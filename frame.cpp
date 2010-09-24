@@ -35,7 +35,7 @@ Frame::~Frame()
 	if(sys && !sys->finalizingDestruction)
 	{
 		//Decrease the refcount of childs
-		for(;i!=displayList.end();i++)
+		for(;i!=displayList.end();++i)
 		{
 			assert(i->second);
 			i->second->decRef();
@@ -48,7 +48,7 @@ void Frame::inputRender()
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
 	//Render objects of this frame;
-	for(;i!=displayList.end();i++)
+	for(;i!=displayList.end();++i)
 	{
 		assert(i->second);
 
@@ -63,7 +63,7 @@ void Frame::Render()
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
 	//Render objects of this frame;
-	for(;i!=displayList.end();i++)
+	for(;i!=displayList.end();++i)
 	{
 		assert(i->second);
 
@@ -76,7 +76,7 @@ void Frame::Render()
 void dumpDisplayList(list<DisplayObject*>& l)
 {
 	list<DisplayObject*>::iterator it=l.begin();
-	for(;it!=l.end();it++)
+	for(;it!=l.end();++it)
 	{
 		cout << *it << endl;
 	}
@@ -113,20 +113,20 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 
 		//Update the displayList using the tags in this frame
 		std::list<DisplayListTag*>::iterator it=blueprint.begin();
-		for(;it!=blueprint.end();it++)
+		for(;it!=blueprint.end();++it)
 			(*it)->execute(parent, d);
 		blueprint.clear();
 		displayList=d;
 		//Acquire a new reference to every child
 		list <pair<PlaceInfo, DisplayObject*> >::const_iterator dit=displayList.begin();
-		for(;dit!=displayList.end();dit++)
+		for(;dit!=displayList.end();++dit)
 			dit->second->incRef();
 		initialized=true;
 
 		//As part of initialization set the transformation matrix for the child objects
 		list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
-		for(;i!=displayList.end();i++)
+		for(;i!=displayList.end();++i)
 			i->second->setMatrix(i->first.Matrix);
 	}
 }

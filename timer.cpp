@@ -82,7 +82,7 @@ TimerThread::~TimerThread()
 {
 	stop();
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
-	for(;it!=pendingEvents.end();it++)
+	for(;it!=pendingEvents.end();++it)
 		delete *it;
 	sem_destroy(&mutex);
 	sem_destroy(&newEvent);
@@ -124,7 +124,7 @@ void TimerThread::dumpJobs()
 {
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	//Find if the job is in the list
-	for(;it!=pendingEvents.end();it++)
+	for(;it!=pendingEvents.end();++it)
 		cout << (*it)->job << endl;
 }
 
@@ -224,7 +224,7 @@ bool TimerThread::removeJob(ITickJob* job)
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	bool first=true;
 	//Find if the job is in the list
-	for(;it!=pendingEvents.end();it++)
+	for(;it!=pendingEvents.end();++it)
 	{
 		if((*it)->job==job)
 			break;

@@ -206,17 +206,17 @@ void PulsePlugin::freeStream ( AudioStream *audioStream )
 
 void overflow_notify()
 {
-	cout << "____overflow!!!!" << endl;
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____overflow!!!!");
 }
 
 void underflow_notify()
 {
-	cout << "____underflow!!!!" << endl;
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____underflow!!!!");
 }
 
 void started_notify()
 {
-	cout << "____started!!!!" << endl;
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____started!!!!");
 }
 
 AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
@@ -267,11 +267,11 @@ void PulsePlugin::contextStatusCB ( pa_context *context, PulsePlugin *th )
 		th->contextReady = true;
 		break;
 	case PA_CONTEXT_FAILED:
+		LOG(LOG_ERROR,_("AUDIO BACKEND: Connection to PulseAudio server failed"));
 	case PA_CONTEXT_TERMINATED:
 		th->noServer = true;
 		th->contextReady = false; //In case something went wrong and the context is not correctly set
 		th->stop(); //It should stop if the context can't be set
-		LOG(LOG_ERROR,_("Connection to PulseAudio server failed"));
 		break;
 	default:
 		break;
@@ -324,7 +324,7 @@ void PulsePlugin::stop()
 	if ( !stopped )
 	{
 		stopped = true;
-		for ( stream_iterator it = streams.begin();it != streams.end(); it++ )
+		for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
 		{
 			freeStream( *it );
 		}

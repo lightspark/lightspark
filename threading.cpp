@@ -27,16 +27,23 @@
 using namespace lightspark;
 
 //NOTE: thread jobs can be run only once
-IThreadJob::IThreadJob():destroyMe(false),executing(false),aborting(false)
+IThreadJob::IThreadJob():jobHasTerminated(false),destroyMe(false),executing(false),aborting(false)
 {
-	sem_init(&terminated, 0, 0);
+	sem_init(&jobTerminated, 0, 0);
 }
 
 IThreadJob::~IThreadJob()
 {
 	if(executing)
-		sem_wait(&terminated);
-	sem_destroy(&terminated);
+		waitForJobTermination();
+	sem_destroy(&jobTerminated);
+}
+
+void IThreadJob::waitForJobTermination()
+{
+	if(!jobHasTerminated)
+		sem_wait(&jobTerminated);
+	jobHasTerminated = true;
 }
 
 void IThreadJob::run()
@@ -51,7 +58,7 @@ void IThreadJob::run()
 		LOG(LOG_NOT_IMPLEMENTED,_("Job terminated"));
 	}
 
-	sem_post(&terminated);
+	sem_post(&jobTerminated);
 }
 
 void IThreadJob::stop()

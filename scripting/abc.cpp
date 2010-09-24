@@ -254,6 +254,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("HTTPStatusEvent","flash.events",Class<HTTPStatusEvent>::getClass());
 	builtin->setVariableByQName("KeyboardEvent","flash.events",Class<KeyboardEvent>::getClass());
 
+	builtin->setVariableByQName("sendToURL","flash.net",Class<IFunction>::getFunction(sendToURL));
 	builtin->setVariableByQName("LocalConnection","flash.net",Class<ASObject>::getClass(QName("LocalConnection","flash.net")));
 	builtin->setVariableByQName("NetConnection","flash.net",Class<NetConnection>::getClass());
 	builtin->setVariableByQName("NetStream","flash.net",Class<NetStream>::getClass());
@@ -1208,6 +1209,8 @@ void ABCVm::not_impl(int n)
 
 void call_context::runtime_stack_push(ASObject* s)
 {
+	if(stack_index>=mi->body->max_stack)
+		throw RunTimeException("Stack overflow");
 	stack[stack_index++]=s;
 }
 
@@ -1424,7 +1427,8 @@ void ABCVm::Run(ABCVm* th)
 	profile->setTag("VM");
 	//When aborting execution remaining events should be handled
 	bool bailOut=false;
-	//bailout is used to keep the vm running. When bailout is true only process evnts until the queue in empty
+	bool firstMissingEvents=true;
+	//bailout is used to keep the vm running. When bailout is true only process events until the queue is empty
 	while(!bailOut || !th->events_queue.empty())
 	{
 		try
@@ -1437,8 +1441,13 @@ void ABCVm::Run(ABCVm* th)
 				//If the queue is empty stop immediately
 				if(th->events_queue.empty())
 					break;
-				else
+				//else
+				//	LOG(LOG_NO_INFO,th->events_queue.size() << _(" events missing before exit"));
+				else if(firstMissingEvents)
+				{
 					LOG(LOG_NO_INFO,th->events_queue.size() << _(" events missing before exit"));
+					firstMissingEvents = false;
+				}
 			}
 			Chronometer chronometer;
 			sem_wait(&th->event_queue_mutex);

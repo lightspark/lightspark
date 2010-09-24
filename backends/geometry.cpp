@@ -103,7 +103,7 @@ void GeomShape::Render(int x, int y) const
 		{
 			std::vector<Vector2>::const_iterator it=outlines[i].begin();
 			glBegin(GL_LINE_STRIP);
-			for(;it!=outlines[i].end();it++)
+			for(;it!=outlines[i].end();++it)
 				glVertex2i(it->x+x,it->y+y);
 			glEnd();
 		}
@@ -121,7 +121,7 @@ void GeomShape::SetStyles(const std::list<FILLSTYLE>* styles)
 		//Simulate array access :-(
 		list<FILLSTYLE>::const_iterator it=styles->begin();
 		for(unsigned int i=0;i<(color-1);i++)
-			it++;
+			++it;
 		style=&(*it);
 	}
 }

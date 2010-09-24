@@ -37,6 +37,7 @@
 #include "backends/audio.h"
 #include "backends/pluginmanager.h"
 #include "backends/urlutils.h"
+#include "backends/security.h"
 
 #include "platforms/pluginutils.h"
 
@@ -130,8 +131,6 @@ public:
 	void setVariableByString(const std::string& s, ASObject* o);*/
 	void registerChildClip(MovieClip* clip);
 	void unregisterChildClip(MovieClip* clip);
-
-	Security::SANDBOXTYPE sandboxType;
 };
 
 class ThreadProfile
@@ -283,15 +282,13 @@ public:
 
 	DownloadManager* downloadManager;
 	IntervalManager* intervalManager;
+	SecurityManager* securityManager;
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };
 	SCALE_MODE scaleMode;
 	
 	//Static AS class properties
 	//NAMING: static$CLASSNAME$$PROPERTYNAME$
-	//	Security
-	bool staticSecurityExactSettings;
-	bool staticSecurityExactSettingsLocked;
 	//	NetConnection
 	ObjectEncoding::ENCODING staticNetConnectionDefaultObjectEncoding;
 };

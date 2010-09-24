@@ -114,6 +114,28 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(setColor);
 	ASFUNCTION(getColor);
+
+	ASFUNCTION(getRedMultiplier);
+	ASFUNCTION(setRedMultiplier);
+	ASFUNCTION(getGreenMultiplier);
+	ASFUNCTION(setGreenMultiplier);
+	ASFUNCTION(getBlueMultiplier);
+	ASFUNCTION(setBlueMultiplier);
+	ASFUNCTION(getAlphaMultiplier);
+	ASFUNCTION(setAlphaMultiplier);
+
+	ASFUNCTION(getRedOffset);
+	ASFUNCTION(setRedOffset);
+	ASFUNCTION(getGreenOffset);
+	ASFUNCTION(setGreenOffset);
+	ASFUNCTION(getBlueOffset);
+	ASFUNCTION(setBlueOffset);
+	ASFUNCTION(getAlphaOffset);
+	ASFUNCTION(setAlphaOffset);
+
+	ASFUNCTION(concat);
+
+	tiny_string toString(bool debugMsg=false);
 };
 
 class Transform: public ASObject
@@ -122,7 +144,6 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
-
 
 class Matrix: public ASObject
 {
@@ -139,9 +160,14 @@ public:
 	//Methods
 	ASFUNCTION(clone);
 	ASFUNCTION(concat);
+	ASFUNCTION(createBox);
+	//ASFUNCTION(createGradientBox);
+	ASFUNCTION(deltaTransformPoint);
 	ASFUNCTION(identity);
+	ASFUNCTION(invert);
 	ASFUNCTION(rotate);
 	ASFUNCTION(scale);
+	ASFUNCTION(transformPoint);
 	ASFUNCTION(translate);
 	
 	//Properties
@@ -157,6 +183,49 @@ public:
 	ASFUNCTION(_set_d);
 	ASFUNCTION(_set_tx);
 	ASFUNCTION(_set_ty);
+};
+
+class Vector3D: public ASObject
+{
+public:
+	number_t w, x, y, z;
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	
+	//Overloads
+	tiny_string toString(bool debugMsg=false);
+	
+	ASFUNCTION(_constructor);
+	
+	//Methods
+	ASFUNCTION(add);
+	ASFUNCTION(angleBetween);
+	ASFUNCTION(clone);
+	ASFUNCTION(crossProduct);
+	ASFUNCTION(decrementBy);
+	ASFUNCTION(distance);
+	ASFUNCTION(dotProduct);
+	ASFUNCTION(equals);
+	ASFUNCTION(incrementBy);
+	ASFUNCTION(nearEquals);
+	ASFUNCTION(negate);
+	ASFUNCTION(normalize);
+	ASFUNCTION(project);
+	ASFUNCTION(scaleBy);
+	ASFUNCTION(subtract);
+	
+	//Properties
+	ASFUNCTION(_get_w);
+	ASFUNCTION(_get_x);
+	ASFUNCTION(_get_y);
+	ASFUNCTION(_get_z);
+	ASFUNCTION(_get_length);
+	ASFUNCTION(_get_lengthSquared);
+
+	ASFUNCTION(_set_w);
+	ASFUNCTION(_set_x);
+	ASFUNCTION(_set_y);
+	ASFUNCTION(_set_z);
 };
 
 };

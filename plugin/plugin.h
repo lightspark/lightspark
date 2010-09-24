@@ -40,21 +40,20 @@ private:
 public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
-	lightspark::Downloader* download(const lightspark::tiny_string& u, bool cached=false);
-	lightspark::Downloader* download(const lightspark::URLInfo& u, bool cached=false);
-	void destroy(lightspark::Downloader* d);
+	lightspark::Downloader* download(const lightspark::tiny_string& url, bool cached=false);
+	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached=false);
 };
 
+class nsPluginInstance;
 class NPDownloader: public lightspark::Downloader
 {
+	friend class nsPluginInstance;
 private:
 	NPP instance;
-	lightspark::tiny_string url;
+	bool started;
 	static void dlStartCallback(void* th);
 public:
-	bool started;
-	NPDownloader(NPP i, const lightspark::tiny_string& u);
-	void terminate();
+	NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance);
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

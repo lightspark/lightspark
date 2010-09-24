@@ -131,7 +131,7 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 	assert_and_throw(argslen==0);
 	Array* ret=Class<Array>::getInstanceS();
 	map<tiny_string, ASObject*>::const_iterator it=th->styles.begin();
-	for(;it!=th->styles.end();it++)
+	for(;it!=th->styles.end();++it)
 		ret->push(Class<ASString>::getInstanceS(it->first));
 	return ret;
 }

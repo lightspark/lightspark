@@ -243,7 +243,7 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayO
 {
 	list <pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
 
-	for(;it!=ls.end();it++)
+	for(;it!=ls.end();++it)
 	{
 		if(it->second->Depth==Depth)
 		{
@@ -714,7 +714,7 @@ void DefineTextTag::inputRender()
 	int count=0;
 	unsigned int shapes_done=0;
 	it= TextRecords.begin();
-	for(;it!=TextRecords.end();it++)
+	for(;it!=TextRecords.end();++it)
 	{
 		if(it->StyleFlagsHasFont)
 		{
@@ -728,7 +728,7 @@ void DefineTextTag::inputRender()
 		x2+=(*it).XOffset;
 		y2+=(*it).YOffset;
 
-		for(;it2!=(it->GlyphEntries.end());it2++)
+		for(;it2!=(it->GlyphEntries.end());++it2)
 		{
 			while(shapes_done<cached.size() &&  cached[shapes_done].id==count)
 			{
@@ -760,7 +760,7 @@ void DefineTextTag::Render()
 		int count=0;
 		std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 		std::vector < GLYPHENTRY >::iterator it2;
-		for(;it!=TextRecords.end();it++)
+		for(;it!=TextRecords.end();++it)
 		{
 			if(it->StyleFlagsHasFont)
 			{
@@ -770,7 +770,7 @@ void DefineTextTag::Render()
 					LOG(LOG_ERROR,_("Should be a FontTag"));
 			}
 			it2 = it->GlyphEntries.begin();
-			for(;it2!=(it->GlyphEntries.end());it2++)
+			for(;it2!=(it->GlyphEntries.end());++it2)
 			{
 				//TODO: refactor to cache glyphs
 				vector<GeomShape> new_shapes;
@@ -805,7 +805,7 @@ void DefineTextTag::Render()
 	float scale_cur=1;
 	int count=0;
 	unsigned int shapes_done=0;
-	for(;it!=TextRecords.end();it++)
+	for(;it!=TextRecords.end();++it)
 	{
 		if(it->StyleFlagsHasFont)
 		{
@@ -819,7 +819,7 @@ void DefineTextTag::Render()
 		x2+=(*it).XOffset;
 		y2+=(*it).YOffset;
 
-		for(;it2!=(it->GlyphEntries.end());it2++)
+		for(;it2!=(it->GlyphEntries.end());++it2)
 		{
 			while(shapes_done<cached.size() && cached[shapes_done].id==count)
 			{
@@ -931,14 +931,14 @@ void DefineMorphShapeTag::Render()
 	rt->glAcquireFramebuffer();
 
 	std::vector < GeomShape >::iterator it=shapes.begin();
-	for(;it!=shapes.end();it++)
+	for(;it!=shapes.end();++it)
 		it->Render();
 
 	rt->glBlitFramebuffer();
 	if(rt->glAcquireIdBuffer())
 	{
 		std::vector < GeomShape >::iterator it=shapes.begin();
-		for(;it!=shapes.end();it++)
+		for(;it!=shapes.end();++it)
 			it->Render();
 		rt->glReleaseIdBuffer();
 	}
@@ -1010,7 +1010,7 @@ void DefineShapeTag::inputRender()
 	glScalef(0.05,0.05,1);
 
 /*	std::vector < GeomShape >::iterator it=cached.begin();
-	for(;it!=cached.end();it++)
+	for(;it!=cached.end();++it)
 	{
 		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
 		it->Render();
@@ -1283,7 +1283,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 	PlaceInfo infos;
 	//Find if this id is already on the list
 	list < pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
-	for(;it!=ls.end();it++)
+	for(;it!=ls.end();++it)
 	{
 		if(it->second->Depth==Depth)
 		{
@@ -1456,7 +1456,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 	PlaceInfo infos;
 	//Find if this id is already on the list
 	list < pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
-	for(;it!=ls.end();it++)
+	for(;it!=ls.end();++it)
 	{
 		if(it->second->Depth==Depth)
 		{

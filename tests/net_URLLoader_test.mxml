@@ -22,24 +22,33 @@
 	private var received:uint = 0;
 	private function appComplete():void
 	{
-		if(Security.sandboxType == Security.REMOTE || 
-			Security.sandboxType == Security.LOCAL_WITH_NETWORK ||
-			Security.sandboxType == Security.LOCAL_TRUSTED) 
+		try
+		{
+			if(Security.sandboxType == Security.REMOTE || 
+				Security.sandboxType == Security.LOCAL_WITH_NETWORK ||
+				Security.sandboxType == Security.LOCAL_TRUSTED) 
 			{
-			Tests.info("Sandbox allows loading remote files");
-			remoteLoader = new URLLoader();
-			remoteLoader.addEventListener(IOErrorEvent.IO_ERROR, remoteErrorHandler);
-			remoteLoader.addEventListener(Event.COMPLETE, remoteLoaderCompleteHandler);
-			remoteLoader.load(new URLRequest(remoteFilePath));
+				Tests.info("Sandbox allows loading remote files");
+				remoteLoader = new URLLoader();
+				remoteLoader.addEventListener(IOErrorEvent.IO_ERROR, remoteErrorHandler);
+				remoteLoader.addEventListener(Event.COMPLETE, remoteLoaderCompleteHandler);
+				remoteLoader.load(new URLRequest(remoteFilePath));
+			}
+			if(Security.sandboxType == Security.LOCAL_WITH_FILE ||
+				Security.sandboxType == Security.LOCAL_TRUSTED)
+			{
+				Tests.info("Sandbox allows loading local files");
+				localLoader = new URLLoader();
+				localLoader.addEventListener(IOErrorEvent.IO_ERROR, localErrorHandler);
+				localLoader.addEventListener(Event.COMPLETE, localLoaderCompleteHandler);
+				localLoader.load(new URLRequest(localFilePath));
+			}
 		}
-		if(Security.sandboxType == Security.LOCAL_WITH_FILE ||
-			Security.sandboxType == Security.LOCAL_TRUSTED)
-			{
-			Tests.info("Sandbox allows loading local files");
-			localLoader = new URLLoader();
-			localLoader.addEventListener(IOErrorEvent.IO_ERROR, localErrorHandler);
-			localLoader.addEventListener(Event.COMPLETE, localLoaderCompleteHandler);
-			localLoader.load(new URLRequest(localFilePath));
+		catch(e:SecurityError)
+		{
+			Tests.assertDontReach("SecurityError thrown");
+			Tests.info("Error:", e.toString());
+			Tests.report(visual, this.name);
 		}
 	}
 	private function remoteErrorHandler(e:Event):void

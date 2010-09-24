@@ -295,7 +295,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLEARRAY& v)
 
 	v.FillStyles.resize(v.FillStyleCount);
 	list<FILLSTYLE>::iterator it=v.FillStyles.begin();
-	for(;it!=v.FillStyles.end();it++)
+	for(;it!=v.FillStyles.end();++it)
 	{
 		it->version=v.version;
 		s >> *it;

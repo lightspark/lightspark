@@ -1295,7 +1295,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	//We modify the cur_level of obj
 	obj->decLevel();
 
-	obj->setVariableByMultiname(*name, value, false);
+	obj->setVariableByMultiname(*name, value);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -1321,7 +1321,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	obj->decLevel();
 
 	//Should we skip implementation? I think it's reasonable
-	ASObject* o=obj->getVariableByMultiname(*name, true, false);
+	ASObject* o=obj->getVariableByMultiname(*name, true);
 
 	tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
@@ -1360,7 +1360,7 @@ void ABCVm::getLex(call_context* th, int n)
 	//Find out the current 'this', when looking up over it, we have to consider all of it
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	ASObject* target;
-	for(;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();++it)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
@@ -1447,7 +1447,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	ASObject* o=NULL;
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	for(;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();++it)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
@@ -1485,7 +1485,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 
-	for(;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();++it)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
@@ -1587,7 +1587,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	obj->decLevel();
 
 	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true, false);
+	ASObject* o=obj->getVariableByMultiname(*name, true);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();

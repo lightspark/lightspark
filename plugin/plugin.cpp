@@ -20,13 +20,15 @@
 #include "plugin.h"
 #include "logger.h"
 #include "compat.h"
+#include <string>
+#include <algorithm>
 #include "backends/urlutils.h"
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define FAKE_PLUGIN_NAME    "Lightspark player"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME";"FAKE_MIME_TYPE":swfls:"FAKE_PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r442"
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r443"
 
 using namespace std;
 
@@ -34,47 +36,75 @@ TLSDATA DLL_PUBLIC lightspark::SystemState* sys=NULL;
 TLSDATA DLL_PUBLIC lightspark::RenderThread* rt=NULL;
 TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 
-NPDownloadManager::NPDownloadManager(NPP i):instance(i)
+/**
+ * \brief Constructor for NPDownloadManager
+ *
+ * The NPAPI download manager produces \c NPDownloader-type \c Downloaders.
+ * It should only be used in the plugin version of LS.
+ * \param[in] _instance An \c NPP object representing the plugin
+ */
+NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
 {
 	type = NPAPI;
 }
 
+/**
+ * \brief Destructor for NPDownloaderManager
+ */
 NPDownloadManager::~NPDownloadManager()
 {
 }
 
-lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u, bool cached)
+/**
+ * \brief Create a Downloader for an URL.
+ *
+ * Returns a pointer to a newly created \c Downloader for the given URL.
+ * \param[in] url The URL (as a \c tiny_string) the \c Downloader is requested for
+ * \param[in] cached Whether or not to disk-cache the download (default=false)
+ * \return A pointer to a newly created \c Downloader for the given URL.
+ * \see DownloadManager::destroy()
+ */
+lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& url, bool cached)
 {
-	return download(sys->getOrigin().goToURL(u), cached);
+	return download(sys->getOrigin().goToURL(url), cached);
 }
 
+/**
+ * \brief Create a Downloader for an URL.
+ *
+ * Returns a pointer to a newly created Downloader for the given URL.
+ * \param[in] url The URL (as a \c URLInfo) the \c Downloader is requested for
+ * \param[in] cached Whether or not to disk-cache the download (default=false)
+ * \return A pointer to a newly created \c Downloader for the given URL.
+ * \see DownloadManager::destroy()
+ */
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached)
 {
-	LOG(LOG_NO_INFO, "DownloadManager: PLUGIN: '" << url.getParsedURL() << "'");
+	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
+			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
-	NPDownloader* downloader=new NPDownloader(instance, url.getParsedURL());
-	downloader->setCached(cached);
+	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance);
 	return downloader;
 }
 
-void NPDownloadManager::destroy(lightspark::Downloader* d)
-{
-	//First of all, wait for termination
-	if(!sys->isShuttingDown())
-		d->wait();
-	delete d;
-}
-
-NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i),url(u),started(false)
+/**
+ * \brief Constructor for the NPDownloader class
+ *
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] _cached Whether or not to cache this download.
+ */
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance):
+	Downloader(_url, _cached),instance(_instance),started(false)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
 
-void NPDownloader::terminate()
-{
-	sem_post(&terminated);
-}
-
+/**
+ * \brief Callback to start the download.
+ *
+ * Gets called by NPN_PluginThreadAsyncCall to start the download in a new thread.
+ * \param t \c this pointer to the \c NPDownloader object
+ */
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
@@ -162,7 +192,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	m_sys=new lightspark::SystemState(m_pt);
 	//As this is the plugin, enable fallback on Gnash for older clips
 	m_sys->enableGnashFallback();
-	m_sys->sandboxType = lightspark::Security::REMOTE; //Needed for security reasons
+	//Files running in the plugin have REMOTE sandbox
+	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 	//Find flashvars argument
 	for(int i=0;i<argc;i++)
 	{
@@ -353,19 +384,26 @@ string nsPluginInstance::getPageURL() const
 
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
-	//We have to cast the downloadanager to a NPDownloadManager
-	lightspark::Downloader* dl=(lightspark::Downloader*)stream->notifyData;
+	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
 	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
 
-	//If this is the first NewStream call, set the system root url.
-	//cout << stream->headers << endl;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
-		dl->setLen(stream->end);
+		dl->setLength(stream->end);
 		//TODO: confirm that growing buffers are normal. This does fix a bug I found though. (timonvo)
-		dl->setAllowBufferRealloc(true);
 		*stype=NP_NORMAL;
+
+		if(strcmp(stream->url, dl->getURL().raw_buf()) != 0)
+		{
+			LOG(LOG_NO_INFO, _("NET: PLUGIN: redirect detected"));
+			dl->setRedirected(lightspark::tiny_string(stream->url));
+		}
+		if(NP_VERSION_MINOR >= NPVERS_HAS_RESPONSE_HEADERS)
+		{
+			//We've already got the length of the download, no need to set it from the headers
+			dl->parseHeaders(stream->headers, false);
+		}
 	}
 	else
 	{
@@ -411,7 +449,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 {
 	if(stream->pdata)
 	{
-		lightspark::Downloader* dl=static_cast<lightspark::Downloader*>(stream->pdata);
+		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 		if(dl->hasFailed())
 			return -1;
 		dl->append((uint8_t*)buffer,len);
@@ -440,17 +478,14 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 		case NPRES_DONE:
 			cout << "Done" <<endl;
 			dl->setFinished();
-			dl->terminate();
 			break;
 		case NPRES_USER_BREAK:
 			cout << "User Break" <<endl;
 			dl->setFailed();
-			dl->terminate();
 			break;
 		case NPRES_NETWORK_ERR:
 			cout << "Network Error" <<endl;
 			dl->setFailed();
-			dl->terminate();
 			break;
 	}
 }

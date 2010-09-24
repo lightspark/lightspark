@@ -337,7 +337,7 @@ Dictionary::~Dictionary()
 	if(!sys->finalizingDestruction)
 	{
 		std::map<ASObject*,ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();it++)
+		for(;it!=data.end();++it)
 			it->second->decRef();
 	}
 }
@@ -424,7 +424,7 @@ void Dictionary::getIteratorByMultiname(const multiname& name, map<ASObject*, AS
 	{
 		//Ok, we need to do the slow lookup on every object and check for === comparison
 		map<ASObject*, ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();it++)
+		for(;it!=data.end();++it)
 		{
 			if(it->first->getObjectType()==T_STRING)
 			{
@@ -442,7 +442,7 @@ void Dictionary::getIteratorByMultiname(const multiname& name, map<ASObject*, AS
 	{
 		//Ok, we need to do the slow lookup on every object and check for === comparison
 		map<ASObject*, ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();it++)
+		for(;it!=data.end();++it)
 		{
 			SWFOBJECT_TYPE type=it->first->getObjectType();
 			if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
@@ -460,7 +460,7 @@ void Dictionary::getIteratorByMultiname(const multiname& name, map<ASObject*, AS
 	{
 		//Ok, we need to do the slow lookup on every object and check for === comparison
 		map<ASObject*, ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();it++)
+		for(;it!=data.end();++it)
 		{
 			SWFOBJECT_TYPE type=it->first->getObjectType();
 			if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
@@ -513,7 +513,7 @@ bool Dictionary::nextName(unsigned int index, ASObject*& out)
 	assert_and_throw(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
 	for(unsigned int i=0;i<index;i++)
-		it++;
+		++it;
 	out=it->first;
 	return true;
 }
@@ -524,7 +524,7 @@ bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 	assert(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
 	for(unsigned int i=0;i<index;i++)
-		it++;
+		++it;
 	out=it->second;
 	return true;
 }
@@ -542,7 +542,7 @@ tiny_string Dictionary::toString(bool debugMsg)
 		if(it != data.begin())
 			retstr << ", ";
 		retstr << "{" << it->first->toString() << ", " << it->second->toString() << "}";
-		it++;
+		++it;
 	}
 	retstr << "}";
 	
@@ -769,7 +769,7 @@ IntervalManager::~IntervalManager()
 {
 	//Run through all running intervals and remove their tickjob, delete their intervalRunner and erase their entry
 	std::map<uint32_t,IntervalRunner*>::iterator it = runners.begin();
-	for(; it != runners.end(); it++)
+	while(it != runners.end())
 	{
 		sys->removeJob((*it).second);
 		delete((*it).second);
@@ -817,7 +817,7 @@ uint32_t IntervalManager::getFreeID()
 {
 	//At the first run every currentID will be available. But eventually the currentID will wrap around.
 	//Thats why we need to check if the currentID isn't used yet
-	while(runners.find(currentID) != runners.end())
+	while(runners.count(currentID) != 0)
 		currentID++;
 	return currentID;
 }

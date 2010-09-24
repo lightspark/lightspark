@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 	char* fileName=NULL;
 	char* url=NULL;
 	char* paramsFileName=NULL;
-	Security::SANDBOXTYPE sandboxType=Security::REMOTE;
+	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::REMOTE;
 	bool useInterpreter=true;
 	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
@@ -72,18 +72,11 @@ int main(int argc, char* argv[])
 
 			url=argv[i];
 		}
-		else if(strcmp(argv[i],"-ni")==0 || 
-			strcmp(argv[i],"--disable-interpreter")==0)
-		{
+		else if(strcmp(argv[i],"-ni")==0 || strcmp(argv[i],"--disable-interpreter")==0)
 			useInterpreter=false;
-		}
-		else if(strcmp(argv[i],"-j")==0 || 
-			strcmp(argv[i],"--enable-jit")==0)
-		{
+		else if(strcmp(argv[i],"-j")==0 || strcmp(argv[i],"--enable-jit")==0)
 			useJit=true;
-		}
-		else if(strcmp(argv[i],"-l")==0 || 
-			strcmp(argv[i],"--log-level")==0)
+		else if(strcmp(argv[i],"-l")==0 || strcmp(argv[i],"--log-level")==0)
 		{
 			i++;
 			if(i==argc)
@@ -115,21 +108,13 @@ int main(int argc, char* argv[])
 				break;
 			}
 			if(strncmp(argv[i], "remote", 6) == 0)
-			{
-				sandboxType = Security::REMOTE;
-			}
+				sandboxType = SecurityManager::REMOTE;
 			else if(strncmp(argv[i], "local-with-filesystem", 21) == 0)
-			{
-				sandboxType = Security::LOCAL_WITH_FILE;
-			}
+				sandboxType = SecurityManager::LOCAL_WITH_FILE;
 			else if(strncmp(argv[i], "local-with-networking", 21) == 0)
-			{
-				sandboxType = Security::LOCAL_WITH_NETWORK;
-			}
+				sandboxType = SecurityManager::LOCAL_WITH_NETWORK;
 			else if(strncmp(argv[i], "local-trusted", 13) == 0)
-			{
-				sandboxType = Security::LOCAL_TRUSTED;
-			}
+				sandboxType = SecurityManager::LOCAL_TRUSTED;
 		}
 		else
 		{
@@ -180,7 +165,7 @@ int main(int argc, char* argv[])
 	}
 #ifndef WIN32
 	//When running in a local sandbox, set the root URL to the current working dir
-	else if(sandboxType != Security::REMOTE)
+	else if(sandboxType != SecurityManager::REMOTE)
 	{
 		char * cwd = get_current_dir_name();
 		tiny_string cwdStr = tiny_string("file://") + tiny_string(cwd, true);
@@ -208,17 +193,17 @@ int main(int argc, char* argv[])
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	sys->setParamsAndEngine(SDL, NULL);
-	sys->sandboxType = sandboxType;
+	sys->securityManager->setSandboxType(sandboxType);
+	if(sandboxType == SecurityManager::REMOTE)
+		LOG(LOG_NO_INFO, _("Running in remote sandbox"));
+	else if(sandboxType == SecurityManager::LOCAL_WITH_NETWORK)
+		LOG(LOG_NO_INFO, _("Running in local-with-networking sandbox"));
+	else if(sandboxType == SecurityManager::LOCAL_WITH_FILE)
+		LOG(LOG_NO_INFO, _("Running in local-with-filesystem sandbox"));
+	else if(sandboxType == SecurityManager::LOCAL_TRUSTED)
+		LOG(LOG_NO_INFO, _("Running in local-trusted sandbox"));
 
 	sys->downloadManager=new StandaloneDownloadManager();
-	if(sandboxType == Security::REMOTE)
-		LOG(LOG_NO_INFO, _("Running in remote sandbox"));
-	else if(sandboxType == Security::LOCAL_WITH_NETWORK)
-		LOG(LOG_NO_INFO, _("Running in local-with-networking sandbox"));
-	else if(sandboxType == Security::LOCAL_WITH_FILE)
-		LOG(LOG_NO_INFO, _("Running in local-with-filesystem sandbox"));
-	else if(sandboxType == Security::LOCAL_TRUSTED)
-		LOG(LOG_NO_INFO, _("Running in local-trusted sandbox"));
 
 	//Start the parser
 	sys->addJob(pt);

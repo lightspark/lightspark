@@ -248,17 +248,17 @@ void OpenALPlugin::freeStream ( uint32_t id )
 
 void overflow_notify()
 {
-	cout << "____overflow!!!!" << endl;
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____overflow!!!!");
 }
 
 void underflow_notify()
 {
-	cout << "____underflow!!!!" << endl;
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____underflow!!!!");
 }
 
 void started_notify()
 {
-	cout << "____started!!!!" << endl;
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____started!!!!");
 }
 
 uint32_t OpenALPlugin::createStream ( AudioDecoder *decoder )

@@ -19,8 +19,15 @@
 
 		Security.exactSettings = false;
 		Tests.assertFalse(Security.exactSettings, "exactSettings: setter, false");
-		Security.exactSettings = true;
-		Tests.assertTrue(Security.exactSettings, "exactSettings: setter, true");
+		try
+		{
+			Security.exactSettings = true;
+			Tests.assertDontReach("exactSettings: setter after already setting once, true, throw exception");
+		}
+		catch(e:SecurityError)
+		{
+			Tests.assertTrue(true, "exactSettings: setter after already setting once, true, throw exception");
+		}
 
 		//Check values of constants
 		Tests.assertEquals("remote", Security.REMOTE, "REMOTE: value");
@@ -51,6 +58,21 @@
 		rect.graphics.beginFill(color);
 		rect.graphics.drawRect(30,0,150,100);
 		rect.graphics.endFill();
+
+		Security.loadPolicyFile("http://ls.localhost/sub/crossdomain.xml");
+
+		try
+		{
+			var localLoader:URLLoader = new URLLoader();
+			localLoader.addEventListener(IOErrorEvent.IO_ERROR, function():void {});
+			localLoader.addEventListener(Event.COMPLETE, function():void {});
+			localLoader.load(new URLRequest("http://ls.localhost/sub/test.data"));
+		}
+		catch(e:SecurityError)
+		{
+			Tests.info("SecurityError");
+			Tests.info(e);
+		}
 
 		Tests.report(visual, this.name);
 	}

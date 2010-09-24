@@ -217,7 +217,7 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns
 	const var_iterator ret_end=Variables.upper_bound(n);
 
 	var_iterator ret=ret_begin;
-	for(;ret!=ret_end;ret++)
+	for(;ret!=ret_end;++ret)
 	{
 		if(ret->second.kind==BORROWED_TRAIT && !borrowedMode)
 			continue;
@@ -482,7 +482,7 @@ void variables_map::killObjVar(const multiname& mname)
 	{
 		const nsNameAndKind& ns=mname.ns[i];
 		var_iterator start=ret.first;
-		for(;start!=ret.second;start++)
+		for(;start!=ret.second;++start)
 		{
 			if(start->second.ns==ns)
 			{
@@ -523,7 +523,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create, bool bor
 
 	assert_and_throw(!mname.ns.empty());
 	var_iterator ret=ret_begin;
-	for(;ret!=ret_end;ret++)
+	for(;ret!=ret_end;++ret)
 	{
 		if(ret->second.kind==BORROWED_TRAIT && !borrowedMode)
 			continue;
@@ -558,7 +558,7 @@ ASFUNCTIONBODY(ASObject,generator)
 {
 	//By default we assume it's a passtrough cast
 	assert_and_throw(argslen==1);
-	LOG(LOG_CALLS,_("Passthorugh of ") << args[0]);
+	LOG(LOG_CALLS,_("Passthrough of ") << args[0]);
 	args[0]->incRef();
 	return args[0];
 }
@@ -694,7 +694,7 @@ void ASObject::check() const
 	//Heavyweight stuff
 #ifdef EXPENSIVE_DEBUG
 	variables_map::const_var_iterator it=Variables.Variables.begin();
-	for(;it!=Variables.Variables.end();it++)
+	for(;it!=Variables.Variables.end();++it)
 	{
 		variables_map::const_var_iterator next=it;
 		next++;
@@ -729,7 +729,7 @@ void ASObject::check() const
 void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
-	for(;it!=Variables.end();it++)
+	for(;it!=Variables.end();++it)
 		LOG(LOG_NO_INFO, ((it->second.kind==OWNED_TRAIT)?"O: ":"B: ") <<  '[' << it->second.ns.name << "] "<< it->first << ' ' << 
 			it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter);
 }
@@ -744,7 +744,7 @@ void variables_map::destroyContents()
 	if(sys->finalizingDestruction) //Objects are being destroyed by the relative classes
 		return;
 	var_iterator it=Variables.begin();
-	for(;it!=Variables.end();it++)
+	for(;it!=Variables.end();++it)
 	{
 		if(it->second.var.var)
 			it->second.var.var->decRef();
@@ -838,7 +838,7 @@ void variables_map::initSlot(unsigned int n, const tiny_string& name, const nsNa
 	{
 		//Check if this namespace is already present
 		var_iterator start=ret.first;
-		for(;start!=ret.second;start++)
+		for(;start!=ret.second;++start)
 		{
 			if(start->second.ns==ns)
 			{
@@ -874,7 +874,7 @@ obj_var* variables_map::getValueAt(unsigned int index)
 		var_iterator it=Variables.begin();
 
 		for(unsigned int i=0;i<index;i++)
-			it++;
+			++it;
 
 		return &it->second.var;
 	}
@@ -911,7 +911,7 @@ tiny_string variables_map::getNameAt(unsigned int index)
 		var_iterator it=Variables.begin();
 
 		for(unsigned int i=0;i<index;i++)
-			it++;
+			++it;
 
 		return it->first;
 	}

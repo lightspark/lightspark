@@ -29,6 +29,8 @@ SET_NAMESPACE("flash.geom");
 REGISTER_CLASS_NAME(Transform);
 REGISTER_CLASS_NAME(ColorTransform);
 REGISTER_CLASS_NAME(Point);
+//REGISTER_CLASS_NAME(Matrix);
+REGISTER_CLASS_NAME(Vector3D);
 REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle","flash.geom");
 REGISTER_CLASS_NAME(Matrix);
 
@@ -493,6 +495,31 @@ ASFUNCTIONBODY(Rectangle,_union)
 void ColorTransform::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+
+	// properties
+	c->setGetterByQName("color","",Class<IFunction>::getFunction(getColor),true);
+	c->setSetterByQName("color","",Class<IFunction>::getFunction(setColor),true);
+
+	c->setGetterByQName("redMultiplier","",Class<IFunction>::getFunction(getRedMultiplier),true);
+	c->setSetterByQName("redMultiplier","",Class<IFunction>::getFunction(setRedMultiplier),true);
+	c->setGetterByQName("greenMultiplier","",Class<IFunction>::getFunction(getGreenMultiplier),true);
+	c->setSetterByQName("greenMultiplier","",Class<IFunction>::getFunction(setGreenMultiplier),true);
+	c->setGetterByQName("blueMultiplier","",Class<IFunction>::getFunction(getBlueMultiplier),true);
+	c->setSetterByQName("blueMultiplier","",Class<IFunction>::getFunction(setBlueMultiplier),true);
+	c->setGetterByQName("alphaMultiplier","",Class<IFunction>::getFunction(getAlphaMultiplier),true);
+	c->setSetterByQName("alphaMultiplier","",Class<IFunction>::getFunction(setAlphaMultiplier),true);
+
+	c->setGetterByQName("redOffset","",Class<IFunction>::getFunction(getRedOffset),true);
+	c->setSetterByQName("redOffset","",Class<IFunction>::getFunction(setRedOffset),true);
+	c->setGetterByQName("greenOffset","",Class<IFunction>::getFunction(getGreenOffset),true);
+	c->setSetterByQName("greenOffset","",Class<IFunction>::getFunction(setGreenOffset),true);
+	c->setGetterByQName("blueOffset","",Class<IFunction>::getFunction(getBlueOffset),true);
+	c->setSetterByQName("blueOffset","",Class<IFunction>::getFunction(setBlueOffset),true);
+	c->setGetterByQName("alphaOffset","",Class<IFunction>::getFunction(getAlphaOffset),true);
+	c->setSetterByQName("alphaOffset","",Class<IFunction>::getFunction(setAlphaOffset),true);
+
+	// methods
+	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
 }
 
 ASFUNCTIONBODY(ColorTransform,_constructor)
@@ -554,8 +581,158 @@ ASFUNCTIONBODY(ColorTransform,setColor)
 
 ASFUNCTIONBODY(ColorTransform,getColor)
 {
-	assert_and_throw(false && "getColor not implemented");
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+
+	int ao, ro, go, bo;
+	ao = static_cast<int>(th->alphaOffset) & 0xff;
+	ro = static_cast<int>(th->redOffset) & 0xff;
+	go = static_cast<int>(th->greenOffset) & 0xff;
+	bo = static_cast<int>(th->blueOffset) & 0xff;
+
+	number_t color = (ao<<24) | (ro<<16) | (go<<8) | bo;
+
+	return abstract_d(color);
+}
+
+ASFUNCTIONBODY(ColorTransform,getRedMultiplier)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->redMultiplier);
+}
+
+ASFUNCTIONBODY(ColorTransform,setRedMultiplier)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->redMultiplier = args[0]->toNumber();
 	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getGreenMultiplier)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->greenMultiplier);
+}
+
+ASFUNCTIONBODY(ColorTransform,setGreenMultiplier)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->greenMultiplier = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getBlueMultiplier)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->blueMultiplier);
+}
+
+ASFUNCTIONBODY(ColorTransform,setBlueMultiplier)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->blueMultiplier = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getAlphaMultiplier)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->alphaMultiplier);
+}
+
+ASFUNCTIONBODY(ColorTransform,setAlphaMultiplier)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->alphaMultiplier = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getRedOffset)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->redOffset);
+}
+
+ASFUNCTIONBODY(ColorTransform,setRedOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->redOffset = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getGreenOffset)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->greenOffset);
+}
+
+ASFUNCTIONBODY(ColorTransform,setGreenOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->greenOffset = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getBlueOffset)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->blueOffset);
+}
+
+ASFUNCTIONBODY(ColorTransform,setBlueOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->blueOffset = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getAlphaOffset)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->alphaOffset);
+}
+
+ASFUNCTIONBODY(ColorTransform,setAlphaOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->alphaOffset = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,concat)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	ColorTransform* ct=static_cast<ColorTransform*>(args[0]);
+
+	th->redMultiplier *= ct->redMultiplier;
+	th->redOffset = th->redOffset * ct->redMultiplier + ct->redOffset;
+	th->greenMultiplier *= ct->greenMultiplier;
+	th->greenOffset = th->greenOffset * ct->greenMultiplier + ct->greenOffset;
+	th->blueMultiplier *= ct->blueMultiplier;
+	th->blueOffset = th->blueOffset * ct->blueMultiplier + ct->blueOffset;
+	th->alphaMultiplier *= ct->alphaMultiplier;
+	th->alphaOffset = th->alphaOffset * ct->alphaMultiplier + ct->alphaOffset;
+
+	return NULL;
+}
+
+tiny_string ColorTransform::toString(bool debugMsg)
+{
+	assert_and_throw(implEnable);
+	
+	char buf[1024];
+	snprintf(buf,1024,"(redOffset=%f, redMultiplier=%f, greenOffset=%f, greenMultiplier=%f blueOffset=%f blueMultiplier=%f alphaOffset=%f, alphaMultiplier=%f)", redOffset, redMultiplier, greenOffset, greenMultiplier, blueOffset, blueMultiplier, alphaOffset, alphaMultiplier);
+	
+	return tiny_string(buf, true);
 }
 
 void Point::sinit(Class_base* c)
@@ -769,15 +946,15 @@ void Matrix::sinit(Class_base* c)
 	//Methods 
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
+	c->setMethodByQName("createBox","",Class<IFunction>::getFunction(createBox),true);
+	c->setMethodByQName("deltaTransformPoint","",Class<IFunction>::getFunction(deltaTransformPoint),true);
 	c->setMethodByQName("identity","",Class<IFunction>::getFunction(identity),true);
+	c->setMethodByQName("invert","",Class<IFunction>::getFunction(invert),true);
 	c->setMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),true);
 	c->setMethodByQName("scale","",Class<IFunction>::getFunction(scale),true);
+	c->setMethodByQName("transformPoint","",Class<IFunction>::getFunction(transformPoint),true);
 	c->setMethodByQName("translate","",Class<IFunction>::getFunction(translate),true);
 }
-
-/**
- * NOTE: Many of these functions are wrong. They replace the current values instead of multiplying them out.
- */
 
 ASFUNCTIONBODY(Matrix,_constructor)
 {
@@ -951,37 +1128,532 @@ ASFUNCTIONBODY(Matrix,identity)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Matrix,invert)
+{
+	assert_and_throw(argslen==0);
+	Matrix* th=static_cast<Matrix*>(obj);
+	
+	number_t ta, tb, tc, td, ttx, tty;
+	number_t Z;
+
+	Z = th->a * th->d - th->b * th-> c;
+	ta = th->d;
+	ta /= Z;
+	tc = -(th->c);
+	tc /= Z;
+	ttx = th->c * th->ty + th->d * th->tx;
+	ttx /= Z;
+	tb = -(th->b);
+	tb /= Z;
+	td = th->a;
+	td /= Z;
+	tty = th->b * th->tx - th->a * th->ty;
+	tty /= Z;
+
+	th->a = ta;
+	th->b = tb;
+	th->c = tc;
+	th->d = td;
+	th->tx = ttx;
+	th->ty = tty;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,translate)
+{
+	assert_and_throw(argslen==2);
+	Matrix* th=static_cast<Matrix*>(obj);
+	number_t dx = args[0]->toNumber();
+	number_t dy = args[1]->toNumber();
+
+	number_t ttx, tty;
+
+	ttx = th->a * dx + th->c * dy + th->tx;
+	tty = th->b * dx + th->d * dy + th->ty;
+
+	th->tx = ttx;
+	th->ty = tty;
+
+	return NULL;
+}
+
 ASFUNCTIONBODY(Matrix,rotate)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
 	assert_and_throw(argslen==1);
-	double angle = args[0]->toNumber();
-	th->a = ::cos(angle); th->c = -::sin(angle); th->tx = 0.0;
-	th->b = ::sin(angle); th->d =  ::cos(angle); th->ty = 0.0;
+	Matrix* th=static_cast<Matrix*>(obj);
+	number_t angle = args[0]->toNumber();
+	number_t ta, tb, tc, td;
+
+	ta = th->a * cos(angle) + th->c * sin(angle);
+	tb = th->b * cos(angle) + th->d * sin(angle);
+	tc = th->c * cos(angle) - th->a * sin(angle);
+	td = th->d * cos(angle) - th->b * sin(angle);
+
+	th->a = ta;
+	th->b = tb;
+	th->c = tc;
+	th->d = td;
 
 	return NULL;
 }
 
 ASFUNCTIONBODY(Matrix,scale)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
 	assert_and_throw(argslen==2);
-	double sx = args[0]->toNumber();
-	double sy = args[1]->toNumber();
-	th->a = sx;   th->c = 0.0; th->tx = 0.0;
-	th->b = 0.0;  th->d = sy;  th->ty = 0.0;
+	Matrix* th=static_cast<Matrix*>(obj);
+	number_t sx = args[0]->toNumber();
+	number_t sy = args[1]->toNumber();
+
+	th->a *= sx;
+	th->b *= sx;
+	th->c *= sy;
+	th->d *= sy;
 		
 	return NULL;
 }
 
-ASFUNCTIONBODY(Matrix,translate)
+ASFUNCTIONBODY(Matrix,createBox)
 {
+	assert_and_throw(argslen>=2 && argslen <= 5);
 	Matrix* th=static_cast<Matrix*>(obj);
-	assert_and_throw(argslen==2);
-	double dx = args[0]->toNumber();
-	double dy = args[1]->toNumber();
-	th->tx += dx;
-	th->ty += dy;
-		
+	number_t scaleX = args[0]->toNumber();
+	number_t scaleY = args[1]->toNumber();
+	number_t angle = 0;
+	if ( argslen > 2 ) angle = args[2]->toNumber();
+	number_t translateX = 0;
+	if ( argslen > 3 ) translateX = args[3]->toNumber();
+	number_t translateY = 0;
+	if ( argslen > 4 ) translateY = args[4]->toNumber();
+
+	number_t ta, tb, tc, td, ttx, tty;
+
+	ta = scaleX * cos(angle);
+	tb = scaleX * sin(angle);
+	tc = -scaleY * sin(angle);
+	td = scaleY * cos(angle);
+	ttx = translateX * scaleX * cos(angle) - translateY * scaleY * sin(angle);
+	tty = translateX * scaleX * sin(angle) + translateY * scaleY * cos(angle);
+
+	th->a = ta;
+	th->b = tb;
+	th->c = tc;
+	th->d = td;
+	th->tx = ttx;
+	th->ty = tty;
+
 	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,transformPoint)
+{
+	assert_and_throw(argslen==1);
+	Matrix* th=static_cast<Matrix*>(obj);
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t ttx = th->a * pt->getX() + th->c * pt->getY() + th->tx;
+	number_t tty = th->b * pt->getX() + th->d * pt->getY() + th->ty;
+
+	return Class<Point>::getInstanceS(ttx, tty);
+}
+
+ASFUNCTIONBODY(Matrix,deltaTransformPoint)
+{
+	assert_and_throw(argslen==1);
+	Matrix* th=static_cast<Matrix*>(obj);
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t ttx = th->a * pt->getX() + th->c * pt->getY();
+	number_t tty = th->b * pt->getX() + th->d * pt->getY();
+
+	return Class<Point>::getInstanceS(ttx, tty);
+}
+
+void Vector3D::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+
+	// constants
+	Vector3D* tx = Class<Vector3D>::getInstanceS();
+	tx->x = 1;
+	c->setVariableByQName("X_AXIS","", tx);
+	Vector3D* ty = Class<Vector3D>::getInstanceS();
+	ty->y = 1;
+	c->setVariableByQName("Y_AXIS","", ty);
+	Vector3D* tz = Class<Vector3D>::getInstanceS();
+	tz->z = 1;
+	c->setVariableByQName("Z_AXIS","", tz);
+	
+	// properties
+	c->setGetterByQName("w","",Class<IFunction>::getFunction(_get_w),true);
+	c->setGetterByQName("x","",Class<IFunction>::getFunction(_get_x),true);
+	c->setGetterByQName("y","",Class<IFunction>::getFunction(_get_y),true);
+	c->setGetterByQName("z","",Class<IFunction>::getFunction(_get_z),true);
+	c->setGetterByQName("length","",Class<IFunction>::getFunction(_get_length),true);
+	c->setGetterByQName("lengthSquared","",Class<IFunction>::getFunction(_get_lengthSquared),true);
+	
+	c->setSetterByQName("w","",Class<IFunction>::getFunction(_set_w),true);
+	c->setSetterByQName("x","",Class<IFunction>::getFunction(_set_x),true);
+	c->setSetterByQName("y","",Class<IFunction>::getFunction(_set_y),true);
+	c->setSetterByQName("z","",Class<IFunction>::getFunction(_set_z),true);
+	
+	// methods 
+	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
+	c->setMethodByQName("angleBetween","",Class<IFunction>::getFunction(angleBetween),true);
+	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
+	c->setMethodByQName("crossProduct","",Class<IFunction>::getFunction(crossProduct),true);
+	c->setMethodByQName("decrementBy","",Class<IFunction>::getFunction(decrementBy),true);
+	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),true);
+	c->setMethodByQName("dotProduct","",Class<IFunction>::getFunction(dotProduct),true);
+	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
+	c->setMethodByQName("incrementBy","",Class<IFunction>::getFunction(incrementBy),true);
+	c->setMethodByQName("nearEquals","",Class<IFunction>::getFunction(nearEquals),true);
+	c->setMethodByQName("negate","",Class<IFunction>::getFunction(negate),true);
+	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
+	c->setMethodByQName("project","",Class<IFunction>::getFunction(project),true);
+	c->setMethodByQName("scaleBy","",Class<IFunction>::getFunction(scaleBy),true);
+	c->setMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),true);
+}
+
+ASFUNCTIONBODY(Vector3D,_constructor)
+{
+	assert_and_throw(argslen <= 4);
+	ASObject::_constructor(obj,NULL,0);
+	
+	Vector3D * th=static_cast<Vector3D*>(obj);
+	
+	th->w = 0;
+	th->x = 0;
+	th->y = 0;
+	th->z = 0;
+	
+	if (argslen >= 1)
+		th->x = args[0]->toNumber();
+	if (argslen >= 2)
+		th->y = args[1]->toNumber();
+	if (argslen >= 3)
+		th->z = args[2]->toNumber();
+	if (argslen == 4)
+		th->w = args[3]->toNumber();
+
+	return NULL;
+}
+
+void Vector3D::buildTraits(ASObject* o)
+{
+}
+
+tiny_string Vector3D::toString(bool debugMsg)
+{
+	assert_and_throw(implEnable);
+	
+	char buf[512];
+	snprintf(buf,512,"(x=%f, y=%f, z=%f)", x, y, z);
+	
+	return tiny_string(buf, true);
+}
+
+ASFUNCTIONBODY(Vector3D,_get_w)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->w);
+}
+
+ASFUNCTIONBODY(Vector3D,_set_w)
+{
+	assert_and_throw(argslen==1);
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	th->w = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,_get_x)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->x);
+}
+
+ASFUNCTIONBODY(Vector3D,_set_x)
+{
+	assert_and_throw(argslen==1);
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	th->x = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,_get_y)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->y);
+}
+
+ASFUNCTIONBODY(Vector3D,_set_y)
+{
+	assert_and_throw(argslen==1);
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	th->y = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,_get_z)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->z);
+}
+
+ASFUNCTIONBODY(Vector3D,_set_z)
+{
+	assert_and_throw(argslen==1);
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	th->z = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,_get_length)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
+}
+
+ASFUNCTIONBODY(Vector3D,_get_lengthSquared)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->x * th->x + th->y * th->y + th->z * th->z);
+}
+
+ASFUNCTIONBODY(Vector3D,clone)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* ret=Class<Vector3D>::getInstanceS();
+
+	ret->w = th->w;
+	ret->x = th->x;
+	ret->y = th->y;
+	ret->z = th->z;
+
+	return ret;
+}
+
+ASFUNCTIONBODY(Vector3D,add)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* ret=Class<Vector3D>::getInstanceS();
+
+	ret->x = th->x + vc->x;
+	ret->y = th->y + vc->y;
+	ret->z = th->z + vc->z;
+
+	return ret;
+}
+
+ASFUNCTIONBODY(Vector3D,angleBetween)
+{
+	assert_and_throw(argslen==2);
+
+	Vector3D* vc1=static_cast<Vector3D*>(args[0]);
+	Vector3D* vc2=static_cast<Vector3D*>(args[1]);
+
+	number_t angle = vc1->x * vc2->x + vc1->y * vc2->y + vc1->z * vc2->z;
+	angle /= sqrt(vc1->x * vc1->x + vc1->y * vc1->y + vc1->z * vc1->z);
+	angle /= sqrt(vc2->x * vc2->x + vc2->y * vc2->y + vc2->z * vc2->z);
+	angle = acos(angle);
+
+	return abstract_d(angle);
+}
+
+ASFUNCTIONBODY(Vector3D,crossProduct)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* ret=Class<Vector3D>::getInstanceS();
+
+	ret->x = th->y * vc->z - th->z * vc->y;
+	ret->y = th->z * vc->x - th->x * vc->z;
+	ret->z = th->x * vc->y - th->y * vc->x;
+
+	return ret;
+}
+
+ASFUNCTIONBODY(Vector3D,decrementBy)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+
+	th->x -= vc->x;
+	th->y -= vc->y;
+	th->z -= vc->z;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,distance)
+{
+	assert_and_throw(argslen==2);
+
+	Vector3D* vc1=static_cast<Vector3D*>(args[0]);
+	Vector3D* vc2=static_cast<Vector3D*>(args[1]);
+
+	number_t dx, dy, dz, dist;
+	dx = vc1->x - vc2->x;
+	dy = vc1->y - vc2->y;
+	dz = vc1->z - vc2->z;
+	dist = sqrt(dx * dx + dy * dy + dz * dz);
+
+	return abstract_d(dist);
+}
+
+ASFUNCTIONBODY(Vector3D,dotProduct)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+
+	return abstract_d(th->x * vc->x + th->y * vc->y + th->z * vc->z);
+}
+
+ASFUNCTIONBODY(Vector3D,equals)
+{
+	assert_and_throw(argslen==1 || argslen==2);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	int32_t allfour = 0;
+
+	if ( argslen == 2 )
+	{
+		Boolean* af=static_cast<Boolean*>(args[1]);
+		allfour = af->toInt();
+	}
+
+	return abstract_b(th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
+}
+
+ASFUNCTIONBODY(Vector3D,incrementBy)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+
+	th->x += vc->x;
+	th->y += vc->y;
+	th->z += vc->z;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,nearEquals)
+{
+	assert_and_throw(argslen==2 && argslen==3);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	number_t tolerance = args[1]->toNumber();
+	int32_t allfour = 0;
+
+	if (argslen == 3 )
+	{
+		Boolean* af=static_cast<Boolean*>(args[2]);
+		allfour = af->toInt();
+	}
+
+	bool dx, dy, dz, dw;
+	dx = (th->x - vc->x) < tolerance;
+	dy = (th->y - vc->y) < tolerance;
+	dz = (th->z - vc->z) < tolerance;
+	dw = allfour ? (th->w - vc->w) < tolerance : true;
+
+	return abstract_b(dx && dy && dz && dw);
+}
+
+ASFUNCTIONBODY(Vector3D,negate)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+
+	th->x = -th->x;
+	th->y = -th->y;
+	th->z = -th->z;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,normalize)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+
+	number_t len = sqrt(th->x * th->x + th->y * th->y + th->z * th->z);
+
+	th->x /= len;
+	th->y /= len;
+	th->z /= len;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,project)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+
+	th->x /= th->w;
+	th->y /= th->w;
+	th->z /= th->w;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,scaleBy)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	number_t scale = args[0]->toNumber();
+
+	th->x *= scale;
+	th->y *= scale;
+	th->z *= scale;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,subtract)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* ret=Class<Vector3D>::getInstanceS();
+
+	ret->x = th->x - vc->x;
+	ret->y = th->y - vc->y;
+	ret->z = th->z - vc->z;
+
+	return ret;
 }

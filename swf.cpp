@@ -165,10 +165,13 @@ void SystemState::staticDeinit()
 #endif
 }
 
-SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
-	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),currentVm(NULL),
-	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
+SystemState::SystemState(ParseThread* p):
+	RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
+	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
+	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
+	showProfilingData(false),showInteractiveMap(false),showDebug(false),currentVm(NULL),
+	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),
+	scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
 	//Create the thread pool
@@ -183,6 +186,7 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 	pluginManager = new PluginManager;
 	audioManager=new AudioManager(pluginManager);
 	intervalManager=new IntervalManager();
+	securityManager=new SecurityManager();
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;
@@ -311,6 +315,8 @@ void SystemState::stopEngines()
 		timerThread->wait();
 	delete downloadManager;
 	downloadManager=NULL;
+	delete securityManager;
+	securityManager=NULL;
 	if(currentVm)
 		currentVm->shutdown();
 	delete timerThread;
@@ -676,7 +682,7 @@ void SystemState::tick()
 	RootMovieClip::tick();
  	sem_wait(&mutex);
 	list<ThreadProfile>::iterator it=profilingData.begin();
-	for(;it!=profilingData.end();it++)
+	for(;it!=profilingData.end();++it)
 		it->tick();
 	sem_post(&mutex);
 	//Enter frame should be sent to the stage too
@@ -1083,7 +1089,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
 	sem_wait(&mutex);
 	list< DictionaryTag*>::iterator it = dictionary.begin();
-	for(;it!=dictionary.end();it++)
+	for(;it!=dictionary.end();++it)
 	{
 		if((*it)->getId()==id)
 			break;

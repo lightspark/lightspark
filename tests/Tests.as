@@ -238,7 +238,7 @@ package
 			var lines:Array;
 			for(var i:uint = 0; i < msgs.length; i++)
 			{
-				lines = msgs[i].split("\n");
+				lines = msgs[i].toString().split("\n");
 				for(var j:uint = 0; j < lines.length; j++)
 				{
 					trace("[INFO] " + lines[j]);

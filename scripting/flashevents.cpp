@@ -264,7 +264,7 @@ void EventDispatcher::buildTraits(ASObject* o)
 void EventDispatcher::dumpHandlers()
 {
 	std::map<tiny_string,list<listener> >::iterator it=handlers.begin();
-	for(;it!=handlers.end();it++)
+	for(;it!=handlers.end();++it)
 		std::cout << it->first << std::endl;
 }
 

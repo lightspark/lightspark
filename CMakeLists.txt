@@ -91,6 +91,7 @@ ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 
 # Using relative folders, cmake happens by itself CMAKE_INSTALL_PREFIX
 IF(UNIX)
+	 SET(ETCDIR "/etc") #Using absolute folder
    SET(BINDIR "bin")
    SET(DATADIR "${CMAKE_INSTALL_PREFIX}/share")
    SET(LIBDIR "lib${LIB_SUFFIX}")
@@ -103,7 +104,6 @@ SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /us
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the browser plugin?")
-SET(AUDIO_BACKEND "pulse" CACHE STRING "Choose audio backend: none pulse alsa, default is pulse")
 SET(ENABLE_CURL TRUE CACHE BOOL "Enable CURL? (Required for Downloader functionality)")
 SET(ENABLE_LIBAVCODEC TRUE CACHE BOOL "Enable libavcodec and dependent functionality?")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
@@ -259,6 +259,7 @@ SET(LIBSPARK_SOURCES
   threading.cpp
   timer.cpp
   backends/audio.cpp
+  backends/config.cpp
   backends/decoder.cpp
   backends/geometry.cpp
   backends/graphics.cpp
@@ -268,6 +269,7 @@ SET(LIBSPARK_SOURCES
   backends/rendering.cpp
   backends/security.cpp
   backends/urlutils.cpp
+  parsing/config.cpp
   parsing/crossdomainpolicy.cpp
   parsing/flv.cpp
   parsing/streams.cpp
@@ -363,16 +365,9 @@ ENDIF(COMPILE_PLUGIN)
 GETTEXT_CREATE_TRANSLATIONS(i18n/lightspark.pot ALL i18n/pl.po i18n/fr.po
         i18n/zh_CN.po)
 
-#Audio backend plugins
-IF(${AUDIO_BACKEND} MATCHES "pulse")
-  ADD_SUBDIRECTORY(backends/interfaces/audio/pulse)
-ENDIF(${AUDIO_BACKEND} MATCHES "pulse")
-IF(${AUDIO_BACKEND} MATCHES "alsa")
-  ADD_SUBDIRECTORY(backends/interfaces/audio/alsa)
-ENDIF(${AUDIO_BACKEND} MATCHES "alsa")
-IF(${AUDIO_BACKEND} MATCHES "openal")
-  ADD_SUBDIRECTORY(backends/interfaces/audio/openal)
-ENDIF(${AUDIO_BACKEND} MATCHES "openal")
+ADD_SUBDIRECTORY(backends/interfaces/audio/pulse)
+#ADD_SUBDIRECTORY(backends/interfaces/audio/alsa)
+#ADD_SUBDIRECTORY(backends/interfaces/audio/openal)
 
 #Install icons and desktop file
 if(UNIX)
@@ -387,4 +382,10 @@ if(UNIX)
           RENAME lightspark.svg
          )
   INSTALL(FILES media/lightspark.desktop DESTINATION ${DATADIR}/applications )
+endif(UNIX)
+
+if(UNIX)
+	INSTALL(FILES etc/xdg/lightspark.conf
+		      DESTINATION ${ETCDIR}/xdg/
+				 )
 endif(UNIX)

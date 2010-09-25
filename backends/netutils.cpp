@@ -521,7 +521,10 @@ void Downloader::openCache()
 	if(cached && !cache.is_open())
 	{
 		//Create a temporary file(name)
-		char cacheFilenameC[] = "/tmp/lightsparkdownloadXXXXXX";
+		std::string cacheFilenameS = sys->config->getCacheDirectory() + "/" + sys->config->getCachePrefix() + "XXXXXX";
+		char cacheFilenameC[cacheFilenameS.length()+1];
+		strncpy(cacheFilenameC, cacheFilenameS.c_str(), cacheFilenameS.length());
+		cacheFilenameC[cacheFilenameS.length()] = '\0';
 		//char cacheFilenameC[30] = "/tmp/lightsparkdownloadXXXXXX";
 		//strcpy(cacheFilenameC, "/tmp/lightsparkdownloadXXXXXX");
 		int fd = mkstemp(cacheFilenameC);

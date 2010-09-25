@@ -23,44 +23,15 @@
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
-ConfigParser::ConfigParser(const std::string& data):
-	valid(true),file(g_key_file_new()),groupCount(0),currentGroup(0),keyCount(0),currentKey(0)
-{
-	if(!g_key_file_load_from_data(file, data.c_str(), data.length(), G_KEY_FILE_NONE, NULL))
-		valid = false;
-
-	groups = g_key_file_get_groups(file, &groupCount);
-}
-
-ConfigParser::ConfigParser(const std::string& filename, bool search, const char** dirs):
+ConfigParser::ConfigParser(const std::string& filename):
 	valid(true),file(g_key_file_new()),
 	groups(NULL),groupCount(0),currentGroup(0),
-	keys(NULL),keyCount(0),currentKey(0)
+	keys(NULL),keyCount(0),currentKey(0),
+	group(NULL),key(NULL)
 {
-	if(!search)
-	{
-		LOG(LOG_NO_INFO, "trying to parse: " << filename);
-		if(!g_key_file_load_from_file(file, filename.c_str(), G_KEY_FILE_NONE, NULL))
-			valid = false;
-	}
-	else if(dirs == NULL)
-	{
-		char* fullPath;
-		if(!g_key_file_load_from_data_dirs(file, filename.c_str(), &fullPath, G_KEY_FILE_NONE, NULL))
-			valid = false;
-		else
-			free(fullPath);
-	}
+	if(!g_key_file_load_from_file(file, filename.c_str(), G_KEY_FILE_NONE, NULL))
+		valid = false;
 	else
-	{
-		char* fullPath;
-		if(!g_key_file_load_from_dirs(file, filename.c_str(), dirs, &fullPath, G_KEY_FILE_NONE, NULL))
-			valid = false;
-		else
-			free(fullPath);
-	}
-
-	if(valid)
 		groups = g_key_file_get_groups(file, &groupCount);
 }
 
@@ -76,46 +47,41 @@ ConfigParser::~ConfigParser()
 
 bool ConfigParser::read()
 {
-	//There are no groups or we have already parsed the last key/group pair in the file
-	if(!valid || groupCount == 0 || (currentGroup == groupCount && (currentKey == keyCount || keyCount == 0)))
+	//This parser is invalid or there are no groups
+	if(!valid || groupCount == 0)
 		return false;
 
-	if(currentKey == keyCount && currentGroup == groupCount-1)
-		return false;
-	else if(currentGroup == 0 && currentKey == 0)
+	//We encountered the first group or have handled the last key in a group
+	if((currentGroup == 0 && currentKey == 0) ||
+			(currentKey == keyCount && currentGroup < groupCount-1))
 	{
-		keys = g_key_file_get_keys(file, groups[currentGroup], &keyCount, NULL);
+		if(currentGroup == 0 && currentKey == 0)
+			keys = g_key_file_get_keys(file, groups[currentGroup], &keyCount, NULL);
+		else
+		{
+			currentKey = 0;
+			++currentGroup;
+			g_strfreev(keys);
+			keys = g_key_file_get_keys(file, groups[currentGroup], &keyCount, NULL);
+		}
+
 		while(keyCount == 0 && currentGroup < groupCount-1)
 		{
-			LOG(LOG_NO_INFO, "empty group, trying next");
 			++currentGroup;
 			g_strfreev(keys);
 			keys = g_key_file_get_keys(file, groups[currentGroup], &keyCount, NULL);
 		}
-		//We didn't find any more groups containing keys
-		if(keyCount == 0 && currentGroup == groupCount-1)
-			return false;
-		group = groups[currentGroup];
-	}
-	else if(currentKey == keyCount && currentGroup < groupCount-1)
-	{
-		currentKey = 0;
-		do {
-			++currentGroup;
-			g_strfreev(keys);
-			keys = g_key_file_get_keys(file, groups[currentGroup], &keyCount, NULL);
-		}
-		while(keyCount == 0 && currentGroup < groupCount-1);
-		//We didn't find any more groups containing keys
-		if(keyCount == 0 && currentGroup == groupCount-1)
-			return false;
 		group = groups[currentGroup];
 	}
 
+	//We encountered the end of the file
+	if(currentGroup == groupCount-1 && currentKey == keyCount)
+		return false;
 
 	//We have a valid currentKey/currentGroup pair, lets set the current key
 	key = keys[currentKey];
 
+	//Increment currentKey for next round of reading
 	++currentKey;
 	return true;
 }

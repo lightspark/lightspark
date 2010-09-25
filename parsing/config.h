@@ -41,14 +41,15 @@ namespace lightspark
 		char* group;
 		char* key;
 	public:
-		//Load a config from a buffer
-		ConfigParser(const std::string& data);
 		//Load a config from a file
-		ConfigParser(const std::string& filename, bool search, const char** dirs=NULL);
+		ConfigParser(const std::string& filename);
 		~ConfigParser();
 
 		bool isValid() { return valid; }
 		bool read();
+
+		//These properties and their return types are only valid until the next read()
+		//They should be copied before use
 		const char* getGroup() { return group; }
 		const char* getKey() { return key; }
 		const char* getValue() { return g_key_file_get_value(file, group, key, NULL); }

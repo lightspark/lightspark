@@ -54,7 +54,7 @@ void Config::load()
 	while(*cursor != NULL)
 	{
 		sysDir = *cursor;
-		parser = new ConfigParser(sysDir + "/" + configFilename, false);
+		parser = new ConfigParser(sysDir + "/" + configFilename);
 		while(parser->read())
 			handleEntry();
 		delete parser;
@@ -63,7 +63,7 @@ void Config::load()
 	}
 
 	//Try user config next
-	parser = new ConfigParser(userConfigDirectory + "/" + configFilename, false);
+	parser = new ConfigParser(userConfigDirectory + "/" + configFilename);
 	while(parser->read())
 		handleEntry();
 	delete parser;

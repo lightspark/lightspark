@@ -220,7 +220,6 @@ class ThreadedDownloader : public Downloader, public IThreadJob
 private:
 	ACQUIRE_RELEASE_FLAG(fenceState);
 public:
-	ThreadedDownloader():fenceState(false){}
 	void enableFencingWaiting();
 	void jobFence();
 	void waitFencing();

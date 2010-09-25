@@ -41,6 +41,7 @@ class DisplayObjectContainer;
 class DisplayObject: public EventDispatcher
 {
 friend class DisplayObjectContainer;
+friend class GraphicsContainer;
 private:
 	mutable pthread_spinlock_t MatrixSpinlock;
 	MATRIX Matrix;
@@ -50,7 +51,8 @@ private:
 	number_t sx,sy;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 protected:
-	void computeDeviceBounds(uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
+	void computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
+			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
 	bool onStage;
 	RootMovieClip* root;
@@ -183,17 +185,23 @@ public:
 	ASFUNCTION(contains);
 };
 
+class GraphicsContainer;
+
 class Graphics: public ASObject
 {
+friend class GraphicsContainer;
 private:
-	//builder and geometry are used by RenderThread and ABCVm
-	Mutex tokensMutex;
 	std::vector<GeomToken> tokens;
 	//We need a list to preserve pointers
 	std::list<FILLSTYLE> styles; 
 	int curX, curY;
+	GraphicsContainer *const owner;
 public:
-	Graphics():tokensMutex("tokensMutex"),curX(0),curY(0)
+	Graphics():owner(NULL)
+	{
+		throw RunTimeException("Cannot instantiate a Graphics object");
+	}
+	Graphics(GraphicsContainer* _o):curX(0),curY(0),owner(_o)
 	{
 	}
 	static void sinit(Class_base* c);
@@ -211,12 +219,21 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
 
-class Shape: public DisplayObject
+class GraphicsContainer
 {
-private:
+friend class Graphics;
+protected:
 	Graphics* graphics;
+	DisplayObject* owner;
+	GraphicsContainer(DisplayObject* _o):graphics(NULL),owner(_o){}
+private:
+	void invalidateGraphics();
+};
+
+class Shape: public DisplayObject, public GraphicsContainer
+{
 public:
-	Shape():graphics(NULL){}
+	Shape():GraphicsContainer(this){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -294,13 +311,11 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
 
-class Sprite: public DisplayObjectContainer
+class Sprite: public DisplayObjectContainer, public GraphicsContainer
 {
 friend class DisplayObject;
 private:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-protected:
-	Graphics* graphics;
 public:
 	Sprite();
 	static void sinit(Class_base* c);

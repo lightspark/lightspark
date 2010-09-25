@@ -272,7 +272,7 @@ bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 		return false;
 }
 
-Sprite::Sprite():graphics(NULL)
+Sprite::Sprite():GraphicsContainer(this)
 {
 }
 
@@ -282,6 +282,24 @@ void Sprite::sinit(Class_base* c)
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),true);
+}
+
+void GraphicsContainer::invalidateGraphics()
+{
+	assert(graphics);
+	uint32_t x,y,width,height;
+	number_t bxmin,bxmax,bymin,bymax;
+	if(graphics->getBounds(bxmin,bxmax,bymin,bymax)==false)
+	{
+		//No contents, nothing to do
+		return;
+	}
+	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
+	if(width==0 || height==0)
+		return;
+	DynamicCairoRenderer* r=new DynamicCairoRenderer(&owner->shepherd, owner->cachedSurface, graphics->tokens, 
+					owner->getConcatenatedMatrix(), x, y, width, height);
+	sys->addJob(r);
 }
 
 void Sprite::buildTraits(ASObject* o)
@@ -432,7 +450,7 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 	Sprite* th=static_cast<Sprite*>(obj);
 	//Probably graphics is not used often, so create it here
 	if(th->graphics==NULL)
-		th->graphics=Class<Graphics>::getInstanceS();
+		th->graphics=Class<Graphics>::getInstanceS(th);
 
 	th->graphics->incRef();
 	return th->graphics;
@@ -1013,11 +1031,9 @@ void DisplayObject::defaultRender() const
 	glPopMatrix();
 }
 
-void DisplayObject::computeDeviceBounds(uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const
+void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
+		uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const
 {
-	number_t xmin,xmax,ymin,ymax;
-	if(!getBounds(xmin,xmax,ymin,ymax))
-		return;
 	//As the transformation is arbitrary we have to check all the four vertices
 	number_t coords[8];
 	localToGlobal(xmin,ymin,coords[0],coords[1]);
@@ -1910,7 +1926,7 @@ ASFUNCTIONBODY(Shape,_getGraphics)
 	Shape* th=static_cast<Shape*>(obj);
 	//Probably graphics is not used often, so create it here
 	if(th->graphics==NULL)
-		th->graphics=Class<Graphics>::getInstanceS();
+		th->graphics=Class<Graphics>::getInstanceS(th);
 
 	th->graphics->incRef();
 	return th->graphics;
@@ -2040,30 +2056,19 @@ void Graphics::buildTraits(ASObject* o)
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	::abort();
-/*	Locker locker2(geometryMutex);
-	//If the geometry has been modified we have to generate it again
-	if(!validGeometry)
-	{
-		validGeometry=true;
-		Locker locker(builderMutex);
-		geometry.clear();
-		builder.outputShapes(geometry);
-		for(unsigned int i=0;i<geometry.size();i++)
-			geometry[i].BuildFromEdges(&styles);
-	}
-	if(geometry.size()==0)
+	if(tokens.size()==0)
 		return false;
 
 	//Initialize values to the first available
 	bool initialized=false;
-	for(unsigned int i=0;i<geometry.size();i++)
+	for(unsigned int i=0;i<tokens.size();i++)
 	{
-		for(unsigned int j=0;j<geometry[i].outlines.size();j++)
+		switch(tokens[i].type)
 		{
-			for(unsigned int k=0;k<geometry[i].outlines[j].size();k++)
+			case MOVE:
+			case STRAIGHT:
 			{
-				const Vector2& v=geometry[i].outlines[j][k];
+				const Vector2& v=tokens[i].p1;
 				if(initialized)
 				{
 					xmin=imin(v.x,xmin);
@@ -2079,10 +2084,13 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 					ymax=v.y;
 					initialized=true;
 				}
+				break;
 			}
+			default:
+				break;
 		}
 	}
-	return initialized;*/
+	return initialized;
 }
 
 ASFUNCTIONBODY(Graphics,_constructor)
@@ -2093,10 +2101,7 @@ ASFUNCTIONBODY(Graphics,_constructor)
 ASFUNCTIONBODY(Graphics,clear)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	{
-		Locker locker(th->tokensMutex);
-		th->tokens.clear();
-	}
+	th->tokens.clear();
 	th->styles.clear();
 	return NULL;
 }
@@ -2110,10 +2115,7 @@ ASFUNCTIONBODY(Graphics,moveTo)
 	th->curY=args[1]->toInt();
 	//TODO: support line styles to avoid this
 	if(!th->styles.empty())
-	{
-		Locker locker(th->tokensMutex);
 		th->tokens.emplace_back(MOVE, Vector2(th->curX, th->curY));
-	}
 	return NULL;
 }
 
@@ -2128,8 +2130,8 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	//TODO: support line styles to avoid this
 	if(!th->styles.empty())
 	{
-		Locker locker(th->tokensMutex);
 		th->tokens.emplace_back(STRAIGHT, Vector2(x, y));
+		th->owner->invalidateGraphics();
 	}
 
 	th->curX=x;
@@ -2155,7 +2157,6 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	//TODO: support line styles to avoid this
 	if(!th->styles.empty())
 	{
-		Locker locker(th->tokensMutex);
 		th->tokens.emplace_back(MOVE, a);
 		th->tokens.emplace_back(STRAIGHT, b);
 		th->tokens.emplace_back(STRAIGHT, c);
@@ -2183,7 +2184,6 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	//TODO: support line styles to avoid this
 	if(!th->styles.empty())
 	{
-		Locker locker(th->tokensMutex);
 		th->tokens.emplace_back(MOVE, a);
 		th->tokens.emplace_back(STRAIGHT, b);
 		th->tokens.emplace_back(STRAIGHT, c);
@@ -2205,7 +2205,6 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		assert_and_throw(ar->size()>=1);
 		color=ar->at(0)->toUInt();
 	}
-	Locker locker(th->tokensMutex);
 	th->styles.emplace_back(FILLSTYLE());
 	th->styles.back().FillStyleType=SOLID_FILL;
 	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
@@ -2225,7 +2224,6 @@ ASFUNCTIONBODY(Graphics,beginFill)
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
-	Locker locker(th->tokensMutex);
 	th->styles.emplace_back(FILLSTYLE());
 	th->styles.back().FillStyleType=SOLID_FILL;
 	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
@@ -2242,7 +2240,7 @@ ASFUNCTIONBODY(Graphics,endFill)
 
 void Graphics::Render()
 {
-	::abort();
+//	::abort();
 /*	Locker locker2(geometryMutex);
 	//If the geometry has been modified we have to generate it again
 	if(!validGeometry)

@@ -956,7 +956,13 @@ void DefineShapeTag::computeCached()
 void DefineShapeTag::invalidate()
 {
 	uint32_t x,y,width,height;
-	computeDeviceBounds(x,y,width,height);
+	number_t bxmin,bxmax,bymin,bymax;
+	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
+	{
+		//No contents, nothing to do
+		return;
+	}
+	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
 	computeCached();

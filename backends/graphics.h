@@ -203,6 +203,7 @@ protected:
 	uint32_t height;
 	uint8_t* surfaceBytes;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
+	void executeImpl(const std::vector<GeomToken>& tokens);
 public:
 	CairoRenderer(Shepherd* _o, CachedSurface& _t, const MATRIX& _m, uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):
 			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),surfaceBytes(NULL){}
@@ -225,6 +226,21 @@ protected:
 	const std::vector<GeomToken>& tokens;
 public:
 	StaticCairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g,const MATRIX& _m, 
+				uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):CairoRenderer(_o, _t, _m, _x, _y, _w, _h),tokens(_g){}
+	//IThreadJob
+	void execute();
+};
+
+/**
+	A renderer that stores a local copy of the tokens as they may change anytime
+*/
+
+class DynamicCairoRenderer: public CairoRenderer
+{
+protected:
+	const std::vector<GeomToken> tokens;
+public:
+	DynamicCairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g,const MATRIX& _m, 
 				uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):CairoRenderer(_o, _t, _m, _x, _y, _w, _h),tokens(_g){}
 	//IThreadJob
 	void execute();

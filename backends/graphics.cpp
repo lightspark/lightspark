@@ -406,10 +406,18 @@ cairo_matrix_t CairoRenderer::MATRIXToCairo(const MATRIX& matrix)
 	return ret;
 }
 
-void StaticCairoRenderer::execute()
+void CairoRenderer::threadAbort()
 {
-	if(!Sheep::lockOwner())
-		return;
+	//Nothing special to be done
+}
+
+void CairoRenderer::jobFence()
+{
+	sys->getRenderThread()->addUploadJob(this);
+}
+
+void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens)
+{
 	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	assert(cairoWidthStride==width*4);
 	surfaceBytes=new uint8_t[cairoWidthStride*height];
@@ -487,12 +495,16 @@ void StaticCairoRenderer::execute()
 	cairo_surface_destroy(cairoSurface);
 }
 
-void CairoRenderer::threadAbort()
+void StaticCairoRenderer::execute()
 {
-	//Nothing special to be done
+	if(!Sheep::lockOwner())
+		return;
+	executeImpl(tokens);
 }
 
-void CairoRenderer::jobFence()
+void DynamicCairoRenderer::execute()
 {
-	sys->getRenderThread()->addUploadJob(this);
+	if(!Sheep::lockOwner())
+		return;
+	executeImpl(tokens);
 }

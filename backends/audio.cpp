@@ -56,9 +56,14 @@ AudioManager::AudioManager ( PluginManager *sharedPluginManager )
 	set_audiobackend ( DesiredAudio );
 }
 
+bool AudioManager::pluginLoaded() const
+{
+	return oAudioPlugin != NULL;
+}
+
 void AudioManager::freeStreamPlugin ( AudioStream *audioStream )
 {
-	if ( oAudioPlugin != NULL )
+	if ( pluginLoaded() )
 	{
 		oAudioPlugin->freeStream ( audioStream );
 	}
@@ -70,7 +75,7 @@ void AudioManager::freeStreamPlugin ( AudioStream *audioStream )
 
 AudioStream *AudioManager::createStreamPlugin ( AudioDecoder *decoder )
 {
-	if ( oAudioPlugin != NULL )
+	if ( pluginLoaded() )
 	{
 		return oAudioPlugin->createStream ( decoder );
 	}
@@ -83,7 +88,7 @@ AudioStream *AudioManager::createStreamPlugin ( AudioDecoder *decoder )
 
 void AudioManager::pauseStreamPlugin( AudioStream *audioStream )
 {
-	if ( oAudioPlugin != NULL )
+	if ( pluginLoaded() )
 	{
 		oAudioPlugin->pauseStream ( audioStream );
 	}
@@ -96,7 +101,7 @@ void AudioManager::pauseStreamPlugin( AudioStream *audioStream )
 
 void AudioManager::resumeStreamPlugin( AudioStream *audioStream )
 {
-	if ( oAudioPlugin != NULL )
+	if ( pluginLoaded() )
 	{
 		oAudioPlugin->resumeStream ( audioStream );
 	}
@@ -109,7 +114,7 @@ void AudioManager::resumeStreamPlugin( AudioStream *audioStream )
 
 bool AudioManager::isTimingAvailablePlugin() const
 {
-	if ( oAudioPlugin != NULL )
+	if ( pluginLoaded() )
 	{
 		return oAudioPlugin->isTimingAvailable();
 	}
@@ -142,7 +147,7 @@ void AudioManager::refresh_audioplugins_list()
 
 void AudioManager::release_audioplugin()
 {
-	if ( oAudioPlugin != NULL )
+	if ( pluginLoaded() )
 	{
 		pluginManager->release_plugin ( oAudioPlugin );
 	}
@@ -154,7 +159,7 @@ void AudioManager::load_audioplugin ( string selected_backend )
 	release_audioplugin();
 	oAudioPlugin = static_cast<IAudioPlugin *> ( pluginManager->get_plugin ( selected_backend ) );
 
-	if ( oAudioPlugin == NULL )
+	if ( !pluginLoaded() )
 	{
 		LOG ( LOG_NO_INFO, _ ( "Could not load the audiobackend" ) );
 	}

@@ -983,6 +983,7 @@ void RenderThread::releaseTexture(const TextureChunk& chunk)
 	uint32_t blocksW=(chunk.width+127)/128;
 	uint32_t blocksH=(chunk.height+127)/128;
 	uint32_t numberOfBlocks=blocksW*blocksH;
+	Locker l(mutexLargeTexture);
 	for(uint32_t i=0;i<numberOfBlocks;i++)
 	{
 		uint32_t bitOffset=chunk.chunks[i];

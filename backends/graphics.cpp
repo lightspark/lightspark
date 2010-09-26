@@ -337,7 +337,12 @@ TextureChunk::TextureChunk(const TextureChunk& r):chunks(NULL),width(r.width),he
 
 TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 {
-	assert(chunks==NULL);
+	if(chunks)
+	{
+		//We were already initialized, so first clean up
+		sys->getRenderThread()->releaseTexture(*this);
+		delete[] chunks;
+	}
 	width=r.width;
 	height=r.height;
 	uint32_t blocksW=(width+127)/128;
@@ -416,7 +421,7 @@ void CairoRenderer::jobFence()
 	sys->getRenderThread()->addUploadJob(this);
 }
 
-void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens)
+void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens, double scaleCorrection)
 {
 	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	assert(cairoWidthStride==width*4);
@@ -435,7 +440,7 @@ void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens)
 	cairo_transform(cr, &mat);
 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_scale(cr, 0.05, 0.05);
+	cairo_scale(cr, scaleCorrection, scaleCorrection);
 	cairo_pattern_t* pattern=NULL;
 	bool empty=true;
 	for(uint32_t i=0;i<tokens.size();i++)
@@ -499,12 +504,12 @@ void StaticCairoRenderer::execute()
 {
 	if(!Sheep::lockOwner())
 		return;
-	executeImpl(tokens);
+	executeImpl(tokens, 0.05);
 }
 
 void DynamicCairoRenderer::execute()
 {
 	if(!Sheep::lockOwner())
 		return;
-	executeImpl(tokens);
+	executeImpl(tokens, 1);
 }

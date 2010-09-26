@@ -396,7 +396,7 @@ void Sprite::Render()
 		//Should clean only the bounds of the graphics
 		if(!isSimple())
 			rt->glAcquireTempBuffer(t1,t2,t3,t4);
-		graphics->Render();
+		defaultRender();
 		if(!isSimple())
 			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
@@ -421,8 +421,8 @@ void Sprite::inputRender()
 
 	MatrixApplier ma(getMatrix());
 
-	if(graphics)
-		graphics->Render();
+//	if(graphics)
+//		graphics->Render();
 
 	{
 		Locker l(mutexDisplayList);
@@ -730,7 +730,7 @@ void MovieClip::Render()
 		//Should clean only the bounds of the graphics
 		if(!isSimple())
 			rt->glAcquireTempBuffer(t1,t2,t3,t4);
-		graphics->Render();
+		defaultRender();
 		if(!isSimple())
 			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
@@ -764,8 +764,8 @@ void MovieClip::inputRender()
 			(*j)->inputRender();
 	}
 
-	if(graphics)
-		graphics->Render();
+//	if(graphics)
+//		graphics->Render();
 	ma.unapply();
 	InteractiveObject::RenderEpilogue();
 }
@@ -1890,7 +1890,7 @@ void Shape::Render()
 	if(!isSimple())
 		rt->glAcquireTempBuffer(t1,t2,t3,t4);
 
-	graphics->Render();
+	defaultRender();
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(t1,t2,t3,t4);
@@ -1911,7 +1911,7 @@ void Shape::inputRender()
 
 	MatrixApplier ma(getMatrix());
 
-	graphics->Render();
+//	graphics->Render();
 	ma.unapply();
 }
 
@@ -2189,6 +2189,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 		th->tokens.emplace_back(STRAIGHT, c);
 		th->tokens.emplace_back(STRAIGHT, d);
 		th->tokens.emplace_back(STRAIGHT, a);
+		th->owner->invalidateGraphics();
 	}
 	return NULL;
 }
@@ -2236,26 +2237,6 @@ ASFUNCTIONBODY(Graphics,endFill)
 //	Graphics* th=static_cast<Graphics*>(obj);
 	//TODO: close the path if open
 	return NULL;
-}
-
-void Graphics::Render()
-{
-//	::abort();
-/*	Locker locker2(geometryMutex);
-	//If the geometry has been modified we have to generate it again
-	if(!validGeometry)
-	{
-		validGeometry=true;
-		Locker locker(builderMutex);
-		cout << "Generating geometry" << endl;
-		geometry.clear();
-		builder.outputShapes(geometry);
-		for(unsigned int i=0;i<geometry.size();i++)
-			geometry[i].BuildFromEdges(&styles);
-	}
-
-	for(unsigned int i=0;i<geometry.size();i++)
-		geometry[i].Render();*/
 }
 
 void LineScaleMode::sinit(Class_base* c)

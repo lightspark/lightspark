@@ -215,7 +215,6 @@ public:
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineTo);
 	ASFUNCTION(clear);
-	void Render();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
 

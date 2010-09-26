@@ -203,7 +203,7 @@ protected:
 	uint32_t height;
 	uint8_t* surfaceBytes;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
-	void executeImpl(const std::vector<GeomToken>& tokens);
+	void executeImpl(const std::vector<GeomToken>& tokens, double scaleCorrection);
 public:
 	CairoRenderer(Shepherd* _o, CachedSurface& _t, const MATRIX& _m, uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):
 			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),surfaceBytes(NULL){}

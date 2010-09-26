@@ -177,6 +177,16 @@ MATRIX MATRIX::multiplyMatrix(const MATRIX& r) const
 	return ret;
 }
 
+const bool MATRIX::operator!=(const MATRIX& r) const
+{
+	return ScaleX!=r.ScaleX ||
+		RotateSkew1!=r.RotateSkew1 ||
+		RotateSkew0!=r.RotateSkew0 ||
+		ScaleY!=r.ScaleY ||
+		TranslateX!=r.TranslateX ||
+		TranslateY!=r.TranslateY;
+}
+
 std::ostream& operator<<(std::ostream& s, const MATRIX& r)
 {
 	s << "| " << r.ScaleX << ' ' << r.RotateSkew0 << " |" << std::endl;

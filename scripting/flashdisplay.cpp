@@ -980,10 +980,16 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 {
 	if(ACQUIRE_READ(useMatrix))
 	{
+		bool mustInvalidate=false;
 		pthread_spin_lock(&MatrixSpinlock);
-		Matrix=m;
+		if(Matrix!=m)
+		{
+			Matrix=m;
+			mustInvalidate=true;
+		}
 		pthread_spin_unlock(&MatrixSpinlock);
-		invalidate();
+		if(mustInvalidate)
+			invalidate();
 	}
 }
 

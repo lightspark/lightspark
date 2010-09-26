@@ -813,7 +813,7 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 		if(colonPos != std::string::npos)
 		{
 			headerName = header.substr(0, colonPos);
-			if(header.substr(colonPos+1, 1) == " ")
+			if(header[colonPos+1] == ' ')
 				headerValue = header.substr(colonPos+2, header.length()-colonPos-1);
 			else
 				headerValue = header.substr(colonPos+1, header.length()-colonPos);

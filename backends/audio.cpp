@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "swf.h"
 #include "audio.h"
 #include <iostream>
 #include "../logger.h"
@@ -32,6 +33,7 @@
 using namespace lightspark;
 using namespace std;
 
+extern TLSDATA SystemState* sys;
 
 /****************
 AudioManager::AudioManager
@@ -50,7 +52,7 @@ AudioManager::AudioManager ( PluginManager *sharedPluginManager )
 	selectedAudioBackend = "";
 	oAudioPlugin = NULL;
 //	  string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
-	string DesiredAudio = "pulse";
+	string DesiredAudio = sys->config->getAudioBackendName();
 	set_audiobackend ( DesiredAudio );
 }
 
@@ -154,7 +156,7 @@ void AudioManager::load_audioplugin ( string selected_backend )
 
 	if ( oAudioPlugin == NULL )
 	{
-		LOG ( LOG_ERROR, _ ( "Could not load the audiobackend" ) );
+		LOG ( LOG_NO_INFO, _ ( "Could not load the audiobackend" ) );
 	}
 }
 

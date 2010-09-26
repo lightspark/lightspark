@@ -585,7 +585,10 @@ void Downloader::openCache()
 	if(cached && !cache.is_open())
 	{
 		//Create a temporary file(name)
-		char cacheFilenameC[] = "/tmp/lightsparkdownloadXXXXXX";
+		std::string cacheFilenameS = sys->config->getCacheDirectory() + "/" + sys->config->getCachePrefix() + "XXXXXX";
+		char cacheFilenameC[cacheFilenameS.length()+1];
+		strncpy(cacheFilenameC, cacheFilenameS.c_str(), cacheFilenameS.length());
+		cacheFilenameC[cacheFilenameS.length()] = '\0';
 		//char cacheFilenameC[30] = "/tmp/lightsparkdownloadXXXXXX";
 		//strcpy(cacheFilenameC, "/tmp/lightsparkdownloadXXXXXX");
 		int fd = mkstemp(cacheFilenameC);
@@ -810,7 +813,7 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 		if(colonPos != std::string::npos)
 		{
 			headerName = header.substr(0, colonPos);
-			if(header.substr(colonPos+1, 1) == " ")
+			if(header[colonPos+1] == ' ')
 				headerValue = header.substr(colonPos+2, header.length()-colonPos-1);
 			else
 				headerValue = header.substr(colonPos+1, header.length()-colonPos);

@@ -61,7 +61,9 @@ bool VideoDecoder::resizeIfNeeded(TextureChunk& tex)
 
 void VideoDecoder::sizeNeeded(uint32_t& w, uint32_t& h) const
 {
-	w=frameWidth;
+	//Return the actual width aligned to 16, the SSE2 packer is advantaged by this
+	//and it comes for free as the texture tiles are aligned to 128
+	w=(frameWidth+15)&0xfffffff0;
 	h=frameHeight;
 }
 
@@ -252,15 +254,15 @@ void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h) const
 {
 	if(buffers.isEmpty())
 		return;
-	assert_and_throw(w==frameWidth && h==frameHeight);
+	//Verify that the size are right
+	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
 	//At least a frame is available
 	const YUVBuffer& cur=buffers.front();
 	//If the width is compatible with full aligned accesses use the aligned version of the packer
-	uint32_t alignedWidth=(frameWidth+15)&0xfffffff0;
 	if(frameWidth%32==0)
-		fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],data,alignedWidth,frameHeight);
+		fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
 	else
-		fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],data,alignedWidth,frameHeight);
+		fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
 }
 
 void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const

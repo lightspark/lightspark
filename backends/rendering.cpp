@@ -1112,8 +1112,10 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	assert(w<=largeTextureSize && h<=largeTextureSize);
 	glBindTexture(GL_TEXTURE_2D, largeTextureId);
 	//TODO: Detect continuos
-	assert(w==chunk.width);
-	assert(h==chunk.height);
+	//The size is ok if doesn't grow over the allocated size
+	//this allows some alignment freedom
+	assert(w<=((chunk.width+127)&0xffffff80));
+	assert(h<=((chunk.height+127)&0xffffff80));
 	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
 	const uint32_t blocksPerSide=largeTextureSize/128;
 	const uint32_t blocksW=(w+127)/128;

@@ -37,7 +37,8 @@ Config::Config():
 	configFilename("lightspark.conf"),
 	systemConfigDirectories(g_get_system_config_dirs()),userConfigDirectory(g_get_user_config_dir()),
 	//DEFAULT SETTINGS
-	cacheDirectory((string) g_get_user_cache_dir() + "/lightspark"),cachePrefix("cache"),
+	defaultCacheDirectory((string) g_get_user_cache_dir() + "/lightspark"),
+	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),
 	audioBackend(PULSEAUDIO),audioBackendName("")
 {
 	audioBackendNames = {"pulseaudio", "openal", "alsa"};
@@ -73,10 +74,28 @@ void Config::load()
 	delete parser;
 	parser = NULL;
 
+#ifndef WIN32
+	//Expand tilde in path
+	if(cacheDirectory.length() > 0 && cacheDirectory[0] == '~')
+		cacheDirectory.replace(0, 1, getenv("HOME"));
+#endif
+
 	//If cache dir doesn't exist, create it
 	path cacheDirectoryP(cacheDirectory);
 	if(!is_directory(cacheDirectoryP))
-		create_directory(cacheDirectoryP);
+	{
+		LOG(LOG_NO_INFO, "Cache directory does not exist, trying to create");
+		try
+		{
+			create_directories(cacheDirectoryP);
+		}
+		catch(const basic_filesystem_error<path>& e)
+		{
+			LOG(LOG_NO_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
+					defaultCacheDirectory);
+			cacheDirectory = defaultCacheDirectory;
+		}
+	}
 
 	//Set the audio backend name
 	audioBackendName = audioBackendNames[audioBackend];
@@ -87,14 +106,17 @@ void Config::handleEntry()
 	string group = parser->getGroup();
 	string key = parser->getKey();
 	string value = parser->getValue();
+	//Audio backend
 	if(group == "audio" && key == "backend" && value == audioBackendNames[PULSEAUDIO])
 		audioBackend = PULSEAUDIO;
 	else if(group == "audio" && key == "backend" && value == audioBackendNames[OPENAL])
 		audioBackend = OPENAL;
 	else if(group == "audio" && key == "backend" && value == audioBackendNames[ALSA])
 		audioBackend = ALSA;
+	//Cache directory
 	else if(group == "cache" && key == "directory")
 		cacheDirectory = value;
+	//Cache prefix
 	else if(group == "cache" && key == "prefix")
 		cachePrefix = value;
 	else

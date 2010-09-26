@@ -43,7 +43,9 @@ namespace lightspark
 		const char* audioBackendNames[3];
 
 		//-- SETTINGS
-		//Specifies where files are cached (like downloaded data), default="~/.cache/lightspark"
+		//Specifies the default cache directory = "~/.cache/lightspark"
+		std::string defaultCacheDirectory;
+		//Specifies where files are cached (like downloaded data)
 		std::string cacheDirectory;
 		//Specifies what prefix the cache files should have, default="cache"
 		std::string cachePrefix;

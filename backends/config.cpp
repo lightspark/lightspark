@@ -33,9 +33,10 @@ extern TLSDATA SystemState* sys;
 
 Config::Config():
 	parser(NULL),
-	//Directories
+	//CONFIGURATION FILENAME AND SEARCH DIRECTORIES
 	configFilename("lightspark.conf"),
 	systemConfigDirectories(g_get_system_config_dirs()),userConfigDirectory(g_get_user_config_dir()),
+	//DEFAULT SETTINGS
 	cacheDirectory((string) g_get_user_cache_dir() + "/lightspark"),cachePrefix("cache"),
 	audioBackend(PULSEAUDIO),audioBackendName("")
 {
@@ -44,6 +45,8 @@ Config::Config():
 
 Config::~Config()
 {
+	if(parser != NULL)
+		delete parser;
 }
 
 void Config::load()
@@ -58,6 +61,7 @@ void Config::load()
 		while(parser->read())
 			handleEntry();
 		delete parser;
+		parser = NULL;
 
 		++cursor;
 	}
@@ -67,6 +71,7 @@ void Config::load()
 	while(parser->read())
 		handleEntry();
 	delete parser;
+	parser = NULL;
 
 	//If cache dir doesn't exist, create it
 	path cacheDirectoryP(cacheDirectory);
@@ -93,5 +98,5 @@ void Config::handleEntry()
 	else if(group == "cache" && key == "prefix")
 		cachePrefix = value;
 	else
-		throw RunTimeException("Config::handleEntry: invalid entry encountered in config file: '" + group + "/" + key + "'='" + value + "'");
+		throw ConfigException((string) _("Invalid entry encountered in configuration file") + ": '" + group + "/" + key + "'='" + value + "'");
 }

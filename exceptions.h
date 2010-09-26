@@ -115,5 +115,20 @@ public:
 	}
 };
 
+class ConfigException: public LightsparkException
+{
+public:
+	ConfigException(const std::string& c):LightsparkException(c)
+	{
+	}
+	const char* what() const throw()
+	{
+		if(cause.length() == 0)
+			return "Lightspark invalid configuration file";
+		else
+			return cause.c_str();
+	}
+};
+
 };
 #endif

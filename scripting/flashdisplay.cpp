@@ -376,6 +376,13 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 	return ret;
 }
 
+void Sprite::invalidate()
+{
+	DisplayObjectContainer::invalidate();
+	if(graphics)
+		invalidateGraphics();
+}
+
 void Sprite::Render()
 {
 	number_t t1,t2,t3,t4;
@@ -642,7 +649,7 @@ void MovieClip::advanceFrame()
 
 void MovieClip::invalidate()
 {
-	DisplayObjectContainer::invalidate();
+	Sprite::invalidate();
 	//Now invalidate all the objects in all frames
 	for(uint32_t i=0;i<frames.size();i++)
 	{
@@ -971,9 +978,13 @@ void DisplayObject::buildTraits(ASObject* o)
 
 void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 {
-	pthread_spin_lock(&MatrixSpinlock);
-	Matrix=m;
-	pthread_spin_unlock(&MatrixSpinlock);
+	if(ACQUIRE_READ(useMatrix))
+	{
+		pthread_spin_lock(&MatrixSpinlock);
+		Matrix=m;
+		pthread_spin_unlock(&MatrixSpinlock);
+		invalidate();
+	}
 }
 
 MATRIX DisplayObject::getConcatenatedMatrix() const
@@ -1148,6 +1159,8 @@ ASFUNCTIONBODY(DisplayObject,_setScaleX)
 		RELEASE_WRITE(th->useMatrix,false);
 	}
 	th->sx=val;
+	if(th->onStage)
+		th->invalidate();
 	return NULL;
 }
 
@@ -1171,6 +1184,8 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 		RELEASE_WRITE(th->useMatrix,false);
 	}
 	th->sy=val;
+	if(th->onStage)
+		th->invalidate();
 	return NULL;
 }
 
@@ -1913,6 +1928,12 @@ void Shape::inputRender()
 
 //	graphics->Render();
 	ma.unapply();
+}
+
+void Shape::invalidate()
+{
+	if(graphics)
+		invalidateGraphics();
 }
 
 ASFUNCTIONBODY(Shape,_constructor)

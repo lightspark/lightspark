@@ -225,7 +225,6 @@ protected:
 	Graphics* graphics;
 	DisplayObject* owner;
 	GraphicsContainer(DisplayObject* _o):graphics(NULL),owner(_o){}
-private:
 	void invalidateGraphics();
 };
 
@@ -240,6 +239,7 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
 	void inputRender();
+	void invalidate();
 };
 
 class MorphShape: public DisplayObject
@@ -327,6 +327,7 @@ public:
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
+	void invalidate();
 	void inputRender();
 };
 
@@ -340,7 +341,6 @@ protected:
 	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	Frame* cur_frame;
 	void bootstrap();
-	void invalidate();
 	std::vector<IFunction*> frameScripts;
 public:
 	std::vector<Frame> frames;
@@ -368,6 +368,7 @@ public:
 	//DisplayObject interface
 	void Render();
 	void inputRender();
+	void invalidate();
 	void setRoot(RootMovieClip* r);
 	void setOnStage(bool staged);
 	

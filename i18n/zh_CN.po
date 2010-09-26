@@ -12,10 +12,10 @@ msgstr ""
 "PO-Revision-Date: 2010-08-20 23:03-0500\n"
 "Last-Translator:  <song6song@gmail.com>\n"
 "Language-Team: zh_CN\n"
-"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: zh_CN\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: ../scripting/abc.cpp:925

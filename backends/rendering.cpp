@@ -919,6 +919,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			}
 			profile->accountTime(chronometer.checkpoint());
 			th->renderNeeded=false;
+			sys->invalidate();
 		}
 		glDisable(GL_TEXTURE_2D);
 	}

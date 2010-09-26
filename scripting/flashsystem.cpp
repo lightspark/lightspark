@@ -230,7 +230,7 @@ ASFUNCTIONBODY(lightspark, fscommand)
 	tiny_string command = Class<ASString>::cast(args[0])->toString();
 	if(command == "quit")
 	{
-		sys->setShutdownFlag();
+//		sys->setShutdownFlag();
 	}
 	return NULL;
 }

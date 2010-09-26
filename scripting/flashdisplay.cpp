@@ -2235,7 +2235,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	}
 	th->styles.emplace_back(FILLSTYLE());
 	th->styles.back().FillStyleType=SOLID_FILL;
-	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
+	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
 	th->tokens.emplace_back(SET_FILL, &th->styles.back());
 	return NULL;
 }
@@ -2251,10 +2251,9 @@ ASFUNCTIONBODY(Graphics,beginFill)
 		color=args[0]->toUInt();
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
-	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
 	th->styles.emplace_back(FILLSTYLE());
 	th->styles.back().FillStyleType=SOLID_FILL;
-	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
+	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
 	th->tokens.emplace_back(SET_FILL, &th->styles.back());
 	return NULL;
 }

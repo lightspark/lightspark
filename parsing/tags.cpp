@@ -963,8 +963,6 @@ void DefineShapeTag::invalidate()
 		return;
 	}
 	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
-	if(width==0 || height==0)
-		return;
 	computeCached();
 	StaticCairoRenderer* r=new StaticCairoRenderer(&shepherd, cachedSurface, cachedTokens, getConcatenatedMatrix(), x, y, width, height);
 	sys->addJob(r);

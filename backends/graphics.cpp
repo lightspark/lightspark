@@ -359,6 +359,16 @@ TextureChunk::~TextureChunk()
 
 bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 {
+	if(w==0 || h==0)
+	{
+		//The texture collapsed, release the resources
+		sys->getRenderThread()->releaseTexture(*this);
+		delete[] chunks;
+		chunks=NULL;
+		width=w;
+		height=h;
+		return true;
+	}
 	const uint32_t blocksW=(width+127)/128;
 	const uint32_t blocksH=(height+127)/128;
 	if(w<=blocksW*128 && h<=blocksH*128)
@@ -423,6 +433,11 @@ void CairoRenderer::jobFence()
 
 void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens, double scaleCorrection)
 {
+	if(width==0 || height==0)
+	{
+		//Nothing to do, move on
+		return;
+	}
 	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	assert(cairoWidthStride==width*4);
 	surfaceBytes=new uint8_t[cairoWidthStride*height];

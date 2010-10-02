@@ -491,20 +491,24 @@ uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const
 ASFUNCTIONBODY(MovieClip,addFrameScript)
 {
 	MovieClip* th=Class<MovieClip>::cast(obj);
-	assert_and_throw(argslen==2);
-	uint32_t frame=args[0]->toInt();
-	if(frame>=th->totalFrames)
-		return NULL;
-	if(args[1]->getObjectType()!=T_FUNCTION)
+	assert_and_throw(argslen>=2 && argslen%2==0);
+
+	for(uint32_t i=0;i<argslen;i+=2)
 	{
-		LOG(LOG_ERROR,_("Not a function"));
-		return NULL;
+		uint32_t frame=args[i]->toInt();
+		if(frame>=th->totalFrames)
+			return NULL;
+		if(args[i+1]->getObjectType()!=T_FUNCTION)
+		{
+			LOG(LOG_ERROR,_("Not a function"));
+			return NULL;
+		}
+		IFunction* f=static_cast<IFunction*>(args[i+1]);
+		f->incRef();
+		assert(th->frameScripts.size()==th->totalFrames);
+		th->frameScripts[frame]=f;
 	}
-	IFunction* f=static_cast<IFunction*>(args[1]);
-	f->incRef();
 	
-	assert(th->frameScripts.size()==th->totalFrames);
-	th->frameScripts[frame]=f;
 	return NULL;
 }
 

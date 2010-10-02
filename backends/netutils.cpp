@@ -33,16 +33,42 @@ using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
 /**
+ * \brief Download manager constructor
+ *
+ * Can only be called from within a derived class
+ */
+DownloadManager::DownloadManager()
+{
+	sem_init(&mutex, 0, 1);
+	//== Lock initialized
+}
+/**
  * \brief Download manager destructor.
  *
- * Traverses the list of active downloaders, calling stop() on all of them.
- * Destruction of the downloader is up to the code using the downloader.
- * This method just makes sure the downloader isn't stuck waiting for data.
+ * Traverses the list of active downloaders, calling \c stop() and \c destroy() on all of them.
+ * If the downloader is already destroyed, destroy() won't do anything (no double delete).
+ * Waits for the mutex before proceeding.
+ * \see Downloader::stop()
+ * \see Downloader::destroy()
  */
 DownloadManager::~DownloadManager()
 {
+	sem_wait(&mutex);
+	//-- Lock acquired
+
 	for(std::list<Downloader*>::iterator it=downloaders.begin(); it!=downloaders.end(); ++it)
+	{
 		(*it)->stop();
+
+		//++ Release lock
+		sem_post(&mutex);
+		destroy(*it);
+		sem_wait(&mutex);
+		//-- Lock acquired
+	}
+
+	//== Destroy lock
+	sem_destroy(&mutex);
 }
 
 /**
@@ -64,6 +90,44 @@ void DownloadManager::destroy(Downloader* downloader)
 		thd->waitFencing();
 		delete thd;
 	}
+}
+
+/**
+ * \brief Add a Downloader to the active downloads list
+ *
+ * Waits for the mutex at start and releases the mutex when finished.
+ */
+void DownloadManager::addDownloader(Downloader* downloader)
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+	downloaders.push_back(downloader);
+	//++ Release lock
+	sem_post(&mutex);
+}
+
+/**
+ * \brief Remove a Downloader from the active downloads list
+ *
+ * Waits for the mutex at start and releases the mutex when finished.
+ */
+bool DownloadManager::removeDownloader(Downloader* downloader)
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+	for(std::list<Downloader*>::iterator it=downloaders.begin(); it!=downloaders.end(); ++it)
+	{
+		if((*it) == downloader)
+		{
+			downloaders.erase(it);
+			//++ Release lock
+			sem_post(&mutex);
+			return true;
+		}
+	}
+	//++ Release lock
+	sem_post(&mutex);
+	return false;
 }
 
 /**
@@ -529,7 +593,10 @@ void Downloader::openCache()
 	if(cached && !cache.is_open())
 	{
 		//Create a temporary file(name)
-		char cacheFilenameC[] = "/tmp/lightsparkdownloadXXXXXX";
+		std::string cacheFilenameS = sys->config->getCacheDirectory() + "/" + sys->config->getCachePrefix() + "XXXXXX";
+		char cacheFilenameC[cacheFilenameS.length()+1];
+		strncpy(cacheFilenameC, cacheFilenameS.c_str(), cacheFilenameS.length());
+		cacheFilenameC[cacheFilenameS.length()] = '\0';
 		//char cacheFilenameC[30] = "/tmp/lightsparkdownloadXXXXXX";
 		//strcpy(cacheFilenameC, "/tmp/lightsparkdownloadXXXXXX");
 		int fd = mkstemp(cacheFilenameC);
@@ -754,7 +821,7 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 		if(colonPos != std::string::npos)
 		{
 			headerName = header.substr(0, colonPos);
-			if(header.substr(colonPos+1, 1) == " ")
+			if(header[colonPos+1] == ' ')
 				headerValue = header.substr(colonPos+2, header.length()-colonPos-1);
 			else
 				headerValue = header.substr(colonPos+1, header.length()-colonPos);

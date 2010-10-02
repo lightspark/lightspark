@@ -49,6 +49,7 @@ private:
 
 public:
 	AudioManager ( PluginManager *sharePluginManager );
+	bool pluginLoaded() const;
 	AudioStream *createStreamPlugin ( AudioDecoder *decoder );
 	void freeStreamPlugin ( AudioStream *audioStream );
 	bool isTimingAvailablePlugin() const;

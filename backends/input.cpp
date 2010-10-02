@@ -152,9 +152,9 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 			break;
 		}
 		default:
-#ifdef EXPENSIVE_DEBUG
-			cout << "GDKTYPE " << event->type << endl;
-#endif
+//#ifdef EXPENSIVE_DEBUG
+//			cout << "GDKTYPE " << event->type << endl;
+//#endif
 			break;
 	}
 	return ret;

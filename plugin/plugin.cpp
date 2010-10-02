@@ -84,6 +84,7 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance);
+	addDownloader(downloader);
 	return downloader;
 }
 

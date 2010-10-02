@@ -17,9 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <libxml++/libxml++.h>
+#include <libxml++/parsers/textreader.h>
+
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <sstream>
 #include "scripting/abc.h"
 #include "tags.h"
 #include "scripting/actions.h"
@@ -1866,7 +1870,7 @@ ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,_("ScriptLimitsTag Tag"));
 	in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
-	LOG(LOG_NO_INFO,_("MaxRecusionDepth: ") << MaxRecursionDepth << _(", ScriptTimeoutSeconds: ") << ScriptTimeoutSeconds);
+	LOG(LOG_NO_INFO,_("MaxRecursionDepth: ") << MaxRecursionDepth << _(", ScriptTimeoutSeconds: ") << ScriptTimeoutSeconds);
 }
 
 DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
@@ -1909,5 +1913,15 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,_("MetadataTag Tag"));
 	in >> XmlString;
-	LOG(LOG_NO_INFO,_("MetaData: ") << XmlString);
+
+	string XmlStringStd = XmlString;
+	xmlpp::TextReader xml((const unsigned char*)XmlStringStd.c_str(), XmlStringStd.length());
+
+	ostringstream output;
+	while(xml.read())
+	{
+		if(xml.get_depth() == 2 && xml.read_string() != "")
+			output << endl << "\t" << xml.get_local_name() << ":\t\t" << xml.read_string();
+	}
+	LOG(LOG_NO_INFO, "SWF Metadata:" << output.str());
 }

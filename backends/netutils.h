@@ -38,20 +38,12 @@ class Downloader;
 class DLL_PUBLIC DownloadManager
 {
 private:
+	sem_t mutex;
 	std::list<Downloader*> downloaders;
 protected:
-	void addDownloader(Downloader* downloader) { downloaders.push_back(downloader); }
-	bool removeDownloader(Downloader* downloader) {
-		for(std::list<Downloader*>::iterator it=downloaders.begin(); it!=downloaders.end(); ++it)
-		{
-			if((*it) == downloader)
-			{
-				downloaders.erase(it);
-				return true;
-			}
-		}
-		return false;
-	}
+	DownloadManager();
+	void addDownloader(Downloader* downloader);
+	bool removeDownloader(Downloader* downloader);
 public:
 	virtual ~DownloadManager();
 	virtual Downloader* download(const tiny_string& url, bool cached=false)=0;

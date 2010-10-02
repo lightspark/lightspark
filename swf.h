@@ -33,11 +33,12 @@
 #include "scripting/flashnet.h"
 #include "scripting/flashsystem.h"
 #include "timer.h"
-#include "backends/graphics.h"
 #include "backends/audio.h"
+#include "backends/config.h"
+#include "backends/graphics.h"
 #include "backends/pluginmanager.h"
-#include "backends/urlutils.h"
 #include "backends/security.h"
+#include "backends/urlutils.h"
 
 #include "platforms/pluginutils.h"
 
@@ -251,8 +252,9 @@ public:
 	Stage* stage;
 	ABCVm* currentVm;
 
-	PluginManager *pluginManager;
-	AudioManager *audioManager;
+	Config* config;
+	PluginManager* pluginManager;
+	AudioManager* audioManager;
 
 	//Application starting time in milliseconds
 	uint64_t startTime;

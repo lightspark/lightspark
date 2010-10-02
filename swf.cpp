@@ -183,6 +183,8 @@ SystemState::SystemState(ParseThread* p):
 		parseThread->root=this;
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
+	config=new Config;
+	config->load();
 	pluginManager = new PluginManager;
 	audioManager=new AudioManager(pluginManager);
 	intervalManager=new IntervalManager();
@@ -317,6 +319,8 @@ void SystemState::stopEngines()
 	downloadManager=NULL;
 	delete securityManager;
 	securityManager=NULL;
+	delete config;
+	config=NULL;
 	if(currentVm)
 		currentVm->shutdown();
 	delete timerThread;

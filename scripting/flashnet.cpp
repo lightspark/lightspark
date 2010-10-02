@@ -812,7 +812,7 @@ void NetStream::execute()
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
-							if(audioDecoder->isValid())
+							if(audioDecoder->isValid() && sys->audioManager->pluginLoaded())
 								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
 						}
 						else
@@ -820,7 +820,7 @@ void NetStream::execute()
 							assert_and_throw(audioCodec==tag.SoundFormat);
 							decodedAudioBytes+=
 								audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
-							if(audioStream==0 && audioDecoder->isValid())
+							if(audioStream==0 && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
 								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
 							//Adjust timing
 							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();

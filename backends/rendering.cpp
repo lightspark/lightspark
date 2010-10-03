@@ -227,12 +227,13 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	glEnable(GL_TEXTURE_2D);
 	try
 	{
+		Chronometer chronometer;
 		while(1)
 		{
 			sem_wait(&th->event);
 			if(th->m_sys->isShuttingDown() || th->terminated)
 				break;
-			Chronometer chronometer;
+			chronometer.checkpoint();
 			
 			if(th->resizeNeeded)
 			{
@@ -247,6 +248,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				th->newHeight=0;
 				th->resizeNeeded=false;
 				th->commonGLResize(th->windowWidth, th->windowHeight);
+				profile->accountTime(chronometer.checkpoint());
 				continue;
 			}
 
@@ -274,32 +276,29 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			if(th->uploadNeeded)
 			{
 				ITextureUploadable* u=th->getUploadJob();
-				if(u)
-				{
-					uint32_t w,h;
-					u->sizeNeeded(w,h);
-					if(w>th->pixelBufferWidth || h>th->pixelBufferHeight)
-						th->resizePixelBuffers(w,h);
-					//Increment and wrap current buffer index
-					unsigned int nextBuffer = (th->currentPixelBuffer + 1)%2;
+				assert(u);
+				uint32_t w,h;
+				u->sizeNeeded(w,h);
+				if(w>th->pixelBufferWidth || h>th->pixelBufferHeight)
+					th->resizePixelBuffers(w,h);
+				//Increment and wrap current buffer index
+				unsigned int nextBuffer = (th->currentPixelBuffer + 1)%2;
 
-					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[nextBuffer]);
-					uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
-					uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[nextBuffer]);
+				uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+				uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
 
-					u->upload(alignedBuf, w, h);
+				u->upload(alignedBuf, w, h);
 
-					glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+				glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-					th->currentPixelBufferOffset=alignedBuf-buf;
-					th->currentPixelBuffer=nextBuffer;
-					
-					th->prevUploadJob=u;
-					continue;
-				}
-				else if(!th->renderNeeded)
-					continue;
+				th->currentPixelBufferOffset=alignedBuf-buf;
+				th->currentPixelBuffer=nextBuffer;
+				
+				th->prevUploadJob=u;
+				profile->accountTime(chronometer.checkpoint());
+				continue;
 			}
 
 			assert(th->renderNeeded);
@@ -502,7 +501,7 @@ void RenderThread::commonGLInit(int width, int height)
 	int maxTexSize;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
 	assert(maxTexSize>0);
-	largeTextureSize=maxTexSize;
+	largeTextureSize=min(maxTexSize,1024);
 	//Allocate the texture
 	while(glGetError()!=GL_NO_ERROR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
@@ -820,6 +819,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				th->newHeight=0;
 				th->resizeNeeded=false;
 				th->commonGLResize(th->windowWidth, th->windowHeight);
+				profile->accountTime(chronometer.checkpoint());
 				continue;
 			}
 
@@ -847,32 +847,29 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			if(th->uploadNeeded)
 			{
 				ITextureUploadable* u=th->getUploadJob();
-				if(u)
-				{
-					uint32_t w,h;
-					u->sizeNeeded(w,h);
-					if(w>th->pixelBufferWidth || h>th->pixelBufferHeight)
-						th->resizePixelBuffers(w,h);
-					//Increment and wrap current buffer index
-					unsigned int nextBuffer = (th->currentPixelBuffer + 1)%2;
+				assert(u);
+				uint32_t w,h;
+				u->sizeNeeded(w,h);
+				if(w>th->pixelBufferWidth || h>th->pixelBufferHeight)
+					th->resizePixelBuffers(w,h);
+				//Increment and wrap current buffer index
+				unsigned int nextBuffer = (th->currentPixelBuffer + 1)%2;
 
-					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[nextBuffer]);
-					uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
-					uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[nextBuffer]);
+				uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+				uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
 
-					u->upload(alignedBuf, w, h);
+				u->upload(alignedBuf, w, h);
 
-					glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+				glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-					th->currentPixelBufferOffset=alignedBuf-buf;
-					th->currentPixelBuffer=nextBuffer;
-					
-					th->prevUploadJob=u;
-					continue;
-				}
-				else if(!th->renderNeeded)
-					continue;
+				th->currentPixelBufferOffset=alignedBuf-buf;
+				th->currentPixelBuffer=nextBuffer;
+				
+				th->prevUploadJob=u;
+				profile->accountTime(chronometer.checkpoint());
+				continue;
 			}
 
 			assert(th->renderNeeded);
@@ -947,10 +944,11 @@ void RenderThread::addUploadJob(ITextureUploadable* u)
 ITextureUploadable* RenderThread::getUploadJob()
 {
 	Locker l(mutexUploadJobs);
-	if(uploadJobs.empty())
-		return NULL;
+	assert(!uploadJobs.empty());
 	ITextureUploadable* ret=uploadJobs.front();
 	uploadJobs.pop_front();
+	if(uploadJobs.empty())
+		uploadNeeded=false;
 	return ret;
 }
 

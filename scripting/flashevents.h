@@ -38,7 +38,7 @@ class ABCContext;
 class Event: public ASObject
 {
 public:
-	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}
+	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false),async(true){}
 	Event(const tiny_string& t, bool b=false);
 	virtual ~Event();
 	static void sinit(Class_base*);
@@ -53,6 +53,7 @@ public:
 	ASObject* target;
 	ASObject* currentTarget;
 	bool bubbles;
+	bool async;
 };
 
 class KeyboardEvent: public Event
@@ -284,10 +285,10 @@ class SynchronizationEvent: public Event
 private:
 	sem_t s;
 public:
-	SynchronizationEvent():Event("SynchronizationEvent"){sem_init(&s,0,0);}
-	SynchronizationEvent(const tiny_string& _s):Event(_s){sem_init(&s,0,0);}
+	SynchronizationEvent();
+	SynchronizationEvent(const tiny_string& _s);
 	static void sinit(Class_base*);
-	~SynchronizationEvent(){sem_destroy(&s);}
+	~SynchronizationEvent();
 	EVENT_TYPE getEventType() { return SYNC; }
 	void sync()
 	{

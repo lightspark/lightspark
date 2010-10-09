@@ -1113,9 +1113,9 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	//If the system should terminate new events are not accepted
 	if(m_sys->shouldTerminate())
 		return false;
-	//If the event is a synchronization and we are running in the VM context
-	//we should handle it immidiately to avoid deadlock
-	if(isVmThread && (ev->getEventType()==SYNC || ev->getEventType()==CONSTRUCT_OBJECT))
+	//Execute synchronous events in the VM context immediately to
+	//avoid deadlock
+	if(isVmThread && !ev->async)
 	{
 		assert(obj==NULL);
 		ev->incRef();

@@ -55,7 +55,7 @@ void IEventDispatcher::linkTraits(Class_base* c)
 	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
 }
 
-Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NULL),bubbles(b)
+Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NULL),bubbles(b),async(true)
 {
 }
 
@@ -573,4 +573,21 @@ FunctionEvent::FunctionEvent(IFunction* _f, ASObject* _obj, ASObject** _args, ui
 FunctionEvent::~FunctionEvent()
 {
 	delete[] args;
+}
+
+SynchronizationEvent::SynchronizationEvent():Event("SynchronizationEvent")
+{
+	sem_init(&s,0,0);
+	async=false; // avoid deadlock
+}
+
+SynchronizationEvent::SynchronizationEvent(const tiny_string& _s):Event(_s)
+{
+	sem_init(&s,0,0);
+	async=false; // avoid deadlock
+}
+
+SynchronizationEvent::~SynchronizationEvent()
+{
+	sem_destroy(&s);
 }

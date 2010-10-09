@@ -570,6 +570,27 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->state.max_FP);
 	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,th));
+	SynchronizationEvent* se=new SynchronizationEvent;
+	bool added=sys->currentVm->addEvent(NULL,se);
+	if(!added)
+	{
+		se->decRef();
+		throw RunTimeException("Could not add event");
+	}
+	se->wait();
+	se->decRef();
+
+	th->getRoot()->enterFrame();
+	se=new SynchronizationEvent;
+	added=sys->currentVm->addEvent(NULL,se);
+	if(!added)
+	{
+		se->decRef();
+		throw RunTimeException("Could not add event");
+	}
+	se->wait();
+	se->decRef();
+
 	return NULL;
 }
 

@@ -132,6 +132,7 @@ public:
 	void setVariableByString(const std::string& s, ASObject* o);*/
 	void registerChildClip(MovieClip* clip);
 	void unregisterChildClip(MovieClip* clip);
+	void enterFrame();
 };
 
 class ThreadProfile

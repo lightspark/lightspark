@@ -548,6 +548,7 @@ ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
 
 ABCContextInitEvent::ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEvent"),context(c)
 {
+	async=false;
 }
 
 ShutdownEvent::ShutdownEvent():Event("shutdownEvent")

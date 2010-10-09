@@ -1106,6 +1106,13 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 
 void RootMovieClip::tick()
 {
+	enterFrame();
+}
+
+void RootMovieClip::enterFrame()
+{
+	Locker l(mutexFrames);
+
 	//Frame advancement may cause exceptions
 	try
 	{
@@ -1134,7 +1141,7 @@ void RootMovieClip::tick()
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,_("Exception in RootMovieClip::tick ") << e.cause);
+		LOG(LOG_ERROR,_("Exception in RootMovieClip::enterFrame ") << e.cause);
 		sys->setError(e.cause);
 	}
 }

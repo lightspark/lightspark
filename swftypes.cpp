@@ -1140,7 +1140,17 @@ void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_s
 			return;
 		}
 	}
-	//No double colons in the string
+	// No namespace, look for a package name
+	for(int i=tmp.len()-1;i>0;i--)
+	{
+		if(tmp[i]=='.')
+		{
+			ns=tmp.substr(0,i);
+			name=tmp.substr(i+1,tmp.len());
+			return;
+		}
+	}
+	//No namespace or package in the string
 	name=tmp;
 	ns="";
 }

@@ -41,6 +41,12 @@ tiny_string ASObject::toString(bool debugMsg)
 		if(obj_toString->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
+
+			// Avoid infinite recursion
+			Function* asobject_toString=Class<IFunction>::getFunction(ASObject::_toString);
+			if (asobject_toString->isEqual(f_toString))
+				return "[object Object]";
+
 			ASObject* ret=f_toString->call(this,NULL,0);
 			assert_and_throw(ret->getObjectType()==T_STRING);
 			return ret->toString();

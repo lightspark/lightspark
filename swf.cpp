@@ -195,8 +195,6 @@ SystemState::SystemState(ParseThread* p):
 	startTime=compat_msectiming();
 	
 	setPrototype(Class<MovieClip>::getClass());
-
-	setOnStage(true);
 }
 
 void SystemState::setDownloadedPath(const tiny_string& p)
@@ -946,6 +944,8 @@ void RootMovieClip::initialize()
 		}
 		se->wait();
 		se->decRef();
+
+		setOnStage(true);
 	}
 }
 

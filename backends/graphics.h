@@ -145,15 +145,17 @@ class TextureChunk
 {
 friend class RenderThread;
 private:
+	uint32_t texId;
 	uint32_t* chunks;
 	TextureChunk(uint32_t w, uint32_t h);
 public:
-	TextureChunk():chunks(NULL),width(0),height(0){}
+	TextureChunk():texId(0),chunks(NULL),width(0),height(0){}
 	TextureChunk(const TextureChunk& r);
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();
 	bool resizeIfLargeEnough(uint32_t w, uint32_t h);
 	uint32_t getNumberOfChunks() const { return ((width+127)/128)*((height+127)/128); }
+	bool isValid() const { return chunks; }
 	uint32_t width;
 	uint32_t height;
 };

@@ -1045,6 +1045,8 @@ bool DisplayObject::isSimple() const
 
 void DisplayObject::defaultRender() const
 {
+	if(!cachedSurface.tex.isValid())
+		return;
 	glPushMatrix();
 	glLoadIdentity();
 	glColor4f(0,0,1,0);

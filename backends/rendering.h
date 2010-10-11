@@ -49,9 +49,18 @@ private:
 	void resizePixelBuffers(uint32_t w, uint32_t h);
 	ITextureUploadable* prevUploadJob;
 	Mutex mutexLargeTexture;
-	GLuint largeTextureId;
 	uint32_t largeTextureSize;
-	uint8_t* largeTextureBitmap;
+	struct LargeTexture
+	{
+		GLuint id;
+		uint8_t* bitmap;
+		LargeTexture(GLuint i, uint8_t* b):id(i),bitmap(b){}
+		~LargeTexture(){/*delete[] bitmap;*/}
+	};
+	std::vector<LargeTexture> largeTextures;
+	LargeTexture& allocateNewTexture();
+	bool allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
+	bool allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
 	//Possible events to be handled
 	//TODO: pad to avoid false sharing on the cache lines
 	bool renderNeeded;

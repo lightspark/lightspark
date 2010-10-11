@@ -263,16 +263,18 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			}
 
 			if(th->prevUploadJob)
-			{
+			{				
 				ITextureUploadable* u=th->prevUploadJob;
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[th->currentPixelBuffer]);
-				//Copy content of the pbo to the texture, 0 is the offset in the pbo
 				uint32_t w,h;
 				u->sizeNeeded(w,h);
-				th->loadChunkBGRA(u->getTexture(), w, h, (uint8_t*)th->currentPixelBufferOffset);
+				const TextureChunk& tex=u->getTexture();
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[th->currentPixelBuffer]);
+				//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
+				th->loadChunkBGRA(tex, w, h, (uint8_t*)th->currentPixelBufferOffset);
 				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 				u->uploadFence();
 				th->prevUploadJob=NULL;
+
 			}
 
 			if(th->uploadNeeded)
@@ -969,15 +971,12 @@ void RenderThread::releaseTexture(const TextureChunk& chunk)
 	uint32_t numberOfBlocks=blocksW*blocksH;
 	Locker l(mutexLargeTexture);
 	LargeTexture& tex=largeTextures[chunk.texId];
-	cout << "Alloc: Release ";
 	for(uint32_t i=0;i<numberOfBlocks;i++)
 	{
-		cout << chunk.chunks[i] << ' ';
 		uint32_t bitOffset=chunk.chunks[i];
 		assert(tex.bitmap[bitOffset/8]&(1<<(bitOffset%8)));
 		tex.bitmap[bitOffset/8]^=(1<<(bitOffset%8));
 	}
-	cout << endl;
 }
 
 RenderThread::LargeTexture& RenderThread::allocateNewTexture()

@@ -297,8 +297,8 @@ void GraphicsContainer::invalidateGraphics()
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
-	DynamicCairoRenderer* r=new DynamicCairoRenderer(&owner->shepherd, owner->cachedSurface, graphics->tokens, 
-					owner->getConcatenatedMatrix(), x, y, width, height);
+	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, graphics->tokens, 
+						owner->getConcatenatedMatrix(), x, y, width, height, 1);
 	sys->addJob(r);
 }
 
@@ -2242,7 +2242,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	th->styles.emplace_back(FILLSTYLE());
 	th->styles.back().FillStyleType=SOLID_FILL;
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
-	th->tokens.emplace_back(SET_FILL, &th->styles.back());
+	th->tokens.emplace_back(SET_FILL, th->styles.back());
 	return NULL;
 }
 
@@ -2260,7 +2260,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 	th->styles.emplace_back(FILLSTYLE());
 	th->styles.back().FillStyleType=SOLID_FILL;
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
-	th->tokens.emplace_back(SET_FILL, &th->styles.back());
+	th->tokens.emplace_back(SET_FILL, th->styles.back());
 	return NULL;
 }
 

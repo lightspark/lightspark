@@ -52,9 +52,9 @@ class GeomToken
 public:
 	GEOM_TOKEN_TYPE type;
 	Vector2 p1;
-	const FILLSTYLE* style;
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),style(NULL){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE* _f):type(_t),p1(0,0),style(_f){}
+	FILLSTYLE style;
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE _f):type(_t),p1(0,0),style(_f){}
 };
 
 class GeomShape

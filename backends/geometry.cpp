@@ -369,7 +369,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, vector< Geo
 			assert(stylesIt!=styles.end());
 		}
 		//Set the fill style
-		tokens.emplace_back(SET_FILL,&(*stylesIt));
+		tokens.emplace_back(SET_FILL,*stylesIt);
 		vector<vector<unsigned int> >& outlinesForColor=it->second;
 		for(unsigned int i=0;i<outlinesForColor.size();i++)
 		{

@@ -189,6 +189,7 @@ public:
 
 /**
 	The base class for render jobs based on cairo
+	Stores an internal copy of the data to be rendered
 */
 class CairoRenderer: public ITextureUploadable, public IThreadJob, public Sheep
 {
@@ -204,11 +205,15 @@ protected:
 	uint32_t width;
 	uint32_t height;
 	uint8_t* surfaceBytes;
+	const std::vector<GeomToken> tokens;
+	const float scaleFactor;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
 	void executeImpl(const std::vector<GeomToken>& tokens, double scaleCorrection);
 public:
-	CairoRenderer(Shepherd* _o, CachedSurface& _t, const MATRIX& _m, uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):
-			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),surfaceBytes(NULL){}
+	CairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, 
+			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s):
+			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),
+			surfaceBytes(NULL),tokens(_g),scaleFactor(_s){}
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
 	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
@@ -217,34 +222,6 @@ public:
 	//IThreadJob interface
 	void threadAbort();
 	void jobFence();
-};
-
-/**
-	A renderer that works on static sets of tokens (e.g.) They will not change once started
-*/
-class StaticCairoRenderer: public CairoRenderer
-{
-protected:
-	const std::vector<GeomToken>& tokens;
-public:
-	StaticCairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g,const MATRIX& _m, 
-				uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):CairoRenderer(_o, _t, _m, _x, _y, _w, _h),tokens(_g){}
-	//IThreadJob
-	void execute();
-};
-
-/**
-	A renderer that stores a local copy of the tokens as they may change anytime
-*/
-
-class DynamicCairoRenderer: public CairoRenderer
-{
-protected:
-	const std::vector<GeomToken> tokens;
-public:
-	DynamicCairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g,const MATRIX& _m, 
-				uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):CairoRenderer(_o, _t, _m, _x, _y, _w, _h),tokens(_g){}
-	//IThreadJob
 	void execute();
 };
 

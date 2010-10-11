@@ -479,24 +479,23 @@ void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens, double sca
 					empty=true;
 				}
 				//NOTE: Destruction of the pattern happens internally by refcounting
-				assert(tokens[i].style);
-				const FILLSTYLE* style=tokens[i].style;
-				if(style->FillStyleType==SOLID_FILL)
+				const FILLSTYLE& style=tokens[i].style;
+				if(style.FillStyleType==SOLID_FILL)
 				{
-					const RGBA& color=style->Color;
+					const RGBA& color=style.Color;
 					cairo_set_source_rgba (cr, color.rf(), color.gf(), color.bf(), color.af());
 				}
-				else if(style->FillStyleType==LINEAR_GRADIENT)
+				else if(style.FillStyleType==LINEAR_GRADIENT)
 				{
 					pattern=cairo_pattern_create_linear(-16384,0,16384,0);
-					const cairo_matrix_t& pattern_mat=MATRIXToCairo(style->GradientMatrix);
+					const cairo_matrix_t& pattern_mat=MATRIXToCairo(style.GradientMatrix);
 					cairo_pattern_set_matrix(pattern, &pattern_mat);
 					
-					for(uint32_t i=0;i<style->Gradient.GradientRecords.size();i++)
+					for(uint32_t i=0;i<style.Gradient.GradientRecords.size();i++)
 					{
-						double ratio=style->Gradient.GradientRecords[i].Ratio;
+						double ratio=style.Gradient.GradientRecords[i].Ratio;
 						ratio/=255;
-						const RGBA& color=style->Gradient.GradientRecords[i].Color;
+						const RGBA& color=style.Gradient.GradientRecords[i].Color;
 						cairo_pattern_add_color_stop_rgba(pattern, ratio, color.rf(), color.gf(), color.bf(), color.af());
 					} 
 					cairo_set_source(cr, pattern);
@@ -517,16 +516,9 @@ void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens, double sca
 	cairo_surface_destroy(cairoSurface);
 }
 
-void StaticCairoRenderer::execute()
+void CairoRenderer::execute()
 {
 	if(!Sheep::lockOwner())
 		return;
-	executeImpl(tokens, 0.05);
-}
-
-void DynamicCairoRenderer::execute()
-{
-	if(!Sheep::lockOwner())
-		return;
-	executeImpl(tokens, 1);
+	executeImpl(tokens, scaleFactor);
 }

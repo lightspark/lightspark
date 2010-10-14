@@ -433,32 +433,9 @@ void CairoRenderer::jobFence()
 	sys->getRenderThread()->addUploadJob(this);
 }
 
-void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens, double scaleCorrection)
+bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection) const
 {
-	if(width==0 || height==0)
-	{
-		//Nothing to do, move on
-		return;
-	}
-	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
-	assert(cairoWidthStride==width*4);
-	surfaceBytes=new uint8_t[cairoWidthStride*height];
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(surfaceBytes, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
-	cairo_t* cr=cairo_create(cairoSurface);
-
-	cairo_set_source_rgba(cr, 0, 0, 0, 0);
-	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-	cairo_paint(cr);
-
-	matrix.TranslateX-=xOffset;
-	matrix.TranslateY-=yOffset;
-	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-	const cairo_matrix_t& mat=MATRIXToCairo(matrix);
-	cairo_transform(cr, &mat);
-
-	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
-	cairo_pattern_t* pattern=NULL;
 	bool empty=true;
 	for(uint32_t i=0;i<tokens.size();i++)
 	{
@@ -487,14 +464,14 @@ void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens, double sca
 				}
 				else if(style.FillStyleType==LINEAR_GRADIENT)
 				{
-					pattern=cairo_pattern_create_linear(-16384,0,16384,0);
+					cairo_pattern_t* pattern=cairo_pattern_create_linear(-16384,0,16384,0);
 					const cairo_matrix_t& pattern_mat=MATRIXToCairo(style.GradientMatrix);
 					cairo_pattern_set_matrix(pattern, &pattern_mat);
 					
 					for(uint32_t i=0;i<style.Gradient.GradientRecords.size();i++)
 					{
 						double ratio=style.Gradient.GradientRecords[i].Ratio;
-						ratio/=255;
+						ratio/=255.0f;
 						const RGBA& color=style.Gradient.GradientRecords[i].Color;
 						cairo_pattern_add_color_stop_rgba(pattern, ratio, color.rf(), color.gf(), color.bf(), color.af());
 					} 
@@ -508,7 +485,49 @@ void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens, double sca
 				::abort();
 		}
 	}
+	return empty;
+}
 
+void CairoRenderer::cairoClean(cairo_t* cr) const
+{
+	cairo_set_source_rgba(cr, 0, 0, 0, 0);
+	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+	cairo_paint(cr);
+}
+
+cairo_surface_t* CairoRenderer::allocateSurface()
+{
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	assert(cairoWidthStride==width*4);
+	assert(surfaceBytes==NULL);
+	surfaceBytes=new uint8_t[cairoWidthStride*height];
+	return cairo_image_surface_create_for_data(surfaceBytes, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
+}
+
+void CairoRenderer::execute()
+{
+	//Will be unlocked after uploadFence
+	if(!Sheep::lockOwner())
+		return;
+	if(width==0 || height==0)
+	{
+		//Nothing to do, move on
+		return;
+	}
+	cairo_surface_t* cairoSurface=allocateSurface();
+	cairo_t* cr=cairo_create(cairoSurface);
+
+	cairoClean(cr);
+
+	matrix.TranslateX-=xOffset;
+	matrix.TranslateY-=yOffset;
+	const cairo_matrix_t& mat=MATRIXToCairo(matrix);
+	cairo_transform(cr, &mat);
+
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor);
 	if(!empty)
 		cairo_fill(cr);
 
@@ -516,9 +535,43 @@ void CairoRenderer::executeImpl(const std::vector<GeomToken>& tokens, double sca
 	cairo_surface_destroy(cairoSurface);
 }
 
-void CairoRenderer::execute()
+void MaskedCairoRenderer::execute()
 {
+	//Will be unlocked after uploadFence
 	if(!Sheep::lockOwner())
 		return;
-	executeImpl(tokens, scaleFactor);
+	if(width==0 || height==0)
+	{
+		//Nothing to do, move on
+		return;
+	}
+	cairo_surface_t* cairoSurface=allocateSurface();
+	cairo_t* cr=cairo_create(cairoSurface);
+
+	cairoClean(cr);
+	
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+
+	//Apply mask
+	maskMatrix.TranslateX-=xOffset;
+	maskMatrix.TranslateY-=yOffset;
+	const cairo_matrix_t& mat=MATRIXToCairo(maskMatrix);
+	cairo_set_matrix(cr, &mat);
+
+	bool empty=cairoPathFromTokens(cr, maskTokens, maskScaleFactor);
+	if(!empty)
+		cairo_clip(cr);
+
+	matrix.TranslateX-=xOffset;
+	matrix.TranslateY-=yOffset;
+	const cairo_matrix_t& mat2=MATRIXToCairo(matrix);
+	cairo_set_matrix(cr, &mat2);
+
+	empty=cairoPathFromTokens(cr, tokens, scaleFactor);
+	if(!empty)
+		cairo_fill(cr);
+
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
 }

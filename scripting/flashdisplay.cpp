@@ -245,9 +245,7 @@ void Loader::Render()
 	if(!loaded)
 		return;
 
-	if(alpha==0.0)
-		return;
-	if(!visible)
+	if(skipRender())
 		return;
 
 	MatrixApplier ma(getMatrix());
@@ -385,14 +383,12 @@ void Sprite::invalidate()
 
 void Sprite::Render()
 {
+	if(skipRender())
+		return;
+
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
 	if(!notEmpty)
-		return;
-
-	if(alpha==0.0)
-		return;
-	if(!visible)
 		return;
 
 	MatrixApplier ma(getMatrix());
@@ -420,10 +416,9 @@ void Sprite::Render()
 
 void Sprite::inputRender()
 {
-	if(alpha==0.0)
+	if(skipRender())
 		return;
-	if(!visible)
-		return;
+
 	InteractiveObject::RenderProloue();
 
 	MatrixApplier ma(getMatrix());
@@ -645,6 +640,7 @@ void MovieClip::advanceFrame()
 		if(!state.stop_FP && framesLoaded>0)
 			state.next_FP=imin(state.FP+1,framesLoaded-1);
 		state.explicit_FP=false;
+		assert(state.FP<frameScripts.size());
 		if(frameScripts[state.FP])
 			getVm()->addEvent(NULL,new FunctionEvent(frameScripts[state.FP]));
 	}
@@ -707,14 +703,12 @@ void MovieClip::bootstrap()
 
 void MovieClip::Render()
 {
+	if(skipRender())
+		return;
+
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
 	if(!notEmpty)
-		return;
-
-	if(alpha==0.0)
-		return;
-	if(!visible)
 		return;
 
 	MatrixApplier ma(getMatrix());
@@ -914,14 +908,14 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	return ret;
 }
 
-DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),onStage(false),root(NULL),loaderInfo(NULL),
-	alpha(1.0),visible(true),parent(NULL)
+DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),mask(NULL),onStage(false),root(NULL),
+	loaderInfo(NULL),alpha(1.0),visible(true),parent(NULL)
 {
 	pthread_spin_init(&MatrixSpinlock, 0);
 }
 
-DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),onStage(false),
-	root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),parent(NULL)
+DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(NULL),
+	mask(NULL),onStage(false),root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),parent(NULL)
 {
 	pthread_spin_init(&MatrixSpinlock, 0);
 }
@@ -965,7 +959,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setSetterByQName("scale9Grid","",Class<IFunction>::getFunction(undefinedFunction),true);
 	c->setGetterByQName("stage","",Class<IFunction>::getFunction(_getStage),true);
 	c->setGetterByQName("mask","",Class<IFunction>::getFunction(_getMask),true);
-	c->setSetterByQName("mask","",Class<IFunction>::getFunction(undefinedFunction),true);
+	c->setSetterByQName("mask","",Class<IFunction>::getFunction(_setMask),true);
 	c->setGetterByQName("alpha","",Class<IFunction>::getFunction(_getAlpha),true);
 	c->setSetterByQName("alpha","",Class<IFunction>::getFunction(_setAlpha),true);
 	c->setGetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction),true);
@@ -994,6 +988,35 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 		pthread_spin_unlock(&MatrixSpinlock);
 		if(mustInvalidate)
 			invalidate();
+	}
+}
+
+void DisplayObject::becomeMaskOf(DisplayObject* m)
+{
+	assert_and_throw(mask==NULL);
+	if(m)
+		m->incRef();
+	DisplayObject* tmp=maskOf;
+	maskOf=m;
+	if(tmp)
+	{
+		//We are changing owner
+		tmp->setMask(NULL);
+		tmp->decRef();
+	}
+}
+
+void DisplayObject::setMask(DisplayObject* m)
+{
+	if(m)
+		m->incRef();
+	DisplayObject* tmp=mask;
+	mask=m;
+	if(tmp)
+	{
+		//Drop the previous mask
+		tmp->becomeMaskOf(NULL);
+		tmp->decRef();
 	}
 }
 
@@ -1043,8 +1066,14 @@ bool DisplayObject::isSimple() const
 	return alpha==1.0;
 }
 
+bool DisplayObject::skipRender() const
+{
+	return visible==false || alpha==0.0 || maskOf!=NULL;
+}
+
 void DisplayObject::defaultRender() const
 {
+	assert(!skipRender());
 	if(!cachedSurface.tex.isValid())
 		return;
 	glPushMatrix();
@@ -1147,8 +1176,29 @@ ASFUNCTIONBODY(DisplayObject,_getAlpha)
 
 ASFUNCTIONBODY(DisplayObject,_getMask)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return new Null;
+	DisplayObject* th=Class<DisplayObject>::cast(obj);
+	if(th->mask==NULL)
+		return new Null;
+
+	th->mask->incRef();
+	return th->mask;
+}
+
+ASFUNCTIONBODY(DisplayObject,_setMask)
+{
+	DisplayObject* th=Class<DisplayObject>::cast(obj);
+	assert_and_throw(argslen==1);
+	if(args[0] && args[0]->getPrototype() && args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()))
+	{
+		//We received a valid mask object
+		DisplayObject* newMask=Class<DisplayObject>::cast(args[0]);
+		newMask->becomeMaskOf(th);
+		newMask->setMask(newMask);
+	}
+	else
+		th->setMask(NULL);
+
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScaleX)
@@ -1901,9 +1951,7 @@ void Shape::Render()
 	if(graphics==NULL)
 		return;
 
-	if(alpha==0.0)
-		return;
-	if(!visible)
+	if(skipRender())
 		return;
 
 	number_t t1,t2,t3,t4;

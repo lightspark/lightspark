@@ -1022,7 +1022,7 @@ bool RenderThread::allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk
 			for(uint32_t j=0;j<blocksW;j++)
 			{
 				uint32_t bitOffset=start+i*blockPerSide+j;
-				if((bitOffset/8)>=bitmapSize)
+				if(bitOffset>=bitmapSize)
 				{
 					badRect=true;
 					break;

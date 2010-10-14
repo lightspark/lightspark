@@ -208,7 +208,9 @@ protected:
 	const std::vector<GeomToken> tokens;
 	const float scaleFactor;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
-	void executeImpl(const std::vector<GeomToken>& tokens, double scaleCorrection);
+	bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection) const;
+	void cairoClean(cairo_t* cr) const;
+	cairo_surface_t* allocateSurface();
 public:
 	CairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, 
 			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s):
@@ -222,6 +224,21 @@ public:
 	//IThreadJob interface
 	void threadAbort();
 	void jobFence();
+	void execute();
+};
+
+class MaskedCairoRenderer: public CairoRenderer
+{
+protected:
+	MATRIX maskMatrix;
+	const std::vector<GeomToken> maskTokens;
+	const float maskScaleFactor;
+public:
+	MaskedCairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
+			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s,
+			const std::vector<GeomToken>& _mg, const MATRIX& _mm, float _ms):
+			CairoRenderer(_o,_t,_g,_m,_x,_y,_w,_h,_s),maskMatrix(_mm),maskTokens(_mg),maskScaleFactor(_ms){}
+	//IThreadJob interface
 	void execute();
 };
 

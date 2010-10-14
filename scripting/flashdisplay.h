@@ -49,7 +49,17 @@ private:
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;
+	/**
+	  	The object we are masking, if any
+	*/
+	DisplayObject* maskOf;
+	/**
+	  	The object that masks us, if any
+	*/
+	DisplayObject* mask;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	void becomeMaskOf(DisplayObject* m);
+	void setMask(DisplayObject* m);
 protected:
 	void computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
@@ -60,6 +70,7 @@ protected:
 	int computeWidth();
 	int computeHeight();
 	bool isSimple() const;
+	bool skipRender() const;
 	float alpha;
 	bool visible;
 	//Data to handle async rendering
@@ -114,6 +125,7 @@ public:
 	ASFUNCTION(_getY);
 	ASFUNCTION(_setY);
 	ASFUNCTION(_getMask);
+	ASFUNCTION(_setMask);
 	ASFUNCTION(_setAlpha);
 	ASFUNCTION(_getAlpha);
 	ASFUNCTION(_getScaleX);

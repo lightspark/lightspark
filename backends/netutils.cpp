@@ -42,8 +42,9 @@ DownloadManager::DownloadManager()
 	sem_init(&mutex, 0, 1);
 	//== Lock initialized
 }
+
 /**
- * \brief Download manager destructor.
+ * \brief Destroyes all the pending downloads, must be called in the destructor of each derived class
  *
  * Traverses the list of active downloaders, calling \c stop() and \c destroy() on all of them.
  * If the downloader is already destroyed, destroy() won't do anything (no double delete).
@@ -51,7 +52,7 @@ DownloadManager::DownloadManager()
  * \see Downloader::stop()
  * \see Downloader::destroy()
  */
-DownloadManager::~DownloadManager()
+void DownloadManager::cleanUp()
 {
 	sem_wait(&mutex);
 	//-- Lock acquired
@@ -78,13 +79,12 @@ DownloadManager::~DownloadManager()
  * \param downloader A pointer to the \c Downloader to be destroyed.
  * \see DownloadManager::download()
  */
-void DownloadManager::destroy(Downloader* downloader)
+void StandaloneDownloadManager::destroy(Downloader* downloader)
 {
 	//If the downloader was still in the active-downloader list, delete it
 	if(removeDownloader(downloader))
 	{
-		if(!sys->isShuttingDown())
-			downloader->waitForTermination();
+		downloader->waitForTermination();
 		//NOTE: the following static cast should be safe. we now the type of created objects
 		ThreadedDownloader* thd=static_cast<ThreadedDownloader*>(downloader);
 		thd->waitFencing();
@@ -139,6 +139,11 @@ bool DownloadManager::removeDownloader(Downloader* downloader)
 StandaloneDownloadManager::StandaloneDownloadManager()
 {
 	type = STANDALONE;
+}
+
+StandaloneDownloadManager::~StandaloneDownloadManager()
+{
+	cleanUp();
 }
 
 /**

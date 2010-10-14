@@ -53,6 +53,7 @@ NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
  */
 NPDownloadManager::~NPDownloadManager()
 {
+	cleanUp();
 }
 
 /**
@@ -87,6 +88,17 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 	addDownloader(downloader);
 	return downloader;
 }
+
+void NPDownloadManager::destroy(lightspark::Downloader* downloader)
+{
+	//If the downloader was still in the active-downloader list, delete it
+	if(removeDownloader(downloader))
+	{
+		downloader->waitForTermination();
+		delete downloader;
+	}
+}
+
 
 /**
  * \brief Constructor for the NPDownloader class
@@ -387,7 +399,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 {
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
 	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
-
+	sys=m_sys;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
@@ -429,6 +441,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
+	sys=NULL;
 	return NPERR_NO_ERROR; 
 }
 

@@ -1096,7 +1096,7 @@ Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
 
-void lightspark::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens,
+void DefineShapeTag::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens,
 	const std::list<FILLSTYLE>& fillStyles)
 {
 	int startX=0;

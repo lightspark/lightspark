@@ -515,14 +515,32 @@ void RenderThread::commonGLInit(int width, int height)
 	glUseProgram(gpu_program);
 	cleanGLErrors();
 	int tex=glGetUniformLocation(gpu_program,"g_tex1");
-	glUniform1i(tex,0);
+	cout << tex << endl;
+	if(tex!=-1)
+		glUniform1i(tex,0);
+	tex=glGetUniformLocation(gpu_program,"g_tex2");
+	cout << tex << endl;
+	if(tex!=-1)
+		glUniform1i(tex,1);
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
-	glUniform2f(fragmentTexScaleUniform,1,1);
+	cout << fragmentTexScaleUniform << endl;
+	if(fragmentTexScaleUniform!=-1)
+		glUniform2f(fragmentTexScaleUniform,1.0f/width,1.0f/height);
 	cleanGLErrors();
 
+	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
+	glEnable(GL_TEXTURE_2D);
 	//Default to replace
-	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-	// create a framebuffer object
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	//At least two texture unit are guaranteed in OpenGL 1.3
+	//The second unit will be used to access the temporary buffer
+	glActiveTexture(GL_TEXTURE1);
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	glBindTexture(GL_TEXTURE_2D, tempTex.getId());
+
+	glActiveTexture(GL_TEXTURE0);
+	//Create a framebuffer object
 	glGenFramebuffers(1, &fboId);
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, tempTex.getId(), 0);
@@ -677,6 +695,32 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 		m_sys->inputRender();
 		materialOverride=false;
 	}
+
+	//Clear the tmp buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glClearColor(1,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glLoadIdentity();
+	glUseProgram(0);
+	glColor4f(0,1,0,1);
+	glActiveTexture(GL_TEXTURE1);
+	glDisable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glDisable(GL_TEXTURE_2D);
+	glBegin(GL_QUADS);
+		glVertex2i(windowWidth/2-100,windowHeight/2-100);
+		glVertex2i(windowWidth/2+100,windowHeight/2-100);
+		glVertex2i(windowWidth/2+100,windowHeight/2+100);
+		glVertex2i(windowWidth/2-100,windowHeight/2+100);
+	glEnd();
+	glActiveTexture(GL_TEXTURE1);
+	glEnable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_TEXTURE_2D);
+	glUseProgram(gpu_program);
+	//End DEBUG
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 	//Clear the back buffer
@@ -712,11 +756,17 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 		glTranslatef(-offsetX,(offsetY+windowHeight)*(-1.0f),0);
 		glUseProgram(0);
 		glDisable(GL_BLEND);
+		glActiveTexture(GL_TEXTURE1);
+		glDisable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE0);
 		glDisable(GL_TEXTURE_2D);
 		if(selectedDebug)
 			selectedDebug->debugRender(&font, true);
 		else
 			m_sys->debugRender(&font, true);
+		glActiveTexture(GL_TEXTURE1);
+		glEnable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE0);
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_BLEND);
 		glUseProgram(gpu_program);
@@ -728,6 +778,9 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 		glScalef(1.0f/scaleX,-1.0f/scaleY,1);
 		glTranslatef(-offsetX,(offsetY+windowHeight)*(-1.0f),0);
 		glUseProgram(0);
+		glActiveTexture(GL_TEXTURE1);
+		glDisable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE0);
 		glDisable(GL_TEXTURE_2D);
 		glColor3f(0,0,0);
 		char frameBuf[20];
@@ -747,6 +800,9 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 		list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
 		for(;it!=m_sys->profilingData.end();it++)
 			it->plot(1000000/m_sys->getFrameRate(),&font);
+		glActiveTexture(GL_TEXTURE1);
+		glEnable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE0);
 		glEnable(GL_TEXTURE_2D);
 		glUseProgram(gpu_program);
 	}
@@ -783,8 +839,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	font.FaceSize(12);
 	try
 	{
-		//Texturing must be enabled otherwise no tex coord will be sent to the shader
-		glEnable(GL_TEXTURE_2D);
 		Chronometer chronometer;
 		while(1)
 		{
@@ -905,7 +959,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			profile->accountTime(chronometer.checkpoint());
 			th->renderNeeded=false;
 		}
-		glDisable(GL_TEXTURE_2D);
 	}
 	catch(LightsparkException& e)
 	{

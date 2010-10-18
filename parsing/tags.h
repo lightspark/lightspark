@@ -73,8 +73,6 @@ public:
 
 class DictionaryTag: public Tag
 {
-protected:
-	std::vector<GeomToken> cachedTokens;
 public:
 	Class_base* bindedTo;
 	RootMovieClip* loadedFrom;
@@ -93,7 +91,7 @@ public:
 	virtual void execute(RootMovieClip* root)=0;
 };
 
-class DefineShapeTag: public DictionaryTag, public DisplayObject
+class DefineShapeTag: public DictionaryTag, public Shape
 {
 private:
 	void computeCached();

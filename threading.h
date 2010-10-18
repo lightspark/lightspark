@@ -232,6 +232,21 @@ public:
 	}
 };
 
+class SpinlockLocker
+{
+private:
+	Spinlock& lock;
+public:
+	SpinlockLocker(Spinlock& _l):lock(_l)
+	{
+		lock.lock();
+	}
+	~SpinlockLocker()
+	{
+		lock.unlock();
+	}
+};
+
 class Shepherd;
 
 class Sheep

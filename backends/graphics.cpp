@@ -478,7 +478,9 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 					cairo_set_source(cr, pattern);
 				}
 				else
-					::abort();
+				{
+					LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style");
+				}
 				break;
 			}
 			default:
@@ -528,47 +530,6 @@ void CairoRenderer::execute()
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
 	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor);
-	if(!empty)
-		cairo_fill(cr);
-
-	cairo_destroy(cr);
-	cairo_surface_destroy(cairoSurface);
-}
-
-void MaskedCairoRenderer::execute()
-{
-	//Will be unlocked after uploadFence
-	if(!Sheep::lockOwner())
-		return;
-	if(width==0 || height==0)
-	{
-		//Nothing to do, move on
-		return;
-	}
-	cairo_surface_t* cairoSurface=allocateSurface();
-	cairo_t* cr=cairo_create(cairoSurface);
-
-	cairoClean(cr);
-	
-	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-
-	//Apply mask
-	maskMatrix.TranslateX-=xOffset;
-	maskMatrix.TranslateY-=yOffset;
-	const cairo_matrix_t& mat=MATRIXToCairo(maskMatrix);
-	cairo_set_matrix(cr, &mat);
-
-	bool empty=cairoPathFromTokens(cr, maskTokens, maskScaleFactor);
-	if(!empty)
-		cairo_clip(cr);
-
-	matrix.TranslateX-=xOffset;
-	matrix.TranslateY-=yOffset;
-	const cairo_matrix_t& mat2=MATRIXToCairo(matrix);
-	cairo_set_matrix(cr, &mat2);
-
-	empty=cairoPathFromTokens(cr, tokens, scaleFactor);
 	if(!empty)
 		cairo_fill(cr);
 

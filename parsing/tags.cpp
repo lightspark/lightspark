@@ -959,6 +959,8 @@ void DefineShapeTag::computeCached()
 
 void DefineShapeTag::invalidate()
 {
+	//Acquire the lock to avoid data changes
+//	SpinlockLocker locker(spinlock);
 	uint32_t x,y,width,height;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
@@ -1028,9 +1030,7 @@ void DefineShapeTag::inputRender()
 
 void DefineShapeTag::Render()
 {
-	if(alpha==0)
-		return;
-	if(!visible)
+	if(skipRender())
 		return;
 
 	MatrixApplier ma(getMatrix());

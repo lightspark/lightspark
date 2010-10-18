@@ -295,8 +295,8 @@ void GraphicsContainer::invalidateGraphics()
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
-	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, graphics->tokens, 
-						owner->getConcatenatedMatrix(), x, y, width, height, 1);
+	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, graphics->tokens,
+				owner->getConcatenatedMatrix(), x, y, width, height, 1);
 	sys->addJob(r);
 }
 
@@ -911,20 +911,17 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),mask(NULL),onStage(false),root(NULL),
 	loaderInfo(NULL),alpha(1.0),visible(true),parent(NULL)
 {
-	pthread_spin_init(&MatrixSpinlock, 0);
 }
 
 DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(NULL),
 	mask(NULL),onStage(false),root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),parent(NULL)
 {
-	pthread_spin_init(&MatrixSpinlock, 0);
 }
 
 DisplayObject::~DisplayObject()
 {
 	if(loaderInfo && !sys->finalizingDestruction)
 		loaderInfo->decRef();
-	pthread_spin_destroy(&MatrixSpinlock);
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -979,13 +976,14 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 	if(ACQUIRE_READ(useMatrix))
 	{
 		bool mustInvalidate=false;
-		pthread_spin_lock(&MatrixSpinlock);
-		if(Matrix!=m)
 		{
-			Matrix=m;
-			mustInvalidate=true;
+			SpinlockLocker locker(spinlock);
+			if(Matrix!=m)
+			{
+				Matrix=m;
+				mustInvalidate=true;
+			}
 		}
-		pthread_spin_unlock(&MatrixSpinlock);
 		if(mustInvalidate)
 			invalidate();
 	}
@@ -1008,6 +1006,7 @@ void DisplayObject::becomeMaskOf(DisplayObject* m)
 
 void DisplayObject::setMask(DisplayObject* m)
 {
+	bool mustInvalidate=(mask!=m) && onStage;
 	if(m)
 		m->incRef();
 	DisplayObject* tmp=mask;
@@ -1018,6 +1017,8 @@ void DisplayObject::setMask(DisplayObject* m)
 		tmp->becomeMaskOf(NULL);
 		tmp->decRef();
 	}
+	if(mustInvalidate)
+		invalidate();
 }
 
 MATRIX DisplayObject::getConcatenatedMatrix() const
@@ -1033,9 +1034,8 @@ MATRIX DisplayObject::getMatrix() const
 	MATRIX ret;
 	if(ACQUIRE_READ(useMatrix))
 	{
-		pthread_spin_lock(&MatrixSpinlock);
+		SpinlockLocker locker(spinlock);
 		ret=Matrix;
-		pthread_spin_unlock(&MatrixSpinlock);
 	}
 	else
 	{
@@ -1052,12 +1052,11 @@ MATRIX DisplayObject::getMatrix() const
 void DisplayObject::valFromMatrix()
 {
 	assert(useMatrix);
-	pthread_spin_lock(&MatrixSpinlock);
+	SpinlockLocker locker(spinlock);
 	tx=Matrix.TranslateX;
 	ty=Matrix.TranslateY;
 	sx=Matrix.ScaleX;
 	sy=Matrix.ScaleY;
-	pthread_spin_unlock(&MatrixSpinlock);
 }
 
 bool DisplayObject::isSimple() const
@@ -1073,6 +1072,7 @@ bool DisplayObject::skipRender() const
 
 void DisplayObject::defaultRender() const
 {
+	//TODO: TOLOCK
 	assert(!skipRender());
 	if(!cachedSurface.tex.isValid())
 		return;
@@ -1113,6 +1113,17 @@ void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, num
 	outWidth=ceil(maxx-minx);
 	outHeight=ceil(maxy-miny);
 }
+
+/*list< vector<GeomToken> > DisplayObject::getCompositeMask() const
+{
+	list< vector<GeomToken> > ret;
+	SpinlockLocker locker(spinlock);
+	if(mask)
+		ret=mask->get();
+	if(super)
+		ret.splice(super->getCompositeMask());
+	return ret;
+}*/
 
 void DisplayObject::invalidate()
 {
@@ -1197,6 +1208,7 @@ ASFUNCTIONBODY(DisplayObject,_setMask)
 	}
 	else
 		th->setMask(NULL);
+	__asm__("int $3");
 
 	return NULL;
 }
@@ -1990,10 +2002,23 @@ void Shape::inputRender()
 	ma.unapply();
 }
 
+const vector<GeomToken>& Shape::getTokens()
+{
+	return cachedTokens;
+}
+
+float Shape::getScaleFactor() const
+{
+	return 1;
+}
+
 void Shape::invalidate()
 {
 	if(graphics)
+	{
 		invalidateGraphics();
+		cachedTokens=graphics->getGraphicsTokens();
+	}
 }
 
 ASFUNCTIONBODY(Shape,_constructor)
@@ -2133,6 +2158,11 @@ void Graphics::sinit(Class_base* c)
 
 void Graphics::buildTraits(ASObject* o)
 {
+}
+
+vector<GeomToken> Graphics::getGraphicsTokens() const
+{
+	return tokens;
 }
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

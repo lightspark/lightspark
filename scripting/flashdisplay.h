@@ -40,10 +40,9 @@ class DisplayObjectContainer;
 
 class DisplayObject: public EventDispatcher
 {
-friend class DisplayObjectContainer;
+//friend class DisplayObjectContainer;
 friend class GraphicsContainer;
 private:
-	mutable pthread_spinlock_t MatrixSpinlock;
 	MATRIX Matrix;
 	ACQUIRE_RELEASE_FLAG(useMatrix);
 	number_t tx,ty;
@@ -53,18 +52,15 @@ private:
 	  	The object we are masking, if any
 	*/
 	DisplayObject* maskOf;
+	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	void becomeMaskOf(DisplayObject* m);
+	void setMask(DisplayObject* m);
+protected:
 	/**
 	  	The object that masks us, if any
 	*/
 	DisplayObject* mask;
-	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
-	void becomeMaskOf(DisplayObject* m);
-	void setMask(DisplayObject* m);
-	virtual const std::vector<GeomToken>& getTokens()
-	{
-		throw RunTimeException("DisplayObject::getTokens");
-	}
-protected:
+	mutable Spinlock spinlock;
 	void computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
@@ -82,7 +78,6 @@ protected:
 	CachedSurface cachedSurface;
 	void defaultRender() const;
 	DisplayObject(const DisplayObject& d);
-	MATRIX getConcatenatedMatrix() const;
 public:
 	int Depth;
 	tiny_string name;
@@ -96,6 +91,17 @@ public:
 	~DisplayObject();
 	MATRIX getMatrix() const;
 	virtual void invalidate();
+	MATRIX getConcatenatedMatrix() const;
+	virtual const std::vector<GeomToken>& getTokens()
+	{
+		::abort();
+		throw RunTimeException("DisplayObject::getTokens");
+	}
+	virtual float getScaleFactor() const
+	{
+		::abort();
+		throw RunTimeException("DisplayObject::getScaleFactor");
+	}
 	virtual void Render()
 	{
 		throw RunTimeException("DisplayObject::Render");
@@ -212,6 +218,7 @@ private:
 	std::list<FILLSTYLE> styles; 
 	int curX, curY;
 	GraphicsContainer *const owner;
+	//TODO: Add spinlock
 public:
 	Graphics():owner(NULL)
 	{
@@ -232,6 +239,7 @@ public:
 	ASFUNCTION(lineTo);
 	ASFUNCTION(clear);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	std::vector<GeomToken> getGraphicsTokens() const;
 };
 
 class GraphicsContainer
@@ -246,6 +254,8 @@ protected:
 
 class Shape: public DisplayObject, public GraphicsContainer
 {
+protected:
+	std::vector<GeomToken> cachedTokens;
 public:
 	Shape():GraphicsContainer(this){}
 	static void sinit(Class_base* c);
@@ -256,6 +266,8 @@ public:
 	void Render();
 	void inputRender();
 	void invalidate();
+	const std::vector<GeomToken>& getTokens();
+	float getScaleFactor() const;
 };
 
 class MorphShape: public DisplayObject

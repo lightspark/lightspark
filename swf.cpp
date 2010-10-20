@@ -169,9 +169,8 @@ SystemState::SystemState(ParseThread* p):
 	RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
-	showProfilingData(false),showInteractiveMap(false),showDebug(false),currentVm(NULL),
-	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),
-	scaleMode(SHOW_ALL)
+	showProfilingData(false),showDebug(false),currentVm(NULL),finalizingDestruction(false),
+	useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
 	//Create the thread pool

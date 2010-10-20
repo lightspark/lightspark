@@ -222,7 +222,6 @@ public:
 
 	//Interative analysis flags
 	bool showProfilingData;
-	bool showInteractiveMap;
 	bool showDebug;
 	
 	std::string errorCause;

@@ -66,9 +66,6 @@ private:
 	bool renderNeeded;
 	bool uploadNeeded;
 	sem_t event;
-	sem_t inputDone;
-	bool inputNeeded;
-	bool inputDisabled;
 	std::string fontPath;
 	bool resizeNeeded;
 	uint32_t newWidth;
@@ -87,7 +84,6 @@ private:
 	uint64_t time_s, time_d;
 
 	bool loadShaderPrograms();
-	uint32_t* interactive_buffer;
 	bool tempBufferAcquired;
 	void tick();
 	int frameCount;
@@ -117,7 +113,6 @@ public:
 	~RenderThread();
 	void wait();
 	void draw();
-	float getIdAt(int x, int y);
 	//The calling context MUST call this function with the transformation matrix ready
 	void glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 	void glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
@@ -161,7 +156,6 @@ public:
 		return !maskStack.empty();
 	}
 	void renderMaskToTmpBuffer() const;
-	void requestInput();
 	void requestResize(uint32_t w, uint32_t h);
 	void waitForInitialization()
 	{
@@ -172,9 +166,7 @@ public:
 	int gpu_program;
 	int blitter_program;
 	GLuint fboId;
-	TextureBuffer dataTex;
 	TextureBuffer tempTex;
-	TextureBuffer inputTex;
 	uint32_t windowWidth;
 	uint32_t windowHeight;
 	bool hasNPOTTextures;

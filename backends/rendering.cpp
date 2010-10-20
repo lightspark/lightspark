@@ -51,16 +51,14 @@ void RenderThread::wait()
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):
 	m_sys(s),terminated(false),currentPixelBuffer(0),currentPixelBufferOffset(0),
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),mutexLargeTexture("Large texture"),largeTextureSize(0),
-	renderNeeded(false),uploadNeeded(false),inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),
-	newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),
-	secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),dataTex(false),tempTex(false),
-	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL)
+	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),
+	tempBufferAcquired(false),frameCount(0),secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),
+	tempTex(false),hasNPOTTextures(false),selectedDebug(NULL)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	
 	m_sys=s;
 	sem_init(&event,0,0);
-	sem_init(&inputDone,0,0);
 
 #ifdef WIN32
 	fontPath = "TimesNewRoman.ttf";
@@ -104,16 +102,7 @@ RenderThread::~RenderThread()
 {
 	wait();
 	sem_destroy(&event);
-	sem_destroy(&inputDone);
-	delete[] interactive_buffer;
 	LOG(LOG_NO_INFO,_("~RenderThread this=") << this);
-}
-
-void RenderThread::requestInput()
-{
-	inputNeeded=true;
-	sem_post(&event);
-	sem_wait(&inputDone);
 }
 
 void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
@@ -252,14 +241,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				th->commonGLResize(th->windowWidth, th->windowHeight);
 				profile->accountTime(chronometer.checkpoint());
 				continue;
-			}
-
-			if(th->inputNeeded)
-			{
-				th->inputTex.bind();
-				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
-				th->inputNeeded=false;
-				sem_post(&th->inputDone);
 			}
 
 			if(th->prevUploadJob)
@@ -434,13 +415,6 @@ bool RenderThread::loadShaderPrograms()
 	return true;
 }
 
-float RenderThread::getIdAt(int x, int y)
-{
-	//TODO: use floating point textures
-	uint32_t allocWidth=inputTex.getAllocWidth();
-	return (interactive_buffer[y*allocWidth+x]&0xff)/255.0f;
-}
-
 void RenderThread::commonGLDeinit()
 {
 	//Fence any object that is still waiting for upload
@@ -452,9 +426,7 @@ void RenderThread::commonGLDeinit()
 		(*it)->uploadFence();
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glDeleteFramebuffers(1,&rt->fboId);
-	dataTex.shutdown();
 	tempTex.shutdown();
-	inputTex.shutdown();
 	for(uint32_t i=0;i<largeTextures.size();i++)
 	{
 		glDeleteTextures(1,&largeTextures[i].id);
@@ -488,13 +460,9 @@ void RenderThread::commonGLInit(int width, int height)
 	glEnable(GL_BLEND);
 
 	glActiveTexture(GL_TEXTURE0);
-	//Viewport setup and interactive_buffer allocation is left for GLResize	
-
-	dataTex.init();
+	//Viewport setup is left for GLResize	
 
 	tempTex.init(width, height, GL_NEAREST);
-
-	inputTex.init(width, height, GL_NEAREST);
 
 	//Get the maximum allowed texture size, up to 1024
 	int maxTexSize;
@@ -544,16 +512,6 @@ void RenderThread::commonGLInit(int width, int height)
 	glGenFramebuffers(1, &fboId);
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, tempTex.getId(), 0);
-	//Verify if we have more than an attachment available (1 is guaranteed)
-	GLint numberOfAttachments=0;
-	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &numberOfAttachments);
-	if(numberOfAttachments>=2)
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, inputTex.getId(), 0);
-	else
-	{
-		LOG(LOG_ERROR,_("Non enough color attachments available, input disabled"));
-		inputDisabled=true;
-	}
 	
 	// check FBO status
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -654,11 +612,6 @@ void RenderThread::commonGLResize(int w, int h)
 	glMatrixMode(GL_MODELVIEW);
 
 	tempTex.resize(windowWidth, windowHeight);
-
-	inputTex.resize(windowWidth, windowHeight);
-	//Rellocate buffer for texture readback
-	delete[] interactive_buffer;
-	interactive_buffer=new uint32_t[inputTex.getAllocWidth()*inputTex.getAllocHeight()];
 }
 
 void RenderThread::requestResize(uint32_t w, uint32_t h)
@@ -702,13 +655,6 @@ void RenderThread::renderMaskToTmpBuffer() const
 
 void RenderThread::coreRendering(FTFont& font, bool testMode)
 {
-	//Now draw the input layer
-	if(!inputDisabled)
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-		glDrawBuffer(GL_COLOR_ATTACHMENT1);
-	}
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 	//Clear the back buffer
@@ -717,25 +663,7 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 	glClear(GL_COLOR_BUFFER_BIT);
 	glLoadIdentity();
 
-	if(m_sys->showInteractiveMap)
-	{
-		inputTex.bind();
-		inputTex.setTexScale(fragmentTexScaleUniform);
-		glColor4f(0,0,1,0);
-
-		glBegin(GL_QUADS);
-			glTexCoord2f(0,1);
-			glVertex2i(0,0);
-			glTexCoord2f(1,1);
-			glVertex2i(windowWidth,0);
-			glTexCoord2f(1,0);
-			glVertex2i(windowWidth,windowHeight);
-			glTexCoord2f(0,0);
-			glVertex2i(0,windowHeight);
-		glEnd();
-	}
-	else
-		m_sys->Render(false);
+	m_sys->Render(false);
 
 	if(testMode && m_sys->showDebug)
 	{
@@ -850,14 +778,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				th->commonGLResize(th->windowWidth, th->windowHeight);
 				profile->accountTime(chronometer.checkpoint());
 				continue;
-			}
-
-			if(th->inputNeeded)
-			{
-				th->inputTex.bind();
-				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
-				th->inputNeeded=false;
-				sem_post(&th->inputDone);
 			}
 
 			if(th->prevUploadJob)

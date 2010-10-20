@@ -507,9 +507,6 @@ void FILLSTYLE::setFragmentProgram() const
 		float r,g,b,a;
 	};
 
-	//TODO: CHECK do we need to do this when the tex is not being used?
-	rt->dataTex.bind();
-
 	if(FillStyleType==0x00)
 	{
 		//LOG(TRACE,_("Fill color"));
@@ -576,9 +573,6 @@ void FILLSTYLE::setFragmentProgram() const
 
 void FILLSTYLE::fixedColor(float r, float g, float b)
 {
-	//TODO: CHECK: do we need to this here?
-	rt->dataTex.bind();
-
 	//Let's abuse of glColor and glTexCoord to transport
 	//custom information
 	glColor4f(1,0,0,0);

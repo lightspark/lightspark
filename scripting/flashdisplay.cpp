@@ -429,31 +429,6 @@ void Sprite::Render(bool maskEnabled)
 		rt->popMask();
 }
 
-void Sprite::inputRender()
-{
-	if(skipRender(false))
-		return;
-
-	InteractiveObject::RenderProloue();
-
-	MatrixApplier ma(getMatrix());
-
-//	if(graphics)
-//		graphics->Render();
-
-	{
-		Locker l(mutexDisplayList);
-		//Now draw also the display list
-		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->inputRender();
-	}
-
-	ma.unapply();
-	
-	InteractiveObject::RenderEpilogue();
-}
-
 ASFUNCTIONBODY(Sprite,_constructor)
 {
 	//Sprite* th=static_cast<Sprite*>(obj->implementation);
@@ -764,38 +739,6 @@ void MovieClip::Render(bool maskEnabled)
 	}
 
 	ma.unapply();
-}
-
-void MovieClip::inputRender()
-{
-	if(alpha==0.0)
-		return;
-	if(!visible)
-		return;
-	InteractiveObject::RenderProloue();
-
-	MatrixApplier ma(getMatrix());
-	//Save current frame, this may change during rendering
-	uint32_t curFP=state.FP;
-
-	if(framesLoaded)
-	{
-		assert_and_throw(curFP<framesLoaded);
-		frames[curFP].inputRender();
-	}
-
-	{
-		//Render objects added at runtime
-		Locker l(mutexDisplayList);
-		list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
-		for(;j!=dynamicDisplayList.end();++j)
-			(*j)->inputRender();
-	}
-
-//	if(graphics)
-//		graphics->Render();
-	ma.unapply();
-	InteractiveObject::RenderEpilogue();
 }
 
 Vector2 MovieClip::debugRender(FTFont* font, bool deep)
@@ -1615,7 +1558,7 @@ DisplayObjectContainer::~DisplayObjectContainer()
 	}
 }
 
-InteractiveObject::InteractiveObject():id(0)
+InteractiveObject::InteractiveObject()
 {
 }
 
@@ -1629,7 +1572,6 @@ ASFUNCTIONBODY(InteractiveObject,_constructor)
 {
 	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
-	assert_and_throw(th->id==0);
 	//Object registered very early are not supported this way (Stage for example)
 	if(sys && sys->getInputThread())
 		sys->getInputThread()->addListener(th);
@@ -1648,18 +1590,6 @@ void InteractiveObject::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	//c->setSetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
 	//c->setGetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
-}
-
-void InteractiveObject::RenderProloue()
-{
-	rt->pushId();
-	rt->currentId=id;
-	FILLSTYLE::fixedColor(id,id,id);
-}
-
-void InteractiveObject::RenderEpilogue()
-{
-	rt->popId();
 }
 
 void DisplayObjectContainer::dumpDisplayList()
@@ -2017,23 +1947,6 @@ void Shape::Render(bool maskEnabled)
 	if(!isSimple())
 		rt->glBlitTempBuffer(t1,t2,t3,t4);
 	
-	ma.unapply();
-}
-
-void Shape::inputRender()
-{
-	//If graphics is not yet initialized we have nothing to do
-	if(graphics==NULL)
-		return;
-
-	if(alpha==0.0)
-		return;
-	if(!visible)
-		return;
-
-	MatrixApplier ma(getMatrix());
-
-//	graphics->Render();
 	ma.unapply();
 }
 

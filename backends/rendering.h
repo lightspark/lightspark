@@ -92,7 +92,6 @@ private:
 	void tick();
 	int frameCount;
 	int secsCount;
-	std::vector<float> idStack;
 	Mutex mutexUploadJobs;
 	std::deque<ITextureUploadable*> uploadJobs;
 	/*
@@ -164,15 +163,6 @@ public:
 	void renderMaskToTmpBuffer() const;
 	void requestInput();
 	void requestResize(uint32_t w, uint32_t h);
-	void pushId()
-	{
-		idStack.push_back(currentId);
-	}
-	void popId()
-	{
-		currentId=idStack.back();
-		idStack.pop_back();
-	}
 	void waitForInitialization()
 	{
 		initialized.wait();
@@ -191,8 +181,6 @@ public:
 	GLuint fragmentTexScaleUniform;
 	
 	InteractiveObject* selectedDebug;
-	float currentId;
-	bool materialOverride;
 };
 
 };

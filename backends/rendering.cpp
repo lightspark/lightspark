@@ -54,7 +54,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):
 	renderNeeded(false),uploadNeeded(false),inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),
 	newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),
 	secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),dataTex(false),tempTex(false),
-	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	
@@ -124,7 +124,6 @@ void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ym
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	materialOverride=false;
 	
 	glColor4f(0,0,0,0); //No output is fairly ok to clear
 	glBegin(GL_QUADS);
@@ -708,12 +707,6 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 		glDrawBuffer(GL_COLOR_ATTACHMENT1);
-		glClearColor(0,0,0,0);
-		glClear(GL_COLOR_BUFFER_BIT);
-	
-		materialOverride=true;
-		m_sys->inputRender();
-		materialOverride=false;
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

@@ -106,10 +106,6 @@ public:
 	{
 		throw RunTimeException("DisplayObject::Render");
 	}
-	virtual void inputRender()
-	{
-		Render(false);
-	}
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		throw RunTimeException("DisplayObject::getBounds");
@@ -161,17 +157,12 @@ public:
 
 class InteractiveObject: public DisplayObject
 {
-protected:
-	float id;
-	void RenderProloue();
-	void RenderEpilogue();
 public:
 	InteractiveObject();
 	virtual ~InteractiveObject();
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	void setId(float i){id=i;}
 };
 
 class DisplayObjectContainer: public InteractiveObject
@@ -264,7 +255,6 @@ public:
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
-	void inputRender();
 	void invalidate();
 	const std::vector<GeomToken>& getTokens();
 	float getScaleFactor() const;
@@ -356,7 +346,6 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
 	void invalidate();
-	void inputRender();
 };
 
 class MovieClip: public Sprite
@@ -395,7 +384,6 @@ public:
 
 	//DisplayObject interface
 	void Render(bool maskEnabled);
-	void inputRender();
 	void invalidate();
 	void setRoot(RootMovieClip* r);
 	void setOnStage(bool staged);

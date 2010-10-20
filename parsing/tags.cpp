@@ -691,66 +691,6 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 	}
 }
 
-void DefineTextTag::inputRender()
-{
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-	std::vector < TEXTRECORD >::iterator it=TextRecords.begin();
-	if(it==TextRecords.end()) //Nothing to draw
-		return;
-	std::vector < GLYPHENTRY >::iterator it2;
-	int x=0,y=0;
-
-	//Build a fake FILLSTYLEs
-	FILLSTYLE f;
-	f.FillStyleType=SOLID_FILL;
-	f.Color=it->TextColor;
-	MatrixApplier ma(getMatrix());
-	ma.concat(TextMatrix);
-	//Shapes are defined in twips, so scale then down
-	glScalef(0.05,0.05,1);
-	
-	//The next 1/20 scale is needed by DefineFont3. Should be conditional
-	glScalef(0.05,0.05,1);
-	float scale_cur=1;
-	int count=0;
-	unsigned int shapes_done=0;
-	it= TextRecords.begin();
-	for(;it!=TextRecords.end();++it)
-	{
-		if(it->StyleFlagsHasFont)
-		{
-			float scale=it->TextHeight;
-			scale/=1024;
-			glScalef(scale/scale_cur,scale/scale_cur,1);
-			scale_cur=scale;
-		}
-		it2 = it->GlyphEntries.begin();
-		int x2=x,y2=y;
-		x2+=(*it).XOffset;
-		y2+=(*it).YOffset;
-
-		for(;it2!=(it->GlyphEntries.end());++it2)
-		{
-			while(shapes_done<cached.size() &&  cached[shapes_done].id==count)
-			{
-				assert_and_throw(cached[shapes_done].color==1)
-				cached[shapes_done].style=&f;
-
-				cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
-				shapes_done++;
-				if(shapes_done==cached.size())
-					break;
-			}
-			x2+=it2->GlyphAdvance;
-			count++;
-		}
-	}
-	ma.unapply();
-}
-
 void DefineTextTag::Render(bool maskEnabled)
 {
 	LOG(LOG_TRACE,_("DefineText Render"));
@@ -1007,25 +947,6 @@ bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, n
 	//getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
 	//TODO: adapt for rotation
 	return true;
-}
-
-void DefineShapeTag::inputRender()
-{
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-
-	MatrixApplier ma(getMatrix());
-	glScalef(0.05,0.05,1);
-
-/*	std::vector < GeomShape >::iterator it=cached.begin();
-	for(;it!=cached.end();++it)
-	{
-		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
-		it->Render();
-	}*/
-	ma.unapply();
 }
 
 void DefineShapeTag::Render(bool maskEnabled)

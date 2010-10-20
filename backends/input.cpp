@@ -273,17 +273,6 @@ void InputThread::addListener(InteractiveObject* ob)
 	
 	//Register the listener
 	listeners.push_back(ob);
-	unsigned int count=listeners.size();
-
-	//Set a unique id for listeners in the range [0,1]
-	//count is the number of listeners, this is correct so that no one gets 0
-	float increment=1.0f/count;
-	float cur=increment;
-	for(unsigned int i=0;i<count;i++)
-	{
-		listeners[i]->setId(cur);
-		cur+=increment;
-	}
 }
 
 void InputThread::removeListener(InteractiveObject* ob)
@@ -296,18 +285,6 @@ void InputThread::removeListener(InteractiveObject* ob)
 	
 	//Unregister the listener
 	listeners.erase(it);
-	
-	unsigned int count=listeners.size();
-
-	//Set a unique id for listeners in the range [0,1]
-	//count is the number of listeners, this is correct so that no one gets 0
-	float increment=1.0f/count;
-	float cur=increment;
-	for(unsigned int i=0;i<count;i++)
-	{
-		listeners[i]->setId(cur);
-		cur+=increment;
-	}
 }
 
 void InputThread::enableDrag(Sprite* s, const lightspark::RECT& limit)

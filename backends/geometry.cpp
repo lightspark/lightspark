@@ -49,8 +49,7 @@ void GeomShape::Render(int x, int y) const
 	bool filled=false;
 	if(hasFill && color)
 	{
-		if(!rt->materialOverride)
-			style->setFragmentProgram();
+		style->setFragmentProgram();
 
 		//Render the strips
 		for(unsigned int i=0;i<triangle_strips.size();i++)
@@ -97,8 +96,7 @@ void GeomShape::Render(int x, int y) const
 	if(/*graphic.stroked ||*/ !filled && color)
 	{
 		//LOG(TRACE,_("Line tracing"));
-		if(!rt->materialOverride)
-			FILLSTYLE::fixedColor(0,0,0);
+		FILLSTYLE::fixedColor(0,0,0);
 		for(unsigned int i=0;i<outlines.size();i++)
 		{
 			std::vector<Vector2>::const_iterator it=outlines[i].begin();

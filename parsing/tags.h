@@ -107,7 +107,6 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	void Render(bool maskEnabled);
-	virtual void inputRender();
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	ASObject* instance() const
@@ -517,7 +516,6 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }
 	void Render(bool maskEnabled);
-	void inputRender();
 	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{

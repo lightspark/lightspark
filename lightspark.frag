@@ -1,9 +1,8 @@
 uniform sampler2D g_tex1, g_tex2;
 uniform vec2 texScale;
 
-//We abuse of default varying to pass various data
+//We abuse of default varying to pass a selector
 //gl_Color: Selector of current shader function
-//gl_TexCoord[0]: Fill color/Texture coordinate
 
 const mat3 YUVtoRGB = mat3(	1, 1, 1, //First coloumn
 				0, -0.344, 1.772, //Second coloumn

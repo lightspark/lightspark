@@ -57,37 +57,6 @@ public:
 	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE _f):type(_t),p1(0,0),style(_f){}
 };
 
-class GeomShape
-{
-friend class DefineTextTag;
-friend class DefineShape2Tag;
-friend class DefineShape3Tag;
-private:
-	void TessellateGLU();
-	static void CALLBACK GLUCallbackBegin(GLenum type, GeomShape* obj);
-	static void CALLBACK GLUCallbackEnd(GeomShape* obj);
-	static void CALLBACK GLUCallbackVertex(Vector2* vertexData, GeomShape* obj);
-	static void CALLBACK GLUCallbackCombine(GLdouble coords[3], void *vertex_data[4], 
-				       GLfloat weight[4], Vector2** outData, GeomShape* obj);
-	GLenum curTessTarget;
-	std::vector<Vector2*> tmpVertices;
-	void SetStyles(const std::list<FILLSTYLE>* styles);
-	const FILLSTYLE* style;
-	bool hasFill;
-public:
-	GeomShape():curTessTarget(0),style(NULL),hasFill(false),color(0){}
-	std::vector<Vector2> triangles;
-	std::vector<std::vector<Vector2> > triangle_strips;
-	std::vector<std::vector<Vector2> > triangle_fans;
-
-	std::vector<std::vector<Vector2> > outlines;
-
-	unsigned int color;
-
-	void Render(int x=0, int y=0) const;
-	void BuildFromEdges(const std::list<FILLSTYLE>* styles);
-};
-
 class ShapesBuilder
 {
 private:
@@ -108,13 +77,6 @@ public:
 	*/
 	void outputTokens(const std::list<FILLSTYLE>& styles, std::vector<GeomToken>& tokens);
 	void clear();
-};
-
-class GlyphShape: public GeomShape
-{
-public:
-	GlyphShape(const GeomShape& g, int i):GeomShape(g),id(i){}
-	int id;
 };
 
 std::ostream& operator<<(std::ostream& s, const Vector2& p);

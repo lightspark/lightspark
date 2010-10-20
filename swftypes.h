@@ -784,8 +784,6 @@ public:
 	FOCALGRADIENT FocalGradient;
 	UI16 BitmapId;
 	MATRIX BitmapMatrix;
-	virtual void setFragmentProgram() const;
-	static void fixedColor(float r, float g, float b);
 	virtual ~FILLSTYLE(){}
 };
 
@@ -801,7 +799,7 @@ public:
 	std::vector<UI8> EndRatios;
 	std::vector<RGBA> StartColors;
 	std::vector<RGBA> EndColors;
-	virtual ~MORPHFILLSTYLE(){}
+	~MORPHFILLSTYLE(){}
 };
 
 class LINESTYLE
@@ -943,8 +941,6 @@ public:
 	DefineTextTag* parent;
 	TEXTRECORD(DefineTextTag* p):parent(p){}
 };
-
-class GeomShape;
 
 class SHAPE
 {

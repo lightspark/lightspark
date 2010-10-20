@@ -698,7 +698,8 @@ void DefineTextTag::Render(bool maskEnabled)
 		return;
 	if(!visible)
 		return;
-	if(cached.size()==0)
+	//TODO: reimplement
+/*	if(cached.size()==0)
 	{
 		FontTag* font=NULL;
 		int count=0;
@@ -782,7 +783,7 @@ void DefineTextTag::Render(bool maskEnabled)
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(TextBounds.Xmin,TextBounds.Xmax,TextBounds.Ymin,TextBounds.Ymax);
-	ma.unapply();
+	ma.unapply();*/
 }
 
 Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
@@ -1100,8 +1101,8 @@ void DefineShapeTag::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 	shapesBuilder.outputTokens(fillStyles, tokens);
 }
 
-void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
-{
+//void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
+//{
 //	SHAPE& shape=GlyphShapeTable[glyph];
 //	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
@@ -1138,10 +1139,10 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 		}
 		else
 			s.back().graphic.stroked=false;*/
-}
+//}
 
-void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
-{
+//void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
+//{
 	//SHAPE& shape=GlyphShapeTable[glyph];
 	//FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
@@ -1178,10 +1179,10 @@ void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 		}
 		else
 			s.back().graphic.stroked=false;*/
-}
+//}
 
-void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
-{
+//void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
+//{
 	/*SHAPE& shape=GlyphShapeTable[glyph];
 	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
@@ -1189,7 +1190,7 @@ void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
 		s[i].BuildFromEdges(NULL);*/
 
 	//Should check fill state
-}
+//}
 
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 {

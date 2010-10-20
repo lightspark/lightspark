@@ -411,7 +411,7 @@ protected:
 	UI16 FontID;
 public:
 	FontTag(RECORDHEADER h):DictionaryTag(h){}
-	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
+	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
 };
 
 class DefineFontTag: public FontTag
@@ -424,7 +424,7 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
+	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFontInfoTag: public Tag
@@ -464,7 +464,7 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
+	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFont3Tag: public FontTag
@@ -497,7 +497,7 @@ private:
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
+	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineTextTag: public DictionaryTag, public DisplayObject
@@ -510,8 +510,6 @@ private:
 	UI8 GlyphBits;
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
-	//Override the usual vector, we need special shapes
-	std::vector<GlyphShape> cached;
 public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }

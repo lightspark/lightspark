@@ -105,6 +105,14 @@ private:
 	*/
 	void coreRendering(FTFont& font, bool testMode);
 	Semaphore initialized;
+	class MaskData
+	{
+	public:
+		DisplayObject* d;
+		MATRIX m;
+		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
+	};
+	std::vector<MaskData> maskStack;
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
@@ -134,6 +142,26 @@ public:
 		Enqueue something to be uploaded to texture
 	*/
 	void addUploadJob(ITextureUploadable* u);
+	/**
+	  	Add a mask to the stack mask
+		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
+	*/
+	void pushMask(DisplayObject* d, const MATRIX& m)
+	{
+		maskStack.emplace_back(d,m);
+	}
+	/**
+	  	Remove the last pushed mask
+	*/
+	void popMask()
+	{
+		maskStack.pop_back();
+	}
+	bool isMaskPresent()
+	{
+		return !maskStack.empty();
+	}
+	void renderMaskToTmpBuffer() const;
 	void requestInput();
 	void requestResize(uint32_t w, uint32_t h);
 	void pushId()

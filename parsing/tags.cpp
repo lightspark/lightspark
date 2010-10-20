@@ -308,7 +308,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 		in >> InitialText;
 }
 
-void DefineEditTextTag::Render()
+void DefineEditTextTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineEditTextTag: Render"));
 }
@@ -671,7 +671,7 @@ ASObject* DefineBitsLossless2Tag::instance() const
 	return ret;
 }
 
-void DefineBitsLossless2Tag::Render()
+void DefineBitsLossless2Tag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineBitsLossless2Tag::Render"));
 }
@@ -751,7 +751,7 @@ void DefineTextTag::inputRender()
 	ma.unapply();
 }
 
-void DefineTextTag::Render()
+void DefineTextTag::Render(bool maskEnabled)
 {
 	LOG(LOG_TRACE,_("DefineText Render"));
 	if(alpha==0)
@@ -912,7 +912,7 @@ ASObject* DefineMorphShapeTag::instance() const
 	return ret;
 }
 
-void DefineMorphShapeTag::Render()
+void DefineMorphShapeTag::Render(bool maskEnabled)
 {
 	if(alpha==0)
 		return;
@@ -1028,16 +1028,24 @@ void DefineShapeTag::inputRender()
 	ma.unapply();
 }
 
-void DefineShapeTag::Render()
+void DefineShapeTag::Render(bool maskEnabled)
 {
-	if(skipRender())
+	if(skipRender(maskEnabled))
 		return;
+
+	if(mask)
+	{
+		if(mask->parent)
+			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
+		else
+			rt->pushMask(mask,MATRIX());
+	}
 
 	MatrixApplier ma(getMatrix());
 	if(!isSimple())
 		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
-	defaultRender();
+	defaultRender(maskEnabled);
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
@@ -1720,7 +1728,7 @@ void DefineButton2Tag::handleEvent(Event* e)
 	IdleToOverUp=true;
 }
 
-void DefineButton2Tag::Render()
+void DefineButton2Tag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineButton2Tag::Render"));
 	if(alpha==0)
@@ -1794,7 +1802,7 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):Dic
 	in >> CodecID;
 }
 
-void DefineVideoStreamTag::Render()
+void DefineVideoStreamTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NO_INFO,_("DefineVideoStreamTag Render"));
 /*	if(alpha==0)

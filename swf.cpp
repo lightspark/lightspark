@@ -964,7 +964,7 @@ bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	return true;
 }
 
-void RootMovieClip::Render()
+void RootMovieClip::Render(bool maskEnabled)
 {
 	Locker l(mutexFrames);
 	while(1)
@@ -980,7 +980,7 @@ void RootMovieClip::Render()
 		l.lock();
 	}
 
-	MovieClip::Render();
+	MovieClip::Render(maskEnabled);
 }
 
 void RootMovieClip::setFrameCount(int f)

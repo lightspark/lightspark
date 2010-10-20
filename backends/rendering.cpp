@@ -118,6 +118,7 @@ void RenderThread::requestInput()
 
 void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
+	::abort();
 	assert(tempBufferAcquired==false);
 	tempBufferAcquired=true;
 
@@ -681,6 +682,25 @@ void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 	pixelBufferHeight=h;
 }
 
+void RenderThread::renderMaskToTmpBuffer() const
+{
+	assert(!maskStack.empty());
+	//Clear the tmp buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	for(uint32_t i=0;i<maskStack.size();i++)
+	{
+		float matrix[16];
+		maskStack[i].m.get4DMatrix(matrix);
+		glLoadMatrixf(matrix);
+		maskStack[i].d->Render(true);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
+}
+
 void RenderThread::coreRendering(FTFont& font, bool testMode)
 {
 	//Now draw the input layer
@@ -695,31 +715,6 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 		m_sys->inputRender();
 		materialOverride=false;
 	}
-
-	//Clear the tmp buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	glClearColor(1,0,0,0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glLoadIdentity();
-	glUseProgram(0);
-	glColor4f(0,1,0,1);
-	glActiveTexture(GL_TEXTURE1);
-	glDisable(GL_TEXTURE_2D);
-	glActiveTexture(GL_TEXTURE0);
-	glDisable(GL_TEXTURE_2D);
-	glBegin(GL_QUADS);
-		glVertex2i(windowWidth/2-100,windowHeight/2-100);
-		glVertex2i(windowWidth/2+100,windowHeight/2-100);
-		glVertex2i(windowWidth/2+100,windowHeight/2+100);
-		glVertex2i(windowWidth/2-100,windowHeight/2+100);
-	glEnd();
-	glActiveTexture(GL_TEXTURE1);
-	glEnable(GL_TEXTURE_2D);
-	glActiveTexture(GL_TEXTURE0);
-	glEnable(GL_TEXTURE_2D);
-	glUseProgram(gpu_program);
-	//End DEBUG
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
@@ -747,7 +742,7 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 		glEnd();
 	}
 	else
-		m_sys->Render();
+		m_sys->Render(false);
 
 	if(testMode && m_sys->showDebug)
 	{

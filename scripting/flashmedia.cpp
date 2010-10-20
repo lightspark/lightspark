@@ -93,9 +93,14 @@ void Video::inputRender()
 	sem_post(&mutex);
 }
 
-void Video::Render()
+void Video::Render(bool maskEnabled)
 {
 	sem_wait(&mutex);
+	if(skipRender(maskEnabled))
+	{
+		sem_post(&mutex);
+		return;
+	}
 	if(netStream && netStream->lockIfReady())
 	{
 		//All operations here should be non blocking

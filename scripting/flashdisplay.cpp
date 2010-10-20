@@ -240,16 +240,20 @@ void Loader::threadAbort()
 	throw UnsupportedException("Loader::threadAbort");
 }
 
-void Loader::Render()
+void Loader::Render(bool maskEnabled)
 {
 	if(!loaded)
 		return;
 
-	if(skipRender())
+	if(skipRender(maskEnabled))
 		return;
 
+	assert(mask==NULL);
+
+	assert(!rt->isMaskPresent());
+
 	MatrixApplier ma(getMatrix());
-	local_root->Render();
+	local_root->Render(maskEnabled);
 	ma.unapply();
 }
 
@@ -381,10 +385,19 @@ void Sprite::invalidate()
 		invalidateGraphics();
 }
 
-void Sprite::Render()
+void Sprite::Render(bool maskEnabled)
 {
-	if(skipRender())
+	if(skipRender(maskEnabled))
 		return;
+
+	//TODO: TOLOCK
+	if(mask)
+	{
+		if(mask->parent)
+			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
+		else
+			rt->pushMask(mask,MATRIX());
+	}
 
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -399,7 +412,7 @@ void Sprite::Render()
 		//Should clean only the bounds of the graphics
 		if(!isSimple())
 			rt->glAcquireTempBuffer(t1,t2,t3,t4);
-		defaultRender();
+		defaultRender(maskEnabled);
 		if(!isSimple())
 			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
@@ -409,14 +422,16 @@ void Sprite::Render()
 		//Now draw also the display list
 		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
 		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->Render();
+			(*it)->Render(maskEnabled);
 	}
 	ma.unapply();
+	if(mask)
+		rt->popMask();
 }
 
 void Sprite::inputRender()
 {
-	if(skipRender())
+	if(skipRender(false))
 		return;
 
 	InteractiveObject::RenderProloue();
@@ -701,10 +716,18 @@ void MovieClip::bootstrap()
 	frames[0].init(this,displayList);
 }
 
-void MovieClip::Render()
+void MovieClip::Render(bool maskEnabled)
 {
-	if(skipRender())
+	if(skipRender(maskEnabled))
 		return;
+
+	if(mask)
+	{
+		if(mask->parent)
+			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
+		else
+			rt->pushMask(mask,MATRIX());
+	}
 
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -718,7 +741,7 @@ void MovieClip::Render()
 	if(framesLoaded)
 	{
 		assert_and_throw(curFP<framesLoaded);
-		frames[curFP].Render();
+		frames[curFP].Render(maskEnabled);
 	}
 
 	{
@@ -726,7 +749,7 @@ void MovieClip::Render()
 		Locker l(mutexDisplayList);
 		list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
 		for(;j!=dynamicDisplayList.end();++j)
-			(*j)->Render();
+			(*j)->Render(maskEnabled);
 	}
 
 	//Draw the dynamically added graphics, if any
@@ -735,7 +758,7 @@ void MovieClip::Render()
 		//Should clean only the bounds of the graphics
 		if(!isSimple())
 			rt->glAcquireTempBuffer(t1,t2,t3,t4);
-		defaultRender();
+		defaultRender(maskEnabled);
 		if(!isSimple())
 			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
@@ -1065,20 +1088,33 @@ bool DisplayObject::isSimple() const
 	return alpha==1.0;
 }
 
-bool DisplayObject::skipRender() const
+bool DisplayObject::skipRender(bool maskEnabled) const
 {
-	return visible==false || alpha==0.0 || maskOf!=NULL;
+	return visible==false || alpha==0.0 || (!maskEnabled && maskOf!=NULL);
 }
 
-void DisplayObject::defaultRender() const
+void DisplayObject::defaultRender(bool maskEnabled) const
 {
 	//TODO: TOLOCK
-	assert(!skipRender());
 	if(!cachedSurface.tex.isValid())
 		return;
+	float enableMaskLookup=0.0f;
+	//If the maskEnabled is already set we are the mask!
+	if(!maskEnabled && rt->isMaskPresent())
+	{
+		rt->renderMaskToTmpBuffer();
+		enableMaskLookup=1.0f;
+		glColor4f(1,0,0,0);
+		glBegin(GL_QUADS);
+			glVertex2i(-1000,-1000);
+			glVertex2i(1000,-1000);
+			glVertex2i(1000,1000);
+			glVertex2i(-1000,1000);
+		glEnd();
+	}
 	glPushMatrix();
 	glLoadIdentity();
-	glColor4f(0,0,1,0);
+	glColor4f(enableMaskLookup,0,1,0);
 	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	glPopMatrix();
 }
@@ -1114,19 +1150,11 @@ void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, num
 	outHeight=ceil(maxy-miny);
 }
 
-/*list< vector<GeomToken> > DisplayObject::getCompositeMask() const
-{
-	list< vector<GeomToken> > ret;
-	SpinlockLocker locker(spinlock);
-	if(mask)
-		ret=mask->get();
-	if(super)
-		ret.splice(super->getCompositeMask());
-	return ret;
-}*/
-
 void DisplayObject::invalidate()
 {
+	//Let's invalidate also the mask
+	if(mask)
+		mask->invalidate();
 }
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
@@ -1204,11 +1232,10 @@ ASFUNCTIONBODY(DisplayObject,_setMask)
 		//We received a valid mask object
 		DisplayObject* newMask=Class<DisplayObject>::cast(args[0]);
 		newMask->becomeMaskOf(th);
-		newMask->setMask(newMask);
+		th->setMask(newMask);
 	}
 	else
 		th->setMask(NULL);
-	__asm__("int $3");
 
 	return NULL;
 }
@@ -1686,6 +1713,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 
 void DisplayObjectContainer::invalidate()
 {
+	DisplayObject::invalidate();
 	Locker l(mutexDisplayList);
 	list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();it++)
@@ -1957,15 +1985,22 @@ bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& 
 	return false;
 }
 
-void Shape::Render()
+void Shape::Render(bool maskEnabled)
 {
 	//If graphics is not yet initialized we have nothing to do
 	if(graphics==NULL)
 		return;
 
-	if(skipRender())
+	if(skipRender(maskEnabled))
 		return;
 
+	if(mask)
+	{
+		if(mask->parent)
+			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
+		else
+			rt->pushMask(mask,MATRIX());
+	}
 	number_t t1,t2,t3,t4;
 	bool ret=graphics->getBounds(t1,t2,t3,t4);
 
@@ -1977,7 +2012,7 @@ void Shape::Render()
 	if(!isSimple())
 		rt->glAcquireTempBuffer(t1,t2,t3,t4);
 
-	defaultRender();
+	defaultRender(maskEnabled);
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(t1,t2,t3,t4);

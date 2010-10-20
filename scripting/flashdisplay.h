@@ -70,13 +70,13 @@ protected:
 	int computeWidth();
 	int computeHeight();
 	bool isSimple() const;
-	bool skipRender() const;
+	bool skipRender(bool maskEnabled) const;
 	float alpha;
 	bool visible;
 	//Data to handle async rendering
 	Shepherd shepherd;
 	CachedSurface cachedSurface;
-	void defaultRender() const;
+	void defaultRender(bool maskEnabled) const;
 	DisplayObject(const DisplayObject& d);
 public:
 	int Depth;
@@ -102,13 +102,13 @@ public:
 		::abort();
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	virtual void Render()
+	virtual void Render(bool maskEnabled)
 	{
 		throw RunTimeException("DisplayObject::Render");
 	}
 	virtual void inputRender()
 	{
-		Render();
+		Render(false);
 	}
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
@@ -263,7 +263,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void Render();
+	void Render(bool maskEnabled);
 	void inputRender();
 	void invalidate();
 	const std::vector<GeomToken>& getTokens();
@@ -334,7 +334,7 @@ public:
 	{
 		return 0;
 	}
-	void Render();
+	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
 
@@ -354,7 +354,7 @@ public:
 		return 0;
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void Render();
+	void Render(bool maskEnabled);
 	void invalidate();
 	void inputRender();
 };
@@ -394,7 +394,7 @@ public:
 	void setTotalFrames(uint32_t t);
 
 	//DisplayObject interface
-	void Render();
+	void Render(bool maskEnabled);
 	void inputRender();
 	void invalidate();
 	void setRoot(RootMovieClip* r);

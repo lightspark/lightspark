@@ -50,7 +50,7 @@ public:
 	std::vector < ControlTag* > controls;
 	Frame():initialized(false){}
 	~Frame();
-	void Render();
+	void Render(bool maskEnabled);
 	void inputRender();
 	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
 	bool isInitialized() const { return initialized; }

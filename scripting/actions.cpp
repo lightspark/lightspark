@@ -78,7 +78,7 @@ void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, Di
 	ls.push_back(make_pair(PlaceInfo(),this));
 }
 
-void DoActionTag::Render()
+void DoActionTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("AVM1 not supported"));
 /*
@@ -145,7 +145,7 @@ void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo
 	ls.push_back(make_pair(PlaceInfo(),this));
 }
 
-void DoInitActionTag::Render()
+void DoInitActionTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("AVM1 not supported"));
 /*

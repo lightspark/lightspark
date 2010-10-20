@@ -106,7 +106,7 @@ protected:
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render();
+	void Render(bool maskEnabled);
 	virtual void inputRender();
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
@@ -180,8 +180,8 @@ private:
 	SHAPE EndEdges;
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return CharacterId; }
-	virtual void Render();
+	int getId(){ return CharacterId; }
+	void Render(bool maskEnabled);
 	virtual ASObject* instance() const;
 };
 
@@ -222,8 +222,8 @@ private:
 
 public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
-	virtual int getId(){ return CharacterID; }
-	virtual void Render();
+	int getId(){ return CharacterID; }
+	void Render(bool maskEnabled);
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const;
 };
@@ -377,7 +377,7 @@ private:
 public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
-	virtual void Render();
+	void Render(bool maskEnabled);
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual void handleEvent(Event*);
@@ -516,7 +516,7 @@ private:
 public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }
-	void Render();
+	void Render(bool maskEnabled);
 	void inputRender();
 	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -591,7 +591,7 @@ public:
 	{
 		return false;
 	}
-	virtual void Render();
+	void Render(bool maskEnabled);
 };
 
 class DefineScalingGridTag: public Tag
@@ -640,7 +640,7 @@ private:
 public:
 	DefineVideoStreamTag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterID; }
-	void Render();
+	void Render(bool maskEnabled);
 };
 
 class SoundStreamBlockTag: public Tag

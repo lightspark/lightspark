@@ -58,7 +58,7 @@ void Frame::inputRender()
 	}
 }
 
-void Frame::Render()
+void Frame::Render(bool maskEnabled)
 {
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
@@ -69,7 +69,7 @@ void Frame::Render()
 
 		//Assign object data from current transformation
 		i->second->setMatrix(i->first.Matrix);
-		i->second->Render();
+		i->second->Render(maskEnabled);
 	}
 }
 

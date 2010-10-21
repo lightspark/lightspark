@@ -729,6 +729,7 @@ public:
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	MATRIX multiplyMatrix(const MATRIX& r) const;
 	const bool operator!=(const MATRIX& r) const;
+	MATRIX getInverted() const;
 };
 
 class GRADRECORD

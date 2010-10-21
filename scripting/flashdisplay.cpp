@@ -406,6 +406,14 @@ void Sprite::Render(bool maskEnabled)
 
 	MatrixApplier ma(getMatrix());
 
+	{
+		Locker l(mutexDisplayList);
+		//Now draw also the display list
+		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();++it)
+			(*it)->Render(maskEnabled);
+	}
+
 	//Draw the dynamically added graphics, if any
 	if(graphics)
 	{
@@ -417,16 +425,47 @@ void Sprite::Render(bool maskEnabled)
 			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
 	
-	{
-		Locker l(mutexDisplayList);
-		//Now draw also the display list
-		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->Render(maskEnabled);
-	}
 	ma.unapply();
 	if(mask)
 		rt->popMask();
+}
+
+DisplayObject* Sprite::hitTest(number_t x, number_t y)
+{
+	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
+
+	//TODO: TOLOCK
+	if(mask)
+		LOG(LOG_NOT_IMPLEMENTED,"Support masks in Sprite::hitTest");
+	//First of all firter using the BBOX
+	number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return NULL;
+	if(x<t1 || x>t2 || y<t3 || y>t4)
+		return NULL;
+
+	if(graphics)
+	{
+		//To coordinates are already locals
+		if(graphics->hitTest(x,y))
+			return this;
+	}
+
+	{
+		//Test objects added at runtime, in reverse order
+		Locker l(mutexDisplayList);
+		list<DisplayObject*>::const_reverse_iterator j=dynamicDisplayList.rbegin();
+		for(;j!=dynamicDisplayList.rend();++j)
+		{
+			number_t localX, localY;
+			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
+			DisplayObject* ret=(*j)->hitTest(localX,localY);
+			if(ret)
+				return ret;
+		}
+	}
+	return NULL;
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)
@@ -739,6 +778,48 @@ void MovieClip::Render(bool maskEnabled)
 	}
 
 	ma.unapply();
+}
+
+DisplayObject* MovieClip::hitTest(number_t x, number_t y)
+{
+	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
+
+	//TODO: TOLOCK
+	if(mask)
+		LOG(LOG_NOT_IMPLEMENTED,"Support masks in MovieClip::hitTest");
+	//First of all firter using the BBOX
+	number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return NULL;
+	if(x<t1 || x>t2 || y<t3 || y>t4)
+		return NULL;
+
+	//TODO: support graphics
+	assert_and_throw(graphics==NULL);
+
+	{
+		//Test objects added at runtime, in reverse order
+		Locker l(mutexDisplayList);
+		list<DisplayObject*>::const_reverse_iterator j=dynamicDisplayList.rbegin();
+		for(;j!=dynamicDisplayList.rend();++j)
+		{
+			number_t localX, localY;
+			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
+			DisplayObject* ret=(*j)->hitTest(localX,localY);
+			if(ret)
+				return ret;
+		}
+	}
+
+	//TODO: support frames
+	if(framesLoaded)
+	{
+		uint32_t curFP=state.FP;
+		assert_and_throw(curFP<framesLoaded);
+		assert_and_throw(frames[curFP].displayList.empty());
+	}
+	return NULL;
 }
 
 Vector2 MovieClip::debugRender(FTFont* font, bool deep)

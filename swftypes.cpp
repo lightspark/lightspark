@@ -143,6 +143,19 @@ std::ostream& operator<<(std::ostream& s, const RGB& r)
 	return s;
 }
 
+MATRIX MATRIX::getInverted() const
+{
+	MATRIX ret;
+	const number_t den=ScaleX*ScaleY+RotateSkew0*RotateSkew1;
+	ret.ScaleX=ScaleY/den;
+	ret.RotateSkew1=-RotateSkew1/den;
+	ret.RotateSkew0=-RotateSkew0/den;
+	ret.ScaleY=ScaleX/den;
+	ret.TranslateX=(RotateSkew1*TranslateY-ScaleY*TranslateX)/den;
+	ret.TranslateY=(RotateSkew0*TranslateX-ScaleX*TranslateY)/den;
+	return ret;
+}
+
 void MATRIX::get4DMatrix(float matrix[16]) const
 {
 	memset(matrix,0,sizeof(float)*16);

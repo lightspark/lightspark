@@ -109,7 +109,11 @@ public:
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		throw RunTimeException("DisplayObject::getBounds");
-		return false;
+	}
+	virtual DisplayObject* hitTest(number_t x, number_t y)
+	{
+		throw RunTimeException("DisplayObject::hitTest");
+		::abort();
 	}
 	virtual void setRoot(RootMovieClip* root);
 	virtual void setOnStage(bool staged);
@@ -231,6 +235,7 @@ public:
 	ASFUNCTION(clear);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	std::vector<GeomToken> getGraphicsTokens() const;
+	bool hitTest(number_t x, number_t y);
 };
 
 class GraphicsContainer
@@ -345,6 +350,7 @@ public:
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
+	DisplayObject* hitTest(number_t x, number_t y);
 	void invalidate();
 };
 
@@ -384,6 +390,7 @@ public:
 
 	//DisplayObject interface
 	void Render(bool maskEnabled);
+	DisplayObject* hitTest(number_t x, number_t y);
 	void invalidate();
 	void setRoot(RootMovieClip* r);
 	void setOnStage(bool staged);

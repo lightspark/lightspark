@@ -167,6 +167,15 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				Locker locker(th->mutexListeners);
 				cout << "Support MouseDown SDL" << endl;
+				th->m_sys->hitTest(event.button.x,event.button.y);
+/*				for(uint32_t i=0;i<th->listeners.size();i++)
+				{
+					//TODO: TOLOCK lock the whole object somehow
+					const MATRIX m=(th->listeners[i]->getConcatenatedMatrix()).getInverted();
+					number_t localX, localY;
+					m.multiply2D(event.button.x,event.button.y,localX,localY);
+					th->listeners[i]->hitTest(localX, localY);
+				}*/
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:

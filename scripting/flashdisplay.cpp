@@ -431,7 +431,7 @@ void Sprite::Render(bool maskEnabled)
 		rt->popMask();
 }
 
-DisplayObject* Sprite::hitTest(number_t x, number_t y)
+InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
 
@@ -461,7 +461,7 @@ DisplayObject* Sprite::hitTest(number_t x, number_t y)
 		{
 			number_t localX, localY;
 			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			DisplayObject* ret=(*j)->hitTest(localX,localY);
+			InteractiveObject* ret=(*j)->hitTest(this, localX,localY);
 			if(ret)
 				return ret;
 		}
@@ -781,9 +781,9 @@ void MovieClip::Render(bool maskEnabled)
 	ma.unapply();
 }
 
-DisplayObject* MovieClip::hitTest(number_t x, number_t y)
+InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
-	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
+	//NOTE: in hitTest the stuff must be tested in the opposite order of Rendering
 
 	//TODO: TOLOCK
 	if(mask)
@@ -807,7 +807,7 @@ DisplayObject* MovieClip::hitTest(number_t x, number_t y)
 		{
 			number_t localX, localY;
 			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			DisplayObject* ret=(*j)->hitTest(localX,localY);
+			InteractiveObject* ret=(*j)->hitTest(this, localX,localY);
 			if(ret)
 				return ret;
 		}
@@ -2197,7 +2197,7 @@ vector<GeomToken> Graphics::getGraphicsTokens() const
 
 bool Graphics::hitTest(number_t x, number_t y) const
 {
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 4, 4, 4);
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t* cr=cairo_create(cairoSurface);
 	
 	//Use cairo to guarantee consistency
@@ -2218,8 +2218,7 @@ bool Graphics::hitTest(number_t x, number_t y) const
 				::abort();
 		}
 	}
-	__asm__("int $3");
-	bool ret=cairo_in_clip(cr, x, y);
+	bool ret=cairo_in_fill(cr, x, y);
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
 	return ret;

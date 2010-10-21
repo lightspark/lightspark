@@ -13,11 +13,16 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 
 <mx:Script>
 	<![CDATA[
+	private function mouseH(e:Event):void
+	{
+		trace("Mouse down received");
+	}
 	private function appComplete():void
 	{
 		s1.graphics.beginFill(0x00ffff);
 		s1.graphics.drawRect(0,0,100,100);
 		s1.graphics.endFill();
+		s1.addEventListener(MouseEvent.MOUSE_DOWN,mouseH);
 /*		s2.graphics.beginFill(0x0000ff);
 		s2.graphics.drawRect(0,0,100,100);
 		s2.graphics.endFill();

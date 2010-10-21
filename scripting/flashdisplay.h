@@ -37,6 +37,7 @@ class RootMovieClip;
 class DisplayListTag;
 class LoaderInfo;
 class DisplayObjectContainer;
+class InteractiveObject;
 
 class DisplayObject: public EventDispatcher
 {
@@ -110,7 +111,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getBounds");
 	}
-	virtual DisplayObject* hitTest(number_t x, number_t y)
+	virtual InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y)
 	{
 		throw RunTimeException("DisplayObject::hitTest");
 		::abort();
@@ -350,7 +351,7 @@ public:
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
-	DisplayObject* hitTest(number_t x, number_t y);
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	void invalidate();
 };
 
@@ -390,7 +391,7 @@ public:
 
 	//DisplayObject interface
 	void Render(bool maskEnabled);
-	DisplayObject* hitTest(number_t x, number_t y);
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	void invalidate();
 	void setRoot(RootMovieClip* r);
 	void setOnStage(bool staged);

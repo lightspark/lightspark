@@ -30,6 +30,7 @@
 #include "compat.h"
 #include "class.h"
 #include "backends/rendering.h"
+#include "backends/geometry.h"
 #include "compat.h"
 
 #include <GL/glew.h>
@@ -2192,6 +2193,36 @@ void Graphics::buildTraits(ASObject* o)
 vector<GeomToken> Graphics::getGraphicsTokens() const
 {
 	return tokens;
+}
+
+bool Graphics::hitTest(number_t x, number_t y) const
+{
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 4, 4, 4);
+	cairo_t* cr=cairo_create(cairoSurface);
+	
+	//Use cairo to guarantee consistency
+	for(uint32_t i=0;i<tokens.size();i++)
+	{
+		switch(tokens[i].type)
+		{
+			case STRAIGHT:
+				cairo_line_to(cr, tokens[i].p1.x, tokens[i].p1.y);
+				break;
+			case MOVE:
+				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
+				break;	
+			case SET_FILL:
+				//Not relevant
+				break;
+			default:
+				::abort();
+		}
+	}
+	__asm__("int $3");
+	bool ret=cairo_in_clip(cr, x, y);
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+	return ret;
 }
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

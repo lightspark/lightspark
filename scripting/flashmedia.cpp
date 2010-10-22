@@ -193,6 +193,14 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	return NULL;
 }
 
+InteractiveObject* Video::hitTest(InteractiveObject* last, number_t x, number_t y)
+{
+	if(x>=0 && x<=width && y>=0 && y<=height)
+		return last;
+	else
+		return NULL;
+}
+
 void Sound::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -208,3 +216,4 @@ ASFUNCTIONBODY(Sound,_constructor)
 {
 	return NULL;
 }
+

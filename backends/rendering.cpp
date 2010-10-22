@@ -51,8 +51,8 @@ void RenderThread::wait()
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):
 	m_sys(s),terminated(false),currentPixelBuffer(0),currentPixelBufferOffset(0),
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),mutexLargeTexture("Large texture"),largeTextureSize(0),
-	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),
-	tempBufferAcquired(false),frameCount(0),secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),
+	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
+	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),
 	tempTex(false),hasNPOTTextures(false),selectedDebug(NULL)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
@@ -241,6 +241,17 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				th->commonGLResize(th->windowWidth, th->windowHeight);
 				profile->accountTime(chronometer.checkpoint());
 				continue;
+			}
+
+			if(th->newTextureNeeded)
+			{
+				//Find if any largeTexture is not initialized
+				Locker l(th->mutexLargeTexture);
+				for(uint32_t i=0;i<th->largeTextures.size();i++)
+				{
+					if(th->largeTextures[i].id==(GLuint)-1)
+						th->largeTextures[i].id=th->allocateNewGLTexture();
+				}
 			}
 
 			if(th->prevUploadJob)
@@ -780,6 +791,17 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				continue;
 			}
 
+			if(th->newTextureNeeded)
+			{
+				//Find if any largeTexture is not initialized
+				Locker l(th->mutexLargeTexture);
+				for(uint32_t i=0;i<th->largeTextures.size();i++)
+				{
+					if(th->largeTextures[i].id==(GLuint)-1)
+						th->largeTextures[i].id=th->allocateNewGLTexture();
+				}
+			}
+
 			if(th->prevUploadJob)
 			{
 				ITextureUploadable* u=th->prevUploadJob;
@@ -940,7 +962,7 @@ void RenderThread::releaseTexture(const TextureChunk& chunk)
 	}
 }
 
-RenderThread::LargeTexture& RenderThread::allocateNewTexture()
+GLuint RenderThread::allocateNewGLTexture() const
 {
 	//Set up the huge texture
 	GLuint tmp;
@@ -960,11 +982,18 @@ RenderThread::LargeTexture& RenderThread::allocateNewTexture()
 		LOG(LOG_ERROR,_("Can't allocate large texture... Aborting"));
 		::abort();
 	}
+	return tmp;
+}
+
+RenderThread::LargeTexture& RenderThread::allocateNewTexture()
+{
+	//Signal that a new texture is needed
+	newTextureNeeded=true;
 	//Let's allocate the bitmap for the texture blocks, minumum block size is 128
 	uint32_t bitmapSize=(largeTextureSize/128)*(largeTextureSize/128)/8;
 	uint8_t* bitmap=new uint8_t[bitmapSize];
 	memset(bitmap,0,bitmapSize);
-	largeTextures.emplace_back(tmp,bitmap);
+	largeTextures.emplace_back(bitmap);
 	return largeTextures.back();
 }
 

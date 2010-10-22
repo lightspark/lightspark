@@ -179,7 +179,16 @@ void* InputThread::sdl_worker(InputThread* th)
 			case SDL_MOUSEBUTTONUP:
 			{
 				Locker locker(th->mutexListeners);
-				cout << "Support MouseUp SDL" << endl;
+				InteractiveObject* selected=th->m_sys->hitTest(NULL,event.button.x,event.button.y);
+				assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
+				//Add event to the event queue
+				th->m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));
+				if(th->lastMouseDownTarget==selected)
+				{
+					//Also send the click event
+					th->m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("click",true));
+					th->lastMouseDownTarget=NULL;
+				}
 				break;
 			}
 			case SDL_VIDEORESIZE:

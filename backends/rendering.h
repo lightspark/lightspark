@@ -50,24 +50,27 @@ private:
 	ITextureUploadable* prevUploadJob;
 	Mutex mutexLargeTexture;
 	uint32_t largeTextureSize;
-	struct LargeTexture
+	class LargeTexture
 	{
+	public:
 		GLuint id;
 		uint8_t* bitmap;
-		LargeTexture(GLuint i, uint8_t* b):id(i),bitmap(b){}
+		LargeTexture(uint8_t* b):id(-1),bitmap(b){}
 		~LargeTexture(){/*delete[] bitmap;*/}
 	};
 	std::vector<LargeTexture> largeTextures;
+	GLuint allocateNewGLTexture() const;
 	LargeTexture& allocateNewTexture();
 	bool allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
 	bool allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
 	//Possible events to be handled
 	//TODO: pad to avoid false sharing on the cache lines
-	bool renderNeeded;
-	bool uploadNeeded;
+	volatile bool renderNeeded;
+	volatile bool uploadNeeded;
+	volatile bool resizeNeeded;
+	volatile bool newTextureNeeded;
 	sem_t event;
 	std::string fontPath;
-	bool resizeNeeded;
 	uint32_t newWidth;
 	uint32_t newHeight;
 	float scaleX;
@@ -170,7 +173,7 @@ public:
 	uint32_t windowWidth;
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
-	GLuint fragmentTexScaleUniform;
+	int fragmentTexScaleUniform;
 	
 	InteractiveObject* selectedDebug;
 };

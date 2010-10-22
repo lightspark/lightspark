@@ -34,8 +34,6 @@
 
 using namespace lightspark;
 using namespace std;
-extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
-extern TLSDATA RenderThread* rt;
 
 void RenderThread::wait()
 {

@@ -116,6 +116,12 @@ public:
 		throw RunTimeException("DisplayObject::hitTest");
 		::abort();
 	}
+	//API to handle mask support in hit testing
+	virtual bool isOpaque(number_t x, number_t y)
+	{
+		throw RunTimeException("DisplayObject::isOpaque");
+		::abort();
+	}
 	virtual void setRoot(RootMovieClip* root);
 	virtual void setOnStage(bool staged);
 	RootMovieClip* getRoot() { return root; }

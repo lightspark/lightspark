@@ -52,8 +52,6 @@ extern "C" {
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
 
 SWF_HEADER::SWF_HEADER(istream& in):valid(false)

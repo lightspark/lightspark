@@ -30,7 +30,6 @@
 
 using namespace lightspark;
 using namespace std;
-extern TLSDATA SystemState* sys;
 
 /**
  * \brief SecurityManager constructor

@@ -26,9 +26,6 @@
 using namespace lightspark;
 using namespace std;
 
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
-
 SET_NAMESPACE("flash.media");
 
 REGISTER_CLASS_NAME(SoundTransform);

@@ -26,8 +26,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-
 Frame::~Frame()
 {
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();

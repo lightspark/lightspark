@@ -141,6 +141,8 @@ public:
 	void addUploadJob(ITextureUploadable* u);
 	/**
 	  	Add a mask to the stack mask
+		@param d The DisplayObject used as a mask
+		@param m The total matrix from the parent of the object to stage
 		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
 	*/
 	void pushMask(DisplayObject* d, const MATRIX& m)
@@ -179,4 +181,5 @@ public:
 };
 
 };
+extern TLSDATA lightspark::RenderThread* rt DLL_PUBLIC;
 #endif

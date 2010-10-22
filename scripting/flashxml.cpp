@@ -25,9 +25,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
-
 SET_NAMESPACE("flash.xml");
 
 REGISTER_CLASS_NAME(XMLDocument);

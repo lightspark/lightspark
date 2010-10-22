@@ -24,8 +24,6 @@
 #ifndef CLASS_H
 #define CLASS_H
 
-extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
-
 namespace lightspark
 {
 

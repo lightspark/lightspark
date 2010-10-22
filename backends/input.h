@@ -30,6 +30,7 @@ namespace lightspark
 {
 
 class SystemState;
+class DisplayObject;
 class InteractiveObject;
 class Sprite;
 
@@ -54,6 +55,14 @@ private:
 	Sprite* curDragged;
 	InteractiveObject* lastMouseDownTarget;
 	RECT dragLimit;
+	class MaskData
+	{
+	public:
+		DisplayObject* d;
+		MATRIX m;
+		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
+	};
+	std::vector<MaskData> maskStack;
 public:
 	InputThread(SystemState* s,ENGINE e, void* param=NULL);
 	~InputThread();
@@ -62,6 +71,27 @@ public:
 	void removeListener(InteractiveObject* ob);
 	void enableDrag(Sprite* s, const RECT& limit);
 	void disableDrag();
+	/**
+	  	Add a mask to the stack mask
+		@param d The DisplayObject used as a mask
+		@param m The total matrix from object to stage
+		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
+	*/
+	void pushMask(DisplayObject* d, const MATRIX& m)
+	{
+		maskStack.emplace_back(d,m);
+	}
+	/**
+	  	Remove the last pushed mask
+	*/
+	void popMask()
+	{
+		maskStack.pop_back();
+	}
+	bool isMaskPresent()
+	{
+		return !maskStack.empty();
+	}
 };
 
 };

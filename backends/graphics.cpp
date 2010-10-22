@@ -29,8 +29,6 @@
 #include <iostream>
 
 using namespace lightspark;
-extern TLSDATA RenderThread* rt;
-extern TLSDATA SystemState* sys;
 
 void lightspark::cleanGLErrors()
 {

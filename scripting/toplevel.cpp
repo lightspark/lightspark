@@ -40,8 +40,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-
 SET_NAMESPACE("");
 
 REGISTER_CLASS_NAME(Array);

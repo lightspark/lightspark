@@ -21,7 +21,6 @@
 #include "swf.h"
 
 using namespace lightspark;
-extern TLSDATA SystemState* sys;
 
 ConfigParser::ConfigParser(const std::string& filename):
 	valid(true),file(g_key_file_new()),

@@ -30,7 +30,6 @@
 #endif
 
 using namespace lightspark;
-extern TLSDATA SystemState* sys;
 
 /**
  * \brief Download manager constructor

@@ -313,4 +313,5 @@ public:
 };
 
 };
+extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
 #endif

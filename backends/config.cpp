@@ -29,7 +29,6 @@
 using namespace lightspark;
 using namespace std;
 using namespace boost::filesystem;
-extern TLSDATA SystemState* sys;
 
 Config::Config():
 	parser(NULL),

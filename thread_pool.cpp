@@ -26,7 +26,6 @@
 
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
 TLSDATA lightspark::IThreadJob* thisJob=NULL;
 
 ThreadPool::ThreadPool(SystemState* s):stopFlag(false)

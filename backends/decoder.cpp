@@ -30,9 +30,6 @@
 using namespace lightspark;
 using namespace std;
 
-extern TLSDATA RenderThread* rt;
-extern TLSDATA SystemState* sys;
-
 bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 {
 	if(w!=frameWidth || h!=frameHeight)

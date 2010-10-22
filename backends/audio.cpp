@@ -33,8 +33,6 @@
 using namespace lightspark;
 using namespace std;
 
-extern TLSDATA SystemState* sys;
-
 /****************
 AudioManager::AudioManager
 *****************

@@ -26,8 +26,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-
 VirtualMachine::VirtualMachine()
 {
 	sem_init(&mutex,0,1);

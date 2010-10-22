@@ -41,9 +41,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
-
 SET_NAMESPACE("flash.display");
 
 REGISTER_CLASS_NAME(LoaderInfo);

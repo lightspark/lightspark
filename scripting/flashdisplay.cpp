@@ -404,14 +404,6 @@ void Sprite::Render(bool maskEnabled)
 
 	MatrixApplier ma(getMatrix());
 
-	{
-		Locker l(mutexDisplayList);
-		//Now draw also the display list
-		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->Render(maskEnabled);
-	}
-
 	//Draw the dynamically added graphics, if any
 	if(graphics)
 	{
@@ -423,6 +415,14 @@ void Sprite::Render(bool maskEnabled)
 			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
 	
+	{
+		Locker l(mutexDisplayList);
+		//Now draw also the display list
+		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();++it)
+			(*it)->Render(maskEnabled);
+	}
+
 	ma.unapply();
 	if(mask)
 		rt->popMask();
@@ -443,13 +443,6 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 	if(x<t1 || x>t2 || y<t3 || y>t4)
 		return NULL;
 
-	if(graphics)
-	{
-		//To coordinates are already locals
-		if(graphics->hitTest(x,y))
-			return this;
-	}
-
 	{
 		//Test objects added at runtime, in reverse order
 		Locker l(mutexDisplayList);
@@ -463,6 +456,14 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 				return ret;
 		}
 	}
+
+	if(graphics)
+	{
+		//To coordinates are already locals
+		if(graphics->hitTest(x,y))
+			return this;
+	}
+
 	return NULL;
 }
 
@@ -750,6 +751,17 @@ void MovieClip::Render(bool maskEnabled)
 	//Save current frame, this may change during rendering
 	uint32_t curFP=state.FP;
 
+	//Draw the dynamically added graphics, if any
+	if(graphics)
+	{
+		//Should clean only the bounds of the graphics
+		if(!isSimple())
+			rt->glAcquireTempBuffer(t1,t2,t3,t4);
+		defaultRender(maskEnabled);
+		if(!isSimple())
+			rt->glBlitTempBuffer(t1,t2,t3,t4);
+	}
+
 	if(framesLoaded)
 	{
 		assert_and_throw(curFP<framesLoaded);
@@ -762,17 +774,6 @@ void MovieClip::Render(bool maskEnabled)
 		list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
 		for(;j!=dynamicDisplayList.end();++j)
 			(*j)->Render(maskEnabled);
-	}
-
-	//Draw the dynamically added graphics, if any
-	if(graphics)
-	{
-		//Should clean only the bounds of the graphics
-		if(!isSimple())
-			rt->glAcquireTempBuffer(t1,t2,t3,t4);
-		defaultRender(maskEnabled);
-		if(!isSimple())
-			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
 
 	ma.unapply();
@@ -792,9 +793,6 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, numbe
 		return NULL;
 	if(x<t1 || x>t2 || y<t3 || y>t4)
 		return NULL;
-
-	//TODO: support graphics
-	assert_and_throw(graphics==NULL);
 
 	{
 		//Test objects added at runtime, in reverse order
@@ -817,6 +815,10 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, numbe
 		assert_and_throw(curFP<framesLoaded);
 		assert_and_throw(frames[curFP].displayList.empty());
 	}
+
+	//TODO: support graphics
+	assert_and_throw(graphics==NULL);
+
 	return NULL;
 }
 

@@ -389,6 +389,11 @@ void Sprite::Render(bool maskEnabled)
 		return;
 
 	//TODO: TOLOCK
+	number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return;
+
 	if(mask)
 	{
 		if(mask->parent)
@@ -396,11 +401,6 @@ void Sprite::Render(bool maskEnabled)
 		else
 			rt->pushMask(mask,MATRIX());
 	}
-
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return;
 
 	MatrixApplier ma(getMatrix());
 
@@ -433,11 +433,6 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	//TODO: TOLOCK
-	if(mask)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Support masks in Sprite::hitTest");
-		::abort();
-	}
 	//First of all firter using the BBOX
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -445,6 +440,9 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 		return NULL;
 	if(x<t1 || x>t2 || y<t3 || y>t4)
 		return NULL;
+
+	if(mask)
+		sys->getInputThread()->pushMask(mask,mask->getConcatenatedMatrix().getInverted());
 
 	{
 		//Test objects added at runtime, in reverse order
@@ -456,7 +454,11 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 			InteractiveObject* ret=(*j)->hitTest(this, localX,localY);
 			if(ret)
+			{
+				if(mask)
+					sys->getInputThread()->popMask();
 				return ret;
+			}
 		}
 	}
 
@@ -464,9 +466,15 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 	{
 		//To coordinates are already locals
 		if(graphics->hitTest(x,y))
+		{
+			if(mask)
+				sys->getInputThread()->popMask();
 			return this;
+		}
 	}
 
+	if(mask)
+		sys->getInputThread()->popMask();
 	return NULL;
 }
 
@@ -737,6 +745,11 @@ void MovieClip::Render(bool maskEnabled)
 	if(skipRender(maskEnabled))
 		return;
 
+	number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return;
+
 	if(mask)
 	{
 		if(mask->parent)
@@ -744,11 +757,6 @@ void MovieClip::Render(bool maskEnabled)
 		else
 			rt->pushMask(mask,MATRIX());
 	}
-
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return;
 
 	MatrixApplier ma(getMatrix());
 	//Save current frame, this may change during rendering
@@ -779,6 +787,8 @@ void MovieClip::Render(bool maskEnabled)
 			(*j)->Render(maskEnabled);
 	}
 
+	if(mask)
+		rt->popMask();
 	ma.unapply();
 }
 

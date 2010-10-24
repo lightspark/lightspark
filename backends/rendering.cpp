@@ -673,6 +673,7 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 	glLoadIdentity();
 
 	m_sys->Render(false);
+	assert(maskStack.empty());
 
 	if(testMode && m_sys->showDebug)
 	{

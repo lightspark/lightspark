@@ -166,6 +166,7 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				Locker locker(th->mutexListeners);
 				InteractiveObject* selected=th->m_sys->hitTest(NULL,event.button.x,event.button.y);
+				assert(th->maskStack.empty());
 				assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 				th->lastMouseDownTarget=selected;
 				//Add event to the event queue
@@ -179,6 +180,7 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				Locker locker(th->mutexListeners);
 				InteractiveObject* selected=th->m_sys->hitTest(NULL,event.button.x,event.button.y);
+				assert(th->maskStack.empty());
 				assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 				//Add event to the event queue
 				th->m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));

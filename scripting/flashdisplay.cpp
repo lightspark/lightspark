@@ -431,10 +431,13 @@ void Sprite::Render(bool maskEnabled)
 InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
-
+	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	//TODO: TOLOCK
 	if(mask)
+	{
 		LOG(LOG_NOT_IMPLEMENTED,"Support masks in Sprite::hitTest");
+		::abort();
+	}
 	//First of all firter using the BBOX
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -457,7 +460,7 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 		}
 	}
 
-	if(graphics)
+	if(graphics && mouseEnabled)
 	{
 		//To coordinates are already locals
 		if(graphics->hitTest(x,y))
@@ -782,10 +785,14 @@ void MovieClip::Render(bool maskEnabled)
 InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be tested in the opposite order of Rendering
+	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 
 	//TODO: TOLOCK
 	if(mask)
+	{
 		LOG(LOG_NOT_IMPLEMENTED,"Support masks in MovieClip::hitTest");
+		::abort();
+	}
 	//First of all firter using the BBOX
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -817,7 +824,7 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, numbe
 	}
 
 	//TODO: support graphics
-	assert_and_throw(graphics==NULL);
+	assert_and_throw(graphics==NULL || !mouseEnabled);
 
 	return NULL;
 }
@@ -893,7 +900,6 @@ bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 					ymax=t4;
 					valid=true;
 					//Now values are valid
-					continue;
 				}
 				else
 				{
@@ -902,7 +908,6 @@ bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 					ymin=imin(ymin,t3);
 					ymax=imax(ymax,t4);
 				}
-				break;
 			}
 		}
 	}
@@ -1639,7 +1644,7 @@ DisplayObjectContainer::~DisplayObjectContainer()
 	}
 }
 
-InteractiveObject::InteractiveObject()
+InteractiveObject::InteractiveObject():mouseEnabled(true)
 {
 }
 
@@ -1660,6 +1665,20 @@ ASFUNCTIONBODY(InteractiveObject,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(InteractiveObject,_setMouseEnabled)
+{
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
+	assert_and_throw(argslen==1);
+	th->mouseEnabled=Boolean_concrete(args[0]);
+	return NULL;
+}
+
+ASFUNCTIONBODY(InteractiveObject,_getMouseEnabled)
+{
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
+	return abstract_b(th->mouseEnabled);
+}
+
 void InteractiveObject::buildTraits(ASObject* o)
 {
 }
@@ -1669,8 +1688,8 @@ void InteractiveObject::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	//c->setSetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
-	//c->setGetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setSetterByQName("mouseEnabled","",Class<IFunction>::getFunction(_setMouseEnabled),true);
+	c->setGetterByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),true);
 }
 
 void DisplayObjectContainer::dumpDisplayList()
@@ -1994,6 +2013,27 @@ bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& 
 		}
 	}
 	return false;
+}
+
+InteractiveObject* Shape::hitTest(InteractiveObject* last, number_t x, number_t y)
+{
+	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
+	assert_and_throw(!sys->getInputThread()->isMaskPresent());
+	//TODO: TOLOCK
+	if(mask)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Support masks in Shape::hitTest");
+		::abort();
+	}
+
+	if(graphics)
+	{
+		//To coordinates are already locals
+		if(graphics->hitTest(x,y))
+			return last;
+	}
+
+	return NULL;
 }
 
 void Shape::Render(bool maskEnabled)

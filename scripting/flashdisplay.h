@@ -168,10 +168,14 @@ public:
 
 class InteractiveObject: public DisplayObject
 {
+protected:
+	bool mouseEnabled;
 public:
 	InteractiveObject();
 	virtual ~InteractiveObject();
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_setMouseEnabled);
+	ASFUNCTION(_getMouseEnabled);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -267,6 +271,7 @@ public:
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	void invalidate();
 	const std::vector<GeomToken>& getTokens();
 	float getScaleFactor() const;

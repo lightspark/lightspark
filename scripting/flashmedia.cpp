@@ -22,6 +22,7 @@
 #include "compat.h"
 #include <iostream>
 #include "backends/rendering.h"
+#include "backends/input.h"
 
 using namespace lightspark;
 using namespace std;
@@ -192,6 +193,8 @@ ASFUNCTIONBODY(Video,attachNetStream)
 
 InteractiveObject* Video::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
+	assert_and_throw(!sys->getInputThread()->isMaskPresent());
+	assert_and_throw(mask==NULL);
 	if(x>=0 && x<=width && y>=0 && y<=height)
 		return last;
 	else

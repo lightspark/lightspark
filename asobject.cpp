@@ -767,7 +767,10 @@ ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(
 ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),prototype(o.prototype),implEnable(true)
 {
 	if(prototype)
+	{
 		prototype->incRef();
+		cur_level=prototype->max_level;
+	}
 
 #ifndef NDEBUG
 	//Stuff only used in debugging

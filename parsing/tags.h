@@ -98,6 +98,10 @@ private:
 	void invalidate();
 	void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, 
 			std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles);
+	/*
+	   	Computes the bounding rect, this is a non-virtual function!
+	*/
+	void boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 protected:
 	UI16 ShapeId;
 	RECT ShapeBounds;
@@ -109,6 +113,7 @@ public:
 	void Render(bool maskEnabled);
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	ASObject* instance() const
 	{
 		DefineShapeTag* ret=new DefineShapeTag(*this);

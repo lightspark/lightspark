@@ -913,9 +913,8 @@ void DefineShapeTag::invalidate()
 	sys->addJob(r);
 }
 
-bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+void DefineShapeTag::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	//Apply transformation with the current matrix
 	int a=ShapeBounds.Xmin;
 	int b=ShapeBounds.Ymin;
 	int c=ShapeBounds.Xmax;
@@ -940,12 +939,67 @@ bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, n
 	else
 		d+=19;
 	d/=20;
-	getMatrix().multiply2D(a,b,xmin,ymin);
-	getMatrix().multiply2D(c,d,xmax,ymax);
+	xmin=a;
+	ymin=b;
+	xmax=c;
+	ymax=d;
+}
+
+bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	//Apply transformation with the current matrix
+	boundsRect(xmin,xmax,ymin,ymax);
+	getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+	getMatrix().multiply2D(xmax,ymax,xmax,ymax);
 	//getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
 	//getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
 	//TODO: adapt for rotation
 	return true;
+}
+
+InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, number_t y)
+{
+	assert_and_throw(!sys->getInputThread()->isMaskPresent());
+	//TODO: TOLOCK
+	if(mask)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Support masks in DefineShapeTag::hitTest");
+		::abort();
+	}
+
+	number_t x1,x2,y1,y2;
+	boundsRect(x1,x2,y1,y2);
+	if(x<x1 || x>x2 || y<y1 || y>y2)
+		return NULL;
+
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+	cairo_t* cr=cairo_create(cairoSurface);
+	
+	//Use cairo to guarantee consistency
+	for(uint32_t i=0;i<cachedTokens.size();i++)
+	{
+		switch(cachedTokens[i].type)
+		{
+			case STRAIGHT:
+				cairo_line_to(cr, cachedTokens[i].p1.x, cachedTokens[i].p1.y);
+				break;
+			case MOVE:
+				cairo_move_to(cr, cachedTokens[i].p1.x, cachedTokens[i].p1.y);
+				break;	
+			case SET_FILL:
+				//Not relevant
+				break;
+			default:
+				::abort();
+		}
+	}
+	bool ret=cairo_in_fill(cr, x, y);
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+	if(ret)
+		return last;
+	else
+		return NULL;
 }
 
 void DefineShapeTag::Render(bool maskEnabled)

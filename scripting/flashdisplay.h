@@ -117,7 +117,7 @@ public:
 		::abort();
 	}
 	//API to handle mask support in hit testing
-	virtual bool isOpaque(number_t x, number_t y)
+	virtual bool isOpaque(number_t x, number_t y) const
 	{
 		throw RunTimeException("DisplayObject::isOpaque");
 		::abort();
@@ -272,6 +272,7 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
 	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	bool isOpaque(number_t x, number_t y) const;
 	void invalidate();
 	const std::vector<GeomToken>& getTokens();
 	float getScaleFactor() const;

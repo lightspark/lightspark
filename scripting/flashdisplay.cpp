@@ -832,12 +832,19 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, numbe
 		}
 	}
 
-	//TODO: support frames
 	if(framesLoaded)
 	{
 		uint32_t curFP=state.FP;
 		assert_and_throw(curFP<framesLoaded);
-		assert_and_throw(frames[curFP].displayList.empty());
+		list<pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[curFP].displayList.begin();
+		for(;it!=frames[curFP].displayList.end();++it)
+		{
+			number_t localX, localY;
+			it->second->getMatrix().getInverted().multiply2D(x,y,localX,localY);
+			InteractiveObject* ret=it->second->hitTest(this, localX,localY);
+			if(ret)
+				return ret;
+		}
 	}
 
 	//TODO: support graphics
@@ -2031,6 +2038,13 @@ bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& 
 			return true;
 		}
 	}
+	return false;
+}
+
+
+bool Shape::isOpaque(number_t x, number_t y) const
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Shape::isOpaque not really implemented");
 	return false;
 }
 

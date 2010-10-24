@@ -92,6 +92,10 @@ public:
 	{
 		return !maskStack.empty();
 	}
+	/*
+	   	Checks if the given point in Stage coordinates is currently masked or not
+	*/
+	bool isMasked(number_t x, number_t y) const;
 };
 
 };

@@ -431,7 +431,6 @@ void Sprite::Render(bool maskEnabled)
 InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
-	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	//TODO: TOLOCK
 	//First of all firter using the BBOX
 	number_t t1,t2,t3,t4;
@@ -464,12 +463,21 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 
 	if(graphics && mouseEnabled)
 	{
-		//To coordinates are already locals
+		//The coordinates are locals
 		if(graphics->hitTest(x,y))
 		{
+			InteractiveObject* ret=this;
+			//Also test if the we are under the mask (if any)
+			if(sys->getInputThread()->isMaskPresent())
+			{
+				number_t globalX, globalY;
+				getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
+				if(!sys->getInputThread()->isMasked(globalX, globalY))
+					ret=NULL;
+			}
 			if(mask)
 				sys->getInputThread()->popMask();
-			return this;
+			return ret;
 		}
 	}
 
@@ -795,7 +803,6 @@ void MovieClip::Render(bool maskEnabled)
 InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be tested in the opposite order of Rendering
-	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 
 	//TODO: TOLOCK
 	if(mask)
@@ -835,6 +842,8 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, numbe
 
 	//TODO: support graphics
 	assert_and_throw(graphics==NULL || !mouseEnabled);
+	//TODO: no point in checking for masks now, children will check themselves
+	//assert_and_throw(!sys->getInputThread()->isMaskPresent());
 
 	return NULL;
 }

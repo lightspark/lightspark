@@ -264,3 +264,15 @@ void InputThread::disableDrag()
 	}
 }
 
+bool InputThread::isMasked(number_t x, number_t y) const
+{
+	for(uint32_t i=0;i<maskStack.size();i++)
+	{
+		number_t localX, localY;
+		maskStack[i].m.multiply2D(x,y,localX,localY);
+		if(!maskStack[i].d->isOpaque(localX, localY))
+			return false;
+	}
+
+	return true;
+}

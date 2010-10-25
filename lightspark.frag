@@ -23,7 +23,7 @@ vec4 tex_lookup_yuv()
 
 void main()
 {
-	if(gl_Color.x==1.0 && texture2D(g_tex2,gl_TexCoord[1]).a==0.0)
+	if(gl_Color.x==1.0 && texture2D(g_tex2,gl_TexCoord[1].xy).a==0.0)
 		discard;
 
 	gl_FragColor=(tex_lookup()*gl_Color.z)+

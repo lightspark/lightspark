@@ -427,7 +427,7 @@ bool RenderThread::loadShaderPrograms()
 	fs = dataFileRead("lightspark-blitter.vert");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,_("Shader lightspark.vert not found"));
+		LOG(LOG_ERROR,_("Shader lightspark-blitter.vert not found"));
 		throw RunTimeException("Vertex shader code not found");
 	}
 	glShaderSource(v, 1, &fs,NULL);

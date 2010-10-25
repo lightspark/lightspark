@@ -110,6 +110,10 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 		list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
 		for(;i!=displayList.end();++i)
+		{
 			i->second->setMatrix(i->first.Matrix);
+			//Take a chance to also invalidate the content
+			i->second->invalidate();
+		}
 	}
 }

@@ -381,7 +381,8 @@ bool RenderThread::loadShaderPrograms()
 	assert(glShaderSource);
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
-
+	GLuint g = glCreateShader(GL_VERTEX_SHADER);
+	
 	bool ret=true;
 	char str[1024];
 	int a;
@@ -391,10 +392,24 @@ bool RenderThread::loadShaderPrograms()
 	glGetShaderInfoLog(f,1024,&a,str);
 	LOG(LOG_NO_INFO,_("Fragment shader compilation ") << str);
 
+	fs = dataFileRead("lightspark.vert");
+	if(fs==NULL)
+	{
+		LOG(LOG_ERROR,_("Shader lightspark.vert not found"));
+		throw RunTimeException("Vertex shader code not found");
+	}
+	glShaderSource(g, 1, &fs,NULL);
+	free((void*)fs);
+
+	glCompileShader(g);
+	glGetShaderInfoLog(g,1024,&a,str);
+	LOG(LOG_NO_INFO,_("Vertex shader compilation ") << str);
+
 	assert(glCreateProgram);
 	gpu_program = glCreateProgram();
 	assert(glAttachShader);
 	glAttachShader(gpu_program,f);
+	glAttachShader(gpu_program,g);
 
 	assert(glLinkProgram);
 	glLinkProgram(gpu_program);
@@ -409,7 +424,7 @@ bool RenderThread::loadShaderPrograms()
 	//Create the blitter shader
 	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
-	fs = dataFileRead("lightspark.vert");
+	fs = dataFileRead("lightspark-blitter.vert");
 	if(fs==NULL)
 	{
 		LOG(LOG_ERROR,_("Shader lightspark.vert not found"));

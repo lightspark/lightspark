@@ -141,6 +141,60 @@ void RenderThread::glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin,
 	glUseProgram(gpu_program);
 }
 
+void RenderThread::handleNewTexture()
+{
+	//Find if any largeTexture is not initialized
+	Locker l(mutexLargeTexture);
+	for(uint32_t i=0;i<largeTextures.size();i++)
+	{
+		if(largeTextures[i].id==(GLuint)-1)
+			largeTextures[i].id=allocateNewGLTexture();
+	}
+	newTextureNeeded=false;
+}
+
+void RenderThread::finalizeUpload()
+{
+	ITextureUploadable* u=prevUploadJob;
+	uint32_t w,h;
+	u->sizeNeeded(w,h);
+	const TextureChunk& tex=u->getTexture();
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[currentPixelBuffer]);
+	//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
+	loadChunkBGRA(tex, w, h, (uint8_t*)currentPixelBufferOffset);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+	u->uploadFence();
+	prevUploadJob=NULL;
+}
+
+void RenderThread::handleUpload()
+{
+	ITextureUploadable* u=getUploadJob();
+	assert(u);
+	uint32_t w,h;
+	u->sizeNeeded(w,h);
+	if(w>pixelBufferWidth || h>pixelBufferHeight)
+		resizePixelBuffers(w,h);
+	//Increment and wrap current buffer index
+	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
+
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[nextBuffer]);
+	uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+	uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
+
+	u->upload(alignedBuf, w, h);
+
+	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+	currentPixelBufferOffset=alignedBuf-buf;
+	currentPixelBuffer=nextBuffer;
+
+	//Get the texture to be sure it's allocated when the upload comes
+	u->getTexture();
+	prevUploadJob=u;
+}
+
 #ifdef COMPILE_PLUGIN
 void* RenderThread::gtkplug_worker(RenderThread* th)
 {
@@ -242,55 +296,14 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			}
 
 			if(th->newTextureNeeded)
-			{
-				//Find if any largeTexture is not initialized
-				Locker l(th->mutexLargeTexture);
-				for(uint32_t i=0;i<th->largeTextures.size();i++)
-				{
-					if(th->largeTextures[i].id==(GLuint)-1)
-						th->largeTextures[i].id=th->allocateNewGLTexture();
-				}
-			}
+				th->handleNewTexture();
 
 			if(th->prevUploadJob)
-			{				
-				ITextureUploadable* u=th->prevUploadJob;
-				uint32_t w,h;
-				u->sizeNeeded(w,h);
-				const TextureChunk& tex=u->getTexture();
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[th->currentPixelBuffer]);
-				//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
-				th->loadChunkBGRA(tex, w, h, (uint8_t*)th->currentPixelBufferOffset);
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-				u->uploadFence();
-				th->prevUploadJob=NULL;
-
-			}
+				th->finalizeUpload();
 
 			if(th->uploadNeeded)
 			{
-				ITextureUploadable* u=th->getUploadJob();
-				assert(u);
-				uint32_t w,h;
-				u->sizeNeeded(w,h);
-				if(w>th->pixelBufferWidth || h>th->pixelBufferHeight)
-					th->resizePixelBuffers(w,h);
-				//Increment and wrap current buffer index
-				unsigned int nextBuffer = (th->currentPixelBuffer + 1)%2;
-
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[nextBuffer]);
-				uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
-				uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
-
-				u->upload(alignedBuf, w, h);
-
-				glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-				th->currentPixelBufferOffset=alignedBuf-buf;
-				th->currentPixelBuffer=nextBuffer;
-				
-				th->prevUploadJob=u;
+				th->handleUpload();
 				profile->accountTime(chronometer.checkpoint());
 				continue;
 			}
@@ -791,54 +804,14 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			}
 
 			if(th->newTextureNeeded)
-			{
-				//Find if any largeTexture is not initialized
-				Locker l(th->mutexLargeTexture);
-				for(uint32_t i=0;i<th->largeTextures.size();i++)
-				{
-					if(th->largeTextures[i].id==(GLuint)-1)
-						th->largeTextures[i].id=th->allocateNewGLTexture();
-				}
-			}
+				th->handleNewTexture();
 
 			if(th->prevUploadJob)
-			{
-				ITextureUploadable* u=th->prevUploadJob;
-				uint32_t w,h;
-				u->sizeNeeded(w,h);
-				const TextureChunk& tex=u->getTexture();
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[th->currentPixelBuffer]);
-				//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
-				th->loadChunkBGRA(tex, w, h, (uint8_t*)th->currentPixelBufferOffset);
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-				u->uploadFence();
-				th->prevUploadJob=NULL;
-			}
+				th->finalizeUpload();
 
 			if(th->uploadNeeded)
 			{
-				ITextureUploadable* u=th->getUploadJob();
-				assert(u);
-				uint32_t w,h;
-				u->sizeNeeded(w,h);
-				if(w>th->pixelBufferWidth || h>th->pixelBufferHeight)
-					th->resizePixelBuffers(w,h);
-				//Increment and wrap current buffer index
-				unsigned int nextBuffer = (th->currentPixelBuffer + 1)%2;
-
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[nextBuffer]);
-				uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
-				uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
-
-				u->upload(alignedBuf, w, h);
-
-				glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-				th->currentPixelBufferOffset=alignedBuf-buf;
-				th->currentPixelBuffer=nextBuffer;
-				
-				th->prevUploadJob=u;
+				th->handleUpload();
 				profile->accountTime(chronometer.checkpoint());
 				continue;
 			}

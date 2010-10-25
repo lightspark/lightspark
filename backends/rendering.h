@@ -69,6 +69,9 @@ private:
 	volatile bool uploadNeeded;
 	volatile bool resizeNeeded;
 	volatile bool newTextureNeeded;
+	void handleNewTexture();
+	void finalizeUpload();
+	void handleUpload();
 	sem_t event;
 	std::string fontPath;
 	uint32_t newWidth;

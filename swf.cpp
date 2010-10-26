@@ -192,6 +192,9 @@ SystemState::SystemState(ParseThread* p):
 	startTime=compat_msectiming();
 	
 	setPrototype(Class<MovieClip>::getClass());
+
+	renderThread=new RenderThread(this);
+	inputThread=new InputThread(this);
 }
 
 void SystemState::setDownloadedPath(const tiny_string& p)
@@ -404,12 +407,9 @@ void SystemState::setError(const string& c)
 		error=true;
 		errorCause=c;
 		timerThread->stop();
-		if(renderThread)
-		{
-			//Disable timed rendering
-			removeJob(renderThread);
-			renderThread->draw();
-		}
+		//Disable timed rendering
+		removeJob(renderThread);
+		renderThread->draw();
 	}
 }
 
@@ -438,10 +438,8 @@ void SystemState::wait()
 	event.user.data1 = 0;
 	event.user.data1 = 0;
 	SDL_PushEvent(&event);
-	if(renderThread)
-		renderThread->wait();
-	if(inputThread)
-		inputThread->wait();
+	renderThread->wait();
+	inputThread->wait();
 	if(currentVm)
 		currentVm->shutdown();
 }
@@ -498,8 +496,8 @@ void SystemState::delayedCreation(SystemState* th)
 	p.window=GDK_WINDOW_XWINDOW(p.container->window);
 	XSync(p.display, False);
 	sem_wait(&th->mutex);
-	th->renderThread=new RenderThread(th, th->engine, &th->npapiParams);
-	th->inputThread=new InputThread(th, th->engine, &th->npapiParams);
+	th->renderThread->start(th->engine, &th->npapiParams);
+	th->inputThread->start(th->engine, &th->npapiParams);
 	//If the render rate is known start the render ticks
 	if(th->renderRate)
 		th->startRenderTicks();
@@ -511,7 +509,6 @@ void SystemState::delayedCreation(SystemState* th)
 void SystemState::createEngines()
 {
 	sem_wait(&mutex);
-	assert(renderThread==NULL && inputThread==NULL);
 #ifdef COMPILE_PLUGIN
 	//Check if we should fall back on gnash
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
@@ -620,14 +617,13 @@ void SystemState::createEngines()
 	}
 	else //SDL engine
 	{
-		renderThread=new RenderThread(this, engine, NULL);
-		inputThread=new InputThread(this, engine, NULL);
+		renderThread->start(engine, NULL);
+		inputThread->start(engine, NULL);
 		//If the render rate is known start the render ticks
 		if(renderRate)
 			startRenderTicks();
 	}
 	sem_post(&mutex);
-	while(!renderThread);
 	renderThread->waitForInitialization();
 	//Now that there is something to actually render the contents add the SystemState to the stage
 	setOnStage(true);
@@ -673,8 +669,7 @@ void SystemState::setRenderRate(float rate)
 	
 	//The requested rate is higher, let's reschedule the job
 	renderRate=rate;
-	if(renderThread)
-		startRenderTicks();
+	startRenderTicks();
 	sem_post(&mutex);
 }
 

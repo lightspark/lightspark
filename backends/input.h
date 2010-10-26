@@ -66,9 +66,10 @@ private:
 	void handleMouseDown(uint32_t x, uint32_t y);
 	void handleMouseUp(uint32_t x, uint32_t y);
 public:
-	InputThread(SystemState* s,ENGINE e, void* param=NULL);
+	InputThread(SystemState* s);
 	~InputThread();
 	void wait();
+	void start(ENGINE e, void* param);
 	void addListener(InteractiveObject* ob);
 	void removeListener(InteractiveObject* ob);
 	void enableDrag(Sprite* s, const RECT& limit);

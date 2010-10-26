@@ -37,17 +37,20 @@ using namespace std;
 
 void RenderThread::wait()
 {
-	if(terminated)
+	if(status==TERMINATED)
 		return;
-	terminated=true;
 	//Signal potentially blocking semaphore
 	sem_post(&event);
-	int ret=pthread_join(t,NULL);
-	assert_and_throw(ret==0);
+	if(status==STARTED)
+	{
+		int ret=pthread_join(t,NULL);
+		assert_and_throw(ret==0);
+	}
+	status=TERMINATED;
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):
-	m_sys(s),terminated(false),currentPixelBuffer(0),currentPixelBufferOffset(0),
+RenderThread::RenderThread(SystemState* s):
+	m_sys(s),status(CREATED),currentPixelBuffer(0),currentPixelBufferOffset(0),
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),mutexLargeTexture("Large texture"),largeTextureSize(0),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),
@@ -83,7 +86,10 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):
 	FcPatternDestroy(match);
 	LOG(LOG_NO_INFO, _("Font File is ") << fontPath);
 #endif
+}
 
+void RenderThread::start(ENGINE e,void* params)
+{
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifdef COMPILE_PLUGIN
@@ -274,7 +280,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		while(1)
 		{
 			sem_wait(&th->event);
-			if(th->m_sys->isShuttingDown() || th->terminated)
+			if(th->m_sys->isShuttingDown())
 				break;
 			chronometer.checkpoint();
 			
@@ -797,7 +803,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		while(1)
 		{
 			sem_wait(&th->event);
-			if(th->m_sys->isShuttingDown() || th->terminated)
+			if(th->m_sys->isShuttingDown())
 				break;
 			chronometer.checkpoint();
 
@@ -889,7 +895,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 void RenderThread::addUploadJob(ITextureUploadable* u)
 {
 	Locker l(mutexUploadJobs);
-	if(m_sys->isShuttingDown() || terminated)
+	if(m_sys->isShuttingDown() || status==TERMINATED)
 	{
 		u->uploadFence();
 		return;

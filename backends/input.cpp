@@ -32,10 +32,14 @@
 using namespace lightspark;
 using namespace std;
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),threaded(false),
+InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
 	LOG(LOG_NO_INFO,_("Creating input thread"));
+}
+
+void InputThread::start(ENGINE e,void* param)
+{
 	if(e==SDL)
 	{
 		threaded=true;

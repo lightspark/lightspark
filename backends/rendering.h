@@ -32,7 +32,8 @@ friend class DisplayObject;
 private:
 	SystemState* m_sys;
 	pthread_t t;
-	bool terminated;
+	enum STATUS { CREATED=0, STARTED, TERMINATED };
+	STATUS status;
 	static void* sdl_worker(RenderThread*);
 #ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
@@ -115,8 +116,9 @@ private:
 	};
 	std::vector<MaskData> maskStack;
 public:
-	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
+	RenderThread(SystemState* s);
 	~RenderThread();
+	void start(ENGINE e,void* param);
 	void wait();
 	void draw();
 	//The calling context MUST call this function with the transformation matrix ready

@@ -1113,10 +1113,9 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 void RenderThread::renderTextured(const TextureChunk& chunk, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
 	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
-	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
 	const uint32_t blocksPerSide=largeTextureSize/128;
 	uint32_t startX, startY, endX, endY;
-	assert(numberOfChunks==((chunk.width+127)/128)*((chunk.height+127)/128));
+	assert(chunk.getNumberOfChunks()==((chunk.width+127)/128)*((chunk.height+127)/128));
 	
 	uint32_t curChunk=0;
 	for(uint32_t i=0;i<chunk.height;i+=128)

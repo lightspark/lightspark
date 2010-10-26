@@ -819,15 +819,15 @@ Class_base* ASObject::getActualPrototype() const
 	Class_base* ret=prototype;
 	if(ret==NULL)
 	{
-		assert_and_throw(type==T_CLASS);
+		assert(type==T_CLASS);
 		return NULL;
 	}
 
 	for(int i=prototype->max_level;i>cur_level;i--)
 		ret=ret->super;
 
-	assert_and_throw(ret);
-	assert_and_throw(ret->max_level==cur_level);
+	assert(ret);
+	assert(ret->max_level==cur_level);
 	return ret;
 }
 

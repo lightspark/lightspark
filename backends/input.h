@@ -63,6 +63,8 @@ private:
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
 	std::vector<MaskData> maskStack;
+	void handleMouseDown(uint32_t x, uint32_t y);
+	void handleMouseUp(uint32_t x, uint32_t y);
 public:
 	InputThread(SystemState* s,ENGINE e, void* param=NULL);
 	~InputThread();

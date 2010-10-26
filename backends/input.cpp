@@ -103,17 +103,15 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 		}
 		case GDK_BUTTON_PRESS:
 		{
-			//Grab focus
+			//Grab focus, to receive keypresses
 			gtk_widget_grab_focus(widget);
-			cout << "Press" << endl;
-			Locker locker(th->mutexListeners);
+			th->handleMouseDown(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
 		case GDK_BUTTON_RELEASE:
 		{
-			cout << "Release" << endl;
-			Locker locker(th->mutexListeners);
+			th->handleMouseUp(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
@@ -126,6 +124,36 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 	return ret;
 }
 #endif
+
+void InputThread::handleMouseDown(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	InteractiveObject* selected=m_sys->hitTest(NULL,x,y);
+	assert(maskStack.empty());
+	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
+	lastMouseDownTarget=selected;
+	//Add event to the event queue
+	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseDown",true));
+	//And select that object for debugging (if needed)
+	if(m_sys->showDebug)
+		m_sys->getRenderThread()->selectedDebug=selected;
+}
+
+void InputThread::handleMouseUp(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	InteractiveObject* selected=m_sys->hitTest(NULL,x,y);
+	assert(maskStack.empty());
+	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
+	//Add event to the event queue
+	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));
+	if(lastMouseDownTarget==selected)
+	{
+		//Also send the click event
+		m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("click",true));
+		lastMouseDownTarget=NULL;
+	}
+}
 
 void* InputThread::sdl_worker(InputThread* th)
 {
@@ -164,32 +192,12 @@ void* InputThread::sdl_worker(InputThread* th)
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
-				Locker locker(th->mutexListeners);
-				InteractiveObject* selected=th->m_sys->hitTest(NULL,event.button.x,event.button.y);
-				assert(th->maskStack.empty());
-				assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
-				th->lastMouseDownTarget=selected;
-				//Add event to the event queue
-				th->m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseDown",true));
-				//And select that object for debugging (if needed)
-				if(th->m_sys->showDebug)
-					th->m_sys->getRenderThread()->selectedDebug=selected;
+				th->handleMouseDown(event.button.x,event.button.y);
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
-				Locker locker(th->mutexListeners);
-				InteractiveObject* selected=th->m_sys->hitTest(NULL,event.button.x,event.button.y);
-				assert(th->maskStack.empty());
-				assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
-				//Add event to the event queue
-				th->m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));
-				if(th->lastMouseDownTarget==selected)
-				{
-					//Also send the click event
-					th->m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("click",true));
-					th->lastMouseDownTarget=NULL;
-				}
+				th->handleMouseUp(event.button.x,event.button.y);
 				break;
 			}
 			case SDL_VIDEORESIZE:

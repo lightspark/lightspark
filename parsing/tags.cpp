@@ -959,7 +959,6 @@ bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, n
 
 InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
-	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	//TODO: TOLOCK
 	if(mask)
 	{
@@ -997,7 +996,17 @@ InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, 
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
 	if(ret)
+	{
+		//Also test if the we are under the mask (if any)
+		if(sys->getInputThread()->isMaskPresent())
+		{
+			number_t globalX, globalY;
+			getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
+			if(!sys->getInputThread()->isMasked(globalX, globalY))
+				return NULL;
+		}
 		return last;
+	}
 	else
 		return NULL;
 }

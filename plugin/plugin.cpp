@@ -309,6 +309,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		// The page with the plugin is being resized.
 		// Save any UI information because the next time
 		// around expect a SetWindow with a new window id.
+		LOG(LOG_ERROR,"Resize not supported");
 	}
 	else
 	{
@@ -329,17 +330,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p.height=mHeight;
 		p.helper=AsyncHelper;
 		p.helperArg=this;
-		cout << "X Window " << hex << p.window << dec << endl;
-		if(m_sys->getRenderThread()!=NULL)
-		{
-			cout << "destroy old context" << endl;
-			abort();
-		}
-		if(m_sys->getInputThread()!=NULL)
-		{
-			cout << "destroy old input" << endl;
-			abort();
-		}
+		LOG(LOG_NO_INFO,"X Window " << hex << p.window << dec);
 		m_sys->setParamsAndEngine(lightspark::GTKPLUG,&p);
 	}
 	//draw();

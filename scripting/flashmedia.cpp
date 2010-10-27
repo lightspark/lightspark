@@ -82,7 +82,7 @@ void Video::Render(bool maskEnabled)
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
 
-		MatrixApplier ma(getMatrix());
+		MatrixApplier ma(getConcatenatedMatrix());
 
 		if(!isSimple())
 			rt->glAcquireTempBuffer(0,width,0,height);

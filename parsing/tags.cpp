@@ -1016,21 +1016,9 @@ void DefineShapeTag::Render(bool maskEnabled)
 	if(skipRender(maskEnabled))
 		return;
 
-	if(mask)
-	{
-		if(mask->parent)
-			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
-		else
-			rt->pushMask(mask,MATRIX());
-	}
-
-	if(!isSimple())
-		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-
-	defaultRender(maskEnabled);
-
-	if(!isSimple())
-		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
+	number_t t1,t2,t3,t4;
+	DefineShapeTag::boundsRect(t1,t2,t3,t4);
+	Shape::renderImpl(maskEnabled,t1,t2,t3,t4);
 }
 
 Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)

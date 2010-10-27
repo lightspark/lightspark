@@ -240,17 +240,14 @@ void Loader::threadAbort()
 
 void Loader::Render(bool maskEnabled)
 {
-	if(!loaded)
+	if(!loaded || skipRender(maskEnabled))
 		return;
 
-	if(skipRender(maskEnabled))
-		return;
-
-	assert(mask==NULL);
-
-	assert(!rt->isMaskPresent());
+	renderPrologue();
 
 	local_root->Render(maskEnabled);
+
+	renderEpilogue();
 }
 
 bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -376,17 +373,8 @@ void Sprite::invalidate()
 		invalidateGraphics();
 }
 
-void Sprite::Render(bool maskEnabled)
+void DisplayObject::renderPrologue() const
 {
-	if(skipRender(maskEnabled))
-		return;
-
-	//TODO: TOLOCK
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return;
-
 	if(mask)
 	{
 		if(mask->parent)
@@ -394,7 +382,16 @@ void Sprite::Render(bool maskEnabled)
 		else
 			rt->pushMask(mask,MATRIX());
 	}
+}
 
+void DisplayObject::renderEpilogue() const
+{
+	if(mask)
+		rt->popMask();
+}
+
+void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+{
 	//Draw the dynamically added graphics, if any
 	if(graphics)
 	{
@@ -409,13 +406,28 @@ void Sprite::Render(bool maskEnabled)
 	{
 		Locker l(mutexDisplayList);
 		//Now draw also the display list
-		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
+		list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
 		for(;it!=dynamicDisplayList.end();++it)
 			(*it)->Render(maskEnabled);
 	}
+}
 
-	if(mask)
-		rt->popMask();
+void Sprite::Render(bool maskEnabled)
+{
+	if(skipRender(maskEnabled))
+		return;
+
+	//TODO: TOLOCK
+	number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return;
+
+	renderPrologue();
+
+	renderImpl(maskEnabled,t1,t2,t3,t4);
+
+	renderEpilogue();
 }
 
 InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t y)
@@ -748,44 +760,19 @@ void MovieClip::Render(bool maskEnabled)
 	if(!notEmpty)
 		return;
 
-	if(mask)
-	{
-		if(mask->parent)
-			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
-		else
-			rt->pushMask(mask,MATRIX());
-	}
+	renderPrologue();
 
-	//Save current frame, this may change during rendering
-	uint32_t curFP=state.FP;
-
-	//Draw the dynamically added graphics, if any
-	if(graphics)
-	{
-		//Should clean only the bounds of the graphics
-		if(!isSimple())
-			rt->glAcquireTempBuffer(t1,t2,t3,t4);
-		defaultRender(maskEnabled);
-		if(!isSimple())
-			rt->glBlitTempBuffer(t1,t2,t3,t4);
-	}
+	Sprite::renderImpl(maskEnabled,t1,t2,t3,t4);
 
 	if(framesLoaded)
 	{
+		//Save current frame, this may change during rendering
+		uint32_t curFP=state.FP;
 		assert_and_throw(curFP<framesLoaded);
 		frames[curFP].Render(maskEnabled);
 	}
 
-	{
-		//Render objects added at runtime
-		Locker l(mutexDisplayList);
-		list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
-		for(;j!=dynamicDisplayList.end();++j)
-			(*j)->Render(maskEnabled);
-	}
-
-	if(mask)
-		rt->popMask();
+	renderEpilogue();
 }
 
 InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, number_t y)
@@ -2057,27 +2044,9 @@ InteractiveObject* Shape::hitTest(InteractiveObject* last, number_t x, number_t 
 	return NULL;
 }
 
-void Shape::Render(bool maskEnabled)
+void Shape::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
-	//If graphics is not yet initialized we have nothing to do
-	if(graphics==NULL)
-		return;
-
-	if(skipRender(maskEnabled))
-		return;
-
-	if(mask)
-	{
-		if(mask->parent)
-			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
-		else
-			rt->pushMask(mask,MATRIX());
-	}
-	number_t t1,t2,t3,t4;
-	bool ret=graphics->getBounds(t1,t2,t3,t4);
-
-	if(!ret)
-		return;
+	renderPrologue();
 
 	if(!isSimple())
 		rt->glAcquireTempBuffer(t1,t2,t3,t4);
@@ -2086,6 +2055,20 @@ void Shape::Render(bool maskEnabled)
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(t1,t2,t3,t4);
+	renderEpilogue();
+}
+
+void Shape::Render(bool maskEnabled)
+{
+	//If graphics is not yet initialized we have nothing to do
+	if(graphics==NULL || skipRender(maskEnabled))
+		return;
+
+	number_t t1,t2,t3,t4;
+	bool ret=graphics->getBounds(t1,t2,t3,t4);
+	if(!ret)
+		return;
+	Shape::renderImpl(maskEnabled, t1, t2, t3, t4);
 }
 
 const vector<GeomToken>& Shape::getTokens()

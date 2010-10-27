@@ -79,6 +79,8 @@ protected:
 	CachedSurface cachedSurface;
 	void defaultRender(bool maskEnabled) const;
 	DisplayObject(const DisplayObject& d);
+	void renderPrologue() const;
+	void renderEpilogue() const;
 public:
 	int Depth;
 	tiny_string name;
@@ -263,6 +265,7 @@ class Shape: public DisplayObject, public GraphicsContainer
 {
 protected:
 	std::vector<GeomToken> cachedTokens;
+	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 public:
 	Shape():GraphicsContainer(this){}
 	static void sinit(Class_base* c);
@@ -351,6 +354,8 @@ class Sprite: public DisplayObjectContainer, public GraphicsContainer
 friend class DisplayObject;
 private:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+protected:
+	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 public:
 	Sprite();
 	static void sinit(Class_base* c);

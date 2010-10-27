@@ -250,23 +250,16 @@ void Loader::Render(bool maskEnabled)
 
 	assert(!rt->isMaskPresent());
 
-	MatrixApplier ma(getMatrix());
 	local_root->Render(maskEnabled);
-	ma.unapply();
 }
 
 bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(content)
+	if(content && content->getBounds(xmin,xmax,ymin,ymax))
 	{
-		if(content->getBounds(xmin,xmax,ymin,ymax))
-		{
-			getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-			getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-			return true;
-		}
-		else
-			return false;
+		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
+		return true;
 	}
 	else
 		return false;
@@ -402,8 +395,6 @@ void Sprite::Render(bool maskEnabled)
 			rt->pushMask(mask,MATRIX());
 	}
 
-	MatrixApplier ma(getMatrix());
-
 	//Draw the dynamically added graphics, if any
 	if(graphics)
 	{
@@ -423,7 +414,6 @@ void Sprite::Render(bool maskEnabled)
 			(*it)->Render(maskEnabled);
 	}
 
-	ma.unapply();
 	if(mask)
 		rt->popMask();
 }
@@ -766,7 +756,6 @@ void MovieClip::Render(bool maskEnabled)
 			rt->pushMask(mask,MATRIX());
 	}
 
-	MatrixApplier ma(getMatrix());
 	//Save current frame, this may change during rendering
 	uint32_t curFP=state.FP;
 
@@ -797,7 +786,6 @@ void MovieClip::Render(bool maskEnabled)
 
 	if(mask)
 		rt->popMask();
-	ma.unapply();
 }
 
 InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, number_t y)
@@ -2091,8 +2079,6 @@ void Shape::Render(bool maskEnabled)
 	if(!ret)
 		return;
 
-	MatrixApplier ma(getMatrix());
-
 	if(!isSimple())
 		rt->glAcquireTempBuffer(t1,t2,t3,t4);
 
@@ -2100,8 +2086,6 @@ void Shape::Render(bool maskEnabled)
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(t1,t2,t3,t4);
-	
-	ma.unapply();
 }
 
 const vector<GeomToken>& Shape::getTokens()

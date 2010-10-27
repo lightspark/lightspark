@@ -1024,7 +1024,6 @@ void DefineShapeTag::Render(bool maskEnabled)
 			rt->pushMask(mask,MATRIX());
 	}
 
-	MatrixApplier ma(getMatrix());
 	if(!isSimple())
 		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
@@ -1032,7 +1031,6 @@ void DefineShapeTag::Render(bool maskEnabled)
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-	ma.unapply();
 }
 
 Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)

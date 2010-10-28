@@ -99,12 +99,10 @@ public:
 	MATRIX getConcatenatedMatrix() const;
 	virtual const std::vector<GeomToken>& getTokens()
 	{
-		::abort();
 		throw RunTimeException("DisplayObject::getTokens");
 	}
 	virtual float getScaleFactor() const
 	{
-		::abort();
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
 	virtual void Render(bool maskEnabled)
@@ -118,21 +116,18 @@ public:
 	virtual InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y)
 	{
 		throw RunTimeException("DisplayObject::hitTest");
-		::abort();
 	}
 	//API to handle mask support in hit testing
 	virtual bool isOpaque(number_t x, number_t y) const
 	{
 		throw RunTimeException("DisplayObject::isOpaque");
-		::abort();
 	}
 	virtual void setRoot(RootMovieClip* root);
 	virtual void setOnStage(bool staged);
 	RootMovieClip* getRoot() { return root; }
 	virtual Vector2 debugRender(FTFont* font, bool deep)
 	{
-		::abort();
-		return Vector2(0,0);
+		throw RunTimeException("DisplayObject::debugRender");
 	}
 	void setMatrix(const MATRIX& m);
 	static void sinit(Class_base* c);

@@ -321,27 +321,29 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
 				glTranslatef(-th->offsetX,(th->offsetY+th->windowHeight)*(-1.0f),0);
 				glUseProgram(0);
+				glActiveTexture(GL_TEXTURE1);
+				glDisable(GL_TEXTURE_2D);
+				glActiveTexture(GL_TEXTURE0);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
-				glLoadIdentity();
 
 				glClearColor(0,0,0,1);
 				glClear(GL_COLOR_BUFFER_BIT);
 				glColor3f(0.8,0.8,0.8);
 					    
 				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-					    -1,FTPoint(0,th->windowHeight/2));
+						-1,FTPoint(0,th->windowHeight/2));
 
 				stringstream errorMsg;
 				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
 				font.Render(errorMsg.str().c_str(),
-					    -1,FTPoint(0,th->windowHeight/2-20));
+						-1,FTPoint(0,th->windowHeight/2-20));
 					    
 				errorMsg.str("");
 				errorMsg << "Cause: " << th->m_sys->errorCause;
 				font.Render(errorMsg.str().c_str(),
-					    -1,FTPoint(0,th->windowHeight/2-40));
+						-1,FTPoint(0,th->windowHeight/2-40));
 				
 				glFlush();
 				glXSwapBuffers(d,glxWin);
@@ -846,6 +848,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
 				glTranslatef(-th->offsetX,(th->offsetY+th->windowHeight)*(-1.0f),0);
 				glUseProgram(0);
+				glActiveTexture(GL_TEXTURE1);
+				glDisable(GL_TEXTURE_2D);
+				glActiveTexture(GL_TEXTURE0);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);

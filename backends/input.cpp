@@ -132,8 +132,20 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	InteractiveObject* selected=m_sys->hitTest(NULL,x,y);
+	InteractiveObject* selected=NULL;
+	try
+	{
+		selected=m_sys->hitTest(NULL,x,y);
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,_("Error in input handling ") << e.cause);
+		m_sys->setError(e.cause);
+		return;
+	}
 	assert(maskStack.empty());
+	if(selected==NULL)
+		return;
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	lastMouseDownTarget=selected;
 	//Add event to the event queue
@@ -146,8 +158,20 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	InteractiveObject* selected=m_sys->hitTest(NULL,x,y);
+	InteractiveObject* selected=NULL;
+	try
+	{
+		selected=m_sys->hitTest(NULL,x,y);
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,_("Error in input handling ") << e.cause);
+		m_sys->setError(e.cause);
+		return;
+	}
 	assert(maskStack.empty());
+	if(selected==NULL)
+		return;
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	//Add event to the event queue
 	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));

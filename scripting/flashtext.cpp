@@ -94,7 +94,7 @@ ASFUNCTIONBODY(TextField,_setHeight)
 	return NULL;
 }
 
-void TextField::Render()
+void TextField::Render(bool maskEnabled)
 {
 	//TODO: implement
 	LOG(LOG_NOT_IMPLEMENTED,_("TextField::Render"));

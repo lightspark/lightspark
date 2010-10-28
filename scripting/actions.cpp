@@ -26,8 +26,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
 
 void lightspark::ignore(istream& i, int count);
@@ -78,7 +76,7 @@ void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, Di
 	ls.push_back(make_pair(PlaceInfo(),this));
 }
 
-void DoActionTag::Render()
+void DoActionTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("AVM1 not supported"));
 /*
@@ -145,7 +143,7 @@ void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo
 	ls.push_back(make_pair(PlaceInfo(),this));
 }
 
-void DoInitActionTag::Render()
+void DoInitActionTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("AVM1 not supported"));
 /*

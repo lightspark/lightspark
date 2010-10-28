@@ -28,7 +28,6 @@
 #include <fstream>
 
 using namespace lightspark;
-extern TLSDATA SystemState* sys;
 
 std::ostream& lightspark::operator<<(std::ostream& s, const URLInfo& u)
 {

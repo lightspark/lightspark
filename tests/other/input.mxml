@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!--
+NOTE: name attribute should be:
+lightspark_CLASSNAME_test or lightspark_FUNCTIONNAME_test for toplevel tests
+lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test for non-toplevel tests
+(e.g.: lightspark_net_NetStream_test or lightspark_Array_test)
+-->
+<mx:Application name="lightspark_INPUT_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	private function mouseH(e:Event):void
+	{
+		trace("Mouse down received");
+		e.target.alpha=0.5;
+	}
+	private function appComplete():void
+	{
+		s1.graphics.beginFill(0x00ffff);
+		s1.graphics.drawRect(0,0,100,100);
+		s1.graphics.endFill();
+		s1.alpha=0;
+		s1.addEventListener(MouseEvent.MOUSE_DOWN,mouseH);
+/*		s2.graphics.beginFill(0x0000ff);
+		s2.graphics.drawRect(0,0,100,100);
+		s2.graphics.endFill();
+		s2.x=30;
+		s2.y=30;
+		s3.addChild(s1);
+		addChild(s3);
+		addChild(s2);
+
+		s3.mask=s2;*/
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="s1" />
+
+</mx:Application>

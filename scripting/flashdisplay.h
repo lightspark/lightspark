@@ -28,6 +28,7 @@
 #include "flashutils.h"
 #include "thread_pool.h"
 #include "backends/geometry.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {
@@ -36,28 +37,52 @@ class RootMovieClip;
 class DisplayListTag;
 class LoaderInfo;
 class DisplayObjectContainer;
+class InteractiveObject;
 
 class DisplayObject: public EventDispatcher
 {
-friend class DisplayObjectContainer;
+//friend class DisplayObjectContainer;
+friend class GraphicsContainer;
 private:
 	MATRIX Matrix;
-	bool useMatrix;
+	ACQUIRE_RELEASE_FLAG(useMatrix);
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;
-	bool onStage;
-
+	/**
+	  	The object we are masking, if any
+	*/
+	DisplayObject* maskOf;
+	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	void becomeMaskOf(DisplayObject* m);
+	void setMask(DisplayObject* m);
 protected:
-	MATRIX getMatrix() const;
+	/**
+	  	The object that masks us, if any
+	*/
+	DisplayObject* mask;
+	mutable Spinlock spinlock;
+	void computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
+			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
+	bool onStage;
 	RootMovieClip* root;
 	LoaderInfo* loaderInfo;
 	int computeWidth();
 	int computeHeight();
 	bool isSimple() const;
+	bool skipRender(bool maskEnabled) const;
 	float alpha;
 	bool visible;
+	//Data to handle async rendering
+	Shepherd shepherd;
+	CachedSurface cachedSurface;
+	void defaultRender(bool maskEnabled) const;
+	DisplayObject(const DisplayObject& d);
+	void renderPrologue() const;
+	void renderEpilogue() const;
+	void hitTestPrologue() const;
+	void hitTestEpilogue() const;
 public:
 	int Depth;
 	tiny_string name;
@@ -69,18 +94,37 @@ public:
 	DisplayObjectContainer* parent;
 	DisplayObject();
 	~DisplayObject();
-	virtual void Render()
+	MATRIX getMatrix() const;
+	virtual void invalidate();
+	MATRIX getConcatenatedMatrix() const;
+	virtual const std::vector<GeomToken>& getTokens()
+	{
+		::abort();
+		throw RunTimeException("DisplayObject::getTokens");
+	}
+	virtual float getScaleFactor() const
+	{
+		::abort();
+		throw RunTimeException("DisplayObject::getScaleFactor");
+	}
+	virtual void Render(bool maskEnabled)
 	{
 		throw RunTimeException("DisplayObject::Render");
-	}
-	virtual void inputRender()
-	{
-		Render();
 	}
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		throw RunTimeException("DisplayObject::getBounds");
-		return false;
+	}
+	virtual InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y)
+	{
+		throw RunTimeException("DisplayObject::hitTest");
+		::abort();
+	}
+	//API to handle mask support in hit testing
+	virtual bool isOpaque(number_t x, number_t y) const
+	{
+		throw RunTimeException("DisplayObject::isOpaque");
+		::abort();
 	}
 	virtual void setRoot(RootMovieClip* root);
 	virtual void setOnStage(bool staged);
@@ -102,6 +146,7 @@ public:
 	ASFUNCTION(_getY);
 	ASFUNCTION(_setY);
 	ASFUNCTION(_getMask);
+	ASFUNCTION(_setMask);
 	ASFUNCTION(_setAlpha);
 	ASFUNCTION(_getAlpha);
 	ASFUNCTION(_getScaleX);
@@ -128,16 +173,15 @@ public:
 class InteractiveObject: public DisplayObject
 {
 protected:
-	float id;
-	void RenderProloue();
-	void RenderEpilogue();
+	bool mouseEnabled;
 public:
 	InteractiveObject();
 	virtual ~InteractiveObject();
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_setMouseEnabled);
+	ASFUNCTION(_getMouseEnabled);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	void setId(float i){id=i;}
 };
 
 class DisplayObjectContainer: public InteractiveObject
@@ -146,6 +190,7 @@ private:
 	void _addChildAt(DisplayObject* child, unsigned int index);
 	bool _contains(DisplayObject* d);
 protected:
+	void invalidate();
 	//This is shared between RenderThread and VM
 	std::list < DisplayObject* > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
@@ -172,20 +217,24 @@ public:
 	ASFUNCTION(contains);
 };
 
+class GraphicsContainer;
+
 class Graphics: public ASObject
 {
+friend class GraphicsContainer;
 private:
-	//builder and geometry are used by RenderThread and ABCVm
-	mutable Mutex builderMutex;
-	mutable ShapesBuilder builder;
-	mutable Mutex geometryMutex;
-	mutable bool validGeometry;
-	mutable std::vector<GeomShape> geometry;
+	std::vector<GeomToken> tokens;
 	//We need a list to preserve pointers
 	std::list<FILLSTYLE> styles; 
 	int curX, curY;
+	GraphicsContainer *const owner;
+	//TODO: Add spinlock
 public:
-	Graphics():builderMutex("builderMutex"),geometryMutex("geometryMutex"),validGeometry(false),curX(0),curY(0)
+	Graphics():owner(NULL)
+	{
+		throw RunTimeException("Cannot instantiate a Graphics object");
+	}
+	Graphics(GraphicsContainer* _o):curX(0),curY(0),owner(_o)
 	{
 	}
 	static void sinit(Class_base* c);
@@ -199,23 +248,39 @@ public:
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineTo);
 	ASFUNCTION(clear);
-	void Render();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	std::vector<GeomToken> getGraphicsTokens() const;
+	bool hitTest(number_t x, number_t y) const;
 };
 
-class Shape: public DisplayObject
+class GraphicsContainer
 {
-private:
+friend class Graphics;
+protected:
 	Graphics* graphics;
+	DisplayObject* owner;
+	GraphicsContainer(DisplayObject* _o):graphics(NULL),owner(_o){}
+	void invalidateGraphics();
+};
+
+class Shape: public DisplayObject, public GraphicsContainer
+{
+protected:
+	std::vector<GeomToken> cachedTokens;
+	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 public:
-	Shape():graphics(NULL){}
+	Shape():GraphicsContainer(this){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void Render();
-	void inputRender();
+	void Render(bool maskEnabled);
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	bool isOpaque(number_t x, number_t y) const;
+	void invalidate();
+	const std::vector<GeomToken>& getTokens();
+	float getScaleFactor() const;
 };
 
 class MorphShape: public DisplayObject
@@ -282,17 +347,18 @@ public:
 	{
 		return 0;
 	}
-	void Render();
+	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
 
-class Sprite: public DisplayObjectContainer
+class Sprite: public DisplayObjectContainer, public GraphicsContainer
 {
 friend class DisplayObject;
 private:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 protected:
-	Graphics* graphics;
+	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
+	InteractiveObject* hitTestImpl(number_t x, number_t y);
 public:
 	Sprite();
 	static void sinit(Class_base* c);
@@ -304,8 +370,9 @@ public:
 		return 0;
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void Render();
-	void inputRender();
+	void Render(bool maskEnabled);
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	void invalidate();
 };
 
 class MovieClip: public Sprite
@@ -343,16 +410,18 @@ public:
 	void setTotalFrames(uint32_t t);
 
 	//DisplayObject interface
-	void Render();
-	void inputRender();
+	void Render(bool maskEnabled);
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	void invalidate();
 	void setRoot(RootMovieClip* r);
+	void setOnStage(bool staged);
 	
 	/*! \brief Should be run with the default fragment/vertex program on
 	* * \param font An FT font used for debug messages
 	* * \param deep Flag to enable propagation of the debugRender to children */
 	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void check()
+	void check() const
 	{
 		assert_and_throw(frames.size()==framesLoaded);
 	}

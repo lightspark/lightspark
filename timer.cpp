@@ -28,9 +28,6 @@
 using namespace lightspark;
 using namespace std;
 
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
-
 uint64_t lightspark::timespecToMsecs(timespec t)
 {
 	uint64_t ret=0;

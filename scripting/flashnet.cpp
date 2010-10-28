@@ -24,6 +24,7 @@
 #include "parsing/flv.h"
 #include "scripting/flashsystem.h"
 #include "compat.h"
+#include "backends/rendering.h"
 
 using namespace std;
 using namespace lightspark;
@@ -677,7 +678,6 @@ void NetStream::tick()
 		}
 		return;
 	}
-
 	//If sound is enabled, and the stream is not paused anymore, resume the sound stream.
 	//This will restart time.
 	else if(audioStream && audioStream->isValid() && audioStream->paused())
@@ -698,6 +698,9 @@ void NetStream::tick()
 		audioDecoder->skipAll();
 	}
 	videoDecoder->skipUntil(streamTime);
+	//The next line ensures that the downloader will not be destroyed before the upload jobs are fenced
+	videoDecoder->waitForFencing();
+	sys->getRenderThread()->addUploadJob(videoDecoder);
 }
 
 bool NetStream::isReady() const
@@ -986,26 +989,28 @@ void NetStream::execute()
 		if(videoDecoder)
 			videoDecoder->waitFlushed();
 	}
-
-	//Clean up everything for a possible re-run
-	sem_wait(&mutex);
-	sys->downloadManager->destroy(downloader);
-	downloader=NULL;
-	//This transition is critical, so the mutex is needed
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);
 	tickStarted=false;
-	if(videoDecoder)
-		delete videoDecoder;
+	sem_wait(&mutex);
+	//Change the state to invalid to avoid locking
+	AudioDecoder* a=audioDecoder;
+	VideoDecoder* v=videoDecoder;
 	videoDecoder=NULL;
+	audioDecoder=NULL;
+	//Clean up everything for a possible re-run
+	sys->downloadManager->destroy(downloader);
+	//This transition is critical, so the mutex is needed
+	downloader=NULL;
 	if(audioStream)
 		sys->audioManager->freeStreamPlugin(audioStream);
 	audioStream=NULL;
-	if(audioDecoder)
-		delete audioDecoder;
-	audioDecoder=NULL;
-
 	sem_post(&mutex);
+	if(v)
+		delete v;
+	if(a)
+		delete a;
+	
 }
 
 void NetStream::threadAbort()
@@ -1087,6 +1092,12 @@ double NetStream::getFrameRate()
 	return frameRate;
 }
 
+const TextureChunk& NetStream::getTexture() const
+{
+	assert(isReady());
+	return videoDecoder->getTexture();
+}
+
 uint32_t NetStream::getStreamTime()
 {
 	assert(isReady());
@@ -1103,12 +1114,6 @@ uint32_t NetStream::getTotalLength()
 {
 	assert(isReady());
 	return downloader->getLength();
-}
-
-bool NetStream::copyFrameToTexture(TextureBuffer& tex)
-{
-	assert(isReady());
-	return videoDecoder->copyFrameToTexture(tex);
 }
 
 void URLVariables::sinit(Class_base* c)

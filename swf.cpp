@@ -52,8 +52,6 @@ extern "C" {
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
 
 SWF_HEADER::SWF_HEADER(istream& in):valid(false)
@@ -169,9 +167,8 @@ SystemState::SystemState(ParseThread* p):
 	RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
-	showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),
-	currentVm(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false),
-	downloadManager(NULL),scaleMode(SHOW_ALL)
+	showProfilingData(false),showDebug(false),currentVm(NULL),finalizingDestruction(false),
+	useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
 	//Create the thread pool
@@ -196,7 +193,8 @@ SystemState::SystemState(ParseThread* p):
 	
 	setPrototype(Class<MovieClip>::getClass());
 
-	setOnStage(true);
+	renderThread=new RenderThread(this);
+	inputThread=new InputThread(this);
 }
 
 void SystemState::setDownloadedPath(const tiny_string& p)
@@ -409,12 +407,9 @@ void SystemState::setError(const string& c)
 		error=true;
 		errorCause=c;
 		timerThread->stop();
-		if(renderThread)
-		{
-			//Disable timed rendering
-			removeJob(renderThread);
-			renderThread->draw();
-		}
+		//Disable timed rendering
+		removeJob(renderThread);
+		renderThread->draw();
 	}
 }
 
@@ -443,10 +438,8 @@ void SystemState::wait()
 	event.user.data1 = 0;
 	event.user.data1 = 0;
 	SDL_PushEvent(&event);
-	if(renderThread)
-		renderThread->wait();
-	if(inputThread)
-		inputThread->wait();
+	renderThread->wait();
+	inputThread->wait();
 	if(currentVm)
 		currentVm->shutdown();
 }
@@ -503,8 +496,8 @@ void SystemState::delayedCreation(SystemState* th)
 	p.window=GDK_WINDOW_XWINDOW(p.container->window);
 	XSync(p.display, False);
 	sem_wait(&th->mutex);
-	th->renderThread=new RenderThread(th, th->engine, &th->npapiParams);
-	th->inputThread=new InputThread(th, th->engine, &th->npapiParams);
+	th->renderThread->start(th->engine, &th->npapiParams);
+	th->inputThread->start(th->engine, &th->npapiParams);
 	//If the render rate is known start the render ticks
 	if(th->renderRate)
 		th->startRenderTicks();
@@ -516,7 +509,6 @@ void SystemState::delayedCreation(SystemState* th)
 void SystemState::createEngines()
 {
 	sem_wait(&mutex);
-	assert(renderThread==NULL && inputThread==NULL);
 #ifdef COMPILE_PLUGIN
 	//Check if we should fall back on gnash
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
@@ -601,13 +593,15 @@ void SystemState::createEngines()
 			sem_post(&mutex);
 			//Engines should not be started, stop everything
 			stopEngines();
+			sem_post(&mutex);
 			return;
-		}
+			}
 	}
 #else 
 	//COMPILE_PLUGIN not defined
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
 	{
+		sem_post(&mutex);
 		throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
 	}
 #endif
@@ -617,18 +611,22 @@ void SystemState::createEngines()
 #ifdef COMPILE_PLUGIN
 		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
 #else
+		sem_post(&mutex);
 		throw new UnsupportedException("Plugin engine not available when not built with COMPILE_PLUGIN");
 #endif
 	}
 	else //SDL engine
 	{
-		renderThread=new RenderThread(this, engine, NULL);
-		inputThread=new InputThread(this, engine, NULL);
+		renderThread->start(engine, NULL);
+		inputThread->start(engine, NULL);
 		//If the render rate is known start the render ticks
 		if(renderRate)
 			startRenderTicks();
 	}
 	sem_post(&mutex);
+	renderThread->waitForInitialization();
+	//Now that there is something to actually render the contents add the SystemState to the stage
+	setOnStage(true);
 }
 
 void SystemState::needsAVM2(bool n)
@@ -671,8 +669,7 @@ void SystemState::setRenderRate(float rate)
 	
 	//The requested rate is higher, let's reschedule the job
 	renderRate=rate;
-	if(renderThread)
-		startRenderTicks();
+	startRenderTicks();
 	sem_post(&mutex);
 }
 
@@ -959,7 +956,7 @@ bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	return true;
 }
 
-void RootMovieClip::Render()
+void RootMovieClip::Render(bool maskEnabled)
 {
 	Locker l(mutexFrames);
 	while(1)
@@ -975,7 +972,7 @@ void RootMovieClip::Render()
 		l.lock();
 	}
 
-	MovieClip::Render();
+	MovieClip::Render(maskEnabled);
 }
 
 void RootMovieClip::setFrameCount(int f)

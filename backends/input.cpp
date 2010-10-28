@@ -31,12 +31,15 @@
 
 using namespace lightspark;
 using namespace std;
-extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),threaded(false),
+InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
 	LOG(LOG_NO_INFO,_("Creating input thread"));
+}
+
+void InputThread::start(ENGINE e,void* param)
+{
 	if(e==SDL)
 	{
 		threaded=true;
@@ -86,9 +89,6 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 			//cout << "key press" << endl;
 			switch(event->key.keyval)
 			{
-				case GDK_i:
-					th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
-					break;
 				case GDK_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;
@@ -107,47 +107,15 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 		}
 		case GDK_BUTTON_PRESS:
 		{
-			//Grab focus
+			//Grab focus, to receive keypresses
 			gtk_widget_grab_focus(widget);
-			//cout << "Press" << endl;
-			Locker locker(th->mutexListeners);
-			th->m_sys->getRenderThread()->requestInput();
-			float selected=th->m_sys->getRenderThread()->getIdAt(event->button.x,event->button.y);
-			if(selected!=0)
-			{
-				int index=lrint(th->listeners.size()*selected);
-				index--;
-
-				th->lastMouseDownTarget=th->listeners[index];
-				//Add event to the event queue
-				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
-				//And select that object for debugging (if needed)
-				if(th->m_sys->showDebug)
-					th->m_sys->getRenderThread()->selectedDebug=th->listeners[index];
-			}
+			th->handleMouseDown(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
 		case GDK_BUTTON_RELEASE:
 		{
-			//cout << "Release" << endl;
-			Locker locker(th->mutexListeners);
-			th->m_sys->getRenderThread()->requestInput();
-			float selected=th->m_sys->getRenderThread()->getIdAt(event->button.x,event->button.y);
-			if(selected!=0)
-			{
-				int index=lrint(th->listeners.size()*selected);
-				index--;
-
-				//Add event to the event queue
-				getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseUp",true));
-				//Also send the click event
-				if(th->lastMouseDownTarget==th->listeners[index])
-				{
-					getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("click",true));
-					th->lastMouseDownTarget=NULL;
-				}
-			}
+			th->handleMouseUp(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
@@ -160,6 +128,36 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 	return ret;
 }
 #endif
+
+void InputThread::handleMouseDown(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	InteractiveObject* selected=m_sys->hitTest(NULL,x,y);
+	assert(maskStack.empty());
+	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
+	lastMouseDownTarget=selected;
+	//Add event to the event queue
+	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseDown",true));
+	//And select that object for debugging (if needed)
+	if(m_sys->showDebug)
+		m_sys->getRenderThread()->selectedDebug=selected;
+}
+
+void InputThread::handleMouseUp(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	InteractiveObject* selected=m_sys->hitTest(NULL,x,y);
+	assert(maskStack.empty());
+	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
+	//Add event to the event queue
+	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));
+	if(lastMouseDownTarget==selected)
+	{
+		//Also send the click event
+		m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("click",true));
+		lastMouseDownTarget=NULL;
+	}
+}
 
 void* InputThread::sdl_worker(InputThread* th)
 {
@@ -178,9 +176,6 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_d:
 						th->m_sys->showDebug=!th->m_sys->showDebug;
 						break;
-					case SDLK_i:
-						th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
-						break;
 					case SDLK_p:
 						th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 						break;
@@ -193,18 +188,6 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_s:
 						th->m_sys->state.stop_FP=true;
 						break;
-					case SDLK_DOWN:
-						th->m_sys->yOffset-=10;
-						break;
-					case SDLK_UP:
-						th->m_sys->yOffset+=10;
-						break;
-					case SDLK_LEFT:
-						th->m_sys->xOffset-=10;
-						break;
-					case SDLK_RIGHT:
-						th->m_sys->xOffset+=10;
-						break;
 					//Ignore any other keystrokes
 					default:
 						break;
@@ -213,45 +196,12 @@ void* InputThread::sdl_worker(InputThread* th)
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
-				Locker locker(th->mutexListeners);
-				th->m_sys->getRenderThread()->requestInput();
-				float selected=th->m_sys->getRenderThread()->getIdAt(event.button.x,event.button.y);
-				if(selected==0)
-				{
-					th->m_sys->getRenderThread()->selectedDebug=NULL;
-					break;
-				}
-
-				int index=lrint(th->listeners.size()*selected);
-				index--;
-
-				th->lastMouseDownTarget=th->listeners[index];
-				//Add event to the event queue
-				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
-				//And select that object for debugging (if needed)
-				if(th->m_sys->showDebug)
-					th->m_sys->getRenderThread()->selectedDebug=th->listeners[index];
+				th->handleMouseDown(event.button.x,event.button.y);
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
-				Locker locker(th->mutexListeners);
-				th->m_sys->getRenderThread()->requestInput();
-				float selected=th->m_sys->getRenderThread()->getIdAt(event.button.x,event.button.y);
-				if(selected==0)
-					break;
-
-				int index=lrint(th->listeners.size()*selected);
-				index--;
-
-				//Add event to the event queue
-				getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseUp",true));
-				//Also send the click event
-				if(th->lastMouseDownTarget==th->listeners[index])
-				{
-					getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("click",true));
-					th->lastMouseDownTarget=NULL;
-				}
+				th->handleMouseUp(event.button.x,event.button.y);
 				break;
 			}
 			case SDL_VIDEORESIZE:
@@ -285,17 +235,6 @@ void InputThread::addListener(InteractiveObject* ob)
 	
 	//Register the listener
 	listeners.push_back(ob);
-	unsigned int count=listeners.size();
-
-	//Set a unique id for listeners in the range [0,1]
-	//count is the number of listeners, this is correct so that no one gets 0
-	float increment=1.0f/count;
-	float cur=increment;
-	for(unsigned int i=0;i<count;i++)
-	{
-		listeners[i]->setId(cur);
-		cur+=increment;
-	}
 }
 
 void InputThread::removeListener(InteractiveObject* ob)
@@ -308,18 +247,6 @@ void InputThread::removeListener(InteractiveObject* ob)
 	
 	//Unregister the listener
 	listeners.erase(it);
-	
-	unsigned int count=listeners.size();
-
-	//Set a unique id for listeners in the range [0,1]
-	//count is the number of listeners, this is correct so that no one gets 0
-	float increment=1.0f/count;
-	float cur=increment;
-	for(unsigned int i=0;i<count;i++)
-	{
-		listeners[i]->setId(cur);
-		cur+=increment;
-	}
 }
 
 void InputThread::enableDrag(Sprite* s, const lightspark::RECT& limit)
@@ -349,3 +276,15 @@ void InputThread::disableDrag()
 	}
 }
 
+bool InputThread::isMasked(number_t x, number_t y) const
+{
+	for(uint32_t i=0;i<maskStack.size();i++)
+	{
+		number_t localX, localY;
+		maskStack[i].m.multiply2D(x,y,localX,localY);
+		if(!maskStack[i].d->isOpaque(localX, localY))
+			return false;
+	}
+
+	return true;
+}

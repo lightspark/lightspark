@@ -119,7 +119,7 @@ public:
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();
-	void Render();
+	void Render(bool maskEnabled);
 	void parsingFailed();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
@@ -222,10 +222,7 @@ public:
 
 	//Interative analysis flags
 	bool showProfilingData;
-	bool showInteractiveMap;
 	bool showDebug;
-	int xOffset;
-	int yOffset;
 	
 	std::string errorCause;
 	void setError(const std::string& c);
@@ -316,4 +313,5 @@ public:
 };
 
 };
+extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
 #endif

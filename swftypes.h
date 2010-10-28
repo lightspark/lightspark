@@ -493,6 +493,30 @@ public:
 		Alpha=255;
 		return *this;
 	}
+	float rf() const
+	{
+		float ret=Red;
+		ret/=255;
+		return ret;
+	}
+	float gf() const
+	{
+		float ret=Green;
+		ret/=255;
+		return ret;
+	}
+	float bf() const
+	{
+		float ret=Blue;
+		ret/=255;
+		return ret;
+	}
+	float af() const
+	{
+		float ret=Alpha;
+		ret/=255;
+		return ret;
+	}
 };
 
 typedef UI8 LANGCODE;
@@ -693,17 +717,19 @@ class MATRIX
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
 	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
 public:
-	float ScaleX;
-	float ScaleY;
-	float RotateSkew0;
-	float RotateSkew1;
+	number_t ScaleX;
+	number_t ScaleY;
+	number_t RotateSkew0;
+	number_t RotateSkew1;
 	int TranslateX;
 	int TranslateY;
 public:
 	MATRIX():ScaleX(1),ScaleY(1),RotateSkew0(0),RotateSkew1(0),TranslateX(0),TranslateY(0){}
 	void get4DMatrix(float matrix[16]) const;
-	void getTranslation(int& x, int& y) const;
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	MATRIX multiplyMatrix(const MATRIX& r) const;
+	const bool operator!=(const MATRIX& r) const;
+	MATRIX getInverted() const;
 };
 
 class GRADRECORD
@@ -745,30 +771,20 @@ public:
 class FILLSTYLEARRAY;
 class MORPHFILLSTYLE;
 
+enum FILL_STYLE_TYPE { SOLID_FILL=0x00, LINEAR_GRADIENT=0x10, RADIAL_GRADIENT=0x12, FOCAL_RADIAL_GRADIENT=0x13, REPEATING_BITMAP=0x40,
+			CLIPPED_BITMAP=0x41, NON_SMOOTHED_REPEATING_BITMAP=0x42, NON_SMOOTHED_CLIPPED_BITMAP=0x43};
+
 class FILLSTYLE
 {
-	friend std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v);
-	friend std::istream& operator>>(std::istream& s, FILLSTYLE& v);
-	friend std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v);
-	friend class DefineTextTag;
-	friend class DefineShape2Tag;
-	friend class DefineShape3Tag;
-	friend class GeomShape;
-	friend class Graphics;
-private:
+public:
 	int version;
-	UI8 FillStyleType;
+	FILL_STYLE_TYPE FillStyleType;
 	RGBA Color;
 	MATRIX GradientMatrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
 	UI16 BitmapId;
 	MATRIX BitmapMatrix;
-
-public:
-	virtual void setFragmentProgram() const;
-	static void fixedColor(float r, float g, float b);
-	virtual void setVertexData(arrayElem* elem);
 	virtual ~FILLSTYLE(){}
 };
 
@@ -784,7 +800,7 @@ public:
 	std::vector<UI8> EndRatios;
 	std::vector<RGBA> StartColors;
 	std::vector<RGBA> EndColors;
-	virtual ~MORPHFILLSTYLE(){}
+	~MORPHFILLSTYLE(){}
 };
 
 class LINESTYLE
@@ -891,8 +907,6 @@ public:
 	int32_t AnchorDeltaX;
 	int32_t AnchorDeltaY;
 
-//	SHAPERECORD():TypeFlag(false),StateNewStyles(false),StateLineStyle(false),StateFillStyle1(false),StateFillStyle0(false),
-//		StateMoveTo(false),MoveDeltaX(0),MoveDeltaY(0),DeltaX(0),DeltaY(0){};
 	SHAPERECORD(SHAPE* p,BitStream& bs);
 };
 
@@ -928,8 +942,6 @@ public:
 	DefineTextTag* parent;
 	TEXTRECORD(DefineTextTag* p):parent(p){}
 };
-
-class GeomShape;
 
 class SHAPE
 {

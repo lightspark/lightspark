@@ -25,11 +25,10 @@
 #include "platforms/fastpaths.h"
 #include "swf.h"
 #include "graphics.h"
+#include "backends/rendering.h"
 
 using namespace lightspark;
 using namespace std;
-
-extern TLSDATA SystemState* sys;
 
 bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 {
@@ -39,23 +38,46 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		frameHeight=h;
 		LOG(LOG_NO_INFO,_("VIDEO DEC: Video frame size ") << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
+		videoTexture=sys->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
 		return true;
 	}
 	else
 		return false;
 }
 
-bool VideoDecoder::resizeIfNeeded(TextureBuffer& tex)
+bool VideoDecoder::resizeIfNeeded(TextureChunk& tex)
 {
 	if(!resizeGLBuffers)
 		return false;
 
-	//Request a sane alignment
-	tex.setRequestedAlignment(16,1);
-	//Initialize texture to video size
-	tex.resize(frameWidth, frameHeight);
+	//Chunks are at least aligned to 128, we need 16
+	assert_and_throw(tex.width==frameWidth && tex.height==frameHeight);
 	resizeGLBuffers=false;
 	return true;
+}
+
+void VideoDecoder::sizeNeeded(uint32_t& w, uint32_t& h) const
+{
+	//Return the actual width aligned to 16, the SSE2 packer is advantaged by this
+	//and it comes for free as the texture tiles are aligned to 128
+	w=(frameWidth+15)&0xfffffff0;
+	h=frameHeight;
+}
+
+const TextureChunk& VideoDecoder::getTexture()
+{
+	return videoTexture;
+}
+
+void VideoDecoder::uploadFence()
+{
+	assert(fenceCount);
+	ATOMIC_DECREMENT(fenceCount);
+}
+
+void VideoDecoder::waitForFencing()
+{
+	ATOMIC_INCREMENT(fenceCount);
 }
 
 #ifdef ENABLE_LIBAVCODEC
@@ -80,7 +102,7 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):curBuffer(0),curBufferOffset(0),
-	codecContext(NULL),mutex("VideoDecoder"),initialized(false)
+	codecContext(NULL),mutex("VideoDecoder")
 {
 	//The tag is the header, initialize decoding
 	codecContext=avcodec_alloc_context();
@@ -124,6 +146,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 
 FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
+	while(fenceCount);
 	assert(codecContext);
 	av_free(codecContext);
 	av_free(frameIn);
@@ -224,62 +247,19 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 	buffers.commitLast();
 }
 
-bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
+void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h) const
 {
-	assert(isValid());
-	if(!initialized)
-	{
-		glGenBuffers(2,videoBuffers);
-		initialized=true;
-	}
-
-	bool ret=false;
-	//Align width to 16 bytes (4 pixels), the alignment protocol is also respected when resizing texture
-	const uint32_t alignedWidth=(frameWidth+15)&0xfffffff0;
-	if(VideoDecoder::resizeIfNeeded(tex))
-	{
-		//Initialize both PBOs to video size, the width is aligned to 16, add some padding to ensure space to align the buffer
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4+16, 0, GL_STREAM_DRAW);
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[1]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4+16, 0, GL_STREAM_DRAW);
-	}
+	if(buffers.isEmpty())
+		return;
+	//Verify that the size are right
+	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
+	//At least a frame is available
+	const YUVBuffer& cur=buffers.front();
+	//If the width is compatible with full aligned accesses use the aligned version of the packer
+	if(frameWidth%32==0)
+		fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
 	else
-	{
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
-		//Copy content of the pbo to the texture, 0 is the offset in the pbo
-		tex.setBGRAData((uint8_t*)curBufferOffset, alignedWidth, frameHeight);
-		//Now texture width has become alignedWidth, reset it to the right value
-		tex.resize(frameWidth,frameHeight);
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-		ret=true;
-	}
-
-	Locker locker(mutex);
-	if(!buffers.isEmpty())
-	{
-		//Increment and wrap current buffer index
-		unsigned int nextBuffer = (curBuffer + 1)%2;
-
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
-		uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
-		uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
-
-		//At least a frame is available
-		YUVBuffer& cur=buffers.front();
-		//If the width is compatible with full aligned accesses use the aligned version of the packer
-		if(frameWidth%32==0)
-			fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],alignedBuf,frameWidth,frameHeight);
-		else
-			fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],alignedBuf,frameWidth,frameHeight);
-
-		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-		curBufferOffset=alignedBuf-buf;
-		curBuffer=nextBuffer;
-	}
-	return ret;
+		fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
 }
 
 void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const

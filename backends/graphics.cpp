@@ -29,7 +29,6 @@
 #include <iostream>
 
 using namespace lightspark;
-extern TLSDATA RenderThread* rt;
 
 void lightspark::cleanGLErrors()
 {
@@ -191,6 +190,7 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 			glBindTexture(GL_TEXTURE_2D,texId);
 			LOG(LOG_CALLS,_("Reallocating texture to size ") << w << 'x' << h);
 			setAllocSize(w,h);
+			while(glGetError()!=GL_NO_ERROR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 			GLenum err=glGetError();
 			assert(err!=GL_INVALID_OPERATION);
@@ -310,4 +310,243 @@ void MatrixApplier::concat(const MATRIX& m)
 void MatrixApplier::unapply()
 {
 	glPopMatrix();
+}
+
+TextureChunk::TextureChunk(uint32_t w, uint32_t h)
+{
+	width=w;
+	height=h;
+	if(w==0 || h==0)
+	{
+		chunks=NULL;
+		return;
+	}
+	const uint32_t blocksW=(w+127)/128;
+	const uint32_t blocksH=(h+127)/128;
+	chunks=new uint32_t[blocksW*blocksH];
+}
+
+TextureChunk::TextureChunk(const TextureChunk& r):texId(0),chunks(NULL),width(r.width),height(r.height)
+{
+	assert(chunks==NULL);
+	assert(width==0 && height==0);
+	assert(texId==0);
+	return;
+}
+
+TextureChunk& TextureChunk::operator=(const TextureChunk& r)
+{
+	if(chunks)
+	{
+		//We were already initialized, so first clean up
+		sys->getRenderThread()->releaseTexture(*this);
+		delete[] chunks;
+	}
+	width=r.width;
+	height=r.height;
+	uint32_t blocksW=(width+127)/128;
+	uint32_t blocksH=(height+127)/128;
+	texId=r.texId;
+	chunks=new uint32_t[blocksW*blocksH];
+	memcpy(chunks, r.chunks, blocksW*blocksH*4);
+	return *this;
+}
+
+TextureChunk::~TextureChunk()
+{
+	delete[] chunks;
+}
+
+bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
+{
+	if(w==0 || h==0)
+	{
+		//The texture collapsed, release the resources
+		sys->getRenderThread()->releaseTexture(*this);
+		delete[] chunks;
+		chunks=NULL;
+		width=w;
+		height=h;
+		return true;
+	}
+	const uint32_t blocksW=(width+127)/128;
+	const uint32_t blocksH=(height+127)/128;
+	if(w<=blocksW*128 && h<=blocksH*128)
+	{
+		width=w;
+		height=h;
+		return true;
+	}
+	return false;
+}
+
+void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h) const
+{
+	w=width;
+	h=height;
+}
+
+void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h) const
+{
+	if(surfaceBytes)
+		memcpy(data,surfaceBytes,w*h*4);
+}
+
+const TextureChunk& CairoRenderer::getTexture()
+{
+	//Verify that the texture is large enough
+	if(!surface.tex.resizeIfLargeEnough(width, height))
+		surface.tex=sys->getRenderThread()->allocateTexture(width, height,false);
+	surface.xOffset=xOffset;
+	surface.yOffset=yOffset;
+	return surface.tex;
+}
+
+void CairoRenderer::uploadFence()
+{
+	if(surfaceBytes)
+		Sheep::unlockOwner();
+	delete this;
+}
+
+cairo_matrix_t CairoRenderer::MATRIXToCairo(const MATRIX& matrix)
+{
+	cairo_matrix_t ret;
+	ret.xx=matrix.ScaleX;
+	ret.xy=matrix.RotateSkew1;
+	ret.yx=matrix.RotateSkew0;
+	ret.yy=matrix.ScaleY;
+	ret.x0=matrix.TranslateX;
+	ret.y0=matrix.TranslateY;
+	return ret;
+}
+
+void CairoRenderer::threadAbort()
+{
+	//Nothing special to be done
+}
+
+void CairoRenderer::jobFence()
+{
+	sys->getRenderThread()->addUploadJob(this);
+}
+
+bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill)
+{
+	cairo_scale(cr, scaleCorrection, scaleCorrection);
+	bool empty=true;
+	for(uint32_t i=0;i<tokens.size();i++)
+	{
+		switch(tokens[i].type)
+		{
+			case STRAIGHT:
+				cairo_line_to(cr, tokens[i].p1.x, tokens[i].p1.y);
+				empty=false;
+				break;
+			case MOVE:
+				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
+				break;	
+			case SET_FILL:
+			{
+				if(skipFill)
+					break;
+				if(!empty)
+				{
+					cairo_fill(cr);
+					empty=true;
+				}
+				//NOTE: Destruction of the pattern happens internally by refcounting
+				const FILLSTYLE& style=tokens[i].style;
+				if(style.FillStyleType==SOLID_FILL)
+				{
+					const RGBA& color=style.Color;
+					cairo_set_source_rgba (cr, color.rf(), color.gf(), color.bf(), color.af());
+				}
+				else if(style.FillStyleType==LINEAR_GRADIENT)
+				{
+					cairo_pattern_t* pattern=cairo_pattern_create_linear(-16384,0,16384,0);
+					const cairo_matrix_t& pattern_mat=MATRIXToCairo(style.GradientMatrix);
+					cairo_pattern_set_matrix(pattern, &pattern_mat);
+					
+					for(uint32_t i=0;i<style.Gradient.GradientRecords.size();i++)
+					{
+						double ratio=style.Gradient.GradientRecords[i].Ratio;
+						ratio/=255.0f;
+						const RGBA& color=style.Gradient.GradientRecords[i].Color;
+						cairo_pattern_add_color_stop_rgba(pattern, ratio, color.rf(), color.gf(), color.bf(), color.af());
+					} 
+					cairo_set_source(cr, pattern);
+				}
+				else
+				{
+					LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style");
+				}
+				break;
+			}
+			default:
+				::abort();
+		}
+	}
+	return empty;
+}
+
+void CairoRenderer::cairoClean(cairo_t* cr) const
+{
+	cairo_set_source_rgba(cr, 0, 0, 0, 0);
+	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+	cairo_paint(cr);
+}
+
+cairo_surface_t* CairoRenderer::allocateSurface()
+{
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	assert(cairoWidthStride==width*4);
+	assert(surfaceBytes==NULL);
+	surfaceBytes=new uint8_t[cairoWidthStride*height];
+	return cairo_image_surface_create_for_data(surfaceBytes, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
+}
+
+void CairoRenderer::execute()
+{
+	//Will be unlocked after uploadFence
+	if(!Sheep::lockOwner())
+		return;
+	if(width==0 || height==0)
+	{
+		//Nothing to do, move on
+		return;
+	}
+	cairo_surface_t* cairoSurface=allocateSurface();
+	cairo_t* cr=cairo_create(cairoSurface);
+
+	cairoClean(cr);
+
+	matrix.TranslateX-=xOffset;
+	matrix.TranslateY-=yOffset;
+	const cairo_matrix_t& mat=MATRIXToCairo(matrix);
+	cairo_transform(cr, &mat);
+
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, false);
+	if(!empty)
+		cairo_fill(cr);
+
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+}
+
+bool CairoRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
+{
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+	cairo_t* cr=cairo_create(cairoSurface);
+	
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true);
+	bool ret=false;
+	if(!empty)
+		ret=cairo_in_fill(cr, x, y);
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+	return ret;
 }

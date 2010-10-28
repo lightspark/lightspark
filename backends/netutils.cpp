@@ -30,7 +30,6 @@
 #endif
 
 using namespace lightspark;
-extern TLSDATA SystemState* sys;
 
 /**
  * \brief Download manager constructor
@@ -42,8 +41,9 @@ DownloadManager::DownloadManager()
 	sem_init(&mutex, 0, 1);
 	//== Lock initialized
 }
+
 /**
- * \brief Download manager destructor.
+ * \brief Destroyes all the pending downloads, must be called in the destructor of each derived class
  *
  * Traverses the list of active downloaders, calling \c stop() and \c destroy() on all of them.
  * If the downloader is already destroyed, destroy() won't do anything (no double delete).
@@ -51,7 +51,7 @@ DownloadManager::DownloadManager()
  * \see Downloader::stop()
  * \see Downloader::destroy()
  */
-DownloadManager::~DownloadManager()
+void DownloadManager::cleanUp()
 {
 	sem_wait(&mutex);
 	//-- Lock acquired
@@ -78,11 +78,17 @@ DownloadManager::~DownloadManager()
  * \param downloader A pointer to the \c Downloader to be destroyed.
  * \see DownloadManager::download()
  */
-void DownloadManager::destroy(Downloader* downloader)
+void StandaloneDownloadManager::destroy(Downloader* downloader)
 {
 	//If the downloader was still in the active-downloader list, delete it
 	if(removeDownloader(downloader))
-		delete downloader;
+	{
+		downloader->waitForTermination();
+		//NOTE: the following static cast should be safe. we now the type of created objects
+		ThreadedDownloader* thd=static_cast<ThreadedDownloader*>(downloader);
+		thd->waitFencing();
+		delete thd;
+	}
 }
 
 /**
@@ -134,6 +140,11 @@ StandaloneDownloadManager::StandaloneDownloadManager()
 	type = STANDALONE;
 }
 
+StandaloneDownloadManager::~StandaloneDownloadManager()
+{
+	cleanUp();
+}
+
 /**
  * \brief Create a Downloader for an URL.
  *
@@ -172,6 +183,7 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
 		downloader=new CurlDownloader(url.getParsedURL(), cached);
 	}
+	downloader->enableFencingWaiting();
 	addDownloader(downloader);
 	sys->addJob(downloader);
 	return downloader;
@@ -958,6 +970,27 @@ void Downloader::waitForTermination()
 	sem_post(&mutex);
 }
 
+void ThreadedDownloader::enableFencingWaiting()
+{
+	RELEASE_WRITE(fenceState,true);
+}
+
+/**
+ * \brief The jobFence for ThreadedDownloader.
+ *
+ * This is the very last thing \c ThreadPool does with the \c ThreadedDownloader.
+ * \post The \c fenceState is set to false
+ */
+void ThreadedDownloader::jobFence()
+{
+	RELEASE_WRITE(fenceState,false);
+}
+
+void ThreadedDownloader::waitFencing()
+{
+	while(fenceState);
+}
+
 /**
  * \brief Constructor for the ThreadedDownloader class.
  *
@@ -966,10 +999,8 @@ void Downloader::waitForTermination()
  * \param[in] _cached Whether or not to cache this download.
  */
 ThreadedDownloader::ThreadedDownloader(const tiny_string& url, bool cached):
-	Downloader(url, cached)
+	Downloader(url, cached),fenceState(false)
 {
-	sem_init(&fenced, 0, 0);
-	//== Fenced signal initialized
 }
 
 /**
@@ -977,25 +1008,12 @@ ThreadedDownloader::ThreadedDownloader(const tiny_string& url, bool cached):
  *
  * Waits for the \c fenced signal.
  * \post \c fenced signalled was handled
- */
+ *
 ThreadedDownloader::~ThreadedDownloader()
 {
 	sem_wait(&fenced);
 	//-- Fenced signalled
-}
-
-/**
- * \brief The jobFence for ThreadedDownloader.
- *
- * This is the very last thing \c ThreadPool does with the \c ThreadedDownloader.
- * Signals \c fenced.
- * \post \c fenced signalled
- */
-void ThreadedDownloader::jobFence()
-{
-	//++ Signal fenced
-	sem_post(&fenced);
-}
+}*/
 
 /**
  * \brief Constructor for the CurlDownloader class.

@@ -25,6 +25,7 @@
 #include <semaphore.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <vector>
 
 namespace lightspark
 {
@@ -81,6 +82,26 @@ public:
 	//void signal_all();
 	void wait();
 	bool try_wait();
+};
+
+class SemaphoreLighter
+{
+private:
+	Semaphore& _s;
+	bool lighted;
+public:
+	SemaphoreLighter(Semaphore& s):_s(s),lighted(false){}
+	~SemaphoreLighter()
+	{
+		if(!lighted)
+			_s.signal();
+	}
+	void light()
+	{
+		assert(!lighted);
+		_s.signal();
+		lighted=true;
+	}
 };
 
 class Locker
@@ -182,6 +203,128 @@ public:
 		return tmp;
 	}
 
+};
+
+class Spinlock
+{
+private:
+	pthread_spinlock_t l;
+public:
+	Spinlock()
+	{
+		pthread_spin_init(&l,0);
+	}
+	~Spinlock()
+	{
+		pthread_spin_destroy(&l);
+	}
+	void lock()
+	{
+		pthread_spin_lock(&l);
+	}
+	bool trylock()
+	{
+		return pthread_spin_trylock(&l)==0;
+	}
+	void unlock()
+	{
+		pthread_spin_unlock(&l);
+	}
+};
+
+class SpinlockLocker
+{
+private:
+	Spinlock& lock;
+public:
+	SpinlockLocker(Spinlock& _l):lock(_l)
+	{
+		lock.lock();
+	}
+	~SpinlockLocker()
+	{
+		lock.unlock();
+	}
+};
+
+class Shepherd;
+
+class Sheep
+{
+friend class Shepherd;
+private:
+	ACQUIRE_RELEASE_FLAG(disable);
+	ACQUIRE_RELEASE_FLAG(executing);
+	Shepherd* owner;
+protected:
+	bool lockOwner()
+	{
+		RELEASE_WRITE(executing,true);
+		if(ACQUIRE_READ(disable))
+		{
+			RELEASE_WRITE(executing,false);
+			return false;
+		}
+		return true;
+	}
+	void unlockOwner()
+	{
+		RELEASE_WRITE(executing,false);
+	}
+public:
+	Sheep(Shepherd* _o):disable(false),executing(false),owner(_o){}
+	~Sheep();
+};
+
+class Shepherd
+{
+private:
+	std::vector<Sheep*> sheeps;
+	Spinlock sheepsLock;
+public:
+	~Shepherd()
+	{
+		sheepsLock.lock();
+		for(uint32_t i=0;i<sheeps.size();i++)
+		{
+			if(sheeps[i])
+			{
+				RELEASE_WRITE(sheeps[i]->disable,true);
+				while(ACQUIRE_READ(sheeps[i]->executing));
+				sheeps[i]->owner=NULL;
+			}
+		}
+		sheepsLock.unlock();
+	}
+	void addSheep(Sheep* s)
+	{
+		sheepsLock.lock();
+		for(uint32_t i=0;i<sheeps.size();i++)
+		{
+			if(sheeps[i]==NULL)
+			{
+				sheeps[i]=s;
+				break;
+			}
+		}
+		sheepsLock.unlock();
+	}
+	bool removeSheep(Sheep* s)
+	{
+		bool ret=sheepsLock.trylock();
+		if(!ret)
+			return false;
+		for(uint32_t i=0;i<sheeps.size();i++)
+		{
+			if(sheeps[i]==s)
+			{
+				sheeps[i]=NULL;
+				break;
+			}
+		}
+		sheepsLock.unlock();
+		return true;
+	}
 };
 
 };

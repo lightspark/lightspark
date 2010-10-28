@@ -21,7 +21,6 @@
 #include "swf.h"
 
 using namespace lightspark;
-extern TLSDATA SystemState* sys;
 
 CrossDomainPolicy::CrossDomainPolicy(const unsigned char* buffer, size_t length, 
 		POLICYFILETYPE _type, POLICYFILESUBTYPE _subtype, bool _master):

@@ -24,23 +24,18 @@
 #include <GL/glew.h>
 #include <vector>
 #include "swftypes.h"
+#include "threading.h"
+#include <cairo.h>
+#include "backends/geometry.h"
 
 namespace lightspark
 {
 
+class DisplayObject;
+
 void cleanGLErrors();
 
-class GLResource
-{
-public:
-	/**
-		Should be used to cleanly destroy GL resources inside the render thread
-	*/
-	virtual void shutdown()=0;
-	virtual ~GLResource() {}
-};
-
-class TextureBuffer: public GLResource
+class TextureBuffer
 {
 private:
 	GLuint texId;
@@ -144,6 +139,93 @@ public:
 	MatrixApplier(const MATRIX& m);
 	void concat(const MATRIX& m);
 	void unapply();
+};
+
+class TextureChunk
+{
+friend class RenderThread;
+private:
+	uint32_t texId;
+	uint32_t* chunks;
+	TextureChunk(uint32_t w, uint32_t h);
+public:
+	TextureChunk():texId(0),chunks(NULL),width(0),height(0){}
+	TextureChunk(const TextureChunk& r);
+	TextureChunk& operator=(const TextureChunk& r);
+	~TextureChunk();
+	bool resizeIfLargeEnough(uint32_t w, uint32_t h);
+	uint32_t getNumberOfChunks() const { return ((width+127)/128)*((height+127)/128); }
+	bool isValid() const { return chunks; }
+	uint32_t width;
+	uint32_t height;
+};
+
+class CachedSurface
+{
+public:
+	CachedSurface():xOffset(0),yOffset(0){}
+	TextureChunk tex;
+	uint32_t xOffset;
+	uint32_t yOffset;
+};
+
+class ITextureUploadable
+{
+protected:
+	~ITextureUploadable(){}
+public:
+	virtual void sizeNeeded(uint32_t& w, uint32_t& h) const=0;
+	/*
+		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
+	*/
+	virtual void upload(uint8_t* data, uint32_t w, uint32_t h) const=0;
+	virtual const TextureChunk& getTexture()=0;
+	/*
+		Signal the completion of the upload to the texture
+		NOTE: fence may be called on shutdown even if the upload has not happen, so be ready for this event
+	*/
+	virtual void uploadFence()=0;
+};
+
+/**
+	The base class for render jobs based on cairo
+	Stores an internal copy of the data to be rendered
+*/
+class CairoRenderer: public ITextureUploadable, public IThreadJob, public Sheep
+{
+protected:
+	~CairoRenderer(){delete[] surfaceBytes;}
+	/**
+		The target texture for the rendering, must be non const as the operation will update the size
+	*/
+	CachedSurface& surface;
+	MATRIX matrix;
+	uint32_t xOffset;
+	uint32_t yOffset;
+	uint32_t width;
+	uint32_t height;
+	uint8_t* surfaceBytes;
+	const std::vector<GeomToken> tokens;
+	const float scaleFactor;
+	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
+	static bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill);
+	void cairoClean(cairo_t* cr) const;
+	cairo_surface_t* allocateSurface();
+public:
+	CairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, 
+			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s):
+			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),
+			surfaceBytes(NULL),tokens(_g),scaleFactor(_s){}
+	static bool hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
+	//ITextureUploadable interface
+	void sizeNeeded(uint32_t& w, uint32_t& h) const;
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
+	const TextureChunk& getTexture();
+	void uploadFence();
+	//IThreadJob interface
+	void threadAbort();
+	void jobFence();
+	void execute();
 };
 
 };

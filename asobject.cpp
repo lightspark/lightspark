@@ -767,7 +767,10 @@ ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(
 ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),prototype(o.prototype),implEnable(true)
 {
 	if(prototype)
+	{
 		prototype->incRef();
+		cur_level=prototype->max_level;
+	}
 
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -816,15 +819,15 @@ Class_base* ASObject::getActualPrototype() const
 	Class_base* ret=prototype;
 	if(ret==NULL)
 	{
-		assert_and_throw(type==T_CLASS);
+		assert(type==T_CLASS);
 		return NULL;
 	}
 
 	for(int i=prototype->max_level;i>cur_level;i--)
 		ret=ret->super;
 
-	assert_and_throw(ret);
-	assert_and_throw(ret->max_level==cur_level);
+	assert(ret);
+	assert(ret->max_level==cur_level);
 	return ret;
 }
 

@@ -22,12 +22,10 @@
 #include "compat.h"
 #include <iostream>
 #include "backends/rendering.h"
+#include "backends/input.h"
 
 using namespace lightspark;
 using namespace std;
-
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
 
 SET_NAMESPACE("flash.media");
 
@@ -66,22 +64,17 @@ void Video::buildTraits(ASObject* o)
 
 Video::~Video()
 {
-	if(rt)
-	{
-		rt->acquireResourceMutex();
-		rt->removeResource(&videoTexture);
-	}
-	videoTexture.shutdown();
-	if(rt)
-	{
-		rt->releaseResourceMutex();
-		sem_destroy(&mutex);
-	}
+	sem_destroy(&mutex);
 }
 
-void Video::inputRender()
+void Video::Render(bool maskEnabled)
 {
 	sem_wait(&mutex);
+	if(skipRender(maskEnabled))
+	{
+		sem_post(&mutex);
+		return;
+	}
 	if(netStream && netStream->lockIfReady())
 	{
 		//All operations here should be non blocking
@@ -89,65 +82,15 @@ void Video::inputRender()
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
 
-		MatrixApplier ma(getMatrix());
-
-		glBegin(GL_QUADS);
-			glVertex2i(0,0);
-			glVertex2i(width,0);
-			glVertex2i(width,height);
-			glVertex2i(0,height);
-		glEnd();
-		ma.unapply();
-		netStream->unlock();
-	}
-	sem_post(&mutex);
-}
-
-void Video::Render()
-{
-	if(!initialized)
-	{
-		videoTexture.init(0,0,GL_LINEAR);
-		rt->addResource(&videoTexture);
-		initialized=true;
-	}
-
-	sem_wait(&mutex);
-	if(netStream && netStream->lockIfReady())
-	{
-		//All operations here should be non blocking
-		//Get size
-		videoWidth=netStream->getVideoWidth();
-		videoHeight=netStream->getVideoHeight();
-
-		MatrixApplier ma(getMatrix());
+		MatrixApplier ma(getConcatenatedMatrix());
 
 		if(!isSimple())
 			rt->glAcquireTempBuffer(0,width,0,height);
 
-		bool frameReady=netStream->copyFrameToTexture(videoTexture);
-		videoTexture.bind();
-		videoTexture.setTexScale(rt->fragmentTexScaleUniform);
-
 		//Enable texture lookup and YUV to RGB conversion
-		if(frameReady)
-		{
-			glColor4f(0,0,0,1);
-			//width and height should not change now
-			glBegin(GL_QUADS);
-				glTexCoord2f(0,0);
-				glVertex2i(0,0);
-
-				glTexCoord2f(1,0);
-				glVertex2i(width,0);
-
-				glTexCoord2f(1,1);
-				glVertex2i(width,height);
-
-				glTexCoord2f(0,1);
-				glVertex2i(0,height);
-			glEnd();
-		}
+		glColor4f(0,0,0,1);
+		//width and height will not change now (the Video mutex is acquired)
+		rt->renderTextured(netStream->getTexture(), 0, 0, width, height);
 
 		if(!isSimple())
 			rt->glBlitTempBuffer(0,width,0,height);
@@ -248,6 +191,16 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	return NULL;
 }
 
+InteractiveObject* Video::hitTest(InteractiveObject* last, number_t x, number_t y)
+{
+	assert_and_throw(!sys->getInputThread()->isMaskPresent());
+	assert_and_throw(mask==NULL);
+	if(x>=0 && x<=width && y>=0 && y<=height)
+		return last;
+	else
+		return NULL;
+}
+
 void Sound::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -263,3 +216,4 @@ ASFUNCTIONBODY(Sound,_constructor)
 {
 	return NULL;
 }
+

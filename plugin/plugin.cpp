@@ -53,6 +53,7 @@ NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
  */
 NPDownloadManager::~NPDownloadManager()
 {
+	cleanUp();
 }
 
 /**
@@ -87,6 +88,17 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 	addDownloader(downloader);
 	return downloader;
 }
+
+void NPDownloadManager::destroy(lightspark::Downloader* downloader)
+{
+	//If the downloader was still in the active-downloader list, delete it
+	if(removeDownloader(downloader))
+	{
+		downloader->waitForTermination();
+		delete downloader;
+	}
+}
+
 
 /**
  * \brief Constructor for the NPDownloader class
@@ -297,6 +309,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		// The page with the plugin is being resized.
 		// Save any UI information because the next time
 		// around expect a SetWindow with a new window id.
+		LOG(LOG_ERROR,"Resize not supported");
 	}
 	else
 	{
@@ -317,17 +330,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p.height=mHeight;
 		p.helper=AsyncHelper;
 		p.helperArg=this;
-		cout << "X Window " << hex << p.window << dec << endl;
-		if(m_sys->getRenderThread()!=NULL)
-		{
-			cout << "destroy old context" << endl;
-			abort();
-		}
-		if(m_sys->getInputThread()!=NULL)
-		{
-			cout << "destroy old input" << endl;
-			abort();
-		}
+		LOG(LOG_NO_INFO,"X Window " << hex << p.window << dec);
 		m_sys->setParamsAndEngine(lightspark::GTKPLUG,&p);
 	}
 	//draw();
@@ -387,7 +390,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 {
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
 	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
-
+	sys=m_sys;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
@@ -429,6 +432,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
+	sys=NULL;
 	return NPERR_NO_ERROR; 
 }
 

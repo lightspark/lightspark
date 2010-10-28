@@ -48,7 +48,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
 TLSDATA bool isVmThread=false;
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)

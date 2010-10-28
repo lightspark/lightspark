@@ -201,6 +201,12 @@ public:
 	*/
 	double getFrameRate();
 	/**
+	  	Get the texture containing the current video Frame
+		@pre lock on the object should be acquired and object should be ready
+		@return a TextureChunk ready to be blitted
+	*/
+	const TextureChunk& getTexture() const;
+	/**
 	  	Get the stream time
 
 		@pre lock on the object should be acquired and object should be ready
@@ -221,14 +227,6 @@ public:
 		@return the total length of the data
 	*/
 	uint32_t getTotalLength();
-	/**
-	  	copy the current frame to a texture
-
-		@pre lock on the object should be acquired and object should be ready
-		@param tex the TextureBuffer to copy in
-		@return true if a new frame has been copied
-	*/
-	bool copyFrameToTexture(TextureBuffer& tex);
 	/**
 	  	Acquire the mutex to guarantee validity of data
 

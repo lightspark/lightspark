@@ -64,26 +64,28 @@ public:
 	}
 };
 
-class VideoDecoder: public Decoder
+class VideoDecoder: public Decoder, public ITextureUploadable
 {
 private:
 	bool resizeGLBuffers;
 protected:
+	/*
+		Derived classes must spinwaits on this to become false before deleting
+	*/
+	ATOMIC_INT32(fenceCount);
 	uint32_t frameWidth;
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
-	bool resizeIfNeeded(TextureBuffer& tex);
+	bool resizeIfNeeded(TextureChunk& tex);
 	LS_VIDEO_CODEC videoCodec;
+	TextureChunk videoTexture;
 public:
-	VideoDecoder():resizeGLBuffers(false),frameWidth(0),frameHeight(0),frameRate(0){}
-	virtual ~VideoDecoder(){}
+	VideoDecoder():resizeGLBuffers(false),fenceCount(0),frameWidth(0),frameHeight(0),frameRate(0){}
+	virtual ~VideoDecoder(){};
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
 	virtual void skipUntil(uint32_t time)=0;
 	virtual void skipAll()=0;
-	//NOTE: the base implementation returns true if resizing of buffers should be done
-	//This should be called in every derived implementation
-	virtual bool copyFrameToTexture(TextureBuffer& tex)=0;
 	uint32_t getWidth()
 	{
 		return frameWidth;
@@ -93,20 +95,32 @@ public:
 		return frameHeight;
 	}
 	double frameRate;
+	/*
+		Useful to avoid destruction of the object while a pending upload is waiting
+	*/
+	void waitForFencing();
+	//ITextureUploadable interface
+	void sizeNeeded(uint32_t& w, uint32_t& h) const;
+	const TextureChunk& getTexture();
+	void uploadFence();
 };
 
 class NullVideoDecoder: public VideoDecoder
 {
 public:
 	NullVideoDecoder() {status=VALID;}
+	~NullVideoDecoder() { while(fenceCount); }
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
 	void skipAll(){}
-	bool copyFrameToTexture(TextureBuffer& tex){return false;}
 	void setFlushing()
 	{
 		flushing=true;
+	}
+	//ITextureUploadable interface
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const
+	{
 	}
 };
 
@@ -144,7 +158,6 @@ private:
 	AVCodecContext* codecContext;
 	BlockingCircularQueue<YUVBuffer,80> buffers;
 	Mutex mutex;
-	bool initialized;
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t time);
 	void setSize(uint32_t w, uint32_t h);
@@ -156,7 +169,6 @@ public:
 	bool discardFrame();
 	void skipUntil(uint32_t time);
 	void skipAll();
-	bool copyFrameToTexture(TextureBuffer& tex);
 	void setFlushing()
 	{
 		flushing=true;
@@ -166,6 +178,8 @@ public:
 			flushed.signal();
 		}
 	}
+	//ITextureUploadable interface
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
 };
 #endif
 

@@ -41,8 +41,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
 
 Tag* TagFactory::readTag()
@@ -251,6 +249,8 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayO
 	{
 		if(it->second->Depth==Depth)
 		{
+			it->second->parent=NULL;
+			it->second->setRoot(NULL);
 			it->second->decRef();
 			ls.erase(it);
 			break;
@@ -306,7 +306,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 		in >> InitialText;
 }
 
-void DefineEditTextTag::Render()
+void DefineEditTextTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineEditTextTag: Render"));
 }
@@ -669,7 +669,7 @@ ASObject* DefineBitsLossless2Tag::instance() const
 	return ret;
 }
 
-void DefineBitsLossless2Tag::Render()
+void DefineBitsLossless2Tag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineBitsLossless2Tag::Render"));
 }
@@ -689,74 +689,15 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 	}
 }
 
-void DefineTextTag::inputRender()
-{
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-	std::vector < TEXTRECORD >::iterator it=TextRecords.begin();
-	if(it==TextRecords.end()) //Nothing to draw
-		return;
-	std::vector < GLYPHENTRY >::iterator it2;
-	int x=0,y=0;
-
-	//Build a fake FILLSTYLEs
-	FILLSTYLE f;
-	f.FillStyleType=0x00;
-	f.Color=it->TextColor;
-	MatrixApplier ma(getMatrix());
-	ma.concat(TextMatrix);
-	//Shapes are defined in twips, so scale then down
-	glScalef(0.05,0.05,1);
-	
-	//The next 1/20 scale is needed by DefineFont3. Should be conditional
-	glScalef(0.05,0.05,1);
-	float scale_cur=1;
-	int count=0;
-	unsigned int shapes_done=0;
-	it= TextRecords.begin();
-	for(;it!=TextRecords.end();++it)
-	{
-		if(it->StyleFlagsHasFont)
-		{
-			float scale=it->TextHeight;
-			scale/=1024;
-			glScalef(scale/scale_cur,scale/scale_cur,1);
-			scale_cur=scale;
-		}
-		it2 = it->GlyphEntries.begin();
-		int x2=x,y2=y;
-		x2+=(*it).XOffset;
-		y2+=(*it).YOffset;
-
-		for(;it2!=(it->GlyphEntries.end());++it2)
-		{
-			while(shapes_done<cached.size() &&  cached[shapes_done].id==count)
-			{
-				assert_and_throw(cached[shapes_done].color==1)
-				cached[shapes_done].style=&f;
-
-				cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
-				shapes_done++;
-				if(shapes_done==cached.size())
-					break;
-			}
-			x2+=it2->GlyphAdvance;
-			count++;
-		}
-	}
-	ma.unapply();
-}
-
-void DefineTextTag::Render()
+void DefineTextTag::Render(bool maskEnabled)
 {
 	LOG(LOG_TRACE,_("DefineText Render"));
 	if(alpha==0)
 		return;
 	if(!visible)
 		return;
-	if(cached.size()==0)
+	//TODO: reimplement
+/*	if(cached.size()==0)
 	{
 		FontTag* font=NULL;
 		int count=0;
@@ -792,7 +733,7 @@ void DefineTextTag::Render()
 
 	//Build a fake FILLSTYLEs
 	FILLSTYLE f;
-	f.FillStyleType=0x00;
+	f.FillStyleType=SOLID_FILL;
 	f.Color=it->TextColor;
 	MatrixApplier ma(getMatrix());
 	ma.concat(TextMatrix);
@@ -840,7 +781,7 @@ void DefineTextTag::Render()
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(TextBounds.Xmin,TextBounds.Xmax,TextBounds.Ymin,TextBounds.Ymax);
-	ma.unapply();
+	ma.unapply();*/
 }
 
 Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
@@ -902,12 +843,6 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):Dicti
 		ignore(in,dest-in.tellg());
 }
 
-std::ostream& operator<<(std::ostream& s, const Vector2& p)
-{
-	s << "{ "<< p.x << ',' << p.y << " }" << std::endl;
-	return s;
-}
-
 ASObject* DefineMorphShapeTag::instance() const
 {
 	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
@@ -916,7 +851,7 @@ ASObject* DefineMorphShapeTag::instance() const
 	return ret;
 }
 
-void DefineMorphShapeTag::Render()
+void DefineMorphShapeTag::Render(bool maskEnabled)
 {
 	if(alpha==0)
 		return;
@@ -953,57 +888,114 @@ void DefineMorphShapeTag::Render()
 	glPopMatrix();*/
 }
 
-void DefineShapeTag::inputRender()
+void DefineShapeTag::computeCached()
 {
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-
-	MatrixApplier ma(getMatrix());
-	glScalef(0.05,0.05,1);
-
-	std::vector < GeomShape >::iterator it=cached.begin();
-	for(;it!=cached.end();++it)
+	if(cachedTokens.size()==0)
 	{
-		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
-		it->Render();
+		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cachedTokens,Shapes.FillStyles.FillStyles);
 	}
-	ma.unapply();
 }
 
-void DefineShapeTag::Render()
+void DefineShapeTag::invalidate()
 {
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-
-	if(cached.size()==0)
+	//Acquire the lock to avoid data changes
+//	SpinlockLocker locker(spinlock);
+	uint32_t x,y,width,height;
+	number_t bxmin,bxmax,bymin,bymax;
+	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
 	{
-		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
+		//No contents, nothing to do
+		return;
+	}
+	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
+	computeCached();
+	CairoRenderer* r=new CairoRenderer(&shepherd, cachedSurface, cachedTokens, getConcatenatedMatrix(), x, y, width, height, 0.05);
+	sys->addJob(r);
+}
 
-		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
+void DefineShapeTag::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	int a=ShapeBounds.Xmin;
+	int b=ShapeBounds.Ymin;
+	int c=ShapeBounds.Xmax;
+	int d=ShapeBounds.Ymax;
+	if(a<0)
+		a-=19;
+	else
+		a+=19;
+	a/=20;
+	if(b<0)
+		b-=19;
+	else
+		b+=19;
+	b/=20;
+	if(c<0)
+		c-=19;
+	else
+		c+=19;
+	c/=20;
+	if(d<0)
+		d-=19;
+	else
+		d+=19;
+	d/=20;
+	xmin=a;
+	ymin=b;
+	xmax=c;
+	ymax=d;
+}
+
+bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	//Apply transformation with the current matrix
+	boundsRect(xmin,xmax,ymin,ymax);
+	getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+	getMatrix().multiply2D(xmax,ymax,xmax,ymax);
+	//getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
+	//getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
+	//TODO: adapt for rotation
+	return true;
+}
+
+InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, number_t y)
+{
+	//TODO: TOLOCK
+	if(mask)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Support masks in DefineShapeTag::hitTest");
+		::abort();
 	}
 
-	MatrixApplier ma(getMatrix());
-	glScalef(0.05,0.05,1);
+	number_t x1,x2,y1,y2;
+	boundsRect(x1,x2,y1,y2);
+	if(x<x1 || x>x2 || y<y1 || y>y2)
+		return NULL;
 
-	if(!isSimple())
-		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-
-	std::vector < GeomShape >::iterator it=cached.begin();
-	for(;it!=cached.end();++it)
+	bool ret=CairoRenderer::hitTest(cachedTokens, 0.05, x, y);
+	if(ret)
 	{
-		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
-		it->Render();
+		//Also test if the we are under the mask (if any)
+		if(sys->getInputThread()->isMaskPresent())
+		{
+			number_t globalX, globalY;
+			getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
+			if(!sys->getInputThread()->isMasked(globalX, globalY))
+				return NULL;
+		}
+		return last;
 	}
+	else
+		return NULL;
+}
 
-	if(!isSimple())
-		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
+void DefineShapeTag::Render(bool maskEnabled)
+{
+	if(skipRender(maskEnabled))
+		return;
 
-	ma.unapply();
+	number_t t1,t2,t3,t4;
+	DefineShapeTag::boundsRect(t1,t2,t3,t4);
+	Shape::renderImpl(maskEnabled,t1,t2,t3,t4);
 }
 
 Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)
@@ -1058,7 +1050,8 @@ Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
 
-void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& shapeRecords, vector<GeomShape>& shapes)
+void DefineShapeTag::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens,
+	const std::list<FILLSTYLE>& fillStyles)
 {
 	int startX=0;
 	int startY=0;
@@ -1080,9 +1073,9 @@ void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& sha
 				Vector2 p2(startX,startY);
 				
 				if(color0)
-					shapesBuilder.extendOutlineForColor(color0,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
 				if(color1)
-					shapesBuilder.extendOutlineForColor(color1,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
 			}
 			else
 			{
@@ -1096,13 +1089,13 @@ void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& sha
 
 				if(color0)
 				{
-					shapesBuilder.extendOutlineForColor(color0,p1,p2);
-					shapesBuilder.extendOutlineForColor(color0,p2,p3);
+					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(color0,p2,p3);
 				}
 				if(color1)
 				{
-					shapesBuilder.extendOutlineForColor(color1,p1,p2);
-					shapesBuilder.extendOutlineForColor(color1,p2,p3);
+					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(color1,p2,p3);
 				}
 			}
 		}
@@ -1129,16 +1122,16 @@ void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& sha
 		}
 	}
 
-	shapesBuilder.outputShapes(shapes);
+	shapesBuilder.outputTokens(fillStyles, tokens);
 }
 
-void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
-{
-	SHAPE& shape=GlyphShapeTable[glyph];
-	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
+//void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
+//{
+//	SHAPE& shape=GlyphShapeTable[glyph];
+//	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
-	for(unsigned int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(NULL);
+/*	for(unsigned int i=0;i<s.size();i++)
+		s[i].BuildFromEdges(NULL);*/
 
 	//Should check fill state
 
@@ -1170,15 +1163,15 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 		}
 		else
 			s.back().graphic.stroked=false;*/
-}
+//}
 
-void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
-{
-	SHAPE& shape=GlyphShapeTable[glyph];
-	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
+//void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
+//{
+	//SHAPE& shape=GlyphShapeTable[glyph];
+	//FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
-	for(unsigned int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(NULL);
+	/*for(unsigned int i=0;i<s.size();i++)
+		s[i].BuildFromEdges(NULL);*/
 
 	//Should check fill state
 
@@ -1210,18 +1203,18 @@ void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 		}
 		else
 			s.back().graphic.stroked=false;*/
-}
+//}
 
-void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
-{
-	SHAPE& shape=GlyphShapeTable[glyph];
+//void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
+//{
+	/*SHAPE& shape=GlyphShapeTable[glyph];
 	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
 	for(unsigned int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(NULL);
+		s[i].BuildFromEdges(NULL);*/
 
 	//Should check fill state
-}
+//}
 
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
@@ -1319,6 +1312,8 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				(ls.begin(),ls.end(),Depth,list_orderer());
 			//As we are inserting the object in the list we need to incref it
 			toAdd->incRef();
+			toAdd->parent=parent;
+			toAdd->setRoot(parent->getRoot());
 			ls.insert(it,make_pair(infos,toAdd));
 		}
 	}
@@ -1357,10 +1352,14 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			}
 			else
 			{
+				it->second->parent=NULL;
+				it->second->setRoot(NULL);
 				it->second->decRef();
 				ls.erase(it);
 				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
 				toAdd->incRef();
+				toAdd->parent=parent;
+				toAdd->setRoot(parent->getRoot());
 				ls.insert(it,make_pair(infos,toAdd));
 			}
 		}
@@ -1486,6 +1485,8 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				(ls.begin(),ls.end(),Depth,list_orderer());
 			//As we are inserting the object in the list we need to incref it
 			toAdd->incRef();
+			toAdd->parent=parent;
+			toAdd->setRoot(parent->getRoot());
 			ls.insert(it,make_pair(infos,toAdd));
 		}
 	}
@@ -1528,6 +1529,8 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				ls.erase(it);
 				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
 				toAdd->incRef();
+				toAdd->parent=parent;
+				toAdd->setRoot(parent->getRoot());
 				ls.insert(it,make_pair(infos,toAdd));
 			}
 		}
@@ -1671,7 +1674,7 @@ void DefineButton2Tag::handleEvent(Event* e)
 	IdleToOverUp=true;
 }
 
-void DefineButton2Tag::Render()
+void DefineButton2Tag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineButton2Tag::Render"));
 	if(alpha==0)
@@ -1729,6 +1732,11 @@ Vector2 DefineButton2Tag::debugRender(FTFont* font, bool deep)
 	return Vector2(100,100);
 }
 
+bool DefineButton2Tag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	return false;
+}
+
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_NO_INFO,_("DefineVideoStreamTag"));
@@ -1740,7 +1748,7 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):Dic
 	in >> CodecID;
 }
 
-void DefineVideoStreamTag::Render()
+void DefineVideoStreamTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NO_INFO,_("DefineVideoStreamTag Render"));
 /*	if(alpha==0)

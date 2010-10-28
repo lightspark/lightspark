@@ -26,8 +26,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA SystemState* sys;
-
 Frame::~Frame()
 {
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
@@ -43,7 +41,7 @@ Frame::~Frame()
 	}
 }
 
-void Frame::inputRender()
+void Frame::Render(bool maskEnabled)
 {
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
@@ -54,22 +52,7 @@ void Frame::inputRender()
 
 		//Assign object data from current transformation
 		i->second->setMatrix(i->first.Matrix);
-		i->second->inputRender();
-	}
-}
-
-void Frame::Render()
-{
-	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
-
-	//Render objects of this frame;
-	for(;i!=displayList.end();++i)
-	{
-		assert(i->second);
-
-		//Assign object data from current transformation
-		i->second->setMatrix(i->first.Matrix);
-		i->second->Render();
+		i->second->Render(maskEnabled);
 	}
 }
 
@@ -127,6 +110,10 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 		list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
 		for(;i!=displayList.end();++i)
+		{
 			i->second->setMatrix(i->first.Matrix);
+			//Take a chance to also invalidate the content
+			i->second->invalidate();
+		}
 	}
 }

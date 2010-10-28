@@ -128,3 +128,15 @@ void Semaphore::signal()
 {
 	sem_post(&sem);
 }
+
+
+Sheep::~Sheep()
+{
+	if(lockOwner())
+	{
+		//The owner will not be destroyed until unlocked
+		if(owner)
+			owner->removeSheep(this);
+	}
+	unlockOwner();
+}

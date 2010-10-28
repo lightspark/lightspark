@@ -51,10 +51,9 @@ private:
 	sem_t mutex;
 	uint32_t width, height, videoWidth, videoHeight;
 	bool initialized;
-	TextureBuffer videoTexture;
 	NetStream* netStream;
 public:
-	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),videoTexture(false),netStream(NULL)
+	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),netStream(NULL)
 	{
 		sem_init(&mutex,0,1);
 	}
@@ -69,9 +68,9 @@ public:
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_setHeight);
 	ASFUNCTION(attachNetStream);
-	void Render();
-	void inputRender();
+	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 };
 
 };

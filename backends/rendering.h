@@ -21,16 +21,19 @@
 #define RENDERING_H
 
 #include "timer.h"
+#include <FTGL/ftgl.h>
 
 namespace lightspark
 {
 
 class RenderThread: public ITickJob
 {
+friend class DisplayObject;
 private:
 	SystemState* m_sys;
 	pthread_t t;
-	bool terminated;
+	enum STATUS { CREATED=0, STARTED, TERMINATED };
+	STATUS status;
 	static void* sdl_worker(RenderThread*);
 #ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
@@ -39,12 +42,39 @@ private:
 	void commonGLInit(int width, int height);
 	void commonGLResize(int width, int height);
 	void commonGLDeinit();
-	sem_t render;
-	sem_t inputDone;
-	bool inputNeeded;
-	bool inputDisabled;
+	GLuint pixelBuffers[2];
+	uint32_t currentPixelBuffer;
+	uint32_t currentPixelBufferOffset;
+	uint32_t pixelBufferWidth;
+	uint32_t pixelBufferHeight;
+	void resizePixelBuffers(uint32_t w, uint32_t h);
+	ITextureUploadable* prevUploadJob;
+	Mutex mutexLargeTexture;
+	uint32_t largeTextureSize;
+	class LargeTexture
+	{
+	public:
+		GLuint id;
+		uint8_t* bitmap;
+		LargeTexture(uint8_t* b):id(-1),bitmap(b){}
+		~LargeTexture(){/*delete[] bitmap;*/}
+	};
+	std::vector<LargeTexture> largeTextures;
+	GLuint allocateNewGLTexture() const;
+	LargeTexture& allocateNewTexture();
+	bool allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
+	bool allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
+	//Possible events to be handled
+	//TODO: pad to avoid false sharing on the cache lines
+	volatile bool renderNeeded;
+	volatile bool uploadNeeded;
+	volatile bool resizeNeeded;
+	volatile bool newTextureNeeded;
+	void handleNewTexture();
+	void finalizeUpload();
+	void handleUpload();
+	sem_t event;
 	std::string fontPath;
-	bool resizeNeeded;
 	uint32_t newWidth;
 	uint32_t newHeight;
 	float scaleX;
@@ -61,73 +91,100 @@ private:
 	uint64_t time_s, time_d;
 
 	bool loadShaderPrograms();
-	uint32_t* interactive_buffer;
 	bool tempBufferAcquired;
 	void tick();
 	int frameCount;
 	int secsCount;
-	std::vector<float> idStack;
-	Mutex mutexResources;
-	std::set<GLResource*> managedResources;
+	Mutex mutexUploadJobs;
+	std::deque<ITextureUploadable*> uploadJobs;
+	/*
+		Utility to get a job to do
+	*/
+	ITextureUploadable* getUploadJob();
+	/*
+		Common code to handle the core of the rendering
+		@param testMode True if overlays can be displayed
+	*/
+	void coreRendering(FTFont& font, bool testMode);
+	Semaphore initialized;
+	class MaskData
+	{
+	public:
+		DisplayObject* d;
+		MATRIX m;
+		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
+	};
+	std::vector<MaskData> maskStack;
 public:
-	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
+	RenderThread(SystemState* s);
 	~RenderThread();
+	void start(ENGINE e,void* param);
 	void wait();
 	void draw();
-	float getIdAt(int x, int y);
 	//The calling context MUST call this function with the transformation matrix ready
 	void glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 	void glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 	/**
-		Add a GLResource to the managed pool
-		@param res The GLResource to be manged
-		@pre running inside the renderthread OR the resourceMutex is acquired
+		Allocates a chunk from the shared texture
 	*/
-	void addResource(GLResource* res);
+	TextureChunk allocateTexture(uint32_t w, uint32_t h, bool compact);
 	/**
-		Remove a GLResource from the managed pool
-		@param res The GLResource to stop managing
-		@pre running inside the renderthread OR the resourceMutex is acquired
+		Release texture
 	*/
-	void removeResource(GLResource* res);
+	void releaseTexture(const TextureChunk& chunk);
 	/**
-		Acquire the resource mutex to do resource cleanup
+		Render a quad of given size using the given chunk
 	*/
-	void acquireResourceMutex();
+	void renderTextured(const TextureChunk& chunk, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 	/**
-		Release the resource mutex
+		Load the given data in the given texture chunk
 	*/
-	void releaseResourceMutex();
-
-	void requestInput();
-	void requestResize(uint32_t w, uint32_t h);
-	void pushId()
+	void loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data);
+	/**
+		Enqueue something to be uploaded to texture
+	*/
+	void addUploadJob(ITextureUploadable* u);
+	/**
+	  	Add a mask to the stack mask
+		@param d The DisplayObject used as a mask
+		@param m The total matrix from the parent of the object to stage
+		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
+	*/
+	void pushMask(DisplayObject* d, const MATRIX& m)
 	{
-		idStack.push_back(currentId);
+		maskStack.emplace_back(d,m);
 	}
-	void popId()
+	/**
+	  	Remove the last pushed mask
+	*/
+	void popMask()
 	{
-		currentId=idStack.back();
-		idStack.pop_back();
+		maskStack.pop_back();
+	}
+	bool isMaskPresent()
+	{
+		return !maskStack.empty();
+	}
+	void renderMaskToTmpBuffer() const;
+	void requestResize(uint32_t w, uint32_t h);
+	void waitForInitialization()
+	{
+		initialized.wait();
 	}
 
 	//OpenGL programs
 	int gpu_program;
 	int blitter_program;
 	GLuint fboId;
-	TextureBuffer dataTex;
-	TextureBuffer mainTex;
 	TextureBuffer tempTex;
-	TextureBuffer inputTex;
 	uint32_t windowWidth;
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
-	GLuint fragmentTexScaleUniform;
+	int fragmentTexScaleUniform;
 	
 	InteractiveObject* selectedDebug;
-	float currentId;
-	bool materialOverride;
 };
 
 };
+extern TLSDATA lightspark::RenderThread* rt DLL_PUBLIC;
 #endif

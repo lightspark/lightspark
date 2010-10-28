@@ -98,6 +98,10 @@ long lrint(double f);
 #define ATOMIC_INCREMENT(x) x.fetch_add(1)
 #define ATOMIC_DECREMENT(x) x.fetch_sub(1)
 
+//Boolean type con acquire release barrier semantics
+#define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
+#define ACQUIRE_READ(x) x.load(memory_order_acquire)
+#define RELEASE_WRITE(x, v) x.store(v, memory_order_release)
 int aligned_malloc(void **memptr, size_t alignment, size_t size);
 void aligned_free(void *mem);
 #endif

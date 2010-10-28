@@ -39,7 +39,6 @@ namespace lightspark
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
-void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomShape>& shapes);
 
 class Tag
 {
@@ -74,8 +73,6 @@ public:
 
 class DictionaryTag: public Tag
 {
-protected:
-	std::vector<GeomShape> cached;
 public:
 	Class_base* bindedTo;
 	RootMovieClip* loadedFrom;
@@ -94,8 +91,17 @@ public:
 	virtual void execute(RootMovieClip* root)=0;
 };
 
-class DefineShapeTag: public DictionaryTag, public DisplayObject
+class DefineShapeTag: public DictionaryTag, public Shape
 {
+private:
+	void computeCached();
+	void invalidate();
+	void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, 
+			std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles);
+	/*
+	   	Computes the bounding rect, this is a non-virtual function!
+	*/
+	void boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 protected:
 	UI16 ShapeId;
 	RECT ShapeBounds;
@@ -104,18 +110,10 @@ protected:
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render();
-	virtual void inputRender();
+	void Render(bool maskEnabled);
 	virtual Vector2 debugRender(FTFont* font, bool deep);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		//Apply transformation with the current matrix
-		getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
-		getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
-		//TODO: adapt for rotation
-		return true;
-	}
-
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	ASObject* instance() const
 	{
 		DefineShapeTag* ret=new DefineShapeTag(*this);
@@ -186,8 +184,8 @@ private:
 	SHAPE EndEdges;
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return CharacterId; }
-	virtual void Render();
+	int getId(){ return CharacterId; }
+	void Render(bool maskEnabled);
 	virtual ASObject* instance() const;
 };
 
@@ -228,8 +226,8 @@ private:
 
 public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
-	virtual int getId(){ return CharacterID; }
-	virtual void Render();
+	int getId(){ return CharacterID; }
+	void Render(bool maskEnabled);
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const;
 };
@@ -383,12 +381,9 @@ private:
 public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
-	virtual void Render();
+	void Render(bool maskEnabled);
 	virtual Vector2 debugRender(FTFont* font, bool deep);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		throw UnsupportedException("DefineButton2Tag::getBounds");
-	}
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual void handleEvent(Event*);
 
 	ASObject* instance() const;
@@ -421,7 +416,7 @@ protected:
 	UI16 FontID;
 public:
 	FontTag(RECORDHEADER h):DictionaryTag(h){}
-	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
+	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
 };
 
 class DefineFontTag: public FontTag
@@ -434,7 +429,7 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
+	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFontInfoTag: public Tag
@@ -474,7 +469,7 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
+	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFont3Tag: public FontTag
@@ -507,7 +502,7 @@ private:
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
+	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineTextTag: public DictionaryTag, public DisplayObject
@@ -520,14 +515,11 @@ private:
 	UI8 GlyphBits;
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
-	//Override the usual vector, we need special shapes
-	std::vector<GlyphShape> cached;
 public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return CharacterId; }
-	virtual void Render();
-	virtual void inputRender();
-	virtual Vector2 debugRender(FTFont* font, bool deep);
+	int getId(){ return CharacterId; }
+	void Render(bool maskEnabled);
+	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		getMatrix().multiply2D(TextBounds.Xmin/20,TextBounds.Ymin/20,xmin,ymin);
@@ -600,7 +592,7 @@ public:
 	{
 		return false;
 	}
-	virtual void Render();
+	void Render(bool maskEnabled);
 };
 
 class DefineScalingGridTag: public Tag
@@ -649,7 +641,7 @@ private:
 public:
 	DefineVideoStreamTag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterID; }
-	void Render();
+	void Render(bool maskEnabled);
 };
 
 class SoundStreamBlockTag: public Tag

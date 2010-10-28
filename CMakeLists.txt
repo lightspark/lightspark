@@ -145,7 +145,7 @@ ENDIF(Boost_FOUND)
 
 IF(UNIX)
   INCLUDE(FindPkgConfig REQUIRED)
-  pkg_check_modules(EXTRA_LIBS REQUIRED x11 fontconfig)
+  pkg_check_modules(EXTRA_LIBS REQUIRED x11 fontconfig cairo)
 ENDIF(UNIX)
 
 IF(WIN32)
@@ -227,7 +227,8 @@ ENDIF(ENABLE_DEBIAN_ALTERNATIVES)
 
 # Compiler defaults flags for different profiles
 IF(CMAKE_COMPILER_IS_GNUCC)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x")
+  SET(CMAKE_CXX_FLAGS
+	"${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x -Wdisabled-optimization")
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
   SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
   SET(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
@@ -340,6 +341,7 @@ IF(COMPILE_LIGHTSPARK)
   IF(UNIX)
     INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lightspark.frag DESTINATION ${DATADIR}/lightspark)
     INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lightspark.vert DESTINATION ${DATADIR}/lightspark)
+    INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lightspark-blitter.vert DESTINATION ${DATADIR}/lightspark)
     INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/docs/man/lightspark.1 DESTINATION share/man/man1)
     INSTALL(TARGETS lightspark RUNTIME DESTINATION ${BINDIR})
   ENDIF(UNIX)

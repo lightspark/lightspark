@@ -430,21 +430,21 @@ void Sprite::Render(bool maskEnabled)
 	renderEpilogue();
 }
 
-InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t y)
+void DisplayObject::hitTestPrologue() const
 {
-	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
-	//TODO: TOLOCK
-	//First of all firter using the BBOX
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return NULL;
-	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NULL;
-
 	if(mask)
 		sys->getInputThread()->pushMask(mask,mask->getConcatenatedMatrix().getInverted());
+}
 
+void DisplayObject::hitTestEpilogue() const
+{
+	if(mask)
+		sys->getInputThread()->popMask();
+}
+
+InteractiveObject* Sprite::hitTestImpl(number_t x, number_t y)
+{
+	InteractiveObject* ret=NULL;
 	{
 		//Test objects added at runtime, in reverse order
 		Locker l(mutexDisplayList);
@@ -453,22 +453,18 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 		{
 			number_t localX, localY;
 			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			InteractiveObject* ret=(*j)->hitTest(this, localX,localY);
+			ret=(*j)->hitTest(this, localX,localY);
 			if(ret)
-			{
-				if(mask)
-					sys->getInputThread()->popMask();
-				return ret;
-			}
+				break;
 		}
 	}
 
-	if(graphics && mouseEnabled)
+	if(ret==NULL && graphics && mouseEnabled)
 	{
 		//The coordinates are locals
 		if(graphics->hitTest(x,y))
 		{
-			InteractiveObject* ret=this;
+			ret=this;
 			//Also test if the we are under the mask (if any)
 			if(sys->getInputThread()->isMaskPresent())
 			{
@@ -477,15 +473,29 @@ InteractiveObject* Sprite::hitTest(InteractiveObject* last, number_t x, number_t
 				if(!sys->getInputThread()->isMasked(globalX, globalY))
 					ret=NULL;
 			}
-			if(mask)
-				sys->getInputThread()->popMask();
-			return ret;
 		}
 	}
+	return ret;
+}
 
-	if(mask)
-		sys->getInputThread()->popMask();
-	return NULL;
+InteractiveObject* Sprite::hitTest(InteractiveObject*, number_t x, number_t y)
+{
+	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
+	//TODO: TOLOCK
+	//First of all filter using the BBOX
+	number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return NULL;
+	if(x<t1 || x>t2 || y<t3 || y>t4)
+		return NULL;
+
+	hitTestPrologue();
+
+	InteractiveObject* ret=hitTestImpl(x, y);
+
+	hitTestEpilogue();
+	return ret;
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)
@@ -775,16 +785,11 @@ void MovieClip::Render(bool maskEnabled)
 	renderEpilogue();
 }
 
-InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, number_t y)
+InteractiveObject* MovieClip::hitTest(InteractiveObject*, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be tested in the opposite order of Rendering
 
 	//TODO: TOLOCK
-	if(mask)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Support masks in MovieClip::hitTest");
-		::abort();
-	}
 	//First of all firter using the BBOX
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -793,20 +798,9 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, numbe
 	if(x<t1 || x>t2 || y<t3 || y>t4)
 		return NULL;
 
-	{
-		//Test objects added at runtime, in reverse order
-		Locker l(mutexDisplayList);
-		list<DisplayObject*>::const_reverse_iterator j=dynamicDisplayList.rbegin();
-		for(;j!=dynamicDisplayList.rend();++j)
-		{
-			number_t localX, localY;
-			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			InteractiveObject* ret=(*j)->hitTest(this, localX,localY);
-			if(ret)
-				return ret;
-		}
-	}
+	hitTestPrologue();
 
+	InteractiveObject* ret=NULL;
 	if(framesLoaded)
 	{
 		uint32_t curFP=state.FP;
@@ -816,18 +810,17 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject* last, number_t x, numbe
 		{
 			number_t localX, localY;
 			it->second->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			InteractiveObject* ret=it->second->hitTest(this, localX,localY);
+			ret=it->second->hitTest(this, localX,localY);
 			if(ret)
-				return ret;
+				break;
 		}
 	}
 
-	//TODO: support graphics
-	assert_and_throw(graphics==NULL || !mouseEnabled);
-	//TODO: no point in checking for masks now, children will check themselves
-	//assert_and_throw(!sys->getInputThread()->isMaskPresent());
+	if(ret==NULL)
+		ret=Sprite::hitTestImpl(x, y);
 
-	return NULL;
+	hitTestEpilogue();
+	return ret;
 }
 
 Vector2 MovieClip::debugRender(FTFont* font, bool deep)
@@ -2036,7 +2029,7 @@ InteractiveObject* Shape::hitTest(InteractiveObject* last, number_t x, number_t 
 
 	if(graphics)
 	{
-		//To coordinates are already locals
+		//The coordinates are already local
 		if(graphics->hitTest(x,y))
 			return last;
 	}
@@ -2236,31 +2229,7 @@ vector<GeomToken> Graphics::getGraphicsTokens() const
 
 bool Graphics::hitTest(number_t x, number_t y) const
 {
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
-	cairo_t* cr=cairo_create(cairoSurface);
-	
-	//Use cairo to guarantee consistency
-	for(uint32_t i=0;i<tokens.size();i++)
-	{
-		switch(tokens[i].type)
-		{
-			case STRAIGHT:
-				cairo_line_to(cr, tokens[i].p1.x, tokens[i].p1.y);
-				break;
-			case MOVE:
-				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
-				break;	
-			case SET_FILL:
-				//Not relevant
-				break;
-			default:
-				::abort();
-		}
-	}
-	bool ret=cairo_in_fill(cr, x, y);
-	cairo_destroy(cr);
-	cairo_surface_destroy(cairoSurface);
-	return ret;
+	return CairoRenderer::hitTest(tokens, 1, x, y);
 }
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

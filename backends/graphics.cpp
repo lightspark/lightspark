@@ -431,7 +431,7 @@ void CairoRenderer::jobFence()
 	sys->getRenderThread()->addUploadJob(this);
 }
 
-bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection) const
+bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill)
 {
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 	bool empty=true;
@@ -448,6 +448,8 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 				break;	
 			case SET_FILL:
 			{
+				if(skipFill)
+					break;
 				if(!empty)
 				{
 					cairo_fill(cr);
@@ -527,10 +529,24 @@ void CairoRenderer::execute()
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
-	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor);
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, false);
 	if(!empty)
 		cairo_fill(cr);
 
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
+}
+
+bool CairoRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
+{
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+	cairo_t* cr=cairo_create(cairoSurface);
+	
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true);
+	bool ret=false;
+	if(!empty)
+		ret=cairo_in_fill(cr, x, y);
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+	return ret;
 }

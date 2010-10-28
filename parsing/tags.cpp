@@ -971,30 +971,7 @@ InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, 
 	if(x<x1 || x>x2 || y<y1 || y>y2)
 		return NULL;
 
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
-	cairo_t* cr=cairo_create(cairoSurface);
-	
-	//Use cairo to guarantee consistency
-	for(uint32_t i=0;i<cachedTokens.size();i++)
-	{
-		switch(cachedTokens[i].type)
-		{
-			case STRAIGHT:
-				cairo_line_to(cr, cachedTokens[i].p1.x, cachedTokens[i].p1.y);
-				break;
-			case MOVE:
-				cairo_move_to(cr, cachedTokens[i].p1.x, cachedTokens[i].p1.y);
-				break;	
-			case SET_FILL:
-				//Not relevant
-				break;
-			default:
-				::abort();
-		}
-	}
-	bool ret=cairo_in_fill(cr, x, y);
-	cairo_destroy(cr);
-	cairo_surface_destroy(cairoSurface);
+	bool ret=CairoRenderer::hitTest(cachedTokens, 0.05, x, y);
 	if(ret)
 	{
 		//Also test if the we are under the mask (if any)

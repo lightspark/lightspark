@@ -81,6 +81,8 @@ protected:
 	DisplayObject(const DisplayObject& d);
 	void renderPrologue() const;
 	void renderEpilogue() const;
+	void hitTestPrologue() const;
+	void hitTestEpilogue() const;
 public:
 	int Depth;
 	tiny_string name;
@@ -356,6 +358,7 @@ private:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 protected:
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
+	InteractiveObject* hitTestImpl(number_t x, number_t y);
 public:
 	Sprite();
 	static void sinit(Class_base* c);

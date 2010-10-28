@@ -140,6 +140,7 @@ private:
 	Class_base* prototype;
 	obj_var* findGettable(const multiname& name) DLL_LOCAL;
 	obj_var* findSettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
+	tiny_string toStringImpl() const;
 
 public:
 #ifndef NDEBUG

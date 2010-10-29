@@ -57,6 +57,7 @@ tiny_string ASObject::toString(bool debugMsg)
 		if(obj_toString->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
+			incRef();
 			ASObject* ret=f_toString->call(this,NULL,0);
 			assert_and_throw(ret->getObjectType()==T_STRING);
 			tiny_string retS=ret->toString();
@@ -429,6 +430,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 			obj->var->decRef();
 		obj->var=o;
 	}
+}
+
+bool ASObject::tmp()
+{
+	if(prototype==NULL)
+		return false;
+	return prototype->class_name.name=="YouTubeEnvironment";
 }
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)

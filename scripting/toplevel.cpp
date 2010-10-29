@@ -1793,7 +1793,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	tl=getVm()->getCurObjAndLevel();
 	tl.cur_this->setLevel(tl.cur_level);
-	//obj->decRef();
+	obj->decRef();
 
 	delete cc;
 	hit_count++;

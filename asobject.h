@@ -141,6 +141,7 @@ private:
 	obj_var* findGettable(const multiname& name) DLL_LOCAL;
 	obj_var* findSettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
 	tiny_string toStringImpl() const;
+	bool tmp() DLL_PUBLIC;
 
 public:
 #ifndef NDEBUG
@@ -159,8 +160,9 @@ public:
 	void check() const;
 	void incRef()
 	{
-		//std::cout << "incref " << this << std::endl;
 		ATOMIC_INCREMENT(ref_count);
+		if(tmp())
+			std::cout << "incref " << this << " count " << ref_count << std::endl;
 		assert(ref_count>0);
 	}
 	void decRef()
@@ -168,6 +170,8 @@ public:
 		//std::cout << "decref " << this << std::endl;
 		assert_and_throw(ref_count>0);
 		uint32_t t=ATOMIC_DECREMENT(ref_count);
+		if(tmp())
+			std::cout << "decref " << this << " count " << ref_count << std::endl;
 		if(t==0)
 		{
 			if(manager)

@@ -345,6 +345,8 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 			it->f->decRef();
 			h->second.erase(it);
 		}
+		if(h->second.empty()) //Remove the entry from the map
+			th->handlers.erase(h);
 	}
 	return NULL;
 }
@@ -405,8 +407,6 @@ void EventDispatcher::handleEvent(Event* e)
 	}
 	
 	e->check();
-	//If the number of handlers now if 0, then purge the entry from the map
-	//TODO
 }
 
 bool EventDispatcher::hasEventListener(const tiny_string& eventName)

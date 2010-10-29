@@ -765,7 +765,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
 	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_CALLS,_("callPropVoid ") << *name << ' ' << m);
+	LOG(LOG_CALLS,"callPropVoid " << *name << ' ' << m);
 
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -837,7 +837,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 				if(ret)
 					ret->decRef();
 
-				obj->decRef();
+				//No need to decRef obj, as it has been passed to the function
 				LOG(LOG_CALLS,_("End of calling ") << *name);
 				delete[] proxyArgs;
 				return;

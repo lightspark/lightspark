@@ -1678,10 +1678,13 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	if(bound && closure_this && !thisOverride)
 	{
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
+		if(obj)
+			obj->decRef();
 		obj=closure_this;
 	}
 
 	cc->locals[0]=obj;
+	assert_and_throw(obj);
 	obj->incRef();
 
 	//Fixup missing parameters
@@ -1790,6 +1793,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	tl=getVm()->getCurObjAndLevel();
 	tl.cur_this->setLevel(tl.cur_level);
+	//obj->decRef();
 
 	delete cc;
 	hit_count++;
@@ -1802,10 +1806,12 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 	if(bound && closure_this && !thisOverride)
 	{
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
-		obj->decRef();
+		if(obj)
+			obj->decRef();
 		obj=closure_this;
 		obj->incRef();
 	}
+	assert_and_throw(obj);
 	ret=val(obj,args,num_args);
 
 	for(uint32_t i=0;i<num_args;i++)
@@ -1820,8 +1826,8 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("E","",abstract_d(2.71828182845905));
 	c->setVariableByQName("LN10","",abstract_d(2.302585092994046));
 	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453));
-	c->setVariableByQName(_("LOG10E"),"",abstract_d(0.4342944819032518));
-	c->setVariableByQName(_("LOG2E"),"",abstract_d(1.442695040888963387));
+	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518));
+	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387));
 	c->setVariableByQName("PI","",abstract_d(3.141592653589793));
 	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476));
 	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951));

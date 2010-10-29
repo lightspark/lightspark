@@ -516,7 +516,8 @@ private:
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
 public:
-	DefineTextTag(RECORDHEADER h, std::istream& in);
+	int version;
+	DefineTextTag(RECORDHEADER h, std::istream& in,int v=1);
 	int getId(){ return CharacterId; }
 	void Render(bool maskEnabled);
 	Vector2 debugRender(FTFont* font, bool deep);
@@ -533,6 +534,16 @@ public:
 	ASObject* instance() const
 	{
 		return new DefineTextTag(*this);
+	}
+};
+
+class DefineText2Tag: public DefineTextTag
+{
+public:
+	DefineText2Tag(RECORDHEADER h, std::istream& in);
+	ASObject* instance() const
+	{
+		return new DefineText2Tag(*this);
 	}
 };
 

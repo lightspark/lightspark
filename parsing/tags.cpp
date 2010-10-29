@@ -114,6 +114,9 @@ Tag* TagFactory::readTag()
 		case 32:
 			ret=new DefineShape3Tag(h,f);
 			break;
+		case 33:
+			ret=new DefineText2Tag(h,f);
+			break;
 		case 34:
 			ret=new DefineButton2Tag(h,f);
 			break;
@@ -671,13 +674,17 @@ ASObject* DefineBitsLossless2Tag::instance() const
 
 void DefineBitsLossless2Tag::Render(bool maskEnabled)
 {
-	LOG(LOG_NOT_IMPLEMENTED,_("DefineBitsLossless2Tag::Render"));
+	LOG(LOG_NOT_IMPLEMENTED,"DefineBitsLossless2Tag::Render");
 }
 
-DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
+DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, int v):DictionaryTag(h),version(v)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
-	LOG(LOG_TRACE,_("DefineText ID ") << CharacterId);
+	assert(v==1 || v==2);
+	if(v==1)
+		LOG(LOG_TRACE,"DefineText ID " << CharacterId);
+	else if(v==2)
+		LOG(LOG_TRACE,"DefineText2 ID " << CharacterId);
 
 	TEXTRECORD t(this);
 	while(1)
@@ -689,9 +696,13 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 	}
 }
 
+DefineText2Tag::DefineText2Tag(RECORDHEADER h, istream& in):DefineTextTag(h,in,2)
+{
+}
+
 void DefineTextTag::Render(bool maskEnabled)
 {
-	LOG(LOG_TRACE,_("DefineText Render"));
+	LOG(LOG_TRACE,"DefineText Render");
 	if(alpha==0)
 		return;
 	if(!visible)

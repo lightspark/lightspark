@@ -430,9 +430,20 @@ std::istream& lightspark::operator>>(std::istream& in, TEXTRECORD& v)
 		in >> v.FontID;
 	if(v.StyleFlagsHasColor)
 	{
-		RGB t;
-		in >> t;
-		v.TextColor=t;
+		if(v.parent->version==1)
+		{
+			RGB t;
+			in >> t;
+			v.TextColor=t;
+		}
+		else if(v.parent->version==2)
+		{
+			RGBA t;
+			in >> t;
+			v.TextColor=t;
+		}
+		else
+			assert(false);
 	}
 	if(v.StyleFlagsHasXOffset)
 		in >> v.XOffset;

@@ -479,7 +479,7 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 				}
 				else
 				{
-					LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style");
+					LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style " << (int)style.FillStyleType);
 				}
 				break;
 			}

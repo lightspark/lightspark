@@ -32,11 +32,11 @@ namespace lightspark
 		GKeyFile* file;
 
 		char** groups;
-		unsigned long groupCount;
-		unsigned long currentGroup;
+		gsize groupCount;
+		gsize currentGroup;
 		char** keys;
-		unsigned long keyCount;
-		unsigned long currentKey;
+		gsize keyCount;
+		gsize currentKey;
 		//Status
 		char* group;
 		char* key;
@@ -54,13 +54,13 @@ namespace lightspark
 		const char* getKey() { return key; }
 		const char* getValue() { return g_key_file_get_value(file, group, key, NULL); }
 		const char* getValueString() { return g_key_file_get_string(file, group, key, NULL); }
-		char* const* getValueStringList(unsigned long* length) { return g_key_file_get_string_list(file, group, key, length, NULL); }
+		char* const* getValueStringList(gsize* length) { return g_key_file_get_string_list(file, group, key, length, NULL); }
 		bool getValueBoolean() { return (bool)g_key_file_get_boolean(file, group, key, NULL); }
-		bool* getValueBooleanList(unsigned long* length) { return (bool*)g_key_file_get_boolean_list(file, group, key, length, NULL); }
+		bool* getValueBooleanList(gsize* length) { return (bool*)g_key_file_get_boolean_list(file, group, key, length, NULL); }
 		int getValueInteger() { return g_key_file_get_integer(file, group, key, NULL); }
-		const int* getValueIntegerList(unsigned long* length) { return g_key_file_get_integer_list(file, group, key, length, NULL); }
+		const int* getValueIntegerList(gsize* length) { return g_key_file_get_integer_list(file, group, key, length, NULL); }
 		double getValueDouble() { return g_key_file_get_double(file, group, key, NULL); }
-		const double* getValueDoubleList(unsigned long* length) { return g_key_file_get_double_list(file, group, key, length, NULL); }
+		const double* getValueDoubleList(gsize* length) { return g_key_file_get_double_list(file, group, key, length, NULL); }
 	};
 }
 

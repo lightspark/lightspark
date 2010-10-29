@@ -890,25 +890,24 @@ void DefineMorphShapeTag::Render(bool maskEnabled)
 
 void DefineShapeTag::computeCached()
 {
-	if(cachedTokens.size()==0)
-	{
+	if(cachedTokens.empty())
 		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cachedTokens,Shapes.FillStyles.FillStyles);
-	}
 }
 
 void DefineShapeTag::invalidate()
 {
 	//Acquire the lock to avoid data changes
 //	SpinlockLocker locker(spinlock);
-	uint32_t x,y,width,height;
-	number_t bxmin,bxmax,bymin,bymax;
-	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
+	computeCached();
+	if(cachedTokens.empty())
 	{
 		//No contents, nothing to do
 		return;
 	}
+	uint32_t x,y,width,height;
+	number_t bxmin,bxmax,bymin,bymax;
+	boundsRect(bxmin,bxmax,bymin,bymax);
 	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
-	computeCached();
 	CairoRenderer* r=new CairoRenderer(&shepherd, cachedSurface, cachedTokens, getConcatenatedMatrix(), x, y, width, height, 0.05);
 	sys->addJob(r);
 }

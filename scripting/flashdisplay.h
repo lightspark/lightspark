@@ -124,6 +124,7 @@ public:
 	}
 	virtual void setRoot(RootMovieClip* root);
 	virtual void setOnStage(bool staged);
+	bool isOnStage() const { return onStage; }
 	RootMovieClip* getRoot() { return root; }
 	virtual Vector2 debugRender(FTFont* font, bool deep)
 	{

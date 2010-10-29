@@ -1030,7 +1030,7 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 				mustInvalidate=true;
 			}
 		}
-		if(mustInvalidate)
+		if(mustInvalidate && onStage)
 			invalidate();
 	}
 }
@@ -1063,7 +1063,7 @@ void DisplayObject::setMask(DisplayObject* m)
 		tmp->becomeMaskOf(NULL);
 		tmp->decRef();
 	}
-	if(mustInvalidate)
+	if(mustInvalidate && onStage)
 		invalidate();
 }
 

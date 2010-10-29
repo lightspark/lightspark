@@ -167,16 +167,11 @@ public:
 	{
 		//std::cout << "decref " << this << std::endl;
 		assert_and_throw(ref_count>0);
-		ATOMIC_DECREMENT(ref_count);
-		// Note: The check is not done atomically, but this should be OK anyway due to
-		//       how threads pass these objects between them. Be careful if you pass
-		//       around objects and then decRef them.
-		if(ref_count==0)
+		uint32_t t=ATOMIC_DECREMENT(ref_count);
+		if(t==0)
 		{
 			if(manager)
-			{
 				manager->put(this);
-			}
 			else
 			{
 				//Let's make refcount very invalid

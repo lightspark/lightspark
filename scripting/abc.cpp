@@ -666,6 +666,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 		{
 			ret->name_s="any";
 			ret->name_type=multiname::NAME_STRING;
+			ret->ns.emplace_back("",NAMESPACE);
 			return ret;
 		}
 		switch(m->kind)

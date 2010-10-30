@@ -90,6 +90,7 @@ RenderThread::RenderThread(SystemState* s):
 
 void RenderThread::start(ENGINE e,void* params)
 {
+	status=STARTED;
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifdef COMPILE_PLUGIN

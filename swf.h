@@ -81,7 +81,7 @@ class RootMovieClip: public MovieClip, public ITickJob
 {
 friend class ParseThread;
 protected:
-	sem_t mutex;
+	Mutex mutex;
 	bool initialized;
 	URLInfo origin;
 	void tick();

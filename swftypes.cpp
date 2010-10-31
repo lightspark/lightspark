@@ -549,7 +549,24 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 	else if(v.FillStyleType==REPEATING_BITMAP || v.FillStyleType==CLIPPED_BITMAP || v.FillStyleType==NON_SMOOTHED_REPEATING_BITMAP || 
 			v.FillStyleType==NON_SMOOTHED_CLIPPED_BITMAP)
 	{
-		s >> v.BitmapId >> v.BitmapMatrix;
+		UI16 bitmapId;
+		s >> bitmapId >> v.BitmapMatrix;
+		//Lookup the bitmap in the dictionary
+		if(bitmapId!=65535)
+		{
+			DictionaryTag* dict=pt->root->dictionaryLookup(bitmapId);
+			v.bitmap=dynamic_cast<Bitmap*>(dict);
+			if(v.bitmap==NULL)
+			{
+				LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
+				throw ParseException("Invalid ID for bitmap");
+			}
+		}
+		else
+		{
+			//The bitmap might be invalid, the style should not be used
+			v.bitmap=NULL;
+		}
 	}
 	else
 	{

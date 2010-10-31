@@ -71,12 +71,6 @@ DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& i
 	skip(in);
 }
 
-DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("DefineBitsJPEG2Tag Tag"));
-	skip(in);
-}
-
 DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	in >> CharacterId >> Splitter;

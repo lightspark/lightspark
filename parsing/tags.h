@@ -577,13 +577,30 @@ private:
 	//ZlibBitmapData;
 public:
 	DefineBitsLosslessTag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return CharacterId; }
+	int getId(){ return CharacterId; }
 };
 
-class DefineBitsJPEG2Tag: public Tag
+class DefineBitsJPEG2Tag: public DictionaryTag, public Bitmap
 {
+private:
+	UI16 CharacterId;
+	uint8_t* data;
 public:
 	DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in);
+	~DefineBitsJPEG2Tag();
+	int getId(){ return CharacterId; }
+};
+
+class DefineBitsJPEG3Tag: public DictionaryTag, public Bitmap
+{
+private:
+	UI16 CharacterId;
+	uint8_t* data;
+	uint8_t* alphaData;
+public:
+	DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in);
+	~DefineBitsJPEG3Tag();
+	int getId(){ return CharacterId; }
 };
 
 class DefineBitsLossless2Tag: public DictionaryTag, public Bitmap
@@ -597,8 +614,8 @@ private:
 	//ZlibBitmapData;
 public:
 	DefineBitsLossless2Tag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return CharacterId; }
-	virtual ASObject* instance() const;
+	int getId(){ return CharacterId; }
+	ASObject* instance() const;
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		return false;

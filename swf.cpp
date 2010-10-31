@@ -76,11 +76,10 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 	valid=true;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),parsingIsFailed(false),frameRate(0),mutexFrames("mutexFrame"),
-	toBind(false),mutexChildrenClips("mutexChildrenClips")
+RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),initialized(false),parsingIsFailed(false),frameRate(0),
+	mutexFrames("mutexFrame"),toBind(false),mutexChildrenClips("mutexChildrenClips")
 {
 	root=this;
-	sem_init(&mutex,0,1);
 	sem_init(&new_frame,0,0);
 	loaderInfo=li;
 	//Reset framesLoaded, as there are still not available
@@ -93,7 +92,6 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),pars
 
 RootMovieClip::~RootMovieClip()
 {
-	sem_destroy(&mutex);
 	sem_destroy(&new_frame);
 }
 
@@ -200,10 +198,9 @@ SystemState::SystemState(ParseThread* p):
 void SystemState::setDownloadedPath(const tiny_string& p)
 {
 	dumpedSWFPath=p;
-	sem_wait(&mutex);
+	Locker l(mutex);
 	if(waitingForDump)
 		fileDumpAvailable.signal();
-	sem_post(&mutex);
 }
 
 void SystemState::setCookies(const char* c)
@@ -415,7 +412,7 @@ void SystemState::setError(const string& c)
 
 void SystemState::setShutdownFlag()
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 	if(currentVm)
 	{
 		ShutdownEvent* e=new ShutdownEvent;
@@ -426,7 +423,6 @@ void SystemState::setShutdownFlag()
 	shutdown=true;
 
 	sem_post(&terminated);
-	sem_post(&mutex);
 }
 
 void SystemState::wait()
@@ -495,20 +491,19 @@ void SystemState::delayedCreation(SystemState* th)
 	gtk_widget_map(p.container);
 	p.window=GDK_WINDOW_XWINDOW(p.container->window);
 	XSync(p.display, False);
-	sem_wait(&th->mutex);
+	Locker l(th->mutex);
 	th->renderThread->start(th->engine, &th->npapiParams);
 	th->inputThread->start(th->engine, &th->npapiParams);
 	//If the render rate is known start the render ticks
 	if(th->renderRate)
 		th->startRenderTicks();
-	sem_post(&th->mutex);
 }
 
 #endif
 
 void SystemState::createEngines()
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 #ifdef COMPILE_PLUGIN
 	//Check if we should fall back on gnash
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
@@ -516,11 +511,11 @@ void SystemState::createEngines()
 		if(dumpedSWFPath.len()==0) //The path is not known yet
 		{
 			waitingForDump=true;
-			sem_post(&mutex);
+			l.unlock();
 			fileDumpAvailable.wait();
 			if(shutdown)
 				return;
-			sem_wait(&mutex);
+			l.lock();
 		}
 		LOG(LOG_NO_INFO,_("Invoking gnash!"));
 		//Dump the cookies to a temporary file
@@ -590,12 +585,11 @@ void SystemState::createEngines()
 		{
 			//Restore handlers
 			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
-			sem_post(&mutex);
 			//Engines should not be started, stop everything
+			l.unlock();
 			stopEngines();
-			sem_post(&mutex);
 			return;
-			}
+		}
 	}
 #else 
 	//COMPILE_PLUGIN not defined
@@ -623,7 +617,7 @@ void SystemState::createEngines()
 		if(renderRate)
 			startRenderTicks();
 	}
-	sem_post(&mutex);
+	l.unlock();
 	renderThread->waitForInitialization();
 	//Now that there is something to actually render the contents add the SystemState to the stage
 	setOnStage(true);
@@ -631,7 +625,7 @@ void SystemState::createEngines()
 
 void SystemState::needsAVM2(bool n)
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 	assert(currentVm==NULL);
 	//Create the virtual machine if needed
 	if(n)
@@ -644,43 +638,38 @@ void SystemState::needsAVM2(bool n)
 		vmVersion=AVM1;
 	if(engine)
 		addJob(new EngineCreator);
-	sem_post(&mutex);
 }
 
 void SystemState::setParamsAndEngine(ENGINE e, NPAPI_params* p)
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 	if(p)
 		npapiParams=*p;
 	engine=e;
 	if(vmVersion)
 		addJob(new EngineCreator);
-	sem_post(&mutex);
 }
 
 void SystemState::setRenderRate(float rate)
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 	if(renderRate>=rate)
-	{
-		sem_post(&mutex);
 		return;
-	}
 	
 	//The requested rate is higher, let's reschedule the job
 	renderRate=rate;
 	startRenderTicks();
-	sem_post(&mutex);
 }
 
 void SystemState::tick()
 {
 	RootMovieClip::tick();
- 	sem_wait(&mutex);
-	list<ThreadProfile>::iterator it=profilingData.begin();
-	for(;it!=profilingData.end();++it)
-		it->tick();
-	sem_post(&mutex);
+	{
+		Locker l(mutex);
+		list<ThreadProfile>::iterator it=profilingData.begin();
+		for(;it!=profilingData.end();++it)
+			it->tick();
+	}
 	//Enter frame should be sent to the stage too
 	if(stage->hasEventListener("enterFrame"))
 	{
@@ -712,10 +701,9 @@ bool SystemState::removeJob(ITickJob* job)
 
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 	profilingData.push_back(ThreadProfile(color,100));
 	ThreadProfile* ret=&profilingData.back();
-	sem_post(&mutex);
 	return ret;
 }
 
@@ -1010,16 +998,14 @@ float RootMovieClip::getFrameRate() const
 
 void RootMovieClip::addToDictionary(DictionaryTag* r)
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 	dictionary.push_back(r);
-	sem_post(&mutex);
 }
 
 void RootMovieClip::addToFrame(DisplayListTag* t)
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 	MovieClip::addToFrame(t);
-	sem_post(&mutex);
 }
 
 void RootMovieClip::labelCurrentFrame(const STRING& name)
@@ -1083,7 +1069,7 @@ void RootMovieClip::setBackground(const RGB& bg)
 
 DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
 	list< DictionaryTag*>::iterator it = dictionary.begin();
 	for(;it!=dictionary.end();++it)
 	{
@@ -1093,11 +1079,9 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	if(it==dictionary.end())
 	{
 		LOG(LOG_ERROR,_("No such Id on dictionary ") << id);
-		sem_post(&mutex);
 		throw RunTimeException("Could not find an object on the dictionary");
 	}
 	DictionaryTag* ret=*it;
-	sem_post(&mutex);
 	return ret;
 }
 

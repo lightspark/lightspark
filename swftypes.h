@@ -47,7 +47,7 @@ enum TRISTATE { TFALSE=0, TTRUE, TUNDEFINED };
 typedef double number_t;
 
 class ASObject;
-struct arrayElem;
+class Bitmap;
 
 class tiny_string
 {
@@ -783,8 +783,8 @@ public:
 	MATRIX GradientMatrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
-	UI16 BitmapId;
 	MATRIX BitmapMatrix;
+	Bitmap* bitmap;
 	virtual ~FILLSTYLE(){}
 };
 

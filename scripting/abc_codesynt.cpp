@@ -3318,20 +3318,20 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//TODO: 32bit check
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
-					value=Builder.CreateAdd(v1.first, v2.first);
+					value=Builder.CreateFAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
 					//TODO: 32bit check
 					v2.first=Builder.CreateSIToFP(v2.first,number_type);
-					value=Builder.CreateAdd(v1.first, v2.first);
+					value=Builder.CreateFAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
 				{
 					//TODO: 32bit check
-					value=Builder.CreateAdd(v1.first, v2.first);
+					value=Builder.CreateFAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else
@@ -3352,19 +3352,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
 				{
-					value=Builder.CreateSub(v2.first, v1.first);
+					value=Builder.CreateFSub(v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
-					value=Builder.CreateSub(v2.first, v1.first);
+					value=Builder.CreateFSub(v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
 					v2.first=Builder.CreateSIToFP(v2.first,number_type);
-					value=Builder.CreateSub(v2.first, v1.first);
+					value=Builder.CreateFSub(v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
@@ -3416,13 +3416,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
 					v2.first=Builder.CreateSIToFP(v2.first,number_type);
-					value=Builder.CreateMul(v1.first, v2.first);
+					value=Builder.CreateFMul(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
-					value=Builder.CreateMul(v1.first, v2.first);
+					value=Builder.CreateFMul(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else

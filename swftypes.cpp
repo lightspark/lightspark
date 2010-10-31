@@ -247,7 +247,7 @@ std::istream& lightspark::operator>>(std::istream& s, RGBA& v)
 void LINESTYLEARRAY::appendStyles(const LINESTYLEARRAY& r)
 {
 	unsigned int count = LineStyleCount + r.LineStyleCount;
-	assert_and_throw(version!=-1);
+	assert(version!=-1);
 
 	assert_and_throw(r.version==version);
 	if(version<4)
@@ -259,7 +259,7 @@ void LINESTYLEARRAY::appendStyles(const LINESTYLEARRAY& r)
 
 std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 {
-	assert_and_throw(v.version!=-1);
+	assert(v.version!=-1);
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
 		LOG(LOG_ERROR,_("Line array extended not supported"));
@@ -267,8 +267,7 @@ std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 	{
 		for(int i=0;i<v.LineStyleCount;i++)
 		{
-			LINESTYLE tmp;
-			tmp.version=v.version;
+			LINESTYLE tmp(v.version);
 			s >> tmp;
 			v.LineStyles.push_back(tmp);
 		}
@@ -277,7 +276,7 @@ std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 	{
 		for(int i=0;i<v.LineStyleCount;i++)
 		{
-			LINESTYLE2 tmp;
+			LINESTYLE2 tmp(v.version);
 			s >> tmp;
 			v.LineStyles2.push_back(tmp);
 		}
@@ -300,7 +299,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 
 void FILLSTYLEARRAY::appendStyles(const FILLSTYLEARRAY& r)
 {
-	assert_and_throw(version!=-1);
+	assert(version!=-1);
 	unsigned int count = FillStyleCount + r.FillStyleCount;
 
 	FillStyles.insert(FillStyles.end(),r.FillStyles.begin(),r.FillStyles.end());
@@ -309,17 +308,16 @@ void FILLSTYLEARRAY::appendStyles(const FILLSTYLEARRAY& r)
 
 std::istream& lightspark::operator>>(std::istream& s, FILLSTYLEARRAY& v)
 {
-	assert_and_throw(v.version!=-1);
+	assert(v.version!=-1);
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
 		LOG(LOG_ERROR,_("Fill array extended not supported"));
 
-	v.FillStyles.resize(v.FillStyleCount);
-	list<FILLSTYLE>::iterator it=v.FillStyles.begin();
-	for(;it!=v.FillStyles.end();++it)
+	for(int i=0;i<v.FillStyleCount;i++)
 	{
-		it->version=v.version;
-		s >> *it;
+		FILLSTYLE t(v.version);
+		s >> t;
+		v.FillStyles.push_back(t);
 	}
 	return s;
 }
@@ -482,8 +480,7 @@ std::istream& lightspark::operator>>(std::istream& s, GRADIENT& v)
 	v.SpreadMode=UB(2,bs);
 	v.InterpolationMode=UB(2,bs);
 	v.NumGradient=UB(4,bs);
-	GRADRECORD gr;
-	gr.version=v.version;
+	GRADRECORD gr(v.version);
 	for(int i=0;i<v.NumGradient;i++)
 	{
 		s >> gr;
@@ -499,8 +496,7 @@ std::istream& lightspark::operator>>(std::istream& s, FOCALGRADIENT& v)
 	v.SpreadMode=UB(2,bs);
 	v.InterpolationMode=UB(2,bs);
 	v.NumGradient=UB(4,bs);
-	GRADRECORD gr;
-	gr.version=v.version;
+	GRADRECORD gr(v.version);
 	for(int i=0;i<v.NumGradient;i++)
 	{
 		s >> gr;
@@ -538,8 +534,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 	}
 	else if(v.FillStyleType==LINEAR_GRADIENT || v.FillStyleType==RADIAL_GRADIENT || v.FillStyleType==FOCAL_RADIAL_GRADIENT)
 	{
-		s >> v.GradientMatrix;
-		v.Gradient.version=v.version;
+		s >> v.Matrix;
 		v.FocalGradient.version=v.version;
 		if(v.FillStyleType==FOCAL_RADIAL_GRADIENT)
 			s >> v.FocalGradient;
@@ -550,7 +545,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 			v.FillStyleType==NON_SMOOTHED_CLIPPED_BITMAP)
 	{
 		UI16 bitmapId;
-		s >> bitmapId >> v.BitmapMatrix;
+		s >> bitmapId >> v.Matrix;
 		//Lookup the bitmap in the dictionary
 		if(bitmapId!=65535)
 		{
@@ -570,7 +565,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 	}
 	else
 	{
-		LOG(LOG_ERROR,_("Not supported fill style ") << (int)v.FillStyleType << _("... Aborting"));
+		LOG(LOG_ERROR,_("Not supported fill style ") << (int)v.FillStyleType);
 		throw ParseException("Not supported fill style");
 	}
 	return s;
@@ -680,14 +675,12 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),TypeFlag(false),State
 			if(ps==NULL)
 				throw ParseException("Malformed SWF file");
 			bs.pos=0;
-			FILLSTYLEARRAY a;
-			a.version=ps->FillStyles.version;
+			FILLSTYLEARRAY a(ps->FillStyles.version);
 			bs.f >> a;
 			p->fillOffset=ps->FillStyles.FillStyleCount;
 			ps->FillStyles.appendStyles(a);
 
-			LINESTYLEARRAY b;
-			b.version=ps->LineStyles.version;
+			LINESTYLEARRAY b(ps->LineStyles.version);
 			bs.f >> b;
 			p->lineOffset=ps->LineStyles.LineStyleCount;
 			ps->LineStyles.appendStyles(b);

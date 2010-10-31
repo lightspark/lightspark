@@ -337,9 +337,10 @@ SystemState::~SystemState()
 		unlink(cookiesFileName);
 	assert(shutdown);
 	//The thread pool should be stopped before everything
+	threadPool->stop();
+	stopEngines();
 	delete threadPool;
 	threadPool=NULL;
-	stopEngines();
 
 	//decRef all our object before destroying classes
 	Variables.destroyContents();

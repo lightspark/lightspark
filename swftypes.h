@@ -736,6 +736,7 @@ class GRADRECORD
 {
 	friend std::istream& operator>>(std::istream& s, GRADRECORD& v);
 public:
+	GRADRECORD(int v):version(v){}
 	int version;
 	UI8 Ratio;
 	RGBA Color;
@@ -749,6 +750,7 @@ class GRADIENT
 {
 	friend std::istream& operator>>(std::istream& s, GRADIENT& v);
 public:
+	GRADIENT(int v):version(v){}
 	int version;
 	int SpreadMode;
 	int InterpolationMode;
@@ -777,13 +779,13 @@ enum FILL_STYLE_TYPE { SOLID_FILL=0x00, LINEAR_GRADIENT=0x10, RADIAL_GRADIENT=0x
 class FILLSTYLE
 {
 public:
+	FILLSTYLE(int v):version(v),Gradient(v){}
 	int version;
 	FILL_STYLE_TYPE FillStyleType;
 	RGBA Color;
-	MATRIX GradientMatrix;
+	MATRIX Matrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
-	MATRIX BitmapMatrix;
 	Bitmap* bitmap;
 	virtual ~FILLSTYLE(){}
 };
@@ -791,6 +793,7 @@ public:
 class MORPHFILLSTYLE:public FILLSTYLE
 {
 public:
+	MORPHFILLSTYLE():FILLSTYLE(1){}
 	RGBA StartColor;
 	RGBA EndColor;
 	MATRIX StartGradientMatrix;
@@ -806,6 +809,7 @@ public:
 class LINESTYLE
 {
 public:
+	LINESTYLE(int v):version(v){}
 	int version;
 	UI16 Width;
 	RGBA Color;
@@ -814,6 +818,8 @@ public:
 class LINESTYLE2
 {
 public:
+	LINESTYLE2(int v):version(v),FillType(v){}
+	int version;
 	UI16 Width;
 	UB StartCapStyle;
 	UB JointStyle;
@@ -840,9 +846,9 @@ public:
 class LINESTYLEARRAY
 {
 public:
-	LINESTYLEARRAY():version(-1){}
-	void appendStyles(const LINESTYLEARRAY& r);
+	LINESTYLEARRAY(int v):version(v){}
 	int version;
+	void appendStyles(const LINESTYLEARRAY& r);
 	UI8 LineStyleCount;
 	std::list<LINESTYLE> LineStyles;
 	std::list<LINESTYLE2> LineStyles2;
@@ -858,9 +864,9 @@ public:
 class FILLSTYLEARRAY
 {
 public:
-	FILLSTYLEARRAY():version(-1){}
-	void appendStyles(const FILLSTYLEARRAY& r);
+	FILLSTYLEARRAY(int v):version(v){}
 	int version;
+	void appendStyles(const FILLSTYLEARRAY& r);
 	UI8 FillStyleCount;
 	std::list<FILLSTYLE> FillStyles;
 };
@@ -961,7 +967,8 @@ class SHAPEWITHSTYLE : public SHAPE
 {
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
-	int version;
+	SHAPEWITHSTYLE(int v):version(v),FillStyles(v),LineStyles(v){}
+	const int version;
 	FILLSTYLEARRAY FillStyles;
 	LINESTYLEARRAY LineStyles;
 };

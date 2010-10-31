@@ -53,7 +53,7 @@ public:
 	GEOM_TOKEN_TYPE type;
 	Vector2 p1;
 	FILLSTYLE style;
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),style(-1){}
 	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE _f):type(_t),p1(0,0),style(_f){}
 };
 

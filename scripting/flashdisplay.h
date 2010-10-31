@@ -460,11 +460,20 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class IntSize
+{
+public:
+	uint32_t width;
+	uint32_t height;
+	IntSize(uint32_t w, uint32_t h):width(h),height(h){}
+};
+
 class Bitmap: public DisplayObject
 {
 public:
 	static void sinit(Class_base* c);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	virtual IntSize getBitmapSize() const;
 };
 
 };

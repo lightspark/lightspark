@@ -2384,7 +2384,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		assert_and_throw(ar->size()>=1);
 		color=ar->at(0)->toUInt();
 	}
-	th->styles.emplace_back(FILLSTYLE());
+	th->styles.emplace_back(FILLSTYLE(-1));
 	th->styles.back().FillStyleType=SOLID_FILL;
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
 	th->tokens.emplace_back(SET_FILL, th->styles.back());
@@ -2394,15 +2394,13 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 ASFUNCTIONBODY(Graphics,beginFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	th->styles.emplace_back(FILLSTYLE());
-	th->styles.back().FillStyleType=SOLID_FILL;
 	uint32_t color=0;
 	uint8_t alpha=255;
 	if(argslen>=1)
 		color=args[0]->toUInt();
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
-	th->styles.emplace_back(FILLSTYLE());
+	th->styles.emplace_back(FILLSTYLE(-1));
 	th->styles.back().FillStyleType=SOLID_FILL;
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
 	th->tokens.emplace_back(SET_FILL, th->styles.back());
@@ -2450,3 +2448,7 @@ bool Bitmap::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 	return false;
 }
 
+IntSize Bitmap::getBitmapSize() const
+{
+	return IntSize(100,100);
+}

@@ -86,6 +86,7 @@ RenderThread::RenderThread(SystemState* s):
 	FcPatternDestroy(match);
 	LOG(LOG_NO_INFO, _("Font File is ") << fontPath);
 #endif
+	time_s = compat_get_current_time_ms();
 }
 
 void RenderThread::start(ENGINE e,void* params)
@@ -100,7 +101,6 @@ void RenderThread::start(ENGINE e,void* params)
 		pthread_create(&t,NULL,(thread_worker)gtkplug_worker,this);
 	}
 #endif
-	time_s = compat_get_current_time_ms();
 }
 
 RenderThread::~RenderThread()

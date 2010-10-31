@@ -814,31 +814,27 @@ Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
 	return Vector2(100,100);
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),Shapes(1)
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
-	Shapes.version=1;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DefineShapeTag(h)
+DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DefineShapeTag(h,2)
 {
 	LOG(LOG_TRACE,_("DefineShape2Tag"));
-	Shapes.version=2;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DefineShape2Tag(h)
+DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DefineShape2Tag(h,3)
 {
 	LOG(LOG_TRACE,_("DefineShape3Tag"));
-	Shapes.version=3;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3Tag(h)
+DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3Tag(h,4)
 {
 	LOG(LOG_TRACE,_("DefineShape4Tag"));
-	Shapes.version=4;
 	in >> ShapeId >> ShapeBounds >> EdgeBounds;
 	BitStream bs(in);
 	UB(5,bs);

@@ -106,7 +106,7 @@ protected:
 	UI16 ShapeId;
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;
-	DefineShapeTag(RECORDHEADER h):DictionaryTag(h){};
+	DefineShapeTag(RECORDHEADER h,int v):DictionaryTag(h),Shapes(v){};
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
@@ -125,7 +125,7 @@ public:
 class DefineShape2Tag: public DefineShapeTag
 {
 protected:
-	DefineShape2Tag(RECORDHEADER h):DefineShapeTag(h){};
+	DefineShape2Tag(RECORDHEADER h, int v):DefineShapeTag(h,v){};
 public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual Vector2 debugRender(FTFont* font, bool deep);
@@ -140,7 +140,7 @@ public:
 class DefineShape3Tag: public DefineShape2Tag
 {
 protected:
-	DefineShape3Tag(RECORDHEADER h):DefineShape2Tag(h){};
+	DefineShape3Tag(RECORDHEADER h,int v):DefineShape2Tag(h,v){};
 public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }

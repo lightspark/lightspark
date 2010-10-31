@@ -790,7 +790,6 @@ void ASString::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString),true);
 	c->setMethodByQName("split",AS3,Class<IFunction>::getFunction(split),true);
 	c->setMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr),true);
 	c->setMethodByQName("replace",AS3,Class<IFunction>::getFunction(replace),true);
@@ -805,6 +804,8 @@ void ASString::sinit(Class_base* c)
 	c->setMethodByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase),true);
 	c->setMethodByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode),true);
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength),true);
+	//Fake method to override the default behavior
+	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ASString::_toString),true);
 }
 
 void ASString::buildTraits(ASObject* o)
@@ -930,6 +931,13 @@ ASFUNCTIONBODY(ASString,match)
 			ret->push(Class<ASString>::getInstanceS(arg0));
 	}
 	return ret;
+}
+
+ASFUNCTIONBODY(ASString,_toString)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	assert_and_throw(argslen==0);
+	return Class<ASString>::getInstanceS(th->ASString::toString(false));
 }
 
 ASFUNCTIONBODY(ASString,split)
@@ -1338,6 +1346,7 @@ void Integer::sinit(Class_base* c)
 	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648));
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),true);
 }
 
 tiny_string UInteger::toString(bool debugMsg)
@@ -1407,6 +1416,13 @@ TRISTATE Number::isLess(ASObject* o)
 	}
 }
 
+ASFUNCTIONBODY(Number,_toString)
+{
+	Number* th=static_cast<Number*>(obj);
+	assert_and_throw(argslen==0);
+	return Class<ASString>::getInstanceS(th->Number::toString(false));
+}
+
 tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
@@ -1425,6 +1441,7 @@ void Number::sinit(Class_base* c)
 	pinf->setPrototype(c);
 	c->setVariableByQName("NEGATIVE_INFINITY","",ninf);
 	c->setVariableByQName("POSITIVE_INFINITY","",pinf);
+	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),true);
 }
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)

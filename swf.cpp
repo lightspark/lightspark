@@ -298,11 +298,6 @@ void SystemState::setParameters(ASObject* p)
 void SystemState::stopEngines()
 {
 	//Stops the thread that is parsing us
-	delete audioManager;
-	audioManager=NULL;
-	delete pluginManager;
-	pluginManager=NULL;
-	
 	if(parseThread)
 	{
 		parseThread->stop();
@@ -322,6 +317,12 @@ void SystemState::stopEngines()
 		currentVm->shutdown();
 	delete timerThread;
 	timerThread=NULL;
+	//Now stop the managers
+	delete audioManager;
+	audioManager=NULL;
+	delete pluginManager;
+	pluginManager=NULL;
+	
 }
 
 SystemState::~SystemState()

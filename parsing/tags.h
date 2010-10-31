@@ -566,7 +566,7 @@ public:
 	void execute(RootMovieClip* root){};
 };
 
-class DefineBitsLosslessTag: public DictionaryTag
+class DefineBitsLosslessTag: public DictionaryTag, public Bitmap
 {
 private:
 	UI16 CharacterId;

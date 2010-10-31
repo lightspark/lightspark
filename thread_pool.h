@@ -39,7 +39,7 @@ class SystemState;
 class ThreadPool
 {
 private:
-	sem_t mutex;
+	Mutex mutex;
 	pthread_t threads[NUM_THREADS];
 	IThreadJob* curJobs[NUM_THREADS];
 	std::deque<IThreadJob*> jobs;
@@ -51,7 +51,7 @@ public:
 	ThreadPool(SystemState* s);
 	~ThreadPool();
 	void addJob(IThreadJob* j);
-	void stop();
+	void forceStop();
 };
 
 };

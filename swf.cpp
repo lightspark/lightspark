@@ -304,7 +304,7 @@ void SystemState::stopEngines()
 		parseThread->wait();
 	}
 	if(threadPool)
-		threadPool->stop();
+		threadPool->forceStop();
 	if(timerThread)
 		timerThread->wait();
 	delete downloadManager;
@@ -317,6 +317,8 @@ void SystemState::stopEngines()
 		currentVm->shutdown();
 	delete timerThread;
 	timerThread=NULL;
+	delete threadPool;
+	threadPool=NULL;
 	//Now stop the managers
 	delete audioManager;
 	audioManager=NULL;
@@ -338,10 +340,9 @@ SystemState::~SystemState()
 		unlink(cookiesFileName);
 	assert(shutdown);
 	//The thread pool should be stopped before everything
-	threadPool->stop();
+	if(threadPool)
+		threadPool->forceStop();
 	stopEngines();
-	delete threadPool;
-	threadPool=NULL;
 
 	//decRef all our object before destroying classes
 	Variables.destroyContents();
@@ -462,7 +463,6 @@ void SystemState::EngineCreator::execute()
 
 void SystemState::EngineCreator::threadAbort()
 {
-	assert(sys->shutdown);
 	sys->fileDumpAvailable.signal();
 }
 

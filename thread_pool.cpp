@@ -28,10 +28,9 @@ using namespace lightspark;
 
 TLSDATA lightspark::IThreadJob* thisJob=NULL;
 
-ThreadPool::ThreadPool(SystemState* s):stopFlag(false)
+ThreadPool::ThreadPool(SystemState* s):mutex("ThreadPool mutex"),stopFlag(false)
 {
 	m_sys=s;
-	sem_init(&mutex,0,1);
 	sem_init(&num_jobs,0,0);
 	for(int i=0;i<NUM_THREADS;i++)
 	{
@@ -44,40 +43,42 @@ ThreadPool::ThreadPool(SystemState* s):stopFlag(false)
 	}
 }
 
-void ThreadPool::stop()
+void ThreadPool::forceStop()
 {
-	stopFlag=true;
-	//Signal an event for all the threads
-	for(int i=0;i<NUM_THREADS;i++)
-		sem_post(&num_jobs);
+	if(!stopFlag)
+	{
+		stopFlag=true;
+		//Signal an event for all the threads
+		for(int i=0;i<NUM_THREADS;i++)
+			sem_post(&num_jobs);
+		{
+			Locker l(mutex);
+			//Now abort any job that is still executing
+			for(int i=0;i<NUM_THREADS;i++)
+			{
+				if(curJobs[i])
+					curJobs[i]->stop();
+			}
+			//Fence all the non executed jobs
+			std::deque<IThreadJob*>::iterator it=jobs.begin();
+			for(;it!=jobs.end();it++)
+				(*it)->jobFence();
+			jobs.clear();
+		}
 
+		for(int i=0;i<NUM_THREADS;i++)
+		{
+			if(pthread_join(threads[i],NULL)!=0)
+				LOG(LOG_ERROR,_("pthread_join failed in ~ThreadPool"));
+		}
+	}
 }
 
 ThreadPool::~ThreadPool()
 {
-	stop();
-	//Now abort any job that is still executing
-	sem_wait(&mutex);
-	for(int i=0;i<NUM_THREADS;i++)
-	{
-		if(curJobs[i])
-			curJobs[i]->stop();
-	}
-	//Fence all the non executed jobs
-	std::deque<IThreadJob*>::iterator it=jobs.begin();
-	for(;it!=jobs.end();it++)
-		(*it)->jobFence();
-	jobs.clear();
-	sem_post(&mutex);
-
-	for(int i=0;i<NUM_THREADS;i++)
-	{
-		if(pthread_join(threads[i],NULL)!=0)
-			LOG(LOG_ERROR,_("pthread_join failed in ~ThreadPool"));
-	}
+	forceStop();
 
 	sem_destroy(&num_jobs);
-	sem_destroy(&mutex);
 }
 
 void* ThreadPool::job_worker(void* t)
@@ -103,12 +104,12 @@ void* ThreadPool::job_worker(void* t)
 		sem_wait(&th->num_jobs);
 		if(th->stopFlag)
 			pthread_exit(0);
-		sem_wait(&th->mutex);
+		Locker l(th->mutex);
 		IThreadJob* myJob=th->jobs.front();
 		th->jobs.pop_front();
 		th->curJobs[index]=myJob;
 		myJob->executing=true;
-		sem_post(&th->mutex);
+		l.unlock();
 
 		assert(thisJob==NULL);
 		thisJob=myJob;
@@ -125,7 +126,7 @@ void* ThreadPool::job_worker(void* t)
 		profile->accountTime(chronometer.checkpoint());
 		thisJob=NULL;
 
-		sem_wait(&th->mutex);
+		l.lock();
 		myJob->executing=false;
 		th->curJobs[index]=NULL;
 		if(myJob->destroyMe)
@@ -135,16 +136,20 @@ void* ThreadPool::job_worker(void* t)
 		}
 		else
 			myJob->jobFence();
-		sem_post(&th->mutex);
+		l.unlock();
 	}
 	return NULL;
 }
 
 void ThreadPool::addJob(IThreadJob* j)
 {
-	sem_wait(&mutex);
+	Locker l(mutex);
+	if(stopFlag)
+	{
+		j->jobFence();
+		return;
+	}
 	jobs.push_back(j);
-	sem_post(&mutex);
 	sem_post(&num_jobs);
 }
 

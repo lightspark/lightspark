@@ -313,6 +313,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	}
 	else
 	{
+		assert(mWindow==0);
 		mWindow = (Window) aWindow->window;
 		NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
 		mDisplay = ws_info->display;
@@ -330,7 +331,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p.height=mHeight;
 		p.helper=AsyncHelper;
 		p.helperArg=this;
-		LOG(LOG_NO_INFO,"X Window " << hex << p.window << dec);
+		LOG(LOG_NO_INFO,"X Window " << hex << p.window << dec << " Width: " << p.width << " Height: " << p.height);
 		m_sys->setParamsAndEngine(lightspark::GTKPLUG,&p);
 	}
 	//draw();

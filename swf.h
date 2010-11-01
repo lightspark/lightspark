@@ -112,6 +112,7 @@ public:
 	float getFrameRate() const;
 	void setFrameRate(float f);
 	void setFrameCount(int f);
+	void setOnStage(bool staged);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
 	void addToFrame(DisplayListTag* t);

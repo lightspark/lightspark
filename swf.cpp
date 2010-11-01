@@ -140,6 +140,12 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 	clip->decRef();
 }
 
+void RootMovieClip::setOnStage(bool staged)
+{
+	Locker l(mutexFrames);
+	MovieClip::setOnStage(staged);
+}
+
 void SystemState::staticInit()
 {
 	//Do needed global initialization

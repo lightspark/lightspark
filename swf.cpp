@@ -597,7 +597,6 @@ void SystemState::createEngines()
 	//COMPILE_PLUGIN not defined
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
 	{
-		sem_post(&mutex);
 		throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
 	}
 #endif
@@ -607,7 +606,6 @@ void SystemState::createEngines()
 #ifdef COMPILE_PLUGIN
 		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
 #else
-		sem_post(&mutex);
 		throw new UnsupportedException("Plugin engine not available when not built with COMPILE_PLUGIN");
 #endif
 	}

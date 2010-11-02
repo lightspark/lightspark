@@ -95,7 +95,7 @@ long lrint(double f);
 
 #include <stdatomic.h>
 #define ATOMIC_INT32(x) std::atomic<int32_t> x
-#define ATOMIC_INCREMENT(x) x.fetch_add(1)
+#define ATOMIC_INCREMENT(x) (x.fetch_add(1)+1)
 #define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
 
 //Boolean type con acquire release barrier semantics

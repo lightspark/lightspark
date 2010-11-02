@@ -160,8 +160,11 @@ public:
 	void incRef()
 	{
 		//std::cout << "incref " << this << std::endl;
+#ifndef NDEBUG
+		uint32_t t=
+#endif
 		ATOMIC_INCREMENT(ref_count);
-		assert(ref_count>0);
+		assert(t>0);
 	}
 	void decRef()
 	{

@@ -172,7 +172,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+		sys->currentVm->addEvent(_MR(th),_MNR(Class<Event>::getInstanceS("ioError")));
 	}
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
@@ -216,13 +216,13 @@ void URLLoader::execute()
 				data=Class<ASString>::getInstanceS((char*)buf,downloader->getLength());
 			}
 			//Send a complete event for this object
-			sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete"));
+			sys->currentVm->addEvent(_MR(this),_MNR(Class<Event>::getInstanceS("complete")));
 		}
 	}
 	else
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+		sys->currentVm->addEvent(_MR(this),_MNR(Class<Event>::getInstanceS("ioError")));
 	}
 
 	sys->downloadManager->destroy(downloader);
@@ -347,7 +347,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
 	Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success");
-	getVm()->addEvent(th, status);
+	getVm()->addEvent(_MR(th), _MNR(status));
 	status->decRef();
 	return NULL;
 }
@@ -572,7 +572,7 @@ ASFUNCTIONBODY(NetStream,play)
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+		sys->currentVm->addEvent(_MR(th),_MNR(Class<Event>::getInstanceS("ioError")));
 	}
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
@@ -597,9 +597,8 @@ ASFUNCTIONBODY(NetStream,resume)
 	if(th->paused)
 	{
 		th->paused = false;
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		_NR<Event> status(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify"));
+		getVm()->addEvent(_MR(th), status);
 	}
 	return NULL;
 }
@@ -610,9 +609,8 @@ ASFUNCTIONBODY(NetStream,pause)
 	if(!th->paused)
 	{
 		th->paused = true;
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		_NR<Event> status(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify"));
+		getVm()->addEvent(_MR(th), status);
 	}
 	return NULL;
 }
@@ -636,9 +634,8 @@ ASFUNCTIONBODY(NetStream,close)
 	if(!th->closed)
 	{
 		th->threadAbort();
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		_NR<Event> status(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop"));
+		getVm()->addEvent(_MR(th), status);
 	}
 	LOG(LOG_CALLS, _("NetStream::close called"));
 	return NULL;
@@ -730,7 +727,7 @@ void NetStream::execute()
 {
 	if(downloader->hasFailed())
 	{
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+		sys->currentVm->addEvent(_MR(this),_MNR(Class<Event>::getInstanceS("ioError")));
 		sys->downloadManager->destroy(downloader);
 		return;
 	}
@@ -858,12 +855,12 @@ void NetStream::execute()
 								videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
 								decodedVideoFrames++;
 							}
-							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
-							getVm()->addEvent(this, status);
-							status->decRef();
-							status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Full");
-							getVm()->addEvent(this, status);
-							status->decRef();
+							_NR<Event> status1(Class<NetStatusEvent>::getInstanceS("status","NetStream.Play.Start"));
+							incRef();
+							getVm()->addEvent(_MR(this), status1);
+							_NR<Event> status2(Class<NetStatusEvent>::getInstanceS("status","NetStream.Buffer.Full"));
+							incRef();
+							getVm()->addEvent(_MR(this), status2);
 						}
 						else
 						{
@@ -932,10 +929,9 @@ void NetStream::execute()
 							callbackArgs[0] = metadata;
 							client->incRef();
 							metadata->incRef();
-							FunctionEvent* event = 
-								new FunctionEvent(static_cast<IFunction*>(callback), client, callbackArgs, 1);
-							getVm()->addEvent(NULL,event);
-							event->decRef();
+							_NR<Event> event(
+								new FunctionEvent(static_cast<IFunction*>(callback), client, callbackArgs, 1));
+							getVm()->addEvent(NullRef,event);
 						}
 					}
 

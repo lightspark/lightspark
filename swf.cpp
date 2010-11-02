@@ -425,8 +425,7 @@ void SystemState::setShutdownFlag()
 	if(currentVm)
 	{
 		ShutdownEvent* e=new ShutdownEvent;
-		currentVm->addEvent(NULL,e);
-		e->decRef();
+		currentVm->addEvent(NullRef,_MNR(e));
 	}
 	//Set the flag after sending the event, otherwise it's ignored by the VM
 	shutdown=true;
@@ -680,7 +679,7 @@ void SystemState::tick()
 	if(stage->hasEventListener("enterFrame"))
 	{
 		Event* e=Class<Event>::getInstanceS("enterFrame");
-		getVm()->addEvent(stage,e);
+		getVm()->addEvent(_MR(stage),_MNR(e));
 		e->decRef();
 	}
 }
@@ -924,19 +923,15 @@ void RootMovieClip::initialize()
 		initialized=true;
 		//Let's see if we have to bind the root movie clip itself
 		if(bindName.len())
-			sys->currentVm->addEvent(NULL,new BindClassEvent(this,bindName));
+			sys->currentVm->addEvent(NullRef,_MNR(new BindClassEvent(this,bindName)));
 		//Now signal the completion for this root
-		sys->currentVm->addEvent(loaderInfo,Class<Event>::getInstanceS("init"));
+		sys->currentVm->addEvent(_MR(loaderInfo),_MNR(Class<Event>::getInstanceS("init")));
 		//Wait for handling of all previous events
-		SynchronizationEvent* se=new SynchronizationEvent;
-		bool added=sys->currentVm->addEvent(NULL, se);
+		_NR<SynchronizationEvent> se(new SynchronizationEvent);
+		bool added=sys->currentVm->addEvent(NullRef, se);
 		if(!added)
-		{
-			se->decRef();
 			throw RunTimeException("Could not add event");
-		}
 		se->wait();
-		se->decRef();
 	}
 }
 
@@ -1097,9 +1092,9 @@ void RootMovieClip::tick()
 	try
 	{
 		advanceFrame();
-		Event* e=Class<Event>::getInstanceS("enterFrame");
+		_NR<Event> e(Class<Event>::getInstanceS("enterFrame"));
 		if(hasEventListener("enterFrame"))
-			getVm()->addEvent(this,e);
+			getVm()->addEvent(_MR(this),e);
 		//Get a copy of the current childs
 		vector<MovieClip*> curChildren;
 		{
@@ -1114,10 +1109,9 @@ void RootMovieClip::tick()
 		{
 			curChildren[i]->advanceFrame();
 			if(curChildren[i]->hasEventListener("enterFrame"))
-				getVm()->addEvent(curChildren[i],e);
+				getVm()->addEvent(_MR(curChildren[i]),e);
 			curChildren[i]->decRef();
 		}
-		e->decRef();
 	}
 	catch(LightsparkException& e)
 	{

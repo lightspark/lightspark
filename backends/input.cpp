@@ -149,7 +149,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	lastMouseDownTarget=selected;
 	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseDown",true));
+	m_sys->currentVm->addEvent(_MR(selected),_MNR(Class<MouseEvent>::getInstanceS("mouseDown",true)));
 	//And select that object for debugging (if needed)
 	if(m_sys->showDebug)
 		m_sys->getRenderThread()->selectedDebug=selected;
@@ -174,11 +174,11 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 		return;
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));
+	m_sys->currentVm->addEvent(_MR(selected),_MNR(Class<MouseEvent>::getInstanceS("mouseUp",true)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
-		m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("click",true));
+		m_sys->currentVm->addEvent(_MR(selected),_MNR(Class<MouseEvent>::getInstanceS("click",true)));
 		lastMouseDownTarget=NULL;
 	}
 }

@@ -229,7 +229,7 @@ void Loader::execute()
 	}
 	loaded=true;
 	//Add a complete event for this object
-	sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("complete"));
+	sys->currentVm->addEvent(_MR(contentLoaderInfo),_MNR(Class<Event>::getInstanceS("complete")));
 }
 
 void Loader::threadAbort()
@@ -647,7 +647,7 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->state.max_FP);
-	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,th));
+	sys->currentVm->addEvent(NullRef,_MNR(new FrameChangeEvent(th->state.FP+1,th)));
 	return NULL;
 }
 
@@ -701,7 +701,7 @@ void MovieClip::advanceFrame()
 		state.explicit_FP=false;
 		assert(state.FP<frameScripts.size());
 		if(frameScripts[state.FP])
-			getVm()->addEvent(NULL,new FunctionEvent(frameScripts[state.FP]));
+			getVm()->addEvent(NullRef,_MNR(new FunctionEvent(frameScripts[state.FP])));
 	}
 
 }
@@ -1205,15 +1205,13 @@ void DisplayObject::setOnStage(bool staged)
 			return;
 		if(onStage==true && hasEventListener("addedToStage"))
 		{
-			Event* e=Class<Event>::getInstanceS("addedToStage");
-			getVm()->addEvent(this,e);
-			e->decRef();
+			_NR<Event> e(Class<Event>::getInstanceS("addedToStage"));
+			getVm()->addEvent(_MR(this),e);
 		}
 		else if(onStage==false && hasEventListener("removedFromStage"))
 		{
-			Event* e=Class<Event>::getInstanceS("removedFromStage");
-			getVm()->addEvent(this,e);
-			e->decRef();
+			_NR<Event> e(Class<Event>::getInstanceS("removedFromStage"));
+			getVm()->addEvent(_MR(this),e);
 		}
 	}
 }
@@ -1850,7 +1848,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 
 	//Notify the object
 	d->incRef();
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
+	sys->currentVm->addEvent(_MR(d),_MNR(Class<Event>::getInstanceS("added")));
 
 	return d;
 }
@@ -1870,7 +1868,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 
 	//Notify the object
 	d->incRef();
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
+	sys->currentVm->addEvent(_MR(d),_MNR(Class<Event>::getInstanceS("added")));
 
 	return d;
 }

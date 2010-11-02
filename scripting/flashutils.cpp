@@ -205,9 +205,9 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 
 void Timer::tick()
 {
-	TimerEvent* e=Class<TimerEvent>::getInstanceS("timer");
-	sys->currentVm->addEvent(this,e);
-	e->decRef();
+	_NR<TimerEvent> e(Class<TimerEvent>::getInstanceS("timer"));
+	incRef();
+	sys->currentVm->addEvent(_MR(this),e);
 	if(repeatCount==0)
 		sys->addWait(delay,this);
 	else
@@ -750,9 +750,8 @@ void IntervalRunner::tick()
 	}
 	//Incref the this object
 	obj->incRef();
-	FunctionEvent* event = new FunctionEvent(static_cast<IFunction*>(callback), obj, args, argslen);
-	getVm()->addEvent(NULL,event);
-	event->decRef();
+	_NR<FunctionEvent> event(new FunctionEvent(static_cast<IFunction*>(callback), obj, args, argslen));
+	getVm()->addEvent(NullRef,event);
 	if(type == TIMEOUT)
 	{
 		//TODO: IntervalRunner deletes itself. Is this allowed?

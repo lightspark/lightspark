@@ -34,6 +34,7 @@
 #include <map>
 #include <set>
 #include "swf.h"
+#include "objectreference.h"
 
 namespace lightspark
 {
@@ -601,8 +602,8 @@ private:
 
 	//Event handling
 	bool shuttingdown;
-	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
-	void handleEvent(std::pair<EventDispatcher*,Event*> e);
+	std::deque<std::pair<_R<EventDispatcher>,_NR<Event> > > events_queue;
+	void handleEvent(std::pair<_R<EventDispatcher>,_NR<Event>> e);
 
 	void buildClassAndInjectBase(const std::string& n, ASObject*, ASObject* const* a, const unsigned int argslen, bool isRoot);
 
@@ -626,7 +627,8 @@ public:
 	~ABCVm();
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
-	bool addEvent(EventDispatcher*,Event*) DLL_PUBLIC;
+	bool addEvent(_R<EventDispatcher>,_NR<Event>);
+	void addContext(ABCContextInitEvent* e) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
 	void wait();

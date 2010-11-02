@@ -117,8 +117,7 @@ int main(int argc, char* argv[])
 		contexts.push_back(context);
 		f.close();
 		ABCContextInitEvent* e=new ABCContextInitEvent(context);
-		vm->addEvent(NULL,e);
-		e->decRef();
+		vm->addContext(e);
 	}
 	sys->setShutdownFlag();
 	sys->wait();

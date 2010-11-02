@@ -75,16 +75,12 @@ DoABCTag::~DoABCTag()
 void DoABCTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
-	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
-	SynchronizationEvent* se=new SynchronizationEvent;
-	bool added=sys->currentVm->addEvent(NULL,se);
+	sys->currentVm->addEvent(NullRef,_MNR(new ABCContextInitEvent(context)));
+	_NR<SynchronizationEvent> se(new SynchronizationEvent);
+	bool added=sys->currentVm->addEvent(NullRef,se);
 	if(!added)
-	{
-		se->decRef();
 		throw RunTimeException("Could not add event");
-	}
 	se->wait();
-	se->decRef();
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -118,8 +114,7 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			ASObject* base=dynamic_cast<ASObject*>(t);
 			assert_and_throw(base!=NULL);
 			BindClassEvent* e=new BindClassEvent(base,(const char*)Names[i]);
-			sys->currentVm->addEvent(NULL,e);
-			e->decRef();
+			sys->currentVm->addEvent(NullRef,_MNR(e));
 		}
 	}
 }
@@ -1010,33 +1005,31 @@ int ABCVm::getEventQueueSize()
 	return events_queue.size();
 }
 
-void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
+void ABCVm::handleEvent(pair<_R<EventDispatcher>,_NR<Event> > e)
 {
 	e.second->check();
-	if(e.first)
+	if(!e.first.isNull())
 	{
 		//TODO: implement capture phase
 		//Do target phase
-		Event* event=e.second;
-		assert_and_throw(event->target==NULL);
-		event->target=e.first;
-		event->currentTarget=e.first;
-		e.first->handleEvent(event);
+		assert_and_throw(e.second->target==NULL);
+		e.second->target=e.first.getPtr();
+		e.second->currentTarget=e.first.getPtr();
+		e.first->handleEvent(e.second.getPtr()); //AUTOMATE
 		//Do bubbling phase
-		if(event->bubbles && e.first->prototype->isSubClass(Class<DisplayObject>::getClass()))
+		if(e.second->bubbles && e.first->prototype->isSubClass(Class<DisplayObject>::getClass()))
 		{
-			DisplayObjectContainer* cur=static_cast<DisplayObject*>(e.first)->parent;
+			DisplayObjectContainer* cur=static_cast<DisplayObject*>(e.first.getPtr())->parent;
 			while(cur)
 			{
-				event->currentTarget=cur;
-				cur->handleEvent(event);
+				e.second->currentTarget=cur;
+				cur->handleEvent(e.second.getPtr()); //AUTOMATE
 				cur=cur->parent;
 			}
 		}
 		//Reset events so they might be recycled
-		event->currentTarget=NULL;
-		event->target=NULL;
-		e.first->decRef();
+		e.second->currentTarget=NULL;
+		e.second->target=NULL;
 	}
 	else
 	{
@@ -1045,10 +1038,10 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 		{
 			case BIND_CLASS:
 			{
-				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
+				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second.getPtr());
 				bool isRoot= ev->base==sys;
 				LOG(LOG_CALLS,_("Binding of ") << ev->class_name);
-				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,NULL,0,isRoot);
+				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,NULL,0,isRoot); //AUTOMATE
 				LOG(LOG_CALLS,_("End of binding of ") << ev->class_name);
 				break;
 			}
@@ -1057,26 +1050,26 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 				break;
 			case SYNC:
 			{
-				SynchronizationEvent* ev=static_cast<SynchronizationEvent*>(e.second);
+				SynchronizationEvent* ev=static_cast<SynchronizationEvent*>(e.second.getPtr());
 				ev->sync();
 				break;
 			}
 			case FUNCTION:
 			{
-				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
+				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second.getPtr());
 				//We hope the method is binded
 				ev->f->call(ev->obj,ev->args,ev->numArgs,ev->thisOverride);
 				break;
 			}
 			case CONTEXT_INIT:
 			{
-				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);
+				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second.getPtr());
 				ev->context->exec();
 				break;
 			}
 			case CONSTRUCT_OBJECT:
 			{
-				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
+				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,_("Building instance traits"));
 				try
 				{
@@ -1093,7 +1086,7 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 			}
 			case CHANGE_FRAME:
 			{
-				FrameChangeEvent* ev=static_cast<FrameChangeEvent*>(e.second);
+				FrameChangeEvent* ev=static_cast<FrameChangeEvent*>(e.second.getPtr());
 				ev->movieClip->state.next_FP=ev->frame;
 				ev->movieClip->state.explicit_FP=true;
 				break;
@@ -1102,13 +1095,17 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 				throw UnsupportedException("Not supported event");
 		}
 	}
-	e.second->decRef();
+}
+
+void ABCVm::addContext(ABCContextInitEvent* e)
+{
+	addEvent(NullRef, _MNR(e));
 }
 
 /*! \brief enqueue an event, a reference is acquired
 * * \param obj EventDispatcher that will receive the event
 * * \param ev event that will be sent */
-bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
+bool ABCVm::addEvent(_R<EventDispatcher> obj ,_NR<Event> ev)
 {
 	//If the system should terminate new events are not accepted
 	if(m_sys->shouldTerminate())
@@ -1117,17 +1114,13 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	//we should handle it immidiately to avoid deadlock
 	if(isVmThread && (ev->getEventType()==SYNC || ev->getEventType()==CONSTRUCT_OBJECT))
 	{
-		assert(obj==NULL);
-		ev->incRef();
-		handleEvent(make_pair<EventDispatcher*>(NULL, ev));
+		assert(obj.isNull());
+		handleEvent(make_pair<_R<EventDispatcher>>(NullRef, ev));
 		return true;
 	}
 
 	sem_wait(&event_queue_mutex);
-	if(obj)
-		obj->incRef();
-	ev->incRef();
-	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
+	events_queue.emplace_back(make_pair(obj, ev));
 	sem_post(&event_queue_mutex);
 	sem_post(&sem_event_count);
 	return true;
@@ -1451,7 +1444,7 @@ void ABCVm::Run(ABCVm* th)
 			}
 			Chronometer chronometer;
 			sem_wait(&th->event_queue_mutex);
-			pair<EventDispatcher*,Event*> e=th->events_queue.front();
+			pair<_R<EventDispatcher>,_NR<Event> > e=th->events_queue.front();
 			th->events_queue.pop_front();
 			sem_post(&th->event_queue_mutex);
 			th->handleEvent(e);

@@ -1292,15 +1292,11 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			if(PlaceFlagHasMatrix)
 				toAdd->setMatrix(Matrix);
 			//We now ask the VM to construct this object
-			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->getPrototype());
-			bool added=sys->currentVm->addEvent(NULL,e);
+			_NR<ConstructObjectEvent> e(new ConstructObjectEvent(toAdd,toAdd->getPrototype()));
+			bool added=sys->currentVm->addEvent(NullRef,e);
 			if(!added)
-			{
-				e->decRef();
 				throw RunTimeException("Could not add event");
-			}
 			e->wait();
-			e->decRef();
 		}
 
 		if(PlaceFlagHasColorTransform)
@@ -1465,15 +1461,11 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			if(PlaceFlagHasMatrix)
 				toAdd->setMatrix(Matrix);
 			//We now ask the VM to construct this object
-			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->getPrototype());
-			bool added=sys->currentVm->addEvent(NULL,e);
+			_NR<ConstructObjectEvent> e(new ConstructObjectEvent(toAdd,toAdd->getPrototype()));
+			bool added=sys->currentVm->addEvent(NullRef,e);
 			if(!added)
-			{
-				e->decRef();
 				throw RunTimeException("Could not add event");
-			}
 			e->wait();
-			e->decRef();
 		}
 
 		if(PlaceFlagHasColorTransform)

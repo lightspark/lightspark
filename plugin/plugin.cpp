@@ -145,6 +145,7 @@ NPError NS_PluginInitialize()
 
 void NS_PluginShutdown()
 {
+	LOG(LOG_NO_INFO,"Lightspark plugin shutdown");
 	lightspark::SystemState::staticDeinit();
 }
 

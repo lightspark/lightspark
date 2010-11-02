@@ -82,7 +82,6 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 			{
 				//We stop execution until execution engine catches up
 				_NR<SynchronizationEvent> se(new SynchronizationEvent);
-				puppa(se);
 				bool added=sys->currentVm->addEvent(NullRef, se);
 				if(!added)
 					throw RunTimeException("Could not add event");

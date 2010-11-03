@@ -347,14 +347,28 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 	uint32_t blocksW=(width+127)/128;
 	uint32_t blocksH=(height+127)/128;
 	texId=r.texId;
-	chunks=new uint32_t[blocksW*blocksH];
-	memcpy(chunks, r.chunks, blocksW*blocksH*4);
+	if(r.chunks)
+	{
+		chunks=new uint32_t[blocksW*blocksH];
+		memcpy(chunks, r.chunks, blocksW*blocksH*4);
+	}
+	else
+		chunks=NULL;
 	return *this;
 }
 
 TextureChunk::~TextureChunk()
 {
 	delete[] chunks;
+}
+
+void TextureChunk::makeEmpty()
+{
+	width=0;
+	height=0;
+	texId=0;
+	delete[] chunks;
+	chunks=NULL;
 }
 
 bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)

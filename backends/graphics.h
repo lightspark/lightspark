@@ -156,6 +156,7 @@ public:
 	bool resizeIfLargeEnough(uint32_t w, uint32_t h);
 	uint32_t getNumberOfChunks() const { return ((width+127)/128)*((height+127)/128); }
 	bool isValid() const { return chunks; }
+	void makeEmpty();
 	uint32_t width;
 	uint32_t height;
 };

@@ -1049,6 +1049,7 @@ bool RenderThread::allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk&
 	uint32_t found=0;
 	uint32_t blockPerSide=largeTextureSize/128;
 	uint32_t bitmapSize=blockPerSide*blockPerSide;
+	//TODO: use the already allocated array
 	uint32_t* tmp=new uint32_t[blocksW*blocksH];
 	for(uint32_t i=0;i<bitmapSize;i++)
 	{
@@ -1117,8 +1118,14 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 		done=allocateChunkOnTextureCompact(tex, ret, blocksW, blocksH);
 	else
 		done=allocateChunkOnTextureSparse(tex, ret, blocksW, blocksH);
-	assert(done);
-	ret.texId=index;
+	if(!done)
+	{
+		//We were not able to allocate the whole surface on a single page
+		LOG(LOG_NOT_IMPLEMENTED,"Support multi page surface allocation");
+		ret.makeEmpty();
+	}
+	else
+		ret.texId=index;
 	return ret;
 }
 
@@ -1171,7 +1178,9 @@ void RenderThread::renderTextured(const TextureChunk& chunk, uint32_t x, uint32_
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
 {
-	assert(w<=largeTextureSize && h<=largeTextureSize);
+	//Fast bailout if the TextureChunk is not valid
+	if(chunk.chunks==NULL)
+		return;
 	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
 	//TODO: Detect continuos
 	//The size is ok if doesn't grow over the allocated size

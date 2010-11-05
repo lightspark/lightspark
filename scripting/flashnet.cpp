@@ -769,9 +769,8 @@ void NetStream::execute()
 				//Check if threadAbort has been called, if so, stop this loop
 				if(closed)
 					done = true;
-				UI32 PreviousTagSize;
+				UI32FLV PreviousTagSize;
 				s >> PreviousTagSize;
-				PreviousTagSize.bswap();
 				assert_and_throw(PreviousTagSize==prevSize);
 
 				//Check tag type and read it

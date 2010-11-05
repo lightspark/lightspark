@@ -2025,6 +2025,7 @@ istream& lightspark::operator>>(istream& in, u16& v)
 {
 	uint16_t t;
 	in.read((char*)&t,2);
+	SwfToLe16(t);
 	v.val=t;
 	return in;
 }
@@ -2033,6 +2034,7 @@ istream& lightspark::operator>>(istream& in, d64& v)
 {
 	//Should check if this is right
 	in.read((char*)&v.val,8);
+	SwfToLe(v.val);
 	return in;
 }
 

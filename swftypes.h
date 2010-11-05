@@ -33,12 +33,99 @@
 #include <assert.h>
 #include "exceptions.h"
 #ifndef WIN32
-// TODO: Proper CMake check
-#include <arpa/inet.h>
+ // TODO: Proper CMake check
+ #include <arpa/inet.h>
+#endif
+#include <stdatomic.h>
+#include <endian.h>
+
+#ifdef BIG_ENDIAN
+#include <algorithm>
 #endif
 
 namespace lightspark
 {
+
+inline void ByteSwap(unsigned char *b, int n)
+{
+        int i=0, j = n-1;
+        while (i<j)
+        {
+                std::swap(b[i], b[j]);
+                i++;
+                j--;
+        }
+}
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+template <class T>
+inline void SwfToLe(T &x)
+{
+	ByteSwap((unsigned char*) &x, sizeof(x));
+}
+
+template <class T>
+inline void SwfToLe16(T &x)
+{
+	x = htole16(static_cast<uint16_t>(x));
+}
+
+template <class T>
+inline void SwfToLe24(T &x)
+{
+	std::swap(reinterpret_cast<unsigned char*>(&x)[0],
+		reinterpret_cast<unsigned char*>(&x)[2]);
+}
+
+template <class T>
+inline void SwfToLe32(T &x)
+{
+	x = htole32(static_cast<uint32_t>(x));
+}
+ #define FlvToLe(x)	(x)
+ #define FlvToLe16(x)	(x)
+ #define FlvToLe24(x)	(x)
+ #define FlvToLe32(x)	(x)
+#else
+ #define SwfToLe(x) 	(x)
+ #define SwfToLe16(x)	(x)
+ #define SwfToLe24(x)   (x)
+ #define SwfToLe32(x)   (x)
+template <class T>
+inline void FlvToLe(T &x)
+{
+	ByteSwap((unsigned char*) &x, sizeof(x));
+}
+
+template <class T>
+inline void FlvToLe16(T &x)
+{
+	x = ntohs(static_cast<uint16_t>(x));
+}
+
+template <class T>
+inline void FlvToLe24(T &x)
+{
+	x = ntohl(static_cast<uint32_t>(x));
+}
+
+template <class T>
+inline void FlvToLe32(T &x)
+{
+	x = ntohl(static_cast<uint32_t>(x));
+}
+#endif // __BYTE_ORDER == __BIG_ENDIAN
+
+#define ASFUNCTION(name) \
+	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
+#define ASFUNCTIONBODY(c,name) \
+	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
+
+#define CLASSBUILDABLE(className) \
+	friend class Class<className>; 
+
+enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
+	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14};
 
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_UINT,STACK_NUMBER,STACK_BOOLEAN};
 
@@ -256,57 +343,74 @@ public:
 class UI32
 {
 friend std::istream& operator>>(std::istream& s, UI32& v);
-private:
+protected:
 	uint32_t val;
 public:
 	UI32():val(0){}
 	UI32(uint32_t v):val(v){}
 	operator uint32_t() const{ return val; }
-	void bswap() { val=ntohl(val); }
+};
+
+class UI32FLV : public UI32
+{
+friend std::istream& operator>>(std::istream& s, UI32FLV& v);
+public:
+	UI32FLV():UI32(){}
+	UI32FLV(uint32_t v):UI32(v){}
 };
 
 class UI24
 {
 friend std::istream& operator>>(std::istream& s, UI24& v);
-private:
+protected:
 	uint32_t val;
 public:
 	UI24():val(0){}
 	operator uint32_t() const { return val; }
-	void bswap()
-	{
-		val=ntohl(val)>>8; //The most significant byte is discarted
-	}
+};
+
+class UI24FLV : public UI24
+{
+friend std::istream& operator>>(std::istream& s, UI24FLV& v);
+public:
+	UI24FLV():UI24(){}
 };
 
 class SI24
 {
 friend std::istream& operator>>(std::istream& s, SI24& v);
-private:
+protected:
 	int32_t val;
 public:
 	SI24():val(0){}
 	operator int32_t() const { return val; }
-	void bswap() 
-	{
-		val=ntohl(val)>>8; //The most significant byte is discarted
-		//Check for sign extension
-		if(val&0x800000)
-			val|=(0xff000000);
-	}
+};
+
+class SI24FLV : public SI24
+{
+friend std::istream& operator>>(std::istream& s, SI24FLV& v);
+public:
+	SI24FLV():SI24(){}
 };
 
 class UI16
 {
 friend std::istream& operator>>(std::istream& s, UI16& v);
-private:
+protected:
 	uint16_t val;
 public:
 	UI16():val(0){}
 	UI16(uint16_t v):val(v){}
 	operator uint16_t() const { return val; }
 	operator UI32() const { return val; }
-	void bswap() { val=ntohs(val); }
+};
+
+class UI16FLV : public UI16
+{
+friend std::istream& operator>>(std::istream& s, UI16FLV& v);
+public:
+	UI16FLV():UI16(){}
+	UI16FLV(uint16_t v):UI16(v){}
 };
 
 class UI8 
@@ -429,12 +533,20 @@ public:
 class SI16
 {
 friend std::istream& operator>>(std::istream& s, SI16& v);
-private:
+protected:
 	int16_t val;
 public:
 	SI16():val(0){}
 	SI16(int16_t v):val(v){}
 	operator int16_t(){ return val; }
+};
+
+class SI16FLV : public SI16
+{
+friend std::istream& operator>>(std::istream& s, SI16FLV& v);
+public:
+	SI16FLV():SI16(){}
+	SI16FLV(int16_t v):SI16(v){}
 };
 
 //TODO: Really implement or suppress
@@ -532,12 +644,28 @@ inline std::istream& operator>>(std::istream& s, UI8& v)
 inline std::istream& operator>>(std::istream& s, SI16& v)
 {
 	s.read((char*)&v.val,2);
+	SwfToLe16(v.val);
+	return s;
+}
+
+inline std::istream & operator>>(std::istream &s, SI16FLV& v)
+{
+	s.read((char*)&v.val,2);
+	FlvToLe16(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16& v)
 {
 	s.read((char*)&v.val,2);
+	SwfToLe16(v.val);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, UI16FLV& v)
+{
+	s.read((char*)&v.val,2);
+	FlvToLe16(v.val);
 	return s;
 }
 
@@ -545,6 +673,17 @@ inline std::istream& operator>>(std::istream& s, UI24& v)
 {
 	assert_and_throw(v.val==0);
 	s.read((char*)&v.val,3);
+	SwfToLe24(v.val);
+	v.val>>=8;
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, UI24FLV& v)
+{
+	assert_and_throw(v.val==0);
+	s.read((char*)&v.val,3);
+	FlvToLe24(v.val);
+	v.val>>=8;
 	return s;
 }
 
@@ -552,6 +691,20 @@ inline std::istream& operator>>(std::istream& s, SI24& v)
 {
 	assert_and_throw(v.val==0);
 	s.read((char*)&v.val,3);
+	SwfToLe24(v.val);
+	v.val>>=8;
+	//Check for sign extesion
+	if(v.val&0x800000)
+		v.val|=0xff000000;
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, SI24FLV& v)
+{
+	assert_and_throw(v.val==0);
+	s.read((char*)&v.val,3);
+	FlvToLe24(v.val);
+	v.val>>=8;
 	//Check for sign extesion
 	if(v.val&0x800000)
 		v.val|=0xff000000;
@@ -561,12 +714,21 @@ inline std::istream& operator>>(std::istream& s, SI24& v)
 inline std::istream& operator>>(std::istream& s, UI32& v)
 {
 	s.read((char*)&v.val,4);
+	SwfToLe32(v.val);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, UI32FLV& v)
+{
+	s.read((char*)&v.val,4);
+	FlvToLe32(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, FLOAT& v)
 {
 	s.read((char*)&v.val,4);
+	SwfToLe(v.val);
 	return s;
 }
 
@@ -575,6 +737,7 @@ inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 	// "Wacky format" is 45670123. Thanks to Gnash for reversing :-)
 	s.read(((char*)&v.val)+4,4);
 	s.read(((char*)&v.val),4);
+	SwfToLe(v.val);
 	return s;
 }
 

@@ -963,7 +963,7 @@ ABCContext::ABCContext(istream& in)
 	}
 }
 
-ABCVm::ABCVm(SystemState* s):m_sys(s),terminated(false),shuttingdown(false)
+ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
 {
 	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
@@ -974,15 +974,27 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),terminated(false),shuttingdown(false)
 	LOG(LOG_NO_INFO,_("Global is ") << Global);
 	//Push a dummy default context
 	pushObjAndLevel(Class<ASObject>::getInstanceS(),0);
+}
+
+void ABCVm::start()
+{
+	status=STARTED;
 	pthread_create(&t,NULL,(thread_worker)Run,this);
 }
 
 void ABCVm::shutdown()
 {
-	//signal potentially blocking semaphores
-	shuttingdown=true;
-	sem_post(&sem_event_count);
-	wait();
+	if(status==STARTED)
+	{
+		//signal potentially blocking semaphores
+		shuttingdown=true;
+		sem_post(&sem_event_count);
+		if(pthread_join(t,NULL)!=0)
+		{
+			LOG(LOG_ERROR,_("pthread_join in ABCVm failed"));
+		}
+		status=TERMINATED;
+	}
 }
 
 ABCVm::~ABCVm()
@@ -991,18 +1003,7 @@ ABCVm::~ABCVm()
 	sem_destroy(&event_queue_mutex);
 	delete int_manager;
 	delete number_manager;
-}
-
-void ABCVm::wait()
-{
-	if(!terminated)
-	{
-		if(pthread_join(t,NULL)!=0)
-		{
-			LOG(LOG_ERROR,_("pthread_join in ABCVm failed"));
-		}
-		terminated=true;
-	}
+	delete Global;
 }
 
 int ABCVm::getEventQueueSize()

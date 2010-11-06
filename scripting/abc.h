@@ -442,7 +442,8 @@ friend class method_info;
 private:
 	SystemState* m_sys;
 	pthread_t t;
-	bool terminated;
+	enum STATUS { CREATED=0, STARTED, TERMINATED };
+	STATUS status;
 
 	llvm::Module* module;
 
@@ -624,12 +625,15 @@ public:
 		@pre shutdown must have been called
 	*/
 	~ABCVm();
+	/**
+	  	Start the VM thread
+	*/
+	void start();
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
 	bool addEvent(EventDispatcher*,Event*) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
-	void wait();
 
 	void pushObjAndLevel(ASObject* o, int l);
 	thisAndLevel popObjAndLevel();

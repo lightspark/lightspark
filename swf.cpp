@@ -445,6 +445,8 @@ void SystemState::wait()
 		event.user.data1 = 0;
 		SDL_PushEvent(&event);
 	}
+	//Acquire the mutex to sure that the engines are not being started right now
+	Locker l(mutex);
 	renderThread->wait();
 	inputThread->wait();
 	if(currentVm)
@@ -501,7 +503,10 @@ void SystemState::delayedCreation(SystemState* th)
 	gtk_widget_map(p.container);
 	p.window=GDK_WINDOW_XWINDOW(p.container->window);
 	XSync(p.display, False);
+	//The lock is needed to avoid thread creation/destruction races
 	Locker l(th->mutex);
+	if(th->shutdown)
+		return;
 	th->renderThread->start(th->engine, &th->npapiParams);
 	th->inputThread->start(th->engine, &th->npapiParams);
 	//If the render rate is known start the render ticks
@@ -519,6 +524,11 @@ void SystemState::delayedStopping(SystemState* th)
 void SystemState::createEngines()
 {
 	Locker l(mutex);
+	if(shutdown)
+	{
+		//A shutdown request has arrived before the creation of engines
+		return;
+	}
 #ifdef COMPILE_PLUGIN
 	//Check if we should fall back on gnash
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
@@ -633,6 +643,11 @@ void SystemState::createEngines()
 	}
 	l.unlock();
 	renderThread->waitForInitialization();
+	l.lock();
+	//As we lost the lock the shutdown procesure might have started
+	if(currentVm && !shutdown)
+		currentVm->start();
+	l.unlock();
 	//Now that there is something to actually render the contents add the SystemState to the stage
 	setOnStage(true);
 }

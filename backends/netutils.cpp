@@ -729,7 +729,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 	if((receivedLength+added)>length)
 	{
 		uint32_t newLength;
-		assert(length>receivedLength);
+		assert(length=>receivedLength);
 		//If reallocating the buffer ask for a minimum amount of space
 		if((receivedLength+added)-length > bufferMinGrowth)
 			newLength = receivedLength + added;

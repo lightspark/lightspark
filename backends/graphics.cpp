@@ -197,7 +197,7 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 			if(err==GL_INVALID_VALUE)
 			{
 				LOG(LOG_ERROR,_("GL_INVALID_VALUE after glTexImage2D, width=") << allocWidth << _(" height=") << allocHeight);
-				throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::setBGRAData");
+				throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::resize");
 			}
 		}
 		width=w;

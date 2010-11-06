@@ -68,8 +68,12 @@ void ThreadPool::forceStop()
 
 		for(int i=0;i<NUM_THREADS;i++)
 		{
-			if(pthread_join(threads[i],NULL)!=0)
-				LOG(LOG_ERROR,_("pthread_join failed in ~ThreadPool"));
+			int ret=pthread_join(threads[i],NULL);
+			if(ret!=0)
+			{
+				LOG(LOG_ERROR,_("pthread_join failed in ~ThreadPool. Error: ") << ret);
+				assert(0);
+			}
 		}
 	}
 }

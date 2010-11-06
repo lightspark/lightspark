@@ -40,7 +40,7 @@ private:
 	static void* gtkplug_worker(RenderThread*);
 #endif
 	void commonGLInit(int width, int height);
-	void commonGLResize(int width, int height);
+	void commonGLResize();
 	void commonGLDeinit();
 	GLuint pixelBuffers[2];
 	uint32_t currentPixelBuffer;

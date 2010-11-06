@@ -260,7 +260,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		cout << "Indirect!!" << endl;
 
 	th->commonGLInit(th->windowWidth, th->windowHeight);
-	th->commonGLResize(th->windowWidth, th->windowHeight);
+	th->commonGLResize();
 	lighter.light();
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
@@ -297,7 +297,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				th->newWidth=0;
 				th->newHeight=0;
 				th->resizeNeeded=false;
-				th->commonGLResize(th->windowWidth, th->windowHeight);
+				th->commonGLResize();
 				profile->accountTime(chronometer.checkpoint());
 				continue;
 			}
@@ -573,7 +573,7 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 }
 
-void RenderThread::commonGLResize(int w, int h)
+void RenderThread::commonGLResize()
 {
 	//Get the size of the content
 	RECT r=m_sys->getFrameSize();
@@ -790,7 +790,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	SDL_SetVideoMode(th->windowWidth, th->windowHeight, 24, SDL_OPENGL|SDL_RESIZABLE);
 	th->commonGLInit(th->windowWidth, th->windowHeight);
-	th->commonGLResize(th->windowWidth, th->windowHeight);
+	th->commonGLResize();
 	lighter.light();
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
@@ -822,7 +822,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				th->newWidth=0;
 				th->newHeight=0;
 				th->resizeNeeded=false;
-				th->commonGLResize(th->windowWidth, th->windowHeight);
+				th->commonGLResize();
 				profile->accountTime(chronometer.checkpoint());
 				continue;
 			}

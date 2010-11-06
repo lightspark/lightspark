@@ -428,7 +428,6 @@ void SystemState::setShutdownFlag()
 		currentVm->addEvent(NULL,e);
 		e->decRef();
 	}
-	//Set the flag after sending the event, otherwise it's ignored by the VM
 	shutdown=true;
 
 	sem_post(&terminated);
@@ -437,12 +436,15 @@ void SystemState::setShutdownFlag()
 void SystemState::wait()
 {
 	sem_wait(&terminated);
-	SDL_Event event;
-	event.type = SDL_USEREVENT;
-	event.user.code = SHUTDOWN;
-	event.user.data1 = 0;
-	event.user.data1 = 0;
-	SDL_PushEvent(&event);
+	if(engine==SDL)
+	{
+		SDL_Event event;
+		event.type = SDL_USEREVENT;
+		event.user.code = SHUTDOWN;
+		event.user.data1 = 0;
+		event.user.data1 = 0;
+		SDL_PushEvent(&event);
+	}
 	renderThread->wait();
 	inputThread->wait();
 	if(currentVm)

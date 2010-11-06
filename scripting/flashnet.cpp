@@ -210,10 +210,12 @@ void URLLoader::execute()
 				ByteArray* byteArray=Class<ByteArray>::getInstanceS();
 				byteArray->acquireBuffer(buf,downloader->getLength());
 				data=byteArray;
+				//The buffers must not be deleted, it's now handled bt the ByteArray instance
 			}
 			else if(dataFormat=="text")
 			{
 				data=Class<ASString>::getInstanceS((char*)buf,downloader->getLength());
+				delete[] buf;
 			}
 			//Send a complete event for this object
 			sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete"));

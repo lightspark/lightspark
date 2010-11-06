@@ -1717,6 +1717,7 @@ void DisplayObjectContainer::setOnStage(bool staged)
 	{
 		DisplayObject::setOnStage(staged);
 		//Notify childern
+		Locker l(mutexDisplayList);
 		list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
 		for(;it!=dynamicDisplayList.end();++it)
 			(*it)->setOnStage(staged);
@@ -1787,8 +1788,8 @@ void DisplayObjectContainer::_removeChild(DisplayObject* child)
 	assert_and_throw(child->parent==this);
 	assert_and_throw(child->getRoot()==root);
 
-	Locker l(mutexDisplayList);
 	{
+		Locker l(mutexDisplayList);
 		list<DisplayObject*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 		assert_and_throw(it!=dynamicDisplayList.end());
 		dynamicDisplayList.erase(it);

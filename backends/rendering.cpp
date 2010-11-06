@@ -37,16 +37,14 @@ using namespace std;
 
 void RenderThread::wait()
 {
-	if(status==TERMINATED)
-		return;
-	//Signal potentially blocking semaphore
-	sem_post(&event);
 	if(status==STARTED)
 	{
+		//Signal potentially blocking semaphore
+		sem_post(&event);
 		int ret=pthread_join(t,NULL);
 		assert_and_throw(ret==0);
+		status=TERMINATED;
 	}
-	status=TERMINATED;
 }
 
 RenderThread::RenderThread(SystemState* s):

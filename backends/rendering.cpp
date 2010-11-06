@@ -787,6 +787,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 	SDL_SetVideoMode(th->windowWidth, th->windowHeight, 24, SDL_OPENGL|SDL_RESIZABLE);
+	SDL_WM_SetCaption("Lightspark","Lightspark");
 	th->commonGLInit(th->windowWidth, th->windowHeight);
 	th->commonGLResize();
 	lighter.light();

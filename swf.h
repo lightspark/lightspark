@@ -90,6 +90,7 @@ private:
 	sem_t new_frame;
 	bool parsingIsFailed;
 	RGB Background;
+	Spinlock dictSpinlock;
 	std::list < DictionaryTag* > dictionary;
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
@@ -218,6 +219,7 @@ private:
 	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
 
 	URLInfo url;
+	Spinlock profileDataSpinlock;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	ENGINE getEngine() DLL_PUBLIC { return engine; };

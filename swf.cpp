@@ -694,7 +694,7 @@ void SystemState::tick()
 {
 	RootMovieClip::tick();
 	{
-		Locker l(mutex);
+		SpinlockLocker l(profileDataSpinlock);
 		list<ThreadProfile>::iterator it=profilingData.begin();
 		for(;it!=profilingData.end();++it)
 			it->tick();
@@ -730,7 +730,7 @@ bool SystemState::removeJob(ITickJob* job)
 
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 {
-	Locker l(mutex);
+	SpinlockLocker l(profileDataSpinlock);
 	profilingData.push_back(ThreadProfile(color,100));
 	ThreadProfile* ret=&profilingData.back();
 	return ret;
@@ -1027,7 +1027,7 @@ float RootMovieClip::getFrameRate() const
 
 void RootMovieClip::addToDictionary(DictionaryTag* r)
 {
-	Locker l(mutex);
+	SpinlockLocker l(dictSpinlock);
 	dictionary.push_back(r);
 }
 
@@ -1098,7 +1098,7 @@ void RootMovieClip::setBackground(const RGB& bg)
 
 DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
-	Locker l(mutex);
+	SpinlockLocker l(dictSpinlock);
 	list< DictionaryTag*>::iterator it = dictionary.begin();
 	for(;it!=dictionary.end();++it)
 	{

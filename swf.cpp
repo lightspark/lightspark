@@ -507,6 +507,11 @@ void SystemState::delayedCreation(SystemState* th)
 		th->startRenderTicks();
 }
 
+void SystemState::delayedStopping(SystemState* th)
+{
+	th->stopEngines();
+}
+
 #endif
 
 void SystemState::createEngines()
@@ -595,7 +600,8 @@ void SystemState::createEngines()
 			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			//Engines should not be started, stop everything
 			l.unlock();
-			stopEngines();
+			//We cannot stop the engines now, as this is inside a ThreadPool job
+			npapiParams.helper(npapiParams.helperArg, (helper_t)delayedStopping, this);
 			return;
 		}
 	}
@@ -607,7 +613,7 @@ void SystemState::createEngines()
 	}
 #endif
 
-	if(engine==GTKPLUG) //The engines must be created int the context of the main thread
+	if(engine==GTKPLUG) //The engines must be created in the context of the main thread
 	{
 #ifdef COMPILE_PLUGIN
 		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);

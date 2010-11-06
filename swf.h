@@ -197,6 +197,7 @@ private:
 	*/
 #ifdef COMPILE_PLUGIN
 	static void delayedCreation(SystemState* th);
+	static void delayedStopping(SystemState* th);
 #endif
 	void stopEngines();
 	//Useful to wait for complete download of the SWF

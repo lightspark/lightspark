@@ -516,7 +516,9 @@ void SystemState::delayedCreation(SystemState* th)
 
 void SystemState::delayedStopping(SystemState* th)
 {
+	sys=th;
 	th->stopEngines();
+	sys=NULL;
 }
 
 #endif

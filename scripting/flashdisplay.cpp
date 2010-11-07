@@ -211,13 +211,12 @@ void Loader::execute()
 	}
 	else if(source==BYTES)
 	{
-		//Implement loadBytes, now just dump
 		assert_and_throw(bytes->bytes);
 
 		//We only support swf files now
 		assert_and_throw(memcmp(bytes->bytes,"CWS",3)==0);
 
-		//The loaderInfo of the content is out contentLoaderInfo
+		//The loaderInfo of the content is our contentLoaderInfo
 		contentLoaderInfo->incRef();
 		local_root=new RootMovieClip(contentLoaderInfo);
 		zlib_bytes_filter zf(bytes->bytes,bytes->len);

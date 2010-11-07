@@ -417,6 +417,7 @@ ASObject* DefineSpriteTag::instance() const
 	else
 		ret->setPrototype(Class<MovieClip>::getClass());
 	ret->bootstrap();
+	//TODO: should we call the frameScripts?
 	return ret;
 }
 

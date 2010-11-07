@@ -694,12 +694,13 @@ void MovieClip::advanceFrame()
 		//Should initialize all the frames from the current to the next
 		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
 			frames[i].init(this,displayList);
+		bool frameChanging=(state.FP!=state.next_FP);
 		state.FP=state.next_FP;
 		if(!state.stop_FP && framesLoaded>0)
 			state.next_FP=imin(state.FP+1,framesLoaded-1);
 		state.explicit_FP=false;
 		assert(state.FP<frameScripts.size());
-		if(frameScripts[state.FP])
+		if(frameChanging && frameScripts[state.FP])
 			getVm()->addEvent(NULL,new FunctionEvent(frameScripts[state.FP]));
 	}
 

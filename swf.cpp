@@ -1068,10 +1068,12 @@ void RootMovieClip::commitFrame(bool another)
 	{
 		//Let's initialize the first frame of this movieclip
 		bootstrap();
-		//TODO Should dispatch INIT here
 		//Root movie clips are initialized now, after the first frame is really ready 
 		initialize();
 		//Now the bindings are effective
+		//Execute the event registered for the first frame, if any
+		if(frameScripts[0])
+			getVm()->addEvent(NULL,new FunctionEvent(frameScripts[0]));
 
 		//When the first frame is committed the frame rate is known
 		sys->addTick(1000/frameRate,this);

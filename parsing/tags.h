@@ -580,6 +580,17 @@ public:
 	int getId(){ return CharacterId; }
 };
 
+class DefineBitsTag: public DictionaryTag, public Bitmap
+{
+private:
+	UI16 CharacterId;
+	uint8_t* data;
+public:
+	DefineBitsTag(RECORDHEADER h, std::istream& in);
+	~DefineBitsTag();
+	int getId(){ return CharacterId; }
+};
+
 class DefineBitsJPEG2Tag: public DictionaryTag, public Bitmap
 {
 private:

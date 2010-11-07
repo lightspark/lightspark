@@ -66,6 +66,9 @@ Tag* TagFactory::readTag()
 			break;
 	//	case 4:
 	//		ret=new PlaceObjectTag(h,f);
+		case 6:
+			ret=new DefineBitsTag(h,f);
+			break;
 		case 9:
 			ret=new SetBackgroundColorTag(h,f);
 			break;
@@ -1887,6 +1890,21 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 			output << endl << "\t" << xml.get_local_name() << ":\t\t" << xml.read_string();
 	}
 	LOG(LOG_NO_INFO, "SWF Metadata:" << output.str());
+}
+
+DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+{
+	LOG(LOG_TRACE,_("DefineBitsTag Tag"));
+	in >> CharacterId;
+	//Read image data
+	int dataSize=Header.getLength()-2;
+	data=new(nothrow) uint8_t[dataSize];
+	in.read((char*)data,dataSize);
+}
+
+DefineBitsTag::~DefineBitsTag()
+{
+	delete[] data;
 }
 
 DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)

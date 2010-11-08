@@ -47,7 +47,8 @@ class DLL_PUBLIC sync_stream: public std::streambuf
 {
 public:
 	sync_stream();
-	void reset();
+	void stop();
+	void eof();
 	~sync_stream();
 	uint32_t write(char* buf, int len);
 	uint32_t getFree();
@@ -64,6 +65,7 @@ private:
 	bool wait_notempty;
 	const int buf_size;
 	bool failed;
+	bool ended;
 	int consumed;
 };
 

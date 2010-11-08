@@ -27,7 +27,7 @@
 
 using namespace std;
 
-sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(false),buf_size(1024*1024),failed(false),consumed(0)
+sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(false),buf_size(1024*1024),failed(false),ended(false),consumed(0)
 {
 	buffer=new char[buf_size];
 	sem_init(&mutex,0,1);
@@ -44,7 +44,7 @@ sync_stream::~sync_stream()
 	sem_destroy(&notempty);
 }
 
-void sync_stream::reset()
+void sync_stream::stop()
 {
 	sem_wait(&mutex);
 	failed=true;
@@ -52,13 +52,28 @@ void sync_stream::reset()
 	{
 		wait_notfull=false;
 		sem_post(&notfull);
+		sem_wait(&mutex);
 	}
 	if(wait_notempty)
 	{
 		wait_notempty=false;
 		sem_post(&notempty);
+		sem_wait(&mutex);
 	}
 	sem_post(&mutex);
+}
+
+void sync_stream::eof()
+{
+	sem_wait(&mutex);
+	ended=true;
+	if(wait_notempty)
+	{
+		wait_notempty=false;
+		sem_post(&notempty);
+	}
+	else
+		sem_post(&mutex);
 }
 
 sync_stream::pos_type sync_stream::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)
@@ -79,12 +94,24 @@ sync_stream::int_type sync_stream::underflow()
 	consumed+=consumedNow;
 	head+=consumedNow;
 	head%=buf_size;
+	if(failed)
+	{
+		sem_post(&mutex);
+		//Return EOF
+		return -1;
+	}
 	if(tail==head)
 	{
+		if(ended) //There is no way more data will arrive
+		{
+			sem_post(&mutex);
+			//Return EOF
+			return -1;
+		}
 		wait_notempty=true;
 		sem_post(&mutex);
 		sem_wait(&notempty);
-		if(failed)
+		if(failed || ended)
 		{
 			sem_post(&mutex);
 			//Return EOF
@@ -113,6 +140,11 @@ sync_stream::int_type sync_stream::underflow()
 uint32_t sync_stream::write(char* buf, int len)
 {
 	sem_wait(&mutex);
+	if(failed)
+	{
+		sem_post(&mutex);
+		return 0;
+	}
 	if(((tail-head+buf_size)%buf_size)==buf_size-1)
 	{
 		wait_notfull=true;

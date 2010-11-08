@@ -25,6 +25,8 @@
 #include <gtk/gtk.h>
 #endif
 
+class sync_stream;
+
 namespace lightspark
 {
 
@@ -35,6 +37,7 @@ struct NPAPI_params
 {
 	Display* display;
 	GtkWidget* container;
+	sync_stream* stream;
 	VisualID visual;
 	Window window;
 	int width;

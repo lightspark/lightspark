@@ -331,6 +331,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p.height=mHeight;
 		p.helper=AsyncHelper;
 		p.helperArg=this;
+		p.stream=&swf_buf;
 		LOG(LOG_NO_INFO,"X Window " << hex << p.window << dec << " Width: " << p.width << " Height: " << p.height);
 		m_sys->setParamsAndEngine(lightspark::GTKPLUG,&p);
 	}

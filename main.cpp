@@ -208,7 +208,6 @@ int main(int argc, char* argv[])
 	sys->addJob(pt);
 
 	sys->wait();
-	pt->wait();
 	delete sys;
 	delete pt;
 

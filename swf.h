@@ -301,7 +301,6 @@ public:
 	bool useAVM2;
 	ParseThread(RootMovieClip* r,std::istream& in) DLL_PUBLIC;
 	~ParseThread();
-	void wait() DLL_PUBLIC;
 };
 
 };

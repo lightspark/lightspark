@@ -281,12 +281,6 @@ void SystemState::setParameters(ASObject* p)
 
 void SystemState::stopEngines()
 {
-	//Stops the thread that is parsing us
-	if(parseThread)
-	{
-		parseThread->stop();
-		parseThread->wait();
-	}
 	if(threadPool)
 		threadPool->forceStop();
 	if(timerThread)
@@ -495,6 +489,8 @@ void SystemState::delayedCreation(SystemState* th)
 void SystemState::delayedStopping(SystemState* th)
 {
 	sys=th;
+	//This is called from the plugin, also kill the stream
+	th->npapiParams.stream->reset();
 	th->stopEngines();
 	sys=NULL;
 }
@@ -947,15 +943,6 @@ void ParseThread::threadAbort()
 {
 	//Tell the our RootMovieClip that the parsing is ending
 	root->parsingFailed();
-}
-
-void ParseThread::wait()
-{
-	if(!isEnded)
-	{
-		sem_wait(&ended);
-		isEnded=true;
-	}
 }
 
 void RootMovieClip::initialize()

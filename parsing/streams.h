@@ -30,23 +30,20 @@
 class zlib_filter: public std::streambuf
 {
 private:
-	bool compressed;
+	std::streambuf* backend;
 	int consumed;
 	z_stream strm;
 	char buffer[4096];
-	int available;
-	virtual int provideBuffer(int limit)=0;
-	bool initialize();
 protected:
 	char in_buf[4096];
 	virtual int_type underflow();
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 public:
-	zlib_filter() DLL_PUBLIC;
-	~zlib_filter() DLL_PUBLIC;
+	zlib_filter(std::streambuf* b);
+	~zlib_filter();
 };
 
-class DLL_PUBLIC sync_stream: public zlib_filter
+class DLL_PUBLIC sync_stream: public std::streambuf
 {
 public:
 	sync_stream();
@@ -54,8 +51,9 @@ public:
 	~sync_stream();
 	uint32_t write(char* buf, int len);
 	uint32_t getFree();
+	virtual int_type underflow();
+	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 private:
-	int provideBuffer(int limit);
 	char* buffer;
 	int head;
 	int tail;
@@ -66,26 +64,18 @@ private:
 	bool wait_notempty;
 	const int buf_size;
 	bool failed;
+	int consumed;
 };
 
-class DLL_PUBLIC zlib_file_filter:public zlib_filter
-{
-private:
-	FILE* f;
-	int provideBuffer(int limit);
-public:
-	zlib_file_filter(const char* file_name);
-};
-
-class zlib_bytes_filter:public zlib_filter
+class bytes_buf:public std::streambuf
 {
 private:
 	const uint8_t* buf;
 	int offset;
 	int len;
-	int provideBuffer(int limit);
 public:
-	zlib_bytes_filter(const uint8_t* b, int l);
+	bytes_buf(const uint8_t* b, int l);
+	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 };
 
 #endif

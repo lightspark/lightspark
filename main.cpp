@@ -147,8 +147,7 @@ int main(int argc, char* argv[])
 #endif
 
 	Log::initLogging(log_level);
-	zlib_file_filter zf(fileName);
-	istream f(&zf);
+	ifstream f(fileName);
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	cout.exceptions( ios::failbit | ios::badbit);
 	cerr.exceptions( ios::failbit | ios::badbit);

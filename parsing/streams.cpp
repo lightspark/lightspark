@@ -27,16 +27,18 @@
 
 using namespace std;
 
-sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(false),buf_size(1024*1024),failed(false)
+sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(false),buf_size(1024*1024),failed(false),consumed(0)
 {
 	buffer=new char[buf_size];
 	sem_init(&mutex,0,1);
 	sem_init(&notfull,0,0);
 	sem_init(&notempty,0,0);
+	setg(buffer,buffer,buffer);
 }
 
 sync_stream::~sync_stream()
 {
+	delete[] buffer;
 	sem_destroy(&mutex);
 	sem_destroy(&notfull);
 	sem_destroy(&notempty);
@@ -49,39 +51,52 @@ void sync_stream::destroy()
 	sem_post(&notempty);
 }
 
-int sync_stream::provideBuffer(int limit)
+sync_stream::pos_type sync_stream::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)
 {
+	assert(off==0);
+	//The current offset is the amount of byte completely consumed plus the amount used in the buffer
+	int ret=consumed+(gptr()-eback());
+	return ret;
+}
+
+sync_stream::int_type sync_stream::underflow()
+{
+	assert(gptr()==egptr());
+
 	sem_wait(&mutex);
+	//First of all we add the length of the buffer to the consumed variable
+	int consumedNow=(gptr()-eback());
+	consumed+=consumedNow;
+	head+=consumedNow;
+	head%=buf_size;
 	if(tail==head)
 	{
 		wait_notempty=true;
 		sem_post(&mutex);
 		sem_wait(&notempty);
 		if(failed)
-			return 0;
+		{
+			//Return EOF
+			return -1;
+		}
 	}
 
-	int available=(tail-head+buf_size)%buf_size;
-	available=imin(available,limit);
-	if(head+available>buf_size)
-	{
-		int i=buf_size-head;
-		memcpy(in_buf,buffer+head,i);
-		memcpy(in_buf+i,buffer,available-i);
-	}
+	if(head<tail)
+		setg(buffer+head,buffer+head,buffer+tail);
 	else
-		memcpy(in_buf,buffer+head,available);
+		setg(buffer+head,buffer+head,buffer+buf_size);
 
-	head+=available;
-	head%=buf_size;
-	if(wait_notfull)
+	//Verify that there is room
+	if(wait_notfull && ((tail-head+buf_size)%buf_size)<buf_size-1)
 	{
 		wait_notfull=true;
 		sem_post(&notfull);
 	}
 	else
 		sem_post(&mutex);
-	return available;
+
+	//Cast to unsigned, otherwise 0xff would become eof
+	return (unsigned char)buffer[head];
 }
 
 uint32_t sync_stream::write(char* buf, int len)
@@ -128,110 +143,62 @@ uint32_t sync_stream::getFree()
 	return freeBytes;
 }
 
-zlib_filter::zlib_filter():compressed(false),consumed(0),available(0)
+zlib_filter::zlib_filter(streambuf* b):backend(b),consumed(0)
 {
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.avail_in = 0;
+	strm.next_in = Z_NULL;
+	int ret = inflateInit(&strm);
+	if (ret != Z_OK)
+		throw lightspark::RunTimeException("Failed to initialize ZLib");
+	setg(buffer,buffer,buffer);
 }
 
 zlib_filter::~zlib_filter()
 {
-	if(compressed)
-		inflateEnd(&strm);
-}
-
-bool zlib_filter::initialize()
-{
-	//Should check that this is called only once
-	available=provideBuffer(8);
-	if(available!=8)
-		return false;
-	//We read only the first 8 bytes, as those are always uncompressed
-
-	//Now check the signature
-	if(in_buf[1]!='W' || in_buf[2]!='S')
-		return false;
-	if(in_buf[0]=='F')
-		compressed=false;
-	else if(in_buf[0]=='C')
-	{
-		compressed=true;
-		strm.zalloc = Z_NULL;
-		strm.zfree = Z_NULL;
-		strm.opaque = Z_NULL;
-		strm.avail_in = 0;
-		strm.next_in = Z_NULL;
-		int ret = inflateInit(&strm);
-		if (ret != Z_OK)
-			throw lightspark::RunTimeException("Failed to initialize ZLib");
-	}
-	else
-		return false;
-
-	//Ok, it seems to be a valid SWF, from now, if the file is compressed, data has to be inflated
-
-	//Copy the in_buf to the out buffer
-	memcpy(buffer,in_buf,8);
-	setg(buffer,buffer,buffer+available);
-	return true;
+	inflateEnd(&strm);
 }
 
 zlib_filter::int_type zlib_filter::underflow()
 {
 	assert(gptr()==egptr());
 
-	//First of all we add the lenght of the buffer to the consumed variable
+	//First of all we add the length of the buffer to the consumed variable
 	consumed+=(gptr()-eback());
 
-	//The first time
-	if(consumed==0)
+	// run inflate() on input until output buffer is full
+	strm.avail_out = 4096;
+	strm.next_out = (unsigned char*)buffer;
+	do
 	{
-		bool ret=initialize();
-		if(ret)
-			return (unsigned char)buffer[0];
-		else
-			throw lightspark::ParseException("Not an SWF file");
-	}
-
-	if(!compressed)
-	{
-		int real_count=provideBuffer(4096);
-		assert(real_count>0);
-		memcpy(buffer,in_buf,real_count);
-		setg(buffer,buffer,buffer+real_count);
-	}
-	else
-	{
-		// run inflate() on input until output buffer is full
-		strm.avail_out = 4096;
-		strm.next_out = (unsigned char*)buffer;
-		do
+		if(strm.avail_in==0)
 		{
-			if(strm.avail_in==0)
+			int real_count=backend->sgetn(in_buf,4096);
+			if(real_count==0)
 			{
-				int real_count=provideBuffer(4096);
-				if(real_count==0)
-				{
-					//File is not big enough
-					throw lightspark::ParseException("Unexpected end of file");
-				}
-				strm.next_in=(unsigned char*)in_buf;
-				strm.avail_in=real_count;
+				//File is not big enough
+				throw lightspark::ParseException("Unexpected end of file");
 			}
-			int ret=inflate(&strm, Z_NO_FLUSH);
-			if(ret==Z_OK);
-			else if(ret==Z_STREAM_END)
-			{
-				//The stream ended, close the buffer here
-				break;
-			}
-			else
-				throw lightspark::ParseException("Unexpected Zlib error");
+			strm.next_in=(unsigned char*)in_buf;
+			strm.avail_in=real_count;
 		}
-		while(strm.avail_out!=0);
-		int available=4096-strm.avail_out;
-		setg(buffer,buffer,buffer+available);
+		int ret=inflate(&strm, Z_NO_FLUSH);
+		if(ret==Z_OK);
+		else if(ret==Z_STREAM_END)
+		{
+			//The stream ended, close the buffer here
+			break;
+		}
+		else
+			throw lightspark::ParseException("Unexpected Zlib error");
 	}
+	while(strm.avail_out!=0);
+	int available=4096-strm.avail_out;
+	setg(buffer,buffer,buffer+available);
 
-	//Cast to signed, otherwise 0xff would become eof
+	//Cast to unsigned, otherwise 0xff would become eof
 	return (unsigned char)buffer[0];
 }
 
@@ -243,30 +210,16 @@ zlib_filter::pos_type zlib_filter::seekoff(off_type off, ios_base::seekdir dir,i
 	return ret;
 }
 
-zlib_file_filter::zlib_file_filter(const char* file_name)
+bytes_buf::bytes_buf(const uint8_t* b, int l):buf(b),offset(0),len(l)
 {
-	f=fopen(file_name,"rb");
-	if(f==NULL)
-		throw lightspark::RunTimeException("File does not exists");
+	setg((char*)buf,(char*)buf,(char*)buf+len);
 }
 
-int zlib_file_filter::provideBuffer(int limit)
+bytes_buf::pos_type bytes_buf::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)
 {
-	int ret=fread(in_buf,1,limit,f);
-	if(feof(f))
-		fclose(f);
-	return ret;
-}
-
-zlib_bytes_filter::zlib_bytes_filter(const uint8_t* b, int l):buf(b),offset(0),len(l)
-{
-}
-
-int zlib_bytes_filter::provideBuffer(int limit)
-{
-	int ret=imin(limit,len-offset);
-	memcpy(in_buf,buf+offset,ret);
-	offset+=ret;
+	assert(off==0);
+	//The current offset is the amount used in the buffer
+	int ret=(gptr()-eback());
 	return ret;
 }
 

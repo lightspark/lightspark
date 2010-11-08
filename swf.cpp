@@ -54,28 +54,6 @@ using namespace lightspark;
 
 extern TLSDATA ParseThread* pt;
 
-SWF_HEADER::SWF_HEADER(istream& in):valid(false)
-{
-	in >> Signature[0] >> Signature[1] >> Signature[2];
-
-	in >> Version >> FileLength;
-	if(Signature[0]=='F' && Signature[1]=='W' && Signature[2]=='S')
-	{
-		LOG(LOG_NO_INFO, _("Uncompressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
-	}
-	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
-	{
-		LOG(LOG_NO_INFO, _("Compressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
-	}
-	else
-	{
-		LOG(LOG_NO_INFO,_("No SWF file signature found"));
-		return;
-	}
-	in >> FrameSize >> FrameRate >> FrameCount;
-	valid=true;
-}
-
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),initialized(false),parsingIsFailed(false),frameRate(0),
 	mutexFrames("mutexFrame"),toBind(false),mutexChildrenClips("mutexChildrenClips")
 {
@@ -833,7 +811,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 	}
 }
 
-ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),isEnded(false),root(NULL),version(0),useAVM2(false)
+ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),zlibFilter(NULL),backend(NULL),isEnded(false),root(NULL),version(0),useAVM2(false)
 {
 	root=r;
 	sem_init(&ended,0,0);
@@ -841,7 +819,57 @@ ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),isEnded(false),root
 
 ParseThread::~ParseThread()
 {
+	if(zlibFilter)
+	{
+		//Restore the istream
+		f.rdbuf(backend);
+		delete zlibFilter;
+	}
 	sem_destroy(&ended);
+}
+
+bool ParseThread::parseHeader()
+{
+	UI8 Signature[3];
+	UI8 Version;
+	UI32 FileLength;
+	RECT FrameSize;
+	UI16 FrameRate;
+	UI16 FrameCount;
+
+	f >> Signature[0] >> Signature[1] >> Signature[2];
+
+	f >> Version >> FileLength;
+	if(Signature[0]=='F' && Signature[1]=='W' && Signature[2]=='S')
+	{
+		LOG(LOG_NO_INFO, _("Uncompressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
+	}
+	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
+	{
+		LOG(LOG_NO_INFO, _("Compressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
+		//The file is compressed, create a filtering streambuf
+		backend=f.rdbuf();
+		f.rdbuf(new zlib_filter(backend));
+	}
+	else
+	{
+		LOG(LOG_NO_INFO,_("No SWF file signature found"));
+		return false;
+	}
+	f >> FrameSize >> FrameRate >> FrameCount;
+
+	version=Version;
+	root->version=Version;
+	root->fileLength=FileLength;
+	float frameRate=FrameRate;
+	frameRate/=256;
+	LOG(LOG_NO_INFO,_("FrameRate ") << frameRate);
+	root->setFrameRate(frameRate);
+	//TODO: setting render rate should be done when the clip is added to the displaylist
+	sys->setRenderRate(frameRate);
+	root->setFrameSize(FrameSize);
+	root->setFrameCount(FrameCount);
+	return true;
 }
 
 void ParseThread::execute()
@@ -849,20 +877,8 @@ void ParseThread::execute()
 	pt=this;
 	try
 	{
-		SWF_HEADER h(f);
-		if(!h.valid)
+		if(!parseHeader())
 			throw ParseException("Not an SWF file");
-		version=h.Version;
-		root->version=h.Version;
-		root->fileLenght=h.FileLength;
-		float frameRate=h.FrameRate;
-		frameRate/=256;
-		LOG(LOG_NO_INFO,_("FrameRate ") << frameRate);
-		root->setFrameRate(frameRate);
-		//TODO: setting render rate should be done when the clip is added to the displaylist
-		sys->setRenderRate(frameRate);
-		root->setFrameSize(h.getFrameSize());
-		root->setFrameCount(h.FrameCount);
 
 		//Create a top level TagFactory
 		TagFactory factory(f, true);

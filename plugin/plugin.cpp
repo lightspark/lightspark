@@ -229,7 +229,6 @@ nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
 	sys=m_sys;
-	//cerr << "instance dying" << endl;
 	swf_buf.destroy();
 	m_pt->stop();
 	m_sys->setShutdownFlag();

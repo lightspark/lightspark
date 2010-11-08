@@ -167,6 +167,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	th->bytes=static_cast<ByteArray*>(args[0]);
 	if(th->bytes->bytes)
 	{
+		th->bytes->incRef();
 		th->loading=true;
 		th->source=BYTES;
 		//To be decreffed in jobFence
@@ -219,12 +220,13 @@ void Loader::execute()
 		//The loaderInfo of the content is our contentLoaderInfo
 		contentLoaderInfo->incRef();
 		local_root=new RootMovieClip(contentLoaderInfo);
-		zlib_bytes_filter zf(bytes->bytes,bytes->len);
-		istream s(&zf);
+		bytes_buf bb(bytes->bytes,bytes->len);
+		istream s(&bb);
 
 		ParseThread* local_pt = new ParseThread(local_root,s);
 		local_pt->run();
 		content=local_root;
+		bytes->decRef();
 	}
 	loaded=true;
 	//Add a complete event for this object

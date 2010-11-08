@@ -470,7 +470,10 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 	if(stream->pdata)
 		cerr << "Destroy " << stream->pdata << endl;
 	else
+	{
+		swf_buf.destroy();
 		LOG(LOG_NO_INFO, _("DestroyStream on main stream"));
+	}
 	return NPERR_NO_ERROR;
 }
 

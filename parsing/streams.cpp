@@ -154,6 +154,7 @@ zlib_filter::zlib_filter(streambuf* b):backend(b),consumed(0)
 	if (ret != Z_OK)
 		throw lightspark::RunTimeException("Failed to initialize ZLib");
 	setg(buffer,buffer,buffer);
+	consumed+=pubseekoff(0, ios_base::cur, ios_base::in);
 }
 
 zlib_filter::~zlib_filter()

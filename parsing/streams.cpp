@@ -44,11 +44,21 @@ sync_stream::~sync_stream()
 	sem_destroy(&notempty);
 }
 
-void sync_stream::destroy()
+void sync_stream::reset()
 {
+	sem_wait(&mutex);
 	failed=true;
-	sem_post(&notfull);
-	sem_post(&notempty);
+	if(wait_notfull)
+	{
+		wait_notfull=false;
+		sem_post(&notfull);
+	}
+	if(wait_notempty)
+	{
+		wait_notempty=false;
+		sem_post(&notempty);
+	}
+	sem_post(&mutex);
 }
 
 sync_stream::pos_type sync_stream::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)
@@ -76,6 +86,7 @@ sync_stream::int_type sync_stream::underflow()
 		sem_wait(&notempty);
 		if(failed)
 		{
+			sem_post(&mutex);
 			//Return EOF
 			return -1;
 		}
@@ -108,7 +119,10 @@ uint32_t sync_stream::write(char* buf, int len)
 		sem_post(&mutex);
 		sem_wait(&notfull);
 		if(failed)
+		{
+			sem_post(&mutex);
 			return 0;
+		}
 	}
 
 	if((head-tail+buf_size-1)%buf_size<len)

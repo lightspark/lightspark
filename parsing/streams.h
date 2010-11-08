@@ -47,7 +47,7 @@ class DLL_PUBLIC sync_stream: public std::streambuf
 {
 public:
 	sync_stream();
-	void destroy();
+	void reset();
 	~sync_stream();
 	uint32_t write(char* buf, int len);
 	uint32_t getFree();

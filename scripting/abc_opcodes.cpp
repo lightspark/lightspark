@@ -2223,8 +2223,11 @@ void ABCVm::newClass(call_context* th, int n)
 			th->context->buildTrait(ret,&cur->traits[i],true);
 	}
 
+	SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(constructor);
+	//Also the constructor should have the script as the global object
+	constructorFunc->addToScope(th->scope_stack[0]);
 	//add Constructor the the class methods
-	ret->constructor=Class<IFunction>::getSyntheticFunction(constructor);
+	ret->constructor=constructorFunc;
 	ret->class_index=n;
 
 	//Set the constructor variable to the class itself (this is accessed by object using the protoype)

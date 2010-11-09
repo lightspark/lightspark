@@ -333,6 +333,7 @@ public:
 	Loader():local_root(NULL),loading(false),loaded(false),content(NULL)
 	{
 	}
+	~Loader();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

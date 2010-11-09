@@ -138,15 +138,11 @@ ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
 ASFUNCTIONBODY(Loader,load)
 {
 	Loader* th=static_cast<Loader*>(obj);
-/*	if(th->loading)
+	if(th->loading)
 		return NULL;
-	th->loading=true;*/
-	throw UnsupportedException("Loader::load");
-/*	if(args->at(0)->getClassName()!="URLRequest")
-	{
-		LOG(ERROR,_("ArgumentError"));
-		abort();
-	}*/
+	th->loading=true;
+	assert_and_throw(argslen==1 && args[0]);
+	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<URLRequest>::getClass()));
 	URLRequest* r=static_cast<URLRequest*>(args[0]);
 	th->url=r->url;
 	th->source=URL;
@@ -177,6 +173,12 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	return NULL;
 }
 
+Loader::~Loader()
+{
+	if(local_root)
+		local_root->decRef();
+}
+
 void Loader::jobFence()
 {
 	decRef();
@@ -189,7 +191,7 @@ void Loader::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),true);
 	c->setMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),true);
-//	c->setVariableByQName("load","",Class<IFunction>::getFunction(load));
+	c->setMethodByQName("load","",Class<IFunction>::getFunction(load),true);
 }
 
 void Loader::buildTraits(ASObject* o)
@@ -198,17 +200,18 @@ void Loader::buildTraits(ASObject* o)
 
 void Loader::execute()
 {
-	LOG(LOG_NOT_IMPLEMENTED,_("Loader async execution ") << url);
 	if(source==URL)
 	{
-		threadAbort();
-		/*local_root=new RootMovieClip;
-		zlib_file_filter zf;
-		zf.open(url.raw_buf(),ios_base::in);
-		istream s(&zf);
+		//TODO: add security checks
+		LOG(LOG_CALLS,_("Loader async execution ") << url);
+		Downloader* downloader=sys->downloadManager->download(url, false);
+		local_root=new RootMovieClip(contentLoaderInfo);
+		istream s(downloader);
 
-		ParseThread local_pt(sys,local_root,s);
-		local_pt.wait();*/
+		ParseThread* local_pt=new ParseThread(local_root,s);
+		local_pt->run();
+		sys->downloadManager->destroy(downloader);
+		content=local_root;
 	}
 	else if(source==BYTES)
 	{

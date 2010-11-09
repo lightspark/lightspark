@@ -120,7 +120,7 @@ public:
 	~RenderThread();
 	void start(ENGINE e,void* param);
 	void wait();
-	void draw();
+	void draw(bool force);
 	//The calling context MUST call this function with the transformation matrix ready
 	void glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 	void glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);

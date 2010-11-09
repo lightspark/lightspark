@@ -313,7 +313,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				continue;
 			}
 
-			assert(th->renderNeeded);
 			if(th->m_sys->isOnError())
 			{
 				glLoadIdentity();
@@ -839,8 +838,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				continue;
 			}
 
-			assert(th->renderNeeded);
-
 			SDL_PumpEvents();
 			if(th->m_sys->isOnError())
 			{
@@ -921,9 +918,9 @@ ITextureUploadable* RenderThread::getUploadJob()
 	return ret;
 }
 
-void RenderThread::draw()
+void RenderThread::draw(bool force)
 {
-	if(renderNeeded) //A rendering is already queued
+	if(renderNeeded && !force) //A rendering is already queued
 		return;
 	renderNeeded=true;
 	sem_post(&event);
@@ -942,7 +939,7 @@ void RenderThread::draw()
 
 void RenderThread::tick()
 {
-	draw();
+	draw(false);
 }
 
 void RenderThread::releaseTexture(const TextureChunk& chunk)

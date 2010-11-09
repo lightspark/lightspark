@@ -387,7 +387,7 @@ void SystemState::setError(const string& c)
 		timerThread->stop();
 		//Disable timed rendering
 		removeJob(renderThread);
-		renderThread->draw();
+		renderThread->draw(true);
 	}
 }
 

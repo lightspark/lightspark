@@ -101,7 +101,7 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 		case GDK_EXPOSE:
 		{
 			//Signal the renderThread
-			th->m_sys->getRenderThread()->draw();
+			th->m_sys->getRenderThread()->draw(false);
 			ret=TRUE;
 			break;
 		}

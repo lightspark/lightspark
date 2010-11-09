@@ -425,6 +425,9 @@ public:
 
 class Stage: public DisplayObjectContainer
 {
+private:
+	uint32_t internalGetHeight() const;
+	uint32_t internalGetWidth() const;
 public:
 	Stage();
 	static void sinit(Class_base* c);

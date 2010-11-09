@@ -2128,6 +2128,8 @@ void Stage::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth),true);
 	c->setGetterByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight),true);
+	c->setGetterByQName("width","",Class<IFunction>::getFunction(_getStageWidth),true);
+	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getStageHeight),true);
 	c->setGetterByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode),true);
 	c->setSetterByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),true);
 }
@@ -2145,9 +2147,8 @@ ASFUNCTIONBODY(Stage,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(Stage,_getStageWidth)
+uint32_t Stage::internalGetWidth() const
 {
-	//Stage* th=static_cast<Stage*>(obj);
 	uint32_t width;
 	if(sys->scaleMode==SystemState::NO_SCALE && sys->getRenderThread())
 		width=sys->getRenderThread()->windowWidth;
@@ -2156,12 +2157,11 @@ ASFUNCTIONBODY(Stage,_getStageWidth)
 		RECT size=sys->getFrameSize();
 		width=size.Xmax/20;
 	}
-	return abstract_d(width);
+	return width;
 }
 
-ASFUNCTIONBODY(Stage,_getStageHeight)
+uint32_t Stage::internalGetHeight() const
 {
-	//Stage* th=static_cast<Stage*>(obj);
 	uint32_t height;
 	if(sys->scaleMode==SystemState::NO_SCALE && sys->getRenderThread())
 		height=sys->getRenderThread()->windowHeight;
@@ -2170,7 +2170,19 @@ ASFUNCTIONBODY(Stage,_getStageHeight)
 		RECT size=sys->getFrameSize();
 		height=size.Ymax/20;
 	}
-	return abstract_d(height);
+	return height;
+}
+
+ASFUNCTIONBODY(Stage,_getStageWidth)
+{
+	Stage* th=static_cast<Stage*>(obj);
+	return abstract_d(th->internalGetWidth());
+}
+
+ASFUNCTIONBODY(Stage,_getStageHeight)
+{
+	Stage* th=static_cast<Stage*>(obj);
+	return abstract_d(th->internalGetHeight());
 }
 
 ASFUNCTIONBODY(Stage,_getScaleMode)

@@ -268,6 +268,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
 	builtin->setVariableByQName("Security","flash.system",Class<Security>::getClass());
 	builtin->setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
+	builtin->setVariableByQName("SecurityDomain","flash.system",Class<SecurityDomain>::getClass());
 	builtin->setVariableByQName("LoaderContext","flash.system",Class<ASObject>::getClass(QName("LoaderContext","flash.system")));
 
 	builtin->setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass());

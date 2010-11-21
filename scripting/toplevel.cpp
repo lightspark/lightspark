@@ -1022,9 +1022,16 @@ ASFUNCTIONBODY(ASString,split)
 ASFUNCTIONBODY(ASString,substr)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	int start=args[0]->toInt();
-	if(start<0)
+	int start=0;
+	if(argslen>=1)
+		start=args[0]->toInt();
+	if(start<0) {
 		start=th->data.size()+start;
+		if(start<0)
+			start=0;
+	}
+	if(start>(int)th->data.size())
+		start=th->data.size();
 
 	int len=0x7fffffff;
 	if(argslen==2)

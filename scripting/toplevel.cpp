@@ -792,6 +792,7 @@ void ASString::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("split",AS3,Class<IFunction>::getFunction(split),true);
 	c->setMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr),true);
+	c->setMethodByQName("substring",AS3,Class<IFunction>::getFunction(substring),true);
 	c->setMethodByQName("replace",AS3,Class<IFunction>::getFunction(replace),true);
 	c->setMethodByQName("concat",AS3,Class<IFunction>::getFunction(concat),true);
 	c->setMethodByQName("match",AS3,Class<IFunction>::getFunction(match),true);
@@ -1030,6 +1031,34 @@ ASFUNCTIONBODY(ASString,substr)
 		len=args[1]->toInt();
 
 	return Class<ASString>::getInstanceS(th->data.substr(start,len));
+}
+
+ASFUNCTIONBODY(ASString,substring)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	int start=0;
+	if (argslen>=1)
+		start=args[0]->toInt();
+	if(start<0)
+		start=0;
+	if(start>(int)th->data.size())
+		start=th->data.size();
+
+	int end=0x7fffffff;
+	if(argslen>=2)
+		end=args[1]->toInt();
+	if(end<0)
+		end=0;
+	if(end>(int)th->data.size())
+		end=th->data.size();
+
+	if(start>end) {
+		int tmp=start;
+		start=end;
+		end=tmp;
+	}
+
+	return Class<ASString>::getInstanceS(th->data.substr(start,end-start));
 }
 
 tiny_string Array::toString(bool debugMsg)

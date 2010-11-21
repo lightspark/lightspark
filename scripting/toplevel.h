@@ -388,6 +388,7 @@ public:
 	ASFUNCTION(slice);
 	ASFUNCTION(split);
 	ASFUNCTION(substr);
+	ASFUNCTION(substring);
 	ASFUNCTION(toLowerCase);
 	ASFUNCTION(toUpperCase);
 	ASFUNCTION(_toString);

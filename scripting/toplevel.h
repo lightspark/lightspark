@@ -381,6 +381,7 @@ public:
 	ASFUNCTION(concat);
 	ASFUNCTION(fromCharCode);
 	ASFUNCTION(indexOf);
+	ASFUNCTION(lastIndexOf);
 	ASFUNCTION(match);
 	ASFUNCTION(replace);
 	ASFUNCTION(search);

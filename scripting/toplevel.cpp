@@ -797,6 +797,7 @@ void ASString::sinit(Class_base* c)
 	c->setMethodByQName("match",AS3,Class<IFunction>::getFunction(match),true);
 	c->setMethodByQName("search",AS3,Class<IFunction>::getFunction(search),true);
 	c->setMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),true);
+	c->setMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),true);
 	c->setMethodByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt),true);
 	c->setMethodByQName("charAt",AS3,Class<IFunction>::getFunction(charAt),true);
 	c->setMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),true);
@@ -2202,6 +2203,22 @@ ASFUNCTIONBODY(ASString,indexOf)
 		return abstract_i(-1);
 	else
 		return abstract_i(i);
+}
+
+ASFUNCTIONBODY(ASString,lastIndexOf)
+{
+	assert_and_throw(argslen==1 || argslen==2);
+	ASString* th=static_cast<ASString*>(obj);
+	const tiny_string& val=args[0]->toString();
+	int startIndex=0x7fffffff;
+	if(argslen>1)
+		startIndex=args[1]->toInt();
+
+	size_t pos=th->data.rfind(val.raw_buf(), startIndex);
+	if(pos==th->data.npos)
+		return abstract_i(-1);
+	else
+		return abstract_i(pos);
 }
 
 ASFUNCTIONBODY(ASString,toLowerCase)

@@ -238,9 +238,16 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	ASObject* arg0=args[0];
 
 	int unsigned i = th->data.size()-1;
-	if(argslen == 2)
+	int j;
+	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !isnan(args[1]->toNumber()))
 	{
-		i = args[1]->toInt();
+		j = args[1]->toInt(); //Preserve sign
+		if(j < 0) //Negative offset, use it as offset from the end of the array
+			i = th->data.size()+j;
+		else //Positive offset, use it directly
+			i = j;
+		if(i > th->data.size()) //If the passed offset is bigger than the array, cap the offset
+			i = th->data.size()-1;
 	}
 
 	DATA_TYPE dtype = th->data[i].type;
@@ -3318,7 +3325,7 @@ ASFUNCTIONBODY(lightspark,isFinite)
 			return abstract_b(false);
 	}
 	else
-		throw UnsupportedException("Weird argument for isNaN");
+		throw UnsupportedException("Weird argument for isFinite");
 }
 
 ASFUNCTIONBODY(lightspark,encodeURI)

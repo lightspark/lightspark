@@ -57,6 +57,7 @@ REGISTER_CLASS_NAME(Graphics);
 REGISTER_CLASS_NAME(LineScaleMode);
 REGISTER_CLASS_NAME(StageScaleMode);
 REGISTER_CLASS_NAME(StageAlign);
+REGISTER_CLASS_NAME(StageQuality);
 REGISTER_CLASS_NAME(Bitmap);
 
 void LoaderInfo::sinit(Class_base* c)
@@ -2451,6 +2452,14 @@ void StageScaleMode::sinit(Class_base* c)
 void StageAlign::sinit(Class_base* c)
 {
 	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL"));
+}
+
+void StageQuality::sinit(Class_base* c)
+{
+	c->setVariableByQName("BEST","",Class<ASString>::getInstanceS("best"));
+	c->setVariableByQName("HIGH","",Class<ASString>::getInstanceS("high"));
+	c->setVariableByQName("LOW","",Class<ASString>::getInstanceS("low"));
+	c->setVariableByQName("MEDIUM","",Class<ASString>::getInstanceS("medium"));
 }
 
 void Bitmap::sinit(Class_base* c)

@@ -2180,10 +2180,29 @@ ASFUNCTIONBODY(ASString,slice)
 	int startIndex=0;
 	if(argslen>=1)
 		startIndex=args[0]->toInt();
+	if(startIndex<0) {
+		startIndex=th->data.size()+startIndex;
+		if(startIndex<0)
+			startIndex=0;
+	}
+	if(startIndex>(int)th->data.size())
+		startIndex=th->data.size();
+
 	int endIndex=0x7fffffff;
 	if(argslen>=2)
 		endIndex=args[1]->toInt();
-	return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex));
+	if(endIndex<0) {
+		endIndex=th->data.size()+endIndex;
+		if(endIndex<0)
+			endIndex=0;
+	}
+	if(endIndex>(int)th->data.size())
+		endIndex=th->data.size();
+
+	if(endIndex<=startIndex)
+		return Class<ASString>::getInstanceS("");
+	else
+		return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex-startIndex));
 }
 
 ASFUNCTIONBODY(ASString,charAt)

@@ -2273,8 +2273,11 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 	ASString* th=static_cast<ASString*>(obj);
 	const tiny_string& val=args[0]->toString();
 	int startIndex=0x7fffffff;
-	if(argslen>1)
+	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !isnan(args[1]->toNumber()))
 		startIndex=args[1]->toInt();
+		
+	if(startIndex < 0) //If negative offset is passed, clamp to 0 for start-of-string matches
+		return (th->data.substr(0, val.len()) == val.raw_buf() ? abstract_i(0) : abstract_i(-1));
 
 	size_t pos=th->data.rfind(val.raw_buf(), startIndex);
 	if(pos==th->data.npos)

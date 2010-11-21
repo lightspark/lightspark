@@ -53,6 +53,7 @@
 
 		var e:Array=[ 2, 1, 2, 3 ];
 		Tests.assertEquals(e.lastIndexOf(2), 2, "lastIndexOf() no offset");
+		Tests.assertEquals(e.lastIndexOf(2,2), 2, "lastIndexOf() no offset");
 		Tests.assertEquals(e.lastIndexOf(2, 1), 0, "lastIndexOf() positive offset");
 		Tests.assertEquals(e.lastIndexOf(2, -3), 0, "lastIndexOf() negative offset (1)");
 		Tests.assertEquals(e.lastIndexOf(2, -2), 2, "lastIndexOf() negative offset (2)");

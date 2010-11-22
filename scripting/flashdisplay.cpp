@@ -2435,6 +2435,7 @@ ASFUNCTIONBODY(Graphics,endFill)
 
 void LineScaleMode::sinit(Class_base* c)
 {
+	c->setConstructor(NULL);
 	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS("horizontal"));
 	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"));
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"));
@@ -2443,6 +2444,7 @@ void LineScaleMode::sinit(Class_base* c)
 
 void StageScaleMode::sinit(Class_base* c)
 {
+	c->setConstructor(NULL);
 	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS("exactFit"));
 	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS("noBorder"));
 	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS("noScale"));
@@ -2451,11 +2453,13 @@ void StageScaleMode::sinit(Class_base* c)
 
 void StageAlign::sinit(Class_base* c)
 {
+	c->setConstructor(NULL);
 	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL"));
 }
 
 void StageQuality::sinit(Class_base* c)
 {
+	c->setConstructor(NULL);
 	c->setVariableByQName("BEST","",Class<ASString>::getInstanceS("best"));
 	c->setVariableByQName("HIGH","",Class<ASString>::getInstanceS("high"));
 	c->setVariableByQName("LOW","",Class<ASString>::getInstanceS("low"));

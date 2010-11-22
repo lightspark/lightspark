@@ -170,6 +170,9 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("XMLList","",Class<ASObject>::getClass(QName("XMLList","")));
 	builtin->setVariableByQName("int","",Class<Integer>::getClass());
 
+	// Fake Vector with an Array -- see constructGenericType
+	builtin->setVariableByQName("Vector","__AS3__.vec",Class<Array>::getClass());
+
 	builtin->setVariableByQName("print","",Class<IFunction>::getFunction(print));
 	builtin->setVariableByQName("trace","",Class<IFunction>::getFunction(trace));
 	builtin->setVariableByQName("parseInt","",Class<IFunction>::getFunction(parseInt));

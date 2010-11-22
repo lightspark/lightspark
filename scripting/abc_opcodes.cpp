@@ -696,8 +696,17 @@ void ABCVm::construct(call_context* th, int m)
 	delete[] args;
 }
 
-void ABCVm::constructGenericType(call_context* th, int m)
+void ABCVm::constructGenericType(call_context* th, int argc)
 {
+
+	assert_and_throw(argc == 1); // Vector only has one argument
+
+	ASObject* arg = th->runtime_stack_pop();
+
+	// Vector is Array -- already on stack.
+	// ASObject* factory = th->runtime_stack_pop();
+
+    /*
 	throw UnsupportedException("constructGenericType not implement");
 	LOG(LOG_CALLS, _("constructGenericType ") << m);
 	ASObject** args=new ASObject*[m];
@@ -710,11 +719,11 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	{
 		LOG(LOG_ERROR,_("Check"));
 		abort();
-	/*	LOG(LOG_CALLS,_("Deferred definition of property ") << name);
+		LOG(LOG_CALLS,_("Deferred definition of property ") << name);
 		Definable* d=static_cast<Definable*>(o);
 		d->define(obj);
 		o=obj->getVariableByMultiname(name,owner);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);*/
+		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);
 	}
 
 	LOG(LOG_CALLS,_("Constructing"));
@@ -726,6 +735,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	LOG(LOG_CALLS,_("End of constructing"));
 	th->runtime_stack_push(ret);
 	delete[] args;
+    */
 }
 
 ASObject* ABCVm::typeOf(ASObject* obj)

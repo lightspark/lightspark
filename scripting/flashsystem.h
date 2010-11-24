@@ -47,6 +47,16 @@ public:
 	ASFUNCTION(getDefinition);
 };
 
+class SecurityDomain: public ASObject
+{
+public:
+	SecurityDomain(){}
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getCurrentDomain);
+};
+
 class Security: public ASObject
 {
 public:

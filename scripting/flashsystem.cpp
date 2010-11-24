@@ -32,6 +32,7 @@ using namespace lightspark;
 SET_NAMESPACE("flash.system");
 
 REGISTER_CLASS_NAME(ApplicationDomain);
+REGISTER_CLASS_NAME(SecurityDomain);
 REGISTER_CLASS_NAME(Capabilities);
 REGISTER_CLASS_NAME(Security);
 
@@ -142,6 +143,27 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	return o;
+}
+
+void SecurityDomain::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	//Static
+	c->setGetterByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),false);
+}
+
+void SecurityDomain::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(SecurityDomain,_constructor)
+{
+	return NULL;
+}
+
+ASFUNCTIONBODY(SecurityDomain,_getCurrentDomain)
+{
+	return Class<SecurityDomain>::getInstanceS();
 }
 
 void Security::sinit(Class_base* c)

@@ -381,12 +381,14 @@ public:
 	ASFUNCTION(concat);
 	ASFUNCTION(fromCharCode);
 	ASFUNCTION(indexOf);
+	ASFUNCTION(lastIndexOf);
 	ASFUNCTION(match);
 	ASFUNCTION(replace);
 	ASFUNCTION(search);
 	ASFUNCTION(slice);
 	ASFUNCTION(split);
 	ASFUNCTION(substr);
+	ASFUNCTION(substring);
 	ASFUNCTION(toLowerCase);
 	ASFUNCTION(toUpperCase);
 	ASFUNCTION(_toString);

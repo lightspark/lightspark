@@ -52,8 +52,16 @@
 		Tests.assertEquals(d.indexOf(2, 1), 2, "indexOf() two parameters");
 
 		var e:Array=[ 2, 1, 2, 3 ];
-		Tests.assertEquals(d.lastIndexOf(2), 2, "lastIndexOf() single parameter");
-		Tests.assertEquals(d.lastIndexOf(2, 1), 0, "lastIndexOf() two parameters");
+		Tests.assertEquals(e.lastIndexOf(2), 2, "lastIndexOf() no offset");
+		Tests.assertEquals(e.lastIndexOf(2,2), 2, "lastIndexOf() no offset");
+		Tests.assertEquals(e.lastIndexOf(2, 1), 0, "lastIndexOf() positive offset");
+		Tests.assertEquals(e.lastIndexOf(2, -3), 0, "lastIndexOf() negative offset (1)");
+		Tests.assertEquals(e.lastIndexOf(2, -2), 2, "lastIndexOf() negative offset (2)");
+		Tests.assertEquals(e.lastIndexOf(2, NaN), 2, "lastIndexOf() NaN offset");
+		Tests.assertEquals(e.lastIndexOf(2, undefined), 2, "lastIndexOf() undefined offset");
+		Tests.assertEquals(e.lastIndexOf(2, "a"), 2, "lastIndexOf() string offset (1)");
+		Tests.assertEquals(e.lastIndexOf(2, "1"), 0, "lastIndexOf() string offset (2)");
+		Tests.assertEquals(e.lastIndexOf(2, 20), 2, "lastIndexOf() too big");
 
 		Tests.report(visual, this.name);
 	}

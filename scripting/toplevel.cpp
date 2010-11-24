@@ -238,9 +238,16 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	ASObject* arg0=args[0];
 
 	int unsigned i = th->data.size()-1;
-	if(argslen == 2)
+	int j;
+	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !isnan(args[1]->toNumber()))
 	{
-		i = args[1]->toInt();
+		j = args[1]->toInt(); //Preserve sign
+		if(j < 0) //Negative offset, use it as offset from the end of the array
+			i = th->data.size()+j;
+		else //Positive offset, use it directly
+			i = j;
+		if(i > th->data.size()) //If the passed offset is bigger than the array, cap the offset
+			i = th->data.size()-1;
 	}
 
 	DATA_TYPE dtype = th->data[i].type;
@@ -792,11 +799,13 @@ void ASString::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("split",AS3,Class<IFunction>::getFunction(split),true);
 	c->setMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr),true);
+	c->setMethodByQName("substring",AS3,Class<IFunction>::getFunction(substring),true);
 	c->setMethodByQName("replace",AS3,Class<IFunction>::getFunction(replace),true);
 	c->setMethodByQName("concat",AS3,Class<IFunction>::getFunction(concat),true);
 	c->setMethodByQName("match",AS3,Class<IFunction>::getFunction(match),true);
 	c->setMethodByQName("search",AS3,Class<IFunction>::getFunction(search),true);
 	c->setMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),true);
+	c->setMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),true);
 	c->setMethodByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt),true);
 	c->setMethodByQName("charAt",AS3,Class<IFunction>::getFunction(charAt),true);
 	c->setMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),true);
@@ -1020,15 +1029,50 @@ ASFUNCTIONBODY(ASString,split)
 ASFUNCTIONBODY(ASString,substr)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	int start=args[0]->toInt();
-	if(start<0)
+	int start=0;
+	if(argslen>=1)
+		start=args[0]->toInt();
+	if(start<0) {
 		start=th->data.size()+start;
+		if(start<0)
+			start=0;
+	}
+	if(start>(int)th->data.size())
+		start=th->data.size();
 
 	int len=0x7fffffff;
 	if(argslen==2)
 		len=args[1]->toInt();
 
 	return Class<ASString>::getInstanceS(th->data.substr(start,len));
+}
+
+ASFUNCTIONBODY(ASString,substring)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	int start=0;
+	if (argslen>=1)
+		start=args[0]->toInt();
+	if(start<0)
+		start=0;
+	if(start>(int)th->data.size())
+		start=th->data.size();
+
+	int end=0x7fffffff;
+	if(argslen>=2)
+		end=args[1]->toInt();
+	if(end<0)
+		end=0;
+	if(end>(int)th->data.size())
+		end=th->data.size();
+
+	if(start>end) {
+		int tmp=start;
+		start=end;
+		end=tmp;
+	}
+
+	return Class<ASString>::getInstanceS(th->data.substr(start,end-start));
 }
 
 tiny_string Array::toString(bool debugMsg)
@@ -2143,10 +2187,29 @@ ASFUNCTIONBODY(ASString,slice)
 	int startIndex=0;
 	if(argslen>=1)
 		startIndex=args[0]->toInt();
+	if(startIndex<0) {
+		startIndex=th->data.size()+startIndex;
+		if(startIndex<0)
+			startIndex=0;
+	}
+	if(startIndex>(int)th->data.size())
+		startIndex=th->data.size();
+
 	int endIndex=0x7fffffff;
 	if(argslen>=2)
 		endIndex=args[1]->toInt();
-	return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex));
+	if(endIndex<0) {
+		endIndex=th->data.size()+endIndex;
+		if(endIndex<0)
+			endIndex=0;
+	}
+	if(endIndex>(int)th->data.size())
+		endIndex=th->data.size();
+
+	if(endIndex<=startIndex)
+		return Class<ASString>::getInstanceS("");
+	else
+		return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex-startIndex));
 }
 
 ASFUNCTIONBODY(ASString,charAt)
@@ -2202,6 +2265,25 @@ ASFUNCTIONBODY(ASString,indexOf)
 		return abstract_i(-1);
 	else
 		return abstract_i(i);
+}
+
+ASFUNCTIONBODY(ASString,lastIndexOf)
+{
+	assert_and_throw(argslen==1 || argslen==2);
+	ASString* th=static_cast<ASString*>(obj);
+	const tiny_string& val=args[0]->toString();
+	int startIndex=0x7fffffff;
+	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !isnan(args[1]->toNumber()))
+		startIndex=args[1]->toInt();
+		
+	if(startIndex < 0) //If negative offset is passed, clamp to 0 for start-of-string matches
+		return (th->data.substr(0, val.len()) == val.raw_buf() ? abstract_i(0) : abstract_i(-1));
+
+	size_t pos=th->data.rfind(val.raw_buf(), startIndex);
+	if(pos==th->data.npos)
+		return abstract_i(-1);
+	else
+		return abstract_i(pos);
 }
 
 ASFUNCTIONBODY(ASString,toLowerCase)
@@ -3246,7 +3328,7 @@ ASFUNCTIONBODY(lightspark,isFinite)
 			return abstract_b(false);
 	}
 	else
-		throw UnsupportedException("Weird argument for isNaN");
+		throw UnsupportedException("Weird argument for isFinite");
 }
 
 ASFUNCTIONBODY(lightspark,encodeURI)

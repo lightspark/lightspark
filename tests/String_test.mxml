@@ -118,6 +118,37 @@
 		ret4 = str.search(re);
 		Tests.assertEquals(1, ret4, "search(): capturing regexp search");
 
+		//Substring tests
+		str = new String("sliceable");
+		var ret5:String = str.substr(5);
+		Tests.assertEquals("able", ret5, "substr(): start", true);
+
+		ret5 = str.substr(5, 2);
+		Tests.assertEquals("ab", ret5, "substr(): start and len", true);
+
+		ret5 = str.substring(5);
+		Tests.assertEquals("able", ret5, "substring(): start", true);
+
+		ret5 = str.substring(5, 7);
+		Tests.assertEquals("ab", ret5, "substring(): start and end", true);
+
+		ret5 = str.slice(5, 7);
+		Tests.assertEquals("ab", ret5, "slice(): positive parameters", true);
+
+		ret5 = str.slice(-4, -2);
+		Tests.assertEquals("ab", ret5, "slice(): negative parameters", true);
+
+		//lastIndexOf tests
+		var e:String="abcdb";
+		Tests.assertEquals(e.lastIndexOf("b"), 4, "lastIndexOf() no offset");
+		Tests.assertEquals(e.lastIndexOf("b", 1), 1, "lastIndexOf() positive offset");
+		Tests.assertEquals(e.lastIndexOf("b", 0), -1, "lastIndexOf() zero offset");
+		Tests.assertEquals(e.lastIndexOf("ab", -100), 0, "lastIndexOf() negative offset (1)");
+		Tests.assertEquals(e.lastIndexOf("bc", -100), -1, "lastIndexOf() negative offset (2)");
+		Tests.assertEquals(e.lastIndexOf("b", NaN), 4, "lastIndexOf() NaN offset");
+		Tests.assertEquals(e.lastIndexOf("b", undefined), 4, "lastIndexOf() undefined offset");
+		Tests.assertEquals(e.lastIndexOf("b", 20), 4, "lastIndexOf() too big");
+
 		Tests.report(visual, this.name);
 	}
 	private function func1():String

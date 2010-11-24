@@ -199,6 +199,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("LineScaleMode","flash.display",Class<LineScaleMode>::getClass());
 	builtin->setVariableByQName("StageScaleMode","flash.display",Class<StageScaleMode>::getClass());
 	builtin->setVariableByQName("StageAlign","flash.display",Class<StageAlign>::getClass());
+	builtin->setVariableByQName("StageQuality","flash.display",Class<StageQuality>::getClass());
 	builtin->setVariableByQName("IBitmapDrawable","flash.display",Class<ASObject>::getClass(QName("IBitmapDrawable","flash.display")));
 	builtin->setVariableByQName("BitmapData","flash.display",Class<ASObject>::getClass(QName("BitmapData","flash.display")));
 	builtin->setVariableByQName("Bitmap","flash.display",Class<Bitmap>::getClass());
@@ -268,6 +269,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
 	builtin->setVariableByQName("Security","flash.system",Class<Security>::getClass());
 	builtin->setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
+	builtin->setVariableByQName("SecurityDomain","flash.system",Class<SecurityDomain>::getClass());
 	builtin->setVariableByQName("LoaderContext","flash.system",Class<ASObject>::getClass(QName("LoaderContext","flash.system")));
 
 	builtin->setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass());

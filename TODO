@@ -1,6 +1,4 @@
 Official TODO Queue:
--) Clipping
--) Onor sandboxing
 -) Onor script limits
 -) Implement ScalingGrid for correct positioning of some objects
 -) Understand the semantics of nextname on methods and the like

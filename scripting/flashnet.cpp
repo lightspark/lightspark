@@ -760,7 +760,7 @@ void NetStream::execute()
 		{
 			FLV_HEADER h(s);
 			if(!h.isValid())
-				threadAbort();
+				throw ParseException("FLV is not valid");
 
 			unsigned int prevSize=0;
 			bool done=false;

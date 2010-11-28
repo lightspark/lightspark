@@ -207,8 +207,15 @@ void Loader::execute()
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
 		Downloader* downloader=sys->downloadManager->download(url, false);
 		local_root=new RootMovieClip(contentLoaderInfo);
+		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
+		if(downloader->hasFailed()) //Check to see if the download failed for some reason
+		{
+			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
+			sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("ioError"));
+			sys->downloadManager->destroy(downloader);
+			return;
+		}
 		istream s(downloader);
-
 		ParseThread* local_pt=new ParseThread(local_root,s);
 		local_pt->run();
 		sys->downloadManager->destroy(downloader);

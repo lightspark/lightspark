@@ -661,7 +661,7 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 	if(strncmp(buf,"FLV",3)==0)
 		ret=FLV_STREAM;
 	else
-		threadAbort();
+		throw ParseException("File signature not recognized");
 
 	s.seekg(0);
 	return ret;

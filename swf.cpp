@@ -124,6 +124,13 @@ void RootMovieClip::setOnStage(bool staged)
 	MovieClip::setOnStage(staged);
 }
 
+RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li)
+{
+	RootMovieClip* ret=new RootMovieClip(li);
+	ret->setPrototype(Class<MovieClip>::getClass());
+	return ret;
+}
+
 void SystemState::staticInit()
 {
 	//Do needed global initialization

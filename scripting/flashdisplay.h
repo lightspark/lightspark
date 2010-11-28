@@ -321,7 +321,6 @@ private:
 	RootMovieClip* local_root;
 	bool loading;
 	bool loaded;
-	DisplayObject* content;
 	SOURCE source;
 	tiny_string url;
 	ByteArray* bytes;
@@ -330,7 +329,7 @@ private:
 	void threadAbort();
 	void jobFence();
 public:
-	Loader():local_root(NULL),loading(false),loaded(false),content(NULL)
+	Loader():local_root(NULL),loading(false),loaded(false)
 	{
 	}
 	~Loader();

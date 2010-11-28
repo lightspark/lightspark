@@ -176,7 +176,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 
 Loader::~Loader()
 {
-	if(local_root)
+	if(local_root && !sys->finalizingDestruction)
 		local_root->decRef();
 }
 
@@ -201,12 +201,15 @@ void Loader::buildTraits(ASObject* o)
 
 void Loader::execute()
 {
+	assert(source==URL || source==BYTES);
+	//The loaderInfo of the content is our contentLoaderInfo
+	contentLoaderInfo->incRef();
+	local_root=RootMovieClip::getInstance(contentLoaderInfo);
 	if(source==URL)
 	{
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
 		Downloader* downloader=sys->downloadManager->download(url, false);
-		local_root=new RootMovieClip(contentLoaderInfo);
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{
@@ -219,7 +222,6 @@ void Loader::execute()
 		ParseThread* local_pt=new ParseThread(local_root,s);
 		local_pt->run();
 		sys->downloadManager->destroy(downloader);
-		content=local_root;
 	}
 	else if(source==BYTES)
 	{
@@ -228,15 +230,11 @@ void Loader::execute()
 		//We only support swf files now
 		assert_and_throw(memcmp(bytes->bytes,"CWS",3)==0);
 
-		//The loaderInfo of the content is our contentLoaderInfo
-		contentLoaderInfo->incRef();
-		local_root=new RootMovieClip(contentLoaderInfo);
 		bytes_buf bb(bytes->bytes,bytes->len);
 		istream s(&bb);
 
 		ParseThread* local_pt = new ParseThread(local_root,s);
 		local_pt->run();
-		content=local_root;
 		bytes->decRef();
 	}
 	loaded=true;
@@ -264,7 +262,7 @@ void Loader::Render(bool maskEnabled)
 
 bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(content && content->getBounds(xmin,xmax,ymin,ymax))
+	if(local_root && local_root->getBounds(xmin,xmax,ymin,ymax))
 	{
 		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
 		getMatrix().multiply2D(xmax,ymax,xmax,ymax);

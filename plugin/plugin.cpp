@@ -23,6 +23,7 @@
 #include <string>
 #include <algorithm>
 #include "backends/urlutils.h"
+
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
@@ -125,7 +126,7 @@ void NPDownloader::dlStartCallback(void* t)
 	th->started=true;
 	NPError e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
 	if(e!=NPERR_NO_ERROR)
-		abort();
+		th->setFailed(); //No need to crash, we can just mark the download failed
 }
 
 char* NPP_GetMIMEDescription(void)

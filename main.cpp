@@ -116,6 +116,12 @@ int main(int argc, char* argv[])
 			else if(strncmp(argv[i], "local-trusted", 13) == 0)
 				sandboxType = SecurityManager::LOCAL_TRUSTED;
 		}
+		else if(strcmp(argv[i],"-v")==0 || 
+			strcmp(argv[i],"--version")==0)
+		{
+			cout << "Lightspark version " << VERSION << " Copyright 2009-2010 Alessandro Pignotti" << endl;
+			exit(-1);
+		}
 		else
 		{
 			//No options flag, so set the swf file name

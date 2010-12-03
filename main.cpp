@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
 	ifstream f(fileName);
 	if(!f)
 	{
-		cout << "File not found" << endl;
+		cout << argv[0] << ": " << fileName << ": No such file or directory" << endl;
 		exit(2);
 	}
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );

@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
 			strcmp(argv[i],"--version")==0)
 		{
 			cout << "Lightspark version " << VERSION << " Copyright 2009-2010 Alessandro Pignotti" << endl;
-			exit(-1);
+			exit(0);
 		}
 		else
 		{
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 
 			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" << 
 			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox] <file.swf>" << endl;
-		exit(-1);
+		exit(1);
 	}
 
 #ifndef WIN32
@@ -154,6 +154,11 @@ int main(int argc, char* argv[])
 
 	Log::initLogging(log_level);
 	ifstream f(fileName);
+	if(!f)
+	{
+		cout << "File not found" << endl;
+		exit(2);
+	}
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	cout.exceptions( ios::failbit | ios::badbit);
 	cerr.exceptions( ios::failbit | ios::badbit);
@@ -189,7 +194,7 @@ int main(int argc, char* argv[])
 	if(!(useInterpreter || useJit))
 	{
 		LOG(LOG_ERROR,_("No execution model enabled"));
-		exit(-1);
+		exit(1);
 	}
 	sys->useInterpreter=useInterpreter;
 	sys->useJit=useJit;

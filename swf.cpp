@@ -638,7 +638,6 @@ void SystemState::createEngines()
 		currentVm->start();
 	l.unlock();
 	//Now that there is something to actually render the contents add the SystemState to the stage
-	setOnStage(true);
 }
 
 void SystemState::needsAVM2(bool n)
@@ -1095,6 +1094,17 @@ void RootMovieClip::commitFrame(bool another)
 			getVm()->addEvent(NULL, funcEvent);
 			funcEvent->decRef();
 		}
+
+		setOnStage(true);
+		SynchronizationEvent* se=new SynchronizationEvent;
+		bool added=getVm()->addEvent(NULL,se);
+		if(!added)
+		{
+			se->decRef();
+			throw RunTimeException("Could not add event");
+		}
+		se->wait();
+		se->decRef();
 
 		//When the first frame is committed the frame rate is known
 		sys->addTick(1000/frameRate,this);

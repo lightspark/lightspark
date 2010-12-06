@@ -19,7 +19,7 @@
 lightspark \- a free Flash player
 .SH SYNOPSIS
 .B lightspark 
-[\-\-url|\-u http://loader.url/file.swf] [\-\-disable-interpreter|\-ni] [\-\-enable\-jit|\-j] [\-\-log\-level|\-l 0-4] [\-\-parameters\-file|\-p params-file] file.swf
+[\-\-url|\-u http://loader.url/file.swf] [\-\-disable-interpreter|\-ni] [\-\-enable\-jit|\-j] [\-\-log\-level|\-l 0-4] [\-\-parameters\-file|\-p params-file] [\-\-version|\-v] file.swf
 .SH DESCRIPTION
 .B Lightspark
 is a free, modern Flash Player implementation, this documents the options accepted by the standalone version of the program.
@@ -52,6 +52,10 @@ Sets the verbosity of the output, the default is 2
 \fB\-\-parameters-file\fP params-file, \fB\-p\fP params-file
 .IP
 Load flash parameters from file. Every odd line will be interpreted as a parameter name, with the following one as the value.
+.HP
+\fB\-\-version\fP, \fB\-v\fP
+.IP
+Shows lightspark version and exits.
 .SH AUTHOR
 lightspark was written by Alessandro Pignotti.
 .PP

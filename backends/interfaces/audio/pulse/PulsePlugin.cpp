@@ -116,7 +116,8 @@ void PulsePlugin::streamStatusCB ( pa_stream *stream, PulseAudioStream *th )
 {
 	if ( pa_stream_get_state ( stream ) == PA_STREAM_READY )
 		th->streamStatus = PulseAudioStream::STREAM_READY;
-	else if ( pa_stream_get_state ( stream ) == PA_STREAM_TERMINATED )
+	else if ( pa_stream_get_state ( stream ) == PA_STREAM_TERMINATED ||
+		pa_stream_get_state ( stream ) == PA_STREAM_FAILED )
 	{
 		assert ( stream == th->stream );
 		th->streamStatus = PulseAudioStream::STREAM_DEAD;

@@ -189,7 +189,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass());
 	builtin->setVariableByQName("Loader","flash.display",Class<Loader>::getClass());
 	builtin->setVariableByQName("LoaderInfo","flash.display",Class<LoaderInfo>::getClass());
-	builtin->setVariableByQName("SimpleButton","flash.display",Class<ASObject>::getClass(QName("SimpleButton","flash.display")));
+	builtin->setVariableByQName("SimpleButton","flash.display",Class<SimpleButton>::getClass());
 	builtin->setVariableByQName("InteractiveObject","flash.display",Class<InteractiveObject>::getClass());
 	builtin->setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
 	builtin->setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());

@@ -180,6 +180,15 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
+class SimpleButton: public InteractiveObject
+{
+public:
+	SimpleButton(){}
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+};
+
 class DisplayObjectContainer: public InteractiveObject
 {
 private:

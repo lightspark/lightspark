@@ -59,6 +59,7 @@ REGISTER_CLASS_NAME(StageScaleMode);
 REGISTER_CLASS_NAME(StageAlign);
 REGISTER_CLASS_NAME(StageQuality);
 REGISTER_CLASS_NAME(Bitmap);
+REGISTER_CLASS_NAME(SimpleButton);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -2488,3 +2489,21 @@ IntSize Bitmap::getBitmapSize() const
 {
 	return IntSize(100,100);
 }
+
+void SimpleButton::sinit(Class_base* c)
+{
+//	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setConstructor(NULL);
+	c->super=Class<InteractiveObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void SimpleButton::buildTraits(ASObject* o)
+{
+}
+
+bool SimpleButton::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	return false;
+}
+

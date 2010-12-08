@@ -698,33 +698,38 @@ void ABCVm::construct(call_context* th, int m)
 
 void ABCVm::constructGenericType(call_context* th, int m)
 {
-	throw UnsupportedException("constructGenericType not implement");
+//	throw UnsupportedException("constructGenericType not implement");
 	LOG(LOG_CALLS, _("constructGenericType ") << m);
+	assert_and_throw(m==1);
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	if(obj->getObjectType()==T_DEFINABLE)
+/*	if(obj->getObjectType()==T_DEFINABLE)
 	{
 		LOG(LOG_ERROR,_("Check"));
 		abort();
-	/*	LOG(LOG_CALLS,_("Deferred definition of property ") << name);
+		LOG(LOG_CALLS,_("Deferred definition of property ") << name);
 		Definable* d=static_cast<Definable*>(o);
 		d->define(obj);
 		o=obj->getVariableByMultiname(name,owner);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);*/
+		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);
 	}
 
 	LOG(LOG_CALLS,_("Constructing"));
 	Class_base* o_class=static_cast<Class_base*>(obj);
 	assert_and_throw(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance(true,args,m);
+	ASObject* ret=o_class->getInstance(true,args,m);*/
+	ASObject* ret=new Undefined;
 
 	obj->decRef();
 	LOG(LOG_CALLS,_("End of constructing"));
 	th->runtime_stack_push(ret);
+	//TODO: remove when implemented
+	for(int i=0;i<m;i++)
+		args[i]->decRef();
 	delete[] args;
 }
 

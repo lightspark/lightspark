@@ -57,6 +57,8 @@ void ByteArray::sinit(Class_base* c)
 	c->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition),true);
 	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition),true);
 	c->setMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),true);
+//	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),true);
+	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),true);
 }
 
 void ByteArray::buildTraits(ASObject* o)
@@ -122,6 +124,13 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	th->position+=length;
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_toString)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	//TODO: check for Byte Order Mark
+	return Class<ASString>::getInstanceS((char*)th->bytes,th->len);
 }
 
 ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)

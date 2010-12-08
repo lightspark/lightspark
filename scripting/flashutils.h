@@ -49,6 +49,7 @@ public:
 	ASFUNCTION(_getPosition);
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(readBytes);
+	ASFUNCTION(_toString);
 
 	/**
 		Get ownership over the passed buffer

@@ -154,6 +154,9 @@ int main(int argc, char* argv[])
 
 	Log::initLogging(log_level);
 	ifstream f(fileName);
+	f.seekg(0, ios::end);
+	uint32_t fileSize=f.tellg();
+	f.seekg(0, ios::beg);
 	if(!f)
 	{
 		cout << argv[0] << ": " << fileName << ": No such file or directory" << endl;
@@ -165,7 +168,7 @@ int main(int argc, char* argv[])
 	ParseThread* pt = new ParseThread(NULL,f);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration
-	sys=new SystemState(pt);
+	sys=new SystemState(pt, fileSize);
 
 	//This setting allows qualifying filename-only paths to fully qualified paths
 	//When the URL parameter is set, set the root URL to the given parameter

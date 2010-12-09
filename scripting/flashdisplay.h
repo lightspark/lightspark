@@ -308,7 +308,7 @@ private:
 	tiny_string loaderURL;
 	EventDispatcher* sharedEvents;
 public:
-	LoaderInfo():bytesLoaded(100),bytesTotal(100)
+	LoaderInfo():bytesLoaded(0),bytesTotal(0)
 	{
 	}
 	static void sinit(Class_base* c);
@@ -321,6 +321,11 @@ public:
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getApplicationDomain);
 	ASFUNCTION(_getSharedEvents);
+	void setBytesTotal(uint32_t b)
+	{
+		bytesTotal=b;
+	}
+	void setBytesLoaded(uint32_t b);
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer

@@ -78,6 +78,16 @@ void LoaderInfo::buildTraits(ASObject* o)
 {
 }
 
+void LoaderInfo::setBytesLoaded(uint32_t b)
+{
+	if(b!=bytesLoaded)
+	{
+		bytesLoaded=b;
+		if(sys && sys->currentVm)
+			sys->currentVm->addEvent(this,Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal));
+	}
+}
+
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);

@@ -3226,6 +3226,11 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		LOG(LOG_CALLS,_("Array to bool"));
 		return true;
 	}
+	else if(obj->getObjectType()==T_FUNCTION)
+	{
+		LOG(LOG_CALLS,_("Function to bool"));
+		return true;
+	}
 	else if(obj->getObjectType()==T_UNDEFINED)
 	{
 		LOG(LOG_CALLS,_("Undefined to bool"));

@@ -1132,10 +1132,10 @@ ASFUNCTIONBODY(URLVariables,_constructor)
 tiny_string URLVariables::toString(bool debugMsg)
 {
 	assert_and_throw(implEnable);
-	//URL encoding should already have been performed when the variables were passed
-	throw UnsupportedException("URLVariables::toString");
 	if(debugMsg)
 		return ASObject::toString(debugMsg);
+	//URL encoding should already have been performed when the variables were passed
+	throw UnsupportedException("URLVariables::toString");
 	int size=numVariables();
 	tiny_string ret;
 	for(int i=0;i<size;i++)

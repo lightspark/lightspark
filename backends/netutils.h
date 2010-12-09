@@ -34,6 +34,7 @@ namespace lightspark
 {
 
 class Downloader;
+class LoaderInfo;
 
 class DLL_PUBLIC DownloadManager
 {
@@ -165,6 +166,11 @@ protected:
 	std::map<tiny_string, tiny_string> headers;
 	void parseHeaders(const char* headers, bool _setLength);
 	void parseHeader(std::string header, bool _setLength);
+
+	//-- PROGRESS MONITORING
+	LoaderInfo* owner;
+	void notifyOwnerAboutBytesTotal() const;
+	void notifyOwnerAboutBytesLoaded() const;
 public:
 	//This class can only get destroyed by DownloadManager derivate classes
 	virtual ~Downloader();
@@ -204,6 +210,8 @@ public:
 	bool isRedirected() { return redirected; }
 	const tiny_string& getOriginalURL() { return originalURL; }
 	uint16_t getRequestStatus() { return requestStatus; }
+
+	void setOwner(LoaderInfo* li) { owner=li; }
 };
 
 class ThreadedDownloader : public Downloader, public IThreadJob

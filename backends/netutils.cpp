@@ -204,7 +204,8 @@ Downloader::Downloader(const tiny_string& _url, bool _cached):
 	buffer(NULL),                                                 //BUFFERING
 	cached(_cached),cachePos(0),cacheSize(0),keepCache(false),    //CACHING
 	length(0),receivedLength(0),                                  //DOWNLOADED DATA
-	redirected(false),requestStatus(0)                            //HTTP REDIR, STATUS & HEADERS
+	redirected(false),requestStatus(0),                           //HTTP REDIR, STATUS & HEADERS
+	owner(NULL)                                                   //PROGRESS
 {
 	sem_init(&mutex,0,1);
 	//== Lock initialized 
@@ -704,6 +705,7 @@ void Downloader::setLength(uint32_t _length)
 
 		allocateBuffer(length);
 	}
+	notifyOwnerAboutBytesTotal();
 }
 
 /**
@@ -764,6 +766,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 
 	//++ Release lock
 	sem_post(&mutex);
+	notifyOwnerAboutBytesLoaded();
 }
 
 /**
@@ -971,6 +974,18 @@ void Downloader::waitForTermination()
 	}
 	//++ Release lock
 	sem_post(&mutex);
+}
+
+void Downloader::notifyOwnerAboutBytesTotal() const
+{
+	if(owner)
+		owner->setBytesTotal(length);
+}
+
+void Downloader::notifyOwnerAboutBytesLoaded() const
+{
+	if(owner)
+		owner->setBytesLoaded(receivedLength);
 }
 
 void ThreadedDownloader::enableFencingWaiting()
@@ -1201,6 +1216,8 @@ void LocalDownloader::execute()
 			//Report that we've downloaded everything already
 			length = cache.tellg();
 			receivedLength = length;
+			notifyOwnerAboutBytesLoaded();
+			notifyOwnerAboutBytesTotal();
 
 			//++ Release lock
 			sem_post(&mutex);

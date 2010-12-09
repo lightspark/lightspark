@@ -204,7 +204,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 {
 	sys=NULL;
 	m_pt=new lightspark::ParseThread(NULL,swf_stream);
-	m_sys=new lightspark::SystemState(m_pt);
+	m_sys=new lightspark::SystemState(m_pt,0);
 	//As this is the plugin, enable fallback on Gnash for older clips
 	m_sys->enableGnashFallback();
 	//Files running in the plugin have REMOTE sandbox

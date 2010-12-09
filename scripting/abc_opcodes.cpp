@@ -204,7 +204,7 @@ intptr_t ABCVm::pushShort(intptr_t n)
 
 void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
 {
-	LOG(LOG_CALLS,_("setSlot ") << dec << n);
+	LOG(LOG_CALLS,"setSlot " << n);
 	if(value==NULL)
 		value=new Undefined;
 	obj->setSlot(n,value);
@@ -213,8 +213,8 @@ void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
 
 ASObject* ABCVm::getSlot(ASObject* obj, int n)
 {
-	LOG(LOG_CALLS,_("getSlot ") << dec << n);
 	ASObject* ret=obj->getSlot(n);
+	LOG(LOG_CALLS,"getSlot " << n << " " << ret->toString(true));
 	ret->incRef();
 	obj->decRef();
 	return ret;
@@ -1766,7 +1766,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	{
 		obj->decRef();
 		real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
-		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"_(":")not _(") << ")subclass of " << c->class_name);
+		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"":_("not ")) << _("subclass of ") << c->class_name);
 		type->decRef();
 		return real_ret;
 	}
@@ -1809,7 +1809,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	}
 
 	real_ret=objc->isSubClass(c);
-	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"_(":")not ") 
+	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"":_("not ")) 
 			<< "subclass of " << c->class_name);
 	obj->decRef();
 	type->decRef();

@@ -156,7 +156,11 @@ MouseEvent::MouseEvent(const tiny_string& t, bool b):Event(t,b)
 {
 }
 
-ProgressEvent::ProgressEvent():Event("progress"),bytesLoaded(0),bytesTotal(0)
+ProgressEvent::ProgressEvent():Event("progress",false),bytesLoaded(0),bytesTotal(0)
+{
+}
+
+ProgressEvent::ProgressEvent(uint32_t loaded, uint32_t total):Event("progress",false),bytesLoaded(loaded),bytesTotal(total)
 {
 }
 

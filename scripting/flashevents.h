@@ -173,6 +173,7 @@ private:
 	uint32_t bytesTotal;
 public:
 	ProgressEvent();
+	ProgressEvent(uint32_t loaded, uint32_t total);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

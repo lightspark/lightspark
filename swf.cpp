@@ -152,7 +152,7 @@ void SystemState::staticDeinit()
 #endif
 }
 
-SystemState::SystemState(ParseThread* p):
+SystemState::SystemState(ParseThread* p, uint32_t fileSize):
 	RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
@@ -176,6 +176,9 @@ SystemState::SystemState(ParseThread* p):
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
+	//If the size is not known those will stay at zero
+	loaderInfo->setBytesLoaded(fileSize);
+	loaderInfo->setBytesTotal(fileSize);
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;
 	startTime=compat_msectiming();

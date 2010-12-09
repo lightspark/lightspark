@@ -66,9 +66,9 @@ NPDownloadManager::~NPDownloadManager()
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& url, bool cached)
+lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& url, bool cached, lightspark::LoaderInfo* owner)
 {
-	return download(sys->getOrigin().goToURL(url), cached);
+	return download(sys->getOrigin().goToURL(url), cached, owner);
 }
 
 /**
@@ -80,12 +80,12 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_strin
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached)
+lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached, lightspark::LoaderInfo* owner)
 {
 	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
-	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance);
+	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance, owner);
 	addDownloader(downloader);
 	return downloader;
 }
@@ -107,9 +107,10 @@ void NPDownloadManager::destroy(lightspark::Downloader* downloader)
  * \param[in] _url The URL for the Downloader.
  * \param[in] _cached Whether or not to cache this download.
  */
-NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance):
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::LoaderInfo* owner):
 	Downloader(_url, _cached),instance(_instance),started(false)
 {
+	setOwner(owner);
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
 

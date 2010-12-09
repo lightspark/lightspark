@@ -154,9 +154,9 @@ StandaloneDownloadManager::~StandaloneDownloadManager()
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-Downloader* StandaloneDownloadManager::download(const tiny_string& url, bool cached)
+Downloader* StandaloneDownloadManager::download(const tiny_string& url, bool cached, LoaderInfo* owner)
 {
-	return download(sys->getOrigin().goToURL(url), cached);
+	return download(sys->getOrigin().goToURL(url), cached, owner);
 }
 
 /**
@@ -168,7 +168,7 @@ Downloader* StandaloneDownloadManager::download(const tiny_string& url, bool cac
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
+Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached, LoaderInfo* owner)
 {
 	LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager::download '") << url.getParsedURL()
 			<< "'" << (cached ? _(" - cached") : ""));
@@ -183,6 +183,7 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
 		downloader=new CurlDownloader(url.getParsedURL(), cached);
 	}
+	downloader->setOwner(owner);
 	downloader->enableFencingWaiting();
 	addDownloader(downloader);
 	sys->addJob(downloader);

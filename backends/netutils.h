@@ -48,8 +48,8 @@ protected:
 	void cleanUp();
 public:
 	virtual ~DownloadManager() {};
-	virtual Downloader* download(const tiny_string& url, bool cached=false)=0;
-	virtual Downloader* download(const URLInfo& url, bool cached=false)=0;
+	virtual Downloader* download(const tiny_string& url, bool cached=false, LoaderInfo* owner=NULL)=0;
+	virtual Downloader* download(const URLInfo& url, bool cached=false, LoaderInfo* owner=NULL)=0;
 	virtual void destroy(Downloader* downloader)=0;
 
 	enum MANAGERTYPE { NPAPI, STANDALONE };
@@ -61,8 +61,8 @@ class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 public:
 	StandaloneDownloadManager();
 	~StandaloneDownloadManager();
-	Downloader* download(const tiny_string& url, bool cached=false);
-	Downloader* download(const URLInfo& url, bool cached=false);
+	Downloader* download(const tiny_string& url, bool cached=false, LoaderInfo* owner=NULL);
+	Downloader* download(const URLInfo& url, bool cached=false, LoaderInfo* owner=NULL);
 	void destroy(Downloader* downloader);
 };
 

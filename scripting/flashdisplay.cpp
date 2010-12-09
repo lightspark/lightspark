@@ -220,7 +220,7 @@ void Loader::execute()
 	{
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
-		Downloader* downloader=sys->downloadManager->download(url, false);
+		Downloader* downloader=sys->downloadManager->download(url, false, contentLoaderInfo);
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{

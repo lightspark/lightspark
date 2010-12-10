@@ -964,7 +964,7 @@ void RootMovieClip::initialize()
 		if(bindName.len())
 			sys->currentVm->addEvent(NULL,new BindClassEvent(this,bindName,BindClassEvent::ISROOT));
 		//Now signal the completion for this root
-		sys->currentVm->addEvent(loaderInfo,Class<Event>::getInstanceS("init"));
+		loaderInfo->sendInit();
 		//Wait for handling of all previous events
 		SynchronizationEvent* se=new SynchronizationEvent;
 		bool added=sys->currentVm->addEvent(NULL, se);
@@ -994,7 +994,7 @@ void RootMovieClip::Render(bool maskEnabled)
 	while(1)
 	{
 		//Check if the next frame we are going to play is available
-		if(state.next_FP<frames.size())
+		if(state.FP<frames.size())
 			break;
 
 		l.unlock();
@@ -1074,8 +1074,6 @@ void RootMovieClip::commitFrame(bool another)
 	}
 	else
 		cur_frame=NULL;
-
-	assert_and_throw(frames.size()<=frames.capacity());
 
 	if(framesLoaded==1)
 	{

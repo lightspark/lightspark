@@ -1135,7 +1135,7 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
-	if(th->getRequestStatus()/100 != 3)
+	if(th->getRequestStatus()/100 == 2)
 		th->append((uint8_t*)buffer,added);
 	return added;
 }

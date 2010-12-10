@@ -82,9 +82,37 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
 	{
+		SpinlockLocker l(spinlock);
 		bytesLoaded=b;
 		if(sys && sys->currentVm)
 			sys->currentVm->addEvent(this,Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal));
+		if(loadStatus==INIT_SENT)
+		{
+			//The clip is also complete now
+			Event* e=Class<Event>::getInstanceS("complete");
+			sys->currentVm->addEvent(this,e);
+			e->decRef();
+			loadStatus=COMPLETE;
+		}
+	}
+}
+
+void LoaderInfo::sendInit()
+{
+	Event* e=Class<Event>::getInstanceS("init");
+	sys->currentVm->addEvent(this,e);
+	e->decRef();
+	SpinlockLocker l(spinlock);
+	assert(loadStatus==STARTED);
+	assert(bytesTotal);
+	loadStatus=INIT_SENT;
+	if(bytesLoaded==bytesTotal)
+	{
+		//The clip is also complete now
+		e=Class<Event>::getInstanceS("complete");
+		sys->currentVm->addEvent(this,e);
+		e->decRef();
+		loadStatus=COMPLETE;
 	}
 }
 

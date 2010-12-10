@@ -307,8 +307,11 @@ private:
 	tiny_string url;
 	tiny_string loaderURL;
 	EventDispatcher* sharedEvents;
+	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
+	LOAD_STATUS loadStatus;
+	Spinlock spinlock;
 public:
-	LoaderInfo():bytesLoaded(0),bytesTotal(0)
+	LoaderInfo():bytesLoaded(0),bytesTotal(0),loadStatus(STARTED)
 	{
 	}
 	static void sinit(Class_base* c);
@@ -326,6 +329,7 @@ public:
 		bytesTotal=b;
 	}
 	void setBytesLoaded(uint32_t b);
+	void sendInit();
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer

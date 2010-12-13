@@ -18,10 +18,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "amf3.h"
+#include "amf3_parser.h"
 
 #include <string>
-#include <fstream>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -132,31 +131,5 @@ std::ostream& lightspark::amf3::operator<<(std::ostream& o, const boost::recursi
 		o << r.m_denseSection[i] << endl;
 	}
 	o << "=========" << std::endl;
-}
-
-int main(int argc, char **argv) {
-	std::ifstream input ("amf3.bin");
-	input.unsetf(std::ios::skipws);
-	assert(input);
-	char buf[4096];
-	input.read(buf,4096);
-	int available=input.gcount();
-	assert(available<4096);
-	input.close();
-	char* start=buf;
-	char* end=buf+available;
-
-	std::vector<ValueType> ans;
-	Amf3ParserGrammar theParser;
-
-	bool r = qi::parse(start, end, theParser,ans);
- 	assert(r);
-// 	assert(init == end);
-
-	for (int i=0;i < ans.size();++i)
-	{
-		cout << ans[i] << endl;
-	}
-	
-    return 0;
+	return o;
 }

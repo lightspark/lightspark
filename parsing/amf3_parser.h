@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _AMF3_H
+#ifndef _AMF3_PARSER_H
 
 #include <stdint.h>
 #include <iostream>
@@ -36,10 +36,9 @@ template<class T>
 class ReferenceOrValue
 {
 template<class Y> friend std::ostream& operator<<(std::ostream& o, const ReferenceOrValue<Y>& r);
-private:
+public:
 	enum CONTENTS { NONE=0, REFERENCE, VALUE };
 	CONTENTS contents;
-public:
 	uint32_t reference;
 	T value;
 	ReferenceOrValue():contents(NONE){}
@@ -217,9 +216,9 @@ struct Amf3ParserGrammar : boost::spirit::qi::grammar<char*,std::vector<ValueTyp
 	Amf3ParserGrammar();
 };
 
-};
+}; //namespace amf3
 
-};
+}; //namespace lightspark
 BOOST_FUSION_ADAPT_STRUCT(
 	lightspark::amf3::Array,
 	(lightspark::amf3::Array::AssociativeArray, m_associativeSection)

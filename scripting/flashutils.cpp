@@ -22,6 +22,7 @@
 #include "asobject.h"
 #include "class.h"
 #include "compat.h"
+#include "parsing/amf3_generator.h"
 #include <sstream>
 
 using namespace std;
@@ -57,6 +58,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition),true);
 	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition),true);
 	c->setMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),true);
+	c->setMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),true);
 //	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),true);
 	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),true);
 }
@@ -113,17 +115,61 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	assert_and_throw(args[0]->getPrototype()==Class<ByteArray>::getClass());
 
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
-	int offset=args[1]->toInt();
-	int length=args[2]->toInt();
-	//TODO: Support offset
+	uint32_t offset=args[1]->toInt();
+	uint32_t length=args[2]->toInt();
+	//TODO: Support offset (offset is in the destination!)
 	if(offset!=0)
 		throw UnsupportedException("offset in ByteArray::readBytes");
 
+	//Error checks
+	if(length > th->len)
+	{
+		LOG(LOG_ERROR,"ByteArray::readBytes not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
 	uint8_t* buf=out->getBuffer(length);
 	memcpy(buf,th->bytes+th->position,length);
 	th->position+=length;
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,readObject)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==0);
+	if(th->bytes==NULL)
+	{
+		LOG(LOG_ERROR,"No data to read");
+		return NULL;
+	}
+	std::vector<ASObject*> ret;
+	char* start=(char*)th->bytes;
+	char* end=(char*)th->bytes+th->len;
+	Amf3Deserializer d(start,end);
+	try
+	{
+		d.generateObjects(ret);
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,"Exception caught while parsing AMF3");
+		//TODO: throw AS exception
+	}
+
+	if(ret.size()==0)
+	{
+		LOG(LOG_ERROR,"No objects in the AMF3 data. Returning Undefined");
+		return new Undefined;
+	}
+	if(ret.size()>1)
+	{
+		LOG(LOG_ERROR,"More than one object in the AMF3 data. Returning the first");
+		for(uint32_t i=1;i<ret.size();i++)
+			ret[i]->decRef();
+	}
+	return ret[0];
 }
 
 ASFUNCTIONBODY(ByteArray,_toString)

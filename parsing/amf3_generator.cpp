@@ -40,14 +40,21 @@ static ASObject* createObject(Amf3Deserializer* th, const amf3::ValueType& v)
 {
 	switch(v.contents)
 	{
+		case amf3::ValueType::NULLTYPE:
+			return new Null;
+		case amf3::ValueType::UNDEFINEDTYPE:
+			return new Undefined;
+		case amf3::ValueType::BOOL:
+			return abstract_b(v.boolVal.val);
+		case amf3::ValueType::INTEGER:
+			return abstract_i(v.intVal.val);
+		case amf3::ValueType::UTF8STRING:
+			return Class<ASString>::getInstanceS(getString(th, v.stringVal));
 		case amf3::ValueType::ARRAYTYPE:
 			return createArray(th, v.arrayVal);
-			break;
 		default:
-			cout << "Fail " << v.contents << endl;
-			exit(-1);
+			throw UnsupportedException("Unsupported type in AMF3");
 	}
-	return NULL;
 }
 
 static ASObject* createArray(Amf3Deserializer* th, const amf3::ArrayType& t)
@@ -90,20 +97,3 @@ bool Amf3Deserializer::generateObjects(std::vector<ASObject*>& objs)
 	return true;
 }
 
-/*int main(int argc, char **argv) {
-	std::ifstream input ("../amf3.bin");
-	input.unsetf(std::ios::skipws);
-	assert(input);
-	char buf[4096];
-	input.read(buf,4096);
-	int available=input.gcount();
-	assert(available<4096);
-	input.close();
-	char* start=buf;
-	char* end=buf+available;
-	Amf3Deserializer d(start,end);
-	std::vector<ASObject*> puppa;
-	d.generateObjects(puppa);
-	
-    return 0;
-}*/

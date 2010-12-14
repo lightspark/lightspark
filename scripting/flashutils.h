@@ -38,8 +38,8 @@ friend class Loader;
 friend class URLLoader;
 protected:
 	uint8_t* bytes;
-	unsigned int len;
-	unsigned int position;
+	uint32_t len;
+	uint32_t position;
 	ByteArray(const ByteArray& b);
 public:
 	ByteArray();
@@ -49,6 +49,7 @@ public:
 	ASFUNCTION(_getPosition);
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(readBytes);
+	ASFUNCTION(readObject);
 	ASFUNCTION(_toString);
 
 	/**
@@ -59,6 +60,7 @@ public:
 	*/
 	void acquireBuffer(uint8_t* buf, int bufLen);
 	uint8_t* getBuffer(unsigned int size);
+	uint32_t getLength() const { return len; }
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

@@ -104,9 +104,8 @@ void LoaderInfo::sendInit()
 	e->decRef();
 	SpinlockLocker l(spinlock);
 	assert(loadStatus==STARTED);
-	assert(bytesTotal);
 	loadStatus=INIT_SENT;
-	if(bytesLoaded==bytesTotal)
+	if(bytesTotal && bytesLoaded==bytesTotal)
 	{
 		//The clip is also complete now
 		e=Class<Event>::getInstanceS("complete");

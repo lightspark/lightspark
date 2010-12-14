@@ -925,35 +925,7 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 
 bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	bool valid=false;
-	{
-		Locker l(mutexDisplayList);
-		
-		list<DisplayObject*>::const_iterator dynit=dynamicDisplayList.begin();
-		for(;dynit!=dynamicDisplayList.end();++dynit)
-		{
-			number_t t1,t2,t3,t4;
-			if((*dynit)->getBounds(t1,t2,t3,t4))
-			{
-				if(valid==false)
-				{
-					xmin=t1;
-					xmax=t2;
-					ymin=t3;
-					ymax=t4;
-					valid=true;
-					//Now values are valid
-				}
-				else
-				{
-					xmin=imin(xmin,t1);
-					xmax=imax(xmax,t2);
-					ymin=imin(ymin,t3);
-					ymax=imax(ymax,t4);
-				}
-			}
-		}
-	}
+	bool valid=Sprite::boundsRect(xmin,xmax,ymin,ymax);
 	
 	if(framesLoaded==0) //We end here
 		return valid;

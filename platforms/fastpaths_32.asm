@@ -87,12 +87,12 @@ inner_loop_after_dup:
 	movapd xmm5,xmm0
 	punpcklbw xmm5,xmm3
 
-; Unpack the low part of V1 with zeroes [V1V1]
+; Unpack the low part of V1 with ones [V1V1]
 	movapd xmm6,xmm4
 	pcmpeqb xmm7,xmm7
 	punpcklbw xmm6,xmm7
 
-; Unpack the low and high part of the those temporaries [YUV0]
+; Unpack the low and high part of the those temporaries [YUV1]
 	movapd xmm7,xmm5
 	punpcklwd xmm7,xmm6 ;low part
 	punpckhwd xmm5,xmm6 ;high part
@@ -109,7 +109,7 @@ inner_loop_after_dup:
 	pcmpeqb xmm7,xmm7
 	punpckhbw xmm6,xmm7
 
-; Unpack the low and high part of the those temporaries [YUV0]
+; Unpack the low and high part of the those temporaries [YUV1]
 	movapd xmm7,xmm0
 	punpcklwd xmm7,xmm6 ;low part
 	punpckhwd xmm0,xmm6 ;high part
@@ -215,12 +215,12 @@ inner_loop_after_dup2:
 	movapd xmm5,xmm0
 	punpcklbw xmm5,xmm3
 
-; Unpack the low part of V1 with zeroes [V1V1]
+; Unpack the low part of V1 with ones [V1V1]
 	movapd xmm6,xmm4
 	pcmpeqb xmm7,xmm7
 	punpcklbw xmm6,xmm7
 
-; Unpack the low and high part of the those temporaries [YUV0]
+; Unpack the low and high part of the those temporaries [YUV1]
 	movapd xmm7,xmm5
 	punpcklwd xmm7,xmm6 ;low part
 	punpckhwd xmm5,xmm6 ;high part
@@ -237,7 +237,7 @@ inner_loop_after_dup2:
 	pcmpeqb xmm7,xmm7
 	punpckhbw xmm6,xmm7
 
-; Unpack the low and high part of the those temporaries [YUV0]
+; Unpack the low and high part of the those temporaries [YUV1]
 	movapd xmm7,xmm0
 	punpcklwd xmm7,xmm6 ;low part
 	punpckhwd xmm0,xmm6 ;high part

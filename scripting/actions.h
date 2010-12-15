@@ -69,7 +69,7 @@ public:
 class DoInitActionTag: public DisplayListTag, public ExecutionContext, public DisplayObject
 {
 private:
-	UI16 SpriteID;
+	UI16_SWF SpriteID;
 
 	std::vector<ActionTag*> actions;
 	bool done;
@@ -87,8 +87,8 @@ public:
 class ExportAssetsTag: public Tag
 {
 private:
-	UI16 Count;
-	std::vector<UI16> Tags;
+	UI16_SWF Count;
+	std::vector<UI16_SWF> Tags;
 	std::vector<STRING> Names;
 public:
 	ExportAssetsTag(RECORDHEADER h, std::istream& in);
@@ -98,7 +98,7 @@ class ACTIONRECORDHEADER
 {
 public:
 	UI8 ActionCode;
-	UI16 Length;
+	UI16_SWF Length;
 	ACTIONRECORDHEADER(std::istream& in);
 	ActionTag* createTag(std::istream& in);
 };
@@ -135,9 +135,9 @@ class ActionDefineFunction:public ActionTag, public IFunction
 {
 private:
 	STRING FunctionName;
-	UI16 NumParams;
+	UI16_SWF NumParams;
 	std::vector<STRING> params;
-	UI16 CodeSize;
+	UI16_SWF CodeSize;
 
 	std::vector<ActionTag*> functionActions;
 public:
@@ -163,7 +163,7 @@ class ActionDefineFunction2:public ActionTag, public IFunction, public Execution
 {
 private:
 	STRING FunctionName;
-	UI16 NumParams;
+	UI16_SWF NumParams;
 	UI8 RegisterCount;
 	UB PreloadParentFlag;
 	UB PreloadRootFlag;
@@ -175,7 +175,7 @@ private:
 	UB PreloadThisFlag;
 	UB PreloadGlobalFlag;
 	std::vector<REGISTERPARAM> Parameters;
-	UI16 CodeSize;
+	UI16_SWF CodeSize;
 
 	std::vector<ActionTag*> functionActions;
 public:
@@ -194,7 +194,7 @@ public:
 class ActionJump:public ActionTag
 {
 private:
-	SI16 BranchOffset;
+	SI16_SWF BranchOffset;
 public:
 	ActionJump(std::istream& in);
 	void Execute();
@@ -204,7 +204,7 @@ public:
 class ActionWith:public ActionTag
 {
 private:
-	UI16 Size;
+	UI16_SWF Size;
 public:
 	ActionWith(std::istream& in);
 	void Execute();
@@ -214,7 +214,7 @@ public:
 class ActionIf:public ActionTag
 {
 private:
-	SI16 Offset;
+	SI16_SWF Offset;
 public:
 	ActionIf(std::istream& in);
 	void Execute();
@@ -224,7 +224,7 @@ public:
 class ActionGotoFrame:public ActionTag
 {
 private:
-	UI16 Frame;
+	UI16_SWF Frame;
 public:
 	ActionGotoFrame(std::istream& in);
 	void Execute();
@@ -255,7 +255,7 @@ public:
 class ActionConstantPool : public ActionTag
 {
 private:
-	UI16 Count;
+	UI16_SWF Count;
 	std::vector<STRING> ConstantPool;
 public:
 	ActionConstantPool(std::istream& in);
@@ -674,7 +674,7 @@ private:
 	DOUBLE Double;
 	UI32 Integer;
 	UI8 Constant8;
-	UI16 Constant16;*/
+	UI16_SWF Constant16;*/
 
 	std::vector<ASObject*> Objects;
 public:
@@ -686,7 +686,7 @@ public:
 class BUTTONCONDACTION
 {
 public:
-	UI16 CondActionSize;
+	UI16_SWF CondActionSize;
 	UB CondIdleToOverDown;
 	UB CondOutDownToIdle;
 	UB CondOutDownToOverDown;

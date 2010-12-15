@@ -86,10 +86,10 @@ protected:
 public:
 	int Depth;
 	tiny_string name;
-	UI16 CharacterId;
+	UI16_SWF CharacterId;
 	CXFORMWITHALPHA ColorTransform;
-	UI16 Ratio;
-	UI16 ClipDepth;
+	UI16_SWF Ratio;
+	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	DisplayObjectContainer* parent;
 	DisplayObject();

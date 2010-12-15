@@ -1917,99 +1917,105 @@ ASObject* method_info::getOptional(unsigned int i)
 istream& lightspark::operator>>(istream& in, u32& v)
 {
 	int i=0;
-	uint8_t t,t2;
 	v.val=0;
+	uint8_t t;
 	do
 	{
 		in.read((char*)&t,1);
-		t2=t;
-		t&=0x7f;
-
-		v.val|=(t<<i);
-		i+=7;
-		if(i==35)
+		//No more than 5 bytes should be read
+		if(i==28)
 		{
-			if(t>15)
-				LOG(LOG_ERROR,_("parsing u32 ") << (int)t);
+			//Only the first 4 bits should be used to reach 32 bits
+			if((t&0xf0))
+				LOG(LOG_ERROR,"Error in u32");
+			uint8_t t2=(t&0xf);
+			v.val|=(t2<<i);
 			break;
 		}
+		else
+		{
+			uint8_t t2=(t&0x7f);
+			v.val|=(t2<<i);
+			i+=7;
+		}
 	}
-	while(t2&0x80);
+	while(t&0x80);
 	return in;
 }
 
 istream& lightspark::operator>>(istream& in, s32& v)
 {
 	int i=0;
-	uint8_t t,t2;
 	v.val=0;
+	uint8_t t;
+	bool signExtend=true;
 	do
 	{
 		in.read((char*)&t,1);
-		t2=t;
-		t&=0x7f;
-
-		v.val|=(t<<i);
-		i+=7;
-		if(i==35)
+		//No more than 5 bytes should be read
+		if(i==28)
 		{
-			if(t>15)
-			{
-				LOG(LOG_ERROR,_("parsing s32"));
-			}
+			//Only the first 4 bits should be used to reach 32 bits
+			if((t&0xf0))
+				LOG(LOG_ERROR,"Error in s32");
+			uint8_t t2=(t&0xf);
+			v.val|=(t2<<i);
+			//The number is filled, no sign extension
+			signExtend=false;
 			break;
 		}
+		else
+		{
+			uint8_t t2=(t&0x7f);
+			v.val|=(t2<<i);
+			i+=7;
+		}
 	}
-	while(t2&0x80);
+	while(t&0x80);
 /*	//Sign extension usage not clear at all
-	if(t2&0x40)
+	if(signExtend && t&0x40)
 	{
 		//Sign extend
-		for(i;i<32;i++)
-			v.val|=(1<<i);
+		v.val|=(0xffffffff<<i);
 	}*/
 	return in;
 }
 
 istream& lightspark::operator>>(istream& in, s24& v)
 {
-	int i=0;
-	v.val=0;
-	uint8_t t;
-	for(i=0;i<24;i+=8)
-	{
-		in.read((char*)&t,1);
-		v.val|=(t<<i);
-	}
-
-	if(t&0x80)
-	{
-		//Sign extend
-		for(;i<32;i++)
-			v.val|=(1<<i);
-	}
+	uint32_t ret=0;
+	in.read((char*)&ret,3);
+	v.val=LittleEndianToSignedHost24(ret);
 	return in;
 }
 
 istream& lightspark::operator>>(istream& in, u30& v)
 {
 	int i=0;
-	uint8_t t,t2;
 	v.val=0;
+	uint8_t t;
 	do
 	{
 		in.read((char*)&t,1);
-		t2=t;
-		t&=0x7f;
-
-		v.val|=(t<<i);
-		i+=7;
-		if(i>29)
-			LOG(LOG_ERROR,_("parsing u30"));
+		//No more than 5 bytes should be read
+		if(i==28)
+		{
+			//Only the first 2 bits should be used to reach 30 bits
+			if((t&0xfc))
+				LOG(LOG_ERROR,"Error in u30");
+			uint8_t t2=(t&0x3);
+			v.val|=(t2<<i);
+			break;
+		}
+		else
+		{
+			uint8_t t2=(t&0x7f);
+			v.val|=(t2<<i);
+			i+=7;
+		}
 	}
-	while(t2&0x80);
-	if(v.val&0xc0000000)
-			LOG(LOG_ERROR,_("parsing u30"));
+	while(t&0x80);
+	assert((v.val&0xc0000000)==0);
 	return in;
 }
 
@@ -2025,16 +2031,21 @@ istream& lightspark::operator>>(istream& in, u16& v)
 {
 	uint16_t t;
 	in.read((char*)&t,2);
-	SwfToLe16(t);
-	v.val=t;
+	v.val=LittleEndianToHost16(t);
 	return in;
 }
 
 istream& lightspark::operator>>(istream& in, d64& v)
 {
-	//Should check if this is right
-	in.read((char*)&v.val,8);
-	SwfToLe(v.val);
+	union double_reader
+	{
+		uint64_t dump;
+		double value;
+	};
+	double_reader dummy;
+	in.read((char*)&dummy.dump,8);
+	dummy.dump=LittleEndianToHost64(dummy.dump);
+	v.val=dummy.value;
 	return in;
 }
 

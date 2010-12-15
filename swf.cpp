@@ -838,10 +838,10 @@ bool ParseThread::parseHeader()
 {
 	UI8 Signature[3];
 	UI8 Version;
-	UI32 FileLength;
+	UI32_SWF FileLength;
 	RECT FrameSize;
-	UI16 FrameRate;
-	UI16 FrameCount;
+	UI16_SWF FrameRate;
+	UI16_SWF FrameCount;
 
 	f >> Signature[0] >> Signature[1] >> Signature[2];
 

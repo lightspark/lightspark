@@ -454,7 +454,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h)
 	LOG(LOG_TRACE,_("DefineFont"));
 	in >> FontID;
 
-	UI16 t;
+	UI16_SWF t;
 	int NumGlyphs=0;
 	in >> t;
 	OffsetTable.push_back(t);
@@ -497,7 +497,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	in >> NumGlyphs;
 	if(FontFlagsWideOffsets)
 	{
-		UI32 t;
+		UI32_SWF t;
 		for(int i=0;i<NumGlyphs;i++)
 		{
 			in >> t;
@@ -508,7 +508,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	}
 	else
 	{
-		UI16 t;
+		UI16_SWF t;
 		for(int i=0;i<NumGlyphs;i++)
 		{
 			in >> t;
@@ -527,7 +527,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	{
 		for(int i=0;i<NumGlyphs;i++)
 		{
-			UI16 t;
+			UI16_SWF t;
 			in >> t;
 			CodeTable.push_back(t);
 		}
@@ -547,7 +547,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 
 		for(int i=0;i<NumGlyphs;i++)
 		{
-			SI16 t;
+			SI16_SWF t;
 			in >> t;
 			FontAdvanceTable.push_back(t);
 		}
@@ -586,7 +586,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	in >> NumGlyphs;
 	if(FontFlagsWideOffsets)
 	{
-		UI32 t;
+		UI32_SWF t;
 		for(int i=0;i<NumGlyphs;i++)
 		{
 			in >> t;
@@ -597,7 +597,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	}
 	else
 	{
-		UI16 t;
+		UI16_SWF t;
 		for(int i=0;i<NumGlyphs;i++)
 		{
 			in >> t;
@@ -613,7 +613,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	}
 	for(int i=0;i<NumGlyphs;i++)
 	{
-		UI16 t;
+		UI16_SWF t;
 		in >> t;
 		CodeTable.push_back(t);
 	}
@@ -623,7 +623,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 
 		for(int i=0;i<NumGlyphs;i++)
 		{
-			SI16 t;
+			SI16_SWF t;
 			in >> t;
 			FontAdvanceTable.push_back(t);
 		}
@@ -1631,7 +1631,7 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 	LOG(LOG_NO_INFO,_("SWF Info:") << 
 	endl << "\tProductId: " << ProductId <<
 	endl << "\tEdition: " << Edition <<
-	endl << "\tVersion: " << UI32(MajorVersion) << "." << UI32(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
+	endl << "\tVersion: " << int(MajorVersion) << "." << int(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
 	endl << "\tCompileTime: " << longlongTime);
 }
 
@@ -1848,11 +1848,11 @@ DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
 
 	//Note the switch to hex formatting on the ostream, and switch back to dec
 	LOG(LOG_NO_INFO,_("DebugId ") << hex <<
-		UI32(DebugId[0]) << UI32(DebugId[1]) << UI32(DebugId[2]) << UI32(DebugId[3]) << "-" <<
-		UI32(DebugId[4]) << UI32(DebugId[5]) << "-" <<
-		UI32(DebugId[6]) << UI32(DebugId[7]) << "-" <<
-		UI32(DebugId[8]) << UI32(DebugId[9]) << "-" <<
-		UI32(DebugId[10]) << UI32(DebugId[11]) << UI32(DebugId[12]) << UI32(DebugId[13]) << UI32(DebugId[14]) << UI32(DebugId[15]) <<
+		int(DebugId[0]) << int(DebugId[1]) << int(DebugId[2]) << int(DebugId[3]) << "-" <<
+		int(DebugId[4]) << int(DebugId[5]) << "-" <<
+		int(DebugId[6]) << int(DebugId[7]) << "-" <<
+		int(DebugId[8]) << int(DebugId[9]) << "-" <<
+		int(DebugId[10]) << int(DebugId[11]) << int(DebugId[12]) << int(DebugId[13]) << int(DebugId[14]) << int(DebugId[15]) <<
 		dec);
 }
 
@@ -1926,7 +1926,7 @@ DefineBitsJPEG2Tag::~DefineBitsJPEG2Tag()
 DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),alphaData(NULL)
 {
 	LOG(LOG_TRACE,_("DefineBitsJPEG3Tag Tag"));
-	UI32 dataSize;
+	UI32_SWF dataSize;
 	in >> CharacterId >> dataSize;
 	//Read image data
 	data=new(nothrow) uint8_t[dataSize];

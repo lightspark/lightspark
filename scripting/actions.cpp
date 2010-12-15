@@ -1267,7 +1267,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			}
 			case 7:
 			{
-				UI32 tmp;
+				UI32_SWF tmp;
 				in >> tmp;
 				//Objects.push_back(new Integer(tmp));
 				r-=4;
@@ -1286,7 +1286,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			}
 			case 9:
 			{
-				UI16 i;
+				UI16_SWF i;
 				in >> i;
 				//ConstantReference* c=new ConstantReference(i);
 				//Objects.push_back(c);

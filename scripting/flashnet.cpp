@@ -769,7 +769,7 @@ void NetStream::execute()
 				//Check if threadAbort has been called, if so, stop this loop
 				if(closed)
 					done = true;
-				UI32FLV PreviousTagSize;
+				UI32_FLV PreviousTagSize;
 				s >> PreviousTagSize;
 				assert_and_throw(PreviousTagSize==prevSize);
 

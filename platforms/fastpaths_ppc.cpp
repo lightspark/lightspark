@@ -21,8 +21,7 @@
 #include <inttypes.h>
 #include <altivec.h>
 
-void fastYUV420ChannelsToYUV0Buffer_AltivecAligned(uint8_t* y, uint8_t* u, 
-			uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
+void lightspark::fastYUV420ChannelsToYUV0Buffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
 {
 	printf("HEy!");
 	vector unsigned char y_vec;
@@ -79,20 +78,4 @@ void fastYUV420ChannelsToYUV0Buffer_AltivecAligned(uint8_t* y, uint8_t* u,
 			p_out += 16;
 		}
 	}
-}
-
-extern "C" {
-	void fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(uint8_t* y, uint8_t* u, 
-			uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
-	{
-		fastYUV420ChannelsToYUV0Buffer_AltivecAligned(y,u,v,out,width,height);
-	}
-
-
-	void fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(uint8_t* y, uint8_t* u, 
-			uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
-	{
-		fastYUV420ChannelsToYUV0Buffer_AltivecAligned(y,u,v,out,width,height);
-	}
-
 }

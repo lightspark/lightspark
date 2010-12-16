@@ -255,11 +255,7 @@ void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h) const
 	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
 	//At least a frame is available
 	const YUVBuffer& cur=buffers.front();
-	//If the width is compatible with full aligned accesses use the aligned version of the packer
-	if(frameWidth%32==0)
-		fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
-	else
-		fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
+	fastYUV420ChannelsToYUV0Buffer(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
 }
 
 void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const

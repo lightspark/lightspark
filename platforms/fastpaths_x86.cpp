@@ -20,19 +20,21 @@
 #include "fastpaths.h"
 #include <inttypes.h>
 
-void lightspark::fastYUV420ChannelsToYUV0Buffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
+extern "C"
 {
-	for(uint32_t i=0;i<height;i++)
-	{
-		for(uint32_t j=0;j<width;j++)
-		{
-			uint32_t pixelCoordFull=i*width+j;
-			uint32_t pixelCoordHalf=(i/2)*(width/2)+(j/2);
-			out[pixelCoordFull*4+1]=v[pixelCoordHalf];
-			out[pixelCoordFull*4+2]=u[pixelCoordHalf];
-			out[pixelCoordFull*4+3]=y[pixelCoordFull];
-			out[pixelCoordFull*4+0]=0xff;
-		}
-	}
+	void fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(uint8_t* y, uint8_t* u, 
+			uint8_t* v, uint8_t* out, uint32_t width, uint32_t height);
+	void fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(uint8_t* y, uint8_t* u, 
+			uint8_t* v, uint8_t* out, uint32_t width, uint32_t height);
 }
 
+using namespace lightspark;
+
+void lightspark::fastYUV420ChannelsToYUV0Buffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
+{
+	//If the width is compatible with full aligned accesses use the aligned version of the packer
+	if(width%32==0)
+		fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(y,u,v,out,width,height);
+	else
+		fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(y,u,v,out,width,height);
+}

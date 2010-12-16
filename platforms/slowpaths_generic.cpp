@@ -1,0 +1,56 @@
+/**************************************************************************
+  Lightspark, a free flash player implementation
+
+  Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Lesser General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ **************************************************************************/
+
+#include "fastpaths.h"
+#include <inttypes.h>
+
+void slowYUV420ChannelsToYUV0Buffer_Generic(uint8_t* y, uint8_t* u, 
+			uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
+{
+	for(uint32_t i=0;i<height;i++)
+	{
+		for(uint32_t j=0;j<width;j++)
+		{
+			uint32_t pixelCoordFull=i*width+j;
+			uint32_t pixelCoordHalf=(i/2)*(width/2)+(j/2);
+			out[pixelCoordFull*4+1]=v[pixelCoordHalf];
+			out[pixelCoordFull*4+2]=u[pixelCoordHalf];
+			out[pixelCoordFull*4+3]=y[pixelCoordFull];
+			out[pixelCoordFull*4+0]=0xff;
+		}
+	}
+}
+
+extern "C"
+{
+	void fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(uint8_t* y, uint8_t* u, 
+			uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
+	{
+		slowYUV420ChannelsToYUV0Buffer_Generic(y,u,v,out,width,height);
+	}
+
+
+	void fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(uint8_t* y, uint8_t* u, 
+			uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
+	{
+		slowYUV420ChannelsToYUV0Buffer_Generic(y,u,v,out,width,height);
+	}
+
+}
+

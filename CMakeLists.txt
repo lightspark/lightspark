@@ -310,8 +310,8 @@ IF(${i386})
 ELSEIF(${x86_64})
   #Why is there a particular faspaths_32vc but none for 64 bit?
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_64.asm)
-ELSEIF(${ppc})
-  SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_ppc.cpp)
+ELSE()
+  SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
 ENDIF(${i386})
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})

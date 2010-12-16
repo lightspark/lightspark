@@ -643,6 +643,7 @@ public:
 	}
 
 	static bool strictEqualImpl(ASObject*, ASObject*);
+	static void publicHandleEvent(EventDispatcher* dispatcher, Event* event);
 
 };
 

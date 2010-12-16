@@ -1013,33 +1013,41 @@ int ABCVm::getEventQueueSize()
 	return events_queue.size();
 }
 
-void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
+void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, Event* event)
+{
+	assert(dispatcher);
+
+	//TODO: implement capture phase
+	//Do target phase
+	assert_and_throw(event->target==NULL);
+	event->target=dispatcher;
+	event->currentTarget=dispatcher;
+	dispatcher->handleEvent(event);
+	//Do bubbling phase
+	if(event->bubbles && dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
+	{
+		DisplayObjectContainer* cur=static_cast<DisplayObject*>(dispatcher)->parent;
+		while(cur)
+		{
+			event->currentTarget=cur;
+			cur->handleEvent(event);
+			cur=cur->parent;
+		}
+	}
+	//Reset events so they might be recycled
+	event->currentTarget=NULL;
+	event->target=NULL;
+	dispatcher->decRef();
+	event->decRef();
+}
+
+void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 {
 	e.second->check();
 	if(e.first)
 	{
-		//TODO: implement capture phase
-		//Do target phase
-		Event* event=e.second;
-		assert_and_throw(event->target==NULL);
-		event->target=e.first;
-		event->currentTarget=e.first;
-		e.first->handleEvent(event);
-		//Do bubbling phase
-		if(event->bubbles && e.first->prototype->isSubClass(Class<DisplayObject>::getClass()))
-		{
-			DisplayObjectContainer* cur=static_cast<DisplayObject*>(e.first)->parent;
-			while(cur)
-			{
-				event->currentTarget=cur;
-				cur->handleEvent(event);
-				cur=cur->parent;
-			}
-		}
-		//Reset events so they might be recycled
-		event->currentTarget=NULL;
-		event->target=NULL;
-		e.first->decRef();
+		//decRef of both argments happens inside the function
+		publicHandleEvent(e.first, e.second);
 	}
 	else
 	{
@@ -1103,8 +1111,8 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 			default:
 				throw UnsupportedException("Not supported event");
 		}
+		e.second->decRef();
 	}
-	e.second->decRef();
 }
 
 /*! \brief enqueue an event, a reference is acquired

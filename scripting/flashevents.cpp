@@ -364,10 +364,18 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	Event* e=Class<Event>::cast(args[0]);
 	if(e==NULL || th==NULL)
 		return abstract_b(false);
-	//CHECK: maybe is to be cloned
-	e->incRef();
 	assert_and_throw(e->type!="");
-	th->handleEvent(e);
+	if(e->target)
+	{
+		//The object must be cloned
+		//TODO: support cloning of actual type
+		Event* newEvent=Class<Event>::getInstanceS(e->type,e->bubbles);
+		e=newEvent;
+	}
+	else
+		e->incRef();
+	th->incRef();
+	ABCVm::publicHandleEvent(th, e);
 	return abstract_b(true);
 }
 

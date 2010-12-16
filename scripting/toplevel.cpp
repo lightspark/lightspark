@@ -3428,7 +3428,7 @@ ASFUNCTIONBODY(lightspark,print)
 
 ASFUNCTIONBODY(lightspark,trace)
 {
-	for(intptr_t i = 0; i< argslen;i++)
+	for(uint32_t i = 0; i< argslen;i++)
 	{
 		if(i > 0)
 			cerr << " ";

@@ -185,9 +185,8 @@ inline uint16_t LittleEndianToHost16(uint16_t x)
 
 inline uint32_t LittleEndianToSignedHost24(uint32_t x)
 {
-	assert(x<0x1000000);
-	//Discard the lowest byte, as it was the highest
-	uint32_t ret=le32toh(x)>>8;
+	uint32_t ret=le32toh(x);
+	assert(ret<0x1000000);
 	//Sign extend
 	if(ret&0x800000)
 		ret|=0xff000000;
@@ -197,8 +196,7 @@ inline uint32_t LittleEndianToSignedHost24(uint32_t x)
 inline uint32_t LittleEndianToUnsignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
-	//Discard the lowest byte, as it was the highest
-	uint32_t ret=le32toh(x)>>8;
+	uint32_t ret=le32toh(x);
 	return ret;
 }
 
@@ -219,8 +217,9 @@ inline uint16_t BigEndianToHost16(uint16_t x)
 
 inline uint32_t BigEndianToSignedHost24(uint32_t x)
 {
-	assert(x<0x1000000);
 	//Sign extend
+	x>>=8;
+	assert(x<0x1000000);
 	if(x&0x800000)
 		x|=0xff000000;
 	return x;
@@ -228,6 +227,7 @@ inline uint32_t BigEndianToSignedHost24(uint32_t x)
 
 inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 {
+	x>>=8;
 	assert(x<0x1000000);
 	return x;
 }

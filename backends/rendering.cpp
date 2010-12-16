@@ -32,6 +32,13 @@
 #include <fontconfig/fontconfig.h>
 #endif
 
+//The interpretation of texture data change with the endianness
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8_REV
+#else
+#define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8
+#endif
+
 using namespace lightspark;
 using namespace std;
 
@@ -970,7 +977,7 @@ GLuint RenderThread::allocateNewGLTexture() const
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	//Allocate the texture
 	while(glGetError()!=GL_NO_ERROR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, 0);
 	GLenum err=glGetError();
 	if(err)
 	{
@@ -1198,7 +1205,7 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*128);
 		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*128);
 		while(glGetError()!=GL_NO_ERROR);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_BYTE, data);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, data);
 		assert(glGetError()!=GL_INVALID_OPERATION);
 	}
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);

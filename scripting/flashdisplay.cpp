@@ -183,6 +183,7 @@ ASFUNCTIONBODY(Loader,load)
 	assert_and_throw(argslen > 0 && args[0] && argslen <= 2);
 	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<URLRequest>::getClass()));
 	URLRequest* r=static_cast<URLRequest*>(args[0]);
+	assert_and_throw(r->method==URLRequest::GET);
 	th->url=r->url;
 	th->source=URL;
 	//To be decreffed in jobFence

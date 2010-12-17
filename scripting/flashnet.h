@@ -52,6 +52,12 @@ public:
 	ASFUNCTION(_setMethod);
 };
 
+class URLRequestMethod: public ASObject
+{
+public:
+	static void sinit(Class_base*);
+};
+
 class URLVariables: public ASObject
 {
 public:

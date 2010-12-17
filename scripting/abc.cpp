@@ -261,6 +261,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getClass());
 	builtin->setVariableByQName("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getClass());
 	builtin->setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());
+	builtin->setVariableByQName("URLRequestMethod","flash.net",Class<URLRequestMethod>::getClass());
 	builtin->setVariableByQName("URLVariables","flash.net",Class<URLVariables>::getClass());
 	builtin->setVariableByQName("SharedObject","flash.net",Class<SharedObject>::getClass());
 	builtin->setVariableByQName("ObjectEncoding","flash.net",Class<ObjectEncoding>::getClass());

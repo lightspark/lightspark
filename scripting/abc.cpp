@@ -111,16 +111,7 @@ DoABCDefineTag::~DoABCDefineTag()
 void DoABCDefineTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
-	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
-	SynchronizationEvent* se=new SynchronizationEvent;
-	bool added=sys->currentVm->addEvent(NULL,se);
-	if(!added)
-	{
-		se->decRef();
-		throw RunTimeException("Could not add event");
-	}
-	se->wait();
-	se->decRef();
+	sys->currentVm->syncVMEvent(new ABCContextInitEvent(context));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)

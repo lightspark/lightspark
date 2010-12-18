@@ -65,10 +65,12 @@ void dumpDisplayList(list<DisplayObject*>& l)
 	}
 }
 
-void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
+void Frame::initABCControls(MovieClip* parent)
 {
-	if(!initialized)
+	if(!controlsInitialized)
 	{
+		controlsInitialized=true;
+
 		//Execute control tags for this frame
 		//Only the root movie clip can have control tags
 		if(!controls.empty())
@@ -93,6 +95,14 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 				//Now the bindings are effective for all tags
 			}
 		}
+	}
+}
+
+void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
+{
+	if(!initialized)
+	{
+		initABCControls(parent);
 
 		//Update the displayList using the tags in this frame
 		std::list<DisplayListTag*>::iterator it=blueprint.begin();

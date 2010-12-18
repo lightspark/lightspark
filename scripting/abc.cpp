@@ -1181,6 +1181,40 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	return true;
 }
 
+/*! \brief enqueue an event and wait until completed
+ * \param ev event that will be sent
+ *
+ * When called from VM thread, handle the event and return. When
+ * called from other threads, enqueue the event and wait until VM
+ * thread catches up.
+ */
+bool ABCVm::syncVMEvent(Event* ev)
+{
+	//If the system should terminate new events are not accepted
+	if(m_sys->shouldTerminate())
+		return false;
+	
+	if(isVmThread)
+	{
+		handleEvent(make_pair<EventDispatcher*>(NULL,ev));
+		return true;
+	}
+	else
+	{
+		bool res=addEvent(NULL,ev);
+		SynchronizationEvent* se=new SynchronizationEvent;
+		bool added=addEvent(NULL,se);
+		if(!added)
+		{
+			se->decRef();
+			throw RunTimeException("Could not add event");
+		}
+		se->wait();
+		se->decRef();
+		return res;
+	}
+}
+
 void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* const* args, const unsigned int argslen, bool isRoot)
 {
 	//It seems to be acceptable for the same base to be binded multiple times,

@@ -714,21 +714,21 @@ ASFUNCTIONBODY(MovieClip,stop)
 ASFUNCTIONBODY(MovieClip,gotoAndStop)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
+	int next_frame;
 	assert_and_throw(argslen==1);
 	if(args[0]->getObjectType()==T_STRING)
 	{
 		uint32_t dest=th->getFrameIdByLabel(args[0]->toString());
 		if(dest==0xffffffff)
 			throw RunTimeException("MovieClip::gotoAndStop frame does not exists");
-		th->state.next_FP=dest;
+		next_frame=dest;
 	}
 	else
-		th->state.next_FP=args[0]->toInt();
+		next_frame=args[0]->toInt();
 
 	//TODO: check, should wrap around?
-	th->state.next_FP%=th->state.max_FP;
-	th->state.explicit_FP=true;
-	th->state.stop_FP=true;
+	next_frame%=th->state.max_FP;
+	sys->currentVm->syncVMEvent(new FrameChangeEvent(next_frame,true,th));
 	return NULL;
 }
 
@@ -736,7 +736,7 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->state.max_FP);
-	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,th));
+	sys->currentVm->syncVMEvent(new FrameChangeEvent(th->state.FP+1,th->state.stop_FP,th));
 	return NULL;
 }
 

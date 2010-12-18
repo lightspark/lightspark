@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_utils_Dicionary_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import flash.utils.Dictionary;
+	private function appComplete():void
+	{
+		var dict:flash.utils.Dictionary=new flash.utils.Dictionary;
+		Tests.assertEquals(false, dict.hasOwnProperty(this), "hasOwnProperty on non existant Dictionary item");
+		dict[this]="Test";
+		Tests.assertEquals(false, dict.hasOwnProperty(this), "hasOwnProperty on existant Dictionary item");
+
+		Tests.report(visual, this.name);
+	}
+ ]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

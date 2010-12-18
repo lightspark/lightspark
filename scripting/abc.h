@@ -632,6 +632,7 @@ public:
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
 	bool addEvent(EventDispatcher*,Event*) DLL_PUBLIC;
+	bool syncVMEvent(Event*) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
 

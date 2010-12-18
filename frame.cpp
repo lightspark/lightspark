@@ -77,21 +77,6 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 			for(unsigned int i=0;i<controls.size();i++)
 				controls[i]->execute(parent->getRoot());
 			controls.clear();
-
-			if(sys->currentVm)
-			{
-				//We stop execution until execution engine catches up
-				SynchronizationEvent* se=new SynchronizationEvent;
-				bool added=sys->currentVm->addEvent(NULL, se);
-				if(!added)
-				{
-					se->decRef();
-					throw RunTimeException("Could not add event");
-				}
-				se->wait();
-				se->decRef();
-				//Now the bindings are effective for all tags
-			}
 		}
 
 		//Update the displayList using the tags in this frame

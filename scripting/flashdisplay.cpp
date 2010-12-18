@@ -257,6 +257,7 @@ void Loader::execute()
 			sys->downloadManager->destroy(downloader);
 			return;
 		}
+		sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("open"));
 		istream s(downloader);
 		ParseThread* local_pt=new ParseThread(local_root,s);
 		local_pt->run();

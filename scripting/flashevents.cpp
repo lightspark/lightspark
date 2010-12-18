@@ -70,6 +70,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS("addedToStage"));
 	c->setVariableByQName("REMOVED_FROM_STAGE","",Class<ASString>::getInstanceS("removedFromStage"));
 	c->setVariableByQName("INIT","",Class<ASString>::getInstanceS("init"));
+	c->setVariableByQName("OPEN","",Class<ASString>::getInstanceS("open"));
 	c->setVariableByQName("CLOSE","",Class<ASString>::getInstanceS("close"));
 	c->setVariableByQName("ADDED","",Class<ASString>::getInstanceS("added"));
 	c->setVariableByQName("COMPLETE","",Class<ASString>::getInstanceS("complete"));

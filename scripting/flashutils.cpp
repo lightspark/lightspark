@@ -449,11 +449,11 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	map<ASObject*, ASObject*>::iterator it;
 	getIteratorByMultiname(name, it);
 	
-	assert_and_throw(it != data.end());
-	
-	it->second->decRef();
-	data.erase(it);
-
+	if(it != data.end())
+	{
+		it->second->decRef();
+		data.erase(it);
+	}
 	//This is ugly, but at least we are sure that we own name_o
 	multiname* tmp=const_cast<multiname*>(&name);
 	tmp->name_o=NULL;
@@ -574,6 +574,7 @@ bool Dictionary::nextName(unsigned int index, ASObject*& out)
 	for(unsigned int i=0;i<index;i++)
 		++it;
 	out=it->first;
+	out->incRef();
 	return true;
 }
 

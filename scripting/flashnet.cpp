@@ -244,7 +244,7 @@ void URLLoader::execute()
 				ByteArray* byteArray=Class<ByteArray>::getInstanceS();
 				byteArray->acquireBuffer(buf,downloader->getLength());
 				data=byteArray;
-				//The buffers must not be deleted, it's now handled bt the ByteArray instance
+				//The buffers must not be deleted, it's now handled by the ByteArray instance
 			}
 			else if(dataFormat=="text")
 			{

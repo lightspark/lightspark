@@ -151,10 +151,7 @@ private:
 		throw RunTimeException("Class_function::buildInstanceTraits");
 	}
 public:
-	//Class_function is both used as the prototype for each function and as the Function classs object
-	Class_function():Class_base(QName("Function","")),f(NULL),asprototype(NULL){}
-	Class_function(IFunction* _f, ASObject* _p):Class_base(QName("Function","")),f(_f),asprototype(_p){}
-	tiny_string class_name;
+	Class_function(IFunction* _f, ASObject* _p);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL)
 	{
 		ASObject* ret=Class_base::getVariableByMultiname(name,skip_impl, base);
@@ -179,7 +176,6 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
-	static Class_function* getClass();
 };
 
 class IFunction: public ASObject

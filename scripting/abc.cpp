@@ -148,7 +148,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Infinity","",abstract_d(numeric_limits<double>::infinity()));
 	builtin->setVariableByQName("String","",Class<ASString>::getClass());
 	builtin->setVariableByQName("Array","",Class<Array>::getClass());
-	builtin->setVariableByQName("Function","",Class_function::getClass());
+	builtin->setVariableByQName("Function","",Class<IFunction>::getClass());
 	builtin->setVariableByQName("undefined","",new Undefined);
 	builtin->setVariableByQName("Math","",Class<Math>::getClass());
 	builtin->setVariableByQName("Date","",Class<Date>::getClass());
@@ -1332,10 +1332,6 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	}
 	else
 	{
-		//Special cases
-		if(obj->getObjectType()==T_FUNCTION && type==Class_function::getClass())
-			return true;
-
 		real_ret=obj->getObjectType()==type->getObjectType();
 		LOG(LOG_CALLS,_("isType on non classed object ") << real_ret);
 		return real_ret;

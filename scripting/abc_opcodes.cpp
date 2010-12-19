@@ -677,7 +677,7 @@ void ABCVm::construct(call_context* th, int m)
 
 				//Now add our prototype
 				sf->incRef();
-				ret->prototype=new Class_function(sf,asp);
+				ret->setPrototype(new Class_function(sf,asp));
 			}
 			break;
 		}
@@ -1797,10 +1797,6 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	}
 	else
 	{
-		//Special cases
-		if(obj->getObjectType()==T_FUNCTION && type==Class_function::getClass())
-			return true;
-
 		real_ret=obj->getObjectType()==type->getObjectType();
 		LOG(LOG_CALLS,_("isTypelate on non classed object ") << real_ret);
 		obj->decRef();
@@ -1819,7 +1815,6 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,_("asTypelate"));
-	assert_and_throw(obj->getObjectType()!=T_FUNCTION);
 
 	assert_and_throw(type->getObjectType()==T_CLASS);
 	Class_base* c=static_cast<Class_base*>(type);
@@ -1827,7 +1822,7 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
 		bool real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
-		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"_(":")not _(") << ")subclass of " << c->class_name);
+		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"":_("not ")) << _("subclass of ") << c->class_name);
 		type->decRef();
 		if(real_ret)
 			return obj;
@@ -1861,7 +1856,7 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 
 	bool real_ret=objc->isSubClass(c);
 	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?_(" "):_("not ")) 
-			<< "subclass of " << c->class_name);
+			<< _("subclass of ") << c->class_name);
 	type->decRef();
 	if(real_ret)
 		return obj;
@@ -2001,7 +1996,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 			//Now add our prototype
 			sf->incRef();
-			ret->prototype=new Class_function(sf,asp);
+			ret->setPrototype(new Class_function(sf,asp));
 		}
 	}
 	else

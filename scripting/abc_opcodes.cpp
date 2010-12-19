@@ -2359,11 +2359,11 @@ void ABCVm::call(call_context* th, int m)
 void ABCVm::deleteProperty(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_NOT_IMPLEMENTED,_("deleteProperty ") << *name);
+	LOG(LOG_CALLS,_("deleteProperty ") << *name);
 	ASObject* obj=th->runtime_stack_pop();
 	obj->deleteVariableByMultiname(*name);
 
-	//Now we assume thta all objects are dynamic
+	//TODO: Now we assume that all objects are dynamic
 	th->runtime_stack_push(abstract_b(true));
 
 	obj->decRef();

@@ -298,6 +298,8 @@ public:
 	//void Render();
 };
 
+class Loader;
+
 class LoaderInfo: public EventDispatcher
 {
 friend class RootMovieClip;
@@ -307,13 +309,13 @@ private:
 	tiny_string url;
 	tiny_string loaderURL;
 	EventDispatcher* sharedEvents;
+	Loader* loader;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
 	LOAD_STATUS loadStatus;
 	Spinlock spinlock;
 public:
-	LoaderInfo():bytesLoaded(0),bytesTotal(0),loadStatus(STARTED)
-	{
-	}
+	LoaderInfo():bytesLoaded(0),bytesTotal(0),loader(NULL),loadStatus(STARTED) {}
+	LoaderInfo(Loader* l):bytesLoaded(0),bytesTotal(0),loader(l),loadStatus(STARTED) {}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -323,6 +325,7 @@ public:
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getApplicationDomain);
+	ASFUNCTION(_getLoader);
 	ASFUNCTION(_getSharedEvents);
 	void setBytesTotal(uint32_t b)
 	{
@@ -357,6 +360,7 @@ public:
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
 	ASFUNCTION(_getContentLoaderInfo);
+	ASFUNCTION(_getContent);
 	int getDepth() const
 	{
 		return 0;
@@ -454,6 +458,7 @@ public:
 	ASFUNCTION(_getStageHeight);
 	ASFUNCTION(_getScaleMode);
 	ASFUNCTION(_setScaleMode);
+	ASFUNCTION(_getLoaderInfo);
 };
 
 class StageScaleMode: public ASObject

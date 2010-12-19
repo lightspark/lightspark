@@ -67,6 +67,7 @@ void LoaderInfo::sinit(Class_base* c)
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderURL),true);
+	c->setGetterByQName("loader","",Class<IFunction>::getFunction(_getLoader),true);
 	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL),true);
 	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
 	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
@@ -129,6 +130,18 @@ ASFUNCTIONBODY(LoaderInfo,_getLoaderURL)
 	return Class<ASString>::getInstanceS(th->loaderURL);
 }
 
+ASFUNCTIONBODY(LoaderInfo,_getLoader)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	if(th->loader)
+	{
+		th->loader->incRef();
+		return th->loader;
+	}
+	else
+		return new Undefined;
+}
+
 ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
@@ -163,8 +176,15 @@ ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS();
+	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(th);
 	return NULL;
+}
+
+ASFUNCTIONBODY(Loader,_getContent)
+{
+	Loader* th=static_cast<Loader*>(obj);
+	th->local_root->incRef();
+	return th->local_root;
 }
 
 ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
@@ -230,6 +250,7 @@ void Loader::sinit(Class_base* c)
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),true);
+	c->setGetterByQName("content","",Class<IFunction>::getFunction(_getContent),true);
 	c->setMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),true);
 	c->setMethodByQName("load","",Class<IFunction>::getFunction(load),true);
 }
@@ -262,9 +283,11 @@ void Loader::execute()
 		ParseThread* local_pt=new ParseThread(local_root,s);
 		local_pt->run();
 		sys->downloadManager->destroy(downloader);
+		//complete event is dispatched when the LoaderInfo has sent init and bytesTotal==bytesLoaded
 	}
 	else if(source==BYTES)
 	{
+		//TODO: set bytesLoaded and bytesTotal
 		assert_and_throw(bytes->bytes);
 
 		//We only support swf files now
@@ -276,10 +299,10 @@ void Loader::execute()
 		ParseThread* local_pt = new ParseThread(local_root,s);
 		local_pt->run();
 		bytes->decRef();
+		//Add a complete event for this object
+		sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("complete"));
 	}
 	loaded=true;
-	//Add a complete event for this object
-	sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("complete"));
 }
 
 void Loader::threadAbort()
@@ -1435,9 +1458,15 @@ ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 
 ASFUNCTIONBODY(DisplayObject,_getStage)
 {
-	assert(sys->stage);
-	sys->stage->incRef();
-	return sys->stage;
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	if(th->onStage)
+	{
+		assert(sys->stage);
+		sys->stage->incRef();
+		return sys->stage;
+	}
+	else
+		return new Null;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
@@ -2153,6 +2182,7 @@ void Stage::sinit(Class_base* c)
 	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getStageHeight),true);
 	c->setGetterByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode),true);
 	c->setSetterByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),true);
+	c->setGetterByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),true);
 }
 
 void Stage::buildTraits(ASObject* o)
@@ -2204,6 +2234,11 @@ ASFUNCTIONBODY(Stage,_getStageHeight)
 {
 	Stage* th=static_cast<Stage*>(obj);
 	return abstract_d(th->internalGetHeight());
+}
+
+ASFUNCTIONBODY(Stage,_getLoaderInfo)
+{
+	return SystemState::_getLoaderInfo(sys,NULL,0);
 }
 
 ASFUNCTIONBODY(Stage,_getScaleMode)

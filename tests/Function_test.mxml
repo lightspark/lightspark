@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Function_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+
+	private function appComplete():void
+	{
+		var testFunc:Function=function():void
+		{
+			this.validMember=true;
+		};
+		testFunc.prototype=new Object;
+		testFunc.prototype["superMember"]=true;
+		Tests.assertEquals(true, testFunc is Function, "Dynamic function is Function");
+		Tests.assertEquals(testFunc, testFunc as Function, "Dynamic function as Function");
+		var constructed:Object=new testFunc();
+		Tests.assertEquals(false, constructed is Function, "Object constructed from function is not Function");
+		Tests.assertEquals(true, constructed["validMember"], "Object constructed from function members are valid");
+		Tests.assertEquals(true, constructed["superMember"], "Object constructed from function members may access function members");
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

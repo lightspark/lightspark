@@ -549,12 +549,21 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		//Lookup the bitmap in the dictionary
 		if(bitmapId!=65535)
 		{
-			DictionaryTag* dict=pt->root->dictionaryLookup(bitmapId);
-			v.bitmap=dynamic_cast<Bitmap*>(dict);
-			if(v.bitmap==NULL)
+			try
 			{
-				LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
-				throw ParseException("Invalid ID for bitmap");
+				DictionaryTag* dict=pt->root->dictionaryLookup(bitmapId);
+				v.bitmap=dynamic_cast<Bitmap*>(dict);
+				if(v.bitmap==NULL)
+				{
+					LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
+					throw ParseException("Invalid ID for bitmap");
+				}
+			}
+			catch(RunTimeException& e)
+			{
+				//Thrown if the bitmapId does not exists in dictionary
+				LOG(LOG_ERROR,"Exception in FillStyle parsing: " << e.what());
+				v.bitmap=NULL;
 			}
 		}
 		else

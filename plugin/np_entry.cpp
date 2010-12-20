@@ -1,7 +1,8 @@
 /**************************************************************************
     Lighspark, a free flash player implementation
 
-    Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2010  Timon Van Overveldt (timonvo@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -118,10 +119,28 @@ static NPError fillNetscapeFunctionTable(NPNetscapeFuncs* aNPNFuncs)
   NPNFuncs.forceredraw      = aNPNFuncs->forceredraw;
   NPNFuncs.pluginthreadasynccall = aNPNFuncs->pluginthreadasynccall;
   NPNFuncs.getvalueforurl   = aNPNFuncs->getvalueforurl;
-  NPNFuncs.getstringidentifier = aNPNFuncs->getstringidentifier;
+
+	// NPRuntime
   NPNFuncs.releasevariantvalue = aNPNFuncs->releasevariantvalue;
-  NPNFuncs.getproperty      = aNPNFuncs->getproperty;
+  NPNFuncs.identifierisstring = aNPNFuncs->identifierisstring;
+  NPNFuncs.utf8fromidentifier = aNPNFuncs->utf8fromidentifier;
+  NPNFuncs.intfromidentifier = aNPNFuncs->intfromidentifier;
+  NPNFuncs.getstringidentifier = aNPNFuncs->getstringidentifier;
+  NPNFuncs.getstringidentifiers = aNPNFuncs->getstringidentifiers;
+  NPNFuncs.getintidentifier = aNPNFuncs->getintidentifier;
+  NPNFuncs.createobject     = aNPNFuncs->createobject;
+  NPNFuncs.retainobject     = aNPNFuncs->retainobject;
   NPNFuncs.releaseobject    = aNPNFuncs->releaseobject;
+  NPNFuncs.invoke           = aNPNFuncs->invoke;
+  NPNFuncs.invokeDefault    = aNPNFuncs->invokeDefault;
+  NPNFuncs.enumerate        = aNPNFuncs->enumerate;
+  NPNFuncs.evaluate         = aNPNFuncs->evaluate;
+  NPNFuncs.getproperty      = aNPNFuncs->getproperty;
+  NPNFuncs.setproperty      = aNPNFuncs->setproperty;
+  NPNFuncs.removeproperty   = aNPNFuncs->removeproperty;
+  NPNFuncs.hasproperty      = aNPNFuncs->hasproperty;
+  NPNFuncs.hasmethod        = aNPNFuncs->hasmethod;
+  NPNFuncs.setexception     = aNPNFuncs->setexception;
 
   return NPERR_NO_ERROR;
 }

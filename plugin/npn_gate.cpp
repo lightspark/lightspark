@@ -1,7 +1,8 @@
 /**************************************************************************
     Lighspark, a free flash player implementation
 
-    Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2010  Timon Van Overveldt (timonvo@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -44,26 +45,6 @@ void NPN_PluginThreadAsyncCall(NPP instance, void (*func) (void *), void *userDa
 NPError NPN_GetValueForURL(NPP instance, NPNURLVariable variable, const char *url, char **value, uint32_t *len)
 {
   return NPNFuncs.getvalueforurl(instance, variable, url, value, len);
-}
-
-NPIdentifier NPN_GetStringIdentifier(const NPUTF8 *name)
-{
-  return NPNFuncs.getstringidentifier(name);
-}
-
-void NPN_ReleaseVariantValue(NPVariant *variant)
-{
-  return NPNFuncs.releasevariantvalue(variant);
-}
-
-bool NPN_GetProperty(NPP npp, NPObject *npobj, NPIdentifier propertyName, NPVariant *result)
-{
-  return NPNFuncs.getproperty(npp, npobj, propertyName, result);
-}
-
-void NPN_ReleaseObject(NPObject *npobj)
-{
-  NPNFuncs.releaseobject(npobj);
 }
 
 NPError NPN_GetURLNotify(NPP instance, const char *url, const char *target, void* notifyData)
@@ -228,4 +209,105 @@ void NPN_InvalidateRegion(NPP instance, NPRegion invalidRegion)
 void NPN_ForceRedraw(NPP instance)
 {
   CallNPN_ForceRedrawProc(NPNFuncs.forceredraw, instance);
+}
+
+// NPRuntime
+void NPN_ReleaseVariantValue(NPVariant *variant)
+{
+  return NPNFuncs.releasevariantvalue(variant);
+}
+
+bool NPN_IdentifierIsString(NPIdentifier identifier)
+{
+	return NPNFuncs.identifierisstring(identifier);
+}
+
+NPUTF8* NPN_UTF8FromIdentifier(NPIdentifier identifier)
+{
+	return NPNFuncs.utf8fromidentifier(identifier);
+}
+
+int32_t NPN_IntFromIdentifier(NPIdentifier identifier)
+{
+	return NPNFuncs.intfromidentifier(identifier);
+}
+
+NPIdentifier NPN_GetStringIdentifier(const NPUTF8 *name)
+{
+  return NPNFuncs.getstringidentifier(name);
+}
+
+void NPN_GetStringsIdentifiers(const NPUTF8 **names,
+		int32_t nameCount, NPIdentifier *identifiers)
+{
+	NPNFuncs.getstringidentifiers(names, nameCount, identifiers);
+}
+
+NPIdentifier NPN_GetIntIdentifier(int32_t intid)
+{
+	return NPNFuncs.getintidentifier(intid);
+}
+
+NPObject* NPN_CreateObject(NPP npp, NPClass* aClass)
+{
+	return NPNFuncs.createobject(npp, aClass);
+}
+
+NPObject* NPN_RetainObject(NPObject *npobj)
+{
+	return NPNFuncs.retainobject(npobj);
+}
+
+void NPN_ReleaseObject(NPObject *npobj)
+{
+	NPNFuncs.releaseobject(npobj);
+}
+
+bool NPN_Invoke(NPP npp, NPObject *npobj, NPIdentifier methodName,
+		const NPVariant *args, uint32_t argCount, NPVariant *result)
+{
+	return NPNFuncs.invoke(npp, npobj, methodName, args, argCount, result);
+}
+
+bool NPN_InvokeDefault(NPP npp, NPObject *npobj, const NPVariant *args,
+		uint32_t argCount, NPVariant *result)
+{
+	return NPNFuncs.invokeDefault(npp, npobj, args, argCount, result);
+}
+
+bool NPN_Enumerate(NPP npp, NPObject *npobj, NPIdentifier **identifiers,
+		uint32_t *identifierCount)
+{
+	return NPNFuncs.enumerate(npp, npobj, identifiers, identifierCount);
+}
+
+bool NPN_Evaluate(NPP npp, NPObject *npobj, NPString *script,
+		NPVariant *result)
+{
+	return NPNFuncs.evaluate(npp, npobj, script, result);
+}
+
+bool NPN_GetProperty(NPP npp, NPObject *npobj, NPIdentifier propertyName, NPVariant *result)
+{
+	return NPNFuncs.getproperty(npp, npobj, propertyName, result);
+}
+
+bool NPN_SetProperty(NPP npp, NPObject *npobj, NPIdentifier propertyName, const NPVariant *value)
+{
+	return NPNFuncs.setproperty(npp, npobj, propertyName, value);
+}
+
+bool NPN_RemoveProperty(NPP npp, NPObject *npobj, NPIdentifier propertyName)
+{
+	return NPNFuncs.removeproperty(npp, npobj, propertyName);
+}
+
+bool NPN_HasProperty(NPP npp, NPObject *npobj, NPIdentifier propertyName)
+{
+	return NPNFuncs.hasproperty(npp, npobj, propertyName);
+}
+
+bool NPN_HasMethod(NPP npp, NPObject *npobj, NPIdentifier methodName)
+{
+	return NPNFuncs.hasmethod(npp, npobj, methodName);
 }

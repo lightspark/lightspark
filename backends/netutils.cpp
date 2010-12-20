@@ -289,8 +289,8 @@ Downloader::int_type Downloader::underflow()
 	//If we have read all available data
 	if(startReceivedLength==startOffset)
 	{
-		//The download has failed, has finished or the end is reached
-		if(failed || finished || (startReceivedLength==length && length!=0))
+		//The download has failed or has finished
+		if(failed || finished)
 		{
 			//++ Release lock
 			sem_post(&mutex);
@@ -345,7 +345,10 @@ Downloader::int_type Downloader::underflow()
 		//Read into our buffer window
 		cache.read((char*)stableBuffer, cacheSize);
 		if(cache.fail())
+		{
+			sem_post(&mutex);
 			throw RunTimeException(_("Downloader::underflow: reading from cache file failed"));
+		}
 
 		begin=(char*)stableBuffer;
 		cur=(char*)stableBuffer;

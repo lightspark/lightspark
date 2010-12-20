@@ -163,7 +163,6 @@ private:
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
-	ParseThread* parseThread;
 	sem_t terminated;
 	float renderRate;
 	bool error;

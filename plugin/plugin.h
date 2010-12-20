@@ -54,6 +54,7 @@ private:
 	bool started;
 	static void dlStartCallback(void* th);
 public:
+	NPDownloader(const lightspark::tiny_string& _url, lightspark::LoaderInfo* owner);
 	NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::LoaderInfo* owner);
 };
 
@@ -96,9 +97,8 @@ private:
 	Colormap mColormap;
 	unsigned int mDepth;
 
-	std::istream swf_stream;
-	sync_stream swf_buf;
-
+	std::istream mainDownloaderStream;
+	NPDownloader* mainDownloader;
 	lightspark::SystemState* m_sys;
 	lightspark::ParseThread* m_pt;
 };

@@ -100,6 +100,16 @@ void NPDownloadManager::destroy(lightspark::Downloader* downloader)
 	}
 }
 
+/**
+ * \brief Constructor for the NPDownloader class (used for the main stream)
+ *
+ * \param[in] _url The URL for the Downloader.
+ */
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::LoaderInfo* owner):
+	Downloader(_url, false),instance(NULL),started(false)
+{
+	setOwner(owner);
+}
 
 /**
  * \brief Constructor for the NPDownloader class
@@ -201,11 +211,10 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
-	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),swf_stream(&swf_buf)
+	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),mainDownloaderStream(NULL),mainDownloader(NULL),m_pt(NULL)
 {
 	sys=NULL;
-	m_pt=new lightspark::ParseThread(NULL,swf_stream);
-	m_sys=new lightspark::SystemState(m_pt,0);
+	m_sys=new lightspark::SystemState(NULL,0);
 	//As this is the plugin, enable fallback on Gnash for older clips
 	m_sys->enableGnashFallback();
 	//Files running in the plugin have REMOTE sandbox
@@ -222,7 +231,6 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		//The SWF file url should be getted from NewStream
 	}
 	m_sys->downloadManager=new NPDownloadManager(mInstance);
-	m_sys->addJob(m_pt);
 	//The sys var should be NULL in this thread
 	sys=NULL;
 }
@@ -231,8 +239,10 @@ nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
 	sys=m_sys;
-	swf_buf.stop();
-	m_pt->stop();
+	if(mainDownloader)
+		mainDownloader->stop();
+	if(m_pt)
+		m_pt->stop();
 	m_sys->setShutdownFlag();
 	m_sys->wait();
 	delete m_sys;
@@ -295,7 +305,8 @@ void nsPluginInstance::AsyncHelper(void* th_void, helper_t func, void* privArg)
 void nsPluginInstance::StopDownloaderHelper(void* th_void)
 {
 	nsPluginInstance* th=(nsPluginInstance*)th_void;
-	th->swf_buf.stop();
+	if(th->mainDownloader)
+		th->mainDownloader->stop();
 }
 
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
@@ -420,7 +431,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 			dl->parseHeaders(stream->headers, false);
 		}
 	}
-	else
+	else if(m_pt==NULL)
 	{
 		//This is the main file
 		m_sys->setOrigin(stream->url);
@@ -440,6 +451,13 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 			NPN_MemFree(data);
 			m_sys->setCookies(packedCookies.c_str());
 		}
+		//Now create a Downloader for this
+		dl=new NPDownloader(stream->url,m_sys->getLoaderInfo());
+		dl->setLength(stream->end);
+		mainDownloader=dl;
+		mainDownloaderStream.rdbuf(mainDownloader);
+		m_pt=new lightspark::ParseThread(m_sys,mainDownloaderStream);
+		m_sys->addJob(m_pt);
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
@@ -458,7 +476,7 @@ int32_t nsPluginInstance::WriteReady(NPStream *stream)
 	if(stream->pdata) //This is a Downloader based download
 		return 1024*1024;
 	else
-		return swf_buf.getFree();
+		return 0;
 }
 
 int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, void *buffer)
@@ -472,17 +490,15 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 		return len;
 	}
 	else
-		return swf_buf.write((char*)buffer,len);
+		return len; //Drop everything (this is a second stream for the same SWF instance)
 }
 
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
 	if(stream->pdata)
-		cerr << "Destroy " << stream->pdata << endl;
-	else
 	{
-		swf_buf.eof();
-		LOG(LOG_NO_INFO, _("DestroyStream on main stream"));
+		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
+		dl->setFinished();
 	}
 	return NPERR_NO_ERROR;
 }

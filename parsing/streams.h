@@ -41,6 +41,7 @@ protected:
 public:
 	zlib_filter(std::streambuf* b);
 	~zlib_filter();
+	uint32_t input_bytes_consumed();
 };
 
 class DLL_PUBLIC sync_stream: public std::streambuf

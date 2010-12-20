@@ -177,7 +177,6 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	securityManager=new SecurityManager();
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	//If the size is not known those will stay at zero
-	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;
@@ -857,7 +856,8 @@ bool ParseThread::parseHeader()
 		LOG(LOG_NO_INFO, _("Compressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
 		//The file is compressed, create a filtering streambuf
 		backend=f.rdbuf();
-		f.rdbuf(new zlib_filter(backend));
+		zlibFilter=new zlib_filter(backend);
+		f.rdbuf(zlibFilter);
 	}
 	else
 	{
@@ -880,6 +880,14 @@ bool ParseThread::parseHeader()
 	return true;
 }
 
+uint32_t ParseThread::bytesConsumed()
+{
+	if(zlibFilter)
+		return zlibFilter->input_bytes_consumed();
+	else
+		return f.tellg();
+}
+
 void ParseThread::execute()
 {
 	pt=this;
@@ -895,6 +903,7 @@ void ParseThread::execute()
 		while(!done)
 		{
 			Tag* tag=factory.readTag();
+			root->loaderInfo->setBytesLoaded(bytesConsumed());
 			sys->tagsStorage.push_back(tag);
 			switch(tag->getType())
 			{
@@ -939,6 +948,7 @@ void ParseThread::execute()
 			if(sys->shouldTerminate() || aborting)
 				break;
 		}
+		root->loaderInfo->setBytesLoaded(root->loaderInfo->getBytesTotal());
 	}
 	catch(LightsparkException& e)
 	{

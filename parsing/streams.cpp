@@ -249,6 +249,11 @@ zlib_filter::int_type zlib_filter::underflow()
 	return (unsigned char)buffer[0];
 }
 
+uint32_t zlib_filter::input_bytes_consumed()
+{
+	return strm.total_in;
+}
+
 zlib_filter::pos_type zlib_filter::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)
 {
 	assert(off==0);

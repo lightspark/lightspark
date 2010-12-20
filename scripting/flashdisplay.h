@@ -334,6 +334,14 @@ public:
 		bytesTotal=b;
 	}
 	void setBytesLoaded(uint32_t b);
+	uint32_t getBytesTotal()
+	{
+		return bytesTotal;
+	}
+	uint32_t getBytesLoaded()
+	{
+		return bytesLoaded;
+	}
 	void sendInit();
 };
 

@@ -483,10 +483,12 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 {
 	if(stream->pdata)
 	{
+		sys=m_sys;
 		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 		if(dl->hasFailed())
 			return -1;
 		dl->append((uint8_t*)buffer,len);
+		sys=NULL;
 		return len;
 	}
 	else

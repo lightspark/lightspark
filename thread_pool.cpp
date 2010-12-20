@@ -153,6 +153,7 @@ void ThreadPool::addJob(IThreadJob* j)
 		j->jobFence();
 		return;
 	}
+	assert(j);
 	jobs.push_back(j);
 	sem_post(&num_jobs);
 }

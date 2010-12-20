@@ -157,7 +157,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	showProfilingData(false),showDebug(false),currentVm(NULL),finalizingDestruction(false),
-	useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
+	useInterpreter(true),useJit(false),downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
 	//Create the thread pool
@@ -299,6 +299,11 @@ void SystemState::stopEngines()
 	downloadManager=NULL;
 	delete securityManager;
 	securityManager=NULL;
+	if(extScriptObject != NULL)
+	{
+		delete extScriptObject;
+		extScriptObject = NULL;
+	}
 	delete config;
 	config=NULL;
 	if(currentVm)

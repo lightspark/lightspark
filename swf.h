@@ -39,6 +39,7 @@
 #include "backends/pluginmanager.h"
 #include "backends/security.h"
 #include "backends/urlutils.h"
+#include "backends/extscriptobject.h"
 
 #include "platforms/pluginutils.h"
 
@@ -277,6 +278,7 @@ public:
 	DownloadManager* downloadManager;
 	IntervalManager* intervalManager;
 	SecurityManager* securityManager;
+	ExtScriptObject* extScriptObject;
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };
 	SCALE_MODE scaleMode;

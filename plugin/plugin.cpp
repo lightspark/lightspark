@@ -292,6 +292,12 @@ void nsPluginInstance::AsyncHelper(void* th_void, helper_t func, void* privArg)
 	NPN_PluginThreadAsyncCall(th->mInstance, func, privArg);
 }
 
+void nsPluginInstance::StopDownloaderHelper(void* th_void)
+{
+	nsPluginInstance* th=(nsPluginInstance*)th_void;
+	th->swf_buf.stop();
+}
+
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
 	if(aWindow == NULL)
@@ -331,9 +337,10 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p.window=mWindow;
 		p.width=mWidth;
 		p.height=mHeight;
+		//TODO: Refactor into virtual interface
 		p.helper=AsyncHelper;
 		p.helperArg=this;
-		p.stream=&swf_buf;
+		p.stopDownloaderHelper=StopDownloaderHelper;
 		LOG(LOG_NO_INFO,"X Window " << hex << p.window << dec << " Width: " << p.width << " Height: " << p.height);
 		m_sys->setParamsAndEngine(lightspark::GTKPLUG,&p);
 	}

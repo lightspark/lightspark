@@ -81,6 +81,7 @@ public:
 
 private:
 	static void AsyncHelper(void* th, helper_t func, void* privArg);
+	static void StopDownloaderHelper(void* th_void);
 	std::string getPageURL() const;
 
 	NPP mInstance;

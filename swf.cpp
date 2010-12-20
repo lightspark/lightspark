@@ -500,7 +500,7 @@ void SystemState::delayedStopping(SystemState* th)
 {
 	sys=th;
 	//This is called from the plugin, also kill the stream
-	th->npapiParams.stream->stop();
+	th->npapiParams.stopDownloaderHelper(th->npapiParams.helperArg);
 	th->stopEngines();
 	sys=NULL;
 }

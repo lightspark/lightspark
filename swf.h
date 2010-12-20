@@ -49,6 +49,8 @@
 //#include <windows.h>
 #endif
 
+class zlib_filter;
+
 namespace lightspark
 {
 
@@ -291,7 +293,7 @@ class ParseThread: public IThreadJob
 {
 private:
 	std::istream& f;
-	std::streambuf* zlibFilter;
+	zlib_filter* zlibFilter;
 	std::streambuf* backend;
 	sem_t ended;
 	bool isEnded;
@@ -299,6 +301,7 @@ private:
 	void threadAbort();
 	void jobFence() {};
 	bool parseHeader();
+	uint32_t bytesConsumed();
 public:
 	RootMovieClip* root;
 	int version;

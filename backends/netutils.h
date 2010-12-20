@@ -120,10 +120,14 @@ protected:
 	//-- BUFFERING
 	//This will hold the whole download (non-cached) or a window into the download (cached)
 	uint8_t* buffer;
+	//We can't change the used buffer (for example when resizing) asynchronously. We can only do that on underflows
+	uint8_t* stableBuffer;
 	//Minimum growth of the buffer
 	static const size_t bufferMinGrowth = 4096;
 	//(Re)allocate the buffer
 	void allocateBuffer(size_t size);
+	//Synchronize stableBuffer and buffer
+	void syncBuffers();
 
 	//-- CACHING
 	//True if the file is cached to disk (default = false)

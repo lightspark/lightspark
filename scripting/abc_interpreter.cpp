@@ -44,6 +44,11 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 		switch(opcode)
 		{
+			case 0x02:
+			{
+				//nop
+				break;
+			}
 			case 0x03:
 			{
 				//throw

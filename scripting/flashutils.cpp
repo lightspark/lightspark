@@ -59,6 +59,8 @@ void ByteArray::sinit(Class_base* c)
 	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition),true);
 	c->setMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),true);
 	c->setMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),true);
+	c->setMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),true);
+	c->setMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),true);
 //	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),true);
 	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),true);
 }
@@ -67,16 +69,24 @@ void ByteArray::buildTraits(ASObject* o)
 {
 }
 
-uint8_t* ByteArray::getBuffer(unsigned int size)
+uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 {
 	if(bytes==NULL)
 	{
 		len=size;
 		bytes=new uint8_t[len];
 	}
-	else
+	else if(enableResize==false)
 	{
 		assert_and_throw(size<=len);
+	}
+	else //if(enableResize==true)
+	{
+		//Resize the buffer
+		uint8_t* bytes2=new uint8_t[size];
+		memcpy(bytes2,bytes,len);
+		len=size;
+		bytes=bytes2;
 	}
 	return bytes;
 }
@@ -111,14 +121,18 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
-	assert_and_throw(argslen==3);
+	assert_and_throw(argslen>=1 && argslen<=3);
 	assert_and_throw(args[0]->getPrototype()==Class<ByteArray>::getClass());
 
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
-	uint32_t offset=args[1]->toInt();
-	uint32_t length=args[2]->toInt();
+	uint32_t offset=0;
+	uint32_t length=0;
+	if(argslen>=2)
+		offset=args[1]->toInt();
+	if(argslen==3)
+		length=args[2]->toInt();
 	//TODO: Support offset (offset is in the destination!)
-	if(offset!=0)
+	if(offset!=0 || length==0)
 		throw UnsupportedException("offset in ByteArray::readBytes");
 
 	//Error checks
@@ -128,9 +142,56 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 		//TODO: throw AS exceptions
 		return NULL;
 	}
-	uint8_t* buf=out->getBuffer(length);
+	uint8_t* buf=out->getBuffer(length,false);
 	memcpy(buf,th->bytes+th->position,length);
 	th->position+=length;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,writeUTFBytes)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	//Validate parameters
+	assert_and_throw(argslen==1);
+	assert_and_throw(args[0]->getObjectType()==T_STRING);
+	ASString* str=Class<ASString>::cast(args[0]);
+	th->getBuffer(th->position+str->data.size()+1,true);
+	memcpy(th->bytes+th->position,str->data.c_str(),str->data.size()+1);
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,writeBytes)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	//Validate parameters
+	assert_and_throw(argslen>=1 && argslen<=3);
+	assert_and_throw(args[0]->getPrototype()==Class<ByteArray>::getClass());
+	ByteArray* out=Class<ByteArray>::cast(args[0]);
+	uint32_t offset=0;
+	uint32_t length=0;
+	if(argslen>=2)
+		offset=args[1]->toInt();
+	if(argslen==3)
+		length=args[2]->toInt();
+
+	//TODO: Support offset (offset is in the destination!)
+	if(offset!=0)
+		throw UnsupportedException("offset in ByteArray::writeBytes");
+
+	//If the length is 0 the whole buffer must be copied
+	if(length == 0)
+		length=out->getLength();
+	else if(length > out->getLength())
+	{
+		LOG(LOG_ERROR,"ByteArray::writeBytes not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+	uint8_t* buf=out->getBuffer(length,false);
+	th->getBuffer(th->position+length,true);
+	memcpy(th->bytes+th->position,buf,length);
 
 	return NULL;
 }

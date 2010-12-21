@@ -50,6 +50,8 @@ public:
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(readBytes);
 	ASFUNCTION(readObject);
+	ASFUNCTION(writeBytes);
+	ASFUNCTION(writeUTFBytes);
 	ASFUNCTION(_toString);
 
 	/**
@@ -59,7 +61,7 @@ public:
 		@pre buf must be allocated using new[]
 	*/
 	void acquireBuffer(uint8_t* buf, int bufLen);
-	uint8_t* getBuffer(unsigned int size);
+	uint8_t* getBuffer(unsigned int size, bool enableResize);
 	uint32_t getLength() const { return len; }
 
 	static void sinit(Class_base* c);

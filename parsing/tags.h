@@ -410,7 +410,7 @@ public:
 	}
 };
 
-class FontTag: public DictionaryTag
+class FontTag: public DictionaryTag, public Font
 {
 protected:
 	UI16_SWF FontID;

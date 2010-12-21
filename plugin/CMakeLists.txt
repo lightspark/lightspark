@@ -30,7 +30,8 @@ IF(UNIX)
 ENDIF(UNIX)
 
 # Firefox plugin target
-ADD_LIBRARY(lightsparkplugin SHARED np_entry.cpp npn_gate.cpp npp_gate.cpp plugin.cpp)
+ADD_LIBRARY(lightsparkplugin SHARED np_entry.cpp npn_gate.cpp npp_gate.cpp
+	plugin.cpp npscriptobject.cpp)
 TARGET_LINK_LIBRARIES(lightsparkplugin spark ${MOZ_PLUGIN_LIBRARIES} ${GTK_LIBRARIES})
 
 IF(UNIX)

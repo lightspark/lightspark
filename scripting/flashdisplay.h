@@ -326,6 +326,7 @@ public:
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getApplicationDomain);
 	ASFUNCTION(_getLoader);
+	ASFUNCTION(_getContent);
 	ASFUNCTION(_getSharedEvents);
 	void setBytesTotal(uint32_t b)
 	{

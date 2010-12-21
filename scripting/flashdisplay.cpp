@@ -68,6 +68,7 @@ void LoaderInfo::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderURL),true);
 	c->setGetterByQName("loader","",Class<IFunction>::getFunction(_getLoader),true);
+	c->setGetterByQName("content","",Class<IFunction>::getFunction(_getContent),true);
 	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL),true);
 	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
 	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
@@ -130,6 +131,16 @@ ASFUNCTIONBODY(LoaderInfo,_getLoaderURL)
 	return Class<ASString>::getInstanceS(th->loaderURL);
 }
 
+ASFUNCTIONBODY(LoaderInfo,_getContent)
+{
+	//Use Loader::getContent
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	if(th->loader)
+		return Loader::_getContent(th->loader,NULL,0);
+	else
+		return new Undefined;
+}
+
 ASFUNCTIONBODY(LoaderInfo,_getLoader)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
@@ -183,8 +194,13 @@ ASFUNCTIONBODY(Loader,_constructor)
 ASFUNCTIONBODY(Loader,_getContent)
 {
 	Loader* th=static_cast<Loader*>(obj);
-	th->local_root->incRef();
-	return th->local_root;
+	if(th->local_root)
+	{
+		th->local_root->incRef();
+		return th->local_root;
+	}
+	else
+		return new Undefined;
 }
 
 ASFUNCTIONBODY(Loader,_getContentLoaderInfo)

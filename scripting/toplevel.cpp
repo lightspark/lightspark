@@ -848,6 +848,8 @@ ASFUNCTIONBODY(ASString,search)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
+		if(re->multiline)
+			options|=PCRE_MULTILINE;
 		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
 		if(error)
 			return abstract_i(ret);
@@ -899,6 +901,8 @@ ASFUNCTIONBODY(ASString,match)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
+		if(re->multiline)
+			options|=PCRE_MULTILINE;
 		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
 		if(error)
 			return new Null;
@@ -971,6 +975,8 @@ ASFUNCTIONBODY(ASString,split)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
+		if(re->multiline)
+			options|=PCRE_MULTILINE;
 		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &offset,NULL);
 		if(error)
 			return ret;
@@ -2075,7 +2081,7 @@ bool Null::isEqual(ASObject* r)
 		return false;
 }
 
-RegExp::RegExp():global(false),ignoreCase(false),extended(false),lastIndex(0)
+RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)
 {
 }
 
@@ -2113,8 +2119,10 @@ ASFUNCTIONBODY(RegExp,_constructor)
 				case 'x':
 					th->extended=true;
 					break;
-				case 's':
 				case 'm':
+					th->multiline=true;
+					break;
+				case 's':
 					throw UnsupportedException("RegExp not completely implemented");
 
 			}
@@ -2135,6 +2143,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
 	opt.set_extended(th->extended);
+	opt.set_multiline(th->multiline);
 
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert_and_throw(th->lastIndex==0);
@@ -2178,6 +2187,7 @@ ASFUNCTIONBODY(RegExp,test)
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
 	opt.set_extended(th->extended);
+	opt.set_multiline(th->multiline);
 
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert_and_throw(th->lastIndex==0);
@@ -2345,6 +2355,8 @@ ASFUNCTIONBODY(ASString,replace)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
+		if(re->multiline)
+			options|=PCRE_MULTILINE;
 		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
 		if(error)
 			return ret;

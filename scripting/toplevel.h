@@ -743,6 +743,7 @@ private:
 	bool global;
 	bool ignoreCase;
 	bool extended;
+	bool multiline;
 	int lastIndex;
 	RegExp();
 public:

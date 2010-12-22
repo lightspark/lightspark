@@ -28,12 +28,23 @@ REGISTER_CLASS_NAME(ExternalInterface);
 
 void ExternalInterface::sinit(Class_base* c)
 {
-/*	assert(c->constructor==NULL);
-	c->constructor=Class<IFunction>::getFunction(_constructor);*/
-	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable),true);
+	c->setConstructor(NULL);
+	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable),false);
+	c->setGetterByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),false);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)
 {
-	return abstract_b(false);
+	return abstract_b(sys->extScriptObject != NULL);
+}
+
+ASFUNCTIONBODY(ExternalInterface,_getObjectID)
+{
+	if(sys->extScriptObject == NULL)
+		return Class<ASString>::getInstanceS("");
+
+	ExtVariantObject* object = sys->extScriptObject->getProperty("name");
+	std::string result = object->toString();
+	delete object;
+	return Class<ASString>::getInstanceS(result);
 }

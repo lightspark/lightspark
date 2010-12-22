@@ -31,6 +31,7 @@ class ExternalInterface: public ASObject
 public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_getAvailable);
+	ASFUNCTION(_getObjectID);
 };
 
 };

@@ -2165,6 +2165,35 @@ ASFUNCTIONBODY(RegExp,exec)
 		return new Null;
 	}
 	assert_and_throw(capturingGroups<10);
+	//Get information about named capturing groups
+	int namedGroups;
+	infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_NAMECOUNT, &namedGroups);
+	if(infoOk!=0)
+	{
+		pcre_free(pcreRE);
+		return new Null;
+	}
+	//Get information about the size of named entries
+	int namedSize;
+	infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_NAMEENTRYSIZE, &namedSize);
+	if(infoOk!=0)
+	{
+		pcre_free(pcreRE);
+		return new Null;
+	}
+	struct nameEntry
+	{
+		uint16_t number;
+		char name[0];
+	};
+	char* entries;
+	infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_NAMETABLE, &entries);
+	if(infoOk!=0)
+	{
+		pcre_free(pcreRE);
+		return new Null;
+	}
+
 	int ovector[30];
 	int offset=(th->global)?th->lastIndex:0;
 	const char* str=arg0.raw_buf();
@@ -2183,6 +2212,15 @@ ASFUNCTIONBODY(RegExp,exec)
 	args[0]->incRef();
 	a->setVariableByQName("input","",args[0]);
 	a->setVariableByQName("index","",abstract_i(ovector[0]));
+	for(int i=0;i<namedGroups;i++)
+	{
+		nameEntry* entry=(nameEntry*)entries;
+		uint16_t num=BigEndianToHost16(entry->number);
+		ASObject* captured=a->at(num);
+		captured->incRef();
+		a->setVariableByQName(entry->name,"",captured);
+		entries+=namedSize;
+	}
 	th->lastIndex=ovector[1];
 	return a;
 }

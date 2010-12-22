@@ -2140,45 +2140,51 @@ ASFUNCTIONBODY(RegExp,_getGlobal)
 ASFUNCTIONBODY(RegExp,exec)
 {
 	RegExp* th=static_cast<RegExp*>(obj);
-	pcrecpp::RE_Options opt;
-	opt.set_caseless(th->ignoreCase);
-	opt.set_extended(th->extended);
-	opt.set_multiline(th->multiline);
-
-	pcrecpp::RE pcreRE(th->re,opt);
-	assert_and_throw(th->lastIndex==0);
+	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
-	LOG(LOG_CALLS,_("re: ") << th->re);
-	int numberOfCaptures=pcreRE.NumberOfCapturingGroups();
-	LOG(LOG_CALLS,_("capturing groups ") << numberOfCaptures);
-	assert_and_throw(numberOfCaptures!=-1);
-	//The array of captured groups
-	pcrecpp::Arg** captures=new pcrecpp::Arg*[numberOfCaptures];
-	//The array of strings
-	string* s=new string[numberOfCaptures];
-	for(int i=0;i<numberOfCaptures;i++)
-		captures[i]=new pcrecpp::Arg(&s[i]);
-
-	int consumed;
-	bool matched=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
-	ASObject* ret;
-	if(matched)
+	const char* error;
+	int errorOffset;
+	int options=0;
+	if(th->ignoreCase)
+		options|=PCRE_CASELESS;
+	if(th->extended)
+		options|=PCRE_EXTENDED;
+	if(th->multiline)
+		options|=PCRE_MULTILINE;
+	if(!th->global)
+		options|=PCRE_ANCHORED;
+	pcre* pcreRE=pcre_compile(th->re.c_str(), options, &error, &errorOffset,NULL);
+	if(error)
+		return new Null;
+	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+	int capturingGroups;
+	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+	if(infoOk!=0)
 	{
-		Array* a=Class<Array>::getInstanceS();
-		for(int i=0;i<numberOfCaptures;i++)
-			a->push(Class<ASString>::getInstanceS(s[i]));
-		args[0]->incRef();
-		a->setVariableByQName("input","",args[0]);
-		ret=a;
-		//TODO: add index field (not possible with current PCRECPP)
+		pcre_free(pcreRE);
+		return new Null;
 	}
-	else
-		ret=new Null;
-
-	delete[] captures;
-	delete[] s;
-
-	return ret;
+	assert_and_throw(capturingGroups<10);
+	int ovector[30];
+	int offset=(th->global)?th->lastIndex:0;
+	const char* str=arg0.raw_buf();
+	int strLen=arg0.len();
+	int rc=pcre_exec(pcreRE, NULL, str, strLen, offset, 0, ovector, 30);
+	if(rc<=0)
+	{
+		//No matches or error
+		pcre_free(pcreRE);
+		return new Null;
+	}
+	Array* a=Class<Array>::getInstanceS();
+	//Push the whole result and the captured strings
+	for(int i=0;i<capturingGroups+1;i++)
+		a->push(Class<ASString>::getInstanceS(str+ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+	args[0]->incRef();
+	a->setVariableByQName("input","",args[0]);
+	a->setVariableByQName("index","",abstract_i(ovector[0]));
+	th->lastIndex=ovector[1];
+	return a;
 }
 
 ASFUNCTIONBODY(RegExp,test)

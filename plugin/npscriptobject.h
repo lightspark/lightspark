@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <string>
+#include <map>
 #include <sstream>
 
 #include "npapi.h"
@@ -146,6 +147,108 @@ private:
 		default: {}
 		}
 	}
+};
+
+class NPScriptObject : public NPObject
+{
+public:
+	NPScriptObject(NPP inst);
+	~NPScriptObject() {};
+	
+	static NPClass npClass;
+
+	/* Static methods used by NPRuntime */
+	static NPObject* allocate(NPP instance, NPClass* _class)
+	{ return new NPScriptObject(instance); }
+	static void deallocate(NPObject* obj) { delete (NPScriptObject*) obj; }
+	static void invalidate(NPObject* obj) { }
+
+	static bool hasMethod(NPObject* obj, NPIdentifier name)
+	{ return ((NPScriptObject*) obj)->hasMethod(name); }
+	static bool invoke(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result)
+	{ return ((NPScriptObject*) obj)->invoke(name, args, argc, result); }
+	static bool invokeDefault(NPObject* obj,
+			const NPVariant* args, uint32_t argc, NPVariant* result)
+	{ return ((NPScriptObject*) obj)->invokeDefault(args, argc, result); }
+
+	static bool hasProperty(NPObject* obj, NPIdentifier name)
+	{ return ((NPScriptObject*) obj)->hasProperty(name); }
+	static bool getProperty(NPObject* obj, NPIdentifier name, NPVariant* result)
+	{ return ((NPScriptObject*) obj)->getProperty(name, result); }
+	static bool setProperty(NPObject* obj, NPIdentifier name, const NPVariant* value)
+	{ return ((NPScriptObject*) obj)->setProperty(name, *value); }
+	static bool removeProperty(NPObject* obj, NPIdentifier name)
+	{ return ((NPScriptObject*) obj)->removeProperty(name); }
+
+	static bool enumerate(NPObject* obj, NPIdentifier** value, uint32_t* count)
+	{ return ((NPScriptObject*) obj)->enumerate(value, count); }
+	static bool construct(NPObject* obj,
+			const NPVariant* args, uint32_t argc, NPVariant* result)
+	{ return ((NPScriptObject*) obj)->construct(args, argc, result); }
+private:
+	NPP instance;
+	NPObject* windowObject;
+	NPObject* pluginElementObject;
+
+	std::map<NPIdentifier, NPVariantObject> properties;
+	std::map<NPIdentifier, NPInvokeFunctionPtr> methods;
+
+	/* Utility methods */
+	bool hasMethod(const std::string& name)
+	{ return hasMethod(NPN_GetStringIdentifier(name.c_str())); }
+	void setMethod(const std::string& name, NPInvokeFunctionPtr func)
+	{ setMethod(NPN_GetStringIdentifier(name.c_str()), func); }
+
+	bool hasProperty(const std::string& name)
+	{ return hasProperty(NPN_GetStringIdentifier(name.c_str())); }
+	NPVariantObject getProperty(const std::string& name);
+	void setProperty(const std::string& name, const std::string& value);
+	void setProperty(const std::string& name, double value);
+	void setProperty(const std::string& name, int value);
+
+	/* Methods indirectly used by NPRuntime */
+	bool hasMethod(NPIdentifier name) { return methods.find(name) != methods.end(); }
+	bool invoke(NPIdentifier name, const NPVariant* args, uint32_t argc, NPVariant* result);
+	bool invokeDefault(const NPVariant* args, uint32_t argc, NPVariant* result);
+	// Not really part of NPClass but used internally
+	bool setMethod(NPIdentifier name, NPInvokeFunctionPtr func) { methods[name] = func; return true; }
+	
+	bool hasProperty(NPIdentifier name) { return properties.find(name) != properties.end(); }
+	bool getProperty(NPIdentifier name, NPVariant* result);
+	bool setProperty(NPIdentifier name, const NPVariant& value) { properties[name] = value; return true; }
+	bool removeProperty(NPIdentifier name);
+
+	bool enumerate(NPIdentifier** value, uint32_t* count);
+	bool construct(const NPVariant* args, uint32_t argc, NPVariant* result);
+
+	// Standard methods
+	static bool stdGetVariable(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdSetVariable(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdGotoFrame(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdIsPlaying(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdLoadMovie(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdPan(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdPercentLoaded(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdPlay(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdRewind(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdStopPlay(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdSetZoomRect(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdZoom(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdTotalFrames(NPObject* obj, NPIdentifier name,
+			const NPVariant* args, uint32_t argc, NPVariant* result);
 };
 
 #endif

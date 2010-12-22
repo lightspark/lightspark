@@ -213,8 +213,9 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 // nsPluginInstance class implementation
 //
-nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
-	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),mainDownloaderStream(NULL),mainDownloader(NULL),m_pt(NULL)
+nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : 
+	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),
+	mainDownloaderStream(NULL),mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
 {
 	cout << "Lightspark version " << VERSION << " Copyright 2009-2010 Alessandro Pignotti" << endl << endl;
 	sys=NULL;
@@ -235,6 +236,16 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		//The SWF file url should be getted from NewStream
 	}
 	m_sys->downloadManager=new NPDownloadManager(mInstance);
+
+	int p_major, p_minor, n_major, n_minor;
+	NPN_Version(&p_major, &p_minor, &n_major, &n_minor);
+	if (n_minor >= 14) { // since NPAPI start to support
+		scriptObject =
+			(NPScriptObject *) NPN_CreateObject(mInstance, &NPScriptObject::npClass);
+	}
+	else
+		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
+
 	//The sys var should be NULL in this thread
 	sys=NULL;
 }
@@ -292,6 +303,17 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
     case NPPVpluginNeedsXEmbed:
       return NS_PluginGetValue(aVariable, aValue) ;
       break;
+		case NPPVpluginScriptableNPObject:
+			if(scriptObject)
+			{
+				void **v = (void **)aValue;
+				NPN_RetainObject(scriptObject);
+				*v = scriptObject;
+				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObject returned to browser");
+				break;
+			}
+			else
+				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObject requested but was NULL");
     default:
       err = NPERR_INVALID_PARAM;
       break;

@@ -242,6 +242,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	if (n_minor >= 14) { // since NPAPI start to support
 		scriptObject =
 			(NPScriptObject *) NPN_CreateObject(mInstance, &NPScriptObject::npClass);
+		m_sys->extScriptObject = new NPScriptObjectGW(scriptObject);
 	}
 	else
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");

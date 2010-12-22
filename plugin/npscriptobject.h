@@ -151,6 +151,7 @@ private:
 
 class NPScriptObject : public NPObject
 {
+	friend class NPScriptObjectGW;
 public:
 	NPScriptObject(NPP inst);
 	~NPScriptObject() {};
@@ -249,6 +250,37 @@ private:
 			const NPVariant* args, uint32_t argc, NPVariant* result);
 	static bool stdTotalFrames(NPObject* obj, NPIdentifier name,
 			const NPVariant* args, uint32_t argc, NPVariant* result);
+};
+
+/**
+ * Multiple inheritance doesn't seem to work will when used with the NPObject base class.
+ * Thats why we use this gateway class which inherits only from ExtScriptObject.
+ */
+class DLL_PUBLIC NPScriptObjectGW : public lightspark::ExtScriptObject
+{
+private:
+	NPScriptObject* so;
+public:
+	NPScriptObjectGW(NPScriptObject* scriptObject) : so(scriptObject)
+	{ assert(so != NULL); };
+	~NPScriptObjectGW() {};
+
+	bool hasMethod(const std::string& name)
+	{ return so->hasMethod(name); }
+	void setMethod(const std::string& name, NPInvokeFunctionPtr func)
+	{ so->setMethod(name, func); }
+
+	bool hasProperty(const std::string& name)
+	{ return so->hasProperty(name); }
+	void setProperty(const std::string& name, const std::string& value)
+	{ so->setProperty(name, value); }
+	void setProperty(const std::string& name, double value)
+	{ so->setProperty(name, value); }
+	void setProperty(const std::string& name, int value)
+	{ so->setProperty(name, value); }
+	//The returned object should be deleted by the caller
+	NPVariantObject* getProperty(const std::string& name)
+	{ return new NPVariantObject(so->getProperty(name)); }
 };
 
 #endif

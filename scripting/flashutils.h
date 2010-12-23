@@ -48,6 +48,8 @@ public:
 	ASFUNCTION(_getLength);
 	ASFUNCTION(_getPosition);
 	ASFUNCTION(_setPosition);
+	ASFUNCTION(_getDefaultObjectEncoding);
+	ASFUNCTION(_setDefaultObjectEncoding);
 	ASFUNCTION(readBytes);
 	ASFUNCTION(readObject);
 	ASFUNCTION(writeBytes);

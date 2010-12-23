@@ -329,8 +329,8 @@ void NetConnection::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setMethodByQName("connect","",Class<IFunction>::getFunction(connect),true);
 	c->setGetterByQName("connected","",Class<IFunction>::getFunction(_getConnected),true);
-	c->setGetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),true);
-	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),true);
+	c->setGetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),false);
+	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),false);
 	sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
 	c->setGetterByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),true);
 	c->setSetterByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),true);
@@ -405,8 +405,10 @@ ASFUNCTIONBODY(NetConnection,_setDefaultObjectEncoding)
 	int32_t value = args[0]->toInt();
 	if(value == 0)
 		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF0;
-	else
+	else if(value == 3)
 		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF3;
+	else
+		throw RunTimeException("Invalid object encoding");
 	return NULL;
 }
 

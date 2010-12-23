@@ -285,6 +285,7 @@ public:
 	//NAMING: static$CLASSNAME$$PROPERTYNAME$
 	//	NetConnection
 	ObjectEncoding::ENCODING staticNetConnectionDefaultObjectEncoding;
+	ObjectEncoding::ENCODING staticByteArrayDefaultObjectEncoding;
 };
 
 class ParseThread: public IThreadJob

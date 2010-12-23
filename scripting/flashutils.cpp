@@ -57,6 +57,9 @@ void ByteArray::sinit(Class_base* c)
 	c->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),true);
 	c->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition),true);
 	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition),true);
+	c->setGetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),false);
+	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),false);
+	sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
 	c->setMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),true);
 	c->setMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),true);
 	c->setMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),true);
@@ -102,6 +105,24 @@ ASFUNCTIONBODY(ByteArray,_setPosition)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	int pos=args[0]->toInt();
 	th->position=pos;
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_getDefaultObjectEncoding)
+{
+	return abstract_i(sys->staticNetConnectionDefaultObjectEncoding);
+}
+
+ASFUNCTIONBODY(ByteArray,_setDefaultObjectEncoding)
+{
+	assert_and_throw(argslen == 1);
+	int32_t value = args[0]->toInt();
+	if(value == 0)
+		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF0;
+	else if(value == 3)
+		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
+	else
+		throw RunTimeException("Invalid object encoding");
 	return NULL;
 }
 

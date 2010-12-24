@@ -49,6 +49,33 @@ public:
 	virtual bool getBoolean() const { return 0; }
 };
 
+class DLL_PUBLIC ExtIdentifierObject
+{
+public:
+	ExtIdentifierObject() {}
+	ExtIdentifierObject(const std::string& value) {}
+	ExtIdentifierObject(const char* value) {}
+	ExtIdentifierObject(int32_t value) {}
+	ExtIdentifierObject(const ExtIdentifierObject& value) {}
+	virtual ~ExtIdentifierObject() {}
+
+	virtual bool operator<(const ExtIdentifierObject& other) const
+	{
+		if(getType() == EI_STRING && other.getType() == EI_STRING)
+			return getString() < other.getString();
+		else if(getType() == EI_INT32 && other.getType() == EI_INT32)
+			return getInt() < other.getInt();
+		else if(getType() == EI_INT32 && other.getType() == EI_STRING)
+			return true;
+		return false;
+	}
+
+	enum EI_TYPE { EI_STRING, EI_INT32, EI_UNKNOWN };
+	virtual EI_TYPE getType() const { return EI_UNKNOWN; }
+	virtual std::string getString() const { return ""; }
+	virtual int32_t getInt() const { return 0; }
+};
+
 class DLL_PUBLIC ExtScriptObject
 {
 public:

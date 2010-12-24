@@ -187,6 +187,82 @@ private:
 	}
 };
 
+class NPIdentifierObject : public lightspark::ExtIdentifierObject
+{
+public:
+	NPIdentifierObject(const std::string& value)
+	{ identifier = NPN_GetStringIdentifier(value.c_str()); }
+	NPIdentifierObject(const char* value)
+	{ identifier = NPN_GetStringIdentifier(value); }
+	NPIdentifierObject(int32_t value)
+	{ identifier = NPN_GetIntIdentifier(value); }
+	NPIdentifierObject(const ExtIdentifierObject& value)
+	{
+		if(value.getType() == EI_STRING)
+			identifier = NPN_GetStringIdentifier(value.getString().c_str());
+		else
+			identifier = NPN_GetIntIdentifier(value.getInt());
+	}
+
+	NPIdentifierObject(const NPIdentifierObject& id) { id.copy(identifier); }
+	NPIdentifierObject(const NPIdentifier& id) { copy(id, identifier); }
+	~NPIdentifierObject() {}
+
+	void copy(NPIdentifier& dest) const { copy(identifier, dest); }
+
+	bool operator<(const NPIdentifierObject& other) const
+	{
+		return identifier < other.getNPIdentifier();
+	}
+	bool operator<(const ExtIdentifierObject& other) const
+	{
+		return ExtIdentifierObject::operator<(other);
+	}
+
+
+	EI_TYPE getType() const { return getType(identifier); }
+	static EI_TYPE getType(const NPIdentifier& identifier)
+	{
+		if(NPN_IdentifierIsString(identifier))
+			return EI_STRING;
+		else
+			return EI_INT32;
+	}
+
+	std::string getString() const { return getString(identifier); }
+	static std::string getString(const NPIdentifier& identifier)
+	{
+		if(getType(identifier) == EI_STRING)
+			return std::string(NPN_UTF8FromIdentifier(identifier));
+		else
+			return "";
+	}
+	int32_t getInt() const { return getInt(identifier); }
+	static int32_t getInt(const NPIdentifier& identifier)
+	{
+		if(getType(identifier) == EI_STRING)
+			return NPN_IntFromIdentifier(identifier);
+		else
+			return 0;
+	}
+
+	NPIdentifier getNPIdentifier() const
+	{
+		if(getType() == EI_STRING) return NPN_GetStringIdentifier(getString().c_str());
+		else return NPN_GetIntIdentifier(getInt());
+	}
+private:
+	NPIdentifier identifier;
+
+	static void copy(const NPIdentifier& from, NPIdentifier& dest)
+	{
+		if(NPN_IdentifierIsString(from))
+			dest = NPN_GetStringIdentifier(NPN_UTF8FromIdentifier(from));
+		else
+			dest = NPN_GetIntIdentifier(NPN_IntFromIdentifier(from));
+	}
+};
+
 class NPScriptObject : public NPObject
 {
 	friend class NPScriptObjectGW;

@@ -1509,13 +1509,18 @@ void Date::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setMethodByQName("getTimezoneOffset","",Class<IFunction>::getFunction(getTimezoneOffset),true);
+	c->setMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(getTimezoneOffset),true);
 	c->setMethodByQName("valueOf","",Class<IFunction>::getFunction(valueOf),true);
 	c->setMethodByQName("getTime",AS3,Class<IFunction>::getFunction(getTime),true);
-	c->setMethodByQName("getFullYear","",Class<IFunction>::getFunction(getFullYear),true);
+	c->setMethodByQName("getFullYear",AS3,Class<IFunction>::getFunction(getFullYear),true);
 	c->setMethodByQName("getHours",AS3,Class<IFunction>::getFunction(getHours),true);
 	c->setMethodByQName("getMinutes",AS3,Class<IFunction>::getFunction(getMinutes),true);
 	c->setMethodByQName("getSeconds",AS3,Class<IFunction>::getFunction(getMinutes),true);
+	c->setMethodByQName("getUTCFullYear",AS3,Class<IFunction>::getFunction(getUTCFullYear),true);
+	c->setMethodByQName("getUTCMonth",AS3,Class<IFunction>::getFunction(getUTCMonth),true);
+	c->setMethodByQName("getUTCDate",AS3,Class<IFunction>::getFunction(getUTCDate),true);
+	c->setMethodByQName("getUTCHours",AS3,Class<IFunction>::getFunction(getUTCHours),true);
+	c->setMethodByQName("getUTCMinutes",AS3,Class<IFunction>::getFunction(getUTCMinutes),true);
 	//o->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(ASObject::_toString));
 }
 
@@ -1540,6 +1545,36 @@ ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("getTimezoneOffset"));
 	return abstract_d(120);
+}
+
+ASFUNCTIONBODY(Date,getUTCFullYear)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(th->year);
+}
+
+ASFUNCTIONBODY(Date,getUTCMonth)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(th->month);
+}
+
+ASFUNCTIONBODY(Date,getUTCDate)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(th->date);
+}
+
+ASFUNCTIONBODY(Date,getUTCHours)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(th->hour);
+}
+
+ASFUNCTIONBODY(Date,getUTCMinutes)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(th->minute);
 }
 
 ASFUNCTIONBODY(Date,getFullYear)

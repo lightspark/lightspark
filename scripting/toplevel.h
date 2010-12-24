@@ -684,6 +684,11 @@ public:
 	ASFUNCTION(getFullYear);
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
+	ASFUNCTION(getUTCFullYear);
+	ASFUNCTION(getUTCMonth);
+	ASFUNCTION(getUTCDate);
+	ASFUNCTION(getUTCHours);
+	ASFUNCTION(getUTCMinutes);
 	ASFUNCTION(valueOf);
 	tiny_string toString(bool debugMsg=false);
 	tiny_string toString_priv() const;

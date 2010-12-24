@@ -31,12 +31,22 @@ namespace lightspark
 class DLL_PUBLIC ExtVariantObject
 {
 public:
-	virtual ~ExtVariantObject() {};
+	ExtVariantObject() {}
+	ExtVariantObject(const std::string& value) {}
+	ExtVariantObject(const char* value) {}
+	ExtVariantObject(int32_t value) {}
+	ExtVariantObject(double value) {}
+	ExtVariantObject(bool value) {}
+	ExtVariantObject(const ExtVariantObject& value) {}
+	virtual ~ExtVariantObject() {}
 
 	enum EVO_TYPE
-	{ EVO_STRING, EVO_INT32, EVO_DOUBLE, EVO_BOOLEAN, EVO_OBJECT, EVO_NULL, EVO_VOID, EVO_UNKNOWN };
-	virtual EVO_TYPE getType() const { return EVO_UNKNOWN; }
-	virtual std::string toString() const { return "unknown type"; }
+	{ EVO_STRING, EVO_INT32, EVO_DOUBLE, EVO_BOOLEAN, EVO_OBJECT, EVO_NULL, EVO_VOID };
+	virtual EVO_TYPE getType() const { return EVO_VOID; }
+	virtual std::string getString() const { return ""; }
+	virtual int32_t getInt() const { return 0; }
+	virtual double getDouble() const { return 0.0; }
+	virtual bool getBoolean() const { return 0; }
 };
 
 class DLL_PUBLIC ExtScriptObject

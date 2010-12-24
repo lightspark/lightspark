@@ -44,7 +44,7 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 		return Class<ASString>::getInstanceS("");
 
 	ExtVariantObject* object = sys->extScriptObject->getProperty("name");
-	std::string result = object->toString();
+	std::string result = object->getString();
 	delete object;
 	return Class<ASString>::getInstanceS(result);
 }

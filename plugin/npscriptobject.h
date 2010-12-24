@@ -21,6 +21,7 @@
 #ifndef _NP_SCRIPT_OBJECT_H
 #define _NP_SCRIPT_OBJECT_H
 
+#include <typeinfo>
 #include <string.h>
 #include <string>
 #include <map>
@@ -34,21 +35,75 @@
 class NPVariantObject : public lightspark::ExtVariantObject
 {
 public:
-	NPVariantObject() { NULL_TO_NPVARIANT(variant); }
+	NPVariantObject()
+	{ NULL_TO_NPVARIANT(variant); }
+	NPVariantObject(const std::string& value)
+	{ STRINGN_TO_NPVARIANT(value.c_str(), (int) value.size(), variant); }
+	NPVariantObject(const char* value)
+	{ STRINGN_TO_NPVARIANT(value, (int) strlen(value), variant); }
+	NPVariantObject(int32_t value)
+	{ INT32_TO_NPVARIANT(value, variant); }
+	NPVariantObject(double value)
+	{ DOUBLE_TO_NPVARIANT(value, variant); }
+	NPVariantObject(bool value)
+	{ BOOLEAN_TO_NPVARIANT(value, variant); }
+	NPVariantObject(const ExtVariantObject& value)
+	{
+		switch(value.getType())
+		{
+		case EVO_STRING:
+			{
+				std::string strValue = value.getString();
+				STRINGN_TO_NPVARIANT(strValue.c_str(), (int) strValue.size(), variant);
+				break;
+			}
+		case EVO_INT32:
+			INT32_TO_NPVARIANT(value.getInt(), variant);
+			break;
+		case EVO_DOUBLE:
+			DOUBLE_TO_NPVARIANT(value.getDouble(), variant);
+			break;
+		case EVO_BOOLEAN:
+			BOOLEAN_TO_NPVARIANT(value.getBoolean(), variant);
+			break;
+		case EVO_OBJECT:
+			{
+				NPObject* obj = (NPObject*) NPN_MemAlloc(sizeof(NPObject));
+				OBJECT_TO_NPVARIANT(obj, variant);
+				break;
+			}
+		case EVO_NULL:
+			NULL_TO_NPVARIANT(variant);
+			break;
+		case EVO_VOID:
+		default:
+			VOID_TO_NPVARIANT(variant);
+			NULL_TO_NPVARIANT(variant);
+			break;
+		}
+	}
+
 	NPVariantObject(const NPVariantObject& other) { other.copy(variant); }
 	NPVariantObject(const NPVariant& other) { copy(other, variant); }
+
 	~NPVariantObject() { NPN_ReleaseVariantValue(&variant); }
 	
 	NPVariantObject& operator=(const NPVariantObject& other)
 	{
-		NPN_ReleaseVariantValue(&variant);
-		other.copy(variant);
+		if(this != &other)
+		{
+			NPN_ReleaseVariantValue(&variant);
+			other.copy(variant);
+		}
 		return *this;
 	}
 	NPVariantObject& operator=(const NPVariant& other)
 	{
-		NPN_ReleaseVariantValue(&variant);
-		copy(other, variant);
+		if(&variant != &other)
+		{
+			NPN_ReleaseVariantValue(&variant);
+			copy(other, variant);
+		}
 		return *this;
 	}
 
@@ -69,57 +124,40 @@ public:
 			return EVO_OBJECT;
 		else if(NPVARIANT_IS_NULL(variant))
 			return EVO_NULL;
-		else if(NPVARIANT_IS_VOID(variant))
-			return EVO_VOID;
 		else
-			return EVO_UNKNOWN;
+			return EVO_VOID;
 	}
 
-	std::string toString() const { return toString(variant); }
-	static std::string toString(const NPVariant& variant)
+	std::string getString() const { return getString(variant); }
+	static std::string getString(const NPVariant& variant)
 	{
-		switch(getType(variant))
+		if(getType(variant) == EVO_STRING)
 		{
-		case EVO_STRING:
-			{
-				NPString val = NPVARIANT_TO_STRING(variant);
-				return std::string(val.UTF8Characters, val.UTF8Length);
-				break;
-			}
-		case EVO_INT32:
-			{
-				int32_t val = NPVARIANT_TO_INT32(variant);
-				std::stringstream out;
-				out << val;
-				return out.str();
-				break;
-			}
-		case EVO_DOUBLE:
-			{
-				double val = NPVARIANT_TO_DOUBLE(variant);
-				std::stringstream out;
-				out << val;
-				return out.str();
-				break;
-			}
-		case EVO_BOOLEAN:
-			{
-				bool val = NPVARIANT_TO_BOOLEAN(variant);
-				return (val ? "true" : "false");
-				break;
-			}
-		case EVO_OBJECT:
-			return "object";
-			break;
-		case EVO_NULL:
-			return "null";
-			break;
-		case EVO_VOID:
-			return "void";
-			break;
-		default: {}
+			NPString val = NPVARIANT_TO_STRING(variant);
+			return std::string(val.UTF8Characters, val.UTF8Length);
 		}
-		return "unknown type";
+		return "";
+	}
+	int32_t getInt() const { return getInt(variant); }
+	static int32_t getInt(const NPVariant& variant)
+	{
+		if(getType(variant) == EVO_INT32)
+			return NPVARIANT_TO_INT32(variant);
+		return 0;
+	}
+	double getDouble() const { return getDouble(variant); }
+	static double getDouble(const NPVariant& variant)
+	{
+		if(getType(variant) == EVO_DOUBLE)
+			return NPVARIANT_TO_DOUBLE(variant);
+		return 0.0;
+	}
+	bool getBoolean() const { return getBoolean(variant); }
+	static bool getBoolean(const NPVariant& variant)
+	{
+		if(getType(variant) == EVO_BOOLEAN)
+			return NPVARIANT_TO_BOOLEAN(variant);
+		return false;
 	}
 
 private:

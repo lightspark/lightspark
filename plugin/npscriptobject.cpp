@@ -52,10 +52,10 @@ NPScriptObject::NPScriptObject(NPP inst) : instance(inst)
 	{
 		NPVariant result;
 		NPN_GetProperty(instance, pluginElementObject, NPN_GetStringIdentifier("id"), &result);
-		setProperty("id", NPVariantObject::toString(result));
+		setProperty("id", NPVariantObject::getString(result));
 		NPN_ReleaseVariantValue(&result);
 		NPN_GetProperty(instance, pluginElementObject, NPN_GetStringIdentifier("name"), &result);
-		setProperty("name", NPVariantObject::toString(result));
+		setProperty("name", NPVariantObject::getString(result));
 		NPN_ReleaseVariantValue(&result);
 	}
 

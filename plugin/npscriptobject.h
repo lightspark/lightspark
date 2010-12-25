@@ -324,7 +324,6 @@ private:
 	}
 };
 
-
 /**
  * Multiple inheritance doesn't seem to work will when used with the NPObject base class.
  * Thats why we use this gateway class which inherits only from ExtScriptObject.
@@ -336,15 +335,14 @@ private:
 	// If an entry is set with a ExtIdentifierObject or ExtVariantObject,
 	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.
 	std::map<NPIdentifierObject, NPVariantObject> properties;
-	std::map<NPIdentifierObject, NPInvokeFunctionPtr> methods;
+	std::map<NPIdentifierObject, lightspark::ExtCallbackFunctionPtr> methods;
 public:
 	NPScriptObject();
 	~NPScriptObject() {};
 
-	//bool invoke(const NPIdentifierObject& id, const NPVariantObject* args, uint32_t argc, NPVariantObject* result);
+	// These methods are not part of the ExtScriptObject interface.
+	// ExtScriptObject does not provide a way to invoke the set methods.
 	bool invoke(NPIdentifier name, const NPVariant* args, uint32_t argc, NPVariant* result);
-
-	//bool invokeDefault(const NPVariantObject* args, uint32_t argc, NPVariantObject* result);
 	bool invokeDefault(const NPVariant* args, uint32_t argc, NPVariant* result);
 
 	/* ExtScriptObject interface */
@@ -352,7 +350,7 @@ public:
 	{
 		return methods.find(id) != methods.end();
 	}
-	void setMethod(const NPIdentifierObject& id, NPInvokeFunctionPtr func)
+	void setMethod(const lightspark::ExtIdentifierObject& id, const lightspark::ExtCallbackFunctionPtr& func)
 	{
 		methods[id] = func;
 	}
@@ -373,32 +371,32 @@ public:
 	// These methods are standard to every flash instance.
 	// They provide features such as getting/setting internal variables,
 	// going to a frame, pausing etc... to the external container.
-	static bool stdGetVariable(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdSetVariable(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdGotoFrame(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdIsPlaying(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdLoadMovie(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdPan(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdPercentLoaded(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdPlay(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdRewind(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdStopPlay(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdSetZoomRect(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdZoom(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
-	static bool stdTotalFrames(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result);
+	static bool stdGetVariable(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdSetVariable(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdGotoFrame(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdIsPlaying(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdLoadMovie(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdPan(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdPercentLoaded(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdPlay(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdRewind(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdStopPlay(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdSetZoomRect(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdZoom(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
+	static bool stdTotalFrames(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result);
 };
 
 /**

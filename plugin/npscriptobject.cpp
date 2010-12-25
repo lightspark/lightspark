@@ -44,12 +44,29 @@ NPScriptObject::NPScriptObject()
 
 bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t argc, NPVariant* result)
 {
-	std::map<NPIdentifierObject, NPInvokeFunctionPtr>::iterator it;
-	it = methods.find(NPIdentifierObject(id));
-	if(it != methods.end())
-		return ((NPInvokeFunctionPtr) it->second)(NULL, id, args, argc, result);
+	NPIdentifierObject objId(id);
+	// Check if the method exists
+	std::map<NPIdentifierObject, lightspark::ExtCallbackFunctionPtr>::iterator it;
+	it = methods.find(objId);
+	if(it == methods.end())
+		return false;
 
-	return false;
+	// Convert raw arguments to objects
+	NPVariantObject objArgs[argc];
+	for(uint32_t i = 0; i < argc; i++)
+		objArgs[i] = NPVariantObject(args[i]);
+
+	// Run the function
+	lightspark::ExtVariantObject* objResult;
+	bool res = ((lightspark::ExtCallbackFunctionPtr) it->second)(objId, objArgs, argc, &objResult);
+	if(objResult == NULL)
+		return false;
+
+	// Copy the result into the raw NPVariant result and delete intermediate result
+	NPVariantObject(*objResult).copy(*result);
+	delete objResult;
+
+	return res;
 }
 
 bool NPScriptObject::invokeDefault(const NPVariant* args, uint32_t argc, NPVariant* result)
@@ -61,8 +78,6 @@ bool NPScriptObject::invokeDefault(const NPVariant* args, uint32_t argc, NPVaria
 NPVariantObject* NPScriptObject::getProperty(const lightspark::ExtIdentifierObject& id)
 {
 	std::map<NPIdentifierObject, NPVariantObject>::const_iterator it = properties.find(id);
-	LOG(LOG_NO_INFO, "properties stored: " << properties.size());
-	//__asm__("int $3");
 	if(it == properties.end())
 		return NULL;
 
@@ -80,107 +95,107 @@ bool NPScriptObject::removeProperty(const lightspark::ExtIdentifierObject& id)
 }
 
 /* Standard methods */
-bool NPScriptObject::stdGetVariable(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdGetVariable(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdGetVariable");
-	NULL_TO_NPVARIANT(*result);
+	*result = new NPVariantObject();
 	return false;
 }
 
-bool NPScriptObject::stdSetVariable(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdSetVariable(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdSetVariable");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdGotoFrame(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdGotoFrame(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdGotoFrame");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdIsPlaying(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdIsPlaying(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdIsPlaying");
-	BOOLEAN_TO_NPVARIANT(true, *result);
+	*result = new NPVariantObject(true);
 	return true;
 }
 
-bool NPScriptObject::stdLoadMovie(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdLoadMovie(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdLoadMovie");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdPan(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdPan(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdPan");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdPercentLoaded(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdPercentLoaded(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdPercentLoaded");
-	INT32_TO_NPVARIANT(100, *result);
+	*result = new NPVariantObject(100);
 	return true;
 }
 
-bool NPScriptObject::stdPlay(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdPlay(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdPlay");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdRewind(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdRewind(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdRewind");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdStopPlay(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdStopPlay(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdStopPlay");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdSetZoomRect(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdSetZoomRect(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdSetZoomRect");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdZoom(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdZoom(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdZoom");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 
-bool NPScriptObject::stdTotalFrames(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
+bool NPScriptObject::stdTotalFrames(const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdTotalFrames");
-	BOOLEAN_TO_NPVARIANT(false, *result);
+	*result = new NPVariantObject(false);
 	return false;
 }
 

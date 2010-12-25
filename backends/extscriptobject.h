@@ -136,6 +136,10 @@ private:
 	int32_t intValue;
 };
 
+// The result variable should be "delete"d by the caller after use.
+typedef bool (*ExtCallbackFunctionPtr)(const ExtIdentifierObject& id,
+		const ExtVariantObject* args, uint32_t argc, ExtVariantObject** result);
+
 /**
  * An ExtScriptObject represents the interface LS presents to the external container.
  * There should be a 1-to-1 relationship between LS instances & ExtScriptObjects.
@@ -150,6 +154,9 @@ public:
 	virtual ~ExtScriptObject() {};
 
 	virtual bool hasMethod(const ExtIdentifierObject& id) = 0;
+	// There currently is no way to invoke the set methods. There's no need for it anyway.
+	virtual void setMethod(const ExtIdentifierObject& id, const ExtCallbackFunctionPtr& func) = 0;
+
 	virtual bool hasProperty(const ExtIdentifierObject& id) = 0;
 	// The returned value should be "delete"d by the caller after use
 	virtual ExtVariantObject* getProperty(const ExtIdentifierObject& id) = 0;

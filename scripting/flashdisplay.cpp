@@ -366,6 +366,8 @@ void Sprite::sinit(Class_base* c)
 void GraphicsContainer::invalidateGraphics()
 {
 	assert(graphics);
+	if(!owner->isOnStage())
+		return;
 	uint32_t x,y,width,height;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(graphics->getBounds(bxmin,bxmax,bymin,bymax)==false)

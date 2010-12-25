@@ -101,7 +101,7 @@ private:
 
 	std::istream mainDownloaderStream;
 	NPDownloader* mainDownloader;
-	NPScriptObject* scriptObject;
+	NPScriptObjectGW* scriptObject;
 	lightspark::SystemState* m_sys;
 	lightspark::ParseThread* m_pt;
 };

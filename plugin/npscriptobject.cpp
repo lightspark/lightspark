@@ -22,42 +22,9 @@
 
 #include "npscriptobject.h"
 
-NPClass NPScriptObject::npClass = 
+NPScriptObject::NPScriptObject()
 {
-	NP_CLASS_STRUCT_VERSION,
-	allocate,
-	deallocate,
-	invalidate,
-	hasMethod,
-	invoke,
-	invokeDefault,
-	hasProperty,
-	getProperty,
-	setProperty,
-	removeProperty,
-	enumerate,
-	construct
-};
-
-NPScriptObject::NPScriptObject(NPP inst) : instance(inst)
-{
-	assert(instance != NULL);
-
-	NPN_GetValue(instance, NPNVWindowNPObject, &windowObject);
-	NPN_GetValue(instance, NPNVPluginElementNPObject, &pluginElementObject);
-
 	setProperty("$version", "10,0,r"SHORTVERSION);
-
-	if(pluginElementObject != NULL)
-	{
-		NPVariant result;
-		NPN_GetProperty(instance, pluginElementObject, NPN_GetStringIdentifier("id"), &result);
-		setProperty("id", NPVariantObject::getString(result));
-		NPN_ReleaseVariantValue(&result);
-		NPN_GetProperty(instance, pluginElementObject, NPN_GetStringIdentifier("name"), &result);
-		setProperty("name", NPVariantObject::getString(result));
-		NPN_ReleaseVariantValue(&result);
-	}
 
 	// Standard methods
 	setMethod("SetVariable", stdSetVariable);
@@ -75,84 +42,41 @@ NPScriptObject::NPScriptObject(NPP inst) : instance(inst)
 	setMethod("TotalFrames", stdTotalFrames);
 }
 
-/* Utility: property related */
-NPVariantObject NPScriptObject::getProperty(const std::string& name)
+bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t argc, NPVariant* result)
 {
-	NPVariant variant;
-	getProperty(NPN_GetStringIdentifier(name.c_str()), &variant);
-	NPVariantObject obj(variant);
-	NPN_ReleaseVariantValue(&variant);
-	return obj;
-}
-void NPScriptObject::setProperty(const std::string& name, const std::string& value)
-{
-	NPVariant strvar;
-	STRINGN_TO_NPVARIANT(value.c_str(), static_cast<int>(value.size()), strvar);
-	setProperty(NPN_GetStringIdentifier(name.c_str()), strvar);
-}
-void NPScriptObject::setProperty(const std::string& name, double value)
-{
-	NPVariant doublevar;
-	DOUBLE_TO_NPVARIANT(value, doublevar);
-	setProperty(NPN_GetStringIdentifier(name.c_str()), doublevar);
-}
-void NPScriptObject::setProperty(const std::string& name, int value)
-{
-	NPVariant intvar;
-	INT32_TO_NPVARIANT(value, intvar);
-	setProperty(NPN_GetStringIdentifier(name.c_str()), intvar);
-}
-
-/* NPRuntime: method related */
-bool NPScriptObject::invoke(NPIdentifier name, const NPVariant* args, uint32_t argc, NPVariant* result)
-{
-	std::map<NPIdentifier, NPInvokeFunctionPtr>::iterator it = methods.find(name);
+	std::map<NPIdentifierObject, NPInvokeFunctionPtr>::iterator it;
+	it = methods.find(NPIdentifierObject(id));
 	if(it != methods.end())
-		return ((NPInvokeFunctionPtr) it->second)(NULL, name, args, argc, result);
+		return ((NPInvokeFunctionPtr) it->second)(NULL, id, args, argc, result);
 
 	return false;
 }
 
 bool NPScriptObject::invokeDefault(const NPVariant* args, uint32_t argc, NPVariant* result)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::invokeDefault");
+	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObjectGW::invokeDefault");
 	return false;
 }
 
-/* NPRuntime: property related */
-bool NPScriptObject::getProperty(NPIdentifier name, NPVariant* result)
+NPVariantObject* NPScriptObject::getProperty(const lightspark::ExtIdentifierObject& id)
 {
-	std::map<NPIdentifier, NPVariantObject>::const_iterator it = properties.find(name);
+	std::map<NPIdentifierObject, NPVariantObject>::const_iterator it = properties.find(id);
+	LOG(LOG_NO_INFO, "properties stored: " << properties.size());
+	//__asm__("int $3");
+	if(it == properties.end())
+		return NULL;
+
+	NPVariantObject* result = new NPVariantObject(it->second);
+	return result;
+}
+bool NPScriptObject::removeProperty(const lightspark::ExtIdentifierObject& id)
+{
+	std::map<NPIdentifierObject, NPVariantObject>::iterator it = properties.find(id);
 	if(it == properties.end())
 		return false;
 
-	it->second.copy(*result);
+	properties.erase(it);
 	return true;
-}
-
-bool NPScriptObject::removeProperty(NPIdentifier name)
-{
-	std::map<NPIdentifier, NPVariantObject>::iterator it = properties.find(name);
-	if(it != properties.end())
-	{
-		properties.erase(it);
-		return true;
-	}
-
-	return false;
-}
-
-/* NPRuntime: misc */
-bool NPScriptObject::enumerate(NPIdentifier** value, uint32_t* count)
-{
-	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::enumerate");
-	return false;
-}
-
-bool NPScriptObject::construct(const NPVariant* args, uint32_t argc, NPVariant* result)
-{
-	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::construct");
-	return false;
 }
 
 /* Standard methods */
@@ -259,3 +183,22 @@ bool NPScriptObject::stdTotalFrames(NPObject* obj, NPIdentifier name,
 	BOOLEAN_TO_NPVARIANT(false, *result);
 	return false;
 }
+
+
+// NPScriptObjectGW NPClass for use with NPRuntime
+NPClass NPScriptObjectGW::npClass = 
+{
+	NP_CLASS_STRUCT_VERSION,
+	allocate,
+	deallocate,
+	invalidate,
+	hasMethod,
+	invoke,
+	invokeDefault,
+	hasProperty,
+	getProperty,
+	setProperty,
+	removeProperty,
+	enumerate,
+	construct
+};

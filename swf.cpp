@@ -299,11 +299,6 @@ void SystemState::stopEngines()
 	downloadManager=NULL;
 	delete securityManager;
 	securityManager=NULL;
-	if(extScriptObject != NULL)
-	{
-		delete extScriptObject;
-		extScriptObject = NULL;
-	}
 	delete config;
 	config=NULL;
 	if(currentVm)

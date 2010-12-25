@@ -32,62 +32,97 @@
 
 #include "backends/extscriptobject.h"
 
+/**
+ * This class extends ExtVariantObject and as such can be used in the same way.
+ * It can also convert NPVariants into NPVariantObjects and vice-versa.
+ * It can also convert ExtVariantObjects into NPVariantObjects (object-type variants excluded)
+ * and as such can convert ExtVariantObjects into NPVariants.
+ */
 class NPVariantObject : public lightspark::ExtVariantObject
 {
 public:
 	NPVariantObject()
-	{ NULL_TO_NPVARIANT(variant); }
+	{ VOID_TO_NPVARIANT(variant); }
 	NPVariantObject(const std::string& value)
-	{ STRINGN_TO_NPVARIANT(value.c_str(), (int) value.size(), variant); }
+	{
+		NPVariant temp;
+		STRINGN_TO_NPVARIANT(value.c_str(), (int) value.size(), temp);
+		copy(temp, variant);
+	}
 	NPVariantObject(const char* value)
-	{ STRINGN_TO_NPVARIANT(value, (int) strlen(value), variant); }
+	{
+		NPVariant temp;
+		STRINGN_TO_NPVARIANT(value, (int) strlen(value), temp);
+		copy(temp, variant);
+	}
 	NPVariantObject(int32_t value)
 	{ INT32_TO_NPVARIANT(value, variant); }
 	NPVariantObject(double value)
 	{ DOUBLE_TO_NPVARIANT(value, variant); }
 	NPVariantObject(bool value)
 	{ BOOLEAN_TO_NPVARIANT(value, variant); }
+
+	// ExtVariantObject copy-constructor
 	NPVariantObject(const ExtVariantObject& value)
 	{
-		switch(value.getType())
+		// It's possible we got a down-casted NPVariantObject, so lets check for it
+		try
 		{
-		case EVO_STRING:
+			dynamic_cast<const NPVariantObject&>(value).copy(variant);
+		}
+		// Seems we got a real ExtVariantObject, lets convert
+		catch(std::bad_cast&)
+		{
+			switch(value.getType())
 			{
-				std::string strValue = value.getString();
-				STRINGN_TO_NPVARIANT(strValue.c_str(), (int) strValue.size(), variant);
+			case EVO_STRING:
+				{
+					std::string strValue = value.getString();
+					NPVariant temp;
+					STRINGN_TO_NPVARIANT(strValue.c_str(), (int) strValue.size(), temp);
+					copy(temp, variant);
+					break;
+				}
+			case EVO_INT32:
+				INT32_TO_NPVARIANT(value.getInt(), variant);
+				break;
+			case EVO_DOUBLE:
+				DOUBLE_TO_NPVARIANT(value.getDouble(), variant);
+				break;
+			case EVO_BOOLEAN:
+				BOOLEAN_TO_NPVARIANT(value.getBoolean(), variant);
+				break;
+			case EVO_OBJECT:
+				{
+					// We only do a very shallow copy here.
+					// None of the object properties are actually copied.
+					NPObject* obj = (NPObject*) NPN_MemAlloc(sizeof(NPObject));
+					OBJECT_TO_NPVARIANT(obj, variant);
+					break;
+				}
+			case EVO_NULL:
+				NULL_TO_NPVARIANT(variant);
+				break;
+			case EVO_VOID:
+			default:
+				VOID_TO_NPVARIANT(variant);
 				break;
 			}
-		case EVO_INT32:
-			INT32_TO_NPVARIANT(value.getInt(), variant);
-			break;
-		case EVO_DOUBLE:
-			DOUBLE_TO_NPVARIANT(value.getDouble(), variant);
-			break;
-		case EVO_BOOLEAN:
-			BOOLEAN_TO_NPVARIANT(value.getBoolean(), variant);
-			break;
-		case EVO_OBJECT:
-			{
-				NPObject* obj = (NPObject*) NPN_MemAlloc(sizeof(NPObject));
-				OBJECT_TO_NPVARIANT(obj, variant);
-				break;
-			}
-		case EVO_NULL:
-			NULL_TO_NPVARIANT(variant);
-			break;
-		case EVO_VOID:
-		default:
-			VOID_TO_NPVARIANT(variant);
-			NULL_TO_NPVARIANT(variant);
-			break;
 		}
 	}
-
+	// NPVariantObject copy-constructor
 	NPVariantObject(const NPVariantObject& other) { other.copy(variant); }
-	NPVariantObject(const NPVariant& other) { copy(other, variant); }
+	NPVariantObject(const NPVariant& other) {
+		copy(other, variant);
+	}
 
 	~NPVariantObject() { NPN_ReleaseVariantValue(&variant); }
-	
+
+	// Copy this NPVariantObject's NPVariant value to another one.
+	void copy(NPVariant& dest) const { copy(variant, dest); }
+
+	// Straight copying of this object isn't correct.
+	// We need to properly copy the stored data.
 	NPVariantObject& operator=(const NPVariantObject& other)
 	{
 		if(this != &other)
@@ -106,8 +141,6 @@ public:
 		}
 		return *this;
 	}
-
-	void copy(NPVariant& dest) const { copy(variant, dest); }
 
 	EVO_TYPE getType() const { return getType(variant); }
 	static EVO_TYPE getType(const NPVariant& variant)
@@ -163,6 +196,7 @@ public:
 private:
 	NPVariant variant;
 
+	// This forms the base for the NPVariantObject & NPVariant copy-constructors.
 	static void copy(const NPVariant& from, NPVariant& dest)
 	{
 		dest = from;
@@ -187,6 +221,12 @@ private:
 	}
 };
 
+/**
+ * This class extends ExtIdentifierObject. As such it can be used the same way.
+ * It can also convert NPIdentifiers into NPIdentifierObjects and vice versa.
+ * It can also convert ExtIdentifierObjects into NPIdentifierObjects, and as such
+ * can convert ExtIdentifierObjects into NPIdentifiers.
+ */
 class NPIdentifierObject : public lightspark::ExtIdentifierObject
 {
 public:
@@ -196,27 +236,46 @@ public:
 	{ identifier = NPN_GetStringIdentifier(value); }
 	NPIdentifierObject(int32_t value)
 	{ identifier = NPN_GetIntIdentifier(value); }
+
+	// ExtIdentifierObject copy-constructor
 	NPIdentifierObject(const ExtIdentifierObject& value)
 	{
-		if(value.getType() == EI_STRING)
-			identifier = NPN_GetStringIdentifier(value.getString().c_str());
-		else
-			identifier = NPN_GetIntIdentifier(value.getInt());
+		// It is possible we got a down-casted ExtIdentifierObject, so lets check for that
+		try
+		{
+			dynamic_cast<const NPIdentifierObject&>(value).copy(identifier);
+		}
+		// We got a real ExtIdentifierObject, lets convert it
+		catch(std::bad_cast&)
+		{
+			if(value.getType() == EI_STRING)
+				identifier = NPN_GetStringIdentifier(value.getString().c_str());
+			else
+				identifier = NPN_GetIntIdentifier(value.getInt());
+		}
 	}
-
+	// NPIdentifierObject copy-constructor
 	NPIdentifierObject(const NPIdentifierObject& id) { id.copy(identifier); }
+	// NPIdentifier copy-constructor, converts and NPIdentifier into an NPIdentifierObject
 	NPIdentifierObject(const NPIdentifier& id) { copy(id, identifier); }
+
 	~NPIdentifierObject() {}
 
 	void copy(NPIdentifier& dest) const { copy(identifier, dest); }
 
-	bool operator<(const NPIdentifierObject& other) const
-	{
-		return identifier < other.getNPIdentifier();
-	}
+	// NPIdentifierObjects get used as keys in an std::map, so they need to comparable
 	bool operator<(const ExtIdentifierObject& other) const
 	{
-		return ExtIdentifierObject::operator<(other);
+		// It is possible we got a down-casted NPIdentifierObject, so lets check for that
+		try
+		{
+			return identifier < dynamic_cast<const NPIdentifierObject&>(other).getNPIdentifier();
+		}
+		// We got a real ExtIdentifierObject, let ExtIdentifierObject::operator< handle this
+		catch(std::bad_cast&)
+		{
+			return ExtIdentifierObject::operator<(other);
+		}
 	}
 
 
@@ -254,6 +313,8 @@ public:
 private:
 	NPIdentifier identifier;
 
+	// Copy one identifier to the other.
+	// This forms the base for the NPIdentifier & NPIdentifierObject copy-constructors.
 	static void copy(const NPIdentifier& from, NPIdentifier& dest)
 	{
 		if(NPN_IdentifierIsString(from))
@@ -263,81 +324,55 @@ private:
 	}
 };
 
-class NPScriptObject : public NPObject
+
+/**
+ * Multiple inheritance doesn't seem to work will when used with the NPObject base class.
+ * Thats why we use this gateway class which inherits only from ExtScriptObject.
+ */
+class DLL_PUBLIC NPScriptObject : public lightspark::ExtScriptObject
 {
-	friend class NPScriptObjectGW;
-public:
-	NPScriptObject(NPP inst);
-	~NPScriptObject() {};
-	
-	static NPClass npClass;
-
-	/* Static methods used by NPRuntime */
-	static NPObject* allocate(NPP instance, NPClass* _class)
-	{ return new NPScriptObject(instance); }
-	static void deallocate(NPObject* obj) { delete (NPScriptObject*) obj; }
-	static void invalidate(NPObject* obj) { }
-
-	static bool hasMethod(NPObject* obj, NPIdentifier name)
-	{ return ((NPScriptObject*) obj)->hasMethod(name); }
-	static bool invoke(NPObject* obj, NPIdentifier name,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
-	{ return ((NPScriptObject*) obj)->invoke(name, args, argc, result); }
-	static bool invokeDefault(NPObject* obj,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
-	{ return ((NPScriptObject*) obj)->invokeDefault(args, argc, result); }
-
-	static bool hasProperty(NPObject* obj, NPIdentifier name)
-	{ return ((NPScriptObject*) obj)->hasProperty(name); }
-	static bool getProperty(NPObject* obj, NPIdentifier name, NPVariant* result)
-	{ return ((NPScriptObject*) obj)->getProperty(name, result); }
-	static bool setProperty(NPObject* obj, NPIdentifier name, const NPVariant* value)
-	{ return ((NPScriptObject*) obj)->setProperty(name, *value); }
-	static bool removeProperty(NPObject* obj, NPIdentifier name)
-	{ return ((NPScriptObject*) obj)->removeProperty(name); }
-
-	static bool enumerate(NPObject* obj, NPIdentifier** value, uint32_t* count)
-	{ return ((NPScriptObject*) obj)->enumerate(value, count); }
-	static bool construct(NPObject* obj,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
-	{ return ((NPScriptObject*) obj)->construct(args, argc, result); }
 private:
-	NPP instance;
-	NPObject* windowObject;
-	NPObject* pluginElementObject;
+	// This map stores this object's methods & properties
+	// If an entry is set with a ExtIdentifierObject or ExtVariantObject,
+	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.
+	std::map<NPIdentifierObject, NPVariantObject> properties;
+	std::map<NPIdentifierObject, NPInvokeFunctionPtr> methods;
+public:
+	NPScriptObject();
+	~NPScriptObject() {};
 
-	std::map<NPIdentifier, NPVariantObject> properties;
-	std::map<NPIdentifier, NPInvokeFunctionPtr> methods;
-
-	/* Utility methods */
-	bool hasMethod(const std::string& name)
-	{ return hasMethod(NPN_GetStringIdentifier(name.c_str())); }
-	void setMethod(const std::string& name, NPInvokeFunctionPtr func)
-	{ setMethod(NPN_GetStringIdentifier(name.c_str()), func); }
-
-	bool hasProperty(const std::string& name)
-	{ return hasProperty(NPN_GetStringIdentifier(name.c_str())); }
-	NPVariantObject getProperty(const std::string& name);
-	void setProperty(const std::string& name, const std::string& value);
-	void setProperty(const std::string& name, double value);
-	void setProperty(const std::string& name, int value);
-
-	/* Methods indirectly used by NPRuntime */
-	bool hasMethod(NPIdentifier name) { return methods.find(name) != methods.end(); }
+	//bool invoke(const NPIdentifierObject& id, const NPVariantObject* args, uint32_t argc, NPVariantObject* result);
 	bool invoke(NPIdentifier name, const NPVariant* args, uint32_t argc, NPVariant* result);
-	bool invokeDefault(const NPVariant* args, uint32_t argc, NPVariant* result);
-	// Not really part of NPClass but used internally
-	bool setMethod(NPIdentifier name, NPInvokeFunctionPtr func) { methods[name] = func; return true; }
-	
-	bool hasProperty(NPIdentifier name) { return properties.find(name) != properties.end(); }
-	bool getProperty(NPIdentifier name, NPVariant* result);
-	bool setProperty(NPIdentifier name, const NPVariant& value) { properties[name] = value; return true; }
-	bool removeProperty(NPIdentifier name);
 
-	bool enumerate(NPIdentifier** value, uint32_t* count);
-	bool construct(const NPVariant* args, uint32_t argc, NPVariant* result);
+	//bool invokeDefault(const NPVariantObject* args, uint32_t argc, NPVariantObject* result);
+	bool invokeDefault(const NPVariant* args, uint32_t argc, NPVariant* result);
+
+	/* ExtScriptObject interface */
+	bool hasMethod(const lightspark::ExtIdentifierObject& id)
+	{
+		return methods.find(id) != methods.end();
+	}
+	void setMethod(const NPIdentifierObject& id, NPInvokeFunctionPtr func)
+	{
+		methods[id] = func;
+	}
+	bool hasProperty(const lightspark::ExtIdentifierObject& id)
+	{
+		return properties.find(id) != properties.end();
+	}
+
+	// The returned value should be "delete"d by the caller after use
+	NPVariantObject* getProperty(const lightspark::ExtIdentifierObject& id);
+	void setProperty(const lightspark::ExtIdentifierObject& id, const lightspark::ExtVariantObject& value)
+	{
+		properties[id] = value;
+	}
+	bool removeProperty(const lightspark::ExtIdentifierObject& id);
 
 	// Standard methods
+	// These methods are standard to every flash instance.
+	// They provide features such as getting/setting internal variables,
+	// going to a frame, pausing etc... to the external container.
 	static bool stdGetVariable(NPObject* obj, NPIdentifier name,
 			const NPVariant* args, uint32_t argc, NPVariant* result);
 	static bool stdSetVariable(NPObject* obj, NPIdentifier name,
@@ -367,34 +402,103 @@ private:
 };
 
 /**
- * Multiple inheritance doesn't seem to work will when used with the NPObject base class.
- * Thats why we use this gateway class which inherits only from ExtScriptObject.
+ * This class acts as a gateway between NPRuntime & NPScriptObject.
+ * Multiple inheritance doesn't seem to work will in conjunction with NPObject.
+ * That's the main reason this gateway is used.
  */
-class DLL_PUBLIC NPScriptObjectGW : public lightspark::ExtScriptObject
+class NPScriptObjectGW : public NPObject
 {
+public:
+	NPScriptObjectGW(NPP inst) : instance(inst)
+	{
+		assert(instance != NULL);
+		so = new NPScriptObject();
+
+		NPN_GetValue(instance, NPNVWindowNPObject, &windowObject);
+		NPN_GetValue(instance, NPNVPluginElementNPObject, &pluginElementObject);
+
+		// Lets set these basic properties, fetched from the NPRuntime
+		if(pluginElementObject != NULL)
+		{
+			NPVariant result;
+			NPN_GetProperty(instance, pluginElementObject, NPN_GetStringIdentifier("id"), &result);
+			NPVariantObject objResult(result);
+			so->setProperty("id", objResult);
+			NPN_ReleaseVariantValue(&result);
+			NPN_GetProperty(instance, pluginElementObject, NPN_GetStringIdentifier("name"), &result);
+			so->setProperty("name", NPVariantObject(result));
+			NPN_ReleaseVariantValue(&result);
+		}
+	}
+	~NPScriptObjectGW()
+	{
+		delete so;
+	};
+
+	NPScriptObject* getScriptObject() { return so; }
+	
+	static NPClass npClass;
+
+	/* Static gateway methods used by NPRuntime */
+	static NPObject* allocate(NPP instance, NPClass* _class)
+	{
+		return new NPScriptObjectGW(instance);
+	}
+	static void deallocate(NPObject* obj)
+	{
+		delete (NPScriptObjectGW*) obj;
+	}
+	static void invalidate(NPObject* obj) { }
+
+	/* NPScriptObject forwarders */
+	static bool hasMethod(NPObject* obj, NPIdentifier id)
+	{
+		return ((NPScriptObjectGW*) obj)->so->hasMethod(NPIdentifierObject(id));
+	}
+	static bool invoke(NPObject* obj, NPIdentifier id,
+			const NPVariant* args, uint32_t argc, NPVariant* result)
+	{
+		return ((NPScriptObjectGW*) obj)->so->invoke(id, args, argc, result);
+	}
+	static bool invokeDefault(NPObject* obj,
+			const NPVariant* args, uint32_t argc, NPVariant* result)
+	{
+		return ((NPScriptObjectGW*) obj)->so->invokeDefault(args, argc, result);
+	}
+
+	static bool hasProperty(NPObject* obj, NPIdentifier id)
+	{
+		return ((NPScriptObjectGW*) obj)->so->hasProperty(NPIdentifierObject(id));
+	}
+	static bool getProperty(NPObject* obj, NPIdentifier id, NPVariant* result)
+	{
+		NPVariantObject* resultObj = ((NPScriptObjectGW*) obj)->so->getProperty(NPIdentifierObject(id));
+		if(resultObj == NULL)
+			return false;
+
+		resultObj->copy(*result);
+		delete resultObj;
+		return true;
+	}
+	static bool setProperty(NPObject* obj, NPIdentifier id, const NPVariant* value)
+	{
+		((NPScriptObjectGW*) obj)->so->setProperty(NPIdentifierObject(id), NPVariantObject(*value));
+		return true;
+	}
+	static bool removeProperty(NPObject* obj, NPIdentifier id)
+	{
+		return ((NPScriptObjectGW*) obj)->so->removeProperty(NPIdentifierObject(id));
+	}
+
+	/* Non-implemented */
+	static bool enumerate(NPObject* obj, NPIdentifier** value, uint32_t* count) { return false; }
+	static bool construct(NPObject* obj,
+			const NPVariant* args, uint32_t argc, NPVariant* result) { return false; }
 private:
 	NPScriptObject* so;
-public:
-	NPScriptObjectGW(NPScriptObject* scriptObject) : so(scriptObject)
-	{ assert(so != NULL); };
-	~NPScriptObjectGW() {};
-
-	bool hasMethod(const std::string& name)
-	{ return so->hasMethod(name); }
-	void setMethod(const std::string& name, NPInvokeFunctionPtr func)
-	{ so->setMethod(name, func); }
-
-	bool hasProperty(const std::string& name)
-	{ return so->hasProperty(name); }
-	void setProperty(const std::string& name, const std::string& value)
-	{ so->setProperty(name, value); }
-	void setProperty(const std::string& name, double value)
-	{ so->setProperty(name, value); }
-	void setProperty(const std::string& name, int value)
-	{ so->setProperty(name, value); }
-	//The returned object should be deleted by the caller
-	NPVariantObject* getProperty(const std::string& name)
-	{ return new NPVariantObject(so->getProperty(name)); }
+	NPP instance;
+	NPObject* windowObject;
+	NPObject* pluginElementObject;
 };
 
 #endif

@@ -241,8 +241,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	NPN_Version(&p_major, &p_minor, &n_major, &n_minor);
 	if (n_minor >= 14) { // since NPAPI start to support
 		scriptObject =
-			(NPScriptObject *) NPN_CreateObject(mInstance, &NPScriptObject::npClass);
-		m_sys->extScriptObject = new NPScriptObjectGW(scriptObject);
+			(NPScriptObjectGW *) NPN_CreateObject(mInstance, &NPScriptObjectGW::npClass);
+		m_sys->extScriptObject = scriptObject->getScriptObject();
 	}
 	else
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
@@ -310,11 +310,11 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 				void **v = (void **)aValue;
 				NPN_RetainObject(scriptObject);
 				*v = scriptObject;
-				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObject returned to browser");
+				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObjectGW returned to browser");
 				break;
 			}
 			else
-				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObject requested but was NULL");
+				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObjectGW requested but was NULL");
     default:
       err = NPERR_INVALID_PARAM;
       break;

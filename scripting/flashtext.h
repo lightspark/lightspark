@@ -40,6 +40,7 @@ class TextField: public DisplayObject
 private:
 	intptr_t width;
 	intptr_t height;
+	tiny_string text;
 public:
 	TextField():width(0),height(0){}
 	static void sinit(Class_base* c);
@@ -50,6 +51,8 @@ public:
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_setHeight);
+	ASFUNCTION(_getText);
+	ASFUNCTION(_setText);
 };
 
 class StyleSheet: public EventDispatcher

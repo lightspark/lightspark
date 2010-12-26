@@ -51,6 +51,8 @@ void TextField::sinit(Class_base* c)
 	c->setSetterByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),true);
 	c->setGetterByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),true);
 	c->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),true);
+	c->setGetterByQName("text","",Class<IFunction>::getFunction(TextField::_getText),true);
+	c->setSetterByQName("text","",Class<IFunction>::getFunction(TextField::_setText),true);
 }
 
 void TextField::buildTraits(ASObject* o)
@@ -94,10 +96,24 @@ ASFUNCTIONBODY(TextField,_setHeight)
 	return NULL;
 }
 
+ASFUNCTIONBODY(TextField,_getText)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return Class<ASString>::getInstanceS(th->text);
+}
+
+ASFUNCTIONBODY(TextField,_setText)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	assert_and_throw(argslen==1);
+	th->text=args[0]->toString();
+	return NULL;
+}
+
 void TextField::Render(bool maskEnabled)
 {
 	//TODO: implement
-	LOG(LOG_NOT_IMPLEMENTED,_("TextField::Render"));
+	LOG(LOG_NOT_IMPLEMENTED,_("TextField::Render ") << text);
 }
 
 void StyleSheet::sinit(Class_base* c)

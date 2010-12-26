@@ -15,6 +15,8 @@
 		
 		dict["foo"] = 5;
 		dict[o] = "muffins";
+
+		Tests.assertTrue(dict.hasOwnProperty("foo"),"hasOwnProperty with string");
 		
 		Tests.assertEquals(dict["foo"], 5, "dict[\"foo\"] = 5", true);
 		Tests.assertEquals(dict[o], "muffins", "dict[Object]", true);
@@ -34,7 +36,7 @@
 		for (var key:* in dict2)
 			n++;
 		
-		Tests.assertFalse(n == 1, "Dictionary.weakKeys");
+		Tests.assertEquals(n, 1, "Dictionary.weakKeys");
 		
 		Tests.report(visual, name);
 	}

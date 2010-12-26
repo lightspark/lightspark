@@ -19,7 +19,6 @@
 
 #include <list>
 #include <algorithm>
-#include <pcrecpp.h>
 #include <pcre.h>
 #include <string.h>
 #include <sstream>
@@ -27,6 +26,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <limits>
+#include <cstdio>
 
 #include "abc.h"
 #include "toplevel.h"
@@ -2263,16 +2263,31 @@ ASFUNCTIONBODY(RegExp,exec)
 ASFUNCTIONBODY(RegExp,test)
 {
 	RegExp* th=static_cast<RegExp*>(obj);
-	pcrecpp::RE_Options opt;
-	opt.set_caseless(th->ignoreCase);
-	opt.set_extended(th->extended);
-	opt.set_multiline(th->multiline);
 
-	pcrecpp::RE pcreRE(th->re,opt);
-	assert_and_throw(th->lastIndex==0);
-	const tiny_string& arg0=args[0]->toString();
+	const tiny_string& arg0 = args[0]->toString();
 
-	bool ret=pcreRE.PartialMatch(arg0.raw_buf());
+	int options = 0;
+	if(th->ignoreCase)
+		options |= PCRE_CASELESS;
+	if(th->extended)
+		options |= PCRE_EXTENDED;
+	if(th->multiline)
+		options |= PCRE_MULTILINE;
+
+	const char * error;
+	int errorOffset;
+	pcre * pcreRE = pcre_compile(th->re.c_str(), options, &error, &errorOffset, NULL);
+	if(error)
+		return new Null;
+
+	const char* str=arg0.raw_buf();
+	int strLen=arg0.len();
+    int ovector[30];
+	int rc = pcre_exec(pcreRE, NULL, str, strLen, 0, PCRE_PARTIAL_SOFT, ovector, 30);
+
+    // either a partial or full match
+	bool ret = ( (rc == PCRE_ERROR_PARTIAL) || (rc >= 0) );
+
 	return abstract_b(ret);
 }
 

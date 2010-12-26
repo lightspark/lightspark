@@ -23,6 +23,9 @@
 		
 		delete dict["foo"];
 		
+		dict[2] = "number two";
+		Tests.assertTrue(dict.hasOwnProperty(2), "hasOwnProperty with number");
+		Tests.assertEquals(dict["2"], "number two", "primitive keys behaviour", true);
 		Tests.assertFalse(dict["foo"] == 5, "delete dict[\"key\"]");
 		
 		var dict2:Dictionary = new Dictionary();

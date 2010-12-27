@@ -16,9 +16,9 @@
 		Tests.assertArrayEquals(["idenTIfiER_123","idenTIfiER_","123"], ret, "exec(): With capturing groups", true);
 		Tests.assertEquals("idenTIfiER_", ret.namedCapture, "exec(): With named capturing groups", true);
 
-		var re2:RegExp = new RegExp("[0-9]+a");
-		var ret2:Boolean = re2.test("012");
-		Tests.assertTrue(ret2, "test(): With partial matching");
+		var re2:RegExp = new RegExp("[0-9]+");
+		var ret2:Boolean = re2.test("aaa012bbb");
+		Tests.assertTrue(ret2, "test()");
 
 		Tests.report(visual, this.name);
 	}

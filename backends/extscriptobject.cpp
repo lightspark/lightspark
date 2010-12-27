@@ -104,8 +104,9 @@ ExtVariantObject::ExtVariantObject(ASObject* other) :
 		doubleValue = other->toNumber();
 		type = EVO_DOUBLE;
 		break;
-	case T_OBJECT:
 	case T_ARRAY:
+		objectValue.setType(ExtObject::EO_ARRAY);
+	case T_OBJECT:
 		type = EVO_OBJECT;
 		{
 			bool hasNext = false;
@@ -153,33 +154,56 @@ ASObject* ExtVariantObject::getASObject() const
 		return abstract_b(getBoolean());
 	case EVO_OBJECT:
 		{
-			ASObject* asobj = Class<ASObject>::getInstanceS();
-			
-			ExtIdentifierObject** ids;
+			ExtObject* objValue = getObject();
+			ASObject* asobj;
+
 			ExtVariantObject* property;
 			uint32_t count;
-			std::stringstream out;
-			ExtObject* objValue = getObject();
-			if(objValue != NULL && objValue->enumerate(&ids, &count))
+
+			// We are converting an array, so lets set indexes
+			if(objValue->getType() == ExtObject::EO_ARRAY)
 			{
+				asobj = Class<Array>::getInstanceS();
+				count = objValue->getLength();
+				static_cast<Array*>(asobj)->resize(count);
 				for(uint32_t i = 0; i < count; i++)
 				{
-					property = objValue->getProperty(*ids[i]);
-					if(ids[i]->getType() == ExtIdentifierObject::EI_STRING)
-						asobj->setVariableByQName(ids[i]->getString(), "", property->getASObject());
-					else
-					{
-						out << ids[i]->getInt();
-						asobj->setVariableByQName(out.str().c_str(), "", property->getASObject());
-					}
+					property = objValue->getProperty(i);
+					static_cast<Array*>(asobj)->set(i, property->getASObject());
 					delete property;
-					delete ids[i];
 				}
+			}
+			// We are converting an object, so lets set variables
+			else
+			{
+				asobj = Class<ASObject>::getInstanceS();
+			
+				ExtIdentifierObject** ids;
+				uint32_t count;
+				std::stringstream strOut;
+				if(objValue != NULL && objValue->enumerate(&ids, &count))
+				{
+					for(uint32_t i = 0; i < count; i++)
+					{
+						property = objValue->getProperty(*ids[i]);
+
+						if(ids[i]->getType() == ExtIdentifierObject::EI_STRING)
+							asobj->setVariableByQName(ids[i]->getString(), "", property->getASObject());
+						else
+						{
+							strOut << ids[i]->getInt();
+							asobj->setVariableByQName(strOut.str().c_str(), "", property->getASObject());
+						}
+						delete property;
+						delete ids[i];
+					}
+				}
+				delete ids;
 			}
 			if(objValue != NULL)
 				delete objValue;
-			delete ids;
 
+			asobj->incRef();
 			return asobj;
 		}
 	case EVO_NULL:

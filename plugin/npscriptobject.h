@@ -186,10 +186,11 @@ public:
 	bool removeProperty(const lightspark::ExtIdentifierObject& id);
 
 	bool enumerate(lightspark::ExtIdentifierObject*** ids, uint32_t* count) const;
+
+	uint32_t getLength() const { return properties.size(); }
 private:
 	NPP instance;
 	std::map<NPIdentifierObject, NPVariantObject> properties;
-	typedef std::pair<NPIdentifierObject, NPVariantObject> propPair;
 
 	static void copy(const lightspark::ExtObject& from, lightspark::ExtObject& to);
 };
@@ -593,9 +594,7 @@ private:
 	// If an entry is set with a ExtIdentifierObject or ExtVariantObject,
 	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.
 	std::map<NPIdentifierObject, NPVariantObject> properties;
-	typedef std::pair<NPIdentifierObject, NPVariantObject> propPair;
 	std::map<NPIdentifierObject, lightspark::ExtCallbackFunction> methods;
-	typedef std::pair<NPIdentifierObject, lightspark::ExtCallbackFunction> methPair;
 };
 
 /**

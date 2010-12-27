@@ -24,10 +24,13 @@
 
 using namespace std;
 
-NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) : instance(_instance)
+NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) :
+	instance(_instance)
 {
 	NPIdentifier* ids = NULL;
 	NPVariant property;
+	NPIdentifierObject* id;
+	bool allIntIds = true;
 	uint32_t count;
 	if(instance == NULL || obj == NULL)
 		return;
@@ -38,7 +41,27 @@ NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) : instance(_instanc
 		{
 			if(NPN_GetProperty(instance, obj, ids[i], &property))
 			{
-				setProperty(NPIdentifierObject(ids[i]), NPVariantObject(instance, property));
+				id = new NPIdentifierObject(ids[i]);
+				if(id->getType() != NPIdentifierObject::EI_INT32)
+					allIntIds = false;
+
+				LOG(LOG_NO_INFO, "setting property: " << id->getString() << id->getInt());
+				setProperty(*id, NPVariantObject(instance, property));
+				delete id;
+				NPN_ReleaseVariantValue(&property);
+			}
+		}
+		// Arrays don't enumerate the length property. So we can check that, if we got all integer ids,
+		// and there exists an un-enumerated length property of type integer, we actually got passed an array.
+		if(allIntIds)
+		{
+			if(NPN_GetProperty(instance, obj, NPIdentifierObject("length").getNPIdentifier(), &property))
+			{
+				if(NPVARIANT_IS_INT32(property))
+				{
+					setType(EO_ARRAY);
+					LOG(LOG_NO_INFO, "got all int ids & length, marking as array = " << getLength());
+				}
 				NPN_ReleaseVariantValue(&property);
 			}
 		}

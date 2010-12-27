@@ -109,8 +109,8 @@ class ExtVariantObject;
 class DLL_PUBLIC ExtObject
 {
 public:
-	ExtObject() {}
-	ExtObject(const ExtObject& other) { other.copy(properties); }
+	ExtObject() : type(EO_OBJECT) {}
+	ExtObject(const ExtObject& other) : type(EO_OBJECT) { other.copy(properties); }
 	virtual ~ExtObject() {}
 	virtual ExtObject& operator=(const ExtObject& other)
 	{
@@ -127,9 +127,15 @@ public:
 	virtual bool removeProperty(const ExtIdentifierObject& id);
 
 	virtual bool enumerate(ExtIdentifierObject*** ids, uint32_t* count) const;
+
+	enum EO_TYPE { EO_OBJECT, EO_ARRAY };
+	virtual EO_TYPE getType() const { return type; }
+	virtual void setType(EO_TYPE _type) { type = _type; }
+	virtual uint32_t getLength() const { return properties.size(); }
+protected:
+	EO_TYPE type;
 private:
 	std::map<ExtIdentifierObject, ExtVariantObject> properties;
-	typedef std::pair<ExtIdentifierObject, ExtVariantObject> propPair;
 };
 
 /**

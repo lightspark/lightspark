@@ -512,15 +512,14 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, ASOb
 		multiname* tmp=const_cast<multiname*>(&name);
 		tmp->name_o=NULL;
 	}
-	else if(name.name_type==multiname::NAME_STRING)
-		data[Class<ASString>::getInstanceS(name.name_s)]=o;
-	else if(name.name_type==multiname::NAME_INT)
-		data[abstract_i(name.name_i)]=o;
-	else if(name.name_type==multiname::NAME_NUMBER)
-		data[abstract_d(name.name_d)]=o;
 	else
 	{
-		throw UnsupportedException("Unsupported name kind in Dictionary::setVariableByMultiname");
+		//Primitive types _must_ be handled by the normal ASObject path
+		//REFERENCE: Dictionary Object on AS3 reference
+		assert(name.name_type==multiname::NAME_STRING ||
+			name.name_type==multiname::NAME_INT ||
+			name.name_type==multiname::NAME_NUMBER);
+		ASObject::setVariableByMultiname(name, o, base);
 	}
 }
 
@@ -528,110 +527,51 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(implEnable);
 	
-	map<ASObject*, ASObject*>::iterator it;
-	getIteratorByMultiname(name, it);
-	
-	if(it != data.end())
-	{
-		it->second->decRef();
-		data.erase(it);
-	}
-	//This is ugly, but at least we are sure that we own name_o
-	multiname* tmp=const_cast<multiname*>(&name);
-	tmp->name_o=NULL;
-}
-
-void Dictionary::getIteratorByMultiname(const multiname& name, map<ASObject*, ASObject*>::iterator& iter)
-{
-	assert_and_throw(implEnable);
-	//It seems that various kind of implementation works only with the empty namespace
-	assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		//From specs, then === operator compare references when working on generic objects
 		map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
 		if(it != data.end())
 		{
-			iter = it;
-			//This is ugly, but at least we are sure that we own name_o
-			multiname* tmp=const_cast<multiname*>(&name);
-			tmp->name_o=NULL;
-			return;
-		}
-	}
-	else if(name.name_type==multiname::NAME_STRING)
-	{
-		//Ok, we need to do the slow lookup on every object and check for === comparison
-		map<ASObject*, ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();++it)
-		{
-			if(it->first->getObjectType()==T_STRING)
-			{
-				ASString* s=Class<ASString>::cast(it->first);
-				if(name.name_s == s->data.c_str())
-				{
-					//Value found
-					iter = it;
-					return;
-				}
-			}
-		}
-	}
-	else if(name.name_type==multiname::NAME_INT)
-	{
-		//Ok, we need to do the slow lookup on every object and check for === comparison
-		map<ASObject*, ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();++it)
-		{
-			SWFOBJECT_TYPE type=it->first->getObjectType();
-			if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
-			{
-				if(name.name_i == it->first->toNumber())
-				{
-					//Value found
-					iter = it;
-					return;
-				}
-			}
-		}
-	}
-	else if(name.name_type==multiname::NAME_NUMBER)
-	{
-		//Ok, we need to do the slow lookup on every object and check for === comparison
-		map<ASObject*, ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();++it)
-		{
-			SWFOBJECT_TYPE type=it->first->getObjectType();
-			if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
-			{
-				if(name.name_d == it->first->toNumber())
-				{
-					//Value found
-					iter = it;
-					return;
-				}
-			}
+			it->first->decRef();
+			it->second->decRef();
+			data.erase(it);
 		}
 	}
 	else
 	{
-		throw UnsupportedException("Unsupported name kind on Dictionary::getVariableByMultiname");
+		//Primitive types _must_ be handled by the normal ASObject path
+		//REFERENCE: Dictionary Object on AS3 reference
+		assert(name.name_type==multiname::NAME_STRING ||
+			name.name_type==multiname::NAME_INT ||
+			name.name_type==multiname::NAME_NUMBER);
+		return ASObject::deleteVariableByMultiname(name);
 	}
-	iter = data.end();
 }
-
 
 ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	if(!skip_impl && implEnable)
 	{
-		map<ASObject*, ASObject*>::iterator it;
-		getIteratorByMultiname(name, it);
-		
-		if (it != data.end())
+		if(name.name_type==multiname::NAME_OBJECT)
 		{
-			it->second->incRef();
-			return it->second;
+			map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
+			if(it != data.end())
+			{
+				//This is ugly, but at least we are sure that we own name_o
+				multiname* tmp=const_cast<multiname*>(&name);
+				tmp->name_o=NULL;
+				it->second->incRef();
+				return it->second;
+			}
+		}
+		else
+		{
+			//Primitive types _must_ be handled by the normal ASObject path
+			//REFERENCE: Dictionary Object on AS3 reference
+			assert(name.name_type==multiname::NAME_STRING ||
+				name.name_type==multiname::NAME_INT ||
+				name.name_type==multiname::NAME_NUMBER);
+			return ASObject::getVariableByMultiname(name, skip_impl, base);
 		}
 	}
 	//Try with the base implementation

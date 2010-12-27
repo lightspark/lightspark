@@ -41,6 +41,7 @@ void Capabilities::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setGetterByQName("language","",Class<IFunction>::getFunction(_getLanguage),true);
 	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"));
+	c->setVariableByQName("serverString","",Class<ASString>::getInstanceS(""));
 }
 
 ASFUNCTIONBODY(Capabilities,_constructor)

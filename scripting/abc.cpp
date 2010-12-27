@@ -206,6 +206,8 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")));
 	builtin->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass(QName("BitmapFilter","flash.filters")));
+	builtin->setVariableByQName("GlowFilter","flash.filters",Class<ASObject>::getClass(QName("GlowFilter","flash.filters")));
+	builtin->setVariableByQName("ColorMatrixFilter","flash.filters",Class<ASObject>::getClass(QName("ColorMatrixFilter","flash.filters")));
 
 	builtin->setVariableByQName("Font","flash.text",Class<Font>::getClass());
 	builtin->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getClass());

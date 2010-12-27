@@ -5,5 +5,4 @@ Official TODO Queue:
 -) handle private methods, which should be getted on the same level
 -) Add Named Objects to frames and not to clips
 -) Conditional scaling of FontGlyph based on version
--) Avoid primitive objects in Dictionary
 -) Rework SpriteTag to avoid having the display list cached in frames and build them using the tags

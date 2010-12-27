@@ -366,6 +366,8 @@ void Sprite::sinit(Class_base* c)
 void GraphicsContainer::invalidateGraphics()
 {
 	assert(graphics);
+	if(!owner->isOnStage())
+		return;
 	uint32_t x,y,width,height;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(graphics->getBounds(bxmin,bxmax,bymin,bymax)==false)
@@ -1842,9 +1844,9 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 			for(unsigned int i=0;i<index;i++)
 				++it;
 			dynamicDisplayList.insert(it,child);
-			//We acquire a reference to the child
-			child->incRef();
 		}
+		//We acquire a reference to the child
+		child->incRef();
 	}
 	child->setOnStage(onStage);
 }
@@ -1909,7 +1911,6 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
-	args[0]->incRef();
 
 	int index=args[1]->toInt();
 
@@ -1918,9 +1919,10 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	th->_addChildAt(d,index);
 
 	//Notify the object
-	d->incRef();
 	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
 
+	//incRef again as the value is getting returned
+	d->incRef();
 	return d;
 }
 
@@ -1931,16 +1933,15 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
-	args[0]->incRef();
 
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
-	d->incRef();
 	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
 
+	d->incRef();
 	return d;
 }
 
@@ -1956,7 +1957,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 
 	th->_removeChild(d);
 
-	//As we return the child we don't decRef it again
+	//As we return the child we have to incRef it
+	d->incRef();
 	return d;
 }
 

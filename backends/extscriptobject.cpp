@@ -30,47 +30,47 @@
 using namespace lightspark;
 using namespace std;
 
-void ExtObject::copy(std::map<ExtIdentifierObject, ExtVariantObject>& dest) const
+void ExtObject::copy(std::map<ExtIdentifier, ExtVariant>& dest) const
 {
 	dest = properties;
 }
 
-bool ExtObject::hasProperty(const ExtIdentifierObject& id) const
+bool ExtObject::hasProperty(const ExtIdentifier& id) const
 {
 	return properties.find(id) != properties.end();
 }
-ExtVariantObject* ExtObject::getProperty(const ExtIdentifierObject& id) const
+ExtVariant* ExtObject::getProperty(const ExtIdentifier& id) const
 {
-	std::map<ExtIdentifierObject, ExtVariantObject>::const_iterator it = properties.find(id);
+	std::map<ExtIdentifier, ExtVariant>::const_iterator it = properties.find(id);
 	if(it == properties.end())
 		return NULL;
 
-	const ExtVariantObject& temp = it->second;
-	ExtVariantObject* result = new ExtVariantObject(temp);
+	const ExtVariant& temp = it->second;
+	ExtVariant* result = new ExtVariant(temp);
 	return result;
 }
-void ExtObject::setProperty(const ExtIdentifierObject& id, const ExtVariantObject& value)
+void ExtObject::setProperty(const ExtIdentifier& id, const ExtVariant& value)
 {
 	properties[id] = value;
 }
-bool ExtObject::removeProperty(const ExtIdentifierObject& id)
+bool ExtObject::removeProperty(const ExtIdentifier& id)
 {
-	std::map<ExtIdentifierObject, ExtVariantObject>::iterator it = properties.find(id);
+	std::map<ExtIdentifier, ExtVariant>::iterator it = properties.find(id);
 	if(it == properties.end())
 		return false;
 
 	properties.erase(it);
 	return true;
 }
-bool ExtObject::enumerate(ExtIdentifierObject*** ids, uint32_t* count) const
+bool ExtObject::enumerate(ExtIdentifier*** ids, uint32_t* count) const
 {
 	*count = properties.size();
-	*ids = new ExtIdentifierObject*[properties.size()];
-	std::map<ExtIdentifierObject, ExtVariantObject>::const_iterator it;
+	*ids = new ExtIdentifier*[properties.size()];
+	std::map<ExtIdentifier, ExtVariant>::const_iterator it;
 	int i = 0;
 	for(it = properties.begin(); it != properties.end(); ++it)
 	{
-		(*ids)[i] = new ExtIdentifierObject(it->first);
+		(*ids)[i] = new ExtIdentifier(it->first);
 		i++;
 	}
 
@@ -78,7 +78,7 @@ bool ExtObject::enumerate(ExtIdentifierObject*** ids, uint32_t* count) const
 }
 
 /* More advanced copy constructors */
-ExtVariantObject::ExtVariantObject(const ExtVariantObject& other)
+ExtVariant::ExtVariant(const ExtVariant& other)
 {
 	type = other.getType();
 	strValue = other.getString();
@@ -87,31 +87,31 @@ ExtVariantObject::ExtVariantObject(const ExtVariantObject& other)
 	booleanValue = other.getBoolean();
 	objectValue = *other.getObject();
 }
-ExtVariantObject::ExtVariantObject(ASObject* other) :
+ExtVariant::ExtVariant(ASObject* other) :
 	strValue(""), intValue(0), doubleValue(0), booleanValue(false)
 {
 	switch(other->getObjectType())
 	{
 	case T_STRING:
 		strValue = other->toString().raw_buf();
-		type = EVO_STRING;
+		type = EV_STRING;
 		break;
 	case T_INTEGER:
 		intValue = other->toInt();
-		type = EVO_INT32;
+		type = EV_INT32;
 		break;
 	case T_NUMBER:
 		doubleValue = other->toNumber();
-		type = EVO_DOUBLE;
+		type = EV_DOUBLE;
 		break;
 	case T_BOOLEAN:
 		booleanValue = Boolean_concrete(other);
-		type = EVO_BOOLEAN;
+		type = EV_BOOLEAN;
 		break;
 	case T_ARRAY:
 		objectValue.setType(ExtObject::EO_ARRAY);
 	case T_OBJECT:
-		type = EVO_OBJECT;
+		type = EV_OBJECT;
 		{
 			bool hasNext = false;
 			ASObject* nextName = NULL;
@@ -135,33 +135,33 @@ ExtVariantObject::ExtVariantObject(ASObject* other) :
 		}
 		break;
 	case T_NULL:
-		type = EVO_NULL;
+		type = EV_NULL;
 		break;
 	case T_UNDEFINED:
 	default:
-		type = EVO_VOID;
+		type = EV_VOID;
 		break;
 	}
 }
 
-ASObject* ExtVariantObject::getASObject() const
+ASObject* ExtVariant::getASObject() const
 {
 	switch(getType())
 	{
-	case EVO_STRING:
+	case EV_STRING:
 		return Class<ASString>::getInstanceS(getString());
-	case EVO_INT32:
+	case EV_INT32:
 		return abstract_i(getInt());
-	case EVO_DOUBLE:
+	case EV_DOUBLE:
 		return abstract_d(getDouble());
-	case EVO_BOOLEAN:
+	case EV_BOOLEAN:
 		return abstract_b(getBoolean());
-	case EVO_OBJECT:
+	case EV_OBJECT:
 		{
 			ExtObject* objValue = getObject();
 			ASObject* asobj;
 
-			ExtVariantObject* property;
+			ExtVariant* property;
 			uint32_t count;
 
 			// We are converting an array, so lets set indexes
@@ -182,7 +182,7 @@ ASObject* ExtVariantObject::getASObject() const
 			{
 				asobj = Class<ASObject>::getInstanceS();
 			
-				ExtIdentifierObject** ids;
+				ExtIdentifier** ids;
 				uint32_t count;
 				std::stringstream strOut;
 				if(objValue != NULL && objValue->enumerate(&ids, &count))
@@ -191,7 +191,7 @@ ASObject* ExtVariantObject::getASObject() const
 					{
 						property = objValue->getProperty(*ids[i]);
 
-						if(ids[i]->getType() == ExtIdentifierObject::EI_STRING)
+						if(ids[i]->getType() == ExtIdentifier::EI_STRING)
 							asobj->setVariableByQName(ids[i]->getString(), "", property->getASObject());
 						else
 						{
@@ -210,16 +210,16 @@ ASObject* ExtVariantObject::getASObject() const
 			asobj->incRef();
 			return asobj;
 		}
-	case EVO_NULL:
+	case EV_NULL:
 		return new Null;
-	case EVO_VOID:
+	case EV_VOID:
 	default:
 		return new Undefined;
 	}
 }
 
-bool ExtCallbackFunction::operator()(const ExtScriptObject& so, const ExtIdentifierObject& id,
-		const ExtVariantObject** args, uint32_t argc, ExtVariantObject** result)
+bool ExtCallbackFunction::operator()(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc, ExtVariant** result)
 {
 	if(iFunc != NULL)
 	{
@@ -232,7 +232,7 @@ bool ExtCallbackFunction::operator()(const ExtScriptObject& so, const ExtIdentif
 
 		ASObject* objResult = iFunc->call(new Null, objArgs, argc);
 		if(objResult != NULL)
-			*result = new ExtVariantObject(objResult);
+			*result = new ExtVariant(objResult);
 		return true;
 	}
 	else

@@ -45,7 +45,7 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 	if(sys->extScriptObject == NULL)
 		return Class<ASString>::getInstanceS("");
 
-	ExtVariantObject* object = sys->extScriptObject->getProperty("name");
+	ExtVariant* object = sys->extScriptObject->getProperty("name");
 	if(object == NULL)
 		return Class<ASString>::getInstanceS("");
 

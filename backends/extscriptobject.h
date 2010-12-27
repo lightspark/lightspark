@@ -32,19 +32,19 @@ namespace lightspark
 {
 
 /**
- * ExtIdentifierObjects are the basic identifiers for interfacing with an external container.
+ * ExtIdentifiers are the basic identifiers for interfacing with an external container.
  * They can represent: int & string datatypes.
  * They are used to name properties of objects throughout ExtScriptObject.
  *
  * This class can be extended to fit a specific interface (e.g.: NPIdentifierObject & NPRuntime).
- * These subclasses should provide a means to convert an ExtIdentifierObject.
- * This way, subclasses of ExtIdentifierObjects can transparently work with different subclasses of ExtIdentifierObject.
+ * These subclasses should provide a means to convert an ExtIdentifier.
+ * This way, subclasses of ExtIdentifiers can transparently work with different subclasses of ExtIdentifier.
  */
-class DLL_PUBLIC ExtIdentifierObject
+class DLL_PUBLIC ExtIdentifier
 {
 public:
-	ExtIdentifierObject() : type(EI_STRING), strValue(""), intValue(0) {}
-	ExtIdentifierObject(const std::string& value) :
+	ExtIdentifier() : type(EI_STRING), strValue(""), intValue(0) {}
+	ExtIdentifier(const std::string& value) :
 		type(EI_STRING), strValue(value), intValue(0)
 	{
 		intValue = atoi(strValue.c_str());
@@ -54,7 +54,7 @@ public:
 		if(out.str() == strValue)
 			type = EI_INT32;
 	}
-	ExtIdentifierObject(const char* value) :
+	ExtIdentifier(const char* value) :
 		type(EI_STRING), strValue(value), intValue(0)
 	{
 		intValue = atoi(value);
@@ -64,19 +64,19 @@ public:
 		if(out.str() == std::string(strValue))
 			type = EI_INT32;
 	}
-	ExtIdentifierObject(int32_t value) :
+	ExtIdentifier(int32_t value) :
 		type(EI_INT32), strValue(""), intValue(value) {}
-	ExtIdentifierObject(const ExtIdentifierObject& other)
+	ExtIdentifier(const ExtIdentifier& other)
 	{
 		type = other.getType();
 		strValue = other.getString();
 		intValue = other.getInt();
 	}
 
-	virtual ~ExtIdentifierObject() {}
+	virtual ~ExtIdentifier() {}
 
 	// Since these objects get used as keys in std::maps, they need to be comparable.
-	virtual bool operator<(const ExtIdentifierObject& other) const
+	virtual bool operator<(const ExtIdentifier& other) const
 	{
 		if(getType() == EI_STRING && other.getType() == EI_STRING)
 			return getString() < other.getString();
@@ -90,9 +90,9 @@ public:
 	enum EI_TYPE { EI_STRING, EI_INT32 };
 	virtual EI_TYPE getType() const { return type; }
 
-	// These methods return the value of the ExtIdentifierObject.
+	// These methods return the value of the ExtIdentifier.
 	// Returned values for non-matching types are undefined.
-	// As such, don't get a string value for an integer ExtIdentifierObject.
+	// As such, don't get a string value for an integer ExtIdentifier.
 	virtual std::string getString() const { return strValue; }
 	virtual int32_t getInt() const { return intValue; }
 private:
@@ -101,10 +101,10 @@ private:
 	int32_t intValue;
 };
 
-class ExtVariantObject;
+class ExtVariant;
 /**
  * This class represents an object containing key-value pairs 
- * of ExtIdentifierObjects & ExtVariantObjects.
+ * of ExtIdentifiers & ExtVariants.
  */
 class DLL_PUBLIC ExtObject
 {
@@ -119,15 +119,15 @@ public:
 		return *this;
 	}
 
-	void copy(std::map<ExtIdentifierObject, ExtVariantObject>& dest) const;
+	void copy(std::map<ExtIdentifier, ExtVariant>& dest) const;
 
-	virtual bool hasProperty(const ExtIdentifierObject& id) const;
+	virtual bool hasProperty(const ExtIdentifier& id) const;
 	// The returned value should be "delete"d by the caller after use
-	virtual ExtVariantObject* getProperty(const ExtIdentifierObject& id) const;
-	virtual void setProperty(const ExtIdentifierObject& id, const ExtVariantObject& value);
-	virtual bool removeProperty(const ExtIdentifierObject& id);
+	virtual ExtVariant* getProperty(const ExtIdentifier& id) const;
+	virtual void setProperty(const ExtIdentifier& id, const ExtVariant& value);
+	virtual bool removeProperty(const ExtIdentifier& id);
 
-	virtual bool enumerate(ExtIdentifierObject*** ids, uint32_t* count) const;
+	virtual bool enumerate(ExtIdentifier*** ids, uint32_t* count) const;
 
 	enum EO_TYPE { EO_OBJECT, EO_ARRAY };
 	virtual EO_TYPE getType() const { return type; }
@@ -136,47 +136,47 @@ public:
 protected:
 	EO_TYPE type;
 private:
-	std::map<ExtIdentifierObject, ExtVariantObject> properties;
+	std::map<ExtIdentifier, ExtVariant> properties;
 };
 
 /**
- * ExtVariantObjects are the basic datatype for interfacing with an external container.
+ * ExtVariants are the basic datatype for interfacing with an external container.
  * They can represent: void, null, string, int32, double & boolean datatypes.
  * They are used throughout the ExtScriptObject to pass & return data.
  *
  * This class can be extended to fit a specific interface (e.g.: NPVariantObject & NPRuntime).
- * These subclasses should provide a means to convert an ExtVariantObject.
+ * These subclasses should provide a means to convert an ExtVariant.
  * This way, subclasses of ExtScriptObject can transparently 
- * work with different subclasses of ExtVariantObject.
- * This class is also able to convert an ASObject* to an ExtVariantObject and the other way around.
+ * work with different subclasses of ExtVariant.
+ * This class is also able to convert an ASObject* to an ExtVariant and the other way around.
  */
-class DLL_PUBLIC ExtVariantObject
+class DLL_PUBLIC ExtVariant
 {
 public:
-	ExtVariantObject() :
-		type(EVO_VOID), strValue(""), intValue(0), doubleValue(0), booleanValue(false) {}
-	ExtVariantObject(const std::string& value) :
-		type(EVO_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false) {}
-	ExtVariantObject(const char* value) :
-		type(EVO_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false) {}
-	ExtVariantObject(int32_t value) :
-		type(EVO_INT32), strValue(""), intValue(value), doubleValue(0), booleanValue(false) {}
-	ExtVariantObject(double value) :
-		type(EVO_DOUBLE), strValue(""), intValue(0), doubleValue(value), booleanValue(false) {}
-	ExtVariantObject(bool value) :
-		type(EVO_BOOLEAN), strValue(""), intValue(0), doubleValue(0), booleanValue(value) {}
-	ExtVariantObject(const ExtVariantObject& other);
-	ExtVariantObject(ASObject* other);
+	ExtVariant() :
+		type(EV_VOID), strValue(""), intValue(0), doubleValue(0), booleanValue(false) {}
+	ExtVariant(const std::string& value) :
+		type(EV_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false) {}
+	ExtVariant(const char* value) :
+		type(EV_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false) {}
+	ExtVariant(int32_t value) :
+		type(EV_INT32), strValue(""), intValue(value), doubleValue(0), booleanValue(false) {}
+	ExtVariant(double value) :
+		type(EV_DOUBLE), strValue(""), intValue(0), doubleValue(value), booleanValue(false) {}
+	ExtVariant(bool value) :
+		type(EV_BOOLEAN), strValue(""), intValue(0), doubleValue(0), booleanValue(value) {}
+	ExtVariant(const ExtVariant& other);
+	ExtVariant(ASObject* other);
 
-	virtual ~ExtVariantObject() {}
+	virtual ~ExtVariant() {}
 
-	enum EVO_TYPE
-	{ EVO_STRING, EVO_INT32, EVO_DOUBLE, EVO_BOOLEAN, EVO_OBJECT, EVO_NULL, EVO_VOID };
-	virtual EVO_TYPE getType() const { return type; }
+	enum EV_TYPE
+	{ EV_STRING, EV_INT32, EV_DOUBLE, EV_BOOLEAN, EV_OBJECT, EV_NULL, EV_VOID };
+	virtual EV_TYPE getType() const { return type; }
 
-	// These methods return the value of the ExtVariantObject.
+	// These methods return the value of the ExtVariant.
 	// Returned values for non-matching types are undefined.
-	// As such, don't get a string value for an integer ExtVariantObject
+	// As such, don't get a string value for an integer ExtVariant
 	virtual std::string getString() const { return strValue; }
 	virtual int32_t getInt() const { return intValue; }
 	virtual double getDouble() const { return doubleValue; }
@@ -185,7 +185,7 @@ public:
 	virtual ExtObject* getObject() const { return new ExtObject(objectValue); }
 	virtual ASObject* getASObject() const;
 private:
-	EVO_TYPE type;
+	EV_TYPE type;
 	std::string strValue;
 	int32_t intValue;
 	double doubleValue;
@@ -196,8 +196,8 @@ private:
 class ExtScriptObject;
 // The signature for a hard-coded callback function.
 // The result variable should be "delete"d by the caller after use.
-typedef bool (*ExtCallbackFunctionPtr)(const ExtScriptObject& so, const ExtIdentifierObject& id,
-		const ExtVariantObject** args, uint32_t argc, ExtVariantObject** result);
+typedef bool (*ExtCallbackFunctionPtr)(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc, ExtVariant** result);
 
 /**
  * This class provides a unified interface to hard-coded & runtime callback functions.
@@ -212,8 +212,8 @@ public:
 	ExtCallbackFunction(ExtCallbackFunctionPtr func) : iFunc(NULL), extFunc(func) {}
 
 	// The result variable should be "delete"d by the caller after use.
-	bool operator()(const ExtScriptObject& so, const ExtIdentifierObject& id,
-		const ExtVariantObject** args, uint32_t argc, ExtVariantObject** result);
+	bool operator()(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc, ExtVariant** result);
 private:
 	IFunction* iFunc;
 	ExtCallbackFunctionPtr extFunc;
@@ -224,26 +224,26 @@ private:
  * There should be a 1-to-1 relationship between LS instances & ExtScriptObjects.
  *
  * ExtScriptObjects can present properties & methods to the external container.
- * Both are identified by an ExtIdentifierObject (or an object of a derived class).
- * Properties have a value of type ExtVariantObject (or a derived type).
+ * Both are identified by an ExtIdentifier (or an object of a derived class).
+ * Properties have a value of type ExtVariant (or a derived type).
  */
 class DLL_PUBLIC ExtScriptObject
 {
 public:
 	virtual ~ExtScriptObject() {};
 
-	virtual bool hasMethod(const ExtIdentifierObject& id) const = 0;
+	virtual bool hasMethod(const ExtIdentifier& id) const = 0;
 	// There currently is no way to invoke the set methods. There's no need for it anyway.
-	virtual void setMethod(const ExtIdentifierObject& id, const ExtCallbackFunction& func) = 0;
-	virtual bool removeMethod(const ExtIdentifierObject& id) = 0;
+	virtual void setMethod(const ExtIdentifier& id, const ExtCallbackFunction& func) = 0;
+	virtual bool removeMethod(const ExtIdentifier& id) = 0;
 
-	virtual bool hasProperty(const ExtIdentifierObject& id) const = 0;
+	virtual bool hasProperty(const ExtIdentifier& id) const = 0;
 	// The returned value should be "delete"d by the caller after use
-	virtual ExtVariantObject* getProperty(const ExtIdentifierObject& id) const = 0;
-	virtual void setProperty(const ExtIdentifierObject& id, const ExtVariantObject& value) = 0;
-	virtual bool removeProperty(const ExtIdentifierObject& id) = 0;
+	virtual ExtVariant* getProperty(const ExtIdentifier& id) const = 0;
+	virtual void setProperty(const ExtIdentifier& id, const ExtVariant& value) = 0;
+	virtual bool removeProperty(const ExtIdentifier& id) = 0;
 
-	virtual bool enumerate(ExtIdentifierObject*** ids, uint32_t* count) const = 0;
+	virtual bool enumerate(ExtIdentifier*** ids, uint32_t* count) const = 0;
 };
 
 };

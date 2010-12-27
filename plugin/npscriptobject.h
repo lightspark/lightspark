@@ -165,6 +165,7 @@ public:
 	NPObjectObject(NPP _instance) : instance(_instance) {}
 	NPObjectObject(NPP _instance, lightspark::ExtObject& other) : instance(_instance)
 	{
+		setType(other.getType());
 		copy(other, *this);
 	}
 	NPObjectObject(NPP _instance, NPObject* obj);
@@ -172,6 +173,7 @@ public:
 	~NPObjectObject() {}
 	NPObjectObject& operator=(const lightspark::ExtObject& other)
 	{
+		setType(other.getType());
 		copy(other, *this);
 		return *this;
 	}
@@ -193,95 +195,6 @@ private:
 	std::map<NPIdentifierObject, NPVariantObject> properties;
 
 	static void copy(const lightspark::ExtObject& from, lightspark::ExtObject& to);
-};
-
-class NPObjectObjectGW : public NPObject
-{
-public:
-	NPObjectObjectGW(NPP inst) : instance(inst)
-	{
-		assert(instance != NULL);
-		obj = new NPObjectObject(inst);
-	}
-	~NPObjectObjectGW()
-	{
-		delete obj;
-	};
-
-	lightspark::ExtObject* getObject() { return obj; }
-	
-	static NPClass npClass;
-
-	/* Static gateway methods used by NPRuntime */
-	static NPObject* allocate(NPP instance, NPClass* _class)
-	{
-		return new NPObjectObjectGW(instance);
-	}
-	static void deallocate(NPObject* obj)
-	{
-		delete (NPObjectObjectGW*) obj;
-	}
-	static void invalidate(NPObject* obj) { }
-
-	/* NPObjectObject forwarders */
-	static bool hasMethod(NPObject* obj, NPIdentifier id)
-	{
-		// No support for methods
-		return false;
-	}
-	static bool invoke(NPObject* obj, NPIdentifier id,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
-	{
-		// No support for methods
-		return false;
-	}
-	static bool invokeDefault(NPObject* obj,
-			const NPVariant* args, uint32_t argc, NPVariant* result)
-	{
-		// No support for methods
-		return false;
-	}
-
-	static bool hasProperty(NPObject* obj, NPIdentifier id)
-	{
-		return ((NPObjectObjectGW*) obj)->obj->hasProperty(NPIdentifierObject(id));
-	}
-	static bool getProperty(NPObject* obj, NPIdentifier id, NPVariant* result);
-	static bool setProperty(NPObject* obj, NPIdentifier id, const NPVariant* value);
-	static bool removeProperty(NPObject* obj, NPIdentifier id)
-	{
-		return ((NPObjectObjectGW*) obj)->obj->removeProperty(NPIdentifierObject(id));
-	}
-
-	static bool enumerate(NPObject* obj, NPIdentifier** result, uint32_t* count)
-	{
-		NPObjectObject* o = ((NPObjectObjectGW*) obj)->obj;
-		lightspark::ExtIdentifierObject** ids = NULL;
-		if(o->enumerate(&ids, count))
-		{
-			*result = (NPIdentifier*) NPN_MemAlloc(sizeof(NPIdentifier)*(*count));
-			for(uint32_t i = 0; i < *count; i++)
-			{
-				(*result)[i] = NPIdentifierObject(*ids[i]).getNPIdentifier();
-				delete ids[i];
-			}
-			if(ids != NULL)
-				delete ids;
-
-			return true;
-		}
-		if(ids != NULL)
-			delete ids;
-
-		return false;
-	}
-
-	/* Not implemented */
-	static bool construct(NPObject* obj,
-			const NPVariant* args, uint32_t argc, NPVariant* result) { return false; }
-private:
-	NPObjectObject* obj;
-	NPP instance;
 };
 
 /**
@@ -348,29 +261,50 @@ public:
 				break;
 			case EVO_OBJECT:
 				{
-					NPObjectObjectGW* obj = (NPObjectObjectGW*) NPN_CreateObject(instance, &NPObjectObjectGW::npClass);
-					lightspark::ExtIdentifierObject** ids = NULL;
-					lightspark::ExtVariantObject* property;
-					uint32_t count;
 					lightspark::ExtObject* objValue = value.getObject();
-					NPVariant npVar;
-					if(objValue->enumerate(&ids, &count))
+					uint32_t count = objValue->getLength();
+					ExtVariantObject* property;
+					NPVariant varProperty;
+					NPObject* windowObject;
+					NPN_GetValue(instance, NPNVWindowNPObject, &windowObject);
+					if(objValue->getType() == lightspark::ExtObject::EO_ARRAY)
 					{
+						NPN_Invoke(instance, windowObject, NPN_GetStringIdentifier("Array"), NULL, 0, &variant);
+						NPObject* arrObj = NPVARIANT_TO_OBJECT(variant);
+						NPVariant varResult;
+
 						for(uint32_t i = 0; i < count; i++)
 						{
-							property = objValue->getProperty(*ids[i]);
-							NPVariantObject(instance, *property).copy(npVar);
-							NPObjectObjectGW::setProperty(obj, NPIdentifierObject(*ids[i]).getNPIdentifier(), &npVar);
+							property = objValue->getProperty(i);
+							NPVariantObject(instance, *property).copy(varProperty);
+							NPN_Invoke(instance, arrObj, NPN_GetStringIdentifier("push"), &varProperty, 1, &varResult);
+							NPN_ReleaseVariantValue(&varResult);
+							NPN_ReleaseVariantValue(&varProperty);
 							delete property;
-							delete ids[i];
-							NPN_ReleaseVariantValue(&npVar);
 						}
 					}
-					delete objValue;
-					if(ids != NULL)
-						delete ids;
+					else
+					{
+						NPN_Invoke(instance, windowObject, NPN_GetStringIdentifier("Object"), NULL, 0, &variant);
+						NPObject* objObj = NPVARIANT_TO_OBJECT(variant);
+						lightspark::ExtIdentifierObject** ids = NULL;
 
-					OBJECT_TO_NPVARIANT(obj, variant);
+						if(objValue->enumerate(&ids, &count))
+						{
+							for(uint32_t i = 0; i < count; i++)
+							{
+								property = objValue->getProperty(*ids[i]);
+								NPVariantObject(instance, *property).copy(varProperty);
+								NPN_SetProperty(instance, objObj, NPIdentifierObject(*ids[i]).getNPIdentifier(), &varProperty);
+								NPN_ReleaseVariantValue(&varProperty);
+								delete property;
+								delete ids[i];
+							}
+						}
+						if(ids != NULL)
+							delete ids;
+					}
+					delete objValue;
 					break;
 				}
 			case EVO_NULL:

@@ -45,7 +45,6 @@ NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) :
 				if(id->getType() != NPIdentifierObject::EI_INT32)
 					allIntIds = false;
 
-				LOG(LOG_NO_INFO, "setting property: " << id->getString() << id->getInt());
 				setProperty(*id, NPVariantObject(instance, property));
 				delete id;
 				NPN_ReleaseVariantValue(&property);
@@ -60,7 +59,6 @@ NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) :
 				if(NPVARIANT_IS_INT32(property))
 				{
 					setType(EO_ARRAY);
-					LOG(LOG_NO_INFO, "got all int ids & length, marking as array = " << getLength());
 				}
 				NPN_ReleaseVariantValue(&property);
 			}
@@ -130,41 +128,6 @@ bool NPObjectObject::enumerate(lightspark::ExtIdentifierObject*** ids, uint32_t*
 	return true;
 }
 
-// NPObjectObjectGW NPClass for use with NPRuntime
-NPClass NPObjectObjectGW::npClass = 
-{
-	NP_CLASS_STRUCT_VERSION,
-	allocate,
-	deallocate,
-	invalidate,
-	hasMethod,
-	invoke,
-	invokeDefault,
-	hasProperty,
-	getProperty,
-	setProperty,
-	removeProperty,
-	enumerate,
-	construct
-};
-bool NPObjectObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* result)
-{
-	NPVariantObject* resultObj = new NPVariantObject(
-			((NPObjectObjectGW*) obj)->instance,
-			*(((NPObjectObjectGW*) obj)->obj->getProperty(NPIdentifierObject(id)))
-			);
-	if(resultObj == NULL)
-		return false;
-
-	resultObj->copy(*result);
-	delete resultObj;
-	return true;
-}
-bool NPObjectObjectGW::setProperty(NPObject* obj, NPIdentifier id, const NPVariant* value)
-{
-	((NPObjectObjectGW*) obj)->obj->setProperty(NPIdentifierObject(id), NPVariantObject(((NPObjectObjectGW*) obj)->instance, *value));
-	return true;
-}
 
 
 NPScriptObject::NPScriptObject(NPP _instance) : instance(_instance)

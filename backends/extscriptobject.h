@@ -110,10 +110,11 @@ class DLL_PUBLIC ExtObject
 {
 public:
 	ExtObject() : type(EO_OBJECT) {}
-	ExtObject(const ExtObject& other) : type(EO_OBJECT) { other.copy(properties); }
+	ExtObject(const ExtObject& other) { type = other.getType(); other.copy(properties); }
 	virtual ~ExtObject() {}
 	virtual ExtObject& operator=(const ExtObject& other)
 	{
+		type = other.getType();
 		other.copy(properties);
 		return *this;
 	}

@@ -104,6 +104,10 @@ ExtVariantObject::ExtVariantObject(ASObject* other) :
 		doubleValue = other->toNumber();
 		type = EVO_DOUBLE;
 		break;
+	case T_BOOLEAN:
+		booleanValue = Boolean_concrete(other);
+		type = EVO_BOOLEAN;
+		break;
 	case T_ARRAY:
 		objectValue.setType(ExtObject::EO_ARRAY);
 	case T_OBJECT:

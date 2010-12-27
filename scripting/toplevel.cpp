@@ -866,7 +866,7 @@ ASFUNCTIONBODY(ASString,search)
 		int offset=0;
 		//Global is not used in search
 		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
-		if(rc<=0)
+		if(rc<0)
 		{
 			//No matches or error
 			pcre_free(pcreRE);
@@ -920,7 +920,7 @@ ASFUNCTIONBODY(ASString,match)
 		do
 		{
 			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
-			if(rc<=0)
+			if(rc<0)
 			{
 				//No matches or error
 				pcre_free(pcreRE);
@@ -996,7 +996,7 @@ ASFUNCTIONBODY(ASString,split)
 		{
 			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
 			end=ovector[0];
-			if(rc<=0)
+			if(rc<0)
 				end=th->data.size();
 			ASString* s=Class<ASString>::getInstanceS(th->data.substr(offset,end-offset));
 			ret->push(s);
@@ -2234,7 +2234,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	const char* str=arg0.raw_buf();
 	int strLen=arg0.len();
 	int rc=pcre_exec(pcreRE, NULL, str, strLen, offset, 0, ovector, 30);
-	if(rc<=0)
+	if(rc<0)
 	{
 		//No matches or error
 		pcre_free(pcreRE);
@@ -2282,11 +2282,10 @@ ASFUNCTIONBODY(RegExp,test)
 
 	const char* str=arg0.raw_buf();
 	int strLen=arg0.len();
-    int ovector[30];
-	int rc = pcre_exec(pcreRE, NULL, str, strLen, 0, PCRE_PARTIAL_SOFT, ovector, 30);
-
-    // either a partial or full match
-	bool ret = ( (rc == PCRE_ERROR_PARTIAL) || (rc >= 0) );
+	int ovector[30];
+	int offset=(th->global)?th->lastIndex:0;
+	int rc = pcre_exec(pcreRE, NULL, str, strLen, offset, 0, ovector, 30);
+	bool ret = (rc >= 0);
 
 	return abstract_b(ret);
 }
@@ -2469,7 +2468,7 @@ ASFUNCTIONBODY(ASString,replace)
 		do
 		{
 			int rc=pcre_exec(pcreRE, NULL, ret->data.c_str(), ret->data.size(), offset, 0, ovector, 30);
-			if(rc<=0)
+			if(rc<0)
 			{
 				//No matches or error
 				pcre_free(pcreRE);

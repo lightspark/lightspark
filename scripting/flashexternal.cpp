@@ -19,6 +19,7 @@
 
 #include "flashexternal.h"
 #include "class.h"
+#include "backends/extscriptobject.h"
 
 using namespace lightspark;
 
@@ -31,6 +32,7 @@ void ExternalInterface::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable),false);
 	c->setGetterByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),false);
+	c->setMethodByQName("addCallback","",Class<IFunction>::getFunction(addCallback),false);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)
@@ -44,7 +46,29 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 		return Class<ASString>::getInstanceS("");
 
 	ExtVariantObject* object = sys->extScriptObject->getProperty("name");
+	if(object == NULL)
+		return Class<ASString>::getInstanceS("");
+
 	std::string result = object->getString();
 	delete object;
 	return Class<ASString>::getInstanceS(result);
+}
+
+ASFUNCTIONBODY(ExternalInterface,addCallback)
+{
+	LOG(LOG_NO_INFO, "ExternalInterface::addCallback");
+	if(sys->extScriptObject == NULL)
+		return NULL;
+
+	assert_and_throw(argslen == 2);
+
+	if(args[1]->getObjectType() == T_NULL)
+		sys->extScriptObject->removeMethod(args[0]->toString().raw_buf());
+	else
+	{
+		IFunction* f=static_cast<IFunction*>(args[1]);
+		f->incRef();
+		sys->extScriptObject->setMethod(args[0]->toString().raw_buf(), ExtCallbackFunction(f));
+	}
+	return abstract_b(true);
 }

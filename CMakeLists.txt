@@ -271,6 +271,7 @@ SET(LIBSPARK_SOURCES
   backends/audio.cpp
   backends/config.cpp
   backends/decoder.cpp
+  backends/extscriptobject.cpp
   backends/geometry.cpp
   backends/graphics.cpp
   backends/input.cpp

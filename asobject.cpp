@@ -108,19 +108,30 @@ TRISTATE ASObject::isLess(ASObject* r)
 bool ASObject::hasNext(unsigned int& index, bool& out)
 {
 	assert_and_throw(implEnable);
-	return false;
+
+	out = index < numVariables();
+	index++;
+
+	return true;
 }
 
 bool ASObject::nextName(unsigned int index, ASObject*& out)
 {
 	assert_and_throw(implEnable);
-	return false;
+
+	out = Class<ASString>::getInstanceS(getNameAt(index-1));
+
+	return true;
 }
 
 bool ASObject::nextValue(unsigned int index, ASObject*& out)
 {
 	assert_and_throw(implEnable);
-	return false;
+
+	out = getValueAt(index);
+	out->incRef();
+
+	return true;
 }
 
 void ASObject::sinit(Class_base* c)

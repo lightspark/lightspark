@@ -22,7 +22,129 @@
 
 #include "npscriptobject.h"
 
-NPScriptObject::NPScriptObject()
+using namespace std;
+
+NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) : instance(_instance)
+{
+	NPIdentifier* ids = NULL;
+	NPVariant property;
+	uint32_t count;
+	if(instance == NULL || obj == NULL)
+		return;
+
+	if(NPN_Enumerate(instance, obj, &ids, &count))
+	{
+		for(uint32_t i = 0; i < count; i++)
+		{
+			if(NPN_GetProperty(instance, obj, ids[i], &property))
+			{
+				setProperty(NPIdentifierObject(ids[i]), NPVariantObject(instance, property));
+				NPN_ReleaseVariantValue(&property);
+			}
+		}
+		NPN_MemFree(ids);
+	}
+}
+
+void NPObjectObject::copy(const lightspark::ExtObject& from, lightspark::ExtObject& to)
+{
+	lightspark::ExtIdentifierObject** ids;
+	lightspark::ExtVariantObject* property;
+	uint32_t count;
+	if(from.enumerate(&ids, &count))
+	{
+		for(uint32_t i = 0; i < count; i++)
+		{
+			property = from.getProperty(*ids[i]);
+			to.setProperty(*ids[i], *property);
+			delete property;
+			delete ids[i];
+		}
+	}
+	delete ids;
+}
+
+bool NPObjectObject::hasProperty(const lightspark::ExtIdentifierObject& id) const
+{
+	return properties.find(id) != properties.end();
+}
+lightspark::ExtVariantObject* NPObjectObject::getProperty(const lightspark::ExtIdentifierObject& id) const
+{
+	std::map<NPIdentifierObject, NPVariantObject>::const_iterator it = properties.find(id);
+	if(it == properties.end())
+		return NULL;
+
+	const NPVariantObject& temp = it->second;
+	NPVariantObject* result = new NPVariantObject(instance, temp);
+	return result;
+}
+void NPObjectObject::setProperty(const lightspark::ExtIdentifierObject& id, const lightspark::ExtVariantObject& value)
+{
+	properties[id] =  NPVariantObject(instance, value);
+}
+
+bool NPObjectObject::removeProperty(const lightspark::ExtIdentifierObject& id)
+{
+	std::map<NPIdentifierObject, NPVariantObject>::iterator it = properties.find(id);
+	if(it == properties.end())
+		return false;
+
+	properties.erase(it);
+	return true;
+}
+bool NPObjectObject::enumerate(lightspark::ExtIdentifierObject*** ids, uint32_t* count) const
+{
+	*count = properties.size();
+	*ids = new lightspark::ExtIdentifierObject*[properties.size()];
+	std::map<NPIdentifierObject, NPVariantObject>::const_iterator it;
+	int i = 0;
+	for(it = properties.begin(); it != properties.end(); ++it)
+	{
+		(*ids)[i] = new NPIdentifierObject(it->first);
+		i++;
+	}
+
+	return true;
+}
+
+// NPObjectObjectGW NPClass for use with NPRuntime
+NPClass NPObjectObjectGW::npClass = 
+{
+	NP_CLASS_STRUCT_VERSION,
+	allocate,
+	deallocate,
+	invalidate,
+	hasMethod,
+	invoke,
+	invokeDefault,
+	hasProperty,
+	getProperty,
+	setProperty,
+	removeProperty,
+	enumerate,
+	construct
+};
+bool NPObjectObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* result)
+{
+	NPVariantObject* resultObj = new NPVariantObject(
+			((NPObjectObjectGW*) obj)->instance,
+			*(((NPObjectObjectGW*) obj)->obj->getProperty(NPIdentifierObject(id)))
+			);
+	if(resultObj == NULL)
+		return false;
+
+	resultObj->copy(*result);
+	delete resultObj;
+	return true;
+}
+bool NPObjectObjectGW::setProperty(NPObject* obj, NPIdentifier id, const NPVariant* value)
+{
+	((NPObjectObjectGW*) obj)->obj->setProperty(NPIdentifierObject(id), NPVariantObject(((NPObjectObjectGW*) obj)->instance, *value));
+	return true;
+}
+
+
+NPScriptObject::NPScriptObject(NPP _instance) : instance(_instance)
 {
 	setProperty("$version", "10,0,r"SHORTVERSION);
 
@@ -46,25 +168,30 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 {
 	NPIdentifierObject objId(id);
 	// Check if the method exists
-	std::map<NPIdentifierObject, lightspark::ExtCallbackFunctionPtr>::iterator it;
+	std::map<NPIdentifierObject, lightspark::ExtCallbackFunction>::iterator it;
 	it = methods.find(objId);
 	if(it == methods.end())
 		return false;
 
 	// Convert raw arguments to objects
-	NPVariantObject objArgs[argc];
+	const lightspark::ExtVariantObject* objArgs[argc];
 	for(uint32_t i = 0; i < argc; i++)
-		objArgs[i] = NPVariantObject(args[i]);
+		objArgs[i] = new NPVariantObject(instance, args[i]);
 
 	// Run the function
-	lightspark::ExtVariantObject* objResult;
-	bool res = ((lightspark::ExtCallbackFunctionPtr) it->second)(objId, objArgs, argc, &objResult);
-	if(objResult == NULL)
-		return false;
+	lightspark::ExtVariantObject* objResult = NULL;
+	bool res = it->second(*this, objId, objArgs, argc, &objResult);
 
-	// Copy the result into the raw NPVariant result and delete intermediate result
-	NPVariantObject(*objResult).copy(*result);
-	delete objResult;
+	// Delete converted arguments
+	for(uint32_t i = 0; i < argc; i++)
+		delete objArgs[i];
+
+	if(objResult != NULL)
+	{
+		// Copy the result into the raw NPVariant result and delete intermediate result
+		NPVariantObject(instance, *objResult).copy(*result);
+		delete objResult;
+	}
 
 	return res;
 }
@@ -74,14 +201,23 @@ bool NPScriptObject::invokeDefault(const NPVariant* args, uint32_t argc, NPVaria
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObjectGW::invokeDefault");
 	return false;
 }
+bool NPScriptObject::removeMethod(const lightspark::ExtIdentifierObject& id)
+{
+	std::map<NPIdentifierObject, lightspark::ExtCallbackFunction>::iterator it = methods.find(id);
+	if(it == methods.end())
+		return false;
 
-NPVariantObject* NPScriptObject::getProperty(const lightspark::ExtIdentifierObject& id)
+	methods.erase(it);
+	return true;
+}
+
+NPVariantObject* NPScriptObject::getProperty(const lightspark::ExtIdentifierObject& id) const
 {
 	std::map<NPIdentifierObject, NPVariantObject>::const_iterator it = properties.find(id);
 	if(it == properties.end())
 		return NULL;
 
-	NPVariantObject* result = new NPVariantObject(it->second);
+	NPVariantObject* result = new NPVariantObject(instance, it->second);
 	return result;
 }
 bool NPScriptObject::removeProperty(const lightspark::ExtIdentifierObject& id)
@@ -94,108 +230,142 @@ bool NPScriptObject::removeProperty(const lightspark::ExtIdentifierObject& id)
 	return true;
 }
 
+bool NPScriptObject::enumerate(lightspark::ExtIdentifierObject*** ids, uint32_t* count) const
+{
+	*count = properties.size()+methods.size();
+	*ids = new lightspark::ExtIdentifierObject*[properties.size()+methods.size()];
+	std::map<NPIdentifierObject, NPVariantObject>::const_iterator prop_it;
+	int i = 0;
+	for(prop_it = properties.begin(); prop_it != properties.end(); ++prop_it)
+	{
+		(*ids)[i] = new NPIdentifierObject(prop_it->first);
+		i++;
+	}
+	std::map<NPIdentifierObject, lightspark::ExtCallbackFunction>::const_iterator meth_it;
+	for(meth_it = methods.begin(); meth_it != methods.end(); ++meth_it)
+	{
+		(*ids)[i] = new NPIdentifierObject(meth_it->first);
+		i++;
+	}
+
+	return true;
+}
+
 /* Standard methods */
-bool NPScriptObject::stdGetVariable(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdGetVariable(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdGetVariable");
-	*result = new NPVariantObject();
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance);
 	return false;
 }
 
-bool NPScriptObject::stdSetVariable(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdSetVariable(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdSetVariable");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdGotoFrame(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdGotoFrame(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdGotoFrame");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdIsPlaying(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdIsPlaying(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdIsPlaying");
-	*result = new NPVariantObject(true);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, true);
 	return true;
 }
 
-bool NPScriptObject::stdLoadMovie(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdLoadMovie(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdLoadMovie");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdPan(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdPan(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdPan");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdPercentLoaded(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdPercentLoaded(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdPercentLoaded");
-	*result = new NPVariantObject(100);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, 100);
 	return true;
 }
 
-bool NPScriptObject::stdPlay(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdPlay(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdPlay");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdRewind(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdRewind(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdRewind");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdStopPlay(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdStopPlay(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdStopPlay");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdSetZoomRect(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdSetZoomRect(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdSetZoomRect");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdZoom(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdZoom(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdZoom");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 
-bool NPScriptObject::stdTotalFrames(const lightspark::ExtIdentifierObject& id,
-			const lightspark::ExtVariantObject* args, uint32_t argc, lightspark::ExtVariantObject** result)
+bool NPScriptObject::stdTotalFrames(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifierObject& id,
+			const lightspark::ExtVariantObject** args, uint32_t argc, lightspark::ExtVariantObject** result)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdTotalFrames");
-	*result = new NPVariantObject(false);
+	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance, false);
 	return false;
 }
 

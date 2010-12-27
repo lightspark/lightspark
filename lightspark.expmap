@@ -10,6 +10,11 @@ global:
 		*lightspark::Event*;
 		*lightspark::Downloader*;
 		*lightspark::DownloadManager*;
+		*lightspark::ExtVariantObject*;
+		*lightspark::ExtIdentifierObject*;
+		*lightspark::ExtObject*;
+		*lightspark::ExtCallbackFunction*;
+		*lightspark::ExtScriptObject*;
 		rt;
 		sys;
 		pt;

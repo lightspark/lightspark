@@ -336,6 +336,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 	{
 		m->cached=new multiname;
 		ret=m->cached;
+		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
 		{
 			case 0x1b:
@@ -386,6 +387,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 		ret=new multiname;
 		ret->name_s="any";
 		ret->name_type=multiname::NAME_STRING;
+		ret->isAttribute=false;
 		return ret;
 	}
 
@@ -394,6 +396,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 	{
 		m->cached=new multiname;
 		ret=m->cached;
+		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
 		{
 			case 0x07:
@@ -464,7 +467,6 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else
 				{
-					
 					throw UnsupportedException("Multiname to String not implemented");
 					//ret->name_s=rt1->toString();
 					//ret->name_type=multiname::NAME_STRING;
@@ -616,6 +618,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 	{
 		m->cached=new multiname;
 		ret=m->cached;
+		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
 		{
 			case 0x1b:
@@ -666,6 +669,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 	{
 		m->cached=new multiname;
 		ret=m->cached;
+		ret->isAttribute=m->isAttributeName();
 
 		if(n==0)
 		{
@@ -688,7 +692,8 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
-			case 0x09:
+			case 0x09: //Multiname
+			case 0x0e: //MultinameA
 			{
 				const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
@@ -790,9 +795,6 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			case 0x12:
 				LOG(CALLS, _("RTQNameLA"));
 				break;
-			case 0x0e:
-				LOG(CALLS, _("MultinameA"));
-				break;
 			case 0x1c:
 				LOG(CALLS, _("MultinameLA"));
 				break;*/
@@ -891,7 +893,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				LOG(CALLS, _("MultinameLA"));
 				break;*/
 			default:
-				LOG(LOG_ERROR,_("dMultiname to String not yet implemented for this kind ") << hex << m->kind);
+				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		ret->name_s.len();
@@ -2329,4 +2331,19 @@ ASFUNCTIONBODY(lightspark,undefinedFunction)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("Function not implemented"));
 	return NULL;
+}
+
+bool multiname_info::isAttributeName() const
+{
+	switch(kind)
+	{
+		case 0x0d:
+		case 0x10:
+		case 0x12:
+		case 0x0e:
+		case 0x1c:
+			return true;
+		default:
+			return false;
+	}
 }

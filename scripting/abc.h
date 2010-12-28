@@ -136,6 +136,7 @@ struct multiname_info
 	multiname* cached;
 	multiname_info():cached(NULL){}
 	~multiname_info(){delete cached;}
+	bool isAttributeName() const;
 };
 
 struct cpool_info

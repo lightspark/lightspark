@@ -19,6 +19,7 @@
 **************************************************************************/
 
 #include <string>
+#include <sstream>
 
 #include "asobject.h"
 #include "scripting/class.h"
@@ -30,11 +31,81 @@
 using namespace lightspark;
 using namespace std;
 
+/* -- ExtIdentifier -- */
+// Constructors
+ExtIdentifier::ExtIdentifier() :
+	type(EI_STRING), strValue(""), intValue(0)
+{
+}
+ExtIdentifier::ExtIdentifier(const std::string& value) :
+	type(EI_STRING), strValue(value), intValue(0)
+{
+	stringToInt();
+}
+ExtIdentifier::ExtIdentifier(const char* value) :
+	type(EI_STRING), strValue(value), intValue(0)
+{
+	stringToInt();
+}
+
+ExtIdentifier::ExtIdentifier(int32_t value) :
+	type(EI_INT32), strValue(""), intValue(value)
+{
+}
+ExtIdentifier::ExtIdentifier(const ExtIdentifier& other)
+{
+	type = other.getType();
+	strValue = other.getString();
+	intValue = other.getInt();
+}
+
+// Convert integer string identifiers to integer identifiers
+void ExtIdentifier::stringToInt()
+{
+	intValue = atoi(strValue.c_str());
+	std::stringstream conv;
+	conv << intValue;
+
+	if(conv.str() == strValue)
+		type = EI_INT32;
+}
+
+// Comparator
+bool ExtIdentifier::operator<(const ExtIdentifier& other) const
+{
+	if(getType() == EI_STRING && other.getType() == EI_STRING)
+		return getString() < other.getString();
+	else if(getType() == EI_INT32 && other.getType() == EI_INT32)
+		return getInt() < other.getInt();
+	else if(getType() == EI_INT32 && other.getType() == EI_STRING)
+		return true;
+	return false;
+}
+
+/* -- ExtObject -- */
+// Constructors
+ExtObject::ExtObject() : type(EO_OBJECT)
+{
+}
+ExtObject::ExtObject(const ExtObject& other)
+{
+	type = other.getType();
+	other.copy(properties);
+}
+
+// Copying
+ExtObject& ExtObject::operator=(const ExtObject& other)
+{
+	type = other.getType();
+	other.copy(properties);
+	return *this;
+} 
 void ExtObject::copy(std::map<ExtIdentifier, ExtVariant>& dest) const
 {
 	dest = properties;
 }
 
+// Properties
 bool ExtObject::hasProperty(const ExtIdentifier& id) const
 {
 	return properties.find(id) != properties.end();
@@ -45,9 +116,7 @@ ExtVariant* ExtObject::getProperty(const ExtIdentifier& id) const
 	if(it == properties.end())
 		return NULL;
 
-	const ExtVariant& temp = it->second;
-	ExtVariant* result = new ExtVariant(temp);
-	return result;
+	return new ExtVariant(it->second);
 }
 void ExtObject::setProperty(const ExtIdentifier& id, const ExtVariant& value)
 {
@@ -77,7 +146,32 @@ bool ExtObject::enumerate(ExtIdentifier*** ids, uint32_t* count) const
 	return true;
 }
 
-/* More advanced copy constructors */
+/* -- ExtVariant -- */
+// Constructors
+ExtVariant::ExtVariant() :
+	type(EV_VOID), strValue(""), intValue(0), doubleValue(0), booleanValue(false)
+{
+}
+ExtVariant::ExtVariant(const std::string& value) :
+	type(EV_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false)
+{
+}
+ExtVariant::ExtVariant(const char* value) :
+	type(EV_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false)
+{
+}
+ExtVariant::ExtVariant(int32_t value) :
+	type(EV_INT32), strValue(""), intValue(value), doubleValue(0), booleanValue(false)
+{
+}
+ExtVariant::ExtVariant(double value) :
+	type(EV_DOUBLE), strValue(""), intValue(0), doubleValue(value), booleanValue(false)
+{
+}
+ExtVariant::ExtVariant(bool value) :
+	type(EV_BOOLEAN), strValue(""), intValue(0), doubleValue(0), booleanValue(value)
+{
+}
 ExtVariant::ExtVariant(const ExtVariant& other)
 {
 	type = other.getType();
@@ -121,14 +215,12 @@ ExtVariant::ExtVariant(ASObject* other) :
 			{
 				other->nextName(index, nextName);
 				other->nextValue(index-1, nextValue);
+
 				if(nextName->getObjectType() == T_INTEGER)
-				{
 					objectValue.setProperty(nextName->toInt(), nextValue);
-				}
 				else
-				{
 					objectValue.setProperty(nextName->toString().raw_buf(), nextValue);
-				}
+
 				nextName->decRef();
 				nextValue->decRef();
 			}
@@ -144,6 +236,7 @@ ExtVariant::ExtVariant(ASObject* other) :
 	}
 }
 
+// Conversion to ASObject
 ASObject* ExtVariant::getASObject() const
 {
 	switch(getType())
@@ -184,7 +277,7 @@ ASObject* ExtVariant::getASObject() const
 			
 				ExtIdentifier** ids;
 				uint32_t count;
-				std::stringstream strOut;
+				std::stringstream conv;
 				if(objValue != NULL && objValue->enumerate(&ids, &count))
 				{
 					for(uint32_t i = 0; i < count; i++)
@@ -195,8 +288,8 @@ ASObject* ExtVariant::getASObject() const
 							asobj->setVariableByQName(ids[i]->getString(), "", property->getASObject());
 						else
 						{
-							strOut << ids[i]->getInt();
-							asobj->setVariableByQName(strOut.str().c_str(), "", property->getASObject());
+							conv << ids[i]->getInt();
+							asobj->setVariableByQName(conv.str().c_str(), "", property->getASObject());
 						}
 						delete property;
 						delete ids[i];
@@ -218,6 +311,7 @@ ASObject* ExtVariant::getASObject() const
 	}
 }
 
+/* -- ExtCallbackFunction -- */
 bool ExtCallbackFunction::operator()(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc, ExtVariant** result)
 {

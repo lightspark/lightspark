@@ -22,7 +22,6 @@
 #define _EXT_SCRIPT_OBJECT_H
 
 #include <string>
-#include <sstream>
 #include <map>
 
 #include "asobject.h"
@@ -43,62 +42,28 @@ namespace lightspark
 class DLL_PUBLIC ExtIdentifier
 {
 public:
-	ExtIdentifier() : type(EI_STRING), strValue(""), intValue(0) {}
-	ExtIdentifier(const std::string& value) :
-		type(EI_STRING), strValue(value), intValue(0)
-	{
-		intValue = atoi(strValue.c_str());
-		std::stringstream out;
-		out << intValue;
-		// Convert integer string identifiers to integer identifiers
-		if(out.str() == strValue)
-			type = EI_INT32;
-	}
-	ExtIdentifier(const char* value) :
-		type(EI_STRING), strValue(value), intValue(0)
-	{
-		intValue = atoi(value);
-		std::stringstream out;
-		out << intValue;
-		// Convert integer string identifiers to integer identifiers
-		if(out.str() == std::string(strValue))
-			type = EI_INT32;
-	}
-	ExtIdentifier(int32_t value) :
-		type(EI_INT32), strValue(""), intValue(value) {}
-	ExtIdentifier(const ExtIdentifier& other)
-	{
-		type = other.getType();
-		strValue = other.getString();
-		intValue = other.getInt();
-	}
-
+	ExtIdentifier();
+	ExtIdentifier(const std::string& value);
+	ExtIdentifier(const char* value);
+	ExtIdentifier(int32_t value);
+	ExtIdentifier(const ExtIdentifier& other);
 	virtual ~ExtIdentifier() {}
 
 	// Since these objects get used as keys in std::maps, they need to be comparable.
-	virtual bool operator<(const ExtIdentifier& other) const
-	{
-		if(getType() == EI_STRING && other.getType() == EI_STRING)
-			return getString() < other.getString();
-		else if(getType() == EI_INT32 && other.getType() == EI_INT32)
-			return getInt() < other.getInt();
-		else if(getType() == EI_INT32 && other.getType() == EI_STRING)
-			return true;
-		return false;
-	}
+	virtual bool operator<(const ExtIdentifier& other) const;
 
 	enum EI_TYPE { EI_STRING, EI_INT32 };
 	virtual EI_TYPE getType() const { return type; }
 
 	// These methods return the value of the ExtIdentifier.
 	// Returned values for non-matching types are undefined.
-	// As such, don't get a string value for an integer ExtIdentifier.
 	virtual std::string getString() const { return strValue; }
 	virtual int32_t getInt() const { return intValue; }
 private:
 	EI_TYPE type;
 	std::string strValue;
 	int32_t intValue;
+	void stringToInt();
 };
 
 class ExtVariant;
@@ -109,16 +74,11 @@ class ExtVariant;
 class DLL_PUBLIC ExtObject
 {
 public:
-	ExtObject() : type(EO_OBJECT) {}
-	ExtObject(const ExtObject& other) { type = other.getType(); other.copy(properties); }
+	ExtObject();
+	ExtObject(const ExtObject& other);
 	virtual ~ExtObject() {}
-	virtual ExtObject& operator=(const ExtObject& other)
-	{
-		type = other.getType();
-		other.copy(properties);
-		return *this;
-	}
 
+	ExtObject& operator=(const ExtObject& other);
 	void copy(std::map<ExtIdentifier, ExtVariant>& dest) const;
 
 	virtual bool hasProperty(const ExtIdentifier& id) const;
@@ -128,11 +88,11 @@ public:
 	virtual bool removeProperty(const ExtIdentifier& id);
 
 	virtual bool enumerate(ExtIdentifier*** ids, uint32_t* count) const;
+	virtual uint32_t getLength() const { return properties.size(); }
 
 	enum EO_TYPE { EO_OBJECT, EO_ARRAY };
 	virtual EO_TYPE getType() const { return type; }
 	virtual void setType(EO_TYPE _type) { type = _type; }
-	virtual uint32_t getLength() const { return properties.size(); }
 protected:
 	EO_TYPE type;
 private:
@@ -153,18 +113,12 @@ private:
 class DLL_PUBLIC ExtVariant
 {
 public:
-	ExtVariant() :
-		type(EV_VOID), strValue(""), intValue(0), doubleValue(0), booleanValue(false) {}
-	ExtVariant(const std::string& value) :
-		type(EV_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false) {}
-	ExtVariant(const char* value) :
-		type(EV_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false) {}
-	ExtVariant(int32_t value) :
-		type(EV_INT32), strValue(""), intValue(value), doubleValue(0), booleanValue(false) {}
-	ExtVariant(double value) :
-		type(EV_DOUBLE), strValue(""), intValue(0), doubleValue(value), booleanValue(false) {}
-	ExtVariant(bool value) :
-		type(EV_BOOLEAN), strValue(""), intValue(0), doubleValue(0), booleanValue(value) {}
+	ExtVariant();
+	ExtVariant(const std::string& value);
+	ExtVariant(const char* value);
+	ExtVariant(int32_t value);
+	ExtVariant(double value);
+	ExtVariant(bool value);
 	ExtVariant(const ExtVariant& other);
 	ExtVariant(ASObject* other);
 
@@ -201,8 +155,7 @@ typedef bool (*ExtCallbackFunctionPtr)(const ExtScriptObject& so, const ExtIdent
 
 /**
  * This class provides a unified interface to hard-coded & runtime callback functions.
- * It stores either a IFunction* or a ExtCallbackFunctionPtr and provides a
- * operator() to call them.
+ * It stores either a IFunction* or an ExtCallbackFunctionPtr and provides a operator() to call them.
  */
 class DLL_PUBLIC ExtCallbackFunction
 {

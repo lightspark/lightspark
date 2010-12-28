@@ -935,8 +935,8 @@ number_t ABCVm::subtract(ASObject* val2, ASObject* val1)
 		LOG(LOG_NOT_IMPLEMENTED,_("subtract: HACK"));
 		return 0;
 	}
-	int num2=val2->toInt();
-	int num1=val1->toInt();
+	number_t num2=val2->toNumber();
+	number_t num1=val1->toNumber();
 
 	val1->decRef();
 	val2->decRef();

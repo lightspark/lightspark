@@ -257,6 +257,8 @@ nsPluginInstance::~nsPluginInstance()
 	sys=m_sys;
 	if(mainDownloader)
 		mainDownloader->stop();
+	// Prepare our external script object for destruction
+	static_cast<NPScriptObject*>(m_sys->extScriptObject)->destroy();
 	if(m_pt)
 		m_pt->stop();
 	m_sys->setShutdownFlag();

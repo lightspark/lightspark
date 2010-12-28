@@ -197,6 +197,8 @@ public:
 	virtual bool removeProperty(const ExtIdentifier& id) = 0;
 
 	virtual bool enumerate(ExtIdentifier*** ids, uint32_t* count) const = 0;
+
+	virtual bool callExternal(const ExtIdentifier& id, const ExtVariant** args, uint32_t argc, ExtVariant** result) = 0;
 };
 
 };

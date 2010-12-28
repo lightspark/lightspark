@@ -19,6 +19,7 @@
 **************************************************************************/
 
 #include "logger.h"
+#include "plugin.h"
 
 #include "npscriptobject.h"
 
@@ -262,13 +263,17 @@ NPObject* NPObjectObject::getNPObject(NPP instance, const lightspark::ExtObject&
 {
 	uint32_t count = obj.getLength();
 
+	// This will hold the enumerated properties
 	lightspark::ExtVariant* property;
+	// This will hold the converted properties
 	NPVariant varProperty;
 
 	NPObject* windowObject;
 	NPN_GetValue(instance, NPNVWindowNPObject, &windowObject);
 
+	// This will hold the result from NPN_Invoke
 	NPVariant resultVariant;
+	// This will hold the converted result from NPN_Invoke
 	NPObject* result;
 
 	// We are converting to a javascript Array
@@ -276,24 +281,29 @@ NPObject* NPObjectObject::getNPObject(NPP instance, const lightspark::ExtObject&
 	{
 		// Create a new Array NPObject
 		NPN_Invoke(instance, windowObject, NPN_GetStringIdentifier("Array"), NULL, 0, &resultVariant);
+		// Convert our NPVariant result to an NPObject
 		result = NPVARIANT_TO_OBJECT(resultVariant);
-
-		NPVariant varResult;
 
 		// Push all values onto the array
 		for(uint32_t i = 0; i < count; i++)
 		{
 			property = obj.getProperty(i);
+
+			// The returned property might be an NPVariantObject, which would save us a conversion
 			try
 			{
 				dynamic_cast<NPVariantObject&>(*property).copy(varProperty);
 			}
+			// We got a real ExtVariant, so we need to convert it to NPVariantObject first
 			catch(std::bad_cast&)
 			{
 				NPVariantObject(instance, *property).copy(varProperty);
 			}
-			NPN_Invoke(instance, result, NPN_GetStringIdentifier("push"), &varProperty, 1, &varResult);
-			NPN_ReleaseVariantValue(&varResult);
+
+			// Push the value onto the newly created Array
+			NPN_Invoke(instance, result, NPN_GetStringIdentifier("push"), &varProperty, 1, &resultVariant);
+
+			NPN_ReleaseVariantValue(&resultVariant);
 			NPN_ReleaseVariantValue(&varProperty);
 			delete property;
 		}
@@ -302,24 +312,31 @@ NPObject* NPObjectObject::getNPObject(NPP instance, const lightspark::ExtObject&
 	{
 		// Create a new Object NPObject
 		NPN_Invoke(instance, windowObject, NPN_GetStringIdentifier("Object"), NULL, 0, &resultVariant);
+		// Convert our NPVariant result to an NPObject
 		result = NPVARIANT_TO_OBJECT(resultVariant);
-		lightspark::ExtIdentifier** ids = NULL;
 
+		lightspark::ExtIdentifier** ids = NULL;
 		// Set all values of the object
 		if(obj.enumerate(&ids, &count))
 		{
 			for(uint32_t i = 0; i < count; i++)
 			{
 				property = obj.getProperty(*ids[i]);
+
+				// The returned property might be an NPVariantObject, which would save us a conversion
 				try
 				{
 					dynamic_cast<NPVariantObject&>(*property).copy(varProperty);
 				}
+				// We got a real ExtVariant, so we need to convert it to NPVariantObject first
 				catch(std::bad_cast&)
 				{
 					NPVariantObject(instance, *property).copy(varProperty);
 				}
+
+				// Set the properties
 				NPN_SetProperty(instance, result, NPIdentifierObject(*ids[i]).getNPIdentifier(), &varProperty);
+
 				NPN_ReleaseVariantValue(&varProperty);
 				delete property;
 				delete ids[i];
@@ -526,8 +543,17 @@ void NPVariantObject::copy(const NPVariant& from, NPVariant& dest)
 
 /* -- NPScriptObject -- */
 // Constructor
-NPScriptObject::NPScriptObject(NPP _instance) : instance(_instance)
+NPScriptObject::NPScriptObject(NPP _instance) : instance(_instance), shuttingDown(false)
 {
+	// This object is always created in the main plugin thread, so lets save
+	// so that we can check if we are in the main plugin thread later on.
+	mainThread = pthread_self();
+
+	// Only one external call can be made at a time
+	sem_init(&mutex, 0, 1);
+	// Used to signal end of asynchronous external call
+	sem_init(&callStatus, 0, 0);
+
 	setProperty("$version", "10,0,r"SHORTVERSION);
 
 	// Standard methods
@@ -544,6 +570,20 @@ NPScriptObject::NPScriptObject(NPP _instance) : instance(_instance)
 	setMethod("StopPlay", stdStopPlay);
 	setMethod("Zoom", stdZoom);
 	setMethod("TotalFrames", stdTotalFrames);
+}
+
+// Destructors
+NPScriptObject::~NPScriptObject()
+{
+	sem_destroy(&callStatus);
+	sem_destroy(&mutex);
+}
+// Destruction preparator
+void NPScriptObject::destroy()
+{
+	shuttingDown = true;
+	sem_post(&callStatus);
+	sem_post(&mutex);
 }
 
 // NPRuntime interface: invoking methods
@@ -638,7 +678,82 @@ bool NPScriptObject::enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count
 	return true;
 }
 
-/* Standard Flash methods */
+// ExtScriptObject interface: calling external methods
+bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
+		const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result)
+{
+	// Make sure we are the only external call being executed
+	sem_wait(&mutex);
+	if(shuttingDown)
+	{
+		// Forward the shutdown cascade
+		sem_post(&mutex);
+		return false;
+	}
+
+	// This will hold the result from our NPN_Invoke call
+	NPVariant resultVariant;
+
+	// These will get passed as arguments to NPN_Invoke
+	NPVariant variantArgs[argc];
+	for(uint32_t i = 0; i < argc; i++)
+		NPVariantObject(instance, *args[i]).copy(variantArgs[i]);
+
+	// Signals when the async has been completed
+	// True if NPN_Invoke succeeded
+	bool success;
+
+	EXT_CALL_DATA data = {
+		&mainThread,
+		instance,
+		NPIdentifierObject(id).getNPIdentifier(),
+		variantArgs,
+		argc,
+		&resultVariant,
+		&callStatus,
+		&success
+	};
+
+	// We are not in the main thread, so ask the browser to call this method asynchronously
+	if(!pthread_equal(pthread_self(), mainThread))
+		NPN_PluginThreadAsyncCall(instance, &callExternal, &data);
+	// We are in the main thread, so we can call the method ourselves synchronously
+	else
+		callExternal(&data);
+
+	// Wait for the (possibly asynchronously) called function to finish
+	sem_wait(&callStatus);
+
+	// If NPN_Invoke succeeded, convert & copy its result and release it.
+	if(success)
+	{
+		*result = new NPVariantObject(instance, resultVariant);
+		NPN_ReleaseVariantValue(&resultVariant);
+	}
+
+	// Release the converted arguments
+	for(uint32_t i = 0; i < argc; i++)
+		NPN_ReleaseVariantValue(&variantArgs[i]);
+
+	sem_post(&mutex);
+	return success;
+}
+void NPScriptObject::callExternal(void* d)
+{
+	EXT_CALL_DATA* data = static_cast<EXT_CALL_DATA*>(d);
+
+	// Assert we are in the main plugin thread
+	assert(pthread_equal(pthread_self(), *data->mainThread));
+
+	NPObject* windowObject;
+	NPN_GetValue(data->instance, NPNVWindowNPObject, &windowObject);
+
+	*(data->success) = NPN_Invoke(data->instance, windowObject, data->id,
+				data->args, data->argc, data->result);
+	sem_post(data->callStatus);
+}
+
+// Standard Flash methods
 bool NPScriptObject::stdGetVariable(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
 			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result)

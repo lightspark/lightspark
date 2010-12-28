@@ -33,6 +33,7 @@ public:
 	ASFUNCTION(_getAvailable);
 	ASFUNCTION(_getObjectID);
 	ASFUNCTION(addCallback);
+	ASFUNCTION(call);
 };
 
 };

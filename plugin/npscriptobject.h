@@ -31,6 +31,7 @@
 #include "npruntime.h"
 
 #include "asobject.h"
+#include "platforms/pluginutils.h"
 
 #include "backends/extscriptobject.h"
 
@@ -175,7 +176,10 @@ class DLL_PUBLIC NPScriptObject : public lightspark::ExtScriptObject
 {
 public:
 	NPScriptObject(NPP _instance);
-	~NPScriptObject() {};
+	~NPScriptObject();
+	// Stops all waiting external calls, should be called before destruction.
+	// Actual destruction should be initiated by the browser, as a last step of destruction.
+	void destroy();
 
 	// These methods are not part of the ExtScriptObject interface.
 	// ExtScriptObject does not provide a way to invoke the set methods.
@@ -209,6 +213,22 @@ public:
 
 	// Enumeration
 	bool enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count) const;
+	
+	// Calling methods in the external container
+	bool callExternal(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+
+	typedef struct {
+		pthread_t* mainThread;
+		NPP instance;
+		NPIdentifier id;
+		const NPVariant* args;
+		uint32_t argc;
+		NPVariant* result;
+		sem_t* callStatus;
+		bool* success;
+	} EXT_CALL_DATA;
+	// This must be called from the plugin thread
+	static void callExternal(void* data);
 
 	// Standard methods
 	// These methods are standard to every flash instance.
@@ -255,6 +275,13 @@ public:
 			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
 private:
 	NPP instance;
+	// Used to determine if a method is called in the main plugin thread
+	pthread_t mainThread;
+	// Provides mutual exclusion for external calls
+	sem_t mutex;
+	sem_t callStatus;
+	// True if this object is being shut down
+	bool shuttingDown;
 	// This map stores this object's methods & properties
 	// If an entry is set with a ExtIdentifier or ExtVariant,
 	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.

@@ -239,20 +239,24 @@ ExtVariant::ExtVariant(ASObject* other) :
 // Conversion to ASObject
 ASObject* ExtVariant::getASObject() const
 {
+	ASObject* asobj;
 	switch(getType())
 	{
 	case EV_STRING:
-		return Class<ASString>::getInstanceS(getString());
+		asobj = Class<ASString>::getInstanceS(getString().c_str());
+		break;
 	case EV_INT32:
-		return abstract_i(getInt());
+		asobj = abstract_i(getInt());
+		break;
 	case EV_DOUBLE:
-		return abstract_d(getDouble());
+		asobj = abstract_d(getDouble());
+		break;
 	case EV_BOOLEAN:
-		return abstract_b(getBoolean());
+		asobj = abstract_b(getBoolean());
+		break;
 	case EV_OBJECT:
 		{
 			ExtObject* objValue = getObject();
-			ASObject* asobj;
 
 			ExtVariant* property;
 			uint32_t count;
@@ -299,16 +303,18 @@ ASObject* ExtVariant::getASObject() const
 			}
 			if(objValue != NULL)
 				delete objValue;
-
-			asobj->incRef();
-			return asobj;
 		}
+		break;
 	case EV_NULL:
-		return new Null;
+		asobj = new Null;
+		break;
 	case EV_VOID:
 	default:
-		return new Undefined;
+		asobj = new Undefined;
+		break;
 	}
+	asobj->incRef();
+	return asobj;
 }
 
 /* -- ExtCallbackFunction -- */

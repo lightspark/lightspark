@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/toplevel.h"
 #include "flashexternal.h"
 #include "class.h"
 #include "backends/extscriptobject.h"
@@ -33,6 +34,7 @@ void ExternalInterface::sinit(Class_base* c)
 	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable),false);
 	c->setGetterByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),false);
 	c->setMethodByQName("addCallback","",Class<IFunction>::getFunction(addCallback),false);
+	c->setMethodByQName("call","",Class<IFunction>::getFunction(call),false);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)
@@ -57,7 +59,7 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 ASFUNCTIONBODY(ExternalInterface,addCallback)
 {
 	if(sys->extScriptObject == NULL)
-		return NULL;
+		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen == 2);
 
@@ -70,4 +72,40 @@ ASFUNCTIONBODY(ExternalInterface,addCallback)
 		sys->extScriptObject->setMethod(args[0]->toString().raw_buf(), ExtCallbackFunction(f));
 	}
 	return abstract_b(true);
+}
+
+ASFUNCTIONBODY(ExternalInterface,call)
+{
+	if(sys->extScriptObject == NULL)
+		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
+	
+	assert_and_throw(argslen >= 1 && args[0]->getObjectType() == T_STRING);
+
+	// Convert given arguments to ExtVariants
+	const ExtVariant* callArgs[argslen-1];
+	for(uint32_t i = 0; i < argslen-1; i++)
+		callArgs[i] = new ExtVariant(args[i+1]);
+	ExtVariant* result = NULL;
+
+	ASObject* asobjResult = NULL;
+	// Let the external script object call the external method
+	bool callSuccess = sys->extScriptObject->callExternal(args[0]->toString().raw_buf(), callArgs, argslen-1, &result);
+
+	// Delete converted arguments
+	for(uint32_t i = 0; i < argslen-1; i++)
+		delete callArgs[i];
+	
+	if(callSuccess)
+	{
+		// Convert & copy result to ASObject and delete it
+		if(result != NULL)
+		{
+			asobjResult = result->getASObject();
+			delete result;
+		}
+	}
+	else
+		throw Class<ASError>::getInstanceS("Calling of external function failed");
+
+	return asobjResult;
 }

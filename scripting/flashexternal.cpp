@@ -56,7 +56,6 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 
 ASFUNCTIONBODY(ExternalInterface,addCallback)
 {
-	LOG(LOG_NO_INFO, "ExternalInterface::addCallback");
 	if(sys->extScriptObject == NULL)
 		return NULL;
 

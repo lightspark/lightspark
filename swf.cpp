@@ -1177,7 +1177,7 @@ void RootMovieClip::commitFrame(bool another)
 		}
 
 		//When the first frame is committed the frame rate is known
-		sys->addTick(1000/frameRate,this);
+		sys->addTick((1000/frameRate)*24,this);
 	}
 	sem_post(&new_frame);
 }

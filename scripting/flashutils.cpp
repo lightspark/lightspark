@@ -372,12 +372,12 @@ void Timer::tick()
 	sys->currentVm->addEvent(this,e);
 	e->decRef();
 	if(repeatCount==0)
-		sys->addWait(delay,this);
+		sys->addWait(delay*100,this);
 	else
 	{
 		currentCount++;
 		if(currentCount<=repeatCount)
-			sys->addWait(delay,this);
+			sys->addWait(delay*100,this);
 	}
 }
 
@@ -409,7 +409,7 @@ ASFUNCTIONBODY(Timer,start)
 	th->running=true;
 	th->incRef();
 	//TODO: use addTick when more than s single shot is used
-	sys->addWait(th->delay,th);
+	sys->addWait(th->delay*100,th);
 	return NULL;
 }
 

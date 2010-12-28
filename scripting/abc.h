@@ -648,6 +648,17 @@ public:
 
 };
 
+class DoABCTag: public ControlTag
+{
+private:
+	ABCContext* context;
+	pthread_t thread;
+public:
+	DoABCTag(RECORDHEADER h, std::istream& in);
+	~DoABCTag();
+	void execute(RootMovieClip* root);
+};
+
 class DoABCDefineTag: public ControlTag
 {
 private:

@@ -183,6 +183,9 @@ Tag* TagFactory::readTag()
 		case 70:
 			ret=new PlaceObject3Tag(h,f);
 			break;
+		case 72:
+			ret=new DoABCTag(h,f);
+			break;
 		case 73:
 			ret=new DefineFontAlignZonesTag(h,f);
 			break;

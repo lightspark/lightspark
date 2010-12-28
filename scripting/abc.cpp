@@ -166,8 +166,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("TypeError","",Class<TypeError>::getClass());
 	builtin->setVariableByQName("URIError","",Class<URIError>::getClass());
 	builtin->setVariableByQName("VerifyError","",Class<VerifyError>::getClass());
-	builtin->setVariableByQName("XML","",Class<ASObject>::getClass(QName("XML","")));
-	builtin->setVariableByQName("XMLList","",Class<ASObject>::getClass(QName("XMLList","")));
+	builtin->setVariableByQName("XML","",Class<XML>::getClass());
+	builtin->setVariableByQName("XMLList","",Class<XMLList>::getClass());
 	builtin->setVariableByQName("int","",Class<Integer>::getClass());
 
 	builtin->setVariableByQName("print","",Class<IFunction>::getFunction(print));

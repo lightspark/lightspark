@@ -222,6 +222,7 @@ public:
 		pthread_t* mainThread;
 		NPP instance;
 		NPIdentifier id;
+		const char* scriptString;
 		const NPVariant* args;
 		uint32_t argc;
 		NPVariant* result;

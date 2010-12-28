@@ -707,6 +707,7 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 		&mainThread,
 		instance,
 		NPIdentifierObject(id).getNPIdentifier(),
+		("(" + id.getString() + ")").c_str(),
 		variantArgs,
 		argc,
 		&resultVariant,
@@ -748,8 +749,47 @@ void NPScriptObject::callExternal(void* d)
 	NPObject* windowObject;
 	NPN_GetValue(data->instance, NPNVWindowNPObject, &windowObject);
 
+	// Lets try to invoke the identifier as if it is a function name
 	*(data->success) = NPN_Invoke(data->instance, windowObject, data->id,
 				data->args, data->argc, data->result);
+	// Simple invoke succeeded, no further tries needed
+	if(*(data->success))
+	{
+		sem_post(data->callStatus);
+		return;
+	}
+
+	// Simple invoke failed, now try to evaluate the "identifier" as a script
+	NPString script;
+	script.UTF8Characters = data->scriptString;
+	script.UTF8Length = strlen(data->scriptString);
+	*(data->success) = NPN_Evaluate(data->instance, windowObject, &script, data->result);
+
+	// Evaluate failed or it didn't return an object
+	if(!*(data->success) || !NPVARIANT_IS_OBJECT(*(data->result)))
+	{
+		sem_post(data->callStatus);
+		return;
+	}
+
+	// Evaluate didn't fail AND returned an object, lets try to invoke this object
+	NPVariant evalResult = *(data->result);
+	NPObject* evalObj = NPVARIANT_TO_OBJECT(*(data->result));
+	bool evalSuccess = *(data->success);
+	// Lets try to invoke the default function on the object returned by the evaluation
+	*(data->success) = NPN_InvokeDefault(data->instance, evalObj,
+				data->args, data->argc, data->result);
+	// Invocation of default function failed, it seems the evaluation returned a "normal" object.
+	// Restore previous results.
+	if(!*(data->success))
+	{
+		*(data->result) = evalResult;
+		*(data->success) = evalSuccess;
+	}
+	// Invocation of the default function succeeded, lets release the intermediate object.
+	else
+		NPN_ReleaseVariantValue(&evalResult);
+
 	sem_post(data->callStatus);
 }
 

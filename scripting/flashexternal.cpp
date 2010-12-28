@@ -105,7 +105,10 @@ ASFUNCTIONBODY(ExternalInterface,call)
 		}
 	}
 	else
+	{
+		LOG(LOG_NO_INFO, "External function failed: " << args[0]->toString().raw_buf());
 		throw Class<ASError>::getInstanceS("Calling of external function failed");
+	}
 
 	return asobjResult;
 }

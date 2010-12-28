@@ -648,7 +648,7 @@ public:
 
 };
 
-class DoABCTag: public ControlTag
+class DoABCDefineTag: public ControlTag
 {
 private:
 	UI32_SWF Flags;
@@ -656,8 +656,8 @@ private:
 	ABCContext* context;
 	pthread_t thread;
 public:
-	DoABCTag(RECORDHEADER h, std::istream& in);
-	~DoABCTag();
+	DoABCDefineTag(RECORDHEADER h, std::istream& in);
+	~DoABCDefineTag();
 	void execute(RootMovieClip* root);
 };
 

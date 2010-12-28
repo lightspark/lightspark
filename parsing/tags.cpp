@@ -202,7 +202,7 @@ Tag* TagFactory::readTag()
 			ret=new DefineScalingGridTag(h,f);
 			break;
 		case 82:
-			ret=new DoABCTag(h,f);
+			ret=new DoABCDefineTag(h,f);
 			break;
 		case 83:
 			ret=new DefineShape4Tag(h,f);

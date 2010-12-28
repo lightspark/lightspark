@@ -50,12 +50,12 @@ using namespace lightspark;
 
 TLSDATA bool isVmThread=false;
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
+DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
 	in >> Flags >> Name;
-	LOG(LOG_CALLS,_("DoABCTag Name: ") << Name);
+	LOG(LOG_CALLS,_("DoABCDefineTag Name: ") << Name);
 
 	context=new ABCContext(in);
 
@@ -67,12 +67,12 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	}
 }
 
-DoABCTag::~DoABCTag()
+DoABCDefineTag::~DoABCDefineTag()
 {
 	delete context;
 }
 
-void DoABCTag::execute(RootMovieClip*)
+void DoABCDefineTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));

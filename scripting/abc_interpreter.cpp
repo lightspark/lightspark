@@ -867,6 +867,15 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				context->runtime_stack_push(convert_s(val));
 				break;
 			}
+			case 0x72:
+			{
+				//esc_xattr
+				LOG(LOG_NOT_IMPLEMENTED,"esc_xattr");
+				ASObject* val=context->runtime_stack_pop();
+				ASString* str=Class<ASString>::getInstanceS(val->toString());
+				context->runtime_stack_push(str);
+				break;
+			}
 			case 0x73:
 			{
 				//convert_i

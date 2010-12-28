@@ -75,7 +75,7 @@ friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
 	enum TYPE { READONLY=0, STATIC, DYNAMIC };
 	#define STATIC_SIZE 64
-	#define DYNAMIC_SIZE 4096
+	#define DYNAMIC_SIZE 32768
 	char _buf_static[STATIC_SIZE];
 	char* buf;
 	TYPE type;

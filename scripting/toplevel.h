@@ -26,6 +26,7 @@
 #include "frame.h"
 #include "exceptions.h"
 #include "threading.h"
+#include <libxml++/parsers/domparser.h>
 
 namespace lightspark
 {
@@ -639,25 +640,38 @@ public:
 	static void sinit(Class_base* c);
 };
 
-class ASMovieClipLoader: public ASObject
-{
-public:
-	ASMovieClipLoader();
-	ASFUNCTION(addListener);
-	ASFUNCTION(constructor);
-
-};
-
-class ASXML: public ASObject
+class XML: public ASObject
 {
 private:
-	char* xml_buf;
-	int xml_index;
-	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
+	//The parser will destroy the document and all the childs on destruction
+	xmlpp::DomParser parser;
+	//Pointer to the root XML element, the one that owns the parser that created this node
+	XML* root;
+	//The node this object represent
+	xmlpp::Node* node;
+	static void recusiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);
 public:
-	ASXML();
-	ASFUNCTION(constructor);
-	ASFUNCTION(load);
+	XML();
+	XML(XML* _r, xmlpp::Node* _n);
+	~XML();
+	ASFUNCTION(_constructor);
+	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base* c);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+};
+
+class XMLList: public ASObject
+{
+private:
+	std::vector<XML*> nodes;
+public:
+	XMLList(){}
+	XMLList(const std::vector<XML*>& r):nodes(r){}
+	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_getLength);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 };
 
 class Date: public ASObject

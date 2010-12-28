@@ -73,7 +73,7 @@ DoABCTag::~DoABCTag()
 
 void DoABCTag::execute(RootMovieClip*)
 {
-	LOG(LOG_CALLS,_("ABC Exec ") << Name);
+	LOG(LOG_CALLS,_("ABC Exec"));
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
 	SynchronizationEvent* se=new SynchronizationEvent;
 	bool added=sys->currentVm->addEvent(NULL,se);

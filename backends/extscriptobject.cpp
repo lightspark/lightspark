@@ -344,6 +344,7 @@ bool ExtCallbackFunction::operator()(const ExtScriptObject& so, const ExtIdentif
 		catch(LightsparkException& e)
 		{
 			LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
+			sys->setError(e.cause);
 			return false;
 		}
 		return true;

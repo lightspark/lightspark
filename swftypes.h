@@ -468,6 +468,11 @@ struct multiname
 		ASObject* name_o;
 	};
 	std::vector<nsNameAndKind> ns;
+	bool isAttribute;
+	/*
+		Returns a string name whatever is the name type
+	*/
+	tiny_string normalizedName() const;
 	tiny_string qualifiedString() const;
 };
 

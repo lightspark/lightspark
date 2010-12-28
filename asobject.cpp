@@ -465,23 +465,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 void variables_map::killObjVar(const multiname& mname)
 {
-	tiny_string name;
-	switch(mname.name_type)
-	{
-		case multiname::NAME_INT:
-			name=tiny_string(mname.name_i);
-			break;
-		case multiname::NAME_NUMBER:
-			name=tiny_string(mname.name_d);
-			break;
-		case multiname::NAME_STRING:
-			name=mname.name_s;
-			break;
-		default:
-			assert_and_throw("Unexpected name kind" && false);
-	}
-
-
+	tiny_string name=mname.normalizedName();
 	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	assert_and_throw(ret.first!=ret.second);
 
@@ -506,24 +490,7 @@ void variables_map::killObjVar(const multiname& mname)
 
 obj_var* variables_map::findObjVar(const multiname& mname, bool create, bool borrowedMode)
 {
-	tiny_string name;
-	switch(mname.name_type)
-	{
-		case multiname::NAME_INT:
-			name=tiny_string(mname.name_i);
-			break;
-		case multiname::NAME_NUMBER:
-			name=tiny_string(mname.name_d);
-			break;
-		case multiname::NAME_STRING:
-			name=mname.name_s;
-			break;
-		case multiname::NAME_OBJECT:
-			name=mname.name_o->toString();
-			break;
-		default:
-			assert_and_throw("Unexpected name kind" && false);
-	}
+	tiny_string name=mname.normalizedName();
 
 	const var_iterator ret_begin=Variables.lower_bound(name);
 	//This actually look for the first different name, if we accept also previous levels

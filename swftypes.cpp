@@ -54,6 +54,23 @@ tiny_string multiname::qualifiedString() const
 	}
 }
 
+tiny_string multiname::normalizedName() const
+{
+	switch(name_type)
+	{
+		case multiname::NAME_INT:
+			return tiny_string(name_i);
+		case multiname::NAME_NUMBER:
+			return tiny_string(name_d);
+		case multiname::NAME_STRING:
+			return name_s;
+		case multiname::NAME_OBJECT:
+			return name_o->toString();
+		default:
+			assert("Unexpected name kind" && false);
+	}
+}
+
 std::ostream& lightspark::operator<<(std::ostream& s, const QName& r)
 {
 	s << r.ns << ':' << r.name;

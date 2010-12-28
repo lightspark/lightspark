@@ -57,10 +57,7 @@ public:
 	{
 		bool ret=sys->classes.insert(std::make_pair(name,this)).second;
 		if(!ret)
-		{
 			LOG(LOG_ERROR,"Class name collision at: " << name);
-			throw RunTimeException("Class name collision");
-		}
 	}
 	void buildInstanceTraits(ASObject* o) const;
 	void bindToTag(DictionaryTag const* t)

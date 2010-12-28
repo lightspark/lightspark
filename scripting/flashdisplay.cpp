@@ -1947,6 +1947,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 	{
 		return abstract_b(false);
 	}
+	//HACK
+	if(args[0]->getObjectType() == T_NULL)
+		return abstract_b(false); 
+	if(args[0]->getObjectType() == T_UNDEFINED)
+		return abstract_b(false); 
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
@@ -1967,6 +1972,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	{
 		return new Null;
 	}
+	//HACK
+	if(args[0]->getObjectType() == T_NULL)
+		return new Null; 
+	if(args[0]->getObjectType() == T_UNDEFINED)
+		return new Undefined; 
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
@@ -1993,6 +2003,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	{
 		return new Null;
 	}
+	//HACK
+	if(args[0]->getObjectType() == T_NULL)
+		return new Null; 
+	if(args[0]->getObjectType() == T_UNDEFINED)
+		return new Undefined; 
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
@@ -2017,6 +2032,9 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 	{
 		return new Null;
 	}
+	//HACK
+	if(args[0]->getObjectType() == T_UNDEFINED)
+		return new Undefined; 
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));

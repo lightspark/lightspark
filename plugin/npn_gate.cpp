@@ -311,3 +311,8 @@ bool NPN_HasMethod(NPP npp, NPObject *npobj, NPIdentifier methodName)
 {
 	return NPNFuncs.hasmethod(npp, npobj, methodName);
 }
+
+void NPN_SetException(NPObject *npobj, const NPUTF8* message)
+{
+	NPNFuncs.setexception(npobj, message);
+}

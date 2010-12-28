@@ -243,6 +243,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		scriptObject =
 			(NPScriptObjectGW *) NPN_CreateObject(mInstance, &NPScriptObjectGW::npClass);
 		m_sys->extScriptObject = scriptObject->getScriptObject();
+		scriptObject->m_sys = m_sys;
 	}
 	else
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");

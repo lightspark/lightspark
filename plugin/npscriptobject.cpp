@@ -923,21 +923,31 @@ NPScriptObjectGW::~NPScriptObjectGW()
 // Properties
 bool NPScriptObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* result)
 {
+	sys = ((NPScriptObjectGW*) obj)->m_sys;
+	
 	NPVariantObject* resultObj = ((NPScriptObjectGW*) obj)->so->getProperty(NPIdentifierObject(id));
 	if(resultObj == NULL)
+	{
+		sys = NULL;
 		return false;
+	}
 
 	resultObj->copy(*result);
 	delete resultObj;
+
+	sys = NULL;
 	return true;
 }
 
 // Enumeration
 bool NPScriptObjectGW::enumerate(NPObject* obj, NPIdentifier** value, uint32_t* count)
 {
+	sys = ((NPScriptObjectGW*) obj)->m_sys;
+
 	NPScriptObject* o = ((NPScriptObjectGW*) obj)->so;
 	lightspark::ExtIdentifier** ids = NULL;
-	if(o->enumerate(&ids, count))
+	bool success = o->enumerate(&ids, count);
+	if(success)
 	{
 		*value = (NPIdentifier*) NPN_MemAlloc(sizeof(NPIdentifier)*(*count));
 		for(uint32_t i = 0; i < *count; i++)
@@ -945,13 +955,11 @@ bool NPScriptObjectGW::enumerate(NPObject* obj, NPIdentifier** value, uint32_t* 
 			(*value)[i] = dynamic_cast<NPIdentifierObject&>(*ids[i]).getNPIdentifier();
 			delete ids[i];
 		}
-		if(ids != NULL)
-			delete ids;
-
-		return true;
 	}
+
 	if(ids != NULL)
 		delete ids;
 
-	return false;
+	sys = NULL;
+	return success;
 }

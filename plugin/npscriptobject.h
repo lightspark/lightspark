@@ -30,6 +30,7 @@
 #include "npapi.h"
 #include "npruntime.h"
 
+#include "swf.h"
 #include "asobject.h"
 #include "platforms/pluginutils.h"
 
@@ -302,6 +303,8 @@ public:
 
 	NPScriptObject* getScriptObject() { return so; }
 	
+	lightspark::SystemState* m_sys;
+
 	static NPClass npClass;
 
 	/* Static gateway methods used by NPRuntime */
@@ -318,32 +321,50 @@ public:
 	/* NPScriptObject forwarders */
 	static bool hasMethod(NPObject* obj, NPIdentifier id)
 	{
-		return ((NPScriptObjectGW*) obj)->so->hasMethod(NPIdentifierObject(id));
+		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		bool success = ((NPScriptObjectGW*) obj)->so->hasMethod(NPIdentifierObject(id));
+		sys = NULL;
+		return success;
 	}
 	static bool invoke(NPObject* obj, NPIdentifier id,
 			const NPVariant* args, uint32_t argc, NPVariant* result)
 	{
-		return ((NPScriptObjectGW*) obj)->so->invoke(id, args, argc, result);
+		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		bool success = ((NPScriptObjectGW*) obj)->so->invoke(id, args, argc, result);
+		sys = NULL;
+		return success;
 	}
 	static bool invokeDefault(NPObject* obj,
 			const NPVariant* args, uint32_t argc, NPVariant* result)
 	{
-		return ((NPScriptObjectGW*) obj)->so->invokeDefault(args, argc, result);
+		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		bool success = ((NPScriptObjectGW*) obj)->so->invokeDefault(args, argc, result);
+		sys = NULL;
+		return success;
 	}
 
 	static bool hasProperty(NPObject* obj, NPIdentifier id)
 	{
-		return ((NPScriptObjectGW*) obj)->so->hasProperty(NPIdentifierObject(id));
+		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		bool success = ((NPScriptObjectGW*) obj)->so->hasProperty(NPIdentifierObject(id));
+		sys = NULL;
+		return success;
 	}
 	static bool getProperty(NPObject* obj, NPIdentifier id, NPVariant* result);
 	static bool setProperty(NPObject* obj, NPIdentifier id, const NPVariant* value)
 	{
+		sys = ((NPScriptObjectGW*) obj)->m_sys;
 		((NPScriptObjectGW*) obj)->so->setProperty(NPIdentifierObject(id), NPVariantObject(((NPScriptObjectGW*) obj)->instance, *value));
-		return true;
+		bool success = true;
+		sys = NULL;
+		return success;
 	}
 	static bool removeProperty(NPObject* obj, NPIdentifier id)
 	{
-		return ((NPScriptObjectGW*) obj)->so->removeProperty(NPIdentifierObject(id));
+		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		bool success = ((NPScriptObjectGW*) obj)->so->removeProperty(NPIdentifierObject(id));
+		sys = NULL;
+		return success;
 	}
 
 	static bool enumerate(NPObject* obj, NPIdentifier** value, uint32_t* count);

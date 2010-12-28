@@ -33,6 +33,8 @@ void ExternalInterface::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable),false);
 	c->setGetterByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),false);
+	c->setGetterByQName("marshallExceptions","",Class<IFunction>::getFunction(_getMarshallExceptions),false);
+	c->setSetterByQName("marshallExceptions","",Class<IFunction>::getFunction(_setMarshallExceptions),false);
 	c->setMethodByQName("addCallback","",Class<IFunction>::getFunction(addCallback),false);
 	c->setMethodByQName("call","",Class<IFunction>::getFunction(call),false);
 }
@@ -55,6 +57,22 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 	delete object;
 	return Class<ASString>::getInstanceS(result);
 }
+
+ASFUNCTIONBODY(ExternalInterface, _getMarshallExceptions)
+{
+	if(sys->extScriptObject == NULL)
+		return abstract_b(false);
+	else
+		return abstract_b(sys->extScriptObject->getMarshallExceptions());
+}
+
+ASFUNCTIONBODY(ExternalInterface, _setMarshallExceptions)
+{
+	if(sys->extScriptObject != NULL)
+		sys->extScriptObject->setMarshallExceptions(Boolean_concrete(args[0]));
+	return NULL;
+}
+
 
 ASFUNCTIONBODY(ExternalInterface,addCallback)
 {

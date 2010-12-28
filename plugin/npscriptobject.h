@@ -169,6 +169,7 @@ private:
 	static void copy(const NPVariant& from, NPVariant& dest);
 };
 
+class NPScriptObjectGW;
 /**
  * Multiple inheritance doesn't seem to work will when used with the NPObject base class.
  * Thats why we use this gateway class which inherits only from ExtScriptObject.
@@ -176,7 +177,7 @@ private:
 class DLL_PUBLIC NPScriptObject : public lightspark::ExtScriptObject
 {
 public:
-	NPScriptObject(NPP _instance);
+	NPScriptObject(NPScriptObjectGW* gw);
 	~NPScriptObject();
 	// Stops all waiting external calls, should be called before destruction.
 	// Actual destruction should be initiated by the browser, as a last step of destruction.
@@ -232,6 +233,11 @@ public:
 	// This must be called from the plugin thread
 	static void callExternal(void* data);
 
+	// Throwing exceptions to the container
+	void setException(const std::string& message) const;
+	void setMarshallExceptions(bool marshall) { marshallExceptions = marshall; }
+	bool getMarshallExceptions() const { return marshallExceptions; }
+
 	// Standard methods
 	// These methods are standard to every flash instance.
 	// They provide features such as getting/setting internal variables,
@@ -276,6 +282,7 @@ public:
 			const lightspark::ExtIdentifier& id,
 			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
 private:
+	NPScriptObjectGW* gw;
 	NPP instance;
 	// Used to determine if a method is called in the main plugin thread
 	pthread_t mainThread;
@@ -284,6 +291,8 @@ private:
 	sem_t callStatus;
 	// True if this object is being shut down
 	bool shuttingDown;
+	// True if exceptions should be marshalled to the container
+	bool marshallExceptions;
 	// This map stores this object's methods & properties
 	// If an entry is set with a ExtIdentifier or ExtVariant,
 	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.
@@ -303,6 +312,7 @@ public:
 	~NPScriptObjectGW();
 
 	NPScriptObject* getScriptObject() { return so; }
+	NPP getInstance() { return instance; }
 	
 	lightspark::SystemState* m_sys;
 

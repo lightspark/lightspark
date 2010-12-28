@@ -338,6 +338,7 @@ bool ExtCallbackFunction::operator()(const ExtScriptObject& so, const ExtIdentif
 		}
 		catch(ASObject* obj)
 		{
+			so.setException(obj->toString().raw_buf());
 			LOG(LOG_ERROR, "ASObject exception caught in external callback");
 			return false;
 		}

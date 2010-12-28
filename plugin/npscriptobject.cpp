@@ -543,7 +543,8 @@ void NPVariantObject::copy(const NPVariant& from, NPVariant& dest)
 
 /* -- NPScriptObject -- */
 // Constructor
-NPScriptObject::NPScriptObject(NPP _instance) : instance(_instance), shuttingDown(false)
+NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
+	gw(_gw), instance(gw->getInstance()), shuttingDown(false), marshallExceptions(false)
 {
 	// This object is always created in the main plugin thread, so lets save
 	// so that we can check if we are in the main plugin thread later on.
@@ -793,6 +794,12 @@ void NPScriptObject::callExternal(void* d)
 	sem_post(data->callStatus);
 }
 
+void NPScriptObject::setException(const std::string& message) const
+{
+	if(marshallExceptions)
+		NPN_SetException(gw, message.c_str());
+}
+
 // Standard Flash methods
 bool NPScriptObject::stdGetVariable(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
@@ -935,7 +942,7 @@ NPClass NPScriptObjectGW::npClass =
 NPScriptObjectGW::NPScriptObjectGW(NPP inst) : instance(inst)
 {
 	assert(instance != NULL);
-	so = new NPScriptObject(instance);
+	so = new NPScriptObject(this);
 
 	NPN_GetValue(instance, NPNVWindowNPObject, &windowObject);
 	NPN_GetValue(instance, NPNVPluginElementNPObject, &pluginElementObject);

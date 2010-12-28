@@ -330,9 +330,22 @@ bool ExtCallbackFunction::operator()(const ExtScriptObject& so, const ExtIdentif
 			objArgs[i] = args[i]->getASObject();
 		}
 
-		ASObject* objResult = iFunc->call(new Null, objArgs, argc);
-		if(objResult != NULL)
-			*result = new ExtVariant(objResult);
+		try
+		{
+			ASObject* objResult = iFunc->call(new Null, objArgs, argc);
+			if(objResult != NULL)
+				*result = new ExtVariant(objResult);
+		}
+		catch(ASObject* obj)
+		{
+			LOG(LOG_ERROR, "ASObject exception caught in external callback");
+			return false;
+		}
+		catch(LightsparkException& e)
+		{
+			LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
+			return false;
+		}
 		return true;
 	}
 	else

@@ -1259,12 +1259,12 @@ void DisplayObject::setRoot(RootMovieClip* r)
 void DisplayObject::setOnStage(bool staged)
 {
 	//TODO: When removing from stage released the cachedTex
-	if(onStage==false && staged==true)
-		invalidate();
 	if(staged!=onStage)
 	{
 		//Our stage condition changed, send event
 		onStage=staged;
+		if(staged==true)
+			invalidate();
 		if(getVm()==NULL)
 			return;
 		if(onStage==true && hasEventListener("addedToStage"))

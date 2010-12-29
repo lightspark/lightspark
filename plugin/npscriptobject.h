@@ -25,7 +25,6 @@
 #include <string.h>
 #include <string>
 #include <map>
-#include <sstream>
 
 #include "npapi.h"
 #include "npruntime.h"

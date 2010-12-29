@@ -67,11 +67,11 @@ NPIdentifierObject::NPIdentifierObject(const NPIdentifier& id)
 // Convert integer string identifiers to integer identifiers
 void NPIdentifierObject::stringToInt(const std::string& value)
 {
-	int intValue = atoi(value.c_str());
-	std::stringstream conv;
-	conv << intValue;
+	char* endptr;
+	int intValue = strtol(value.c_str(), &endptr, 10);
+	
 	// Convert integer string identifiers to integer identifiers
-	if(conv.str() == value)
+	if(*endptr == '\0')
 		identifier = NPN_GetIntIdentifier(intValue);
 	else
 		identifier = NPN_GetStringIdentifier(value.c_str());

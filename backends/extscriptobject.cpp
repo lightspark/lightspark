@@ -62,11 +62,10 @@ ExtIdentifier::ExtIdentifier(const ExtIdentifier& other)
 // Convert integer string identifiers to integer identifiers
 void ExtIdentifier::stringToInt()
 {
-	intValue = atoi(strValue.c_str());
-	std::stringstream conv;
-	conv << intValue;
+	char* endptr;
+	intValue = strtol(strValue.c_str(), &endptr, 10);
 
-	if(conv.str() == strValue)
+	if(*endptr == '\0')
 		type = EI_INT32;
 }
 

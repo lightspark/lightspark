@@ -213,6 +213,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),mainDownloaderStream(NULL),mainDownloader(NULL),m_pt(NULL)
 {
+	cout << "Lightspark version " << VERSION << " Copyright 2009-2010 Alessandro Pignotti" << endl << endl;
 	sys=NULL;
 	m_sys=new lightspark::SystemState(NULL,0);
 	//As this is the plugin, enable fallback on Gnash for older clips

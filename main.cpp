@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-
+	cout << "Lightspark version " << VERSION << " Copyright 2009-2010 Alessandro Pignotti" << endl << endl;
 	if(fileName==NULL)
 	{
 		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 

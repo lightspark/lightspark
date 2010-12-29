@@ -228,6 +228,15 @@ number_t ABCVm::negate(ASObject* v)
 	return ret;
 }
 
+intptr_t ABCVm::negate_i(ASObject* o)
+{
+	LOG(LOG_CALLS,_("negate_i"));
+
+	int n=o->toInt();
+	o->decRef();
+	return -n;
+}
+
 uintptr_t ABCVm::bitNot(ASObject* val)
 {
 	uintptr_t i1=val->toUInt();

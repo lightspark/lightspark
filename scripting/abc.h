@@ -527,6 +527,7 @@ private:
 	static bool _not(ASObject*);
 	static bool equals(ASObject*,ASObject*);
 	static number_t negate(ASObject*);
+	static intptr_t negate_i(ASObject*);
 	static void pop();
 	static ASObject* typeOf(ASObject*);
 	static void _throw(call_context* th);

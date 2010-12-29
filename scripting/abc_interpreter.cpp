@@ -1217,6 +1217,14 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				incLocal_i(context, t);
 				break;
 			}
+			case 0xc4:
+			{
+				//negate_i
+				ASObject *val=context->runtime_stack_pop();
+				ASObject* ret=abstract_i(negate_i(val));
+				context->runtime_stack_push(ret);
+				break;
+			}
 			case 0xc5:
 			{
 				//add_i

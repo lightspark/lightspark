@@ -957,12 +957,28 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				context->runtime_stack_push(ret);
 				break;
 			}
+			case 0x92:
+			{
+				//inclocal
+				u30 t;
+				code >> t;
+				incLocal(context, t);
+				break;
+			}
 			case 0x93:
 			{
 				//decrement
 				ASObject* val=context->runtime_stack_pop();
 				ASObject* ret=abstract_i(decrement(val));
 				context->runtime_stack_push(ret);
+				break;
+			}
+			case 0x94:
+			{
+				//declocal
+				u30 t;
+				code >> t;
+				decLocal(context, t);
 				break;
 			}
 			case 0x95:
@@ -1215,6 +1231,14 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t;
 				code >> t;
 				incLocal_i(context, t);
+				break;
+			}
+			case 0xc3:
+			{
+				//declocal_i
+				u30 t;
+				code >> t;
+				decLocal_i(context, t);
 				break;
 			}
 			case 0xc4:

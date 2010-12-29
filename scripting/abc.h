@@ -503,6 +503,9 @@ private:
 	static void pushUInt(call_context* th, int n);
 	static void pushDouble(call_context* th, int n);
 	static void incLocal_i(call_context* th, int n);
+	static void incLocal(call_context* th, int n);
+	static void decLocal_i(call_context* th, int n);
+	static void decLocal(call_context* th, int n);
 	static void coerce(call_context* th, int n);
 	static ASObject* getProperty(ASObject* obj, multiname* name);
 	static intptr_t getProperty_i(ASObject* obj, multiname* name);

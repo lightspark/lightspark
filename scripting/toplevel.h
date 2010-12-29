@@ -607,6 +607,7 @@ class Number : public ASObject
 {
 friend ASObject* abstract_d(number_t i);
 friend class ABCContext;
+friend class ABCVm;
 CLASSBUILDABLE(Number);
 private:
 	double val;

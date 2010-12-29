@@ -598,6 +598,21 @@ number_t ABCVm::multiply(ASObject* val2, ASObject* val1)
 	return num1*num2;
 }
 
+void ABCVm::incLocal(call_context* th, int n)
+{
+	LOG(LOG_CALLS, _("incLocal ") << n );
+	if(th->locals[n]->getObjectType()==T_NUMBER)
+	{
+		Number* i=static_cast<Number*>(th->locals[n]);
+		i->val++;
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,_("Cannot increment type ") << th->locals[n]->getObjectType());
+	}
+
+}
+
 void ABCVm::incLocal_i(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("incLocal_i ") << n );
@@ -609,6 +624,36 @@ void ABCVm::incLocal_i(call_context* th, int n)
 	else
 	{
 		LOG(LOG_NOT_IMPLEMENTED,_("Cannot increment type ") << th->locals[n]->getObjectType());
+	}
+
+}
+
+void ABCVm::decLocal(call_context* th, int n)
+{
+	LOG(LOG_CALLS, _("decLocal ") << n );
+	if(th->locals[n]->getObjectType()==T_INTEGER)
+	{
+		Number* i=static_cast<Number*>(th->locals[n]);
+		i->val--;
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,_("Cannot decrement type ") << th->locals[n]->getObjectType());
+	}
+
+}
+
+void ABCVm::decLocal_i(call_context* th, int n)
+{
+	LOG(LOG_CALLS, _("decLocal_i ") << n );
+	if(th->locals[n]->getObjectType()==T_INTEGER)
+	{
+		Integer* i=static_cast<Integer*>(th->locals[n]);
+		i->val--;
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,_("Cannot decrement type ") << th->locals[n]->getObjectType());
 	}
 
 }

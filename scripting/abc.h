@@ -530,6 +530,7 @@ private:
 	static void pop();
 	static ASObject* typeOf(ASObject*);
 	static void _throw(call_context* th);
+	static ASObject* asType(ASObject* obj, multiname* name);
 	static ASObject* asTypelate(ASObject* type, ASObject* obj);
 	static bool isTypelate(ASObject* type, ASObject* obj);
 	static bool isType(ASObject* obj, multiname* name);

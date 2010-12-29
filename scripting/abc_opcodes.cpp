@@ -1812,6 +1812,20 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	return real_ret;
 }
 
+ASObject* ABCVm::asType(ASObject* obj, multiname* name)
+{
+	bool ret = ABCContext::isinstance(obj, name);	
+	LOG(LOG_CALLS,_("asType"));
+	
+	if(ret)
+		return obj;
+	else
+	{
+		obj->decRef();
+		return new Null;
+	}
+}
+
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,_("asTypelate"));

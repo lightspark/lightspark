@@ -918,6 +918,19 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				context->runtime_stack_push(coerce_s(context->runtime_stack_pop()));
 				break;
 			}
+			case 0x86:
+			{
+				//astype
+				u30 t;
+				code >> t;
+				multiname* name=context->context->getMultiname(t,context);
+
+				ASObject* v1=context->runtime_stack_pop();
+
+				ASObject* ret=asType(v1, name);
+				context->runtime_stack_push(ret);
+				break;
+			}
 			case 0x87:
 			{
 				//astypelate

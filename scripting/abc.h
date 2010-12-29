@@ -536,6 +536,7 @@ private:
 	static bool isType(ASObject* obj, multiname* name);
 	static void swap();
 	static ASObject* add(ASObject*,ASObject*);
+	static intptr_t add_i(ASObject*,ASObject*);
 	static ASObject* add_oi(ASObject*,intptr_t);
 	static ASObject* add_od(ASObject*,number_t);
 	static uintptr_t bitAnd(ASObject*,ASObject*);
@@ -554,6 +555,7 @@ private:
 	static number_t divide(ASObject*,ASObject*);
 	static intptr_t modulo(ASObject*,ASObject*);
 	static number_t subtract(ASObject*,ASObject*);
+	static intptr_t subtract_i(ASObject*,ASObject*);
 	static number_t subtract_oi(ASObject*, intptr_t);
 	static number_t subtract_io(intptr_t, ASObject*);
 	static number_t subtract_do(number_t, ASObject*);

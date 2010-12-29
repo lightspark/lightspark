@@ -1217,6 +1217,26 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				incLocal_i(context, t);
 				break;
 			}
+			case 0xc5:
+			{
+				//add_i
+				ASObject* v2=context->runtime_stack_pop();
+				ASObject* v1=context->runtime_stack_pop();
+
+				ASObject* ret=abstract_i(add_i(v2, v1));
+				context->runtime_stack_push(ret);
+				break;
+			}
+			case 0xc6:
+			{
+				//subtract_i
+				ASObject* v2=context->runtime_stack_pop();
+				ASObject* v1=context->runtime_stack_pop();
+
+				ASObject* ret=abstract_i(subtract_i(v2, v1));
+				context->runtime_stack_push(ret);
+				break;
+			}
 			case 0xd0:
 			case 0xd1:
 			case 0xd2:

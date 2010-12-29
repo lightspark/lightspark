@@ -1632,10 +1632,10 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 	longlongTime|=CompileTimeLo;
 
 	LOG(LOG_NO_INFO,_("SWF Info:") << 
-	endl << "\tProductId: " << ProductId <<
-	endl << "\tEdition: " << Edition <<
-	endl << "\tVersion: " << int(MajorVersion) << "." << int(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
-	endl << "\tCompileTime: " << longlongTime);
+	endl << "\tProductId:\t\t" << ProductId <<
+	endl << "\tEdition:\t\t" << Edition <<
+	endl << "\tVersion:\t\t" << int(MajorVersion) << "." << int(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
+	endl << "\tCompileTime:\t\t" << longlongTime);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
@@ -1890,7 +1890,7 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 	ostringstream output;
 	while(xml.read())
 	{
-		if(xml.get_depth() == 2 && xml.read_string() != "")
+		if(xml.get_depth() == 2 && xml.get_node_type() == xmlpp::TextReader::Element)
 			output << endl << "\t" << xml.get_local_name() << ":\t\t" << xml.read_string();
 	}
 	LOG(LOG_NO_INFO, "SWF Metadata:" << output.str());

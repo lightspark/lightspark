@@ -54,8 +54,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
-	in >> Flags >> Name;
-	LOG(LOG_CALLS,_("DoABCTag Name: ") << Name);
+	LOG(LOG_CALLS,_("DoABCTag"));
 
 	context=new ABCContext(in);
 
@@ -73,6 +72,43 @@ DoABCTag::~DoABCTag()
 }
 
 void DoABCTag::execute(RootMovieClip*)
+{
+	LOG(LOG_CALLS,_("ABC Exec"));
+	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
+	SynchronizationEvent* se=new SynchronizationEvent;
+	bool added=sys->currentVm->addEvent(NULL,se);
+	if(!added)
+	{
+		se->decRef();
+		throw RunTimeException("Could not add event");
+	}
+	se->wait();
+	se->decRef();
+}
+
+DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
+{
+	int dest=in.tellg();
+	dest+=h.getLength();
+	in >> Flags >> Name;
+	LOG(LOG_CALLS,_("DoABCDefineTag Name: ") << Name);
+
+	context=new ABCContext(in);
+
+	int pos=in.tellg();
+	if(dest!=pos)
+	{
+		LOG(LOG_ERROR,_("Corrupted ABC data: missing ") << dest-in.tellg());
+		throw ParseException("Not complete ABC data");
+	}
+}
+
+DoABCDefineTag::~DoABCDefineTag()
+{
+	delete context;
+}
+
+void DoABCDefineTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));

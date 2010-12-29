@@ -312,7 +312,6 @@ ASObject* ExtVariant::getASObject() const
 		asobj = new Undefined;
 		break;
 	}
-	asobj->incRef();
 	return asobj;
 }
 

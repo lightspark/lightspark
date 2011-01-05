@@ -106,11 +106,11 @@ intptr_t ABCVm::convert_i(ASObject* o)
 	return ret;
 }
 
-ASObject* ABCVM::convert_s(ASObject* o)
+ASObject* ABCVm::convert_s(ASObject* o)
 {
 	LOG(LOG_CALLS, _("convert_s") );
 	ASObject* ret=o;
-	if(o->getObjectType!=T_STRING)
+	if(o->getObjectType()!=T_STRING)
 	{
 		ret=Class<ASString>::getInstanceS(o->toString(false));
 		o->decRef();

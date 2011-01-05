@@ -322,7 +322,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT));
 };
 
-NetConnection::NetConnection()
+NetConnection::NetConnection():_connected(false)
 {
 }
 

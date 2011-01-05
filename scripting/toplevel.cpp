@@ -1999,23 +1999,23 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			else
 				ret=val(cc);
 		}
-		catch (ASObject* obj) // Doesn't have to be an ASError at all.
+		catch (ASObject* excobj) // Doesn't have to be an ASError at all.
 		{
 			unsigned int pos = cc->code->tellg();
 			bool no_handler = true;
 
-			LOG(LOG_TRACE, "got an " << obj->toString());
+			LOG(LOG_TRACE, "got an " << excobj->toString());
 			LOG(LOG_TRACE, "pos=" << pos);
 			for (unsigned int i=0;i<mi->body->exception_count;i++) {
 				exception_info exc=mi->body->exceptions[i];
 				multiname* name=mi->context->getMultiname(exc.exc_type, cc);
 				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to);
-				if (pos > exc.from && pos <= exc.to && ABCContext::isinstance(obj, name))
+				if (pos > exc.from && pos <= exc.to && ABCContext::isinstance(excobj, name))
 				{
 					no_handler = false;
 					cc->code->seekg((uint32_t)exc.target);
 					cc->runtime_stack_clear();
-					cc->runtime_stack_push(obj);
+					cc->runtime_stack_push(excobj);
 					for(uint32_t i=0;i<cc->scope_stack.size();i++)
 						cc->scope_stack[i]->decRef();
 					cc->scope_stack.clear();
@@ -2025,7 +2025,12 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			}
 			if (no_handler)
 			{
-				throw obj;
+				getVm()->popObjAndLevel();
+				obj->resetLevel();
+				tl=getVm()->getCurObjAndLevel();
+				tl.cur_this->setLevel(tl.cur_level);
+				delete cc;
+				throw excobj;
 			}
 			continue;
 		}

@@ -58,6 +58,12 @@ tiny_string ASObject::toString(bool debugMsg)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
 			ASObject* ret=f_toString->call(this,NULL,0);
+			//HACK: Hulu needs describeType
+			if(ret->getObjectType()==T_UNDEFINED)
+			{
+				ret->decRef();
+				return "undefined";
+			}
 			assert_and_throw(ret->getObjectType()==T_STRING);
 			tiny_string retS=ret->toString();
 			ret->decRef();

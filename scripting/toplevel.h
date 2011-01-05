@@ -474,6 +474,7 @@ private:
 		sortComparatorWrapper(IFunction* c):comparator(c){}
 		bool operator()(const data_slot& d1, const data_slot& d2);
 	};
+	tiny_string toString_priv() const;
 public:
 	//These utility methods are also used by ByteArray 
 	static bool isValidMultiname(const multiname& name, unsigned int& index);
@@ -545,7 +546,6 @@ public:
 	bool hasNext(unsigned int& index, bool& out);
 	bool nextName(unsigned int index, ASObject*& out);
 	bool nextValue(unsigned int index, ASObject*& out);
-	tiny_string toString_priv() const;
 };
 
 class Integer : public ASObject

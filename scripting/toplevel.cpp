@@ -2438,7 +2438,8 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 	ASString* th=static_cast<ASString*>(obj);
 	unsigned int index=args[0]->toInt();
 	assert_and_throw(index>=0 && index<th->data.size());
-	return abstract_i(th->data[index]);
+	//Character codes are expected to be positive
+	return abstract_i((uint8_t)th->data[index]);
 }
 
 ASFUNCTIONBODY(ASString,indexOf)

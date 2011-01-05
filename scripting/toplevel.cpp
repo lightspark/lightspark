@@ -522,6 +522,7 @@ void XML::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(XML::_toString),true);
 }
 
 ASFUNCTIONBODY(XML,_constructor)
@@ -582,6 +583,39 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 	//The new object will be incReffed by the calling code
 	ret->fake_decRef();
 	return ret;
+}
+
+ASFUNCTIONBODY(XML,_toString)
+{
+	XML* th=Class<XML>::cast(obj);
+	return Class<ASString>::getInstanceS(th->toString_priv());
+}
+
+tiny_string XML::toString_priv() const
+{
+	//We have to use vanilla libxml2, libxml++ is not enough
+	xmlNodePtr libXml2Node=node->cobj();
+	tiny_string ret;
+	switch(libXml2Node->type)
+	{
+		case XML_ATTRIBUTE_NODE:
+		{
+			xmlChar* content=xmlNodeGetContent(libXml2Node);
+			ret=tiny_string((char*)content,true);
+			xmlFree(content);
+			break;
+		}
+		default:
+			throw UnsupportedException("Unsupport type in XML::toString");
+	}
+	return ret;
+}
+
+tiny_string XML::toString(bool debugMsg)
+{
+	if(debugMsg)
+		return ASObject::toString(true);
+	return toString_priv();
 }
 
 void XMLList::sinit(Class_base* c)

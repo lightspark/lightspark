@@ -650,15 +650,18 @@ private:
 	//The node this object represent
 	xmlpp::Node* node;
 	static void recusiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);
+	tiny_string toString_priv() const;
 public:
 	XML();
 	XML(XML* _r, xmlpp::Node* _n);
 	~XML();
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_toString);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	tiny_string toString(bool debugMsg=false);
 };
 
 class XMLList: public ASObject

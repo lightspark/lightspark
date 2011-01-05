@@ -1104,15 +1104,9 @@ void DefineShapeTag::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 				Vector2 p3(startX,startY);
 
 				if(color0)
-				{
-					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
-					shapesBuilder.extendFilledOutlineForColor(color0,p2,p3);
-				}
+					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
 				if(color1)
-				{
-					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
-					shapesBuilder.extendFilledOutlineForColor(color1,p2,p3);
-				}
+					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
 			}
 		}
 		else

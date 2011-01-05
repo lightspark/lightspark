@@ -445,6 +445,20 @@ void CairoRenderer::jobFence()
 	sys->getRenderThread()->addUploadJob(this);
 }
 
+void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y)
+{
+	double start_x, start_y;
+	cairo_get_current_point(cr, &start_x, &start_y);
+	double control_1x = control_x*(2.0/3.0) + start_x*(1.0/3.0);
+	double control_1y = control_y*(2.0/3.0) + start_y*(1.0/3.0);
+	double control_2x = control_x*(2.0/3.0) + end_x*(1.0/3.0);
+	double control_2y = control_y*(2.0/3.0) + end_y*(1.0/3.0);
+	cairo_curve_to(cr,
+	               control_1x, control_1y,
+	               control_2x, control_2y,
+	               end_x, end_y);
+}
+
 bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill)
 {
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
@@ -460,7 +474,22 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 				break;
 			case MOVE:
 				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
-				break;	
+				break;
+			case CURVE_QUADRATIC:
+			{
+				quadraticBezier(cr,
+				                tokens[i].p1.x, tokens[i].p1.y,
+				                tokens[i].p2.x, tokens[i].p2.y);
+				empty=false;
+				break;
+			}
+			case CURVE_CUBIC:
+				cairo_curve_to(cr,
+				               tokens[i].p1.x, tokens[i].p1.y,
+				               tokens[i].p2.x, tokens[i].p2.y,
+				               tokens[i].p3.x, tokens[i].p3.y);
+				empty=false;
+				break;
 			case SET_FILL:
 			{
 				if(skipFill)

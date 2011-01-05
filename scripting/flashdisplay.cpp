@@ -2406,6 +2406,31 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Graphics,curveTo)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	assert_and_throw(argslen==4);
+
+	int controlX=args[0]->toInt();
+	int controlY=args[1]->toInt();
+
+	int anchorX=args[2]->toInt();
+	int anchorY=args[3]->toInt();
+
+	//TODO: support line styles to avoid this
+	if(!th->styles.empty())
+	{
+		th->tokens.emplace_back(CURVE_QUADRATIC,
+		                        Vector2(controlX, controlY),
+		                        Vector2(anchorX, anchorY));
+		th->owner->invalidateGraphics();
+	}
+
+	th->curX=anchorX;
+	th->curY=anchorY;
+	return NULL;
+}
+
 ASFUNCTIONBODY(Graphics,drawCircle)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
@@ -2415,20 +2440,40 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	double y=args[1]->toNumber();
 	double radius=args[2]->toNumber();
 
-	//Well, right now let's build a square anyway
-	const Vector2 a(x-radius,y-radius);
-	const Vector2 b(x+radius,y-radius);
-	const Vector2 c(x+radius,y+radius);
-	const Vector2 d(x-radius,y+radius);
+	// 4/3 * (sqrt2 - 1)
+	double kappa = 0.55228474983079356*radius;
 
 	//TODO: support line styles to avoid this
 	if(!th->styles.empty())
 	{
-		th->tokens.emplace_back(MOVE, a);
-		th->tokens.emplace_back(STRAIGHT, b);
-		th->tokens.emplace_back(STRAIGHT, c);
-		th->tokens.emplace_back(STRAIGHT, d);
-		th->tokens.emplace_back(STRAIGHT, a);
+		// top
+		th->tokens.emplace_back(MOVE, Vector2(x, y-radius));
+
+		// right
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x+kappa , y-radius),
+		                        Vector2(x+radius, y-kappa ),
+		                        Vector2(x+radius, y       ));
+
+		// bottom
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x+radius, y+kappa ),
+		                        Vector2(x+kappa , y+radius),
+		                        Vector2(x       , y+radius));
+
+		// left
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x-kappa , y+radius),
+		                        Vector2(x-radius, y+kappa ),
+		                        Vector2(x-radius, y       ));
+
+		// back to top
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x-radius, y-kappa ),
+		                        Vector2(x-kappa , y-radius),
+		                        Vector2(x       , y-radius));
+
+		th->owner->invalidateGraphics();
 	}
 	return NULL;
 }

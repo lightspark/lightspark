@@ -45,30 +45,46 @@ public:
 	int dot(const Vector2& r) const { return x*r.x+y*r.y;}
 };
 
-enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE, MOVE, SET_FILL, SET_STROKE };
+enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CURVE_CUBIC };
 
 class GeomToken
 {
 public:
 	GEOM_TOKEN_TYPE type;
 	Vector2 p1;
+	Vector2 p2;
+	Vector2 p3;
 	FILLSTYLE style;
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),style(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE _f):type(_t),p1(0,0),style(_f){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),p2(0,0),p3(0,0),style(-1){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):type(_t),p1(_p1),p2(_p2),p3(0,0),style(-1){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):type(_t),p1(_p1),p2(_p2),p3(_p3),style(-1){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE _f):type(_t),p1(0,0),p2(0,0),p3(0,0),style(_f){}
+};
+
+enum SHAPE_PATH_SEGMENT_TYPE { PATH_START=0, PATH_STRAIGHT, PATH_CURVE_QUADRATIC };
+
+class ShapePathSegment {
+public:
+	SHAPE_PATH_SEGMENT_TYPE type;
+	unsigned int i;
+	ShapePathSegment(SHAPE_PATH_SEGMENT_TYPE _t, unsigned int _i):type(_t),i(_i){}
+	bool operator==(const ShapePathSegment& v)const{return v.i == i;}
 };
 
 class ShapesBuilder
 {
 private:
 	std::map< Vector2, unsigned int > verticesMap;
-	std::map< unsigned int, std::vector< std::vector<unsigned int> > > filledShapesMap;
-	std::map< unsigned int, std::vector< std::vector<unsigned int> > > strokeShapesMap;
+	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > filledShapesMap;
+	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > strokeShapesMap;
 	void joinOutlines();
-	static bool isOutlineEmpty(const std::vector<unsigned int>& outline);
+	static bool isOutlineEmpty(const std::vector<ShapePathSegment>& outline);
 	static void extendOutlineForColor(std::map< unsigned int, std::vector< std::vector<Vector2> > >& map);
+	unsigned int makeVertex(const Vector2& v);
 	const Vector2& getVertex(unsigned int index);
 public:
 	void extendFilledOutlineForColor(unsigned int fillColor, const Vector2& v1, const Vector2& v2);
+	void extendFilledOutlineForColorCurve(unsigned int color, const Vector2& start, const Vector2& control, const Vector2& end);
 	void extendStrokeOutlineForColor(unsigned int stroke, const Vector2& v1, const Vector2& v2);
 	/**
 		Generate a sequence of cachable tokens that defines the geomtries

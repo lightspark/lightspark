@@ -30,7 +30,7 @@
 using namespace std;
 using namespace lightspark;
 
-bool ShapesBuilder::isOutlineEmpty(const std::vector< unsigned int >& outline)
+bool ShapesBuilder::isOutlineEmpty(const std::vector<ShapePathSegment>& outline)
 {
 	return outline.empty();
 }
@@ -43,10 +43,10 @@ void ShapesBuilder::clear()
 
 void ShapesBuilder::joinOutlines()
 {
-	map< unsigned int, vector< vector <unsigned int> > >::iterator it=filledShapesMap.begin();
+	map< unsigned int, vector< vector <ShapePathSegment> > >::iterator it=filledShapesMap.begin();
 	for(;it!=filledShapesMap.end();it++)
 	{
-		vector< vector<unsigned int> >& outlinesForColor=it->second;
+		vector< vector<ShapePathSegment> >& outlinesForColor=it->second;
 		//Repack outlines of the same color, avoiding excessive copying
 		for(int i=0;i<int(outlinesForColor.size());i++)
 		{
@@ -72,9 +72,8 @@ void ShapesBuilder::joinOutlines()
 				{
 					//CHECK: this works for adjacent shapes of the same color?
 					//Copy all the vertex but the origin in this one
-					outlinesForColor[j].insert(outlinesForColor[j].end(),
-									outlinesForColor[i].rbegin()+1,
-									outlinesForColor[i].rend());
+					for (int k = outlinesForColor[i].size()-2; k >= 0; k--)
+						outlinesForColor[j].emplace_back(outlinesForColor[i][k+1].type, outlinesForColor[i][k].i);
 					//Invalidate the origin, but not the high level vector
 					outlinesForColor[i].clear();
 					break;
@@ -88,46 +87,73 @@ void ShapesBuilder::joinOutlines()
 	}
 }
 
+unsigned int ShapesBuilder::makeVertex(const Vector2& v) {
+	map<Vector2, unsigned int>::const_iterator it=verticesMap.find(v);
+	if(it!=verticesMap.end())
+		return it->second;
+
+	unsigned int i = verticesMap.size();
+	verticesMap.insert(make_pair(v, i));
+	return i;
+}
+
 void ShapesBuilder::extendFilledOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2)
 {
 	assert_and_throw(color);
 	//Find the indices of the vertex
-	unsigned int v1Index, v2Index;
-	map<Vector2, unsigned int>::const_iterator it=verticesMap.find(v1);
-	if(it==verticesMap.end())
-	{
-		v1Index=verticesMap.size();
-		verticesMap.insert(make_pair(v1,v1Index));
-	}
-	else
-		v1Index=it->second;
-	it=verticesMap.find(v2);
-	if(it==verticesMap.end())
-	{
-		v2Index=verticesMap.size();
-		verticesMap.insert(make_pair(v2,v2Index));
-	}
-	else
-		v2Index=it->second;
+	unsigned int v1Index = makeVertex(v1);
+	unsigned int v2Index = makeVertex(v2);
 
-	vector< vector<unsigned int> >& outlinesForColor=filledShapesMap[color];
+	vector< vector<ShapePathSegment> >& outlinesForColor=filledShapesMap[color];
 	//Search a suitable outline to attach this new vertex
 	for(unsigned int i=0;i<outlinesForColor.size();i++)
 	{
 		assert_and_throw(outlinesForColor[i].size()>=2);
 		if(outlinesForColor[i].front()==outlinesForColor[i].back())
 			continue;
-		if(outlinesForColor[i].back()==v1Index)
+		if(outlinesForColor[i].back().i==v1Index)
 		{
-			outlinesForColor[i].push_back(v2Index);
+			outlinesForColor[i].emplace_back(PATH_STRAIGHT, v2Index);
 			return;
 		}
 	}
 	//No suitable outline found, create one
-	outlinesForColor.push_back(vector<unsigned int>());
-	outlinesForColor.back().reserve(2);
-	outlinesForColor.back().push_back(v1Index);
-	outlinesForColor.back().push_back(v2Index);
+	vector<ShapePathSegment> vertices;
+	vertices.reserve(2);
+	vertices.emplace_back(PATH_START, v1Index);
+	vertices.emplace_back(PATH_STRAIGHT, v2Index);
+	outlinesForColor.push_back(vertices);
+}
+
+void ShapesBuilder::extendFilledOutlineForColorCurve(unsigned int color, const Vector2& v1, const Vector2& v2, const Vector2& v3)
+{
+	assert_and_throw(color);
+	//Find the indices of the vertex
+	unsigned int v1Index = makeVertex(v1);
+	unsigned int v2Index = makeVertex(v2);
+	unsigned int v3Index = makeVertex(v3);
+
+	vector< vector<ShapePathSegment> >& outlinesForColor=filledShapesMap[color];
+	//Search a suitable outline to attach this new vertex
+	for(unsigned int i=0;i<outlinesForColor.size();i++)
+	{
+		assert_and_throw(outlinesForColor[i].size()>=2);
+		if(outlinesForColor[i].front()==outlinesForColor[i].back())
+			continue;
+		if(outlinesForColor[i].back().i==v1Index)
+		{
+			outlinesForColor[i].emplace_back(PATH_CURVE_QUADRATIC, v2Index);
+			outlinesForColor[i].emplace_back(PATH_CURVE_QUADRATIC, v3Index);
+			return;
+		}
+	}
+	//No suitable outline found, create one
+	vector<ShapePathSegment> vertices;
+	vertices.reserve(2);
+	vertices.emplace_back(PATH_START, v1Index);
+	vertices.emplace_back(PATH_CURVE_QUADRATIC, v2Index);
+	vertices.emplace_back(PATH_CURVE_QUADRATIC, v3Index);
+	outlinesForColor.push_back(vertices);
 }
 
 const Vector2& ShapesBuilder::getVertex(unsigned int index)
@@ -146,7 +172,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, vector< Geo
 {
 	joinOutlines();
 	//Try to greedily condense as much as possible the output
-	map< unsigned int, vector< vector<unsigned int> > >::iterator it=filledShapesMap.begin();
+	map< unsigned int, vector< vector<ShapePathSegment> > >::iterator it=filledShapesMap.begin();
 	//For each color
 	for(;it!=filledShapesMap.end();it++)
 	{
@@ -161,13 +187,20 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, vector< Geo
 		}
 		//Set the fill style
 		tokens.emplace_back(SET_FILL,*stylesIt);
-		vector<vector<unsigned int> >& outlinesForColor=it->second;
+		vector<vector<ShapePathSegment> >& outlinesForColor=it->second;
 		for(unsigned int i=0;i<outlinesForColor.size();i++)
 		{
-			vector<unsigned int>& vertices=outlinesForColor[i];
-			tokens.emplace_back(MOVE,getVertex(vertices[0]));
-			for(unsigned int j=1;j<vertices.size();j++)
-				tokens.emplace_back(STRAIGHT,getVertex(vertices[j]));
+			vector<ShapePathSegment>& segments=outlinesForColor[i];
+			assert (segments[0].type == PATH_START);
+			tokens.emplace_back(MOVE, getVertex(segments[0].i));
+			for(unsigned int j=1;j<segments.size();j++) {
+				ShapePathSegment segment = segments[j];
+				assert(segment.type != PATH_START);
+				if (segment.type == PATH_STRAIGHT)
+					tokens.emplace_back(STRAIGHT, getVertex(segment.i));
+				if (segment.type == PATH_CURVE_QUADRATIC)
+					tokens.emplace_back(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i));
+			}
 		}
 	}
 }

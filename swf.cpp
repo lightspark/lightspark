@@ -456,6 +456,7 @@ void SystemState::EngineCreator::execute()
 void SystemState::EngineCreator::threadAbort()
 {
 	sys->fileDumpAvailable.signal();
+	sys->getRenderThread()->forceInitialization();
 }
 
 #ifndef GNASH_PATH
@@ -631,7 +632,9 @@ void SystemState::createEngines()
 	renderThread->waitForInitialization();
 	l.lock();
 	//As we lost the lock the shutdown procesure might have started
-	if(currentVm && !shutdown)
+	if(shutdown)
+		return;
+	if(currentVm)
 		currentVm->start();
 	l.unlock();
 	//Now that there is something to actually render the contents add the SystemState to the stage

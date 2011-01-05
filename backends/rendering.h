@@ -171,6 +171,10 @@ public:
 	{
 		initialized.wait();
 	}
+	void forceInitialization()
+	{
+		initialized.signal();
+	}
 
 	//OpenGL programs
 	int gpu_program;

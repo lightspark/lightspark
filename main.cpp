@@ -58,6 +58,8 @@ int main(int argc, char* argv[])
 	bindtextdomain("lightspark", "/usr/share/locale");
 	textdomain("lightspark");
 
+	cout << "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others" << endl;
+
 	for(int i=1;i<argc;i++)
 	{
 		if(strcmp(argv[i],"-u")==0 || 
@@ -119,7 +121,6 @@ int main(int argc, char* argv[])
 		else if(strcmp(argv[i],"-v")==0 || 
 			strcmp(argv[i],"--version")==0)
 		{
-			cout << "Lightspark version " << VERSION << " Copyright 2009-2010 Alessandro Pignotti" << endl;
 			exit(0);
 		}
 		else
@@ -134,10 +135,9 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	cout << "Lightspark version " << VERSION << " Copyright 2009-2010 Alessandro Pignotti" << endl << endl;
 	if(fileName==NULL)
 	{
-		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 
+		cout << endl << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 
 			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" << 
 			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox] <file.swf>" << endl;
 		exit(1);

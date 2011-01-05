@@ -552,6 +552,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 		{
 			case 0x07:
 			case 0x09:
+			case 0x0e:
 			{
 				//Nothing to do, the cached value is enough
 				break;
@@ -628,9 +629,6 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				break;
 			case 0x12:
 				LOG(CALLS, _("RTQNameLA"));
-				break;
-			case 0x0e:
-				LOG(CALLS, _("MultinameA"));
 				break;
 			case 0x1c:
 				LOG(CALLS, _("MultinameLA"));
@@ -850,6 +848,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			case 0x1d: //Generics, still not implemented
 			case 0x07:
 			case 0x09:
+			case 0x0e:
 			{
 				//Nothing to do, the cached value is enough
 				break;
@@ -921,9 +920,6 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				break;
 			case 0x12:
 				LOG(CALLS, _("RTQNameLA"));
-				break;
-			case 0x0e:
-				LOG(CALLS, _("MultinameA"));
 				break;
 			case 0x1c:
 				LOG(CALLS, _("MultinameLA"));

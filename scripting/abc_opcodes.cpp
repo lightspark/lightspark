@@ -610,6 +610,16 @@ number_t ABCVm::multiply(ASObject* val2, ASObject* val1)
 	return num1*num2;
 }
 
+intptr_t ABCVm::multiply_i(ASObject* val2, ASObject* val1)
+{
+	int num1=val1->toInt();
+	int num2=val2->toInt();
+	val1->decRef();
+	val2->decRef();
+	LOG(LOG_CALLS,_("multiply ")  << num1 << '*' << num2);
+	return num1*num2;
+}
+
 void ABCVm::incLocal(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("incLocal ") << n );

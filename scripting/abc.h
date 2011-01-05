@@ -555,6 +555,7 @@ private:
 	static uintptr_t lShift(ASObject*,ASObject*);
 	static uintptr_t lShift_io(uintptr_t,ASObject*);
 	static number_t multiply(ASObject*,ASObject*);
+	static intptr_t multiply_i(ASObject*,ASObject*);
 	static number_t multiply_oi(ASObject*, intptr_t);
 	static number_t divide(ASObject*,ASObject*);
 	static intptr_t modulo(ASObject*,ASObject*);

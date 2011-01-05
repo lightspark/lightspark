@@ -36,6 +36,7 @@
 #include "class.h"
 #include "exceptions.h"
 #include "backends/urlutils.h"
+#include <libxml/tree.h>
 
 using namespace std;
 using namespace lightspark;
@@ -507,7 +508,7 @@ XML::XML():root(NULL),node(NULL)
 
 XML::XML(XML* _r, xmlpp::Node* _n):root(_r),node(_n)
 {
-	assert(root);
+	assert(root && node);
 }
 
 XML::~XML()
@@ -573,7 +574,11 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 	if(element==NULL)
 		return NULL;
 	xmlpp::Attribute* attr=element->get_attribute(attributeName.raw_buf());
-	ASObject* ret=Class<XML>::getInstanceS((root)?(root):this, attr);
+	if(attr==NULL)
+		return NULL;
+	XML* rootXML=(root)?(root):this;
+	rootXML->incRef();
+	ASObject* ret=Class<XML>::getInstanceS(rootXML, attr);
 	//The new object will be incReffed by the calling code
 	ret->fake_decRef();
 	return ret;

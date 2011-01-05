@@ -861,6 +861,8 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0x70:
 			{
 				//convert_s
+				ASObject* val=context->runtime_stack_pop();
+				context->runtime_stack_push(convert_s(val));
 				break;
 			}
 			case 0x73:

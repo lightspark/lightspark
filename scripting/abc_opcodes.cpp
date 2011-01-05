@@ -106,6 +106,18 @@ intptr_t ABCVm::convert_i(ASObject* o)
 	return ret;
 }
 
+ASObject* ABCVM::convert_s(ASObject* o)
+{
+	LOG(LOG_CALLS, _("convert_s") );
+	ASObject* ret=o;
+	if(o->getObjectType!=T_STRING)
+	{
+		ret=Class<ASString>::getInstanceS(o->toString(false));
+		o->decRef();
+	}
+	return ret;
+}
+
 void ABCVm::label()
 {
 	LOG(LOG_CALLS, _("label") );

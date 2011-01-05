@@ -573,6 +573,7 @@ private:
 	static intptr_t convert_i(ASObject*);
 	static uintptr_t convert_u(ASObject*);
 	static number_t convert_d(ASObject*);
+	static ASObject* convert_s(ASObject*);
 	static bool convert_b(ASObject*);
 	static bool greaterThan(ASObject*,ASObject*);
 	static bool greaterEquals(ASObject*,ASObject*);

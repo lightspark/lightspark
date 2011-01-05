@@ -32,7 +32,7 @@ uintptr_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
 	uintptr_t i2=val2->toUInt();
 	val1->decRef();
 	val2->decRef();
-	LOG(LOG_CALLS,_("bitAnd_oo ") << hex << i1 << '&' << i2);
+	LOG(LOG_CALLS,_("bitAnd_oo ") << hex << i1 << '&' << i2 << dec);
 	return i1&i2;
 }
 
@@ -41,7 +41,7 @@ uintptr_t ABCVm::bitAnd_oi(ASObject* val1, intptr_t val2)
 	uintptr_t i1=val1->toUInt();
 	uintptr_t i2=val2;
 	val1->decRef();
-	LOG(LOG_CALLS,_("bitAnd_oi ") << hex << i1 << '&' << i2);
+	LOG(LOG_CALLS,_("bitAnd_oi ") << hex << i1 << '&' << i2 << dec);
 	return i1&i2;
 }
 
@@ -241,7 +241,7 @@ uintptr_t ABCVm::bitNot(ASObject* val)
 {
 	uintptr_t i1=val->toUInt();
 	val->decRef();
-	LOG(LOG_CALLS,_("bitNot ") << hex << i1);
+	LOG(LOG_CALLS,_("bitNot ") << hex << i1 << dec);
 	return ~i1;
 }
 
@@ -251,7 +251,7 @@ uintptr_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 	int i2=val2->toUInt();
 	val1->decRef();
 	val2->decRef();
-	LOG(LOG_CALLS,_("bitXor ") << hex << i1 << '^' << i2);
+	LOG(LOG_CALLS,_("bitXor ") << hex << i1 << '^' << i2 << dec);
 	return i1^i2;
 }
 
@@ -260,7 +260,7 @@ uintptr_t ABCVm::bitOr_oi(ASObject* val2, uintptr_t val1)
 	int i1=val1;
 	int i2=val2->toUInt();
 	val2->decRef();
-	LOG(LOG_CALLS,_("bitOr ") << hex << i1 << '|' << i2);
+	LOG(LOG_CALLS,_("bitOr ") << hex << i1 << '|' << i2 << dec);
 	return i1|i2;
 }
 
@@ -270,7 +270,7 @@ uintptr_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 	int i2=val2->toUInt();
 	val1->decRef();
 	val2->decRef();
-	LOG(LOG_CALLS,_("bitOr ") << hex << i1 << '|' << i2);
+	LOG(LOG_CALLS,_("bitOr ") << hex << i1 << '|' << i2 << dec);
 	return i1|i2;
 }
 

@@ -3466,16 +3466,31 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 
 ASFUNCTIONBODY(lightspark,parseInt)
 {
+	assert_and_throw(argslen==1 || argslen==2);
 	if(args[0]->getObjectType()==T_UNDEFINED)
+	{
+		LOG(LOG_ERROR,"Undefined passed to parseInt");
 		return new Undefined;
+	}
 	else
 	{
+		int radix=10;
+		if(argslen==2)
+		{
+			radix=args[1]->toInt();
+			assert_and_throw(radix==10 || radix==16);
+		}
 		const tiny_string& val=args[0]->toString();
 		const char* cur=val.raw_buf();
-		int ret=0;
-		if(strncmp(cur,"0x",2)==0) // Should be an exadecimal number
+		//Also 0x could be used to flag the number is hexadecimal
+		if(val.len()>=2 && strncmp(cur,"0x",2)==0)
 		{
+			radix=16;
 			cur+=2;
+		}
+		int ret=0;
+		if(radix==16) // Should be an exadecimal number
+		{
 			while(*cur)
 			{
 				ret<<=4; //*16
@@ -3483,7 +3498,7 @@ ASFUNCTIONBODY(lightspark,parseInt)
 				cur++;
 			}
 		}
-		else
+		else if(radix==10)
 			ret=atoi(cur);
 		return abstract_i(ret);
 	}

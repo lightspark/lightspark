@@ -205,7 +205,7 @@ public:
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	virtual void deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	//NOTE: the isBorrowed flasg is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
+	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
 	void setMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);

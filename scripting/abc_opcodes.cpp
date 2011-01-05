@@ -630,7 +630,9 @@ void ABCVm::incLocal(call_context* th, int n)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Cannot increment type ") << th->locals[n]->getObjectType());
+		number_t tmp=th->locals[n]->toNumber();
+		th->locals[n]->decRef();
+		th->locals[n]=abstract_d(tmp+1);
 	}
 
 }
@@ -645,7 +647,9 @@ void ABCVm::incLocal_i(call_context* th, int n)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Cannot increment type ") << th->locals[n]->getObjectType());
+		int32_t tmp=th->locals[n]->toInt();
+		th->locals[n]->decRef();
+		th->locals[n]=abstract_i(tmp+1);
 	}
 
 }
@@ -653,14 +657,16 @@ void ABCVm::incLocal_i(call_context* th, int n)
 void ABCVm::decLocal(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("decLocal ") << n );
-	if(th->locals[n]->getObjectType()==T_INTEGER)
+	if(th->locals[n]->getObjectType()==T_NUMBER)
 	{
 		Number* i=static_cast<Number*>(th->locals[n]);
 		i->val--;
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Cannot decrement type ") << th->locals[n]->getObjectType());
+		number_t tmp=th->locals[n]->toNumber();
+		th->locals[n]->decRef();
+		th->locals[n]=abstract_d(tmp-1);
 	}
 
 }
@@ -675,7 +681,9 @@ void ABCVm::decLocal_i(call_context* th, int n)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Cannot decrement type ") << th->locals[n]->getObjectType());
+		int32_t tmp=th->locals[n]->toInt();
+		th->locals[n]->decRef();
+		th->locals[n]=abstract_i(tmp-1);
 	}
 
 }

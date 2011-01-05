@@ -324,7 +324,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			{
 				glLoadIdentity();
 				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
-				glTranslatef(-th->offsetX,(th->offsetY+th->windowHeight)*(-1.0f),0);
+				glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
 				glUseProgram(0);
 				glActiveTexture(GL_TEXTURE1);
 				glDisable(GL_TEXTURE_2D);
@@ -656,7 +656,7 @@ void RenderThread::commonGLResize()
 	glOrtho(0,windowWidth,0,windowHeight,-100,0);
 	//scaleY is negated to adapt the flash and gl coordinates system
 	//An additional translation is added for the same reason
-	glTranslatef(offsetX,offsetY+windowHeight,0);
+	glTranslatef(offsetX,windowHeight-offsetY,0);
 	glScalef(scaleX,-scaleY,1);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -720,7 +720,7 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 	{
 		glLoadIdentity();
 		glScalef(1.0f/scaleX,-1.0f/scaleY,1);
-		glTranslatef(-offsetX,(offsetY+windowHeight)*(-1.0f),0);
+		glTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
 		glUseProgram(0);
 		glDisable(GL_BLEND);
 		glActiveTexture(GL_TEXTURE1);
@@ -743,7 +743,7 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 	{
 		glLoadIdentity();
 		glScalef(1.0f/scaleX,-1.0f/scaleY,1);
-		glTranslatef(-offsetX,(offsetY+windowHeight)*(-1.0f),0);
+		glTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
 		glUseProgram(0);
 		glActiveTexture(GL_TEXTURE1);
 		glDisable(GL_TEXTURE_2D);
@@ -850,7 +850,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			{
 				glLoadIdentity();
 				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
-				glTranslatef(-th->offsetX,(th->offsetY+th->windowHeight)*(-1.0f),0);
+				glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
 				glUseProgram(0);
 				glActiveTexture(GL_TEXTURE1);
 				glDisable(GL_TEXTURE_2D);

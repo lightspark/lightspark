@@ -911,7 +911,7 @@ void ASString::sinit(Class_base* c)
 	c->setMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),true);
 	c->setMethodByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase),true);
 	c->setMethodByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase),true);
-	c->setMethodByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode),true);
+	c->setMethodByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode),false);
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength),true);
 	//Fake method to override the default behavior
 	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ASString::_toString),true);
@@ -2513,12 +2513,15 @@ ASFUNCTIONBODY(ASString,toUpperCase)
 
 ASFUNCTIONBODY(ASString,fromCharCode)
 {
-	assert_and_throw(argslen==1);
-	int ret=args[0]->toInt();
-	if(ret>127)
-		LOG(LOG_NOT_IMPLEMENTED,_("Unicode not supported in String::fromCharCode"));
-	char buf[2] = { (char)ret, 0 };
-	return Class<ASString>::getInstanceS(buf);
+	ASString* ret=Class<ASString>::getInstanceS();
+	for(uint32_t i=0;i<argslen;i++)
+	{
+		int newChar=args[i]->toInt();
+		if(newChar>127)
+			LOG(LOG_NOT_IMPLEMENTED,_("Unicode not supported in String::fromCharCode"));
+		ret->data+=char(newChar);
+	}
+	return ret;
 }
 
 ASFUNCTIONBODY(ASString,replace)

@@ -149,6 +149,9 @@
 		Tests.assertEquals(e.lastIndexOf("b", undefined), 4, "lastIndexOf() undefined offset");
 		Tests.assertEquals(e.lastIndexOf("b", 20), 4, "lastIndexOf() too big");
 
+		//charCodeAt tests
+		e=String.fromCharCode(128);
+		Tests.assertEquals(0x80,e.charCodeAt(0),"charCodeAt");
 		Tests.report(visual, this.name);
 	}
 	private function func1():String

@@ -2302,6 +2302,7 @@ void Graphics::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("clear","",Class<IFunction>::getFunction(clear),true);
 	c->setMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),true);
+	c->setMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),true);
 	c->setMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),true);
 	c->setMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),true);
 	c->setMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),true);
@@ -2448,6 +2449,97 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	return NULL;
 }
 
+/* KAPPA = 4 * (sqrt2 - 1) / 3
+ * This value was found in a Python prompt:
+ *
+ * >>> 4.0 * (2**0.5 - 1) / 3.0
+ *
+ * Source: http://whizkidtech.redprince.net/bezier/circle/
+ */
+const double KAPPA = 0.55228474983079356;
+
+ASFUNCTIONBODY(Graphics,drawRoundRect)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	assert_and_throw(argslen==5 || argslen==6);
+
+	double x=args[0]->toNumber();
+	double y=args[1]->toNumber();
+	double width=args[2]->toNumber();
+	double height=args[3]->toNumber();
+	double ellipseWidth=args[4]->toNumber();
+	double ellipseHeight;
+	if (argslen==6)
+		ellipseHeight=args[5]->toNumber();
+
+	if (isnan(ellipseHeight) || argslen == 5)
+		ellipseHeight=ellipseWidth;
+
+	ellipseHeight /= 2;
+	ellipseWidth  /= 2;
+
+	double kappaW = KAPPA * ellipseWidth;
+	double kappaH = KAPPA * ellipseHeight;
+
+	/*
+	 *    A-----B
+	 *   /       \
+	 *  H         C
+	 *  |         |
+	 *  G         D
+	 *   \       /
+	 *    F-----E
+	 * 
+	 * Flash starts and stops the pen at 'D', so we will too.
+	 */
+
+	//TODO: support line styles to avoid this
+	if(!th->styles.empty())
+	{
+		// D
+		th->tokens.emplace_back(MOVE, Vector2(x+width, y+height-ellipseHeight));
+
+		// D -> E
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x+width, y+height-ellipseHeight+kappaH),
+		                        Vector2(x+width-ellipseWidth+kappaW, y+height),
+		                        Vector2(x+width-ellipseWidth, y+height));
+
+		// E -> F
+		th->tokens.emplace_back(STRAIGHT, Vector2(x+ellipseWidth, y+height));
+
+		// F -> G
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x+ellipseWidth-kappaW, y+height),
+		                        Vector2(x, y+height-kappaH),
+		                        Vector2(x, y+height-ellipseHeight));
+
+		// G -> H
+		th->tokens.emplace_back(STRAIGHT, Vector2(x, y+ellipseHeight));
+
+		// H -> A
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x, y+ellipseHeight-kappaH),
+		                        Vector2(x+ellipseWidth-kappaW, y),
+		                        Vector2(x+ellipseWidth, y));
+
+		// A -> B
+		th->tokens.emplace_back(STRAIGHT, Vector2(x+width-ellipseWidth, y));
+
+		// B -> C
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x+width-ellipseWidth+kappaW, y),
+		                        Vector2(x+width, y+kappaH),
+		                        Vector2(x+width, y+ellipseHeight));
+
+		// C -> D
+		th->tokens.emplace_back(STRAIGHT, Vector2(x+width, y+height-ellipseHeight));
+
+		th->owner->invalidateGraphics();
+	}
+	return NULL;
+}
+
 ASFUNCTIONBODY(Graphics,drawCircle)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
@@ -2457,8 +2549,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	double y=args[1]->toNumber();
 	double radius=args[2]->toNumber();
 
-	// 4/3 * (sqrt2 - 1)
-	double kappa = 0.55228474983079356*radius;
+	double kappa = KAPPA*radius;
 
 	//TODO: support line styles to avoid this
 	if(!th->styles.empty())

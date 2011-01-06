@@ -249,6 +249,7 @@ public:
 	ASFUNCTION(beginGradientFill);
 	ASFUNCTION(endFill);
 	ASFUNCTION(drawRect);
+	ASFUNCTION(drawRoundRect);
 	ASFUNCTION(drawCircle);
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineTo);

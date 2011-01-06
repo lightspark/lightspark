@@ -658,6 +658,9 @@ public:
 	~XML();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
+	ASFUNCTION(nodeKind);
+	ASFUNCTION(children);
+	ASFUNCTION(localName);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);

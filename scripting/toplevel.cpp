@@ -523,6 +523,9 @@ void XML::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(XML::_toString),true);
+	c->setMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),true);
+	c->setMethodByQName("children",AS3,Class<IFunction>::getFunction(children),true);
+	c->setMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),true);
 }
 
 ASFUNCTIONBODY(XML,_constructor)
@@ -535,6 +538,54 @@ ASFUNCTIONBODY(XML,_constructor)
 	th->parser.parse_memory_raw((const unsigned char*)str->data.c_str(), str->data.size());
 	th->node=th->parser.get_document()->get_root_node();
 	return NULL;
+}
+
+ASFUNCTIONBODY(XML,nodeKind)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==0);
+	assert(th->node);
+	xmlNodePtr libXml2Node=th->node->cobj();
+	switch(libXml2Node->type)
+	{
+		case XML_ATTRIBUTE_NODE:
+			return Class<ASString>::getInstanceS("attribute");
+		case XML_ELEMENT_NODE:
+			return Class<ASString>::getInstanceS("element");
+		case XML_TEXT_NODE:
+			return Class<ASString>::getInstanceS("text");
+		default:
+		{
+			LOG(LOG_ERROR,"Unsupported XML type " << libXml2Node->type);
+			throw UnsupportedException("Unsupported XML node type");
+		}
+	}
+}
+
+ASFUNCTIONBODY(XML,localName)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==0);
+	assert(th->node);
+	return Class<ASString>::getInstanceS(th->node->get_name());
+}
+
+ASFUNCTIONBODY(XML,children)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==0);
+	assert(th->node);
+	const xmlpp::Node::NodeList& list=th->node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=list.begin();
+	std::vector<XML*> ret;
+	XML* rootXML=(th->root)?(th->root):th;
+	for(;it!=list.end();it++)
+	{
+		rootXML->incRef();
+		ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+	}
+	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
+	return retObj;
 }
 
 void XML::recusiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
@@ -599,6 +650,7 @@ tiny_string XML::toString_priv() const
 	switch(libXml2Node->type)
 	{
 		case XML_ATTRIBUTE_NODE:
+		case XML_TEXT_NODE:
 		{
 			xmlChar* content=xmlNodeGetContent(libXml2Node);
 			ret=tiny_string((char*)content,true);
@@ -606,7 +658,7 @@ tiny_string XML::toString_priv() const
 			break;
 		}
 		default:
-			throw UnsupportedException("Unsupport type in XML::toString");
+			throw UnsupportedException("Unsupported type in XML::toString");
 	}
 	return ret;
 }

@@ -87,8 +87,9 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	{
 		//Resize the buffer
 		uint8_t* bytes2=new uint8_t[size];
-		memcpy(bytes2,bytes,len);
 		len=size;
+		memcpy(bytes2,bytes,len);
+		delete[] bytes;
 		bytes=bytes2;
 	}
 	return bytes;

@@ -857,7 +857,7 @@ IntervalManager::~IntervalManager()
 	{
 		sys->removeJob((*it).second);
 		delete((*it).second);
-		runners.erase(it);
+		runners.erase(it++);
 	}
 	sem_destroy(&mutex);
 }

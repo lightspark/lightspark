@@ -998,6 +998,18 @@ tiny_string Matrix::toString(bool debugMsg)
 	return tiny_string(buf, true);
 }
 
+MATRIX Matrix::getMATRIX() const
+{
+	MATRIX ret;
+	ret.ScaleX = a;
+	ret.ScaleY = d;
+	ret.RotateSkew0 = b;
+	ret.RotateSkew1 = c;
+	ret.TranslateX = tx;
+	ret.TranslateY = ty;
+	return ret;
+}
+
 ASFUNCTIONBODY(Matrix,_get_a)
 {
 	Matrix* th=static_cast<Matrix*>(obj);

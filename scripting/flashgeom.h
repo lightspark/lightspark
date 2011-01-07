@@ -152,6 +152,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void _createBox(number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y);
+	MATRIX getMATRIX() const;
 
 	//Overloads
 	tiny_string toString(bool debugMsg=false);

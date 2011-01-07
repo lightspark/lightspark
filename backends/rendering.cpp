@@ -506,7 +506,7 @@ void RenderThread::commonGLInit(int width, int height)
 	//Load shaders
 	loadShaderPrograms();
 
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 
 	glActiveTexture(GL_TEXTURE0);

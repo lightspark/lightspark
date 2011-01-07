@@ -2304,6 +2304,7 @@ void Graphics::sinit(Class_base* c)
 	c->setMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),true);
 	c->setMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),true);
 	c->setMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),true);
+	c->setMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),true);
 	c->setMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),true);
 	c->setMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),true);
 	c->setMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),true);

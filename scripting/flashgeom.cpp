@@ -947,6 +947,7 @@ void Matrix::sinit(Class_base* c)
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
 	c->setMethodByQName("createBox","",Class<IFunction>::getFunction(createBox),true);
+	c->setMethodByQName("createGradientBox","",Class<IFunction>::getFunction(createGradientBox),true);
 	c->setMethodByQName("deltaTransformPoint","",Class<IFunction>::getFunction(deltaTransformPoint),true);
 	c->setMethodByQName("identity","",Class<IFunction>::getFunction(identity),true);
 	c->setMethodByQName("invert","",Class<IFunction>::getFunction(invert),true);
@@ -1230,8 +1231,8 @@ void Matrix::_createBox (number_t scaleX, number_t scaleY, number_t angle, numbe
 	b = scaleX * sin(angle);
 	c = -scaleY * sin(angle);
 	d = scaleY * cos(angle);
-	tx = x * scaleX * cos(angle) - y * scaleY * sin(angle);
-	ty = x * scaleX * sin(angle) + y * scaleY * cos(angle);
+	tx = x * cos(angle) - y * sin(angle);
+	ty = x * sin(angle) + y * cos(angle);
 }
 
 ASFUNCTIONBODY(Matrix,createBox)

@@ -139,7 +139,7 @@ INCLUDE(FindFTGL REQUIRED)
 INCLUDE(FindGLEW REQUIRED)
 IF(UNIX)
   INCLUDE(FindPkgConfig REQUIRED)
-	pkg_check_modules(XMLPP REQUIRED libxml++-2.6)
+	pkg_check_modules(XMLPP REQUIRED libxml++-2.6>=2.33.1)
 ENDIF(UNIX)
 
 if(WIN32)

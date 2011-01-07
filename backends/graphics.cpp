@@ -459,11 +459,99 @@ void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double contro
 	               end_x, end_y);
 }
 
+cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
+{
+
+	cairo_pattern_t* pattern;
+
+	switch(style.FillStyleType) {
+		case SOLID_FILL:
+		{
+			const RGBA& color = style.Color;
+			pattern = cairo_pattern_create_rgba(color.rf(), color.gf(),
+			                                    color.bf(), color.af());
+			break;
+		}
+		case LINEAR_GRADIENT:
+		case RADIAL_GRADIENT:
+		{
+			GRADIENT grad = style.Gradient;
+
+			// We want an opaque black background... a gradient with no stops
+			// in cairo will give us transparency.
+			if (grad.GradientRecords.size() == 0)
+				pattern = cairo_pattern_create_rgb(0, 0, 0);
+
+			if (style.FillStyleType == LINEAR_GRADIENT)
+				pattern = cairo_pattern_create_linear(-16384.0, 0, 16384.0, 0);
+			else
+				pattern = cairo_pattern_create_radial(0, 0, 0, 0, 0, 16384.0);
+
+			if (grad.SpreadMode == 0) // PAD
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
+			else if (grad.SpreadMode == 1) // REFLECT
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REFLECT);
+			else if (grad.SpreadMode == 2) // REPEAT
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
+
+			for(uint32_t i=0;i<grad.GradientRecords.size();i++)
+			{
+				double ratio = grad.GradientRecords[i].Ratio / 255.0;
+				const RGBA& color=style.Gradient.GradientRecords[i].Color;
+
+				cairo_pattern_add_color_stop_rgba(pattern, ratio,
+				    color.rf(), color.gf(), color.bf(), color.af());
+			}
+			break;
+		}
+
+		case NON_SMOOTHED_REPEATING_BITMAP:
+		case NON_SMOOTHED_CLIPPED_BITMAP:
+		case REPEATING_BITMAP:
+		case CLIPPED_BITMAP:
+		{
+			if(style.bitmap==NULL)
+				throw RunTimeException("Invalid bitmap");
+
+			// IntSize size = style.bitmap->getBitmapSize();
+			// cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.width, size.height);
+			// uint8_t* tmp = cairo_image_surface_get_data(surface);
+			// for(uint32_t i=0;i<size.width*size.height;i++)
+			// {
+			// 	tmp[i*4+1]=i;
+			// 	tmp[i*4+3]=0xff;
+			// }
+
+			// cairo_set_source_surface(cr, surface, 0, 0);
+			// pattern = cairo_get_source(cr);
+			// if (style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
+			//     style.FillStyleType == REPEATING_BITMAP)
+			// 	cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
+			// else
+			// 	cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
+
+			// if (style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
+			//     style.FillStyle == NON_SMOOTHED_CLIPPED_BITMAP)
+			// 	cairo_pattern_set_filter(pattern, CAIRO_FILTER_NEAREST);
+			// else
+			// 	cairo_pattern_set_filter(pattern, CAIRO_FILTER_BILINEAR);
+
+			// bitmaps not implemented, fall through
+		}
+		default:
+			LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style " << (int)style.FillStyleType);
+	}
+
+	cairo_matrix_t matrix = MATRIXToCairo(style.Matrix);
+	cairo_matrix_invert(&matrix);
+	cairo_pattern_set_matrix(pattern, &matrix);
+	return pattern;
+}
+
 bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill)
 {
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 	bool empty=true;
-	cairo_surface_t* currentSurface=NULL;
 	for(uint32_t i=0;i<tokens.size();i++)
 	{
 		switch(tokens[i].type)
@@ -499,96 +587,9 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 					cairo_fill(cr);
 					empty=true;
 				}
-				if(currentSurface)
-				{
-					cairo_surface_destroy(currentSurface);
-					currentSurface=NULL;
-				}
 				//NOTE: Destruction of the pattern happens internally by refcounting
-				const FILLSTYLE& style=tokens[i].style;
-				switch(style.FillStyleType)
-				{
-					case SOLID_FILL:
-					{
-						const RGBA& color=style.Color;
-						cairo_set_source_rgba (cr, color.rf(), color.gf(), color.bf(), color.af());
-						break;
-					}
-					case LINEAR_GRADIENT:
-					{
-						cairo_pattern_t* pattern=cairo_pattern_create_linear(-16384,0,16384,0);
-						const cairo_matrix_t& pattern_mat=MATRIXToCairo(style.Matrix);
-						cairo_pattern_set_matrix(pattern, &pattern_mat);
-						
-						for(uint32_t i=0;i<style.Gradient.GradientRecords.size();i++)
-						{
-							double ratio=style.Gradient.GradientRecords[i].Ratio;
-							ratio/=255.0f;
-							const RGBA& color=style.Gradient.GradientRecords[i].Color;
-							cairo_pattern_add_color_stop_rgba(pattern, ratio, 
-									color.rf(), color.gf(), color.bf(), color.af());
-						} 
-						cairo_set_source(cr, pattern);
-						break;
-					}
-					case RADIAL_GRADIENT:
-					{
-						cairo_pattern_t* pattern=cairo_pattern_create_radial(0,0,0,0,0,16384);
-						const cairo_matrix_t& pattern_mat=MATRIXToCairo(style.Matrix);
-						cairo_pattern_set_matrix(pattern, &pattern_mat);
-						
-						for(uint32_t i=0;i<style.Gradient.GradientRecords.size();i++)
-						{
-							double ratio=style.Gradient.GradientRecords[i].Ratio;
-							ratio/=255.0f;
-							const RGBA& color=style.Gradient.GradientRecords[i].Color;
-							cairo_pattern_add_color_stop_rgba(pattern, ratio, 
-									color.rf(), color.gf(), color.bf(), color.af());
-						} 
-						cairo_set_source(cr, pattern);
-						break;
-					}
-					case NON_SMOOTHED_REPEATING_BITMAP:
-					{
-						if(style.bitmap==NULL)
-							throw RunTimeException("Invalid bitmap");
-						IntSize size=style.bitmap->getBitmapSize();
-						currentSurface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.width, size.height);
-						uint8_t* tmp=cairo_image_surface_get_data(currentSurface);
-						for(uint32_t i=0;i<size.width*size.height;i++)
-						{
-							tmp[i*4+1]=i;
-							tmp[i*4+3]=0xff;
-						}
-						cairo_set_source_surface(cr, currentSurface, 0, 0);
-						cairo_pattern_t* p=cairo_get_source(cr);
-						cairo_pattern_set_extend(p, CAIRO_EXTEND_REPEAT);
-						const cairo_matrix_t& pattern_mat=MATRIXToCairo(style.Matrix);
-						cairo_pattern_set_matrix(p, &pattern_mat);
-						break;
-					}
-					case NON_SMOOTHED_CLIPPED_BITMAP:
-					{
-						if(style.bitmap==NULL)
-							throw RunTimeException("Invalid bitmap");
-						IntSize size=style.bitmap->getBitmapSize();
-						currentSurface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.width, size.height);
-						uint8_t* tmp=cairo_image_surface_get_data(currentSurface);
-						for(uint32_t i=0;i<size.width*size.height;i++)
-						{
-							tmp[i*4+2]=i;
-							tmp[i*4+3]=0xff;
-						}
-						cairo_set_source_surface(cr, currentSurface, 0, 0);
-						cairo_pattern_t* p=cairo_get_source(cr);
-						cairo_pattern_set_extend(p, CAIRO_EXTEND_PAD);
-						const cairo_matrix_t& pattern_mat=MATRIXToCairo(style.Matrix);
-						cairo_pattern_set_matrix(p, &pattern_mat);
-						break;
-					}
-					default:
-						LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style " << (int)style.FillStyleType);
-				}
+				cairo_pattern_t* pattern = FILLSTYLEToCairo(tokens[i].style);
+				cairo_set_source(cr, pattern);
 				break;
 			}
 			default:
@@ -597,8 +598,6 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 	}
 	if(!empty && !skipFill)
 		cairo_fill(cr);
-	if(currentSurface)
-		cairo_surface_destroy(currentSurface);
 	return empty;
 }
 

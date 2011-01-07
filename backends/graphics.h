@@ -209,6 +209,7 @@ protected:
 	const std::vector<GeomToken> tokens;
 	const float scaleFactor;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
+	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style);
 	static bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	void cairoClean(cairo_t* cr) const;

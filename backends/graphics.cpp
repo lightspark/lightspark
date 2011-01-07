@@ -564,13 +564,11 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
 				break;
 			case CURVE_QUADRATIC:
-			{
 				quadraticBezier(cr,
 				                tokens[i].p1.x, tokens[i].p1.y,
 				                tokens[i].p2.x, tokens[i].p2.y);
 				empty=false;
 				break;
-			}
 			case CURVE_CUBIC:
 				cairo_curve_to(cr,
 				               tokens[i].p1.x, tokens[i].p1.y,

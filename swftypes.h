@@ -539,6 +539,7 @@ class RGBA
 public:
 	RGBA():Red(0),Green(0),Blue(0),Alpha(255){}
 	RGBA(int r, int g, int b, int a):Red(r),Green(g),Blue(b),Alpha(a){}
+	RGBA(uint color, int a):Red((color>>16)&0xFF),Green((color>>8)&0xFF),Blue(color&0xFF),Alpha(a){}
 	UI8 Red;
 	UI8 Green;
 	UI8 Blue;

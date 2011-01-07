@@ -2512,19 +2512,87 @@ ASFUNCTIONBODY(Graphics,drawRect)
 ASFUNCTIONBODY(Graphics,beginGradientFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	uint32_t color=0;
-	uint8_t alpha=255;
-	if(argslen>=2) //Colors
+	assert_and_throw(argslen>=4);
+
+	FILLSTYLE style = FILLSTYLE(-1);
+
+	assert_and_throw(args[1]->getObjectType()==T_ARRAY);
+	Array* colors=Class<Array>::cast(args[1]);
+
+	assert_and_throw(args[2]->getObjectType()==T_ARRAY);
+	Array* alphas=Class<Array>::cast(args[2]);
+
+	assert_and_throw(args[3]->getObjectType()==T_ARRAY);
+	Array* ratios=Class<Array>::cast(args[3]);
+
+	int NumGradient = colors->size();
+	if (NumGradient != alphas->size() || NumGradient != ratios->size())
+		return NULL;
+
+	if (NumGradient < 1 || NumGradient > 15)
+		return NULL;
+
+	const tiny_string& type=args[0]->toString();
+
+	if(type == "linear")
+		style.FillStyleType=LINEAR_GRADIENT;
+	else if(type == "radial")
+		style.FillStyleType=RADIAL_GRADIENT;
+	else
+		return NULL;
+
+	// Don't support FOCALGRADIENT for now.
+	GRADIENT grad = GRADIENT(-1);
+	grad.NumGradient = NumGradient;
+	for(int i = 0; i < NumGradient; i ++)
 	{
-		assert_and_throw(args[1]->getObjectType()==T_ARRAY);
-		Array* ar=Class<Array>::cast(args[1]);
-		assert_and_throw(ar->size()>=1);
-		color=ar->at(0)->toUInt();
+		GRADRECORD record = GRADRECORD(-1);
+		record.Color = RGBA(colors->at(i)->toUInt(), (int)alphas->at(i)->toNumber()*255);
+		record.Ratio = UI8(ratios->at(i)->toUInt());
+		grad.GradientRecords.push_back(record);
 	}
-	th->styles.emplace_back(FILLSTYLE(-1));
-	th->styles.back().FillStyleType=SOLID_FILL;
-	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
-	th->tokens.emplace_back(SET_FILL, th->styles.back());
+
+	if(argslen > 4)
+	{
+		style.Matrix = static_cast<Matrix*>(args[4])->getMATRIX();
+		if (style.Matrix.ScaleX == 0)
+			style.Matrix.ScaleX = 1;
+		else
+			style.Matrix.ScaleX /= 20;
+
+		if (style.Matrix.ScaleY == 0)
+			style.Matrix.ScaleY = 1;
+		else
+			style.Matrix.ScaleY /= 20;
+	} else {
+		style.Matrix.ScaleX = 200.0/32768.0;
+		style.Matrix.ScaleY = 200.0/32768.0;
+	}
+
+	if(argslen > 5)
+	{
+		const tiny_string& spread=args[5]->toString();
+		if (spread == "pad")
+			grad.SpreadMode = 0;
+		else if (spread == "reflect")
+			grad.SpreadMode = 1;
+		else if (spread == "repeat")
+			grad.SpreadMode = 2;
+	}
+
+	if(argslen > 6)
+	{
+		const tiny_string& interp=args[6]->toString();
+		if (interp == "rgb")
+			grad.InterpolationMode = 0;
+		else if (interp == "linearRGB")
+			grad.InterpolationMode = 1;
+	}
+
+	style.Gradient = grad;
+
+	th->styles.push_back(style);
+	th->tokens.emplace_back(SET_FILL, style);
 	return NULL;
 }
 

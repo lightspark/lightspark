@@ -1228,10 +1228,13 @@ ASFUNCTIONBODY(Matrix,createBox)
 	Matrix* th=static_cast<Matrix*>(obj);
 	number_t scaleX = args[0]->toNumber();
 	number_t scaleY = args[1]->toNumber();
+
 	number_t angle = 0;
 	if ( argslen > 2 ) angle = args[2]->toNumber();
+
 	number_t translateX = 0;
 	if ( argslen > 3 ) translateX = args[3]->toNumber();
+
 	number_t translateY = 0;
 	if ( argslen > 4 ) translateY = args[4]->toNumber();
 
@@ -1246,10 +1249,13 @@ ASFUNCTIONBODY(Matrix,createGradientBox)
 	Matrix* th=static_cast<Matrix*>(obj);
 	number_t width  = args[0]->toNumber();
 	number_t height = args[1]->toNumber();
+
 	number_t angle = 0;
 	if ( argslen > 2 ) angle = args[2]->toNumber();
+
 	number_t translateX = width/2;
 	if ( argslen > 3 ) translateX += args[3]->toNumber();
+
 	number_t translateY = width/2;
 	if ( argslen > 3 ) translateY += args[4]->toNumber();
 

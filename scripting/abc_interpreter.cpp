@@ -474,7 +474,9 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0x25:
 			{
 				//pushshort
-				u30 t;
+				// specs say pushshort is a u30, but it's really a u32
+				// see https://bugs.adobe.com/jira/browse/ASC-4181
+				u32 t;
 				code >> t;
 				context->runtime_stack_push(abstract_i(t));
 				pushShort(t);

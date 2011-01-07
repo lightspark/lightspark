@@ -1218,7 +1218,7 @@ void Matrix::_createBox (number_t scaleX, number_t scaleY, number_t angle, numbe
 	b = scaleX * sin(angle);
 	c = -scaleY * sin(angle);
 	d = scaleY * cos(angle);
- 	tx = x * scaleX * cos(angle) - y * scaleY * sin(angle);
+	tx = x * scaleX * cos(angle) - y * scaleY * sin(angle);
 	ty = x * scaleX * sin(angle) + y * scaleY * cos(angle);
 }
 

@@ -1268,8 +1268,8 @@ ASFUNCTIONBODY(Matrix,createGradientBox)
 	number_t translateX = width/2;
 	if ( argslen > 3 ) translateX += args[3]->toNumber();
 
-	number_t translateY = width/2;
-	if ( argslen > 3 ) translateY += args[4]->toNumber();
+	number_t translateY = height/2;
+	if ( argslen > 4 ) translateY += args[4]->toNumber();
 
 	th->_createBox(width / 1638.4, height / 1638.4, angle, translateX, translateY);
 

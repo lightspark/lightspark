@@ -493,6 +493,24 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class GradientType: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
+class InterpolationMethod: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
+class SpreadMethod: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
 class IntSize
 {
 public:

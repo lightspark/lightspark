@@ -58,6 +58,9 @@ REGISTER_CLASS_NAME(LineScaleMode);
 REGISTER_CLASS_NAME(StageScaleMode);
 REGISTER_CLASS_NAME(StageAlign);
 REGISTER_CLASS_NAME(StageQuality);
+REGISTER_CLASS_NAME(GradientType);
+REGISTER_CLASS_NAME(SpreadMethod);
+REGISTER_CLASS_NAME(InterpolationMethod);
 REGISTER_CLASS_NAME(Bitmap);
 REGISTER_CLASS_NAME(SimpleButton);
 
@@ -2605,6 +2608,28 @@ void SimpleButton::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
+}
+
+void GradientType::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setVariableByQName("LINEAR","",Class<ASString>::getInstanceS("linear"));
+	c->setVariableByQName("RADIAL","",Class<ASString>::getInstanceS("radial"));
+}
+
+void SpreadMethod::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setVariableByQName("PAD","",Class<ASString>::getInstanceS("pad"));
+	c->setVariableByQName("REFLECT","",Class<ASString>::getInstanceS("reflect"));
+	c->setVariableByQName("REPEAT","",Class<ASString>::getInstanceS("repeat"));
+}
+
+void InterpolationMethod::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setVariableByQName("RGB","",Class<ASString>::getInstanceS("rgb"));
+	c->setVariableByQName("LINEAR_RGB","",Class<ASString>::getInstanceS("linearRGB"));
 }
 
 void SimpleButton::buildTraits(ASObject* o)

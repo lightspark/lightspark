@@ -2449,14 +2449,8 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	//TODO: support line styles to avoid this
 	if(!th->styles.empty())
 	{
-		// top
-		th->tokens.emplace_back(MOVE, Vector2(x, y-radius));
-
 		// right
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x+kappa , y-radius),
-		                        Vector2(x+radius, y-kappa ),
-		                        Vector2(x+radius, y       ));
+		th->tokens.emplace_back(MOVE, Vector2(x+radius, y));
 
 		// bottom
 		th->tokens.emplace_back(CURVE_CUBIC,
@@ -2470,11 +2464,17 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 		                        Vector2(x-radius, y+kappa ),
 		                        Vector2(x-radius, y       ));
 
-		// back to top
+		// top
 		th->tokens.emplace_back(CURVE_CUBIC,
 		                        Vector2(x-radius, y-kappa ),
 		                        Vector2(x-kappa , y-radius),
 		                        Vector2(x       , y-radius));
+
+		// back to right
+		th->tokens.emplace_back(CURVE_CUBIC,
+		                        Vector2(x+kappa , y-radius),
+		                        Vector2(x+radius, y-kappa ),
+		                        Vector2(x+radius, y       ));
 
 		th->owner->invalidateGraphics();
 	}

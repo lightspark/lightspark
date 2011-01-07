@@ -2327,41 +2327,54 @@ bool Graphics::hitTest(number_t x, number_t y) const
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
+
+#define VECTOR_BOUNDS(v) \
+	xmin=dmin(v.x,xmin); \
+	xmax=dmax(v.x,xmax); \
+	ymin=dmin(v.y,ymin); \
+	ymax=dmax(v.y,ymax);
+
 	if(tokens.size()==0)
 		return false;
 
-	//Initialize values to the first available
-	bool initialized=false;
+	xmin = numeric_limits<double>::infinity();
+	ymin = numeric_limits<double>::infinity();
+	xmax = -numeric_limits<double>::infinity();
+	ymax = -numeric_limits<double>::infinity();
+
+	bool hasContent = false;
 	for(unsigned int i=0;i<tokens.size();i++)
 	{
 		switch(tokens[i].type)
 		{
-			case MOVE:
+			case CURVE_CUBIC:
+			{
+				VECTOR_BOUNDS(tokens[i].p3);
+				// fall through
+			}
+			case CURVE_QUADRATIC:
+			{
+				VECTOR_BOUNDS(tokens[i].p2);
+				// fall through
+			}
 			case STRAIGHT:
 			{
-				const Vector2& v=tokens[i].p1;
-				if(initialized)
-				{
-					xmin=imin(v.x,xmin);
-					xmax=imax(v.x,xmax);
-					ymin=imin(v.y,ymin);
-					ymax=imax(v.y,ymax);
-				}
-				else
-				{
-					xmin=v.x;
-					xmax=v.x;
-					ymin=v.y;
-					ymax=v.y;
-					initialized=true;
-				}
+				hasContent = true;
+				// fall through
+			}
+			case MOVE:
+			{
+				VECTOR_BOUNDS(tokens[i].p1);
 				break;
 			}
-			default:
+			case SET_FILL:
+			case SET_STROKE:
 				break;
 		}
 	}
-	return initialized;
+	return hasContent;
+
+#undef VECTOR_BOUNDS
 }
 
 ASFUNCTIONBODY(Graphics,_constructor)

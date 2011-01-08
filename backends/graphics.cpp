@@ -552,7 +552,11 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 	}
 
 	cairo_matrix_t matrix = MATRIXToCairo(style.Matrix);
-	cairo_matrix_invert(&matrix);
+	cairo_status_t status = cairo_matrix_invert(&matrix);
+
+	if (status != CAIRO_STATUS_SUCCESS)
+		LOG(LOG_ERROR, "cairo_matrix_invert failed with " << status);
+
 	cairo_pattern_set_matrix(pattern, &matrix);
 	return pattern;
 }

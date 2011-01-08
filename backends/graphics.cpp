@@ -470,7 +470,7 @@ void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double contro
 cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 {
 
-	cairo_pattern_t* pattern;
+	cairo_pattern_t* pattern = NULL;
 
 	switch(style.FillStyleType) {
 		case SOLID_FILL:
@@ -548,6 +548,7 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 		}
 		default:
 			LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style " << (int)style.FillStyleType);
+			return NULL;
 	}
 
 	cairo_matrix_t matrix = MATRIXToCairo(style.Matrix);
@@ -595,6 +596,8 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 				}
 				//NOTE: Destruction of the pattern happens internally by refcounting
 				cairo_pattern_t* pattern = FILLSTYLEToCairo(tokens[i].style);
+				if (pattern == NULL)
+					continue;
 				cairo_set_source(cr, pattern);
 				break;
 			}

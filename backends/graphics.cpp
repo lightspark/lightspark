@@ -432,11 +432,6 @@ cairo_matrix_t CairoRenderer::MATRIXToCairo(const MATRIX& matrix)
 	                  matrix.RotateSkew1, matrix.ScaleY,
 	                  matrix.TranslateX, matrix.TranslateY);
 
-    double a, b, c, d;
-
-    a = ret.xx; b = ret.yx;
-    c = ret.xy; d = ret.yy;
-
 	return ret;
 }
 

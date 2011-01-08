@@ -426,20 +426,17 @@ void CairoRenderer::uploadFence()
 cairo_matrix_t CairoRenderer::MATRIXToCairo(const MATRIX& matrix)
 {
 	cairo_matrix_t ret;
-	if (matrix.ScaleX == 0.)
-		ret.xx=1;
-	else
-		ret.xx=matrix.ScaleX;
 
-	if (matrix.ScaleY == 0.)
-		ret.yy=1;
-	else
-		ret.yy=matrix.ScaleY;
+	cairo_matrix_init(&ret,
+	                  matrix.ScaleX, matrix.RotateSkew0,
+	                  matrix.RotateSkew1, matrix.ScaleY,
+	                  matrix.TranslateX, matrix.TranslateY);
 
-	ret.xy=matrix.RotateSkew1;
-	ret.yx=matrix.RotateSkew0;
-	ret.x0=matrix.TranslateX;
-	ret.y0=matrix.TranslateY;
+    double a, b, c, d;
+
+    a = ret.xx; b = ret.yx;
+    c = ret.xy; d = ret.yy;
+
 	return ret;
 }
 
@@ -554,10 +551,9 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 	cairo_matrix_t matrix = MATRIXToCairo(style.Matrix);
 	cairo_status_t status = cairo_matrix_invert(&matrix);
 
-	if (status != CAIRO_STATUS_SUCCESS)
-		LOG(LOG_ERROR, "cairo_matrix_invert failed with " << status);
+	if (status != CAIRO_STATUS_INVALID_MATRIX)
+		cairo_pattern_set_matrix(pattern, &matrix);
 
-	cairo_pattern_set_matrix(pattern, &matrix);
 	return pattern;
 }
 

@@ -552,8 +552,6 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 
 	// Only one external call can be made at a time
 	sem_init(&mutex, 0, 1);
-	// Used to signal end of asynchronous external call
-	sem_init(&callStatus, 0, 0);
 
 	setProperty("$version", "10,0,r"SHORTVERSION);
 
@@ -576,14 +574,20 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 // Destructors
 NPScriptObject::~NPScriptObject()
 {
-	sem_destroy(&callStatus);
 	sem_destroy(&mutex);
 }
 // Destruction preparator
 void NPScriptObject::destroy()
 {
 	shuttingDown = true;
-	sem_post(&callStatus);
+
+	// Signal all call statusses to continue and not wait for their respective external functions to return
+	std::vector<sem_t*>::iterator it = callStatusses.begin();
+	while(it != callStatusses.end())
+	{
+		sem_post(*it);
+		++it;
+	}
 	sem_post(&mutex);
 }
 
@@ -702,8 +706,13 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 
 	// Signals when the async has been completed
 	// True if NPN_Invoke succeeded
-	bool success;
+	bool success = false;
 
+	// Used to signal completion of asynchronous external call
+	sem_t callStatus;
+	sem_init(&callStatus, 0, 0);
+	// Add this callStatus semaphore to the list of running call statusses to be cleaned up on shutdown
+	callStatusses.push_back(&callStatus);
 	EXT_CALL_DATA data = {
 		&mainThread,
 		instance,
@@ -716,6 +725,9 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 		&success
 	};
 
+	// Called JS may invoke a callback, which in turn may invoke another external method, which needs this mutex
+	sem_post(&mutex);
+
 	// We are not in the main thread, so ask the browser to call this method asynchronously
 	if(!pthread_equal(pthread_self(), mainThread))
 		NPN_PluginThreadAsyncCall(instance, &callExternal, &data);
@@ -725,6 +737,12 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 
 	// Wait for the (possibly asynchronously) called function to finish
 	sem_wait(&callStatus);
+	// This call status doesn't need to be cleaned up anymore on shutdown
+	callStatusses.pop_back();
+	sem_destroy(&callStatus);
+
+	// Only after our called function has finished, do we ask for the mutex again to continue
+	sem_wait(&mutex);
 
 	// If NPN_Invoke succeeded, convert & copy its result and release it.
 	if(success)

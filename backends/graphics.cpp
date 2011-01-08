@@ -426,10 +426,18 @@ void CairoRenderer::uploadFence()
 cairo_matrix_t CairoRenderer::MATRIXToCairo(const MATRIX& matrix)
 {
 	cairo_matrix_t ret;
-	ret.xx=matrix.ScaleX;
+	if (matrix.ScaleX == 0.)
+		ret.xx=1;
+	else
+		ret.xx=matrix.ScaleX;
+
+	if (matrix.ScaleY == 0.)
+		ret.yy=1;
+	else
+		ret.yy=matrix.ScaleY;
+
 	ret.xy=matrix.RotateSkew1;
 	ret.yx=matrix.RotateSkew0;
-	ret.yy=matrix.ScaleY;
 	ret.x0=matrix.TranslateX;
 	ret.y0=matrix.TranslateY;
 	return ret;

@@ -661,6 +661,7 @@ public:
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(nodeKind);
 	ASFUNCTION(children);
+	ASFUNCTION(attributes);
 	ASFUNCTION(localName);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);

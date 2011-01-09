@@ -526,6 +526,7 @@ void XML::sinit(Class_base* c)
 	c->setMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),true);
 	c->setMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),true);
 	c->setMethodByQName("children",AS3,Class<IFunction>::getFunction(children),true);
+	c->setMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),true);
 	c->setMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),true);
 }
 
@@ -569,6 +570,28 @@ ASFUNCTIONBODY(XML,localName)
 	assert_and_throw(argslen==0);
 	assert(th->node);
 	return Class<ASString>::getInstanceS(th->node->get_name());
+}
+
+ASFUNCTIONBODY(XML,attributes)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==0);
+	assert(th->node);
+	//Needed dynamic cast, we want the type check
+	xmlpp::Element* elem=dynamic_cast<xmlpp::Element*>(th->node);
+	if(elem==NULL)
+		return Class<XMLList>::getInstanceS();
+	const xmlpp::Element::AttributeList& list=elem->get_attributes();
+	xmlpp::Element::AttributeList::const_iterator it=list.begin();
+	std::vector<XML*> ret;
+	XML* rootXML=(th->root)?(th->root):th;
+	for(;it!=list.end();it++)
+	{
+		rootXML->incRef();
+		ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+	}
+	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
+	return retObj;
 }
 
 ASFUNCTIONBODY(XML,toXMLString)

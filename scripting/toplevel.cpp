@@ -533,7 +533,7 @@ void XML::sinit(Class_base* c)
 ASFUNCTIONBODY(XML,_constructor)
 {
 	XML* th=Class<XML>::cast(obj);
-	if(argslen==0)
+	if(argslen==0 && th->root) //If root is already set we have been constructed outside AS code
 		return NULL;
 	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);

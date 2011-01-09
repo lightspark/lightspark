@@ -214,6 +214,7 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	uint8_t* buf=out->getBuffer(length,false);
 	th->getBuffer(th->position+length,true);
 	memcpy(th->bytes+th->position,buf,length);
+	th->position+=length;
 
 	return NULL;
 }

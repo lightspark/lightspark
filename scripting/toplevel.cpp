@@ -427,7 +427,7 @@ bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_sl
 		objs[1]=abstract_i(d2.data_i);
 	else if(d2.type==DATA_OBJECT && d2.data)
 	{
-		objs[1]=d1.data;
+		objs[1]=d2.data;
 		objs[1]->incRef();
 	}
 	else

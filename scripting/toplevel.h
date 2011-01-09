@@ -658,6 +658,7 @@ public:
 	~XML();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
+	ASFUNCTION(toXMLString);
 	ASFUNCTION(nodeKind);
 	ASFUNCTION(children);
 	ASFUNCTION(localName);

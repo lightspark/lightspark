@@ -523,6 +523,7 @@ void XML::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(XML::_toString),true);
+	c->setMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),true);
 	c->setMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),true);
 	c->setMethodByQName("children",AS3,Class<IFunction>::getFunction(children),true);
 	c->setMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),true);
@@ -568,6 +569,24 @@ ASFUNCTIONBODY(XML,localName)
 	assert_and_throw(argslen==0);
 	assert(th->node);
 	return Class<ASString>::getInstanceS(th->node->get_name());
+}
+
+ASFUNCTIONBODY(XML,toXMLString)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==0);
+	assert(th->node);
+	//Allocate a page at the beginning
+	xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
+	XML* rootXML=(th->root)?(th->root):th;
+	xmlDocPtr xmlDoc=rootXML->parser.get_document()->cobj();
+	assert(xmlDoc);
+	int retVal=xmlNodeDump(xmlBuffer, xmlDoc, th->node->cobj(), 0, 0);
+	if(retVal==-1)
+		throw RunTimeException("Error om XML::toXMLString");
+	ASString* ret=Class<ASString>::getInstanceS((char*)xmlBuffer->content,xmlBuffer->size);
+	xmlBufferFree(xmlBuffer);
+	return ret;
 }
 
 ASFUNCTIONBODY(XML,children)

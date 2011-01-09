@@ -226,22 +226,18 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	if(argslen==3)
 		length=args[2]->toInt();
 
-	//TODO: Support offset (offset is in the destination!)
-	if(offset!=0)
-		throw UnsupportedException("offset in ByteArray::writeBytes");
-
 	//If the length is 0 the whole buffer must be copied
 	if(length == 0)
-		length=out->getLength();
-	else if(length > out->getLength())
+		length=(out->getLength()-offset);
+	else if(length > (out->getLength()-offset))
 	{
 		LOG(LOG_ERROR,"ByteArray::writeBytes not enough data");
 		//TODO: throw AS exceptions
 		return NULL;
 	}
-	uint8_t* buf=out->getBuffer(length,false);
+	uint8_t* buf=out->getBuffer(offset+length,false);
 	th->getBuffer(th->position+length,true);
-	memcpy(th->bytes+th->position,buf,length);
+	memcpy(th->bytes+th->position,buf+offset,length);
 	th->position+=length;
 
 	return NULL;

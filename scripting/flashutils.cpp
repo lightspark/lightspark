@@ -83,7 +83,7 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	{
 		assert_and_throw(size<=len);
 	}
-	else //if(enableResize==true)
+	else if(len<size) // && enableResize==true
 	{
 		//Resize the buffer
 		uint8_t* bytes2=new uint8_t[size];
@@ -164,7 +164,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 		//TODO: throw AS exceptions
 		return NULL;
 	}
-	uint8_t* buf=out->getBuffer(length,false);
+	uint8_t* buf=out->getBuffer(length,true);
 	memcpy(buf,th->bytes+th->position,length);
 	th->position+=length;
 

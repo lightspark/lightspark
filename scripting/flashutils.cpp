@@ -54,6 +54,7 @@ ByteArray::~ByteArray()
 void ByteArray::sinit(Class_base* c)
 {
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength),true);
+	c->setSetterByQName("length","",Class<IFunction>::getFunction(_setLength),true);
 	c->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),true);
 	c->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition),true);
 	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition),true);
@@ -124,6 +125,33 @@ ASFUNCTIONBODY(ByteArray,_setDefaultObjectEncoding)
 		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_setLength)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==1);
+	uint32_t newLen=args[0]->toInt();
+	if(newLen==th->len) //Nothing to do
+		return NULL;
+	uint8_t* newBytes=new uint8_t[newLen];
+	if(th->len<newLen)
+	{
+		//Extend
+		memcpy(newBytes,th->bytes,th->len);
+		memset(newBytes+th->len,0,newLen-th->len);
+	}
+	else
+	{
+		//Truncate
+		memcpy(newBytes,th->bytes,newLen);
+	}
+	delete[] th->bytes;
+	th->bytes=newBytes;
+	th->len=newLen;
+	//TODO: check position
+	th->position=0;
 	return NULL;
 }
 

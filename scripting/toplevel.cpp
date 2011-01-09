@@ -1743,7 +1743,7 @@ void Date::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(getTimezoneOffset),true);
-	c->setMethodByQName("valueOf","",Class<IFunction>::getFunction(valueOf),true);
+	c->setMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),true);
 	c->setMethodByQName("getTime",AS3,Class<IFunction>::getFunction(getTime),true);
 	c->setMethodByQName("getFullYear",AS3,Class<IFunction>::getFunction(getFullYear),true);
 	c->setMethodByQName("getHours",AS3,Class<IFunction>::getFunction(getHours),true);

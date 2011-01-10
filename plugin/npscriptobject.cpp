@@ -704,14 +704,6 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 		return false;
 	}
 
-	// This will hold the result from our NPN_Invoke call
-	NPVariant resultVariant;
-
-	// These will get passed as arguments to NPN_Invoke
-	NPVariant variantArgs[argc];
-	for(uint32_t i = 0; i < argc; i++)
-		NPVariantObject(instance, *args[i]).copy(variantArgs[i]);
-
 	// Signals when the async has been completed
 	// True if NPN_Invoke succeeded
 	bool success = false;
@@ -726,9 +718,9 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 		instance,
 		NPIdentifierObject(id).getNPIdentifier(),
 		("(" + id.getString() + ")").c_str(),
-		variantArgs,
+		args,
 		argc,
-		&resultVariant,
+		result,
 		&callStatus,
 		&success
 	};
@@ -752,17 +744,6 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	// Only after our called function has finished, do we ask for the mutex again to continue
 	sem_wait(&mutex);
 
-	// If NPN_Invoke succeeded, convert & copy its result and release it.
-	if(success)
-	{
-		*result = new NPVariantObject(instance, resultVariant);
-		NPN_ReleaseVariantValue(&resultVariant);
-	}
-
-	// Release the converted arguments
-	for(uint32_t i = 0; i < argc; i++)
-		NPN_ReleaseVariantValue(&variantArgs[i]);
-
 	sem_post(&mutex);
 	return success;
 }
@@ -773,49 +754,62 @@ void NPScriptObject::callExternal(void* d)
 	// Assert we are in the main plugin thread
 	assert(pthread_equal(pthread_self(), *data->mainThread));
 
+	// This will hold the result from our NPN_Invoke(Default) call
+	NPVariant resultVariant;
+
+	// These will get passed as arguments to NPN_Invoke(Default)
+	NPVariant variantArgs[data->argc];
+	for(uint32_t i = 0; i < data->argc; i++)
+		NPVariantObject(data->instance, *(data->args[i])).copy(variantArgs[i]);
+
 	NPObject* windowObject;
 	NPN_GetValue(data->instance, NPNVWindowNPObject, &windowObject);
 
 	// Lets try to invoke the identifier as if it is a function name
 	*(data->success) = NPN_Invoke(data->instance, windowObject, data->id,
-				data->args, data->argc, data->result);
+				variantArgs, data->argc, &resultVariant);
 	// Simple invoke succeeded, no further tries needed
-	if(*(data->success))
-	{
-		sem_post(data->callStatus);
-		return;
-	}
-
-	// Simple invoke failed, now try to evaluate the "identifier" as a script
-	NPString script;
-	script.UTF8Characters = data->scriptString;
-	script.UTF8Length = strlen(data->scriptString);
-	*(data->success) = NPN_Evaluate(data->instance, windowObject, &script, data->result);
-
-	// Evaluate failed or it didn't return an object
-	if(!*(data->success) || !NPVARIANT_IS_OBJECT(*(data->result)))
-	{
-		sem_post(data->callStatus);
-		return;
-	}
-
-	// Evaluate didn't fail AND returned an object, lets try to invoke this object
-	NPVariant evalResult = *(data->result);
-	NPObject* evalObj = NPVARIANT_TO_OBJECT(*(data->result));
-	bool evalSuccess = *(data->success);
-	// Lets try to invoke the default function on the object returned by the evaluation
-	*(data->success) = NPN_InvokeDefault(data->instance, evalObj,
-				data->args, data->argc, data->result);
-	// Invocation of default function failed, it seems the evaluation returned a "normal" object.
-	// Restore previous results.
 	if(!*(data->success))
 	{
-		*(data->result) = evalResult;
-		*(data->success) = evalSuccess;
+		// Simple invoke failed, now try to evaluate the "identifier" as a script
+		NPString script;
+		script.UTF8Characters = data->scriptString;
+		script.UTF8Length = strlen(data->scriptString);
+		*(data->success) = NPN_Evaluate(data->instance, windowObject, &script, &resultVariant);
+
+		// Evaluate failed or it didn't return an object
+		if(*(data->success) || NPVARIANT_IS_OBJECT(resultVariant))
+		{
+			// Evaluate didn't fail AND returned an object, lets try to invoke this object
+			NPVariant evalResult = resultVariant;
+			NPObject* evalObj = NPVARIANT_TO_OBJECT(resultVariant);
+			bool evalSuccess = *(data->success);
+			// Lets try to invoke the default function on the object returned by the evaluation
+			*(data->success) = NPN_InvokeDefault(data->instance, evalObj,
+						variantArgs, data->argc, &resultVariant);
+			// Invocation of default function failed, it seems the evaluation returned a "normal" object.
+			// Restore previous results.
+			if(!*(data->success))
+			{
+				resultVariant = evalResult;
+				*(data->success) = evalSuccess;
+			}
+			// Invocation of the default function succeeded, lets release the intermediate object.
+			else
+				NPN_ReleaseVariantValue(&evalResult);
+		}
 	}
-	// Invocation of the default function succeeded, lets release the intermediate object.
-	else
-		NPN_ReleaseVariantValue(&evalResult);
+
+	// If NPN_Invoke(Default) succeeded, convert & copy its result and release it.
+	if(*(data->success))
+	{
+		*(data->result) = new NPVariantObject(data->instance, resultVariant);
+		NPN_ReleaseVariantValue(&resultVariant);
+	}
+
+	// Release the converted arguments
+	for(uint32_t i = 0; i < data->argc; i++)
+		NPN_ReleaseVariantValue(&(variantArgs[i]));
 
 	sem_post(data->callStatus);
 }

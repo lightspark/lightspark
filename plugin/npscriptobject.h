@@ -224,9 +224,9 @@ public:
 		NPP instance;
 		NPIdentifier id;
 		const char* scriptString;
-		const NPVariant* args;
+		const lightspark::ExtVariant** args;
 		uint32_t argc;
-		NPVariant* result;
+		lightspark::ExtVariant** result;
 		sem_t* callStatus;
 		bool* success;
 	} EXT_CALL_DATA;

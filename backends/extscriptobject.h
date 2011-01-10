@@ -155,12 +155,18 @@ class ExtScriptObject;
 class DLL_PUBLIC ExtCallback
 {
 public:
-	ExtCallback() {}
+	ExtCallback() : success(false), exception(NULL) {}
 	virtual ~ExtCallback() {}
 
+	virtual void call(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc)=0;
+	virtual void wait()=0;
+	virtual void wakeUp()=0;
 	// The result variable should be "delete"d by the caller after use.
-	virtual bool call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc, ExtVariant** result)=0;
+	virtual bool getResult(const ExtScriptObject& so, ExtVariant** result)=0;
+protected:
+	bool success;
+	ASObject* exception;
 };
 
 /**
@@ -169,14 +175,18 @@ public:
 class DLL_PUBLIC ExtASCallback : public ExtCallback
 {
 public:
-	ExtASCallback(IFunction* _func) : func(_func) { func->incRef(); }
+	ExtASCallback(IFunction* _func) : func(_func), result(NULL) { func->incRef(); }
 	~ExtASCallback() { func->decRef(); }
 
+	void call(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc);
+	void wait();
+	void wakeUp();
 	// The result variable should be "delete"d by the caller after use.
-	bool call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc, ExtVariant** result);
+	bool getResult(const ExtScriptObject& so, ExtVariant** _result);
 private:
 	IFunction* func;
+	ASObject* result;
 };
 
 /**
@@ -189,14 +199,18 @@ public:
 	typedef bool (*funcPtr)(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc, ExtVariant** result);
 
-	ExtBuiltinCallback(funcPtr _func) : func(_func) {}
+	ExtBuiltinCallback(funcPtr _func) : func(_func), result(NULL) {}
 	~ExtBuiltinCallback() {}
 
+	void call(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc);
+	void wait();
+	void wakeUp();
 	// The result variable should be "delete"d by the caller after use.
-	bool call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc, ExtVariant** result);
+	bool getResult(const ExtScriptObject& so, ExtVariant** _result);
 private:
 	funcPtr func;
+	ExtVariant* result;
 };
 
 /**

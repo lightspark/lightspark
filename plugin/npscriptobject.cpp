@@ -614,7 +614,9 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 
 	// Run the function
 	lightspark::ExtVariant* objResult = NULL;
-	bool res = it->second->call(*this, objId, objArgs, argc, &objResult);
+	it->second->call(*this, objId, objArgs, argc);
+	it->second->wait();
+	bool res = it->second->getResult(*this, &objResult);
 
 	// Delete converted arguments
 	for(uint32_t i = 0; i < argc; i++)
@@ -994,6 +996,7 @@ NPScriptObjectGW::~NPScriptObjectGW()
 // Properties
 bool NPScriptObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* result)
 {
+	lightspark::SystemState* prevSys = sys;
 	sys = ((NPScriptObjectGW*) obj)->m_sys;
 	
 	NPVariantObject* resultObj = ((NPScriptObjectGW*) obj)->so->getProperty(NPIdentifierObject(id));
@@ -1006,13 +1009,14 @@ bool NPScriptObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* re
 	resultObj->copy(*result);
 	delete resultObj;
 
-	sys = NULL;
+	sys = prevSys;
 	return true;
 }
 
 // Enumeration
 bool NPScriptObjectGW::enumerate(NPObject* obj, NPIdentifier** value, uint32_t* count)
 {
+	lightspark::SystemState* prevSys = sys;
 	sys = ((NPScriptObjectGW*) obj)->m_sys;
 
 	NPScriptObject* o = ((NPScriptObjectGW*) obj)->so;
@@ -1031,6 +1035,6 @@ bool NPScriptObjectGW::enumerate(NPObject* obj, NPIdentifier** value, uint32_t* 
 	if(ids != NULL)
 		delete ids;
 
-	sys = NULL;
+	sys = prevSys;
 	return success;
 }

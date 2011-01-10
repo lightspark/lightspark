@@ -219,9 +219,6 @@ ExtVariant::ExtVariant(ASObject* other) :
 					objectValue.setProperty(nextName->toInt(), nextValue);
 				else
 					objectValue.setProperty(nextName->toString().raw_buf(), nextValue);
-
-				nextName->decRef();
-				nextValue->decRef();
 			}
 		}
 		break;
@@ -315,9 +312,9 @@ ASObject* ExtVariant::getASObject() const
 	return asobj;
 }
 
-/* -- ExtCallbackFunction -- */
-bool ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc, ExtVariant** result)
+/* -- ExtASCallback -- */
+void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc)
 {
 	// Convert raw arguments to objects
 	ASObject* objArgs[argc];
@@ -328,35 +325,78 @@ bool ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 
 	try
 	{
-		ASObject* objResult = func->call(new Null, objArgs, argc);
-		if(objResult != NULL)
-			*result = new ExtVariant(objResult);
+		result = func->call(new Null, objArgs, argc);
 	}
-	catch(ASObject* obj)
+	catch(ASObject* _exception)
 	{
-		so.setException(obj->toString().raw_buf());
+		exception = _exception;
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
+		sys->setError(e.cause);
+		success = false;
+	}
+}
+void ExtASCallback::wait()
+{
+}
+void ExtASCallback::wakeUp()
+{
+}
+bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
+{
+	if(exception != NULL)
+	{
+		if(result != NULL)
+			result->decRef();
+
+		so.setException(exception->toString().raw_buf());
+		exception->decRef();
 		LOG(LOG_ERROR, "ASObject exception caught in external callback");
 		return false;
 	}
-	catch(LightsparkException& e)
+	if(result != NULL)
 	{
-		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
-		sys->setError(e.cause);
-		return false;
+		*_result = new ExtVariant(result);
+		result->decRef();
 	}
 	return true;
 }
-bool ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc, ExtVariant** result)
+/* -- ExtBuiltinCallback -- */
+void ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc)
 {
 	try
 	{
-		return func(so, id, args, argc, result);
+		success = func(so, id, args, argc, &result);
+	}
+	catch(ASObject* _exception)
+	{
+		exception = _exception;
 	}
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
 		sys->setError(e.cause);
+		success = false;
+	}
+}
+void ExtBuiltinCallback::wait()
+{
+}
+void ExtBuiltinCallback::wakeUp()
+{
+}
+bool ExtBuiltinCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
+{
+	*_result = result;
+	if(exception != NULL)
+	{
+		so.setException(exception->toString().raw_buf());
+		exception->decRef();
+		LOG(LOG_ERROR, "ASObject exception caught in external callback");
 		return false;
 	}
+	return success;
 }

@@ -332,49 +332,55 @@ public:
 	/* NPScriptObject forwarders */
 	static bool hasMethod(NPObject* obj, NPIdentifier id)
 	{
+		lightspark::SystemState* prevSys = sys;
 		sys = ((NPScriptObjectGW*) obj)->m_sys;
 		bool success = ((NPScriptObjectGW*) obj)->so->hasMethod(NPIdentifierObject(id));
-		sys = NULL;
+		sys = prevSys;
 		return success;
 	}
 	static bool invoke(NPObject* obj, NPIdentifier id,
 			const NPVariant* args, uint32_t argc, NPVariant* result)
 	{
+		lightspark::SystemState* prevSys = sys;
 		sys = ((NPScriptObjectGW*) obj)->m_sys;
 		bool success = ((NPScriptObjectGW*) obj)->so->invoke(id, args, argc, result);
-		sys = NULL;
+		sys = prevSys;
 		return success;
 	}
 	static bool invokeDefault(NPObject* obj,
 			const NPVariant* args, uint32_t argc, NPVariant* result)
 	{
+		lightspark::SystemState* prevSys = sys;
 		sys = ((NPScriptObjectGW*) obj)->m_sys;
 		bool success = ((NPScriptObjectGW*) obj)->so->invokeDefault(args, argc, result);
-		sys = NULL;
+		sys = prevSys;
 		return success;
 	}
 
 	static bool hasProperty(NPObject* obj, NPIdentifier id)
 	{
+		lightspark::SystemState* prevSys = sys;
 		sys = ((NPScriptObjectGW*) obj)->m_sys;
 		bool success = ((NPScriptObjectGW*) obj)->so->hasProperty(NPIdentifierObject(id));
-		sys = NULL;
+		sys = prevSys;
 		return success;
 	}
 	static bool getProperty(NPObject* obj, NPIdentifier id, NPVariant* result);
 	static bool setProperty(NPObject* obj, NPIdentifier id, const NPVariant* value)
 	{
+		lightspark::SystemState* prevSys = sys;
 		sys = ((NPScriptObjectGW*) obj)->m_sys;
 		((NPScriptObjectGW*) obj)->so->setProperty(NPIdentifierObject(id), NPVariantObject(((NPScriptObjectGW*) obj)->instance, *value));
 		bool success = true;
-		sys = NULL;
+		sys = prevSys;
 		return success;
 	}
 	static bool removeProperty(NPObject* obj, NPIdentifier id)
 	{
+		lightspark::SystemState* prevSys = sys;
 		sys = ((NPScriptObjectGW*) obj)->m_sys;
 		bool success = ((NPScriptObjectGW*) obj)->so->removeProperty(NPIdentifierObject(id));
-		sys = NULL;
+		sys = prevSys;
 		return success;
 	}
 

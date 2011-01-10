@@ -556,25 +556,31 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 	setProperty("$version", "10,0,r"SHORTVERSION);
 
 	// Standard methods
-	setMethod("SetVariable", stdSetVariable);
-	setMethod("GetVariable", stdGetVariable);
-	setMethod("GotoFrame", stdGotoFrame);
-	setMethod("IsPlaying", stdIsPlaying);
-	setMethod("LoadMovie", stdLoadMovie);
-	setMethod("Pan", stdPan);
-	setMethod("PercentLoaded", stdPercentLoaded);
-	setMethod("Play", stdPlay);
-	setMethod("Rewind", stdRewind);
-	setMethod("SetZoomRect", stdSetZoomRect);
-	setMethod("StopPlay", stdStopPlay);
-	setMethod("Zoom", stdZoom);
-	setMethod("TotalFrames", stdTotalFrames);
+	setMethod("SetVariable", new lightspark::ExtBuiltinCallback(stdSetVariable));
+	setMethod("GetVariable", new lightspark::ExtBuiltinCallback(stdGetVariable));
+	setMethod("GotoFrame", new lightspark::ExtBuiltinCallback(stdGotoFrame));
+	setMethod("IsPlaying", new lightspark::ExtBuiltinCallback(stdIsPlaying));
+	setMethod("LoadMovie", new lightspark::ExtBuiltinCallback(stdLoadMovie));
+	setMethod("Pan", new lightspark::ExtBuiltinCallback(stdPan));
+	setMethod("PercentLoaded", new lightspark::ExtBuiltinCallback(stdPercentLoaded));
+	setMethod("Play", new lightspark::ExtBuiltinCallback(stdPlay));
+	setMethod("Rewind", new lightspark::ExtBuiltinCallback(stdRewind));
+	setMethod("SetZoomRect", new lightspark::ExtBuiltinCallback(stdSetZoomRect));
+	setMethod("StopPlay", new lightspark::ExtBuiltinCallback(stdStopPlay));
+	setMethod("Zoom", new lightspark::ExtBuiltinCallback(stdZoom));
+	setMethod("TotalFrames", new lightspark::ExtBuiltinCallback(stdTotalFrames));
 }
 
 // Destructors
 NPScriptObject::~NPScriptObject()
 {
 	sem_destroy(&mutex);
+	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator meth_it = methods.begin();
+	while(meth_it != methods.end())
+	{
+		delete (*meth_it).second;
+		methods.erase(meth_it++);
+	}
 }
 // Destruction preparator
 void NPScriptObject::destroy()
@@ -596,7 +602,7 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 {
 	NPIdentifierObject objId(id);
 	// Check if the method exists
-	std::map<NPIdentifierObject, lightspark::ExtCallbackFunction>::iterator it;
+	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator it;
 	it = methods.find(objId);
 	if(it == methods.end())
 		return false;
@@ -608,7 +614,7 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 
 	// Run the function
 	lightspark::ExtVariant* objResult = NULL;
-	bool res = it->second(*this, objId, objArgs, argc, &objResult);
+	bool res = it->second->call(*this, objId, objArgs, argc, &objResult);
 
 	// Delete converted arguments
 	for(uint32_t i = 0; i < argc; i++)
@@ -633,7 +639,7 @@ bool NPScriptObject::invokeDefault(const NPVariant* args, uint32_t argc, NPVaria
 // ExtScriptObject interface: methods
 bool NPScriptObject::removeMethod(const lightspark::ExtIdentifier& id)
 {
-	std::map<NPIdentifierObject, lightspark::ExtCallbackFunction>::iterator it = methods.find(id);
+	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator it = methods.find(id);
 	if(it == methods.end())
 		return false;
 
@@ -673,7 +679,7 @@ bool NPScriptObject::enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count
 		(*ids)[i] = new NPIdentifierObject(prop_it->first);
 		i++;
 	}
-	std::map<NPIdentifierObject, lightspark::ExtCallbackFunction>::const_iterator meth_it;
+	std::map<NPIdentifierObject, lightspark::ExtCallback*>::const_iterator meth_it;
 	for(meth_it = methods.begin(); meth_it != methods.end(); ++meth_it)
 	{
 		(*ids)[i] = new NPIdentifierObject(meth_it->first);

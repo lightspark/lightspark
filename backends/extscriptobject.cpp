@@ -316,38 +316,47 @@ ASObject* ExtVariant::getASObject() const
 }
 
 /* -- ExtCallbackFunction -- */
-bool ExtCallbackFunction::operator()(const ExtScriptObject& so, const ExtIdentifier& id,
+bool ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc, ExtVariant** result)
 {
-	if(iFunc != NULL)
+	// Convert raw arguments to objects
+	ASObject* objArgs[argc];
+	for(uint32_t i = 0; i < argc; i++)
 	{
-		// Convert raw arguments to objects
-		ASObject* objArgs[argc];
-		for(uint32_t i = 0; i < argc; i++)
-		{
-			objArgs[i] = args[i]->getASObject();
-		}
-
-		try
-		{
-			ASObject* objResult = iFunc->call(new Null, objArgs, argc);
-			if(objResult != NULL)
-				*result = new ExtVariant(objResult);
-		}
-		catch(ASObject* obj)
-		{
-			so.setException(obj->toString().raw_buf());
-			LOG(LOG_ERROR, "ASObject exception caught in external callback");
-			return false;
-		}
-		catch(LightsparkException& e)
-		{
-			LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
-			sys->setError(e.cause);
-			return false;
-		}
-		return true;
+		objArgs[i] = args[i]->getASObject();
 	}
-	else
-		return extFunc(so, id, args, argc, result);
+
+	try
+	{
+		ASObject* objResult = func->call(new Null, objArgs, argc);
+		if(objResult != NULL)
+			*result = new ExtVariant(objResult);
+	}
+	catch(ASObject* obj)
+	{
+		so.setException(obj->toString().raw_buf());
+		LOG(LOG_ERROR, "ASObject exception caught in external callback");
+		return false;
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
+		sys->setError(e.cause);
+		return false;
+	}
+	return true;
+}
+bool ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc, ExtVariant** result)
+{
+	try
+	{
+		return func(so, id, args, argc, result);
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
+		sys->setError(e.cause);
+		return false;
+	}
 }

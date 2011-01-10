@@ -194,7 +194,7 @@ public:
 	{
 		return methods.find(id) != methods.end();
 	}
-	void setMethod(const lightspark::ExtIdentifier& id, const lightspark::ExtCallbackFunction& func)
+	void setMethod(const lightspark::ExtIdentifier& id, lightspark::ExtCallback* func)
 	{
 		methods[id] = func;
 	}
@@ -297,7 +297,7 @@ private:
 	// If an entry is set with a ExtIdentifier or ExtVariant,
 	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.
 	std::map<NPIdentifierObject, NPVariantObject> properties;
-	std::map<NPIdentifierObject, lightspark::ExtCallbackFunction> methods;
+	std::map<NPIdentifierObject, lightspark::ExtCallback*> methods;
 };
 
 /**

@@ -13,7 +13,9 @@ global:
 		*lightspark::ExtVariant*;
 		*lightspark::ExtIdentifier*;
 		*lightspark::ExtObject*;
-		*lightspark::ExtCallbackFunction*;
+		*lightspark::ExtCallback*;
+		*lightspark::ExtASCallback*;
+		*lightspark::ExtBuiltinCallback*;
 		*lightspark::ExtScriptObject*;
 		rt;
 		sys;

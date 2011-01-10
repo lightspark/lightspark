@@ -87,7 +87,7 @@ ASFUNCTIONBODY(ExternalInterface,addCallback)
 	{
 		IFunction* f=static_cast<IFunction*>(args[1]);
 		f->incRef();
-		sys->extScriptObject->setMethod(args[0]->toString().raw_buf(), ExtCallbackFunction(f));
+		sys->extScriptObject->setMethod(args[0]->toString().raw_buf(), new ExtASCallback(f));
 	}
 	return abstract_b(true);
 }

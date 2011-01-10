@@ -148,28 +148,55 @@ private:
 };
 
 class ExtScriptObject;
-// The signature for a hard-coded callback function.
-// The result variable should be "delete"d by the caller after use.
-typedef bool (*ExtCallbackFunctionPtr)(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc, ExtVariant** result);
 
 /**
- * This class provides a unified interface to hard-coded & runtime callback functions.
- * It stores either a IFunction* or an ExtCallbackFunctionPtr and provides a operator() to call them.
+ * This class provides an interface to use for external callback functions.
  */
-class DLL_PUBLIC ExtCallbackFunction
+class DLL_PUBLIC ExtCallback
 {
 public:
-	ExtCallbackFunction() : iFunc(NULL), extFunc(NULL) {}
-	ExtCallbackFunction(IFunction* func) : iFunc(func), extFunc(NULL) {}
-	ExtCallbackFunction(ExtCallbackFunctionPtr func) : iFunc(NULL), extFunc(func) {}
+	ExtCallback() {}
+	virtual ~ExtCallback() {}
 
 	// The result variable should be "delete"d by the caller after use.
-	bool operator()(const ExtScriptObject& so, const ExtIdentifier& id,
+	virtual bool call(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc, ExtVariant** result)=0;
+};
+
+/**
+ * ExtCallback specialization for IFunctions
+ */
+class DLL_PUBLIC ExtASCallback : public ExtCallback
+{
+public:
+	ExtASCallback(IFunction* _func) : func(_func) { func->incRef(); }
+	~ExtASCallback() { func->decRef(); }
+
+	// The result variable should be "delete"d by the caller after use.
+	bool call(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc, ExtVariant** result);
 private:
-	IFunction* iFunc;
-	ExtCallbackFunctionPtr extFunc;
+	IFunction* func;
+};
+
+/**
+ * ExtCallback specialization for builtin functions
+ */
+class DLL_PUBLIC ExtBuiltinCallback : public ExtCallback
+{
+public:
+	// The signature for a hard-coded callback function.
+	typedef bool (*funcPtr)(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc, ExtVariant** result);
+
+	ExtBuiltinCallback(funcPtr _func) : func(_func) {}
+	~ExtBuiltinCallback() {}
+
+	// The result variable should be "delete"d by the caller after use.
+	bool call(const ExtScriptObject& so, const ExtIdentifier& id,
+		const ExtVariant** args, uint32_t argc, ExtVariant** result);
+private:
+	funcPtr func;
 };
 
 /**
@@ -187,7 +214,7 @@ public:
 
 	virtual bool hasMethod(const ExtIdentifier& id) const = 0;
 	// There currently is no way to invoke the set methods. There's no need for it anyway.
-	virtual void setMethod(const ExtIdentifier& id, const ExtCallbackFunction& func) = 0;
+	virtual void setMethod(const ExtIdentifier& id, ExtCallback* func) = 0;
 	virtual bool removeMethod(const ExtIdentifier& id) = 0;
 
 	virtual bool hasProperty(const ExtIdentifier& id) const = 0;

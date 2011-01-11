@@ -628,8 +628,9 @@ void HTTPStatusEvent::sinit(Class_base* c)
 	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"));
 }
 
-FunctionEvent::FunctionEvent(IFunction* _f, ASObject* _obj, ASObject** _args, uint32_t _numArgs, bool _thisOverride):
-		Event("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs),thisOverride(_thisOverride)
+FunctionEvent::FunctionEvent(IFunction* _f, ASObject* _obj, ASObject** _args, uint32_t _numArgs, ASObject** _result, ASObject** _exception, SynchronizationEvent* _sync, bool _thisOverride):
+		Event("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs),
+		result(_result),exception(_exception),sync(_sync),thisOverride(_thisOverride)
 {
 	args = new ASObject*[numArgs];
 	uint32_t i;

@@ -272,6 +272,7 @@ public:
 	EVENT_TYPE getEventType() { return SHUTDOWN; }
 };
 
+class SynchronizationEvent;
 class FunctionEvent: public Event
 {
 friend class ABCVm;
@@ -280,9 +281,12 @@ private:
 	ASObject* obj;
 	ASObject** args;
 	unsigned int numArgs;
+	ASObject** result;
+	ASObject** exception;
+	SynchronizationEvent* sync;
 	bool thisOverride;
 public:
-	FunctionEvent(IFunction* _f, ASObject* _obj=NULL, ASObject** _args=NULL, uint32_t _numArgs=0, bool _thisOverride=false);
+	FunctionEvent(IFunction* _f, ASObject* _obj=NULL, ASObject** _args=NULL, uint32_t _numArgs=0, ASObject** _result=NULL, ASObject** _exception=NULL, SynchronizationEvent* _sync=NULL, bool _thisOverride=false);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return FUNCTION; }

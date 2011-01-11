@@ -1118,8 +1118,35 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 			case FUNCTION:
 			{
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
-				//We hope the method is binded
-				ev->f->call(ev->obj,ev->args,ev->numArgs,ev->thisOverride);
+				// We should catch exceptions and report them
+				if(ev->exception != NULL)
+				{
+					try
+					{
+						//We hope the method is bound
+						ASObject* result = ev->f->call(ev->obj,ev->args,ev->numArgs,ev->thisOverride);
+						// We should report the function result
+						if(ev->result != NULL)
+							*(ev->result) = result;
+					}
+					catch(ASObject* exception)
+					{
+						// Report the exception
+						*(ev->exception) = exception;
+					}
+				}
+				// Exceptions aren't expected and shouldn't be ignored
+				else
+				{
+					//We hope the method is bound
+					ASObject* result = ev->f->call(ev->obj,ev->args,ev->numArgs,ev->thisOverride);
+					// We should report the function result
+					if(ev->result != NULL)
+						*(ev->result) = result;
+				}
+				// We should synchronize the passed SynchronizationEvent
+				if(ev->sync != NULL)
+					ev->sync->sync();
 				break;
 			}
 			case CONTEXT_INIT:

@@ -208,9 +208,9 @@ public:
 		strcat(buf,r.buf);
 		return *this;
 	}
-	const tiny_string operator+(const tiny_string& r)
+	const tiny_string operator+(const tiny_string& r) const
 	{
-		tiny_string ret(buf);
+		tiny_string ret(*this);
 		ret+=r;
 		return ret;
 	}

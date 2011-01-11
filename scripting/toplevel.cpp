@@ -36,7 +36,6 @@
 #include "class.h"
 #include "exceptions.h"
 #include "backends/urlutils.h"
-#include <libxml/tree.h>
 
 using namespace std;
 using namespace lightspark;
@@ -502,11 +501,16 @@ ASFUNCTIONBODY(Array,_push)
 	return abstract_i(th->size());
 }
 
-XML::XML():root(NULL),node(NULL)
+XML::XML():root(NULL),node(NULL),constructed(false)
 {
 }
 
-XML::XML(XML* _r, xmlpp::Node* _n):root(_r),node(_n)
+XML::XML(const string& str):root(NULL),node(NULL),constructed(true)
+{
+	buildFromString(str);
+}
+
+XML::XML(XML* _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
 {
 	assert(root && node);
 }
@@ -528,17 +532,23 @@ void XML::sinit(Class_base* c)
 	c->setMethodByQName("children",AS3,Class<IFunction>::getFunction(children),true);
 	c->setMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),true);
 	c->setMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),true);
+	c->setMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),true);
+}
+
+void XML::buildFromString(const string& str)
+{
+	parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
+	node=parser.get_document()->get_root_node();
 }
 
 ASFUNCTIONBODY(XML,_constructor)
 {
 	XML* th=Class<XML>::cast(obj);
-	if(argslen==0 && th->root) //If root is already set we have been constructed outside AS code
+	if(argslen==0 && th->constructed) //If root is already set we have been constructed outside AS code
 		return NULL;
 	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	th->parser.parse_memory_raw((const unsigned char*)str->data.c_str(), str->data.size());
-	th->node=th->parser.get_document()->get_root_node();
+	th->buildFromString(str->data);
 	return NULL;
 }
 
@@ -572,6 +582,31 @@ ASFUNCTIONBODY(XML,localName)
 	return Class<ASString>::getInstanceS(th->node->get_name());
 }
 
+ASFUNCTIONBODY(XML,appendChild)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==1);
+	XML* arg=NULL;
+	if(args[0]->getPrototype()==Class<XML>::getClass())
+		arg=Class<XML>::cast(args[0]);
+	else if(args[0]->getPrototype()==Class<XMLList>::getClass())
+		arg=Class<XMLList>::cast(args[0])->convertToXML();
+
+	if(arg==NULL)
+		throw RunTimeException("Invalid argument for XML::appendChild");
+	//Change the root of the appended XML node
+	XML* rootXML=(th->root)?th->root:th;
+	if(arg->root)
+		arg->root->decRef();
+	rootXML->incRef();
+	arg->root=rootXML;
+	xmlUnlinkNode(arg->node->cobj());
+	xmlNodePtr ret=xmlAddChild(th->node->cobj(),arg->node->cobj());
+	assert_and_throw(ret);
+	arg->incRef();
+	return arg;
+}
+
 ASFUNCTIONBODY(XML,attributes)
 {
 	XML* th=Class<XML>::cast(obj);
@@ -594,6 +629,16 @@ ASFUNCTIONBODY(XML,attributes)
 	return retObj;
 }
 
+void XML::toXMLString_priv(xmlBufferPtr buf) 
+{
+	XML* rootXML=(root)?(root):this;
+	xmlDocPtr xmlDoc=rootXML->parser.get_document()->cobj();
+	assert(xmlDoc);
+	int retVal=xmlNodeDump(buf, xmlDoc, node->cobj(), 0, 0);
+	if(retVal==-1)
+		throw RunTimeException("Error om XML::toXMLString_priv");
+}
+
 ASFUNCTIONBODY(XML,toXMLString)
 {
 	XML* th=Class<XML>::cast(obj);
@@ -601,13 +646,8 @@ ASFUNCTIONBODY(XML,toXMLString)
 	assert(th->node);
 	//Allocate a page at the beginning
 	xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
-	XML* rootXML=(th->root)?(th->root):th;
-	xmlDocPtr xmlDoc=rootXML->parser.get_document()->cobj();
-	assert(xmlDoc);
-	int retVal=xmlNodeDump(xmlBuffer, xmlDoc, th->node->cobj(), 0, 0);
-	if(retVal==-1)
-		throw RunTimeException("Error om XML::toXMLString");
-	ASString* ret=Class<ASString>::getInstanceS((char*)xmlBuffer->content,xmlBuffer->size);
+	th->toXMLString_priv(xmlBuffer);
+	ASString* ret=Class<ASString>::getInstanceS((char*)xmlBuffer->content);
 	xmlBufferFree(xmlBuffer);
 	return ret;
 }
@@ -630,7 +670,7 @@ ASFUNCTIONBODY(XML,children)
 	return retObj;
 }
 
-void XML::recusiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
+void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
 {
 	assert(root);
 	//Check if this node is being requested
@@ -643,14 +683,14 @@ void XML::recusiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny
 	const xmlpp::Node::NodeList& list=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
 	for(;it!=list.end();it++)
-		recusiveGetDescendantsByQName(root, *it, name, ns, ret);
+		recursiveGetDescendantsByQName(root, *it, name, ns, ret);
 }
 
 void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
 {
 	assert(node);
 	assert_and_throw(ns=="");
-	recusiveGetDescendantsByQName((root)?(root):this, node, name, ns, ret);
+	recursiveGetDescendantsByQName((root)?(root):this, node, name, ns, ret);
 }
 
 ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
@@ -684,7 +724,7 @@ ASFUNCTIONBODY(XML,_toString)
 	return Class<ASString>::getInstanceS(th->toString_priv());
 }
 
-tiny_string XML::toString_priv() const
+tiny_string XML::toString_priv()
 {
 	//We have to use vanilla libxml2, libxml++ is not enough
 	xmlNodePtr libXml2Node=node->cobj();
@@ -700,7 +740,13 @@ tiny_string XML::toString_priv() const
 			break;
 		}
 		default:
-			throw UnsupportedException("Unsupported type in XML::toString");
+		{
+			assert_and_throw(!node->get_children().empty());
+			xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
+			toXMLString_priv(xmlBuffer);
+			ret=tiny_string((char*)xmlBuffer->content,true);
+			xmlBufferFree(xmlBuffer);
+		}
 	}
 	return ret;
 }
@@ -716,8 +762,24 @@ void XMLList::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	//c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("length","",Class<IFunction>::getFunction(_getLength),true);
+	c->setMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),true);
+}
+
+ASFUNCTIONBODY(XMLList,_constructor)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	if(argslen==0 && th->constructed)
+	{
+		//Called from internal code
+		return NULL;
+	}
+	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
+	ASString* str=Class<ASString>::cast(args[0]);
+	XML* val=Class<XML>::getInstanceS(str->data);
+	th->nodes.push_back(val);
+	return NULL;
 }
 
 ASFUNCTIONBODY(XMLList,_getLength)
@@ -725,6 +787,14 @@ ASFUNCTIONBODY(XMLList,_getLength)
 	XMLList* th=Class<XMLList>::cast(obj);
 	assert_and_throw(argslen==0);
 	return abstract_i(th->nodes.size());
+}
+
+ASFUNCTIONBODY(XMLList,appendChild)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	assert_and_throw(th->nodes.size()==1);
+	//Forward to the XML object
+	return XML::appendChild(th->nodes[0],args,argslen);
 }
 
 ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
@@ -742,6 +812,17 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 
 	if(index<nodes.size())
 		return nodes[index];
+	else
+		return NULL;
+}
+
+XML* XMLList::convertToXML() const
+{
+	if(nodes.size()==1)
+	{
+		nodes[0]->incRef();
+		return nodes[0];
+	}
 	else
 		return NULL;
 }

@@ -26,6 +26,7 @@
 #include "frame.h"
 #include "exceptions.h"
 #include "threading.h"
+#include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 
 namespace lightspark
@@ -650,10 +651,15 @@ private:
 	XML* root;
 	//The node this object represent
 	xmlpp::Node* node;
-	static void recusiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);
-	tiny_string toString_priv() const;
+	static void recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
+			std::vector<XML*>& ret);
+	tiny_string toString_priv();
+	void toXMLString_priv(xmlBufferPtr buf);
+	void buildFromString(const std::string& str);
+	bool constructed;
 public:
 	XML();
+	XML(const std::string& str);
 	XML(XML* _r, xmlpp::Node* _n);
 	~XML();
 	ASFUNCTION(_constructor);
@@ -662,6 +668,7 @@ public:
 	ASFUNCTION(nodeKind);
 	ASFUNCTION(children);
 	ASFUNCTION(attributes);
+	ASFUNCTION(appendChild);
 	ASFUNCTION(localName);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
@@ -674,13 +681,17 @@ class XMLList: public ASObject
 {
 private:
 	std::vector<XML*> nodes;
+	bool constructed;
 public:
-	XMLList(){}
-	XMLList(const std::vector<XML*>& r):nodes(r){}
+	XMLList():constructed(false){}
+	XMLList(const std::vector<XML*>& r):nodes(r),constructed(true){}
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLength);
+	ASFUNCTION(appendChild);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	XML* convertToXML() const;
 };
 
 class Date: public ASObject

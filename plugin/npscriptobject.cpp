@@ -588,11 +588,10 @@ void NPScriptObject::destroy()
 	shuttingDown = true;
 
 	// Signal all call statusses to continue and not wait for their respective external functions to return
-	std::vector<sem_t*>::iterator it = callStatusses.begin();
-	while(it != callStatusses.end())
+	while(callStatusses.size() > 0)
 	{
-		sem_post(*it);
-		++it;
+		sem_post(callStatusses.top());
+		callStatusses.pop();
 	}
 	sem_post(&mutex);
 }
@@ -712,7 +711,7 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	sem_t callStatus;
 	sem_init(&callStatus, 0, 0);
 	// Add this callStatus semaphore to the list of running call statusses to be cleaned up on shutdown
-	callStatusses.push_back(&callStatus);
+	callStatusses.push(&callStatus);
 	EXT_CALL_DATA data = {
 		&mainThread,
 		instance,
@@ -738,7 +737,7 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	// Wait for the (possibly asynchronously) called function to finish
 	sem_wait(&callStatus);
 	// This call status doesn't need to be cleaned up anymore on shutdown
-	callStatusses.pop_back();
+	callStatusses.pop();
 	sem_destroy(&callStatus);
 
 	// Only after our called function has finished, do we ask for the mutex again to continue

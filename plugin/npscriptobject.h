@@ -25,7 +25,7 @@
 #include <string.h>
 #include <string>
 #include <map>
-#include <vector>
+#include <stack>
 
 #include "npapi.h"
 #include "npruntime.h"
@@ -288,7 +288,7 @@ private:
 	pthread_t mainThread;
 	// Provides mutual exclusion for external calls
 	sem_t mutex;
-	std::vector<sem_t*> callStatusses;
+	std::stack<sem_t*> callStatusses;
 	// True if this object is being shut down
 	bool shuttingDown;
 	// True if exceptions should be marshalled to the container

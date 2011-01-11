@@ -537,8 +537,11 @@ void XML::sinit(Class_base* c)
 
 void XML::buildFromString(const string& str)
 {
-	parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
-	node=parser.get_document()->get_root_node();
+	if(!str.empty())
+	{
+		parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
+		node=parser.get_document()->get_root_node();
+	}
 }
 
 ASFUNCTIONBODY(XML,_constructor)

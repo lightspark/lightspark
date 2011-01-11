@@ -818,6 +818,8 @@ void NPScriptObject::setException(const std::string& message) const
 {
 	if(marshallExceptions)
 		NPN_SetException(gw, message.c_str());
+	else
+		NPN_SetException(gw, "Error in Actionscript. Use a try/catch block to find error.");
 }
 
 // Standard Flash methods

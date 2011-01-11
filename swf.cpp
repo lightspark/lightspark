@@ -820,7 +820,8 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 	}
 }
 
-ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),zlibFilter(NULL),backend(NULL),isEnded(false),root(NULL),version(0),useAVM2(false)
+ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),zlibFilter(NULL),backend(NULL),isEnded(false),fileType(NONE),root(NULL),
+	version(0),useAVM2(false)
 {
 	root=r;
 	sem_init(&ended,0,0);
@@ -837,38 +838,45 @@ ParseThread::~ParseThread()
 	sem_destroy(&ended);
 }
 
-bool ParseThread::parseHeader()
+void ParseThread::checkType(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4)
 {
-	UI8 Signature[3];
-	UI8 Version;
+	if(c1=='F' && c2=='W' && c3=='S')
+	{
+		fileType=SWF;
+		version=c4;
+		root->version=version;
+	}
+	else if(c1=='C' && c2=='W' && c3=='S')
+	{
+		fileType=COMPRESSED_SWF;
+		version=c4;
+		root->version=version;
+	}
+	else if((c1&0x80) && c2=='P' && c3=='N' && c4=='G')
+		fileType=PNG;
+}
+
+void ParseThread::parseSWFHeader()
+{
 	UI32_SWF FileLength;
 	RECT FrameSize;
 	UI16_SWF FrameRate;
 	UI16_SWF FrameCount;
 
-	f >> Signature[0] >> Signature[1] >> Signature[2];
-
-	f >> Version >> FileLength;
-	if(Signature[0]=='F' && Signature[1]=='W' && Signature[2]=='S')
+	f >> FileLength;
+	//Enable decompression if needed
+	if(fileType==SWF)
+		LOG(LOG_NO_INFO, _("Uncompressed SWF file: Version ") << (int)version);
+	else if(fileType==COMPRESSED_SWF)
 	{
-		LOG(LOG_NO_INFO, _("Uncompressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
-	}
-	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
-	{
-		LOG(LOG_NO_INFO, _("Compressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
+		LOG(LOG_NO_INFO, _("Compressed SWF file: Version ") << (int)version);
 		//The file is compressed, create a filtering streambuf
 		backend=f.rdbuf();
 		f.rdbuf(new zlib_filter(backend));
 	}
-	else
-	{
-		LOG(LOG_NO_INFO,_("No SWF file signature found"));
-		return false;
-	}
+
 	f >> FrameSize >> FrameRate >> FrameCount;
 
-	version=Version;
-	root->version=Version;
 	root->fileLength=FileLength;
 	float frameRate=FrameRate;
 	frameRate/=256;
@@ -878,7 +886,6 @@ bool ParseThread::parseHeader()
 	sys->setRenderRate(frameRate);
 	root->setFrameSize(FrameSize);
 	root->setFrameCount(FrameCount);
-	return true;
 }
 
 void ParseThread::execute()
@@ -886,8 +893,19 @@ void ParseThread::execute()
 	pt=this;
 	try
 	{
-		if(!parseHeader())
-			throw ParseException("Not an SWF file");
+		UI8 Signature[4];
+		f >> Signature[0] >> Signature[1] >> Signature[2] >> Signature[3];
+		checkType(Signature[0],Signature[1],Signature[2],Signature[3]);
+		if(fileType==NONE)
+			throw ParseException("Not a supported file");
+		if(fileType==PNG)
+		{
+			//Not really supported
+			pt=NULL;
+			sem_post(&ended);
+			return;
+		}
+		parseSWFHeader();
 
 		//Create a top level TagFactory
 		TagFactory factory(f, true);

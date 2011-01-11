@@ -613,9 +613,13 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 
 	// Run the function
 	lightspark::ExtVariant* objResult = NULL;
-	it->second->call(*this, objId, objArgs, argc);
-	it->second->wait();
-	bool res = it->second->getResult(*this, &objResult);
+	// Make sure we use a copy of the callback
+	lightspark::ExtCallback* callback = it->second->copy();
+	callback->call(*this, objId, objArgs, argc);
+	callback->wait();
+	bool res = callback->getResult(*this, &objResult);
+	// Delete our callback after use
+	delete callback;
 
 	// Delete converted arguments
 	for(uint32_t i = 0; i < argc; i++)

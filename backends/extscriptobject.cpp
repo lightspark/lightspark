@@ -22,9 +22,10 @@
 #include <sstream>
 
 #include "asobject.h"
+#include "compat.h"
+#include "scripting/abc.h"
 #include "scripting/class.h"
 #include "scripting/toplevel.h"
-#include "compat.h"
 
 #include "extscriptobject.h"
 
@@ -323,29 +324,37 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		objArgs[i] = args[i]->getASObject();
 	}
 
-	try
-	{
-		result = func->call(new Null, objArgs, argc);
-	}
-	catch(ASObject* _exception)
-	{
-		exception = _exception;
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
-		sys->setError(e.cause);
-		success = false;
-	}
+	// This event is not actually added to the VM event queue.
+	// It is instead synched by the VM after the callback has completed execution.
+	syncEvent = new SynchronizationEvent;
+	funcEvent = new FunctionEvent(func, new Null, objArgs, argc, &result, &exception, syncEvent);
+	// Add the callback function event to the VM event queue
+	getVm()->addEvent(NULL,funcEvent);
+	// We won't use this event any more
+	funcEvent->decRef();
 }
 void ExtASCallback::wait()
 {
+	if(syncEvent != NULL)
+		syncEvent->wait();
 }
 void ExtASCallback::wakeUp()
 {
+	if(syncEvent != NULL)
+		syncEvent->sync();
 }
 bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 {
+	// syncEvent should be not-NULL since call() should have set it
+	if(syncEvent == NULL)
+		return false;
+
+	// We've no use for syncEvent anymore
+	syncEvent->decRef();
+	// Clean up pointers
+	syncEvent = NULL;
+	funcEvent = NULL;
+	// Did the callback throw an exception?
 	if(exception != NULL)
 	{
 		if(result != NULL)
@@ -354,14 +363,23 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 		so.setException(exception->toString().raw_buf());
 		exception->decRef();
 		LOG(LOG_ERROR, "ASObject exception caught in external callback");
-		return false;
+		success = false;
 	}
-	if(result != NULL)
+	// Did the callback return a non-NULL result?
+	else if(result != NULL)
 	{
 		*_result = new ExtVariant(result);
 		result->decRef();
+		success = true;
 	}
-	return true;
+	// No exception but also not result, still a success
+	else
+		success = true;
+
+	// Clean up pointers
+	result = NULL;
+	exception = NULL;
+	return success;
 }
 /* -- ExtBuiltinCallback -- */
 void ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
@@ -369,6 +387,7 @@ void ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id
 {
 	try
 	{
+		// We expect the builtin callback to handle main <--> VM thread synchronization by itself
 		success = func(so, id, args, argc, &result);
 	}
 	catch(ASObject* _exception)

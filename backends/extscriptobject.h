@@ -26,6 +26,7 @@
 
 #include "asobject.h"
 #include "compat.h"
+#include "scripting/flashevents.h"
 
 namespace lightspark
 {
@@ -158,6 +159,9 @@ public:
 	ExtCallback() : success(false), exception(NULL) {}
 	virtual ~ExtCallback() {}
 
+	// Don't forget to delete this copy after use
+	virtual ExtCallback* copy()=0;
+
 	virtual void call(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc)=0;
 	virtual void wait()=0;
@@ -175,8 +179,11 @@ protected:
 class DLL_PUBLIC ExtASCallback : public ExtCallback
 {
 public:
-	ExtASCallback(IFunction* _func) : func(_func), result(NULL) { func->incRef(); }
+	ExtASCallback(IFunction* _func) : func(_func), syncEvent(NULL), funcEvent(NULL), result(NULL) { func->incRef(); }
 	~ExtASCallback() { func->decRef(); }
+
+	// Don't forget to delete this copy after use
+	ExtASCallback* copy() { return new ExtASCallback(func); }
 
 	void call(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc);
@@ -186,6 +193,8 @@ public:
 	bool getResult(const ExtScriptObject& so, ExtVariant** _result);
 private:
 	IFunction* func;
+	SynchronizationEvent* syncEvent;
+	FunctionEvent* funcEvent;
 	ASObject* result;
 };
 
@@ -201,6 +210,9 @@ public:
 
 	ExtBuiltinCallback(funcPtr _func) : func(_func), result(NULL) {}
 	~ExtBuiltinCallback() {}
+	
+	// Don't forget to delete this copy after use
+	ExtBuiltinCallback* copy() { return new ExtBuiltinCallback(func); }
 
 	void call(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc);

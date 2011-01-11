@@ -42,6 +42,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(firstChild);
+	ASFUNCTION(attributes);
 };
 
 class XMLDocument: public XMLNode
@@ -58,6 +59,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(parseXML);
+	ASFUNCTION(firstChild);
 };
 
 };

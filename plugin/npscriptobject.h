@@ -286,13 +286,25 @@ private:
 	NPP instance;
 	// Used to determine if a method is called in the main plugin thread
 	pthread_t mainThread;
+
 	// Provides mutual exclusion for external calls
 	sem_t mutex;
 	std::stack<sem_t*> callStatusses;
+
+	// The root callback currently being invoked. If this is not NULL
+	// when invoke() gets called, we can assume the invoke()
+	// is nested inside another one.
+	lightspark::ExtCallback* currentCallback;
+	// The data for the external call that needs to be made.
+	// If a callback is woken up and this is not NULL,
+	// it was a forced wake-up and we should call an external method.
+	EXT_CALL_DATA* externalCallData;
+
 	// True if this object is being shut down
 	bool shuttingDown;
 	// True if exceptions should be marshalled to the container
 	bool marshallExceptions;
+
 	// This map stores this object's methods & properties
 	// If an entry is set with a ExtIdentifier or ExtVariant,
 	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.

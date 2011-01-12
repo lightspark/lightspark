@@ -544,7 +544,9 @@ void NPVariantObject::copy(const NPVariant& from, NPVariant& dest)
 /* -- NPScriptObject -- */
 // Constructor
 NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
-	gw(_gw), instance(gw->getInstance()), shuttingDown(false), marshallExceptions(false)
+	gw(_gw), instance(gw->getInstance()),
+	currentCallback(NULL), externalCallData(NULL),
+	shuttingDown(false), marshallExceptions(false)
 {
 	// This object is always created in the main plugin thread, so lets save
 	// so that we can check if we are in the main plugin thread later on.
@@ -611,13 +613,50 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	for(uint32_t i = 0; i < argc; i++)
 		objArgs[i] = new NPVariantObject(instance, args[i]);
 
-	// Run the function
+	// This will hold our eventual callback result
 	lightspark::ExtVariant* objResult = NULL;
 	// Make sure we use a copy of the callback
 	lightspark::ExtCallback* callback = it->second->copy();
-	callback->call(*this, objId, objArgs, argc);
+
+	// Set the current root callback only if there isn't one already
+	bool resetCurrentCallback = false;
+	if(currentCallback == NULL)
+	{
+		// Remember to reset the current callback
+		resetCurrentCallback = true;
+		currentCallback = callback;
+	}
+
+	// Call our callback.
+	// If we aren't the root callback, indicate that the VM is suspended.
+	// We can assume this since we are in a nested invoke(),
+	// which got called from within an external call (which is run from the VM).
+	callback->call(*this, objId, objArgs, argc, currentCallback!=NULL);
+	// Wait for its result or a forced wake-up
 	callback->wait();
+	// As long as we get forced wake-ups,
+	// execute the requested external calls and keep waiting.
+	// Note that only the root callback can be forcibly woken up.
+	while(externalCallData != NULL)
+	{
+		// Copy the external call data pointer
+		EXT_CALL_DATA* data = externalCallData;
+		// Clear the external call data pointer BEFORE executing the call.
+		// This will make sure another nested external call will
+		// be handled properly.
+		externalCallData = NULL;
+		// Execute the external call
+		callExternal(data);
+		// Keep waiting
+		callback->wait();
+	}
+	// Get the result of our callback
 	bool res = callback->getResult(*this, &objResult);
+
+	// Reset the root current callback to NULL, if necessary
+	if(resetCurrentCallback)
+		currentCallback = NULL;
+
 	// Delete our callback after use
 	delete callback;
 
@@ -631,7 +670,6 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 		NPVariantObject(instance, *objResult).copy(*result);
 		delete objResult;
 	}
-
 	return res;
 }
 
@@ -716,11 +754,12 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	sem_init(&callStatus, 0, 0);
 	// Add this callStatus semaphore to the list of running call statusses to be cleaned up on shutdown
 	callStatusses.push(&callStatus);
+	std::string scriptString = "(" + id.getString() + ")";
 	EXT_CALL_DATA data = {
 		&mainThread,
 		instance,
 		NPIdentifierObject(id).getNPIdentifier(),
-		("(" + id.getString() + ")").c_str(),
+		scriptString.c_str(),
 		args,
 		argc,
 		result,
@@ -731,12 +770,25 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	// Called JS may invoke a callback, which in turn may invoke another external method, which needs this mutex
 	sem_post(&mutex);
 
-	// We are not in the main thread, so ask the browser to call this method asynchronously
-	if(!pthread_equal(pthread_self(), mainThread))
-		NPN_PluginThreadAsyncCall(instance, &callExternal, &data);
-	// We are in the main thread, so we can call the method ourselves synchronously
-	else
+	// We are in the main thread,
+	// so we can call the method ourselves synchronously straight away
+	if(pthread_equal(pthread_self(), mainThread))
 		callExternal(&data);
+	// We are not in the main thread
+	else
+	{
+		// Main thread is not occupied by an invoked callback,
+		// so ask the browser to asynchronously call our external function.
+		if(currentCallback == NULL)
+			NPN_PluginThreadAsyncCall(instance, &callExternal, &data);
+		// Main thread is occupied by an invoked callback.
+		// Wake it up and ask it run our external call
+		else
+		{
+			externalCallData = &data;
+			currentCallback->wakeUp();
+		}
+	}
 
 	// Wait for the (possibly asynchronously) called function to finish
 	sem_wait(&callStatus);

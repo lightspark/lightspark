@@ -163,7 +163,7 @@ public:
 	virtual ExtCallback* copy()=0;
 
 	virtual void call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc)=0;
+		const ExtVariant** args, uint32_t argc, bool synchronous)=0;
 	virtual void wait()=0;
 	virtual void wakeUp()=0;
 	// The result variable should be "delete"d by the caller after use.
@@ -186,7 +186,7 @@ public:
 	ExtASCallback* copy() { return new ExtASCallback(func); }
 
 	void call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc);
+		const ExtVariant** args, uint32_t argc, bool synchronous);
 	void wait();
 	void wakeUp();
 	// The result variable should be "delete"d by the caller after use.
@@ -215,7 +215,7 @@ public:
 	ExtBuiltinCallback* copy() { return new ExtBuiltinCallback(func); }
 
 	void call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc);
+		const ExtVariant** args, uint32_t argc, bool synchronous);
 	void wait();
 	void wakeUp();
 	// The result variable should be "delete"d by the caller after use.

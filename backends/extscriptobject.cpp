@@ -315,7 +315,7 @@ ASObject* ExtVariant::getASObject() const
 
 /* -- ExtASCallback -- */
 void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc)
+		const ExtVariant** args, uint32_t argc, bool synchronous)
 {
 	// Convert raw arguments to objects
 	ASObject* objArgs[argc];
@@ -325,13 +325,50 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	}
 
 	// This event is not actually added to the VM event queue.
-	// It is instead synched by the VM after the callback has completed execution.
+	// It is instead synched by the VM (or ourselves) after 
+	// the callback has completed execution.
 	syncEvent = new SynchronizationEvent;
-	funcEvent = new FunctionEvent(func, new Null, objArgs, argc, &result, &exception, syncEvent);
-	// Add the callback function event to the VM event queue
-	getVm()->addEvent(NULL,funcEvent);
-	// We won't use this event any more
-	funcEvent->decRef();
+
+	// Explanation for argument "synchronous":
+	// Take a callback which (indirectly) calls another callback, while running in the VM thread.
+	// The parent waits for the result of the second. (hence, the VM is suspended)
+	// If the second callback would also try to execute in the VM thread, it would only
+	// get executed when the parent had completed, since the event/function queue is FIFO.
+	// This would result in a deadlock. Therefore, we run the function straight away.
+
+	// The caller indicated the VM isn't currently suspended,
+	// so add a FunctionEvent to the VM event queue.
+	if(!synchronous)
+	{
+		funcEvent = new FunctionEvent(func, new Null, objArgs, argc, &result, &exception, syncEvent);
+		// Add the callback function event to the VM event queue
+		getVm()->addEvent(NULL,funcEvent);
+		// We won't use this event any more
+		funcEvent->decRef();
+	}
+	// The caller indicated the VM is currently suspended, so call synchronously.
+	else
+	{
+		try
+		{
+			result = func->call(new Null, objArgs, argc);
+		}
+		// Catch AS exceptions and pass them on
+		catch(ASObject* _exception)
+		{
+			exception = _exception;
+		}
+		// Catch LS exceptions and report them
+		catch(LightsparkException& e)
+		{
+			LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
+			sys->setError(e.cause);
+		}
+
+		// Sync the syncEvent since we called the function synchronously
+		syncEvent->sync();
+	}
+
 }
 void ExtASCallback::wait()
 {
@@ -354,12 +391,13 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 	// Clean up pointers
 	syncEvent = NULL;
 	funcEvent = NULL;
-	// Did the callback throw an exception?
+	// Did the callback throw an AS exception?
 	if(exception != NULL)
 	{
 		if(result != NULL)
 			result->decRef();
 
+		// Pass on the exception to the container through the script object
 		so.setException(exception->toString().raw_buf());
 		exception->decRef();
 		LOG(LOG_ERROR, "ASObject exception caught in external callback");
@@ -368,6 +406,7 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 	// Did the callback return a non-NULL result?
 	else if(result != NULL)
 	{
+		// Convert the result
 		*_result = new ExtVariant(result);
 		result->decRef();
 		success = true;
@@ -383,17 +422,19 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 }
 /* -- ExtBuiltinCallback -- */
 void ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc)
+		const ExtVariant** args, uint32_t argc, bool synchronous)
 {
 	try
 	{
 		// We expect the builtin callback to handle main <--> VM thread synchronization by itself
 		success = func(so, id, args, argc, &result);
 	}
+	// Catch AS exceptions and pass them on
 	catch(ASObject* _exception)
 	{
 		exception = _exception;
 	}
+	// Catch LS exceptions and report them
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
@@ -409,7 +450,9 @@ void ExtBuiltinCallback::wakeUp()
 }
 bool ExtBuiltinCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 {
+	// Set the result
 	*_result = result;
+	// Did the callback throw an AS exception?
 	if(exception != NULL)
 	{
 		so.setException(exception->toString().raw_buf());

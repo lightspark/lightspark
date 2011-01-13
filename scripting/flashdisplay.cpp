@@ -796,7 +796,11 @@ void MovieClip::advanceFrame()
 		state.explicit_FP=false;
 		assert(state.FP<frameScripts.size());
 		if(frameChanging && frameScripts[state.FP])
-			getVm()->addEvent(NULL,new FunctionEvent(frameScripts[state.FP]));
+		{
+			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[state.FP]);
+			getVm()->addEvent(NULL, funcEvent);
+			funcEvent->decRef();
+		}
 	}
 
 }

@@ -1090,7 +1090,11 @@ void RootMovieClip::commitFrame(bool another)
 		//Now the bindings are effective
 		//Execute the event registered for the first frame, if any
 		if(frameScripts[0])
-			getVm()->addEvent(NULL,new FunctionEvent(frameScripts[0]));
+		{
+			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[0]);
+			getVm()->addEvent(NULL, funcEvent);
+			funcEvent->decRef();
+		}
 
 		//When the first frame is committed the frame rate is known
 		sys->addTick(1000/frameRate,this);

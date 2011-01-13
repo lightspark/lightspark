@@ -54,6 +54,7 @@ ByteArray::~ByteArray()
 void ByteArray::sinit(Class_base* c)
 {
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength),true);
+	c->setSetterByQName("length","",Class<IFunction>::getFunction(_setLength),true);
 	c->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),true);
 	c->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition),true);
 	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition),true);
@@ -83,12 +84,13 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	{
 		assert_and_throw(size<=len);
 	}
-	else //if(enableResize==true)
+	else if(len<size) // && enableResize==true
 	{
 		//Resize the buffer
 		uint8_t* bytes2=new uint8_t[size];
-		memcpy(bytes2,bytes,len);
 		len=size;
+		memcpy(bytes2,bytes,len);
+		delete[] bytes;
 		bytes=bytes2;
 	}
 	return bytes;
@@ -123,6 +125,33 @@ ASFUNCTIONBODY(ByteArray,_setDefaultObjectEncoding)
 		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_setLength)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==1);
+	uint32_t newLen=args[0]->toInt();
+	if(newLen==th->len) //Nothing to do
+		return NULL;
+	uint8_t* newBytes=new uint8_t[newLen];
+	if(th->len<newLen)
+	{
+		//Extend
+		memcpy(newBytes,th->bytes,th->len);
+		memset(newBytes+th->len,0,newLen-th->len);
+	}
+	else
+	{
+		//Truncate
+		memcpy(newBytes,th->bytes,newLen);
+	}
+	delete[] th->bytes;
+	th->bytes=newBytes;
+	th->len=newLen;
+	//TODO: check position
+	th->position=0;
 	return NULL;
 }
 
@@ -163,7 +192,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 		//TODO: throw AS exceptions
 		return NULL;
 	}
-	uint8_t* buf=out->getBuffer(length,false);
+	uint8_t* buf=out->getBuffer(length,true);
 	memcpy(buf,th->bytes+th->position,length);
 	th->position+=length;
 
@@ -197,22 +226,19 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	if(argslen==3)
 		length=args[2]->toInt();
 
-	//TODO: Support offset (offset is in the destination!)
-	if(offset!=0)
-		throw UnsupportedException("offset in ByteArray::writeBytes");
-
 	//If the length is 0 the whole buffer must be copied
 	if(length == 0)
-		length=out->getLength();
-	else if(length > out->getLength())
+		length=(out->getLength()-offset);
+	else if(length > (out->getLength()-offset))
 	{
 		LOG(LOG_ERROR,"ByteArray::writeBytes not enough data");
 		//TODO: throw AS exceptions
 		return NULL;
 	}
-	uint8_t* buf=out->getBuffer(length,false);
+	uint8_t* buf=out->getBuffer(offset+length,false);
 	th->getBuffer(th->position+length,true);
-	memcpy(th->bytes+th->position,buf,length);
+	memcpy(th->bytes+th->position,buf+offset,length);
+	th->position+=length;
 
 	return NULL;
 }

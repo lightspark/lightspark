@@ -180,6 +180,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	//TODO: should we disallow accessing local files in a directory above 
 	//the current one like we do with NetStream.play?
 
+	assert_and_throw(urlRequest->method==URLRequest::GET);
 	multiname dataName;
 	dataName.name_type=multiname::NAME_STRING;
 	dataName.name_s="data";
@@ -188,8 +189,9 @@ ASFUNCTIONBODY(URLLoader,load)
 	if(data)
 	{
 		if(data->getPrototype()==Class<URLVariables>::getClass())
-			throw RunTimeException("Type mismatch in URLLoader::load parameter: "
-					"URLVariables instead of URLRequest");
+			throw RunTimeException("URLVariables not support in URLLoader::load");
+		else if(data->getPrototype()==Class<ByteArray>::getClass())
+			throw RunTimeException("ByteArray not support in URLLoader::load");
 		else
 		{
 			tiny_string newURL = th->url.getParsedURL();

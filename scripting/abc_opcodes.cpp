@@ -970,6 +970,10 @@ intptr_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("modulo ")  << num1 << '%' << num2);
+	//Special case 0%0
+	//TODO: should be NaN
+	if(num1==0 && num2==0)
+		return 0;
 	return num1%num2;
 }
 

@@ -46,6 +46,7 @@ public:
 	~ByteArray();
 	ASFUNCTION(_getBytesAvailable);
 	ASFUNCTION(_getLength);
+	ASFUNCTION(_setLength);
 	ASFUNCTION(_getPosition);
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(_getDefaultObjectEncoding);

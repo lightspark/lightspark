@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_XML_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var xml1:XML=new XML("<test1></test1>");
+		var xml2:XML=new XML("<test2></test2>");
+		var xml3:XML=new XML("<test3></test3>");
+		xml1.appendChild(xml2);
+		xml2.appendChild(xml3);
+		Tests.assertEquals(xml1.toXMLString(),"<test1><test2><test3/></test2></test1>","Appending XML nodes");
+		var xml4:XML=new XML("");
+		Tests.assertEquals(xml4.localName(),null,"Behaviour when parsing empty strings");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

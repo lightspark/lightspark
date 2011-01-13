@@ -252,6 +252,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass(QName("TextFormat","flash.text")));
 
 	builtin->setVariableByQName("XMLDocument","flash.xml",Class<XMLDocument>::getClass());
+	builtin->setVariableByQName("XMLNode","flash.xml",Class<XMLNode>::getClass());
 
 	builtin->setVariableByQName("ExternalInterface","flash.external",Class<ExternalInterface>::getClass());
 

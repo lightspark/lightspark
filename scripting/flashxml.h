@@ -22,16 +22,44 @@
 
 #include "compat.h"
 #include "asobject.h"
+#include <libxml++/parsers/domparser.h>
 
 namespace lightspark
 {
 
-class XMLDocument: public ASObject
+class XMLDocument;
+
+class XMLNode: public ASObject
 {
+protected:
+	XMLDocument* root;
+	xmlpp::Node* node;
 public:
+	XMLNode():root(NULL),node(NULL){}
+	XMLNode(XMLDocument* _r, xmlpp::Node* _n);
+	~XMLNode();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(firstChild);
+	ASFUNCTION(attributes);
+};
+
+class XMLDocument: public XMLNode
+{
+private:
+	//The parser will destroy the document and all the childs on destruction
+	xmlpp::DomParser parser;
+	bool ownsDocument;
+	xmlpp::Document* document;
+	void clear();
+public:
+	XMLDocument():ownsDocument(false),document(NULL){}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(parseXML);
+	ASFUNCTION(firstChild);
 };
 
 };

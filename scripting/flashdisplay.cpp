@@ -796,22 +796,6 @@ void MovieClip::advanceFrame()
 
 }
 
-void MovieClip::prepareControls()
-{
-	if((!state.stop_FP || state.explicit_FP) && totalFrames!=0 && getPrototype()->isSubClass(Class<MovieClip>::getClass()))
-	{
-		//If we have not yet loaded enough frames delay advancement
-		if(state.next_FP>=framesLoaded)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Not enough frames loaded"));
-			return;
-		}
-		//Should initialize all the frames from the current to the next
-		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
-			frames[i].initABCControls(this);
-	}
-}
-
 void MovieClip::invalidate()
 {
 	Sprite::invalidate();

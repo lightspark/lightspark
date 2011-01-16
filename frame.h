@@ -42,18 +42,16 @@ class Frame
 {
 private:
 	bool initialized;
-	bool controlsInitialized;
 public:
 	tiny_string Label;
 	std::list<DisplayListTag*> blueprint;
 	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
-	Frame():initialized(false),controlsInitialized(false){}
+	Frame():initialized(false){}
 	~Frame();
 	void Render(bool maskEnabled);
 	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
-	void initABCControls(MovieClip* parent);
 	bool isInitialized() const { return initialized; }
 };
 };

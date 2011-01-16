@@ -65,12 +65,10 @@ void dumpDisplayList(list<DisplayObject*>& l)
 	}
 }
 
-void Frame::initABCControls(MovieClip* parent)
+void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 {
-	if(!controlsInitialized)
+	if(!initialized)
 	{
-		controlsInitialized=true;
-
 		//Execute control tags for this frame
 		//Only the root movie clip can have control tags
 		if(!controls.empty())
@@ -80,14 +78,6 @@ void Frame::initABCControls(MovieClip* parent)
 				controls[i]->execute(parent->getRoot());
 			controls.clear();
 		}
-	}
-}
-
-void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
-{
-	if(!initialized)
-	{
-		initABCControls(parent);
 
 		//Update the displayList using the tags in this frame
 		std::list<DisplayListTag*>::iterator it=blueprint.begin();

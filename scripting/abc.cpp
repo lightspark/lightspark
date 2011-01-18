@@ -1099,6 +1099,7 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 				ev->movieClip->state.next_FP=ev->frame;
 				ev->movieClip->state.stop_FP=ev->stop;
 				ev->movieClip->state.explicit_FP=true;
+				ev->movieClip->advanceFrame();
 				break;
 			}
 			default:

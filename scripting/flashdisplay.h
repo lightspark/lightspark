@@ -229,8 +229,6 @@ class Graphics: public ASObject
 friend class GraphicsContainer;
 private:
 	std::vector<GeomToken> tokens;
-	//We need a list to preserve pointers
-	std::list<FILLSTYLE> styles; 
 	int curX, curY;
 	GraphicsContainer *const owner;
 	//TODO: Add spinlock
@@ -245,6 +243,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(lineStyle);
 	ASFUNCTION(beginFill);
 	ASFUNCTION(beginGradientFill);
 	ASFUNCTION(endFill);

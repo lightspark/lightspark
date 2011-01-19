@@ -45,7 +45,7 @@ public:
 	int dot(const Vector2& r) const { return x*r.x+y*r.y;}
 };
 
-enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CURVE_CUBIC };
+enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CLEAR_FILL, CLEAR_STROKE, CURVE_CUBIC };
 
 class GeomToken
 {
@@ -54,11 +54,14 @@ public:
 	Vector2 p1;
 	Vector2 p2;
 	Vector2 p3;
-	FILLSTYLE style;
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),p2(0,0),p3(0,0),style(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):type(_t),p1(_p1),p2(_p2),p3(0,0),style(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):type(_t),p1(_p1),p2(_p2),p3(_p3),style(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE _f):type(_t),p1(0,0),p2(0,0),p3(0,0),style(_f){}
+	FILLSTYLE  fillStyle;
+	LINESTYLE2 lineStyle;
+	GeomToken(GEOM_TOKEN_TYPE _t):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(-1),lineStyle(-1){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),p2(0,0),p3(0,0),fillStyle(-1),lineStyle(-1){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):type(_t),p1(_p1),p2(_p2),p3(0,0),fillStyle(-1),lineStyle(-1){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):type(_t),p1(_p1),p2(_p2),p3(_p3),fillStyle(-1),lineStyle(-1){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE  _f):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(_f),lineStyle(-1){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2 _s):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(-1),lineStyle(_s){}
 };
 
 enum SHAPE_PATH_SEGMENT_TYPE { PATH_START=0, PATH_STRAIGHT, PATH_CURVE_QUADRATIC };

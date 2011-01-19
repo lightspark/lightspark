@@ -2311,6 +2311,7 @@ void Graphics::sinit(Class_base* c)
 	c->setMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),true);
 	c->setMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),true);
 	c->setMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),true);
+	c->setMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),true);
 	c->setMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),true);
 	c->setMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),true);
 	c->setMethodByQName("endFill","",Class<IFunction>::getFunction(endFill),true);
@@ -2333,11 +2334,11 @@ bool Graphics::hitTest(number_t x, number_t y) const
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 
-#define VECTOR_BOUNDS(v) \
-	xmin=dmin(v.x,xmin); \
-	xmax=dmax(v.x,xmax); \
-	ymin=dmin(v.y,ymin); \
-	ymax=dmax(v.y,ymax);
+	#define VECTOR_BOUNDS(v) \
+		xmin=dmin(v.x-strokeWidth,xmin); \
+		xmax=dmax(v.x+strokeWidth,xmax); \
+		ymin=dmin(v.y-strokeWidth,ymin); \
+		ymax=dmax(v.y+strokeWidth,ymax);
 
 	if(tokens.size()==0)
 		return false;
@@ -2348,6 +2349,8 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 	ymax = -numeric_limits<double>::infinity();
 
 	bool hasContent = false;
+	double strokeWidth = 0;
+
 	for(unsigned int i=0;i<tokens.size();i++)
 	{
 		switch(tokens[i].type)
@@ -2372,8 +2375,12 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 				VECTOR_BOUNDS(tokens[i].p1);
 				break;
 			}
+			case CLEAR_FILL:
+			case CLEAR_STROKE:
 			case SET_FILL:
+				break;
 			case SET_STROKE:
+				strokeWidth = (double)(tokens[i].lineStyle.Width / 20.0);
 				break;
 		}
 	}
@@ -2391,7 +2398,6 @@ ASFUNCTIONBODY(Graphics,clear)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	th->tokens.clear();
-	th->styles.clear();
 	return NULL;
 }
 
@@ -2402,9 +2408,8 @@ ASFUNCTIONBODY(Graphics,moveTo)
 
 	th->curX=args[0]->toInt();
 	th->curY=args[1]->toInt();
-	//TODO: support line styles to avoid this
-	if(!th->styles.empty())
-		th->tokens.emplace_back(MOVE, Vector2(th->curX, th->curY));
+
+	th->tokens.emplace_back(MOVE, Vector2(th->curX, th->curY));
 	return NULL;
 }
 
@@ -2416,12 +2421,8 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
 
-	//TODO: support line styles to avoid this
-	if(!th->styles.empty())
-	{
-		th->tokens.emplace_back(STRAIGHT, Vector2(x, y));
-		th->owner->invalidateGraphics();
-	}
+	th->tokens.emplace_back(STRAIGHT, Vector2(x, y));
+	th->owner->invalidateGraphics();
 
 	th->curX=x;
 	th->curY=y;
@@ -2439,14 +2440,10 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	int anchorX=args[2]->toInt();
 	int anchorY=args[3]->toInt();
 
-	//TODO: support line styles to avoid this
-	if(!th->styles.empty())
-	{
-		th->tokens.emplace_back(CURVE_QUADRATIC,
-		                        Vector2(controlX, controlY),
-		                        Vector2(anchorX, anchorY));
-		th->owner->invalidateGraphics();
-	}
+	th->tokens.emplace_back(CURVE_QUADRATIC,
+	                        Vector2(controlX, controlY),
+	                        Vector2(anchorX, anchorY));
+	th->owner->invalidateGraphics();
 
 	th->curX=anchorX;
 	th->curY=anchorY;
@@ -2497,50 +2494,47 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	 * Flash starts and stops the pen at 'D', so we will too.
 	 */
 
-	//TODO: support line styles to avoid this
-	if(!th->styles.empty())
-	{
-		// D
-		th->tokens.emplace_back(MOVE, Vector2(x+width, y+height-ellipseHeight));
+	// D
+	th->tokens.emplace_back(MOVE, Vector2(x+width, y+height-ellipseHeight));
 
-		// D -> E
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x+width, y+height-ellipseHeight+kappaH),
-		                        Vector2(x+width-ellipseWidth+kappaW, y+height),
-		                        Vector2(x+width-ellipseWidth, y+height));
+	// D -> E
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(x+width, y+height-ellipseHeight+kappaH),
+	                        Vector2(x+width-ellipseWidth+kappaW, y+height),
+	                        Vector2(x+width-ellipseWidth, y+height));
 
-		// E -> F
-		th->tokens.emplace_back(STRAIGHT, Vector2(x+ellipseWidth, y+height));
+	// E -> F
+	th->tokens.emplace_back(STRAIGHT, Vector2(x+ellipseWidth, y+height));
 
-		// F -> G
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x+ellipseWidth-kappaW, y+height),
-		                        Vector2(x, y+height-kappaH),
-		                        Vector2(x, y+height-ellipseHeight));
+	// F -> G
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(x+ellipseWidth-kappaW, y+height),
+	                        Vector2(x, y+height-kappaH),
+	                        Vector2(x, y+height-ellipseHeight));
 
-		// G -> H
-		th->tokens.emplace_back(STRAIGHT, Vector2(x, y+ellipseHeight));
+	// G -> H
+	th->tokens.emplace_back(STRAIGHT, Vector2(x, y+ellipseHeight));
 
-		// H -> A
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x, y+ellipseHeight-kappaH),
-		                        Vector2(x+ellipseWidth-kappaW, y),
-		                        Vector2(x+ellipseWidth, y));
+	// H -> A
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(x, y+ellipseHeight-kappaH),
+	                        Vector2(x+ellipseWidth-kappaW, y),
+	                        Vector2(x+ellipseWidth, y));
 
-		// A -> B
-		th->tokens.emplace_back(STRAIGHT, Vector2(x+width-ellipseWidth, y));
+	// A -> B
+	th->tokens.emplace_back(STRAIGHT, Vector2(x+width-ellipseWidth, y));
 
-		// B -> C
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x+width-ellipseWidth+kappaW, y),
-		                        Vector2(x+width, y+kappaH),
-		                        Vector2(x+width, y+ellipseHeight));
+	// B -> C
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(x+width-ellipseWidth+kappaW, y),
+	                        Vector2(x+width, y+kappaH),
+	                        Vector2(x+width, y+ellipseHeight));
 
-		// C -> D
-		th->tokens.emplace_back(STRAIGHT, Vector2(x+width, y+height-ellipseHeight));
+	// C -> D
+	th->tokens.emplace_back(STRAIGHT, Vector2(x+width, y+height-ellipseHeight));
 
-		th->owner->invalidateGraphics();
-	}
+	th->owner->invalidateGraphics();
+	
 	return NULL;
 }
 
@@ -2555,38 +2549,35 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 
 	double kappa = KAPPA*radius;
 
-	//TODO: support line styles to avoid this
-	if(!th->styles.empty())
-	{
-		// right
-		th->tokens.emplace_back(MOVE, Vector2(x+radius, y));
+	// right
+	th->tokens.emplace_back(MOVE, Vector2(x+radius, y));
 
-		// bottom
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x+radius, y+kappa ),
-		                        Vector2(x+kappa , y+radius),
-		                        Vector2(x       , y+radius));
+	// bottom
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(x+radius, y+kappa ),
+	                        Vector2(x+kappa , y+radius),
+	                        Vector2(x       , y+radius));
 
-		// left
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x-kappa , y+radius),
-		                        Vector2(x-radius, y+kappa ),
-		                        Vector2(x-radius, y       ));
+	// left
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(x-kappa , y+radius),
+	                        Vector2(x-radius, y+kappa ),
+	                        Vector2(x-radius, y       ));
 
-		// top
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x-radius, y-kappa ),
-		                        Vector2(x-kappa , y-radius),
-		                        Vector2(x       , y-radius));
+	// top
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(x-radius, y-kappa ),
+	                        Vector2(x-kappa , y-radius),
+	                        Vector2(x       , y-radius));
 
-		// back to right
-		th->tokens.emplace_back(CURVE_CUBIC,
-		                        Vector2(x+kappa , y-radius),
-		                        Vector2(x+radius, y-kappa ),
-		                        Vector2(x+radius, y       ));
+	// back to right
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(x+kappa , y-radius),
+	                        Vector2(x+radius, y-kappa ),
+	                        Vector2(x+radius, y       ));
 
-		th->owner->invalidateGraphics();
-	}
+	th->owner->invalidateGraphics();
+	
 	return NULL;
 }
 
@@ -2605,16 +2596,38 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	const Vector2 c(x+width,y+height);
 	const Vector2 d(x,y+height);
 
-	//TODO: support line styles to avoid this
-	if(!th->styles.empty())
+	th->tokens.emplace_back(MOVE, a);
+	th->tokens.emplace_back(STRAIGHT, b);
+	th->tokens.emplace_back(STRAIGHT, c);
+	th->tokens.emplace_back(STRAIGHT, d);
+	th->tokens.emplace_back(STRAIGHT, a);
+	th->owner->invalidateGraphics();
+	
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,lineStyle)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	if (argslen == 0)
 	{
-		th->tokens.emplace_back(MOVE, a);
-		th->tokens.emplace_back(STRAIGHT, b);
-		th->tokens.emplace_back(STRAIGHT, c);
-		th->tokens.emplace_back(STRAIGHT, d);
-		th->tokens.emplace_back(STRAIGHT, a);
-		th->owner->invalidateGraphics();
+		th->tokens.emplace_back(CLEAR_STROKE);
+		return NULL;
 	}
+	uint32_t color = 0;
+	uint8_t alpha = 255;
+	UI16_SWF thickness = UI16_SWF(args[0]->toNumber() * 20);
+	if (argslen >= 2)
+		color = args[1]->toUInt();
+	if (argslen >= 3)
+		alpha = uint8_t(args[1]->toNumber() * 255);
+
+	// TODO: pixel hinting, scaling, caps, miter, joints
+	
+	LINESTYLE2 style(-1);
+	style.Color = RGBA(color, alpha);
+	style.Width = thickness;
+	th->tokens.emplace_back(SET_STROKE, style);
 	return NULL;
 }
 
@@ -2623,7 +2636,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen>=4);
 
-	FILLSTYLE style = FILLSTYLE(-1);
+	FILLSTYLE style(-1);
 
 	assert_and_throw(args[1]->getObjectType()==T_ARRAY);
 	Array* colors=Class<Array>::cast(args[1]);
@@ -2651,11 +2664,11 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		return NULL;
 
 	// Don't support FOCALGRADIENT for now.
-	GRADIENT grad = GRADIENT(-1);
+	GRADIENT grad(-1);
 	grad.NumGradient = NumGradient;
 	for(int i = 0; i < NumGradient; i ++)
 	{
-		GRADRECORD record = GRADRECORD(-1);
+		GRADRECORD record(-1);
 		record.Color = RGBA(colors->at(i)->toUInt(), (int)alphas->at(i)->toNumber()*255);
 		record.Ratio = UI8(ratios->at(i)->toUInt());
 		grad.GradientRecords.push_back(record);
@@ -2699,8 +2712,6 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	}
 
 	style.Gradient = grad;
-
-	th->styles.push_back(style);
 	th->tokens.emplace_back(SET_FILL, style);
 	return NULL;
 }
@@ -2714,17 +2725,17 @@ ASFUNCTIONBODY(Graphics,beginFill)
 		color=args[0]->toUInt();
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
-	th->styles.emplace_back(FILLSTYLE(-1));
-	th->styles.back().FillStyleType=SOLID_FILL;
-	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
-	th->tokens.emplace_back(SET_FILL, th->styles.back());
+	FILLSTYLE style(-1);
+	style.FillStyleType = SOLID_FILL;
+	style.Color         = RGBA(color, alpha);
+	th->tokens.emplace_back(SET_FILL, style);
 	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,endFill)
 {
-//	Graphics* th=static_cast<Graphics*>(obj);
-	//TODO: close the path if open
+	Graphics* th=static_cast<Graphics*>(obj);
+	th->tokens.emplace_back(CLEAR_FILL);
 	return NULL;
 }
 

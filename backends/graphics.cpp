@@ -552,56 +552,123 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 	return pattern;
 }
 
-bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill)
+bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipPaint)
 {
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
+
 	bool empty=true;
+
+	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
+	cairo_push_group(stroke_cr);
+
+	#define PATH(operation, args...) \
+		operation(cr, ## args); \
+		operation(stroke_cr, ## args);
+
 	for(uint32_t i=0;i<tokens.size();i++)
 	{
 		switch(tokens[i].type)
 		{
-			case STRAIGHT:
-				cairo_line_to(cr, tokens[i].p1.x, tokens[i].p1.y);
-				empty=false;
-				break;
 			case MOVE:
-				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
+				PATH(cairo_move_to, tokens[i].p1.x, tokens[i].p1.y);
+				break;
+			case STRAIGHT:
+				PATH(cairo_line_to, tokens[i].p1.x, tokens[i].p1.y);
+				empty = false;
 				break;
 			case CURVE_QUADRATIC:
-				quadraticBezier(cr,
-				                tokens[i].p1.x, tokens[i].p1.y,
-				                tokens[i].p2.x, tokens[i].p2.y);
-				empty=false;
+				PATH(quadraticBezier,
+				   tokens[i].p1.x, tokens[i].p1.y,
+				   tokens[i].p2.x, tokens[i].p2.y);
+				empty = false;
 				break;
 			case CURVE_CUBIC:
-				cairo_curve_to(cr,
-				               tokens[i].p1.x, tokens[i].p1.y,
-				               tokens[i].p2.x, tokens[i].p2.y,
-				               tokens[i].p3.x, tokens[i].p3.y);
-				empty=false;
+				PATH(cairo_curve_to,
+				   tokens[i].p1.x, tokens[i].p1.y,
+				   tokens[i].p2.x, tokens[i].p2.y,
+				   tokens[i].p3.x, tokens[i].p3.y);
+				empty = false;
 				break;
 			case SET_FILL:
 			{
-				if(skipFill)
+				if(skipPaint)
 					break;
-				if(!empty)
-				{
-					cairo_fill(cr);
-					empty=true;
-				}
-				//NOTE: Destruction of the pattern happens internally by refcounting
-				cairo_pattern_t* pattern = FILLSTYLEToCairo(tokens[i].style);
-				if (pattern == NULL)
-					continue;
+
+				cairo_fill(cr);
+
+				cairo_pattern_t* pattern = FILLSTYLEToCairo(tokens[i].fillStyle);
 				cairo_set_source(cr, pattern);
+
+				// Destroy the first reference.
+				cairo_pattern_destroy(pattern);
+
 				break;
 			}
+			case SET_STROKE:
+			{
+				if(skipPaint)
+					break;
+
+				cairo_stroke(stroke_cr);
+
+				const LINESTYLE2& style = tokens[i].lineStyle;
+				const RGBA& color = style.Color;
+
+				cairo_set_source_rgba(stroke_cr, color.rf(), color.gf(), color.bf(), color.af());
+
+				// TODO: EndCapStyle
+				if (style.StartCapStyle == 0)
+					cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_ROUND);
+				else if (style.StartCapStyle == 1)
+					cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_BUTT);
+				else if (style.StartCapStyle == 2)
+					cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_SQUARE);
+
+				if (style.JointStyle == 0)
+					cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_ROUND);
+				else if (style.JointStyle == 1)
+					cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_BEVEL);
+				else if (style.JointStyle == 2) {
+					cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_MITER);
+					cairo_set_miter_limit(stroke_cr, style.MiterLimitFactor);
+				}
+
+				cairo_set_line_width(stroke_cr, (double)(style.Width / 20.0));
+				break;
+			}
+
+			case CLEAR_FILL:
+				if(skipPaint)
+					break;
+
+				cairo_new_path(cr);
+				break;
+			case CLEAR_STROKE:
+				if(skipPaint)
+					break;
+
+				cairo_new_path(stroke_cr);
+				break;
 			default:
 				::abort();
 		}
 	}
-	if(!empty && !skipFill)
-		cairo_fill(cr);
+
+	#undef PATH
+
+	if(skipPaint)
+		return empty;
+
+	cairo_fill(cr);
+	cairo_stroke(stroke_cr);
+
+	cairo_pattern_t *stroke_pattern = cairo_pop_group(stroke_cr);
+	cairo_set_source(cr, stroke_pattern);
+	cairo_paint(cr);
+
+	cairo_pattern_destroy(stroke_pattern);
+	cairo_destroy(stroke_cr);
+
 	return empty;
 }
 
@@ -632,8 +699,8 @@ void CairoRenderer::execute()
 		return;
 	}
 	cairo_surface_t* cairoSurface=allocateSurface();
-	cairo_t* cr=cairo_create(cairoSurface);
 
+	cairo_t* cr=cairo_create(cairoSurface);
 	cairoClean(cr);
 
 	matrix.TranslateX-=xOffset;
@@ -653,8 +720,8 @@ void CairoRenderer::execute()
 bool CairoRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
-	cairo_t* cr=cairo_create(cairoSurface);
-	
+
+	cairo_t *cr=cairo_create(cairoSurface);
 	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true);
 	bool ret=false;
 	if(!empty)

@@ -533,15 +533,12 @@ void RenderThread::commonGLInit(int width, int height)
 	glUseProgram(gpu_program);
 	cleanGLErrors();
 	int tex=glGetUniformLocation(gpu_program,"g_tex1");
-	cout << tex << endl;
 	if(tex!=-1)
 		glUniform1i(tex,0);
 	tex=glGetUniformLocation(gpu_program,"g_tex2");
-	cout << tex << endl;
 	if(tex!=-1)
 		glUniform1i(tex,1);
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
-	cout << fragmentTexScaleUniform << endl;
 	if(fragmentTexScaleUniform!=-1)
 		glUniform2f(fragmentTexScaleUniform,1.0f/width,1.0f/height);
 	cleanGLErrors();

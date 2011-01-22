@@ -299,14 +299,14 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 
 	bool useCapture=false;
-	int priority=0;
+	uint32_t priority=0;
 
 	if(argslen>=3)
 		useCapture=Boolean_concrete(args[2]);
 	if(argslen>=4)
 		priority=args[3]->toInt();
 
-	if(useCapture || priority!=0)
+	if(useCapture)
 		LOG(LOG_NOT_IMPLEMENTED,_("Not implemented mode for addEventListener"));
 
 	const tiny_string& eventName=args[0]->toString();
@@ -314,16 +314,19 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 	{
 		Locker l(th->handlersMutex);
-		std::map<tiny_string,std::list<listener> >::iterator it=th->handlers.insert(make_pair(eventName,list<listener>())).first;
-
-		if(find(it->second.begin(),it->second.end(),f)!=it->second.end())
+		//Search if any listener is already registered for the event
+		list<listener>& listeners=th->handlers[eventName];
+		f->incRef();
+		const listener newListener(f, priority);
+		//Ordered insertion
+		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
+		//Error check
+		if(insertionPoint->f==f)
 		{
 			LOG(LOG_CALLS,_("Weird event reregistration"));
 			return NULL;
 		}
-
-		f->incRef();
-		it->second.push_back(listener(f));
+		listeners.insert(insertionPoint,newListener);
 	}
 
 	return NULL;

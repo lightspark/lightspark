@@ -207,11 +207,17 @@ class listener
 friend class EventDispatcher;
 private:
 	IFunction* f;
+	uint32_t priority;
 public:
-	explicit listener(IFunction* _f):f(_f){};
+	explicit listener(IFunction* _f, uint32_t _p):f(_f),priority(_p){};
 	bool operator==(IFunction* r)
 	{
 		return f->isEqual(r);
+	}
+	bool operator<(const listener& r) const
+	{
+		//The higher the priority the earlier this must be executed
+		return priority>r.priority;
 	}
 };
 

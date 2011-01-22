@@ -386,6 +386,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	{
 		//The object must be cloned
 		//TODO: support cloning of actual type
+		LOG(LOG_NOT_IMPLEMENTED,"Event cloning not supported!");
 		Event* newEvent=Class<Event>::getInstanceS(e->type,e->bubbles);
 		e=newEvent;
 	}

@@ -51,8 +51,9 @@ class Class_inherit:public Class_base
 private:
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
 	DictionaryTag const* tag;
+	bool bindedToRoot;
 public:
-	Class_inherit(const QName& name):Class_base(name),tag(NULL)
+	Class_inherit(const QName& name):Class_base(name),tag(NULL),bindedToRoot(false)
 	{
 		bool ret=sys->classes.insert(std::make_pair(name,this)).second;
 		if(!ret)
@@ -62,9 +63,17 @@ public:
 		}
 	}
 	void buildInstanceTraits(ASObject* o) const;
-	void bindTag(DictionaryTag const* t)
+	void bindToTag(DictionaryTag const* t)
 	{
 		tag=t;
+	}
+	void bindToRoot()
+	{
+		bindedToRoot=true;
+	}
+	bool isBinded() const
+	{
+		return tag || bindedToRoot;
 	}
 	//Closure stack
 	std::vector<ASObject*> class_scope;

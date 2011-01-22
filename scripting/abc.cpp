@@ -1217,6 +1217,11 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 	//Now the class is valid, check that it's not a builtin one
 	assert_and_throw(static_cast<Class_base*>(derived_class)->class_index!=-1);
 	Class_inherit* derived_class_tmp=static_cast<Class_inherit*>(derived_class);
+	if(derived_class_tmp->isBinded())
+	{
+		LOG(LOG_ERROR, "Class already binded to a tag. Not binding");
+		return;
+	}
 
 	if(isRoot)
 	{
@@ -1227,6 +1232,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 		derived_class_tmp->handleConstruction(base,args,argslen,true);
 		thisAndLevel tl=getVm()->popObjAndLevel();
 		assert_and_throw(tl.cur_this==base);
+		derived_class_tmp->bindToRoot();
 	}
 	else
 	{
@@ -1234,7 +1240,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 		assert_and_throw(t);
 
 		t->bindedTo=derived_class_tmp;
-		derived_class_tmp->bindTag(t);
+		derived_class_tmp->bindToTag(t);
 	}
 }
 

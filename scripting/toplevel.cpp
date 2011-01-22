@@ -2084,24 +2084,34 @@ ASFUNCTIONBODY(IFunction,apply)
 ASFUNCTIONBODY(IFunction,_call)
 {
 	IFunction* th=static_cast<IFunction*>(obj);
-	assert_and_throw(argslen>=1);
-	ASObject** new_args=new ASObject*[argslen-1];
-	for(unsigned int i=1;i<argslen;i++)
+	ASObject* newObj=NULL;
+	ASObject** newArgs=NULL;
+	uint32_t newArgsLen=0;
+	if(argslen==0)
+		newObj=abstract_d(numeric_limits<double>::quiet_NaN());
+	else
 	{
-		new_args[i-1]=args[i];
-		new_args[i-1]->incRef();
+		newObj=args[0];
+		newObj->incRef();
+		newArgsLen=argslen-1;
+		newArgs=new ASObject*[newArgsLen];
+		for(unsigned int i=0;i<newArgsLen;i++)
+		{
+			newArgs[i]=args[i+1];
+			newArgs[i]->incRef();
+		}
 	}
-
-	args[0]->incRef();
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this && th->closure_this->prototype && args[0]->prototype && args[0]->prototype->isSubClass(th->closure_this->prototype)) ||
-		args[0]->prototype==NULL)
+	if(!(th->closure_this && th->closure_this->prototype && args[0]->prototype && 
+			args[0]->prototype->isSubClass(th->closure_this->prototype)) ||	args[0]->prototype==NULL)
 	{
 		overrideThis=false;
 	}
-	ASObject* ret=th->call(args[0],new_args,argslen-1,overrideThis);
-	delete[] new_args;
+	ASObject* ret=th->call(newObj,newArgs,newArgsLen,overrideThis);
+	if(ret==NULL)
+		ret=new Undefined;
+	delete[] newArgs;
 	return ret;
 }
 

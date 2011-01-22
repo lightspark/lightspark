@@ -2077,6 +2077,8 @@ ASFUNCTIONBODY(IFunction,apply)
 		overrideThis=false;
 	}
 	ASObject* ret=th->call(args[0],new_args,len,overrideThis);
+	if(ret==NULL)
+		ret=new Undefined;
 	delete[] new_args;
 	return ret;
 }

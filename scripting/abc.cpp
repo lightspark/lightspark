@@ -297,6 +297,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("LocalConnection","flash.net",Class<ASObject>::getClass(QName("LocalConnection","flash.net")));
 	builtin->setVariableByQName("NetConnection","flash.net",Class<NetConnection>::getClass());
 	builtin->setVariableByQName("NetStream","flash.net",Class<NetStream>::getClass());
+	builtin->setVariableByQName("NetStreamPlayOptions","flash.net",Class<ASObject>::getClass(QName("NetStreamPlayOptions","flash.net")));
 	builtin->setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getClass());
 	builtin->setVariableByQName("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getClass());
 	builtin->setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());

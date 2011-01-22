@@ -716,27 +716,51 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 
 ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
-	if(!name.isAttribute)
+	if(skip_impl)
 		return ASObject::getVariableByMultiname(name, skip_impl, base);
-	//Lookup attribute
-	//TODO: support namespaces
-	assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
-	//Normalize the name to the string form
-	tiny_string attributeName=name.normalizedName();
-	assert(node);
-	//To have attributes we must be an Element
-	xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
-	if(element==NULL)
-		return NULL;
-	xmlpp::Attribute* attr=element->get_attribute(attributeName.raw_buf());
-	if(attr==NULL)
-		return NULL;
-	XML* rootXML=(root)?(root):this;
-	rootXML->incRef();
-	ASObject* ret=Class<XML>::getInstanceS(rootXML, attr);
-	//The new object will be incReffed by the calling code
-	ret->fake_decRef();
-	return ret;
+
+	const tiny_string& normalizedName=name.normalizedName();
+	if(name.isAttribute)
+	{
+		//Lookup attribute
+		//TODO: support namespaces
+		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
+		//Normalize the name to the string form
+		assert(node);
+		//To have attributes we must be an Element
+		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
+		if(element==NULL)
+			return NULL;
+		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
+		if(attr==NULL)
+			return NULL;
+		XML* rootXML=(root)?(root):this;
+		rootXML->incRef();
+		ASObject* ret=Class<XML>::getInstanceS(rootXML, attr);
+		//The new object will be incReffed by the calling code
+		ret->fake_decRef();
+		return ret;
+	}
+	else
+	{
+		//Lookup children
+		//TODO: support namespaces
+		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
+		//Normalize the name to the string form
+		assert(node);
+		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
+		xmlpp::Node::NodeList::const_iterator it=children.begin();
+
+		std::vector<XML*> ret;
+		XML* rootXML=(root)?(root):this;
+		for(;it!=children.end();it++)
+		{
+			rootXML->incRef();
+			ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+		}
+		XMLList* retObj=Class<XMLList>::getInstanceS(ret);
+		return retObj;
+	}
 }
 
 ASFUNCTIONBODY(XML,_toString)

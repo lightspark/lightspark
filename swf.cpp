@@ -854,6 +854,8 @@ void ParseThread::checkType(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4)
 	}
 	else if((c1&0x80) && c2=='P' && c3=='N' && c4=='G')
 		fileType=PNG;
+	else if(c1==0xff && c2==0xd8 && c3==0xff && c4==0xe0)
+		fileType=JPEG;
 }
 
 void ParseThread::parseSWFHeader()
@@ -898,7 +900,7 @@ void ParseThread::execute()
 		checkType(Signature[0],Signature[1],Signature[2],Signature[3]);
 		if(fileType==NONE)
 			throw ParseException("Not a supported file");
-		if(fileType==PNG)
+		if(fileType==PNG || fileType==JPEG)
 		{
 			//Not really supported
 			pt=NULL;

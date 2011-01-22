@@ -138,6 +138,7 @@ void NPDownloader::dlStartCallback(void* t)
 	NPDownloader* th=static_cast<NPDownloader*>(t);
 	cerr << _("Start download for ") << th->url << endl;
 	th->started=true;
+	assert(th->data.empty());
 	NPError e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
 	if(e!=NPERR_NO_ERROR)
 		th->setFailed(); //No need to crash, we can just mark the download failed

@@ -394,6 +394,7 @@ ASFUNCTIONBODY(Timer,_constructor)
 	Timer* th=static_cast<Timer*>(obj);
 	obj->setVariableByQName("start","",Class<IFunction>::getFunction(start));
 	obj->setVariableByQName("reset","",Class<IFunction>::getFunction(reset));
+	obj->setVariableByQName("stop","",Class<IFunction>::getFunction(stop));
 
 	th->delay=args[0]->toInt();
 	if(argslen>=2)
@@ -415,6 +416,23 @@ ASFUNCTIONBODY(Timer,reset)
 {
 	Timer* th=static_cast<Timer*>(obj);
 	th->running=false;
+	return NULL;
+}
+
+ASFUNCTIONBODY(Timer,stop)
+{
+	Timer* th=static_cast<Timer*>(obj);
+	if(th->running)
+	{
+		//This spin waits if the timer is running right now
+		sys->removeJob(th);
+		//NOTE: although no new events will be sent now there might be old events in the queue.
+		//Is this behaviour right?
+
+		//This is not anymore used by the timer, so it can die
+		th->decRef();
+		th->running=false;
+	}
 	return NULL;
 }
 

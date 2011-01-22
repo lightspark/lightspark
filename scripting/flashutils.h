@@ -90,6 +90,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(start);
 	ASFUNCTION(reset);
+	ASFUNCTION(stop);
 };
 
 class Dictionary: public ASObject

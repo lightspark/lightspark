@@ -449,6 +449,11 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 
 NetStatusEvent::NetStatusEvent(const tiny_string& l, const tiny_string& c):Event("netStatus"),level(l),code(c)
 {
+	//The object has been initialized internally
+	ASObject* info=Class<ASObject>::getInstanceS();
+	info->setVariableByQName("level","",Class<ASString>::getInstanceS(level));
+	info->setVariableByQName("code","",Class<ASString>::getInstanceS(code));
+	setVariableByQName("info","",info);
 }
 
 void NetStatusEvent::sinit(Class_base* c)
@@ -463,9 +468,27 @@ void NetStatusEvent::sinit(Class_base* c)
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
 {
 	NetStatusEvent* th=Class<NetStatusEvent>::cast(obj);
-	ASObject* info=Class<ASObject>::getInstanceS();
-	info->setVariableByQName("level","",Class<ASString>::getInstanceS(th->level));
-	info->setVariableByQName("code","",Class<ASString>::getInstanceS(th->code));
+	if(th->level!="" && th->code!="")
+	{
+		//TODO: purge this away
+		return NULL;
+	}
+	assert_and_throw(argslen>=1 && argslen<=4);
+	//Also call the base class constructor, using only the first arguments
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+	ASObject* info;
+	if(argslen==4)
+	{
+		//Building from AS code, use the data
+		args[3]->incRef();
+		info=args[3];
+	}
+	else
+	{
+		//Uninitialized info
+		info=new Null;
+	}
 	obj->setVariableByQName("info","",info);
 	return NULL;
 }

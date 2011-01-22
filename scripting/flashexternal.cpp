@@ -35,8 +35,8 @@ void ExternalInterface::sinit(Class_base* c)
 	c->setGetterByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),false);
 	c->setGetterByQName("marshallExceptions","",Class<IFunction>::getFunction(_getMarshallExceptions),false);
 	c->setSetterByQName("marshallExceptions","",Class<IFunction>::getFunction(_setMarshallExceptions),false);
-	c->setMethodByQName("addCallback","",Class<IFunction>::getFunction(addCallback),false);
-	c->setMethodByQName("call","",Class<IFunction>::getFunction(call),false);
+	//c->setMethodByQName("addCallback","",Class<IFunction>::getFunction(addCallback),false);
+	//c->setMethodByQName("call","",Class<IFunction>::getFunction(call),false);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)

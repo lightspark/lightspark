@@ -180,45 +180,69 @@ ASFUNCTIONBODY(URLLoader,load)
 	//TODO: should we disallow accessing local files in a directory above 
 	//the current one like we do with NetStream.play?
 
-	assert_and_throw(urlRequest->method==URLRequest::GET);
 	multiname dataName;
 	dataName.name_type=multiname::NAME_STRING;
 	dataName.name_s="data";
 	dataName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	ASObject* data=arg->getVariableByMultiname(dataName);
-	if(data)
-	{
-		if(data->getPrototype()==Class<URLVariables>::getClass())
-			throw RunTimeException("URLVariables not support in URLLoader::load");
-		else if(data->getPrototype()==Class<ByteArray>::getClass())
-			throw RunTimeException("ByteArray not support in URLLoader::load");
-		else
-		{
-			tiny_string newURL = th->url.getParsedURL();
-			if(th->url.getQuery() == "")
-				newURL += "?";
-			else
-				newURL += "&amp;";
-			newURL += data->toString();
-			th->url=th->url.goToURL(newURL);
-		}
-	}
 	assert_and_throw(th->dataFormat=="binary" || th->dataFormat=="text");
-	
-	if(!th->url.isValid())
+	if(urlRequest->method==URLRequest::GET)
 	{
-		//Notify an error during loading
-		sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
-	}
-	else //The URL is valid so we can start the download and add ourself as a job
-	{
+		if(data)
+		{
+			if(data->getPrototype()==Class<URLVariables>::getClass())
+				throw RunTimeException("URLVariables not support in URLLoader::load");
+			else if(data->getPrototype()==Class<ByteArray>::getClass())
+				throw RunTimeException("ByteArray not support in URLLoader::load");
+			else
+			{
+				tiny_string newURL = th->url.getParsedURL();
+				if(th->url.getQuery() == "")
+					newURL += "?";
+				else
+					newURL += "&amp;";
+				newURL += data->toString();
+				th->url=th->url.goToURL(newURL);
+			}
+		}
+		if(!th->url.isValid())
+		{
+			//Notify an error during loading
+			sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+			return NULL;
+		}
+		//The URL is valid so we can start the download and add ourself as a job
 		//Don't cache our downloaded files
 		th->downloader=sys->downloadManager->download(th->url, false);
-
-		//To be decreffed in jobFence
-		th->incRef();
-		sys->addJob(th);
 	}
+	else //POST
+	{
+		vector<uint8_t> postData;
+		if(data)
+		{
+			if(data->getPrototype()==Class<URLVariables>::getClass())
+				throw RunTimeException("URLVariables not support in URLLoader::load");
+			else if(data->getPrototype()==Class<ByteArray>::getClass())
+				throw RunTimeException("ByteArray not support in URLLoader::load");
+			else
+			{
+				const tiny_string& strData=data->toString();
+				postData.insert(postData.end(),strData.raw_buf(),strData.raw_buf()+strData.len());
+			}
+		}
+		if(!th->url.isValid())
+		{
+			//Notify an error during loading
+			sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+			return NULL;
+		}
+		//The URL is valid so we can start the download and add ourself as a job
+		th->downloader=sys->downloadManager->downloadWithData(th->url, postData);
+	}
+	//To be decreffed in jobFence
+	th->incRef();
+	assert(th->downloader);
+	sys->addJob(th);
 	return NULL;
 }
 

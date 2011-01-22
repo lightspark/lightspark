@@ -19,6 +19,19 @@
 		var xml4:XML=new XML("");
 		Tests.assertEquals(xml4.localName(),null,"Behaviour when parsing empty strings");
 		Tests.report(visual, this.name);
+		
+		var xml5:XML=new XML("<a><b><c>test1</c></b><b><c>test2</c></b><d><e/></d></a>");
+		trace(getQualifiedClassName(xml5.b));
+		trace(xml5.b);
+		trace(getQualifiedClassName(xml5.d));
+		trace(xml5.d);
+		trace(getQualifiedClassName(xml5.e));
+		trace(xml5.e);
+		trace(getQualifiedClassName(xml5.f));
+		trace(xml5.f);
+		trace(getQualifiedClassName(xml5.children));
+		trace(xml5.children);
+		trace(xml5.children());
 	}
 	]]>
 </mx:Script>

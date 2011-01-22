@@ -2067,7 +2067,7 @@ ASFUNCTIONBODY(Date,getTime)
 ASFUNCTIONBODY(Date,valueOf)
 {
 	//Date* th=static_cast<Date*>(obj);
-	number_t tmp=1294524665;
+	number_t tmp=1295020673;
 	tmp*=1000;
 	return abstract_d(tmp);
 }

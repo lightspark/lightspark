@@ -329,6 +329,8 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			//The owner has to be increffed
 			obj->incRef();
 			ASObject* ret=f->call(obj,args,m);
+			if(ret==NULL)
+				ret=new Undefined;
 			th->runtime_stack_push(ret);
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
@@ -374,6 +376,8 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				//We now suppress special handling
 				LOG(LOG_CALLS,_("Proxy::callProperty"));
 				ASObject* ret=f->call(obj,proxyArgs,m+1);
+				if(ret==NULL)
+					ret=new Undefined;
 				th->runtime_stack_push(ret);
 
 				obj->decRef();

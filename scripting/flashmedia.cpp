@@ -178,14 +178,15 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	}
 
 	//Validate the parameter
-	if(args[0]->getPrototype()!=Class<NetStream>::getClass())
+	if(!args[0]->getPrototype()->isSubClass(Class<NetStream>::getClass()))
 		throw RunTimeException("Type mismatch in Video::attachNetStream");
 
 	//Acquire the netStream
 	args[0]->incRef();
 
-	assert_and_throw(th->netStream==NULL);
 	sem_wait(&th->mutex);
+	if(th->netStream)
+		th->netStream->decRef();
 	th->netStream=Class<NetStream>::cast(args[0]);
 	sem_post(&th->mutex);
 	return NULL;

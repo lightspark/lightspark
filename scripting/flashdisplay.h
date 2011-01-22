@@ -431,7 +431,8 @@ public:
 
 	virtual void addToFrame(DisplayListTag* r);
 
-	void advanceFrame();
+	void sendAdvanceFrameEvent();
+	void advanceFrame();  // VM thread only
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 	void setTotalFrames(uint32_t t);
 

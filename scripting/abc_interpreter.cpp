@@ -1307,8 +1307,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* obj=context->runtime_stack_pop();
 				if(context->locals[i])
 					context->locals[i]->decRef();
-				if(obj==NULL)
-					obj=new Undefined;
 				context->locals[i]=obj;
 				break;
 			}

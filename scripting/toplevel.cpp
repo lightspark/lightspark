@@ -2560,8 +2560,6 @@ ASFUNCTIONBODY(RegExp,exec)
 		options|=PCRE_EXTENDED;
 	if(th->multiline)
 		options|=PCRE_MULTILINE;
-	if(!th->global)
-		options|=PCRE_ANCHORED;
 	pcre* pcreRE=pcre_compile(th->re.c_str(), options, &error, &errorOffset,NULL);
 	if(error)
 		return new Null;

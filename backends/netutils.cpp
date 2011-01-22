@@ -192,6 +192,36 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached,
 }
 
 /**
+ * \brief Create a Downloader for an URL and send data to the host
+ *
+ * Returns a pointer to a newly created \c Downloader for the given URL.
+ * \param[in] url The URL (as a \c URLInfo) the \c Downloader is requested for
+ * \param[in] data The binary data to send to the host
+ * \return A pointer to a newly created \c Downloader for the given URL.
+ * \see DownloadManager::destroy()
+ */
+Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, LoaderInfo* owner)
+{
+	LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager::downloadWithData '") << url.getParsedURL());
+	ThreadedDownloader* downloader;
+	if(url.getProtocol() == "file")
+	{
+		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: local file - Ignoring data field"));
+		downloader=new LocalDownloader(url.getPath(), false);
+	}
+	else
+	{
+		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
+		downloader=new CurlDownloader(url.getParsedURL(), data);
+	}
+	downloader->setOwner(owner);
+	downloader->enableFencingWaiting();
+	addDownloader(downloader);
+	sys->addJob(downloader);
+	return downloader;
+}
+
+/**
  * \brief Downloader constructor.
  *
  * Constructor for the Downloader class. Can only be called from derived classes.
@@ -207,6 +237,38 @@ Downloader::Downloader(const tiny_string& _url, bool _cached):
 	cached(_cached),cachePos(0),cacheSize(0),keepCache(false),    //CACHING
 	length(0),receivedLength(0),                                  //DOWNLOADED DATA
 	redirected(false),requestStatus(0),                           //HTTP REDIR, STATUS & HEADERS
+	owner(NULL)                                                   //PROGRESS
+{
+	sem_init(&mutex,0,1);
+	//== Lock initialized 
+
+	sem_init(&cacheOpened,0,0);
+	//== Initialize cacheOpened signal
+	sem_init(&dataAvailable,0,0);
+	//== Initialize dataAvailable signal
+
+	sem_init(&terminated,0,0);
+	//== Initialize terminated signal
+
+	setg(NULL,NULL,NULL);
+}
+
+/**
+ * \brief Downloader constructor.
+ *
+ * Constructor for the Downloader class. Can only be called from derived classes.
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] data Additional data to send to the host
+ */
+Downloader::Downloader(const tiny_string& _url, const std::vector<uint8_t>& _data):
+	cacheHasOpened(false),hasTerminated(false),                   //LOCKING
+	waitingForCache(false),waitingForData(false),waitingForTermination(false), //STATUS
+	forceStop(true),failed(false),finished(false),                //FLAGS
+	url(_url),originalURL(url),                                   //PROPERTIES
+	buffer(NULL),stableBuffer(NULL),                              //BUFFERING
+	cached(false),cachePos(0),cacheSize(0),keepCache(false),      //CACHING
+	length(0),receivedLength(0),                                  //DOWNLOADED DATA
+	redirected(false),requestStatus(0),data(_data),               //HTTP REDIR, STATUS & HEADERS
 	owner(NULL)                                                   //PROGRESS
 {
 	sem_init(&mutex,0,1);
@@ -1072,6 +1134,18 @@ ThreadedDownloader::ThreadedDownloader(const tiny_string& url, bool cached):
 }
 
 /**
+ * \brief Constructor for the ThreadedDownloader class.
+ *
+ * Constructor for the ThreadedDownloader class. Can only be called from derived classes.
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] data Additional data to send to the host
+ */
+ThreadedDownloader::ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data):
+	Downloader(url, data),fenceState(false)
+{
+}
+
+/**
  * \brief Destructor for the ThreadedDownloader class.
  *
  * Waits for the \c fenced signal.
@@ -1090,6 +1164,16 @@ ThreadedDownloader::~ThreadedDownloader()
  * \param[in] _cached Whether or not to cache this download.
  */
 CurlDownloader::CurlDownloader(const tiny_string& _url, bool _cached):ThreadedDownloader(_url, _cached)
+{
+}
+
+/**
+ * \brief Constructor for the CurlDownloader class.
+ *
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] data Additional data to send to the host
+ */
+CurlDownloader::CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& _data):ThreadedDownloader(_url, _data)
 {
 }
 
@@ -1139,6 +1223,13 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 		//Its probably a good idea to limit redirections, 100 should be more than enough
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 100);
+		if(!data.empty())
+		{
+			curl_easy_setopt(curl, CURLOPT_POST, 1);
+			//data is const, it would not be invalidated
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &data.front());
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
+		}
 		//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		res = curl_easy_perform(curl);
 		if(res!=0)

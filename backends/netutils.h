@@ -51,6 +51,7 @@ public:
 	virtual ~DownloadManager() {};
 	virtual Downloader* download(const tiny_string& url, bool cached=false, LoaderInfo* owner=NULL)=0;
 	virtual Downloader* download(const URLInfo& url, bool cached=false, LoaderInfo* owner=NULL)=0;
+	virtual Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, LoaderInfo* owner=NULL)=0;
 	virtual void destroy(Downloader* downloader)=0;
 
 	enum MANAGERTYPE { NPAPI, STANDALONE };
@@ -64,6 +65,7 @@ public:
 	~StandaloneDownloadManager();
 	Downloader* download(const tiny_string& url, bool cached=false, LoaderInfo* owner=NULL);
 	Downloader* download(const URLInfo& url, bool cached=false, LoaderInfo* owner=NULL);
+	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, LoaderInfo* owner=NULL);
 	void destroy(Downloader* downloader);
 };
 
@@ -81,6 +83,7 @@ private:
 protected:
 	//Abstract base class, can't be constructed
 	Downloader(const tiny_string& _url, bool _cached);
+	Downloader(const tiny_string& _url, const std::vector<uint8_t>& data);
 	//-- LOCKING
 	//Provides internal mutual exclusing
 	sem_t mutex;
@@ -171,6 +174,8 @@ protected:
 	std::map<tiny_string, tiny_string> headers;
 	void parseHeaders(const char* headers, bool _setLength);
 	void parseHeader(std::string header, bool _setLength);
+	//Data to send to the host
+	const std::vector<uint8_t> data;
 
 	//-- PROGRESS MONITORING
 	LoaderInfo* owner;
@@ -230,6 +235,7 @@ public:
 protected:
 	//Abstract base class, can not be constructed
 	ThreadedDownloader(const tiny_string& url, bool cached);
+	ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data);
 //	//This class can only get destroyed by DownloadManager
 //	virtual ~ThreadedDownloader();
 };
@@ -245,6 +251,7 @@ private:
 	void threadAbort();
 public:
 	CurlDownloader(const tiny_string& _url, bool _cached);
+	CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& data);
 };
 
 //LocalDownloader can be used as a thread job, standalone or as a streambuf

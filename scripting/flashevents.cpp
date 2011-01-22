@@ -65,6 +65,9 @@ Event::~Event()
 void Event::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS("enterFrame"));
 	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS("render"));
 	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS("addedToStage"));
@@ -138,6 +141,9 @@ FocusEvent::FocusEvent():Event("focusEvent")
 void FocusEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS("focusIn"));
 	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS("focusOut"));
 	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",Class<ASString>::getInstanceS("mouseFocusChange"));
@@ -168,8 +174,10 @@ ProgressEvent::ProgressEvent(uint32_t loaded, uint32_t total):Event("progress",f
 void ProgressEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"));
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
 
+	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"));
 	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
 	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
 }
@@ -203,16 +211,20 @@ ASFUNCTIONBODY(ProgressEvent,_getBytesTotal)
 
 void TimerEvent::sinit(Class_base* c)
 {
+//	c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS("timer"));
 	c->setVariableByQName("TIMER_COMPLETE","",Class<ASString>::getInstanceS("timerComplete"));
 }
 
 void MouseEvent::sinit(Class_base* c)
 {
-//	assert(c->constructor==NULL);
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click"));
 	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS("doubleClick"));
 	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS("mouseDown"));
@@ -238,6 +250,10 @@ IOErrorEvent::IOErrorEvent()
 
 void IOErrorEvent::sinit(Class_base* c)
 {
+//	c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"));
 }
 
@@ -438,6 +454,9 @@ NetStatusEvent::NetStatusEvent(const tiny_string& l, const tiny_string& c):Event
 void NetStatusEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS("netStatus"));
 }
 
@@ -458,6 +477,9 @@ FullScreenEvent::FullScreenEvent():Event("fullScreenEvent")
 void FullScreenEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"));
 }
 
@@ -473,6 +495,9 @@ KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 void KeyboardEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS("keyDown"));
 	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS("keyUp"));
 }
@@ -489,9 +514,10 @@ TextEvent::TextEvent():Event("textEvent")
 void TextEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS("textInput"));
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
+
+	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS("textInput"));
 }
 
 ASFUNCTIONBODY(TextEvent,_constructor)
@@ -568,6 +594,9 @@ ShutdownEvent::ShutdownEvent():Event("shutdownEvent")
 void HTTPStatusEvent::sinit(Class_base* c)
 {
 //	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
+
 	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"));
 }
 

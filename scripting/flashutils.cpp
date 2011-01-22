@@ -375,8 +375,8 @@ void Timer::tick()
 		sys->addWait(delay,this);
 	else
 	{
-		repeatCount--;
-		if(repeatCount)
+		currentCount++;
+		if(currentCount<=repeatCount)
 			sys->addWait(delay,this);
 	}
 }
@@ -408,6 +408,7 @@ ASFUNCTIONBODY(Timer,start)
 	Timer* th=static_cast<Timer*>(obj);
 	th->running=true;
 	th->incRef();
+	//TODO: use addTick when more than s single shot is used
 	sys->addWait(th->delay,th);
 	return NULL;
 }
@@ -415,7 +416,17 @@ ASFUNCTIONBODY(Timer,start)
 ASFUNCTIONBODY(Timer,reset)
 {
 	Timer* th=static_cast<Timer*>(obj);
-	th->running=false;
+	if(th->running)
+	{
+		//This spin waits if the timer is running right now
+		sys->removeJob(th);
+		//NOTE: although no new events will be sent now there might be old events in the queue.
+		//Is this behaviour right?
+		th->currentCount=0;
+		//This is not anymore used by the timer, so it can die
+		th->decRef();
+		th->running=false;
+	}
 	return NULL;
 }
 

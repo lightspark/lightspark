@@ -733,7 +733,7 @@ ASFUNCTIONBODY(MovieClip,gotoAndStop)
 
 	//TODO: check, should wrap around?
 	next_frame%=th->state.max_FP;
-	sys->currentVm->syncVMEvent(new FrameChangeEvent(next_frame,true,th));
+	sys->currentVm->syncVMEvent(new FrameChangeEvent(th,next_frame,true));
 	return NULL;
 }
 
@@ -741,7 +741,7 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->state.max_FP);
-	sys->currentVm->syncVMEvent(new FrameChangeEvent(th->state.FP+1,th->state.stop_FP,th));
+	sys->currentVm->syncVMEvent(new FrameChangeEvent(th,th->state.FP+1,th->state.stop_FP));
 	return NULL;
 }
 
@@ -773,6 +773,16 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 /*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(createEmptyMovieClip));*/
 	return NULL;
+}
+
+void MovieClip::sendAdvanceFrameEvent()
+{
+	if((!state.stop_FP || state.explicit_FP) && totalFrames!=0 && getPrototype()->isSubClass(Class<MovieClip>::getClass()))
+	{
+		FrameChangeEvent *e=new FrameChangeEvent(this);
+		getVm()->addEvent(NULL,e);
+		e->decRef();
+	}
 }
 
 void MovieClip::advanceFrame()

@@ -336,7 +336,7 @@ private:
 	MovieClip* movieClip;
 	static void sinit(Class_base*);
 public:
-	FrameChangeEvent(int f, bool stop, MovieClip* m):Event("FrameChangeEvent"),frame(f),stop(stop),movieClip(m){}
+	FrameChangeEvent(MovieClip* m, int f=-1, bool stop=false):Event("FrameChangeEvent"),frame(f),stop(stop),movieClip(m){}
 	EVENT_TYPE getEventType() { return CHANGE_FRAME; }
 };
 

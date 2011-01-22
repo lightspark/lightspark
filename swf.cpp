@@ -1164,7 +1164,7 @@ void RootMovieClip::tick()
 	//Frame advancement may cause exceptions
 	try
 	{
-		advanceFrame();
+		sendAdvanceFrameEvent();
 		Event* e=Class<Event>::getInstanceS("enterFrame");
 		if(hasEventListener("enterFrame"))
 			getVm()->addEvent(this,e);
@@ -1180,7 +1180,7 @@ void RootMovieClip::tick()
 		//Advance all the children, and release the reference
 		for(uint32_t i=0;i<curChildren.size();i++)
 		{
-			curChildren[i]->advanceFrame();
+			curChildren[i]->sendAdvanceFrameEvent();
 			if(curChildren[i]->hasEventListener("enterFrame"))
 				getVm()->addEvent(curChildren[i],e);
 			curChildren[i]->decRef();

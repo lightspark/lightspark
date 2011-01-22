@@ -544,6 +544,24 @@ void XML::buildFromString(const string& str)
 	}
 }
 
+ASFUNCTIONBODY(XML,generator)
+{
+	assert(obj==NULL);
+	assert_and_throw(argslen==1);
+	if(args[0]->getObjectType()==T_STRING)
+	{
+		ASString* str=Class<ASString>::cast(args[0]);
+		return Class<XML>::getInstanceS(str->data);
+	}
+	else if(args[0]->getPrototype()==Class<XML>::getClass())
+	{
+		args[0]->incRef();
+		return args[0];
+	}
+	else
+		throw RunTimeException("Type not supported in XML()");
+}
+
 ASFUNCTIONBODY(XML,_constructor)
 {
 	XML* th=Class<XML>::cast(obj);

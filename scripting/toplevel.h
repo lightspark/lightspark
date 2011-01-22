@@ -672,6 +672,7 @@ public:
 	ASFUNCTION(attributes);
 	ASFUNCTION(appendChild);
 	ASFUNCTION(localName);
+	ASFUNCTION(generator);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);

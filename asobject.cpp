@@ -218,14 +218,14 @@ unsigned int ASObject::toUInt()
 int ASObject::toInt()
 {
 	LOG(LOG_ERROR,_("Cannot convert object of type ") << getObjectType() << _(" to int"));
-	throw RunTimeException("Cannot converto object to int");
+	throw RunTimeException("Cannot convert object to int");
 	return 0;
 }
 
 double ASObject::toNumber()
 {
 	LOG(LOG_ERROR,_("Cannot convert object of type ") << getObjectType() << _(" to float"));
-	throw RunTimeException("Cannot converto object to float");
+	throw RunTimeException("Cannot convert object to float");
 	return 0;
 }
 

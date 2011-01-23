@@ -2438,6 +2438,16 @@ bool Null::isEqual(ASObject* r)
 		return false;
 }
 
+int Null::toInt()
+{
+	return 0;
+}
+
+double Null::toNumber()
+{
+	return 0.0;
+}
+
 RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)
 {
 }

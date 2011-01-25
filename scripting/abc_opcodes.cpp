@@ -1466,11 +1466,12 @@ void ABCVm::getSuper(call_context* th, int n)
 
 	//Should we skip implementation? I think it's reasonable
 	ASObject* o=obj->getVariableByMultiname(*name, true);
+	//TODO: should bind if the return type is Function
 
 	tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
 	assert_and_throw(tl.cur_this==obj);
-	//And the reset it using the stack
+	//And we reset it using the stack
 	tl.cur_this->setLevel(tl.cur_level);
 
 	if(o)

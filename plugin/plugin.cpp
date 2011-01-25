@@ -87,6 +87,7 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 {
 	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
+	assert(url.getProtocol()!="rtmpe");
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance, owner);
 	addDownloader(downloader);

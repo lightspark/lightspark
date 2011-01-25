@@ -779,6 +779,7 @@ void ASObject::setPrototype(Class_base* c)
 	{
 		prototype->acquireObject(this);
 		prototype->incRef();
+		setLevel(prototype->max_level);
 	}
 }
 

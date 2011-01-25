@@ -230,6 +230,10 @@ IF(ENABLE_CURL)
   ADD_DEFINITIONS(-DENABLE_CURL)
 ENDIF(ENABLE_CURL)
 
+#TODO: add ENABLE_RTMP switch
+pkg_check_modules(RTMP REQUIRED librtmp)
+SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${RTMP_LIBRARIES})
+
 IF(ENABLE_DEBIAN_ALTERNATIVES)
   SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
 ENDIF(ENABLE_DEBIAN_ALTERNATIVES)
@@ -278,6 +282,7 @@ SET(LIBSPARK_SOURCES
   backends/netutils.cpp
   backends/pluginmanager.cpp
   backends/rendering.cpp
+  backends/rtmputils.cpp
   backends/security.cpp
   backends/urlutils.cpp
   parsing/amf3_generator.cpp

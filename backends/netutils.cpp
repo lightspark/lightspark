@@ -20,6 +20,7 @@
 
 #include "swf.h"
 #include "netutils.h"
+#include "rtmputils.h"
 #include "compat.h"
 #include <string>
 #include <algorithm>
@@ -179,6 +180,11 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached,
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: local file"));
 		downloader=new LocalDownloader(url.getPath(), cached);
 	}
+	else if(url.getProtocol() == "rtmpe")
+	{
+		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: RTMPE stream"));
+		downloader=new RTMPDownloader(url.getParsedURL(), url.getStream());
+	}
 	else
 	{
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
@@ -209,6 +215,8 @@ Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, cons
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: local file - Ignoring data field"));
 		downloader=new LocalDownloader(url.getPath(), false);
 	}
+	else if(url.getProtocol() == "rtmpe")
+		throw RunTimeException("RTMPE does not support additional data");
 	else
 	{
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: remote file"));

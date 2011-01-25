@@ -720,6 +720,11 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		return ASObject::getVariableByMultiname(name, skip_impl, base);
 
 	const tiny_string& normalizedName=name.normalizedName();
+	if(node==NULL)
+	{
+		//This is possible if the XML object was created from an empty string
+		return NULL;
+	}
 	if(name.isAttribute)
 	{
 		//Lookup attribute

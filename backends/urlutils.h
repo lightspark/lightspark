@@ -44,13 +44,14 @@ private:
 	tiny_string pathFile;
 	tiny_string query; //Part after first ?
 	tiny_string fragment; //Part after first #
+	tiny_string stream; //The requested stream, used for RTMP protocols
 	bool valid;
 public:
 	enum INVALID_REASON { MISSING_PROTOCOL, MISSING_PATH, MISSING_HOSTNAME, INVALID_PORT };
 private:
 	INVALID_REASON invalidReason;
 public:
-	URLInfo() {};
+	URLInfo():valid(false) {};
 	URLInfo(const tiny_string& u);
 	~URLInfo() {};
 	bool isValid() const { return valid; }
@@ -93,6 +94,9 @@ public:
 	const tiny_string& getQuery() const { return query; };
 	const tiny_string& getFragment() const { return fragment; };
 
+	//Accessors to the RTMP requested stream
+	const tiny_string& getStream() const { return stream; }
+	void setStream(const tiny_string& s) { stream=s; }
 	//ENCODE_SPACES is used for safety, it can run over another ENCODING without corrupting data
 	enum ENCODING { ENCODE_SPACES, ENCODE_FORM, ENCODE_URI, ENCODE_URICOMPONENT, ENCODE_ESCAPE };
 	static tiny_string encode(const tiny_string& u, ENCODING type=ENCODE_URICOMPONENT)

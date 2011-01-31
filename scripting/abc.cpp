@@ -1010,7 +1010,7 @@ ABCContext::ABCContext(istream& in)
 	}
 }
 
-ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
+ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),bigVmMutex("bigVmMutex")
 {
 	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
@@ -1539,7 +1539,10 @@ void ABCVm::Run(ABCVm* th)
 			pair<EventDispatcher*,Event*> e=th->events_queue.front();
 			th->events_queue.pop_front();
 			sem_post(&th->event_queue_mutex);
-			th->handleEvent(e);
+			{
+				Locker l(th->bigVmMutex);
+				th->handleEvent(e);
+			}
 			if(th->shuttingdown)
 				bailOut=true;
 			//Flush the invalidation queue

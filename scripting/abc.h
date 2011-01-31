@@ -655,6 +655,7 @@ public:
 	static bool strictEqualImpl(ASObject*, ASObject*);
 	static void publicHandleEvent(EventDispatcher* dispatcher, Event* event);
 
+	Mutex bigVmMutex;
 };
 
 class DoABCTag: public ControlTag

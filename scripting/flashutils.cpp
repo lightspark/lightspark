@@ -756,7 +756,7 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,_("Proxy::getProperty"));
+	LOG(LOG_CALLS,"Proxy::getProperty");
 	incRef();
 	ASObject* ret=f->call(this,&arg,1);
 	assert_and_throw(ret);
@@ -767,7 +767,7 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 bool Proxy::hasNext(unsigned int& index, bool& out)
 {
 	assert_and_throw(implEnable);
-	LOG(LOG_CALLS, _("Proxy::hasNext"));
+	LOG(LOG_CALLS,"Proxy::hasNext");
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	multiname nextNameIndexName;
 	nextNameIndexName.name_type=multiname::NAME_STRING;

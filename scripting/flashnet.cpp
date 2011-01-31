@@ -1332,3 +1332,27 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	}
 	return NULL;
 }
+
+//HACK
+static map<tiny_string,Class_base*> aliases;
+
+ASFUNCTIONBODY(lightspark,getClassByAlias)
+{
+	const tiny_string& arg0=args[0]->toString();
+	auto it=aliases.find(arg0);
+	if(it!=aliases.end())
+	{
+		it->second->incRef();
+		return it->second;
+	}
+	return new Undefined;
+}
+
+ASFUNCTIONBODY(lightspark,registerClassAlias)
+{
+	const tiny_string& arg0=args[0]->toString();
+	args[1]->incRef();
+	assert(args[1]->getObjectType()==T_CLASS);
+	aliases[arg0]=static_cast<Class_base*>(args[1]);
+	return NULL;
+}

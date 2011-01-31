@@ -253,6 +253,8 @@ public:
 	void unlock();
 };
 
+ASObject* registerClassAlias(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* getClassByAlias(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* sendToURL(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 };

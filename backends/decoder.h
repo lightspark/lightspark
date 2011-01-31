@@ -40,7 +40,7 @@ extern "C"
 namespace lightspark
 {
 
-enum LS_VIDEO_CODEC { H264=0, H263 };
+enum LS_VIDEO_CODEC { H264=0, H263, VP6 };
 enum LS_AUDIO_CODEC { LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10 };
 
 class Decoder

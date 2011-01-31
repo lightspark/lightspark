@@ -132,6 +132,17 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 		assert(frameRateHint!=0.0);
 		frameRate=frameRateHint;
 	}
+	else if(codecId==VP6)
+	{
+		//TODO: serialize access to avcodec_open
+		const enum CodecID FFMPEGcodecId=CODEC_ID_VP6F;
+		codec=avcodec_find_decoder(FFMPEGcodecId);
+		assert(codec);
+
+		//Exploit the frame rate information
+		assert(frameRateHint!=0.0);
+		frameRate=frameRateHint;
+	}
 
 	if(avcodec_open(codecContext, codec)<0)
 		throw RunTimeException("Cannot open decoder");

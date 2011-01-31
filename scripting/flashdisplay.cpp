@@ -58,6 +58,7 @@ REGISTER_CLASS_NAME(LineScaleMode);
 REGISTER_CLASS_NAME(StageScaleMode);
 REGISTER_CLASS_NAME(StageAlign);
 REGISTER_CLASS_NAME(StageQuality);
+REGISTER_CLASS_NAME(StageDisplayState);
 REGISTER_CLASS_NAME(GradientType);
 REGISTER_CLASS_NAME(SpreadMethod);
 REGISTER_CLASS_NAME(InterpolationMethod);
@@ -2770,6 +2771,13 @@ void StageQuality::sinit(Class_base* c)
 	c->setVariableByQName("HIGH","",Class<ASString>::getInstanceS("high"));
 	c->setVariableByQName("LOW","",Class<ASString>::getInstanceS("low"));
 	c->setVariableByQName("MEDIUM","",Class<ASString>::getInstanceS("medium"));
+}
+
+void StageDisplayState::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"));
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"));
 }
 
 void Bitmap::sinit(Class_base* c)

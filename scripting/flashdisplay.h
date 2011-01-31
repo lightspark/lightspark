@@ -487,6 +487,12 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class StageDisplayState: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
 class LineScaleMode: public ASObject
 {
 public:

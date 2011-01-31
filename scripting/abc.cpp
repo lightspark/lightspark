@@ -236,6 +236,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("StageScaleMode","flash.display",Class<StageScaleMode>::getClass());
 	builtin->setVariableByQName("StageAlign","flash.display",Class<StageAlign>::getClass());
 	builtin->setVariableByQName("StageQuality","flash.display",Class<StageQuality>::getClass());
+	builtin->setVariableByQName("StageDisplayState","flash.display",Class<StageDisplayState>::getClass());
 	builtin->setVariableByQName("IBitmapDrawable","flash.display",Class<ASObject>::getClass(QName("IBitmapDrawable","flash.display")));
 	builtin->setVariableByQName("BitmapData","flash.display",Class<ASObject>::getClass(QName("BitmapData","flash.display")));
 	builtin->setVariableByQName("Bitmap","flash.display",Class<Bitmap>::getClass());

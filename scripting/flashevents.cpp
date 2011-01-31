@@ -59,7 +59,6 @@ Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NU
 
 Event::~Event()
 {
-//	cout << "Destroying event type " << type << " this " << this << endl;
 }
 
 void Event::sinit(Class_base* c)
@@ -289,7 +288,7 @@ void EventDispatcher::dumpHandlers()
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
+	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
 	if(args[0]->getObjectType()==T_UNDEFINED)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"HACK: undefined event type passed to addEventListener");
@@ -352,9 +351,11 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
+	const tiny_string& eventName=args[0]->toString();
+
 	{
 		Locker l(th->handlersMutex);
-		map<tiny_string, list<listener> >::iterator h=th->handlers.find(args[0]->toString());
+		map<tiny_string, list<listener> >::iterator h=th->handlers.find(eventName);
 		if(h==th->handlers.end())
 		{
 			LOG(LOG_CALLS,_("Event not found"));

@@ -987,7 +987,14 @@ void NetStream::execute()
 						onMetaDataName.name_type=multiname::NAME_STRING;
 						onMetaDataName.name_s="onMetaData";
 						onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
-						ASObject* callback = client->getVariableByMultiname(onMetaDataName);
+						ASObject* callback = NULL;
+						//Must synchronize with the VM
+						{
+							Locker l(getVm()->bigVmMutex);
+							callback=client->getVariableByMultiname(onMetaDataName);
+							//TODO where should this be decReffed?
+							callback->incRef();
+						}
 						if(callback && callback->getObjectType() == T_FUNCTION)
 						{
 							ASObject* callbackArgs[1];

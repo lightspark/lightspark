@@ -118,6 +118,20 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 	clip->decRef();
 }
 
+void SystemState::registerEnterFrameListener(DisplayObject* obj)
+{
+	Locker l(mutexEnterFrameListeners);
+	obj->incRef();
+	enterFrameListeners.insert(obj);
+}
+
+void SystemState::unregisterEnterFrameListener(DisplayObject* obj)
+{
+	Locker l(mutexEnterFrameListeners);
+	enterFrameListeners.erase(obj);
+	obj->decRef();
+}
+
 void RootMovieClip::setOnStage(bool staged)
 {
 	Locker l(mutexFrames);
@@ -156,8 +170,8 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
-	showProfilingData(false),showDebug(false),currentVm(NULL),finalizingDestruction(false),
-	useInterpreter(true),useJit(false),downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL)
+	mutexEnterFrameListeners("mutexEnterFrameListeners"),showProfilingData(false),showDebug(false),currentVm(NULL),
+	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
 	//Create the thread pool
@@ -688,6 +702,18 @@ void SystemState::tick()
 		for(;it!=profilingData.end();++it)
 			it->tick();
 	}
+	//Send enterFrame events, if needed
+	{
+		Locker l(mutexEnterFrameListeners);
+		if(!enterFrameListeners.empty())
+		{
+			Event* e=Class<Event>::getInstanceS("enterFrame");
+			auto it=enterFrameListeners.begin();
+			for(;it!=enterFrameListeners.end();it++)
+				getVm()->addEvent(*it,e);
+			e->decRef();
+		}
+	}
 	//Enter frame should be sent to the stage too
 	if(stage->hasEventListener("enterFrame"))
 	{
@@ -1165,27 +1191,19 @@ void RootMovieClip::tick()
 	try
 	{
 		advanceFrame();
-		Event* e=Class<Event>::getInstanceS("enterFrame");
-		if(hasEventListener("enterFrame"))
-			getVm()->addEvent(this,e);
-		//Get a copy of the current childs
-		vector<MovieClip*> curChildren;
+		//advanceFrame may be blocking (if Frame init happens)
+		Locker l(mutexChildrenClips);
+		vector<MovieClip*> tmpChildren(childrenClips.begin(),childrenClips.end());
+		for(uint32_t i=0;i<tmpChildren.size();i++)
+			tmpChildren[i]->incRef();
+		l.unlock();
+		//Advance all the children to the next frame using the temporary copy
+		for(uint32_t i=0;i<tmpChildren.size();i++)
 		{
-			Locker l(mutexChildrenClips);
-			curChildren.reserve(childrenClips.size());
-			curChildren.insert(curChildren.end(),childrenClips.begin(),childrenClips.end());
-			for(uint32_t i=0;i<curChildren.size();i++)
-				curChildren[i]->incRef();
+			tmpChildren[i]->advanceFrame();
+			//Release when done
+			tmpChildren[i]->decRef();
 		}
-		//Advance all the children, and release the reference
-		for(uint32_t i=0;i<curChildren.size();i++)
-		{
-			curChildren[i]->advanceFrame();
-			if(curChildren[i]->hasEventListener("enterFrame"))
-				getVm()->addEvent(curChildren[i],e);
-			curChildren[i]->decRef();
-		}
-		e->decRef();
 	}
 	catch(LightsparkException& e)
 	{

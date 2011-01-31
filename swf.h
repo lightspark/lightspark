@@ -206,6 +206,9 @@ private:
 
 	URLInfo url;
 	Spinlock profileDataSpinlock;
+
+	Mutex mutexEnterFrameListeners;
+	std::set<DisplayObject*> enterFrameListeners;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	ENGINE getEngine() DLL_PUBLIC { return engine; };
@@ -288,6 +291,10 @@ public:
 	//	NetConnection
 	ObjectEncoding::ENCODING staticNetConnectionDefaultObjectEncoding;
 	ObjectEncoding::ENCODING staticByteArrayDefaultObjectEncoding;
+	
+	//enterFrame event management
+	void registerEnterFrameListener(DisplayObject* clip);
+	void unregisterEnterFrameListener(DisplayObject* clip);
 };
 
 class ParseThread: public IThreadJob

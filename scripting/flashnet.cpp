@@ -477,10 +477,13 @@ ASFUNCTIONBODY(NetConnection,_getProtocol)
 ASFUNCTIONBODY(NetConnection,_getURI)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);
-	if(th->_connected)
+	if(th->_connected && th->uri.isValid())
 		return Class<ASString>::getInstanceS(th->uri.getURL());
 	else
-		return new Undefined;
+	{
+		//Reference says the return should be undefined. The right thing is "null" as a string
+		return Class<ASString>::getInstanceS("null");
+	}
 }
 
 NetStream::NetStream():frameRate(0),tickStarted(false),connection(NULL),downloader(NULL),

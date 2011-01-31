@@ -334,7 +334,10 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		priority=args[3]->toInt();
 
 	if(useCapture)
+	{
 		LOG(LOG_NOT_IMPLEMENTED,_("Not implemented mode for addEventListener"));
+		return NULL;
+	}
 
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);

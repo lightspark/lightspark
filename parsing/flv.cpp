@@ -123,6 +123,68 @@ ScriptDataString::ScriptDataString(std::istream& s)
 	delete[] buf;
 }
 
+void skipStrictArray(std::istream& s);
+void skipObject(std::istream& s)
+{
+	while(1)
+	{
+		ScriptDataString varName(s);
+		cout << varName.getString() << endl;
+		UI8 Type;
+		s >> Type;
+		switch(Type)
+		{
+			case 0: //double (big-endian)
+			{
+				uint64_t i;
+				s.read((char*)&i,8);
+				break;
+			}
+			case 2: //string
+			{
+				ScriptDataString String(s);
+				break;
+			}
+			case 10: //strict array
+			{
+				skipStrictArray(s);
+				break;
+			}
+			case 9: //end
+				cout << "end of object" << endl;
+				return;
+			default:
+				cout << (int)Type << endl;
+				::abort();
+		}
+	}
+}
+
+void skipStrictArray(std::istream& s)
+{
+	UI32_FLV len;
+	s >> len;
+	cout << "Array len " << len << endl;
+	for(uint32_t i=0;i<len;i++)
+	{
+		//ScriptDataString varName(s);
+		//cout << varName.getString() << endl;
+		UI8 Type;
+		s >> Type;
+		switch(Type)
+		{
+			case 3:
+			{
+				skipObject(s);
+				break;
+			}
+			default:
+				cout << (int)Type << endl;
+				::abort();
+		}
+	}
+}
+
 ScriptECMAArray::ScriptECMAArray(std::istream& s, ScriptDataTag* tag)
 {
 	//numVar is an 'approximation' of array size
@@ -165,9 +227,23 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s, ScriptDataTag* tag)
 				//cout << "FLV metadata string: " << varName.getString() << " = " << String.getString() << endl;
 				break;
 			}
+			case 8: //ECMA Array
+			{
+				//HACK
+				ScriptDataTag tmpTag;
+				ScriptECMAArray(s, &tmpTag);
+				break;
+			}
 			case 9: //End of array
 			{
+				cout << "end of array" << endl;
 				return;
+			}
+			case 10: //Strict Array
+			{
+				//HACK
+				skipStrictArray(s);
+				break;
 			}
 			default:
 				cout << (int)Type << endl;

@@ -124,7 +124,7 @@ ASFUNCTIONBODY(Array,_constructor)
 {
 	Array* th=static_cast<Array*>(obj);
 
-	if(argslen==1)
+	if(argslen==1 && args[0]->getObjectType()==T_INTEGER)
 	{
 		int size=args[0]->toInt();
 		LOG(LOG_CALLS,_("Creating array of length ") << size);

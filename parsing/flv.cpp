@@ -248,7 +248,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 		SI24_FLV CompositionTime;
 		s >> CompositionTime;
-		assert_and_throw(CompositionTime==0); //TODO: what are composition times
+		//assert_and_throw(CompositionTime==0); //TODO: what are composition times
 
 		//Compute lenght of raw data
 		packetLen=dataSize-5;

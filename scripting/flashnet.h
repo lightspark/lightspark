@@ -140,6 +140,8 @@ private:
 	STREAM_TYPE classifyStream(std::istream& s);
 	double frameRate;
 	bool tickStarted;
+	//The NetConnection used by this NetStream
+	NetConnection* connection;
 	Downloader* downloader;
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;

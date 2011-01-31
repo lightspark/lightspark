@@ -483,7 +483,7 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 		return new Undefined;
 }
 
-NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),
+NetStream::NetStream():frameRate(0),tickStarted(false),connection(NULL),downloader(NULL),
 	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),
 		paused(false),closed(true),checkPolicyFile(false),rawAccessAllowed(false)
 {
@@ -497,6 +497,8 @@ NetStream::~NetStream()
 		sys->removeJob(this);
 	delete videoDecoder; 
 	delete audioDecoder; 
+	if(connection)
+		connection->decRef();
 	sem_destroy(&mutex);
 }
 
@@ -589,6 +591,8 @@ ASFUNCTIONBODY(NetStream,_constructor)
 	}
 
 	th->client = th;
+	th->connection=netConnection;
+	th->connection->incRef();
 
 	assert_and_throw(netConnection->uri.getURL()=="");
 	return NULL;

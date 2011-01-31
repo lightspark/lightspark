@@ -1830,6 +1830,10 @@ TRISTATE Number::isLess(ASObject* o)
 		//Undefined is NaN, so the result is undefined
 		return TUNDEFINED;
 	}
+	else if(o->getObjectType()==T_STRING)
+	{
+		return (val<o->toNumber())?TTRUE:TFALSE;
+	}
 	else
 	{
 		return ASObject::isLess(o);

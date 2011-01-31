@@ -614,33 +614,47 @@ ASFUNCTIONBODY(NetStream,play)
 	th->paused = false;
 //	th->audioPaused = false;
 
-	assert_and_throw(argslen==1);
-	const tiny_string& arg0=args[0]->toString();
-	th->url = sys->getOrigin().goToURL(arg0);
-
-	//checkPolicyFile only applies to per-pixel access, loading and playing is always allowed.
-	//So there is no need to disallow playing if policy files disallow it.
-	//We do need to check if per-pixel access is allowed.
-	SecurityManager::EVALUATIONRESULT evaluationResult = 
-		sys->securityManager->evaluateURL(th->url, th->checkPolicyFile, 
-			~(SecurityManager::LOCAL_WITH_FILE),
-			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
-			true); //Check for navigating up in local directories (not allowed)
-	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
-		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
-				"connect to network");
-	//Local-with-filesystem sandbox can't access network
-	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
-		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
-				"connect to local file");
-	else if(evaluationResult == SecurityManager::NA_PORT)
-		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
-				"connect to restricted port");
-	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
-		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
-				"not allowed to navigate up for local files");
-	else if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
-		th->rawAccessAllowed = true;
+	
+	if(th->connection->uri.isValid())
+	{
+		//We should connect to FMS
+		assert_and_throw(argslen>=2 && argslen<=4);
+		//Args: name, start, len, reset
+		th->url=th->connection->uri;
+		th->url.setStream(args[0]->toString());
+		assert(th->url.getProtocol()=="rtmpe");
+	}
+	else
+	{
+		//HTTP download
+		assert_and_throw(argslen>=1);
+		//args[0] is the url
+		//what is the meaning of the other arguments
+		th->url = sys->getOrigin().goToURL(args[0]->toString());
+		//checkPolicyFile only applies to per-pixel access, loading and playing is always allowed.
+		//So there is no need to disallow playing if policy files disallow it.
+		//We do need to check if per-pixel access is allowed.
+		SecurityManager::EVALUATIONRESULT evaluationResult = 
+			sys->securityManager->evaluateURL(th->url, th->checkPolicyFile, 
+				~(SecurityManager::LOCAL_WITH_FILE),
+				SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
+				true); //Check for navigating up in local directories (not allowed)
+		if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
+			throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
+					"connect to network");
+		//Local-with-filesystem sandbox can't access network
+		else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
+			throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
+					"connect to local file");
+		else if(evaluationResult == SecurityManager::NA_PORT)
+			throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
+					"connect to restricted port");
+		else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
+			throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
+					"not allowed to navigate up for local files");
+		else if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
+			th->rawAccessAllowed = true;
+	}
 
 	assert_and_throw(th->downloader==NULL);
 	

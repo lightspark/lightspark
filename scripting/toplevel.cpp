@@ -808,6 +808,12 @@ tiny_string XML::toString(bool debugMsg)
 	return toString_priv();
 }
 
+XMLList::~XMLList()
+{
+	for(uint32_t i=0;i<nodes.size();i++)
+		nodes[i]->decRef();
+}
+
 void XMLList::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();

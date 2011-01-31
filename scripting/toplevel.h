@@ -688,6 +688,7 @@ private:
 public:
 	XMLList():constructed(false){}
 	XMLList(const std::vector<XML*>& r):nodes(r),constructed(true){}
+	~XMLList();
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);

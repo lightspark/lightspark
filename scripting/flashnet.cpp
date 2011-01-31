@@ -597,7 +597,6 @@ ASFUNCTIONBODY(NetStream,_constructor)
 	th->connection=netConnection;
 	th->connection->incRef();
 
-	assert_and_throw(netConnection->uri.getURL()=="");
 	return NULL;
 }
 

@@ -27,7 +27,7 @@ using namespace lightspark;
 using namespace std;
 
 RTMPDownloader::RTMPDownloader(const tiny_string& _url, const tiny_string& _stream):
-	ThreadedDownloader(_url, false), //No caching to file allowed
+	ThreadedDownloader(_url, true), //No caching to file allowed
 	stream(_stream)
 {
 }
@@ -69,7 +69,6 @@ void RTMPDownloader::execute()
 	{
 		//TODO: avoid the copy in the temporary buffer
 		ret=RTMP_Read(rtmpCtx,buf,4096);
-		cout << "DL " << ret << endl;
 		if(ret==0 || hasFailed() || aborting)
 			break;
 		append((uint8_t*)buf,ret);

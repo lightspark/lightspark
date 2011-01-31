@@ -240,10 +240,14 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("IBitmapDrawable","flash.display",Class<ASObject>::getClass(QName("IBitmapDrawable","flash.display")));
 	builtin->setVariableByQName("BitmapData","flash.display",Class<ASObject>::getClass(QName("BitmapData","flash.display")));
 	builtin->setVariableByQName("Bitmap","flash.display",Class<Bitmap>::getClass());
+	builtin->setVariableByQName("GraphicsGradientFill","flash.display",
+			Class<ASObject>::getClass(QName("GraphicsGradientFill","flash.display")));
+	builtin->setVariableByQName("GraphicsPath","flash.display",Class<ASObject>::getClass(QName("GraphicsPath","flash.display")));
 
 	builtin->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")));
 	builtin->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass(QName("BitmapFilter","flash.filters")));
 	builtin->setVariableByQName("GlowFilter","flash.filters",Class<ASObject>::getClass(QName("GlowFilter","flash.filters")));
+	builtin->setVariableByQName("BevelFilter","flash.filters",Class<ASObject>::getClass(QName("BevelFilter","flash.filters")));
 	builtin->setVariableByQName("ColorMatrixFilter","flash.filters",Class<ASObject>::getClass(QName("ColorMatrixFilter","flash.filters")));
 
 	builtin->setVariableByQName("Font","flash.text",Class<Font>::getClass());

@@ -8,3 +8,5 @@ Official TODO Queue:
 -) Rework SpriteTag to avoid having the display list cached in frames and build them using the tags
 -) Rework and reorder the various getMultiname
 -) Do not use _constructor when building internally
+-) Implement AMF0 for flv parsing
+-) Fix memory based downloader

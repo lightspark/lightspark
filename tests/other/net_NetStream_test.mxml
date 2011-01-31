@@ -104,7 +104,8 @@
 		}
 
 		stream_ns = new NetStream(connect_nc);
-		stream_ns.client = this; //Needed, otherwise will generate a compile warning
+		stream_ns.client = new Object;
+		stream_ns.client["onMetaData"]=this.onMetaData;
 
 		function netStatusHandler(p_evt:NetStatusEvent):void
 		{
@@ -120,8 +121,10 @@
 
 		stream_ns.addEventListener(NetStatusEvent.NET_STATUS, netStatusHandler);
 
+		var videoWrapper:UIComponent = new UIComponent();
+		addChild(videoWrapper);
 		video = new Video();
-		addChild(video);
+		videoWrapper.addChild(video);
 		video.attachNetStream(stream_ns);
 		video.addEventListener(MouseEvent.CLICK,videoClick);
 	}

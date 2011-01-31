@@ -2316,7 +2316,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 			LOG(LOG_TRACE, "got an " << excobj->toString());
 			LOG(LOG_TRACE, "pos=" << pos);
-			for (unsigned int i=0;i<mi->body->exception_count;i++) {
+			for (unsigned int i=0;i<mi->body->exception_count;i++)
+			{
 				exception_info exc=mi->body->exceptions[i];
 				multiname* name=mi->context->getMultiname(exc.exc_type, cc);
 				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to);

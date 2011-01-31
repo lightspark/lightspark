@@ -1052,7 +1052,7 @@ void NetStream::execute()
 	}
 	catch(LightsparkException& e)
 	{
-		cout << e.cause << endl;
+		LOG(LOG_ERROR, "Exception in NetStream " << e.cause);
 		threadAbort();
 		waitForFlush=false;
 	}

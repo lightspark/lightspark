@@ -36,7 +36,6 @@
  // TODO: Proper CMake check
  #include <arpa/inet.h>
 #endif
-#include <stdatomic.h>
 #include <endian.h>
 
 #ifdef BIG_ENDIAN

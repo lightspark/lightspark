@@ -1836,6 +1836,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 			child->parent->_removeChild(child);
 	}
 	child->parent=this;
+	incRef();
 
 	//Set the root of the movie to this container
 	child->setRoot(root);
@@ -1875,6 +1876,7 @@ void DisplayObjectContainer::_removeChild(DisplayObject* child)
 	//Set the root of the movie to NULL
 	child->setRoot(NULL);
 	//We can release the reference to the child
+	child->parent->decRef();
 	child->parent=NULL;
 	child->setOnStage(false);
 	child->decRef();
@@ -1990,6 +1992,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 		th->dynamicDisplayList.erase(it);
 	}
 	//We can release the reference to the child
+	child->parent->decRef();
 	child->parent=NULL;
 	child->setOnStage(false);
 

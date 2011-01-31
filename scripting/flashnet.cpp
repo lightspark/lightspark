@@ -405,14 +405,16 @@ ASFUNCTIONBODY(NetConnection,connect)
 		th->_connected = false;
 		ASString* command = static_cast<ASString*>(args[0]);
 		th->uri = URLInfo(command->toString());
-		
-		if(sys->securityManager->evaluatePoliciesURL(th->uri, true) != SecurityManager::ALLOWED)
+		//TODO: does security apply for streams?
+		assert_and_throw(th->uri.getProtocol()=="rtmpe");
+
+/*		if(sys->securityManager->evaluatePoliciesURL(th->uri, true) != SecurityManager::ALLOWED)
 		{
 			//TODO: find correct way of handling this case
 			throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
 		}
 
-		throw UnsupportedException("NetConnection::connect to FMS");
+		throw UnsupportedException("NetConnection::connect to FMS");*/
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)

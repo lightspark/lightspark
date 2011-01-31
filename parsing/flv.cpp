@@ -97,7 +97,6 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 
 	ScriptDataString String(s);
 	methodName=String.getString();
-	//cout << methodName << endl;
 
 	s >> Type;
 	if(Type!=8)

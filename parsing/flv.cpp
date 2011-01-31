@@ -188,15 +188,35 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 	if(frameType!=1 && frameType!=2)
 		throw ParseException("Unexpected frameType in FLV");
 
-	assert_and_throw(codecId==7 || codecId==2);
+	assert_and_throw(codecId==2 || codecId==4 || codecId==7);
 
 	if(codecId==2)
 	{
 		codec=H263;
 		//H263 video packet
-		//Is everything raw?
 		//Compute lenght of raw data
 		packetLen=dataSize-1;
+
+		// fix warning
+#ifndef NDEBUG
+		int ret =
+#endif
+		aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+		assert(ret==0);
+
+		s.read((char*)packetData,packetLen);
+		memset(packetData+packetLen,0,16);
+	}
+	else if(codecId==4)
+	{
+		codec=VP6;
+		//VP6 video packet
+		uint8_t adjustment;
+		s.read((char*)&adjustment,1);
+		//TODO: support adjustment (FFMPEG accept extradata for it)
+		assert(adjustment==0);
+		//Compute lenght of raw data
+		packetLen=dataSize-2;
 
 		// fix warning
 #ifndef NDEBUG

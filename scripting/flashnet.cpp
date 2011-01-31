@@ -1076,6 +1076,13 @@ void NetStream::execute()
 			audioDecoder->waitFlushed();
 		if(videoDecoder)
 			videoDecoder->waitFlushed();
+
+		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop");
+		getVm()->addEvent(this, status);
+		status->decRef();
+		status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Flush");
+		getVm()->addEvent(this, status);
+		status->decRef();
 	}
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);

@@ -1958,6 +1958,13 @@ ASObject* ABCVm::asType(ASObject* obj, multiname* name)
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,_("asTypelate"));
+	//HACK
+	if(type->getObjectType()==T_UNDEFINED)
+	{
+		type->decRef();
+		obj->decRef();
+		return new Null;
+	}
 
 	assert_and_throw(type->getObjectType()==T_CLASS);
 	Class_base* c=static_cast<Class_base*>(type);

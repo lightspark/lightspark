@@ -1061,6 +1061,7 @@ DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty
 
 DisplayObject::~DisplayObject()
 {
+	//TODO: unregister from the root if enterFrame is used
 	if(loaderInfo && !sys->finalizingDestruction)
 		loaderInfo->decRef();
 }

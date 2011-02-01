@@ -142,6 +142,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	URLLoader* th=static_cast<URLLoader*>(obj);
 	ASObject* arg=args[0];
 	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
+	assert_and_throw(th->downloader==NULL);
 	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
 	//Check for URLRequest.url != null
 	if(urlRequest->url.len() == 0)
@@ -258,6 +259,8 @@ void URLLoader::execute()
 	if(!downloader->hasFailed())
 	{
 		downloader->waitForTermination();
+		//HACK: the downloader may have been cleared in the mean time
+		assert(downloader);
 		if(!downloader->hasFailed())
 		{
 			istream s(downloader);

@@ -222,7 +222,7 @@ ASFUNCTIONBODY(URLLoader,load)
 		if(data)
 		{
 			if(data->getPrototype()==Class<URLVariables>::getClass())
-				throw RunTimeException("URLVariables not support in URLLoader::load");
+				;//throw RunTimeException("URLVariables not support in URLLoader::load");
 			else if(data->getPrototype()==Class<ByteArray>::getClass())
 				throw RunTimeException("ByteArray not support in URLLoader::load");
 			else

@@ -1844,8 +1844,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
+	if(args[0]->getObjectType() == T_CLASS)
+	{
+		return false;
+	}
 	//Validate object type
-	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getPrototype() && 
+		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
@@ -1859,6 +1864,10 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==2);
+	if(args[0]->getObjectType() == T_CLASS)
+	{
+		return new Null;
+	}
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
@@ -1881,6 +1890,10 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
+	if(args[0]->getObjectType() == T_CLASS)
+	{
+		return new Null;
+	}
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
@@ -1902,8 +1915,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
+	if(args[0]->getObjectType() == T_CLASS)
+	{
+		return new Null;
+	}
 	//Validate object type
-	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getPrototype() && 
+		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 

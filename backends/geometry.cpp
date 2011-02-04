@@ -19,7 +19,7 @@
 
 #include "swf.h"
 #include <fstream>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <GL/glew.h>
 #include "swftypes.h"

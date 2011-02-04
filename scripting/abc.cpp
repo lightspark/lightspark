@@ -30,7 +30,7 @@
 #include "swftypes.h"
 #include <sstream>
 #include <limits>
-#include <math.h>
+#include <cmath>
 #include "swf.h"
 #include "flashevents.h"
 #include "flashdisplay.h"

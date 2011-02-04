@@ -25,7 +25,7 @@
 #include <string.h>
 #include <algorithm>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 #include "swf.h"
 #include "backends/geometry.h"
 #include "backends/rendering.h"

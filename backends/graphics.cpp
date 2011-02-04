@@ -596,6 +596,8 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 
 				cairo_fill(cr);
 
+				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
+
 				cairo_pattern_t* pattern = FILLSTYLEToCairo(tokens[i].fillStyle);
 				cairo_set_source(cr, pattern);
 
@@ -614,6 +616,7 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 				const LINESTYLE2& style = tokens[i].lineStyle;
 				const RGBA& color = style.Color;
 
+				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
 				cairo_set_source_rgba(stroke_cr, color.rf(), color.gf(), color.bf(), color.af());
 
 				// TODO: EndCapStyle
@@ -641,13 +644,19 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 				if(skipPaint)
 					break;
 
-				cairo_new_path(cr);
+				cairo_fill(cr);
+
+				// Clear source.
+				cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 				break;
 			case CLEAR_STROKE:
 				if(skipPaint)
 					break;
 
-				cairo_new_path(stroke_cr);
+				cairo_stroke(stroke_cr);
+
+				// Clear source.
+				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
 				break;
 			default:
 				::abort();

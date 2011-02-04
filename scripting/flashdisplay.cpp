@@ -1846,7 +1846,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 	assert_and_throw(argslen==1);
 	if(args[0]->getObjectType() == T_CLASS)
 	{
-		return false;
+		return abstract_b(false);
 	}
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getPrototype() && 

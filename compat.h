@@ -94,15 +94,20 @@ long lrint(double f);
 #define TLSDATA __thread
 #define CALLBACK
 
+//Support both atomic header ( gcc >= 4.6 ), and earlier ( stdatomic.h )
+#ifdef HAVE_ATOMIC
+#include <atomic>
+#else
 #include <stdatomic.h>
+#endif
 #define ATOMIC_INT32(x) std::atomic<int32_t> x
 #define ATOMIC_INCREMENT(x) x.fetch_add(1)
 #define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
 
 //Boolean type con acquire release barrier semantics
 #define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
-#define ACQUIRE_READ(x) x.load(memory_order_acquire)
-#define RELEASE_WRITE(x, v) x.store(v, memory_order_release)
+#define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
+#define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
 int aligned_malloc(void **memptr, size_t alignment, size_t size);
 void aligned_free(void *mem);
 #endif

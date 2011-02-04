@@ -37,8 +37,15 @@ using namespace std;
 SecurityManager::SecurityManager():
 	sandboxType(REMOTE),exactSettings(true),exactSettingsLocked(false)
 {
-	sandboxNames = {"remote","localWithFile","localWithNetwork","localTrusted"};
-	sandboxTitles = {"remote","local-with-filesystem","local-with-networking","local-trusted"};
+	sandboxNames[0] = "remote";
+	sandboxNames[1] = "localWithFile";
+	sandboxNames[2] = "localWithNetwork";
+	sandboxNames[3] = "localTrusted";
+
+	sandboxTitles[0] = "remote";
+	sandboxTitles[1] = "local-with-filesystem";
+	sandboxTitles[2] = "local-with-networking";
+	sandboxTitles[3] = "local-trusted";
 
 	sem_init(&mutex,0,1);
 	//== Lock initialized

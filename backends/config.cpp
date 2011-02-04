@@ -40,7 +40,9 @@ Config::Config():
 	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),
 	audioBackend(PULSEAUDIO),audioBackendName("")
 {
-	audioBackendNames = {"pulseaudio", "openal", "alsa"};
+	audioBackendNames[0] = "pulseaudio";
+	audioBackendNames[1] = "openal";
+	audioBackendNames[2] = "alsa";
 }
 
 Config::~Config()

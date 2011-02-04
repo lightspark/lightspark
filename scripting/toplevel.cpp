@@ -239,7 +239,7 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 
 	int unsigned i = th->data.size()-1;
 	int j;
-	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !isnan(args[1]->toNumber()))
+	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 	{
 		j = args[1]->toInt(); //Preserve sign
 		if(j < 0) //Negative offset, use it as offset from the end of the array
@@ -381,7 +381,7 @@ bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_sl
 		else if(d2.type==DATA_OBJECT && d2.data)
 			b=d2.data->toNumber();
 
-		if(isnan(a) || isnan(b))
+		if(std::isnan(a) || std::isnan(b))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 		return a<b;
 	}
@@ -1206,7 +1206,7 @@ TRISTATE ASString::isLess(ASObject* r)
 	}
 	number_t a=toNumber();
 	number_t b=r->toNumber();
-	if(isnan(a) || isnan(b))
+	if(std::isnan(a) || std::isnan(b))
 		return TUNDEFINED;
 	//TODO: Should we special handle infinite values?
 	return (a<b)?TTRUE:TFALSE;
@@ -2273,7 +2273,7 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 	ASString* th=static_cast<ASString*>(obj);
 	const tiny_string& val=args[0]->toString();
 	int startIndex=0x7fffffff;
-	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !isnan(args[1]->toNumber()))
+	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 		startIndex=args[1]->toInt();
 		
 	if(startIndex < 0) //If negative offset is passed, clamp to 0 for start-of-string matches
@@ -2314,7 +2314,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 
 ASFUNCTIONBODY(ASString,replace)
 {
-	ASString* th=static_cast<const ASString*>(obj);
+	ASString* th=static_cast<ASString*>(obj);
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type=(args[1]->getObjectType()==T_FUNCTION)?FUNC:STRING;
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
@@ -3245,7 +3245,7 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 	{
 		LOG(LOG_CALLS,_("Number to bool"));
 		double val=obj->toNumber();
-		if(val==0 || isnan(val))
+		if(val==0 || std::isnan(val))
 			return false;
 		else
 			return true;
@@ -3307,7 +3307,7 @@ ASFUNCTIONBODY(lightspark,isNaN)
 		return abstract_b(false);
 	else if(args[0]->getObjectType()==T_NUMBER)
 	{
-		if(isnan(args[0]->toNumber()))
+		if(std::isnan(args[0]->toNumber()))
 			return abstract_b(true);
 		else
 			return abstract_b(false);
@@ -3317,7 +3317,7 @@ ASFUNCTIONBODY(lightspark,isNaN)
 	else if(args[0]->getObjectType()==T_STRING)
 	{
 		double n=args[0]->toNumber();
-		return abstract_b(isnan(n));
+		return abstract_b(std::isnan(n));
 	}
 	else
 		throw UnsupportedException("Weird argument for isNaN");

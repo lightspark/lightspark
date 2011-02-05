@@ -311,6 +311,12 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);
 
+	DisplayObject* dispobj=dynamic_cast<DisplayObject*>(th);
+	if(eventName=="enterFrame" && dispobj)
+	{
+		sys->registerEnterFrameListener(dispobj);
+	}
+
 	{
 		Locker l(th->handlersMutex);
 		//Search if any listener is already registered for the event
@@ -352,6 +358,12 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
 	const tiny_string& eventName=args[0]->toString();
+
+	DisplayObject* dispobj=dynamic_cast<DisplayObject*>(th);
+	if(eventName=="enterFrame" && dispobj)
+	{
+		sys->unregisterEnterFrameListener(dispobj);
+	}
 
 	{
 		Locker l(th->handlersMutex);

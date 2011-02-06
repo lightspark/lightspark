@@ -404,6 +404,7 @@ public:
 	Null(){type=T_NULL;}
 	tiny_string toString(bool debugMsg);
 	bool isEqual(ASObject* r);
+	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
 	double toNumber();
 };

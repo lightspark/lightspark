@@ -1713,6 +1713,12 @@ TRISTATE Integer::isLess(ASObject* o)
 			}
 			break;
 			
+		case T_NULL:
+			{
+				return (val < 0)?TTRUE:TFALSE;
+			}
+			break;
+
 		default:
 			break;
 	}
@@ -1804,6 +1810,11 @@ TRISTATE UInteger::isLess(ASObject* o)
 		if(isnan(i->toNumber())) return TUNDEFINED;
 		return (val < i->toUInt())?TTRUE:TFALSE;
 	}
+	else if(o->getObjectType()==T_NULL)
+	{
+		// UInteger is never less than int(null) == 0
+		return TFALSE;
+	}
 	else
 		throw UnsupportedException("UInteger::isLess is not completely implemented");
 }
@@ -1843,6 +1854,10 @@ TRISTATE Number::isLess(ASObject* o)
 	else if(o->getObjectType()==T_STRING)
 	{
 		return (val<o->toNumber())?TTRUE:TFALSE;
+	}
+	else if(o->getObjectType()==T_NULL)
+	{
+		return (val<0)?TTRUE:TFALSE;
 	}
 	else
 	{
@@ -2516,6 +2531,34 @@ bool Null::isEqual(ASObject* r)
 		return true;
 	else
 		return false;
+}
+
+TRISTATE Null::isLess(ASObject* r)
+{
+	if(r->getObjectType()==T_INTEGER)
+	{
+		Integer* i=static_cast<Integer*>(r);
+		return (0<i->toInt())?TTRUE:TFALSE;
+	}
+	else if(r->getObjectType()==T_UINTEGER)
+	{
+		UInteger* i=static_cast<UInteger*>(r);
+		return (0<i->toUInt())?TTRUE:TFALSE;
+	}
+	else if(r->getObjectType()==T_NUMBER)
+	{
+		Number* i=static_cast<Number*>(r);
+		if(isnan(i->toNumber())) return TUNDEFINED;
+		return (0<i->toNumber())?TTRUE:TFALSE;
+	}
+	else if(r->getObjectType()==T_NULL)
+	{
+		return TFALSE;
+	}
+	else
+	{
+		return ASObject::isLess(r);
+	}
 }
 
 int Null::toInt()

@@ -1680,6 +1680,7 @@ TRISTATE Integer::isLess(ASObject* o)
 		case T_NUMBER:
 			{
 				Number* i=static_cast<Number*>(o);
+				if(isnan(i->toNumber())) return TUNDEFINED;
 				return (val < i->toNumber())?TTRUE:TFALSE;
 			}
 			break;
@@ -1797,6 +1798,12 @@ TRISTATE UInteger::isLess(ASObject* o)
 		else
 			return (val1<(uint32_t)val2)?TTRUE:TFALSE;
 	}
+	else if(o->getObjectType()==T_NUMBER)
+	{
+		Number* i=static_cast<Number*>(o);
+		if(isnan(i->toNumber())) return TUNDEFINED;
+		return (val < i->toUInt())?TTRUE:TFALSE;
+	}
 	else
 		throw UnsupportedException("UInteger::isLess is not completely implemented");
 }
@@ -1815,6 +1822,8 @@ bool Number::isEqual(ASObject* o)
 
 TRISTATE Number::isLess(ASObject* o)
 {
+	if(isnan(val))
+		return TUNDEFINED;
 	if(o->getObjectType()==T_INTEGER)
 	{
 		const Integer* i=static_cast<const Integer*>(o);
@@ -1823,6 +1832,7 @@ TRISTATE Number::isLess(ASObject* o)
 	else if(o->getObjectType()==T_NUMBER)
 	{
 		const Number* i=static_cast<const Number*>(o);
+		if(isnan(i->val)) return TUNDEFINED;
 		return (val<i->val)?TTRUE:TFALSE;
 	}
 	else if(o->getObjectType()==T_UNDEFINED)

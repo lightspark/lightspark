@@ -90,6 +90,7 @@ void Event::sinit(Class_base* c)
 
 	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget),true);
 	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType),true);
+	c->setMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),true);
 }
 
 void Event::buildTraits(ASObject* o)
@@ -131,6 +132,33 @@ ASFUNCTIONBODY(Event,_getType)
 {
 	Event* th=static_cast<Event*>(obj);
 	return Class<ASString>::getInstanceS(th->type);
+}
+
+ASFUNCTIONBODY(Event,formatToString)
+{
+	assert_and_throw(argslen>=1);
+	Event* th=static_cast<Event*>(obj);
+	tiny_string msg = "[";
+	msg += args[0]->toString();
+
+	for(unsigned int i=1; i<argslen; i++)
+	{
+		tiny_string prop(args[i]->toString());
+		msg += " ";
+		msg += prop;
+		msg += "=";
+
+		multiname propName;
+		propName.name_type=multiname::NAME_STRING;
+		propName.name_s=prop;
+		propName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
+		ASObject *obj=th->getVariableByMultiname(propName);
+		if (obj)
+			msg += obj->toString();
+	}
+	msg += "]";
+
+	return Class<ASString>::getInstanceS(msg);
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")

@@ -3921,6 +3921,8 @@ ASFUNCTIONBODY(lightspark,isNaN)
 		double n=args[0]->toNumber();
 		return abstract_b(std::isnan(n));
 	}
+	else if(args[0]->getObjectType()==T_NULL)
+		return abstract_b(false); // because Number(null) == 0
 	else
 		throw UnsupportedException("Weird argument for isNaN");
 }

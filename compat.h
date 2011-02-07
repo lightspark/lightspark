@@ -56,7 +56,6 @@ typedef int pid_t;
 // Current Windows is always little-endian
 #define be64toh(x) _byteswap_uint64(x)
 
-#include <stddef.h>
 #include <malloc.h>
 inline int aligned_malloc(void **memptr, size_t alignment, size_t size)
 {

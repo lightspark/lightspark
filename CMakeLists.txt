@@ -45,13 +45,6 @@ IF(CMAKE_COMPILER_IS_GNUCC)
    ENDIF(NOT GCC_IS_4_4)
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-# Check if the system have atomic header ( gcc >= 4.6 )
-INCLUDE (CheckIncludeFileCXX)
-CHECK_INCLUDE_FILE_CXX (atomic HAVE_ATOMIC)
-IF(HAVE_ATOMIC)
-  ADD_DEFINITIONS(-DHAVE_ATOMIC)
-ENDIF(HAVE_ATOMIC)
-
 # Find put the path of the gnash executable, if available
 FIND_PROGRAM(GNASH_EXE_PATH NAMES gnash)
 
@@ -251,6 +244,13 @@ ENDIF(CMAKE_COMPILER_IS_GNUCC)
 IF(MSVC)
   ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DVPCOMPAT -DPTW32_STATIC_LIB -DPCRE_STATIC)
 ENDIF(MSVC)
+
+# Check if the system have atomic header ( gcc >= 4.6 )
+INCLUDE (CheckIncludeFileCXX)
+CHECK_INCLUDE_FILE_CXX (atomic HAVE_ATOMIC)
+IF(HAVE_ATOMIC)
+  ADD_DEFINITIONS(-DHAVE_ATOMIC)
+ENDIF(HAVE_ATOMIC)
 
 # Setting the output directories, so we can build all profiles without mixmatching
 IF(CMAKE_COMPILER_IS_GNUCC)

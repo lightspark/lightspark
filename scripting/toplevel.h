@@ -339,10 +339,14 @@ private:
 public:
 	int32_t toInt()
 	{
-		return val;
+		return val ? 1 : 0;
 	}
 	bool isEqual(ASObject* r);
 	tiny_string toString(bool debugMsg);
+	double toNumber()
+	{
+		return val ? 1.0 : 0.0;
+	}
 	static void buildTraits(ASObject* o){};
 };
 
@@ -352,7 +356,7 @@ public:
 	ASFUNCTION(call);
 	Undefined();
 	tiny_string toString(bool debugMsg);
-	int toInt();
+	int32_t toInt();
 	double toNumber();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);

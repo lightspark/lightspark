@@ -57,7 +57,7 @@ typedef int pid_t;
 #define be64toh(x) _byteswap_uint64(x)
 
 #include <malloc.h>
-inline int aligned_malloc(void **memptr, size_t alignment, size_t size)
+inline int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size)
 {
 	*memptr = _aligned_malloc(size, alignment);
 	return (*memptr != NULL) ? 0: -1;
@@ -108,7 +108,7 @@ long lrint(double f);
 #define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
 #define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
 #define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
-int aligned_malloc(void **memptr, size_t alignment, size_t size);
+int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size);
 void aligned_free(void *mem);
 #endif
 

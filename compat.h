@@ -20,6 +20,9 @@
 #ifndef COMPAT_H
 #define COMPAT_H
 
+// Set BOOST_FILEYSTEM_VERSION to 2 since boost-1.46 defaults to 3
+#define BOOST_FILESYSTEM_VERSION 2
+
 //Define cross platform helpers
 // TODO: This should be reworked to use CMake feature detection where possible
 

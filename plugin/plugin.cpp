@@ -259,12 +259,19 @@ nsPluginInstance::~nsPluginInstance()
 	sys=m_sys;
 	if(mainDownloader)
 		mainDownloader->stop();
-	// Prepare our external script object for destruction
+
+	// Kill all stuff relating to NPScriptObject which is still running
 	static_cast<NPScriptObject*>(m_sys->extScriptObject)->destroy();
+
 	if(m_pt)
 		m_pt->stop();
 	m_sys->setShutdownFlag();
+
 	m_sys->wait();
+
+	// Delete our external script object
+	delete m_sys->extScriptObject;
+
 	delete m_sys;
 	delete m_pt;
 	sys=NULL;

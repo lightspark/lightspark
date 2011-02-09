@@ -290,6 +290,7 @@ private:
 	// Provides mutual exclusion for external calls
 	sem_t mutex;
 	std::stack<sem_t*> callStatusses;
+	sem_t externalCallsFinished;
 
 	// The root callback currently being invoked. If this is not NULL
 	// when invoke() gets called, we can assume the invoke()

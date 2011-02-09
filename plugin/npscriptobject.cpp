@@ -554,6 +554,7 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 
 	// Only one external call can be made at a time
 	sem_init(&mutex, 0, 1);
+	sem_init(&externalCallsFinished, 0, 1);
 
 	setProperty("$version", "10,0,r"SHORTVERSION);
 
@@ -573,10 +574,26 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 	setMethod("TotalFrames", new lightspark::ExtBuiltinCallback(stdTotalFrames));
 }
 
-// Destructors
+// Destructor preparator
+void NPScriptObject::destroy()
+{
+	sem_wait(&mutex);
+	// Prevents new external calls from continuing
+	shuttingDown = true;
+	sem_post(&mutex);
+
+	// If an external call is running, wake it up
+	if(callStatusses.size() > 0)
+		sem_post(callStatusses.top());
+	// Wait for all external calls to finish
+	sem_wait(&externalCallsFinished);
+}
+
+// Destructor
 NPScriptObject::~NPScriptObject()
 {
 	sem_destroy(&mutex);
+
 	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator meth_it = methods.begin();
 	while(meth_it != methods.end())
 	{
@@ -584,23 +601,14 @@ NPScriptObject::~NPScriptObject()
 		methods.erase(meth_it++);
 	}
 }
-// Destruction preparator
-void NPScriptObject::destroy()
-{
-	shuttingDown = true;
-
-	// Signal all call statusses to continue and not wait for their respective external functions to return
-	while(callStatusses.size() > 0)
-	{
-		sem_post(callStatusses.top());
-		callStatusses.pop();
-	}
-	sem_post(&mutex);
-}
 
 // NPRuntime interface: invoking methods
 bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t argc, NPVariant* result)
 {
+	// If the NPScriptObject is shutting down, don't even continue
+	if(shuttingDown)
+		return false;
+
 	NPIdentifierObject objId(id);
 	// Check if the method exists
 	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator it;
@@ -686,6 +694,7 @@ bool NPScriptObject::removeMethod(const lightspark::ExtIdentifier& id)
 	if(it == methods.end())
 		return false;
 
+	delete (*it).second;
 	methods.erase(it);
 	return true;
 }
@@ -738,12 +747,17 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 {
 	// Make sure we are the only external call being executed
 	sem_wait(&mutex);
+	
+	// If we are shutting down, then don't even continue
 	if(shuttingDown)
 	{
-		// Forward the shutdown cascade
 		sem_post(&mutex);
 		return false;
 	}
+
+	// If we are the first external call, then indicate that an external call is running
+	if(callStatusses.size() == 0)
+		sem_wait(&externalCallsFinished);
 
 	// Signals when the async has been completed
 	// True if NPN_Invoke succeeded
@@ -792,12 +806,16 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 
 	// Wait for the (possibly asynchronously) called function to finish
 	sem_wait(&callStatus);
+
+	sem_wait(&mutex);
+
 	// This call status doesn't need to be cleaned up anymore on shutdown
 	callStatusses.pop();
 	sem_destroy(&callStatus);
 
-	// Only after our called function has finished, do we ask for the mutex again to continue
-	sem_wait(&mutex);
+	// If we are the last external call, then indicate that all external calls are now finished
+	if(callStatusses.size() == 0)
+		sem_post(&externalCallsFinished);
 
 	sem_post(&mutex);
 	return success;
@@ -1041,7 +1059,8 @@ NPScriptObjectGW::NPScriptObjectGW(NPP inst) : instance(inst)
 // Destructor
 NPScriptObjectGW::~NPScriptObjectGW()
 {
-	delete so;
+	// The NPScriptObject should already be deleted _before_ we get to this point.
+	// This is the only way we can guarantee that it is deleted _before_ SystemState is deleted.
 };
 
 // Properties

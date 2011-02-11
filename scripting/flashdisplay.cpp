@@ -2492,10 +2492,10 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	double height=args[3]->toNumber();
 	double ellipseWidth=args[4]->toNumber();
 	double ellipseHeight;
-	if (argslen==6)
+	if (argslen == 6)
 		ellipseHeight=args[5]->toNumber();
 
-	if (std::isnan(ellipseHeight) || argslen == 5)
+	if (argslen == 5 || std::isnan(ellipseHeight))
 		ellipseHeight=ellipseWidth;
 
 	ellipseHeight /= 2;

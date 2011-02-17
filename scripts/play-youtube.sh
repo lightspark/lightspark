@@ -22,6 +22,11 @@ if test "x$LIGHTSPARK" = "x"; then
     LIGHTSPARK="lightspark"
 fi
 
+if test "$1" = "-g"; then
+    LIGHTSPARK="gdb --args $LIGHTSPARK"
+    shift 1
+fi
+
 paramfile="$(mktemp)"
 playerfile="$(mktemp)"
 

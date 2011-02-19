@@ -359,7 +359,7 @@ ASFUNCTIONBODY(Array,_pop)
 {
 	Array* th=static_cast<Array*>(obj);
 	ASObject* ret;
-	if(th->data.back().type==DATA_OBJECT)
+	if(!th->data.empty() && th->data.back().type==DATA_OBJECT)
 		ret=th->data.back().data;
 	else
 		throw UnsupportedException("Array::pop not completely implemented");

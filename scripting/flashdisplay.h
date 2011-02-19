@@ -205,7 +205,7 @@ protected:
 	void setOnStage(bool staged);
 public:
 	void dumpDisplayList();
-	void _removeChild(DisplayObject*);
+	bool _removeChild(DisplayObject*);
 	DisplayObjectContainer();
 	virtual ~DisplayObjectContainer();
 	static void sinit(Class_base* c);

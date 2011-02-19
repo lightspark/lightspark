@@ -1860,17 +1860,18 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 	child->setOnStage(onStage);
 }
 
-void DisplayObjectContainer::_removeChild(DisplayObject* child)
+bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 {
 	if(child->parent==NULL)
-		return; //Should throw an ArgumentError
+		return false;
 	assert_and_throw(child->parent==this);
 	assert_and_throw(child->getRoot()==root);
 
 	{
 		Locker l(mutexDisplayList);
 		list<DisplayObject*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
-		assert_and_throw(it!=dynamicDisplayList.end());
+		if(it==dynamicDisplayList.end())
+			return false;
 		dynamicDisplayList.erase(it);
 	}
 	//Set the root of the movie to NULL
@@ -1880,6 +1881,7 @@ void DisplayObjectContainer::_removeChild(DisplayObject* child)
 	child->parent=NULL;
 	child->setOnStage(false);
 	child->decRef();
+	return true;
 }
 
 bool DisplayObjectContainer::_contains(DisplayObject* d)
@@ -1983,7 +1985,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 
-	th->_removeChild(d);
+	if(!th->_removeChild(d))
+		throw Class<ArgumentError>::getInstanceS("removeChild: child not in list");
 
 	//As we return the child we have to incRef it
 	d->incRef();
@@ -2002,7 +2005,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 	{
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
-			return NULL;
+			throw Class<RangeError>::getInstanceS("removeChildAt: invalid index");
 		list<DisplayObject*>::iterator it=th->dynamicDisplayList.begin();
 		for(int32_t i=0;i<index;i++)
 			++it;
@@ -2047,7 +2050,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
 	unsigned int index=args[0]->toInt();
-	assert_and_throw(index<th->dynamicDisplayList.size());
+	if(index>=th->dynamicDisplayList.size())
+		throw Class<RangeError>::getInstanceS("getChildAt: invalid index");
 	list<DisplayObject*>::iterator it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
@@ -2076,7 +2080,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 		
 		ret++;
 		++it;
-		assert_and_throw(it!=th->dynamicDisplayList.end());
+		if(it==th->dynamicDisplayList.end())   
+			throw Class<ArgumentError>::getInstanceS("getChildIndex: child not in list");
 	}
 	while(1);
 	return abstract_i(ret);

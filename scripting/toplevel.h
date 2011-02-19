@@ -502,6 +502,7 @@ public:
 	ASFUNCTION(forEach);
 	ASFUNCTION(_reverse);
 	ASFUNCTION(lastIndexOf);
+	ASFUNCTION(_map);
 
 	ASObject* at(unsigned int index) const
 	{

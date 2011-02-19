@@ -96,7 +96,7 @@ void Array::sinit(Class_base* c)
 	c->setMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),true);
 	c->setMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),true);
 	c->setMethodByQName("join",AS3,Class<IFunction>::getFunction(join),true);
-	//c->setMethodByQName("map",AS3,Class<IFunction>::getFunction(map),true);
+	c->setMethodByQName("map",AS3,Class<IFunction>::getFunction(_map),true);
 	c->setMethodByQName("pop",AS3,Class<IFunction>::getFunction(_pop),true);
 	c->setMethodByQName("push",AS3,Class<IFunction>::getFunction(_push),true);
 	c->setMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),true);
@@ -497,6 +497,38 @@ ASFUNCTIONBODY(Array,_push)
 		args[i]->incRef();
 	}
 	return abstract_i(th->size());
+}
+
+ASFUNCTIONBODY(Array,_map)
+{
+	Array* th=static_cast<Array*>(obj);
+	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_FUNCTION);
+	IFunction* func=static_cast<IFunction*>(args[0]);
+	Array* arrayRet=Class<Array>::getInstanceS();
+
+	for(uint32_t i=0;i<th->data.size();i++)
+	{
+		ASObject* funcArgs[3];
+		const data_slot& slot=th->data[i];
+		if(slot.type==DATA_INT)
+			funcArgs[0]=abstract_i(slot.data_i);
+		else if(slot.type==DATA_OBJECT && slot.data)
+		{
+			funcArgs[0]=slot.data;
+			funcArgs[0]->incRef();
+		}
+		else
+			funcArgs[0]=new Undefined;
+
+		funcArgs[1]=abstract_i(i);
+		funcArgs[2]=th;
+		funcArgs[2]->incRef();
+		ASObject* funcRet=func->call(new Null, funcArgs, 3);
+		assert_and_throw(funcRet);
+		arrayRet->push(funcRet);
+	}
+
+	return arrayRet;
 }
 
 ASMovieClipLoader::ASMovieClipLoader()

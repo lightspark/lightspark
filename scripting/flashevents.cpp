@@ -359,12 +359,6 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 
 	const tiny_string& eventName=args[0]->toString();
 
-	DisplayObject* dispobj=dynamic_cast<DisplayObject*>(th);
-	if(eventName=="enterFrame" && dispobj)
-	{
-		sys->unregisterEnterFrameListener(dispobj);
-	}
-
 	{
 		Locker l(th->handlersMutex);
 		map<tiny_string, list<listener> >::iterator h=th->handlers.find(eventName);
@@ -385,6 +379,14 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		if(h->second.empty()) //Remove the entry from the map
 			th->handlers.erase(h);
 	}
+
+	// Only unregister the enterFrame listener _after_ the handlers have been erased.
+	DisplayObject* dispobj=dynamic_cast<DisplayObject*>(th);
+	if(eventName=="enterFrame" && dispobj)
+	{
+		sys->unregisterEnterFrameListener(dispobj);
+	}
+
 	return NULL;
 }
 

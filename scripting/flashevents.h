@@ -46,6 +46,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getType);
 	ASFUNCTION(_getTarget);
+	ASFUNCTION(formatToString);
 	virtual EVENT_TYPE getEventType() {return EVENT;}
 	tiny_string type;
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending

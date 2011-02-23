@@ -114,8 +114,8 @@ void RootMovieClip::registerChildClip(MovieClip* clip)
 void RootMovieClip::unregisterChildClip(MovieClip* clip)
 {
 	Locker l(mutexChildrenClips);
-	childrenClips.erase(clip);
-	clip->decRef();
+	if(childrenClips.erase(clip))
+		clip->decRef();
 }
 
 void SystemState::registerEnterFrameListener(DisplayObject* obj)
@@ -128,8 +128,8 @@ void SystemState::registerEnterFrameListener(DisplayObject* obj)
 void SystemState::unregisterEnterFrameListener(DisplayObject* obj)
 {
 	Locker l(mutexEnterFrameListeners);
-	enterFrameListeners.erase(obj);
-	obj->decRef();
+	if(enterFrameListeners.erase(obj))
+		obj->decRef();
 }
 
 void RootMovieClip::setOnStage(bool staged)

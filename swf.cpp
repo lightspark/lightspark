@@ -170,8 +170,10 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
-	mutexEnterFrameListeners("mutexEnterFrameListeners"),showProfilingData(false),showDebug(false),currentVm(NULL),
-	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL)
+	mutexEnterFrameListeners("mutexEnterFrameListeners"),invalidateQueueHead(NULL),
+	invalidateQueueTail(NULL),showProfilingData(false),showDebug(false),currentVm(NULL),
+	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),
+	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
 	//Create the thread pool
@@ -749,6 +751,37 @@ ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 	profilingData.push_back(ThreadProfile(color,100));
 	ThreadProfile* ret=&profilingData.back();
 	return ret;
+}
+
+void SystemState::addToInvalidateQueue(DisplayObject* d)
+{
+	SpinlockLocker l(invalidateQueueLock);
+	//Check if the object is already in the queue
+	if(d->invalidateQueueNext || d==invalidateQueueTail)
+		return;
+	if(invalidateQueueHead==NULL)
+		invalidateQueueHead=invalidateQueueTail=d;
+	else
+	{
+		d->invalidateQueueNext=invalidateQueueHead;
+		invalidateQueueHead=d;
+	}
+}
+
+void SystemState::flushInvalidationQueue()
+{
+	SpinlockLocker l(invalidateQueueLock);
+	DisplayObject* cur=invalidateQueueHead;
+	while(cur)
+	{
+		cur->invalidate();
+		cur->decRef();
+		DisplayObject* next=cur->invalidateQueueNext;
+		cur->invalidateQueueNext=NULL;
+		cur=next;
+	}
+	invalidateQueueHead=NULL;
+	invalidateQueueTail=NULL;
 }
 
 void ThreadProfile::setTag(const std::string& t)

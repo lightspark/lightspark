@@ -209,6 +209,18 @@ private:
 
 	Mutex mutexEnterFrameListeners;
 	std::set<DisplayObject*> enterFrameListeners;
+	/*
+	   The head of the invalidate queue
+	*/
+	DisplayObject* invalidateQueueHead;
+	/*
+	   The tail of the invalidate queue
+	*/
+	DisplayObject* invalidateQueueTail;
+	/*
+	   The lock for the invalidate queue
+	*/
+	Spinlock invalidateQueueLock;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	ENGINE getEngine() DLL_PUBLIC { return engine; };
@@ -295,6 +307,10 @@ public:
 	//enterFrame event management
 	void registerEnterFrameListener(DisplayObject* clip);
 	void unregisterEnterFrameListener(DisplayObject* clip);
+
+	//Invalidation queue management
+	void addToInvalidateQueue(DisplayObject* d);
+	void flushInvalidationQueue();
 };
 
 class ParseThread: public IThreadJob

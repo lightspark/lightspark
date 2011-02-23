@@ -41,7 +41,6 @@ class InteractiveObject;
 
 class DisplayObject: public EventDispatcher
 {
-//friend class DisplayObjectContainer;
 friend class GraphicsContainer;
 private:
 	MATRIX Matrix;
@@ -92,6 +91,10 @@ public:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	DisplayObjectContainer* parent;
+	/*
+	   Used to link DisplayObjects the invalidation queue
+	*/
+	DisplayObject* invalidateQueueNext;
 	DisplayObject();
 	~DisplayObject();
 	MATRIX getMatrix() const;

@@ -1027,12 +1027,12 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),mask(NULL),onStage(false),root(NULL),
-	loaderInfo(NULL),alpha(1.0),visible(true),parent(NULL)
+	loaderInfo(NULL),alpha(1.0),visible(true),parent(NULL),invalidateQueueNext(NULL)
 {
 }
 
 DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(NULL),
-	mask(NULL),onStage(false),root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),parent(NULL)
+	mask(NULL),onStage(false),root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),parent(NULL),invalidateQueueNext(NULL)
 {
 }
 
@@ -1356,7 +1356,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleX)
 	}
 	th->sx=val;
 	if(th->onStage)
-		th->invalidate();
+		sys->addToInvalidateQueue(th);
 	return NULL;
 }
 
@@ -1381,7 +1381,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 	}
 	th->sy=val;
 	if(th->onStage)
-		th->invalidate();
+		sys->addToInvalidateQueue(th);
 	return NULL;
 }
 
@@ -1406,7 +1406,7 @@ ASFUNCTIONBODY(DisplayObject,_setX)
 	}
 	th->tx=val;
 	if(th->onStage)
-		th->invalidate();
+		sys->addToInvalidateQueue(th);
 	return NULL;
 }
 
@@ -1431,7 +1431,7 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 	}
 	th->ty=val;
 	if(th->onStage)
-		th->invalidate();
+		sys->addToInvalidateQueue(th);
 	return NULL;
 }
 
@@ -1533,7 +1533,7 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 	}
 	th->rotation=val;
 	if(th->onStage)
-		th->invalidate();
+		sys->addToInvalidateQueue(th);
 	return NULL;
 }
 
@@ -1643,7 +1643,7 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 		th->sx=newscale;
 	}
 	if(th->onStage)
-		th->invalidate();
+		sys->addToInvalidateQueue(th);
 	return NULL;
 }
 
@@ -1675,7 +1675,7 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 		th->sy=newscale;
 	}
 	if(th->onStage)
-		th->invalidate();
+		sys->addToInvalidateQueue(th);
 	return NULL;
 }
 
@@ -2449,7 +2449,7 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int y=args[1]->toInt();
 
 	th->tokens.emplace_back(STRAIGHT, Vector2(x, y));
-	th->owner->invalidateGraphics();
+	sys->addToInvalidateQueue(th->owner->owner);
 
 	th->curX=x;
 	th->curY=y;
@@ -2470,7 +2470,7 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	th->tokens.emplace_back(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
 	                        Vector2(anchorX, anchorY));
-	th->owner->invalidateGraphics();
+	sys->addToInvalidateQueue(th->owner->owner);
 
 	th->curX=anchorX;
 	th->curY=anchorY;
@@ -2560,7 +2560,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	// C -> D
 	th->tokens.emplace_back(STRAIGHT, Vector2(x+width, y+height-ellipseHeight));
 
-	th->owner->invalidateGraphics();
+	sys->addToInvalidateQueue(th->owner->owner);
 	
 	return NULL;
 }
@@ -2603,7 +2603,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	                        Vector2(x+radius, y-kappa ),
 	                        Vector2(x+radius, y       ));
 
-	th->owner->invalidateGraphics();
+	sys->addToInvalidateQueue(th->owner->owner);
 	
 	return NULL;
 }
@@ -2628,7 +2628,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	th->tokens.emplace_back(STRAIGHT, c);
 	th->tokens.emplace_back(STRAIGHT, d);
 	th->tokens.emplace_back(STRAIGHT, a);
-	th->owner->invalidateGraphics();
+	sys->addToInvalidateQueue(th->owner->owner);
 	
 	return NULL;
 }

@@ -766,6 +766,7 @@ void SystemState::addToInvalidateQueue(DisplayObject* d)
 		d->invalidateQueueNext=invalidateQueueHead;
 		invalidateQueueHead=d;
 	}
+	d->incRef();
 }
 
 void SystemState::flushInvalidationQueue()
@@ -775,9 +776,9 @@ void SystemState::flushInvalidationQueue()
 	while(cur)
 	{
 		cur->invalidate();
-		cur->decRef();
 		DisplayObject* next=cur->invalidateQueueNext;
 		cur->invalidateQueueNext=NULL;
+		cur->decRef();
 		cur=next;
 	}
 	invalidateQueueHead=NULL;

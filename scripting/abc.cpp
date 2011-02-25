@@ -1541,6 +1541,8 @@ void ABCVm::Run(ABCVm* th)
 			th->handleEvent(e);
 			if(th->shuttingdown)
 				bailOut=true;
+			//Flush the invalidation queue
+			th->m_sys->flushInvalidationQueue();
 			profile->accountTime(chronometer.checkpoint());
 		}
 		catch(LightsparkException& e)

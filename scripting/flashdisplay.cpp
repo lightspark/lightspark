@@ -463,9 +463,15 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 void Sprite::invalidate()
 {
-	DisplayObjectContainer::invalidate();
+	assert(graphics);
+	invalidateGraphics();
+}
+
+void Sprite::requestInvalidation()
+{
+	DisplayObjectContainer::requestInvalidation();
 	if(graphics)
-		invalidateGraphics();
+		sys->addToInvalidateQueue(this);
 }
 
 void DisplayObject::renderPrologue() const
@@ -806,15 +812,15 @@ void MovieClip::advanceFrame()
 
 }
 
-void MovieClip::invalidate()
+void MovieClip::requestInvalidation()
 {
-	Sprite::invalidate();
+	Sprite::requestInvalidation();
 	//Now invalidate all the objects in all frames
 	for(uint32_t i=0;i<frames.size();i++)
 	{
 		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
 		for(;it!=frames[i].displayList.end();it++)
-			it->second->invalidate();
+			it->second->requestInvalidation();
 	}
 }
 
@@ -1103,7 +1109,7 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 			}
 		}
 		if(mustInvalidate && onStage)
-			invalidate();
+			requestInvalidation();
 	}
 }
 
@@ -1136,7 +1142,7 @@ void DisplayObject::setMask(DisplayObject* m)
 		tmp->decRef();
 	}
 	if(mustInvalidate && onStage)
-		invalidate();
+		requestInvalidation();
 }
 
 MATRIX DisplayObject::getConcatenatedMatrix() const
@@ -1247,9 +1253,15 @@ void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, num
 
 void DisplayObject::invalidate()
 {
+	//Not supposed to be called
+	throw RunTimeException("DisplayObject::invalidate");
+}
+
+void DisplayObject::requestInvalidation()
+{
 	//Let's invalidate also the mask
 	if(mask)
-		mask->invalidate();
+		mask->requestInvalidation();
 }
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
@@ -1272,7 +1284,7 @@ void DisplayObject::setOnStage(bool staged)
 		//Our stage condition changed, send event
 		onStage=staged;
 		if(staged==true)
-			invalidate();
+			requestInvalidation();
 		if(getVm()==NULL)
 			return;
 		if(onStage==true && hasEventListener("addedToStage"))
@@ -1356,7 +1368,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleX)
 	}
 	th->sx=val;
 	if(th->onStage)
-		sys->addToInvalidateQueue(th);
+		th->requestInvalidation();
 	return NULL;
 }
 
@@ -1381,7 +1393,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 	}
 	th->sy=val;
 	if(th->onStage)
-		sys->addToInvalidateQueue(th);
+		th->requestInvalidation();
 	return NULL;
 }
 
@@ -1406,7 +1418,7 @@ ASFUNCTIONBODY(DisplayObject,_setX)
 	}
 	th->tx=val;
 	if(th->onStage)
-		sys->addToInvalidateQueue(th);
+		th->requestInvalidation();
 	return NULL;
 }
 
@@ -1431,7 +1443,7 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 	}
 	th->ty=val;
 	if(th->onStage)
-		sys->addToInvalidateQueue(th);
+		th->requestInvalidation();
 	return NULL;
 }
 
@@ -1533,7 +1545,7 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 	}
 	th->rotation=val;
 	if(th->onStage)
-		sys->addToInvalidateQueue(th);
+		th->requestInvalidation();
 	return NULL;
 }
 
@@ -1641,9 +1653,11 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 			RELEASE_WRITE(th->useMatrix,false);
 		}
 		th->sx=newscale;
+		if(th->sx==2150)
+			__asm__("int $3");
 	}
 	if(th->onStage)
-		sys->addToInvalidateQueue(th);
+		th->requestInvalidation();
 	return NULL;
 }
 
@@ -1675,7 +1689,7 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 		th->sy=newscale;
 	}
 	if(th->onStage)
-		sys->addToInvalidateQueue(th);
+		th->requestInvalidation();
 	return NULL;
 }
 
@@ -1814,13 +1828,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 	return abstract_i(th->dynamicDisplayList.size());
 }
 
-void DisplayObjectContainer::invalidate()
+void DisplayObjectContainer::requestInvalidation()
 {
-	DisplayObject::invalidate();
+	DisplayObject::requestInvalidation();
 	Locker l(mutexDisplayList);
 	list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();it++)
-		(*it)->invalidate();
+		(*it)->requestInvalidation();
 }
 
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index)
@@ -2181,11 +2195,15 @@ float Shape::getScaleFactor() const
 
 void Shape::invalidate()
 {
+	assert(graphics);
+	invalidateGraphics();
+	cachedTokens=graphics->getGraphicsTokens();
+}
+
+void Shape::requestInvalidation()
+{
 	if(graphics)
-	{
-		invalidateGraphics();
-		cachedTokens=graphics->getGraphicsTokens();
-	}
+		sys->addToInvalidateQueue(this);
 }
 
 ASFUNCTIONBODY(Shape,_constructor)
@@ -2449,7 +2467,7 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int y=args[1]->toInt();
 
 	th->tokens.emplace_back(STRAIGHT, Vector2(x, y));
-	sys->addToInvalidateQueue(th->owner->owner);
+	th->owner->owner->requestInvalidation();
 
 	th->curX=x;
 	th->curY=y;
@@ -2470,7 +2488,7 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	th->tokens.emplace_back(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
 	                        Vector2(anchorX, anchorY));
-	sys->addToInvalidateQueue(th->owner->owner);
+	th->owner->owner->requestInvalidation();
 
 	th->curX=anchorX;
 	th->curY=anchorY;
@@ -2560,7 +2578,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	// C -> D
 	th->tokens.emplace_back(STRAIGHT, Vector2(x+width, y+height-ellipseHeight));
 
-	sys->addToInvalidateQueue(th->owner->owner);
+	th->owner->owner->requestInvalidation();
 	
 	return NULL;
 }
@@ -2603,7 +2621,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	                        Vector2(x+radius, y-kappa ),
 	                        Vector2(x+radius, y       ));
 
-	sys->addToInvalidateQueue(th->owner->owner);
+	th->owner->owner->requestInvalidation();
 	
 	return NULL;
 }
@@ -2628,7 +2646,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	th->tokens.emplace_back(STRAIGHT, c);
 	th->tokens.emplace_back(STRAIGHT, d);
 	th->tokens.emplace_back(STRAIGHT, a);
-	sys->addToInvalidateQueue(th->owner->owner);
+	th->owner->owner->requestInvalidation();
 	
 	return NULL;
 }

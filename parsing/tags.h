@@ -96,6 +96,7 @@ class DefineShapeTag: public DictionaryTag, public Shape
 private:
 	void computeCached();
 	void invalidate();
+	void requestInvalidation();
 	void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, 
 			std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles);
 	/*

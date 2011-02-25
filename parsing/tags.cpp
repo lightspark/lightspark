@@ -911,6 +911,11 @@ void DefineShapeTag::computeCached()
 		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cachedTokens,Shapes.FillStyles.FillStyles);
 }
 
+void DefineShapeTag::requestInvalidation()
+{
+	sys->addToInvalidateQueue(this);
+}
+
 void DefineShapeTag::invalidate()
 {
 	//Acquire the lock to avoid data changes

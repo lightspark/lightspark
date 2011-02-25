@@ -442,6 +442,8 @@ void CairoRenderer::threadAbort()
 
 void CairoRenderer::jobFence()
 {
+	if(width==0 || height==0)
+		return;
 	sys->getRenderThread()->addUploadJob(this);
 }
 

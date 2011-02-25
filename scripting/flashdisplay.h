@@ -99,6 +99,7 @@ public:
 	~DisplayObject();
 	MATRIX getMatrix() const;
 	virtual void invalidate();
+	virtual void requestInvalidation();
 	MATRIX getConcatenatedMatrix() const;
 	virtual const std::vector<GeomToken>& getTokens()
 	{
@@ -198,7 +199,7 @@ private:
 	void _addChildAt(DisplayObject* child, unsigned int index);
 	bool _contains(DisplayObject* d);
 protected:
-	void invalidate();
+	void requestInvalidation();
 	//This is shared between RenderThread and VM
 	std::list < DisplayObject* > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
@@ -288,6 +289,7 @@ public:
 	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	bool isOpaque(number_t x, number_t y) const;
 	void invalidate();
+	void requestInvalidation();
 	const std::vector<GeomToken>& getTokens();
 	float getScaleFactor() const;
 };
@@ -395,6 +397,7 @@ public:
 	void Render(bool maskEnabled);
 	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	void invalidate();
+	void requestInvalidation();
 };
 
 class MovieClip: public Sprite
@@ -434,7 +437,7 @@ public:
 	//DisplayObject interface
 	void Render(bool maskEnabled);
 	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
-	void invalidate();
+	void requestInvalidation();
 	void setRoot(RootMovieClip* r);
 	void setOnStage(bool staged);
 	

@@ -442,9 +442,8 @@ void CairoRenderer::threadAbort()
 
 void CairoRenderer::jobFence()
 {
-	if(width==0 || height==0)
-		return;
-	sys->getRenderThread()->addUploadJob(this);
+	if(uploadNeeded)
+		sys->getRenderThread()->addUploadJob(this);
 }
 
 void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y)
@@ -707,8 +706,22 @@ void CairoRenderer::execute()
 	if(width==0 || height==0)
 	{
 		//Nothing to do, move on
+		uploadNeeded=false;
 		return;
 	}
+	uint32_t windowWidth=sys->getRenderThread()->windowWidth;
+	uint32_t windowHeight=sys->getRenderThread()->windowHeight;
+	//Discard stuff that it's outside the visible part
+	if(xOffset >= windowWidth || yOffset >= windowHeight)
+	{
+		uploadNeeded=false;
+		return;
+	}
+	//Clip the size to the screen borders
+	if((width+xOffset) > windowWidth)
+		width=windowWidth-xOffset;
+	if((height+yOffset) > windowHeight)
+		height=windowHeight-yOffset;
 	cairo_surface_t* cairoSurface=allocateSurface();
 
 	cairo_t* cr=cairo_create(cairoSurface);

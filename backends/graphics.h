@@ -208,6 +208,7 @@ protected:
 	uint8_t* surfaceBytes;
 	const std::vector<GeomToken> tokens;
 	const float scaleFactor;
+	bool uploadNeeded;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style);
 	static bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill);
@@ -218,7 +219,7 @@ public:
 	CairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, 
 			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s):
 			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),
-			surfaceBytes(NULL),tokens(_g),scaleFactor(_s){}
+			surfaceBytes(NULL),tokens(_g),scaleFactor(_s),uploadNeeded(true){}
 	static bool hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;

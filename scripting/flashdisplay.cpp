@@ -384,6 +384,9 @@ void GraphicsContainer::invalidateGraphics()
 		return;
 	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, graphics->tokens,
 				owner->getConcatenatedMatrix(), x, y, width, height, 1);
+	//TODO: remove when the TODO in ~DisplayObject is done
+	owner->incRef();
+	owner->shepherd.addSheep(r);
 	sys->addJob(r);
 }
 
@@ -1061,6 +1064,8 @@ DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty
 
 DisplayObject::~DisplayObject()
 {
+	//TODO: ask the shepherd if all the async work is done
+
 	//TODO: unregister from the root if enterFrame is used
 	if(loaderInfo && !sys->finalizingDestruction)
 		loaderInfo->decRef();

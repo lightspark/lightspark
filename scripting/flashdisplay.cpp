@@ -2353,6 +2353,7 @@ void Graphics::sinit(Class_base* c)
 	c->setMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),true);
 	c->setMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),true);
 	c->setMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),true);
+	c->setMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),true);
 	c->setMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),true);
 	c->setMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),true);
 	c->setMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),true);
@@ -2485,6 +2486,31 @@ ASFUNCTIONBODY(Graphics,curveTo)
 
 	th->tokens.emplace_back(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
+	                        Vector2(anchorX, anchorY));
+	th->owner->owner->requestInvalidation();
+
+	th->curX=anchorX;
+	th->curY=anchorY;
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,cubicCurveTo)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	assert_and_throw(argslen==6);
+
+	int control1X=args[0]->toInt();
+	int control1Y=args[1]->toInt();
+
+	int control2X=args[2]->toInt();
+	int control2Y=args[3]->toInt();
+
+	int anchorX=args[4]->toInt();
+	int anchorY=args[5]->toInt();
+
+	th->tokens.emplace_back(CURVE_CUBIC,
+	                        Vector2(control1X, control1Y),
+	                        Vector2(control2X, control2Y),
 	                        Vector2(anchorX, anchorY));
 	th->owner->owner->requestInvalidation();
 

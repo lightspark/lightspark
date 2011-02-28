@@ -684,10 +684,41 @@ ASFUNCTIONBODY(XML,attributes)
 
 void XML::toXMLString_priv(xmlBufferPtr buf) 
 {
+	//NOTE: this function is not thread-safe, as it can modify the xmlNode
 	XML* rootXML=(root)?(root):this;
 	xmlDocPtr xmlDoc=rootXML->parser.get_document()->cobj();
 	assert(xmlDoc);
-	int retVal=xmlNodeDump(buf, xmlDoc, node->cobj(), 0, 0);
+	xmlNodePtr cNode=node->cobj();
+	//As libxml2 does not automatically add the needed namespaces to the dump
+	//we have to workaround the issue
+
+	//Get the needed namespaces
+	xmlNsPtr* neededNamespaces=xmlGetNsList(xmlDoc,cNode);
+	//Save a copy of the namespaces actually defined in the node
+	xmlNsPtr oldNsDef=cNode->nsDef;
+
+	//Copy the namespaces (we need to modify them to create a customized list)
+	vector<xmlNs> localNamespaces;
+	if(neededNamespaces)
+	{
+		xmlNsPtr* cur=neededNamespaces;
+		while(*cur)
+		{
+			localNamespaces.emplace_back(**cur);
+			cur++;
+		}
+		for(uint32_t i=0;i<localNamespaces.size()-1;i++)
+			localNamespaces[i].next=&localNamespaces[i+1];
+		localNamespaces.back().next=NULL;
+		//Free the namespaces arrary
+		xmlFree(neededNamespaces);
+		//Override the node defined namespaces
+		cNode->nsDef=&localNamespaces.front();
+	}
+
+	int retVal=xmlNodeDump(buf, xmlDoc, cNode, 0, 0);
+	//Restore the previously defined namespaces
+	cNode->nsDef=oldNsDef;
 	if(retVal==-1)
 		throw RunTimeException("Error om XML::toXMLString_priv");
 }

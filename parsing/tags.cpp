@@ -261,7 +261,7 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayO
 	{
 		if(it->second->Depth==Depth)
 		{
-			it->second->parent=NULL;
+			it->second->setParent(NULL);
 			it->second->setRoot(NULL);
 			it->second->decRef();
 			ls.erase(it);
@@ -1327,7 +1327,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				(ls.begin(),ls.end(),Depth,list_orderer());
 			//As we are inserting the object in the list we need to incref it
 			toAdd->incRef();
-			toAdd->parent=parent;
+			toAdd->setParent(parent);
 			toAdd->setRoot(parent->getRoot());
 			ls.insert(it,make_pair(infos,toAdd));
 		}
@@ -1367,13 +1367,13 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			}
 			else
 			{
-				it->second->parent=NULL;
+				it->second->setParent(NULL);
 				it->second->setRoot(NULL);
 				it->second->decRef();
 				ls.erase(it);
 				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
 				toAdd->incRef();
-				toAdd->parent=parent;
+				toAdd->setParent(parent);
 				toAdd->setRoot(parent->getRoot());
 				ls.insert(it,make_pair(infos,toAdd));
 			}
@@ -1500,7 +1500,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				(ls.begin(),ls.end(),Depth,list_orderer());
 			//As we are inserting the object in the list we need to incref it
 			toAdd->incRef();
-			toAdd->parent=parent;
+			toAdd->setParent(parent);
 			toAdd->setRoot(parent->getRoot());
 			ls.insert(it,make_pair(infos,toAdd));
 		}
@@ -1544,7 +1544,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				ls.erase(it);
 				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
 				toAdd->incRef();
-				toAdd->parent=parent;
+				toAdd->setParent(parent);
 				toAdd->setRoot(parent->getRoot());
 				ls.insert(it,make_pair(infos,toAdd));
 			}

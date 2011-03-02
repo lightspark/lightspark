@@ -196,7 +196,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
 	stage=Class<Stage>::getInstanceS();
-	parent=stage;
+	setParent(stage);
 	startTime=compat_msectiming();
 	
 	setPrototype(Class<MovieClip>::getClass());

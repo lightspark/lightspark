@@ -55,6 +55,7 @@ private:
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void becomeMaskOf(DisplayObject* m);
 	void setMask(DisplayObject* m);
+	DisplayObjectContainer* parent;
 protected:
 	/**
 	  	The object that masks us, if any
@@ -90,7 +91,8 @@ public:
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
-	DisplayObjectContainer* parent;
+	DisplayObjectContainer* getParent() const { return parent; }
+	void setParent(DisplayObjectContainer* p);
 	/*
 	   Used to link DisplayObjects the invalidation queue
 	*/

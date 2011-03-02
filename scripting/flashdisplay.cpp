@@ -1032,13 +1032,13 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	return ret;
 }
 
-DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),mask(NULL),onStage(false),root(NULL),
-	loaderInfo(NULL),alpha(1.0),visible(true),parent(NULL),invalidateQueueNext(NULL)
+DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),
+	root(NULL),loaderInfo(NULL),alpha(1.0),visible(true),invalidateQueueNext(NULL)
 {
 }
 
 DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(NULL),
-	mask(NULL),onStage(false),root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),parent(NULL),invalidateQueueNext(NULL)
+	parent(NULL),mask(NULL),onStage(false),root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),invalidateQueueNext(NULL)
 {
 }
 
@@ -1563,6 +1563,15 @@ ASFUNCTIONBODY(DisplayObject,_getName)
 	return Class<ASString>::getInstanceS(th->name);
 }
 
+void DisplayObject::setParent(DisplayObjectContainer* p)
+{
+	if(parent!=p)
+	{
+		parent=p;
+		requestInvalidation();
+	}
+}
+
 ASFUNCTIONBODY(DisplayObject,_getParent)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
@@ -1839,15 +1848,15 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 {
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
-	if(child->parent)
+	if(child->getParent())
 	{
 		//Child already in this container
-		if(child->parent==this)
+		if(child->getParent()==this)
 			return;
 		else
-			child->parent->_removeChild(child);
+			child->getParent()->_removeChild(child);
 	}
-	child->parent=this;
+	child->setParent(this);
 	incRef();
 
 	//Set the root of the movie to this container
@@ -1874,9 +1883,9 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 
 bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 {
-	if(child->parent==NULL)
+	if(child->getParent()==NULL)
 		return false;
-	assert_and_throw(child->parent==this);
+	assert_and_throw(child->getParent()==this);
 	assert_and_throw(child->getRoot()==root);
 
 	{
@@ -1889,8 +1898,8 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 	//Set the root of the movie to NULL
 	child->setRoot(NULL);
 	//We can release the reference to the child
-	child->parent->decRef();
-	child->parent=NULL;
+	child->getParent()->decRef();
+	child->setParent(NULL);
 	child->setOnStage(false);
 	child->decRef();
 	return true;
@@ -2025,8 +2034,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 		th->dynamicDisplayList.erase(it);
 	}
 	//We can release the reference to the child
-	child->parent->decRef();
-	child->parent=NULL;
+	child->getParent()->decRef();
+	child->setParent(NULL);
 	child->setOnStage(false);
 
 	//As we return the child we don't decRef it

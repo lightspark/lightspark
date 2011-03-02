@@ -476,7 +476,7 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 		case LINEAR_GRADIENT:
 		case RADIAL_GRADIENT:
 		{
-			GRADIENT grad = style.Gradient;
+			const GRADIENT& grad = style.Gradient;
 
 			// We want an opaque black background... a gradient with no stops
 			// in cairo will give us transparency.

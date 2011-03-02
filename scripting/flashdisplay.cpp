@@ -808,6 +808,16 @@ void MovieClip::advanceFrame()
 			getVm()->addEvent(NULL, funcEvent);
 			funcEvent->decRef();
 		}
+
+		//Invalidate the current frame is needed
+		Frame& curFrame=frames[state.FP];
+		if(curFrame.isInvalid())
+		{
+			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+			for(;it!=curFrame.displayList.end();it++)
+				it->second->requestInvalidation();
+			curFrame.setInvalid(false);
+		}
 	}
 
 }
@@ -815,12 +825,19 @@ void MovieClip::advanceFrame()
 void MovieClip::requestInvalidation()
 {
 	Sprite::requestInvalidation();
-	//Now invalidate all the objects in all frames
+	//Mark all frames as not valid
 	for(uint32_t i=0;i<frames.size();i++)
+		frames[i].setInvalid(true);
+
+	if(framesLoaded)
 	{
-		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
-		for(;it!=frames[i].displayList.end();it++)
+		assert(state.FP<framesLoaded);
+		//Actually invalidate the current frame
+		Frame& curFrame=frames[state.FP];
+		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+		for(;it!=curFrame.displayList.end();it++)
 			it->second->requestInvalidation();
+		curFrame.setInvalid(false);
 	}
 }
 

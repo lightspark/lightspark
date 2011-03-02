@@ -42,17 +42,20 @@ class Frame
 {
 private:
 	bool initialized;
+	bool invalid;
 public:
 	tiny_string Label;
 	std::list<DisplayListTag*> blueprint;
 	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
-	Frame():initialized(false){}
+	Frame():initialized(false),invalid(true){}
 	~Frame();
 	void Render(bool maskEnabled);
 	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
 	bool isInitialized() const { return initialized; }
+	bool isInvalid() const { return invalid; }
+	void setInvalid(bool i) { invalid=i; }
 };
 };
 

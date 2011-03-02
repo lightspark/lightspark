@@ -116,5 +116,6 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 			if(i->second->isOnStage())
 				i->second->requestInvalidation();
 		}
+		invalid=false;
 	}
 }

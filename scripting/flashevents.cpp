@@ -354,7 +354,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		//Error check
-		if(insertionPoint->f==f)
+		if(insertionPoint!=listeners.end() && insertionPoint->f==f)
 		{
 			LOG(LOG_CALLS,_("Weird event reregistration"));
 			return NULL;

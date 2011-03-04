@@ -18,4 +18,4 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-wget $1 -q -O - | egrep -o "<embed(.*?)/>" | sed "s/ /\n/g" | grep src | grep -o '\\\".*\\\"' | tr -d '\\' | tr -d '"'
+wget $1 -q -O - | grep -E -o "<embed(.*?)>" | sed "s/ /\n/g" | grep src | cut -c5- | tr -d '"'

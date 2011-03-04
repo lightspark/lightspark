@@ -18,7 +18,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-
 echo "Dumping from " $1 >&2
 
-wget $1 -q -O - | egrep -o "<embed(.*?)/>" | sed "s/ /\n/g" | grep flashvars | grep -o '\\\".*\\\"' | sed 's@\\\"\(.*\)\\\"@\1@g' | sed "s/&/\n/g" | sed "s/=/\n/g" | `dirname "$0"`/urldecode.sh
+wget $1 -q -O - | grep -E -o "<embed(.*?)>" | grep -E -o 'flashvars=\"[^"]+\"' | cut -c11- | tr -d '"' | sed -e 's/&amp;/\n/g' -e 's/=/\n/g' | `dirname $0`/urldecode.sh

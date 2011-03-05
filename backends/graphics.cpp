@@ -544,17 +544,12 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 			return NULL;
 	}
 
-	cairo_matrix_t matrix = MATRIXToCairo(style.Matrix);
-	cairo_status_t status = cairo_matrix_invert(&matrix);
-
-	if (status != CAIRO_STATUS_INVALID_MATRIX)
-		cairo_pattern_set_matrix(pattern, &matrix);
-
 	return pattern;
 }
 
 bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipPaint)
 {
+	cairo_save(cr);
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 
 	bool empty=true;
@@ -603,7 +598,21 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 
 				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-				cairo_pattern_t* pattern = FILLSTYLEToCairo(tokens[i].fillStyle);
+				cairo_matrix_t mat;
+
+				const FILLSTYLE& style = tokens[i].fillStyle;
+				cairo_pattern_t* pattern = FILLSTYLEToCairo(style);
+
+				mat = MATRIXToCairo(style.Matrix);
+				mat.x0 *= 1/scaleCorrection;
+				mat.y0 *= 1/scaleCorrection;
+				cairo_status_t status = cairo_matrix_invert(&mat);
+
+				if (status != CAIRO_STATUS_SUCCESS)
+					cairo_matrix_init_identity(&mat);
+
+				cairo_pattern_set_matrix(pattern, &mat);
+
 				cairo_set_source(cr, pattern);
 
 				// Destroy the first reference.
@@ -676,6 +685,7 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 	cairo_fill(cr);
 	cairo_stroke(stroke_cr);
 
+	cairo_restore(cr);
 	cairo_pattern_t *stroke_pattern = cairo_pop_group(stroke_cr);
 	cairo_set_source(cr, stroke_pattern);
 	cairo_paint(cr);

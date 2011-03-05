@@ -1,0 +1,47 @@
+Experimental hacky branch for HULU support
+------------------------------------------
+
+This branch includes several hacks and stubbed features that makes the hulu embed player works.
+Hulu site player works only sometimes and I think this may be releated to ads being displayed.
+
+Detailed instructions to test this are below. Please notice that it will take A LOT to display 
+the content (around 2-3 minutes). This slowness is actually mostly "artificial", using 
+top (or equivalent) you can see that lightspark is _not_ actually burning the CPU for most of the 
+time. What happens is that hulu uses timers and enterFrame events to set up timeouts. As there are
+a couple of code paths that are actually slow (basically cryptographic computations) and would
+cause timeouts, all the time events are delayed by a factor of 100.
+
+On exit lightspark segfaults. This is probably caused by wrong memory management of lightspark::XML objects.
+
+PREREQUISITES:
+librtmp should be built from svn. The last release is not ok.
+
+HOWTO:
+
+1) Download the hulu embedded player:
+wget "http://www.hulu.com/site-player/playerembedwrapper.swf?referrer=none&eid=64t5me9DvncdC-jBta-mWA&st=83617&et=&it=&ml=0&siteHost=http://www.hulu.com" -O hulu-embed.swf
+
+2) Arguments needed by hulu embed player:
+cat > hulu-args << "EOF"
+referrer
+none
+eid
+64t5me9DvncdC-jBta-mWA
+st
+
+et
+
+it
+
+ml
+0
+siteHost
+http://www.hulu.com
+ap
+1
+EOF
+
+3) Command to run 
+./lightspark -p hulu-args -u "http://www.hulu.com/site-player/playerembedwrapper.swf?referrer=none&eid=64t5me9DvncdC-jBta-mWA&st=83617&et=&it=&ml=0&siteHost=http://www.hulu.com" hulu-embed.swf -l 0
+
+4) Click once on the center of the black window and wait :-)

@@ -602,21 +602,23 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 
 				const FILLSTYLE& style = tokens[i].fillStyle;
 				cairo_pattern_t* pattern = FILLSTYLEToCairo(style);
+				if(pattern)
+				{
+					mat = MATRIXToCairo(style.Matrix);
+					mat.x0 *= 1/scaleCorrection;
+					mat.y0 *= 1/scaleCorrection;
+					cairo_status_t status = cairo_matrix_invert(&mat);
 
-				mat = MATRIXToCairo(style.Matrix);
-				mat.x0 *= 1/scaleCorrection;
-				mat.y0 *= 1/scaleCorrection;
-				cairo_status_t status = cairo_matrix_invert(&mat);
+					if (status != CAIRO_STATUS_SUCCESS)
+						cairo_matrix_init_identity(&mat);
 
-				if (status != CAIRO_STATUS_SUCCESS)
-					cairo_matrix_init_identity(&mat);
+					cairo_pattern_set_matrix(pattern, &mat);
 
-				cairo_pattern_set_matrix(pattern, &mat);
+					cairo_set_source(cr, pattern);
 
-				cairo_set_source(cr, pattern);
-
-				// Destroy the first reference.
-				cairo_pattern_destroy(pattern);
+					// Destroy the first reference.
+					cairo_pattern_destroy(pattern);
+				}
 
 				break;
 			}

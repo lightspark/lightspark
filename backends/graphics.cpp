@@ -562,6 +562,10 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
 	cairo_push_group(stroke_cr);
 
+	// Make sure not to draw anything until a fill is set.
+	cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
+	cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
+
 	#define PATH(operation, args...) \
 		operation(cr, ## args); \
 		operation(stroke_cr, ## args);
@@ -597,7 +601,7 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 
 				cairo_fill(cr);
 
-				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
+				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
 				cairo_pattern_t* pattern = FILLSTYLEToCairo(tokens[i].fillStyle);
 				cairo_set_source(cr, pattern);

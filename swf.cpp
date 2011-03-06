@@ -785,6 +785,19 @@ void SystemState::flushInvalidationQueue()
 	invalidateQueueTail=NULL;
 }
 
+#ifdef PROFILING_SUPPORT
+void SystemState::setProfilingOutput(const tiny_string& t)
+{
+	profOut=t;
+}
+
+
+const tiny_string& SystemState::getProfilingOutput() const
+{
+	return profOut;
+}
+#endif
+
 void ThreadProfile::setTag(const std::string& t)
 {
 	Locker locker(mutex);

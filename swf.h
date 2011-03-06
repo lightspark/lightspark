@@ -221,6 +221,12 @@ private:
 	   The lock for the invalidate queue
 	*/
 	Spinlock invalidateQueueLock;
+#ifdef PROFILING_SUPPORT
+	/*
+	   Output file for the profiling data
+	*/
+	tiny_string profOut;
+#endif
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	ENGINE getEngine() DLL_PUBLIC { return engine; };
@@ -311,6 +317,11 @@ public:
 	//Invalidation queue management
 	void addToInvalidateQueue(DisplayObject* d);
 	void flushInvalidationQueue();
+
+#ifdef PROFILING_SUPPORT
+	void setProfilingOutput(const tiny_string& t) DLL_PUBLIC;
+	const tiny_string& getProfilingOutput() const;
+#endif
 };
 
 class ParseThread: public IThreadJob

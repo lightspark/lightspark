@@ -227,6 +227,7 @@ public:
 	{
 		closure_level=l;
 	}
+	virtual method_info* getMethodInfo() const=0;
 	static void sinit(Class_base* c);
 };
 
@@ -243,6 +244,7 @@ private:
 	{
 		return new Function(*this);
 	}
+	method_info* getMethodInfo() const { return NULL; }
 public:
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
@@ -270,6 +272,7 @@ private:
 	{
 		return new SyntheticFunction(*this);
 	}
+	method_info* getMethodInfo() const { return mi; }
 public:
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();

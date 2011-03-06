@@ -286,7 +286,7 @@ uintptr_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 	return i1|i2;
 }
 
-void ABCVm::callProperty(call_context* th, int n, int m)
+void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -325,6 +325,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		if(o->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o);
+			called_mi=f->getMethodInfo();
 			//Methods has to be runned with their own class this
 			//The owner has to be increffed
 			obj->incRef();
@@ -364,6 +365,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				assert_and_throw(o->getObjectType()==T_FUNCTION);
 
 				IFunction* f=static_cast<IFunction*>(o);
+				called_mi=f->getMethodInfo();
 
 				//Create a new array
 				ASObject** proxyArgs=new ASObject*[m+1];
@@ -855,7 +857,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 	return Class<ASString>::getInstanceS(ret);
 }
 
-void ABCVm::callPropVoid(call_context* th, int n, int m)
+void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi)
 {
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(LOG_CALLS,"callPropVoid " << *name << ' ' << m);
@@ -885,6 +887,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		if(o->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o);
+			called_mi=f->getMethodInfo();
 			obj->incRef();
 
 			ASObject* ret=f->call(obj,args,m);
@@ -915,6 +918,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 				assert_and_throw(o->getObjectType()==T_FUNCTION);
 
 				IFunction* f=static_cast<IFunction*>(o);
+				called_mi=f->getMethodInfo();
 
 				//Create a new array
 				ASObject** proxyArgs=new ASObject*[m+1];
@@ -1717,7 +1721,7 @@ void ABCVm::initProperty(call_context* th, int n)
 	obj->decRef();
 }
 
-void ABCVm::callSuper(call_context* th, int n, int m)
+void ABCVm::callSuper(call_context* th, int n, int m, method_info*& called_mi)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -1746,6 +1750,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		if(o->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o);
+			called_mi=f->getMethodInfo();
 			obj->incRef();
 			ASObject* ret=f->call(obj,args,m);
 			th->runtime_stack_push(ret);
@@ -1800,7 +1805,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	delete[] args;
 }
 
-void ABCVm::callSuperVoid(call_context* th, int n, int m)
+void ABCVm::callSuperVoid(call_context* th, int n, int m, method_info*& called_mi)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -1829,6 +1834,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		if(o->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o);
+			called_mi=f->getMethodInfo();
 			obj->incRef();
 			ASObject* ret=f->call(obj,args,m);
 			if(ret)
@@ -2331,6 +2337,7 @@ void ABCVm::newClass(call_context* th, int n)
 	int name_index=th->context->instances[n].name;
 	assert_and_throw(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
+	constructor->name=name_index;
 
 	assert_and_throw(mname->ns.size()==1);
 	Class_inherit* ret=new Class_inherit(QName(mname->name_s,mname->ns[0].name));
@@ -2474,7 +2481,7 @@ bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-void ABCVm::call(call_context* th, int m)
+void ABCVm::call(call_context* th, int m, method_info*& called_mi)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -2487,6 +2494,7 @@ void ABCVm::call(call_context* th, int m)
 	if(f->getObjectType()==T_FUNCTION)
 	{
 		IFunction* func=static_cast<IFunction*>(f);
+		called_mi=func->getMethodInfo();
 		//TODO: check for correct level, member function are already binded
 		ASObject* ret=func->call(obj,args,m);
 		//Push the value only if not null

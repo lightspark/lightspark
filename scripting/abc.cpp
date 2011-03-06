@@ -1010,6 +1010,45 @@ ABCContext::ABCContext(istream& in)
 	}
 }
 
+ABCContext::~ABCContext()
+{
+#ifdef PROFILING_SUPPORT
+	if(sys->getProfilingOutput().len())
+	{
+		ofstream f(sys->getProfilingOutput().raw_buf());
+		f << "events: Time" << endl;
+		for(uint32_t i=0;i<methods.size();i++)
+		{
+			if(methods[i].profTime)
+			{
+				if(methods[i].name)
+				{
+					const multiname* m=getMultiname(methods[i].name,NULL);
+					f << "fn=" << *m << endl;
+				}
+				else
+					f << "fn=" << &methods[i] << " " << i << endl;
+				f << "1 " << methods[i].profTime << endl;
+				auto it=methods[i].profCalls.begin();
+				for(;it!=methods[i].profCalls.end();it++)
+				{
+					if(it->first->name)
+					{
+						const multiname* m=getMultiname(it->first->name,NULL);
+						f << "cfn=" << *m << endl;
+					}
+					else
+						f << "cfn=" << it->first << endl;
+					f << "calls=1 1" << endl;
+					f << "1 " << it->second << endl;
+				}
+			}
+		}
+		f.close();
+	}
+#endif
+}
+
 ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
 {
 	sem_init(&event_queue_mutex,0,1);
@@ -1768,6 +1807,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			LOG(LOG_CALLS,_("Getter trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
+			if(m->name==0)
+			{
+				//Use this name as the method name
+				m->name=t->name;
+			}
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
 			//We have to override if there is a method with the same name,
@@ -1807,6 +1851,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			LOG(LOG_CALLS,_("Setter trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
+			if(m->name==0)
+			{
+				//Use this name as the method name
+				m->name=t->name;
+			}
 
 			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
@@ -1847,6 +1896,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			LOG(LOG_CALLS,_("Method trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
+			if(m->name==0)
+			{
+				//Use this name as the method name
+				m->name=t->name;
+			}
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
 			if(obj->getObjectType()==T_CLASS)

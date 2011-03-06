@@ -226,7 +226,6 @@ private:
 	u30 return_type;
 	std::vector<u30> param_type;
 	std::vector<option_detail> options;
-	u30 name;
 	u8 flags;
 
 	std::vector<u30> param_names;
@@ -266,8 +265,14 @@ private:
 	void doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder);
 
 public:
+#ifdef PROFILING_SUPPORT
+	std::map<method_info*,uint64_t> profCalls;
+	uint64_t profTime;
+#endif
+
 	u30 option_count;
 	SyntheticFunction::synt_function f;
+	u30 name;
 	ABCContext* context;
 	method_body_info* body;
 	SyntheticFunction::synt_function synt_method();
@@ -276,7 +281,11 @@ public:
 	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
 	ASObject* getOptional(unsigned int i);
 	int numArgs() { return param_count; }
-	method_info():option_count(0),f(NULL),context(NULL),body(NULL)
+	method_info():
+#ifdef PROFILING_SUPPORT
+		profTime(0),
+#endif
+		option_count(0),f(NULL),context(NULL),body(NULL)
 	{
 	}
 };
@@ -424,6 +433,7 @@ public:
 	multiname* getMultiname(unsigned int m, call_context* th);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in) DLL_PUBLIC;
+	~ABCContext() DLL_PUBLIC;
 	void exec();
 
 	static bool isinstance(ASObject* obj, multiname* name);
@@ -453,10 +463,10 @@ private:
 	void registerFunctions();
 	//Interpreted AS instructions
 	static bool hasNext2(call_context* th, int n, int m); 
-	static void callPropVoid(call_context* th, int n, int m); 
-	static void callSuperVoid(call_context* th, int n, int m); 
-	static void callSuper(call_context* th, int n, int m); 
-	static void callProperty(call_context* th, int n, int m); 
+	static void callPropVoid(call_context* th, int n, int m, method_info*& called_mi);
+	static void callSuperVoid(call_context* th, int n, int m, method_info*& called_mi);
+	static void callSuper(call_context* th, int n, int m, method_info*& called_mi);
+	static void callProperty(call_context* th, int n, int m, method_info*& called_mi);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 
 	static void setLocal_int(int n,int v); 
@@ -511,7 +521,7 @@ private:
 	static intptr_t getProperty_i(ASObject* obj, multiname* name);
 	static void setProperty(ASObject* value,ASObject* obj, multiname* name);
 	static void setProperty_i(intptr_t value,ASObject* obj, multiname* name);
-	static void call(call_context* th, int n);
+	static void call(call_context* th, int n, method_info*& called_mi);
 	static void constructSuper(call_context* th, int n);
 	static void construct(call_context* th, int n);
 	static void constructGenericType(call_context* th, int n);
@@ -621,6 +631,8 @@ private:
 	//It's sane to have them per-Vm, as anyway the vm is single by specs, single threaded
 	std::vector<thisAndLevel> method_this_stack;
 
+	//Profiling support
+	static uint64_t profilingCheckpoint(uint64_t& startTime);
 public:
 	GlobalObject* Global;
 	Manager* int_manager;

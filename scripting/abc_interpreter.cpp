@@ -26,6 +26,14 @@
 using namespace std;
 using namespace lightspark;
 
+uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
+{
+	uint64_t cur=compat_get_thread_cputime_us();
+	uint64_t ret=cur-startTime;
+	startTime=cur;
+	return ret;
+}
+
 ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* context)
 {
 	method_info* mi=function->mi;
@@ -34,6 +42,13 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 	int code_len=code.str().length();
 
 	u8 opcode;
+
+#ifdef PROFILING_SUPPORT
+	uint64_t startTime=compat_get_thread_cputime_us();
+#define PROF_ACCOUNT_TIME(a, b) a+=b;
+#else
+#define PROF_ACCOUNT_TIME(a, b)
+#endif
 
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(1)
@@ -600,7 +615,11 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//call
 				u30 t;
 				code >> t;
-				call(context,t);
+				method_info* called_mi=NULL;
+				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				call(context,t,called_mi);
+				if(called_mi)
+					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x42:
@@ -617,7 +636,11 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t,t2;
 				code >> t;
 				code >> t2;
-				callSuper(context,t,t2);
+				method_info* called_mi=NULL;
+				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				callSuper(context,t,t2,called_mi);
+				if(called_mi)
+					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x46:
@@ -627,13 +650,18 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t,t2;
 				code >> t;
 				code >> t2;
-				callProperty(context,t,t2);
+				method_info* called_mi=NULL;
+				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				callProperty(context,t,t2,called_mi);
+				if(called_mi)
+					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x47:
 			{
 				//returnvoid
 				LOG(LOG_CALLS,_("returnVoid"));
+				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
 				return NULL;
 			}
 			case 0x48:
@@ -641,6 +669,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//returnvalue
 				ASObject* ret=context->runtime_stack_pop();
 				LOG(LOG_CALLS,_("returnValue ") << ret);
+				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
 				return ret;
 			}
 			case 0x49:
@@ -666,7 +695,11 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t,t2;
 				code >> t;
 				code >> t2;
-				callSuperVoid(context,t,t2);
+				method_info* called_mi=NULL;
+				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				callSuperVoid(context,t,t2,called_mi);
+				if(called_mi)
+					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x4f:
@@ -675,7 +708,11 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t,t2;
 				code >> t;
 				code >> t2;
-				callPropVoid(context,t,t2);
+				method_info* called_mi=NULL;
+				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				callPropVoid(context,t,t2,called_mi);
+				if(called_mi)
+					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x53:
@@ -1356,6 +1393,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 		}
 	}
 
+#undef PROF_ACCOUNT_TIME 
 	//We managed to execute all the function
 	return context->runtime_stack_pop();
 }

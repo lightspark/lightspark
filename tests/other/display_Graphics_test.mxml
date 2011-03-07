@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_DISPLAY_GRAPHICS_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	private function appComplete():void
+	{
+		var matrix:Matrix=new Matrix();
+		matrix.a=2000.0/16384.0;
+		matrix.d=2000.0/16384.0;
+
+		s1.graphics.beginGradientFill("linear",[0x000000,0x008800],[1,1],[0,255],matrix);
+		s1.graphics.drawRect(0,0,200,100);
+		s1.graphics.endFill();
+
+		s1.graphics.beginGradientFill("linear",[0x000000,0x008800],[1,1],[0,255]);
+		s1.graphics.drawRect(0,105,200,100);
+		s1.graphics.endFill();
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="s1" />
+
+</mx:Application>

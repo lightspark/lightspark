@@ -119,6 +119,10 @@ public:
 	RenderThread(SystemState* s);
 	~RenderThread();
 	void start(ENGINE e,void* param);
+	/*
+	   The stop function should be call on exit even if the thread is not started
+	*/
+	void stop();
 	void wait();
 	void draw(bool force);
 	//The calling context MUST call this function with the transformation matrix ready

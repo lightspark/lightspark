@@ -343,6 +343,8 @@ SystemState::~SystemState()
 	if(cookiesFileName[0])
 		unlink(cookiesFileName);
 	assert(shutdown);
+
+	renderThread->stop();
 	//The thread pool should be stopped before everything
 	if(threadPool)
 		threadPool->forceStop();

@@ -460,12 +460,13 @@ void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double contro
 	               end_x, end_y);
 }
 
-cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
+cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection)
 {
 
 	cairo_pattern_t* pattern = NULL;
 
-	switch(style.FillStyleType) {
+	switch(style.FillStyleType)
+	{
 		case SOLID_FILL:
 		{
 			const RGBA& color = style.Color;
@@ -481,12 +482,32 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 			// We want an opaque black background... a gradient with no stops
 			// in cairo will give us transparency.
 			if (grad.GradientRecords.size() == 0)
+			{
 				pattern = cairo_pattern_create_rgb(0, 0, 0);
+				return pattern;
+			}
 
+			MATRIX tmp=style.Matrix;
+			tmp.TranslateX/=scaleCorrection;
+			tmp.TranslateY/=scaleCorrection;
+			// The dimensions of the pattern space are specified in SWF specs
+			// as a 16384x16384 box.
 			if (style.FillStyleType == LINEAR_GRADIENT)
-				pattern = cairo_pattern_create_linear(-16384.0, 0, 16384.0, 0);
+			{
+				double x0,y0,x1,y1;
+				tmp.multiply2D(-16384.0, 0,x0,y0);
+				tmp.multiply2D(16384.0, 0,x1,y1);
+				pattern = cairo_pattern_create_linear(x0,y0,x1,y1);
+			}
 			else
-				pattern = cairo_pattern_create_radial(0, 0, 0, 0, 0, 16384.0);
+			{
+				double x0,y0; //Center of the circles
+				double x1,y1; //Point on the circle edge at 0°
+				tmp.multiply2D(0, 0,x0,y0);
+				tmp.multiply2D(16384.0, 0,x1,y1);
+				double radius=sqrt(x1*x1+y1*y1);
+				pattern = cairo_pattern_create_radial(x0, y0, 0, x0, y0, radius);
+			}
 
 			if (grad.SpreadMode == 0) // PAD
 				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
@@ -549,7 +570,6 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style)
 
 bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipPaint)
 {
-	cairo_save(cr);
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 
 	bool empty=true;
@@ -598,24 +618,11 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 
 				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-				cairo_matrix_t mat;
-
 				const FILLSTYLE& style = tokens[i].fillStyle;
-				cairo_pattern_t* pattern = FILLSTYLEToCairo(style);
+				cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection);
 				if(pattern)
 				{
-					mat = MATRIXToCairo(style.Matrix);
-					mat.x0 *= 1/scaleCorrection;
-					mat.y0 *= 1/scaleCorrection;
-					cairo_status_t status = cairo_matrix_invert(&mat);
-
-					if (status != CAIRO_STATUS_SUCCESS)
-						cairo_matrix_init_identity(&mat);
-
-					cairo_pattern_set_matrix(pattern, &mat);
-
 					cairo_set_source(cr, pattern);
-
 					// Destroy the first reference.
 					cairo_pattern_destroy(pattern);
 				}
@@ -687,7 +694,6 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 	cairo_fill(cr);
 	cairo_stroke(stroke_cr);
 
-	cairo_restore(cr);
 	cairo_pattern_t *stroke_pattern = cairo_pop_group(stroke_cr);
 	cairo_set_source(cr, stroke_pattern);
 	cairo_paint(cr);

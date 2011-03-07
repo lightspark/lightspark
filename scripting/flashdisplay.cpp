@@ -2769,21 +2769,20 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		grad.GradientRecords.push_back(record);
 	}
 
-	if(argslen > 4)
+	if(argslen > 4 && args[4]->getPrototype()==Class<Matrix>::getClass())
 	{
 		style.Matrix = static_cast<Matrix*>(args[4])->getMATRIX();
-		if (style.Matrix.ScaleX == 0)
-			style.Matrix.ScaleX = 1;
-		else
-			style.Matrix.ScaleX /= 20;
-
-		if (style.Matrix.ScaleY == 0)
-			style.Matrix.ScaleY = 1;
-		else
-			style.Matrix.ScaleY /= 20;
-	} else {
-		style.Matrix.ScaleX = 200.0/32768.0;
-		style.Matrix.ScaleY = 200.0/32768.0;
+		//Conversion from twips to pixels
+		style.Matrix.ScaleX /= 20.0;
+		style.Matrix.RotateSkew0 /= 20.0;
+		style.Matrix.RotateSkew1 /= 20.0;
+		style.Matrix.ScaleY /= 20.0;
+		//Traslations are ok, that is applied already in the pixel space
+	}
+	else
+	{
+		style.Matrix.ScaleX = 100.0/16384.0;
+		style.Matrix.ScaleY = 100.0/16384.0;
 	}
 
 	if(argslen > 5)

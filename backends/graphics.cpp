@@ -491,7 +491,7 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double 
 			tmp.TranslateX/=scaleCorrection;
 			tmp.TranslateY/=scaleCorrection;
 			// The dimensions of the pattern space are specified in SWF specs
-			// as a 16384x16384 box.
+			// as a 32768x32768 box centered at (0,0)
 			if (style.FillStyleType == LINEAR_GRADIENT)
 			{
 				double x0,y0,x1,y1;

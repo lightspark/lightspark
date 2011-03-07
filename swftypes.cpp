@@ -68,6 +68,8 @@ tiny_string multiname::normalizedName() const
 			return name_o->toString();
 		default:
 			assert("Unexpected name kind" && false);
+			//Should never reach this
+			return "";
 	}
 }
 

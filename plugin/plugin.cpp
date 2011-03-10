@@ -570,18 +570,8 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
-	if(stream->pdata)
-	{
-		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
-		dl->setFinished();
-	}
-	return NPERR_NO_ERROR;
-}
-
-void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
-{
-	NPDownloader* dl=static_cast<NPDownloader*>(notifyData);
-	cout << "URLnotify " << url << endl;
+	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
+	assert(dl);
 	//Notify our downloader of what happened
 	switch(reason)
 	{
@@ -598,4 +588,10 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 			dl->setFailed();
 			break;
 	}
+	return NPERR_NO_ERROR;
+}
+
+void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
+{
+	cout << "URLnotify " << url << endl;
 }

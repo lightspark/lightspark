@@ -759,7 +759,6 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 	LOG(LOG_CALLS,"Proxy::getProperty");
 	incRef();
 	ASObject* ret=f->call(this,&arg,1);
-	assert_and_throw(ret);
 	implEnable=true;
 	return ret;
 }

@@ -79,7 +79,6 @@ public:
 	NPError DestroyStream(NPStream *stream, NPError reason);
 	int32_t Write(NPStream *stream, int32_t offset, int32_t len, void *buffer);
 	int32_t WriteReady(NPStream *stream);
-	void    URLNotify(const char* url, NPReason reason, void* notifyData);
 	void    StreamAsFile(NPStream* stream, const char* fname);
 
 	// locals

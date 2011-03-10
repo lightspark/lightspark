@@ -591,7 +591,3 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 	return NPERR_NO_ERROR;
 }
 
-void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
-{
-	cout << "URLnotify " << url << endl;
-}

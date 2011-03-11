@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_external_ExternalInterface_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	preinitialize="preinitialize();"
+	backgroundColor="blue">
+
+<mx:Script>
+	<![CDATA[
+	private function preinitialize():void
+	{
+		function returnTest(value:*):*
+		{
+			return function(... args):* { return value; }
+		}
+		ExternalInterface.addCallback("returnCompositeTest", returnTest(["string", 3.14, 271, true,  {a : "str key", 2 : "int key"}]));
+		ExternalInterface.addCallback("returnTrueTest", returnTest(true));
+		ExternalInterface.addCallback("returnFalseTest", returnTest(false));
+		ExternalInterface.addCallback("returnNullTest", returnTest(null));
+		ExternalInterface.addCallback("returnUndefinedTest", returnTest(undefined));
+		ExternalInterface.addCallback("returnNumberTest", returnTest(3.1415));
+		ExternalInterface.addCallback("returnIntegerTest", returnTest(271));
+		ExternalInterface.addCallback("returnStringTest", returnTest("hello world"));
+		ExternalInterface.addCallback("returnArgumentsTest", 
+			function(... args):* { return args; });
+
+		ExternalInterface.addCallback("nested1Test", 
+			function(... args):*
+			{
+				return ExternalInterface.call("nested1Test");
+			}
+		);
+		ExternalInterface.addCallback("nested2Test", 
+			function(... args):*
+			{
+				return ExternalInterface.call("nested2Test");
+			}
+		);
+		ExternalInterface.addCallback("nested3Test", 
+			function(... args):*
+			{
+				return "You reached level 3";
+			}
+		);
+		ExternalInterface.addCallback("unsupportedCall1Test", 
+			function(... args):*
+			{
+				return ExternalInterface.call("rawJSTest('hello')");
+			}
+		);
+		ExternalInterface.addCallback("unsupportedCall2Test", 
+			function(... args):*
+			{
+				return ExternalInterface.call("function() { return 'hello'; }");
+			}
+		);
+		// This is actually unwanted behaviour, but we can't get around to it.
+		ExternalInterface.addCallback("unsupportedCall3Test", 
+			function(... args):*
+			{
+				return ExternalInterface.call("function() { return function() { return 'hello'; }; }");
+			}
+		);
+		ExternalInterface.addCallback("undefinedMethodTest",
+			function(... args):*
+			{
+				return ExternalInterface.call("idontexist");
+			}
+		);
+		ExternalInterface.addCallback("jsExceptionTest",
+			function(... args):*
+			{
+				try { return ExternalInterface.call("jsExceptionTest"); }
+				catch(e:*) { return e; }
+			}
+		);
+
+		ExternalInterface.call("ready");
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

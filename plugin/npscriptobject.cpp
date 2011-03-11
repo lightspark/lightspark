@@ -841,7 +841,6 @@ void NPScriptObject::callExternal(void* d)
 	// Lets try to invoke the identifier as if it is a function name
 	*(data->success) = NPN_Invoke(data->instance, windowObject, data->id,
 				variantArgs, data->argc, &resultVariant);
-	// Simple invoke succeeded, no further tries needed
 	if(!*(data->success))
 	{
 		// Simple invoke failed, now try to evaluate the "identifier" as a script
@@ -850,26 +849,35 @@ void NPScriptObject::callExternal(void* d)
 		script.UTF8Length = strlen(data->scriptString);
 		*(data->success) = NPN_Evaluate(data->instance, windowObject, &script, &resultVariant);
 
-		// Evaluate failed or it didn't return an object
-		if(*(data->success) || NPVARIANT_IS_OBJECT(resultVariant))
+		if(*(data->success) && NPVARIANT_IS_OBJECT(resultVariant))
 		{
-			// Evaluate didn't fail AND returned an object, lets try to invoke this object
+			// Evaluate didn't fail AND returned an object, lets try to invoke this object.
+			// An edge case which we can't handle is when the evaluation itself ran a function
+			// which returned another function.
+			// In this case both the first function and the second function will be called.
+			// Example:
+			// Identifier:          test()
+			// Definition of test:  function test() { alert('I meant to display this.'); return test2; }
+			// Definition of test2: function test2() { alert('I didnt mean to display this.'); }
+			// Running will result in both alerts popping up, while only  the first was meant to pop up.
 			NPVariant evalResult = resultVariant;
 			NPObject* evalObj = NPVARIANT_TO_OBJECT(resultVariant);
 			bool evalSuccess = *(data->success);
 			// Lets try to invoke the default function on the object returned by the evaluation
 			*(data->success) = NPN_InvokeDefault(data->instance, evalObj,
 						variantArgs, data->argc, &resultVariant);
-			// Invocation of default function failed, it seems the evaluation returned a "normal" object.
-			// Restore previous results.
 			if(!*(data->success))
 			{
+				// Invocation of default function failed, it seems the evaluation didn't return a function.
+				// Restore previous results.
 				resultVariant = evalResult;
 				*(data->success) = evalSuccess;
 			}
-			// Invocation of the default function succeeded, lets release the intermediate object.
 			else
+			{
+				// Invocation of the default function succeeded, lets release the intermediate object.
 				NPN_ReleaseVariantValue(&evalResult);
+			}
 		}
 	}
 

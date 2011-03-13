@@ -91,8 +91,8 @@ private:
 	tiny_string dataFormat;
 	URLInfo url;
 	ASObject* data;
+	Spinlock downloaderLock;
 	Downloader* downloader;
-	volatile bool executingAbort;
 	void execute();
 	void threadAbort();
 	void jobFence();

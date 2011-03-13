@@ -112,7 +112,7 @@ void URLRequestMethod::sinit(Class_base* c)
 	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"));
 }
 
-URLLoader::URLLoader():dataFormat("text"),data(NULL),downloader(NULL),executingAbort(false)
+URLLoader::URLLoader():dataFormat("text"),data(NULL),downloader(NULL)
 {
 }
 
@@ -295,18 +295,19 @@ void URLLoader::execute()
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
 	}
 
-	sys->downloadManager->destroy(downloader);
-	downloader = NULL;
+	{
+		//Acquire the lock to ensure consistency in threadAbort
+		SpinlockLocker l(downloaderLock);
+		sys->downloadManager->destroy(downloader);
+		downloader = NULL;
+	}
 }
 
 void URLLoader::threadAbort()
 {
-	executingAbort=true;
+	SpinlockLocker l(downloaderLock);
 	if(downloader != NULL)
-	{
 		downloader->stop();
-	}
-	executingAbort=false;
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)

@@ -289,7 +289,7 @@ void Loader::execute()
 	{
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
-		Downloader* downloader=sys->downloadManager->download(url, false, contentLoaderInfo);
+		downloader=sys->downloadManager->download(url, false, contentLoaderInfo);
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{
@@ -302,7 +302,12 @@ void Loader::execute()
 		istream s(downloader);
 		ParseThread* local_pt=new ParseThread(local_root,s);
 		local_pt->run();
-		sys->downloadManager->destroy(downloader);
+		{
+			//Acquire the lock to ensure consistency in threadAbort
+			SpinlockLocker l(downloaderLock);
+			sys->downloadManager->destroy(downloader);
+			downloader=NULL;
+		}
 		//complete event is dispatched when the LoaderInfo has sent init and bytesTotal==bytesLoaded
 	}
 	else if(source==BYTES)
@@ -327,8 +332,13 @@ void Loader::execute()
 
 void Loader::threadAbort()
 {
-	//TODO: implement
-	throw UnsupportedException("Loader::threadAbort");
+	if(source==URL)
+	{
+		//We have to stop the downloader
+		SpinlockLocker l(downloaderLock);
+		if(downloader != NULL)
+			downloader->stop();
+	}
 }
 
 void Loader::Render(bool maskEnabled)

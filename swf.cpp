@@ -646,15 +646,13 @@ void SystemState::createEngines()
 				close(gnashStdin[0]);
 				// Open the SWF file
 				std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::binary);
-				// Get the length of the SWF file
-				swfStream.seekg(0, ios::end);
-				int length = swfStream.tellg();
-				swfStream.seekg(0, ios::beg);
-				// Read the SWF file
-				char data[length];
-				swfStream.read(data, length);
-				// Write the SWF file to Gnash's stdin
-				write(gnashStdin[1], data, length+1);
+				// Read the SWF file and write it to Gnash's stdin
+				char data[1024];
+				while(!swfStream.eof() && !swfStream.fail())
+				{
+					swfStream.read(data, 1024);
+					write(gnashStdin[1], data, swfStream.gcount());
+				}
 				// Close the write end of Gnash's stdin, signalling EOF to Gnash.
 				close(gnashStdin[1]);
 				// Close the SWF file

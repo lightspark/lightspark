@@ -553,9 +553,20 @@ void SystemState::createEngines()
 		int file=mkstemp(cookiesFileName);
 		if(file!=-1)
 		{
+			std::string data("Set-Cookie: " + rawCookies);
 			size_t res;
-			res = write(file,"Set-Cookie: ", 12);
-			res = write(file,rawCookies.c_str(),rawCookies.size());
+			size_t written = 0;
+			// Keep writing until everything we wanted to write actually got written
+			do
+			{
+				res = write(file, data.c_str()+written, data.size()-written);
+				if(res < 0)
+				{
+					LOG(LOG_ERROR, _("Error during writing of cookie file for Gnash"));
+					break;
+				}
+				written += res;
+			} while(written < data.size());
 			close(file);
 			setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
 		}
@@ -648,10 +659,24 @@ void SystemState::createEngines()
 				std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::binary);
 				// Read the SWF file and write it to Gnash's stdin
 				char data[1024];
-				while(!swfStream.eof() && !swfStream.fail())
+				std::streamsize written, ret;
+				bool stop = false;
+				while(!swfStream.eof() && !swfStream.fail() && !stop)
 				{
 					swfStream.read(data, 1024);
-					write(gnashStdin[1], data, swfStream.gcount());
+					// Keep writing until everything we wanted to write actually got written
+					written = 0;
+					do
+					{
+						ret = write(gnashStdin[1], data+written, swfStream.gcount()-written);
+						if(ret < 0)
+						{
+							LOG(LOG_ERROR, _("Error during writing of SWF file to Gnash"));
+							stop = true;
+							break;
+						}
+						written += ret;
+					} while(written < swfStream.gcount());
 				}
 				// Close the write end of Gnash's stdin, signalling EOF to Gnash.
 				close(gnashStdin[1]);

@@ -547,7 +547,7 @@ void SystemState::createEngines()
 				return;
 			l.lock();
 		}
-		LOG(LOG_NO_INFO,_("Invoking gnash!"));
+		LOG(LOG_NO_INFO,_("Trying to invoke gnash!"));
 		//Dump the cookies to a temporary file
 		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
 		int file=mkstemp(cookiesFileName);
@@ -566,6 +566,11 @@ void SystemState::createEngines()
 		sigfillset(&set);
 		//Blocks all signal to avoid terminating while forking with the browser signal handlers on
 		pthread_sigmask(SIG_SETMASK, &set, &oldset);
+
+		// This will be used to pipe the SWF's data to Gnash's stdin
+		int gnashStdin[2];
+		pipe(gnashStdin);
+
 		childPid=fork();
 		if(childPid==-1)
 		{
@@ -576,6 +581,13 @@ void SystemState::createEngines()
 		}
 		else if(childPid==0) //Child process scope
 		{
+			// Close write end of Gnash's stdin pipe, we will only read
+			close(gnashStdin[1]);
+			// Point stdin to the read end of Gnash's stdin pipe
+			dup2(gnashStdin[0], fileno(stdin));
+			// Close the read end of the pipe
+			close(gnashStdin[0]);
+
 			//Allocate some buffers to store gnash arguments
 			char bufXid[32];
 			char bufWidth[32];
@@ -599,9 +611,24 @@ void SystemState::createEngines()
 				strdup("-P"), //SWF parameters
 				strdup(params.c_str()),
 				strdup("-vv"),
-				strdup(dumpedSWFPath.raw_buf()), //SWF file
+				strdup("-"),
 				NULL
 			};
+
+			// Print out an informative message about how we are invoking Gnash
+			{
+				int i = 1;
+				std::string argsStr = "";
+				while(args[i] != NULL)
+				{
+					argsStr += " ";
+					argsStr += args[i];
+					i++;
+				}
+				LOG(LOG_NO_INFO, "Invoking '" << GNASH_PATH << argsStr << 
+						" < " << dumpedSWFPath.raw_buf() << "'");
+			}
+
 			//Avoid calling browser signal handler during the short time between enabling signals and execve
 			sigaction(SIGTERM, NULL, NULL);
 			//Restore handlers
@@ -613,6 +640,27 @@ void SystemState::createEngines()
 		}
 		else //Parent process scope
 		{
+			// Pass the SWF's data to Gnash
+			{
+				// Close read end of stdin pipe, we will only write to it.
+				close(gnashStdin[0]);
+				// Open the SWF file
+				std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::binary);
+				// Get the length of the SWF file
+				swfStream.seekg(0, ios::end);
+				int length = swfStream.tellg();
+				swfStream.seekg(0, ios::beg);
+				// Read the SWF file
+				char data[length];
+				swfStream.read(data, length);
+				// Write the SWF file to Gnash's stdin
+				write(gnashStdin[1], data, length+1);
+				// Close the write end of Gnash's stdin, signalling EOF to Gnash.
+				close(gnashStdin[1]);
+				// Close the SWF file
+				swfStream.close();
+			}
+
 			//Restore handlers
 			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			//Engines should not be started, stop everything

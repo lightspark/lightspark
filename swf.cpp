@@ -636,8 +636,7 @@ void SystemState::createEngines()
 					argsStr += args[i];
 					i++;
 				}
-				LOG(LOG_NO_INFO, "Invoking '" << GNASH_PATH << argsStr << 
-						" < " << dumpedSWFPath.raw_buf() << "'");
+				cerr << "Invoking '" << GNASH_PATH << argsStr << " < " << dumpedSWFPath.raw_buf() << "'" << endl;
 			}
 
 			//Avoid calling browser signal handler during the short time between enabling signals and execve
@@ -646,7 +645,7 @@ void SystemState::createEngines()
 			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			execve(GNASH_PATH, args, environ);
 			//If we are here execve failed, print an error and die
-			LOG(LOG_ERROR,_("Execve failed, content will not be rendered"));
+			cerr << _("Execve failed, content will not be rendered") << endl;
 			exit(0);
 		}
 		else //Parent process scope

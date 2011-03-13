@@ -32,7 +32,7 @@
 #define PLUGIN_NAME    "Shockwave Flash"
 #define FAKE_PLUGIN_NAME    "Lightspark player"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME";"FAKE_MIME_TYPE":swfls:"FAKE_PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r"SHORTVERSION
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.2 r"SHORTVERSION
 
 using namespace std;
 

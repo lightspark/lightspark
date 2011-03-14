@@ -38,6 +38,7 @@ class DisplayListTag;
 class LoaderInfo;
 class DisplayObjectContainer;
 class InteractiveObject;
+class Downloader;
 
 class DisplayObject: public EventDispatcher
 {
@@ -356,11 +357,13 @@ private:
 	tiny_string url;
 	ByteArray* bytes;
 	LoaderInfo* contentLoaderInfo;
+	Spinlock downloaderLock;
+	Downloader* downloader;
 	void execute();
 	void threadAbort();
 	void jobFence();
 public:
-	Loader():local_root(NULL),loading(false),loaded(false)
+	Loader():local_root(NULL),loading(false),loaded(false),bytes(NULL),contentLoaderInfo(NULL),downloader(NULL)
 	{
 	}
 	~Loader();

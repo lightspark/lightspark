@@ -108,6 +108,11 @@ void RenderThread::start(ENGINE e,void* params)
 #endif
 }
 
+void RenderThread::stop()
+{
+	initialized.signal();
+}
+
 RenderThread::~RenderThread()
 {
 	wait();

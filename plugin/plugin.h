@@ -45,7 +45,7 @@ public:
 	lightspark::Downloader* download(const lightspark::tiny_string& url, bool cached=false, lightspark::LoaderInfo* owner=NULL);
 	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached=false, lightspark::LoaderInfo* owner=NULL);
 	lightspark::Downloader* downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
-			lightspark::LoaderInfo* owner=NULL){}
+			lightspark::LoaderInfo* owner=NULL);
 	void destroy(lightspark::Downloader* downloader);
 };
 
@@ -61,6 +61,7 @@ public:
 	//Constructor used for the main file
 	NPDownloader(const lightspark::tiny_string& _url, lightspark::LoaderInfo* owner);
 	NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::LoaderInfo* owner);
+	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::LoaderInfo* owner);
 };
 
 class nsPluginInstance : public nsPluginInstanceBase
@@ -78,7 +79,6 @@ public:
 	NPError DestroyStream(NPStream *stream, NPError reason);
 	int32_t Write(NPStream *stream, int32_t offset, int32_t len, void *buffer);
 	int32_t WriteReady(NPStream *stream);
-	void    URLNotify(const char* url, NPReason reason, void* notifyData);
 	void    StreamAsFile(NPStream* stream, const char* fname);
 
 	// locals

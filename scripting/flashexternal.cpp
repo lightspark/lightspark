@@ -98,6 +98,8 @@ ASFUNCTIONBODY(ExternalInterface,call)
 	
 	assert_and_throw(argslen >= 1 && args[0]->getObjectType() == T_STRING);
 
+	// TODO: Check security constraints & throw SecurityException
+
 	// Convert given arguments to ExtVariants
 	const ExtVariant* callArgs[argslen-1];
 	for(uint32_t i = 0; i < argslen-1; i++)
@@ -123,8 +125,9 @@ ASFUNCTIONBODY(ExternalInterface,call)
 	}
 	else
 	{
-		LOG(LOG_NO_INFO, "External function failed: " << args[0]->toString().raw_buf());
-		throw Class<ASError>::getInstanceS("Calling of external function failed");
+		LOG(LOG_NO_INFO, "External function failed, returning null: " << args[0]->toString().raw_buf());
+		// If the call fails, return null
+		asobjResult = new Null;
 	}
 
 	return asobjResult;

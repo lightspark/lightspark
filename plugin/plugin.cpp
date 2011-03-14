@@ -32,7 +32,7 @@
 #define PLUGIN_NAME    "Shockwave Flash"
 #define FAKE_PLUGIN_NAME    "Lightspark player"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME";"FAKE_MIME_TYPE":swfls:"FAKE_PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r"SHORTVERSION
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.2 r"SHORTVERSION
 
 using namespace std;
 
@@ -93,6 +93,24 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 	addDownloader(downloader);
 	return downloader;
 }
+/*
+   \brief Create a Downloader for an URL and sending additional data
+
+   Returns a pointer to the newly create Downloader for the given URL
+ * \param[in] url The URL (as a \c URLInfo) the \c Downloader is requested for
+ * \param[in] data Additional data that will be sent with the request
+ * \return A pointer to a newly created \c Downloader for the given URL.
+ * \see DownloadManager::destroy()
+ */
+lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
+		lightspark::LoaderInfo* owner)
+{
+	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
+	//Register this download
+	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), data, instance, owner);
+	addDownloader(downloader);
+	return downloader;
+}
 
 void NPDownloadManager::destroy(lightspark::Downloader* downloader)
 {
@@ -120,9 +138,26 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::Load
  *
  * \param[in] _url The URL for the Downloader.
  * \param[in] _cached Whether or not to cache this download.
+ * \param[in] _instance The netscape plugin instance
+ * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::LoaderInfo* owner):
 	Downloader(_url, _cached),instance(_instance),started(false)
+{
+	setOwner(owner);
+	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
+}
+
+/**
+ * \brief Constructor for the NPDownloader class when sending additional data (POST)
+ *
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] _data Additional data that is sent with the request
+ * \param[in] _instance The netscape plugin instance
+ * \param[in] owner The \c LoaderInfo object that keeps track of this download
+ */
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::LoaderInfo* owner):
+	Downloader(_url, _data),instance(_instance),started(false)
 {
 	setOwner(owner);
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
@@ -536,18 +571,8 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
-	if(stream->pdata)
-	{
-		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
-		dl->setFinished();
-	}
-	return NPERR_NO_ERROR;
-}
-
-void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
-{
-	NPDownloader* dl=static_cast<NPDownloader*>(notifyData);
-	cout << "URLnotify " << url << endl;
+	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
+	assert(dl);
 	//Notify our downloader of what happened
 	switch(reason)
 	{
@@ -564,4 +589,6 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 			dl->setFailed();
 			break;
 	}
+	return NPERR_NO_ERROR;
 }
+

@@ -1,3 +1,9 @@
+lightspark (0.4.6-0ubuntu1) maverick; urgency=low
+
+  * New release
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Sun, 13 Mar 2011 16:08:31 +0100
+
 lightspark (0.4.5.3-0ubuntu1) maverick; urgency=low
 
   * Bugfix release

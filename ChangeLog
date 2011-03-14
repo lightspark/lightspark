@@ -1,5 +1,11 @@
 lightspark: An open source flash player implementation
 
+Version 0.4.6:
+	* Fix YouTube breakage
+	* Vastly improved gradient support
+	* Fixed a large amount of graphics glitches
+	* Add support for upcoming Gnash release 0.8.9
+
 Version 0.4.5.3
 	* Fix YouTube breakage
 

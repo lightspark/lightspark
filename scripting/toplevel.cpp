@@ -549,6 +549,8 @@ XML::XML(XML* _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
 
 XML::~XML()
 {
+	if(sys->finalizingDestruction)
+		return;
 	if(root)
 		root->decRef();
 }
@@ -873,6 +875,8 @@ tiny_string XML::toString(bool debugMsg)
 
 XMLList::~XMLList()
 {
+	if(sys->finalizingDestruction)
+		return;
 	for(uint32_t i=0;i<nodes.size();i++)
 		nodes[i]->decRef();
 }
@@ -1256,13 +1260,13 @@ void ASString::buildTraits(ASObject* o)
 
 Array::~Array()
 {
-	if(sys && !sys->finalizingDestruction)
+	if(sys->finalizingDestruction)
+		return;
+
+	for(unsigned int i=0;i<data.size();i++)
 	{
-		for(unsigned int i=0;i<data.size();i++)
-		{
-			if(data[i].type==DATA_OBJECT && data[i].data)
-				data[i].data->decRef();
-		}
+		if(data[i].type==DATA_OBJECT && data[i].data)
+			data[i].data->decRef();
 	}
 }
 

@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<title>ExternalInterface test</title>
+
+<script type="text/javascript">
+function trace()
+{
+	var t = document.getElementById('trace');
+	for(var i = 0; i < arguments.length; i++)
+	{
+		t.value += arguments[i] + "\n";
+		if(typeof console != "undefined")
+			console.log(arguments[i]);
+	}
+}
+
+function compare(left, right)
+{
+	if(typeof(left) == "object")
+	{
+		try
+		{
+			for(k in left)
+			{
+				if(!compare(left[k], right[k]))
+					return false;
+			}
+		}
+		catch(e) { return false; }
+		return true;
+	}
+	else
+		return left == right;
+}
+
+function test(method, result, expected)
+{
+	try
+	{
+		if(compare(result, expected))
+		{
+			trace(method + ": OK");
+			return true;
+		}
+		else
+		{
+			trace("----------------------------------");
+			trace(method + ": FAIL");
+			trace("Expected:");
+			trace("    " + expected);
+			trace("Result:");
+			trace("    " + result);
+			trace("----------------------------------");
+			return false;
+		}
+	}
+	catch(e)
+	{
+		trace("----------------------------------");
+		trace(method + ": FAIL");
+		trace("Expected:");
+		trace("    " + expected);
+		trace("Exception thrown:");
+		trace("    " + e);
+		trace("----------------------------------");
+		return false;
+	}
+}
+
+function testAll()
+{
+	tests =
+	{
+		returnCompositeTest: ["string", 3.14, 271, true,  {a : "str key", 2 : "int key"}],
+		returnTrueTest: true,
+		returnFalseTest: false,
+		returnNullTest: null,
+		returnUndefinedTest: undefined,
+		returnNumberTest: 3.1415,
+		returnIntegerTest: 271,
+		returnStringTest: "hello world"
+	};
+	for(t in tests)
+	{
+		test(t, testPlayer[t](), tests[t]);
+	}
+
+	testArgs =  ["string", 3.14, 271, true,  {a : "str key", 2 : "int key"}];
+	test("returnArgumentsTest", testPlayer.returnArgumentsTest(testArgs), [testArgs]);
+	test("nestedTest", testPlayer.nested1Test(), "You reached level 3");
+	test("unsupportedCall1Test", testPlayer.unsupportedCall1Test(), "hello");
+	test("unsupportedCall2Test", testPlayer.unsupportedCall2Test(), "hello");
+	test("unsupportedCall3Test", testPlayer.unsupportedCall3Test(), "hello");
+	test("undefinedMethodTest", testPlayer.undefinedMethodTest(), null);
+	test("jsExceptionTest", testPlayer.jsExceptionTest(), "success");
+}
+
+function ready()
+{
+	document.getElementById("testButton").style.display = "inline";
+}
+
+function nested1Test()
+{
+	return testPlayer.nested2Test();
+}
+function nested2Test()
+{
+	return testPlayer.nested3Test();
+}
+function rawJSTest(arg)
+{
+	return arg;
+}
+function jsExceptionTest()
+{
+	throw "succes";
+	return "failure";
+}
+</script>
+</head>
+<body onload="window.testPlayer = document.getElementById('testPlayer'); document.getElementById('trace').value = ''">
+	<form method="get" action="#" onsubmit="return false;">
+	<div>
+
+<object width="200" height="200">
+<param name="movie" value="external_ExternalInterface_test.swf"/>
+<param name="allowFullScreen" value="true"/>
+<param name="allowscriptaccess" value="always"/>
+<embed width="200" height="200" src="external_ExternalInterface_test.swf" id="testPlayer" name="testPlayer"/>
+</object>
+
+<button onclick="testAll();" style="display: none;" id="testButton">Test all</button>
+<br/>
+
+<textarea id="trace" value="" rows="30" cols="100"></textarea>
+
+</form>
+</body>
+</html>

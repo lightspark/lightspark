@@ -210,6 +210,13 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_p:
 						th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 						break;
+					case SDLK_m:
+						th->m_sys->audioManager->toggleMuteAll();
+						if(th->m_sys->audioManager->allMuted())
+							LOG(LOG_NO_INFO, "All sounds muted");
+						else
+							LOG(LOG_NO_INFO, "All sounds unmuted");
+						break;
 					case SDLK_q:
 						th->m_sys->setShutdownFlag();
 						if(th->m_sys->currentVm)

@@ -18,10 +18,11 @@
 **************************************************************************/
 
 #include "rtmputils.h"
-#include <librtmp/rtmp.h>
 #include "swf.h"
 
-#include <fstream>
+#ifdef ENABLE_RTMP
+#include <librtmp/rtmp.h>
+#endif
 
 using namespace lightspark;
 using namespace std;
@@ -39,6 +40,7 @@ void RTMPDownloader::threadAbort()
 
 void RTMPDownloader::execute()
 {
+#ifdef ENABLE_RTMP
 	//Allocate and initialize the RTMP context
 	RTMP* rtmpCtx=RTMP_Alloc();
 	RTMP_Init(rtmpCtx);
@@ -56,7 +58,6 @@ void RTMPDownloader::execute()
 	int ret=RTMP_SetupURL(rtmpCtx, urlBuf);
 	cout << "Setup " << ret << endl;
 	//TODO: add return if fails
-	//ofstream f("puppa.flv");
 	ret=RTMP_Connect(rtmpCtx, NULL);
 	cout << "Connect " << ret << endl;
 	ret=RTMP_ConnectStream(rtmpCtx, 0);
@@ -73,10 +74,16 @@ void RTMPDownloader::execute()
 		if(ret==0 || hasFailed() || aborting)
 			break;
 		append((uint8_t*)buf,ret);
-		//f.write(buf,ret);
 	}
-	//f.close();
 	RTMP_Close(rtmpCtx);
 	RTMP_Free(rtmpCtx);
 	delete[] urlBuf;
+#else
+	//ENABLE_RTMP not defined
+	LOG(LOG_ERROR,_("NET: RTMP not enabled in this build. Downloader will always fail."));
+	setFailed();
+	return;
+#endif
+	//Notify the downloader no more data should be expected
+	setFinished();
 }

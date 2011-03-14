@@ -99,6 +99,21 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 					else
 						LOG(LOG_NO_INFO, "All sounds unmuted");
 					break;
+				case GDK_c:
+					if(th->m_sys->hasError())
+					{
+						GtkClipboard *clipboard;
+						clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+						gtk_clipboard_set_text(clipboard, th->m_sys->getErrorCause().c_str(),
+								th->m_sys->getErrorCause().size());
+						clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+						gtk_clipboard_set_text(clipboard, th->m_sys->getErrorCause().c_str(),
+								th->m_sys->getErrorCause().size());
+						LOG(LOG_NO_INFO, "Copied error to clipboard");
+					}
+					else
+						LOG(LOG_NO_INFO, "No error to be coppied to clipboard");
+					break;
 				default:
 					break;
 			}

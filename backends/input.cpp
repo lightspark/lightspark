@@ -92,6 +92,13 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 				case GDK_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;
+				case GDK_m:
+					th->m_sys->audioManager->toggleMuteAll();
+					if(th->m_sys->audioManager->allMuted())
+						LOG(LOG_NO_INFO, "All sounds muted");
+					else
+						LOG(LOG_NO_INFO, "All sounds unmuted");
+					break;
 				default:
 					break;
 			}

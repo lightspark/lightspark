@@ -25,7 +25,7 @@ using namespace std;
 
 
 IAudioPlugin::IAudioPlugin ( string plugin_name, string backend_name, bool init_stopped ):
-	IPlugin(AUDIO, plugin_name, backend_name), stopped(init_stopped)
+	IPlugin(AUDIO, plugin_name, backend_name), stopped(init_stopped), muteAllStreams(false)
 {
 
 }

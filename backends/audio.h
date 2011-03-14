@@ -46,7 +46,6 @@ private:
 	void release_audioplugin();
 	PluginManager *pluginManager;
 
-
 public:
 	AudioManager ( PluginManager *sharePluginManager );
 	bool pluginLoaded() const;
@@ -58,6 +57,12 @@ public:
 	void set_audiobackend ( std::string desired_backend );
 	void get_audioBackendsList();
 	void refresh_audioplugins_list();
+
+	void muteAll() { oAudioPlugin->muteAll(); }
+	void unmuteAll() { oAudioPlugin->unmuteAll(); }
+	void toggleMuteAll() { oAudioPlugin->toggleMuteAll(); }
+	bool allMuted() { return oAudioPlugin->allMuted(); }
+
 	~AudioManager();
 };
 

@@ -247,8 +247,11 @@ AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 		pa_stream_set_underflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) underflow_notify, NULL );
 		pa_stream_set_overflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) overflow_notify, NULL );
 		pa_stream_set_started_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) started_notify, NULL );
+		pa_stream_flags flags = (pa_stream_flags) PA_STREAM_START_CORKED;
+		if(muteAllStreams)
+			flags = (pa_stream_flags) (flags | PA_STREAM_START_MUTED);
 		pa_stream_connect_playback ( audioStream->stream, NULL, &attrs,
-		                             ( pa_stream_flags ) ( PA_STREAM_START_CORKED ), NULL, NULL );
+		                             flags, NULL, NULL );
 		pulseUnlock();
 	}
 	else
@@ -341,6 +344,22 @@ void PulsePlugin::stop()
 	}
 }
 
+void PulsePlugin::muteAll()
+{
+	IAudioPlugin::muteAll();
+	for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
+	{
+		((PulseAudioStream*) (*it))->mute();
+	}
+}
+void PulsePlugin::unmuteAll()
+{
+	IAudioPlugin::unmuteAll();
+	for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
+	{
+		((PulseAudioStream*) (*it))->unmute();
+	}
+}
 
 
 /****************************
@@ -429,6 +448,27 @@ bool PulseAudioStream::paused()
 bool PulseAudioStream::isValid()
 {
 	return streamStatus != STREAM_DEAD;
+}
+
+void PulseAudioStream::mute()
+{
+	pa_context_set_sink_input_mute(
+			pa_stream_get_context(stream),
+			pa_stream_get_index(stream),
+			1,
+			NULL,
+			NULL
+			);
+}
+void PulseAudioStream::unmute()
+{
+	pa_context_set_sink_input_mute(
+			pa_stream_get_context(stream),
+			pa_stream_get_index(stream),
+			0,
+			NULL,
+			NULL
+			);
 }
 
 

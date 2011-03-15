@@ -253,7 +253,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),
 	mainDownloaderStream(NULL),mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
 {
-	cout << "Lightspark version " << VERSION << " Copyright 2009-2010 Alessandro Pignotti" << endl << endl;
+	cout << "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others" << endl;
 	sys=NULL;
 	m_sys=new lightspark::SystemState(NULL,0);
 	//As this is the plugin, enable fallback on Gnash for older clips

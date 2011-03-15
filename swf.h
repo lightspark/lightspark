@@ -237,6 +237,8 @@ public:
 	
 	std::string errorCause;
 	void setError(const std::string& c);
+	bool hasError() { return error; }
+	std::string& getErrorCause() { return errorCause; }
 	bool shouldTerminate() const;
 	bool isShuttingDown() const DLL_PUBLIC;
 	bool isOnError() const;

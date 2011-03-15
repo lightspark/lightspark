@@ -5,6 +5,9 @@ Version 0.4.6:
 	* Vastly improved gradient support
 	* Fixed a large amount of graphics glitches
 	* Add support for upcoming Gnash release 0.8.9
+	* Add profiling support for ActionScript code
+	* Add support for muting all sounds using the 'm' key
+	* Add support for copying error messages using the 'c' key in plugin
 
 Version 0.4.5.3
 	* Fix YouTube breakage

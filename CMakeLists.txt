@@ -116,6 +116,7 @@ SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the browser plugin?")
 SET(ENABLE_CURL TRUE CACHE BOOL "Enable CURL? (Required for Downloader functionality)")
 SET(ENABLE_LIBAVCODEC TRUE CACHE BOOL "Enable libavcodec and dependent functionality?")
+SET(ENABLE_RTMP FALSE CACHE BOOL "Enable librtmp and dependent functionality?")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING

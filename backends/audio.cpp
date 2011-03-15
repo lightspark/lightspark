@@ -44,11 +44,9 @@ Else
   Select and load the good audio plugin lib files
 *****************/
 
-AudioManager::AudioManager ( PluginManager *sharedPluginManager )
+AudioManager::AudioManager ( PluginManager *sharedPluginManager ) :
+	oAudioPlugin(NULL), selectedAudioBackend(""), pluginManager(sharedPluginManager)
 {
-	pluginManager = sharedPluginManager;
-	selectedAudioBackend = "";
-	oAudioPlugin = NULL;
 //	  string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
 	string DesiredAudio = sys->config->getAudioBackendName();
 	set_audiobackend ( DesiredAudio );

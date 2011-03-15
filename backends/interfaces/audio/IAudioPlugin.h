@@ -56,6 +56,8 @@ protected:
 	volatile bool contextReady;
 	volatile bool noServer;
 	bool stopped;
+	bool muteAllStreams;
+
 	IAudioPlugin ( std::string plugin_name, std::string backend_name, bool init_stopped = false );
 
 public:
@@ -68,6 +70,12 @@ public:
 	virtual void pauseStream( AudioStream *audioStream ) = 0;	//Pause the stream (stops time from running, cork)
 	virtual void resumeStream( AudioStream *audioStream ) = 0;	//Resume the stream (restart time, uncork)
 	virtual bool isTimingAvailable() const = 0;
+
+	virtual void muteAll() { muteAllStreams = true; }
+	virtual void unmuteAll() { muteAllStreams = false; }
+	virtual void toggleMuteAll() { muteAllStreams ? unmuteAll() : muteAll(); }
+	virtual bool allMuted() { return muteAllStreams; }
+
 	virtual ~IAudioPlugin();
 };
 

@@ -45,6 +45,7 @@ private:
 	static void streamWriteCB ( pa_stream *stream, size_t nbytes, PulseAudioStream *th );
 	bool contextReady;
 	bool noServer;
+
 public:
 	PulsePlugin ( std::string init_Name = "Pulse plugin output only", std::string init_audiobackend = "pulseaudio",
 		      bool init_contextReady = false, bool init_noServer = false, bool init_stopped = false );
@@ -57,6 +58,10 @@ public:
 	void pulseLock();
 	void pulseUnlock();
 	bool serverAvailable() const;
+
+	void muteAll();
+	void unmuteAll();
+
 	~PulsePlugin();
 };
 
@@ -74,7 +79,9 @@ class PulseAudioStream: public AudioStream
 	pa_stream *stream;
 	PulsePlugin *manager;
 	volatile STREAM_STATUS streamStatus;
-    
+
+	void mute();
+	void unmute();
 };
 
 #endif

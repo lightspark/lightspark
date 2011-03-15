@@ -627,23 +627,28 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	lightspark::ExtCallback* callback = it->second->copy();
 
 	// Set the current root callback only if there isn't one already
-	bool resetCurrentCallback = false;
+	bool rootCallback = false;
 	if(currentCallback == NULL)
 	{
 		// Remember to reset the current callback
-		resetCurrentCallback = true;
+		rootCallback = true;
 		currentCallback = callback;
 	}
+	// Call the callback synchronously if:
+	// - We are not the root callback
+	//     (case: BROWSER -> invoke -> VM -> external call -> BROWSER -> invoke)
+	// - We are the root callback AND we are being called from within an external call
+	//     (case: VM -> external call -> BROWSER -> invoke)
+	bool synchronous = !rootCallback || (rootCallback && callStatusses.size() == 1);
 
 	// Call our callback.
-	// If we aren't the root callback, indicate that the VM is suspended.
-	// We can assume this since we are in a nested invoke(),
-	// which got called from within an external call (which is run from the VM).
-	callback->call(*this, objId, objArgs, argc, currentCallback!=NULL);
+	// We can call it synchronously in the cases specified above.
+	// In both cases, the VM is suspended, waiting for the result from another external call.
+	// Thus we don't have to worry about synchronizing with the VM.
+	callback->call(*this, objId, objArgs, argc, synchronous);
 	// Wait for its result or a forced wake-up
 	callback->wait();
-	// As long as we get forced wake-ups,
-	// execute the requested external calls and keep waiting.
+	// As long as we get forced wake-ups, execute the requested external calls and keep waiting.
 	// Note that only the root callback can be forcibly woken up.
 	while(externalCallData != NULL)
 	{
@@ -662,7 +667,7 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	bool res = callback->getResult(*this, &objResult);
 
 	// Reset the root current callback to NULL, if necessary
-	if(resetCurrentCallback)
+	if(rootCallback)
 		currentCallback = NULL;
 
 	// Delete our callback after use

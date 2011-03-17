@@ -82,7 +82,7 @@ friend std::istream& operator>>(std::istream& in, s32& v);
 private:
 	int32_t val;
 public:
-	operator int32_t(){return val;}
+	operator int32_t() const{return val;}
 };
 
 class u32
@@ -100,7 +100,7 @@ friend std::istream& operator>>(std::istream& in, d64& v);
 private:
 	double val;
 public:
-	operator double(){return val;}
+	operator double() const{return val;}
 };
 
 class string_info
@@ -205,7 +205,7 @@ struct block_info
 	std::map<int,STACK_TYPE> push_types;
 
 	//Needed for indexed access
-	block_info():BB(NULL){abort();}
+	block_info():BB(NULL){assert(false);}
 	block_info(const method_info* mi, const char* blockName);
 	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
 };
@@ -215,6 +215,21 @@ inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
 {
 	return std::make_pair(v, t);
 }
+
+struct blockStudy
+{
+	//start is the first address inside the block
+	//end is the first byte _not_ inside the block
+	uint32_t start,end;
+	uint32_t usageCount;
+	blockStudy(uint32_t a):start(a),end(a+1),usageCount(1)
+	{
+	}
+	bool isAddressInside(uint32_t ip) const
+	{
+		return (ip>=start && ip<end);
+	}
+};
 
 class method_info
 {
@@ -258,11 +273,14 @@ private:
 	//Helper function to add a basic block
 	void addBlock(std::map<unsigned int,block_info>& blocks, unsigned int ip, const char* blockName);
 	std::pair<unsigned int, STACK_TYPE> popTypeFromStack(static_stack_types_vector& stack, unsigned int localIp) const;
-	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
+	llvm::FunctionType* synt_method_prototype(const llvm::Type* pointerType);
 	llvm::Function* llvmf;
 
 	//Does analysis on function code to find optimization chances
-	void doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder);
+	void doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder, uint32_t start, uint32_t end);
+
+	//Function study support
+	std::vector<blockStudy> studiedBlocks;
 
 public:
 #ifdef PROFILING_SUPPORT
@@ -281,16 +299,27 @@ public:
 	bool needsArgs() { return (flags & NEED_ARGUMENTS) != 0;}
 	bool needsRest() { return (flags & NEED_REST) != 0;}
 	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
-	ASObject* getOptional(unsigned int i);
+	ASObject* getOptional(unsigned int i) const;
 	int numArgs() { return param_count; }
 	method_info():
 #ifdef PROFILING_SUPPORT
 		profTime(0),
 		validProfName(false),
 #endif
-		option_count(0),f(NULL),context(NULL),body(NULL)
+		option_count(0),f(NULL),context(NULL),body(NULL),studyFunction(false)
 	{
 	}
+
+	//Function study support
+	/*
+	   Gets a potentially new blockStudy for the given address
+	   This will invalidate pointers returned before
+
+	   If the JIT enable threshold of usageCount is passed, compile the block
+	*/
+	bool studyFunction;
+	blockStudy* getBlockStudyAtAddress(uint32_t ip);
+	SyntheticFunction::synt_function compileBlock(uint32_t start, uint32_t end);
 };
 
 struct item_info
@@ -407,7 +436,7 @@ private:
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
 	int getMultinameRTData(int n) const;
-	ASObject* getConstant(int kind, int index);
+	ASObject* getConstant(int kind, int index) const;
 public:
 	u16 minor;
 	u16 major;

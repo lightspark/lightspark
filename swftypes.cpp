@@ -38,6 +38,15 @@ using namespace lightspark;
 
 extern TLSDATA ParseThread* pt;
 
+bool multiname::isTypeInt() const
+{
+	return name_type==multiname::NAME_STRING &&
+		name_s=="int" &&
+		ns.size()==1 &&
+		//TODO: what's the right namespace kind?
+		ns[0].name=="";
+}
+
 tiny_string multiname::qualifiedString() const
 {
 	assert_and_throw(ns.size()==1);

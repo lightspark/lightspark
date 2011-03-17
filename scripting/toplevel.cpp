@@ -2244,8 +2244,11 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		return NULL;
 	}
 
+	if(mi->profName=="BigInteger::http://crypto.hurlant.com/BigInteger::am")
+		mi->studyFunction=true;
+
 	//Temporarily disable JITting
-	if(sys->useJit && (hit_count==hit_threshold || sys->useInterpreter==false))
+	if((sys->useJit && (hit_count==hit_threshold || sys->useInterpreter==false)))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();

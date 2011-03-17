@@ -1515,7 +1515,7 @@ void ABCVm::Run(ABCVm* th)
 	sys=th->m_sys;
 	while(getVm()!=th);
 	isVmThread=true;
-	if(th->m_sys->useJit)
+//	if(th->m_sys->useJit)
 	{
 		llvm::InitializeNativeTarget();
 		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
@@ -1741,7 +1741,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 	}
 }
 
-ASObject* ABCContext::getConstant(int kind, int index)
+ASObject* ABCContext::getConstant(int kind, int index) const
 {
 	switch(kind)
 	{
@@ -2046,10 +2046,31 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 }
 
 
-ASObject* method_info::getOptional(unsigned int i)
+ASObject* method_info::getOptional(unsigned int i) const
 {
 	assert_and_throw(i<options.size());
 	return context->getConstant(options[i].kind,options[i].val);
+}
+
+blockStudy* method_info::getBlockStudyAtAddress(uint32_t ip)
+{
+	const uint32_t usageCountThreshold=10;
+	//TODO: optimize
+	for(uint32_t i=0;i<studiedBlocks.size();i++)
+	{
+		if(studiedBlocks[i].isAddressInside(ip))
+		{
+			studiedBlocks[i].usageCount++;
+			if(studiedBlocks[i].usageCount>usageCountThreshold)
+			{
+				compileBlock(studiedBlocks[i].start,studiedBlocks[i].end);
+				__asm__("int $3");
+			}
+			return &studiedBlocks[i];
+		}
+	}
+	studiedBlocks.emplace_back(ip);
+	return &studiedBlocks.back();
 }
 
 istream& lightspark::operator>>(istream& in, u32& v)

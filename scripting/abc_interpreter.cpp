@@ -36,12 +36,16 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 
 ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* context)
 {
+	ASObject* returnValue=NULL;
+	bool executingFunction=true;
+
 	method_info* mi=function->mi;
 
 	istringstream& code=*(context->code);
 	int code_len=code.str().length();
 
 	u8 opcode;
+	blockStudy* currentBlock=NULL;
 
 #ifdef PROFILING_SUPPORT
 	if(mi->profTime.empty())
@@ -55,11 +59,12 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 #endif
 
 	//Each case block builds the correct parameters for the interpreter function and call it
-	while(1)
+	while(executingFunction)
 	{
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
+		bool jittableOpcode=false;
 		code >> opcode;
 		if(code.eof())
 			throw ParseException("End of code in intepreter");
@@ -69,6 +74,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0x02:
 			{
 				//nop
+				jittableOpcode=true;
 				break;
 			}
 			case 0x03:
@@ -101,11 +107,13 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				assert_and_throw(context->locals[t]);
 				context->locals[t]->decRef();
 				context->locals[t]=new Undefined;
+				jittableOpcode=true;
 				break;
 			}
 			case 0x09:
 			{
 				//label
+				jittableOpcode=true;
 				break;
 			}
 			case 0x0c:
@@ -126,6 +134,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x0d:
@@ -146,6 +155,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x0e:
@@ -166,6 +176,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x0f:
@@ -186,6 +197,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x10:
@@ -201,6 +213,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				if(dest >= code_len)
 					throw ParseException("Jump out of bounds in intepreter");
 				code.seekg(dest);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x11:
@@ -221,6 +234,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x12:
@@ -241,6 +255,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x13:
@@ -262,6 +277,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x14:
@@ -283,6 +299,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x15:
@@ -304,6 +321,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x16:
@@ -325,6 +343,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x17:
@@ -346,6 +365,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x18:
@@ -367,6 +387,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x19:
@@ -388,6 +409,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x1a:
@@ -409,6 +431,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 						throw ParseException("Jump out of bounds in intepreter");
 					code.seekg(dest);
 				}
+				jittableOpcode=true;
 				break;
 			}
 			case 0x1b:
@@ -439,6 +462,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				if(dest >= code_len)
 					throw ParseException("Jump out of bounds in intepreter");
 				code.seekg(dest);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x1c:
@@ -488,6 +512,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code.read((char*)&t,1);
 				context->runtime_stack_push(abstract_i(t));
 				pushByte(t);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x25:
@@ -499,18 +524,21 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code >> t;
 				context->runtime_stack_push(abstract_i(t));
 				pushShort(t);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x26:
 			{
 				//pushtrue
 				context->runtime_stack_push(abstract_b(pushTrue()));
+				jittableOpcode=true;
 				break;
 			}
 			case 0x27:
 			{
 				//pushfalse
 				context->runtime_stack_push(abstract_b(pushFalse()));
+				jittableOpcode=true;
 				break;
 			}
 			case 0x28:
@@ -526,6 +554,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* o=context->runtime_stack_pop();
 				if(o)
 					o->decRef();
+				jittableOpcode=true;
 				break;
 			}
 			case 0x2a:
@@ -535,6 +564,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* o=context->runtime_stack_peek();
 				o->incRef();
 				context->runtime_stack_push(o);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x2b:
@@ -546,6 +576,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				context->runtime_stack_push(v1);
 				context->runtime_stack_push(v2);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x2c:
@@ -565,6 +596,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* i=abstract_i(context->context->constant_pool.integer[t]);
 				context->runtime_stack_push(i);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x2e:
@@ -576,6 +608,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* i=abstract_i(context->context->constant_pool.uinteger[t]);
 				context->runtime_stack_push(i);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x2f:
@@ -587,6 +620,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* d=abstract_d(context->context->constant_pool.doubles[t]);
 				context->runtime_stack_push(d);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x30:
@@ -672,15 +706,20 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//returnvoid
 				LOG(LOG_CALLS,_("returnVoid"));
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				return NULL;
+				jittableOpcode=true;
+				returnValue=NULL;
+				executingFunction=false;
+				break;
 			}
 			case 0x48:
 			{
 				//returnvalue
-				ASObject* ret=context->runtime_stack_pop();
-				LOG(LOG_CALLS,_("returnValue ") << ret);
+				returnValue=context->runtime_stack_pop();
+				LOG(LOG_CALLS,_("returnValue ") << returnValue);
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				return ret;
+				jittableOpcode=true;
+				executingFunction=false;
+				break;
 			}
 			case 0x49:
 			{
@@ -830,6 +869,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				context->locals[i]->incRef();
 				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toString(true) );
 				context->runtime_stack_push(context->locals[i]);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x63:
@@ -843,6 +883,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				if(context->locals[i])
 					context->locals[i]->decRef();
 				context->locals[i]=obj;
+				jittableOpcode=true;
 				break;
 			}
 			case 0x64:
@@ -923,6 +964,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//convert_i
 				ASObject* val=context->runtime_stack_pop();
 				context->runtime_stack_push(abstract_i(convert_i(val)));
+				jittableOpcode=true;
 				break;
 			}
 			case 0x74:
@@ -930,6 +972,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//convert_u
 				ASObject* val=context->runtime_stack_pop();
 				context->runtime_stack_push(abstract_i(convert_u(val)));
+				jittableOpcode=true;
 				break;
 			}
 			case 0x75:
@@ -937,6 +980,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//convert_d
 				ASObject* val=context->runtime_stack_pop();
 				context->runtime_stack_push(abstract_d(convert_d(val)));
+				jittableOpcode=true;
 				break;
 			}
 			case 0x76:
@@ -944,6 +988,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//convert_b
 				ASObject* val=context->runtime_stack_pop();
 				context->runtime_stack_push(abstract_b(convert_b(val)));
+				jittableOpcode=true;
 				break;
 			}
 			case 0x78:
@@ -1002,6 +1047,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* val=context->runtime_stack_pop();
 				ASObject* ret=abstract_d(negate(val));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x91:
@@ -1010,6 +1056,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* val=context->runtime_stack_pop();
 				ASObject* ret=abstract_i(increment(val));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x92:
@@ -1018,6 +1065,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t;
 				code >> t;
 				incLocal(context, t);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x93:
@@ -1026,6 +1074,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* val=context->runtime_stack_pop();
 				ASObject* ret=abstract_i(decrement(val));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x94:
@@ -1034,6 +1083,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t;
 				code >> t;
 				decLocal(context, t);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x95:
@@ -1050,6 +1100,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* val=context->runtime_stack_pop();
 				ASObject* ret=abstract_b(_not(val));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0x97:
@@ -1058,6 +1109,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* val=context->runtime_stack_pop();
 				ASObject* ret=abstract_i(bitNot(val));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa0:
@@ -1068,6 +1120,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=add(v2, v1);
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa1:
@@ -1079,6 +1132,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_d(subtract(v2, v1));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa2:
@@ -1089,6 +1143,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_d(multiply(v2, v1));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa3:
@@ -1099,6 +1154,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_d(divide(v2, v1));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa4:
@@ -1109,6 +1165,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(modulo(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa5:
@@ -1119,6 +1176,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(lShift(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa6:
@@ -1129,6 +1187,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(rShift(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa7:
@@ -1139,6 +1198,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(urShift(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa8:
@@ -1149,6 +1209,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(bitAnd(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xa9:
@@ -1159,6 +1220,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(bitOr(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xaa:
@@ -1169,6 +1231,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(bitXor(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xab:
@@ -1179,6 +1242,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_b(equals(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xac:
@@ -1189,6 +1253,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_b(strictEquals(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xad:
@@ -1199,6 +1264,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_b(lessThan(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xae:
@@ -1209,6 +1275,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_b(lessEquals(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xaf:
@@ -1219,6 +1286,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_b(greaterThan(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xb0:
@@ -1229,6 +1297,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_b(greaterEquals(v1, v2));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xb2:
@@ -1270,6 +1339,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* val=context->runtime_stack_pop();
 				ASObject* ret=abstract_i(increment_i(val));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xc1:
@@ -1278,6 +1348,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* val=context->runtime_stack_pop();
 				ASObject* ret=abstract_i(decrement_i(val));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xc2:
@@ -1286,6 +1357,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t;
 				code >> t;
 				incLocal_i(context, t);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xc3:
@@ -1294,6 +1366,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t;
 				code >> t;
 				decLocal_i(context, t);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xc4:
@@ -1302,6 +1375,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject *val=context->runtime_stack_pop();
 				ASObject* ret=abstract_i(negate_i(val));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xc5:
@@ -1312,6 +1386,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(add_i(v2, v1));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xc6:
@@ -1322,6 +1397,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(subtract_i(v2, v1));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xc7:
@@ -1332,6 +1408,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* ret=abstract_i(multiply_i(v2, v1));
 				context->runtime_stack_push(ret);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xd0:
@@ -1345,6 +1422,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toString(true) );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);
+				jittableOpcode=true;
 				break;
 			}
 			case 0xd4:
@@ -1359,6 +1437,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				if(context->locals[i])
 					context->locals[i]->decRef();
 				context->locals[i]=obj;
+				jittableOpcode=true;
 				break;
 			}
 			case 0xef:
@@ -1397,10 +1476,28 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				throw ParseException("Not implemented instruction in interpreter");
 		}
 		PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
+
+		if(mi->studyFunction)
+		{
+			if(jittableOpcode)
+			{
+				if(currentBlock)
+				{
+					if(currentBlock->isAddressInside(instructionPointer)) //Loop inside the block
+						currentBlock->usageCount++;
+					else //Grow the block
+						currentBlock->end=instructionPointer;
+				}
+				else //Block changed or new block
+					currentBlock=mi->getBlockStudyAtAddress(instructionPointer);
+			}
+			else
+				currentBlock=NULL;
+		}
 	}
 
 #undef PROF_ACCOUNT_TIME 
 #undef PROF_IGNORE_TIME
 	//We managed to execute all the function
-	return context->runtime_stack_pop();
+	return returnValue;
 }

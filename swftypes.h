@@ -477,6 +477,7 @@ struct multiname
 	*/
 	tiny_string normalizedName() const;
 	tiny_string qualifiedString() const;
+	bool isTypeInt() const;
 };
 
 class FLOAT 

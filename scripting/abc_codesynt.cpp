@@ -571,14 +571,11 @@ STACK_TYPE block_info::checkProactiveCasting(int local_ip,STACK_TYPE type)
 	return result.first->second;
 }
 
-llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex)
+llvm::FunctionType* method_info::synt_method_prototype(const llvm::Type* pointerType)
 {
-	//whatever pointer is good
-	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType(getVm()->llvm_context);
-
 	std::vector<const llvm::Type*> struct_elems;
-	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
+	struct_elems.push_back(llvm::PointerType::getUnqual(pointerType));
+	struct_elems.push_back(llvm::PointerType::getUnqual(pointerType));
 	struct_elems.push_back(llvm::IntegerType::get(getVm()->llvm_context,32));
 	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(getVm()->llvm_context,struct_elems,true));
 
@@ -586,7 +583,7 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 	vector<const llvm::Type*> sig;
 	sig.push_back(context_type);
 
-	return llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	return llvm::FunctionType::get(pointerType, sig, false);
 }
 
 void method_info::consumeStackForRTMultiname(static_stack_types_vector& stack, int multinameIndex) const
@@ -629,10 +626,11 @@ void method_info::addBlock(map<unsigned int,block_info>& blocks, unsigned int ip
 		blocks.insert(make_pair(ip, block_info(this, blockName)));
 }
 
-void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder)
+void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder, uint32_t start, uint32_t end)
 {
 	bool stop;
-	stringstream code(body->code);
+	istringstream code(body->code);
+	code.seekg(start);
 	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
 	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
 	llvm::ExecutionEngine* ex=getVm()->ex;
@@ -646,7 +644,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 		//This is initialized to true so that on first iteration the entry block is used
 		bool last_is_branch=true;
 		code.clear();
-		code.seekg(0);
+		code.seekg(start);
 		stop=true;
 		block_info* cur_block=NULL;
 		static_stack_types_vector static_stack_types;
@@ -657,6 +655,8 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 		while(1)
 		{
 			local_ip=code.tellg();
+			if(local_ip>end)
+				break;
 			code >> opcode;
 			if(code.eof())
 				break;
@@ -1418,18 +1418,18 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 							new_start[j]=STACK_NONE;
 					}
 				}
-			}
-			//It's not useful to sync variables that are going to be resetted
-			for(unsigned int i=0;i<body->local_count;i++)
-			{
-				if(cur.locals_reset[i])
-					new_start[i]=STACK_NONE;
-			}
+				//It's not useful to sync variables that are going to be resetted
+				for(unsigned int i=0;i<body->local_count;i++)
+				{
+					if(cur.locals_reset[i])
+						new_start[i]=STACK_NONE;
+				}
 
-			if(new_start!=cur.locals_start)
-			{
-				stop=false;
-				cur.locals_start=new_start;
+				if(new_start!=cur.locals_start)
+				{
+					stop=false;
+					cur.locals_start=new_start;
+				}
 			}
 		}
 
@@ -1467,6 +1467,172 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 	}
 }
 
+SyntheticFunction::synt_function method_info::compileBlock(uint32_t start, uint32_t end)
+{
+	llvm::ExecutionEngine* ex=getVm()->ex;
+	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
+	//Define common data types
+	//The pointer size compatible int type will be useful
+	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
+	const llvm::Type* int32_type=llvm::IntegerType::get(getVm()->llvm_context,32);
+	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
+	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
+	//Create an LLVM function object
+	llvmf=llvm::Function::Create(synt_method_prototype(voidptr_type),llvm::Function::ExternalLinkage,"",getVm()->module);
+
+	//Create the LLVM builder object
+	llvm::IRBuilder<> Builder(llvm_context);
+
+	//Create the basic block that will hold the prologue of the function
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
+	Builder.SetInsertPoint(BB);
+
+/*	//We define a couple of variables that will be used a lot
+	llvm::Constant* constant;
+	llvm::Constant* constant2;
+	llvm::Value* value;*/
+
+	//The only argument is the call_context structure
+	llvm::Value* callContext=llvmf->getArgumentList().begin();
+
+	//Create the LLVM value that points to the locals array
+	llvm::Value* tmpValue=Builder.CreateStructGEP(callContext,0);
+	llvm::Value* locals=Builder.CreateLoad(tmpValue);
+
+	//The stack is statically handled as much as possible to allow llvm optimizations
+	//On branch and on interpreted/jitted code transition it is synchronized with the dynamic one
+	vector<stack_entry> static_stack;
+	static_stack.reserve(body->max_stack);
+	//Get the pointer to the dynamic stack
+	tmpValue=Builder.CreateStructGEP(callContext,1);
+	llvm::Value* dynamic_stack=Builder.CreateLoad(tmpValue);
+	//Get the index of the dynamic stack
+	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(callContext,2);
+
+	//Creating a mapping between blocks and starting address
+	map<unsigned int,block_info> blocks;
+	//Let's build a block for the real function code, this is also used to bootstrap code analysis
+	addBlock(blocks, start, "begin");
+
+/*	//Initialize the locals of the first block using the argument types
+	for(uint32_t i=0;i<param_type.size();i++)
+	{
+		multiname* m=this->context->getMultiname(param_type[i],NULL);
+		if(m->isTypeInt())
+			blocks[0].locals_start[i+1]=STACK_INT;
+	}*/
+
+	//Analyze code to extract implicit type information
+	doAnalysis(blocks,Builder,start,end);
+/*	for(uint32_t i=0;i<param_type.size();i++)
+	{
+		multiname* m=this->context->getMultiname(param_type[i],NULL);
+		if(m->isTypeInt())
+		{
+			constant = llvm::ConstantInt::get(int_type, i+1);
+			llvm::Value* t=Builder.CreateGEP(locals,constant);
+			t=Builder.CreateLoad(t);
+			Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+			t=Builder.CreateCall(ex->FindFunctionNamed("convert_i"),t);
+			Builder.CreateStore(t,blocks[0].locals_start_obj[i+1]);
+		}
+	}*/
+
+	//Let's reset the stream
+	istringstream code(body->code);
+	code.seekg(start);
+	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
+	block_info* cur_block=NULL;
+
+	//Create a jump to the first block of actual code
+	Builder.CreateBr(blocks[start].BB);
+
+	u8 opcode;
+	bool last_is_branch=true;
+	/*auto it=blocks.begin();
+	while(it!=blocks.end())
+	{
+		const block_info& b=it->second;
+		__asm__("int $3");
+		cout << &b << endl;
+		it++;
+	}*/
+	while(1)
+	{
+		uint32_t local_ip=code.tellg();
+		if(local_ip>end)
+			break;
+		code >> opcode;
+		if(code.eof())
+			break;
+		//Check if we are expecting a new block start
+		map<unsigned int,block_info>::iterator it=blocks.find(local_ip);
+		if(it!=blocks.end())
+		{
+			if(!last_is_branch)
+			{
+				LOG(LOG_TRACE, _("Last instruction before a new block was not a branch."));
+				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,it->second);
+				Builder.CreateBr(it->second.BB);
+			}
+			LOG(LOG_TRACE,_("Starting block at ")<<local_ip);
+			Builder.SetInsertPoint(it->second.BB);
+			cur_block=&it->second;
+
+			if(!cur_block->locals_start.empty())
+			{
+				//Generate prologue, LLVM should optimize register usage
+				assert(static_locals.size()==cur_block->locals_start.size());
+				for(unsigned int i=0;i<static_locals.size();i++)
+				{
+					static_locals[i].second=cur_block->locals_start[i];
+					if(cur_block->locals_start[i]!=STACK_NONE)
+						static_locals[i].first=Builder.CreateLoad(cur_block->locals_start_obj[i]);
+				}
+			}
+
+			last_is_branch=false;
+		}
+		else if(last_is_branch)
+		{
+			//TODO: Check this. It seems that there may be invalid code after
+			//block end
+			LOG(LOG_TRACE,_("Ignoring at ") << local_ip);
+			continue;
+		}
+
+		switch(opcode)
+		{
+			default:
+				LOG(LOG_ERROR,_("Not implemented instruction @") << code.tellg());
+				LOG(LOG_ERROR,_("Opcode ") << hex << (unsigned int)opcode << dec);
+				return NULL;
+				/*constant = llvm::ConstantInt::get(int_type, opcode);
+				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
+				Builder.CreateRetVoid();
+
+				f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
+				return f;*/
+		}
+	}
+
+	map<unsigned int,block_info>::iterator it2=blocks.begin();
+	for(;it2!=blocks.end();++it2)
+	{
+		if(it2->second.BB->getTerminator()==NULL)
+		{
+			cout << "start at " << it2->first << endl;
+			throw RunTimeException("Missing terminator");
+		}
+	}
+
+	getVm()->FPM->run(*llvmf);
+	f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
+	//llvmf->dump();
+	return f;
+}
+
 SyntheticFunction::synt_function method_info::synt_method()
 {
 	if(f)
@@ -1481,15 +1647,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 	llvm::ExecutionEngine* ex=getVm()->ex;
 	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
-	llvm::FunctionType* method_type=synt_method_prototype(ex);
-	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,method_name,getVm()->module);
-
+	//Define common data types
 	//The pointer size compatible int type will be useful
-	//TODO: void*
 	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
 	const llvm::Type* int32_type=llvm::IntegerType::get(getVm()->llvm_context,32);
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
 	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
+	//Create an LLVM function object
+	llvmf=llvm::Function::Create(synt_method_prototype(voidptr_type),llvm::Function::ExternalLinkage,method_name,getVm()->module);
 
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
 	llvm::IRBuilder<> Builder(llvm_context);
@@ -1536,12 +1701,33 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	//Let's build a block for the real function code
 	addBlock(blocks, 0, "begin");
+	//Initialize the locals of the first block using the argument types
+	for(uint32_t i=0;i<param_type.size();i++)
+	{
+		multiname* m=this->context->getMultiname(param_type[i],NULL);
+		if(m->isTypeInt())
+			blocks[0].locals_start[i+1]=STACK_INT;
+	}
 
-	doAnalysis(blocks,Builder);
+	doAnalysis(blocks,Builder,0,body->code.size());
+	for(uint32_t i=0;i<param_type.size();i++)
+	{
+		multiname* m=this->context->getMultiname(param_type[i],NULL);
+		if(m->isTypeInt())
+		{
+			constant = llvm::ConstantInt::get(int_type, i+1);
+			llvm::Value* t=Builder.CreateGEP(locals,constant);
+			t=Builder.CreateLoad(t);
+			Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+			t=Builder.CreateCall(ex->FindFunctionNamed("convert_i"),t);
+			Builder.CreateStore(t,blocks[0].locals_start_obj[i+1]);
+		}
+	}
 
 	//Let's reset the stream
-	stringstream code(body->code);
+	istringstream code(body->code);
 	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
+
 	block_info* cur_block=NULL;
 
 	static_stack.clear();
@@ -3544,7 +3730,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					abstract_value(ex,Builder,v1);
 					abstract_value(ex,Builder,v2);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("lShift"), v1.first, v2.first);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("rShift"), v1.first, v2.first);
 				}
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));

@@ -203,9 +203,10 @@ struct block_info
 	std::set<block_info*> preds;
 	std::set<block_info*> seqs;
 	std::map<int,STACK_TYPE> push_types;
+	uint32_t blockEnd;
 
 	//Needed for indexed access
-	block_info():BB(NULL){assert(false);}
+	block_info():BB(NULL),blockEnd(0){assert(false);}
 	block_info(const method_info* mi, const char* blockName);
 	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
 };
@@ -246,24 +247,24 @@ private:
 	std::vector<u30> param_names;
 
 	//Helper functions to peek/pop/push in the static stack
-	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
+	static stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
+	static stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
+	static void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
 	//Helper function to generate the right object for a concrete type
-	void abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, stack_entry& e);
+	static void abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, stack_entry& e);
 
 	//Helper functions that generates LLVM to access the stack at runtime
-	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
-	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
-	void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
+	static llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
+	static llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
+	static void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
 			llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
 
 	//Helper functions to sync the static stack and locals to the memory 
-	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, 
+	static void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, 
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
+	static void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
 			const std::vector<stack_entry>& static_locals,llvm::Value* locals,
 			const std::vector<STACK_TYPE>& expected,const block_info& dest_block);
 	typedef std::vector<std::pair<int, STACK_TYPE> > static_stack_types_vector;
@@ -282,6 +283,66 @@ private:
 	//Function study support
 	std::vector<blockStudy> studiedBlocks;
 
+	//Helpers to compile the opcodes to LLVM code
+	static void compileAdd(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type, const llvm::Type* number_type);
+	static void compileBitAnd(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type);
+	static void compileConvert_i(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type);
+	static void compileDecrement_i(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type);
+	static void compileDup(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+	static void compileGetLocal(int i, std::vector<stack_entry>& static_locals, llvm::Value* locals,
+			std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type);
+	void compileGetProperty(int t, int local_ip, llvm::Value* callContext,
+			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index, 
+			block_info* cur_block, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type, const llvm::Type* voidptr_type);
+	void compileIfGE(int here, int offset,
+			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+			std::vector<stack_entry>& static_locals, llvm::Value* locals,
+			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
+			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+	static void compileIncrement_i(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type);
+	static void compileJump(int offset, int here,
+			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+			std::vector<stack_entry>& static_locals, llvm::Value* locals,
+			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+	static void compileKill(int i, std::vector<stack_entry>& static_locals,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+	static void compileMultiply(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type, const llvm::Type* number_type);
+	static void compilePushByte(int t, std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
+			llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+	void compilePushInt(int t, std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
+			llvm::ExecutionEngine* ex, llvm::Value* callContext, const llvm::Type* int_type);
+	static void compilePushShort(int t, std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
+			llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+	static void compileLShift(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type);
+	static void compileRShift(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+	static void compileSetLocal(int i, const stack_entry& e, std::vector<stack_entry>& static_locals,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+	void compileSetProperty(int t, llvm::Value* callContext,
+			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index, 
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type, const llvm::Type* voidptr_type);
+	static void compileURShift(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type, const llvm::Type* int32_type);
 public:
 #ifdef PROFILING_SUPPORT
 	std::map<method_info*,uint64_t> profCalls;

@@ -227,7 +227,7 @@ void ABCVm::registerFunctions()
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
-	
+
 	//Lazy pushing, no context, (ASObject*, uintptr_t, int)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
@@ -486,7 +486,7 @@ void method_info::abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& b
 		default:
 			throw RunTimeException("Unexpected object type to abstract");
 	}
-	
+
 }
 
 inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, 
@@ -507,8 +507,8 @@ inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 }
 
 inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder,
-	const vector<stack_entry>& static_locals,llvm::Value* locals,const vector<STACK_TYPE>& expected,
-	const block_info& dest_block)
+		const vector<stack_entry>& static_locals,llvm::Value* locals,const vector<STACK_TYPE>& expected,
+		const block_info& dest_block)
 {
 	for(unsigned int i=0;i<static_locals.size();i++)
 	{
@@ -612,7 +612,7 @@ inline pair<unsigned int,STACK_TYPE> method_info::popTypeFromStack(static_stack_
 	return ret;
 }
 
-block_info::block_info(const method_info* mi, const char* blockName)
+block_info::block_info(const method_info* mi, const char* blockName):blockEnd(0)
 {
 	BB=llvm::BasicBlock::Create(getVm()->llvm_context, blockName, mi->llvmf);
 	locals_start.resize(mi->body->local_count,STACK_NONE);
@@ -685,50 +685,50 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			switch(opcode)
 			{
 				case 0x03: //throw
-				{
-
-					//see also returnvoid
-					last_is_branch=true;
-					static_stack_types.clear();
-					for(unsigned int i=0;i<body->local_count;i++)
 					{
-						if(cur_block->locals_used[i]==false)
-							cur_block->locals_reset[i]=true;
+
+						//see also returnvoid
+						last_is_branch=true;
+						static_stack_types.clear();
+						for(unsigned int i=0;i<body->local_count;i++)
+						{
+							if(cur_block->locals_used[i]==false)
+								cur_block->locals_reset[i]=true;
+						}
+						break;
 					}
-					break;
-				}
 				case 0x04: //getsuper
 				case 0x05: //setsuper
-				{
-					u30 t;
-					code >> t;
-					static_stack_types.clear();
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						static_stack_types.clear();
+						break;
+					}
 				case 0x08: //kill
-				{
-					LOG(LOG_TRACE, _("block analysis: kill") );
-					u30 t;
-					code >> t;
+					{
+						LOG(LOG_TRACE, _("block analysis: kill") );
+						u30 t;
+						code >> t;
 
-					cur_block->locals[t]=STACK_NONE;
-					break;
-				}
+						cur_block->locals[t]=STACK_NONE;
+						break;
+					}
 				case 0x09: //label
-				{
-					//Create a new block and insert it in the mapping
-					unsigned int here=local_ip;
-					addBlock(blocks,here,"label");
+					{
+						//Create a new block and insert it in the mapping
+						unsigned int here=local_ip;
+						addBlock(blocks,here,"label");
 
-					last_is_branch=false;
-					blocks[here].preds.insert(cur_block);
-					cur_block->seqs.insert(&blocks[here]);
-					static_stack_types.clear();
-					cur_block=&blocks[here];
-					LOG(LOG_TRACE,_("New block at ") << local_ip);
-					cur_block->locals=cur_block->locals_start;
-					break;
-				}
+						last_is_branch=false;
+						blocks[here].preds.insert(cur_block);
+						cur_block->seqs.insert(&blocks[here]);
+						static_stack_types.clear();
+						cur_block=&blocks[here];
+						LOG(LOG_TRACE,_("New block at ") << local_ip);
+						cur_block->locals=cur_block->locals_start;
+						break;
+					}
 				case 0x0c: //ifnlt
 				case 0x0d: //ifnle
 				case 0x0e: //ifngt
@@ -744,524 +744,524 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				case 0x18: //ifgt
 				case 0x19: //ifstricteq
 				case 0x1a: //ifstrictne
-				{
-					LOG(LOG_TRACE, _("block analysis: branches") );
-					//TODO: implement common data comparison
-					last_is_branch=true;
-					s24 t;
-					code >> t;
+					{
+						LOG(LOG_TRACE, _("block analysis: branches") );
+						//TODO: implement common data comparison
+						last_is_branch=true;
+						s24 t;
+						code >> t;
 
-					int here=code.tellg();
-					int dest=here+t;
-					//Create a block for the fallthrough code and insert in the mapping
-					addBlock(blocks,here,"fall");
-					blocks[here].preds.insert(cur_block);
-					cur_block->seqs.insert(&blocks[here]);
+						int here=code.tellg();
+						int dest=here+t;
+						//Create a block for the fallthrough code and insert in the mapping
+						addBlock(blocks,here,"fall");
+						blocks[here].preds.insert(cur_block);
+						cur_block->seqs.insert(&blocks[here]);
 
-					//And for the branch destination, if they are not in the blocks mapping
-					addBlock(blocks,dest,"then");
-					blocks[dest].preds.insert(cur_block);
-					cur_block->seqs.insert(&blocks[dest]);
-		
-					static_stack_types.clear();
-					break;
-				}
+						//And for the branch destination, if they are not in the blocks mapping
+						addBlock(blocks,dest,"then");
+						blocks[dest].preds.insert(cur_block);
+						cur_block->seqs.insert(&blocks[dest]);
+
+						static_stack_types.clear();
+						break;
+					}
 				case 0x1b: //lookupswitch
-				{
-					LOG(LOG_TRACE, _("synt lookupswitch") );
-					last_is_branch=true;
-
-					int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
-					s24 t;
-					code >> t;
-					int defaultdest=here+t;
-					LOG(LOG_TRACE,_("default ") << int(t));
-					u30 count;
-					code >> count;
-					LOG(LOG_TRACE,_("count ")<< int(count));
-					vector<s24> offsets(count+1);
-					for(unsigned int i=0;i<count+1;i++)
 					{
-						code >> offsets[i];
-						LOG(LOG_TRACE,_("Case ") << i << _(" ") << offsets[i]);
-					}
-					static_stack_types.clear();
-					addBlock(blocks,defaultdest,"switchdefault");
-					blocks[defaultdest].preds.insert(cur_block);
-					cur_block->seqs.insert(&blocks[defaultdest]);
+						LOG(LOG_TRACE, _("synt lookupswitch") );
+						last_is_branch=true;
 
-					for(unsigned int i=0;i<offsets.size();i++)
-					{
-						int casedest=here+offsets[i];
-						addBlock(blocks,casedest,"switchcase");
-						blocks[casedest].preds.insert(cur_block);
-						cur_block->seqs.insert(&blocks[casedest]);
-					}
+						int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
+						s24 t;
+						code >> t;
+						int defaultdest=here+t;
+						LOG(LOG_TRACE,_("default ") << int(t));
+						u30 count;
+						code >> count;
+						LOG(LOG_TRACE,_("count ")<< int(count));
+						vector<s24> offsets(count+1);
+						for(unsigned int i=0;i<count+1;i++)
+						{
+							code >> offsets[i];
+							LOG(LOG_TRACE,_("Case ") << i << _(" ") << offsets[i]);
+						}
+						static_stack_types.clear();
+						addBlock(blocks,defaultdest,"switchdefault");
+						blocks[defaultdest].preds.insert(cur_block);
+						cur_block->seqs.insert(&blocks[defaultdest]);
 
-					break;
-				}
+						for(unsigned int i=0;i<offsets.size();i++)
+						{
+							int casedest=here+offsets[i];
+							addBlock(blocks,casedest,"switchcase");
+							blocks[casedest].preds.insert(cur_block);
+							cur_block->seqs.insert(&blocks[casedest]);
+						}
+
+						break;
+					}
 				case 0x1c: //pushwith
 				case 0x30: //pushscope
-				{
-					static_stack_types.clear();
-					break;
-				}
+					{
+						static_stack_types.clear();
+						break;
+					}
 				case 0x1d: //popscope
-				{
-					break;
-				}
+					{
+						break;
+					}
 				case 0x1e: //nextname
-				{
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
+					{
+						popTypeFromStack(static_stack_types,local_ip);
+						popTypeFromStack(static_stack_types,local_ip);
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x20: //pushnull
 				case 0x21: //pushundefined
 				case 0x28: //pushnan
-				{
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+					{
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x23: //nextvalue
-				{
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
+					{
+						popTypeFromStack(static_stack_types,local_ip);
+						popTypeFromStack(static_stack_types,local_ip);
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x24: //pushbyte
-				{
-					int8_t t;
-					code.read((char*)&t,1);
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
+					{
+						int8_t t;
+						code.read((char*)&t,1);
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						break;
+					}
 				case 0x25: //pushshort
-				{
-					u30 t;
-					code >> t;
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						break;
+					}
 				case 0x26: //pushtrue
 				case 0x27: //pushfalse
-				{
-					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
-					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
-					break;
-				}
+					{
+						static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+						cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
+						break;
+					}
 				case 0x29: //pop
-				{
-					popTypeFromStack(static_stack_types,local_ip);
-					break;
-				}
+					{
+						popTypeFromStack(static_stack_types,local_ip);
+						break;
+					}
 				case 0x2a: //dup
-				{
-					pair <int, STACK_TYPE> val=popTypeFromStack(static_stack_types,local_ip);
-					static_stack_types.push_back(val);
-					val.first=local_ip;
-					static_stack_types.push_back(val);
+					{
+						pair <int, STACK_TYPE> val=popTypeFromStack(static_stack_types,local_ip);
+						static_stack_types.push_back(val);
+						val.first=local_ip;
+						static_stack_types.push_back(val);
 
-					cur_block->checkProactiveCasting(local_ip,val.second);
-					break;
-				}
+						cur_block->checkProactiveCasting(local_ip,val.second);
+						break;
+					}
 				case 0x2b: //swap
-				{
-					pair <int, STACK_TYPE> t1,t2;
-					t1=popTypeFromStack(static_stack_types,local_ip);
-					t2=popTypeFromStack(static_stack_types,local_ip);
+					{
+						pair <int, STACK_TYPE> t1,t2;
+						t1=popTypeFromStack(static_stack_types,local_ip);
+						t2=popTypeFromStack(static_stack_types,local_ip);
 
-					static_stack_types.push_back(t1);
-					static_stack_types.push_back(t2);
-					break;
-				}
+						static_stack_types.push_back(t1);
+						static_stack_types.push_back(t2);
+						break;
+					}
 				case 0x2c: //pushstring
-				{
-					u30 t;
-					code >> t;
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x2d: //pushint
 				case 0x2e: //pushuint
-				{
-					u30 t;
-					code >> t;
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						break;
+					}
 				case 0x2f: //pushdouble
-				{
-					u30 t;
-					code >> t;
-					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
-					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+						break;
+					}
 				case 0x32: //hasnext2
-				{
-					u30 t;
-					code >> t;
-					cur_block->locals[t]=STACK_NONE;
-					code >> t;
-					cur_block->locals[t]=STACK_NONE;
-					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
-					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						cur_block->locals[t]=STACK_NONE;
+						code >> t;
+						cur_block->locals[t]=STACK_NONE;
+						static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+						cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
+						break;
+					}
 				case 0x40: //newfunction
-				{
-					u30 t;
-					code >> t;
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x41: //call
 				case 0x42: //construct
 				case 0x49: //constructsuper
 				case 0x53: //constructgenerictype
-				{
-					static_stack_types.clear();
-					u30 t;
-					code >> t;
-					break;
-				}
+					{
+						static_stack_types.clear();
+						u30 t;
+						code >> t;
+						break;
+					}
 				case 0x45: //callsuper
 				case 0x46: //callproperty
 				case 0x4a: //constructprop
 				case 0x4e: //callsupervoid
 				case 0x4f: //callpropvoid
-				{
-					static_stack_types.clear();
-					u30 t;
-					code >> t;
-					code >> t;
-					break;
-				}
+					{
+						static_stack_types.clear();
+						u30 t;
+						code >> t;
+						code >> t;
+						break;
+					}
 				case 0x47: //returnvoid
 				case 0x48: //returnvalue
-				{
-					last_is_branch=true;
-					static_stack_types.clear();
-					for(unsigned int i=0;i<body->local_count;i++)
 					{
-						if(cur_block->locals_used[i]==false)
-							cur_block->locals_reset[i]=true;
+						last_is_branch=true;
+						static_stack_types.clear();
+						for(unsigned int i=0;i<body->local_count;i++)
+						{
+							if(cur_block->locals_used[i]==false)
+								cur_block->locals_reset[i]=true;
+						}
+						break;
 					}
-					break;
-				}
 				case 0x55: //newobject
 				case 0x56: //newarray
 				case 0x58: //newclass
 				case 0x59: //getdescendants
 				case 0x60: //getlex
-				{
-					static_stack_types.clear();
-					u30 t;
-					code >> t;
-					break;
-				}
+					{
+						static_stack_types.clear();
+						u30 t;
+						code >> t;
+						break;
+					}
 				case 0x5d: //findpropstrict
 				case 0x5e: //findproperty
-				{
-					u30 t;
-					code >> t;
+					{
+						u30 t;
+						code >> t;
 
-					//We only need to sync the stack if we need RT data for the multiname
-					if(this->context->getMultinameRTData(t)!=0)
-						static_stack_types.clear();
+						//We only need to sync the stack if we need RT data for the multiname
+						if(this->context->getMultinameRTData(t)!=0)
+							static_stack_types.clear();
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x57: //newactivation
-				{
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+					{
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x5a: //newcatch
-				{
-					u30 t;
-					code >> t;
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x61: //setproperty
-				{
-					u30 t;
-					code >> t;
-					//the value
-					popTypeFromStack(static_stack_types,local_ip);
-					//the rt multiname stuff
-					consumeStackForRTMultiname(static_stack_types,t);
-					//the object
-					popTypeFromStack(static_stack_types,local_ip);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						//the value
+						popTypeFromStack(static_stack_types,local_ip);
+						//the rt multiname stuff
+						consumeStackForRTMultiname(static_stack_types,t);
+						//the object
+						popTypeFromStack(static_stack_types,local_ip);
+						break;
+					}
 				case 0x64: //getglobalscope
-				{
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+					{
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x65: //getscopeobject
-				{
-					u30 t;
-					code >> t;
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x66: //getproperty
-				{
-					u30 t;
-					code >> t;
-					consumeStackForRTMultiname(static_stack_types,t);
-					popTypeFromStack(static_stack_types,local_ip);
+					{
+						u30 t;
+						code >> t;
+						consumeStackForRTMultiname(static_stack_types,t);
+						popTypeFromStack(static_stack_types,local_ip);
 
-					STACK_TYPE actual_type=cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					if(actual_type==STACK_OBJECT)
-						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					else if(actual_type==STACK_INT)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(actual_type==STACK_BOOLEAN)
-						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					else
-						throw UnsupportedException("Unsuppoted casting for getproperty");
-					break;
-				}
+						STACK_TYPE actual_type=cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						if(actual_type==STACK_OBJECT)
+							static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						else if(actual_type==STACK_INT)
+							static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						else if(actual_type==STACK_BOOLEAN)
+							static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						else
+							throw UnsupportedException("Unsuppoted casting for getproperty");
+						break;
+					}
 				case 0x68: //initproperty
 				case 0x6a: //deleteproperty
-				{
-					static_stack_types.clear();
-					u30 t;
-					code >> t;
-					break;
-				}
+					{
+						static_stack_types.clear();
+						u30 t;
+						code >> t;
+						break;
+					}
 				case 0x6c: //getslot
-				{
-					u30 t;
-					code >> t;
-					popTypeFromStack(static_stack_types,local_ip);
+					{
+						u30 t;
+						code >> t;
+						popTypeFromStack(static_stack_types,local_ip);
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x6d: //setslot
-				{
-					u30 t;
-					code >> t;
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						popTypeFromStack(static_stack_types,local_ip);
+						popTypeFromStack(static_stack_types,local_ip);
+						break;
+					}
 				case 0x70: //convert_s
-				{
-					break;
-				}
+					{
+						break;
+					}
 				case 0x73: //convert_i
 				case 0x74: //convert_u
-				{
-					popTypeFromStack(static_stack_types,local_ip);
+					{
+						popTypeFromStack(static_stack_types,local_ip);
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						break;
+					}
 				case 0x75:
-				{
-					//convert_d
-					popTypeFromStack(static_stack_types,local_ip);
+					{
+						//convert_d
+						popTypeFromStack(static_stack_types,local_ip);
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
-					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+						break;
+					}
 				case 0x76: //convert_b
-				{
-					popTypeFromStack(static_stack_types,local_ip);
+					{
+						popTypeFromStack(static_stack_types,local_ip);
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
-					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+						cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
+						break;
+					}
 				case 0x78: //checkfilter
-				{
-					break;
-				}
+					{
+						break;
+					}
 				case 0x80: //coerce
-				{
-					static_stack_types.clear();
-					u30 t;
-					code >> t;
-					break;
-				}
+					{
+						static_stack_types.clear();
+						u30 t;
+						code >> t;
+						break;
+					}
 				case 0x82: //coerce_a
 				case 0x85: //coerce_s
-				{
-					break;
-				}
+					{
+						break;
+					}
 				case 0x87: //astypelate
-				{
-					popTypeFromStack(static_stack_types,local_ip).second;
-					popTypeFromStack(static_stack_types,local_ip).second;
+					{
+						popTypeFromStack(static_stack_types,local_ip).second;
+						popTypeFromStack(static_stack_types,local_ip).second;
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x90: //negate
-				{
-					popTypeFromStack(static_stack_types,local_ip).second;
+					{
+						popTypeFromStack(static_stack_types,local_ip).second;
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
-					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+						break;
+					}
 				case 0x95: //typeof
-				{
-					popTypeFromStack(static_stack_types,local_ip).second;
+					{
+						popTypeFromStack(static_stack_types,local_ip).second;
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						break;
+					}
 				case 0x91: //increment
 				case 0x93: //decrement
 				case 0xc0: //increment_i
 				case 0xc1: //decrement_i
-				{
-					popTypeFromStack(static_stack_types,local_ip).second;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
-				case 0x96: //not
-				{
-					popTypeFromStack(static_stack_types,local_ip).second;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
-					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
-					break;
-				}
-				case 0x97: //bitnot
-				{
-					popTypeFromStack(static_stack_types,local_ip).second;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
-				case 0xa0: //add
-				{
-					STACK_TYPE t1,t2;
-					t1=popTypeFromStack(static_stack_types,local_ip).second;
-					t2=popTypeFromStack(static_stack_types,local_ip).second;
-
-					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
 					{
-						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					}
-					else if(t1==STACK_INT && t2==STACK_INT)
-					{
+						popTypeFromStack(static_stack_types,local_ip).second;
+
 						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						break;
 					}
-					else if(t1==STACK_NUMBER || t2==STACK_NUMBER)
+				case 0x96: //not
 					{
-						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
-						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
-					}
-					else
-						throw UnsupportedException("Unsuppoted types for add");
+						popTypeFromStack(static_stack_types,local_ip).second;
 
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+						cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
+						break;
+					}
+				case 0x97: //bitnot
+					{
+						popTypeFromStack(static_stack_types,local_ip).second;
+
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						break;
+					}
+				case 0xa0: //add
+					{
+						STACK_TYPE t1,t2;
+						t1=popTypeFromStack(static_stack_types,local_ip).second;
+						t2=popTypeFromStack(static_stack_types,local_ip).second;
+
+						if(t1==STACK_OBJECT || t2==STACK_OBJECT)
+						{
+							static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+							cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+						}
+						else if(t1==STACK_INT && t2==STACK_INT)
+						{
+							static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+							cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						}
+						else if(t1==STACK_NUMBER || t2==STACK_NUMBER)
+						{
+							static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+							cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+						}
+						else
+							throw UnsupportedException("Unsuppoted types for add");
+
+						break;
+					}
 				case 0xa1: //subtract
 				case 0xa2: //multiply
-				{
-					STACK_TYPE t1,t2;
-					t1=popTypeFromStack(static_stack_types,local_ip).second;
-					t2=popTypeFromStack(static_stack_types,local_ip).second;
+					{
+						STACK_TYPE t1,t2;
+						t1=popTypeFromStack(static_stack_types,local_ip).second;
+						t2=popTypeFromStack(static_stack_types,local_ip).second;
 
-					if(t1==STACK_INT && t2==STACK_INT)
-					{
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						if(t1==STACK_INT && t2==STACK_INT)
+						{
+							static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+							cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						}
+						else
+						{
+							static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+							cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+						}
+						break;
 					}
-					else
+				case 0xa3: //divide
 					{
+						popTypeFromStack(static_stack_types,local_ip).second;
+						popTypeFromStack(static_stack_types,local_ip).second;
+
 						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
 						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+						break;
 					}
-					break;
-				}
-				case 0xa3: //divide
-				{
-					popTypeFromStack(static_stack_types,local_ip).second;
-					popTypeFromStack(static_stack_types,local_ip).second;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
-					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
-					break;
-				}
 				case 0xa4: //modulo
-				{
-					STACK_TYPE t1,t2;
-					t1=popTypeFromStack(static_stack_types,local_ip).second;
-					t2=popTypeFromStack(static_stack_types,local_ip).second;
+					{
+						STACK_TYPE t1,t2;
+						t1=popTypeFromStack(static_stack_types,local_ip).second;
+						t2=popTypeFromStack(static_stack_types,local_ip).second;
 
-					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(t1==STACK_INT && t2==STACK_NUMBER)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(t1==STACK_NUMBER && t2==STACK_INT)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(t1==STACK_INT && t2==STACK_INT)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(t1==STACK_NUMBER && t2==STACK_NUMBER)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else
-						throw UnsupportedException("Unsuppoted types for modulo");
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
+						if(t1==STACK_OBJECT || t2==STACK_OBJECT)
+							static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						else if(t1==STACK_INT && t2==STACK_NUMBER)
+							static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						else if(t1==STACK_NUMBER && t2==STACK_INT)
+							static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						else if(t1==STACK_INT && t2==STACK_INT)
+							static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						else if(t1==STACK_NUMBER && t2==STACK_NUMBER)
+							static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						else
+							throw UnsupportedException("Unsuppoted types for modulo");
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						break;
+					}
 				case 0xa5: //lshift
 				case 0xa6: //rshift
 				case 0xa7: //urshift
 				case 0xa8: //bitand
 				case 0xa9: //bitor
 				case 0xaa: //bitxor
-				{
-					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
-					if(t1.first!=local_ip)
-						cur_block->push_types[t1.first]=STACK_INT;
-					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
-					if(t2.first!=local_ip)
-						cur_block->push_types[t2.first]=STACK_INT;
+					{
+						pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+						if(t1.first!=local_ip)
+							cur_block->push_types[t1.first]=STACK_INT;
+						pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+						if(t2.first!=local_ip)
+							cur_block->push_types[t2.first]=STACK_INT;
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+						break;
+					}
 				case 0xab: //equals
 				case 0xac: //strictequals
 				case 0xad: //lessthan
@@ -1270,85 +1270,85 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				case 0xb0: //greaterequals
 				case 0xb3: //istypelate
 				case 0xb4: //in
-				{
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
+					{
+						popTypeFromStack(static_stack_types,local_ip);
+						popTypeFromStack(static_stack_types,local_ip);
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
-					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
-					break;
-				}
+						static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+						cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
+						break;
+					}
 				case 0xc2: //inclocal_i
-				{
-					static_stack_types.clear();
-					u30 t;
-					code >> t;
-					break;
-				}
+					{
+						static_stack_types.clear();
+						u30 t;
+						code >> t;
+						break;
+					}
 				case 0x62: //getlocal
 					code >> localIndex;
 				case 0xd0: //getlocal_n
 				case 0xd1:
 				case 0xd2:
 				case 0xd3:
-				{
-					int i=(opcode==0x62)?((uint32_t)localIndex):(opcode&3);
-					cur_block->locals_used[i]=true;
-					if(cur_block->locals[i]==STACK_NONE)
 					{
-						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-						cur_block->locals[i]=STACK_OBJECT;
+						int i=(opcode==0x62)?((uint32_t)localIndex):(opcode&3);
+						cur_block->locals_used[i]=true;
+						if(cur_block->locals[i]==STACK_NONE)
+						{
+							static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+							cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+							cur_block->locals[i]=STACK_OBJECT;
+						}
+						else
+						{
+							static_stack_types.push_back(make_pair(local_ip,cur_block->locals[i]));
+							cur_block->checkProactiveCasting(local_ip,cur_block->locals[i]);
+						}
+						break;
 					}
-					else
-					{
-						static_stack_types.push_back(make_pair(local_ip,cur_block->locals[i]));
-						cur_block->checkProactiveCasting(local_ip,cur_block->locals[i]);
-					}
-					break;
-				}
 				case 0x63: //setlocal
 					code >> localIndex;
 				case 0xd4: //setlocal_n
 				case 0xd5:
 				case 0xd6:
 				case 0xd7:
-				{
-					int i=(opcode==0x63)?((uint32_t)localIndex):(opcode&3);
-					cur_block->locals_used[i]=true;
-					STACK_TYPE t;
-					if(!static_stack_types.empty())
 					{
-						t=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t=STACK_OBJECT;
+						int i=(opcode==0x63)?((uint32_t)localIndex):(opcode&3);
+						cur_block->locals_used[i]=true;
+						STACK_TYPE t;
+						if(!static_stack_types.empty())
+						{
+							t=static_stack_types.back().second;
+							static_stack_types.pop_back();
+						}
+						else
+							t=STACK_OBJECT;
 
-					if(cur_block->locals[i]==STACK_NONE)
-						cur_block->locals_reset[i]=true;
-					cur_block->locals[i]=t;
-					break;
-				}
+						if(cur_block->locals[i]==STACK_NONE)
+							cur_block->locals_reset[i]=true;
+						cur_block->locals[i]=t;
+						break;
+					}
 				case 0xef: //debug
-				{
-					uint8_t debug_type;
-					u30 index;
-					uint8_t reg;
-					u30 extra;
-					code.read((char*)&debug_type,1);
-					code >> index;
-					code.read((char*)&reg,1);
-					code >> extra;
-					break;
-				}
+					{
+						uint8_t debug_type;
+						u30 index;
+						uint8_t reg;
+						u30 extra;
+						code.read((char*)&debug_type,1);
+						code >> index;
+						code.read((char*)&reg,1);
+						code >> extra;
+						break;
+					}
 				case 0xf0: //debugline
 				case 0xf1: //debugfile
-				{
-					u30 t;
-					code >> t;
-					break;
-				}
+					{
+						u30 t;
+						code >> t;
+						break;
+					}
 				default:
 					LOG(LOG_ERROR,_("Not implemented instruction @") << code.tellg());
 					u8 a,b,c;
@@ -1465,6 +1465,552 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			}
 		}
 	}
+}
+
+//Helper methods to compile each opcode using LLVM
+void method_info::compileAdd(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+		llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type, const llvm::Type* number_type)
+{
+	LOG(LOG_TRACE, "synt add");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+	}
+	else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v2.first, v1.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+	}
+	else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+	}
+	else if(v1.second==STACK_OBJECT && v2.second==STACK_NUMBER)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+	}
+	else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v2.first, v1.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+	}
+	else if(v1.second==STACK_INT && v2.second==STACK_INT)
+	{
+		llvm::Value* value=Builder.CreateAdd(v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_INT));
+	}
+	else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
+	{
+		//TODO: 32bit check
+		v1.first=Builder.CreateSIToFP(v1.first,number_type);
+		llvm::Value* value=Builder.CreateFAdd(v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+	}
+	else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
+	{
+		//TODO: 32bit check
+		v2.first=Builder.CreateSIToFP(v2.first,number_type);
+		llvm::Value* value=Builder.CreateFAdd(v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+	}
+	else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
+	{
+		//TODO: 32bit check
+		llvm::Value* value=Builder.CreateFAdd(v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+	}
+	else
+		throw UnsupportedException("Unsupported type for add");
+}
+
+void method_info::compileBitAnd(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+		llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt bitand");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+	llvm::Value* value=NULL;
+	if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+		value=Builder.CreateCall2(ex->FindFunctionNamed("bitAnd_oi"), v2.first, v1.first);
+	else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+		value=Builder.CreateCall2(ex->FindFunctionNamed("bitAnd_oi"), v1.first, v2.first);
+	else if(v1.second==STACK_INT && v2.second==STACK_INT)
+		value=Builder.CreateAnd(v1.first,v2.first);
+	else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
+	{
+		v1.first=Builder.CreateFPToUI(v1.first,int_type);
+		value=Builder.CreateAnd(v1.first,v2.first);
+	}
+	else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
+	{
+		v2.first=Builder.CreateFPToUI(v2.first,int_type);
+		value=Builder.CreateAnd(v1.first,v2.first);
+	}
+	else
+	{
+		abstract_value(ex,Builder,v1);
+		abstract_value(ex,Builder,v2);
+		value=Builder.CreateCall2(ex->FindFunctionNamed("bitAnd_oo"), v1.first, v2.first);
+	}
+
+	static_stack_push(static_stack,stack_entry(value,STACK_INT));
+}
+
+void method_info::compileConvert_i(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+		llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt convert_i");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	llvm::Value* value=NULL; 
+	if(v1.second==STACK_NUMBER)
+		value=Builder.CreateFPToSI(v1.first,int_type);
+	else if(v1.second==STACK_INT) //Nothing to do
+		value=v1.first;
+	else
+		value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1.first);
+
+	static_stack_push(static_stack,stack_entry(value,STACK_INT));
+}
+
+void method_info::compileDecrement_i(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt decrement_i");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	llvm::Value* value=NULL;
+	if(v1.second==STACK_OBJECT)
+		value=Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), v1.first);
+	else if(v1.second==STACK_INT)
+	{
+		llvm::Constant* constant = llvm::ConstantInt::get(int_type, 1);
+		value=Builder.CreateSub(v1.first,constant);
+	}
+	else
+		throw UnsupportedException("Unsupported type for decrement_i");
+	static_stack_push(static_stack,stack_entry(value,STACK_INT));
+}
+
+void method_info::compileDup(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
+{
+	LOG(LOG_TRACE, "synt dup");
+	if(Log::getLevel()>=LOG_CALLS)
+		Builder.CreateCall(ex->FindFunctionNamed("dup"));
+	stack_entry e=static_stack_peek(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	static_stack_push(static_stack,e);
+
+	if(e.second==STACK_OBJECT)
+		Builder.CreateCall(ex->FindFunctionNamed("incRef"), e.first);
+}
+
+void method_info::compileGetLocal(int i, vector<stack_entry>& static_locals, llvm::Value* locals,
+		vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt getlocal_n " << i );
+	llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+
+	if(static_locals[i].second==STACK_NONE)
+	{
+		llvm::Value* t=Builder.CreateGEP(locals,constant);
+		t=Builder.CreateLoad(t,"stack");
+		static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
+		static_locals[i]=stack_entry(t,STACK_OBJECT);
+		Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+		Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+		if(Log::getLevel()>=LOG_CALLS)
+			Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), t, constant);
+	}
+	else if(static_locals[i].second==STACK_OBJECT)
+	{
+		Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
+		static_stack_push(static_stack,static_locals[i]);
+		if(Log::getLevel()>=LOG_CALLS)
+			Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), static_locals[i].first, constant);
+	}
+	else if(static_locals[i].second==STACK_INT)
+	{
+		static_stack_push(static_stack,static_locals[i]);
+		if(Log::getLevel()>=LOG_CALLS)
+			Builder.CreateCall2(ex->FindFunctionNamed("getLocal_int"), constant, static_locals[i].first);
+	}
+	else if(static_locals[i].second==STACK_NUMBER ||
+			static_locals[i].second==STACK_BOOLEAN)
+	{
+		static_stack_push(static_stack,static_locals[i]);
+		if(Log::getLevel()>=LOG_CALLS)
+			Builder.CreateCall(ex->FindFunctionNamed("getLocal_short"), constant);
+	}
+	else
+		assert(false && "Unsupported type for getlocal");
+}
+
+void method_info::compileGetProperty(int t, int local_ip, llvm::Value* callContext,
+		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+		block_info* cur_block, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type, const llvm::Type* voidptr_type)
+{
+	LOG(LOG_TRACE, "synt getproperty");
+	llvm::Constant* constant = llvm::ConstantInt::get(int_type, t);
+	int rtdata=context->getMultinameRTData(t);
+	llvm::Value* name=NULL;
+	//HACK: we need to reinterpret the pointer to the generic type
+	llvm::Value* reint_context=Builder.CreateBitCast(callContext,voidptr_type);
+	if(rtdata==0)
+	{
+		//We pass a dummy second context param
+		name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, reint_context, constant);
+	}
+	else if(rtdata==1)
+	{
+		stack_entry rt1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+		if(rt1.second==STACK_INT)
+			name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_i"), reint_context, rt1.first, constant);
+		else if(rt1.second==STACK_NUMBER)
+			name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_d"), reint_context, rt1.first, constant);
+		else if(rt1.second==STACK_OBJECT)
+			name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
+		else
+			throw UnsupportedException("Unsupported type for getproperty");
+	}
+	stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+	if(cur_block->push_types[local_ip]==STACK_OBJECT ||
+			cur_block->push_types[local_ip]==STACK_BOOLEAN)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty"), obj.first, name);
+		static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+	}
+	else if(cur_block->push_types[local_ip]==STACK_INT)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty_i"), obj.first, name);
+		static_stack_push(static_stack,stack_entry(value,STACK_INT));
+	}
+	else
+		throw UnsupportedException("Unsupported type for getproperty");
+}
+
+void method_info::compileIfGE(int here, int offset,
+		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+		vector<stack_entry>& static_locals, llvm::Value* locals,
+		map<unsigned int,block_info>& blocks, block_info* cur_block,
+		llvm::LLVMContext& llvm_context, 
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
+{
+	LOG(LOG_TRACE, "synt ifge");
+	//Make comparision
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	llvm::Value* cond;
+
+	abstract_value(ex,Builder,v1);
+	abstract_value(ex,Builder,v2);
+	cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), v1.first, v2.first);
+
+	syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+	llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+	llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
+	Builder.CreateCondBr(cond,B,A);
+	Builder.SetInsertPoint(A);
+	syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
+	Builder.CreateBr(blocks[here].BB);
+
+	Builder.SetInsertPoint(B);
+	int dest=here+offset;
+	syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
+	Builder.CreateBr(blocks[dest].BB);
+}
+
+void method_info::compileIncrement_i(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt increment_i");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	llvm::Value* value=NULL;
+	if(v1.second==STACK_OBJECT)
+		value=Builder.CreateCall(ex->FindFunctionNamed("increment_i"), v1.first);
+	else if(v1.second==STACK_INT)
+	{
+		llvm::Constant* constant = llvm::ConstantInt::get(int_type, 1);
+		value=Builder.CreateAdd(v1.first,constant);
+	}
+	else
+		throw UnsupportedException("Unsupported type for increment_i");
+	static_stack_push(static_stack,stack_entry(value,STACK_INT));
+}
+
+void method_info::compileJump(int offset, int here,
+		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+		vector<stack_entry>& static_locals, llvm::Value* locals,
+		map<unsigned int,block_info>& blocks, block_info* cur_block,
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt jump " << offset);
+	if(Log::getLevel()>=LOG_CALLS)
+	{
+		llvm::Value* constant = llvm::ConstantInt::get(int_type, offset);
+		Builder.CreateCall(ex->FindFunctionNamed("jump"), constant);
+	}
+
+	int dest=here+offset;
+	syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
+	Builder.CreateBr(blocks[dest].BB);
+}
+
+void method_info::compileKill(int i, vector<stack_entry>& static_locals,
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt kill " << i);
+	if(Log::getLevel()>=LOG_CALLS)
+	{
+		llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+		Builder.CreateCall(ex->FindFunctionNamed("kill"), constant);
+	}
+	if(static_locals[i].second==STACK_OBJECT)
+		Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
+
+	static_locals[i].second=STACK_NONE;
+}
+
+void method_info::compileLShift(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+		llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt lshift");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	llvm::Value* value=NULL;
+	if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+		value=Builder.CreateCall2(ex->FindFunctionNamed("lShift_io"), v1.first, v2.first);
+	else if(v1.second==STACK_INT && v2.second==STACK_INT)
+	{
+		llvm::Constant* constant = llvm::ConstantInt::get(int_type, 31); //Mask for v1
+		v1.first=Builder.CreateAnd(v1.first,constant);
+		value=Builder.CreateShl(v2.first,v1.first);
+	}
+	else
+	{
+		abstract_value(ex,Builder,v1);
+		abstract_value(ex,Builder,v2);
+		value=Builder.CreateCall2(ex->FindFunctionNamed("lShift"), v1.first, v2.first);
+	}
+
+	static_stack_push(static_stack,stack_entry(value,STACK_INT));
+}
+
+void method_info::compileMultiply(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+		llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type, const llvm::Type* number_type)
+{
+	LOG(LOG_TRACE, "synt multiply");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("multiply_oi"), v2.first, v1.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+	}
+	else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+	{
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("multiply_oi"), v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+	}
+	else if(v1.second==STACK_INT && v2.second==STACK_INT)
+	{
+		llvm::Value* value=Builder.CreateMul(v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_INT));
+	}
+	else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
+	{
+		v2.first=Builder.CreateSIToFP(v2.first,number_type);
+		llvm::Value* value=Builder.CreateFMul(v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+	}
+	else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
+	{
+		v1.first=Builder.CreateSIToFP(v1.first,number_type);
+		llvm::Value* value=Builder.CreateFMul(v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+	}
+	else
+	{
+		abstract_value(ex,Builder,v1);
+		abstract_value(ex,Builder,v2);
+		llvm::Value* value=Builder.CreateCall2(ex->FindFunctionNamed("multiply"), v1.first, v2.first);
+		static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+	}
+}
+
+void method_info::compilePushByte(int t, vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
+		llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt pushbyte");
+	llvm::Constant* constant = llvm::ConstantInt::get(int_type, t);
+	static_stack_push(static_stack,stack_entry(constant,STACK_INT));
+	if(Log::getLevel()>=LOG_CALLS)
+		Builder.CreateCall(ex->FindFunctionNamed("pushByte"), constant);
+}
+
+void method_info::compilePushInt(int t, vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
+		llvm::ExecutionEngine* ex, llvm::Value* callContext, const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt pushint");
+	if(Log::getLevel()>=LOG_CALLS)
+	{
+		llvm::Constant* constant = llvm::ConstantInt::get(int_type, t);
+		Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), callContext, constant);
+	}
+	s32 i=context->constant_pool.integer[t];
+	llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+	static_stack_push(static_stack,stack_entry(constant,STACK_INT));
+}
+
+void method_info::compilePushShort(int t, vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
+		llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt pushshort");
+	llvm::Constant* constant = llvm::ConstantInt::get(int_type, t);
+	static_stack_push(static_stack,stack_entry(constant,STACK_INT));
+	if(Log::getLevel()>=LOG_CALLS)
+		Builder.CreateCall(ex->FindFunctionNamed("pushShort"), constant);
+}
+
+void method_info::compileRShift(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+		llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
+{
+	LOG(LOG_TRACE, "synt rshift");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	llvm::Value* value=NULL;
+	if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+	{
+		v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+		value=Builder.CreateCall2(ex->FindFunctionNamed("rShift"), v1.first, v2.first);
+	}
+	else
+	{
+		abstract_value(ex,Builder,v1);
+		abstract_value(ex,Builder,v2);
+		value=Builder.CreateCall2(ex->FindFunctionNamed("rShift"), v1.first, v2.first);
+	}
+
+	static_stack_push(static_stack,stack_entry(value,STACK_INT));
+}
+
+void method_info::compileSetLocal(int i, const stack_entry& e, vector<stack_entry>& static_locals,
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+{
+	LOG(LOG_TRACE, "synt setlocal " << i);
+	if(static_locals[i].second==STACK_OBJECT)
+		Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
+
+	static_locals[i]=e;
+	if(Log::getLevel()>=LOG_CALLS)
+	{
+		llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+		if(e.second==STACK_INT)
+			Builder.CreateCall2(ex->FindFunctionNamed("setLocal_int"), constant, e.first);
+		else if(e.second==STACK_OBJECT)
+			Builder.CreateCall2(ex->FindFunctionNamed("setLocal_obj"), constant, e.first);
+		else
+			Builder.CreateCall(ex->FindFunctionNamed("setLocal"), constant);
+	}
+}
+
+void method_info::compileSetProperty(int t, llvm::Value* callContext,
+		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type, const llvm::Type* voidptr_type)
+{
+	LOG(LOG_TRACE, "synt setproperty");
+	llvm::Constant* constant = llvm::ConstantInt::get(int_type, t);
+	int rtdata=context->getMultinameRTData(t);
+	stack_entry value=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	llvm::Value* name=NULL;
+	//HACK: we need to reinterpret the pointer to the generic type
+	llvm::Value* reint_context=Builder.CreateBitCast(callContext,voidptr_type);
+	if(rtdata==0)
+	{
+		//We pass a dummy second context param
+		name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, reint_context, constant);
+	}
+	else if(rtdata==1)
+	{
+		stack_entry rt1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+		if(rt1.second==STACK_INT)
+			name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_i"), reint_context, rt1.first, constant);
+		else if(rt1.second==STACK_NUMBER)
+			name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_d"), reint_context, rt1.first, constant);
+		else if(rt1.second==STACK_OBJECT)
+			name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
+		else
+			throw UnsupportedException("Unsupported type for setproperty");
+	}
+	stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	if(value.second==STACK_INT)
+		Builder.CreateCall3(ex->FindFunctionNamed("setProperty_i"),value.first, obj.first, name);
+	else if(value.second==STACK_NUMBER)
+	{
+		value.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),value.first);
+		Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
+	}
+	else if(value.second==STACK_BOOLEAN)
+	{
+		value.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),value.first);
+		Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
+	}
+	else
+		Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
+}
+
+void method_info::compileURShift(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
+		llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type, const llvm::Type* int32_type)
+{
+	LOG(LOG_TRACE, "synt urshift");
+	stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	llvm::Value* value=NULL;
+	if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+		value=Builder.CreateCall2(ex->FindFunctionNamed("urShift"), v1.first, v2.first);
+	//else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+	//	exit(43);
+	else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+		value=Builder.CreateCall2(ex->FindFunctionNamed("urShift_io"), v1.first, v2.first);
+	else if(v1.second==STACK_INT && v2.second==STACK_INT)
+	{
+		v2.first=Builder.CreateIntCast(v2.first,int32_type,false);
+		v1.first=Builder.CreateIntCast(v1.first,int32_type,false);
+		value=Builder.CreateLShr(v2.first,v1.first); //Check for trucation of v1.first
+		value=Builder.CreateIntCast(value,int_type,false);
+	}
+	else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
+	{
+		v2.first=Builder.CreateFPToSI(v2.first,int_type);
+		value=Builder.CreateLShr(v2.first,v1.first); //Check for trucation of v1.first
+	}
+	else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
+	{
+		v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v1.first);
+		value=Builder.CreateCall2(ex->FindFunctionNamed("urShift"), v1.first, v2.first);
+	}
+	else
+		throw UnsupportedException("Unsupported type for urShift");
+
+	static_stack_push(static_stack,stack_entry(value,STACK_INT));
 }
 
 SyntheticFunction::synt_function method_info::compileBlock(uint32_t start, uint32_t end)
@@ -1604,6 +2150,188 @@ SyntheticFunction::synt_function method_info::compileBlock(uint32_t start, uint3
 
 		switch(opcode)
 		{
+			case 0x08:
+			{
+				//kill
+				u30 t;
+				code >> t;
+				compileKill(t, static_locals, Builder, ex, int_type);
+				break;
+			}
+			case 0x09:
+			{
+				//label
+				//Create a new block and insert it in the mapping
+				LOG(LOG_TRACE, "synt label");
+				if(Log::getLevel()>=LOG_CALLS)
+					Builder.CreateCall(ex->FindFunctionNamed("label"));
+				break;
+			}
+			case 0x10:
+			{
+				//jump
+				last_is_branch=true;
+
+				s24 t;
+				code >> t;
+				int here=code.tellg();
+				compileJump(t, here, static_stack, dynamic_stack, dynamic_stack_index,
+						static_locals, locals, blocks, cur_block, Builder, ex, int_type);
+				break;
+			}
+			case 0x18:
+			{
+				//ifge
+				last_is_branch=true;
+
+				s24 t;
+				code >> t;
+				int here=code.tellg();
+				compileIfGE(here, t, static_stack, dynamic_stack, dynamic_stack_index,
+						static_locals, locals, blocks, cur_block, llvm_context, Builder, ex);
+				break;
+			}
+			case 0x24:
+			{
+				//pushbyte
+				int8_t t;
+				code.read((char*)&t,1);
+				compilePushByte(t, static_stack, Builder, ex, int_type);
+				break;
+			}
+			case 0x25:
+			{
+				//pushshort
+				u30 t;
+				code >> t;
+				compilePushShort(t, static_stack, Builder, ex, int_type);
+				break;
+			}
+			case 0x2a:
+			{
+				//dup
+				compileDup(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex);
+				break;
+			}
+			case 0x2d:
+			{
+				//pushint
+				u30 t;
+				code >> t;
+				compilePushInt(t, static_stack, Builder, ex, callContext, int_type);
+				break;
+			}
+			case 0x61:
+			{
+				//setproperty
+				u30 t;
+				code >> t;
+				compileSetProperty(t, callContext, static_stack, dynamic_stack, dynamic_stack_index, 
+						Builder, ex, int_type, voidptr_type);
+				break;
+			}
+			case 0x62:
+			{
+				//getlocal
+				u30 i;
+				code >> i;
+				compileGetLocal(i, static_locals, locals, static_stack, Builder, ex, int_type);
+				break;
+			}
+			case 0x63:
+			{
+				//setlocal
+				u30 i;
+				code >> i;
+				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				compileSetLocal(i, e, static_locals, Builder, ex, int_type);
+				break;
+			}
+			case 0x66:
+			{
+				//getproperty
+				u30 t;
+				code >> t;
+				compileGetProperty(t, local_ip, callContext, static_stack, dynamic_stack, dynamic_stack_index, 
+						cur_block, Builder, ex, int_type, voidptr_type);
+				break;
+			}
+			case 0x73:
+			{
+				//convert_i
+				compileConvert_i(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex, int_type);
+				break;
+			}
+			case 0xa0:
+			{
+				//add
+				compileAdd(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex, int_type, number_type);
+				break;
+			}
+			case 0xa2:
+			{
+				//multiply
+				compileMultiply(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex, int_type, number_type);
+				break;
+			}
+			case 0xa5:
+			{
+				//lshift
+				compileLShift(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex, int_type);
+				break;
+			}
+			case 0xa6:
+			{
+				//rshift
+				compileRShift(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex);
+				break;
+			}
+			case 0xa7:
+			{
+				//urshift
+				compileURShift(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex,
+						int_type, int32_type);
+				break;
+			}
+			case 0xa8:
+			{
+				//bitand
+				compileBitAnd(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex, int_type);
+				break;
+			}
+			case 0xc0:
+			{
+				//increment_i
+				compileIncrement_i(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex, int_type);
+				break;
+			}
+			case 0xc1:
+			{
+				//decrement_i
+				compileDecrement_i(static_stack, dynamic_stack, dynamic_stack_index, Builder, ex, int_type);
+				break;
+			}
+			case 0xd0:
+			case 0xd1:
+			case 0xd2:
+			case 0xd3:
+			{
+				//getlocal_n
+				int i=opcode&3;
+				compileGetLocal(i, static_locals, locals, static_stack, Builder, ex, int_type);
+				break;
+			}
+			case 0xd4:
+			case 0xd5:
+			case 0xd6:
+			case 0xd7:
+			{
+				//setlocal_n
+				int i=opcode&3;
+				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				compileSetLocal(i, e, static_locals, Builder, ex, int_type);
+				break;
+			}
 			default:
 				LOG(LOG_ERROR,_("Not implemented instruction @") << code.tellg());
 				LOG(LOG_ERROR,_("Opcode ") << hex << (unsigned int)opcode << dec);
@@ -1622,8 +2350,35 @@ SyntheticFunction::synt_function method_info::compileBlock(uint32_t start, uint3
 	{
 		if(it2->second.BB->getTerminator()==NULL)
 		{
-			cout << "start at " << it2->first << endl;
-			throw RunTimeException("Missing terminator");
+			//Go back to the interpreter
+			Builder.SetInsertPoint(it2->second.BB);
+
+			//Sync the stack
+			syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+			//Write all locals to the locals array
+			for(uint32_t i=0;i<static_locals.size();i++)
+			{
+				if(static_locals[i].second!=STACK_NONE)
+				{
+					llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+					llvm::Value* t=Builder.CreateGEP(locals,constant);
+					llvm::Value* old=Builder.CreateLoad(t);
+					Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
+					abstract_value(ex,Builder,static_locals[i]);
+					Builder.CreateStore(static_locals[i].first,t);
+				}
+			}
+			if(it2->second.blockEnd==0)
+			{
+				__asm__("int $3");
+				//throw RunTimeException("Missing terminator");
+			}
+			else
+			{
+				llvm::Constant* constant = llvm::ConstantInt::get(int_type, it2->second.blockEnd);
+				Builder.CreateRet(constant);
+			}
 		}
 	}
 

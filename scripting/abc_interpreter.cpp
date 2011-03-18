@@ -705,7 +705,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			{
 				//returnvoid
 				LOG(LOG_CALLS,_("returnVoid"));
-				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				jittableOpcode=true;
 				returnValue=NULL;
 				executingFunction=false;
@@ -716,7 +715,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//returnvalue
 				returnValue=context->runtime_stack_pop();
 				LOG(LOG_CALLS,_("returnValue ") << returnValue);
-				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				jittableOpcode=true;
 				executingFunction=false;
 				break;

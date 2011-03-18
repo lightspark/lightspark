@@ -351,6 +351,7 @@ public:
 		return val ? 1.0 : 0.0;
 	}
 	static void buildTraits(ASObject* o){};
+	ASFUNCTION(generator);
 };
 
 class Undefined : public ASObject

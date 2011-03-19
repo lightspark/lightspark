@@ -45,7 +45,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 	int code_len=code.str().length();
 
 	u8 opcode;
-	blockStudy* currentBlock=NULL;
+	BlockStudy* currentBlock=NULL;
 
 #ifdef PROFILING_SUPPORT
 	if(mi->profTime.empty())
@@ -61,10 +61,20 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(executingFunction)
 	{
-#ifdef PROFILING_SUPPORT
-		uint32_t instructionPointer=code.tellg();
-#endif
 		bool jittableOpcode=false;
+		uint32_t instructionPointer=code.tellg();
+		if(mi->studyFunction)
+		{
+			BlockStudy* nextBlock=mi->getBlockStudyAtAddress(instructionPointer, method_info::DO_NOT_CREATE);
+			if(nextBlock && nextBlock->compiledCode && nextBlock->start==instructionPointer)
+			{
+				//Call JItted code
+				mi->checkJITAssumptions(context);
+				uint32_t exitPoint=nextBlock->compiledCode(context);
+				code.seekg(exitPoint);
+				continue;
+			}
+		}
 		code >> opcode;
 		if(code.eof())
 			throw ParseException("End of code in intepreter");
@@ -705,7 +715,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			{
 				//returnvoid
 				LOG(LOG_CALLS,_("returnVoid"));
-				jittableOpcode=true;
 				returnValue=NULL;
 				executingFunction=false;
 				break;
@@ -715,7 +724,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//returnvalue
 				returnValue=context->runtime_stack_pop();
 				LOG(LOG_CALLS,_("returnValue ") << returnValue);
-				jittableOpcode=true;
 				executingFunction=false;
 				break;
 			}
@@ -1479,15 +1487,16 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 		{
 			if(jittableOpcode)
 			{
+				//__asm__("int $3");
 				if(currentBlock)
 				{
 					if(currentBlock->isAddressInside(instructionPointer)) //Loop inside the block
 						currentBlock->usageCount++;
 					else //Grow the block
-						currentBlock->end=instructionPointer;
+						currentBlock->end=(instructionPointer+1);
 				}
 				else //Block changed or new block
-					currentBlock=mi->getBlockStudyAtAddress(instructionPointer);
+					currentBlock=mi->getBlockStudyAtAddress(instructionPointer, method_info::CREATE);
 			}
 			else
 				currentBlock=NULL;

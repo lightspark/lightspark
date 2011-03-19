@@ -2052,23 +2052,29 @@ ASObject* method_info::getOptional(unsigned int i) const
 	return context->getConstant(options[i].kind,options[i].val);
 }
 
-blockStudy* method_info::getBlockStudyAtAddress(uint32_t ip)
+BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK createBlock)
 {
 	const uint32_t usageCountThreshold=10;
-	//TODO: optimize
+	//TODO: optimize the search
 	for(uint32_t i=0;i<studiedBlocks.size();i++)
 	{
 		if(studiedBlocks[i].isAddressInside(ip))
 		{
-			studiedBlocks[i].usageCount++;
-			if(studiedBlocks[i].usageCount>usageCountThreshold)
+			if(createBlock==CREATE)
 			{
-				compileBlock(studiedBlocks[i].start,studiedBlocks[i].end);
-				__asm__("int $3");
+				studiedBlocks[i].usageCount++;
+				if(studiedBlocks[i].compiledCode==NULL &&
+					studiedBlocks[i].usageCount>usageCountThreshold)
+				{
+					studiedBlocks[i].compiledCode=compileBlock(studiedBlocks[i].start,studiedBlocks[i].end);
+					//__asm__("int $3");
+				}
 			}
 			return &studiedBlocks[i];
 		}
 	}
+	if(createBlock==DO_NOT_CREATE)
+		return NULL;
 	studiedBlocks.emplace_back(ip);
 	return &studiedBlocks.back();
 }

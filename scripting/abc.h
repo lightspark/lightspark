@@ -204,6 +204,7 @@ struct block_info
 	std::set<block_info*> seqs;
 	std::map<int,STACK_TYPE> push_types;
 	uint32_t blockEnd;
+	bool terminatedBlock;
 
 	//Needed for indexed access
 	block_info():BB(NULL),blockEnd(0){assert(false);}
@@ -217,13 +218,15 @@ inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
 	return std::make_pair(v, t);
 }
 
-struct blockStudy
+struct BlockStudy
 {
 	//start is the first address inside the block
 	//end is the first byte _not_ inside the block
 	uint32_t start,end;
 	uint32_t usageCount;
-	blockStudy(uint32_t a):start(a),end(a+1),usageCount(1)
+	typedef intptr_t (*synt_block)(call_context* cc);
+	synt_block compiledCode;
+	BlockStudy(uint32_t a):start(a),end(a+1),usageCount(1),compiledCode(NULL)
 	{
 	}
 	bool isAddressInside(uint32_t ip) const
@@ -281,7 +284,7 @@ private:
 	void doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder, uint32_t start, uint32_t end);
 
 	//Function study support
-	std::vector<blockStudy> studiedBlocks;
+	std::vector<BlockStudy> studiedBlocks;
 
 	//Helpers to compile the opcodes to LLVM code
 	static void compileAdd(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
@@ -379,8 +382,15 @@ public:
 	   If the JIT enable threshold of usageCount is passed, compile the block
 	*/
 	bool studyFunction;
-	blockStudy* getBlockStudyAtAddress(uint32_t ip);
-	SyntheticFunction::synt_function compileBlock(uint32_t start, uint32_t end);
+	enum CREATE_STUDY_BLOCK { DO_NOT_CREATE=0, CREATE=1 };
+	BlockStudy* getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK createBlock);
+	BlockStudy::synt_block compileBlock(uint32_t start, uint32_t end);
+	/*
+	   Checks if the locals types are as expected by the JITted code
+	   Currently the JIT engine assumes the locals used for parameters
+	   are always of the parameter type
+	*/
+	bool checkJITAssumptions(const call_context* callContext) const;
 };
 
 struct item_info

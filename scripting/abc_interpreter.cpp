@@ -58,10 +58,17 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 #define PROF_IGNORE_TIME(a)
 #endif
 
+#define TAKE_BRANCH_AND_SEEK(s) do \
+	{ \
+		code.seekg(s); \
+		branchTaken=true; \
+	} while(0);
+
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(executingFunction)
 	{
 		bool jittableOpcode=false;
+		bool branchTaken=false;
 		uint32_t instructionPointer=code.tellg();
 		if(mi->studyFunction)
 		{
@@ -71,7 +78,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//Call JItted code
 				mi->checkJITAssumptions(context);
 				uint32_t exitPoint=nextBlock->compiledCode(context);
-				code.seekg(exitPoint);
+				TAKE_BRANCH_AND_SEEK(exitPoint);
 				continue;
 			}
 		}
@@ -142,7 +149,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -163,7 +170,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -184,7 +191,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -205,7 +212,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -222,7 +229,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//Now 'jump' to the destination, validate on the length
 				if(dest >= code_len)
 					throw ParseException("Jump out of bounds in intepreter");
-				code.seekg(dest);
+				TAKE_BRANCH_AND_SEEK(dest);
 				jittableOpcode=true;
 				break;
 			}
@@ -242,7 +249,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -263,7 +270,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -285,7 +292,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -307,7 +314,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -329,7 +336,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -351,7 +358,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -373,7 +380,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -395,7 +402,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -417,7 +424,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -439,7 +446,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
 						throw ParseException("Jump out of bounds in intepreter");
-					code.seekg(dest);
+					TAKE_BRANCH_AND_SEEK(dest);
 				}
 				jittableOpcode=true;
 				break;
@@ -471,7 +478,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				if(dest >= code_len)
 					throw ParseException("Jump out of bounds in intepreter");
-				code.seekg(dest);
+				TAKE_BRANCH_AND_SEEK(dest);
 				jittableOpcode=true;
 				break;
 			}
@@ -1487,22 +1494,38 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 		{
 			if(jittableOpcode)
 			{
-				//__asm__("int $3");
 				if(currentBlock)
 				{
+					//Check if there is already a block at this address
+					BlockStudy* alreadyDefined=mi->getBlockStudyAtAddress(instructionPointer, method_info::DO_NOT_CREATE);
+					if(alreadyDefined)
+					{
+						assert(currentBlock->start < alreadyDefined->end);
+						currentBlock=mi->mergeBlocks(currentBlock->start,alreadyDefined->end);
+					}
+
 					if(currentBlock->isAddressInside(instructionPointer)) //Loop inside the block
+					{
 						currentBlock->usageCount++;
+					}
 					else //Grow the block
+					{
+						assert(instructionPointer+1>currentBlock->end);
 						currentBlock->end=(instructionPointer+1);
+					}
 				}
 				else //Block changed or new block
 					currentBlock=mi->getBlockStudyAtAddress(instructionPointer, method_info::CREATE);
+
+				if(branchTaken) //Block changed for a branch
+					currentBlock=NULL;
 			}
 			else
 				currentBlock=NULL;
 		}
 	}
 
+#undef TAKE_BRANCH_AND_SEEK
 #undef PROF_ACCOUNT_TIME 
 #undef PROF_IGNORE_TIME
 	//We managed to execute all the function

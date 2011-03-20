@@ -233,7 +233,17 @@ struct BlockStudy
 	{
 		return (ip>=start && ip<end);
 	}
+	//Operator to order the blocks
+	bool operator<(uint32_t r) const
+	{
+		return start<r;
+	}
 };
+
+inline bool operator<(uint32_t l, const BlockStudy& r)
+{
+	return l<r.start;
+}
 
 class method_info
 {
@@ -332,6 +342,9 @@ private:
 			llvm::ExecutionEngine* ex, llvm::Value* callContext, const llvm::Type* int_type);
 	static void compilePushShort(int t, std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
 			llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+	static void compilePushScope(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::Value* callContext,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
 	static void compileLShift(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type);
@@ -374,6 +387,7 @@ public:
 	{
 	}
 
+	enum CREATE_STUDY_BLOCK { DO_NOT_CREATE=0, CREATE=1 };
 	//Function study support
 	/*
 	   Gets a potentially new blockStudy for the given address
@@ -381,9 +395,9 @@ public:
 
 	   If the JIT enable threshold of usageCount is passed, compile the block
 	*/
-	bool studyFunction;
-	enum CREATE_STUDY_BLOCK { DO_NOT_CREATE=0, CREATE=1 };
 	BlockStudy* getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK createBlock);
+	BlockStudy* mergeBlocks(uint32_t aggregateStart, uint32_t aggregateEnd);
+	bool studyFunction;
 	BlockStudy::synt_block compileBlock(uint32_t start, uint32_t end);
 	/*
 	   Checks if the locals types are as expected by the JITted code

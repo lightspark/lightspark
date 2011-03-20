@@ -655,7 +655,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 		while(1)
 		{
 			local_ip=code.tellg();
-			if(local_ip>end)
+			if(local_ip>=end)
 				break;
 			code >> opcode;
 			if(code.eof())
@@ -667,6 +667,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				if(cur_block)
 				{
 					it->second.preds.insert(cur_block);
+					cur_block->terminatedBlock=true;
 					cur_block->seqs.insert(&it->second);
 				}
 				cur_block=&it->second;
@@ -1453,29 +1454,36 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 	for(;bit!=blocks.end();++bit)
 	{
 		block_info& cur=bit->second;
+		//cout << "block @ " << bit->first << endl;
 		cur.locals_start_obj.resize(cur.locals_start.size(),NULL);
 		for(unsigned int i=0;i<cur.locals_start.size();i++)
 		{
 			switch(cur.locals_start[i])
 			{
 				case STACK_NONE:
+					//cout << "none ";
 					break;
 				case STACK_OBJECT:
+					//cout << "object ";
 					cur.locals_start_obj[i]=Builder.CreateAlloca(voidptr_type);
 					break;
 				case STACK_INT:
+					//cout << "int ";
 					cur.locals_start_obj[i]=Builder.CreateAlloca(int_type);
 					break;
 				case STACK_NUMBER:
+					//cout << "number ";
 					cur.locals_start_obj[i]=Builder.CreateAlloca(number_type);
 					break;
 				case STACK_BOOLEAN:
+					//cout << "boolean ";
 					cur.locals_start_obj[i]=Builder.CreateAlloca(bool_type);
 					break;
 				default:
 					throw RunTimeException("Unsupported object type");
 			}
 		}
+		//cout << endl;
 	}
 }
 
@@ -1889,6 +1897,15 @@ void method_info::compilePushInt(int t, vector<stack_entry>& static_stack, llvm:
 	static_stack_push(static_stack,stack_entry(constant,STACK_INT));
 }
 
+void method_info::compilePushScope(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+		llvm::Value* dynamic_stack_index, llvm::Value* callContext,
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
+{
+	LOG(LOG_TRACE, "synt pushscope");
+	syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+	Builder.CreateCall(ex->FindFunctionNamed("pushScope"), callContext);
+}
+
 void method_info::compilePushShort(int t, vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
 		llvm::ExecutionEngine* ex, const llvm::Type* int_type)
 {
@@ -2045,17 +2062,12 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
 	Builder.SetInsertPoint(BB);
 
-/*	//We define a couple of variables that will be used a lot
-	llvm::Constant* constant;
-	llvm::Constant* constant2;
-	llvm::Value* value;*/
-
 	//The only argument is the call_context structure
 	llvm::Value* callContext=llvmf->getArgumentList().begin();
 
 	//Create the LLVM value that points to the locals array
 	llvm::Value* tmpValue=Builder.CreateStructGEP(callContext,0);
-	llvm::Value* locals=Builder.CreateLoad(tmpValue);
+	llvm::Value* locals=Builder.CreateLoad(tmpValue,"locals");
 
 	//The stack is statically handled as much as possible to allow llvm optimizations
 	//On branch and on interpreted/jitted code transition it is synchronized with the dynamic one
@@ -2071,30 +2083,46 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 	map<unsigned int,block_info> blocks;
 	//Let's build a block for the real function code, this is also used to bootstrap code analysis
 	addBlock(blocks, start, "begin");
+	block_info& startBlock=blocks[start];
 
 	//Initialize the locals of the first block using the argument types
 	for(uint32_t i=0;i<param_type.size();i++)
 	{
 		multiname* m=context->getMultiname(param_type[i],NULL);
 		if(m->isTypeInt())
-			blocks[start].locals_start[i+1]=STACK_INT;
+			startBlock.locals_start[i+1]=STACK_INT;
 	}
 
 	//Analyze code to extract implicit type information
 	doAnalysis(blocks,Builder,start,end);
-	for(uint32_t i=0;i<param_type.size();i++)
+
+	//Load the locals contents, if needed
+	for(uint32_t i=0;i<startBlock.locals_start.size();i++)
 	{
-		multiname* m=context->getMultiname(param_type[i],NULL);
-		if(m->isTypeInt())
+		if(startBlock.locals_start[i]==STACK_NONE)
+			continue;
+
+		llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+		llvm::Value* t=Builder.CreateGEP(locals,constant);
+		t=Builder.CreateLoad(t);
+		Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+		switch(startBlock.locals_start[i])
 		{
-			assert(blocks[start].locals_start[i+1]==STACK_INT);
-			llvm::Constant* constant = llvm::ConstantInt::get(int_type, i+1);
-			llvm::Value* t=Builder.CreateGEP(locals,constant);
-			t=Builder.CreateLoad(t);
-			Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-			t=Builder.CreateCall(ex->FindFunctionNamed("convert_i"),t);
-			Builder.CreateStore(t,blocks[start].locals_start_obj[i+1]);
+			case STACK_OBJECT:
+				break;
+			case STACK_INT:
+				t=Builder.CreateCall(ex->FindFunctionNamed("convert_i"),t);
+				break;
+			case STACK_NUMBER:
+				t=Builder.CreateCall(ex->FindFunctionNamed("convert_d"),t);
+				break;
+			case STACK_BOOLEAN:
+				t=Builder.CreateCall(ex->FindFunctionNamed("convert_b"),t);
+				break;
+			default:
+				assert(false && "Unsupported object type");
 		}
+		Builder.CreateStore(t,startBlock.locals_start_obj[i]);
 	}
 
 	//Let's reset the stream
@@ -2111,7 +2139,7 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 	while(1)
 	{
 		uint32_t local_ip=code.tellg();
-		if(local_ip>end)
+		if(local_ip>=end)
 		{
 			if(cur_block)
 				cur_block->blockEnd=local_ip;
@@ -2233,6 +2261,12 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 				u30 t;
 				code >> t;
 				compilePushInt(t, static_stack, Builder, ex, callContext, int_type);
+				break;
+			}
+			case 0x30:
+			{
+				//pushscope
+				compilePushScope(static_stack, dynamic_stack, dynamic_stack_index, callContext, Builder,ex);
 				break;
 			}
 			case 0x61:
@@ -2430,15 +2464,17 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 		}
 	}
 
+	//__asm__("int $3");
+	cout << "start: " << start << " end: " << end << endl;
+	//llvmf->dump();
 	getVm()->FPM->run(*llvmf);
 	BlockStudy::synt_block ret=(BlockStudy::synt_block)getVm()->ex->getPointerToFunction(llvmf);
-	//llvmf->dump();
 	return ret;
 }
 
 bool method_info::checkJITAssumptions(const call_context* callContext) const
 {
-	assert(callContext->locals_size>=param_types.size());
+	assert(callContext->locals_size>=param_type.size());
 	for(uint32_t i=0;i<param_type.size();i++)
 	{
 		multiname* m=context->getMultiname(param_type[i],NULL);

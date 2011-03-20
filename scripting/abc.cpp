@@ -2052,12 +2052,98 @@ ASObject* method_info::getOptional(unsigned int i) const
 	return context->getConstant(options[i].kind,options[i].val);
 }
 
+BlockStudy* method_info::mergeBlocks(uint32_t aggregateStart, uint32_t aggregateEnd)
+{
+	auto itStart=lower_bound(studiedBlocks.begin(),studiedBlocks.end(),aggregateStart);
+	auto itEnd=lower_bound(studiedBlocks.begin(),studiedBlocks.end(),aggregateEnd-1)-1;
+	assert(itStart!=studiedBlocks.end());
+	assert(itStart->start<=aggregateStart && itStart->end>aggregateStart);
+	assert(itEnd->start<=aggregateEnd && itEnd->end>=aggregateEnd);
+
+	itStart->end=itEnd->end;
+	//Erase return the iterator of the first element not erased
+	//The element before it it our new block
+	BlockStudy* ret=&(*(studiedBlocks.erase(itStart+1,itEnd+1)-1));
+	assert(!studiedBlocks.empty());
+	return ret;
+}
+
 BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK createBlock)
 {
 	const uint32_t usageCountThreshold=10;
-	//TODO: optimize the search
+
+	const uint32_t JITHoleThreshold=30;
+
+	auto afterIt=upper_bound(studiedBlocks.begin(),studiedBlocks.end(),ip);
+	if(afterIt!=studiedBlocks.begin()) //Otherwise this block is before all the others
+	{
+		auto it=afterIt-1;
+		if(it->isAddressInside(ip))
+		{
+			//Found a block that contains the address
+			BlockStudy* b=&(*it);
+			if(createBlock==CREATE)
+			{
+				it->usageCount++;
+				if(it->compiledCode==NULL && it->usageCount>usageCountThreshold)
+				{
+					//This block is a candidate for compilation
+					uint32_t aggregateStart=it->start;
+					uint32_t aggregateEnd=it->end;
+
+					if(it!=studiedBlocks.begin())
+					{
+						//Try to merge with previous blocks
+						auto previt = it;
+						do
+						{
+							previt= --previt;
+
+							if(aggregateStart-(previt->end) < JITHoleThreshold)
+							{
+								//The end of the previous block is close enough
+								aggregateStart=previt->start;
+							}
+							else
+								break;
+						}
+						while(previt!=studiedBlocks.begin());
+					}
+					
+					//Try to merge with following blocks
+					auto nextit = (it+1);
+					while(nextit!=studiedBlocks.end())
+					{
+						if((nextit->start)-aggregateEnd < JITHoleThreshold)
+						{
+							//The start of the following block is close enough
+							aggregateEnd=nextit->end;
+						}
+						else
+							break;
+
+						nextit= ++nextit;
+					}
+
+
+					//Merge the blocks if needed
+					if(it->start!=aggregateStart || it->end!=aggregateEnd)
+						b=mergeBlocks(aggregateStart, aggregateEnd);
+					b->compiledCode=compileBlock(b->start,b->end);
+				}
+			}
+			return b;
+		}
+	}
+	if(createBlock==DO_NOT_CREATE)
+		return NULL;
+	afterIt=studiedBlocks.insert(afterIt, BlockStudy(ip));
+	return &(*afterIt);
+
+/*	//TODO: optimize the search
 	for(uint32_t i=0;i<studiedBlocks.size();i++)
 	{
+		assert(studiedBlocks[i].start<studiedBlocks[i].end);
 		if(studiedBlocks[i].isAddressInside(ip))
 		{
 			if(createBlock==CREATE)
@@ -2067,7 +2153,6 @@ BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK 
 					studiedBlocks[i].usageCount>usageCountThreshold)
 				{
 					studiedBlocks[i].compiledCode=compileBlock(studiedBlocks[i].start,studiedBlocks[i].end);
-					//__asm__("int $3");
 				}
 			}
 			return &studiedBlocks[i];
@@ -2076,7 +2161,7 @@ BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK 
 	if(createBlock==DO_NOT_CREATE)
 		return NULL;
 	studiedBlocks.emplace_back(ip);
-	return &studiedBlocks.back();
+	return &studiedBlocks.back();*/
 }
 
 istream& lightspark::operator>>(istream& in, u32& v)

@@ -73,7 +73,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 		if(mi->studyFunction)
 		{
 			BlockStudy* nextBlock=mi->getBlockStudyAtAddress(instructionPointer, method_info::DO_NOT_CREATE);
-			if(nextBlock && nextBlock->compiledCode && nextBlock->start==instructionPointer)
+			if(nextBlock && nextBlock->blockType==BlockStudy::JIT_OK && nextBlock->start==instructionPointer)
 			{
 				//Call JItted code
 				mi->checkJITAssumptions(context);

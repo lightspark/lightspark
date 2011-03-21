@@ -221,12 +221,16 @@ inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
 struct BlockStudy
 {
 	//start is the first address inside the block
+	uint32_t start;
 	//end is the first byte _not_ inside the block
-	uint32_t start,end;
+	uint32_t end;
 	uint32_t usageCount;
+
+	enum BLOCK_TYPE { JIT_CANDIDATE=0, JIT_OK, JIT_FAILED };
+	BLOCK_TYPE blockType;
 	typedef intptr_t (*synt_block)(call_context* cc);
 	synt_block compiledCode;
-	BlockStudy(uint32_t a):start(a),end(a+1),usageCount(1),compiledCode(NULL)
+	BlockStudy(uint32_t a):start(a),end(a+1),usageCount(1),blockType(JIT_CANDIDATE),compiledCode(NULL)
 	{
 	}
 	bool isAddressInside(uint32_t ip) const

@@ -2383,6 +2383,8 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 			default:
 				LOG(LOG_ERROR,_("Not implemented instruction @") << code.tellg());
 				LOG(LOG_ERROR,_("Opcode ") << hex << (unsigned int)opcode << dec);
+				llvmf->eraseFromParent();
+				cout << "Failed to compile " << profName << endl;
 				return NULL;
 				/*constant = llvm::ConstantInt::get(int_type, opcode);
 				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
@@ -2464,8 +2466,7 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 		}
 	}
 
-	//__asm__("int $3");
-	cout << "start: " << start << " end: " << end << endl;
+	//cout << profName << " start: " << start << " end: " << end << endl;
 	//llvmf->dump();
 	getVm()->FPM->run(*llvmf);
 	BlockStudy::synt_block ret=(BlockStudy::synt_block)getVm()->ex->getPointerToFunction(llvmf);

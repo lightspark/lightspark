@@ -2055,7 +2055,7 @@ ASObject* method_info::getOptional(unsigned int i) const
 BlockStudy* method_info::mergeBlocks(uint32_t aggregateStart, uint32_t aggregateEnd)
 {
 	auto itStart=lower_bound(studiedBlocks.begin(),studiedBlocks.end(),aggregateStart);
-	auto itEnd=lower_bound(studiedBlocks.begin(),studiedBlocks.end(),aggregateEnd-1)-1;
+	auto itEnd=upper_bound(studiedBlocks.begin(),studiedBlocks.end(),aggregateEnd-1)-1;
 	assert(itStart!=studiedBlocks.end());
 	assert(itStart->start<=aggregateStart && itStart->end>aggregateStart);
 	assert(itEnd->start<=aggregateEnd && itEnd->end>=aggregateEnd);
@@ -2085,7 +2085,7 @@ BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK 
 			if(createBlock==CREATE)
 			{
 				it->usageCount++;
-				if(it->compiledCode==NULL && it->usageCount>usageCountThreshold)
+				if(it->blockType==BlockStudy::JIT_CANDIDATE && it->usageCount>usageCountThreshold)
 				{
 					//This block is a candidate for compilation
 					uint32_t aggregateStart=it->start;
@@ -2130,6 +2130,7 @@ BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK 
 					if(it->start!=aggregateStart || it->end!=aggregateEnd)
 						b=mergeBlocks(aggregateStart, aggregateEnd);
 					b->compiledCode=compileBlock(b->start,b->end);
+					b->blockType=(b->compiledCode)?(BlockStudy::JIT_OK):(BlockStudy::JIT_FAILED);
 				}
 			}
 			return b;
@@ -2139,29 +2140,6 @@ BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK 
 		return NULL;
 	afterIt=studiedBlocks.insert(afterIt, BlockStudy(ip));
 	return &(*afterIt);
-
-/*	//TODO: optimize the search
-	for(uint32_t i=0;i<studiedBlocks.size();i++)
-	{
-		assert(studiedBlocks[i].start<studiedBlocks[i].end);
-		if(studiedBlocks[i].isAddressInside(ip))
-		{
-			if(createBlock==CREATE)
-			{
-				studiedBlocks[i].usageCount++;
-				if(studiedBlocks[i].compiledCode==NULL &&
-					studiedBlocks[i].usageCount>usageCountThreshold)
-				{
-					studiedBlocks[i].compiledCode=compileBlock(studiedBlocks[i].start,studiedBlocks[i].end);
-				}
-			}
-			return &studiedBlocks[i];
-		}
-	}
-	if(createBlock==DO_NOT_CREATE)
-		return NULL;
-	studiedBlocks.emplace_back(ip);
-	return &studiedBlocks.back();*/
 }
 
 istream& lightspark::operator>>(istream& in, u32& v)

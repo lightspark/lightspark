@@ -307,6 +307,12 @@ private:
 	static void compileBitAnd(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type);
+	static void compileCallProperty(int t, int t2, std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::Value* callContext,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+	static void compileCallPropVoid(int t, int t2, std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::Value* callContext,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
 	static void compileConvert_i(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type);
@@ -315,6 +321,9 @@ private:
 			const llvm::Type* int_type);
 	static void compileDup(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+	static void compileGetLex(int t, std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::Value* callContext,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
 	static void compileGetLocal(int i, std::vector<stack_entry>& static_locals, llvm::Value* locals,
 			std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type);
@@ -327,6 +336,18 @@ private:
 			std::vector<stack_entry>& static_locals, llvm::Value* locals,
 			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
 			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+	void compileIfLE(int here, int offset,
+			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+			std::vector<stack_entry>& static_locals, llvm::Value* locals,
+			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
+			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+	void compileIfLT(int here, int offset,
+			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+			std::vector<stack_entry>& static_locals, llvm::Value* locals,
+			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
+			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+	static void compileIncLocal_i(int t, std::vector<stack_entry>& static_locals, llvm::Value* locals, llvm::Value* callContext,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
 	static void compileIncrement_i(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type);
@@ -340,6 +361,11 @@ private:
 	static void compileMultiply(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type, const llvm::Type* number_type);
+	void compileIfNGE(int here, int offset,
+			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+			std::vector<stack_entry>& static_locals, llvm::Value* locals,
+			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
+			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
 	static void compilePushByte(int t, std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
 			llvm::ExecutionEngine* ex, const llvm::Type* int_type);
 	void compilePushInt(int t, std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
@@ -360,6 +386,9 @@ private:
 			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index, 
 			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type, const llvm::Type* voidptr_type);
+	static void compileSubtract(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
+			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type, const llvm::Type* number_type);
 	static void compileURShift(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type, const llvm::Type* int32_type);

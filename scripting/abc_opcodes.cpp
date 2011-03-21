@@ -331,7 +331,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 			f->incRef();
 			ASObject* ret=f->call(obj,args,m);
 			//call getMethodInfo only after the call, so it's updated
-			//called_mi=f->getMethodInfo();
+			called_mi=f->getMethodInfo();
 			f->decRef();
 			if(ret==NULL)
 				ret=new Undefined;
@@ -907,7 +907,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 			f->incRef();
 			ASObject* ret=f->call(obj,args,m);
 			//call getMethodInfo only after the call, so it's updated
-			//called_mi=f->getMethodInfo();
+			called_mi=f->getMethodInfo();
 			f->decRef();
 			if(ret)
 				ret->decRef();

@@ -309,10 +309,12 @@ private:
 			const llvm::Type* int_type);
 	static void compileCallProperty(int t, int t2, std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 			llvm::Value* dynamic_stack_index, llvm::Value* callContext,
-			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type, const llvm::Type* voidptr_type);
 	static void compileCallPropVoid(int t, int t2, std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 			llvm::Value* dynamic_stack_index, llvm::Value* callContext,
-			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+			const llvm::Type* int_type, const llvm::Type* voidptr_type);
 	static void compileConvert_i(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
 			const llvm::Type* int_type);
@@ -533,7 +535,8 @@ struct opcode_handler
 };
 
 enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, 
-	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT};
+	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT, 
+	ARGS_CONTEXT_INT_INT_OBJ};
 
 struct typed_opcode_handler
 {

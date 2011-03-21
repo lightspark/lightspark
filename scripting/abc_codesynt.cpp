@@ -130,8 +130,8 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"initProperty",(void*)&ABCVm::initProperty,ARGS_CONTEXT_INT},
 	{"kill",(void*)&ABCVm::kill,ARGS_INT},
 	{"jump",(void*)&ABCVm::jump,ARGS_INT},
-	{"callProperty",(void*)&ABCVm::callProperty,ARGS_CONTEXT_INT_INT},
-	{"callPropVoid",(void*)&ABCVm::callPropVoid,ARGS_CONTEXT_INT_INT},
+	{"callProperty",(void*)&ABCVm::callProperty,ARGS_CONTEXT_INT_INT_OBJ},
+	{"callPropVoid",(void*)&ABCVm::callPropVoid,ARGS_CONTEXT_INT_INT_OBJ},
 	{"constructProp",(void*)&ABCVm::constructProp,ARGS_CONTEXT_INT_INT},
 	{"callSuper",(void*)&ABCVm::callSuper,ARGS_CONTEXT_INT_INT},
 	{"callSuperVoid",(void*)&ABCVm::callSuperVoid,ARGS_CONTEXT_INT_INT},
@@ -348,6 +348,11 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	sig_context_int_int.push_back(int_type);
 	sig_context_int_int.push_back(int_type);
 
+	vector<const llvm::Type*> sig_context_int_int_obj;
+	sig_context_int_int.push_back(context_type);
+	sig_context_int_int.push_back(int_type);
+	sig_context_int_int.push_back(int_type);
+	sig_context_int_int.push_back(voidptr_type);
 	llvm::FunctionType* FT=NULL;
 	for(int i=0;i<table_len;i++)
 	{
@@ -397,6 +402,9 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 				break;
 			case ARGS_CONTEXT_INT_INT:
 				FT=llvm::FunctionType::get(ret_type, sig_context_int_int, false);
+				break;
+			case ARGS_CONTEXT_INT_INT_OBJ:
+				FT=llvm::FunctionType::get(ret_type, sig_context_int_int_obj, false);
 				break;
 		}
 
@@ -1586,26 +1594,32 @@ void method_info::compileBitAnd(vector<stack_entry>& static_stack, llvm::Value* 
 
 void method_info::compileCallProperty(int t, int t2, vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 		llvm::Value* dynamic_stack_index, llvm::Value* callContext,
-		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type, const llvm::Type* voidptr_type)
 {
 	LOG(LOG_TRACE, "synt callproperty");
 	llvm::Constant* constant = llvm::ConstantInt::get(int_type, t);
 	llvm::Constant* constant2 = llvm::ConstantInt::get(int_type, t2);
 	syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
-	Builder.CreateCall3(ex->FindFunctionNamed("callProperty"), callContext, constant, constant2);
+	//callProperty returns also the method_info of the called function by reference
+	llvm::Value* called_mi=Builder.CreateAlloca(voidptr_type);
+	Builder.CreateCall4(ex->FindFunctionNamed("callProperty"), callContext, constant, constant2, called_mi);
 }
 
 void method_info::compileCallPropVoid(int t, int t2, vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 		llvm::Value* dynamic_stack_index, llvm::Value* callContext,
-		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type)
+		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
+		const llvm::Type* int_type, const llvm::Type* voidptr_type)
 {
 	LOG(LOG_TRACE, "synt callpropvoid");
 	llvm::Constant* constant = llvm::ConstantInt::get(int_type, t);
 	llvm::Constant* constant2 = llvm::ConstantInt::get(int_type, t2);
 	syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
-	Builder.CreateCall3(ex->FindFunctionNamed("callPropVoid"), callContext, constant, constant2);
+	//callProperty returns also the method_info of the called function by reference
+	llvm::Value* called_mi=Builder.CreateAlloca(voidptr_type);
+	Builder.CreateCall4(ex->FindFunctionNamed("callPropVoid"), callContext, constant, constant2, called_mi);
 }
 
 void method_info::compileConvert_i(vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
@@ -2523,7 +2537,7 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 				code >> t;
 				code >> t2;
 				compileCallProperty(t, t2, static_stack, dynamic_stack, dynamic_stack_index, callContext,
-						Builder, ex, int_type);
+						Builder, ex, int_type, voidptr_type);
 				break;
 			}
 			case 0x4f:
@@ -2533,7 +2547,7 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 				code >> t;
 				code >> t2;
 				compileCallPropVoid(t, t2, static_stack, dynamic_stack, dynamic_stack_index, callContext,
-						Builder, ex, int_type);
+						Builder, ex, int_type, voidptr_type);
 				break;
 			}
 			case 0x60:
@@ -2674,7 +2688,7 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 				LOG(LOG_ERROR,_("Not implemented instruction @") << code.tellg());
 				LOG(LOG_ERROR,_("Opcode ") << hex << (unsigned int)opcode << dec);
 				llvmf->eraseFromParent();
-				cout << "Failed to compile " << profName << endl;
+				//cout << "Failed to compile " << profName << endl;
 				return NULL;
 				/*constant = llvm::ConstantInt::get(int_type, opcode);
 				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
@@ -2757,9 +2771,10 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 	}
 
 	//cout << profName << " start: " << start << " end: " << end << endl;
-	//llvmf->dump();
 	getVm()->FPM->run(*llvmf);
 	BlockStudy::synt_block ret=(BlockStudy::synt_block)getVm()->ex->getPointerToFunction(llvmf);
+	if(profName=="MontgomeryReduction::::reduce")
+		llvmf->dump();
 	return ret;
 }
 

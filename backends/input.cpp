@@ -93,6 +93,8 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;
 				case GDK_m:
+					if (!th->m_sys->audioManager->pluginLoaded())
+						break;
 					th->m_sys->audioManager->toggleMuteAll();
 					if(th->m_sys->audioManager->allMuted())
 						LOG(LOG_NO_INFO, "All sounds muted");
@@ -226,6 +228,8 @@ void* InputThread::sdl_worker(InputThread* th)
 						th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 						break;
 					case SDLK_m:
+						if (!th->m_sys->audioManager->pluginLoaded())
+							break;
 						th->m_sys->audioManager->toggleMuteAll();
 						if(th->m_sys->audioManager->allMuted())
 							LOG(LOG_NO_INFO, "All sounds muted");

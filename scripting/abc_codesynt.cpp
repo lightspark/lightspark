@@ -349,10 +349,11 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	sig_context_int_int.push_back(int_type);
 
 	vector<const llvm::Type*> sig_context_int_int_obj;
-	sig_context_int_int.push_back(context_type);
-	sig_context_int_int.push_back(int_type);
-	sig_context_int_int.push_back(int_type);
-	sig_context_int_int.push_back(voidptr_type);
+	sig_context_int_int_obj.push_back(context_type);
+	sig_context_int_int_obj.push_back(int_type);
+	sig_context_int_int_obj.push_back(int_type);
+	sig_context_int_int_obj.push_back(llvm::PointerType::getUnqual(voidptr_type));
+
 	llvm::FunctionType* FT=NULL;
 	for(int i=0;i<table_len;i++)
 	{
@@ -422,7 +423,7 @@ llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value*
 	builder.CreateStore(index2,dynamic_stack_index);
 
 	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
-	return builder.CreateLoad(dest);
+	return builder.CreateLoad(dest,"stackload");
 }
 
 llvm::Value* method_info::llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
@@ -442,7 +443,7 @@ void method_info::llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& 
 	builder.CreateStore(val,dest);
 
 	//increment stack index
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context,32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context,32), 1, "stacksync");
 	llvm::Value* index2=builder.CreateAdd(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 }
@@ -1619,6 +1620,7 @@ void method_info::compileCallPropVoid(int t, int t2, vector<stack_entry>& static
 
 	//callProperty returns also the method_info of the called function by reference
 	llvm::Value* called_mi=Builder.CreateAlloca(voidptr_type);
+	cout << "callPropVoid " << ex->FindFunctionNamed("callPropVoid")->arg_size() << endl;
 	Builder.CreateCall4(ex->FindFunctionNamed("callPropVoid"), callContext, constant, constant2, called_mi);
 }
 
@@ -2267,100 +2269,16 @@ void method_info::compileURShift(vector<stack_entry>& static_stack, llvm::Value*
 	static_stack_push(static_stack,stack_entry(value,STACK_INT));
 }
 
-BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
+bool method_info::compileBlockImpl(uint32_t start, uint32_t end, std::istringstream& code, map<uint32_t, block_info>& blocks,
+		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+		vector<stack_entry>& static_locals, llvm::Value* locals, llvm::Value* callContext, llvm::LLVMContext& llvm_context,
+		const llvm::Type* int_type, const llvm::Type* int32_type, const llvm::Type* number_type,
+		const llvm::Type* voidptr_type,	llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
 {
-	llvm::ExecutionEngine* ex=getVm()->ex;
-	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
-	//Define common data types
-	//The pointer size compatible int type will be useful
-	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
-	const llvm::Type* int32_type=llvm::IntegerType::get(getVm()->llvm_context,32);
-	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
-	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
-	//Create an LLVM function object
-	llvmf=llvm::Function::Create(synt_method_prototype(voidptr_type),llvm::Function::ExternalLinkage,"",getVm()->module);
-
-	//Create the LLVM builder object
-	llvm::IRBuilder<> Builder(llvm_context);
-
-	//Create the basic block that will hold the prologue of the function
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
-	Builder.SetInsertPoint(BB);
-
-	//The only argument is the call_context structure
-	llvm::Value* callContext=llvmf->getArgumentList().begin();
-
-	//Create the LLVM value that points to the locals array
-	llvm::Value* tmpValue=Builder.CreateStructGEP(callContext,0);
-	llvm::Value* locals=Builder.CreateLoad(tmpValue,"locals");
-
-	//The stack is statically handled as much as possible to allow llvm optimizations
-	//On branch and on interpreted/jitted code transition it is synchronized with the dynamic one
-	vector<stack_entry> static_stack;
-	static_stack.reserve(body->max_stack);
-	//Get the pointer to the dynamic stack
-	tmpValue=Builder.CreateStructGEP(callContext,1);
-	llvm::Value* dynamic_stack=Builder.CreateLoad(tmpValue);
-	//Get the index of the dynamic stack
-	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(callContext,2);
-
-	//Creating a mapping between blocks and starting address
-	map<unsigned int,block_info> blocks;
-	//Let's build a block for the real function code, this is also used to bootstrap code analysis
-	addBlock(blocks, start, "begin");
-	block_info& startBlock=blocks[start];
-
-	//Initialize the locals of the first block using the argument types
-	for(uint32_t i=0;i<param_type.size();i++)
-	{
-		multiname* m=context->getMultiname(param_type[i],NULL);
-		if(m->isTypeInt())
-			startBlock.locals_start[i+1]=STACK_INT;
-	}
-
-	//Analyze code to extract implicit type information
-	doAnalysis(blocks,Builder,start,end);
-
-	//Load the locals contents, if needed
-	for(uint32_t i=0;i<startBlock.locals_start.size();i++)
-	{
-		if(startBlock.locals_start[i]==STACK_NONE)
-			continue;
-
-		llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
-		llvm::Value* t=Builder.CreateGEP(locals,constant);
-		t=Builder.CreateLoad(t);
-		Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-		switch(startBlock.locals_start[i])
-		{
-			case STACK_OBJECT:
-				break;
-			case STACK_INT:
-				t=Builder.CreateCall(ex->FindFunctionNamed("convert_i"),t);
-				break;
-			case STACK_NUMBER:
-				t=Builder.CreateCall(ex->FindFunctionNamed("convert_d"),t);
-				break;
-			case STACK_BOOLEAN:
-				t=Builder.CreateCall(ex->FindFunctionNamed("convert_b"),t);
-				break;
-			default:
-				assert(false && "Unsupported object type");
-		}
-		Builder.CreateStore(t,startBlock.locals_start_obj[i]);
-	}
-
-	//Let's reset the stream
-	istringstream code(body->code);
-	code.seekg(start);
-	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
-	block_info* cur_block=NULL;
-
-	//Create a jump to the first block of actual code
-	Builder.CreateBr(blocks[start].BB);
-
 	u8 opcode;
+	block_info* cur_block=NULL;
 	bool last_is_branch=true;
+	code.seekg(start);
 	while(1)
 	{
 		uint32_t local_ip=code.tellg();
@@ -2687,15 +2605,7 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 			default:
 				LOG(LOG_ERROR,_("Not implemented instruction @") << code.tellg());
 				LOG(LOG_ERROR,_("Opcode ") << hex << (unsigned int)opcode << dec);
-				llvmf->eraseFromParent();
-				//cout << "Failed to compile " << profName << endl;
-				return NULL;
-				/*constant = llvm::ConstantInt::get(int_type, opcode);
-				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
-				Builder.CreateRetVoid();
-
-				f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
-				return f;*/
+				return false;
 		}
 	}
 
@@ -2769,12 +2679,121 @@ BlockStudy::synt_block method_info::compileBlock(uint32_t start, uint32_t end)
 			//throw RunTimeException("Missing terminator");
 		}
 	}
+	return true;
+}
 
-	//cout << profName << " start: " << start << " end: " << end << endl;
+BlockStudy::synt_block method_info::compileBlock(const BlockStudy* block)
+{
+	llvm::ExecutionEngine* ex=getVm()->ex;
+	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
+	//Define common data types
+	//The pointer size compatible int type will be useful
+	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
+	const llvm::Type* int32_type=llvm::IntegerType::get(getVm()->llvm_context,32);
+	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
+	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
+	//Create an LLVM function object
+	llvmf=llvm::Function::Create(synt_method_prototype(voidptr_type),llvm::Function::ExternalLinkage,"",getVm()->module);
+
+	//Create the LLVM builder object
+	llvm::IRBuilder<> Builder(llvm_context);
+
+	//Create the basic block that will hold the prologue of the function
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
+	Builder.SetInsertPoint(BB);
+
+	//The only argument is the call_context structure
+	llvm::Value* callContext=llvmf->getArgumentList().begin();
+
+	//Create the LLVM value that points to the locals array
+	llvm::Value* tmpValue=Builder.CreateStructGEP(callContext,0);
+	llvm::Value* locals=Builder.CreateLoad(tmpValue,"locals");
+
+	//The stack is statically handled as much as possible to allow llvm optimizations
+	//On branch and on interpreted/jitted code transition it is synchronized with the dynamic one
+	vector<stack_entry> static_stack;
+	static_stack.reserve(body->max_stack);
+	//Get the pointer to the dynamic stack
+	tmpValue=Builder.CreateStructGEP(callContext,1);
+	llvm::Value* dynamic_stack=Builder.CreateLoad(tmpValue);
+	//Get the index of the dynamic stack
+	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(callContext,2);
+
+	//Creating a mapping between blocks and starting address
+	map<unsigned int,block_info> blocks;
+
+	uint32_t start=block->start;
+	uint32_t end=block->end;
+
+	//Let's build a block for the real function code, this is also used to bootstrap code analysis
+	addBlock(blocks, start, "begin");
+	block_info& startBlock=blocks[start];
+
+	//Initialize the locals of the first block using the argument types
+	for(uint32_t i=0;i<param_type.size();i++)
+	{
+		multiname* m=context->getMultiname(param_type[i],NULL);
+		if(m->isTypeInt())
+			startBlock.locals_start[i+1]=STACK_INT;
+	}
+
+	//Analyze code to extract implicit type information
+	doAnalysis(blocks,Builder,start,end);
+
+	//Load the locals contents, if needed
+	for(uint32_t i=0;i<startBlock.locals_start.size();i++)
+	{
+		if(startBlock.locals_start[i]==STACK_NONE)
+			continue;
+
+		llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+		llvm::Value* t=Builder.CreateGEP(locals,constant);
+		t=Builder.CreateLoad(t);
+		Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+		switch(startBlock.locals_start[i])
+		{
+			case STACK_OBJECT:
+				break;
+			case STACK_INT:
+				t=Builder.CreateCall(ex->FindFunctionNamed("convert_i"),t);
+				break;
+			case STACK_NUMBER:
+				t=Builder.CreateCall(ex->FindFunctionNamed("convert_d"),t);
+				break;
+			case STACK_BOOLEAN:
+				t=Builder.CreateCall(ex->FindFunctionNamed("convert_b"),t);
+				break;
+			default:
+				assert(false && "Unsupported object type");
+		}
+		Builder.CreateStore(t,startBlock.locals_start_obj[i]);
+	}
+
+	//Let's reset the stream
+	istringstream code(body->code);
+	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
+
+	//Create a jump to the first block of actual code
+	Builder.CreateBr(blocks[start].BB);
+
+	bool success=compileBlockImpl(start, end, code, blocks, static_stack, dynamic_stack, dynamic_stack_index,
+		static_locals, locals, callContext, llvm_context, int_type, int32_type, number_type, voidptr_type,
+		Builder, ex);
+	if(success==false)
+	{
+		llvmf->eraseFromParent();
+		//cout << "Failed to compile " << profName << endl;
+		return NULL;
+	}
+
+	llvmf->dump();
 	getVm()->FPM->run(*llvmf);
 	BlockStudy::synt_block ret=(BlockStudy::synt_block)getVm()->ex->getPointerToFunction(llvmf);
 	if(profName=="MontgomeryReduction::::reduce")
+	{
+		cout << profName << " start: " << start << " end: " << end << endl;
 		llvmf->dump();
+	}
 	return ret;
 }
 

@@ -2129,7 +2129,7 @@ BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK 
 					//Merge the blocks if needed
 					if(it->start!=aggregateStart || it->end!=aggregateEnd)
 						b=mergeBlocks(aggregateStart, aggregateEnd);
-					b->compiledCode=compileBlock(b->start,b->end);
+					b->compiledCode=compileBlock(b);
 					b->blockType=(b->compiledCode)?(BlockStudy::JIT_OK):(BlockStudy::JIT_FAILED);
 				}
 			}

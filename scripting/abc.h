@@ -300,6 +300,12 @@ private:
 	//Function study support
 	std::vector<BlockStudy> studiedBlocks;
 
+	//Compiles a continuous range of opcodes
+	bool compileBlockImpl(uint32_t start, uint32_t end, std::istringstream& code, std::map<uint32_t, block_info>& blocks,
+			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
+			std::vector<stack_entry>& static_locals, llvm::Value* locals, llvm::Value* callContext, llvm::LLVMContext& llvm_context,
+			const llvm::Type* int_type, const llvm::Type* int32_type, const llvm::Type* number_type,
+			const llvm::Type* voidptr_type, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
 	//Helpers to compile the opcodes to LLVM code
 	static void compileAdd(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, 
 			llvm::Value* dynamic_stack_index, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex,
@@ -433,7 +439,7 @@ public:
 	BlockStudy* getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK createBlock);
 	BlockStudy* mergeBlocks(uint32_t aggregateStart, uint32_t aggregateEnd);
 	bool studyFunction;
-	BlockStudy::synt_block compileBlock(uint32_t start, uint32_t end);
+	BlockStudy::synt_block compileBlock(const BlockStudy* block);
 	/*
 	   Checks if the locals types are as expected by the JITted code
 	   Currently the JIT engine assumes the locals used for parameters

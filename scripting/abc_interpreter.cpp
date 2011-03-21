@@ -72,9 +72,11 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 		uint32_t instructionPointer=code.tellg();
 		if(mi->studyFunction)
 		{
+			cout << "Interpreting at " << instructionPointer << endl;
 			BlockStudy* nextBlock=mi->getBlockStudyAtAddress(instructionPointer, method_info::DO_NOT_CREATE);
 			if(nextBlock && nextBlock->blockType==BlockStudy::JIT_OK && nextBlock->start==instructionPointer)
 			{
+				cout << "Invoking compiled block " << instructionPointer << endl;
 				//Call JItted code
 				mi->checkJITAssumptions(context);
 				uint32_t exitPoint=nextBlock->compiledCode(context);
@@ -1524,6 +1526,13 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				currentBlock=NULL;
 		}
 	}
+	/*if(mi->profName=="MontgomeryReduction::::reduce")
+	{
+		for(uint32_t i=0;i<mi->studiedBlocks.size();i++)
+		{
+			cout << "block @ " << mi->studiedBlocks[i].start << "-" << mi->studiedBlocks[i].end << endl;
+		}
+	}*/
 
 #undef TAKE_BRANCH_AND_SEEK
 #undef PROF_ACCOUNT_TIME 

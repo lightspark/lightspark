@@ -2244,10 +2244,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		return NULL;
 	}
 
-//	if(mi->profName=="BigInteger::http://crypto.hurlant.com/BigInteger::am" && mi->studyFunction==false)
-	if(hit_count==hit_threshold)
+	//if(hit_count==hit_threshold)
+	if(mi->profName=="MontgomeryReduction::::reduce")
 	{
-		cout << "Studying " << mi->profName << endl;
+	//	cout << "Studying " << mi->profName << endl;
 		mi->studyFunction=true;
 	}
 

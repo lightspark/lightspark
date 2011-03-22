@@ -208,7 +208,7 @@ struct block_info
 
 	//Needed for indexed access
 	block_info():BB(NULL),blockEnd(0){assert(false);}
-	block_info(const method_info* mi, const char* blockName);
+	block_info(llvm::LLVMContext& llvm_context, uint32_t local_count, llvm::Function* llvmf, const char* blockName);
 	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
 };
 
@@ -225,12 +225,18 @@ struct BlockStudy
 	//end is the first byte _not_ inside the block
 	uint32_t end;
 	uint32_t usageCount;
+	//Link to the next/prev block in a block chain
+	BlockStudy* nextInChain;
+	BlockStudy* prevInChain;
+	//The LLVM function object
+	llvm::Function* llvmf;
 
 	enum BLOCK_TYPE { JIT_CANDIDATE=0, JIT_OK, JIT_FAILED };
 	BLOCK_TYPE blockType;
 	typedef intptr_t (*synt_block)(call_context* cc);
 	synt_block compiledCode;
-	BlockStudy(uint32_t a):start(a),end(a+1),usageCount(1),blockType(JIT_CANDIDATE),compiledCode(NULL)
+	BlockStudy(uint32_t a):start(a),end(a+1),usageCount(1),nextInChain(this),prevInChain(this),
+		blockType(JIT_CANDIDATE),compiledCode(NULL)
 	{
 	}
 	bool isAddressInside(uint32_t ip) const
@@ -242,6 +248,22 @@ struct BlockStudy
 	{
 		return start<r;
 	}
+	void linkToBlock(BlockStudy* b)
+	{
+		assert(b->nextInChain==b && b->prevInChain==b);
+		nextInChain->prevInChain=b;
+		b->nextInChain=nextInChain;
+		nextInChain=b;
+		b->prevInChain=this;
+	}
+	void unlinkBlock()
+	{
+		nextInChain->prevInChain=prevInChain;
+		prevInChain->nextInChain=nextInChain;
+		prevInChain=this;
+		nextInChain=this;
+	}
+	void resetCompiledCode(BlockStudy* stop);
 };
 
 inline bool operator<(uint32_t l, const BlockStudy& r)
@@ -289,13 +311,14 @@ private:
 	void consumeStackForRTMultiname(static_stack_types_vector& stack, int multinameIndex) const;
 
 	//Helper function to add a basic block
-	void addBlock(std::map<unsigned int,block_info>& blocks, unsigned int ip, const char* blockName);
+	void addBlock(std::map<unsigned int,block_info>& blocks, unsigned int ip, llvm::LLVMContext& llvm_context,
+			uint32_t local_count, llvm::Function* llvmf, const char* blockName);
 	std::pair<unsigned int, STACK_TYPE> popTypeFromStack(static_stack_types_vector& stack, unsigned int localIp) const;
 	llvm::FunctionType* synt_method_prototype(const llvm::Type* pointerType);
-	llvm::Function* llvmf;
 
 	//Does analysis on function code to find optimization chances
-	void doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder, uint32_t start, uint32_t end);
+	void doAnalysis(llvm::Function* llvmf, std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder,
+			uint32_t start, uint32_t end);
 
 	//Function study support
 	std::vector<BlockStudy> studiedBlocks;
@@ -303,7 +326,8 @@ private:
 	//Compiles a continuous range of opcodes
 	bool compileBlockImpl(uint32_t start, uint32_t end, std::istringstream& code, std::map<uint32_t, block_info>& blocks,
 			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
-			std::vector<stack_entry>& static_locals, llvm::Value* locals, llvm::Value* callContext, llvm::LLVMContext& llvm_context,
+			std::vector<stack_entry>& static_locals, llvm::Value* locals, llvm::Value* callContext,
+			llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
 			const llvm::Type* int_type, const llvm::Type* int32_type, const llvm::Type* number_type,
 			const llvm::Type* voidptr_type, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
 	//Helpers to compile the opcodes to LLVM code
@@ -343,17 +367,20 @@ private:
 			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
 			std::vector<stack_entry>& static_locals, llvm::Value* locals,
 			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
-			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+			llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
 	void compileIfLE(int here, int offset,
 			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
 			std::vector<stack_entry>& static_locals, llvm::Value* locals,
 			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
-			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+			llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
 	void compileIfLT(int here, int offset,
 			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
 			std::vector<stack_entry>& static_locals, llvm::Value* locals,
 			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
-			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+			llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
 	static void compileIncLocal_i(int t, std::vector<stack_entry>& static_locals, llvm::Value* locals, llvm::Value* callContext,
 			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex, const llvm::Type* int_type);
 	static void compileIncrement_i(std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack,
@@ -373,7 +400,8 @@ private:
 			std::vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
 			std::vector<stack_entry>& static_locals, llvm::Value* locals,
 			std::map<unsigned int,block_info>& blocks, block_info* cur_block,
-			llvm::LLVMContext& llvm_context, llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
+			llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
+			llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex);
 	static void compilePushByte(int t, std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
 			llvm::ExecutionEngine* ex, const llvm::Type* int_type);
 	void compilePushInt(int t, std::vector<stack_entry>& static_stack, llvm::IRBuilder<>& Builder,
@@ -413,7 +441,7 @@ public:
 	u30 name;
 	ABCContext* context;
 	method_body_info* body;
-	SyntheticFunction::synt_function synt_method();
+	//SyntheticFunction::synt_function synt_method();
 	bool needsArgs() { return (flags & NEED_ARGUMENTS) != 0;}
 	bool needsRest() { return (flags & NEED_REST) != 0;}
 	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
@@ -439,7 +467,7 @@ public:
 	BlockStudy* getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK createBlock);
 	BlockStudy* mergeBlocks(uint32_t aggregateStart, uint32_t aggregateEnd);
 	bool studyFunction;
-	BlockStudy::synt_block compileBlock(const BlockStudy* block);
+	BlockStudy::synt_block compileBlockChain(BlockStudy* block);
 	/*
 	   Checks if the locals types are as expected by the JITted code
 	   Currently the JIT engine assumes the locals used for parameters

@@ -84,12 +84,8 @@ public:
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
-		throw UnsupportedException("Class_base::getVariableByMultiname_i");
-		return 0;
-/*		intptr_t ret=ASObject::getVariableByMultiname(name);
-		if(==NULL && super)
-			ret=super->getVariableByMultiname(name);
-		return ret;*/
+		ASObject* ret=getVariableByMultiname(name, false, NULL);
+		return ret->toInt();
 	}
 /*	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{

@@ -621,21 +621,24 @@ inline pair<unsigned int,STACK_TYPE> method_info::popTypeFromStack(static_stack_
 	return ret;
 }
 
-block_info::block_info(const method_info* mi, const char* blockName):blockEnd(0),terminatedBlock(false)
+block_info::block_info(llvm::LLVMContext& llvm_context, uint32_t local_count, llvm::Function* llvmf, const char* blockName):
+	blockEnd(0),terminatedBlock(false)
 {
-	BB=llvm::BasicBlock::Create(getVm()->llvm_context, blockName, mi->llvmf);
-	locals_start.resize(mi->body->local_count,STACK_NONE);
-	locals_reset.resize(mi->body->local_count,false);
-	locals_used.resize(mi->body->local_count,false);
+	BB=llvm::BasicBlock::Create(llvm_context, blockName, llvmf);
+	locals_start.resize(local_count,STACK_NONE);
+	locals_reset.resize(local_count,false);
+	locals_used.resize(local_count,false);
 }
 
-void method_info::addBlock(map<unsigned int,block_info>& blocks, unsigned int ip, const char* blockName)
+void method_info::addBlock(map<unsigned int,block_info>& blocks, unsigned int ip, llvm::LLVMContext& llvm_context,
+			uint32_t local_count, llvm::Function* llvmf, const char* blockName)
 {
 	if(blocks.find(ip)==blocks.end())
-		blocks.insert(make_pair(ip, block_info(this, blockName)));
+		blocks.insert(make_pair(ip, block_info(llvm_context, local_count, llvmf, blockName)));
 }
 
-void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder, uint32_t start, uint32_t end)
+void method_info::doAnalysis(llvm::Function* llvmf, std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder,
+			uint32_t start, uint32_t end)
 {
 	bool stop;
 	istringstream code(body->code);
@@ -729,7 +732,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					{
 						//Create a new block and insert it in the mapping
 						unsigned int here=local_ip;
-						addBlock(blocks,here,"label");
+						addBlock(blocks,here,llvm_context,body->local_count,llvmf,"label");
 
 						last_is_branch=false;
 						blocks[here].preds.insert(cur_block);
@@ -766,13 +769,13 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 						int here=code.tellg();
 						int dest=here+t;
 						//Create a block for the fallthrough code and insert in the mapping
-						addBlock(blocks,here,"fall");
+						addBlock(blocks,here,llvm_context,body->local_count,llvmf,"fall");
 						blocks[here].preds.insert(cur_block);
 						cur_block->terminatedBlock=true;
 						cur_block->seqs.insert(&blocks[here]);
 
 						//And for the branch destination, if they are not in the blocks mapping
-						addBlock(blocks,dest,"then");
+						addBlock(blocks,dest,llvm_context,body->local_count,llvmf,"then");
 						blocks[dest].preds.insert(cur_block);
 						cur_block->seqs.insert(&blocks[dest]);
 
@@ -800,7 +803,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 							LOG(LOG_TRACE,_("Case ") << i << _(" ") << offsets[i]);
 						}
 						static_stack_types.clear();
-						addBlock(blocks,defaultdest,"switchdefault");
+						addBlock(blocks,defaultdest,llvm_context,body->local_count,llvmf,"switchdefault");
 						blocks[defaultdest].preds.insert(cur_block);
 						cur_block->terminatedBlock=true;
 						cur_block->seqs.insert(&blocks[defaultdest]);
@@ -808,7 +811,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 						for(unsigned int i=0;i<offsets.size();i++)
 						{
 							int casedest=here+offsets[i];
-							addBlock(blocks,casedest,"switchcase");
+							addBlock(blocks,casedest,llvm_context,body->local_count,llvmf,"switchcase");
 							blocks[casedest].preds.insert(cur_block);
 							cur_block->seqs.insert(&blocks[casedest]);
 						}
@@ -1774,7 +1777,7 @@ void method_info::compileIfGE(int here, int offset,
 		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
 		vector<stack_entry>& static_locals, llvm::Value* locals,
 		map<unsigned int,block_info>& blocks, block_info* cur_block,
-		llvm::LLVMContext& llvm_context, 
+		llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
 		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
 {
 	LOG(LOG_TRACE, "synt ifge");
@@ -1806,7 +1809,7 @@ void method_info::compileIfLE(int here, int offset,
 		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
 		vector<stack_entry>& static_locals, llvm::Value* locals,
 		map<unsigned int,block_info>& blocks, block_info* cur_block,
-		llvm::LLVMContext& llvm_context, 
+		llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
 		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
 {
 	LOG(LOG_TRACE, "synt ifle");
@@ -1838,7 +1841,7 @@ void method_info::compileIfLT(int here, int offset,
 		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
 		vector<stack_entry>& static_locals, llvm::Value* locals,
 		map<unsigned int,block_info>& blocks, block_info* cur_block,
-		llvm::LLVMContext& llvm_context, 
+		llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
 		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
 {
 	LOG(LOG_TRACE, "synt iflt");
@@ -2019,7 +2022,7 @@ void method_info::compileIfNGE(int here, int offset,
 		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
 		vector<stack_entry>& static_locals, llvm::Value* locals,
 		map<unsigned int,block_info>& blocks, block_info* cur_block,
-		llvm::LLVMContext& llvm_context, 
+		llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
 		llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
 {
 	LOG(LOG_TRACE, "synt ifnge");
@@ -2271,7 +2274,8 @@ void method_info::compileURShift(vector<stack_entry>& static_stack, llvm::Value*
 
 bool method_info::compileBlockImpl(uint32_t start, uint32_t end, std::istringstream& code, map<uint32_t, block_info>& blocks,
 		vector<stack_entry>& static_stack, llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index,
-		vector<stack_entry>& static_locals, llvm::Value* locals, llvm::Value* callContext, llvm::LLVMContext& llvm_context,
+		vector<stack_entry>& static_locals, llvm::Value* locals, llvm::Value* callContext,
+		llvm::LLVMContext& llvm_context, llvm::Function* llvmf,
 		const llvm::Type* int_type, const llvm::Type* int32_type, const llvm::Type* number_type,
 		const llvm::Type* voidptr_type,	llvm::IRBuilder<>& Builder, llvm::ExecutionEngine* ex)
 {
@@ -2361,7 +2365,7 @@ bool method_info::compileBlockImpl(uint32_t start, uint32_t end, std::istringstr
 				code >> t;
 				int here=code.tellg();
 				compileIfNGE(here, t, static_stack, dynamic_stack, dynamic_stack_index,
-						static_locals, locals, blocks, cur_block, llvm_context, Builder, ex);
+						static_locals, locals, blocks, cur_block, llvm_context, llvmf, Builder, ex);
 				break;
 			}
 			case 0x10:
@@ -2385,7 +2389,7 @@ bool method_info::compileBlockImpl(uint32_t start, uint32_t end, std::istringstr
 
 				int here=code.tellg();
 				compileIfLT(here, t, static_stack, dynamic_stack, dynamic_stack_index,
-						static_locals, locals, blocks, cur_block, llvm_context, Builder, ex);
+						static_locals, locals, blocks, cur_block, llvm_context, llvmf, Builder, ex);
 				break;
 			}
 			case 0x16:
@@ -2397,7 +2401,7 @@ bool method_info::compileBlockImpl(uint32_t start, uint32_t end, std::istringstr
 				code >> t;
 				int here=code.tellg();
 				compileIfLE(here, t, static_stack, dynamic_stack, dynamic_stack_index,
-						static_locals, locals, blocks, cur_block, llvm_context, Builder, ex);
+						static_locals, locals, blocks, cur_block, llvm_context, llvmf,  Builder, ex);
 				break;
 			}
 			case 0x18:
@@ -2409,7 +2413,7 @@ bool method_info::compileBlockImpl(uint32_t start, uint32_t end, std::istringstr
 				code >> t;
 				int here=code.tellg();
 				compileIfGE(here, t, static_stack, dynamic_stack, dynamic_stack_index,
-						static_locals, locals, blocks, cur_block, llvm_context, Builder, ex);
+						static_locals, locals, blocks, cur_block, llvm_context, llvmf, Builder, ex);
 				break;
 			}
 			case 0x24:
@@ -2611,78 +2615,45 @@ bool method_info::compileBlockImpl(uint32_t start, uint32_t end, std::istringstr
 
 	/*As a continuos block of instructions have been compiled the blocks may be in one of three states
 	  1) Terminated block: nothing to be done
-	  2) Partially compiled block (cur_block)
-	  3) Empty block (all the others, those block are create in jump but are not inside the JITted part */
+	  2) Partially compiled block (cur_block): it's terminated now with a return to interpreter
+	  3) Empty block (all the others, those block are create in jump but are not inside this JITted part */
 	map<unsigned int,block_info>::iterator it2=blocks.begin();
 	for(;it2!=blocks.end();++it2)
 	{
-		if(it2->second.BB->getTerminator()==NULL) //Case 2 or 3
+		if(it2->second.BB->getTerminator()==NULL && &(it2->second)==cur_block) //Case 2
 		{
 			//Go back to the interpreter safely
 
 			Builder.SetInsertPoint(it2->second.BB);
-			if(&(it2->second)==cur_block) //Case 2
+			//Sync the stack
+			syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+			//The locals state is inside static_locals
+			//Write all locals to the locals array
+			for(uint32_t i=0;i<static_locals.size();i++)
 			{
-				//Sync the stack
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				//The locals state is inside static_locals
-				//Write all locals to the locals array
-				for(uint32_t i=0;i<static_locals.size();i++)
+				if(static_locals[i].second!=STACK_NONE)
 				{
-					if(static_locals[i].second!=STACK_NONE)
-					{
-						llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
-						llvm::Value* t=Builder.CreateGEP(locals,constant);
-						llvm::Value* old=Builder.CreateLoad(t);
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
-						abstract_value(ex,Builder,static_locals[i]);
-						Builder.CreateStore(static_locals[i].first,t);
-					}
+					llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+					llvm::Value* t=Builder.CreateGEP(locals,constant);
+					llvm::Value* old=Builder.CreateLoad(t);
+					Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
+					abstract_value(ex,Builder,static_locals[i]);
+					Builder.CreateStore(static_locals[i].first,t);
 				}
-
-				assert(it2->second.blockEnd!=0 && it2->first<it2->second.blockEnd);
-				llvm::Constant* constant = llvm::ConstantInt::get(int_type, it2->second.blockEnd);
-				//HACK: remove the cast
-				llvm::Value* castedRet = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
-				Builder.CreateRet(castedRet);
-			}
-			else //Case 3
-			{
-				//The stack is already synced
-
-				//The locals state is the one in locals_start
-				//Write all locals to the locals array
-				const block_info& b=it2->second;
-				for(uint32_t i=0;i<b.locals_start.size();i++)
-				{
-					//HACK: optimize
-					static_locals[i].second=b.locals_start[i];
-					if(static_locals[i].second!=STACK_NONE)
-					{
-						static_locals[i].first=Builder.CreateLoad(b.locals_start_obj[i]);
-						llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
-						llvm::Value* t=Builder.CreateGEP(locals,constant);
-						llvm::Value* old=Builder.CreateLoad(t);
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
-						abstract_value(ex,Builder,static_locals[i]);
-						Builder.CreateStore(static_locals[i].first,t);
-					}
-				}
-				assert(it2->second.blockEnd==0);
-				llvm::Constant* constant = llvm::ConstantInt::get(int_type, it2->first);
-				//HACK: remove the cast
-				llvm::Value* castedRet = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
-				Builder.CreateRet(castedRet);
 			}
 
-			//throw RunTimeException("Missing terminator");
+			assert(it2->second.blockEnd!=0 && it2->first<it2->second.blockEnd);
+			llvm::Constant* constant = llvm::ConstantInt::get(int_type, it2->second.blockEnd);
+			//HACK: remove the cast
+			llvm::Value* castedRet = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
+			Builder.CreateRet(castedRet);
 		}
 	}
 	return true;
 }
 
-BlockStudy::synt_block method_info::compileBlock(const BlockStudy* block)
+BlockStudy::synt_block method_info::compileBlockChain(BlockStudy* block)
 {
 	llvm::ExecutionEngine* ex=getVm()->ex;
 	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
@@ -2693,17 +2664,17 @@ BlockStudy::synt_block method_info::compileBlock(const BlockStudy* block)
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
 	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
 	//Create an LLVM function object
-	llvmf=llvm::Function::Create(synt_method_prototype(voidptr_type),llvm::Function::ExternalLinkage,"",getVm()->module);
+	block->llvmf=llvm::Function::Create(synt_method_prototype(voidptr_type),llvm::Function::ExternalLinkage,"",getVm()->module);
 
 	//Create the LLVM builder object
 	llvm::IRBuilder<> Builder(llvm_context);
 
 	//Create the basic block that will hold the prologue of the function
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", block->llvmf);
 	Builder.SetInsertPoint(BB);
 
 	//The only argument is the call_context structure
-	llvm::Value* callContext=llvmf->getArgumentList().begin();
+	llvm::Value* callContext=block->llvmf->getArgumentList().begin();
 
 	//Create the LLVM value that points to the locals array
 	llvm::Value* tmpValue=Builder.CreateStructGEP(callContext,0);
@@ -2722,12 +2693,22 @@ BlockStudy::synt_block method_info::compileBlock(const BlockStudy* block)
 	//Creating a mapping between blocks and starting address
 	map<unsigned int,block_info> blocks;
 
-	uint32_t start=block->start;
-	uint32_t end=block->end;
+	//Compute the boundaries of all the blocks
+	uint32_t aggregateStart=block->start;
+	uint32_t aggregateEnd=block->end;
+	const BlockStudy* cur=block->nextInChain;
+	while(cur!=block)
+	{
+		if(cur->start < aggregateStart)
+			aggregateStart=cur->start;
+		if(aggregateEnd < cur->end)
+			aggregateEnd=cur->end;
+		cur=cur->nextInChain;
+	}
 
 	//Let's build a block for the real function code, this is also used to bootstrap code analysis
-	addBlock(blocks, start, "begin");
-	block_info& startBlock=blocks[start];
+	addBlock(blocks, block->start, llvm_context, body->local_count, block->llvmf, "begin");
+	block_info& startBlock=blocks[block->start];
 
 	//Initialize the locals of the first block using the argument types
 	for(uint32_t i=0;i<param_type.size();i++)
@@ -2738,7 +2719,7 @@ BlockStudy::synt_block method_info::compileBlock(const BlockStudy* block)
 	}
 
 	//Analyze code to extract implicit type information
-	doAnalysis(blocks,Builder,start,end);
+	doAnalysis(block->llvmf,blocks,Builder,aggregateStart,aggregateEnd);
 
 	//Load the locals contents, if needed
 	for(uint32_t i=0;i<startBlock.locals_start.size();i++)
@@ -2774,27 +2755,86 @@ BlockStudy::synt_block method_info::compileBlock(const BlockStudy* block)
 	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
 
 	//Create a jump to the first block of actual code
-	Builder.CreateBr(blocks[start].BB);
+	Builder.CreateBr(blocks[block->start].BB);
 
-	bool success=compileBlockImpl(start, end, code, blocks, static_stack, dynamic_stack, dynamic_stack_index,
-		static_locals, locals, callContext, llvm_context, int_type, int32_type, number_type, voidptr_type,
-		Builder, ex);
-	if(success==false)
+	cur = block;
+	do
 	{
-		llvmf->eraseFromParent();
-		//cout << "Failed to compile " << profName << endl;
-		return NULL;
+		bool success=compileBlockImpl(cur->start, cur->end, code, blocks, static_stack, dynamic_stack, dynamic_stack_index,
+			static_locals, locals, callContext, llvm_context, block->llvmf, int_type, int32_type, number_type,
+			voidptr_type, Builder, ex);
+		if(success==false)
+		{
+			block->llvmf->eraseFromParent();
+			block->llvmf=NULL;
+			//cout << "Failed to compile " << profName << endl;
+			return NULL;
+		}
+		cur = cur->nextInChain;
+	}
+	while(cur!=block);
+
+	//See note in doAnalysis
+	map<unsigned int,block_info>::iterator it2=blocks.begin();
+	for(;it2!=blocks.end();++it2)
+	{
+		if(it2->second.BB->getTerminator()==NULL) //Case 3
+		{
+			assert(it2->second.BB->empty());
+			//Go back to the interpreter safely
+			Builder.SetInsertPoint(it2->second.BB);
+			//The stack is already synced
+
+			//The locals state is the one in locals_start
+			//Write all locals to the locals array
+			const block_info& b=it2->second;
+			for(uint32_t i=0;i<b.locals_start.size();i++)
+			{
+				//HACK: optimize
+				static_locals[i].second=b.locals_start[i];
+				if(static_locals[i].second!=STACK_NONE)
+				{
+					static_locals[i].first=Builder.CreateLoad(b.locals_start_obj[i]);
+					llvm::Constant* constant = llvm::ConstantInt::get(int_type, i);
+					llvm::Value* t=Builder.CreateGEP(locals,constant);
+					llvm::Value* old=Builder.CreateLoad(t);
+					Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
+					abstract_value(ex,Builder,static_locals[i]);
+					Builder.CreateStore(static_locals[i].first,t);
+				}
+			}
+			assert(it2->second.blockEnd==0);
+			llvm::Constant* constant = llvm::ConstantInt::get(int_type, it2->first);
+			//HACK: remove the cast
+			llvm::Value* castedRet = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
+			Builder.CreateRet(castedRet);
+			//throw RunTimeException("Missing terminator");
+		}
 	}
 
-	llvmf->dump();
-	getVm()->FPM->run(*llvmf);
-	BlockStudy::synt_block ret=(BlockStudy::synt_block)getVm()->ex->getPointerToFunction(llvmf);
-	if(profName=="MontgomeryReduction::::reduce")
+	//block->llvmf->dump();
+	getVm()->FPM->run(*block->llvmf);
+	BlockStudy::synt_block ret=(BlockStudy::synt_block)ex->getPointerToFunction(block->llvmf);
+	/*if(profName=="MontgomeryReduction::::reduce")
 	{
-		cout << profName << " start: " << start << " end: " << end << endl;
-		llvmf->dump();
-	}
+		cout << profName << " start: " << block->start << " end: " << block->end << endl;
+		block->llvmf->dump();
+	}*/
 	return ret;
+}
+
+void BlockStudy::resetCompiledCode(BlockStudy* stop)
+{
+	if(blockType==JIT_OK)
+	{
+		getVm()->ex->freeMachineCodeForFunction(llvmf);
+		llvmf->eraseFromParent();
+		llvmf=NULL;
+		compiledCode=NULL;
+		blockType=JIT_CANDIDATE;
+	}
+	if(nextInChain!=stop)
+		nextInChain->resetCompiledCode(stop);
 }
 
 bool method_info::checkJITAssumptions(const call_context* callContext) const
@@ -2812,7 +2852,7 @@ bool method_info::checkJITAssumptions(const call_context* callContext) const
 	return true;
 }
 
-SyntheticFunction::synt_function method_info::synt_method()
+/*SyntheticFunction::synt_function method_info::synt_method()
 {
 	if(f)
 		return f;
@@ -2863,14 +2903,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 	llvm::Value* dynamic_stack=Builder.CreateLoad(value);
 	//Get the index of the dynamic stack
 	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(context,2);
-
-/*	//Allocate a fast dynamic stack based on LLVM alloca instruction
-	//This is used on branches
-	vactor<llvm::Value*> fast_dynamic_stack(body->max_stack);
-	for(int i=0;i<body->max_stack;i++)
-		fast_dynamic_stack[i]=Builder.CreateAlloca(voidptr_type);
-	//Allocate also a stack pointer
-	llvm::Value* fast_dynamic_stack_index=*/
 
 	//the scope stack is not accessible to llvm code
 
@@ -3945,18 +3977,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code >> t;
 				constant2 = llvm::ConstantInt::get(int_type, t);
 
-	/*				//Pop the stack arguments
-				vector<llvm::Value*> args(t+1);
-				for(int i=0;i<t;i++)
-					args[t-i]=static_stack_pop(Builder,static_stack,m).first;*/
 				//Call the function resolver, static case could be resolved at this time (TODO)
 				Builder.CreateCall3(ex->FindFunctionNamed("callProperty"), context, constant, constant2);
-	/*				//Pop the function object, and then the object itself
-				llvm::Value* fun=static_stack_pop(Builder,static_stack,m).first;
-
-				llvm::Value* fun2=Builder.CreateBitCast(fun,synt_method_prototype(t));
-				args[0]=static_stack_pop(Builder,static_stack,m).first;
-				Builder.CreateCall(fun2,args.begin(),args.end());*/
 
 				break;
 			}
@@ -4149,13 +4171,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(rtdata==0)
 				{
 					assert(false && "rewrite support for early binding");
-/*					multiname* name=this->context->getMultiname(t,NULL);
-					if(getGlobal()->getVariableAndTargetByMultiname(*name)!=NULL)
-					{
-						//Ok, let's push global at runtime
-						value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"));
-						staticallyResolved=true;
-					}*/
 				}
 
 				if(staticallyResolved==false)
@@ -4522,22 +4537,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt coerce_a") );
 				if(Log::getLevel()>=LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("coerce_a"));
-				/*stack_entry v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				else
-					value=v1.first;
-				
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
 				break;
 			}
 			case 0x85:
 			{
 				//coerce_s
 				LOG(LOG_TRACE, _("synt coerce_s") );
-				/*llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall(ex->FindFunctionNamed("coerce_s"), v1);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
 				break;
 			}
 			case 0x87:
@@ -5315,4 +5320,4 @@ SyntheticFunction::synt_function method_info::synt_method()
 	f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
 	//llvmf->dump();
 	return f;
-}
+}*/

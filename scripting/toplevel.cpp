@@ -2255,7 +2255,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	if((sys->useJit && (hit_count==hit_threshold || sys->useInterpreter==false)))
 	{
 		//We passed the hot function threshold, synt the function
-		val=mi->synt_method();
+		//val=mi->synt_method();
 		assert_and_throw(val);
 	}
 

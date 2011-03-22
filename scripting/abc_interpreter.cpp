@@ -72,14 +72,29 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 		uint32_t instructionPointer=code.tellg();
 		if(mi->studyFunction)
 		{
-			cout << "Interpreting at " << instructionPointer << endl;
+			//cout << "Interpreting at " << instructionPointer << endl;
 			BlockStudy* nextBlock=mi->getBlockStudyAtAddress(instructionPointer, method_info::DO_NOT_CREATE);
 			if(nextBlock && nextBlock->blockType==BlockStudy::JIT_OK && nextBlock->start==instructionPointer)
 			{
-				cout << "Invoking compiled block " << instructionPointer << endl;
+				//cout << "Invoking compiled block " << instructionPointer << endl;
 				//Call JItted code
 				mi->checkJITAssumptions(context);
 				uint32_t exitPoint=nextBlock->compiledCode(context);
+				//Check if the exitPoint in actually inside a compiled block
+				//As an optimization also updates the currentBlock
+				currentBlock=mi->getBlockStudyAtAddress(exitPoint, method_info::DO_NOT_CREATE);
+				assert(currentBlock!=nextBlock);
+				if(currentBlock && currentBlock->blockType==BlockStudy::JIT_OK)
+				{
+					//cout << "Recompiling chain" << endl;
+					//If the block being added contains compiled code reset it
+					//If the block gets hot again it will be recompiled with all the chain
+					currentBlock->resetCompiledCode(currentBlock);
+					//Link the blocks togheter and recompile both
+					nextBlock->linkToBlock(currentBlock);
+					//TODO: free previous code
+					nextBlock->compiledCode=mi->compileBlockChain(nextBlock);
+				}
 				TAKE_BRANCH_AND_SEEK(exitPoint);
 				continue;
 			}
@@ -1500,7 +1515,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				{
 					//Check if there is already a block at this address
 					BlockStudy* alreadyDefined=mi->getBlockStudyAtAddress(instructionPointer, method_info::DO_NOT_CREATE);
-					if(alreadyDefined)
+					if(alreadyDefined && alreadyDefined!=currentBlock)
 					{
 						assert(currentBlock->start < alreadyDefined->end);
 						currentBlock=mi->mergeBlocks(currentBlock->start,alreadyDefined->end);

@@ -2060,6 +2060,9 @@ BlockStudy* method_info::mergeBlocks(uint32_t aggregateStart, uint32_t aggregate
 	assert(itStart->start<=aggregateStart && itStart->end>aggregateStart);
 	assert(itEnd->start<=aggregateEnd && itEnd->end>=aggregateEnd);
 
+	//Unlink all the blocks
+	for_each(itStart,itEnd+1,mem_fun_ref(&BlockStudy::unlinkBlock));
+	assert(itStart->nextInChain==&(*itStart));
 	itStart->end=itEnd->end;
 	//Erase return the iterator of the first element not erased
 	//The element before it it our new block
@@ -2129,7 +2132,7 @@ BlockStudy* method_info::getBlockStudyAtAddress(uint32_t ip, CREATE_STUDY_BLOCK 
 					//Merge the blocks if needed
 					if(it->start!=aggregateStart || it->end!=aggregateEnd)
 						b=mergeBlocks(aggregateStart, aggregateEnd);
-					b->compiledCode=compileBlock(b);
+					b->compiledCode=compileBlockChain(b);
 					b->blockType=(b->compiledCode)?(BlockStudy::JIT_OK):(BlockStudy::JIT_FAILED);
 				}
 			}

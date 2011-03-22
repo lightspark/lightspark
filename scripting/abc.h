@@ -228,17 +228,22 @@ struct BlockStudy
 	//Link to the next/prev block in a block chain
 	BlockStudy* nextInChain;
 	BlockStudy* prevInChain;
-	//The LLVM function object
-	llvm::Function* llvmf;
 
 	enum BLOCK_TYPE { JIT_CANDIDATE=0, JIT_OK, JIT_FAILED };
 	BLOCK_TYPE blockType;
 	typedef intptr_t (*synt_block)(call_context* cc);
 	synt_block compiledCode;
+	//The LLVM function object
+	llvm::Function* llvmf;
 	BlockStudy(uint32_t a):start(a),end(a+1),usageCount(1),nextInChain(this),prevInChain(this),
-		blockType(JIT_CANDIDATE),compiledCode(NULL)
+		blockType(JIT_CANDIDATE),compiledCode(NULL),llvmf(NULL)
 	{
 	}
+	BlockStudy(const BlockStudy& b):start(b.start),end(b.end),usageCount(b.usageCount),nextInChain(this),prevInChain(this),
+		blockType(JIT_CANDIDATE),compiledCode(NULL),llvmf(NULL)
+	{
+	}
+	~BlockStudy();
 	bool isAddressInside(uint32_t ip) const
 	{
 		return (ip>=start && ip<end);
@@ -247,6 +252,21 @@ struct BlockStudy
 	bool operator<(uint32_t r) const
 	{
 		return start<r;
+	}
+	BlockStudy& operator=(const BlockStudy& b)
+	{
+		start=b.start;
+		end=b.end;
+		usageCount=b.usageCount;
+		//The chains are unlinked
+		nextInChain=this;
+		prevInChain=this;
+
+		//Also the compilation status is resetted
+		blockType=JIT_CANDIDATE;
+		compiledCode=NULL;
+		llvmf=NULL;
+		return *this;
 	}
 	void linkToBlock(BlockStudy* b)
 	{

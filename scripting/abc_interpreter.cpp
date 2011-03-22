@@ -1529,10 +1529,14 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 					{
 						assert(instructionPointer+1>currentBlock->end);
 						currentBlock->end=(instructionPointer+1);
+						currentBlock->resetCompiledCode(currentBlock);
 					}
 				}
 				else //Block changed or new block
+				{
+					//cout << "block changed" << endl;
 					currentBlock=mi->getBlockStudyAtAddress(instructionPointer, method_info::CREATE);
+				}
 
 				if(branchTaken) //Block changed for a branch
 					currentBlock=NULL;

@@ -393,12 +393,12 @@ SystemState::~SystemState()
 		delete it->second;
 		//it->second->decRef()
 	}
-	//The Vm must be destroyed this late to clean all managed integers and numbers
-	delete currentVm;
 
 	//Also destroy all tags
 	for(unsigned int i=0;i<tagsStorage.size();i++)
 		delete tagsStorage[i];
+	//The Vm must be destroyed this late to clean all managed integers and numbers
+	delete currentVm;
 
 	delete renderThread;
 	renderThread=NULL;

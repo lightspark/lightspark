@@ -1466,36 +1466,29 @@ void method_info::doAnalysis(llvm::Function* llvmf, std::map<unsigned int,block_
 	for(;bit!=blocks.end();++bit)
 	{
 		block_info& cur=bit->second;
-		//cout << "block @ " << bit->first << endl;
 		cur.locals_start_obj.resize(cur.locals_start.size(),NULL);
 		for(unsigned int i=0;i<cur.locals_start.size();i++)
 		{
 			switch(cur.locals_start[i])
 			{
 				case STACK_NONE:
-					//cout << "none ";
 					break;
 				case STACK_OBJECT:
-					//cout << "object ";
 					cur.locals_start_obj[i]=Builder.CreateAlloca(voidptr_type);
 					break;
 				case STACK_INT:
-					//cout << "int ";
 					cur.locals_start_obj[i]=Builder.CreateAlloca(int_type);
 					break;
 				case STACK_NUMBER:
-					//cout << "number ";
 					cur.locals_start_obj[i]=Builder.CreateAlloca(number_type);
 					break;
 				case STACK_BOOLEAN:
-					//cout << "boolean ";
 					cur.locals_start_obj[i]=Builder.CreateAlloca(bool_type);
 					break;
 				default:
 					throw RunTimeException("Unsupported object type");
 			}
 		}
-		//cout << endl;
 	}
 }
 
@@ -1623,7 +1616,6 @@ void method_info::compileCallPropVoid(int t, int t2, vector<stack_entry>& static
 
 	//callProperty returns also the method_info of the called function by reference
 	llvm::Value* called_mi=Builder.CreateAlloca(voidptr_type);
-	cout << "callPropVoid " << ex->FindFunctionNamed("callPropVoid")->arg_size() << endl;
 	Builder.CreateCall4(ex->FindFunctionNamed("callPropVoid"), callContext, constant, constant2, called_mi);
 }
 
@@ -2767,7 +2759,6 @@ BlockStudy::synt_block method_info::compileBlockChain(BlockStudy* block)
 		{
 			block->llvmf->eraseFromParent();
 			block->llvmf=NULL;
-			//cout << "Failed to compile " << profName << endl;
 			return NULL;
 		}
 		cur = cur->nextInChain;
@@ -2815,12 +2806,25 @@ BlockStudy::synt_block method_info::compileBlockChain(BlockStudy* block)
 	//block->llvmf->dump();
 	getVm()->FPM->run(*block->llvmf);
 	BlockStudy::synt_block ret=(BlockStudy::synt_block)ex->getPointerToFunction(block->llvmf);
-	/*if(profName=="MontgomeryReduction::::reduce")
+	if(profName=="MontgomeryReduction::::reduce")
 	{
-		cout << profName << " start: " << block->start << " end: " << block->end << endl;
+		cout << profName << endl;
+		BlockStudy* cur=block;
+		do
+		{
+			cout << "start: " << cur->start << " end: " << cur->end << endl;
+			cur=cur->nextInChain;
+		}
+		while(cur!=block);
 		block->llvmf->dump();
-	}*/
+	}
 	return ret;
+}
+
+BlockStudy::~BlockStudy()
+{
+	resetCompiledCode(this);
+	unlinkBlock();
 }
 
 void BlockStudy::resetCompiledCode(BlockStudy* stop)

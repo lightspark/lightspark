@@ -2244,8 +2244,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		return NULL;
 	}
 
-	//if(hit_count==hit_threshold)
-	if(mi->profName=="MontgomeryReduction::::reduce")
+	if(hit_count==hit_threshold)
 	{
 	//	cout << "Studying " << mi->profName << endl;
 		mi->studyFunction=true;

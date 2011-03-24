@@ -187,7 +187,7 @@ struct call_context
 	ASObject* runtime_stack_pop();
 	ASObject* runtime_stack_peek();
 	method_info* mi;
-	std::stringstream* code;
+	std::istringstream* code;
 	call_context(method_info* th, int l, ASObject* const* args, const unsigned int numArgs);
 	~call_context();
 };

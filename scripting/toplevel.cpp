@@ -2260,7 +2260,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	int realLevel=(closure_level!=-1)?closure_level:obj->getLevel();
 
 	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
-	cc->code=new stringstream(mi->body->code);
+	cc->code=new istringstream(mi->body->code);
 	uint32_t i=passedToLocals;
 	cc->scope_stack=func_scope;
 	for(unsigned int i=0;i<func_scope.size();i++)

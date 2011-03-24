@@ -268,6 +268,8 @@ public:
 #ifdef PROFILING_SUPPORT
 	std::map<method_info*,uint64_t> profCalls;
 	uint64_t profTime;
+	tiny_string profName;
+	bool validProfName;
 #endif
 
 	u30 option_count;
@@ -284,6 +286,7 @@ public:
 	method_info():
 #ifdef PROFILING_SUPPORT
 		profTime(0),
+		validProfName(false),
 #endif
 		option_count(0),f(NULL),context(NULL),body(NULL)
 	{

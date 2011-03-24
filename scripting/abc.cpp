@@ -1811,18 +1811,19 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			LOG(LOG_CALLS,_("Getter trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			if(m->name==0)
-			{
-				//Use this name as the method name
-				m->name=t->name;
-			}
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
 			assert_and_throw(obj->getObjectType()==T_CLASS);
 			Class_inherit* prot=static_cast<Class_inherit*>(obj);
-			assert(prot);
+#ifdef PROFILING_SUPPORT
+			if(!m->validProfName)
+			{
+				m->profName=prot->class_name.name+"::"+mname.qualifiedString();
+				m->validProfName=true;
+			}
+#endif
 			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
@@ -1855,11 +1856,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			LOG(LOG_CALLS,_("Setter trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			if(m->name==0)
-			{
-				//Use this name as the method name
-				m->name=t->name;
-			}
 
 			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
@@ -1867,7 +1863,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			//even if the namespace are different, if both are protected
 			assert_and_throw(obj->getObjectType()==T_CLASS);
 			Class_base* prot=static_cast<Class_base*>(obj);
-			assert(prot);
+#ifdef PROFILING_SUPPORT
+			if(!m->validProfName)
+			{
+				m->profName=prot->class_name.name+"::"+mname.qualifiedString();
+				m->validProfName=true;
+			}
+#endif
 			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
@@ -1900,11 +1902,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			LOG(LOG_CALLS,_("Method trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			if(m->name==0)
-			{
-				//Use this name as the method name
-				m->name=t->name;
-			}
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
 			if(obj->getObjectType()==T_CLASS)
@@ -1914,7 +1911,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				//We have to override if there is a method with the same name,
 				//even if the namespace are different, if both are protected
 				Class_inherit* prot=static_cast<Class_inherit*>(obj);
-				assert(prot);
+#ifdef PROFILING_SUPPORT
+				if(!m->validProfName)
+				{
+					m->profName=prot->class_name.name+"::"+mname.qualifiedString();
+					m->validProfName=true;
+				}
+#endif
 				if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 				{
 					//Walk the super chain and find variables to override
@@ -1942,6 +1945,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			{
 				//Script method
 				f->addToScope(obj);
+#ifdef PROFILING_SUPPORT
+				if(!m->validProfName)
+				{
+					m->profName=mname.qualifiedString();
+					m->validProfName=true;
+				}
+#endif
 			}
 			else //TODO: transform in a simple assert
 				assert_and_throw(obj->getObjectType()==T_CLASS || deferred_initialization);

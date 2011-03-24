@@ -2353,10 +2353,16 @@ void ABCVm::newClass(call_context* th, int n)
 	int name_index=th->context->instances[n].name;
 	assert_and_throw(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
-	constructor->name=name_index;
 
 	assert_and_throw(mname->ns.size()==1);
 	Class_inherit* ret=new Class_inherit(QName(mname->name_s,mname->ns[0].name));
+#ifdef PROFILING_SUPPORT
+	if(!constructor->validProfName)
+	{
+		constructor->profName=mname->name_s+"::__CONSTRUCTOR__";
+		constructor->validProfName=true;
+	}
+#endif
 	ret->class_scope=th->scope_stack;
 	for(uint32_t i=0;i<ret->class_scope.size();i++)
 		ret->class_scope[i]->incRef();

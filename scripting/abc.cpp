@@ -1014,44 +1014,37 @@ ABCContext::ABCContext(istream& in)
 #endif
 }
 
-ABCContext::~ABCContext()
-{
 #ifdef PROFILING_SUPPORT
-	if(sys->getProfilingOutput().len())
+void ABCContext::dumpProfilingData(ostream& f) const
+{
+	for(uint32_t i=0;i<methods.size();i++)
 	{
-		ofstream f(sys->getProfilingOutput().raw_buf());
-		f << "events: Time" << endl;
-		for(uint32_t i=0;i<methods.size();i++)
+		if(!methods[i].profTime.empty()) //The function was executed at least once
 		{
-			if(methods[i].profTime)
+			if(methods[i].validProfName)
+				f << "fn=" << methods[i].profName << endl;
+			else
+				f << "fn=" << &methods[i] << endl;
+			for(uint32_t j=0;j<methods[i].profTime.size();j++)
 			{
-				if(methods[i].name)
-				{
-					const multiname* m=getMultiname(methods[i].name,NULL);
-					f << "fn=" << *m << endl;
-				}
+				//Only output instructions that have been actually executed
+				if(methods[i].profTime[j]!=0)
+					f << j << ' ' << methods[i].profTime[j] << endl;
+			}
+			auto it=methods[i].profCalls.begin();
+			for(;it!=methods[i].profCalls.end();it++)
+			{
+				if(it->first->validProfName)
+					f << "cfn=" << it->first->profName << endl;
 				else
-					f << "fn=" << &methods[i] << " " << i << endl;
-				f << "1 " << methods[i].profTime << endl;
-				auto it=methods[i].profCalls.begin();
-				for(;it!=methods[i].profCalls.end();it++)
-				{
-					if(it->first->name)
-					{
-						const multiname* m=getMultiname(it->first->name,NULL);
-						f << "cfn=" << *m << endl;
-					}
-					else
-						f << "cfn=" << it->first << endl;
-					f << "calls=1 1" << endl;
-					f << "1 " << it->second << endl;
-				}
+					f << "cfn=" << it->first << endl;
+				f << "calls=1 1" << endl;
+				f << "1 " << it->second << endl;
 			}
 		}
-		f.close();
 	}
-#endif
 }
+#endif
 
 ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
 {

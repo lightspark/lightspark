@@ -436,10 +436,13 @@ public:
 	multiname* getMultiname(unsigned int m, call_context* th);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in) DLL_PUBLIC;
-	~ABCContext() DLL_PUBLIC;
 	void exec();
 
 	static bool isinstance(ASObject* obj, multiname* name);
+
+#ifdef PROFILING_SUPPORT
+	void dumpProfilingData(std::ostream& f) const;
+#endif
 };
 
 struct thisAndLevel

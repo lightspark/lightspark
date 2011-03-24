@@ -331,8 +331,25 @@ void SystemState::stopEngines()
 	
 }
 
+#ifdef PROFILING_SUPPORT
+void SystemState::saveProfilingInformation()
+{
+	if(profOut.len())
+	{
+		ofstream f(profOut.raw_buf());
+		f << "events: Time" << endl;
+		for(uint32_t i=0;i<contextes.size();i++)
+			contextes[i]->dumpProfilingData(f);
+		f.close();
+	}
+}
+#endif
+
 SystemState::~SystemState()
 {
+#ifdef PROFILING_SUPPORT
+	saveProfilingInformation();
+#endif
 	//Kill our child process if any
 	if(childPid)
 	{

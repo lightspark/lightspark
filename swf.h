@@ -324,6 +324,7 @@ public:
 	void setProfilingOutput(const tiny_string& t) DLL_PUBLIC;
 	const tiny_string& getProfilingOutput() const;
 	std::vector<ABCContext*> contextes;
+	void saveProfilingInformation();
 #endif
 };
 

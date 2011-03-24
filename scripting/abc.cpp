@@ -1008,6 +1008,10 @@ ABCContext::ABCContext(istream& in)
 		else
 			methods[method_body[i].method].body=&method_body[i];
 	}
+
+#ifdef PROFILING_SUPPORT
+	sys->contextes.push_back(this);
+#endif
 }
 
 ABCContext::~ABCContext()

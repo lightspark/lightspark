@@ -44,15 +44,22 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 	u8 opcode;
 
 #ifdef PROFILING_SUPPORT
+	if(mi->profTime.empty())
+		mi->profTime.resize(code_len,0);
 	uint64_t startTime=compat_get_thread_cputime_us();
-#define PROF_ACCOUNT_TIME(a, b) a+=b;
+#define PROF_ACCOUNT_TIME(a, b)  do{a+=b;}while(0)
+#define PROF_IGNORE_TIME(a) a
 #else
 #define PROF_ACCOUNT_TIME(a, b)
+#define PROF_IGNORE_TIME(a)
 #endif
 
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(1)
 	{
+#ifdef PROFILING_SUPPORT
+		uint32_t instructionPointer=code.tellg();
+#endif
 		code >> opcode;
 		if(code.eof())
 			throw ParseException("End of code in intepreter");
@@ -109,7 +116,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNLT(v1, v2);
-
 				if(cond)
 				{
 					int here=code.tellg();
@@ -130,7 +136,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNLE(v1, v2);
-
 				if(cond)
 				{
 					int here=code.tellg();
@@ -151,7 +156,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNGT(v1, v2);
-
 				if(cond)
 				{
 					int here=code.tellg();
@@ -616,10 +620,12 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t;
 				code >> t;
 				method_info* called_mi=NULL;
-				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				call(context,t,called_mi);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+				else
+					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x42:
@@ -637,10 +643,12 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code >> t;
 				code >> t2;
 				method_info* called_mi=NULL;
-				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callSuper(context,t,t2,called_mi);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+				else
+					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x46:
@@ -651,17 +659,19 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code >> t;
 				code >> t2;
 				method_info* called_mi=NULL;
-				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callProperty(context,t,t2,called_mi);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+				else
+					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x47:
 			{
 				//returnvoid
 				LOG(LOG_CALLS,_("returnVoid"));
-				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				return NULL;
 			}
 			case 0x48:
@@ -669,7 +679,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//returnvalue
 				ASObject* ret=context->runtime_stack_pop();
 				LOG(LOG_CALLS,_("returnValue ") << ret);
-				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				return ret;
 			}
 			case 0x49:
@@ -696,10 +706,12 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code >> t;
 				code >> t2;
 				method_info* called_mi=NULL;
-				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callSuperVoid(context,t,t2,called_mi);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+				else
+					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x4f:
@@ -709,10 +721,12 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code >> t;
 				code >> t2;
 				method_info* called_mi=NULL;
-				PROF_ACCOUNT_TIME(mi->profTime,profilingCheckpoint(startTime));
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callPropVoid(context,t,t2,called_mi);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+				else
+					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x53:
@@ -1382,9 +1396,11 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				LOG(LOG_ERROR,_("dump ") << hex << (unsigned int)opcode << dec);
 				throw ParseException("Not implemented instruction in interpreter");
 		}
+		PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 	}
 
 #undef PROF_ACCOUNT_TIME 
+#undef PROF_IGNORE_TIME
 	//We managed to execute all the function
 	return context->runtime_stack_pop();
 }

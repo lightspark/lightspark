@@ -267,7 +267,7 @@ private:
 public:
 #ifdef PROFILING_SUPPORT
 	std::map<method_info*,uint64_t> profCalls;
-	uint64_t profTime;
+	std::vector<uint64_t> profTime;
 	tiny_string profName;
 	bool validProfName;
 #endif

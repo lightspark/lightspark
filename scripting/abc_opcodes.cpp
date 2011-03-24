@@ -730,6 +730,14 @@ void ABCVm::construct(call_context* th, int m)
 			break;
 		}
 
+		case T_OBJECT:
+		{
+			Class_base* o_class=static_cast<Class_base*>(obj->getPrototype());
+			assert(o_class);
+			ret=o_class->getInstance(true,args,m);
+			break;
+		}
+
 		case T_UNDEFINED:
 		case T_NULL:
 		{

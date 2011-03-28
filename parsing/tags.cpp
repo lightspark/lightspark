@@ -259,8 +259,9 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayO
 
 	for(;it!=ls.end();++it)
 	{
-		if(it->second->Depth==Depth)
+		if(it->first.Depth==Depth)
 		{
+			assert(it->second);
 			it->second->setParent(NULL);
 			it->second->setRoot(NULL);
 			it->second->decRef();
@@ -1236,19 +1237,19 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 	LOG(LOG_TRACE,_("ShowFrame"));
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, DisplayObject*>& a, int d)
+bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, DisplayObject*>& a, uint32_t d)
 {
-	return a.second->Depth<d;
+	return a.first.Depth<d;
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(int d, const pair<PlaceInfo, DisplayObject*>& a)
+bool PlaceObject2Tag::list_orderer::operator ()(uint32_t d, const pair<PlaceInfo, DisplayObject*>& a)
 {
-	return d<a.second->Depth;
+	return d<a.first.Depth;
 }
 
 bool PlaceObject2Tag::list_orderer::operator ()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b)
 {
-	return a.second->Depth < b.second->Depth;
+	return a.first.Depth < b.first.Depth;
 }
 
 void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, DisplayObject*> >& ls)
@@ -1257,12 +1258,12 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 	if(ClipDepth!=0)
 		return;
 
-	PlaceInfo infos;
+	PlaceInfo infos(Depth);
 	//Find if this id is already on the list
 	list < pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
 	for(;it!=ls.end();++it)
 	{
-		if(it->second->Depth==Depth)
+		if(it->first.Depth==Depth)
 		{
 			infos=it->first;
 			if(!PlaceFlagMove)
@@ -1319,7 +1320,6 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			toAdd->ClipDepth=ClipDepth;
 
 		toAdd->setRoot(parent->getRoot());
-		toAdd->Depth=Depth;
 		if(!PlaceFlagMove)
 		{
 			list<pair<PlaceInfo, DisplayObject*> >::iterator it=
@@ -1430,12 +1430,12 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 	if(ClipDepth!=0)
 		return;
 
-	PlaceInfo infos;
+	PlaceInfo infos(Depth);
 	//Find if this id is already on the list
 	list < pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
 	for(;it!=ls.end();++it)
 	{
-		if(it->second->Depth==Depth)
+		if(it->first.Depth==Depth)
 		{
 			infos=it->first;
 			if(!PlaceFlagMove)
@@ -1492,7 +1492,6 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			toAdd->ClipDepth=ClipDepth;
 
 		toAdd->setRoot(parent->getRoot());
-		toAdd->Depth=Depth;
 		if(!PlaceFlagMove)
 		{
 			list<pair<PlaceInfo, DisplayObject*> >::iterator it=

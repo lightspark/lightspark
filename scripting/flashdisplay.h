@@ -85,7 +85,6 @@ protected:
 	void hitTestPrologue() const;
 	void hitTestEpilogue() const;
 public:
-	int Depth;
 	tiny_string name;
 	UI16_SWF CharacterId;
 	CXFORMWITHALPHA ColorTransform;

@@ -35,7 +35,9 @@ class MovieClip;
 class PlaceInfo
 {
 public:
+	uint32_t Depth;
 	MATRIX Matrix;
+	PlaceInfo(uint32_t d):Depth(d){}
 };
 
 class Frame

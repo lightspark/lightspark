@@ -298,8 +298,8 @@ protected:
 	class list_orderer
 	{
 	public:
-		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, int d);
-		bool operator()(int d, const std::pair<PlaceInfo, DisplayObject*>& a);
+		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, uint32_t d);
+		bool operator()(uint32_t d, const std::pair<PlaceInfo, DisplayObject*>& a);
 		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b);
 	};
 

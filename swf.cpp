@@ -1255,7 +1255,7 @@ void RootMovieClip::commitFrame(bool another)
 	framesLoaded=frames.size();
 	if(another)
 	{
-		frames.push_back(Frame());
+		frames.emplace_back();
 		cur_frame=&frames.back();
 	}
 	else

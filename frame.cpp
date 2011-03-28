@@ -93,7 +93,7 @@ void dumpDisplayList(list<DisplayObject*>& l)
 	}
 }
 
-void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
+void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> >& d)
 {
 	if(!initialized)
 	{
@@ -122,16 +122,17 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 			}
 		}
 
-		//Update the displayList using the tags in this frame
-		std::list<DisplayListTag*>::iterator it=blueprint.begin();
-		for(;it!=blueprint.end();++it)
-			(*it)->execute(parent, d);
-		blueprint.clear();
 		displayList=d;
 		//Acquire a new reference to every child
 		list <pair<PlaceInfo, DisplayObject*> >::const_iterator dit=displayList.begin();
 		for(;dit!=displayList.end();++dit)
 			dit->second->incRef();
+
+		//Update the displayList using the tags in this frame
+		std::list<DisplayListTag*>::iterator it=blueprint.begin();
+		for(;it!=blueprint.end();++it)
+			(*it)->execute(parent, displayList);
+		blueprint.clear();
 		initialized=true;
 
 		//As part of initialization set the transformation matrix for the child objects

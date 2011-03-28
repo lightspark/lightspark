@@ -412,7 +412,6 @@ private:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 protected:
 	uint32_t framesLoaded;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	Frame* cur_frame;
 	void bootstrap();
 	std::vector<IFunction*> frameScripts;

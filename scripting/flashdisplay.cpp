@@ -805,7 +805,7 @@ void MovieClip::advanceFrame()
 		//Before assigning the next_FP we initialize the frame
 		//Should initialize all the frames from the current to the next
 		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
-			frames[i].init(this,displayList);
+			frames[i].init(this,frames[i-1].displayList);
 		bool frameChanging=(state.FP!=state.next_FP);
 		state.FP=state.next_FP;
 		if(!state.stop_FP && framesLoaded>0)
@@ -890,7 +890,7 @@ void MovieClip::bootstrap()
 		return;
 	assert_and_throw(framesLoaded>0);
 	assert_and_throw(frames.size()>=1);
-	frames[0].init(this,displayList);
+	frames[0].init(this,list<pair<PlaceInfo,DisplayObject*> >());
 }
 
 void MovieClip::Render(bool maskEnabled)

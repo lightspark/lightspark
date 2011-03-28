@@ -58,7 +58,7 @@ public:
 	Frame():initialized(false),invalid(true),constructed(false){}
 	~Frame();
 	void Render(bool maskEnabled);
-	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
+	void init(MovieClip* parent, const std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
 	bool isInitialized() const { return initialized; }
 	bool isInvalid() const { return invalid; }
 	void setInvalid(bool i) { invalid=i; }

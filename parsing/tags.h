@@ -341,7 +341,6 @@ private:
 
 public:
 	PlaceObject3Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
 };
 
 class FrameLabelTag: public Tag

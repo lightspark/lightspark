@@ -31,7 +31,7 @@
 namespace lightspark
 {
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT, CHANGE_FRAME };
+enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT, CHANGE_FRAME, CONSTRUCT_FRAME };
 
 class ABCContext;
 
@@ -348,6 +348,19 @@ private:
 public:
 	FrameChangeEvent(int f, MovieClip* m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
 	EVENT_TYPE getEventType() const { return CHANGE_FRAME; }
+};
+
+//Event to set the Frame::constructed flag.
+//This is useful to make sure that the construction of all the objects in the display list
+//is complete before using the frame
+class FrameConstructedEvent: public Event
+{
+friend class ABCVm;
+private:
+	Frame& frame;
+public:
+	FrameConstructedEvent(Frame& f):frame(f){}
+	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
 };
 
 };

@@ -1216,6 +1216,12 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 				ev->movieClip->state.explicit_FP=true;
 				break;
 			}
+			case CONSTRUCT_FRAME:
+			{
+				FrameConstructedEvent* ev=static_cast<FrameConstructedEvent*>(e.second);
+				ev->frame.setConstructed();
+				break;
+			}
 			default:
 				throw UnsupportedException("Not supported event");
 		}

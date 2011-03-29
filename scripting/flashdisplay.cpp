@@ -827,7 +827,7 @@ void MovieClip::advanceFrame()
 			funcEvent->decRef();
 		}
 
-		//Invalidate the current frame is needed
+		//Invalidate the current frame if needed
 		Frame& curFrame=frames[state.FP];
 		if(curFrame.isInvalid())
 		{

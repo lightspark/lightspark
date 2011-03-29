@@ -655,7 +655,7 @@ MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
 {
 	//It's ok to initialize here framesLoaded=1, as it is valid and empty
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
-	frames.push_back(Frame());
+	frames.emplace_back();
 	cur_frame=&frames.back();
 	frameScripts.resize(totalFrames,NULL);
 }

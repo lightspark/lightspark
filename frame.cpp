@@ -140,11 +140,27 @@ void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> 
 
 		for(;i!=displayList.end();++i)
 		{
+			if(i->second==NULL)
+			{
+				cout << "CANNOT INVALIDATE NOW" << endl;
+				continue;
+			}
 			i->second->setMatrix(i->first.Matrix);
 			//Take a chance to also invalidate the content
 			if(i->second->isOnStage())
 				i->second->requestInvalidation();
 		}
 		invalid=false;
+
+		if(sys->currentVm)
+		{
+			//Add a FrameConstructedEvent to the queue, the event will be executed when the
+			//previous ones are done
+			FrameConstructedEvent* fe=new FrameConstructedEvent(*this);
+			sys->currentVm->addEvent(NULL, fe);
+			fe->decRef();
+		}
+		else
+			setConstructed();
 	}
 }

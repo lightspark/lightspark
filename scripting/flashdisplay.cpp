@@ -365,8 +365,13 @@ bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 		return false;
 }
 
-Sprite::Sprite():GraphicsContainer(this)
+Sprite::Sprite():GraphicsContainer(this),constructed(false)
 {
+}
+
+Sprite::Sprite(const Sprite& r):GraphicsContainer(this),constructed(false)
+{
+	assert(!r.isConstructed());
 }
 
 void Sprite::sinit(Class_base* c)

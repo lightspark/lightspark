@@ -1147,8 +1147,11 @@ void RootMovieClip::initialize()
 	{
 		initialized=true;
 		//Let's see if we have to bind the root movie clip itself
-		if(bindName.len())
+		if(bindName.len()) //The object is constructed after binding
 			sys->currentVm->addEvent(NULL,new BindClassEvent(this,bindName,BindClassEvent::ISROOT));
+		else
+			setConstructed();
+
 		//Now signal the completion for this root
 		loaderInfo->sendInit();
 		//Wait for handling of all previous events

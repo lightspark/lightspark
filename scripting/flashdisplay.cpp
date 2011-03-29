@@ -616,8 +616,9 @@ InteractiveObject* Sprite::hitTest(InteractiveObject*, number_t x, number_t y)
 
 ASFUNCTIONBODY(Sprite,_constructor)
 {
-	//Sprite* th=static_cast<Sprite*>(obj->implementation);
+	Sprite* th=Class<Sprite>::cast(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
+	th->setConstructed();
 
 	return NULL;
 }

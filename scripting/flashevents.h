@@ -31,9 +31,11 @@
 namespace lightspark
 {
 
-enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT, CHANGE_FRAME, CONSTRUCT_FRAME };
+enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_TAG, CHANGE_FRAME, CONSTRUCT_FRAME };
 
 class ABCContext;
+class DictionaryTag;
+class PlaceObject2Tag;
 
 class Event: public ASObject
 {
@@ -324,17 +326,20 @@ public:
 	EVENT_TYPE getEventType() const { return CONTEXT_INIT; }
 };
 
-//This event is also synchronous
-class ConstructObjectEvent: public SynchronizationEvent
+class ConstructTagEvent: public Event
 {
 friend class ABCVm;
 private:
-	Class_base* _class;
-	ASObject* _obj;
+	DictionaryTag* tag;
+	MovieClip* parent;
+	PlaceObject2Tag* placeTag;
+	std::list<std::pair<PlaceInfo, DisplayObject*> >::iterator listIterator;
 	static void sinit(Class_base*);
 public:
-	ConstructObjectEvent(ASObject* o, Class_base* c):SynchronizationEvent("ConstructObjectEvent"),_class(c),_obj(o){}
-	EVENT_TYPE getEventType() const { return CONSTRUCT_OBJECT; }
+	ConstructTagEvent(DictionaryTag* d, MovieClip* p, PlaceObject2Tag* t,
+			std::list<std::pair<PlaceInfo, DisplayObject*> >::iterator& i):
+		Event("ConstructTagEvent"),tag(d),parent(p),placeTag(t),listIterator(i){}
+	EVENT_TYPE getEventType() const { return CONSTRUCT_TAG; }
 };
 
 //Event to change the current frame

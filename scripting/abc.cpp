@@ -1192,21 +1192,17 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 				ev->context->exec();
 				break;
 			}
-			case CONSTRUCT_OBJECT:
+			case CONSTRUCT_TAG:
 			{
-				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
-				LOG(LOG_CALLS,_("Building instance traits"));
-				try
+				ConstructTagEvent* ev=static_cast<ConstructTagEvent*>(e.second);
+				DisplayObject* toAdd=dynamic_cast<DisplayObject*>(ev->tag->instance());
+				assert_and_throw(toAdd);
+				toAdd->setMatrix(ev->listIterator->first.Matrix);
+				if(toAdd->getPrototype())
 				{
-					ev->_class->handleConstruction(ev->_obj,NULL,0,true);
+					toAdd->getPrototype()->handleConstruction(toAdd,NULL,0,true);
 				}
-				catch(LightsparkException& e)
-				{
-					//Sync anyway and rethrow
-					ev->sync();
-					throw;
-				}
-				ev->sync();
+				ev->placeTag->assignObjectToList(toAdd, ev->parent, ev->listIterator);
 				break;
 			}
 			case CHANGE_FRAME:
@@ -1239,7 +1235,7 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 		return false;
 	//If the event is a synchronization and we are running in the VM context
 	//we should handle it immidiately to avoid deadlock
-	if(isVmThread && (ev->getEventType()==SYNC || ev->getEventType()==CONSTRUCT_OBJECT))
+	if(isVmThread && (ev->getEventType()==SYNC))
 	{
 		assert(obj==NULL);
 		ev->incRef();

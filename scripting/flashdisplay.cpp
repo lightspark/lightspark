@@ -814,6 +814,12 @@ void MovieClip::advanceFrame()
 		//Should initialize all the frames from the current to the next
 		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
 			frames[i].init(this,frames[i-1].displayList);
+
+		//Before actually changing the frame verify that it's constructed
+		//If it's not delay the advancement
+		if(!frames[state.next_FP].isConstructed())
+			return;
+
 		bool frameChanging=(state.FP!=state.next_FP);
 		state.FP=state.next_FP;
 		if(!state.stop_FP && framesLoaded>0)
@@ -827,8 +833,17 @@ void MovieClip::advanceFrame()
 			funcEvent->decRef();
 		}
 
-		//Invalidate the current frame if needed
 		Frame& curFrame=frames[state.FP];
+
+		//Set the object on stage
+		if(isOnStage())
+		{
+			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+			for(;it!=curFrame.displayList.end();it++)
+				it->second->setOnStage(true);
+		}
+
+		//Invalidate the current frame if needed
 		if(curFrame.isInvalid())
 		{
 			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
@@ -854,7 +869,10 @@ void MovieClip::requestInvalidation()
 		Frame& curFrame=frames[state.FP];
 		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
 		for(;it!=curFrame.displayList.end();it++)
-			it->second->requestInvalidation();
+		{
+			if(it->second)
+				it->second->requestInvalidation();
+		}
 		curFrame.setInvalid(false);
 	}
 }
@@ -869,7 +887,10 @@ void MovieClip::setOnStage(bool staged)
 		{
 			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
 			for(;it!=frames[i].displayList.end();it++)
-				it->second->setOnStage(staged);
+			{
+				if(it->second)
+					it->second->setOnStage(staged);
+			}
 		}
 	}
 }
@@ -886,7 +907,10 @@ void MovieClip::setRoot(RootMovieClip* r)
 	{
 		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
 		for(;it!=frames[i].displayList.end();it++)
-			it->second->setRoot(root);
+		{
+			if(it->second)
+				it->second->setRoot(root);
+		}
 	}
 	if(root)
 		root->registerChildClip(this);

@@ -324,6 +324,8 @@ public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
+	void assignObjectToList(DisplayObject* obj, MovieClip* parent,
+			std::list<std::pair<PlaceInfo, DisplayObject*> >::iterator listIterator) const;
 };
 
 class PlaceObject3Tag: public PlaceObject2Tag

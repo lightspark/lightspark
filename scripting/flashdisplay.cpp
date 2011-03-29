@@ -800,6 +800,8 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 
 void MovieClip::advanceFrame()
 {
+	if(!isConstructed()) //The constructor has not been run yet for this clip
+		return;
 	if((!state.stop_FP || state.explicit_FP) && totalFrames!=0 && getPrototype()->isSubClass(Class<MovieClip>::getClass()))
 	{
 		//If we have not yet loaded enough frames delay advancement
@@ -901,6 +903,8 @@ void MovieClip::bootstrap()
 
 void MovieClip::Render(bool maskEnabled)
 {
+	if(!isConstructed()) //The constructor has not been run yet for this clip
+		return;
 	if(skipRender(maskEnabled))
 		return;
 

@@ -869,10 +869,7 @@ void MovieClip::requestInvalidation()
 		Frame& curFrame=frames[state.FP];
 		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
 		for(;it!=curFrame.displayList.end();it++)
-		{
-			if(it->second)
-				it->second->requestInvalidation();
-		}
+			it->second->requestInvalidation();
 		curFrame.setInvalid(false);
 	}
 }
@@ -887,10 +884,7 @@ void MovieClip::setOnStage(bool staged)
 		{
 			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
 			for(;it!=frames[i].displayList.end();it++)
-			{
-				if(it->second)
-					it->second->setOnStage(staged);
-			}
+				it->second->setOnStage(staged);
 		}
 	}
 }
@@ -907,10 +901,7 @@ void MovieClip::setRoot(RootMovieClip* r)
 	{
 		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
 		for(;it!=frames[i].displayList.end();it++)
-		{
-			if(it->second)
-				it->second->setRoot(root);
-		}
+			it->second->setRoot(root);
 	}
 	if(root)
 		root->registerChildClip(this);

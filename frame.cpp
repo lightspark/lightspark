@@ -108,8 +108,6 @@ void Frame::construct(MovieClip* parent)
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 	for(;i!=displayList.end();++i)
 	{
-		if(i->second==NULL)
-			continue;
 		i->second->setMatrix(i->first.Matrix);
 		//Take a chance to also invalidate the content
 		if(i->second->isOnStage())

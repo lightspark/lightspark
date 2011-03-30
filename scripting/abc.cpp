@@ -1192,19 +1192,6 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 				ev->context->exec();
 				break;
 			}
-			case CONSTRUCT_TAG:
-			{
-				ConstructTagEvent* ev=static_cast<ConstructTagEvent*>(e.second);
-				DisplayObject* toAdd=dynamic_cast<DisplayObject*>(ev->tag->instance());
-				assert_and_throw(toAdd);
-				toAdd->setMatrix(ev->listIterator->first.Matrix);
-				if(toAdd->getPrototype())
-				{
-					toAdd->getPrototype()->handleConstruction(toAdd,NULL,0,true);
-				}
-				ev->placeTag->assignObjectToList(toAdd, ev->parent, ev->listIterator);
-				break;
-			}
 			case CHANGE_FRAME:
 			{
 				FrameChangeEvent* ev=static_cast<FrameChangeEvent*>(e.second);
@@ -1214,8 +1201,8 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 			}
 			case CONSTRUCT_FRAME:
 			{
-				FrameConstructedEvent* ev=static_cast<FrameConstructedEvent*>(e.second);
-				ev->frame.setConstructed();
+				ConstructFrameEvent* ev=static_cast<ConstructFrameEvent*>(e.second);
+				ev->frame.construct(ev->parent);
 				break;
 			}
 			default:

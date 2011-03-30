@@ -26,6 +26,8 @@
 using namespace std;
 using namespace lightspark;
 
+extern TLSDATA bool isVmThread;
+
 Frame::Frame(const Frame& r):
 	initialized(r.initialized),invalid(r.invalid),
 	constructed(ACQUIRE_READ(r.constructed)),Label(r.Label),
@@ -93,6 +95,30 @@ void dumpDisplayList(list<DisplayObject*>& l)
 	}
 }
 
+void Frame::construct(MovieClip* parent)
+{
+	assert(!constructed);
+	//Update the displayList using the tags in this frame
+	std::list<DisplayListTag*>::iterator it=blueprint.begin();
+	for(;it!=blueprint.end();++it)
+		(*it)->execute(parent, displayList);
+	blueprint.clear();
+
+	//As part of initialization set the transformation matrix for the child objects
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	for(;i!=displayList.end();++i)
+	{
+		if(i->second==NULL)
+			continue;
+		i->second->setMatrix(i->first.Matrix);
+		//Take a chance to also invalidate the content
+		if(i->second->isOnStage())
+			i->second->requestInvalidation();
+	}
+	invalid=false;
+	setConstructed();
+}
+
 void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> >& d)
 {
 	if(!initialized)
@@ -113,39 +139,17 @@ void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> 
 		for(;dit!=displayList.end();++dit)
 			dit->second->incRef();
 
-		//Update the displayList using the tags in this frame
-		std::list<DisplayListTag*>::iterator it=blueprint.begin();
-		for(;it!=blueprint.end();++it)
-			(*it)->execute(parent, displayList);
-		blueprint.clear();
-		initialized=true;
-
-		//As part of initialization set the transformation matrix for the child objects
-		list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
-
-		for(;i!=displayList.end();++i)
+		if(sys->currentVm && !isVmThread)
 		{
-			if(i->second==NULL)
-			{
-				cout << "CANNOT INVALIDATE NOW" << endl;
-				continue;
-			}
-			i->second->setMatrix(i->first.Matrix);
-			//Take a chance to also invalidate the content
-			if(i->second->isOnStage())
-				i->second->requestInvalidation();
-		}
-		invalid=false;
-
-		if(sys->currentVm)
-		{
-			//Add a FrameConstructedEvent to the queue, the event will be executed when the
-			//previous ones are done
-			FrameConstructedEvent* fe=new FrameConstructedEvent(*this);
-			sys->currentVm->addEvent(NULL, fe);
-			fe->decRef();
+			//Add a FrameConstructedEvent to the queue, the whole frame construction
+			//will happen in the VM context
+			ConstructFrameEvent* ce=new ConstructFrameEvent(*this, parent);
+			sys->currentVm->addEvent(NULL, ce);
+			ce->decRef();
 		}
 		else
-			setConstructed();
+			construct(parent);
+
+		initialized=true;
 	}
 }

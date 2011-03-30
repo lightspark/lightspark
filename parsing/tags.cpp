@@ -42,7 +42,6 @@ using namespace std;
 using namespace lightspark;
 
 extern TLSDATA ParseThread* pt;
-extern TLSDATA bool isVmThread;
 
 Tag* TagFactory::readTag()
 {
@@ -1336,31 +1335,14 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			localRoot=parent->getRoot();
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
 
-		if(sys->currentVm)
-		{
-			if(!isVmThread)
-			{
-				//The new object will be constructed and initialized in the context of the VM
-				ConstructTagEvent* e=new ConstructTagEvent(dict, parent, this, it);
-				sys->currentVm->addEvent(NULL,e);
-				e->decRef();
-			}
-			else
-			{
-				DisplayObject* toAdd=dynamic_cast<DisplayObject*>(dict->instance());
-				assert_and_throw(toAdd);
-				if(toAdd->getPrototype())
-					toAdd->getPrototype()->handleConstruction(toAdd,NULL,0,true);
-				assignObjectToList(toAdd, parent, it);
-			}
-		}
-		else
-		{
-			//We can create the object right away
-			DisplayObject* toAdd=dynamic_cast<DisplayObject*>(dict->instance());
-			assert_and_throw(toAdd);
-			assignObjectToList(toAdd, parent, it);
-		}
+		//We can create the object right away
+		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(dict->instance());
+		assert_and_throw(toAdd);
+		//The matrix must be set before invoking the constructor
+		toAdd->setMatrix(Matrix);
+		if(toAdd->getPrototype())
+			toAdd->getPrototype()->handleConstruction(toAdd,NULL,0,true);
+		assignObjectToList(toAdd, parent, it);
 	}
 	else
 	{

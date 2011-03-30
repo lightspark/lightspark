@@ -1154,16 +1154,6 @@ void RootMovieClip::initialize()
 
 		//Now signal the completion for this root
 		loaderInfo->sendInit();
-		//Wait for handling of all previous events
-		SynchronizationEvent* se=new SynchronizationEvent;
-		bool added=sys->currentVm->addEvent(NULL, se);
-		if(!added)
-		{
-			se->decRef();
-			throw RunTimeException("Could not add event");
-		}
-		se->wait();
-		se->decRef();
 	}
 }
 

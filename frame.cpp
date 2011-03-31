@@ -34,6 +34,11 @@ Frame::Frame(const Frame& r):
 	blueprint(r.blueprint),displayList(r.displayList),
 	controls(r.controls)
 {
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+
+	//Increase the refcount of childs
+	for(;i!=displayList.end();++i)
+		i->second->incRef();
 }
 
 Frame::Frame(const Frame&& r):
@@ -64,10 +69,7 @@ Frame::~Frame()
 	{
 		//Decrease the refcount of childs
 		for(;i!=displayList.end();++i)
-		{
-			assert(i->second);
 			i->second->decRef();
-		}
 	}
 }
 

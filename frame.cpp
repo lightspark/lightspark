@@ -47,6 +47,7 @@ Frame::Frame(const Frame&& r):
 	blueprint(std::move(r.blueprint)),displayList(std::move(r.displayList)),
 	controls(std::move(r.controls))
 {
+	assert(r.displayList.empty());
 }
 
 Frame& Frame::operator=(const Frame& r)
@@ -56,6 +57,18 @@ Frame& Frame::operator=(const Frame& r)
 	RELEASE_WRITE(constructed,ACQUIRE_READ(r.constructed));
 	Label=r.Label;
 	blueprint=r.blueprint;
+
+	list <pair<PlaceInfo, DisplayObject*> >::const_iterator i2=r.displayList.begin();
+
+	//Increase the refcount of childs
+	for(;i2!=r.displayList.end();++i2)
+		i2->second->incRef();
+
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	//Decrease the refcount of childs
+	for(;i!=displayList.end();++i)
+		i->second->incRef();
+
 	displayList=r.displayList;
 	controls=r.controls;
 	return *this;

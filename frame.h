@@ -47,18 +47,19 @@ private:
 	bool invalid;
 	ACQUIRE_RELEASE_FLAG(constructed);
 public:
+	typedef std::list<std::pair<PlaceInfo, DisplayObject* > > DisplayListType;
 	Frame(const Frame& r);
 	Frame(const Frame&& r);
 	Frame& operator=(const Frame& r);
 	tiny_string Label;
 	std::list<DisplayListTag*> blueprint;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
+	DisplayListType displayList;
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
 	Frame():initialized(false),invalid(true),constructed(false){}
 	~Frame();
 	void Render(bool maskEnabled);
-	void init(MovieClip* parent, const std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
+	void init(MovieClip* parent, const DisplayListType& d);
 	void construct(MovieClip* parent);
 	bool isInitialized() const { return initialized; }
 	bool isInvalid() const { return invalid; }

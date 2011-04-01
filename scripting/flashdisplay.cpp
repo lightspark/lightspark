@@ -838,7 +838,7 @@ void MovieClip::advanceFrame()
 		//Set the object on stage
 		if(isOnStage())
 		{
-			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+			Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
 			for(;it!=curFrame.displayList.end();it++)
 				it->second->setOnStage(true);
 		}
@@ -846,7 +846,7 @@ void MovieClip::advanceFrame()
 		//Invalidate the current frame if needed
 		if(curFrame.isInvalid())
 		{
-			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+			Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
 			for(;it!=curFrame.displayList.end();it++)
 				it->second->requestInvalidation();
 			curFrame.setInvalid(false);
@@ -867,7 +867,7 @@ void MovieClip::requestInvalidation()
 		assert(state.FP<framesLoaded);
 		//Actually invalidate the current frame
 		Frame& curFrame=frames[state.FP];
-		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+		Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
 		for(;it!=curFrame.displayList.end();it++)
 			it->second->requestInvalidation();
 		curFrame.setInvalid(false);
@@ -882,7 +882,7 @@ void MovieClip::setOnStage(bool staged)
 		//Now notify all the objects in all frames
 		for(uint32_t i=0;i<frames.size();i++)
 		{
-			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
+			Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
 			for(;it!=frames[i].displayList.end();it++)
 				it->second->setOnStage(staged);
 		}
@@ -899,7 +899,7 @@ void MovieClip::setRoot(RootMovieClip* r)
 	//Now notify all the objects in all frames
 	for(uint32_t i=0;i<frames.size();i++)
 	{
-		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
+		Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
 		for(;it!=frames[i].displayList.end();it++)
 			it->second->setRoot(root);
 	}
@@ -913,7 +913,7 @@ void MovieClip::bootstrap()
 		return;
 	assert_and_throw(framesLoaded>0);
 	assert_and_throw(frames.size()>=1);
-	frames[0].init(this,list<pair<PlaceInfo,DisplayObject*> >());
+	frames[0].init(this,Frame::DisplayListType());
 }
 
 void MovieClip::Render(bool maskEnabled)
@@ -963,7 +963,7 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject*, number_t x, number_t y
 	{
 		uint32_t curFP=state.FP;
 		assert_and_throw(curFP<framesLoaded);
-		list<pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[curFP].displayList.begin();
+		Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
 		for(;it!=frames[curFP].displayList.end();++it)
 		{
 			number_t localX, localY;
@@ -1003,7 +1003,7 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 		{
 			assert_and_throw(state.FP<framesLoaded);
 			int curFP=state.FP;
-			list<pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[curFP].displayList.begin();
+			Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
 	
 			for(;it!=frames[curFP].displayList.end();++it)
 			{
@@ -1041,7 +1041,7 @@ bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 
 	//Iterate over the displaylist of the current frame
 	uint32_t curFP=state.FP;
-	std::list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[curFP].displayList.begin();
+	Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
 	
 	//Update bounds for all the elements
 	for(;it!=frames[curFP].displayList.end();++it)

@@ -253,9 +253,9 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 	LOG(LOG_TRACE,_("RemoveObject2 Depth: ") << Depth);
 }
 
-void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& ls)
+void RemoveObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 {
-	list <pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
+	Frame::DisplayListType::iterator it=ls.begin();
 
 	for(;it!=ls.end();++it)
 	{
@@ -1237,17 +1237,17 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 	LOG(LOG_TRACE,_("ShowFrame"));
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, DisplayObject*>& a, uint32_t d)
+bool PlaceObject2Tag::list_orderer::operator ()(const Frame::DisplayListType::value_type& a, uint32_t d)
 {
 	return a.first.Depth<d;
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(uint32_t d, const pair<PlaceInfo, DisplayObject*>& a)
+bool PlaceObject2Tag::list_orderer::operator ()(uint32_t d, const Frame::DisplayListType::value_type& a)
 {
 	return d<a.first.Depth;
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b)
+bool PlaceObject2Tag::list_orderer::operator ()(const Frame::DisplayListType::value_type& a, const Frame::DisplayListType::value_type& b)
 {
 	return a.first.Depth < b.first.Depth;
 }
@@ -1285,7 +1285,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, MovieClip* parent) const
 	obj->requestInvalidation();
 }
 
-void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, DisplayObject*> >& ls)
+void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 {
 	//TODO: support clipping
 	if(ClipDepth!=0)
@@ -1306,8 +1306,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 		if(PlaceFlagHasMatrix)
 			infos.Matrix=Matrix;
 
-		list<pair<PlaceInfo, DisplayObject*> >::iterator it=
-			lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
+		Frame::DisplayListType::iterator it=lower_bound< Frame::DisplayListType::iterator, int, list_orderer>
 			(ls.begin(),ls.end(),Depth,list_orderer());
 		if(it!=ls.end() && it->first.Depth!=Depth && !PlaceFlagMove)
 		{
@@ -1350,8 +1349,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 	{
 		//assert_and_throw(!PlaceFlagHasName && !PlaceFlagHasColorTransform && !PlaceFlagHasRatio && !PlaceFlagHasClipDepth);
 		//We're just changing the PlaceInfo
-		list<pair<PlaceInfo, DisplayObject*> >::iterator it=
-			lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
+		Frame::DisplayListType::iterator it=lower_bound< Frame::DisplayListType::iterator, int, list_orderer>
 			(ls.begin(),ls.end(),Depth,list_orderer());
 		if(it==ls.end() || it->first.Depth!=Depth)
 		{

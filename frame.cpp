@@ -34,7 +34,7 @@ Frame::Frame(const Frame& r):
 	blueprint(r.blueprint),displayList(r.displayList),
 	controls(r.controls)
 {
-	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	DisplayListType::const_iterator i=displayList.begin();
 
 	//Increase the refcount of childs
 	for(;i!=displayList.end();++i)
@@ -58,13 +58,13 @@ Frame& Frame::operator=(const Frame& r)
 	Label=r.Label;
 	blueprint=r.blueprint;
 
-	list <pair<PlaceInfo, DisplayObject*> >::const_iterator i2=r.displayList.begin();
+	DisplayListType::const_iterator i2=r.displayList.begin();
 
 	//Increase the refcount of childs
 	for(;i2!=r.displayList.end();++i2)
 		i2->second->incRef();
 
-	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	DisplayListType::const_iterator i=displayList.begin();
 	//Decrease the refcount of childs
 	for(;i!=displayList.end();++i)
 		i->second->incRef();
@@ -76,7 +76,7 @@ Frame& Frame::operator=(const Frame& r)
 
 Frame::~Frame()
 {
-	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	DisplayListType::iterator i=displayList.begin();
 
 	if(sys && !sys->finalizingDestruction)
 	{
@@ -88,7 +88,7 @@ Frame::~Frame()
 
 void Frame::Render(bool maskEnabled)
 {
-	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	DisplayListType::const_iterator i=displayList.begin();
 
 	//Render objects of this frame;
 	for(;i!=displayList.end();++i)
@@ -120,7 +120,7 @@ void Frame::construct(MovieClip* parent)
 	blueprint.clear();
 
 	//As part of initialization set the transformation matrix for the child objects
-	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	DisplayListType::const_iterator i=displayList.begin();
 	for(;i!=displayList.end();++i)
 	{
 		i->second->setMatrix(i->first.Matrix);
@@ -132,7 +132,7 @@ void Frame::construct(MovieClip* parent)
 	setConstructed();
 }
 
-void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> >& d)
+void Frame::init(MovieClip* parent, const DisplayListType& d)
 {
 	if(!initialized)
 	{
@@ -148,7 +148,7 @@ void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> 
 
 		displayList=d;
 		//Acquire a new reference to every child
-		list <pair<PlaceInfo, DisplayObject*> >::const_iterator dit=displayList.begin();
+		DisplayListType::const_iterator dit=displayList.begin();
 		for(;dit!=displayList.end();++dit)
 			dit->second->incRef();
 

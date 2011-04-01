@@ -1252,10 +1252,8 @@ bool PlaceObject2Tag::list_orderer::operator ()(const std::pair<PlaceInfo, Displ
 	return a.first.Depth < b.first.Depth;
 }
 
-void PlaceObject2Tag::assignObjectToList(DisplayObject* obj, MovieClip* parent,
-		list<pair<PlaceInfo, DisplayObject*> >::iterator listIterator) const
+void PlaceObject2Tag::setProperties(DisplayObject* obj, MovieClip* parent) const
 {
-	//listIterator is guaranteed to be valid;
 	assert_and_throw(obj && PlaceFlagHasCharacter);
 
 	//TODO: move these three attributes in PlaceInfo
@@ -1281,18 +1279,10 @@ void PlaceObject2Tag::assignObjectToList(DisplayObject* obj, MovieClip* parent,
 			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
 	}
 
-	if(PlaceFlagMove)
-	{
-		//If we are here we have to erase the previous object at this depth
-		listIterator->second->decRef();
-	}
-
 	obj->setParent(parent);
 	obj->setRoot(parent->getRoot());
-	//Assign the object reference to the list
-	listIterator->second=obj;
 	//Invalidate the object now that all properties are correctly set
-	listIterator->second->requestInvalidation();
+	obj->requestInvalidation();
 }
 
 void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, DisplayObject*> >& ls)
@@ -1324,8 +1314,6 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
 			return;
 		}
-		//Create a new entry in the list, currently initialized with NULL
-		it=ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,NULL));
 
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
@@ -1342,7 +1330,21 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 		toAdd->setMatrix(Matrix);
 		if(toAdd->getPrototype())
 			toAdd->getPrototype()->handleConstruction(toAdd,NULL,0,true);
-		assignObjectToList(toAdd, parent, it);
+
+		setProperties(toAdd, parent);
+
+		if(it!=ls.end() && it->first.Depth==Depth)
+		{
+			//Overwrite
+			assert_and_throw(PlaceFlagMove);
+			it->first=infos;
+			it->second=toAdd;
+		}
+		else
+		{
+			//Create a new entry in the list
+			ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,toAdd));
+		}
 	}
 	else
 	{

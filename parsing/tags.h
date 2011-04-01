@@ -319,8 +319,7 @@ protected:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
-	void assignObjectToList(DisplayObject* obj, MovieClip* parent,
-			std::list<std::pair<PlaceInfo, DisplayObject*> >::iterator listIterator) const;
+	void setProperties(DisplayObject* obj, MovieClip* parent) const;
 
 public:
 	STRING Name;

@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <list>
 #include "swftypes.h"
+#include "smartrefs.h"
 
 namespace lightspark
 {
@@ -47,7 +48,7 @@ private:
 	bool invalid;
 	ACQUIRE_RELEASE_FLAG(constructed);
 public:
-	typedef std::list<std::pair<PlaceInfo, DisplayObject* > > DisplayListType;
+	typedef std::list<std::pair<PlaceInfo, _R<DisplayObject> > > DisplayListType;
 	Frame(const Frame& r);
 	Frame(const Frame&& r);
 	Frame& operator=(const Frame& r);
@@ -59,8 +60,8 @@ public:
 	Frame():initialized(false),invalid(true),constructed(false){}
 	~Frame();
 	void Render(bool maskEnabled);
-	void init(MovieClip* parent, const DisplayListType& d);
-	void construct(MovieClip* parent);
+	void init(_R<MovieClip> parent, const DisplayListType& d);
+	void construct(_R<MovieClip> parent);
 	bool isInitialized() const { return initialized; }
 	bool isInvalid() const { return invalid; }
 	void setInvalid(bool i) { invalid=i; }

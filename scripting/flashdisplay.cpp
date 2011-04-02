@@ -821,7 +821,10 @@ void MovieClip::advanceFrame()
 		//Before assigning the next_FP we initialize the frame
 		//Should initialize all the frames from the current to the next
 		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
-			frames[i].init(this,frames[i-1].displayList);
+		{
+			this->incRef();
+			frames[i].init(_MR(this),frames[i-1].displayList);
+		}
 
 		//Before actually changing the frame verify that it's constructed
 		//If it's not delay the advancement
@@ -921,7 +924,9 @@ void MovieClip::bootstrap()
 		return;
 	assert_and_throw(framesLoaded>0);
 	assert_and_throw(frames.size()>=1);
-	frames[0].init(this,Frame::DisplayListType());
+	//We must incRef as the reference acquire the object
+	this->incRef();
+	frames[0].init(_MR(this),Frame::DisplayListType());
 }
 
 void MovieClip::Render(bool maskEnabled)

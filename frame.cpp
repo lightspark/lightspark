@@ -67,7 +67,7 @@ Frame& Frame::operator=(const Frame& r)
 	DisplayListType::const_iterator i=displayList.begin();
 	//Decrease the refcount of childs
 	for(;i!=displayList.end();++i)
-		i->second->incRef();
+		i->second->decRef();
 
 	displayList=r.displayList;
 	controls=r.controls;
@@ -90,8 +90,6 @@ void Frame::Render(bool maskEnabled)
 	//Render objects of this frame;
 	for(;i!=displayList.end();++i)
 	{
-		assert(i->second);
-
 		//Assign object data from current transformation
 		i->second->setMatrix(i->first.Matrix);
 		i->second->Render(maskEnabled);
@@ -107,13 +105,13 @@ void dumpDisplayList(list<DisplayObject*>& l)
 	}
 }
 
-void Frame::construct(MovieClip* parent)
+void Frame::construct(_R<MovieClip> parent)
 {
 	assert(!constructed);
 	//Update the displayList using the tags in this frame
 	std::list<DisplayListTag*>::iterator it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
-		(*it)->execute(parent, displayList);
+		(*it)->execute(parent.getPtr(), displayList);
 	blueprint.clear();
 
 	//As part of initialization set the transformation matrix for the child objects
@@ -129,7 +127,7 @@ void Frame::construct(MovieClip* parent)
 	setConstructed();
 }
 
-void Frame::init(MovieClip* parent, const DisplayListType& d)
+void Frame::init(_R<MovieClip> parent, const DisplayListType& d)
 {
 	if(!initialized)
 	{
@@ -137,7 +135,7 @@ void Frame::init(MovieClip* parent, const DisplayListType& d)
 		//Only the root movie clip can have control tags
 		if(!controls.empty())
 		{
-			assert_and_throw(parent->getRoot()==parent);
+			assert_and_throw(parent->getRoot()==parent.getPtr());
 			for(unsigned int i=0;i<controls.size();i++)
 				controls[i]->execute(parent->getRoot());
 			controls.clear();
@@ -153,7 +151,7 @@ void Frame::init(MovieClip* parent, const DisplayListType& d)
 		{
 			//Add a FrameConstructedEvent to the queue, the whole frame construction
 			//will happen in the VM context
-			ConstructFrameEvent* ce=new ConstructFrameEvent(*this, parent);
+			ConstructFrameEvent* ce=new ConstructFrameEvent(*this, parent.getPtr());
 			sys->currentVm->addEvent(NULL, ce);
 			ce->decRef();
 		}

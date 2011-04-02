@@ -261,7 +261,6 @@ void RemoveObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 	{
 		if(it->first.Depth==Depth)
 		{
-			assert(it->second);
 			it->second->setParent(NULL);
 			it->second->setRoot(NULL);
 			it->second->decRef();
@@ -1337,11 +1336,13 @@ void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 			//Overwrite
 			assert_and_throw(PlaceFlagMove);
 			it->first=infos;
-			it->second=toAdd;
+			toAdd->incRef();
+			it->second=_MR(toAdd);
 		}
 		else
 		{
 			//Create a new entry in the list
+			toAdd->incRef();
 			ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,toAdd));
 		}
 	}

@@ -42,7 +42,6 @@ class Event: public ASObject
 public:
 	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}
 	Event(const tiny_string& t, bool b=false);
-	virtual ~Event();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -239,7 +238,6 @@ public:
 	EventDispatcher();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	virtual ~EventDispatcher(){}
 	void handleEvent(Event* e);
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);

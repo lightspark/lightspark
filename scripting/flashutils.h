@@ -101,7 +101,7 @@ private:
 	std::map<ASObject*,ASObject*> data;
 public:
 	Dictionary(){}
-	virtual ~Dictionary();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

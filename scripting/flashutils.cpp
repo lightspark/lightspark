@@ -524,14 +524,13 @@ ASFUNCTIONBODY(lightspark,getTimer)
 	return abstract_i(ret);
 }
 
-Dictionary::~Dictionary()
+void Dictionary::finalize()
 {
-	if(!sys->finalizingDestruction)
-	{
-		std::map<ASObject*,ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();++it)
-			it->second->decRef();
-	}
+	ASObject::finalize();
+	std::map<ASObject*,ASObject*>::iterator it=data.begin();
+	for(;it!=data.end();++it)
+		it->second->decRef();
+	data.clear();
 }
 
 void Dictionary::sinit(Class_base* c)

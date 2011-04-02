@@ -172,6 +172,7 @@ private:
 public:
 	NetStream();
 	~NetStream();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

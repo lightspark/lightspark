@@ -35,10 +35,14 @@ XMLNode::XMLNode(XMLDocument* _r, xmlpp::Node* _n):root(_r),node(_n)
 {
 }
 
-XMLNode::~XMLNode()
+void XMLNode::finalize()
 {
-	if(root!=this)
+	ASObject::finalize();
+	if(root && root!=this)
+	{
 		root->decRef();
+		root=NULL;
+	}
 }
 
 void XMLNode::sinit(Class_base* c)

@@ -99,6 +99,7 @@ public:
 	DisplayObject* invalidateQueueNext;
 	DisplayObject();
 	~DisplayObject();
+	void finalize();
 	MATRIX getMatrix() const;
 	virtual void invalidate();
 	virtual void requestInvalidation();
@@ -178,7 +179,7 @@ protected:
 	bool mouseEnabled;
 public:
 	InteractiveObject();
-	virtual ~InteractiveObject();
+	~InteractiveObject();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_setMouseEnabled);
 	ASFUNCTION(_getMouseEnabled);
@@ -213,7 +214,8 @@ public:
 	void dumpDisplayList();
 	bool _removeChild(DisplayObject*);
 	DisplayObjectContainer();
-	virtual ~DisplayObjectContainer();
+	~DisplayObjectContainer();
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -366,6 +368,7 @@ public:
 	{
 	}
 	~Loader();
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

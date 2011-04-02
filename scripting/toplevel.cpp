@@ -547,12 +547,14 @@ XML::XML(XML* _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
 	assert(root && node);
 }
 
-XML::~XML()
+void XML::finalize()
 {
-	if(sys->finalizingDestruction)
-		return;
+	ASObject::finalize();
 	if(root)
+	{
 		root->decRef();
+		root=NULL;
+	}
 }
 
 void XML::sinit(Class_base* c)
@@ -873,12 +875,11 @@ tiny_string XML::toString(bool debugMsg)
 	return toString_priv();
 }
 
-XMLList::~XMLList()
+void XMLList::finalize()
 {
-	if(sys->finalizingDestruction)
-		return;
 	for(uint32_t i=0;i<nodes.size();i++)
 		nodes[i]->decRef();
+	nodes.clear();
 }
 
 void XMLList::sinit(Class_base* c)
@@ -1258,16 +1259,14 @@ void ASString::buildTraits(ASObject* o)
 {
 }
 
-Array::~Array()
+void Array::finalize()
 {
-	if(sys->finalizingDestruction)
-		return;
-
 	for(unsigned int i=0;i<data.size();i++)
 	{
 		if(data[i].type==DATA_OBJECT && data[i].data)
 			data[i].data->decRef();
 	}
+	data.clear();
 }
 
 ASFUNCTIONBODY(ASString,search)
@@ -3357,21 +3356,8 @@ Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",N
 
 Class_base::~Class_base()
 {
-	if(constructor)
-		constructor->decRef();
-
-	if(super)
-		super->decRef();
-	
-	//Destroy all the object reference by us
 	if(!referencedObjects.empty())
-	{
-		LOG(LOG_CALLS, "Class " << class_name << " references " << referencedObjects.size());
-		set<ASObject*>::iterator it=referencedObjects.begin();
-		for(;it!=referencedObjects.end();++it)
-			delete *it;
-	}
-	
+		LOG(LOG_ERROR,_("Class destroyed without cleanUp called"));
 }
 
 ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
@@ -3523,9 +3509,16 @@ void Class_base::abandonObject(ASObject* ob)
 	}
 }
 
-void Class_base::cleanUp()
+void Class_base::finalizeObjects() const
 {
-	Variables.destroyContents();
+	set<ASObject*>::iterator it=referencedObjects.begin();
+	for(;it!=referencedObjects.end();it++)
+		(*it)->finalize();
+}
+
+void Class_base::finalize()
+{
+	ASObject::finalize();
 	if(constructor)
 	{
 		constructor->decRef();
@@ -3536,6 +3529,23 @@ void Class_base::cleanUp()
 	{
 		super->decRef();
 		super=NULL;
+	}
+}
+
+void Class_base::cleanUp()
+{
+	//finalize must have been called before using cleanUp
+
+	//cleanUp may be called multiple times, be sure all the code is executable multiple times
+	//without double freeing anything
+	//Destroy all the object reference by us
+	if(!referencedObjects.empty())
+		LOG(LOG_CALLS, "Class " << class_name << " references " << referencedObjects.size());
+
+	while(!referencedObjects.empty())
+	{
+		set<ASObject*>::iterator it=referencedObjects.begin();
+		delete *it;
 	}
 }
 

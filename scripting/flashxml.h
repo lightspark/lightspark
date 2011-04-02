@@ -37,7 +37,7 @@ protected:
 public:
 	XMLNode():root(NULL),node(NULL){}
 	XMLNode(XMLDocument* _r, xmlpp::Node* _n);
-	~XMLNode();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

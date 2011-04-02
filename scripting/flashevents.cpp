@@ -57,10 +57,6 @@ Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NU
 {
 }
 
-Event::~Event()
-{
-}
-
 void Event::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

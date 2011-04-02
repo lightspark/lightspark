@@ -172,7 +172,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	mutexEnterFrameListeners("mutexEnterFrameListeners"),invalidateQueueHead(NULL),
 	invalidateQueueTail(NULL),showProfilingData(false),showDebug(false),currentVm(NULL),
-	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),
+	useInterpreter(true),useJit(false),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
@@ -375,15 +375,26 @@ SystemState::~SystemState()
 	//We are already being destroyed, make our prototype abandon us
 	setPrototype(NULL);
 	
-	//Destroy the contents of all the classes
+	/*
+	   Now we have to kill all objects that are still alive. This is done is two passes
+	   1) call finalize on all objects, this will decRef all referenced objects
+	   2) delete all the objects. Now destroying an object should not cause accesses to
+	   	any other object */
+
 	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
-		it->second->cleanUp();
+	{
+		it->second->finalizeObjects();
+		it->second->finalize();
+	}
 
-	finalizingDestruction=true;
-	
 	//Also destroy all frames
 	frames.clear();
+
+	//Destroy the contents of all the classes
+	it=classes.begin();
+	for(;it!=classes.end();++it)
+		it->second->cleanUp();
 
 	//Destroy all registered classes
 	it=classes.begin();

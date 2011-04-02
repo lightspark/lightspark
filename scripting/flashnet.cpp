@@ -497,6 +497,16 @@ NetStream::NetStream():frameRate(0),tickStarted(false),connection(NULL),download
 	sem_init(&mutex,0,1);
 }
 
+void NetStream::finalize()
+{
+	EventDispatcher::finalize();
+	if(connection)
+	{
+		connection->decRef();
+		connection=NULL;
+	}
+}
+
 NetStream::~NetStream()
 {
 	assert(!executing);
@@ -504,8 +514,6 @@ NetStream::~NetStream()
 		sys->removeJob(this);
 	delete videoDecoder; 
 	delete audioDecoder; 
-	if(connection)
-		connection->decRef();
 	sem_destroy(&mutex);
 }
 

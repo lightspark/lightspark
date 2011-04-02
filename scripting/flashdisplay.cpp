@@ -253,10 +253,18 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	return NULL;
 }
 
+void Loader::finalize()
+{
+	DisplayObjectContainer::finalize();
+	if(local_root)
+	{
+		local_root->decRef();
+		local_root=NULL;
+	}
+}
+
 Loader::~Loader()
 {
-	if(local_root && !sys->finalizingDestruction)
-		local_root->decRef();
 }
 
 void Loader::jobFence()
@@ -1094,10 +1102,18 @@ DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty
 {
 }
 
+void DisplayObject::finalize()
+{
+	EventDispatcher::finalize();
+	if(loaderInfo)
+	{
+		loaderInfo->decRef();
+		loaderInfo=NULL;
+	}
+}
+
 DisplayObject::~DisplayObject()
 {
-	if(loaderInfo && !sys->finalizingDestruction)
-		loaderInfo->decRef();
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -1778,15 +1794,18 @@ DisplayObjectContainer::DisplayObjectContainer():mutexDisplayList("mutexDisplayL
 {
 }
 
+void DisplayObjectContainer::finalize()
+{
+	InteractiveObject::finalize();
+	//Release every child
+	list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+		(*it)->decRef();
+	dynamicDisplayList.clear();
+}
+
 DisplayObjectContainer::~DisplayObjectContainer()
 {
-	//Release every child
-	if(!sys->finalizingDestruction)
-	{
-		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->decRef();
-	}
 }
 
 InteractiveObject::InteractiveObject():mouseEnabled(true)

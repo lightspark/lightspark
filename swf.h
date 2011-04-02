@@ -273,7 +273,6 @@ public:
 
 	//Class map
 	std::map<QName, Class_base*> classes;
-	bool finalizingDestruction;
 	std::vector<Tag*> tagsStorage;
 
 	//Flags for command line options

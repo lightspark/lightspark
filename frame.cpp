@@ -78,12 +78,9 @@ Frame::~Frame()
 {
 	DisplayListType::iterator i=displayList.begin();
 
-	if(sys && !sys->finalizingDestruction)
-	{
-		//Decrease the refcount of childs
-		for(;i!=displayList.end();++i)
-			i->second->decRef();
-	}
+	//Decrease the refcount of childs
+	for(;i!=displayList.end();++i)
+		i->second->decRef();
 }
 
 void Frame::Render(bool maskEnabled)

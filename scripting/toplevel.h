@@ -73,6 +73,7 @@ public:
 	void setConstructor(IFunction* c);
 	Class_base(const QName& name);
 	~Class_base();
+	void finalize();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	ASObject* getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL)
@@ -117,6 +118,7 @@ public:
 	void abandonObject(ASObject* ob);
 	void acquireObject(ASObject* ob);
 	void cleanUp();
+	void finalizeObjects() const;
 };
 
 class Class_object: public Class_base
@@ -364,7 +366,6 @@ public:
 	double toNumber();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
-	virtual ~Undefined(){}
 };
 
 class ASString: public ASObject
@@ -488,11 +489,11 @@ private:
 	};
 	tiny_string toString_priv() const;
 public:
+	void finalize();
 	//These utility methods are also used by ByteArray 
 	static bool isValidMultiname(const multiname& name, unsigned int& index);
 	static bool isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index);
 
-	virtual ~Array();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 
@@ -673,7 +674,7 @@ public:
 	XML();
 	XML(const std::string& str);
 	XML(XML* _r, xmlpp::Node* _n);
-	~XML();
+	void finalize();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(toXMLString);
@@ -698,7 +699,7 @@ private:
 public:
 	XMLList():constructed(false){}
 	XMLList(const std::vector<XML*>& r):nodes(r),constructed(true){}
-	~XMLList();
+	void finalize();
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);

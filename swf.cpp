@@ -1275,9 +1275,9 @@ void RootMovieClip::commitFrame(bool another)
 		initialize();
 		//Now the bindings are effective
 		//Execute the event registered for the first frame, if any
-		if(frameScripts[0])
+		if(!frameScripts[0].isNull())
 		{
-			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[0]);
+			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[0].getPtr());
 			getVm()->addEvent(NULL, funcEvent);
 			funcEvent->decRef();
 		}

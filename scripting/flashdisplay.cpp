@@ -666,14 +666,14 @@ MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
 	frames.emplace_back();
 	cur_frame=&frames.back();
-	frameScripts.resize(totalFrames,NULL);
+	frameScripts.resize(totalFrames,NullRef);
 }
 
 void MovieClip::setTotalFrames(uint32_t t)
 {
 	assert(totalFrames==1);
 	totalFrames=t;
-	frameScripts.resize(totalFrames,NULL);
+	frameScripts.resize(totalFrames,NullRef);
 }
 
 void MovieClip::addToFrame(DisplayListTag* t)
@@ -709,7 +709,7 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 		IFunction* f=static_cast<IFunction*>(args[i+1]);
 		f->incRef();
 		assert(th->frameScripts.size()==th->totalFrames);
-		th->frameScripts[frame]=f;
+		th->frameScripts[frame]=_MNR(f);
 	}
 	
 	return NULL;
@@ -837,9 +837,9 @@ void MovieClip::advanceFrame()
 			state.next_FP=imin(state.FP+1,framesLoaded-1);
 		state.explicit_FP=false;
 		assert(state.FP<frameScripts.size());
-		if(frameChanging && frameScripts[state.FP])
+		if(frameChanging && !frameScripts[state.FP].isNull())
 		{
-			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[state.FP]);
+			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[state.FP].getPtr());
 			getVm()->addEvent(NULL, funcEvent);
 			funcEvent->decRef();
 		}

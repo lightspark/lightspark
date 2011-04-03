@@ -422,7 +422,7 @@ protected:
 	uint32_t framesLoaded;
 	Frame* cur_frame;
 	void bootstrap();
-	std::vector<IFunction*> frameScripts;
+	std::vector<_NR<IFunction>> frameScripts;
 public:
 	std::vector<Frame> frames;
 	RunState state;

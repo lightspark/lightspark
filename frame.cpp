@@ -42,7 +42,6 @@ Frame::Frame(const Frame&& r):
 	blueprint(std::move(r.blueprint)),displayList(std::move(r.displayList)),
 	controls(std::move(r.controls))
 {
-	assert(r.displayList.empty());
 }
 
 Frame& Frame::operator=(const Frame& r)

@@ -351,13 +351,13 @@ class Loader: public IThreadJob, public DisplayObjectContainer
 {
 private:
 	enum SOURCE { URL, BYTES };
-	RootMovieClip* local_root;
+	_NR<RootMovieClip> local_root;
 	bool loading;
 	bool loaded;
 	SOURCE source;
 	tiny_string url;
-	ByteArray* bytes;
-	LoaderInfo* contentLoaderInfo;
+	_NR<ByteArray> bytes;
+	_NR<LoaderInfo> contentLoaderInfo;
 	Spinlock downloaderLock;
 	Downloader* downloader;
 	void execute();

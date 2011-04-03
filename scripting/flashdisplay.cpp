@@ -191,17 +191,17 @@ ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(th);
+	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(th));
 	return NULL;
 }
 
 ASFUNCTIONBODY(Loader,_getContent)
 {
 	Loader* th=static_cast<Loader*>(obj);
-	if(th->local_root)
+	if(!th->local_root.isNull())
 	{
 		th->local_root->incRef();
-		return th->local_root;
+		return th->local_root.getPtr();
 	}
 	else
 		return new Undefined;
@@ -211,7 +211,7 @@ ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	th->contentLoaderInfo->incRef();
-	return th->contentLoaderInfo;
+	return th->contentLoaderInfo.getPtr();
 }
 
 ASFUNCTIONBODY(Loader,load)
@@ -239,11 +239,12 @@ ASFUNCTIONBODY(Loader,loadBytes)
 		return NULL;
 	//Find the actual ByteArray object
 	assert_and_throw(argslen>=1);
-	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<ByteArray>::getClass()));
-	th->bytes=static_cast<ByteArray*>(args[0]);
+	assert_and_throw(args[0]->getPrototype() && 
+			args[0]->getPrototype()->isSubClass(Class<ByteArray>::getClass()));
+	args[0]->incRef();
+	th->bytes=_MR(static_cast<ByteArray*>(args[0]));
 	if(th->bytes->bytes)
 	{
-		th->bytes->incRef();
 		th->loading=true;
 		th->source=BYTES;
 		//To be decreffed in jobFence
@@ -256,11 +257,9 @@ ASFUNCTIONBODY(Loader,loadBytes)
 void Loader::finalize()
 {
 	DisplayObjectContainer::finalize();
-	if(local_root)
-	{
-		local_root->decRef();
-		local_root=NULL;
-	}
+	local_root.reset();
+	contentLoaderInfo.reset();
+	bytes.reset();
 }
 
 Loader::~Loader()
@@ -292,23 +291,23 @@ void Loader::execute()
 	assert(source==URL || source==BYTES);
 	//The loaderInfo of the content is our contentLoaderInfo
 	contentLoaderInfo->incRef();
-	local_root=RootMovieClip::getInstance(contentLoaderInfo);
+	local_root=_MR(RootMovieClip::getInstance(contentLoaderInfo.getPtr()));
 	if(source==URL)
 	{
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
-		downloader=sys->downloadManager->download(url, false, contentLoaderInfo);
+		downloader=sys->downloadManager->download(url, false, contentLoaderInfo.getPtr());
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
-			sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("ioError"));
+			sys->currentVm->addEvent(contentLoaderInfo.getPtr(),Class<Event>::getInstanceS("ioError"));
 			sys->downloadManager->destroy(downloader);
 			return;
 		}
-		sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("open"));
+		sys->currentVm->addEvent(contentLoaderInfo.getPtr(),Class<Event>::getInstanceS("open"));
 		istream s(downloader);
-		ParseThread* local_pt=new ParseThread(local_root,s);
+		ParseThread* local_pt=new ParseThread(local_root.getPtr(),s);
 		local_pt->run();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
@@ -329,11 +328,11 @@ void Loader::execute()
 		bytes_buf bb(bytes->bytes,bytes->len);
 		istream s(&bb);
 
-		ParseThread* local_pt = new ParseThread(local_root,s);
+		ParseThread* local_pt = new ParseThread(local_root.getPtr(),s);
 		local_pt->run();
 		bytes->decRef();
 		//Add a complete event for this object
-		sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("complete"));
+		sys->currentVm->addEvent(contentLoaderInfo.getPtr(),Class<Event>::getInstanceS("complete"));
 	}
 	loaded=true;
 }
@@ -363,7 +362,7 @@ void Loader::Render(bool maskEnabled)
 
 bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(local_root && local_root->getBounds(xmin,xmax,ymin,ymax))
+	if(!local_root.isNull() && local_root->getBounds(xmin,xmax,ymin,ymax))
 	{
 		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
 		getMatrix().multiply2D(xmax,ymax,xmax,ymax);

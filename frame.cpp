@@ -34,11 +34,6 @@ Frame::Frame(const Frame& r):
 	blueprint(r.blueprint),displayList(r.displayList),
 	controls(r.controls)
 {
-	DisplayListType::const_iterator i=displayList.begin();
-
-	//Increase the refcount of childs
-	for(;i!=displayList.end();++i)
-		i->second->incRef();
 }
 
 Frame::Frame(const Frame&& r):
@@ -58,17 +53,6 @@ Frame& Frame::operator=(const Frame& r)
 	Label=r.Label;
 	blueprint=r.blueprint;
 
-	DisplayListType::const_iterator i2=r.displayList.begin();
-
-	//Increase the refcount of childs
-	for(;i2!=r.displayList.end();++i2)
-		i2->second->incRef();
-
-	DisplayListType::const_iterator i=displayList.begin();
-	//Decrease the refcount of childs
-	for(;i!=displayList.end();++i)
-		i->second->decRef();
-
 	displayList=r.displayList;
 	controls=r.controls;
 	return *this;
@@ -76,11 +60,6 @@ Frame& Frame::operator=(const Frame& r)
 
 Frame::~Frame()
 {
-	DisplayListType::iterator i=displayList.begin();
-
-	//Decrease the refcount of childs
-	for(;i!=displayList.end();++i)
-		i->second->decRef();
 }
 
 void Frame::Render(bool maskEnabled)
@@ -142,10 +121,6 @@ void Frame::init(_R<MovieClip> parent, const DisplayListType& d)
 		}
 
 		displayList=d;
-		//Acquire a new reference to every child
-		DisplayListType::const_iterator dit=displayList.begin();
-		for(;dit!=displayList.end();++dit)
-			dit->second->incRef();
 
 		if(sys->currentVm && !isVmThread)
 		{

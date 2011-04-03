@@ -22,6 +22,61 @@
 namespace lightspark
 {
 
+template<class T>
+class Ref
+{
+private:
+	T* m;
+public:
+	explicit Ref(T* o):m(o)
+	{
+		assert(m);
+	}
+	Ref(const Ref<T>& r):m(r.m)
+	{
+		m->incRef();
+	}
+	//Constructible from any compatible reference
+	template<class D> Ref(const Ref<D>& r):m(r.m)
+	{
+		m->incRef();
+	}
+	Ref<T>& operator=(const Ref<T>&r)
+	{
+		//incRef before decRef to make sure this works even if the pointer is the same
+		r.m->incRef();
+
+		m->decRef();
+
+		m=r.m;
+		return *this;
+	}
+	template<class D> Ref<T>& operator=(const Ref<D>& r)
+	{
+		//incRef before decRef to make sure this works even if the pointer is the same
+		r.m->incRef();
+
+		m->decRef();
+
+		m=r.m;
+		return *this;
+	}
+	~Ref()
+	{
+		m->decRef();
+	}
+	T* operator->() const {return m;}
+	T* getPtr() const { return m; }
+};
+
+#define _R Ref
+
+template<class T>
+Ref<T> _MR(T* a)
+{
+	return Ref<T>(a);
+}
+
 class NullRef_t
 {
 };
@@ -41,10 +96,35 @@ public:
 		if(m)
 			m->incRef();
 	}
+	//Constructible from any compatible nullable reference and reference
 	template<class D> NullableRef(const NullableRef<D>& r):m(r.m)
 	{
 		if(m)
 			m->incRef();
+	}
+	template<class D> NullableRef(const Ref<D>& r):m(r.getPtr())
+	{
+		//The right hand Ref object is guaranteed to be valid
+		m->incRef();
+	}
+	template<class D> NullableRef<T>& operator=(const NullableRef<D>& r)
+	{
+		if(r.m)
+			r.m->incRef();
+
+		if(m)
+			m->decRef();
+		m=r.m;
+		return *this;
+	}
+	template<class D> NullableRef<T>& operator=(const Ref<D>& r)
+	{
+		r.getPtr()->incRef();
+
+		if(m)
+			m->decRef();
+		m=r.getPtr();
+		return *this;
 	}
 	~NullableRef()
 	{
@@ -54,6 +134,12 @@ public:
 	T* operator->() const {return m;}
 	T* getPtr() const { return m; }
 	bool isNull() const { return m==NULL; }
+	void reset()
+	{
+		if(m)
+			m->decRef();
+		m=NULL;
+	}
 };
 
 //Shorthand notation
@@ -63,45 +149,6 @@ template<class T>
 NullableRef<T> _MNR(T* a)
 {
 	return NullableRef<T>(a);
-}
-
-template<class T>
-class Ref
-{
-private:
-	T* m;
-public:
-	explicit Ref(T* o):m(o)
-	{
-		assert(m);
-	}
-	Ref(const Ref<T>& r):m(r.m)
-	{
-		m->incRef();
-	}
-	template<class D> explicit Ref(const NullableRef<D>& r):m(r.m)
-	{
-		assert(m);
-		m->incRef();
-	}
-	template<class D> Ref(const Ref<D>& r):m(r.m)
-	{
-		m->incRef();
-	}
-	~Ref()
-	{
-		m->decRef();
-	}
-	T* operator->() const {return m;}
-	T* getPtr() const { return m; }
-};
-
-#define _R Ref
-
-template<class T>
-Ref<T> _MR(T* a)
-{
-	return Ref<T>(a);
 }
 
 };

@@ -84,6 +84,12 @@ void LoaderInfo::buildTraits(ASObject* o)
 {
 }
 
+void LoaderInfo::finalize()
+{
+	sharedEvents.reset();
+	loader.reset();
+}
+
 void LoaderInfo::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
@@ -125,7 +131,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
-	th->sharedEvents=Class<EventDispatcher>::getInstanceS();
+	th->sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
 	return NULL;
 }
 
@@ -139,29 +145,29 @@ ASFUNCTIONBODY(LoaderInfo,_getContent)
 {
 	//Use Loader::getContent
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	if(th->loader)
-		return Loader::_getContent(th->loader,NULL,0);
-	else
+	if(th->loader.isNull())
 		return new Undefined;
+	else
+		return Loader::_getContent(th->loader.getPtr(),NULL,0);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getLoader)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	if(th->loader)
+	if(th->loader.isNull())
+		return new Undefined;
+	else
 	{
 		th->loader->incRef();
-		return th->loader;
+		return th->loader.getPtr();
 	}
-	else
-		return new Undefined;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	th->sharedEvents->incRef();
-	return th->sharedEvents;
+	return th->sharedEvents.getPtr();
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getURL)
@@ -191,7 +197,8 @@ ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(th));
+	th->incRef();
+	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(th)));
 	return NULL;
 }
 

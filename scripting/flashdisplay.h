@@ -319,14 +319,15 @@ private:
 	uint32_t bytesTotal;
 	tiny_string url;
 	tiny_string loaderURL;
-	EventDispatcher* sharedEvents;
-	Loader* loader;
+	_NR<EventDispatcher> sharedEvents;
+	_NR<Loader> loader;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
 	LOAD_STATUS loadStatus;
 	Spinlock spinlock;
 public:
-	LoaderInfo():bytesLoaded(0),bytesTotal(0),loader(NULL),loadStatus(STARTED) {}
-	LoaderInfo(Loader* l):bytesLoaded(0),bytesTotal(0),loader(l),loadStatus(STARTED) {}
+	LoaderInfo():bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(NullRef),loadStatus(STARTED) {}
+	LoaderInfo(_R<Loader> l):bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(l),loadStatus(STARTED) {}
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

@@ -169,7 +169,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 {
 	Video* th=Class<Video>::cast(obj);
 	assert_and_throw(argslen==1);
-	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED) //Drop the connection
+	if(args[0]->getObjectType()==T_NULL) //Drop the connection
 	{
 		sem_wait(&th->mutex);
 		th->netStream=NULL;

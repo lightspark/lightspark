@@ -61,6 +61,14 @@ public:
 		m=r.m;
 		return *this;
 	}
+	template<class D> bool operator==(const Ref<D>& r) const
+	{
+		return m==r.getPtr();
+	}
+	bool operator==(T* r) const
+	{
+		return m==r;
+	}
 	~Ref()
 	{
 		m->decRef();
@@ -125,6 +133,18 @@ public:
 			m->decRef();
 		m=r.getPtr();
 		return *this;
+	}
+	template<class D> bool operator==(const NullableRef<D>& r) const
+	{
+		return m==r.getPtr();
+	}
+	template<class D> bool operator==(const Ref<D>& r) const
+	{
+		return m==r.getPtr();
+	}
+	bool operator==(T* r) const
+	{
+		return m==r;
 	}
 	~NullableRef()
 	{

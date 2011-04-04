@@ -893,24 +893,21 @@ tiny_string XML::toString_priv()
 	//We have to use vanilla libxml2, libxml++ is not enough
 	xmlNodePtr libXml2Node=node->cobj();
 	tiny_string ret;
-	switch(libXml2Node->type)
+	if(libXml2Node->type==XML_ATTRIBUTE_NODE ||
+	   libXml2Node->type==XML_TEXT_NODE ||
+	   hasSimpleContent())
 	{
-		case XML_ATTRIBUTE_NODE:
-		case XML_TEXT_NODE:
-		{
-			xmlChar* content=xmlNodeGetContent(libXml2Node);
-			ret=tiny_string((char*)content,true);
-			xmlFree(content);
-			break;
-		}
-		default:
-		{
-			assert_and_throw(!node->get_children().empty());
-			xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
-			toXMLString_priv(xmlBuffer);
-			ret=tiny_string((char*)xmlBuffer->content,true);
-			xmlBufferFree(xmlBuffer);
-		}
+		xmlChar* content=xmlNodeGetContent(libXml2Node);
+		ret=tiny_string((char*)content,true);
+		xmlFree(content);
+	}
+	else
+	{
+		assert_and_throw(!node->get_children().empty());
+		xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
+		toXMLString_priv(xmlBuffer);
+		ret=tiny_string((char*)xmlBuffer->content,true);
+		xmlBufferFree(xmlBuffer);
 	}
 	return ret;
 }

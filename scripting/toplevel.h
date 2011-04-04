@@ -685,11 +685,15 @@ public:
 	ASFUNCTION(appendChild);
 	ASFUNCTION(localName);
 	ASFUNCTION(generator);
+	ASFUNCTION(_hasSimpleContent);
+	ASFUNCTION(_hasComplexContent);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	tiny_string toString(bool debugMsg=false);
+	bool hasSimpleContent() const;
+	bool hasComplexContent() const;
 };
 
 class XMLList: public ASObject

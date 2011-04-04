@@ -567,6 +567,8 @@ void XML::sinit(Class_base* c)
 	c->setMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),true);
 	c->setMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),true);
 	c->setMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),true);
+	c->setMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),true);
+	c->setMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),true);
 }
 
 void XML::buildFromString(const string& str)
@@ -754,6 +756,48 @@ ASFUNCTIONBODY(XML,children)
 	}
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
+}
+
+ASFUNCTIONBODY(XML,_hasSimpleContent)
+{
+	XML *th=static_cast<XML*>(obj);
+	return abstract_b(th->hasSimpleContent());
+}
+
+ASFUNCTIONBODY(XML,_hasComplexContent)
+{
+	XML *th=static_cast<XML*>(obj);
+	return abstract_b(th->hasComplexContent());
+}
+
+bool XML::hasSimpleContent() const
+{
+	xmlElementType nodetype=node->cobj()->type;
+	if(nodetype==XML_COMMENT_NODE || nodetype==XML_PI_NODE)
+		return false;
+
+	const xmlpp::Node::NodeList& children=node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=children.begin();
+	for(;it!=children.end();++it)
+	{
+		if((*it)->cobj()->type==XML_ELEMENT_NODE)
+			return false;
+	}
+
+	return true;
+}
+
+bool XML::hasComplexContent() const
+{
+	const xmlpp::Node::NodeList& children=node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=children.begin();
+	for(;it!=children.end();++it)
+	{
+		if((*it)->cobj()->type==XML_ELEMENT_NODE)
+			return true;
+	}
+
+	return false;
 }
 
 void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)

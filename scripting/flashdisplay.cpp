@@ -388,6 +388,13 @@ Sprite::Sprite(const Sprite& r):GraphicsContainer(this),constructed(false)
 	assert(!r.isConstructed());
 }
 
+void Sprite::finalize()
+{
+	DisplayObjectContainer::finalize();
+	//The GraphicsContainer parent class may need to release the Graphics object;
+	finalizeGraphics();
+}
+
 void Sprite::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -396,9 +403,14 @@ void Sprite::sinit(Class_base* c)
 	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),true);
 }
 
+void GraphicsContainer::finalizeGraphics()
+{
+	graphics.reset();
+}
+
 void GraphicsContainer::invalidateGraphics()
 {
-	assert(graphics);
+	assert(!graphics.isNull());
 	if(!owner->isOnStage())
 		return;
 	uint32_t x,y,width,height;
@@ -425,7 +437,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	bool ret=false;
 	{
 		Locker l(mutexDisplayList);
-		if(dynamicDisplayList.empty() && graphics==NULL)
+		if(dynamicDisplayList.empty() && graphics.isNull())
 			return false;
 
 		//TODO: Check bounds calculation
@@ -453,7 +465,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 			}
 		}
 	}
-	if(graphics)
+	if(!graphics.isNull())
 	{
 		number_t txmin,txmax,tymin,tymax;
 		if(graphics->getBounds(txmin,txmax,tymin,tymax))
@@ -492,14 +504,14 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 void Sprite::invalidate()
 {
-	assert(graphics);
+	assert(!graphics.isNull());
 	invalidateGraphics();
 }
 
 void Sprite::requestInvalidation()
 {
 	DisplayObjectContainer::requestInvalidation();
-	if(graphics)
+	if(!graphics.isNull())
 		sys->addToInvalidateQueue(this);
 }
 
@@ -523,7 +535,7 @@ void DisplayObject::renderEpilogue() const
 void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//Draw the dynamically added graphics, if any
-	if(graphics)
+	if(!graphics.isNull())
 	{
 		//Should clean only the bounds of the graphics
 		if(!isSimple())
@@ -589,7 +601,7 @@ InteractiveObject* Sprite::hitTestImpl(number_t x, number_t y)
 		}
 	}
 
-	if(ret==NULL && graphics && mouseEnabled)
+	if(ret==NULL && !graphics.isNull() && mouseEnabled)
 	{
 		//The coordinates are locals
 		if(graphics->hitTest(x,y))
@@ -641,11 +653,11 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 {
 	Sprite* th=static_cast<Sprite*>(obj);
 	//Probably graphics is not used often, so create it here
-	if(th->graphics==NULL)
-		th->graphics=Class<Graphics>::getInstanceS(th);
+	if(th->graphics.isNull())
+		th->graphics=_MR(Class<Graphics>::getInstanceS(th));
 
 	th->graphics->incRef();
-	return th->graphics;
+	return th->graphics.getPtr();
 }
 
 void MovieClip::sinit(Class_base* c)
@@ -2190,6 +2202,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 	return abstract_i(ret);
 }
 
+void Shape::finalize()
+{
+	DisplayObject::finalize();
+	//The GraphicsContainer parent class may need to release the Graphics object;
+	finalizeGraphics();
+}
+
 void Shape::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -2204,7 +2223,7 @@ void Shape::buildTraits(ASObject* o)
 
 bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(graphics)
+	if(!graphics.isNull())
 	{
 		bool ret=graphics->getBounds(xmin,xmax,ymin,ymax);
 		if(ret)
@@ -2235,7 +2254,7 @@ InteractiveObject* Shape::hitTest(InteractiveObject* last, number_t x, number_t 
 		::abort();
 	}
 
-	if(graphics)
+	if(!graphics.isNull())
 	{
 		//The coordinates are already local
 		if(graphics->hitTest(x,y))
@@ -2262,7 +2281,7 @@ void Shape::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, 
 void Shape::Render(bool maskEnabled)
 {
 	//If graphics is not yet initialized we have nothing to do
-	if(graphics==NULL || skipRender(maskEnabled))
+	if(graphics.isNull() || skipRender(maskEnabled))
 		return;
 
 	number_t t1,t2,t3,t4;
@@ -2284,14 +2303,14 @@ float Shape::getScaleFactor() const
 
 void Shape::invalidate()
 {
-	assert(graphics);
+	assert(!graphics.isNull());
 	invalidateGraphics();
 	cachedTokens=graphics->getGraphicsTokens();
 }
 
 void Shape::requestInvalidation()
 {
-	if(graphics)
+	if(!graphics.isNull())
 		sys->addToInvalidateQueue(this);
 }
 
@@ -2305,11 +2324,11 @@ ASFUNCTIONBODY(Shape,_getGraphics)
 {
 	Shape* th=static_cast<Shape*>(obj);
 	//Probably graphics is not used often, so create it here
-	if(th->graphics==NULL)
-		th->graphics=Class<Graphics>::getInstanceS(th);
+	if(th->graphics.isNull())
+		th->graphics=_MR(Class<Graphics>::getInstanceS(th));
 
 	th->graphics->incRef();
-	return th->graphics;
+	return th->graphics.getPtr();
 }
 
 void MorphShape::sinit(Class_base* c)

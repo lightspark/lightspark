@@ -272,10 +272,14 @@ class GraphicsContainer
 {
 friend class Graphics;
 protected:
-	Graphics* graphics;
+	_NR<Graphics> graphics;
+	/*It's ok for owner to be a non managed pointer. It's a pointer to the same object.
+	  See Shape for example
+	  */
 	DisplayObject* owner;
 	GraphicsContainer(DisplayObject* _o):graphics(NULL),owner(_o){}
 	void invalidateGraphics();
+	void finalizeGraphics();
 };
 
 class Shape: public DisplayObject, public GraphicsContainer
@@ -285,6 +289,7 @@ protected:
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 public:
 	Shape():GraphicsContainer(this){}
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -398,6 +403,7 @@ protected:
 public:
 	Sprite();
 	Sprite(const Sprite& r);
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

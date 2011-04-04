@@ -800,6 +800,11 @@ bool XML::hasComplexContent() const
 	return false;
 }
 
+xmlElementType XML::getNodeKind() const
+{
+	return node->cobj()->type;
+}
+
 void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
 {
 	assert(root);
@@ -932,6 +937,8 @@ void XMLList::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("length","",Class<IFunction>::getFunction(_getLength),true);
 	c->setMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),true);
+	c->setMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),true);
+	c->setMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),true);
 }
 
 ASFUNCTIONBODY(XMLList,_constructor)
@@ -964,6 +971,20 @@ ASFUNCTIONBODY(XMLList,appendChild)
 	return XML::appendChild(th->nodes[0],args,argslen);
 }
 
+ASFUNCTIONBODY(XMLList,_hasSimpleContent)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	assert_and_throw(argslen==0);
+	return abstract_b(th->hasSimpleContent());
+}
+
+ASFUNCTIONBODY(XMLList,_hasComplexContent)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	assert_and_throw(argslen==0);
+	return abstract_b(th->hasComplexContent());
+}
+
 ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	if(skip_impl || !implEnable)
@@ -992,6 +1013,44 @@ XML* XMLList::convertToXML() const
 	}
 	else
 		return NULL;
+}
+
+bool XMLList::hasSimpleContent() const
+{
+	if(nodes.size()==0)
+		return true;
+	else if(nodes.size()==1)
+		return nodes[0]->hasSimpleContent();
+	else
+	{
+		std::vector<XML*>::const_iterator it;
+		for(it=nodes.begin(); it!=nodes.end(); ++it)
+		{
+			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
+				return false;
+		}
+	}
+
+	return true;
+}
+
+bool XMLList::hasComplexContent() const
+{
+	if(nodes.size()==0)
+		return false;
+	else if(nodes.size()==1)
+		return nodes[0]->hasComplexContent();
+	else
+	{
+		std::vector<XML*>::const_iterator it;
+		for(it=nodes.begin(); it!=nodes.end(); ++it)
+		{
+			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
+				return true;
+		}
+	}
+
+	return false;
 }
 
 /*bool XMLList::nextValue(unsigned int index, ASObject*& out)

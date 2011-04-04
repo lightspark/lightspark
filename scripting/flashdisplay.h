@@ -199,12 +199,12 @@ public:
 class DisplayObjectContainer: public InteractiveObject
 {
 private:
-	void _addChildAt(DisplayObject* child, unsigned int index);
-	bool _contains(DisplayObject* d);
+	void _addChildAt(_R<DisplayObject> child, unsigned int index);
+	bool _contains(_R<DisplayObject> child);
 protected:
 	void requestInvalidation();
 	//This is shared between RenderThread and VM
-	std::list < DisplayObject* > dynamicDisplayList;
+	std::list < _R<DisplayObject> > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
@@ -212,9 +212,8 @@ protected:
 	void setOnStage(bool staged);
 public:
 	void dumpDisplayList();
-	bool _removeChild(DisplayObject*);
+	bool _removeChild(_R<DisplayObject> child);
 	DisplayObjectContainer();
-	~DisplayObjectContainer();
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

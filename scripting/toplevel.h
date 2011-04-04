@@ -694,6 +694,7 @@ public:
 	tiny_string toString(bool debugMsg=false);
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
+        xmlElementType getNodeKind() const;
 };
 
 class XMLList: public ASObject
@@ -710,8 +711,12 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(appendChild);
+	ASFUNCTION(_hasSimpleContent);
+	ASFUNCTION(_hasComplexContent);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	XML* convertToXML() const;
+	bool hasSimpleContent() const;
+	bool hasComplexContent() const;
 };
 
 class Date: public ASObject

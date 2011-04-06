@@ -3909,7 +3909,6 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 ASFUNCTIONBODY(Boolean,_toString)
 {
 	Boolean* th=static_cast<Boolean*>(obj);
-	LOG(LOG_NO_INFO, "HEJHAJ " << th->val << " NA.");
 	return Class<ASString>::getInstanceS(th->toString(false));
 }
 

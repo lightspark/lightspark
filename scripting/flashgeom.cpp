@@ -87,6 +87,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("offsetPoint","",Class<IFunction>::getFunction(offsetPoint),true);
 	c->setMethodByQName("setEmpty","",Class<IFunction>::getFunction(setEmpty),true);
 	c->setMethodByQName("union","",Class<IFunction>::getFunction(_union),true);
+	c->setMethodByQName("toString","",Class<IFunction>::getFunction(_toString),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -98,7 +99,7 @@ tiny_string Rectangle::toString(bool debugMsg)
 	assert_and_throw(implEnable);
 	
 	char buf[512];
-	snprintf(buf,512,"(x=%f, y=%f, w=%f, h=%f)",x,y,width,height);
+	snprintf(buf,512,"(x=%.2f, y=%.2f, w=%.2f, h=%.2f)",x,y,width,height);
 	
 	return tiny_string(buf, true);
 }
@@ -490,6 +491,12 @@ ASFUNCTIONBODY(Rectangle,_union)
 	ret->height = max(th->y + th->height, ti->y + ti->height);
 
 	return ret;
+}
+
+ASFUNCTIONBODY(Rectangle,_toString)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj);
+	return Class<ASString>::getInstanceS(th->toString(false));
 }
 
 void ColorTransform::sinit(Class_base* c)

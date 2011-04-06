@@ -3067,6 +3067,12 @@ ASFUNCTIONBODY(ASError,_getErrorID)
 	return abstract_i(th->errorID);
 }
 
+ASFUNCTIONBODY(ASError,_toString)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return Class<ASString>::getInstanceS(th->ASError::toString(false));
+}
+
 ASFUNCTIONBODY(ASError,_setName)
 {
 	ASError* th=static_cast<ASError*>(obj);

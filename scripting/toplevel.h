@@ -825,6 +825,7 @@ public:
 	ASFUNCTION(_setMessage);
 	ASFUNCTION(_getMessage);
 	ASFUNCTION(_getErrorID);
+	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg=false);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

@@ -351,6 +351,8 @@ public:
 		return val ? 1.0 : 0.0;
 	}
 	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base*);
+	ASFUNCTION(_toString);
 	ASFUNCTION(generator);
 };
 

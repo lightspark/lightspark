@@ -3906,6 +3906,18 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 	}
 }
 
+ASFUNCTIONBODY(Boolean,_toString)
+{
+	Boolean* th=static_cast<Boolean*>(obj);
+	LOG(LOG_NO_INFO, "HEJHAJ " << th->val << " NA.");
+	return Class<ASString>::getInstanceS(th->toString(false));
+}
+
+void Boolean::sinit(Class_base* c)
+{
+	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(Boolean::_toString),true);
+}
+
 ASFUNCTIONBODY(lightspark,parseInt)
 {
 	assert_and_throw(argslen==1 || argslen==2);

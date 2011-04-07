@@ -750,15 +750,15 @@ void Point::sinit(Class_base* c)
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getlength),true);
 	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX),true);
 	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY),true);
-	c->setMethodByQName("interpolate","",Class<IFunction>::getFunction(interpolate),true);
-	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),true);
+	c->setMethodByQName("interpolate","",Class<IFunction>::getFunction(interpolate),false);
+	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),false);
 	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
 	c->setMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),true);
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
 	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
 	c->setMethodByQName("offset","",Class<IFunction>::getFunction(offset),true);
-	c->setMethodByQName("polar","",Class<IFunction>::getFunction(polar),true);
+	c->setMethodByQName("polar","",Class<IFunction>::getFunction(polar),false);
 }
 
 void Point::buildTraits(ASObject* o)

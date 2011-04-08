@@ -1165,7 +1165,7 @@ ASFUNCTIONBODY(Matrix,invert)
 	ta /= Z;
 	tc = -(th->c);
 	tc /= Z;
-	ttx = th->c * th->ty + th->d * th->tx;
+	ttx = th->c * th->ty - th->d * th->tx;
 	ttx /= Z;
 	tb = -(th->b);
 	tb /= Z;

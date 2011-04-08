@@ -1122,17 +1122,21 @@ ASFUNCTIONBODY(Matrix,concat)
 	Matrix* th=static_cast<Matrix*>(obj);
 	Matrix* m=static_cast<Matrix*>(args[0]);
 
-	number_t ta, tb, tc, td;
+	number_t ta, tb, tc, td, tx, ty;
 
-	ta = th->a * m->a + th->c * m->c + th->tx * m->tx;
-	tb = th->b * m->a + th->d * m->c + th->ty * m->tx;
-	tc = th->a * m->b + th->c * m->d + th->tx * m->ty;
-	td = th->b * m->b + th->d * m->d + th->ty * m->ty;
+	ta = th->a * m->a + th->c * m->b;
+	tb = th->b * m->a + th->d * m->b;
+	tc = th->a * m->c + th->c * m->d;
+	td = th->b * m->c + th->d * m->d;
+	tx = th->a * m->tx + th->c * m->ty + th->tx;
+	ty = th->b * m->tx + th->d * m->ty + th->ty;
 
 	th->a = ta;
 	th->b = tb;
 	th->c = tc;
 	th->d = td;
+	th->tx = tx;
+	th->ty = ty;
 
 	return NULL;
 }

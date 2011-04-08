@@ -58,7 +58,6 @@ public:
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
 	Frame():initialized(false),invalid(true),constructed(false){}
-	~Frame();
 	void Render(bool maskEnabled);
 	void init(_R<MovieClip> parent, const DisplayListType& d);
 	void construct(_R<MovieClip> parent);

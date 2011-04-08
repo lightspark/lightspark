@@ -687,6 +687,13 @@ MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
 	frameScripts.resize(totalFrames,NullRef);
 }
 
+void MovieClip::finalize()
+{
+	Sprite::finalize();
+	frames.clear();
+	frameScripts.clear();
+}
+
 void MovieClip::setTotalFrames(uint32_t t)
 {
 	assert(totalFrames==1);

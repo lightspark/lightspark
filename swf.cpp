@@ -367,10 +367,8 @@ SystemState::~SystemState()
 		threadPool->forceStop();
 	stopEngines();
 
-	//decRef all our object before destroying classes
-	Variables.destroyContents();
-	loaderInfo->decRef();
-	loaderInfo=NULL;
+	//Finalize ourselves
+	finalize();
 
 	//We are already being destroyed, make our prototype abandon us
 	setPrototype(NULL);
@@ -387,9 +385,6 @@ SystemState::~SystemState()
 		it->second->finalizeObjects();
 		it->second->finalize();
 	}
-
-	//Also destroy all frames
-	frames.clear();
 
 	//Destroy the contents of all the classes
 	it=classes.begin();

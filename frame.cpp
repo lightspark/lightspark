@@ -57,10 +57,6 @@ Frame& Frame::operator=(const Frame& r)
 	return *this;
 }
 
-Frame::~Frame()
-{
-}
-
 void Frame::Render(bool maskEnabled)
 {
 	DisplayListType::const_iterator i=displayList.begin();

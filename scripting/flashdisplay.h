@@ -433,6 +433,7 @@ public:
 	std::vector<Frame> frames;
 	RunState state;
 	MovieClip();
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

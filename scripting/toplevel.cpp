@@ -3505,7 +3505,7 @@ void Class_base::abandonObject(ASObject* ob)
 	set<ASObject>::size_type ret=referencedObjects.erase(ob);
 	if(ret!=1)
 	{
-		LOG(LOG_ERROR,_("Failure in reference counting"));
+		LOG(LOG_ERROR,_("Failure in reference counting in ") << class_name);
 	}
 }
 

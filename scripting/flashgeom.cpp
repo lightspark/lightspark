@@ -87,6 +87,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("offsetPoint","",Class<IFunction>::getFunction(offsetPoint),true);
 	c->setMethodByQName("setEmpty","",Class<IFunction>::getFunction(setEmpty),true);
 	c->setMethodByQName("union","",Class<IFunction>::getFunction(_union),true);
+	c->setMethodByQName("toString","",Class<IFunction>::getFunction(_toString),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -98,7 +99,7 @@ tiny_string Rectangle::toString(bool debugMsg)
 	assert_and_throw(implEnable);
 	
 	char buf[512];
-	snprintf(buf,512,"(x=%f, y=%f, w=%f, h=%f)",x,y,width,height);
+	snprintf(buf,512,"(x=%.2f, y=%.2f, w=%.2f, h=%.2f)",x,y,width,height);
 	
 	return tiny_string(buf, true);
 }
@@ -492,6 +493,12 @@ ASFUNCTIONBODY(Rectangle,_union)
 	return ret;
 }
 
+ASFUNCTIONBODY(Rectangle,_toString)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj);
+	return Class<ASString>::getInstanceS(th->toString(false));
+}
+
 void ColorTransform::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -743,15 +750,15 @@ void Point::sinit(Class_base* c)
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getlength),true);
 	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX),true);
 	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY),true);
-	c->setMethodByQName("interpolate","",Class<IFunction>::getFunction(interpolate),true);
-	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),true);
+	c->setMethodByQName("interpolate","",Class<IFunction>::getFunction(interpolate),false);
+	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),false);
 	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
 	c->setMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),true);
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
 	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
 	c->setMethodByQName("offset","",Class<IFunction>::getFunction(offset),true);
-	c->setMethodByQName("polar","",Class<IFunction>::getFunction(polar),true);
+	c->setMethodByQName("polar","",Class<IFunction>::getFunction(polar),false);
 }
 
 void Point::buildTraits(ASObject* o)
@@ -1115,17 +1122,21 @@ ASFUNCTIONBODY(Matrix,concat)
 	Matrix* th=static_cast<Matrix*>(obj);
 	Matrix* m=static_cast<Matrix*>(args[0]);
 
-	number_t ta, tb, tc, td;
+	number_t ta, tb, tc, td, tx, ty;
 
-	ta = th->a * m->a + th->c * m->c + th->tx * m->tx;
-	tb = th->b * m->a + th->d * m->c + th->ty * m->tx;
-	tc = th->a * m->b + th->c * m->d + th->tx * m->ty;
-	td = th->b * m->b + th->d * m->d + th->ty * m->ty;
+	ta = th->a * m->a + th->c * m->b;
+	tb = th->b * m->a + th->d * m->b;
+	tc = th->a * m->c + th->c * m->d;
+	td = th->b * m->c + th->d * m->d;
+	tx = th->a * m->tx + th->c * m->ty + th->tx;
+	ty = th->b * m->tx + th->d * m->ty + th->ty;
 
 	th->a = ta;
 	th->b = tb;
 	th->c = tc;
 	th->d = td;
+	th->tx = tx;
+	th->ty = ty;
 
 	return NULL;
 }
@@ -1154,7 +1165,7 @@ ASFUNCTIONBODY(Matrix,invert)
 	ta /= Z;
 	tc = -(th->c);
 	tc /= Z;
-	ttx = th->c * th->ty + th->d * th->tx;
+	ttx = th->c * th->ty - th->d * th->tx;
 	ttx /= Z;
 	tb = -(th->b);
 	tb /= Z;

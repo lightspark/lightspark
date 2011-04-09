@@ -29,7 +29,7 @@
 		{
 			names.push(name);
 		}
-		Tests.assertArrayEquals([0, 1, 2], names, "'in' keyword", true);
+		Tests.assertArrayEquals(["0", "1", "2"], names, "'in' keyword", true);
 		
 		var a:Array=[76, 12, "3" ];
 

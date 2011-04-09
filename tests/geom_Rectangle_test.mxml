@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<mx:Application name="lightspark_geom_Point_test"
+<mx:Application name="lightspark_geom_Rectangle_test"
 	xmlns:mx="http://www.adobe.com/2006/mxml"
 	layout="absolute"
 	applicationComplete="appComplete();"
@@ -55,7 +55,7 @@
 		Tests.assertTrue(rect6.isEmpty(), "rectangle.setEmpty")
 
 		var rect9:Rectangle = new Rectangle(0, 0, 10, 10);
-		Tests.assertEquals(rect9.toString(), "(x=0, y=0, w=10, h=10)", "rectangle.toString");
+		Tests.assertEquals(rect9.toString(), "(x=0.00, y=0.00, w=10.00, h=10.00)", "rectangle.toString");
 
 		var rect7:Rectangle = new Rectangle(0, 0, 10, 10);
 		var rect8:Rectangle = new Rectangle(10, 10, 10, 10);

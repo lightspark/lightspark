@@ -53,6 +53,7 @@ void TextField::sinit(Class_base* c)
 	c->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),true);
 	c->setGetterByQName("text","",Class<IFunction>::getFunction(TextField::_getText),true);
 	c->setSetterByQName("text","",Class<IFunction>::getFunction(TextField::_setText),true);
+	c->setMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),true);
 }
 
 void TextField::buildTraits(ASObject* o)
@@ -107,6 +108,14 @@ ASFUNCTIONBODY(TextField,_setText)
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
 	th->text=args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField, appendText)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	assert_and_throw(argslen==1);
+	th->text += args[0]->toString();
 	return NULL;
 }
 

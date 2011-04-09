@@ -10,18 +10,24 @@
 	import flash.display.DisplayObject;
 	import flash.display.Sprite;
 	import Tests;
+
+	private function matrixEqual(m1:Matrix, m2:Matrix):Boolean {
+		return m1.a == m2.a && m1.b == m2.b && m1.c == m2.c && m1.d == m2.d && m1.tx == m2.tx && m1.ty == m2.ty;
+	}
+
 	private function appComplete():void
 	{
 		var mat:Matrix = new Matrix();
 		Tests.assertTrue(mat.a == 1 && mat.b == 0 && mat.c == 0 && mat.d == 1, "new Matrix()");
 		
 		var matc:Matrix = mat.clone();
-		Tests.assertTrue(mat.a == matc.a && mat.b == matc.b && mat.c == matc.c && mat.d == matc.d && mat.tx == matc.tx && mat.ty == matc.ty, "matrix.clone");
+		Tests.assertTrue(matrixEqual(mat, matc), "matrix.clone");
 
 		var matm1:Matrix = new Matrix(1, 4, 2, 5, 3, 5);
 		var matm2:Matrix = new Matrix(2, 4, 5, 7, 9, 11);
-		var matm3:Matrix = new Matrix(39, 78, 51, 106, 3, 5);
-		Tests.assertEquals(matm1.concat(matm2), matm3, "matrix.concat");
+		var matm3:Matrix = new Matrix(10, 28, 19, 55, 34, 96);
+		matm1.concat(matm2);
+		Tests.assertTrue(matrixEqual(matm1, matm3), "matrix.concat");
 
 		mat.a = 50; mat.b = 60; mat.c = 5; mat.d = 100;
 		mat.identity();
@@ -29,7 +35,7 @@
 		
 		var mat2:Matrix = new Matrix();
 		mat2.rotate(Math.PI / 2);
-		Tests.assertTrue(mat2.a == 0 && mat2.b == -1 && mat2.c == 1 && mat2.d == 0, "Matrix.rotate");
+		Tests.assertTrue(mat2.a == 0 && mat2.b == 1 && mat2.c == -1 && mat2.d == 0, "Matrix.rotate");
 		
 		var mat3:Matrix = new Matrix();
 		mat3.scale(4, 2);
@@ -42,7 +48,8 @@
 		var mati1:Matrix = new Matrix(1, 4, 2, 5, 0, 0);
 		var mati2:Matrix = mati1.clone();
 		mati2.invert();
-		Tests.assertEquals(mati1.concat(mati2), new Matrix(1, 0, 0, 1, 0, 0), "matrix.invert");
+		mati1.concat(mati2);
+		Tests.assertTrue(matrixEqual(mati1, new Matrix(1, 0, 0, 1, 0, 0)), "matrix.invert");
 
 		Tests.report(visual, this.name);
 	}

@@ -18,7 +18,7 @@
 			values.push(p);
 		}
 
-		Tests.assertArrayEquals([11, 12, 13], values, "Proxy: enumeration");
+		Tests.assertArrayEquals(["11", "12", "13"], values, "Proxy: enumeration");
 
 		Tests.assertEquals(0, t["data"], "Proxy: existing data");
 		Tests.assertEquals(1, t["data2"], "Proxy: not existing data");

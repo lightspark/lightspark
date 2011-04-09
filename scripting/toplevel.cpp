@@ -3066,6 +3066,12 @@ ASFUNCTIONBODY(ASError,_getErrorID)
 	return abstract_i(th->errorID);
 }
 
+ASFUNCTIONBODY(ASError,_toString)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return Class<ASString>::getInstanceS(th->ASError::toString(false));
+}
+
 ASFUNCTIONBODY(ASError,_setName)
 {
 	ASError* th=static_cast<ASError*>(obj);
@@ -3908,6 +3914,17 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		LOG(LOG_NOT_IMPLEMENTED,_("Boolean conversion for type ") << obj->getObjectType() << endl);
 		return false;
 	}
+}
+
+ASFUNCTIONBODY(Boolean,_toString)
+{
+	Boolean* th=static_cast<Boolean*>(obj);
+	return Class<ASString>::getInstanceS(th->toString(false));
+}
+
+void Boolean::sinit(Class_base* c)
+{
+	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(Boolean::_toString),true);
 }
 
 ASFUNCTIONBODY(lightspark,parseInt)

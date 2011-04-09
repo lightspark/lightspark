@@ -86,6 +86,7 @@ void LoaderInfo::buildTraits(ASObject* o)
 
 void LoaderInfo::finalize()
 {
+	EventDispatcher::finalize();
 	sharedEvents.reset();
 	loader.reset();
 }

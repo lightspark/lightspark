@@ -45,7 +45,7 @@ public:
 		m->incRef();
 	}
 	//Constructible from any compatible reference
-	template<class D> Ref(const Ref<D>& r):m(r.m)
+	template<class D> Ref(const Ref<D>& r):m(r.getPtr())
 	{
 		m->incRef();
 	}
@@ -73,6 +73,7 @@ public:
 	{
 		return m==r.getPtr();
 	}
+	template<class D> bool operator==(const NullableRef<D>&r) const;
 	bool operator==(T* r) const
 	{
 		return m==r;
@@ -164,6 +165,14 @@ public:
 	{
 		return m==r;
 	}
+	template<class D> bool operator!=(const NullableRef<D>& r) const
+	{
+		return m!=r.getPtr();
+	}
+	template<class D> bool operator!=(const Ref<D>& r) const
+	{
+		return m!=r.getPtr();
+	}
 	~NullableRef()
 	{
 		if(m)
@@ -178,6 +187,10 @@ public:
 			m->decRef();
 		m=NULL;
 	}
+	void fakeRelease()
+	{
+		m=NULL;
+	}
 };
 
 //Shorthand notation
@@ -187,6 +200,11 @@ template<class T>
 NullableRef<T> _MNR(T* a)
 {
 	return NullableRef<T>(a);
+}
+
+template<class T> template<class D> bool Ref<T>::operator==(const NullableRef<D>&r) const
+{
+	return m==r.getPtr();
 }
 
 };

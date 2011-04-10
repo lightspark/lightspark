@@ -980,11 +980,8 @@ bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, n
 InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, number_t y)
 {
 	//TODO: TOLOCK
-	if(mask)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Support masks in DefineShapeTag::hitTest");
-		::abort();
-	}
+	if(!mask.isNull())
+		throw UnsupportedException("Support masks in DefineShapeTag::hitTest");
 
 	number_t x1,x2,y1,y2;
 	boundsRect(x1,x2,y1,y2);

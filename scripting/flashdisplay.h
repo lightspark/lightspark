@@ -52,16 +52,16 @@ private:
 	/**
 	  	The object we are masking, if any
 	*/
-	DisplayObject* maskOf;
+	_NR<DisplayObject> maskOf;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
-	void becomeMaskOf(DisplayObject* m);
-	void setMask(DisplayObject* m);
+	void becomeMaskOf(_NR<DisplayObject> m);
+	void setMask(_NR<DisplayObject> m);
 	DisplayObjectContainer* parent;
 protected:
 	/**
 	  	The object that masks us, if any
 	*/
-	DisplayObject* mask;
+	_NR<DisplayObject> mask;
 	mutable Spinlock spinlock;
 	void computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;

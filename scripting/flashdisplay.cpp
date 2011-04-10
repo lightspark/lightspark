@@ -518,18 +518,18 @@ void Sprite::requestInvalidation()
 
 void DisplayObject::renderPrologue() const
 {
-	if(mask)
+	if(!mask.isNull())
 	{
 		if(mask->parent)
-			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
+			rt->pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
 		else
-			rt->pushMask(mask,MATRIX());
+			rt->pushMask(mask.getPtr(),MATRIX());
 	}
 }
 
 void DisplayObject::renderEpilogue() const
 {
-	if(mask)
+	if(!mask.isNull())
 		rt->popMask();
 }
 
@@ -575,13 +575,13 @@ void Sprite::Render(bool maskEnabled)
 
 void DisplayObject::hitTestPrologue() const
 {
-	if(mask)
-		sys->getInputThread()->pushMask(mask,mask->getConcatenatedMatrix().getInverted());
+	if(!mask.isNull())
+		sys->getInputThread()->pushMask(mask.getPtr(),mask->getConcatenatedMatrix().getInverted());
 }
 
 void DisplayObject::hitTestEpilogue() const
 {
-	if(mask)
+	if(!mask.isNull())
 		sys->getInputThread()->popMask();
 }
 
@@ -1141,6 +1141,8 @@ void DisplayObject::finalize()
 		loaderInfo->decRef();
 		loaderInfo=NULL;
 	}
+	maskOf.reset();
+	mask.reset();
 }
 
 DisplayObject::~DisplayObject()
@@ -1212,34 +1214,33 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 	}
 }
 
-void DisplayObject::becomeMaskOf(DisplayObject* m)
+void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
 {
-	assert_and_throw(mask==NULL);
-	if(m)
-		m->incRef();
-	DisplayObject* tmp=maskOf;
 	maskOf=m;
-	if(tmp)
-	{
-		//We are changing owner
-		tmp->setMask(NULL);
-		tmp->decRef();
-	}
+/*	_NR<DisplayObject> tmp=maskOf;
+	maskOf.reset();
+	if(!tmp.isNull())
+		tmp->setMask(NullRef);*/
 }
 
-void DisplayObject::setMask(DisplayObject* m)
+void DisplayObject::setMask(_NR<DisplayObject> m)
 {
 	bool mustInvalidate=(mask!=m) && onStage;
-	if(m)
-		m->incRef();
-	DisplayObject* tmp=mask;
-	mask=m;
-	if(tmp)
+
+	if(!mask.isNull())
 	{
-		//Drop the previous mask
-		tmp->becomeMaskOf(NULL);
-		tmp->decRef();
+		//Remove previous mask
+		mask->becomeMaskOf(NullRef);
 	}
+
+	mask=m;
+	if(!mask.isNull())
+	{
+		//Use new mask
+		this->incRef();
+		mask->becomeMaskOf(_MR(this));
+	}
+
 	if(mustInvalidate && onStage)
 		requestInvalidation();
 }
@@ -1290,7 +1291,7 @@ bool DisplayObject::isSimple() const
 
 bool DisplayObject::skipRender(bool maskEnabled) const
 {
-	return visible==false || alpha==0.0 || (!maskEnabled && maskOf!=NULL);
+	return visible==false || alpha==0.0 || (!maskEnabled && !maskOf.isNull());
 }
 
 void DisplayObject::defaultRender(bool maskEnabled) const
@@ -1359,7 +1360,7 @@ void DisplayObject::invalidate()
 void DisplayObject::requestInvalidation()
 {
 	//Let's invalidate also the mask
-	if(mask)
+	if(!mask.isNull())
 		mask->requestInvalidation();
 }
 
@@ -1422,11 +1423,11 @@ ASFUNCTIONBODY(DisplayObject,_getAlpha)
 ASFUNCTIONBODY(DisplayObject,_getMask)
 {
 	DisplayObject* th=Class<DisplayObject>::cast(obj);
-	if(th->mask==NULL)
+	if(th->mask.isNull())
 		return new Null;
 
 	th->mask->incRef();
-	return th->mask;
+	return th->mask.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_setMask)
@@ -1437,11 +1438,11 @@ ASFUNCTIONBODY(DisplayObject,_setMask)
 	{
 		//We received a valid mask object
 		DisplayObject* newMask=Class<DisplayObject>::cast(args[0]);
-		newMask->becomeMaskOf(th);
-		th->setMask(newMask);
+		newMask->incRef();
+		th->setMask(_MR(newMask));
 	}
 	else
-		th->setMask(NULL);
+		th->setMask(NullRef);
 
 	return NULL;
 }
@@ -2246,11 +2247,8 @@ InteractiveObject* Shape::hitTest(InteractiveObject* last, number_t x, number_t 
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	//TODO: TOLOCK
-	if(mask)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Support masks in Shape::hitTest");
-		::abort();
-	}
+	if(!mask.isNull())
+		throw UnsupportedException("Support masks in Shape::hitTest");
 
 	if(!graphics.isNull())
 	{

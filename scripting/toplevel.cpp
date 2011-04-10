@@ -659,7 +659,11 @@ ASFUNCTIONBODY(XML,localName)
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==0);
 	assert(th->node);
-	return Class<ASString>::getInstanceS(th->node->get_name());
+	xmlElementType nodetype=th->node->cobj()->type;
+	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
+		return new Null;
+	else
+		return Class<ASString>::getInstanceS(th->node->get_name());
 }
 
 ASFUNCTIONBODY(XML,appendChild)

@@ -17,7 +17,26 @@
 		xml2.appendChild(xml3);
 		Tests.assertEquals(xml1.toXMLString(),"<test1><test2><test3/></test2></test1>","Appending XML nodes");
 		var xml4:XML=new XML("");
-		Tests.assertEquals(xml4.localName(),null,"Behaviour when parsing empty strings");
+		Tests.assertEquals(xml4.localName(),null,"localName for empty string");
+		Tests.assertEquals(xml4.nodeKind(),"text","nodeKind for empty string");
+
+		var xml5:XML=new XML("<person age='22'><name>Alice</name></person>");
+		var xml6:XML=new XML("<person age='22'><name>Alice</name></person>");
+		var xml7:XML=new XML("<person age='22'><name>Bob</name></person>");
+		var xml8:XML=new XML("<person age='99'><name>Alice</name></person>");
+		var xmllist1:Object=new XMLList("<person age='22'><name>Alice</name></person>");
+		var simplexml:XML=new XML("<test>123</test>");
+
+		Tests.assertTrue(xml5==xml6, "equal nodes");
+		Tests.assertTrue(xml5!=xml7, "inequal child content");
+		Tests.assertTrue(xml5!=xml8, "inequal attribute values");
+		Tests.assertTrue(xml5==xmllist1, "equality: XML and XMLList");
+		Tests.assertTrue(xmllist1==xml5, "equality: XMLList and XML");
+		Tests.assertTrue(simplexml==Object("123"), "equality: simple XML and string");
+		Tests.assertTrue(simplexml==Object(123), "equality: simple XML and integer");
+		Tests.assertTrue(Object("123")==simplexml, "equality: string and simple XML");
+		Tests.assertTrue(Object(123)==simplexml, "equality: integer and simple XML");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

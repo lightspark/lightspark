@@ -573,7 +573,13 @@ void XML::sinit(Class_base* c)
 
 void XML::buildFromString(const string& str)
 {
-	if(!str.empty())
+	if(str.empty())
+	{
+		xmlpp::Element *el=parser.get_document()->create_root_node("");
+		node=el->add_child_text();
+		// TODO: node's parent (root) should be inaccessible from AS code
+	}
+	else
 	{
 		parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
 		node=parser.get_document()->get_root_node();
@@ -589,6 +595,11 @@ ASFUNCTIONBODY(XML,generator)
 		ASString* str=Class<ASString>::cast(args[0]);
 		return Class<XML>::getInstanceS(str->data);
 	}
+	else if(args[0]->getObjectType()==T_NULL ||
+		args[0]->getObjectType()==T_UNDEFINED)
+	{
+		return Class<XML>::getInstanceS("");
+	}
 	else if(args[0]->getPrototype()==Class<XML>::getClass())
 	{
 		args[0]->incRef();
@@ -600,12 +611,23 @@ ASFUNCTIONBODY(XML,generator)
 
 ASFUNCTIONBODY(XML,_constructor)
 {
+	assert_and_throw(argslen<=1);
 	XML* th=Class<XML>::cast(obj);
 	if(argslen==0 && th->constructed) //If root is already set we have been constructed outside AS code
 		return NULL;
-	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
-	ASString* str=Class<ASString>::cast(args[0]);
-	th->buildFromString(str->data);
+
+	if(argslen==0 ||
+	   args[0]->getObjectType()==T_NULL || 
+	   args[0]->getObjectType()==T_UNDEFINED)
+	{
+		th->buildFromString("");
+	}
+	else
+	{
+		assert_and_throw(args[0]->getObjectType()==T_STRING);
+		ASString* str=Class<ASString>::cast(args[0]);
+		th->buildFromString(str->data);
+	}
 	return NULL;
 }
 

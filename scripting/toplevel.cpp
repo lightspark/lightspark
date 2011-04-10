@@ -27,6 +27,7 @@
 #include <cmath>
 #include <limits>
 #include <cstdio>
+#include <libxml++/nodes/textnode.h>
 
 #include "abc.h"
 #include "toplevel.h"
@@ -919,6 +920,100 @@ tiny_string XML::toString(bool debugMsg)
 	return toString_priv();
 }
 
+bool XML::nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const
+{
+	assert(a && b);
+
+	// type
+	if(a->cobj()->type!=b->cobj()->type)
+		return false;
+
+	// name
+	if(a->get_name()!=b->get_name() || 
+	   (!a->get_name().empty() && 
+	    a->get_namespace_uri()!=b->get_namespace_uri()))
+		return false;
+
+	// attributes
+	xmlpp::Element *el1=dynamic_cast<xmlpp::Element *>(a);
+	xmlpp::Element *el2=dynamic_cast<xmlpp::Element *>(b);
+	if(el1 && el2)
+	{
+		xmlpp::Element::AttributeList attrs1=el1->get_attributes();
+		xmlpp::Element::AttributeList attrs2=el2->get_attributes();
+		if(attrs1.size()!=attrs2.size())
+			return false;
+
+		xmlpp::Element::AttributeList::iterator it=attrs1.begin();
+		while(it!=attrs1.end())
+		{
+			xmlpp::Attribute *attr=el2->get_attribute((*it)->get_name(),
+								  (*it)->get_namespace_prefix());
+			if(!attr || (*it)->get_value()!=attr->get_value())
+				return false;
+
+			++it;
+		}
+	}
+
+	// content
+	xmlpp::ContentNode *c1=dynamic_cast<xmlpp::ContentNode *>(a);
+	xmlpp::ContentNode *c2=dynamic_cast<xmlpp::ContentNode *>(b);
+	if(el1 && el2)
+	{
+		xmlpp::TextNode *text1=el1->get_child_text();
+		xmlpp::TextNode *text2=el2->get_child_text();
+
+		if(text1 && text2)
+		{
+			if(text1->get_content()!=text2->get_content())
+				return false;
+		}
+		else if(text1 || text2)
+			return false;
+
+	}
+	else if(c1 && c2)
+	{
+		if(c1->get_content()!=c2->get_content())
+			return false;
+	}
+	
+	// children
+	xmlpp::Node::NodeList myChildren=a->get_children();
+	xmlpp::Node::NodeList otherChildren=b->get_children();
+	if(myChildren.size()!=otherChildren.size())
+		return false;
+
+	xmlpp::Node::NodeList::iterator it1=myChildren.begin();
+	xmlpp::Node::NodeList::iterator it2=otherChildren.begin();
+	while(it1!=myChildren.end())
+	{
+		if (!nodesEqual(*it1, *it2))
+			return false;
+		++it1;
+		++it2;
+	}
+
+	return true;
+}
+
+bool XML::isEqual(ASObject* r)
+{
+	XML *x=dynamic_cast<XML *>(r);
+	if(x)
+		return nodesEqual(node, x->node);
+
+	XMLList *xl=dynamic_cast<XMLList *>(r);
+	if(xl)
+		return xl->isEqual(this);
+
+	if(hasSimpleContent())
+		return toString()==r->toString();
+
+	return false;
+}
+
 XMLList::~XMLList()
 {
 	if(sys->finalizingDestruction)
@@ -999,6 +1094,31 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 		return nodes[index];
 	else
 		return NULL;
+}
+
+bool XMLList::isEqual(ASObject* r)
+{
+	if(nodes.size()==0 && r->getObjectType()==T_UNDEFINED)
+		return true;
+
+	XMLList *x=dynamic_cast<XMLList *>(r);
+	if(x)
+	{
+		if(nodes.size()!=x->nodes.size())
+			return false;
+
+		for(unsigned int i=0; i<nodes.size(); i++)
+			if(!nodes[i]->isEqual(x->nodes[i]))
+				return false;
+
+		return true;
+	}
+	else if(nodes.size()==1)
+	{
+		return nodes[0]->isEqual(r);
+	}
+
+	return false;
 }
 
 XML* XMLList::convertToXML() const
@@ -1734,8 +1854,18 @@ bool ASString::isEqual(ASObject* r)
 		const ASString* s=static_cast<const ASString*>(r);
 		return s->data==data;
 	}
-	else
-		return false;
+	else if(r->getObjectType()==T_OBJECT)
+	{
+		XMLList *xl=dynamic_cast<XMLList *>(r);
+		if(xl)
+			return xl->isEqual(this);
+		XML *x=dynamic_cast<XML *>(r);
+		if(x && x->hasSimpleContent())
+			return x->toString()==data;
+
+	}
+
+	return false;
 }
 
 TRISTATE ASString::isLess(ASObject* r)
@@ -1797,8 +1927,14 @@ bool Undefined::isEqual(ASObject* r)
 		return true;
 	if(r->getObjectType()==T_NULL)
 		return true;
-	else
-		return false;
+	if(r->getObjectType()==T_OBJECT)
+	{
+		XMLList *xl=dynamic_cast<XMLList *>(r);
+		if(xl)
+			return xl->isEqual(this);
+	}
+
+	return false;
 }
 
 int Undefined::toInt()

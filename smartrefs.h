@@ -17,6 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifndef _SMARTREFS_H
+#define _SMARTREFS_H
+
 #include "asobject.h"
 
 namespace lightspark
@@ -208,3 +211,5 @@ template<class T> template<class D> bool Ref<T>::operator==(const NullableRef<D>
 }
 
 };
+
+#endif

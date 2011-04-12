@@ -22,6 +22,14 @@
 namespace lightspark
 {
 
+/*
+   NOTE: _Always_ define both copy constructor and assignment operator in non templated way.
+   Templated versions must be added if copying should be allowed from compatible types.
+   The compiler will _not_ use templated versions if the right hand type is the same 
+   as the left hand type */
+
+template<class T> class NullableRef;
+
 template<class T>
 class Ref
 {
@@ -114,6 +122,16 @@ public:
 	{
 		//The right hand Ref object is guaranteed to be valid
 		m->incRef();
+	}
+	NullableRef<T>& operator=(const NullableRef<T>& r)
+	{
+		if(r.m)
+			r.m->incRef();
+
+		if(m)
+			m->decRef();
+		m=r.m;
+		return *this;
 	}
 	template<class D> NullableRef<T>& operator=(const NullableRef<D>& r)
 	{

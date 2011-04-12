@@ -1201,7 +1201,8 @@ void RootMovieClip::setFrameCount(int f)
 	//TODO, maybe the next is a regular assert
 	assert_and_throw(cur_frame==&frames.back());
 	//Reserving guarantees than the vector is never invalidated
-	frames.reserve(f);
+	//Add 1 as the commit procedure will add one more (see commitFrame)
+	frames.reserve(f+1);
 	cur_frame=&frames.back();
 }
 

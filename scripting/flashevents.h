@@ -343,9 +343,9 @@ class ConstructFrameEvent: public Event
 friend class ABCVm;
 private:
 	Frame& frame;
-	MovieClip* parent;
+	_R<MovieClip> parent;
 public:
-	ConstructFrameEvent(Frame& f, MovieClip* p):Event("ConstructFrameEvent"),frame(f),parent(p){}
+	ConstructFrameEvent(Frame& f, _R<MovieClip> p):Event("ConstructFrameEvent"),frame(f),parent(p){}
 	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
 };
 

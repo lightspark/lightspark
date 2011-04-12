@@ -677,6 +677,7 @@ FunctionEvent::FunctionEvent(IFunction* _f, ASObject* _obj, ASObject** _args, ui
 		args[i] = _args[i];
 	}
 }
+
 FunctionEvent::~FunctionEvent()
 {
 	delete[] args;

@@ -172,9 +172,6 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 	lastMouseDownTarget=selected;
 	//Add event to the event queue
 	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseDown",true));
-	//And select that object for debugging (if needed)
-	if(m_sys->showDebug)
-		m_sys->getRenderThread()->selectedDebug=selected;
 }
 
 void InputThread::handleMouseUp(uint32_t x, uint32_t y)
@@ -219,9 +216,6 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				switch(event.key.keysym.sym)
 				{
-					case SDLK_d:
-						th->m_sys->showDebug=!th->m_sys->showDebug;
-						break;
 					case SDLK_p:
 						th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 						break;

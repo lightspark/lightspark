@@ -1023,57 +1023,6 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject*, number_t x, number_t y
 	return ret;
 }
 
-Vector2 MovieClip::debugRender(FTFont* font, bool deep)
-{
-	Vector2 ret(0,0);
-	if(!deep)
-	{
-		glColor3f(0.8,0,0);
-		font->Render("MovieClip",-1,FTPoint(0,50));
-		glBegin(GL_LINE_LOOP);
-			glVertex2i(0,0);
-			glVertex2i(100,0);
-			glVertex2i(100,100);
-			glVertex2i(0,100);
-		glEnd();
-		ret+=Vector2(100,100);
-	}
-	else
-	{
-		MatrixApplier ma;
-		if(framesLoaded)
-		{
-			assert_and_throw(state.FP<framesLoaded);
-			int curFP=state.FP;
-			Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
-	
-			for(;it!=frames[curFP].displayList.end();++it)
-			{
-				Vector2 off=it->second->debugRender(font, false);
-				glTranslatef(off.x,0,0);
-				ret.x+=off.x;
-				if(ret.x*20>sys->getFrameSize().Xmax)
-				{
-					glTranslatef(-ret.x,off.y,0);
-					ret.x=0;
-				}
-			}
-		}
-
-		{
-			Locker l(mutexDisplayList);
-			/*list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
-			for(;j!=dynamicDisplayList.end();++j)
-				(*j)->Render();*/
-			assert_and_throw(dynamicDisplayList.empty());
-		}
-
-		ma.unapply();
-	}
-	
-	return ret;
-}
-
 bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	bool valid=Sprite::boundsRect(xmin,xmax,ymin,ymax);

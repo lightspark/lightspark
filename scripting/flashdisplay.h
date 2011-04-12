@@ -132,10 +132,6 @@ public:
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
 	_NR<RootMovieClip> getRoot() { return root; }
-	virtual Vector2 debugRender(FTFont* font, bool deep)
-	{
-		throw RunTimeException("DisplayObject::debugRender");
-	}
 	void setMatrix(const MATRIX& m);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -459,10 +455,6 @@ public:
 	void setRoot(_NR<RootMovieClip> r);
 	void setOnStage(bool staged);
 	
-	/*! \brief Should be run with the default fragment/vertex program on
-	* * \param font An FT font used for debug messages
-	* * \param deep Flag to enable propagation of the debugRender to children */
-	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void check() const
 	{

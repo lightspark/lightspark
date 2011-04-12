@@ -103,9 +103,8 @@ private:
 	ITextureUploadable* getUploadJob();
 	/*
 		Common code to handle the core of the rendering
-		@param testMode True if overlays can be displayed
 	*/
-	void coreRendering(FTFont& font, bool testMode);
+	void coreRendering(FTFont& font);
 	Semaphore initialized;
 	class MaskData
 	{
@@ -189,8 +188,6 @@ public:
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
 	int fragmentTexScaleUniform;
-	
-	InteractiveObject* selectedDebug;
 };
 
 };

@@ -174,7 +174,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	mutexEnterFrameListeners("mutexEnterFrameListeners"),invalidateQueueHead(NULL),
-	invalidateQueueTail(NULL),showProfilingData(false),showDebug(false),currentVm(NULL),
+	invalidateQueueTail(NULL),showProfilingData(false),currentVm(NULL),
 	useInterpreter(true),useJit(false),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {

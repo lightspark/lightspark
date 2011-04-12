@@ -322,23 +322,6 @@ void DefineEditTextTag::Render(bool maskEnabled)
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineEditTextTag: Render"));
 }
 
-Vector2 DefineEditTextTag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0,0.8,0);
-	char buf[20];
-	snprintf(buf,20,"EditText id=%u",(int)CharacterID);
-	font->Render(buf,-1,FTPoint(0,50));
-	
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
-}
-
 ASObject* DefineEditTextTag::instance() const
 {
 	DefineEditTextTag* ret=new DefineEditTextTag(*this);
@@ -421,25 +404,6 @@ ASObject* DefineSpriteTag::instance() const
 	ret->bootstrap();
 	//TODO: should we call the frameScripts?
 	return ret;
-}
-
-Vector2 DefineSpriteTag::debugRender(FTFont* font, bool deep)
-{
-	if(deep)
-		return MovieClip::debugRender(font,deep);
-	
-	glColor3f(0.5,0,0);
-	char buf[20];
-	snprintf(buf,20,"Sprite id=%u",(int)SpriteID);
-	font->Render(buf,-1,FTPoint(0,50));
-	FTBBox tagBox=font->BBox(buf,-1);
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(tagBox.Upper().X(),0);
-		glVertex2i(tagBox.Upper().X(),100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(tagBox.Upper().X(),100);
 }
 
 void lightspark::ignore(istream& i, int count)
@@ -804,22 +768,6 @@ void DefineTextTag::Render(bool maskEnabled)
 	ma.unapply();*/
 }
 
-Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0,0.4,0.4);
-	char buf[20];
-	snprintf(buf,20,"Text id=%u",(int)CharacterId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
-}
-
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),Shapes(1)
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
@@ -1014,54 +962,6 @@ void DefineShapeTag::Render(bool maskEnabled)
 	number_t t1,t2,t3,t4;
 	DefineShapeTag::boundsRect(t1,t2,t3,t4);
 	Shape::renderImpl(maskEnabled,t1,t2,t3,t4);
-}
-
-Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0,0,0.8);
-	char buf[20];
-	snprintf(buf,20,"Shape id=%u",(int)ShapeId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
-}
-
-Vector2 DefineShape2Tag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0,0.8,0.8);
-	char buf[20];
-	snprintf(buf,20,"Shape2 id=%u",(int)ShapeId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
-}
-
-Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0.8,0,0.8);
-	char buf[20];
-	snprintf(buf,20,"Shape3 id=%u",(int)ShapeId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
@@ -1570,22 +1470,6 @@ void DefineButton2Tag::Render(bool maskEnabled)
 		for(unsigned int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
 	}*/
-}
-
-Vector2 DefineButton2Tag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0.8,0.8,0.8);
-	char buf[20];
-	snprintf(buf,20,"Button2 id=%u",(int)CharacterId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
 }
 
 bool DefineButton2Tag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

@@ -233,7 +233,6 @@ public:
 
 	//Interative analysis flags
 	bool showProfilingData;
-	bool showDebug;
 	
 	std::string errorCause;
 	void setError(const std::string& c);

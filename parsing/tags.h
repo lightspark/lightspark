@@ -112,7 +112,6 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	void Render(bool maskEnabled);
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	ASObject* instance() const
@@ -129,7 +128,6 @@ protected:
 	DefineShape2Tag(RECORDHEADER h, int v):DefineShapeTag(h,v){};
 public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const
 	{
 		DefineShape2Tag* ret=new DefineShape2Tag(*this);
@@ -145,7 +143,6 @@ protected:
 public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const
 	{
 		DefineShape3Tag* ret=new DefineShape3Tag(*this);
@@ -233,7 +230,6 @@ public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
 	int getId(){ return CharacterID; }
 	void Render(bool maskEnabled);
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const;
 };
 
@@ -387,7 +383,6 @@ public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	void Render(bool maskEnabled);
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual void handleEvent(Event*);
 
@@ -525,7 +520,6 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in,int v=1);
 	int getId(){ return CharacterId; }
 	void Render(bool maskEnabled);
-	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		getMatrix().multiply2D(TextBounds.Xmin/20,TextBounds.Ymin/20,xmin,ymin);
@@ -560,7 +554,6 @@ private:
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	virtual ASObject* instance() const;
 };
 

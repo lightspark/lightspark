@@ -128,7 +128,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::isOpaque");
 	}
-	virtual void setRoot(RootMovieClip* root);
+	virtual void setRoot(_NR<RootMovieClip> root);
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
 	_NR<RootMovieClip> getRoot() { return root; }
@@ -207,7 +207,7 @@ protected:
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
-	void setRoot(RootMovieClip* r);
+	void setRoot(_NR<RootMovieClip> r);
 	void setOnStage(bool staged);
 public:
 	void dumpDisplayList();
@@ -456,7 +456,7 @@ public:
 	void Render(bool maskEnabled);
 	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	void requestInvalidation();
-	void setRoot(RootMovieClip* r);
+	void setRoot(_NR<RootMovieClip> r);
 	void setOnStage(bool staged);
 	
 	/*! \brief Should be run with the default fragment/vertex program on

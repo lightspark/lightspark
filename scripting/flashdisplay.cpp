@@ -929,9 +929,9 @@ void MovieClip::setOnStage(bool staged)
 	}
 }
 
-void MovieClip::setRoot(RootMovieClip* r)
+void MovieClip::setRoot(_NR<RootMovieClip> r)
 {
-	if(r==root.getPtr())
+	if(r==root)
 		return;
 	if(!root.isNull())
 		root->unregisterChildClip(this);
@@ -941,7 +941,7 @@ void MovieClip::setRoot(RootMovieClip* r)
 	{
 		Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
 		for(;it!=frames[i].displayList.end();it++)
-			it->second->setRoot(root.getPtr());
+			it->second->setRoot(root);
 	}
 	if(!root.isNull())
 		root->registerChildClip(this);
@@ -1369,11 +1369,9 @@ void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, nu
 		parent->localToGlobal(xout, yout, xout, yout);
 }
 
-void DisplayObject::setRoot(RootMovieClip* r)
+void DisplayObject::setRoot(_NR<RootMovieClip> r)
 {
-	if(r)
-		r->incRef();
-	root=_MNR(r);
+	root=r;
 }
 
 void DisplayObject::setOnStage(bool staged)
@@ -1886,9 +1884,9 @@ void DisplayObjectContainer::dumpDisplayList()
 }
 
 //This must be called fromt VM context
-void DisplayObjectContainer::setRoot(RootMovieClip* r)
+void DisplayObjectContainer::setRoot(_NR<RootMovieClip> r)
 {
-	if(r!=root.getPtr())
+	if(r!=root)
 	{
 		DisplayObject::setRoot(r);
 		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
@@ -1947,7 +1945,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 	child->setParent(_MR(this));
 
 	//Set the root of the movie to this container
-	child->setRoot(root.getPtr());
+	child->setRoot(root);
 
 	{
 		Locker l(mutexDisplayList);
@@ -1981,7 +1979,7 @@ bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 		dynamicDisplayList.erase(it);
 	}
 	//Set the root of the movie to NULL
-	child->setRoot(NULL);
+	child->setRoot(NullRef);
 	//We can release the reference to the child
 	child->setParent(NullRef);
 	child->setOnStage(false);

@@ -24,6 +24,7 @@
 #include "threading.h"
 #include "platforms/pluginutils.h"
 #include "swftypes.h"
+#include "smartrefs.h"
 #include <vector>
 
 namespace lightspark
@@ -53,7 +54,7 @@ private:
 	Mutex mutexDragged;
 
 	Sprite* curDragged;
-	InteractiveObject* lastMouseDownTarget;
+	_NR<InteractiveObject> lastMouseDownTarget;
 	RECT dragLimit;
 	class MaskData
 	{

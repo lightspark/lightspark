@@ -113,7 +113,7 @@ public:
 	virtual int getId(){ return ShapeId; }
 	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	ASObject* instance() const
 	{
 		DefineShapeTag* ret=new DefineShapeTag(*this);

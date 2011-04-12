@@ -926,7 +926,7 @@ bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, n
 	return true;
 }
 
-InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, number_t y)
+_NR<InteractiveObject> DefineShapeTag::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	//TODO: TOLOCK
 	if(!mask.isNull())
@@ -935,7 +935,7 @@ InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, 
 	number_t x1,x2,y1,y2;
 	boundsRect(x1,x2,y1,y2);
 	if(x<x1 || x>x2 || y<y1 || y>y2)
-		return NULL;
+		return NullRef;
 
 	bool ret=CairoRenderer::hitTest(cachedTokens, 0.05, x, y);
 	if(ret)
@@ -946,12 +946,12 @@ InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, 
 			number_t globalX, globalY;
 			getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
 			if(!sys->getInputThread()->isMasked(globalX, globalY))
-				return NULL;
+				return NullRef;
 		}
 		return last;
 	}
 	else
-		return NULL;
+		return NullRef;
 }
 
 void DefineShapeTag::Render(bool maskEnabled)

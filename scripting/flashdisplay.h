@@ -119,7 +119,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getBounds");
 	}
-	virtual InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y)
+	virtual _NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 	{
 		throw RunTimeException("DisplayObject::hitTest");
 	}
@@ -290,7 +290,7 @@ public:
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	bool isOpaque(number_t x, number_t y) const;
 	void invalidate();
 	void requestInvalidation();
@@ -392,7 +392,7 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
-	InteractiveObject* hitTestImpl(number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(number_t x, number_t y);
 	void setConstructed() { RELEASE_WRITE(constructed,true); }
 public:
 	Sprite();
@@ -408,7 +408,7 @@ public:
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void invalidate();
 	void requestInvalidation();
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
@@ -450,7 +450,7 @@ public:
 
 	//DisplayObject interface
 	void Render(bool maskEnabled);
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void requestInvalidation();
 	void setRoot(_NR<RootMovieClip> r);
 	void setOnStage(bool staged);

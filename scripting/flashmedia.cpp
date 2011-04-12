@@ -192,14 +192,14 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	return NULL;
 }
 
-InteractiveObject* Video::hitTest(InteractiveObject* last, number_t x, number_t y)
+_NR<InteractiveObject> Video::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
-	assert_and_throw(mask==NULL);
+	assert_and_throw(mask.isNull());
 	if(x>=0 && x<=width && y>=0 && y<=height)
 		return last;
 	else
-		return NULL;
+		return NullRef;
 }
 
 void Sound::sinit(Class_base* c)

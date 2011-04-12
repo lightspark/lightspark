@@ -588,9 +588,9 @@ void DisplayObject::hitTestEpilogue() const
 		sys->getInputThread()->popMask();
 }
 
-InteractiveObject* Sprite::hitTestImpl(number_t x, number_t y)
+_NR<InteractiveObject> Sprite::hitTestImpl(number_t x, number_t y)
 {
-	InteractiveObject* ret=NULL;
+	_NR<InteractiveObject> ret = NullRef;
 	{
 		//Test objects added at runtime, in reverse order
 		Locker l(mutexDisplayList);
@@ -599,8 +599,9 @@ InteractiveObject* Sprite::hitTestImpl(number_t x, number_t y)
 		{
 			number_t localX, localY;
 			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			ret=(*j)->hitTest(this, localX,localY);
-			if(ret)
+			this->incRef();
+			ret=(*j)->hitTest(_MR(this), localX,localY);
+			if(!ret.isNull())
 				break;
 		}
 	}
@@ -610,21 +611,22 @@ InteractiveObject* Sprite::hitTestImpl(number_t x, number_t y)
 		//The coordinates are locals
 		if(graphics->hitTest(x,y))
 		{
-			ret=this;
+			this->incRef();
+			ret=_MR(this);
 			//Also test if the we are under the mask (if any)
 			if(sys->getInputThread()->isMaskPresent())
 			{
 				number_t globalX, globalY;
 				getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
 				if(!sys->getInputThread()->isMasked(globalX, globalY))
-					ret=NULL;
+					ret=NullRef;
 			}
 		}
 	}
 	return ret;
 }
 
-InteractiveObject* Sprite::hitTest(InteractiveObject*, number_t x, number_t y)
+_NR<InteractiveObject> Sprite::hitTest(_NR<InteractiveObject>, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
 	//TODO: TOLOCK
@@ -632,13 +634,13 @@ InteractiveObject* Sprite::hitTest(InteractiveObject*, number_t x, number_t y)
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
 	if(!notEmpty)
-		return NULL;
+		return NullRef;
 	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NULL;
+		return NullRef;
 
 	hitTestPrologue();
 
-	InteractiveObject* ret=hitTestImpl(x, y);
+	_NR<InteractiveObject> ret=hitTestImpl(x, y);
 
 	hitTestEpilogue();
 	return ret;
@@ -985,7 +987,7 @@ void MovieClip::Render(bool maskEnabled)
 	renderEpilogue();
 }
 
-InteractiveObject* MovieClip::hitTest(InteractiveObject*, number_t x, number_t y)
+_NR<InteractiveObject> MovieClip::hitTest(_NR<InteractiveObject>, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be tested in the opposite order of Rendering
 
@@ -994,13 +996,13 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject*, number_t x, number_t y
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
 	if(!notEmpty)
-		return NULL;
+		return NullRef;
 	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NULL;
+		return NullRef;
 
 	hitTestPrologue();
 
-	InteractiveObject* ret=NULL;
+	_NR<InteractiveObject> ret = NullRef;
 	if(framesLoaded)
 	{
 		uint32_t curFP=state.FP;
@@ -1010,13 +1012,14 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject*, number_t x, number_t y
 		{
 			number_t localX, localY;
 			it->second->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			ret=it->second->hitTest(this, localX,localY);
-			if(ret)
+			this->incRef();
+			ret=it->second->hitTest(_MR(this), localX,localY);
+			if(!ret.isNull())
 				break;
 		}
 	}
 
-	if(ret==NULL)
+	if(ret.isNull())
 		ret=Sprite::hitTestImpl(x, y);
 
 	hitTestEpilogue();
@@ -2183,7 +2186,7 @@ bool Shape::isOpaque(number_t x, number_t y) const
 	return false;
 }
 
-InteractiveObject* Shape::hitTest(InteractiveObject* last, number_t x, number_t y)
+_NR<InteractiveObject> Shape::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
@@ -2198,7 +2201,7 @@ InteractiveObject* Shape::hitTest(InteractiveObject* last, number_t x, number_t 
 			return last;
 	}
 
-	return NULL;
+	return NullRef;
 }
 
 void Shape::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const

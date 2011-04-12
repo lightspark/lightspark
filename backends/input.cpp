@@ -154,10 +154,10 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	InteractiveObject* selected=NULL;
+	_NR<InteractiveObject>selected = NullRef;
 	try
 	{
-		selected=m_sys->hitTest(NULL,x,y);
+		selected=m_sys->hitTest(NullRef,x,y);
 	}
 	catch(LightsparkException& e)
 	{
@@ -171,16 +171,16 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	lastMouseDownTarget=selected;
 	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseDown",true));
+	m_sys->currentVm->addEvent(selected.getPtr(),Class<MouseEvent>::getInstanceS("mouseDown",true));
 }
 
 void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	InteractiveObject* selected=NULL;
+	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
-		selected=m_sys->hitTest(NULL,x,y);
+		selected=m_sys->hitTest(NullRef,x,y);
 	}
 	catch(LightsparkException& e)
 	{
@@ -193,12 +193,12 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 		return;
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));
+	m_sys->currentVm->addEvent(selected.getPtr(),Class<MouseEvent>::getInstanceS("mouseUp",true));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
-		m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("click",true));
-		lastMouseDownTarget=NULL;
+		m_sys->currentVm->addEvent(selected.getPtr(),Class<MouseEvent>::getInstanceS("click",true));
+		lastMouseDownTarget=NullRef;
 	}
 }
 

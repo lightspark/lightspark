@@ -381,15 +381,16 @@ SystemState::~SystemState()
 
 	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
-	{
-		it->second->finalizeObjects();
 		it->second->finalize();
-	}
 
 	//Destroy the contents of all the classes
 	it=classes.begin();
 	for(;it!=classes.end();++it)
+	{
+		//Make sure classes survives their cleanUp
+		it->second->incRef();
 		it->second->cleanUp();
+	}
 
 	//Destroy all registered classes
 	it=classes.begin();

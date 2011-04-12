@@ -3524,6 +3524,8 @@ void Class_base::finalizeObjects() const
 
 void Class_base::finalize()
 {
+	finalizeObjects();
+
 	ASObject::finalize();
 	if(constructor)
 	{

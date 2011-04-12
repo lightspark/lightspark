@@ -61,6 +61,7 @@ private:
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
 	std::set<ASObject*> referencedObjects;
+	void finalizeObjects() const;
 
 public:
 	Class_base* super;
@@ -118,7 +119,6 @@ public:
 	void abandonObject(ASObject* ob);
 	void acquireObject(ASObject* ob);
 	void cleanUp();
-	void finalizeObjects() const;
 };
 
 class Class_object: public Class_base

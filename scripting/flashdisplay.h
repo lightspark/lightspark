@@ -56,7 +56,7 @@ private:
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void becomeMaskOf(_NR<DisplayObject> m);
 	void setMask(_NR<DisplayObject> m);
-	DisplayObjectContainer* parent;
+	_NR<DisplayObjectContainer> parent;
 protected:
 	/**
 	  	The object that masks us, if any
@@ -67,8 +67,8 @@ protected:
 			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
 	bool onStage;
-	RootMovieClip* root;
-	LoaderInfo* loaderInfo;
+	_NR<RootMovieClip> root;
+	_NR<LoaderInfo> loaderInfo;
 	int computeWidth();
 	int computeHeight();
 	bool isSimple() const;
@@ -91,14 +91,13 @@ public:
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
-	DisplayObjectContainer* getParent() const { return parent; }
-	void setParent(DisplayObjectContainer* p);
+	_NR<DisplayObjectContainer> getParent() const { return parent; }
+	void setParent(_NR<DisplayObjectContainer> p);
 	/*
 	   Used to link DisplayObjects the invalidation queue
 	*/
-	DisplayObject* invalidateQueueNext;
+	_NR<DisplayObject> invalidateQueueNext;
 	DisplayObject();
-	~DisplayObject();
 	void finalize();
 	MATRIX getMatrix() const;
 	virtual void invalidate();
@@ -132,7 +131,7 @@ public:
 	virtual void setRoot(RootMovieClip* root);
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
-	RootMovieClip* getRoot() { return root; }
+	_NR<RootMovieClip> getRoot() { return root; }
 	virtual Vector2 debugRender(FTFont* font, bool deep)
 	{
 		throw RunTimeException("DisplayObject::debugRender");

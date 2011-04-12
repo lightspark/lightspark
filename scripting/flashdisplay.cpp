@@ -513,17 +513,20 @@ void Sprite::requestInvalidation()
 {
 	DisplayObjectContainer::requestInvalidation();
 	if(!graphics.isNull())
-		sys->addToInvalidateQueue(this);
+	{
+		this->incRef();
+		sys->addToInvalidateQueue(_MR(this));
+	}
 }
 
 void DisplayObject::renderPrologue() const
 {
 	if(!mask.isNull())
 	{
-		if(mask->parent)
-			rt->pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
-		else
+		if(mask->parent.isNull())
 			rt->pushMask(mask.getPtr(),MATRIX());
+		else
+			rt->pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
 	}
 }
 
@@ -928,9 +931,9 @@ void MovieClip::setOnStage(bool staged)
 
 void MovieClip::setRoot(RootMovieClip* r)
 {
-	if(r==root)
+	if(r==root.getPtr())
 		return;
-	if(root)
+	if(!root.isNull())
 		root->unregisterChildClip(this);
 	DisplayObjectContainer::setRoot(r);
 	//Now notify all the objects in all frames
@@ -938,9 +941,9 @@ void MovieClip::setRoot(RootMovieClip* r)
 	{
 		Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
 		for(;it!=frames[i].displayList.end();it++)
-			it->second->setRoot(root);
+			it->second->setRoot(root.getPtr());
 	}
-	if(root)
+	if(!root.isNull())
 		root->registerChildClip(this);
 }
 
@@ -1136,17 +1139,12 @@ DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty
 void DisplayObject::finalize()
 {
 	EventDispatcher::finalize();
-	if(loaderInfo)
-	{
-		loaderInfo->decRef();
-		loaderInfo=NULL;
-	}
 	maskOf.reset();
+	parent.reset();
 	mask.reset();
-}
-
-DisplayObject::~DisplayObject()
-{
+	root.reset();
+	loaderInfo.reset();
+	invalidateQueueNext.reset();
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -1247,10 +1245,10 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 
 MATRIX DisplayObject::getConcatenatedMatrix() const
 {
-	if(parent)
-		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
-	else
+	if(parent.isNull())
 		return getMatrix();
+	else
+		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
 }
 
 MATRIX DisplayObject::getMatrix() const
@@ -1367,13 +1365,15 @@ void DisplayObject::requestInvalidation()
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	getMatrix().multiply2D(xin, yin, xout, yout);
-	if(parent)
+	if(!parent.isNull())
 		parent->localToGlobal(xout, yout, xout, yout);
 }
 
 void DisplayObject::setRoot(RootMovieClip* r)
 {
-	root=r;
+	if(r)
+		r->incRef();
+	root=_MNR(r);
 }
 
 void DisplayObject::setOnStage(bool staged)
@@ -1585,13 +1585,11 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->loaderInfo)
-	{
-		th->loaderInfo->incRef();
-		return th->loaderInfo;
-	}
-	else
+	if(th->loaderInfo.isNull())
 		return new Undefined;
+
+	th->loaderInfo->incRef();
+	return th->loaderInfo.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getStage)
@@ -1663,7 +1661,7 @@ ASFUNCTIONBODY(DisplayObject,_getName)
 	return Class<ASString>::getInstanceS(th->name);
 }
 
-void DisplayObject::setParent(DisplayObjectContainer* p)
+void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
 {
 	if(parent!=p)
 	{
@@ -1675,23 +1673,21 @@ void DisplayObject::setParent(DisplayObjectContainer* p)
 ASFUNCTIONBODY(DisplayObject,_getParent)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->parent==NULL)
+	if(th->parent.isNull())
 		return new Undefined;
 
 	th->parent->incRef();
-	return th->parent;
+	return th->parent.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->root)
-	{
-		th->root->incRef();
-		return th->root;
-	}
-	else
+	if(th->root.isNull())
 		return new Undefined;
+
+	th->root->incRef();
+	return th->root.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)
@@ -1892,7 +1888,7 @@ void DisplayObjectContainer::dumpDisplayList()
 //This must be called fromt VM context
 void DisplayObjectContainer::setRoot(RootMovieClip* r)
 {
-	if(r!=root)
+	if(r!=root.getPtr())
 	{
 		DisplayObject::setRoot(r);
 		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
@@ -1939,7 +1935,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 {
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
-	if(child->getParent())
+	if(!child->getParent().isNull())
 	{
 		//Child already in this container
 		if(child->getParent()==this)
@@ -1947,11 +1943,11 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 		else
 			child->getParent()->_removeChild(child);
 	}
-	child->setParent(this);
-	incRef();
+	this->incRef();
+	child->setParent(_MR(this));
 
 	//Set the root of the movie to this container
-	child->setRoot(root);
+	child->setRoot(root.getPtr());
 
 	{
 		Locker l(mutexDisplayList);
@@ -1987,8 +1983,7 @@ bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 	//Set the root of the movie to NULL
 	child->setRoot(NULL);
 	//We can release the reference to the child
-	child->getParent()->decRef();
-	child->setParent(NULL);
+	child->setParent(NullRef);
 	child->setOnStage(false);
 	child->decRef();
 	return true;
@@ -2127,8 +2122,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 		th->dynamicDisplayList.erase(it);
 	}
 	//We can release the reference to the child
-	child->getParent()->decRef();
-	child->setParent(NULL);
+	child->setParent(NullRef);
 	child->setOnStage(false);
 
 	//As we return the child we don't decRef it
@@ -2307,7 +2301,10 @@ void Shape::invalidate()
 void Shape::requestInvalidation()
 {
 	if(!graphics.isNull())
-		sys->addToInvalidateQueue(this);
+	{
+		this->incRef();
+		sys->addToInvalidateQueue(_MR(this));
+	}
 }
 
 ASFUNCTIONBODY(Shape,_constructor)

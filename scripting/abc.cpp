@@ -1089,12 +1089,12 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, Event* event)
 	//Do bubbling phase
 	if(event->bubbles && dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
 	{
-		DisplayObjectContainer* cur=static_cast<DisplayObject*>(dispatcher)->getParent();
+		DisplayObjectContainer* cur=static_cast<DisplayObject*>(dispatcher)->getParent().getPtr();
 		while(cur)
 		{
 			event->currentTarget=cur;
 			cur->handleEvent(event);
-			cur=cur->getParent();
+			cur=cur->getParent().getPtr();
 		}
 	}
 	//Reset events so they might be recycled

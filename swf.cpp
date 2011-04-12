@@ -57,9 +57,12 @@ extern TLSDATA ParseThread* pt;
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),initialized(false),parsingIsFailed(false),frameRate(0),
 	mutexFrames("mutexFrame"),toBind(false),mutexChildrenClips("mutexChildrenClips")
 {
-	root=this;
+	this->incRef();
+	root=_MR(this);
 	sem_init(&new_frame,0,0);
-	loaderInfo=li;
+	if(li)
+		li->incRef();
+	loaderInfo=_MNR(li);
 	//Reset framesLoaded, as there are still not available
 	framesLoaded=0;
 
@@ -97,7 +100,7 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 	if(origin.getPathFile() == "" && filename != "")
 		origin = origin.goToURL(filename);
 
-	if(loaderInfo)
+	if(!loaderInfo.isNull())
 	{
 		loaderInfo->url=origin.getParsedURL();
 		loaderInfo->loaderURL=origin.getParsedURL();
@@ -191,12 +194,13 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	audioManager=new AudioManager(pluginManager);
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
-	loaderInfo=Class<LoaderInfo>::getInstanceS();
+	loaderInfo=_MR(Class<LoaderInfo>::getInstanceS());
 	//If the size is not known those will stay at zero
 	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
 	stage=Class<Stage>::getInstanceS();
-	setParent(stage);
+	stage->incRef();
+	setParent(_MR(stage));
 	startTime=compat_msectiming();
 	
 	setPrototype(Class<MovieClip>::getClass());
@@ -849,11 +853,11 @@ ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 	return ret;
 }
 
-void SystemState::addToInvalidateQueue(DisplayObject* d)
+void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 {
 	SpinlockLocker l(invalidateQueueLock);
 	//Check if the object is already in the queue
-	if(d->invalidateQueueNext || d==invalidateQueueTail)
+	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail)
 		return;
 	if(invalidateQueueHead==NULL)
 		invalidateQueueHead=invalidateQueueTail=d;
@@ -862,23 +866,21 @@ void SystemState::addToInvalidateQueue(DisplayObject* d)
 		d->invalidateQueueNext=invalidateQueueHead;
 		invalidateQueueHead=d;
 	}
-	d->incRef();
 }
 
 void SystemState::flushInvalidationQueue()
 {
 	SpinlockLocker l(invalidateQueueLock);
-	DisplayObject* cur=invalidateQueueHead;
-	while(cur)
+	_NR<DisplayObject> cur=invalidateQueueHead;
+	while(!cur.isNull())
 	{
 		cur->invalidate();
-		DisplayObject* next=cur->invalidateQueueNext;
-		cur->invalidateQueueNext=NULL;
-		cur->decRef();
+		_NR<DisplayObject> next=cur->invalidateQueueNext;
+		cur->invalidateQueueNext=NullRef;
 		cur=next;
 	}
-	invalidateQueueHead=NULL;
-	invalidateQueueTail=NULL;
+	invalidateQueueHead=NullRef;
+	invalidateQueueTail=NullRef;
 }
 
 #ifdef PROFILING_SUPPORT

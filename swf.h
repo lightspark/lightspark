@@ -212,11 +212,11 @@ private:
 	/*
 	   The head of the invalidate queue
 	*/
-	DisplayObject* invalidateQueueHead;
+	_NR<DisplayObject> invalidateQueueHead;
 	/*
 	   The tail of the invalidate queue
 	*/
-	DisplayObject* invalidateQueueTail;
+	_NR<DisplayObject> invalidateQueueTail;
 	/*
 	   The lock for the invalidate queue
 	*/
@@ -290,8 +290,9 @@ public:
 	float getRenderRate();
 	/*
 	   This is not supposed to be used in the VM, it's only useful to create the Downloader when plugin is being used
+	   So don't create a smart reference
 	*/
-	LoaderInfo* getLoaderInfo() const { return loaderInfo; }
+	LoaderInfo* getLoaderInfo() const { return loaderInfo.getPtr(); }
 
 	//Stuff to be done once for process and not for plugin instance
 	static void staticInit() DLL_PUBLIC;
@@ -316,7 +317,7 @@ public:
 	void unregisterEnterFrameListener(DisplayObject* clip);
 
 	//Invalidation queue management
-	void addToInvalidateQueue(DisplayObject* d);
+	void addToInvalidateQueue(_R<DisplayObject> d);
 	void flushInvalidationQueue();
 
 #ifdef PROFILING_SUPPORT

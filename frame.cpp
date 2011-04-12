@@ -109,9 +109,9 @@ void Frame::init(_R<MovieClip> parent, const DisplayListType& d)
 		//Only the root movie clip can have control tags
 		if(!controls.empty())
 		{
-			assert_and_throw(parent->getRoot()==parent.getPtr());
+			assert_and_throw(parent->getRoot()==parent);
 			for(unsigned int i=0;i<controls.size();i++)
-				controls[i]->execute(parent->getRoot());
+				controls[i]->execute(parent->getRoot().getPtr());
 			controls.clear();
 		}
 

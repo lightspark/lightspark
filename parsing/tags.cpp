@@ -261,7 +261,7 @@ void RemoveObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 	{
 		if(it->first.Depth==Depth)
 		{
-			it->second->setParent(NULL);
+			it->second->setParent(NullRef);
 			it->second->setRoot(NULL);
 			ls.erase(it);
 			break;
@@ -912,7 +912,8 @@ void DefineShapeTag::computeCached()
 
 void DefineShapeTag::requestInvalidation()
 {
-	sys->addToInvalidateQueue(this);
+	this->incRef();
+	sys->addToInvalidateQueue(_MR(this));
 }
 
 void DefineShapeTag::invalidate()
@@ -1274,8 +1275,9 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, MovieClip* parent) const
 			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
 	}
 
-	obj->setParent(parent);
-	obj->setRoot(parent->getRoot());
+	parent->incRef();
+	obj->setParent(_MR(parent));
+	obj->setRoot(parent->getRoot().getPtr());
 	//Invalidate the object now that all properties are correctly set
 	obj->requestInvalidation();
 }
@@ -1311,10 +1313,11 @@ void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
+		//TODO: clean up this nonsense. Of course the parent is a dictionary tag!
 		if(parentDict)
 			localRoot=parentDict->loadedFrom;
 		else
-			localRoot=parent->getRoot();
+			localRoot=parent->getRoot().getPtr();
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
 
 		//We can create the object right away

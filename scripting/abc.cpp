@@ -1085,7 +1085,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, Event* event)
 	assert_and_throw(event->target==NULL);
 	event->target=dispatcher;
 	event->currentTarget=dispatcher;
-	dispatcher->handleEvent(event);
+	event->incRef();
+	dispatcher->handleEvent(_MR(event));
 	//Do bubbling phase
 	if(event->bubbles && dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
 	{
@@ -1093,7 +1094,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, Event* event)
 		while(cur)
 		{
 			event->currentTarget=cur;
-			cur->handleEvent(event);
+			event->incRef();
+			cur->handleEvent(_MR(event));
 			cur=cur->getParent().getPtr();
 		}
 	}

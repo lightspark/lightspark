@@ -284,6 +284,12 @@ EventDispatcher::EventDispatcher():handlersMutex("handlersMutex")
 {
 }
 
+void EventDispatcher::finalize()
+{
+	ASObject::finalize();
+	handlers.clear();
+}
+
 void EventDispatcher::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -346,7 +352,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
 		f->incRef();
-		const listener newListener(f, priority);
+		const listener newListener(_MR(f), priority);
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		//Error check
@@ -395,11 +401,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		IFunction* f=static_cast<IFunction*>(args[1]);
 		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),f);
 		if(it!=h->second.end())
-		{
-			//The listener owns the function
-			it->f->decRef();
 			h->second.erase(it);
-		}
 		if(h->second.empty()) //Remove the entry from the map
 			th->handlers.erase(h);
 	}
@@ -444,7 +446,7 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 	return NULL;
 }
 
-void EventDispatcher::handleEvent(Event* e)
+void EventDispatcher::handleEvent(_R<Event> e)
 {
 	check();
 	e->check();
@@ -470,7 +472,7 @@ void EventDispatcher::handleEvent(Event* e)
 		//tmpListener is now also owned by the vector
 		tmpListener[i].f->incRef();
 		//If the f is a class method, the 'this' is ignored
-		ASObject* const arg0=e;
+		ASObject* const arg0=e.getPtr();
 		ASObject* ret=tmpListener[i].f->call(this,&arg0,1);
 		if(ret)
 			ret->decRef();

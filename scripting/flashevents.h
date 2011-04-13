@@ -208,10 +208,10 @@ class listener
 {
 friend class EventDispatcher;
 private:
-	IFunction* f;
+	_R<IFunction> f;
 	uint32_t priority;
 public:
-	explicit listener(IFunction* _f, uint32_t _p):f(_f),priority(_p){};
+	explicit listener(_R<IFunction> _f, uint32_t _p):f(_f),priority(_p){};
 	bool operator==(IFunction* r)
 	{
 		return f->isEqual(r);
@@ -236,9 +236,10 @@ private:
 	std::map<tiny_string,std::list<listener> > handlers;
 public:
 	EventDispatcher();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	void handleEvent(Event* e);
+	void handleEvent(_R<Event> e);
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
 

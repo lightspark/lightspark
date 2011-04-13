@@ -885,9 +885,9 @@ void IntervalRunner::tick()
 	}
 	//Incref the this object
 	obj->incRef();
-	FunctionEvent* event = new FunctionEvent(static_cast<IFunction*>(callback), obj, args, argslen);
-	getVm()->addEvent(NULL,event);
-	event->decRef();
+	callback->incRef();
+	_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback)), _MR(obj), args, argslen));
+	getVm()->addEvent(NULL,event.getPtr());
 	if(type == TIMEOUT)
 	{
 		//TODO: IntervalRunner deletes itself. Is this allowed?

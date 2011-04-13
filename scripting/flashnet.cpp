@@ -1029,13 +1029,13 @@ void NetStream::execute()
 
 							//TODO: missing: audiocodecid (Number), cuePoints (Object[]), 
 							//videocodecid (Number), custommetadata's
-							callbackArgs[0] = metadata;
 							client->incRef();
 							metadata->incRef();
-							FunctionEvent* event = 
-								new FunctionEvent(static_cast<IFunction*>(callback), client, callbackArgs, 1);
-							getVm()->addEvent(NULL,event);
-							event->decRef();
+							callbackArgs[0] = metadata;
+							callback->incRef();
+							_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback)), 
+									_MR(client), callbackArgs, 1));
+							getVm()->addEvent(NULL,event.getPtr());
 						}
 					}
 

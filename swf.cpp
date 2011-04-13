@@ -1276,9 +1276,8 @@ void RootMovieClip::commitFrame(bool another)
 		//Execute the event registered for the first frame, if any
 		if(!frameScripts[0].isNull())
 		{
-			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[0].getPtr());
-			getVm()->addEvent(NULL, funcEvent);
-			funcEvent->decRef();
+			_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
+			getVm()->addEvent(NULL, funcEvent.getPtr());
 		}
 
 		//When the first frame is committed the frame rate is known

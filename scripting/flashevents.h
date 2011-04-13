@@ -274,20 +274,23 @@ public:
 };
 
 class SynchronizationEvent;
+
 class FunctionEvent: public Event
 {
 friend class ABCVm;
 private:
-	IFunction* f;
-	ASObject* obj;
+	_R<IFunction> f;
+	_NR<ASObject> obj;
 	ASObject** args;
 	unsigned int numArgs;
 	ASObject** result;
 	ASObject** exception;
-	SynchronizationEvent* sync;
+	_NR<SynchronizationEvent> sync;
 	bool thisOverride;
 public:
-	FunctionEvent(IFunction* _f, ASObject* _obj=NULL, ASObject** _args=NULL, uint32_t _numArgs=0, ASObject** _result=NULL, ASObject** _exception=NULL, SynchronizationEvent* _sync=NULL, bool _thisOverride=false);
+	FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj=NullRef, ASObject** _args=NULL, uint32_t _numArgs=0, 
+			ASObject** _result=NULL, ASObject** _exception=NULL, _NR<SynchronizationEvent> _sync=NullRef, 
+			bool _thisOverride=false);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return FUNCTION; }

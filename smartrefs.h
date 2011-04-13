@@ -52,6 +52,7 @@ public:
 	{
 		m->incRef();
 	}
+	template<class D> Ref(const NullableRef<D>& r);
 	Ref<T>& operator=(const Ref<T>&r)
 	{
 		//incRef before decRef to make sure this works even if the pointer is the same
@@ -200,9 +201,21 @@ public:
 #define _NR NullableRef
 
 template<class T>
+Ref<T> _MR(NullableRef<T> a)
+{
+	return Ref<T>(a);
+}
+
+template<class T>
 NullableRef<T> _MNR(T* a)
 {
 	return NullableRef<T>(a);
+}
+
+template<class T> template<class D> Ref<T>::Ref(const NullableRef<D>& r):m(r.getPtr())
+{
+	if(m)
+		m->incRef();
 }
 
 template<class T> template<class D> bool Ref<T>::operator==(const NullableRef<D>&r) const

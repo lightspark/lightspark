@@ -871,9 +871,8 @@ void MovieClip::advanceFrame()
 		assert(state.FP<frameScripts.size());
 		if(frameChanging && !frameScripts[state.FP].isNull())
 		{
-			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[state.FP].getPtr());
-			getVm()->addEvent(NULL, funcEvent);
-			funcEvent->decRef();
+			_R<FunctionEvent> funcEvent(new FunctionEvent(frameScripts[state.FP]));
+			getVm()->addEvent(NULL, funcEvent.getPtr());
 		}
 
 		Frame& curFrame=frames[state.FP];

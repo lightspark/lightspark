@@ -1142,8 +1142,8 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 				{
 					try
 					{
-						//We hope the method is bound
-						ASObject* result = ev->f->call(ev->obj,ev->args,ev->numArgs,ev->thisOverride);
+						ev->obj->incRef();
+						ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs,ev->thisOverride);
 						// We should report the function result
 						if(ev->result != NULL)
 							*(ev->result) = result;
@@ -1157,14 +1157,14 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 				// Exceptions aren't expected and shouldn't be ignored
 				else
 				{
-					//We hope the method is bound
-					ASObject* result = ev->f->call(ev->obj,ev->args,ev->numArgs,ev->thisOverride);
+					ev->obj->incRef();
+					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs,ev->thisOverride);
 					// We should report the function result
 					if(ev->result != NULL)
 						*(ev->result) = result;
 				}
 				// We should synchronize the passed SynchronizationEvent
-				if(ev->sync != NULL)
+				if(!ev->sync.isNull())
 					ev->sync->sync();
 				break;
 			}

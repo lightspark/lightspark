@@ -340,7 +340,9 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	// so add a FunctionEvent to the VM event queue.
 	if(!synchronous)
 	{
-		funcEvent = new FunctionEvent(func, new Null, objArgs, argc, &result, &exception, syncEvent);
+		func->incRef();
+		syncEvent->incRef();
+		funcEvent = new FunctionEvent(_MR(func), _MR(new Null), objArgs, argc, &result, &exception, _MR(syncEvent));
 		// Add the callback function event to the VM event queue
 		getVm()->addEvent(NULL,funcEvent);
 		// We won't use this event any more

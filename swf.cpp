@@ -349,6 +349,13 @@ void SystemState::saveProfilingInformation()
 }
 #endif
 
+void SystemState::finalize()
+{
+	RootMovieClip::finalize();
+	invalidateQueueHead.reset();
+	invalidateQueueTail.reset();
+}
+
 SystemState::~SystemState()
 {
 #ifdef PROFILING_SUPPORT

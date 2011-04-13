@@ -254,6 +254,7 @@ public:
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
 	SystemState(ParseThread* p, uint32_t fileSize) DLL_PUBLIC;
+	void finalize();
 	~SystemState();
 	
 	//Performance profiling

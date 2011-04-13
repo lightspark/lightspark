@@ -135,9 +135,9 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			DictionaryTag* t=root->dictionaryLookup(Tags[i]);
 			ASObject* base=dynamic_cast<ASObject*>(t);
 			assert_and_throw(base!=NULL);
-			BindClassEvent* e=new BindClassEvent(base,(const char*)Names[i],BindClassEvent::NONROOT);
-			sys->currentVm->addEvent(NULL,e);
-			e->decRef();
+			base->incRef();
+			_R<BindClassEvent> e(new BindClassEvent(_MR(base),(const char*)Names[i],BindClassEvent::NONROOT));
+			sys->currentVm->addEvent(NULL,e.getPtr());
 		}
 	}
 }
@@ -1121,7 +1121,7 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 			{
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
 				LOG(LOG_CALLS,_("Binding of ") << ev->class_name);
-				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,NULL,0,ev->isRoot);
+				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base.getPtr(),NULL,0,ev->isRoot);
 				LOG(LOG_CALLS,_("End of binding of ") << ev->class_name);
 				break;
 			}

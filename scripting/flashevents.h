@@ -254,12 +254,12 @@ class BindClassEvent: public Event
 {
 friend class ABCVm;
 private:
-	ASObject* base;
+	_R<ASObject> base;
 	tiny_string class_name;
 	bool isRoot;
 public:
 	enum { NONROOT=0, ISROOT=1 };
-	BindClassEvent(ASObject* b, const tiny_string& c, bool i):
+	BindClassEvent(_R<ASObject> b, const tiny_string& c, bool i):
 		Event("bindClass"),base(b),class_name(c),isRoot(i){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return BIND_CLASS;}

@@ -330,10 +330,10 @@ class FrameChangeEvent: public Event
 friend class ABCVm;
 private:
 	int frame;
-	MovieClip* movieClip;
+	_R<MovieClip> movieClip;
 	static void sinit(Class_base*);
 public:
-	FrameChangeEvent(int f, MovieClip* m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
+	FrameChangeEvent(int f, _R<MovieClip> m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
 	EVENT_TYPE getEventType() const { return CHANGE_FRAME; }
 };
 

@@ -803,7 +803,8 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->state.max_FP);
-	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,th));
+	th->incRef();
+	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,_MR(th)));
 	return NULL;
 }
 

@@ -42,6 +42,7 @@ class Event: public ASObject
 public:
 	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}
 	Event(const tiny_string& t, bool b=false);
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -52,8 +53,8 @@ public:
 	tiny_string type;
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
 	//and the handling is serialized
-	ASObject* target;
-	ASObject* currentTarget;
+	_NR<ASObject> target;
+	_NR<ASObject> currentTarget;
 	bool bubbles;
 };
 

@@ -1083,8 +1083,10 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, Event* event)
 	//TODO: implement capture phase
 	//Do target phase
 	assert_and_throw(event->target==NULL);
-	event->target=dispatcher;
-	event->currentTarget=dispatcher;
+	dispatcher->incRef();
+	event->target=_MR(dispatcher);
+	dispatcher->incRef();
+	event->currentTarget=_MR(dispatcher);
 	event->incRef();
 	dispatcher->handleEvent(_MR(event));
 	//Do bubbling phase
@@ -1093,15 +1095,16 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, Event* event)
 		DisplayObjectContainer* cur=static_cast<DisplayObject*>(dispatcher)->getParent().getPtr();
 		while(cur)
 		{
-			event->currentTarget=cur;
+			cur->incRef();
+			event->currentTarget=_MR(cur);
 			event->incRef();
 			cur->handleEvent(_MR(event));
 			cur=cur->getParent().getPtr();
 		}
 	}
 	//Reset events so they might be recycled
-	event->currentTarget=NULL;
-	event->target=NULL;
+	event->currentTarget=NullRef;
+	event->target=NullRef;
 	dispatcher->decRef();
 	event->decRef();
 }

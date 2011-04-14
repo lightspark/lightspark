@@ -57,6 +57,13 @@ Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NU
 {
 }
 
+void Event::finalize()
+{
+	ASObject::finalize();
+	target.reset();
+	currentTarget.reset();
+}
+
 void Event::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -112,15 +119,15 @@ ASFUNCTIONBODY(Event,_constructor)
 ASFUNCTIONBODY(Event,_getTarget)
 {
 	Event* th=static_cast<Event*>(obj);
-	if(th->target)
-	{
-		th->target->incRef();
-		return th->target;
-	}
-	else
+	if(th->target.isNull())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,_("Target for event ") << th->type);
 		return new Undefined;
+	}
+	else
+	{
+		th->target->incRef();
+		return th->target.getPtr();
 	}
 }
 
@@ -426,7 +433,9 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	if(e==NULL || th==NULL)
 		return abstract_b(false);
 	assert_and_throw(e->type!="");
-	if(e->target)
+	if(e->target.isNull())
+		e->incRef();
+	else
 	{
 		//The object must be cloned
 		//TODO: support cloning of actual type
@@ -434,8 +443,6 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		Event* newEvent=Class<Event>::getInstanceS(e->type,e->bubbles);
 		e=newEvent;
 	}
-	else
-		e->incRef();
 	th->incRef();
 	ABCVm::publicHandleEvent(th, e);
 	return abstract_b(true);

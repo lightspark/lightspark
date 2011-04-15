@@ -692,6 +692,10 @@ void Proxy::sinit(Class_base* c)
 	c->setConstructor(NULL);
 }
 
+void Proxy::buildTraits(ASObject* o)
+{
+}
+
 void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
 	//If a variable named like this already exist, return that

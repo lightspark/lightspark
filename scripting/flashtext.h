@@ -56,6 +56,13 @@ public:
 	ASFUNCTION(_setText);
 };
 
+class TextFormat: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
 class StyleSheet: public EventDispatcher
 {
 private:

@@ -237,7 +237,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getClass());
 	builtin->setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
 	builtin->setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass(QName("TextFieldType","flash.text")));
-	builtin->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass(QName("TextFormat","flash.text")));
+	builtin->setVariableByQName("TextFormat","flash.text",Class<TextFormat>::getClass(QName("TextFormat","flash.text")));
 
 	builtin->setVariableByQName("XMLDocument","flash.xml",Class<XMLDocument>::getClass());
 	builtin->setVariableByQName("XMLNode","flash.xml",Class<XMLNode>::getClass());

@@ -75,61 +75,59 @@ friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
 	enum TYPE { READONLY=0, STATIC, DYNAMIC };
 	#define STATIC_SIZE 64
-	#define DYNAMIC_SIZE 4096
 	char _buf_static[STATIC_SIZE];
 	char* buf;
+	/*
+	   stringSize includes the trailing \0
+	*/
+	uint32_t stringSize;
 	TYPE type;
 	//TODO: use static buffer again if reassigning to short string
 	void makePrivateCopy(const char* s)
 	{
 		resetToStatic();
-		if(strlen(s)>(STATIC_SIZE-1))
-			createBuffer();
-		assert_and_throw(strlen(s)<=DYNAMIC_SIZE);
+		stringSize=strlen(s)+1;
+		if(stringSize > STATIC_SIZE)
+			createBuffer(stringSize);
 		strcpy(buf,s);
 	}
-	void createBuffer()
+	void createBuffer(uint32_t s)
 	{
 		type=DYNAMIC;
-		buf=new char[DYNAMIC_SIZE];
+		buf=new char[s];
 	}
 	void resetToStatic()
 	{
 		if(type==DYNAMIC)
+		{
 			delete[] buf;
+			stringSize=0;
+		}
 		buf=_buf_static;
 		type=STATIC;
 	}
 public:
-	tiny_string():buf(_buf_static),type(STATIC){buf[0]=0;}
+	tiny_string():buf(_buf_static),stringSize(1),type(STATIC){buf[0]=0;}
 	tiny_string(const char* s,bool copy=false):buf(_buf_static),type(READONLY)
 	{
 		if(copy)
 			makePrivateCopy(s);
 		else
+		{
+			stringSize=strlen(s)+1;
 			buf=(char*)s; //This is an unsafe conversion, we have to take care of the RO data
+		}
 	}
-	tiny_string(const tiny_string& r):buf(_buf_static),type(STATIC)
+	tiny_string(const tiny_string& r):buf(_buf_static),stringSize(r.stringSize),type(STATIC)
 	{
-		if(strlen(r.buf)>(STATIC_SIZE-1))
-			createBuffer();
-		assert_and_throw(strlen(r.buf)<=DYNAMIC_SIZE);
+		if(stringSize > STATIC_SIZE)
+			createBuffer(stringSize);
 		strcpy(buf,r.buf);
 	}
-	tiny_string(const std::string& r):buf(_buf_static),type(STATIC)
+	tiny_string(const std::string& r):buf(_buf_static),stringSize(r.size()+1),type(STATIC)
 	{
-		if(r.size()>(STATIC_SIZE-1))
-		{
-			createBuffer();
-			assert_and_throw(r.size()<=DYNAMIC_SIZE);
-			//Comment this assertion and uncomment the following lines to just crop the strings
-			//if(r.size()>4096)
-			//{
-			//	LOG(LOG_NO_INFO, _("tiny_string::tiny_string(): std::string is too big for tiny_string, cropping: ") << r.size() <<_(">")<<4096);
-			//	strcpy(buf,r.substr(0,4096).c_str());
-			//	return;
-			//}
-		}
+		if(stringSize > STATIC_SIZE)
+			createBuffer(stringSize);
 		strcpy(buf,r.c_str());
 	}
 	~tiny_string()
@@ -138,58 +136,47 @@ public:
 	}
 	explicit tiny_string(int i):buf(_buf_static),type(STATIC)
 	{
+		//TODO: use snprintf!!
 		sprintf(buf,"%i",i);
 	}
 	explicit tiny_string(number_t d):buf(_buf_static),type(STATIC)
 	{
+		//TODO: use snprintf!!
 		sprintf(buf,"%g",d);
 	}
 	tiny_string& operator=(const tiny_string& s)
 	{
 		resetToStatic();
-		if(s.len()>(STATIC_SIZE-1))
-			createBuffer();
-		//Lenght is already checked by the other tiny_string
+		stringSize=s.stringSize;
+		if(stringSize > STATIC_SIZE)
+			createBuffer(stringSize);
 		strcpy(buf,s.buf);
 		return *this;
 	}
 	tiny_string& operator=(const std::string& s)
 	{
 		resetToStatic();
-		if(s.size()>(STATIC_SIZE-1))
-		{
-			createBuffer();
-			assert_and_throw(s.size()<=DYNAMIC_SIZE);
-			//Comment this assertion and uncomment the following lines to just crop the strings
-			//if(s.size()>4096)
-			//{
-			//	LOG(LOG_NO_INFO, _("tiny_string::operator=(): std::string is too big for tiny_string, cropping: ") << s.size() <<_(">")<<4096);
-			//	strcpy(buf,s.substr(0,4096).c_str());
-			//  return *this;
-			//}
-		}
-		//Lenght is already checked by the assertion
+		stringSize=s.size()+1;
+		if(stringSize > STATIC_SIZE)
+			createBuffer(stringSize);
 		strcpy(buf,s.c_str());
 		return *this;
 	}
 	tiny_string& operator=(const char* s)
 	{
-		resetToStatic();
-		type=READONLY;
-		buf=(char*)s; //This is an unsafe conversion, we have to take care of the RO data
+		makePrivateCopy(s);
 		return *this;
 	}
 	tiny_string& operator+=(const char* s)
 	{
-		assert_and_throw((strlen(buf)+strlen(s)+1)<=DYNAMIC_SIZE);
 		if(type==READONLY)
 		{
 			char* tmp=buf;
 			makePrivateCopy(tmp);
 		}
-		if(type==STATIC && (strlen(buf)+strlen(s)+1)>STATIC_SIZE)
+		if(type==STATIC && (stringSize + strlen(s)) > STATIC_SIZE)
 		{
-			createBuffer();
+			createBuffer(stringSize + strlen(s));
 			strcpy(buf,_buf_static);
 		}
 		strcat(buf,s);
@@ -197,15 +184,14 @@ public:
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
-		assert_and_throw((strlen(buf)+strlen(r.buf)+1)<=DYNAMIC_SIZE);
 		if(type==READONLY)
 		{
 			char* tmp=buf;
 			makePrivateCopy(tmp);
 		}
-		if(type==STATIC && (strlen(buf)+strlen(r.buf)+1)>STATIC_SIZE)
+		if(type==STATIC && (stringSize + r.stringSize - 1) > STATIC_SIZE)
 		{
-			createBuffer();
+			createBuffer(stringSize + r.stringSize -1);
 			strcpy(buf,_buf_static);
 		}
 		strcat(buf,r.buf);
@@ -223,10 +209,18 @@ public:
 	}
 	bool operator==(const tiny_string& r) const
 	{
+		//The length is checked as an optimization before checking the contents
+		if(stringSize != r.stringSize)
+			return false;
+
 		return strcmp(buf,r.buf)==0;
 	}
 	bool operator!=(const tiny_string& r) const
 	{
+		//The length is checked as an optimization before checking the contents
+		if(stringSize != r.stringSize)
+			return true;
+
 		return strcmp(buf,r.buf)!=0;
 	}
 	bool operator==(const char* r) const
@@ -247,12 +241,16 @@ public:
 	}
 	int len() const
 	{
-		return strlen(buf);
+		return stringSize-1;
 	}
-	tiny_string substr(int start, int end) const
+	tiny_string substr(uint32_t start, uint32_t end) const
 	{
 		tiny_string ret;
-		assert_and_throw((end-start+1)<STATIC_SIZE);
+		//start and end are assumed to be valid
+		assert(end < stringSize);
+		int subSize=end-start+1;
+		if(subSize > STATIC_SIZE)
+			ret.createBuffer(subSize);
 		strncpy(ret.buf,buf+start,end-start);
 		ret.buf[end-start]=0;
 		return ret;

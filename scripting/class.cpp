@@ -47,6 +47,12 @@ ASObject* Class<ASObject>::getVariableByMultiname(const multiname& name, bool sk
 	return ret;
 }
 
+void Class_inherit::finalize()
+{
+	Class_base::finalize();
+	class_scope.clear();
+}
+
 ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 {
 	ASObject* ret=NULL;

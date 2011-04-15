@@ -1374,8 +1374,6 @@ call_context::~call_context()
 	delete[] locals;
 	delete[] stack;
 
-	for(unsigned int i=0;i<scope_stack.size();i++)
-		scope_stack[i]->decRef();
 	delete code;
 }
 
@@ -1913,7 +1911,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else if(deferred_initialization)
 			{
 				//Script method
-				f->addToScope(obj);
+				obj->incRef();
+				f->addToScope(_MR(obj));
 #ifdef PROFILING_SUPPORT
 				if(!m->validProfName)
 				{

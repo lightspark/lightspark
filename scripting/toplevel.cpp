@@ -2234,6 +2234,12 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 //	class_index=-2;
 }
 
+void SyntheticFunction::finalize()
+{
+	IFunction::finalize();
+	func_scope.clear();
+}
+
 ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
 {
 	const int hit_threshold=10;
@@ -2262,8 +2268,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc->code=new istringstream(mi->body->code);
 	uint32_t i=passedToLocals;
 	cc->scope_stack=func_scope;
-	for(unsigned int i=0;i<func_scope.size();i++)
-		func_scope[i]->incRef();
 	cc->initialScopeStack=func_scope.size();
 
 	if(bound && closure_this && !thisOverride)
@@ -2361,8 +2365,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 					cc->code->seekg((uint32_t)exc.target);
 					cc->runtime_stack_clear();
 					cc->runtime_stack_push(excobj);
-					for(uint32_t i=0;i<cc->scope_stack.size();i++)
-						cc->scope_stack[i]->decRef();
 					cc->scope_stack.clear();
 					cc->initialScopeStack=0;
 					break;

@@ -276,9 +276,10 @@ private:
 	}
 	method_info* getMethodInfo() const { return mi; }
 public:
+	void finalize();
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
-	std::vector<ASObject*> func_scope;
+	std::vector<_R<ASObject>> func_scope;
 	bool isEqual(ASObject* r)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
@@ -286,14 +287,12 @@ public:
 			return false;
 		return mi==sf->mi;
 	}
-	void acquireScope(const std::vector<ASObject*>& scope)
+	void acquireScope(const std::vector<_R<ASObject>>& scope)
 	{
 		assert_and_throw(func_scope.empty());
 		func_scope=scope;
-		for(unsigned int i=0;i<func_scope.size();i++)
-			func_scope[i]->incRef();
 	}
-	void addToScope(ASObject* s)
+	void addToScope(_R<ASObject> s)
 	{
 		func_scope.push_back(s);
 	}

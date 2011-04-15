@@ -180,7 +180,7 @@ struct call_context
 #include "packed_end.h"
 	ABCContext* context;
 	int locals_size;
-	std::vector<ASObject*> scope_stack;
+	std::vector<_R<ASObject>> scope_stack;
 	int initialScopeStack;
 	void runtime_stack_push(ASObject* s);
 	void runtime_stack_clear();

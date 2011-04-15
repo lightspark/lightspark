@@ -490,19 +490,19 @@ void ABCVm::pushWith(call_context* th)
 {
 	ASObject* t=th->runtime_stack_pop();
 	LOG(LOG_CALLS, _("pushWith ") << t );
-	th->scope_stack.push_back(t);
+	th->scope_stack.push_back(_MR(t));
 }
 
 void ABCVm::pushScope(call_context* th)
 {
 	ASObject* t=th->runtime_stack_pop();
 	LOG(LOG_CALLS, _("pushScope ") << t );
-	th->scope_stack.push_back(t);
+	th->scope_stack.push_back(_MR(t));
 }
 
 ASObject* ABCVm::getGlobalScope(call_context* th)
 {
-	ASObject* ret=th->scope_stack[0];
+	ASObject* ret=th->scope_stack[0].getPtr();
 	LOG(LOG_CALLS,_("getGlobalScope: ") << ret);
 	ret->incRef();
 	return ret;
@@ -1524,7 +1524,7 @@ void ABCVm::getLex(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("getLex: ") << *name );
-	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	vector<_R<ASObject> >::reverse_iterator it=th->scope_stack.rbegin();
 	ASObject* o;
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
@@ -1543,7 +1543,7 @@ void ABCVm::getLex(call_context* th, int n)
 		o=tmpo;
 		if(o)
 		{
-			target=*it;
+			target=(*it).getPtr();
 			break;
 		}
 	}
@@ -1613,7 +1613,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("findProperty ") << *name );
 
-	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	vector<_R<ASObject>>::reverse_iterator it=th->scope_stack.rbegin();
 	ASObject* o=NULL;
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -1630,14 +1630,14 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 		if(o)
 		{
 			//We have to return the object, not the property
-			ret=*it;
+			ret=(*it).getPtr();
 			break;
 		}
 	}
 	if(o==NULL)
 	{
 		LOG(LOG_CALLS, _("NOT found, pushing global") );
-		ret=th->scope_stack[0];
+		ret=th->scope_stack[0].getPtr();
 	}
 
 	assert_and_throw(ret);
@@ -1650,7 +1650,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("findPropStrict ") << *name );
 
-	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	vector<_R<ASObject>>::reverse_iterator it=th->scope_stack.rbegin();
 	ASObject* o=NULL;
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -1666,7 +1666,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 		if(o)
 		{
 			//We have to return the object, not the property
-			ret=*it;
+			ret=(*it).getPtr();
 			break;
 		}
 	}
@@ -2377,8 +2377,6 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 #endif
 	ret->class_scope=th->scope_stack;
-	for(uint32_t i=0;i<ret->class_scope.size();i++)
-		ret->class_scope[i]->incRef();
 	ASObject* tmp=th->runtime_stack_pop();
 
 	assert_and_throw(th->context);
@@ -2398,7 +2396,8 @@ void ABCVm::newClass(call_context* th, int n)
 	//cinit must inherit the current scope
 	cinit->acquireScope(th->scope_stack);
 	//and the created class
-	cinit->addToScope(ret);
+	ret->incRef();
+	cinit->addToScope(_MR(ret));
 
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
@@ -2580,8 +2579,6 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	method_info* m=&th->context->methods[n];
 	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 	f->func_scope=th->scope_stack;
-	for(unsigned int i=0;i<f->func_scope.size();i++)
-		f->func_scope[i]->incRef();
 
 	//Bind the function to null, as this is not a class method
 	f->bind(NULL,-1);
@@ -2590,7 +2587,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 
 ASObject* ABCVm::getScopeObject(call_context* th, int n)
 {
-	ASObject* ret=th->scope_stack[n+th->initialScopeStack];
+	ASObject* ret=th->scope_stack[n+th->initialScopeStack].getPtr();
 	ret->incRef();
 	LOG(LOG_CALLS, _("getScopeObject: ") << ret );
 	return ret;

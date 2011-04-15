@@ -62,6 +62,7 @@ public:
 			throw RunTimeException("Class name collision");
 		}
 	}
+	void finalize();
 	void buildInstanceTraits(ASObject* o) const;
 	void bindToTag(DictionaryTag const* t)
 	{
@@ -76,7 +77,7 @@ public:
 		return tag || bindedToRoot;
 	}
 	//Closure stack
-	std::vector<ASObject*> class_scope;
+	std::vector<_R<ASObject>> class_scope;
 };
 
 template< class T>

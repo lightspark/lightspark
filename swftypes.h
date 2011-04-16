@@ -96,6 +96,14 @@ private:
 		type=DYNAMIC;
 		buf=new char[s];
 	}
+	void resizeBuffer(uint32_t s)
+	{
+		assert(type==DYNAMIC);
+		char* oldBuf=buf;
+		buf=new char[s];
+		strcpy(buf,oldBuf);
+		delete[] oldBuf;
+	}
 	void resetToStatic()
 	{
 		if(type==DYNAMIC)
@@ -167,42 +175,9 @@ public:
 		makePrivateCopy(s);
 		return *this;
 	}
-	tiny_string& operator+=(const char* s)
-	{
-		if(type==READONLY)
-		{
-			char* tmp=buf;
-			makePrivateCopy(tmp);
-		}
-		if(type==STATIC && (stringSize + strlen(s)) > STATIC_SIZE)
-		{
-			createBuffer(stringSize + strlen(s));
-			strcpy(buf,_buf_static);
-		}
-		strcat(buf,s);
-		return *this;
-	}
-	tiny_string& operator+=(const tiny_string& r)
-	{
-		if(type==READONLY)
-		{
-			char* tmp=buf;
-			makePrivateCopy(tmp);
-		}
-		if(type==STATIC && (stringSize + r.stringSize - 1) > STATIC_SIZE)
-		{
-			createBuffer(stringSize + r.stringSize -1);
-			strcpy(buf,_buf_static);
-		}
-		strcat(buf,r.buf);
-		return *this;
-	}
-	const tiny_string operator+(const tiny_string& r) const
-	{
-		tiny_string ret(*this);
-		ret+=r;
-		return ret;
-	}
+	tiny_string& operator+=(const char* s);
+	tiny_string& operator+=(const tiny_string& r);
+	const tiny_string operator+(const tiny_string& r) const;
 	bool operator<(const tiny_string& r) const
 	{
 		return strcmp(buf,r.buf)<0;
@@ -243,18 +218,7 @@ public:
 	{
 		return stringSize-1;
 	}
-	tiny_string substr(uint32_t start, uint32_t end) const
-	{
-		tiny_string ret;
-		//start and end are assumed to be valid
-		assert(end < stringSize);
-		int subSize=end-start+1;
-		if(subSize > STATIC_SIZE)
-			ret.createBuffer(subSize);
-		strncpy(ret.buf,buf+start,end-start);
-		ret.buf[end-start]=0;
-		return ret;
-	}
+	tiny_string substr(uint32_t start, uint32_t end) const;
 };
 
 class QName

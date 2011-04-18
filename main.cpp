@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
 		char * cwd = get_current_dir_name();
-		tiny_string cwdStr = tiny_string("file://") + tiny_string(cwd, true);
+		string cwdStr = string("file://") + string(cwd, true);
 		free(cwd);
 		cwdStr += "/";
 		sys->setOrigin(cwdStr, fileName);
@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
 #endif
 	else
 	{
-		sys->setOrigin(tiny_string("file://") + tiny_string(fileName));
+		sys->setOrigin(string("file://") + fileName);
 		LOG(LOG_NO_INFO, _("Warning: running with no origin URL set."));
 	}
 

@@ -1217,17 +1217,11 @@ uint32_t NetStream::getTotalLength()
 
 void URLVariables::decode(const tiny_string& s)
 {
-	char* const decoded=g_uri_unescape_string(s.raw_buf(),NULL);
-	if(decoded==NULL)
-	{
-		//Error while unescaping the string
-		return;
-	}
-	char* nameStart=NULL;
-	char* nameEnd=NULL;
-	char* valueStart=NULL;
-	char* valueEnd=NULL;
-	char* cur=decoded;
+	const char* nameStart=NULL;
+	const char* nameEnd=NULL;
+	const char* valueStart=NULL;
+	const char* valueEnd=NULL;
+	const char* cur=s.raw_buf();
 	while(1)
 	{
 		if(nameStart==NULL)
@@ -1258,8 +1252,8 @@ void URLVariables::decode(const tiny_string& s)
 				continue;
 			}
 			valueEnd=cur;
-			string name(nameStart,nameEnd-nameStart);
-			string value(valueStart,valueEnd-valueStart);
+			char* name=g_uri_unescape_segment(nameStart,nameEnd,NULL);
+			char* value=g_uri_unescape_segment(valueStart,valueEnd,NULL);
 			nameStart=NULL;
 			nameEnd=NULL;
 			valueStart=NULL;
@@ -1289,12 +1283,13 @@ void URLVariables::decode(const tiny_string& s)
 			else
 				setVariableByMultiname(propName,Class<ASString>::getInstanceS(value));
 
+			g_free(name);
+			g_free(value);
 			if(*cur==0)
 				break;
 		}
 		cur++;
 	}
-	g_free(decoded);
 }
 
 void URLVariables::sinit(Class_base* c)

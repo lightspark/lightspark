@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_net_URLVariables_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var variables:URLVariables=new URLVariables("prop1=foo&prop2=b%40r");
+		Tests.assertEquals("foo",variables.prop1,"First parsed property of URLVariables");
+		Tests.assertEquals("b@r",variables.prop2,"Second parsed property of URLVariables");
+		variables.decode("prop1=newfoo&prop3=newprop");
+		Tests.assertEquals(true,variables.prop1 is Array,"First parsed property of URLVariables after decode is array");
+		Tests.assertArrayEquals(["foo","newfoo"],variables.prop1,"First parsed property of URLVariables after decode");
+		Tests.assertEquals("b@r",variables.prop2,"Second parsed property of URLVariables after decode");
+		Tests.assertEquals("newprop",variables.prop3,"Third parsed property of URLVariables after decode");
+		Tests.assertEquals("prop3=newprop&prop2=b%40r&prop1=foo&prop1=newfoo",variables.toString(),"URLVariables::toString()");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

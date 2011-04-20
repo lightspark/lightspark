@@ -63,6 +63,24 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
+class TextFieldType: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
+class TextFormatAlign: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
+class TextFieldAutoSize: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
 class StyleSheet: public EventDispatcher
 {
 private:

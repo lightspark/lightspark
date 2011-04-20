@@ -64,6 +64,8 @@ private:
 	void decode(const tiny_string& s);
 	tiny_string toString_priv();
 public:
+	URLVariables(){}
+	URLVariables(const tiny_string& s);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(decode);

@@ -1304,6 +1304,11 @@ void URLVariables::sinit(Class_base* c)
 	c->setMethodByQName("toString","",Class<IFunction>::getFunction(_toString),true);
 }
 
+URLVariables::URLVariables(const tiny_string& s)
+{
+	decode(s);
+}
+
 ASFUNCTIONBODY(URLVariables,decode)
 {
 	URLVariables* th=Class<URLVariables>::cast(obj);

@@ -1215,6 +1215,71 @@ uint32_t NetStream::getTotalLength()
 	return downloader->getLength();
 }
 
+void URLVariables::decode(const tiny_string& s)
+{
+	char* const decoded=g_uri_unescape_string(s.raw_buf(),NULL);
+	if(decoded==NULL)
+	{
+		//Error while unescaping the string
+		return;
+	}
+	char* nameStart=NULL;
+	char* nameEnd=NULL;
+	char* valueStart=NULL;
+	char* valueEnd=NULL;
+	char* cur=decoded;
+	while(1)
+	{
+		if(nameStart==NULL)
+			nameStart=cur;
+		if(*cur == '=')
+		{
+			if(nameStart==NULL || valueStart!=NULL) //Skip this
+			{
+				nameStart=NULL;
+				nameEnd=NULL;
+				valueStart=NULL;
+				valueEnd=NULL;
+				cur++;
+				continue;
+			}
+			nameEnd=cur;
+			valueStart=cur+1;
+		}
+		else if(*cur == '&' || *cur==0)
+		{
+			if(nameStart==NULL || nameEnd==NULL || valueStart==NULL || valueEnd!=NULL)
+			{
+				nameStart=NULL;
+				nameEnd=NULL;
+				valueStart=NULL;
+				valueEnd=NULL;
+				cur++;
+				continue;
+			}
+			valueEnd=cur;
+			string name(nameStart,nameEnd-nameStart);
+			string value(valueStart,valueEnd-valueStart);
+			nameStart=NULL;
+			nameEnd=NULL;
+			valueStart=NULL;
+			valueEnd=NULL;
+			//Check if the variable already exists
+			multiname propName;
+			propName.name_type=multiname::NAME_STRING;
+			propName.name_s=name;
+			propName.ns.push_back(nsNameAndKind("",NAMESPACE));
+			ASObject* curValue=getVariableByMultiname(propName);
+			assert(curValue==NULL);
+			setVariableByMultiname(propName,Class<ASString>::getInstanceS(value));
+			if(*cur==0)
+				break;
+		}
+		cur++;
+	}
+	g_free(decoded);
+}
+
 void URLVariables::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -1222,7 +1287,10 @@ void URLVariables::sinit(Class_base* c)
 
 ASFUNCTIONBODY(URLVariables,_constructor)
 {
-	assert_and_throw(argslen==0);
+	URLVariables* th=Class<URLVariables>::cast(obj);
+	assert_and_throw(argslen<=1);
+	if(argslen==1)
+		th->decode(args[0]->toString());
 	return NULL;
 }
 

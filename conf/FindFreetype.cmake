@@ -71,7 +71,7 @@ FIND_LIBRARY(FREETYPE_LIBRARY
   NAMES freetype libfreetype freetype219 freetype241MT_D
   HINTS
   $ENV{FREETYPE_DIR}
-  PATH_SUFFIXES lib64 lib
+  PATH_SUFFIXES lib64 lib x86_64-linux-gnu i386-linux-gnu
   PATHS
   /usr/local/X11R6
   /usr/local/X11

@@ -31,6 +31,7 @@ SET(ZLIB_NAMES z zlib zdll zlibwapi)
 FIND_LIBRARY(ZLIB_LIBRARY
     NAMES
         ${ZLIB_NAMES}
+    PATH_SUFFIXES lib64 lib x86_64-linux-gnu i386-linux-gnu
     PATHS
         "[HKEY_LOCAL_MACHINE\\SOFTWARE\\GnuWin32\\Zlib;InstallPath]/lib"
 )

@@ -1325,7 +1325,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			return;
 		}
 		//Create a new entry in the list, currently initialized with NULL
-		it=ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,NULL));
+		it=ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,(DisplayObject*)NULL));
 
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);

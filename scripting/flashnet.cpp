@@ -1270,8 +1270,25 @@ void URLVariables::decode(const tiny_string& s)
 			propName.name_s=name;
 			propName.ns.push_back(nsNameAndKind("",NAMESPACE));
 			ASObject* curValue=getVariableByMultiname(propName);
-			assert(curValue==NULL);
-			setVariableByMultiname(propName,Class<ASString>::getInstanceS(value));
+			if(curValue)
+			{
+				//If the variable already exists we have to create an Array of values
+				Array* arr=NULL;
+				if(curValue->getObjectType()!=T_ARRAY)
+				{
+					arr=Class<Array>::getInstanceS();
+					curValue->incRef();
+					arr->push(curValue);
+					setVariableByMultiname(propName,arr);
+				}
+				else
+					arr=Class<Array>::cast(curValue);
+
+				arr->push(Class<ASString>::getInstanceS(value));
+			}
+			else
+				setVariableByMultiname(propName,Class<ASString>::getInstanceS(value));
+
 			if(*cur==0)
 				break;
 		}
@@ -1283,6 +1300,15 @@ void URLVariables::decode(const tiny_string& s)
 void URLVariables::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setMethodByQName("decode","",Class<IFunction>::getFunction(decode),true);
+}
+
+ASFUNCTIONBODY(URLVariables,decode)
+{
+	URLVariables* th=Class<URLVariables>::cast(obj);
+	assert_and_throw(argslen==1);
+	th->decode(args[0]->toString());
+	return NULL;
 }
 
 ASFUNCTIONBODY(URLVariables,_constructor)

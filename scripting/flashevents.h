@@ -31,9 +31,11 @@
 namespace lightspark
 {
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT, CHANGE_FRAME };
+enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_TAG, CHANGE_FRAME, CONSTRUCT_FRAME };
 
 class ABCContext;
+class DictionaryTag;
+class PlaceObject2Tag;
 
 class Event: public ASObject
 {
@@ -47,7 +49,7 @@ public:
 	ASFUNCTION(_getType);
 	ASFUNCTION(_getTarget);
 	ASFUNCTION(formatToString);
-	virtual EVENT_TYPE getEventType() {return EVENT;}
+	virtual EVENT_TYPE getEventType() const {return EVENT;}
 	tiny_string type;
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
 	//and the handling is serialized
@@ -200,7 +202,7 @@ public:
 	MouseEvent(const tiny_string& t, bool b=true);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
+	EVENT_TYPE getEventType() const { return MOUSE_EVENT;}
 };
 
 class listener
@@ -262,7 +264,7 @@ public:
 	BindClassEvent(ASObject* b, const tiny_string& c, bool i):
 		Event("bindClass"),base(b),class_name(c),isRoot(i){}
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType(){ return BIND_CLASS;}
+	EVENT_TYPE getEventType() const { return BIND_CLASS;}
 };
 
 class ShutdownEvent: public Event
@@ -270,7 +272,7 @@ class ShutdownEvent: public Event
 public:
 	ShutdownEvent() DLL_PUBLIC;
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() { return SHUTDOWN; }
+	EVENT_TYPE getEventType() const { return SHUTDOWN; }
 };
 
 class SynchronizationEvent;
@@ -290,7 +292,7 @@ public:
 	FunctionEvent(IFunction* _f, ASObject* _obj=NULL, ASObject** _args=NULL, uint32_t _numArgs=0, ASObject** _result=NULL, ASObject** _exception=NULL, SynchronizationEvent* _sync=NULL, bool _thisOverride=false);
 	~FunctionEvent();
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() { return FUNCTION; }
+	EVENT_TYPE getEventType() const { return FUNCTION; }
 };
 
 class SynchronizationEvent: public Event
@@ -302,7 +304,7 @@ public:
 	SynchronizationEvent(const tiny_string& _s):Event(_s){sem_init(&s,0,0);}
 	static void sinit(Class_base*);
 	~SynchronizationEvent(){sem_destroy(&s);}
-	EVENT_TYPE getEventType() { return SYNC; }
+	EVENT_TYPE getEventType() const { return SYNC; }
 	void sync()
 	{
 		sem_post(&s);
@@ -321,20 +323,7 @@ private:
 public:
 	ABCContextInitEvent(ABCContext* c) DLL_PUBLIC;
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() { return CONTEXT_INIT; }
-};
-
-//This event is also synchronous
-class ConstructObjectEvent: public SynchronizationEvent
-{
-friend class ABCVm;
-private:
-	Class_base* _class;
-	ASObject* _obj;
-	static void sinit(Class_base*);
-public:
-	ConstructObjectEvent(ASObject* o, Class_base* c):SynchronizationEvent("ConstructObjectEvent"),_class(c),_obj(o){}
-	EVENT_TYPE getEventType() { return CONSTRUCT_OBJECT; }
+	EVENT_TYPE getEventType() const { return CONTEXT_INIT; }
 };
 
 //Event to change the current frame
@@ -347,7 +336,19 @@ private:
 	static void sinit(Class_base*);
 public:
 	FrameChangeEvent(int f, MovieClip* m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
-	EVENT_TYPE getEventType() { return CHANGE_FRAME; }
+	EVENT_TYPE getEventType() const { return CHANGE_FRAME; }
+};
+
+//Event to construct a Frame in the VM context
+class ConstructFrameEvent: public Event
+{
+friend class ABCVm;
+private:
+	Frame& frame;
+	MovieClip* parent;
+public:
+	ConstructFrameEvent(Frame& f, MovieClip* p):Event("ConstructFrameEvent"),frame(f),parent(p){}
+	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
 };
 
 };

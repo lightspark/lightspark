@@ -365,8 +365,13 @@ bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 		return false;
 }
 
-Sprite::Sprite():GraphicsContainer(this)
+Sprite::Sprite():GraphicsContainer(this),constructed(false)
 {
+}
+
+Sprite::Sprite(const Sprite& r):GraphicsContainer(this),constructed(false)
+{
+	assert(!r.isConstructed());
 }
 
 void Sprite::sinit(Class_base* c)
@@ -611,8 +616,9 @@ InteractiveObject* Sprite::hitTest(InteractiveObject*, number_t x, number_t y)
 
 ASFUNCTIONBODY(Sprite,_constructor)
 {
-	//Sprite* th=static_cast<Sprite*>(obj->implementation);
+	Sprite* th=Class<Sprite>::cast(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
+	th->setConstructed();
 
 	return NULL;
 }
@@ -650,7 +656,7 @@ MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
 {
 	//It's ok to initialize here framesLoaded=1, as it is valid and empty
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
-	frames.push_back(Frame());
+	frames.emplace_back();
 	cur_frame=&frames.back();
 	frameScripts.resize(totalFrames,NULL);
 }
@@ -794,6 +800,8 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 
 void MovieClip::advanceFrame()
 {
+	if(!isConstructed()) //The constructor has not been run yet for this clip
+		return;
 	if((!state.stop_FP || state.explicit_FP) && totalFrames!=0 && getPrototype()->isSubClass(Class<MovieClip>::getClass()))
 	{
 		//If we have not yet loaded enough frames delay advancement
@@ -805,7 +813,13 @@ void MovieClip::advanceFrame()
 		//Before assigning the next_FP we initialize the frame
 		//Should initialize all the frames from the current to the next
 		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
-			frames[i].init(this,displayList);
+			frames[i].init(this,frames[i-1].displayList);
+
+		//Before actually changing the frame verify that it's constructed
+		//If it's not delay the advancement
+		if(!frames[state.next_FP].isConstructed())
+			return;
+
 		bool frameChanging=(state.FP!=state.next_FP);
 		state.FP=state.next_FP;
 		if(!state.stop_FP && framesLoaded>0)
@@ -819,8 +833,17 @@ void MovieClip::advanceFrame()
 			funcEvent->decRef();
 		}
 
-		//Invalidate the current frame is needed
 		Frame& curFrame=frames[state.FP];
+
+		//Set the object on stage
+		if(isOnStage())
+		{
+			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+			for(;it!=curFrame.displayList.end();it++)
+				it->second->setOnStage(true);
+		}
+
+		//Invalidate the current frame if needed
 		if(curFrame.isInvalid())
 		{
 			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
@@ -890,11 +913,13 @@ void MovieClip::bootstrap()
 		return;
 	assert_and_throw(framesLoaded>0);
 	assert_and_throw(frames.size()>=1);
-	frames[0].init(this,displayList);
+	frames[0].init(this,list<pair<PlaceInfo,DisplayObject*> >());
 }
 
 void MovieClip::Render(bool maskEnabled)
 {
+	if(!isConstructed()) //The constructor has not been run yet for this clip
+		return;
 	if(skipRender(maskEnabled))
 		return;
 

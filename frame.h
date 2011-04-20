@@ -35,7 +35,9 @@ class MovieClip;
 class PlaceInfo
 {
 public:
+	uint32_t Depth;
 	MATRIX Matrix;
+	PlaceInfo(uint32_t d):Depth(d){}
 };
 
 class Frame
@@ -43,19 +45,26 @@ class Frame
 private:
 	bool initialized;
 	bool invalid;
+	ACQUIRE_RELEASE_FLAG(constructed);
 public:
+	Frame(const Frame& r);
+	Frame(const Frame&& r);
+	Frame& operator=(const Frame& r);
 	tiny_string Label;
 	std::list<DisplayListTag*> blueprint;
 	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
-	Frame():initialized(false),invalid(true){}
+	Frame():initialized(false),invalid(true),constructed(false){}
 	~Frame();
 	void Render(bool maskEnabled);
-	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
+	void init(MovieClip* parent, const std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
+	void construct(MovieClip* parent);
 	bool isInitialized() const { return initialized; }
 	bool isInvalid() const { return invalid; }
 	void setInvalid(bool i) { invalid=i; }
+	bool isConstructed() const { return ACQUIRE_READ(constructed); }
+	void setConstructed() { RELEASE_WRITE(constructed,true); }
 };
 };
 

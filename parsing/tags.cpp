@@ -259,8 +259,9 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayO
 
 	for(;it!=ls.end();++it)
 	{
-		if(it->second->Depth==Depth)
+		if(it->first.Depth==Depth)
 		{
+			assert(it->second);
 			it->second->setParent(NULL);
 			it->second->setRoot(NULL);
 			it->second->decRef();
@@ -376,7 +377,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				break;
 			case SHOW_TAG:
 			{
-				frames.push_back(Frame());
+				frames.emplace_back();
 				cur_frame=&frames.back();
 				empty=true;
 				break;
@@ -1236,19 +1237,62 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 	LOG(LOG_TRACE,_("ShowFrame"));
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, DisplayObject*>& a, int d)
+bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, DisplayObject*>& a, uint32_t d)
 {
-	return a.second->Depth<d;
+	return a.first.Depth<d;
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(int d, const pair<PlaceInfo, DisplayObject*>& a)
+bool PlaceObject2Tag::list_orderer::operator ()(uint32_t d, const pair<PlaceInfo, DisplayObject*>& a)
 {
-	return d<a.second->Depth;
+	return d<a.first.Depth;
 }
 
 bool PlaceObject2Tag::list_orderer::operator ()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b)
 {
-	return a.second->Depth < b.second->Depth;
+	return a.first.Depth < b.first.Depth;
+}
+
+void PlaceObject2Tag::assignObjectToList(DisplayObject* obj, MovieClip* parent,
+		list<pair<PlaceInfo, DisplayObject*> >::iterator listIterator) const
+{
+	//listIterator is guaranteed to be valid;
+	assert_and_throw(obj && PlaceFlagHasCharacter);
+
+	//TODO: move these three attributes in PlaceInfo
+	if(PlaceFlagHasColorTransform)
+		obj->ColorTransform=ColorTransform;
+
+	if(PlaceFlagHasRatio)
+		obj->Ratio=Ratio;
+
+	if(PlaceFlagHasClipDepth)
+		obj->ClipDepth=ClipDepth;
+
+	if(PlaceFlagHasName)
+	{
+		//Set a variable on the parent to link this object
+		LOG(LOG_NO_INFO,_("Registering ID ") << CharacterId << _(" with name ") << Name);
+		if(!PlaceFlagMove)
+		{
+			obj->incRef();
+			parent->setVariableByQName((const char*)Name,"",obj);
+		}
+		else
+			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
+	}
+
+	if(PlaceFlagMove)
+	{
+		//If we are here we have to erase the previous object at this depth
+		listIterator->second->decRef();
+	}
+
+	obj->setParent(parent);
+	obj->setRoot(parent->getRoot());
+	//Assign the object reference to the list
+	listIterator->second=obj;
+	//Invalidate the object now that all properties are correctly set
+	listIterator->second->requestInvalidation();
 }
 
 void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, DisplayObject*> >& ls)
@@ -1257,30 +1301,32 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 	if(ClipDepth!=0)
 		return;
 
-	PlaceInfo infos;
-	//Find if this id is already on the list
-	list < pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
-	for(;it!=ls.end();++it)
+	if(!PlaceFlagHasCharacter && !PlaceFlagMove)
 	{
-		if(it->second->Depth==Depth)
-		{
-			infos=it->first;
-			if(!PlaceFlagMove)
-				throw ParseException("Depth already used already on displaylist");
-			break;
-		}
+		LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that does nothing"));
+		return;
 	}
 
-	if(PlaceFlagHasMatrix)
-		infos.Matrix=Matrix;
-
-	DisplayObject* toAdd=NULL;
 	if(PlaceFlagHasCharacter)
 	{
-		//As the transformation matrix can change every frame
-		//it is saved in a side data structure
-		//and assigned to the internal struture every frame
+		//A new character must be placed
 		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
+
+		PlaceInfo infos(Depth);
+		if(PlaceFlagHasMatrix)
+			infos.Matrix=Matrix;
+
+		list<pair<PlaceInfo, DisplayObject*> >::iterator it=
+			lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
+			(ls.begin(),ls.end(),Depth,list_orderer());
+		if(it!=ls.end() && it->first.Depth!=Depth && !PlaceFlagMove)
+		{
+			LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
+			return;
+		}
+		//Create a new entry in the list, currently initialized with NULL
+		it=ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,NULL));
+
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
 		if(parentDict)
@@ -1288,102 +1334,32 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 		else
 			localRoot=parent->getRoot();
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
-		toAdd=dynamic_cast<DisplayObject*>(dict->instance());
+
+		//We can create the object right away
+		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(dict->instance());
 		assert_and_throw(toAdd);
-
-		//Object should be constructed even if not binded
-		if(toAdd->getPrototype() && sys->currentVm)
-		{
-			//Object expect to have the matrix set when created
-			if(PlaceFlagHasMatrix)
-				toAdd->setMatrix(Matrix);
-			//We now ask the VM to construct this object
-			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->getPrototype());
-			bool added=sys->currentVm->addEvent(NULL,e);
-			if(!added)
-			{
-				e->decRef();
-				throw RunTimeException("Could not add event");
-			}
-			e->wait();
-			e->decRef();
-		}
-
-		if(PlaceFlagHasColorTransform)
-			toAdd->ColorTransform=ColorTransform;
-
-		if(PlaceFlagHasRatio)
-			toAdd->Ratio=Ratio;
-
-		if(PlaceFlagHasClipDepth)
-			toAdd->ClipDepth=ClipDepth;
-
-		toAdd->setRoot(parent->getRoot());
-		toAdd->Depth=Depth;
-		if(!PlaceFlagMove)
-		{
-			list<pair<PlaceInfo, DisplayObject*> >::iterator it=
-				lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
-				(ls.begin(),ls.end(),Depth,list_orderer());
-			//As we are inserting the object in the list we need to incref it
-			toAdd->incRef();
-			toAdd->setParent(parent);
-			toAdd->setRoot(parent->getRoot());
-			ls.insert(it,make_pair(infos,toAdd));
-		}
+		//The matrix must be set before invoking the constructor
+		toAdd->setMatrix(Matrix);
+		if(toAdd->getPrototype())
+			toAdd->getPrototype()->handleConstruction(toAdd,NULL,0,true);
+		assignObjectToList(toAdd, parent, it);
 	}
-
-	if(PlaceFlagHasName)
+	else
 	{
-		//Set a variable on the parent to link this object
-		LOG(LOG_NO_INFO,_("Registering ID ") << CharacterId << _(" with name ") << Name);
-		if(!PlaceFlagMove)
+		//assert_and_throw(!PlaceFlagHasName && !PlaceFlagHasColorTransform && !PlaceFlagHasRatio && !PlaceFlagHasClipDepth);
+		//We're just changing the PlaceInfo
+		list<pair<PlaceInfo, DisplayObject*> >::iterator it=
+			lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
+			(ls.begin(),ls.end(),Depth,list_orderer());
+		if(it==ls.end() || it->first.Depth!=Depth)
 		{
-			assert_and_throw(toAdd);
-			toAdd->incRef();
-			parent->setVariableByQName((const char*)Name,"",toAdd);
+			LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that moves a non existing object"));
+			return;
 		}
-		else
-			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
+		if(PlaceFlagHasMatrix)
+			it->first.Matrix=Matrix;
+		//The Depth cannot change when moving
 	}
-
-	//Move the object if relevant
-	if(PlaceFlagMove)
-	{
-		if(it!=ls.end())
-		{
-			if(!PlaceFlagHasCharacter)
-			{
-				//if(it2->PlaceFlagHasClipAction)
-				if(PlaceFlagHasColorTransform)
-					it->second->ColorTransform=ColorTransform;
-
-				if(PlaceFlagHasRatio)
-					it->second->Ratio=Ratio;
-
-				if(PlaceFlagHasClipDepth)
-					it->second->ClipDepth=ClipDepth;
-				it->first=infos;
-			}
-			else
-			{
-				it->second->setParent(NULL);
-				it->second->setRoot(NULL);
-				it->second->decRef();
-				ls.erase(it);
-				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
-				toAdd->incRef();
-				toAdd->setParent(parent);
-				toAdd->setRoot(parent->getRoot());
-				ls.insert(it,make_pair(infos,toAdd));
-			}
-		}
-		else
-			LOG(LOG_ERROR,_("no char to move at depth ") << Depth << _(" name ") << Name);
-	}
-
-	if(toAdd)
-		toAdd->decRef();
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
@@ -1422,139 +1398,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		in >> ClipActions;
 
 	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0))
-}
-
-void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, DisplayObject*> >& ls)
-{
-	//TODO: support clipping, blending, filters, caching
-	if(ClipDepth!=0)
-		return;
-
-	PlaceInfo infos;
-	//Find if this id is already on the list
-	list < pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
-	for(;it!=ls.end();++it)
-	{
-		if(it->second->Depth==Depth)
-		{
-			infos=it->first;
-			if(!PlaceFlagMove)
-				throw ParseException("Depth already used already on displaylist");
-			break;
-		}
-	}
-
-	if(PlaceFlagHasMatrix)
-		infos.Matrix=Matrix;
-
-	DisplayObject* toAdd=NULL;
-	if(PlaceFlagHasCharacter)
-	{
-		//As the transformation matrix can change every frame
-		//it is saved in a side data structure
-		//and assigned to the internal struture every frame
-		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
-		RootMovieClip* localRoot=NULL;
-		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
-		if(parentDict)
-			localRoot=parentDict->loadedFrom;
-		else
-			localRoot=parent->getRoot();
-		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
-		toAdd=dynamic_cast<DisplayObject*>(dict->instance());
-		assert_and_throw(toAdd);
-
-		//Object should be constructed even if not binded
-		if(toAdd->getPrototype() && sys->currentVm)
-		{
-			//Object expect to have the matrix set when created
-			if(PlaceFlagHasMatrix)
-				toAdd->setMatrix(Matrix);
-			//We now ask the VM to construct this object
-			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->getPrototype());
-			bool added=sys->currentVm->addEvent(NULL,e);
-			if(!added)
-			{
-				e->decRef();
-				throw RunTimeException("Could not add event");
-			}
-			e->wait();
-			e->decRef();
-		}
-
-		if(PlaceFlagHasColorTransform)
-			toAdd->ColorTransform=ColorTransform;
-
-		if(PlaceFlagHasRatio)
-			toAdd->Ratio=Ratio;
-
-		if(PlaceFlagHasClipDepth)
-			toAdd->ClipDepth=ClipDepth;
-
-		toAdd->setRoot(parent->getRoot());
-		toAdd->Depth=Depth;
-		if(!PlaceFlagMove)
-		{
-			list<pair<PlaceInfo, DisplayObject*> >::iterator it=
-				lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
-				(ls.begin(),ls.end(),Depth,list_orderer());
-			//As we are inserting the object in the list we need to incref it
-			toAdd->incRef();
-			toAdd->setParent(parent);
-			toAdd->setRoot(parent->getRoot());
-			ls.insert(it,make_pair(infos,toAdd));
-		}
-	}
-
-	if(PlaceFlagHasName)
-	{
-		//Set a variable on the parent to link this object
-		LOG(LOG_NO_INFO,_("Registering ID ") << CharacterId << _(" with name ") << Name);
-		if(!PlaceFlagMove)
-		{
-			assert_and_throw(toAdd);
-			toAdd->incRef();
-			parent->setVariableByQName((const char*)Name,"",toAdd);
-		}
-		else
-			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
-	}
-
-	//Move the object if relevant
-	if(PlaceFlagMove)
-	{
-		if(it!=ls.end())
-		{
-			if(!PlaceFlagHasCharacter)
-			{
-				//if(it2->PlaceFlagHasClipAction)
-				if(PlaceFlagHasColorTransform)
-					it->second->ColorTransform=ColorTransform;
-
-				if(PlaceFlagHasRatio)
-					it->second->Ratio=Ratio;
-
-				if(PlaceFlagHasClipDepth)
-					it->second->ClipDepth=ClipDepth;
-				it->first=infos;
-			}
-			else
-			{
-				it->second->decRef();
-				ls.erase(it);
-				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
-				toAdd->incRef();
-				toAdd->setParent(parent);
-				toAdd->setRoot(parent->getRoot());
-				ls.insert(it,make_pair(infos,toAdd));
-			}
-		}
-		else
-			LOG(LOG_ERROR,_("no char to move at depth ") << Depth << _(" name ") << Name);
-	}
-
-	if(toAdd)
-		toAdd->decRef();
 }
 
 PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in):PlaceObject2Tag(h)

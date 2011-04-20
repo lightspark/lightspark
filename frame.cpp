@@ -26,6 +26,54 @@
 using namespace std;
 using namespace lightspark;
 
+extern TLSDATA bool isVmThread;
+
+Frame::Frame(const Frame& r):
+	initialized(r.initialized),invalid(r.invalid),
+	constructed(ACQUIRE_READ(r.constructed)),Label(r.Label),
+	blueprint(r.blueprint),displayList(r.displayList),
+	controls(r.controls)
+{
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+
+	//Increase the refcount of childs
+	for(;i!=displayList.end();++i)
+		i->second->incRef();
+}
+
+Frame::Frame(const Frame&& r):
+	initialized(r.initialized),invalid(r.invalid),
+	constructed(ACQUIRE_READ(r.constructed)),Label(r.Label),
+	blueprint(std::move(r.blueprint)),displayList(std::move(r.displayList)),
+	controls(std::move(r.controls))
+{
+	assert(r.displayList.empty());
+}
+
+Frame& Frame::operator=(const Frame& r)
+{
+	initialized=r.initialized;
+	invalid=r.invalid;
+	RELEASE_WRITE(constructed,ACQUIRE_READ(r.constructed));
+	Label=r.Label;
+	blueprint=r.blueprint;
+
+	list <pair<PlaceInfo, DisplayObject*> >::const_iterator i2=r.displayList.begin();
+
+	//Increase the refcount of childs
+	for(;i2!=r.displayList.end();++i2)
+		i2->second->incRef();
+
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	//Decrease the refcount of childs
+	for(;i!=displayList.end();++i)
+		i->second->incRef();
+
+	displayList=r.displayList;
+	controls=r.controls;
+	return *this;
+}
+
 Frame::~Frame()
 {
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
@@ -34,10 +82,7 @@ Frame::~Frame()
 	{
 		//Decrease the refcount of childs
 		for(;i!=displayList.end();++i)
-		{
-			assert(i->second);
 			i->second->decRef();
-		}
 	}
 }
 
@@ -65,7 +110,29 @@ void dumpDisplayList(list<DisplayObject*>& l)
 	}
 }
 
-void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
+void Frame::construct(MovieClip* parent)
+{
+	assert(!constructed);
+	//Update the displayList using the tags in this frame
+	std::list<DisplayListTag*>::iterator it=blueprint.begin();
+	for(;it!=blueprint.end();++it)
+		(*it)->execute(parent, displayList);
+	blueprint.clear();
+
+	//As part of initialization set the transformation matrix for the child objects
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+	for(;i!=displayList.end();++i)
+	{
+		i->second->setMatrix(i->first.Matrix);
+		//Take a chance to also invalidate the content
+		if(i->second->isOnStage())
+			i->second->requestInvalidation();
+	}
+	invalid=false;
+	setConstructed();
+}
+
+void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> >& d)
 {
 	if(!initialized)
 	{
@@ -77,45 +144,25 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 			for(unsigned int i=0;i<controls.size();i++)
 				controls[i]->execute(parent->getRoot());
 			controls.clear();
-
-			if(sys->currentVm)
-			{
-				//We stop execution until execution engine catches up
-				SynchronizationEvent* se=new SynchronizationEvent;
-				bool added=sys->currentVm->addEvent(NULL, se);
-				if(!added)
-				{
-					se->decRef();
-					throw RunTimeException("Could not add event");
-				}
-				se->wait();
-				se->decRef();
-				//Now the bindings are effective for all tags
-			}
 		}
 
-		//Update the displayList using the tags in this frame
-		std::list<DisplayListTag*>::iterator it=blueprint.begin();
-		for(;it!=blueprint.end();++it)
-			(*it)->execute(parent, d);
-		blueprint.clear();
 		displayList=d;
 		//Acquire a new reference to every child
 		list <pair<PlaceInfo, DisplayObject*> >::const_iterator dit=displayList.begin();
 		for(;dit!=displayList.end();++dit)
 			dit->second->incRef();
-		initialized=true;
 
-		//As part of initialization set the transformation matrix for the child objects
-		list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
-
-		for(;i!=displayList.end();++i)
+		if(sys->currentVm && !isVmThread)
 		{
-			i->second->setMatrix(i->first.Matrix);
-			//Take a chance to also invalidate the content
-			if(i->second->isOnStage())
-				i->second->requestInvalidation();
+			//Add a FrameConstructedEvent to the queue, the whole frame construction
+			//will happen in the VM context
+			ConstructFrameEvent* ce=new ConstructFrameEvent(*this, parent);
+			sys->currentVm->addEvent(NULL, ce);
+			ce->decRef();
 		}
-		invalid=false;
+		else
+			construct(parent);
+
+		initialized=true;
 	}
 }

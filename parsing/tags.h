@@ -298,8 +298,8 @@ protected:
 	class list_orderer
 	{
 	public:
-		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, int d);
-		bool operator()(int d, const std::pair<PlaceInfo, DisplayObject*>& a);
+		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, uint32_t d);
+		bool operator()(uint32_t d, const std::pair<PlaceInfo, DisplayObject*>& a);
 		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b);
 	};
 
@@ -319,6 +319,8 @@ protected:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
+	void assignObjectToList(DisplayObject* obj, MovieClip* parent,
+			std::list<std::pair<PlaceInfo, DisplayObject*> >::iterator listIterator) const;
 
 public:
 	STRING Name;
@@ -341,7 +343,6 @@ private:
 
 public:
 	PlaceObject3Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
 };
 
 class FrameLabelTag: public Tag

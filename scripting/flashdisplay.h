@@ -85,7 +85,6 @@ protected:
 	void hitTestPrologue() const;
 	void hitTestEpilogue() const;
 public:
-	int Depth;
 	tiny_string name;
 	UI16_SWF CharacterId;
 	CXFORMWITHALPHA ColorTransform;
@@ -385,12 +384,16 @@ public:
 class Sprite: public DisplayObjectContainer, public GraphicsContainer
 {
 friend class DisplayObject;
+private:
+	ACQUIRE_RELEASE_FLAG(constructed);
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	InteractiveObject* hitTestImpl(number_t x, number_t y);
+	void setConstructed() { RELEASE_WRITE(constructed,true); }
 public:
 	Sprite();
+	Sprite(const Sprite& r);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -404,6 +407,7 @@ public:
 	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
 	void invalidate();
 	void requestInvalidation();
+	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 };
 
 class MovieClip: public Sprite
@@ -413,7 +417,6 @@ private:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 protected:
 	uint32_t framesLoaded;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	Frame* cur_frame;
 	void bootstrap();
 	std::vector<IFunction*> frameScripts;

@@ -75,15 +75,6 @@ void DoABCTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
-	SynchronizationEvent* se=new SynchronizationEvent;
-	bool added=sys->currentVm->addEvent(NULL,se);
-	if(!added)
-	{
-		se->decRef();
-		throw RunTimeException("Could not add event");
-	}
-	se->wait();
-	se->decRef();
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -112,15 +103,6 @@ void DoABCDefineTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
-	SynchronizationEvent* se=new SynchronizationEvent;
-	bool added=sys->currentVm->addEvent(NULL,se);
-	if(!added)
-	{
-		se->decRef();
-		throw RunTimeException("Could not add event");
-	}
-	se->wait();
-	se->decRef();
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -1192,28 +1174,17 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 				ev->context->exec();
 				break;
 			}
-			case CONSTRUCT_OBJECT:
-			{
-				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
-				LOG(LOG_CALLS,_("Building instance traits"));
-				try
-				{
-					ev->_class->handleConstruction(ev->_obj,NULL,0,true);
-				}
-				catch(LightsparkException& e)
-				{
-					//Sync anyway and rethrow
-					ev->sync();
-					throw;
-				}
-				ev->sync();
-				break;
-			}
 			case CHANGE_FRAME:
 			{
 				FrameChangeEvent* ev=static_cast<FrameChangeEvent*>(e.second);
 				ev->movieClip->state.next_FP=ev->frame;
 				ev->movieClip->state.explicit_FP=true;
+				break;
+			}
+			case CONSTRUCT_FRAME:
+			{
+				ConstructFrameEvent* ev=static_cast<ConstructFrameEvent*>(e.second);
+				ev->frame.construct(ev->parent);
 				break;
 			}
 			default:
@@ -1233,7 +1204,7 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 		return false;
 	//If the event is a synchronization and we are running in the VM context
 	//we should handle it immidiately to avoid deadlock
-	if(isVmThread && (ev->getEventType()==SYNC || ev->getEventType()==CONSTRUCT_OBJECT))
+	if(isVmThread && (ev->getEventType()==SYNC))
 	{
 		assert(obj==NULL);
 		ev->incRef();

@@ -894,12 +894,12 @@ ASObject* ASObject::getValueAt(int index)
 	return ret;
 }
 
-tiny_string variables_map::getNameAt(unsigned int index)
+tiny_string variables_map::getNameAt(unsigned int index) const
 {
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		var_iterator it=Variables.begin();
+		const_var_iterator it=Variables.begin();
 
 		for(unsigned int i=0;i<index;i++)
 			++it;
@@ -910,7 +910,7 @@ tiny_string variables_map::getNameAt(unsigned int index)
 		throw RunTimeException("getNameAt out of bounds");
 }
 
-unsigned int ASObject::numVariables()
+unsigned int ASObject::numVariables() const
 {
 	return Variables.size();
 }

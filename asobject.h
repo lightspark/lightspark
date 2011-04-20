@@ -94,7 +94,7 @@ private:
 	{
 		return Variables.size();
 	}
-	tiny_string getNameAt(unsigned int i);
+	tiny_string getNameAt(unsigned int i) const;
 	obj_var* getValueAt(unsigned int i);
 	~variables_map();
 public:
@@ -222,8 +222,8 @@ public:
 		Variables.setSlot(n,o);
 	}
 	void initSlot(unsigned int n, const multiname& name);
-	virtual unsigned int numVariables();
-	tiny_string getNameAt(int i)
+	unsigned int numVariables() const;
+	tiny_string getNameAt(int i) const
 	{
 		return Variables.getNameAt(i);
 	}

@@ -893,9 +893,7 @@ tiny_string XML::toString_priv()
 	//We have to use vanilla libxml2, libxml++ is not enough
 	xmlNodePtr libXml2Node=node->cobj();
 	tiny_string ret;
-	if(libXml2Node->type==XML_ATTRIBUTE_NODE ||
-	   libXml2Node->type==XML_TEXT_NODE ||
-	   hasSimpleContent())
+	if(hasSimpleContent())
 	{
 		xmlChar* content=xmlNodeGetContent(libXml2Node);
 		ret=tiny_string((char*)content,true);

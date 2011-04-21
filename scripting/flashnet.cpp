@@ -186,7 +186,6 @@ ASFUNCTIONBODY(URLLoader,load)
 	dataName.name_s="data";
 	dataName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	ASObject* data=arg->getVariableByMultiname(dataName);
-	assert_and_throw(th->dataFormat=="binary" || th->dataFormat=="text");
 	if(urlRequest->method==URLRequest::GET)
 	{
 		if(data)
@@ -278,6 +277,11 @@ void URLLoader::execute()
 			else if(dataFormat=="text")
 			{
 				data=Class<ASString>::getInstanceS((char*)buf,downloader->getLength());
+				delete[] buf;
+			}
+			else if(dataFormat=="variables")
+			{
+				data=Class<URLVariables>::getInstanceS((char*)buf);
 				delete[] buf;
 			}
 			//Send a complete event for this object

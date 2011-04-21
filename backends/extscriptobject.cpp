@@ -342,7 +342,13 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	{
 		funcEvent = new FunctionEvent(func, new Null, objArgs, argc, &result, &exception, syncEvent);
 		// Add the callback function event to the VM event queue
-		getVm()->addEvent(NULL,funcEvent);
+		bool added=getVm()->addEvent(NULL,funcEvent);
+		if(added==false)
+		{
+			//Could not add the event, so the VM is shutting down
+			syncEvent->decRef();
+			syncEvent=NULL;
+		}
 		// We won't use this event any more
 		funcEvent->decRef();
 	}

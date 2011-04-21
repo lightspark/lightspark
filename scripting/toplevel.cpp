@@ -1804,7 +1804,7 @@ bool Integer::isEqual(ASObject* o)
 		return val==o->toInt();
 	}
 	else if(o->getObjectType()==T_NUMBER)
-		return val==o->toInt();
+		return val==o->toNumber();
 	else
 	{
 		return ASObject::isEqual(o);

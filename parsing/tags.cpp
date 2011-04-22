@@ -366,7 +366,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	do
 	{
 		tag=factory.readTag();
-		sys->tagsStorage.push_back(tag);
+		sys->registerTag(tag);
 		switch(tag->getType())
 		{
 			case DICT_TAG:

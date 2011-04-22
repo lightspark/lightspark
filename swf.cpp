@@ -132,6 +132,13 @@ void SystemState::unregisterEnterFrameListener(DisplayObject* obj)
 		obj->decRef();
 }
 
+void SystemState::registerTag(Tag* t)
+{
+	SpinlockLocker l(tagsStorageLock);
+	cout << "Tag " << t << " has type " << t->getType() << endl;
+	tagsStorage.push_back(t);
+}
+
 void RootMovieClip::setOnStage(bool staged)
 {
 	Locker l(mutexFrames);
@@ -1078,7 +1085,7 @@ void ParseThread::execute()
 		while(!done)
 		{
 			Tag* tag=factory.readTag();
-			sys->tagsStorage.push_back(tag);
+			sys->registerTag(tag);
 			switch(tag->getType())
 			{
 				case END_TAG:

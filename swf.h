@@ -221,6 +221,14 @@ private:
 	   The lock for the invalidate queue
 	*/
 	Spinlock invalidateQueueLock;
+	/*
+	   Vector to keep track of the created tags
+	*/
+	std::vector<Tag*> tagsStorage;
+	/*
+	   The lock for the tags storage
+	*/
+	Spinlock tagsStorageLock;
 #ifdef PROFILING_SUPPORT
 	/*
 	   Output file for the profiling data
@@ -274,7 +282,6 @@ public:
 	//Class map
 	std::map<QName, Class_base*> classes;
 	bool finalizingDestruction;
-	std::vector<Tag*> tagsStorage;
 
 	//Flags for command line options
 	bool useInterpreter;
@@ -315,6 +322,9 @@ public:
 	//enterFrame event management
 	void registerEnterFrameListener(DisplayObject* clip);
 	void unregisterEnterFrameListener(DisplayObject* clip);
+
+	//tags management
+	void registerTag(Tag* t);
 
 	//Invalidation queue management
 	void addToInvalidateQueue(DisplayObject* d);

@@ -36,6 +36,7 @@
 #include "class.h"
 #include "exceptions.h"
 #include "backends/urlutils.h"
+#include <libxml++/nodes/textnode.h>
 
 using namespace std;
 using namespace lightspark;

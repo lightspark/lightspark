@@ -1284,7 +1284,10 @@ void PlaceObject2Tag::assignObjectToList(DisplayObject* obj, MovieClip* parent,
 	if(PlaceFlagMove)
 	{
 		//If we are here we have to erase the previous object at this depth
-		listIterator->second->decRef();
+		if(listIterator->second)
+			listIterator->second->decRef();
+		else
+			LOG(LOG_ERROR,_("Moving a non existing object at depth ") << listIterator->first.Depth);
 	}
 
 	obj->setParent(parent);
@@ -1319,13 +1322,20 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 		list<pair<PlaceInfo, DisplayObject*> >::iterator it=
 			lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
 			(ls.begin(),ls.end(),Depth,list_orderer());
-		if(it!=ls.end() && it->first.Depth!=Depth && !PlaceFlagMove)
+		if(it!=ls.end() && it->first.Depth==Depth)
 		{
-			LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
-			return;
+			//We found a member of the list already at this depth
+			if(!PlaceFlagMove)
+			{
+				LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
+				return;
+			}
 		}
-		//Create a new entry in the list, currently initialized with NULL
-		it=ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,(DisplayObject*)NULL));
+		else
+		{
+			//Create a new entry in the list, currently initialized with NULL
+			it=ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,(DisplayObject*)NULL));
+		}
 
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);

@@ -28,6 +28,9 @@ SET_NAMESPACE("flash.text");
 
 REGISTER_CLASS_NAME2(lightspark::Font,"Font","flash.text");
 REGISTER_CLASS_NAME(TextField);
+REGISTER_CLASS_NAME(TextFieldType);
+REGISTER_CLASS_NAME(TextFieldAutoSize);
+REGISTER_CLASS_NAME(TextFormatAlign);
 REGISTER_CLASS_NAME(TextFormat);
 REGISTER_CLASS_NAME(StyleSheet);
 
@@ -124,6 +127,28 @@ void TextField::Render(bool maskEnabled)
 {
 	//TODO: implement
 	LOG(LOG_NOT_IMPLEMENTED,_("TextField::Render ") << text);
+}
+
+void TextFieldAutoSize ::sinit(Class_base* c)
+{
+	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"));
+	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"));
+	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"));
+	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"));
+}
+
+void TextFieldType ::sinit(Class_base* c)
+{
+	c->setVariableByQName("DYNAMIC","",Class<ASString>::getInstanceS("dynamic"));
+	c->setVariableByQName("INPUT","",Class<ASString>::getInstanceS("input"));
+}
+
+void TextFormatAlign ::sinit(Class_base* c)
+{
+	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"));
+	c->setVariableByQName("JUSTIFY","",Class<ASString>::getInstanceS("justify"));
+	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"));
+	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"));
 }
 
 void TextFormat::sinit(Class_base* c)

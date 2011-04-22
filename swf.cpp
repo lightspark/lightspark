@@ -70,6 +70,8 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),init
 
 RootMovieClip::~RootMovieClip()
 {
+	if(this!=sys)
+		sys->removeJob(this);
 	sem_destroy(&new_frame);
 }
 

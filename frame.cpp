@@ -156,6 +156,7 @@ void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> 
 		{
 			//Add a FrameConstructedEvent to the queue, the whole frame construction
 			//will happen in the VM context
+			parent->incRef();
 			ConstructFrameEvent* ce=new ConstructFrameEvent(*this, parent);
 			sys->currentVm->addEvent(NULL, ce);
 			ce->decRef();

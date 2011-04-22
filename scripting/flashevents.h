@@ -348,6 +348,7 @@ private:
 	MovieClip* parent;
 public:
 	ConstructFrameEvent(Frame& f, MovieClip* p):Event("ConstructFrameEvent"),frame(f),parent(p){}
+	~ConstructFrameEvent();
 	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
 };
 

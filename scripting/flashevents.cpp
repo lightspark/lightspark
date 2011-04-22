@@ -685,3 +685,9 @@ FunctionEvent::~FunctionEvent()
 {
 	delete[] args;
 }
+
+ConstructFrameEvent::~ConstructFrameEvent()
+{
+	if(!sys->finalizingDestruction)
+		parent->decRef();
+}

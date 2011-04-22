@@ -144,13 +144,11 @@ public:
 	}
 	explicit tiny_string(int i):buf(_buf_static),type(STATIC)
 	{
-		//TODO: use snprintf!!
-		sprintf(buf,"%i",i);
+		stringSize=snprintf(buf,STATIC_SIZE,"%i",i)+1;
 	}
 	explicit tiny_string(number_t d):buf(_buf_static),type(STATIC)
 	{
-		//TODO: use snprintf!!
-		sprintf(buf,"%g",d);
+		stringSize=snprintf(buf,STATIC_SIZE,"%g",d)+1;
 	}
 	tiny_string& operator=(const tiny_string& s)
 	{

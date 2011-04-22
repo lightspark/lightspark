@@ -37,7 +37,7 @@ XMLNode::XMLNode(XMLDocument* _r, xmlpp::Node* _n):root(_r),node(_n)
 
 XMLNode::~XMLNode()
 {
-	if(root!=this)
+	if(root!=this && !sys->finalizingDestruction)
 		root->decRef();
 }
 

@@ -147,6 +147,7 @@ void Frame::init(MovieClip* parent, const list <pair<PlaceInfo, DisplayObject*> 
 		}
 
 		displayList=d;
+		blueprint.clear();
 		//Acquire a new reference to every child
 		list <pair<PlaceInfo, DisplayObject*> >::const_iterator dit=displayList.begin();
 		for(;dit!=displayList.end();++dit)

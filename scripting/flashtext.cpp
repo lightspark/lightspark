@@ -51,10 +51,10 @@ void TextField::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),true);
-	c->setSetterByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),true);
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),true);
-	c->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),true);
+	c->setGetterByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getWidth),true);
+	c->setSetterByQName("textWidth","",Class<IFunction>::getFunction(TextField::_setWidth),true);
+	c->setGetterByQName("textHeight","",Class<IFunction>::getFunction(TextField::_getHeight),true);
+	c->setSetterByQName("textHeight","",Class<IFunction>::getFunction(TextField::_setHeight),true);
 	c->setGetterByQName("text","",Class<IFunction>::getFunction(TextField::_getText),true);
 	c->setSetterByQName("text","",Class<IFunction>::getFunction(TextField::_setText),true);
 	c->setMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),true);

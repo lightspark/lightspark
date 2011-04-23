@@ -3855,10 +3855,13 @@ ASFUNCTIONBODY(Namespace,_constructor)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
 	//The Namespace class has two constructors, this is the one with a single argument, uriValue:*
-	assert_and_throw(argslen==1);
+	assert_and_throw(argslen<2);
 
 	th->prefix = "";
 	th->uri = "";
+	if (argslen == 0)
+	    return NULL;
+
 	switch(args[0]->getObjectType())
 	{
 		case T_NULL:

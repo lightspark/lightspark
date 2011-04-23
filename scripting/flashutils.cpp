@@ -65,6 +65,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),true);
 	c->setMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),true);
 	c->setMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),true);
+	c->setMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),true);
 //	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),true);
 	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),true);
 }
@@ -239,6 +240,21 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	th->getBuffer(th->position+length,true);
 	memcpy(th->bytes+th->position,buf+offset,length);
 	th->position+=length;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,writeByte)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==1);
+	assert_and_throw(args[0]->getPrototype()==Class<Integer>::getClass());
+
+	int32_t value=args[0]->toInt();
+
+	th->getBuffer(th->position+1,true);
+	th->bytes[th->position-1] = value & 0xFF;
+	th->position++;
 
 	return NULL;
 }

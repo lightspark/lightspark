@@ -2048,7 +2048,9 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
-	if(args[0]->getObjectType() == T_CLASS)
+	if(args[0]->getObjectType() == T_CLASS ||
+	   args[0]->getObjectType() == T_UNDEFINED ||
+	   args[0]->getObjectType() == T_NULL)
 	{
 		return new Null;
 	}

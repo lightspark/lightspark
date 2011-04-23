@@ -53,6 +53,7 @@ public:
 	ASFUNCTION(_setDefaultObjectEncoding);
 	ASFUNCTION(readBytes);
 	ASFUNCTION(readObject);
+	ASFUNCTION(writeByte);
 	ASFUNCTION(writeBytes);
 	ASFUNCTION(writeUTFBytes);
 	ASFUNCTION(_toString);

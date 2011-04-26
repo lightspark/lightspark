@@ -67,6 +67,7 @@ public:
 	URLVariables(){}
 	URLVariables(const tiny_string& s);
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(decode);
 	ASFUNCTION(_toString);

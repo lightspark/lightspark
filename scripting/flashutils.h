@@ -54,6 +54,7 @@ public:
 	ASFUNCTION(readBytes);
 	ASFUNCTION(readObject);
 	ASFUNCTION(writeByte);
+	ASFUNCTION(readByte);
 	ASFUNCTION(writeBytes);
 	ASFUNCTION(writeUTFBytes);
 	ASFUNCTION(_toString);

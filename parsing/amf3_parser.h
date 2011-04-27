@@ -197,7 +197,7 @@ struct Amf3ParserGrammar : boost::spirit::qi::grammar<char*,std::vector<ValueTyp
 	boost::spirit::qi::rule<char*,ArrayType(),boost::spirit::qi::locals<uint32_t> > array_type;
 	boost::spirit::qi::rule<char*,ValueType()> value_type;
 	boost::spirit::qi::rule<char*,std::vector<ValueType>() > entry_rule;
-	boost::spirit::qi::rule<char*,Array(uint32_t)> array_stuct_value;
+	boost::spirit::qi::rule<char*,Array(uint32_t)> array_struct_value;
 
 	enum markers_type {
 		undefined_marker = 0x0,

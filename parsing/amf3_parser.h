@@ -225,4 +225,12 @@ BOOST_FUSION_ADAPT_STRUCT(
 	(std::vector<lightspark::amf3::ValueType>, m_denseSection)
 )
 
+namespace boost { namespace spirit { namespace traits {
+
+//Make sure the parsed types are not wrongly used as containers by spirit
+template <typename Enable> struct is_container<std::string, Enable>: mpl::false_ {};
+
+};};};
+
+
 #endif

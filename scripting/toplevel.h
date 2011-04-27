@@ -422,6 +422,7 @@ public:
 class ASQName: public ASObject
 {
 friend class ABCContext;
+friend class Namespace;
 CLASSBUILDABLE(ASQName);
 private:
 	tiny_string uri;
@@ -430,6 +431,8 @@ private:
 public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getURI);
+	ASFUNCTION(_getLocalName);
 };
 
 class Namespace: public ASObject
@@ -439,12 +442,17 @@ friend class ABCContext;
 CLASSBUILDABLE(Namespace);
 private:
 	tiny_string uri;
+	tiny_string prefix;
 	Namespace(){type=T_NAMESPACE;}
 	Namespace(const tiny_string& _uri):uri(_uri){type=T_NAMESPACE;}
 public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getURI);
+	ASFUNCTION(_setURI);
+	ASFUNCTION(_getPrefix);
+	ASFUNCTION(_setPrefix);
 };
 
 enum DATA_TYPE {DATA_OBJECT=0,DATA_INT};

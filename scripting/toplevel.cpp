@@ -3275,7 +3275,6 @@ void SecurityError::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->max_level=c->super->max_level+1;
 }
 
 void SecurityError::buildTraits(ASObject* o)

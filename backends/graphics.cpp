@@ -696,6 +696,7 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 
 	cairo_pattern_t *stroke_pattern = cairo_pop_group(stroke_cr);
 	cairo_set_source(cr, stroke_pattern);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_paint(cr);
 
 	cairo_pattern_destroy(stroke_pattern);

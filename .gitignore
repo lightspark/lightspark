@@ -7,7 +7,14 @@ x86_64
 #
 # CMAKE
 #
-CMakeFiles/*
+CMakeFiles
 Makefile
 cmake_install.cmake
 CMakeCache.txt
+
+# SWF files
+
+*.swf
+
+# Cscope
+cscope*

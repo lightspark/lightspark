@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_utils_ByteArray_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import flash.utils.ByteArray;
+	private function appComplete():void
+	{
+		var ba:ByteArray = new ByteArray();
+		
+		Tests.assertEquals(3, ByteArray.defaultObjectEncoding, "Default object encoding");
+		Tests.assertEquals(0, ba.position, "Initial position");
+		Tests.assertEquals(0, ba.length, "Initial length");
+
+		ba.writeByte(42);
+		Tests.assertEquals(1, ba.length, "Length after writeByte");
+		ba.writeByte(257); //should only use lower 8 bits and write 1
+		Tests.assertEquals(2, ba.length, "Length after another writeByte");
+		ba.position = 0;
+		Tests.assertEquals(42, ba.readByte(), "readByte");
+		Tests.assertEquals(1, ba.readByte(), "another readByte");
+
+		var ba2:ByteArray = new ByteArray();
+		ba2[0] = 100;
+		ba2[1] = 200
+		ba2[2] = 300;
+		ba.writeBytes(ba2);
+		//should be [42, 1, 100, 200, 300] now
+		Tests.assertEquals(5, ba.length, "Length after writeBytes");
+		Tests.assertEquals(200, ba[3], "Read value written by writeBytes");
+		
+		Tests.report(visual, this.name);
+	}
+ ]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

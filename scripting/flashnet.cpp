@@ -190,9 +190,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	{
 		if(data)
 		{
-			if(data->getPrototype()==Class<URLVariables>::getClass())
-				throw RunTimeException("URLVariables not support in URLLoader::load");
-			else if(data->getPrototype()==Class<ByteArray>::getClass())
+			if(data->getPrototype()==Class<ByteArray>::getClass())
 				throw RunTimeException("ByteArray not support in URLLoader::load");
 			else
 			{
@@ -220,9 +218,7 @@ ASFUNCTIONBODY(URLLoader,load)
 		vector<uint8_t> postData;
 		if(data)
 		{
-			if(data->getPrototype()==Class<URLVariables>::getClass())
-				throw RunTimeException("URLVariables not support in URLLoader::load");
-			else if(data->getPrototype()==Class<ByteArray>::getClass())
+			if(data->getPrototype()==Class<ByteArray>::getClass())
 				throw RunTimeException("ByteArray not support in URLLoader::load");
 			else
 			{
@@ -1301,6 +1297,10 @@ void URLVariables::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("decode","",Class<IFunction>::getFunction(decode),true);
 	c->setMethodByQName("toString","",Class<IFunction>::getFunction(_toString),true);
+}
+
+void URLVariables::buildTraits(ASObject* o)
+{
 }
 
 URLVariables::URLVariables(const tiny_string& s)

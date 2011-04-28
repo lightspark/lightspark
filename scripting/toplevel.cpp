@@ -4196,7 +4196,8 @@ ASFUNCTIONBODY(lightspark,isNaN)
 
 ASFUNCTIONBODY(lightspark,isFinite)
 {
-	if(args[0]->getObjectType()==T_NUMBER)
+	if(args[0]->getObjectType()==T_NUMBER ||
+		args[0]->getObjectType()==T_INTEGER)
 	{
 		if(isfinite(args[0]->toNumber()))
 			return abstract_b(true);

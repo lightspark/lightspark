@@ -266,6 +266,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getClass());
 	builtin->setVariableByQName("Transform","flash.geom",Class<Transform>::getClass());
 	builtin->setVariableByQName("Point","flash.geom",Class<Point>::getClass());
+	builtin->setVariableByQName("Vector3D","flash.geom",Class<Vector3D>::getClass());
+	builtin->setVariableByQName("Matrix3D","flash.geom",Class<ASObject>::getClass(QName("Matrix3D", "flash.geom")));
 
 	builtin->setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
 	builtin->setVariableByQName("Event","flash.events",Class<Event>::getClass());

@@ -62,9 +62,11 @@ void ByteArray::sinit(Class_base* c)
 	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),false);
 	sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
 	c->setMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),true);
+	c->setMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),true);
 	c->setMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),true);
 	c->setMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),true);
 	c->setMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),true);
+	c->setMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),true);
 //	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),true);
 	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),true);
 }
@@ -241,6 +243,32 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	th->position+=length;
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,writeByte)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==1);
+
+	int32_t value=args[0]->toInt();
+
+	th->getBuffer(th->position+1,true);
+	th->bytes[th->position++] = value & 0xFF;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray, readByte)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==0);
+
+	if (th->len <= th->position) {
+		LOG(LOG_ERROR,"ByteArray::readByte not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+	return abstract_i(th->bytes[th->position++]);
 }
 
 ASFUNCTIONBODY(ByteArray,readObject)

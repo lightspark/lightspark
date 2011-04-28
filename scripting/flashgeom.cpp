@@ -529,6 +529,10 @@ void ColorTransform::sinit(Class_base* c)
 	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
 }
 
+void ColorTransform::buildTraits(ASObject* o)
+{
+}
+
 ASFUNCTIONBODY(ColorTransform,_constructor)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);

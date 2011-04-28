@@ -60,6 +60,7 @@ REGISTER_CLASS_NAME(StageAlign);
 REGISTER_CLASS_NAME(StageQuality);
 REGISTER_CLASS_NAME(StageDisplayState);
 REGISTER_CLASS_NAME(GradientType);
+REGISTER_CLASS_NAME(BlendMode);
 REGISTER_CLASS_NAME(SpreadMethod);
 REGISTER_CLASS_NAME(InterpolationMethod);
 REGISTER_CLASS_NAME(Bitmap);
@@ -2048,7 +2049,9 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
-	if(args[0]->getObjectType() == T_CLASS)
+	if(args[0]->getObjectType() == T_CLASS ||
+	   args[0]->getObjectType() == T_UNDEFINED ||
+	   args[0]->getObjectType() == T_NULL)
 	{
 		return new Null;
 	}
@@ -2939,6 +2942,25 @@ void GradientType::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setVariableByQName("LINEAR","",Class<ASString>::getInstanceS("linear"));
 	c->setVariableByQName("RADIAL","",Class<ASString>::getInstanceS("radial"));
+}
+
+void BlendMode::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setVariableByQName("ADD","",Class<ASString>::getInstanceS("add"));
+	c->setVariableByQName("ALPHA","",Class<ASString>::getInstanceS("alpha"));
+	c->setVariableByQName("DARKEN","",Class<ASString>::getInstanceS("darken"));
+	c->setVariableByQName("DIFFERENCE","",Class<ASString>::getInstanceS("difference"));
+	c->setVariableByQName("ERASE","",Class<ASString>::getInstanceS("erase"));
+	c->setVariableByQName("HARDLIGHT","",Class<ASString>::getInstanceS("hardlight"));
+	c->setVariableByQName("INVERT","",Class<ASString>::getInstanceS("invert"));
+	c->setVariableByQName("LAYER","",Class<ASString>::getInstanceS("layer"));
+	c->setVariableByQName("LIGHTEN","",Class<ASString>::getInstanceS("lighten"));
+	c->setVariableByQName("MULTIPLY","",Class<ASString>::getInstanceS("multiply"));
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"));
+	c->setVariableByQName("OVERLAY","",Class<ASString>::getInstanceS("overlay"));
+	c->setVariableByQName("SCREEN","",Class<ASString>::getInstanceS("screen"));
+	c->setVariableByQName("SUBSTRACT","",Class<ASString>::getInstanceS("substract"));
 }
 
 void SpreadMethod::sinit(Class_base* c)

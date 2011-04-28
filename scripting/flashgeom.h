@@ -112,6 +112,7 @@ private:
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 public:
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(setColor);
 	ASFUNCTION(getColor);

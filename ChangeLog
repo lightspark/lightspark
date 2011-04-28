@@ -1,5 +1,12 @@
 lightspark: An open source flash player implementation
 
+Version 0.4.7
+	* Fix YouTube breakage
+	* More robustness against deadlocks
+	* Implement flash.net.URLVariables
+	* XML fixes
+	* Browser plugin is now built by default
+
 Version 0.4.6.1:
 	* Fix YouTube breakage
 

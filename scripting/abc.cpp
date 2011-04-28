@@ -169,6 +169,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Function","",Class<IFunction>::getClass());
 	builtin->setVariableByQName("undefined","",new Undefined);
 	builtin->setVariableByQName("Math","",Class<Math>::getClass());
+	builtin->setVariableByQName("Namespace","",Class<Namespace>::getClass());
 	builtin->setVariableByQName("Date","",Class<Date>::getClass());
 	builtin->setVariableByQName("RegExp","",Class<RegExp>::getClass());
 	builtin->setVariableByQName("QName","",Class<ASQName>::getClass());

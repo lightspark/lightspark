@@ -3790,6 +3790,8 @@ void ASQName::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getURI),true);
+	c->setGetterByQName("local_name","",Class<IFunction>::getFunction(_getLocalName),true);
 }
 
 ASFUNCTIONBODY(ASQName,_constructor)
@@ -3822,11 +3824,27 @@ ASFUNCTIONBODY(ASQName,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(ASQName,_getURI)
+{
+	ASQName* th=static_cast<ASQName*>(obj);
+	return Class<ASString>::getInstanceS(th->uri);
+}
+
+ASFUNCTIONBODY(ASQName,_getLocalName)
+{
+	ASQName* th=static_cast<ASQName*>(obj);
+	return Class<ASString>::getInstanceS(th->local_name);
+}
+
 void Namespace::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSetterByQName("uri","",Class<IFunction>::getFunction(_setURI),true);
+	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getURI),true);
+	c->setSetterByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),true);
+	c->setGetterByQName("prefix","",Class<IFunction>::getFunction(_getPrefix),true);
 }
 
 void Namespace::buildTraits(ASObject* o)
@@ -3835,8 +3853,69 @@ void Namespace::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Namespace,_constructor)
 {
-	assert_and_throw(argslen==0);
+	Namespace* th=static_cast<Namespace*>(obj);
+	//The Namespace class has two constructors, this is the one with a single argument, uriValue:*
+	assert_and_throw(argslen<2);
+
+	th->prefix = "";
+	th->uri = "";
+	if (argslen == 0)
+	    return NULL;
+
+	switch(args[0]->getObjectType())
+	{
+		case T_NULL:
+		case T_UNDEFINED:
+			break;
+		case T_STRING:
+		{
+			ASString* s=static_cast<ASString*>(args[0]);
+			th->uri=s->data;
+			break;
+		}
+		case T_QNAME:
+		{
+			ASQName* q=static_cast<ASQName*>(args[0]);
+			th->uri=q->uri;
+			break;
+		}
+		case T_NAMESPACE:
+		{
+			Namespace* n=static_cast<Namespace*>(args[0]);
+			th->uri=n->uri;
+			th->prefix=n->prefix;
+			break;
+		}
+		default:
+			throw UnsupportedException("Namespace not completely implemented");
+	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(Namespace,_setURI)
+{
+	Namespace* th=static_cast<Namespace*>(obj);
+	th->uri=args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Namespace,_getURI)
+{
+	Namespace* th=static_cast<Namespace*>(obj);
+	return Class<ASString>::getInstanceS(th->uri);
+}
+
+ASFUNCTIONBODY(Namespace,_setPrefix)
+{
+	Namespace* th=static_cast<Namespace*>(obj);
+	th->prefix=args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Namespace,_getPrefix)
+{
+	Namespace* th=static_cast<Namespace*>(obj);
+	return Class<ASString>::getInstanceS(th->prefix);
 }
 
 void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)

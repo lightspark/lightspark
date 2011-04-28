@@ -66,13 +66,13 @@ Amf3ParserGrammar::Amf3ParserGrammar() : Amf3ParserGrammar::base_type(entry_rule
 		( ( qi::eps((_a & 1)==0) >> qi::attr(_a>>1))[_val = _1] | //If it's a reference stop here 
 		  ( qi::eps((_a & 1)==1) >> date_time_)); //Read a string
 
-	array_stuct_value %= *assoc_value_ >> qi::omit[UTF8_empty_] >> //Get the associative part
+	array_struct_value %= *assoc_value_ >> qi::omit[UTF8_empty_] >> //Get the associative part
 				qi::repeat(_r1)[value_type]; //Get the dense part
 
 	array_type = qi::omit[qi::byte_(array_marker)] >> //Get the marker
 		qi::omit[U29_[_a = _1]] >> //Get the reference/value flag into a local variable
 		( ( qi::eps((_a & 1)==0) >> qi::attr(_a>>1))[_val = _1] | //If it's a reference stop here 
-		  ( qi::eps((_a & 1)==1)[_a=_a>>1] >> array_stuct_value(_a)[_val = _1]) //Read the array
+		  ( qi::eps((_a & 1)==1)[_a=_a>>1] >> array_struct_value(_a)[_val = _1]) //Read the array
 		);
 
 	value_type = undefined_type[_val=_1] | null_type[_val=_1] | false_type[_val=_1] | true_type[_val=_1] | integer_type[_val=_1] | 

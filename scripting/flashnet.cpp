@@ -186,14 +186,11 @@ ASFUNCTIONBODY(URLLoader,load)
 	dataName.name_s="data";
 	dataName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	ASObject* data=arg->getVariableByMultiname(dataName);
-	assert_and_throw(th->dataFormat=="binary" || th->dataFormat=="text");
 	if(urlRequest->method==URLRequest::GET)
 	{
 		if(data)
 		{
-			if(data->getPrototype()==Class<URLVariables>::getClass())
-				throw RunTimeException("URLVariables not support in URLLoader::load");
-			else if(data->getPrototype()==Class<ByteArray>::getClass())
+			if(data->getPrototype()==Class<ByteArray>::getClass())
 				throw RunTimeException("ByteArray not support in URLLoader::load");
 			else
 			{
@@ -221,9 +218,7 @@ ASFUNCTIONBODY(URLLoader,load)
 		vector<uint8_t> postData;
 		if(data)
 		{
-			if(data->getPrototype()==Class<URLVariables>::getClass())
-				throw RunTimeException("URLVariables not support in URLLoader::load");
-			else if(data->getPrototype()==Class<ByteArray>::getClass())
+			if(data->getPrototype()==Class<ByteArray>::getClass())
 				throw RunTimeException("ByteArray not support in URLLoader::load");
 			else
 			{
@@ -278,6 +273,11 @@ void URLLoader::execute()
 			else if(dataFormat=="text")
 			{
 				data=Class<ASString>::getInstanceS((char*)buf,downloader->getLength());
+				delete[] buf;
+			}
+			else if(dataFormat=="variables")
+			{
+				data=Class<URLVariables>::getInstanceS((char*)buf);
 				delete[] buf;
 			}
 			//Send a complete event for this object
@@ -1223,15 +1223,174 @@ uint32_t NetStream::getTotalLength()
 	return downloader->getLength();
 }
 
+void URLVariables::decode(const tiny_string& s)
+{
+	const char* nameStart=NULL;
+	const char* nameEnd=NULL;
+	const char* valueStart=NULL;
+	const char* valueEnd=NULL;
+	const char* cur=s.raw_buf();
+	while(1)
+	{
+		if(nameStart==NULL)
+			nameStart=cur;
+		if(*cur == '=')
+		{
+			if(nameStart==NULL || valueStart!=NULL) //Skip this
+			{
+				nameStart=NULL;
+				nameEnd=NULL;
+				valueStart=NULL;
+				valueEnd=NULL;
+				cur++;
+				continue;
+			}
+			nameEnd=cur;
+			valueStart=cur+1;
+		}
+		else if(*cur == '&' || *cur==0)
+		{
+			if(nameStart==NULL || nameEnd==NULL || valueStart==NULL || valueEnd!=NULL)
+			{
+				nameStart=NULL;
+				nameEnd=NULL;
+				valueStart=NULL;
+				valueEnd=NULL;
+				cur++;
+				continue;
+			}
+			valueEnd=cur;
+			char* name=g_uri_unescape_segment(nameStart,nameEnd,NULL);
+			char* value=g_uri_unescape_segment(valueStart,valueEnd,NULL);
+			nameStart=NULL;
+			nameEnd=NULL;
+			valueStart=NULL;
+			valueEnd=NULL;
+			//Check if the variable already exists
+			multiname propName;
+			propName.name_type=multiname::NAME_STRING;
+			propName.name_s=name;
+			propName.ns.push_back(nsNameAndKind("",NAMESPACE));
+			ASObject* curValue=getVariableByMultiname(propName);
+			if(curValue)
+			{
+				//If the variable already exists we have to create an Array of values
+				Array* arr=NULL;
+				if(curValue->getObjectType()!=T_ARRAY)
+				{
+					arr=Class<Array>::getInstanceS();
+					curValue->incRef();
+					arr->push(curValue);
+					setVariableByMultiname(propName,arr);
+				}
+				else
+					arr=Class<Array>::cast(curValue);
+
+				arr->push(Class<ASString>::getInstanceS(value));
+			}
+			else
+				setVariableByMultiname(propName,Class<ASString>::getInstanceS(value));
+
+			g_free(name);
+			g_free(value);
+			if(*cur==0)
+				break;
+		}
+		cur++;
+	}
+}
+
 void URLVariables::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setMethodByQName("decode","",Class<IFunction>::getFunction(decode),true);
+	c->setMethodByQName("toString","",Class<IFunction>::getFunction(_toString),true);
+}
+
+void URLVariables::buildTraits(ASObject* o)
+{
+}
+
+URLVariables::URLVariables(const tiny_string& s)
+{
+	decode(s);
+}
+
+ASFUNCTIONBODY(URLVariables,decode)
+{
+	URLVariables* th=Class<URLVariables>::cast(obj);
+	assert_and_throw(argslen==1);
+	th->decode(args[0]->toString());
+	return NULL;
+}
+
+ASFUNCTIONBODY(URLVariables,_toString)
+{
+	URLVariables* th=Class<URLVariables>::cast(obj);
+	assert_and_throw(argslen==0);
+	return Class<ASString>::getInstanceS(th->toString_priv());
 }
 
 ASFUNCTIONBODY(URLVariables,_constructor)
 {
-	assert_and_throw(argslen==0);
+	URLVariables* th=Class<URLVariables>::cast(obj);
+	assert_and_throw(argslen<=1);
+	if(argslen==1)
+		th->decode(args[0]->toString());
 	return NULL;
+}
+
+tiny_string URLVariables::toString_priv()
+{
+	int size=numVariables();
+	tiny_string tmp;
+	for(int i=0;i<size;i++)
+	{
+		const tiny_string& name=getNameAt(i);
+		//TODO: check if the allow_unicode flag should be true or false in g_uri_escape_string
+
+		ASObject* val=getValueAt(i);
+		if(val->getObjectType()==T_ARRAY)
+		{
+			//Print using multiple properties
+			//Ex. ["foo","bar"] -> prop1=foo&prop1=bar
+			Array* arr=Class<Array>::cast(val);
+			for(int32_t j=0;j<arr->size();j++)
+			{
+				//Escape the name
+				char* escapedName=g_uri_escape_string(name.raw_buf(),NULL, false);
+				tmp+=escapedName;
+				g_free(escapedName);
+				tmp+="=";
+
+				//Escape the value
+				const tiny_string& value=arr->at(j)->toString();
+				char* escapedValue=g_uri_escape_string(value.raw_buf(),NULL, false);
+				tmp+=escapedValue;
+				g_free(escapedValue);
+
+				if(j!=arr->size()-1)
+					tmp+="&";
+			}
+		}
+		else
+		{
+			//Escape the name
+			char* escapedName=g_uri_escape_string(name.raw_buf(),NULL, false);
+			tmp+=escapedName;
+			g_free(escapedName);
+			tmp+="=";
+
+			//Escape the value
+			const tiny_string& value=val->toString();
+			char* escapedValue=g_uri_escape_string(value.raw_buf(),NULL, false);
+			tmp+=escapedValue;
+			g_free(escapedValue);
+		}
+		if(i!=size-1)
+			tmp+="&";
+	}
+	return tmp;
 }
 
 tiny_string URLVariables::toString(bool debugMsg)
@@ -1239,22 +1398,7 @@ tiny_string URLVariables::toString(bool debugMsg)
 	assert_and_throw(implEnable);
 	if(debugMsg)
 		return ASObject::toString(debugMsg);
-	//URL encoding should already have been performed when the variables were passed
-	throw UnsupportedException("URLVariables::toString");
-	int size=numVariables();
-	tiny_string ret;
-	for(int i=0;i<size;i++)
-	{
-		const tiny_string& tmp=getNameAt(i);
-		if(tmp=="")
-			throw UnsupportedException("URLVariables::toString");
-		ret+=tmp;
-		ret+="=";
-		ret+=getValueAt(i)->toString();
-		if(i!=size-1)
-			ret+="&";
-	}
-	return ret;
+	return toString_priv();
 }
 
 ASFUNCTIONBODY(lightspark,sendToURL)

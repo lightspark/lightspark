@@ -1,8 +1,8 @@
 Official TODO Queue:
--) Onor script limits
+-) Honor script limits
 -) Implement ScalingGrid for correct positioning of some objects
 -) Understand the semantics of nextname on methods and the like
--) handle private methods, which should be getted on the same level
+-) Handle private methods, which should be getted on the same level
 -) Add Named Objects to frames and not to clips
 -) Conditional scaling of FontGlyph based on version
 -) Rework SpriteTag to avoid having the display list cached in frames and build them using the tags

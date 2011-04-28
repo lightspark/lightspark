@@ -147,7 +147,9 @@ void* TimerThread::timer_worker(TimerThread* th)
 		//Wait for the absolute time, or a newEvent signal
 		timespec tmpt=msecsToTimespec(timing);
 		sem_post(&th->mutex);
-		int ret=sem_timedwait(&th->newEvent, &tmpt);
+		int ret;
+		while ((ret=sem_timedwait(&th->newEvent, &tmpt)) == -1 && errno==EINTR)
+		    continue;
 		if(th->stopped)
 			pthread_exit(0);
 

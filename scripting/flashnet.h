@@ -60,9 +60,17 @@ public:
 
 class URLVariables: public ASObject
 {
+private:
+	void decode(const tiny_string& s);
+	tiny_string toString_priv();
 public:
+	URLVariables(){}
+	URLVariables(const tiny_string& s);
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(decode);
+	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg=false);
 };
 

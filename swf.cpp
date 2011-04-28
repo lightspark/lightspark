@@ -73,6 +73,8 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),init
 
 RootMovieClip::~RootMovieClip()
 {
+	if(this!=sys)
+		sys->removeJob(this);
 	sem_destroy(&new_frame);
 }
 
@@ -133,6 +135,13 @@ void SystemState::unregisterEnterFrameListener(DisplayObject* obj)
 	Locker l(mutexEnterFrameListeners);
 	if(enterFrameListeners.erase(obj))
 		obj->decRef();
+}
+
+void SystemState::registerTag(Tag* t)
+{
+	SpinlockLocker l(tagsStorageLock);
+	cout << "Tag " << t << " has type " << t->getType() << endl;
+	tagsStorage.push_back(t);
 }
 
 void RootMovieClip::setOnStage(bool staged)
@@ -1094,7 +1103,7 @@ void ParseThread::execute()
 		while(!done)
 		{
 			Tag* tag=factory.readTag();
-			sys->tagsStorage.push_back(tag);
+			sys->registerTag(tag);
 			switch(tag->getType())
 			{
 				case END_TAG:

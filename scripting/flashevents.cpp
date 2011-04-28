@@ -692,3 +692,4 @@ FunctionEvent::~FunctionEvent()
 {
 	delete[] args;
 }
+

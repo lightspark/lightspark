@@ -515,6 +515,12 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class BlendMode: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
 class GradientType: public ASObject
 {
 public:

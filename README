@@ -3,7 +3,7 @@ To compile this software you need to install development packages for llvm-2.7,
 sdl, opengl, curl, zlib, libavcodec, ftgl, libglew, fontconfig, pcre.
 If sound is enabled (on by default), you will also need the development package
 for pulseaudio-libs.
-If the browser plugin is enabled (off by default), you will need the development
+If the browser plugin is enabled (on by default), you will need the development
 package for xulrunner.
 Install also cmake and nasm.
 NOTE:
@@ -19,13 +19,13 @@ To build the software please follow these steps.
 1) cd lightspark
 2) mkdir objs
 3) cd objs
-4) cmake -DCMAKE_BUILD_TYPE=Release -DCOMPILE_PLUGIN=1 ..
+4) cmake -DCMAKE_BUILD_TYPE=Release ..
 5) make
 6) sudo make install
 
 DEBUG MODE:
 To enable debug mode change the cmake command like this:
-4b) cmake -DCMAKE_BUILD_TYPE=Debug -DCOMPILE_PLUGIN=1
+4b) cmake -DCMAKE_BUILD_TYPE=Debug
 
 CMAKE_BUILD_TYPE available: Debug Release RelWithDebInfo Profile
 Sound support may be disabled using the following option: -DENABLE_SOUND=0
@@ -38,7 +38,7 @@ Tools->Add-ons->Plugins window.
 Lightspark registers itself as the plugin for application/x-shockwave-flash and
 for application/x-lightspark, so it should be recognisable in the about:plugins
 page. Its description string is "Shockwave Flash 10.2 r<current version>". The
-current version is now "r461".
+current version is now "r470".
 
 Firefox is not able to deal very well with multiple plugins for the same MIME
 type. If you only see a black box where a flash app should be try to remove any

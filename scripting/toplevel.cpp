@@ -36,6 +36,7 @@
 #include "class.h"
 #include "exceptions.h"
 #include "backends/urlutils.h"
+#include <libxml++/nodes/textnode.h>
 
 using namespace std;
 using namespace lightspark;
@@ -569,11 +570,19 @@ void XML::sinit(Class_base* c)
 	c->setMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),true);
 	c->setMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),true);
 	c->setMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),true);
+	c->setMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),true);
+	c->setMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),true);
 }
 
 void XML::buildFromString(const string& str)
 {
-	if(!str.empty())
+	if(str.empty())
+	{
+		xmlpp::Element *el=parser.get_document()->create_root_node("");
+		node=el->add_child_text();
+		// TODO: node's parent (root) should be inaccessible from AS code
+	}
+	else
 	{
 		parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
 		node=parser.get_document()->get_root_node();
@@ -589,6 +598,11 @@ ASFUNCTIONBODY(XML,generator)
 		ASString* str=Class<ASString>::cast(args[0]);
 		return Class<XML>::getInstanceS(str->data);
 	}
+	else if(args[0]->getObjectType()==T_NULL ||
+		args[0]->getObjectType()==T_UNDEFINED)
+	{
+		return Class<XML>::getInstanceS("");
+	}
 	else if(args[0]->getPrototype()==Class<XML>::getClass())
 	{
 		args[0]->incRef();
@@ -600,12 +614,23 @@ ASFUNCTIONBODY(XML,generator)
 
 ASFUNCTIONBODY(XML,_constructor)
 {
+	assert_and_throw(argslen<=1);
 	XML* th=Class<XML>::cast(obj);
 	if(argslen==0 && th->constructed) //If root is already set we have been constructed outside AS code
 		return NULL;
-	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
-	ASString* str=Class<ASString>::cast(args[0]);
-	th->buildFromString(str->data);
+
+	if(argslen==0 ||
+	   args[0]->getObjectType()==T_NULL || 
+	   args[0]->getObjectType()==T_UNDEFINED)
+	{
+		th->buildFromString("");
+	}
+	else
+	{
+		assert_and_throw(args[0]->getObjectType()==T_STRING);
+		ASString* str=Class<ASString>::cast(args[0]);
+		th->buildFromString(str->data);
+	}
 	return NULL;
 }
 
@@ -636,7 +661,11 @@ ASFUNCTIONBODY(XML,localName)
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==0);
 	assert(th->node);
-	return Class<ASString>::getInstanceS(th->node->get_name());
+	xmlElementType nodetype=th->node->cobj()->type;
+	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
+		return new Null;
+	else
+		return Class<ASString>::getInstanceS(th->node->get_name());
 }
 
 ASFUNCTIONBODY(XML,appendChild)
@@ -758,6 +787,53 @@ ASFUNCTIONBODY(XML,children)
 	return retObj;
 }
 
+ASFUNCTIONBODY(XML,_hasSimpleContent)
+{
+	XML *th=static_cast<XML*>(obj);
+	return abstract_b(th->hasSimpleContent());
+}
+
+ASFUNCTIONBODY(XML,_hasComplexContent)
+{
+	XML *th=static_cast<XML*>(obj);
+	return abstract_b(th->hasComplexContent());
+}
+
+bool XML::hasSimpleContent() const
+{
+	xmlElementType nodetype=node->cobj()->type;
+	if(nodetype==XML_COMMENT_NODE || nodetype==XML_PI_NODE)
+		return false;
+
+	const xmlpp::Node::NodeList& children=node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=children.begin();
+	for(;it!=children.end();++it)
+	{
+		if((*it)->cobj()->type==XML_ELEMENT_NODE)
+			return false;
+	}
+
+	return true;
+}
+
+bool XML::hasComplexContent() const
+{
+	const xmlpp::Node::NodeList& children=node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=children.begin();
+	for(;it!=children.end();++it)
+	{
+		if((*it)->cobj()->type==XML_ELEMENT_NODE)
+			return true;
+	}
+
+	return false;
+}
+
+xmlElementType XML::getNodeKind() const
+{
+	return node->cobj()->type;
+}
+
 void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
 {
 	assert(root);
@@ -846,24 +922,19 @@ tiny_string XML::toString_priv()
 	//We have to use vanilla libxml2, libxml++ is not enough
 	xmlNodePtr libXml2Node=node->cobj();
 	tiny_string ret;
-	switch(libXml2Node->type)
+	if(hasSimpleContent())
 	{
-		case XML_ATTRIBUTE_NODE:
-		case XML_TEXT_NODE:
-		{
-			xmlChar* content=xmlNodeGetContent(libXml2Node);
-			ret=tiny_string((char*)content,true);
-			xmlFree(content);
-			break;
-		}
-		default:
-		{
-			assert_and_throw(!node->get_children().empty());
-			xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
-			toXMLString_priv(xmlBuffer);
-			ret=tiny_string((char*)xmlBuffer->content,true);
-			xmlBufferFree(xmlBuffer);
-		}
+		xmlChar* content=xmlNodeGetContent(libXml2Node);
+		ret=tiny_string((char*)content,true);
+		xmlFree(content);
+	}
+	else
+	{
+		assert_and_throw(!node->get_children().empty());
+		xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
+		toXMLString_priv(xmlBuffer);
+		ret=tiny_string((char*)xmlBuffer->content,true);
+		xmlBufferFree(xmlBuffer);
 	}
 	return ret;
 }
@@ -889,6 +960,8 @@ void XMLList::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setMethodByQName("length","",Class<IFunction>::getFunction(_getLength),true);
 	c->setMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),true);
+	c->setMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),true);
+	c->setMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),true);
 }
 
 ASFUNCTIONBODY(XMLList,_constructor)
@@ -921,6 +994,20 @@ ASFUNCTIONBODY(XMLList,appendChild)
 	return XML::appendChild(th->nodes[0],args,argslen);
 }
 
+ASFUNCTIONBODY(XMLList,_hasSimpleContent)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	assert_and_throw(argslen==0);
+	return abstract_b(th->hasSimpleContent());
+}
+
+ASFUNCTIONBODY(XMLList,_hasComplexContent)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	assert_and_throw(argslen==0);
+	return abstract_b(th->hasComplexContent());
+}
+
 ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	if(skip_impl || !implEnable)
@@ -949,6 +1036,44 @@ XML* XMLList::convertToXML() const
 	}
 	else
 		return NULL;
+}
+
+bool XMLList::hasSimpleContent() const
+{
+	if(nodes.size()==0)
+		return true;
+	else if(nodes.size()==1)
+		return nodes[0]->hasSimpleContent();
+	else
+	{
+		std::vector<XML*>::const_iterator it;
+		for(it=nodes.begin(); it!=nodes.end(); ++it)
+		{
+			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
+				return false;
+		}
+	}
+
+	return true;
+}
+
+bool XMLList::hasComplexContent() const
+{
+	if(nodes.size()==0)
+		return false;
+	else if(nodes.size()==1)
+		return nodes[0]->hasComplexContent();
+	else
+	{
+		std::vector<XML*>::const_iterator it;
+		for(it=nodes.begin(); it!=nodes.end(); ++it)
+		{
+			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
+				return true;
+		}
+	}
+
+	return false;
 }
 
 /*bool XMLList::nextValue(unsigned int index, ASObject*& out)
@@ -1803,7 +1928,7 @@ bool Integer::isEqual(ASObject* o)
 		return val==o->toInt();
 	}
 	else if(o->getObjectType()==T_NUMBER)
-		return val==o->toInt();
+		return val==o->toNumber();
 	else
 	{
 		return ASObject::isEqual(o);
@@ -3151,7 +3276,6 @@ void SecurityError::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->max_level=c->super->max_level+1;
 }
 
 void SecurityError::buildTraits(ASObject* o)
@@ -3688,6 +3812,8 @@ void ASQName::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getURI),true);
+	c->setGetterByQName("local_name","",Class<IFunction>::getFunction(_getLocalName),true);
 }
 
 ASFUNCTIONBODY(ASQName,_constructor)
@@ -3720,11 +3846,27 @@ ASFUNCTIONBODY(ASQName,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(ASQName,_getURI)
+{
+	ASQName* th=static_cast<ASQName*>(obj);
+	return Class<ASString>::getInstanceS(th->uri);
+}
+
+ASFUNCTIONBODY(ASQName,_getLocalName)
+{
+	ASQName* th=static_cast<ASQName*>(obj);
+	return Class<ASString>::getInstanceS(th->local_name);
+}
+
 void Namespace::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSetterByQName("uri","",Class<IFunction>::getFunction(_setURI),true);
+	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getURI),true);
+	c->setSetterByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),true);
+	c->setGetterByQName("prefix","",Class<IFunction>::getFunction(_getPrefix),true);
 }
 
 void Namespace::buildTraits(ASObject* o)
@@ -3733,8 +3875,69 @@ void Namespace::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Namespace,_constructor)
 {
-	assert_and_throw(argslen==0);
+	Namespace* th=static_cast<Namespace*>(obj);
+	//The Namespace class has two constructors, this is the one with a single argument, uriValue:*
+	assert_and_throw(argslen<2);
+
+	th->prefix = "";
+	th->uri = "";
+	if (argslen == 0)
+	    return NULL;
+
+	switch(args[0]->getObjectType())
+	{
+		case T_NULL:
+		case T_UNDEFINED:
+			break;
+		case T_STRING:
+		{
+			ASString* s=static_cast<ASString*>(args[0]);
+			th->uri=s->data;
+			break;
+		}
+		case T_QNAME:
+		{
+			ASQName* q=static_cast<ASQName*>(args[0]);
+			th->uri=q->uri;
+			break;
+		}
+		case T_NAMESPACE:
+		{
+			Namespace* n=static_cast<Namespace*>(args[0]);
+			th->uri=n->uri;
+			th->prefix=n->prefix;
+			break;
+		}
+		default:
+			throw UnsupportedException("Namespace not completely implemented");
+	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(Namespace,_setURI)
+{
+	Namespace* th=static_cast<Namespace*>(obj);
+	th->uri=args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Namespace,_getURI)
+{
+	Namespace* th=static_cast<Namespace*>(obj);
+	return Class<ASString>::getInstanceS(th->uri);
+}
+
+ASFUNCTIONBODY(Namespace,_setPrefix)
+{
+	Namespace* th=static_cast<Namespace*>(obj);
+	th->prefix=args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Namespace,_getPrefix)
+{
+	Namespace* th=static_cast<Namespace*>(obj);
+	return Class<ASString>::getInstanceS(th->prefix);
 }
 
 void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
@@ -4016,7 +4219,8 @@ ASFUNCTIONBODY(lightspark,isNaN)
 
 ASFUNCTIONBODY(lightspark,isFinite)
 {
-	if(args[0]->getObjectType()==T_NUMBER)
+	if(args[0]->getObjectType()==T_NUMBER ||
+		args[0]->getObjectType()==T_INTEGER)
 	{
 		if(isfinite(args[0]->toNumber()))
 			return abstract_b(true);

@@ -197,7 +197,7 @@ struct Amf3ParserGrammar : boost::spirit::qi::grammar<char*,std::vector<ValueTyp
 	boost::spirit::qi::rule<char*,ArrayType(),boost::spirit::qi::locals<uint32_t> > array_type;
 	boost::spirit::qi::rule<char*,ValueType()> value_type;
 	boost::spirit::qi::rule<char*,std::vector<ValueType>() > entry_rule;
-	boost::spirit::qi::rule<char*,Array(uint32_t)> array_stuct_value;
+	boost::spirit::qi::rule<char*,Array(uint32_t)> array_struct_value;
 
 	enum markers_type {
 		undefined_marker = 0x0,
@@ -224,5 +224,13 @@ BOOST_FUSION_ADAPT_STRUCT(
 	(lightspark::amf3::Array::AssociativeArray, m_associativeSection)
 	(std::vector<lightspark::amf3::ValueType>, m_denseSection)
 )
+
+namespace boost { namespace spirit { namespace traits {
+
+//Make sure the parsed types are not wrongly used as containers by spirit
+template <typename Enable> struct is_container<std::string, Enable>: mpl::false_ {};
+
+};};};
+
 
 #endif

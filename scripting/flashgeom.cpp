@@ -29,7 +29,6 @@ SET_NAMESPACE("flash.geom");
 REGISTER_CLASS_NAME(Transform);
 REGISTER_CLASS_NAME(ColorTransform);
 REGISTER_CLASS_NAME(Point);
-//REGISTER_CLASS_NAME(Matrix);
 REGISTER_CLASS_NAME(Vector3D);
 REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle","flash.geom");
 REGISTER_CLASS_NAME(Matrix);
@@ -527,6 +526,10 @@ void ColorTransform::sinit(Class_base* c)
 
 	// methods
 	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
+}
+
+void ColorTransform::buildTraits(ASObject* o)
+{
 }
 
 ASFUNCTIONBODY(ColorTransform,_constructor)
@@ -1317,16 +1320,21 @@ void Vector3D::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 
 	// constants
-	Vector3D* tx = Class<Vector3D>::getInstanceS();
+	Vector3D* tx = new Vector3D();
 	tx->x = 1;
+	tx->setPrototype(c);
 	c->setVariableByQName("X_AXIS","", tx);
-	Vector3D* ty = Class<Vector3D>::getInstanceS();
+
+	Vector3D* ty = new Vector3D();
 	ty->y = 1;
+	ty->setPrototype(c);
 	c->setVariableByQName("Y_AXIS","", ty);
-	Vector3D* tz = Class<Vector3D>::getInstanceS();
+
+	Vector3D* tz = new Vector3D();
 	tz->z = 1;
+	tz->setPrototype(c);
 	c->setVariableByQName("Z_AXIS","", tz);
-	
+
 	// properties
 	c->setGetterByQName("w","",Class<IFunction>::getFunction(_get_w),true);
 	c->setGetterByQName("x","",Class<IFunction>::getFunction(_get_x),true);

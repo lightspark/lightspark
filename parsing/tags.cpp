@@ -347,7 +347,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	do
 	{
 		tag=factory.readTag();
-		sys->tagsStorage.push_back(tag);
+		sys->registerTag(tag);
 		switch(tag->getType())
 		{
 			case DICT_TAG:
@@ -1203,14 +1203,6 @@ void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 		if(PlaceFlagHasMatrix)
 			infos.Matrix=Matrix;
 
-		Frame::DisplayListType::iterator it=lower_bound< Frame::DisplayListType::iterator, int, list_orderer>
-			(ls.begin(),ls.end(),Depth,list_orderer());
-		if(it!=ls.end() && it->first.Depth!=Depth && !PlaceFlagMove)
-		{
-			LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
-			return;
-		}
-
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
 		//TODO: clean up this nonsense. Of course the parent is a dictionary tag!
@@ -1230,12 +1222,21 @@ void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 
 		setProperties(toAdd, parent);
 
+		Frame::DisplayListType::iterator it=lower_bound< Frame::DisplayListType::iterator, int, list_orderer>
+			(ls.begin(),ls.end(),Depth,list_orderer());
+
 		if(it!=ls.end() && it->first.Depth==Depth)
 		{
-			//Overwrite
-			assert_and_throw(PlaceFlagMove);
-			it->first=infos;
-			it->second=_MR(toAdd);
+
+			//We found a member of the list already at this depth
+			if(PlaceFlagMove)
+			{
+				//If we are here we have to erase the previous object at this depth
+				it->first=infos;
+				it->second=_MR(toAdd);
+			}
+			else
+				LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
 		}
 		else
 		{

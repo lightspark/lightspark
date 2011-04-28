@@ -38,6 +38,66 @@ using namespace lightspark;
 
 extern TLSDATA ParseThread* pt;
 
+tiny_string& tiny_string::operator+=(const char* s)
+{
+	if(type==READONLY)
+	{
+		char* tmp=buf;
+		makePrivateCopy(tmp);
+	}
+	uint32_t addedLen=strlen(s);
+	stringSize+=addedLen;
+	if(type==STATIC && stringSize > STATIC_SIZE)
+	{
+		createBuffer(stringSize);
+		strcpy(buf,_buf_static);
+	}
+	else if(type==DYNAMIC && addedLen!=0)
+		resizeBuffer(stringSize);
+	strcat(buf,s);
+	return *this;
+}
+
+tiny_string& tiny_string::operator+=(const tiny_string& r)
+{
+	if(type==READONLY)
+	{
+		char* tmp=buf;
+		makePrivateCopy(tmp);
+	}
+	uint32_t addedLen=r.stringSize-1;
+	stringSize+=addedLen;
+	if(type==STATIC && stringSize > STATIC_SIZE)
+	{
+		createBuffer(stringSize);
+		strcpy(buf,_buf_static);
+	}
+	else if(type==DYNAMIC && addedLen!=0)
+		resizeBuffer(stringSize);
+	strcat(buf,r.buf);
+	return *this;
+}
+
+const tiny_string tiny_string::operator+(const tiny_string& r) const
+{
+	tiny_string ret(*this);
+	ret+=r;
+	return ret;
+}
+
+tiny_string tiny_string::substr(uint32_t start, uint32_t end) const
+{
+	tiny_string ret;
+	//start and end are assumed to be valid
+	assert(end < stringSize);
+	int subSize=end-start+1;
+	if(subSize > STATIC_SIZE)
+		ret.createBuffer(subSize);
+	strncpy(ret.buf,buf+start,end-start);
+	ret.buf[end-start]=0;
+	return ret;
+}
+
 tiny_string multiname::qualifiedString() const
 {
 	assert_and_throw(ns.size()==1);

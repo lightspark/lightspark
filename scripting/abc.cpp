@@ -169,6 +169,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Function","",Class<IFunction>::getClass());
 	builtin->setVariableByQName("undefined","",new Undefined);
 	builtin->setVariableByQName("Math","",Class<Math>::getClass());
+	builtin->setVariableByQName("Namespace","",Class<Namespace>::getClass());
 	builtin->setVariableByQName("Date","",Class<Date>::getClass());
 	builtin->setVariableByQName("RegExp","",Class<RegExp>::getClass());
 	builtin->setVariableByQName("QName","",Class<ASQName>::getClass());
@@ -215,6 +216,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Stage","flash.display",Class<Stage>::getClass());
 	builtin->setVariableByQName("Graphics","flash.display",Class<Graphics>::getClass());
 	builtin->setVariableByQName("GradientType","flash.display",Class<GradientType>::getClass());
+	builtin->setVariableByQName("BlendMode","flash.display",Class<BlendMode>::getClass());
 	builtin->setVariableByQName("LineScaleMode","flash.display",Class<LineScaleMode>::getClass());
 	builtin->setVariableByQName("StageScaleMode","flash.display",Class<StageScaleMode>::getClass());
 	builtin->setVariableByQName("StageAlign","flash.display",Class<StageAlign>::getClass());
@@ -236,8 +238,10 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Font","flash.text",Class<Font>::getClass());
 	builtin->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getClass());
 	builtin->setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
-	builtin->setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass(QName("TextFieldType","flash.text")));
-	builtin->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass(QName("TextFormat","flash.text")));
+	builtin->setVariableByQName("TextFieldType","flash.text",Class<TextFieldType>::getClass());
+	builtin->setVariableByQName("TextFieldAutoSize","flash.text",Class<TextFieldAutoSize>::getClass());
+	builtin->setVariableByQName("TextFormat","flash.text",Class<TextFormat>::getClass());
+	builtin->setVariableByQName("TextFormatAlign","flash.text",Class<TextFormatAlign>::getClass());
 
 	builtin->setVariableByQName("XMLDocument","flash.xml",Class<XMLDocument>::getClass());
 	builtin->setVariableByQName("XMLNode","flash.xml",Class<XMLNode>::getClass());
@@ -263,6 +267,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getClass());
 	builtin->setVariableByQName("Transform","flash.geom",Class<Transform>::getClass());
 	builtin->setVariableByQName("Point","flash.geom",Class<Point>::getClass());
+	builtin->setVariableByQName("Vector3D","flash.geom",Class<Vector3D>::getClass());
+	builtin->setVariableByQName("Matrix3D","flash.geom",Class<ASObject>::getClass(QName("Matrix3D", "flash.geom")));
 
 	builtin->setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
 	builtin->setVariableByQName("Event","flash.events",Class<Event>::getClass());

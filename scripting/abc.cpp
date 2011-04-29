@@ -699,15 +699,15 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 	{
 		m->cached=new multiname;
 		ret=m->cached;
-		ret->isAttribute=m->isAttributeName();
-
 		if(n==0)
 		{
 			ret->name_s="any";
 			ret->name_type=multiname::NAME_STRING;
 			ret->ns.emplace_back("",NAMESPACE);
+			ret->isAttribute=false;
 			return ret;
 		}
+		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
 		{
 			case 0x07:

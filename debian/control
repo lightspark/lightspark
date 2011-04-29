@@ -55,7 +55,6 @@ Xb-Npp-Description: High performance SWF Player
 Xb-Npp-File: liblightsparkplugin.so
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: gnash
-Conflicts: mozilla-plugin-gnash, flashplugin-installer, flashplugin-nonfree
 Description: Experimental high-performance SWF (Adobe Flash) player
  Lightspark is a free Flash player for Linux which aims for high-performance
  by using modern technologies such as JIT compilation and OpenGL shaders.

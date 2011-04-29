@@ -1525,7 +1525,7 @@ void ABCVm::getLex(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("getLex: ") << *name );
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	ASObject* o;
+	ASObject* o = NULL;
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
 	thisAndLevel tl=getVm()->getCurObjAndLevel();

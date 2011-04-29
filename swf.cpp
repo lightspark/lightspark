@@ -137,7 +137,6 @@ void SystemState::unregisterEnterFrameListener(DisplayObject* obj)
 void SystemState::registerTag(Tag* t)
 {
 	SpinlockLocker l(tagsStorageLock);
-	cout << "Tag " << t << " has type " << t->getType() << endl;
 	tagsStorage.push_back(t);
 }
 

@@ -21,6 +21,7 @@
 #define _ABC_H
 
 #include "compat.h"
+#include <cstddef>
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>

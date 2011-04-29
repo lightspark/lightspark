@@ -104,6 +104,7 @@ ASFUNCTIONBODY(URLRequest,_getMethod)
 		case POST:
 			return Class<ASString>::getInstanceS("POST");
 	}
+	return NULL;
 }
 
 void URLRequestMethod::sinit(Class_base* c)

@@ -2379,6 +2379,7 @@ ASFUNCTIONBODY(Stage,_getScaleMode)
 		case SystemState::NO_SCALE:
 			return Class<ASString>::getInstanceS("noScale");
 	}
+	return NULL;
 }
 
 ASFUNCTIONBODY(Stage,_setScaleMode)

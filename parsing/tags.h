@@ -74,6 +74,13 @@ public:
 class DictionaryTag: public Tag
 {
 public:
+	/*
+	   Pointer to the class we are binded to
+
+	   This must ONLY be used when creating instances of the tag
+           There may be more than a class binded to the same tag. Only
+	   the first one is reported here. This behaviour is tested.
+	*/
 	Class_base* bindedTo;
 	RootMovieClip* loadedFrom;
 	DictionaryTag(RECORDHEADER h):Tag(h),bindedTo(NULL),loadedFrom(NULL){ }

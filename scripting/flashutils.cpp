@@ -406,6 +406,13 @@ void Timer::tick()
 		currentCount++;
 		if(currentCount<=repeatCount)
 			sys->addWait(delay,this);
+		else
+		{
+			running=false;
+			TimerEvent* e=Class<TimerEvent>::getInstanceS("timerComplete");
+			sys->currentVm->addEvent(this,e);
+			e->decRef();
+		}
 	}
 }
 

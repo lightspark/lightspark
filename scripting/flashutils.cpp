@@ -404,7 +404,7 @@ void Timer::tick()
 	else
 	{
 		currentCount++;
-		if(currentCount<=repeatCount)
+		if(currentCount<repeatCount)
 			sys->addWait(delay,this);
 		else
 		{

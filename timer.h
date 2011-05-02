@@ -64,6 +64,7 @@ private:
 	SystemState* m_sys;
 	ITickJob* volatile currentJob;
 	bool stopped;
+	bool joined;
 	static void* timer_worker(TimerThread*);
 	void insertNewEvent(TimingEvent* e);
 	void insertNewEvent_nolock(TimingEvent* e);

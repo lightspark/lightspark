@@ -52,7 +52,7 @@ timespec lightspark::msecsToTimespec(uint64_t time)
 	return ret;
 }
 
-TimerThread::TimerThread(SystemState* s):m_sys(s),currentJob(NULL),stopped(false)
+TimerThread::TimerThread(SystemState* s):m_sys(s),currentJob(NULL),stopped(false),joined(false)
 {
 	sem_init(&mutex,0,1);
 	sem_init(&newEvent,0,0);
@@ -71,8 +71,12 @@ void TimerThread::stop()
 
 void TimerThread::wait()
 {
-	stop();
-	pthread_join(t,NULL);
+	if(!joined)
+	{
+		joined=true;
+		stop();
+		pthread_join(t,NULL);
+	}
 }
 
 TimerThread::~TimerThread()

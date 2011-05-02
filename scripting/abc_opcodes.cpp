@@ -2500,7 +2500,6 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 void ABCVm::popScope(call_context* th)
 {
 	LOG(LOG_CALLS,_("popScope"));
-	th->scope_stack.back()->decRef();
 	th->scope_stack.pop_back();
 }
 

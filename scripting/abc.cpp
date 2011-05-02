@@ -1357,7 +1357,6 @@ call_context::call_context(method_info* th, int level, ASObject* const* args, co
 
 call_context::~call_context()
 {
-	//assert_and_throw(stack_index==0);
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(stack_index)
 	{

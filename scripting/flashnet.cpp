@@ -492,8 +492,8 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 }
 
 NetStream::NetStream():frameRate(0),tickStarted(false),connection(NULL),downloader(NULL),
-	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),
-		paused(false),closed(true),checkPolicyFile(false),rawAccessAllowed(false)
+	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),
+	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false)
 {
 	sem_init(&mutex,0,1);
 }
@@ -501,11 +501,8 @@ NetStream::NetStream():frameRate(0),tickStarted(false),connection(NULL),download
 void NetStream::finalize()
 {
 	EventDispatcher::finalize();
-	if(connection)
-	{
-		connection->decRef();
-		connection=NULL;
-	}
+	connection.reset();
+	client.reset();
 }
 
 NetStream::~NetStream()
@@ -548,8 +545,11 @@ void NetStream::buildTraits(ASObject* o)
 ASFUNCTIONBODY(NetStream,_getClient)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
+	if(th->client.isNull())
+		return new Undefined();
 
-	return th->client;
+	th->client->incRef();
+	return th->client.getPtr();
 }
 
 ASFUNCTIONBODY(NetStream,_setClient)
@@ -560,8 +560,8 @@ ASFUNCTIONBODY(NetStream,_setClient)
 
 	NetStream* th=Class<NetStream>::cast(obj);
 
-	th->client = args[0];
-	th->client->incRef();
+	args[0]->incRef();
+	th->client = _MR(args[0]);
 	return NULL;
 }
 
@@ -584,12 +584,15 @@ ASFUNCTIONBODY(NetStream,_setCheckPolicyFile)
 
 ASFUNCTIONBODY(NetStream,_constructor)
 {
+	obj->incRef();
+	_R<NetStream> th=_MR(Class<NetStream>::cast(obj));
+
 	LOG(LOG_CALLS,_("NetStream constructor"));
 	assert_and_throw(argslen>=1 && argslen <=2);
 	assert_and_throw(args[0]->getPrototype()==Class<NetConnection>::getClass());
 
-	NetStream* th=Class<NetStream>::cast(obj);
-	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
+	args[0]->incRef();
+	_R<NetConnection> netConnection = _MR(Class<NetConnection>::cast(args[0]));
 	if(argslen == 2)
 	{
 		if(args[1]->getObjectType() == T_STRING)
@@ -608,7 +611,6 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 	th->client = th;
 	th->connection=netConnection;
-	th->connection->incRef();
 
 	return NULL;
 }

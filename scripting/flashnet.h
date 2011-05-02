@@ -149,7 +149,7 @@ private:
 	double frameRate;
 	bool tickStarted;
 	//The NetConnection used by this NetStream
-	NetConnection* connection;
+	_NR<NetConnection> connection;
 	Downloader* downloader;
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
@@ -174,7 +174,7 @@ private:
 	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
 	CONNECTION_TYPE peerID;
 
-	ASObject* client;
+	_NR<ASObject> client;
 	bool checkPolicyFile;
 	bool rawAccessAllowed;
 public:

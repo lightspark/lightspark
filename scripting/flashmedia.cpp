@@ -62,6 +62,12 @@ void Video::buildTraits(ASObject* o)
 {
 }
 
+void Video::finalize()
+{
+	DisplayObject::finalize();
+	netStream.reset();
+}
+
 Video::~Video()
 {
 	sem_destroy(&mutex);
@@ -75,7 +81,7 @@ void Video::Render(bool maskEnabled)
 		sem_post(&mutex);
 		return;
 	}
-	if(netStream && netStream->lockIfReady())
+	if(!netStream.isNull() && netStream->lockIfReady())
 	{
 		//All operations here should be non blocking
 		//Get size
@@ -172,7 +178,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED) //Drop the connection
 	{
 		sem_wait(&th->mutex);
-		th->netStream=NULL;
+		th->netStream=NullRef;
 		sem_post(&th->mutex);
 		return NULL;
 	}
@@ -185,9 +191,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	args[0]->incRef();
 
 	sem_wait(&th->mutex);
-	if(th->netStream)
-		th->netStream->decRef();
-	th->netStream=Class<NetStream>::cast(args[0]);
+	th->netStream=_MR(Class<NetStream>::cast(args[0]));
 	sem_post(&th->mutex);
 	return NULL;
 }

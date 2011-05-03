@@ -51,12 +51,13 @@ private:
 	sem_t mutex;
 	uint32_t width, height, videoWidth, videoHeight;
 	bool initialized;
-	NetStream* netStream;
+	_NR<NetStream> netStream;
 public:
 	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),netStream(NULL)
 	{
 		sem_init(&mutex,0,1);
 	}
+	void finalize();
 	~Video();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

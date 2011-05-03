@@ -836,9 +836,7 @@ bool Proxy::nextName(unsigned int index, ASObject*& out)
 
 ASFUNCTIONBODY(lightspark,setInterval)
 {
-	assert_and_throw(argslen >= 2);
-	//incRef the function
-	args[0]->incRef();
+	assert_and_throw(argslen >= 2 && args[0]->getObjectType()==T_FUNCTION);
 
 	//Build arguments array
 	ASObject* callbackArgs[argslen-2];
@@ -850,16 +848,17 @@ ASFUNCTIONBODY(lightspark,setInterval)
 		args[i+2]->incRef();
 	}
 
+	//incRef the function
+	args[0]->incRef();
+	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add interval through manager
-	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2, new Null, args[1]->toInt());
+	uint32_t id = sys->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
 	return abstract_i(id);
 }
 
 ASFUNCTIONBODY(lightspark,setTimeout)
 {
 	assert_and_throw(argslen >= 2);
-	//incRef the function
-	args[0]->incRef();
 
 	//Build arguments array
 	ASObject* callbackArgs[argslen-2];
@@ -871,8 +870,11 @@ ASFUNCTIONBODY(lightspark,setTimeout)
 		args[i+2]->incRef();
 	}
 
+	//incRef the function
+	args[0]->incRef();
+	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add timeout through manager
-	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2, new Null, args[1]->toInt());
+	uint32_t id = sys->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
 	return abstract_i(id);
 }
 
@@ -890,20 +892,19 @@ ASFUNCTIONBODY(lightspark,clearTimeout)
 	return NULL;
 }
 
-IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, ASObject* _callback, ASObject** _args, const unsigned int _argslen, 
-		ASObject* _obj, uint32_t _interval):
+IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, _R<IFunction> _callback, ASObject** _args,
+		const unsigned int _argslen, _R<ASObject> _obj, uint32_t _interval):
 	type(_type), id(_id), callback(_callback),argslen(_argslen),obj(_obj),interval(_interval)
 {
 	args = new ASObject*[argslen];
-	uint32_t i;
-	for(i=0; i<argslen; i++)
-	{
+	for(uint32_t i=0; i<argslen; i++)
 		args[i] = _args[i];
-	}
 }
 
 IntervalRunner::~IntervalRunner()
 {
+	for(uint32_t i=0; i<argslen; i++)
+		args[i]->decRef();
 	delete[] args;
 }
 
@@ -915,10 +916,7 @@ void IntervalRunner::tick()
 	{
 		args[i]->incRef();
 	}
-	//Incref the this object
-	obj->incRef();
-	callback->incRef();
-	_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback)), _MR(obj), args, argslen));
+	_R<FunctionEvent> event(new FunctionEvent(callback, obj, args, argslen));
 	getVm()->addEvent(NULL,event.getPtr());
 	if(type == TIMEOUT)
 	{
@@ -947,7 +945,7 @@ IntervalManager::~IntervalManager()
 	sem_destroy(&mutex);
 }
 
-uint32_t IntervalManager::setInterval(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, uint32_t interval)
+uint32_t IntervalManager::setInterval(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, uint32_t interval)
 {
 	sem_wait(&mutex);
 
@@ -964,7 +962,7 @@ uint32_t IntervalManager::setInterval(ASObject* callback, ASObject** args, const
 	sem_post(&mutex);
 	return currentID-1;
 }
-uint32_t IntervalManager::setTimeout(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, uint32_t interval)
+uint32_t IntervalManager::setTimeout(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, uint32_t interval)
 {
 	sem_wait(&mutex);
 

@@ -84,9 +84,10 @@ public:
 class StyleSheet: public EventDispatcher
 {
 private:
-	std::map<tiny_string, ASObject*> styles;
+	std::map<tiny_string, _R<ASObject> > styles;
 public:
 	StyleSheet(){}
+	void finalize();
 	ASFUNCTION(setStyle);
 	ASFUNCTION(_getStyleNames);
 	static void sinit(Class_base* c);

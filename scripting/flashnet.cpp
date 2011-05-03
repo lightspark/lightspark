@@ -117,6 +117,12 @@ URLLoader::URLLoader():dataFormat("text"),data(NULL),downloader(NULL)
 {
 }
 
+void URLLoader::finalize()
+{
+	EventDispatcher::finalize();
+	data.reset();
+}
+
 void URLLoader::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -266,19 +272,19 @@ void URLLoader::execute()
 			//TODO: test binary data format
 			if(dataFormat=="binary")
 			{
-				ByteArray* byteArray=Class<ByteArray>::getInstanceS();
+				_R<ByteArray> byteArray=_MR(Class<ByteArray>::getInstanceS());
 				byteArray->acquireBuffer(buf,downloader->getLength());
 				data=byteArray;
 				//The buffers must not be deleted, it's now handled by the ByteArray instance
 			}
 			else if(dataFormat=="text")
 			{
-				data=Class<ASString>::getInstanceS((char*)buf,downloader->getLength());
+				data=_MR(Class<ASString>::getInstanceS((char*)buf,downloader->getLength()));
 				delete[] buf;
 			}
 			else if(dataFormat=="variables")
 			{
-				data=Class<URLVariables>::getInstanceS((char*)buf);
+				data=_MR(Class<URLVariables>::getInstanceS((char*)buf));
 				delete[] buf;
 			}
 			//Send a complete event for this object
@@ -320,11 +326,11 @@ ASFUNCTIONBODY(URLLoader,_getDataFormat)
 ASFUNCTIONBODY(URLLoader,_getData)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj);
-	if(th->data==NULL)
+	if(th->data.isNull())
 		return new Undefined;
 	
 	th->data->incRef();
-	return th->data;
+	return th->data.getPtr();
 }
 
 ASFUNCTIONBODY(URLLoader,_setDataFormat)

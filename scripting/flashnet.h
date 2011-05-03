@@ -98,7 +98,7 @@ class URLLoader: public EventDispatcher, public IThreadJob
 private:
 	tiny_string dataFormat;
 	URLInfo url;
-	ASObject* data;
+	_NR<ASObject> data;
 	Spinlock downloaderLock;
 	Downloader* downloader;
 	void execute();
@@ -106,6 +106,7 @@ private:
 	void jobFence();
 public:
 	URLLoader();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

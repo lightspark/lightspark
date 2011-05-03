@@ -208,13 +208,13 @@ ostream& lightspark::operator<<(ostream& s, const STRING& t)
 	return s;
 }
 
-std::ostream& operator<<(std::ostream& s, const RGBA& r)
+std::ostream& lightspark::operator<<(std::ostream& s, const RGBA& r)
 {
 	s << "RGBA <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << ',' << (int)r.Alpha << '>';
 	return s;
 }
 
-std::ostream& operator<<(std::ostream& s, const RGB& r)
+std::ostream& lightspark::operator<<(std::ostream& s, const RGB& r)
 {
 	s << "RGB <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << '>';
 	return s;
@@ -277,7 +277,7 @@ const bool MATRIX::operator!=(const MATRIX& r) const
 		TranslateY!=r.TranslateY;
 }
 
-std::ostream& operator<<(std::ostream& s, const MATRIX& r)
+std::ostream& lightspark::operator<<(std::ostream& s, const MATRIX& r)
 {
 	s << "| " << r.ScaleX << ' ' << r.RotateSkew0 << " |" << std::endl;
 	s << "| " << r.RotateSkew1 << ' ' << r.ScaleY << " |" << std::endl;

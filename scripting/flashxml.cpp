@@ -31,18 +31,14 @@ SET_NAMESPACE("flash.xml");
 REGISTER_CLASS_NAME(XMLDocument);
 REGISTER_CLASS_NAME(XMLNode);
 
-XMLNode::XMLNode(XMLDocument* _r, xmlpp::Node* _n):root(_r),node(_n)
+XMLNode::XMLNode(_R<XMLDocument> _r, xmlpp::Node* _n):root(_r),node(_n)
 {
 }
 
 void XMLNode::finalize()
 {
 	ASObject::finalize();
-	if(root && root!=this)
-	{
-		root->decRef();
-		root=NULL;
-	}
+	root.reset();
 }
 
 void XMLNode::sinit(Class_base* c)
@@ -76,7 +72,7 @@ ASFUNCTIONBODY(XMLNode,firstChild)
 	if(children.empty())
 		return new Null;
 	xmlpp::Node* newNode=children.front();
-	th->root->incRef();
+	assert_and_throw(!th->root.isNull());
 	return Class<XMLNode>::getInstanceS(th->root,newNode);
 }
 
@@ -142,7 +138,6 @@ ASFUNCTIONBODY(XMLDocument,parseXML)
 	ASString* str=Class<ASString>::cast(args[0]);
 	th->parser.parse_memory_raw((const unsigned char*)str->data.c_str(), str->data.size());
 	th->document=th->parser.get_document();
-	th->root=th;
 	return NULL;
 }
 
@@ -152,6 +147,6 @@ ASFUNCTIONBODY(XMLDocument,firstChild)
 	assert_and_throw(argslen==0);
 	assert(th->node==NULL);
 	xmlpp::Node* newNode=th->document->get_root_node();
-	th->root->incRef();
-	return Class<XMLNode>::getInstanceS(th->root,newNode);
+	th->incRef();
+	return Class<XMLNode>::getInstanceS(_MR(th),newNode);
 }

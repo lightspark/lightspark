@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
+#include "smartrefs.h"
 #include <libxml++/parsers/domparser.h>
 
 namespace lightspark
@@ -32,11 +33,11 @@ class XMLDocument;
 class XMLNode: public ASObject
 {
 protected:
-	XMLDocument* root;
+	_NR<XMLDocument> root;
 	xmlpp::Node* node;
 public:
-	XMLNode():root(NULL),node(NULL){}
-	XMLNode(XMLDocument* _r, xmlpp::Node* _n);
+	XMLNode():root(NullRef),node(NULL){}
+	XMLNode(_R<XMLDocument> _r, xmlpp::Node* _n);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

@@ -2325,6 +2325,12 @@ IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false)
 	type=T_FUNCTION;
 }
 
+void IFunction::finalize()
+{
+	ASObject::finalize();
+	closure_this.reset();
+}
+
 ASFUNCTIONBODY(IFunction,apply)
 {
 	IFunction* th=static_cast<IFunction*>(obj);
@@ -2350,7 +2356,7 @@ ASFUNCTIONBODY(IFunction,apply)
 	args[0]->incRef();
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this && th->closure_this->prototype && args[0]->prototype && 
+	if(!(th->closure_this.getPtr() && th->closure_this->prototype && args[0]->prototype && 
 				args[0]->prototype->isSubClass(th->closure_this->prototype)) ||	args[0]->prototype==NULL)
 	{
 		overrideThis=false;
@@ -2384,7 +2390,7 @@ ASFUNCTIONBODY(IFunction,_call)
 	}
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this && th->closure_this->prototype && args[0]->prototype && 
+	if(!(th->closure_this.getPtr() && th->closure_this->prototype && args[0]->prototype && 
 			args[0]->prototype->isSubClass(th->closure_this->prototype)) ||	args[0]->prototype==NULL)
 	{
 		overrideThis=false;
@@ -2437,12 +2443,12 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc->scope_stack=func_scope;
 	cc->initialScopeStack=func_scope.size();
 
-	if(bound && closure_this && !thisOverride)
+	if(bound && !closure_this.isNull() && !thisOverride)
 	{
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		if(obj)
 			obj->decRef();
-		obj=closure_this;
+		obj=closure_this.getPtr();
 	}
 
 	cc->locals[0]=obj;
@@ -2568,12 +2574,12 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
 {
 	ASObject* ret;
-	if(bound && closure_this && !thisOverride)
+	if(bound && !closure_this.isNull() && !thisOverride)
 	{
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		if(obj)
 			obj->decRef();
-		obj=closure_this;
+		obj=closure_this.getPtr();
 		obj->incRef();
 	}
 	assert_and_throw(obj);

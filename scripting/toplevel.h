@@ -188,14 +188,15 @@ CLASSBUILDABLE(IFunction);
 protected:
 	IFunction();
 	virtual IFunction* clone()=0;
-	ASObject* closure_this;
+	_NR<ASObject> closure_this;
 	int closure_level;
 	bool bound;
 public:
+	void finalize();
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
 	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false)=0;
-	IFunction* bind(ASObject* c, int level)
+	IFunction* bind(_NR<ASObject> c, int level)
 	{
 		if(!bound)
 		{
@@ -214,8 +215,6 @@ public:
 			}
 			ret->bound=true;
 			ret->closure_this=c;
-			if(c)
-				c->incRef();
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}

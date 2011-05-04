@@ -448,8 +448,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 		{
 			//TODO: maybe also the level should be binded
 			LOG(LOG_CALLS,_("Attaching this to function ") << name);
-			IFunction* f=static_cast<IFunction*>(ret)->bind(obj,-1);
-			obj->decRef();
+			//the obj reference is acquired by the smart reference
+			IFunction* f=static_cast<IFunction*>(ret)->bind(_MR(obj),-1);
 			//No incref is needed, as the function is a new instance
 			return f;
 		}
@@ -1543,6 +1543,7 @@ void ABCVm::getLex(call_context* th, int n)
 		o=tmpo;
 		if(o)
 		{
+			(*it)->incRef();
 			target=(*it).getPtr();
 			break;
 		}
@@ -1563,7 +1564,7 @@ void ABCVm::getLex(call_context* th, int n)
 	if(o->getObjectType()==T_FUNCTION)
 	{
 		LOG(LOG_CALLS,_("Attaching this to function ") << name);
-		IFunction* f=static_cast<IFunction*>(o)->bind(target,-1);
+		IFunction* f=static_cast<IFunction*>(o)->bind(_MR(target),-1);
 		o=f;
 	}
 	else if(o->getObjectType()==T_DEFINABLE)
@@ -2580,7 +2581,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	f->func_scope=th->scope_stack;
 
 	//Bind the function to null, as this is not a class method
-	f->bind(NULL,-1);
+	f->bind(NullRef,-1);
 	return f;
 }
 

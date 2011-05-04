@@ -674,7 +674,7 @@ private:
 	//The node this object represent
 	xmlpp::Node* node;
 	static void recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
-			std::vector<XML*>& ret);
+			std::vector<_R<XML>>& ret);
 	tiny_string toString_priv();
 	void toXMLString_priv(xmlBufferPtr buf);
 	void buildFromString(const std::string& str);
@@ -697,7 +697,7 @@ public:
 	ASFUNCTION(_hasComplexContent);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	tiny_string toString(bool debugMsg=false);
 	bool hasSimpleContent() const;
@@ -708,11 +708,11 @@ public:
 class XMLList: public ASObject
 {
 private:
-	std::vector<XML*> nodes;
+	std::vector<_R<XML> > nodes;
 	bool constructed;
 public:
 	XMLList():constructed(false){}
-	XMLList(const std::vector<XML*>& r):nodes(r),constructed(true){}
+	XMLList(const std::vector<_R<XML> >& r):nodes(r),constructed(true){}
 	void finalize();
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
@@ -722,7 +722,7 @@ public:
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
-	XML* convertToXML() const;
+	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 };

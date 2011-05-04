@@ -2272,7 +2272,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 	XML* xmlObj=Class<XML>::cast(obj);
 	//The name must be a QName
 	assert_and_throw(name->name_type==multiname::NAME_STRING);
-	vector<XML*> ret;
+	vector<_R<XML> > ret;
 	//TODO: support multiname and namespaces
 	xmlObj->getDescendantsByQName(name->name_s, "", ret);
 	obj->decRef();

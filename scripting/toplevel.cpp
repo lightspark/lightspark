@@ -676,7 +676,7 @@ ASFUNCTIONBODY(XML,appendChild)
 	if(args[0]->getPrototype()==Class<XML>::getClass())
 		arg=Class<XML>::cast(args[0]);
 	else if(args[0]->getPrototype()==Class<XMLList>::getClass())
-		arg=Class<XMLList>::cast(args[0])->convertToXML();
+		arg=Class<XMLList>::cast(args[0])->convertToXML().getPtr();
 
 	if(arg==NULL)
 		throw RunTimeException("Invalid argument for XML::appendChild");
@@ -704,12 +704,12 @@ ASFUNCTIONBODY(XML,attributes)
 		return Class<XMLList>::getInstanceS();
 	const xmlpp::Element::AttributeList& list=elem->get_attributes();
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
-	std::vector<XML*> ret;
+	std::vector<_R<XML>> ret;
 	XML* rootXML=(th->root)?(th->root):th;
 	for(;it!=list.end();it++)
 	{
 		rootXML->incRef();
-		ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
@@ -776,12 +776,12 @@ ASFUNCTIONBODY(XML,children)
 	assert(th->node);
 	const xmlpp::Node::NodeList& list=th->node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
-	std::vector<XML*> ret;
+	std::vector<_R<XML>> ret;
 	XML* rootXML=(th->root)?(th->root):th;
 	for(;it!=list.end();it++)
 	{
 		rootXML->incRef();
-		ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
@@ -834,14 +834,14 @@ xmlElementType XML::getNodeKind() const
 	return node->cobj()->type;
 }
 
-void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
+void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<_R<XML>>& ret)
 {
 	assert(root);
 	//Check if this node is being requested
 	if(node->get_name()==name.raw_buf())
 	{
 		root->incRef();
-		ret.push_back(Class<XML>::getInstanceS(root, node));
+		ret.push_back(_MR(Class<XML>::getInstanceS(root, node)));
 	}
 	//NOTE: Creating a temporary list is quite a large overhead, but there is no way in libxml++ to access the first child
 	const xmlpp::Node::NodeList& list=node->get_children();
@@ -850,7 +850,7 @@ void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tin
 		recursiveGetDescendantsByQName(root, *it, name, ns, ret);
 }
 
-void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
+void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret)
 {
 	assert(node);
 	assert_and_throw(ns=="");
@@ -899,12 +899,12 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
 
-		std::vector<XML*> ret;
+		std::vector<_R<XML>> ret;
 		XML* rootXML=(root)?(root):this;
 		for(;it!=children.end();it++)
 		{
 			rootXML->incRef();
-			ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 		}
 		XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 		return retObj;
@@ -948,8 +948,6 @@ tiny_string XML::toString(bool debugMsg)
 
 void XMLList::finalize()
 {
-	for(uint32_t i=0;i<nodes.size();i++)
-		nodes[i]->decRef();
 	nodes.clear();
 }
 
@@ -974,7 +972,7 @@ ASFUNCTIONBODY(XMLList,_constructor)
 	}
 	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	XML* val=Class<XML>::getInstanceS(str->data);
+	_R<XML> val=_MR(Class<XML>::getInstanceS(str->data));
 	th->nodes.push_back(val);
 	return NULL;
 }
@@ -991,7 +989,7 @@ ASFUNCTIONBODY(XMLList,appendChild)
 	XMLList* th=Class<XMLList>::cast(obj);
 	assert_and_throw(th->nodes.size()==1);
 	//Forward to the XML object
-	return XML::appendChild(th->nodes[0],args,argslen);
+	return XML::appendChild(th->nodes[0].getPtr(),args,argslen);
 }
 
 ASFUNCTIONBODY(XMLList,_hasSimpleContent)
@@ -1022,20 +1020,17 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	if(index<nodes.size())
-		return nodes[index];
+		return nodes[index].getPtr();
 	else
 		return NULL;
 }
 
-XML* XMLList::convertToXML() const
+_NR<XML> XMLList::convertToXML() const
 {
 	if(nodes.size()==1)
-	{
-		nodes[0]->incRef();
 		return nodes[0];
-	}
 	else
-		return NULL;
+		return NullRef;
 }
 
 bool XMLList::hasSimpleContent() const
@@ -1046,8 +1041,8 @@ bool XMLList::hasSimpleContent() const
 		return nodes[0]->hasSimpleContent();
 	else
 	{
-		std::vector<XML*>::const_iterator it;
-		for(it=nodes.begin(); it!=nodes.end(); ++it)
+		std::vector<_R<XML> >::const_iterator it=nodes.begin();
+		for(; it!=nodes.end(); ++it)
 		{
 			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
 				return false;
@@ -1065,8 +1060,8 @@ bool XMLList::hasComplexContent() const
 		return nodes[0]->hasComplexContent();
 	else
 	{
-		std::vector<XML*>::const_iterator it;
-		for(it=nodes.begin(); it!=nodes.end(); ++it)
+		std::vector<_R<XML>>::const_iterator it=nodes.begin();
+		for(; it!=nodes.end(); ++it)
 		{
 			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
 				return true;

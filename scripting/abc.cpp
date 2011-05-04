@@ -74,7 +74,7 @@ DoABCTag::~DoABCTag()
 void DoABCTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
-	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
+	sys->currentVm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -102,7 +102,7 @@ DoABCDefineTag::~DoABCDefineTag()
 void DoABCDefineTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
-	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
+	sys->currentVm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -137,7 +137,7 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			assert_and_throw(base!=NULL);
 			base->incRef();
 			_R<BindClassEvent> e(new BindClassEvent(_MR(base),(const char*)Names[i],BindClassEvent::NONROOT));
-			sys->currentVm->addEvent(NULL,e.getPtr());
+			sys->currentVm->addEvent(NullRef,e);
 		}
 	}
 }
@@ -1082,47 +1082,36 @@ int ABCVm::getEventQueueSize()
 	return events_queue.size();
 }
 
-void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, Event* event)
+void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 {
-	assert(dispatcher);
-
 	//TODO: implement capture phase
 	//Do target phase
 	assert_and_throw(event->target==NULL);
-	dispatcher->incRef();
-	event->target=_MR(dispatcher);
-	dispatcher->incRef();
-	event->currentTarget=_MR(dispatcher);
-	event->incRef();
-	dispatcher->handleEvent(_MR(event));
+	event->target=dispatcher;
+	event->currentTarget=dispatcher;
+	dispatcher->handleEvent(event);
 	//Do bubbling phase
 	if(event->bubbles && dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
 	{
-		DisplayObjectContainer* cur=static_cast<DisplayObject*>(dispatcher)->getParent().getPtr();
+		DisplayObjectContainer* cur=static_cast<DisplayObject*>(dispatcher.getPtr())->getParent().getPtr();
 		while(cur)
 		{
 			cur->incRef();
 			event->currentTarget=_MR(cur);
-			event->incRef();
-			cur->handleEvent(_MR(event));
+			cur->handleEvent(event);
 			cur=cur->getParent().getPtr();
 		}
 	}
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
 	event->target=NullRef;
-	dispatcher->decRef();
-	event->decRef();
 }
 
-void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
+void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 {
 	e.second->check();
-	if(e.first)
-	{
-		//decRef of both argments happens inside the function
+	if(!e.first.isNull())
 		publicHandleEvent(e.first, e.second);
-	}
 	else
 	{
 		//Should be handled by the Vm itself
@@ -1130,7 +1119,7 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 		{
 			case BIND_CLASS:
 			{
-				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
+				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,_("Binding of ") << ev->class_name);
 				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base.getPtr(),NULL,0,ev->isRoot);
 				LOG(LOG_CALLS,_("End of binding of ") << ev->class_name);
@@ -1141,13 +1130,13 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 				break;
 			case SYNC:
 			{
-				SynchronizationEvent* ev=static_cast<SynchronizationEvent*>(e.second);
+				SynchronizationEvent* ev=static_cast<SynchronizationEvent*>(e.second.getPtr());
 				ev->sync();
 				break;
 			}
 			case FUNCTION:
 			{
-				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
+				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second.getPtr());
 				// We should catch exceptions and report them
 				if(ev->exception != NULL)
 				{
@@ -1181,34 +1170,33 @@ void ABCVm::handleEvent(std::pair<EventDispatcher*, Event*> e)
 			}
 			case CONTEXT_INIT:
 			{
-				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);
+				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second.getPtr());
 				ev->context->exec();
 				break;
 			}
 			case CHANGE_FRAME:
 			{
-				FrameChangeEvent* ev=static_cast<FrameChangeEvent*>(e.second);
+				FrameChangeEvent* ev=static_cast<FrameChangeEvent*>(e.second.getPtr());
 				ev->movieClip->state.next_FP=ev->frame;
 				ev->movieClip->state.explicit_FP=true;
 				break;
 			}
 			case CONSTRUCT_FRAME:
 			{
-				ConstructFrameEvent* ev=static_cast<ConstructFrameEvent*>(e.second);
+				ConstructFrameEvent* ev=static_cast<ConstructFrameEvent*>(e.second.getPtr());
 				ev->frame.construct(ev->parent);
 				break;
 			}
 			default:
 				throw UnsupportedException("Not supported event");
 		}
-		e.second->decRef();
 	}
 }
 
 /*! \brief enqueue an event, a reference is acquired
 * * \param obj EventDispatcher that will receive the event
 * * \param ev event that will be sent */
-bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
+bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 {
 	//If the system should terminate new events are not accepted
 	if(m_sys->shouldTerminate())
@@ -1217,17 +1205,13 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	//we should handle it immidiately to avoid deadlock
 	if(isVmThread && (ev->getEventType()==SYNC))
 	{
-		assert(obj==NULL);
-		ev->incRef();
-		handleEvent(make_pair<EventDispatcher*>(NULL, ev));
+		assert(obj.isNull());
+		handleEvent(make_pair(obj, ev));
 		return true;
 	}
 
 	sem_wait(&event_queue_mutex);
-	if(obj)
-		obj->incRef();
-	ev->incRef();
-	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
+	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	sem_post(&event_queue_mutex);
 	sem_post(&sem_event_count);
 	return true;
@@ -1548,7 +1532,7 @@ void ABCVm::Run(ABCVm* th)
 			}
 			Chronometer chronometer;
 			sem_wait(&th->event_queue_mutex);
-			pair<EventDispatcher*,Event*> e=th->events_queue.front();
+			pair<_NR<EventDispatcher>,_R<Event>> e=th->events_queue.front();
 			th->events_queue.pop_front();
 			sem_post(&th->event_queue_mutex);
 			th->handleEvent(e);

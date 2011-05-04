@@ -429,22 +429,18 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	if(args[0]->getPrototype()==NULL || !(args[0]->getPrototype()->isSubClass(Class<Event>::getClass())))
 		return abstract_b(false);
 
-	Event* e=Class<Event>::cast(args[0]);
-	if(e==NULL || th==NULL)
-		return abstract_b(false);
+	args[0]->incRef();
+	_R<Event> e=_MR(Class<Event>::cast(args[0]));
 	assert_and_throw(e->type!="");
-	if(e->target.isNull())
-		e->incRef();
-	else
+	if(!e->target.isNull())
 	{
 		//The object must be cloned
 		//TODO: support cloning of actual type
 		LOG(LOG_NOT_IMPLEMENTED,"Event cloning not supported!");
-		Event* newEvent=Class<Event>::getInstanceS(e->type,e->bubbles);
-		e=newEvent;
+		e=_MR(Class<Event>::getInstanceS(e->type,e->bubbles));
 	}
 	th->incRef();
-	ABCVm::publicHandleEvent(th, e);
+	ABCVm::publicHandleEvent(_MR(th), e);
 	return abstract_b(true);
 }
 

@@ -629,8 +629,8 @@ private:
 
 	//Event handling
 	bool shuttingdown;
-	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
-	void handleEvent(std::pair<EventDispatcher*,Event*> e);
+	std::deque<std::pair<_NR<EventDispatcher>,_R<Event> > > events_queue;
+	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
 
 	void buildClassAndInjectBase(const std::string& n, ASObject*, ASObject* const* a, const unsigned int argslen, bool isRoot);
 
@@ -660,7 +660,7 @@ public:
 	void start();
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
-	bool addEvent(EventDispatcher*,Event*) DLL_PUBLIC;
+	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
 
@@ -672,7 +672,7 @@ public:
 	}
 
 	static bool strictEqualImpl(ASObject*, ASObject*);
-	static void publicHandleEvent(EventDispatcher* dispatcher, Event* event);
+	static void publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event);
 
 };
 

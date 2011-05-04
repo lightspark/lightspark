@@ -468,9 +468,8 @@ void SystemState::setShutdownFlag()
 	Locker l(mutex);
 	if(currentVm)
 	{
-		ShutdownEvent* e=new ShutdownEvent;
-		currentVm->addEvent(NULL,e);
-		e->decRef();
+		_R<ShutdownEvent> e(new ShutdownEvent);
+		currentVm->addEvent(NullRef,e);
 	}
 	shutdown=true;
 
@@ -825,19 +824,21 @@ void SystemState::tick()
 		Locker l(mutexEnterFrameListeners);
 		if(!enterFrameListeners.empty())
 		{
-			Event* e=Class<Event>::getInstanceS("enterFrame");
+			_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
 			auto it=enterFrameListeners.begin();
 			for(;it!=enterFrameListeners.end();it++)
-				getVm()->addEvent(*it,e);
-			e->decRef();
+			{
+				(*it)->incRef();
+				getVm()->addEvent(_MR(*it),e);
+			}
 		}
 	}
 	//Enter frame should be sent to the stage too
 	if(stage->hasEventListener("enterFrame"))
 	{
-		Event* e=Class<Event>::getInstanceS("enterFrame");
-		getVm()->addEvent(stage,e);
-		e->decRef();
+		_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
+		stage->incRef();
+		getVm()->addEvent(_MR(stage),e);
 	}
 }
 
@@ -1175,7 +1176,7 @@ void RootMovieClip::initialize()
 		if(bindName.len()) //The object is constructed after binding
 		{
 			this->incRef();
-			sys->currentVm->addEvent(NULL,new BindClassEvent(_MR(this),bindName,BindClassEvent::ISROOT));
+			sys->currentVm->addEvent(NullRef,_MR(new BindClassEvent(_MR(this),bindName,BindClassEvent::ISROOT)));
 		}
 		else
 			setConstructed();
@@ -1296,7 +1297,7 @@ void RootMovieClip::commitFrame(bool another)
 		if(!frameScripts[0].isNull())
 		{
 			_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
-			getVm()->addEvent(NULL, funcEvent.getPtr());
+			getVm()->addEvent(NullRef, funcEvent);
 		}
 
 		//When the first frame is committed the frame rate is known

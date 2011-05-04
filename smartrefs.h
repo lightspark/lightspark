@@ -123,7 +123,7 @@ public:
 			m->incRef();
 	}
 	//Constructible from any compatible nullable reference and reference
-	template<class D> NullableRef(const NullableRef<D>& r):m(r.m)
+	template<class D> NullableRef(const NullableRef<D>& r):m(r.getPtr())
 	{
 		if(m)
 			m->incRef();

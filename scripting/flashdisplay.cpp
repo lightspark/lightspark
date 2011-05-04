@@ -99,13 +99,15 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 		SpinlockLocker l(spinlock);
 		bytesLoaded=b;
 		if(sys && sys->currentVm)
-			sys->currentVm->addEvent(this,Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal));
+		{
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
+		}
 		if(loadStatus==INIT_SENT)
 		{
 			//The clip is also complete now
-			Event* e=Class<Event>::getInstanceS("complete");
-			sys->currentVm->addEvent(this,e);
-			e->decRef();
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 			loadStatus=COMPLETE;
 		}
 	}
@@ -113,18 +115,16 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 
 void LoaderInfo::sendInit()
 {
-	Event* e=Class<Event>::getInstanceS("init");
-	sys->currentVm->addEvent(this,e);
-	e->decRef();
+	this->incRef();
+	sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("init")));
 	SpinlockLocker l(spinlock);
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
 	if(bytesTotal && bytesLoaded==bytesTotal)
 	{
 		//The clip is also complete now
-		e=Class<Event>::getInstanceS("complete");
-		sys->currentVm->addEvent(this,e);
-		e->decRef();
+		this->incRef();
+		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 		loadStatus=COMPLETE;
 	}
 }
@@ -310,11 +310,11 @@ void Loader::execute()
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
-			sys->currentVm->addEvent(contentLoaderInfo.getPtr(),Class<Event>::getInstanceS("ioError"));
+			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("ioError")));
 			sys->downloadManager->destroy(downloader);
 			return;
 		}
-		sys->currentVm->addEvent(contentLoaderInfo.getPtr(),Class<Event>::getInstanceS("open"));
+		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
 		ParseThread* local_pt=new ParseThread(local_root.getPtr(),s);
 		local_pt->run();
@@ -341,7 +341,7 @@ void Loader::execute()
 		local_pt->run();
 		bytes->decRef();
 		//Add a complete event for this object
-		sys->currentVm->addEvent(contentLoaderInfo.getPtr(),Class<Event>::getInstanceS("complete"));
+		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));
 	}
 	loaded=true;
 }
@@ -805,7 +805,7 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->state.max_FP);
 	th->incRef();
-	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,_MR(th)));
+	sys->currentVm->addEvent(NullRef,_MR(new FrameChangeEvent(th->state.FP+1,_MR(th))));
 	return NULL;
 }
 
@@ -871,10 +871,7 @@ void MovieClip::advanceFrame()
 		state.explicit_FP=false;
 		assert(state.FP<frameScripts.size());
 		if(frameChanging && !frameScripts[state.FP].isNull())
-		{
-			_R<FunctionEvent> funcEvent(new FunctionEvent(frameScripts[state.FP]));
-			getVm()->addEvent(NULL, funcEvent.getPtr());
-		}
+			getVm()->addEvent(NullRef, _MR(new FunctionEvent(frameScripts[state.FP])));
 
 		Frame& curFrame=frames[state.FP];
 
@@ -1340,15 +1337,13 @@ void DisplayObject::setOnStage(bool staged)
 			return;
 		if(onStage==true && hasEventListener("addedToStage"))
 		{
-			Event* e=Class<Event>::getInstanceS("addedToStage");
-			getVm()->addEvent(this,e);
-			e->decRef();
+			this->incRef();
+			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("addedToStage")));
 		}
 		else if(onStage==false && hasEventListener("removedFromStage"))
 		{
-			Event* e=Class<Event>::getInstanceS("removedFromStage");
-			getVm()->addEvent(this,e);
-			e->decRef();
+			this->incRef();
+			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("removedFromStage")));
 		}
 	}
 }
@@ -1992,16 +1987,16 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	int index=args[1]->toInt();
 
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
-	d->incRef();
-	th->_addChildAt(_MR(d),index);
+	args[0]->incRef();
+	_R<DisplayObject> d=_MR(Class<DisplayObject>::cast(args[0]));
+	th->_addChildAt(d,index);
 
 	//Notify the object
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
+	sys->currentVm->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
 
 	//incRef again as the value is getting returned
 	d->incRef();
-	return d;
+	return d.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,addChild)
@@ -2017,15 +2012,15 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
-	d->incRef();
-	th->_addChildAt(_MR(d),numeric_limits<unsigned int>::max());
+	args[0]->incRef();
+	_R<DisplayObject> d=_MR(Class<DisplayObject>::cast(args[0]));
+	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
+	sys->currentVm->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
 
 	d->incRef();
-	return d;
+	return d.getPtr();
 }
 
 //Only from VM context

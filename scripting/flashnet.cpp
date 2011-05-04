@@ -213,7 +213,8 @@ ASFUNCTIONBODY(URLLoader,load)
 		if(!th->url.isValid())
 		{
 			//Notify an error during loading
-			sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+			th->incRef();
+			sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
 			return NULL;
 		}
 		//The URL is valid so we can start the download and add ourself as a job
@@ -236,7 +237,8 @@ ASFUNCTIONBODY(URLLoader,load)
 		if(!th->url.isValid())
 		{
 			//Notify an error during loading
-			sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+			th->incRef();
+			sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
 			return NULL;
 		}
 		//The URL is valid so we can start the download and add ourself as a job
@@ -288,18 +290,21 @@ void URLLoader::execute()
 				delete[] buf;
 			}
 			//Send a complete event for this object
-			sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete"));
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 		}
 		else
 		{
 			//Notify an error during loading
-			sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
 		}
 	}
 	else
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+		this->incRef();
+		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
 	}
 
 	{
@@ -424,9 +429,8 @@ ASFUNCTIONBODY(NetConnection,connect)
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
-	Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success");
-	getVm()->addEvent(th, status);
-	status->decRef();
+	th->incRef();
+	getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success")));
 	return NULL;
 }
 
@@ -682,7 +686,8 @@ ASFUNCTIONBODY(NetStream,play)
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+		th->incRef();
+		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
 	}
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
@@ -707,9 +712,8 @@ ASFUNCTIONBODY(NetStream,resume)
 	if(th->paused)
 	{
 		th->paused = false;
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		th->incRef();
+		getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify")));
 	}
 	return NULL;
 }
@@ -720,9 +724,8 @@ ASFUNCTIONBODY(NetStream,pause)
 	if(!th->paused)
 	{
 		th->paused = true;
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		th->incRef();
+		getVm()->addEvent(_MR(th),_MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify")));
 	}
 	return NULL;
 }
@@ -746,9 +749,8 @@ ASFUNCTIONBODY(NetStream,close)
 	if(!th->closed)
 	{
 		th->threadAbort();
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		th->incRef();
+		getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop")));
 	}
 	LOG(LOG_CALLS, _("NetStream::close called"));
 	return NULL;
@@ -840,7 +842,8 @@ void NetStream::execute()
 {
 	if(downloader->hasFailed())
 	{
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+		this->incRef();
+		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
 		sys->downloadManager->destroy(downloader);
 		return;
 	}
@@ -967,12 +970,12 @@ void NetStream::execute()
 								videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
 								decodedVideoFrames++;
 							}
-							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
-							getVm()->addEvent(this, status);
-							status->decRef();
-							status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Full");
-							getVm()->addEvent(this, status);
-							status->decRef();
+							this->incRef();
+							getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS
+										("status", "NetStream.Play.Start")));
+							this->incRef();
+							getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS
+										("status", "NetStream.Buffer.Full")));
 						}
 						else
 						{
@@ -1044,7 +1047,7 @@ void NetStream::execute()
 							callback->incRef();
 							_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback)), 
 									_MR(client), callbackArgs, 1));
-							getVm()->addEvent(NULL,event.getPtr());
+							getVm()->addEvent(NullRef,event);
 						}
 					}
 
@@ -1098,12 +1101,10 @@ void NetStream::execute()
 		if(videoDecoder)
 			videoDecoder->waitFlushed();
 
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop");
-		getVm()->addEvent(this, status);
-		status->decRef();
-		status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Flush");
-		getVm()->addEvent(this, status);
-		status->decRef();
+		this->incRef();
+		getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop")));
+		this->incRef();
+		getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Flush")));
 	}
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);

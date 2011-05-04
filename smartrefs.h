@@ -219,8 +219,8 @@ NullableRef<T> _MNR(T* a)
 
 template<class T> template<class D> Ref<T>::Ref(const NullableRef<D>& r):m(r.getPtr())
 {
-	if(m)
-		m->incRef();
+	assert(m);
+	m->incRef();
 }
 
 template<class T> template<class D> bool Ref<T>::operator==(const NullableRef<D>&r) const

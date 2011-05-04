@@ -543,19 +543,15 @@ XML::XML(const string& str):root(NULL),node(NULL),constructed(true)
 	buildFromString(str);
 }
 
-XML::XML(XML* _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
+XML::XML(_R<XML> _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
 {
-	assert(root && node);
+	assert(node);
 }
 
 void XML::finalize()
 {
 	ASObject::finalize();
-	if(root)
-	{
-		root->decRef();
-		root=NULL;
-	}
+	root.reset();
 }
 
 void XML::sinit(Class_base* c)
@@ -681,10 +677,15 @@ ASFUNCTIONBODY(XML,appendChild)
 	if(arg==NULL)
 		throw RunTimeException("Invalid argument for XML::appendChild");
 	//Change the root of the appended XML node
-	XML* rootXML=(th->root)?th->root:th;
-	if(arg->root)
-		arg->root->decRef();
-	rootXML->incRef();
+	_NR<XML> rootXML=NullRef;
+	if(th->root.isNull())
+	{
+		th->incRef();
+		rootXML=_MR(th);
+	}
+	else
+		rootXML=th->root;
+
 	arg->root=rootXML;
 	xmlUnlinkNode(arg->node->cobj());
 	xmlNodePtr ret=xmlAddChild(th->node->cobj(),arg->node->cobj());
@@ -705,12 +706,18 @@ ASFUNCTIONBODY(XML,attributes)
 	const xmlpp::Element::AttributeList& list=elem->get_attributes();
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
 	std::vector<_R<XML>> ret;
-	XML* rootXML=(th->root)?(th->root):th;
-	for(;it!=list.end();it++)
+	_NR<XML> rootXML=NullRef;
+	if(th->root.isNull())
 	{
-		rootXML->incRef();
-		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+		th->incRef();
+		rootXML=_MR(th);
 	}
+	else
+		rootXML=th->root;
+
+	for(;it!=list.end();it++)
+		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
 }
@@ -718,7 +725,15 @@ ASFUNCTIONBODY(XML,attributes)
 void XML::toXMLString_priv(xmlBufferPtr buf) 
 {
 	//NOTE: this function is not thread-safe, as it can modify the xmlNode
-	XML* rootXML=(root)?(root):this;
+	_NR<XML> rootXML=NullRef;
+	if(root.isNull())
+	{
+		this->incRef();
+		rootXML=_MR(this);
+	}
+	else
+		rootXML=root;
+
 	xmlDocPtr xmlDoc=rootXML->parser.get_document()->cobj();
 	assert(xmlDoc);
 	xmlNodePtr cNode=node->cobj();
@@ -777,7 +792,16 @@ ASFUNCTIONBODY(XML,children)
 	const xmlpp::Node::NodeList& list=th->node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
 	std::vector<_R<XML>> ret;
-	XML* rootXML=(th->root)?(th->root):th;
+
+	_NR<XML> rootXML=NullRef;
+	if(th->root.isNull())
+	{
+		th->incRef();
+		rootXML=_MR(th);
+	}
+	else
+		rootXML=th->root;
+
 	for(;it!=list.end();it++)
 	{
 		rootXML->incRef();
@@ -834,9 +858,9 @@ xmlElementType XML::getNodeKind() const
 	return node->cobj()->type;
 }
 
-void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<_R<XML>>& ret)
+void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns,
+		std::vector<_R<XML>>& ret)
 {
-	assert(root);
 	//Check if this node is being requested
 	if(node->get_name()==name.raw_buf())
 	{
@@ -854,7 +878,16 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 {
 	assert(node);
 	assert_and_throw(ns=="");
-	recursiveGetDescendantsByQName((root)?(root):this, node, name, ns, ret);
+	_NR<XML> rootXML=NullRef;
+	if(root.isNull())
+	{
+		this->incRef();
+		rootXML=_MR(this);
+	}
+	else
+		rootXML=root;
+
+	recursiveGetDescendantsByQName(rootXML, node, name, ns, ret);
 }
 
 ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
@@ -882,8 +915,16 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
 		if(attr==NULL)
 			return NULL;
-		XML* rootXML=(root)?(root):this;
-		rootXML->incRef();
+
+		_NR<XML> rootXML=NullRef;
+		if(root.isNull())
+		{
+			this->incRef();
+			rootXML=_MR(this);
+		}
+		else
+			rootXML=root;
+
 		ASObject* ret=Class<XML>::getInstanceS(rootXML, attr);
 		//The new object will be incReffed by the calling code
 		ret->fake_decRef();
@@ -900,12 +941,18 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
 
 		std::vector<_R<XML>> ret;
-		XML* rootXML=(root)?(root):this;
-		for(;it!=children.end();it++)
+
+		_NR<XML> rootXML=NullRef;
+		if(root.isNull())
 		{
-			rootXML->incRef();
-			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+			this->incRef();
+			rootXML=_MR(this);
 		}
+		else
+			rootXML=root;
+
+		for(;it!=children.end();it++)
+			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 		XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 		return retObj;
 	}

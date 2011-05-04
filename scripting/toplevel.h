@@ -670,10 +670,10 @@ private:
 	//The parser will destroy the document and all the childs on destruction
 	xmlpp::DomParser parser;
 	//Pointer to the root XML element, the one that owns the parser that created this node
-	XML* root;
+	_NR<XML> root;
 	//The node this object represent
 	xmlpp::Node* node;
-	static void recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
+	static void recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
 			std::vector<_R<XML>>& ret);
 	tiny_string toString_priv();
 	void toXMLString_priv(xmlBufferPtr buf);
@@ -682,7 +682,7 @@ private:
 public:
 	XML();
 	XML(const std::string& str);
-	XML(XML* _r, xmlpp::Node* _n);
+	XML(_R<XML> _r, xmlpp::Node* _n);
 	void finalize();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);

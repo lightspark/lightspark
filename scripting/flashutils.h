@@ -100,7 +100,7 @@ class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
-	std::map<ASObject*,ASObject*> data;
+	std::map<_R<ASObject>,_R<ASObject> > data;
 public:
 	Dictionary(){}
 	void finalize();

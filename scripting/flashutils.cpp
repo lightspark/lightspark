@@ -555,9 +555,6 @@ ASFUNCTIONBODY(lightspark,getTimer)
 void Dictionary::finalize()
 {
 	ASObject::finalize();
-	std::map<ASObject*,ASObject*>::iterator it=data.begin();
-	for(;it!=data.end();++it)
-		it->second->decRef();
 	data.clear();
 }
 
@@ -588,11 +585,16 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, ASOb
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
-		data[name.name_o]=o;
+		_R<ASObject> name_o(name.name_o);
 		//This is ugly, but at least we are sure that we own name_o
 		multiname* tmp=const_cast<multiname*>(&name);
 		tmp->name_o=NULL;
+
+		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
+		if(it!=data.end())
+			it->second=_MR(o);
+		else
+			data.insert(make_pair(name_o,_MR(o)));
 	}
 	else
 	{
@@ -611,13 +613,14 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
+		_R<ASObject> name_o(name.name_o);
+		//This is ugly, but at least we are sure that we own name_o
+		multiname* tmp=const_cast<multiname*>(&name);
+		tmp->name_o=NULL;
+
+		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
 		if(it != data.end())
-		{
-			it->first->decRef();
-			it->second->decRef();
 			data.erase(it);
-		}
 	}
 	else
 	{
@@ -636,14 +639,21 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 	{
 		if(name.name_type==multiname::NAME_OBJECT)
 		{
-			map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
+			_R<ASObject> name_o(name.name_o);
+
+			map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
 			if(it != data.end())
 			{
 				//This is ugly, but at least we are sure that we own name_o
 				multiname* tmp=const_cast<multiname*>(&name);
 				tmp->name_o=NULL;
 				it->second->incRef();
-				return it->second;
+				return it->second.getPtr();
+			}
+			else
+			{
+				//Make sure name_o gets not destroyed, it's still owned by name
+				name_o->incRef();
 			}
 		}
 		else
@@ -674,11 +684,12 @@ bool Dictionary::nextName(unsigned int index, ASObject*& out)
 	index--;
 	assert_and_throw(implEnable);
 	assert_and_throw(index<data.size());
-	map<ASObject*,ASObject*>::iterator it=data.begin();
+	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
-	out=it->first;
-	out->incRef();
+
+	it->first->incRef();
+	out=it->first.getPtr();
 	return true;
 }
 
@@ -686,10 +697,11 @@ bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 {
 	assert_and_throw(implEnable);
 	assert(index<data.size());
-	map<ASObject*,ASObject*>::iterator it=data.begin();
+	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
-	out=it->second;
+
+	out=it->second.getPtr();
 	return true;
 }
 
@@ -700,7 +712,7 @@ tiny_string Dictionary::toString(bool debugMsg)
 		
 	std::stringstream retstr;
 	retstr << "{";
-	map<ASObject*,ASObject*>::iterator it=data.begin();
+	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
 	while(it != data.end())
 	{
 		if(it != data.begin())

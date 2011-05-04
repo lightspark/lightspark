@@ -53,7 +53,7 @@ public:
 		m->incRef();
 	}
 	template<class D> Ref(const NullableRef<D>& r);
-	Ref<T>& operator=(const Ref<T>&r)
+	Ref<T>& operator=(const Ref<T>& r)
 	{
 		//incRef before decRef to make sure this works even if the pointer is the same
 		r.m->incRef();
@@ -81,6 +81,11 @@ public:
 	bool operator==(T* r) const
 	{
 		return m==r;
+	}
+	//Order operator for Dictionary map
+	bool operator<(const Ref<T>& r) const
+	{
+		return m<r.m;
 	}
 	~Ref()
 	{

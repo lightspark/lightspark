@@ -2320,7 +2320,7 @@ ASFUNCTIONBODY(Stage,_constructor)
 uint32_t Stage::internalGetWidth() const
 {
 	uint32_t width;
-	if(sys->scaleMode==SystemState::NO_SCALE && sys->getRenderThread())
+	if(sys->scaleMode==SystemState::NO_SCALE)
 		width=sys->getRenderThread()->windowWidth;
 	else
 	{
@@ -2333,7 +2333,7 @@ uint32_t Stage::internalGetWidth() const
 uint32_t Stage::internalGetHeight() const
 {
 	uint32_t height;
-	if(sys->scaleMode==SystemState::NO_SCALE && sys->getRenderThread())
+	if(sys->scaleMode==SystemState::NO_SCALE)
 		height=sys->getRenderThread()->windowHeight;
 	else
 	{
@@ -2391,8 +2391,7 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 		sys->scaleMode=SystemState::NO_SCALE;
 	
 	RenderThread* rt=sys->getRenderThread();
-	if(rt)
-		rt->requestResize(rt->windowWidth, rt->windowHeight);
+	rt->requestResize(rt->windowWidth, rt->windowHeight);
 	return NULL;
 }
 

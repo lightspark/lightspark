@@ -767,9 +767,6 @@ void SystemState::createEngines()
 		return;
 	if(currentVm)
 		currentVm->start();
-	l.unlock();
-	//Now that there is something to actually render the contents add the SystemState to the stage
-	setOnStage(true);
 }
 
 void SystemState::needsAVM2(bool n)
@@ -1171,18 +1168,30 @@ void RootMovieClip::initialize()
 	//NOTE: No references to frames must be done here!
 	if(!initialized && sys->currentVm)
 	{
-		initialized=true;
-		//Let's see if we have to bind the root movie clip itself
-		if(bindName.len()) //The object is constructed after binding
+		if(sys->currentVm)
 		{
-			this->incRef();
-			sys->currentVm->addEvent(NullRef,_MR(new BindClassEvent(_MR(this),bindName,BindClassEvent::ISROOT)));
+			initialized=true;
+			//Let's see if we have to bind the root movie clip itself
+			if(bindName.len()) //The object is constructed after binding
+			{
+				this->incRef();
+				sys->currentVm->addEvent(NullRef,_MR(new BindClassEvent(_MR(this),bindName,BindClassEvent::ISROOT)));
+				sys->currentVm->addEvent(NullRef,_MR(new SysOnStageEvent()));
+			}
+			else
+			{
+				setConstructed();
+				setOnStage(true);
+			}
+
+			//Now signal the completion for this root
+			loaderInfo->sendInit();
 		}
 		else
+		{
 			setConstructed();
-
-		//Now signal the completion for this root
-		loaderInfo->sendInit();
+			setOnStage(true);
+		}
 	}
 }
 

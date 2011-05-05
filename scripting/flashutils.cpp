@@ -408,9 +408,8 @@ void Timer::tick()
 		else
 		{
 			running=false;
-			TimerEvent* e=Class<TimerEvent>::getInstanceS("timerComplete");
-			sys->currentVm->addEvent(this,e);
-			e->decRef();
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timerComplete")));
 		}
 	}
 }

@@ -556,7 +556,7 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 	sem_init(&mutex, 0, 1);
 	sem_init(&externalCallsFinished, 0, 1);
 
-	setProperty("$version", "10,0,r"SHORTVERSION);
+	setProperty("$version", "LNX 10,2,"SHORTVERSION);
 
 	// Standard methods
 	setMethod("SetVariable", new lightspark::ExtBuiltinCallback(stdSetVariable));

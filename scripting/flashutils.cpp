@@ -404,8 +404,15 @@ void Timer::tick()
 	else
 	{
 		currentCount++;
-		if(currentCount<=repeatCount)
+		if(currentCount<repeatCount)
 			sys->addWait(delay,this);
+		else
+		{
+			running=false;
+			TimerEvent* e=Class<TimerEvent>::getInstanceS("timerComplete");
+			sys->currentVm->addEvent(this,e);
+			e->decRef();
+		}
 	}
 }
 
@@ -414,6 +421,12 @@ void Timer::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("currentCount","",Class<IFunction>::getFunction(_getCurrentCount),true);
+	c->setGetterByQName("repeatCount","",Class<IFunction>::getFunction(_getRepeatCount),true);
+	c->setSetterByQName("repeatCount","",Class<IFunction>::getFunction(_setRepeatCount),true);
+	c->setGetterByQName("running","",Class<IFunction>::getFunction(_getRunning),true);
+	c->setGetterByQName("delay","",Class<IFunction>::getFunction(_getDelay),true);
+	c->setSetterByQName("delay","",Class<IFunction>::getFunction(_setDelay),true);
 }
 
 ASFUNCTIONBODY(Timer,_constructor)
@@ -427,6 +440,58 @@ ASFUNCTIONBODY(Timer,_constructor)
 	th->delay=args[0]->toInt();
 	if(argslen>=2)
 		th->repeatCount=args[1]->toInt();
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Timer,_getCurrentCount)
+{
+	Timer* th=static_cast<Timer*>(obj);
+	return abstract_i(th->currentCount);
+}
+
+ASFUNCTIONBODY(Timer,_getRepeatCount)
+{
+	Timer* th=static_cast<Timer*>(obj);
+	return abstract_i(th->repeatCount);
+}
+
+ASFUNCTIONBODY(Timer,_setRepeatCount)
+{
+	assert_and_throw(argslen==1);
+	int32_t count=args[0]->toInt();
+	Timer* th=static_cast<Timer*>(obj);
+	th->repeatCount=count;
+	if(th->repeatCount>0 && th->repeatCount<=th->currentCount)
+	{
+		sys->removeJob(th);
+		th->decRef();
+		th->running=false;
+	}
+	return NULL;
+}
+
+ASFUNCTIONBODY(Timer,_getRunning)
+{
+	Timer* th=static_cast<Timer*>(obj);
+	return abstract_b(th->running);
+}
+
+ASFUNCTIONBODY(Timer,_getDelay)
+{
+	Timer* th=static_cast<Timer*>(obj);
+	return abstract_i(th->delay);
+}
+
+ASFUNCTIONBODY(Timer,_setDelay)
+{
+	assert_and_throw(argslen==1);
+	int32_t newdelay = args[0]->toInt();
+	if (newdelay<=0)
+		throw Class<ASError>::getInstanceS("delay must be positive");
+
+	Timer* th=static_cast<Timer*>(obj);
+	th->delay=newdelay;
 
 	return NULL;
 }

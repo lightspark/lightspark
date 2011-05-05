@@ -913,6 +913,13 @@ bool NPScriptObject::stdGetVariable(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
 			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result)
 {
+	if(argc!=1 || args[0]->getType()!=lightspark::ExtVariant::EV_STRING)
+		return false;
+	//Only support properties currently
+	*result=so.getProperty(NPIdentifierObject(args[0]->getString()));
+	if(*result)
+		return true;
+
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdGetVariable");
 	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance);
 	return false;

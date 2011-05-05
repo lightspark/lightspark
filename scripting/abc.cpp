@@ -1187,6 +1187,11 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				ev->frame.construct(ev->parent);
 				break;
 			}
+			case SYS_ON_STAGE:
+			{
+				sys->setOnStage(true);
+				break;
+			}
 			default:
 				throw UnsupportedException("Not supported event");
 		}

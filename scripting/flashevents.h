@@ -31,7 +31,8 @@
 namespace lightspark
 {
 
-enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_TAG, CHANGE_FRAME, CONSTRUCT_FRAME };
+enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_TAG, CHANGE_FRAME, CONSTRUCT_FRAME,
+			SYS_ON_STAGE };
 
 class ABCContext;
 class DictionaryTag;
@@ -352,6 +353,14 @@ private:
 public:
 	ConstructFrameEvent(Frame& f, _R<MovieClip> p):Event("ConstructFrameEvent"),frame(f),parent(p){}
 	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
+};
+
+//Event to put the SystemState on stage
+class SysOnStageEvent: public Event
+{
+public:
+	SysOnStageEvent():Event("SysOnStageEvent"){};
+	EVENT_TYPE getEventType() const { return SYS_ON_STAGE; };
 };
 
 };

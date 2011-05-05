@@ -91,6 +91,12 @@ public:
 	Timer():delay(0),repeatCount(0),currentCount(0),running(false){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getCurrentCount);
+	ASFUNCTION(_getRepeatCount);
+	ASFUNCTION(_setRepeatCount);
+	ASFUNCTION(_getRunning);
+	ASFUNCTION(_getDelay);
+	ASFUNCTION(_setDelay);
 	ASFUNCTION(start);
 	ASFUNCTION(reset);
 	ASFUNCTION(stop);

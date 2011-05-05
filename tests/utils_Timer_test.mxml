@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_utils_Timer_test"
+        xmlns:mx="http://www.adobe.com/2006/mxml"
+        layout="absolute"
+        applicationComplete="appComplete();"
+        backgroundColor="white">
+
+<mx:Script>
+        <![CDATA[
+        import Tests;
+        import flash.utils.Timer;
+        import flash.events.TimerEvent;
+        import flash.utils.getTimer;
+
+        private var frameNumber:int = 0;
+        private var timerCounter:int = 0;
+        private var finished:Boolean = false;
+        private var currentCountAtComplete:int = 0;
+        private var countInHandler:int = -1;
+        private var runningAtComplete:Boolean;
+        private var timer:Timer;
+
+        private function appComplete():void
+        {
+                addEventListener(Event.ENTER_FRAME, enterFrameHandler);
+
+                timer = new Timer(100, 3);
+                timer.addEventListener(TimerEvent.TIMER, timerHandler);
+                timer.addEventListener(TimerEvent.TIMER_COMPLETE, completeHandler);
+
+                Tests.assertEquals(0, timer.currentCount, "currentCount before starting");
+                Tests.assertEquals(3, timer.repeatCount, "repeatCount before starting");
+
+                timer.start();
+
+                Tests.assertTrue(timer.running, "running after starting");
+        }
+
+        private function timerHandler(e:TimerEvent):void {
+                timerCounter += 1;
+
+                if (timerCounter == 1) {
+                        countInHandler = timer.currentCount;
+                }
+        }
+
+        private function completeHandler(e:TimerEvent):void {
+                currentCountAtComplete = timer.currentCount;
+                runningAtComplete = timer.running;
+
+                finish();
+        }
+
+        private function enterFrameHandler(e:Event):void {
+                frameNumber += 1;
+                if (frameNumber == 24 && !finished) {
+                        Tests.assertDontReach("TIMER_COMPLETE event not received");
+                        finish();
+                }
+        }
+
+        private function finish():void {
+                if (finished)
+                        return;
+                finished = true;
+
+                Tests.assertEquals(1, countInHandler, "currentCount in TIMER event");
+                Tests.assertEquals(3, timerCounter, "TIMER event count");
+                Tests.assertEquals(3, currentCountAtComplete, "currentCount in TIMER_COMPLETE event");
+                Tests.assertFalse(runningAtComplete, "running in TIMER_COMPLETE event");
+                Tests.assertEquals(3, timer.repeatCount, "repeatCount afterwards");
+
+                Tests.report(visual, this.name)
+        }
+
+        ]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

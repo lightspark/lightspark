@@ -342,14 +342,13 @@ const char * nsPluginInstance::getVersion()
 
 NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 {
-  NPError err = NPERR_NO_ERROR;
-  switch (aVariable)
+	NPError err = NPERR_NO_ERROR;
+	switch (aVariable)
 	{
-    case NPPVpluginNameString:
-    case NPPVpluginDescriptionString:
-    case NPPVpluginNeedsXEmbed:
-      return NS_PluginGetValue(aVariable, aValue) ;
-      break;
+		case NPPVpluginNameString:
+		case NPPVpluginDescriptionString:
+		case NPPVpluginNeedsXEmbed:
+			return NS_PluginGetValue(aVariable, aValue) ;
 		case NPPVpluginScriptableNPObject:
 			if(scriptObject)
 			{
@@ -361,11 +360,11 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 			}
 			else
 				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObjectGW requested but was NULL");
-    default:
-      err = NPERR_INVALID_PARAM;
-      break;
-  }
-  return err;
+		default:
+			err = NPERR_INVALID_PARAM;
+			break;
+	}
+	return err;
 
 }
 

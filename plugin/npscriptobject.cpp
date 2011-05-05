@@ -556,7 +556,7 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 	sem_init(&mutex, 0, 1);
 	sem_init(&externalCallsFinished, 0, 1);
 
-	setProperty("$version", "10,0,r"SHORTVERSION);
+	setProperty("$version", "LNX 10,2,"SHORTVERSION);
 
 	// Standard methods
 	setMethod("SetVariable", new lightspark::ExtBuiltinCallback(stdSetVariable));
@@ -913,6 +913,13 @@ bool NPScriptObject::stdGetVariable(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
 			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result)
 {
+	if(argc!=1 || args[0]->getType()!=lightspark::ExtVariant::EV_STRING)
+		return false;
+	//Only support properties currently
+	*result=so.getProperty(NPIdentifierObject(args[0]->getString()));
+	if(*result)
+		return true;
+
 	LOG(LOG_NOT_IMPLEMENTED, "NPScriptObject::stdGetVariable");
 	*result = new NPVariantObject(dynamic_cast<const NPScriptObject&>(so).instance);
 	return false;

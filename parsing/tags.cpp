@@ -353,9 +353,6 @@ ASObject* DefineEditTextTag::instance() const
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	in >> SpriteID >> FrameCount;
-	setTotalFrames(FrameCount);
-	framesLoaded=FrameCount;
-	state.max_FP=FrameCount;
 
 	LOG(LOG_TRACE,_("DefineSprite ID: ") << SpriteID);
 	//Create a non top level TagFactory
@@ -402,9 +399,12 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 
 	if(frames.size()!=FrameCount)
 	{
-		LOG(LOG_ERROR,_("Inconsistent frame count ") << FrameCount);
-		throw ParseException("Invalid frame count in Sprite");
+		//This condition is not critical as Sprites are not executed while being parsed
+		LOG(LOG_CALLS,_("Inconsistent frame count in Sprite ID ") << SpriteID);
 	}
+	framesLoaded=frames.size();
+	setTotalFrames(framesLoaded);
+	state.max_FP=framesLoaded;
 
 	LOG(LOG_TRACE,_("EndDefineSprite ID: ") << SpriteID);
 }

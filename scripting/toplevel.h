@@ -522,6 +522,7 @@ public:
 	ASFUNCTION(_reverse);
 	ASFUNCTION(lastIndexOf);
 	ASFUNCTION(_map);
+	ASFUNCTION(_toString);
 
 	ASObject* at(unsigned int index) const
 	{

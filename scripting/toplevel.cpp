@@ -110,7 +110,7 @@ void Array::sinit(Class_base* c)
 	//c->setMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),true);
 	c->setMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice),true);
 	//c->setMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(toLocaleString),true);
-	//c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(toString),true);
+	c->setMethodByQName("toString","",Class<IFunction>::getFunction(_toString),true);
 	c->setMethodByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),true);
 
 	// workaround, pop was encountered not in the AS3 namespace before, need to investigate it further
@@ -532,6 +532,12 @@ ASFUNCTIONBODY(Array,_map)
 	}
 
 	return arrayRet;
+}
+
+ASFUNCTIONBODY(Array,_toString)
+{
+	Array* th=static_cast<Array*>(obj);
+	return Class<ASString>::getInstanceS(th->toString_priv());
 }
 
 XML::XML():root(NULL),node(NULL),constructed(false)

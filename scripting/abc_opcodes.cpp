@@ -1324,6 +1324,10 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 
 bool ABCVm::strictEqualImpl(ASObject* obj1, ASObject* obj2)
 {
+	//If we are dealing with objects, check the prototype
+	if(obj1->getObjectType()==T_OBJECT && obj2->getObjectType()==T_OBJECT && obj1->prototype!=obj2->prototype)
+			return false;
+
 	SWFOBJECT_TYPE type1=obj1->getObjectType();
 	SWFOBJECT_TYPE type2=obj2->getObjectType();
 	if(type1!=type2)
@@ -2057,22 +2061,20 @@ bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)
 
 bool ABCVm::ifStrictEq(ASObject* obj2, ASObject* obj1)
 {
-	bool ret;
-	//If we are dealing with objects, check the prototype
-	if(obj1->prototype && obj2->prototype && obj1->prototype!=obj2->prototype)
-			ret=false;
-	else if(obj1->getObjectType()!=obj2->getObjectType())
-			ret=false;
-	else
-		ret=ifEq(obj2,obj1);
+	bool ret=strictEqualImpl(obj1,obj2);
 	LOG(LOG_CALLS,_("ifStrictEq ")<<ret);
+	obj1->decRef();
+	obj2->decRef();
 	return ret;
 }
 
 bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,_("ifStrictNE"));
-	return !ifStrictEq(obj2,obj1);
+	bool ret=!strictEqualImpl(obj1,obj2);
+	LOG(LOG_CALLS,_("ifStrictNE ")<<ret);
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
 }
 
 bool ABCVm::in(ASObject* val2, ASObject* val1)

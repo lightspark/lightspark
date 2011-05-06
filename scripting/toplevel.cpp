@@ -3056,7 +3056,6 @@ ASFUNCTIONBODY(ASString,indexOf)
 	if(argslen>1)
 		startIndex=args[1]->toInt();
 	
-	assert_and_throw(startIndex==0);
 	bool found=false;
 	unsigned int i;
 	for(i=startIndex;i<th->data.size();i++)

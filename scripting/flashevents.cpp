@@ -92,6 +92,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));
 
 	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget),true);
+	c->setGetterByQName("currentTarget","",Class<IFunction>::getFunction(_getCurrentTarget),true);
 	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType),true);
 	c->setMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),true);
 }
@@ -114,6 +115,16 @@ ASFUNCTIONBODY(Event,_constructor)
 		th->type=args[0]->toString();
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(Event,_getCurrentTarget)
+{
+	Event* th=static_cast<Event*>(obj);
+	if(th->currentTarget.isNull())
+		return new Undefined;
+
+	th->currentTarget->incRef();
+	return th->currentTarget.getPtr();
 }
 
 ASFUNCTIONBODY(Event,_getTarget)

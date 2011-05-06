@@ -49,6 +49,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getType);
 	ASFUNCTION(_getTarget);
+	ASFUNCTION(_getCurrentTarget);
 	ASFUNCTION(formatToString);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
 	tiny_string type;

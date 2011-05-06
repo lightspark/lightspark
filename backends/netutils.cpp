@@ -1231,6 +1231,7 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 		//Its probably a good idea to limit redirections, 100 should be more than enough
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 100);
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0");
 		if(!data.empty())
 		{
 			curl_easy_setopt(curl, CURLOPT_POST, 1);

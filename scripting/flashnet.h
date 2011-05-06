@@ -144,9 +144,7 @@ public:
 class NetStream: public EventDispatcher, public IThreadJob, public ITickJob
 {
 private:
-	enum STREAM_TYPE { FLV_STREAM=0 };
 	URLInfo url;
-	STREAM_TYPE classifyStream(std::istream& s);
 	double frameRate;
 	bool tickStarted;
 	//The NetConnection used by this NetStream
@@ -154,7 +152,6 @@ private:
 	Downloader* downloader;
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
-	LS_AUDIO_CODEC audioCodec;
 	AudioStream *audioStream;
 	uint32_t streamTime;
 	sem_t mutex;

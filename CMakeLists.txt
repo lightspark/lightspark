@@ -299,6 +299,7 @@ SET(LIBSPARK_SOURCES
   threading.cpp
   timer.cpp
   backends/audio.cpp
+  backends/builtindecoder.cpp
   backends/config.cpp
   backends/decoder.cpp
   backends/extscriptobject.cpp

@@ -471,3 +471,9 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_
 	return maxLen;
 }
 #endif //ENABLE_LIBAVCODEC
+
+StreamDecoder::~StreamDecoder()
+{
+	delete audioDecoder;
+	delete videoDecoder;
+}

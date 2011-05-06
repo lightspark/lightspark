@@ -21,10 +21,10 @@
 #include "abc.h"
 #include "flashnet.h"
 #include "class.h"
-#include "parsing/flv.h"
 #include "scripting/flashsystem.h"
 #include "compat.h"
 #include "backends/rendering.h"
+#include "backends/builtindecoder.h"
 
 using namespace std;
 using namespace lightspark;
@@ -763,20 +763,6 @@ ASFUNCTIONBODY(NetStream,seek)
 	return NULL;
 }
 
-NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
-{
-	char buf[3];
-	s.read(buf,3);
-	STREAM_TYPE ret;
-	if(strncmp(buf,"FLV",3)==0)
-		ret=FLV_STREAM;
-	else
-		throw ParseException("File signature not recognized");
-
-	s.seekg(0);
-	return ret;
-}
-
 //Tick is called from the timer thread, this happens only if a decoder is available
 void NetStream::tick()
 {
@@ -850,228 +836,109 @@ void NetStream::execute()
 
 	//The downloader hasn't failed yet at this point
 
-	//mutex access to downloader
 	istream s(downloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");
-	//We need to catch possible EOF and other error condition in the non reliable stream
-	uint32_t decodedAudioBytes=0;
-	uint32_t decodedVideoFrames=0;
-	//The decoded time is computed from the decodedAudioBytes to avoid drifts
-	uint32_t decodedTime=0;
 	bool waitForFlush=true;
+	StreamDecoder* streamDecoder=NULL;
+	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
-		ScriptDataTag tag;
 		Chronometer chronometer;
-		STREAM_TYPE t=classifyStream(s);
-		if(t==FLV_STREAM)
-		{
-			FLV_HEADER h(s);
-			if(!h.isValid())
-				throw ParseException("FLV is not valid");
-
-			unsigned int prevSize=0;
-			bool done=false;
-			do
-			{
-				//Check if threadAbort has been called, if so, stop this loop
-				if(closed)
-					done = true;
-				UI32_FLV PreviousTagSize;
-				s >> PreviousTagSize;
-				assert_and_throw(PreviousTagSize==prevSize);
-
-				//Check tag type and read it
-				UI8 TagType;
-				s >> TagType;
-				switch(TagType)
-				{
-					case 8:
-					{
-						AudioDataTag tag(s);
-						prevSize=tag.getTotalLen();
-
-						if(audioDecoder==NULL)
-						{
-							audioCodec=tag.SoundFormat;
-							switch(tag.SoundFormat)
-							{
-								case AAC:
-									assert_and_throw(tag.isHeader())
-#ifdef ENABLE_LIBAVCODEC
-									audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,
-											tag.packetData, tag.packetLen);
-#else
-									audioDecoder=new NullAudioDecoder();
-#endif
-									tag.releaseBuffer();
-									break;
-								case MP3:
-#ifdef ENABLE_LIBAVCODEC
-									audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,NULL,0);
-#else
-									audioDecoder=new NullAudioDecoder();
-#endif
-									decodedAudioBytes+=
-										audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
-									//Adjust timing
-									decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
-									break;
-								default:
-									throw RunTimeException("Unsupported SoundFormat");
-							}
-							if(audioDecoder->isValid() && sys->audioManager->pluginLoaded())
-								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
-						}
-						else
-						{
-							assert_and_throw(audioCodec==tag.SoundFormat);
-							decodedAudioBytes+=
-								audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
-							if(audioStream==0 && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
-								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
-							//Adjust timing
-							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
-						}
-						break;
-					}
-					case 9:
-					{
-						VideoDataTag tag(s);
-						prevSize=tag.getTotalLen();
-						//If the framerate is known give the right timing, otherwise use decodedTime from audio
-						uint32_t frameTime=(frameRate!=0.0)?(decodedVideoFrames*1000/frameRate):decodedTime;
-
-						if(videoDecoder==NULL)
-						{
-							//If the isHeader flag is on then the decoder becomes the owner of the data
-							if(tag.isHeader())
-							{
-								//The tag is the header, initialize decoding
-#ifdef ENABLE_LIBAVCODEC
-								videoDecoder=
-									new FFMpegVideoDecoder(tag.codec,tag.packetData,tag.packetLen, frameRate);
-#else
-								videoDecoder=new NullVideoDecoder();
-#endif
-								tag.releaseBuffer();
-							}
-							else if(videoDecoder==NULL)
-							{
-								//First packet but no special handling
-#ifdef ENABLE_LIBAVCODEC
-								videoDecoder=new FFMpegVideoDecoder(tag.codec,NULL,0,frameRate);
-#else
-								videoDecoder=new NullVideoDecoder();
-#endif
-								videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
-								decodedVideoFrames++;
-							}
-							this->incRef();
-							getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS
-										("status", "NetStream.Play.Start")));
-							this->incRef();
-							getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS
-										("status", "NetStream.Buffer.Full")));
-						}
-						else
-						{
-							videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
-							decodedVideoFrames++;
-						}
-						break;
-					}
-					case 18:
-					{
-						tag = ScriptDataTag(s);
-						prevSize=tag.getTotalLen();
-
-						//The frameRate of the container overrides the stream
-						
-						if(tag.metadataDouble.find("framerate") != tag.metadataDouble.end())
-							frameRate=tag.metadataDouble["framerate"];
-						break;
-					}
-					default:
-						LOG(LOG_ERROR,_("Unexpected tag type ") << (int)TagType << _(" in FLV"));
-						threadAbort();
-				}
-				if(!tickStarted && isReady())
-				{
-					{
-						multiname onMetaDataName;
-						onMetaDataName.name_type=multiname::NAME_STRING;
-						onMetaDataName.name_s="onMetaData";
-						onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
-						ASObject* callback = client->getVariableByMultiname(onMetaDataName);
-						if(callback && callback->getObjectType() == T_FUNCTION)
-						{
-							ASObject* callbackArgs[1];
-							ASObject* metadata = Class<ASObject>::getInstanceS();
-							if(tag.metadataDouble.find("width") != tag.metadataDouble.end())
-								metadata->setVariableByQName("width", "", 
-										abstract_d(tag.metadataDouble["width"]));
-							else
-								metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()));
-							if(tag.metadataDouble.find("height") != tag.metadataDouble.end())
-								metadata->setVariableByQName("height", "", 
-										abstract_d(tag.metadataDouble["height"]));
-							else
-								metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()));
-
-							if(tag.metadataDouble.find("framerate") != tag.metadataDouble.end())
-								metadata->setVariableByQName("framerate", "", 
-										abstract_d(tag.metadataDouble["framerate"]));
-							if(tag.metadataDouble.find("duration") != tag.metadataDouble.end())
-								metadata->setVariableByQName("duration", "", 
-										abstract_d(tag.metadataDouble["duration"]));
-							if(tag.metadataInteger.find("canseekontime") != tag.metadataInteger.end())
-								metadata->setVariableByQName("canSeekToEnd", "", 
-										abstract_b(tag.metadataInteger["canseekontime"] == 1));
-
-							if(tag.metadataDouble.find("audiodatarate") != tag.metadataDouble.end())
-								metadata->setVariableByQName("audiodatarate", "", 
-										abstract_d(tag.metadataDouble["audiodatarate"]));
-							if(tag.metadataDouble.find("videodatarate") != tag.metadataDouble.end())
-								metadata->setVariableByQName("videodatarate", "", 
-										abstract_d(tag.metadataDouble["videodatarate"]));
-
-							//TODO: missing: audiocodecid (Number), cuePoints (Object[]), 
-							//videocodecid (Number), custommetadata's
-							client->incRef();
-							metadata->incRef();
-							callbackArgs[0] = metadata;
-							callback->incRef();
-							_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback)), 
-									_MR(client), callbackArgs, 1));
-							getVm()->addEvent(NullRef,event);
-						}
-					}
-
-					tickStarted=true;
-					if(frameRate==0)
-					{
-						assert(videoDecoder->frameRate);
-						frameRate=videoDecoder->frameRate;
-					}
-					sys->addTick(1000/frameRate,this);
-					//Also ask for a render rate equal to the video one (capped at 24)
-					float localRenderRate=dmin(frameRate,24);
-					sys->setRenderRate(localRenderRate);
-				}
-				profile->accountTime(chronometer.checkpoint());
-				if(aborting)
-				{
-					throw JobTerminationException();
-				}
-			}
-			while(!done);
-		}
-		else
+		streamDecoder=new BuiltinStreamDecoder(s);
+		if(!streamDecoder->isValid())
 			threadAbort();
+
+		bool done=false;
+		do
+		{
+			//Check if threadAbort has been called, if so, stop this loop
+			if(closed)
+				done = true;
+			bool decodingSuccess=streamDecoder->decodeNextFrame();
+			if(decodingSuccess==false)
+				done = true;
+
+			if(videoDecoder==NULL && streamDecoder->videoDecoder)
+			{
+				videoDecoder=streamDecoder->videoDecoder;
+				this->incRef();
+				getVm()->addEvent(_MR(this),
+						_MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start")));
+				this->incRef();
+				getVm()->addEvent(_MR(this),
+						_MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Full")));
+			}
+
+			if(audioDecoder==NULL && streamDecoder->audioDecoder)
+				audioDecoder=streamDecoder->audioDecoder;
+
+			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
+				audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
+
+			if(!tickStarted && isReady())
+			{
+				multiname onMetaDataName;
+				onMetaDataName.name_type=multiname::NAME_STRING;
+				onMetaDataName.name_s="onMetaData";
+				onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
+				ASObject* callback = client->getVariableByMultiname(onMetaDataName);
+				if(callback && callback->getObjectType() == T_FUNCTION)
+				{
+					ASObject* callbackArgs[1];
+					ASObject* metadata = Class<ASObject>::getInstanceS();
+					double d;
+					uint32_t i;
+					if(streamDecoder->getMetadataDouble("width",d))
+						metadata->setVariableByQName("width", "",abstract_d(d));
+					else
+						metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()));
+					if(streamDecoder->getMetadataDouble("height",d))
+						metadata->setVariableByQName("height", "",abstract_d(d));
+					else
+						metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()));
+					if(streamDecoder->getMetadataDouble("framerate",d))
+						metadata->setVariableByQName("framerate", "",abstract_d(d));
+					if(streamDecoder->getMetadataDouble("duration",d))
+						metadata->setVariableByQName("duration", "",abstract_d(d));
+					if(streamDecoder->getMetadataInteger("canseekontime",i))
+						metadata->setVariableByQName("canSeekToEnd", "",abstract_b(i == 1));
+					if(streamDecoder->getMetadataDouble("audiodatarate",d))
+						metadata->setVariableByQName("audiodatarate", "",abstract_d(d));
+					if(streamDecoder->getMetadataDouble("videodatarate",d))
+						metadata->setVariableByQName("videodatarate", "",abstract_d(d));
+
+					//TODO: missing: audiocodecid (Number), cuePoints (Object[]),
+					//videocodecid (Number), custommetadata's
+					client->incRef();
+					metadata->incRef();
+					callbackArgs[0] = metadata;
+					callback->incRef();
+					_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback)),
+							_MR(client), callbackArgs, 1));
+					getVm()->addEvent(NullRef,event);
+				}
+
+				tickStarted=true;
+				if(frameRate==0)
+				{
+					assert(videoDecoder->frameRate);
+					frameRate=videoDecoder->frameRate;
+				}
+				sys->addTick(1000/frameRate,this);
+				//Also ask for a render rate equal to the video one (capped at 24)
+				float localRenderRate=dmin(frameRate,24);
+				sys->setRenderRate(localRenderRate);
+			}
+			profile->accountTime(chronometer.checkpoint());
+			if(aborting)
+			{
+				throw JobTerminationException();
+			}
+		}
+		while(!done);
 
 	}
 	catch(LightsparkException& e)
@@ -1111,8 +978,6 @@ void NetStream::execute()
 	tickStarted=false;
 	sem_wait(&mutex);
 	//Change the state to invalid to avoid locking
-	AudioDecoder* a=audioDecoder;
-	VideoDecoder* v=videoDecoder;
 	videoDecoder=NULL;
 	audioDecoder=NULL;
 	//Clean up everything for a possible re-run
@@ -1123,11 +988,7 @@ void NetStream::execute()
 		sys->audioManager->freeStreamPlugin(audioStream);
 	audioStream=NULL;
 	sem_post(&mutex);
-	if(v)
-		delete v;
-	if(a)
-		delete a;
-	
+	delete streamDecoder;
 }
 
 void NetStream::threadAbort()

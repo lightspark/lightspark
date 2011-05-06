@@ -183,7 +183,6 @@ public:
 };
 #endif
 
-
 class AudioDecoder: public Decoder
 {
 protected:
@@ -276,6 +275,21 @@ public:
 	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 };
 #endif
+
+class StreamDecoder
+{
+protected:
+	bool valid;
+public:
+	StreamDecoder():valid(false),audioDecoder(NULL),videoDecoder(NULL){}
+	virtual ~StreamDecoder();
+	virtual bool decodeNextFrame() = 0;
+	virtual bool getMetadataInteger(const char* name, uint32_t& ret) const=0;
+	virtual bool getMetadataDouble(const char* name, double& ret) const=0;
+	bool isValid() const { return valid; }
+	AudioDecoder* audioDecoder;
+	VideoDecoder* videoDecoder;
+};
 
 };
 #endif

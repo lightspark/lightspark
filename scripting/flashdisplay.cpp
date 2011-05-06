@@ -543,11 +543,11 @@ void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,nu
 	if(!graphics.isNull())
 	{
 		//Should clean only the bounds of the graphics
-		if(!isSimple())
-			rt->glAcquireTempBuffer(t1,t2,t3,t4);
+		//if(!isSimple())
+		//	rt->glAcquireTempBuffer(t1,t2,t3,t4);
 		defaultRender(maskEnabled);
-		if(!isSimple())
-			rt->glBlitTempBuffer(t1,t2,t3,t4);
+		//if(!isSimple())
+		//	rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
 	
 	{

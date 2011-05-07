@@ -336,6 +336,7 @@ SET(LIBSPARK_SOURCES
   scripting/flashtext.cpp
   scripting/flashutils.cpp
   scripting/flashxml.cpp
+  scripting/mxcore.cpp
   scripting/toplevel.cpp
   scripting/vm.cpp)
 IF(${i386})

@@ -1931,7 +1931,6 @@ bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 	//We can release the reference to the child
 	child->setParent(NullRef);
 	child->setOnStage(false);
-	child->decRef();
 	return true;
 }
 

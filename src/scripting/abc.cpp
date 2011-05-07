@@ -1796,7 +1796,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,_("Method not linkable"));
+				LOG(LOG_NOT_IMPLEMENTED,_("Method not linkable") << ": " << mname);
 			}
 
 			LOG(LOG_TRACE,_("End Method trait: ") << mname);
@@ -1827,7 +1827,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,_("Getter not linkable"));
+				LOG(LOG_NOT_IMPLEMENTED,_("Getter not linkable") << ": " << mname);
 			}
 			
 			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
@@ -1858,7 +1858,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,_("Setter not linkable"));
+				LOG(LOG_NOT_IMPLEMENTED,_("Setter not linkable") << ": " << mname);
 			}
 			
 			LOG(LOG_TRACE,_("End Setter trait: ") << mname);

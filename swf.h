@@ -352,7 +352,7 @@ private:
 	/*
 	   parseHeader takes the first four characters as argument
 	*/
-	enum FILE_TYPE { NONE=0, SWF, COMPRESSED_SWF, PNG, JPEG };
+	enum FILE_TYPE { NONE=0, SWF, COMPRESSED_SWF, PNG, JPEG, GIF };
 	void parseSWFHeader();
 	void checkType(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
 	FILE_TYPE fileType;

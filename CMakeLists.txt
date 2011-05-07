@@ -183,7 +183,7 @@ IF(UNIX)
 ENDIF(UNIX)
 
 IF(ENABLE_LIBAVCODEC)
-	pkg_check_modules(FFMPEG libavcodec libavutil)
+	pkg_check_modules(FFMPEG libavcodec libavutil libavformat)
 	IF(NOT(FFMPEG_FOUND))
 		INCLUDE(FindFFMpeg REQUIRED)
 	ENDIF(NOT(FFMPEG_FOUND))

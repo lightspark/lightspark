@@ -164,6 +164,7 @@ void SystemState::staticInit()
 #endif
 #ifdef ENABLE_LIBAVCODEC
 	avcodec_register_all();
+	av_register_all();
 #endif
 
 	// seed the random number generator

@@ -847,7 +847,7 @@ void NetStream::execute()
 	try
 	{
 		Chronometer chronometer;
-		streamDecoder=new BuiltinStreamDecoder(s);
+		streamDecoder=new FFMpegStreamDecoder(s);
 		if(!streamDecoder->isValid())
 			threadAbort();
 

@@ -101,8 +101,8 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 	return true;
 }
 
-FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):curBuffer(0),curBufferOffset(0),
-	codecContext(NULL),mutex("VideoDecoder")
+FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):
+	curBuffer(0),curBufferOffset(0),codecContext(NULL),ownedContext(true),mutex("VideoDecoder")
 {
 	//The tag is the header, initialize decoding
 	codecContext=avcodec_alloc_context();
@@ -155,11 +155,41 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 	frameIn=avcodec_alloc_frame();
 }
 
+FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c):
+	curBuffer(0),curBufferOffset(0),codecContext(_c),ownedContext(false),mutex("VideoDecoder")
+{
+	status=INIT;
+	//The tag is the header, initialize decoding
+	switch(codecContext->codec_id)
+	{
+		case CODEC_ID_H264:
+			videoCodec=H264;
+			break;
+		case CODEC_ID_FLV1:
+			videoCodec=H263;
+			break;
+		case CODEC_ID_VP6F:
+			videoCodec=VP6;
+			break;
+		default:
+			return;
+	}
+	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
+	if(avcodec_open(codecContext, codec)<0)
+		return;
+
+	if(fillDataAndCheckValidity())
+		status=VALID;
+
+	frameIn=avcodec_alloc_frame();
+}
+
 FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
 	while(fenceCount);
-	assert(codecContext);
-	av_free(codecContext);
+	avcodec_close(codecContext);
+	if(ownedContext)
+		av_free(codecContext);
 	av_free(frameIn);
 }
 
@@ -222,6 +252,25 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 	int ret=avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
 #endif
 	assert_and_throw(ret==(int)datalen);
+	if(frameOk)
+	{
+		assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
+
+		if(status==INIT && fillDataAndCheckValidity())
+			status=VALID;
+
+		assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
+
+		copyFrameToBuffers(frameIn, time);
+	}
+	return true;
+}
+
+bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
+{
+	int frameOk=0;
+	int ret=avcodec_decode_video2(codecContext, frameIn, &frameOk, pkt);
+	assert_and_throw(ret==(int)pkt->size);
 	if(frameOk)
 	{
 		assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
@@ -389,7 +438,7 @@ void AudioDecoder::skipAll()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen)
+FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen):ownedContext(true)
 {
 	CodecID codecId;
 	switch(audioCodec)
@@ -421,6 +470,26 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initd
 		status=VALID;
 	else
 		status=INIT;
+}
+
+FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):codecContext(_c)
+{
+	status=INIT;
+	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
+	assert(codec);
+
+	if(avcodec_open(codecContext, codec)<0)
+		return;
+
+	if(fillDataAndCheckValidity())
+		status=VALID;
+}
+
+FFMpegAudioDecoder::~FFMpegAudioDecoder()
+{
+	avcodec_close(codecContext);
+	if(ownedContext)
+		av_free(codecContext);
 }
 
 bool FFMpegAudioDecoder::fillDataAndCheckValidity()
@@ -470,10 +539,138 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_
 	samplesBuffer.commitLast();
 	return maxLen;
 }
+
+uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
+{
+	FrameSamples& curTail=samplesBuffer.acquireLast();
+	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+	uint32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
+	assert_and_throw(ret==pkt->size);
+
+	if(status==INIT && fillDataAndCheckValidity())
+		status=VALID;
+
+	curTail.len=maxLen;
+	assert(!(curTail.len&0x80000000));
+	assert(maxLen%2==0);
+	curTail.current=curTail.samples;
+	curTail.time=time;
+	samplesBuffer.commitLast();
+	return maxLen;
+}
 #endif //ENABLE_LIBAVCODEC
 
 StreamDecoder::~StreamDecoder()
 {
 	delete audioDecoder;
 	delete videoDecoder;
+}
+
+FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NULL),audioFound(false),videoFound(false),avioContext(NULL)
+{
+	valid=false;
+	//NOTE: this will become avio_alloc_context in FFMpeg 0.7
+	avioContext=av_alloc_put_byte(avioBuffer,4096,0,this,avioReadPacket,NULL,NULL);
+	if(avioContext==NULL)
+		return;
+
+	//Probe the stream format.
+	//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
+	AVProbeData probeData;
+	probeData.filename="lightspark_stream";
+	probeData.buf=new uint8_t[64+AVPROBE_PADDING_SIZE];
+	memset(probeData.buf,0,64+AVPROBE_PADDING_SIZE);
+	stream.read((char*)probeData.buf,64);
+	int read=stream.gcount();
+	if(read!=64)
+		LOG(LOG_ERROR,_("Not sufficient data is available from the stream"));
+	probeData.buf_size=read;
+
+	stream.seekg(0);
+	AVInputFormat* fmt;
+	fmt=av_probe_input_format(&probeData,1);
+	delete[] probeData.buf;
+	if(fmt==NULL)
+		return;
+
+	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, NULL);
+	if(ret!=0)
+		return;
+	
+	ret=av_find_stream_info(formatCtx);
+	if(ret<0)
+		return;
+
+	LOG(LOG_CALLS,_("FFMpeg found ") << formatCtx->nb_streams << _(" streams"));
+	for(uint32_t i=0;i<formatCtx->nb_streams;i++)
+	{
+		if(formatCtx->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO && videoFound==false)
+		{
+			videoFound=true;
+			videoIndex=i;
+		}
+		else if(formatCtx->streams[i]->codec->codec_type==CODEC_TYPE_AUDIO && audioFound==false)
+		{
+			audioFound=true;
+			audioIndex=i;
+		}
+
+	}
+	if(videoFound)
+	{
+		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codec);
+		videoDecoder=customVideoDecoder;
+	}
+
+	if(audioFound)
+	{
+		customAudioDecoder=new FFMpegAudioDecoder(formatCtx->streams[audioIndex]->codec);
+		audioDecoder=customAudioDecoder;
+	}
+
+	valid=true;
+}
+
+FFMpegStreamDecoder::~FFMpegStreamDecoder()
+{
+	if(formatCtx)
+		av_close_input_stream(formatCtx);
+	if(avioContext)
+		av_free(avioContext);
+}
+
+bool FFMpegStreamDecoder::decodeNextFrame()
+{
+	AVPacket pkt;
+	int ret=av_read_frame(formatCtx, &pkt);
+	if(ret<0)
+		return false;
+	auto time_base=formatCtx->streams[pkt.stream_index]->time_base;
+	//Should use dts
+	uint32_t mtime=pkt.dts*1000*time_base.num/time_base.den;
+
+	if(pkt.stream_index==audioIndex)
+		customAudioDecoder->decodePacket(&pkt, mtime);
+	else
+		customVideoDecoder->decodePacket(&pkt, mtime);
+	av_free_packet(&pkt);
+	return true;
+}
+
+bool FFMpegStreamDecoder::getMetadataInteger(const char* name, uint32_t& ret) const
+{
+	return false;
+}
+
+bool FFMpegStreamDecoder::getMetadataDouble(const char* name, double& ret) const
+{
+	return false;
+}
+
+int FFMpegStreamDecoder::avioReadPacket(void* t, uint8_t* buf, int buf_size)
+{
+	FFMpegStreamDecoder* th=static_cast<FFMpegStreamDecoder*>(t);
+	th->stream.read((char*)buf,buf_size);
+	int ret=th->stream.gcount();
+	return ret;
 }

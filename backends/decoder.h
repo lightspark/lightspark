@@ -29,6 +29,7 @@
 extern "C"
 {
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 #define MAX_AUDIO_FRAME_SIZE AVCODEC_MAX_AUDIO_FRAME_SIZE
 }
 #else
@@ -156,6 +157,7 @@ private:
 	uint32_t curBuffer;
 	uint32_t curBufferOffset;
 	AVCodecContext* codecContext;
+	bool ownedContext;
 	BlockingCircularQueue<YUVBuffer,80> buffers;
 	Mutex mutex;
 	AVFrame* frameIn;
@@ -164,7 +166,15 @@ private:
 	bool fillDataAndCheckValidity();
 public:
 	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint);
+	/*
+	   Specialized constructor used by FFMpegStreamDecoder
+	*/
+	FFMpegVideoDecoder(AVCodecContext* codecContext);
 	~FFMpegVideoDecoder();
+	/*
+	   Specialized decoding used by FFMpegStreamDecoder
+	*/
+	bool decodePacket(AVPacket* pkt, uint32_t time);
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 	bool discardFrame();
 	void skipUntil(uint32_t time);
@@ -269,9 +279,19 @@ class FFMpegAudioDecoder: public AudioDecoder
 {
 private:
 	AVCodecContext* codecContext;
+	bool ownedContext;
 	bool fillDataAndCheckValidity();
 public:
 	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
+	/*
+	   Specialized constructor used by FFMpegStreamDecoder
+	*/
+	FFMpegAudioDecoder(AVCodecContext* codecContext);
+	~FFMpegAudioDecoder();
+	/*
+	   Specialized decoding used by FFMpegStreamDecoder
+	*/
+	uint32_t decodePacket(AVPacket* pkt, uint32_t time);
 	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 };
 #endif
@@ -290,6 +310,33 @@ public:
 	AudioDecoder* audioDecoder;
 	VideoDecoder* videoDecoder;
 };
+
+#ifdef ENABLE_LIBAVCODEC
+class FFMpegStreamDecoder: public StreamDecoder
+{
+private:
+	std::istream& stream;
+	AVFormatContext* formatCtx;
+	bool audioFound;
+	bool videoFound;
+	uint32_t audioIndex;
+	uint32_t videoIndex;
+	//We use our own copy of these to have access of the ffmpeg specific methods
+	FFMpegAudioDecoder* customAudioDecoder;
+	FFMpegVideoDecoder* customVideoDecoder;
+	//Helpers for custom I/O of libavformat
+	uint8_t avioBuffer[4096];
+	static int avioReadPacket(void* th, uint8_t* buf, int buf_size);
+	//NOTE: this will become AVIOContext in FFMpeg 0.7
+	ByteIOContext* avioContext;
+public:
+	FFMpegStreamDecoder(std::istream& s);
+	~FFMpegStreamDecoder();
+	bool decodeNextFrame();
+	bool getMetadataInteger(const char* name, uint32_t& ret) const;
+	bool getMetadataDouble(const char* name, double& ret) const;
+};
+#endif
 
 };
 #endif

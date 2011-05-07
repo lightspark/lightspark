@@ -219,6 +219,9 @@ Tag* TagFactory::readTag()
 		case 88:
 			ret=new DefineFontNameTag(h,f);
 			break;
+		case 91:
+			ret=new DefineFont4Tag(h,f);
+			break;
 		default:
 			LOG(LOG_NOT_IMPLEMENTED,_("Unsupported tag type ") << h.getTagType());
 			ret=new UnimplementedTag(h,f);
@@ -603,6 +606,25 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	}
 	//TODO: implment Kerning support
 	ignore(in,KerningCount*4);
+}
+
+DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):FontTag(h)
+{
+	LOG(LOG_TRACE,_("DefineFont4"));
+	int dest=in.tellg();
+        dest+=h.getLength();
+
+	in >> FontID;
+	BitStream bs(in);
+	UB(5,bs); /* reserved */
+	FontFlagsHasFontData = UB(1,bs);
+	FontFlagsItalic = UB(1,bs);
+	FontFlagsBold = UB(1,bs);
+	in >> FontName;
+
+	if(FontFlagsHasFontData)
+		LOG(LOG_NOT_IMPLEMENTED,"DefineFont4Tag with FontData");
+	ignore(in,dest-in.tellg());
 }
 
 DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):DictionaryTag(h)

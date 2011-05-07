@@ -1162,6 +1162,8 @@ void DisplayObject::sinit(Class_base* c)
 	c->setGetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),true);
 	c->setSetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),true);
 	c->setMethodByQName("getBounds","",Class<IFunction>::getFunction(_getBounds),true);
+	c->setGetterByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),true);
+	c->setGetterByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),true);
 	c->setMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),true);
 }
 
@@ -1765,6 +1767,22 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 	if(th->onStage)
 		th->requestInvalidation();
 	return NULL;
+}
+
+ASFUNCTIONBODY(DisplayObject,_getMouseX)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	number_t temp, outX;
+	th->getConcatenatedMatrix().getInverted().multiply2D(sys->getInputThread()->getMouseX(), temp, outX, temp);
+	return abstract_d(outX);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getMouseY)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	number_t temp, outY;
+	th->getConcatenatedMatrix().getInverted().multiply2D(temp, sys->getInputThread()->getMouseY(), temp, outY);
+	return abstract_d(outY);
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)

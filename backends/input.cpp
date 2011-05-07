@@ -33,7 +33,8 @@ using namespace lightspark;
 using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
-	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
+	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL),
+	mutexInputData("Input data")
 {
 	LOG(LOG_NO_INFO,_("Creating input thread"));
 }
@@ -204,6 +205,13 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 	}
 }
 
+void InputThread::handleMouseMove(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexInputData);
+	mouseX = x;
+	mouseY = y;
+}
+
 void* InputThread::sdl_worker(InputThread* th)
 {
 	sys=th->m_sys;
@@ -253,6 +261,11 @@ void* InputThread::sdl_worker(InputThread* th)
 			case SDL_MOUSEBUTTONUP:
 			{
 				th->handleMouseUp(event.button.x,event.button.y);
+				break;
+			}
+			case SDL_MOUSEMOTION:
+			{
+				th->handleMouseMove(event.motion.x,event.motion.y);
 				break;
 			}
 			case SDL_VIDEORESIZE:

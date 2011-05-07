@@ -66,6 +66,11 @@ private:
 	std::vector<MaskData> maskStack;
 	void handleMouseDown(uint32_t x, uint32_t y);
 	void handleMouseUp(uint32_t x, uint32_t y);
+	void handleMouseMove(uint32_t x, uint32_t y);
+
+	Mutex mutexInputData;
+	number_t mouseX;
+	number_t mouseY;
 public:
 	InputThread(SystemState* s);
 	~InputThread();
@@ -100,6 +105,18 @@ public:
 	   	Checks if the given point in Stage coordinates is currently masked or not
 	*/
 	bool isMasked(number_t x, number_t y) const;
+
+	number_t getMouseX()
+	{
+		Locker locker(mutexInputData);
+		return mouseX;
+	}
+
+	number_t getMouseY()
+	{
+		Locker locker(mutexInputData);
+		return mouseY;
+	}
 };
 
 };

@@ -675,6 +675,8 @@ void MovieClip::sinit(Class_base* c)
 	c->setGetterByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame),true);
 	c->setGetterByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames),true);
 	c->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),true);
+	c->setGetterByQName("currentFrameLabel","",Class<IFunction>::getFunction(_getCurrentFrameLabel),true);
+	c->setGetterByQName("currentLabel","",Class<IFunction>::getFunction(_getCurrentLabel),true);
 	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
 	c->setMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),true);
 	c->setMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),true);
@@ -828,6 +830,29 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based
 	return abstract_i(th->state.FP+1);
+}
+
+ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	if(th->frames[th->state.FP].Label.len() == 0)
+		return new Null();
+	else
+		return Class<ASString>::getInstanceS(th->frames[th->state.FP].Label);
+}
+
+ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	tiny_string label;
+	for(unsigned int i=0;i<=th->state.FP;++i)
+		if(th->frames[i].Label.len() != 0)
+			label = th->frames[i].Label;
+
+	if(label.len() == 0)
+		return new Null();
+	else
+		return Class<ASString>::getInstanceS(label);
 }
 
 ASFUNCTIONBODY(MovieClip,_constructor)
@@ -2917,10 +2942,182 @@ IntSize Bitmap::getBitmapSize() const
 
 void SimpleButton::sinit(Class_base* c)
 {
-//	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setConstructor(NULL);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("upState","",Class<IFunction>::getFunction(_getUpState),true);
+	c->setSetterByQName("upState","",Class<IFunction>::getFunction(_setUpState),true);
+	c->setGetterByQName("downState","",Class<IFunction>::getFunction(_getDownState),true);
+	c->setSetterByQName("downState","",Class<IFunction>::getFunction(_setDownState),true);
+	c->setGetterByQName("overState","",Class<IFunction>::getFunction(_getOverState),true);
+	c->setSetterByQName("overState","",Class<IFunction>::getFunction(_setOverState),true);
+	c->setGetterByQName("hitTestState","",Class<IFunction>::getFunction(_getHitTestState),true);
+	c->setSetterByQName("hitTestState","",Class<IFunction>::getFunction(_setHitTestState),true);
+	c->setGetterByQName("enabled","",Class<IFunction>::getFunction(_getEnabled),true);
+	c->setSetterByQName("enabled","",Class<IFunction>::getFunction(_setEnabled),true);
+}
+
+void SimpleButton::buildTraits(ASObject* o)
+{
+}
+
+_NR<InteractiveObject> SimpleButton::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	_NR<InteractiveObject> ret = NullRef;
+	if (hitTestState)
+	{
+		number_t localX, localY;
+		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
+		ret = hitTestState->hitTest(last, localX, localY);
+	}
+	return ret;
+}
+
+ASFUNCTIONBODY(SimpleButton,_constructor)
+{
+	InteractiveObject::_constructor(obj,NULL,0);
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	th->upState = NULL;
+	th->downState = NULL;
+	th->hitTestState = NULL;
+	th->overState = NULL;
+
+	if (argslen >= 1)
+		th->upState = static_cast<DisplayObject*>(args[0]);
+	if (argslen >= 2)
+		th->overState = static_cast<DisplayObject*>(args[1]);
+	if (argslen >= 3)
+		th->downState = static_cast<DisplayObject*>(args[2]);
+	if (argslen == 4)
+		th->hitTestState = static_cast<DisplayObject*>(args[3]);
+
+	if (th->upState) {
+		th->upState->setOnStage(true);
+		th->upState->requestInvalidation();
+	}
+	return NULL;
+}
+
+ASFUNCTIONBODY(SimpleButton,_getUpState)
+{
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	if(th->upState==NULL)
+		return new Null;
+
+	th->upState->incRef();
+
+	return th->upState;
+}
+
+ASFUNCTIONBODY(SimpleButton,_setUpState)
+{
+	assert_and_throw(argslen == 1);
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	th->upState =Class<DisplayObject>::cast(args[0]);
+	th->upState->setOnStage(true);
+	th->upState->requestInvalidation();
+	return NULL;
+}
+
+ASFUNCTIONBODY(SimpleButton,_getHitTestState)
+{
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	if(th->hitTestState==NULL)
+		return new Null;
+
+	th->hitTestState->incRef();
+
+	return th->hitTestState;
+}
+
+ASFUNCTIONBODY(SimpleButton,_setHitTestState)
+{
+	assert_and_throw(argslen == 1);
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	th->hitTestState =Class<DisplayObject>::cast(args[0]);
+	return NULL;
+}
+
+ASFUNCTIONBODY(SimpleButton,_getOverState)
+{
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	if(th->overState==NULL)
+		return new Null;
+
+	th->overState->incRef();
+
+	return th->overState;
+}
+
+ASFUNCTIONBODY(SimpleButton,_setOverState)
+{
+	assert_and_throw(argslen == 1);
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	th->overState =Class<DisplayObject>::cast(args[0]);
+	return NULL;
+}
+
+ASFUNCTIONBODY(SimpleButton,_getDownState)
+{
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	if(th->downState==NULL)
+		return new Null;
+
+	th->downState->incRef();
+
+	return th->downState;
+}
+
+ASFUNCTIONBODY(SimpleButton,_setDownState)
+{
+	assert_and_throw(argslen == 1);
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	th->downState =Class<DisplayObject>::cast(args[0]);
+	return NULL;
+}
+
+ASFUNCTIONBODY(SimpleButton,_setEnabled)
+{
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	assert_and_throw(argslen==1);
+	th->enabled=Boolean_concrete(args[0]);
+	return NULL;
+}
+
+ASFUNCTIONBODY(SimpleButton,_getEnabled)
+{
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	return abstract_b(th->enabled);
+}
+
+ASFUNCTIONBODY(SimpleButton,_setUseHandCursor)
+{
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	assert_and_throw(argslen==1);
+	th->useHandCursor=Boolean_concrete(args[0]);
+	return NULL;
+}
+
+ASFUNCTIONBODY(SimpleButton,_getUseHandCursor)
+{
+	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	return abstract_b(th->useHandCursor);
+}
+
+bool SimpleButton::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	//FIXME: handle mouse down and over states too
+	if (upState)
+		return upState->getBounds(xmin, xmax, ymin, ymax);
+
+	return false;
+}
+
+void SimpleButton::Render(bool maskEnabled)
+{
+	//FIXME: handle mouse down and over states too
+	if (upState)
+		upState->Render(maskEnabled);
 }
 
 void GradientType::sinit(Class_base* c)
@@ -2962,14 +3159,5 @@ void InterpolationMethod::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setVariableByQName("RGB","",Class<ASString>::getInstanceS("rgb"));
 	c->setVariableByQName("LINEAR_RGB","",Class<ASString>::getInstanceS("linearRGB"));
-}
-
-void SimpleButton::buildTraits(ASObject* o)
-{
-}
-
-bool SimpleButton::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	return false;
 }
 

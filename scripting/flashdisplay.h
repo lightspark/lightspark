@@ -184,11 +184,33 @@ public:
 
 class SimpleButton: public InteractiveObject
 {
+private:
+	DisplayObject *downState;
+	DisplayObject *hitTestState;
+	DisplayObject *overState;
+	DisplayObject *upState;
+	bool enabled;
+	bool useHandCursor;
 public:
 	SimpleButton(){}
+	void Render(bool maskEnabled);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getUpState);
+	ASFUNCTION(_setUpState);
+	ASFUNCTION(_getDownState);
+	ASFUNCTION(_setDownState);
+	ASFUNCTION(_getOverState);
+	ASFUNCTION(_setOverState);
+	ASFUNCTION(_getHitTestState);
+	ASFUNCTION(_setHitTestState);
+	ASFUNCTION(_getEnabled);
+	ASFUNCTION(_setEnabled);
+	ASFUNCTION(_getUseHandCursor);
+	ASFUNCTION(_setUseHandCursor);
 };
 
 class DisplayObjectContainer: public InteractiveObject
@@ -439,6 +461,8 @@ public:
 	ASFUNCTION(gotoAndStop);
 	ASFUNCTION(nextFrame);
 	ASFUNCTION(_getCurrentFrame);
+	ASFUNCTION(_getCurrentFrameLabel);
+	ASFUNCTION(_getCurrentLabel);
 	ASFUNCTION(_getTotalFrames);
 	ASFUNCTION(_getFramesLoaded);
 

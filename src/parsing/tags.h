@@ -585,10 +585,8 @@ class DefineBitsJPEG2Tag: public DictionaryTag, public Bitmap
 {
 private:
 	UI16_SWF CharacterId;
-	uint8_t* data;
 public:
 	DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in);
-	~DefineBitsJPEG2Tag();
 	int getId(){ return CharacterId; }
 };
 
@@ -596,7 +594,6 @@ class DefineBitsJPEG3Tag: public DictionaryTag, public Bitmap
 {
 private:
 	UI16_SWF CharacterId;
-	uint8_t* data;
 	uint8_t* alphaData;
 public:
 	DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in);

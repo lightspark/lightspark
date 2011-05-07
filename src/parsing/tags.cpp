@@ -1552,13 +1552,11 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Diction
 	in >> CharacterId;
 	//Read image data
 	int dataSize=Header.getLength()-2;
-	data=new(nothrow) uint8_t[dataSize];
-	in.read((char*)data,dataSize);
-}
+	uint8_t* inData=new(nothrow) uint8_t[dataSize];
+	in.read((char*)inData,dataSize);
 
-DefineBitsJPEG2Tag::~DefineBitsJPEG2Tag()
-{
-	delete[] data;
+	Bitmap::fromJPEG(inData,dataSize);
+	delete[] inData;
 }
 
 DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),alphaData(NULL)
@@ -1567,12 +1565,18 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 	UI32_SWF dataSize;
 	in >> CharacterId >> dataSize;
 	//Read image data
-	data=new(nothrow) uint8_t[dataSize];
-	in.read((char*)data,dataSize);
+	uint8_t* inData=new(nothrow) uint8_t[dataSize];
+	in.read((char*)inData,dataSize);
+
+	//TODO: check header. Could also be PNG or GIF
+	Bitmap::fromJPEG(inData,dataSize);
+	delete[] inData;
+
 	//Read alpha data (if any)
 	int alphaSize=Header.getLength()-dataSize-6;
 	if(alphaSize>0) //If less that 0 the consistency check on tag size will stop later
 	{
+		LOG(LOG_NOT_IMPLEMENTED,"DefineBitsJPEG3Tag does not use alpha yet");
 		alphaData=new(nothrow) uint8_t[alphaSize];
 		in.read((char*)alphaData,alphaSize);
 	}
@@ -1580,7 +1584,6 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 
 DefineBitsJPEG3Tag::~DefineBitsJPEG3Tag()
 {
-	delete[] data;
 	delete[] alphaData;
 }
 

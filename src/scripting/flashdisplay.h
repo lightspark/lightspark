@@ -640,7 +640,14 @@ public:
 
 class Bitmap: public DisplayObject
 {
+friend class CairoRenderer;
+protected:
+	bool fromJPEG( uint8_t* data, int len);
+	IntSize size;
+	/* the bitmaps data in cairo's internal representation */
+	uint8_t* data;
 public:
+	Bitmap() : size(0,0), data(0) {}
 	static void sinit(Class_base* c);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual IntSize getBitmapSize() const;

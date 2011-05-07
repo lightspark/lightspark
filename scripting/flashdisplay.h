@@ -461,6 +461,8 @@ public:
 	ASFUNCTION(gotoAndStop);
 	ASFUNCTION(nextFrame);
 	ASFUNCTION(_getCurrentFrame);
+	ASFUNCTION(_getCurrentFrameLabel);
+	ASFUNCTION(_getCurrentLabel);
 	ASFUNCTION(_getTotalFrames);
 	ASFUNCTION(_getFramesLoaded);
 

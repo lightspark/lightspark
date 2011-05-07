@@ -675,6 +675,8 @@ void MovieClip::sinit(Class_base* c)
 	c->setGetterByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame),true);
 	c->setGetterByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames),true);
 	c->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),true);
+	c->setGetterByQName("currentFrameLabel","",Class<IFunction>::getFunction(_getCurrentFrameLabel),true);
+	c->setGetterByQName("currentLabel","",Class<IFunction>::getFunction(_getCurrentLabel),true);
 	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
 	c->setMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),true);
 	c->setMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),true);
@@ -828,6 +830,29 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based
 	return abstract_i(th->state.FP+1);
+}
+
+ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	if(th->frames[th->state.FP].Label.len() == 0)
+		return new Null();
+	else
+		return Class<ASString>::getInstanceS(th->frames[th->state.FP].Label);
+}
+
+ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	tiny_string label;
+	for(unsigned int i=0;i<=th->state.FP;++i)
+		if(th->frames[i].Label.len() != 0)
+			label = th->frames[i].Label;
+
+	if(label.len() == 0)
+		return new Null();
+	else
+		return Class<ASString>::getInstanceS(label);
 }
 
 ASFUNCTIONBODY(MovieClip,_constructor)

@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -117,6 +117,12 @@ URLLoader::URLLoader():dataFormat("text"),data(NULL),downloader(NULL)
 {
 }
 
+void URLLoader::finalize()
+{
+	EventDispatcher::finalize();
+	data.reset();
+}
+
 void URLLoader::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -207,7 +213,8 @@ ASFUNCTIONBODY(URLLoader,load)
 		if(!th->url.isValid())
 		{
 			//Notify an error during loading
-			sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+			th->incRef();
+			sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
 			return NULL;
 		}
 		//The URL is valid so we can start the download and add ourself as a job
@@ -230,7 +237,8 @@ ASFUNCTIONBODY(URLLoader,load)
 		if(!th->url.isValid())
 		{
 			//Notify an error during loading
-			sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+			th->incRef();
+			sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
 			return NULL;
 		}
 		//The URL is valid so we can start the download and add ourself as a job
@@ -266,34 +274,37 @@ void URLLoader::execute()
 			//TODO: test binary data format
 			if(dataFormat=="binary")
 			{
-				ByteArray* byteArray=Class<ByteArray>::getInstanceS();
+				_R<ByteArray> byteArray=_MR(Class<ByteArray>::getInstanceS());
 				byteArray->acquireBuffer(buf,downloader->getLength());
 				data=byteArray;
 				//The buffers must not be deleted, it's now handled by the ByteArray instance
 			}
 			else if(dataFormat=="text")
 			{
-				data=Class<ASString>::getInstanceS((char*)buf,downloader->getLength());
+				data=_MR(Class<ASString>::getInstanceS((char*)buf,downloader->getLength()));
 				delete[] buf;
 			}
 			else if(dataFormat=="variables")
 			{
-				data=Class<URLVariables>::getInstanceS((char*)buf);
+				data=_MR(Class<URLVariables>::getInstanceS((char*)buf));
 				delete[] buf;
 			}
 			//Send a complete event for this object
-			sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete"));
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 		}
 		else
 		{
 			//Notify an error during loading
-			sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
 		}
 	}
 	else
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+		this->incRef();
+		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
 	}
 
 	{
@@ -320,11 +331,11 @@ ASFUNCTIONBODY(URLLoader,_getDataFormat)
 ASFUNCTIONBODY(URLLoader,_getData)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj);
-	if(th->data==NULL)
+	if(th->data.isNull())
 		return new Undefined;
 	
 	th->data->incRef();
-	return th->data;
+	return th->data.getPtr();
 }
 
 ASFUNCTIONBODY(URLLoader,_setDataFormat)
@@ -418,9 +429,8 @@ ASFUNCTIONBODY(NetConnection,connect)
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
-	Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success");
-	getVm()->addEvent(th, status);
-	status->decRef();
+	th->incRef();
+	getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success")));
 	return NULL;
 }
 
@@ -492,10 +502,17 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 }
 
 NetStream::NetStream():frameRate(0),tickStarted(false),connection(NULL),downloader(NULL),
-	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),
-		paused(false),closed(true),checkPolicyFile(false),rawAccessAllowed(false)
+	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),
+	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false)
 {
 	sem_init(&mutex,0,1);
+}
+
+void NetStream::finalize()
+{
+	EventDispatcher::finalize();
+	connection.reset();
+	client.reset();
 }
 
 NetStream::~NetStream()
@@ -505,8 +522,6 @@ NetStream::~NetStream()
 		sys->removeJob(this);
 	delete videoDecoder; 
 	delete audioDecoder; 
-	if(connection)
-		connection->decRef();
 	sem_destroy(&mutex);
 }
 
@@ -540,8 +555,11 @@ void NetStream::buildTraits(ASObject* o)
 ASFUNCTIONBODY(NetStream,_getClient)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
+	if(th->client.isNull())
+		return new Undefined();
 
-	return th->client;
+	th->client->incRef();
+	return th->client.getPtr();
 }
 
 ASFUNCTIONBODY(NetStream,_setClient)
@@ -552,8 +570,8 @@ ASFUNCTIONBODY(NetStream,_setClient)
 
 	NetStream* th=Class<NetStream>::cast(obj);
 
-	th->client = args[0];
-	th->client->incRef();
+	args[0]->incRef();
+	th->client = _MR(args[0]);
 	return NULL;
 }
 
@@ -576,12 +594,15 @@ ASFUNCTIONBODY(NetStream,_setCheckPolicyFile)
 
 ASFUNCTIONBODY(NetStream,_constructor)
 {
+	obj->incRef();
+	_R<NetStream> th=_MR(Class<NetStream>::cast(obj));
+
 	LOG(LOG_CALLS,_("NetStream constructor"));
 	assert_and_throw(argslen>=1 && argslen <=2);
 	assert_and_throw(args[0]->getPrototype()==Class<NetConnection>::getClass());
 
-	NetStream* th=Class<NetStream>::cast(obj);
-	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
+	args[0]->incRef();
+	_R<NetConnection> netConnection = _MR(Class<NetConnection>::cast(args[0]));
 	if(argslen == 2)
 	{
 		if(args[1]->getObjectType() == T_STRING)
@@ -600,7 +621,6 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 	th->client = th;
 	th->connection=netConnection;
-	th->connection->incRef();
 
 	return NULL;
 }
@@ -666,7 +686,8 @@ ASFUNCTIONBODY(NetStream,play)
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(th,Class<Event>::getInstanceS("ioError"));
+		th->incRef();
+		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
 	}
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
@@ -691,9 +712,8 @@ ASFUNCTIONBODY(NetStream,resume)
 	if(th->paused)
 	{
 		th->paused = false;
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		th->incRef();
+		getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify")));
 	}
 	return NULL;
 }
@@ -704,9 +724,8 @@ ASFUNCTIONBODY(NetStream,pause)
 	if(!th->paused)
 	{
 		th->paused = true;
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		th->incRef();
+		getVm()->addEvent(_MR(th),_MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify")));
 	}
 	return NULL;
 }
@@ -730,9 +749,8 @@ ASFUNCTIONBODY(NetStream,close)
 	if(!th->closed)
 	{
 		th->threadAbort();
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop");
-		getVm()->addEvent(th, status);
-		status->decRef();
+		th->incRef();
+		getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop")));
 	}
 	LOG(LOG_CALLS, _("NetStream::close called"));
 	return NULL;
@@ -824,7 +842,8 @@ void NetStream::execute()
 {
 	if(downloader->hasFailed())
 	{
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+		this->incRef();
+		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
 		sys->downloadManager->destroy(downloader);
 		return;
 	}
@@ -951,12 +970,12 @@ void NetStream::execute()
 								videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
 								decodedVideoFrames++;
 							}
-							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
-							getVm()->addEvent(this, status);
-							status->decRef();
-							status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Full");
-							getVm()->addEvent(this, status);
-							status->decRef();
+							this->incRef();
+							getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS
+										("status", "NetStream.Play.Start")));
+							this->incRef();
+							getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS
+										("status", "NetStream.Buffer.Full")));
 						}
 						else
 						{
@@ -1022,13 +1041,13 @@ void NetStream::execute()
 
 							//TODO: missing: audiocodecid (Number), cuePoints (Object[]), 
 							//videocodecid (Number), custommetadata's
-							callbackArgs[0] = metadata;
 							client->incRef();
 							metadata->incRef();
-							FunctionEvent* event = 
-								new FunctionEvent(static_cast<IFunction*>(callback), client, callbackArgs, 1);
-							getVm()->addEvent(NULL,event);
-							event->decRef();
+							callbackArgs[0] = metadata;
+							callback->incRef();
+							_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback)), 
+									_MR(client), callbackArgs, 1));
+							getVm()->addEvent(NullRef,event);
 						}
 					}
 
@@ -1082,12 +1101,10 @@ void NetStream::execute()
 		if(videoDecoder)
 			videoDecoder->waitFlushed();
 
-		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop");
-		getVm()->addEvent(this, status);
-		status->decRef();
-		status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Flush");
-		getVm()->addEvent(this, status);
-		status->decRef();
+		this->incRef();
+		getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop")));
+		this->incRef();
+		getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Flush")));
 	}
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);

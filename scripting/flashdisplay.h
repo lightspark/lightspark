@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -52,23 +52,23 @@ private:
 	/**
 	  	The object we are masking, if any
 	*/
-	DisplayObject* maskOf;
+	_NR<DisplayObject> maskOf;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
-	void becomeMaskOf(DisplayObject* m);
-	void setMask(DisplayObject* m);
-	DisplayObjectContainer* parent;
+	void becomeMaskOf(_NR<DisplayObject> m);
+	void setMask(_NR<DisplayObject> m);
+	_NR<DisplayObjectContainer> parent;
 protected:
 	/**
 	  	The object that masks us, if any
 	*/
-	DisplayObject* mask;
+	_NR<DisplayObject> mask;
 	mutable Spinlock spinlock;
 	void computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
 	bool onStage;
-	RootMovieClip* root;
-	LoaderInfo* loaderInfo;
+	_NR<RootMovieClip> root;
+	_NR<LoaderInfo> loaderInfo;
 	int computeWidth();
 	int computeHeight();
 	bool isSimple() const;
@@ -91,14 +91,14 @@ public:
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
-	DisplayObjectContainer* getParent() const { return parent; }
-	void setParent(DisplayObjectContainer* p);
+	_NR<DisplayObjectContainer> getParent() const { return parent; }
+	void setParent(_NR<DisplayObjectContainer> p);
 	/*
 	   Used to link DisplayObjects the invalidation queue
 	*/
-	DisplayObject* invalidateQueueNext;
+	_NR<DisplayObject> invalidateQueueNext;
 	DisplayObject();
-	~DisplayObject();
+	void finalize();
 	MATRIX getMatrix() const;
 	virtual void invalidate();
 	virtual void requestInvalidation();
@@ -119,7 +119,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getBounds");
 	}
-	virtual InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y)
+	virtual _NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 	{
 		throw RunTimeException("DisplayObject::hitTest");
 	}
@@ -128,14 +128,10 @@ public:
 	{
 		throw RunTimeException("DisplayObject::isOpaque");
 	}
-	virtual void setRoot(RootMovieClip* root);
+	virtual void setRoot(_NR<RootMovieClip> root);
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
-	RootMovieClip* getRoot() { return root; }
-	virtual Vector2 debugRender(FTFont* font, bool deep)
-	{
-		throw RunTimeException("DisplayObject::debugRender");
-	}
+	_NR<RootMovieClip> getRoot() { return root; }
 	void setMatrix(const MATRIX& m);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -178,7 +174,7 @@ protected:
 	bool mouseEnabled;
 public:
 	InteractiveObject();
-	virtual ~InteractiveObject();
+	~InteractiveObject();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_setMouseEnabled);
 	ASFUNCTION(_getMouseEnabled);
@@ -220,22 +216,22 @@ public:
 class DisplayObjectContainer: public InteractiveObject
 {
 private:
-	void _addChildAt(DisplayObject* child, unsigned int index);
-	bool _contains(DisplayObject* d);
+	void _addChildAt(_R<DisplayObject> child, unsigned int index);
+	bool _contains(_R<DisplayObject> child);
 protected:
 	void requestInvalidation();
 	//This is shared between RenderThread and VM
-	std::list < DisplayObject* > dynamicDisplayList;
+	std::list < _R<DisplayObject> > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
-	void setRoot(RootMovieClip* r);
+	void setRoot(_NR<RootMovieClip> r);
 	void setOnStage(bool staged);
 public:
 	void dumpDisplayList();
-	bool _removeChild(DisplayObject*);
+	bool _removeChild(_R<DisplayObject> child);
 	DisplayObjectContainer();
-	virtual ~DisplayObjectContainer();
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -292,10 +288,14 @@ class GraphicsContainer
 {
 friend class Graphics;
 protected:
-	Graphics* graphics;
+	_NR<Graphics> graphics;
+	/*It's ok for owner to be a non managed pointer. It's a pointer to the same object.
+	  See Shape for example
+	  */
 	DisplayObject* owner;
 	GraphicsContainer(DisplayObject* _o):graphics(NULL),owner(_o){}
 	void invalidateGraphics();
+	void finalizeGraphics();
 };
 
 class Shape: public DisplayObject, public GraphicsContainer
@@ -305,13 +305,14 @@ protected:
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 public:
 	Shape():GraphicsContainer(this){}
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	bool isOpaque(number_t x, number_t y) const;
 	void invalidate();
 	void requestInvalidation();
@@ -339,14 +340,15 @@ private:
 	uint32_t bytesTotal;
 	tiny_string url;
 	tiny_string loaderURL;
-	EventDispatcher* sharedEvents;
-	Loader* loader;
+	_NR<EventDispatcher> sharedEvents;
+	_NR<Loader> loader;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
 	LOAD_STATUS loadStatus;
 	Spinlock spinlock;
 public:
-	LoaderInfo():bytesLoaded(0),bytesTotal(0),loader(NULL),loadStatus(STARTED) {}
-	LoaderInfo(Loader* l):bytesLoaded(0),bytesTotal(0),loader(l),loadStatus(STARTED) {}
+	LoaderInfo():bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(NullRef),loadStatus(STARTED) {}
+	LoaderInfo(_R<Loader> l):bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(l),loadStatus(STARTED) {}
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -371,13 +373,13 @@ class Loader: public IThreadJob, public DisplayObjectContainer
 {
 private:
 	enum SOURCE { URL, BYTES };
-	RootMovieClip* local_root;
+	_NR<RootMovieClip> local_root;
 	bool loading;
 	bool loaded;
 	SOURCE source;
 	tiny_string url;
-	ByteArray* bytes;
-	LoaderInfo* contentLoaderInfo;
+	_NR<ByteArray> bytes;
+	_NR<LoaderInfo> contentLoaderInfo;
 	Spinlock downloaderLock;
 	Downloader* downloader;
 	void execute();
@@ -388,6 +390,7 @@ public:
 	{
 	}
 	~Loader();
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -411,11 +414,12 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
-	InteractiveObject* hitTestImpl(number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(number_t x, number_t y);
 	void setConstructed() { RELEASE_WRITE(constructed,true); }
 public:
 	Sprite();
 	Sprite(const Sprite& r);
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -426,7 +430,7 @@ public:
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void invalidate();
 	void requestInvalidation();
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
@@ -441,11 +445,12 @@ protected:
 	uint32_t framesLoaded;
 	Frame* cur_frame;
 	void bootstrap();
-	std::vector<IFunction*> frameScripts;
+	std::vector<_NR<IFunction>> frameScripts;
 public:
 	std::vector<Frame> frames;
 	RunState state;
 	MovieClip();
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -467,15 +472,11 @@ public:
 
 	//DisplayObject interface
 	void Render(bool maskEnabled);
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void requestInvalidation();
-	void setRoot(RootMovieClip* r);
+	void setRoot(_NR<RootMovieClip> r);
 	void setOnStage(bool staged);
 	
-	/*! \brief Should be run with the default fragment/vertex program on
-	* * \param font An FT font used for debug messages
-	* * \param deep Flag to enable propagation of the debugRender to children */
-	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void check() const
 	{

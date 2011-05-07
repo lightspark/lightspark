@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -24,6 +24,7 @@
 #include "threading.h"
 #include "platforms/pluginutils.h"
 #include "swftypes.h"
+#include "smartrefs.h"
 #include <vector>
 
 namespace lightspark
@@ -53,7 +54,7 @@ private:
 	Mutex mutexDragged;
 
 	Sprite* curDragged;
-	InteractiveObject* lastMouseDownTarget;
+	_NR<InteractiveObject> lastMouseDownTarget;
 	RECT dragLimit;
 	class MaskData
 	{

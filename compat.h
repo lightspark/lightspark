@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -29,6 +29,7 @@
 // gettext support
 #include <locale.h>
 #include <libintl.h>
+#include <stddef.h>
 #include <assert.h>
 #define _(STRING) gettext(STRING)
 

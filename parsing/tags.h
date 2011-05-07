@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -68,7 +68,7 @@ class DisplayListTag: public Tag
 public:
 	DisplayListTag(RECORDHEADER h):Tag(h){}
 	virtual TAGTYPE getType() const{ return DISPLAY_LIST_TAG; }
-	virtual void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list)=0;
+	virtual void execute(MovieClip* parent, Frame::DisplayListType& list)=0;
 };
 
 class DictionaryTag: public Tag
@@ -119,9 +119,8 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	void Render(bool maskEnabled);
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	ASObject* instance() const
 	{
 		DefineShapeTag* ret=new DefineShapeTag(*this);
@@ -136,7 +135,6 @@ protected:
 	DefineShape2Tag(RECORDHEADER h, int v):DefineShapeTag(h,v){};
 public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const
 	{
 		DefineShape2Tag* ret=new DefineShape2Tag(*this);
@@ -152,7 +150,6 @@ protected:
 public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const
 	{
 		DefineShape3Tag* ret=new DefineShape3Tag(*this);
@@ -240,7 +237,6 @@ public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
 	int getId(){ return CharacterID; }
 	void Render(bool maskEnabled);
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const;
 };
 
@@ -296,7 +292,7 @@ private:
 
 public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
+	void execute(MovieClip* parent, Frame::DisplayListType& list);
 };
 
 class PlaceObject2Tag: public DisplayListTag
@@ -305,9 +301,9 @@ protected:
 	class list_orderer
 	{
 	public:
-		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, uint32_t d);
-		bool operator()(uint32_t d, const std::pair<PlaceInfo, DisplayObject*>& a);
-		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b);
+		bool operator()(const Frame::DisplayListType::value_type& a, uint32_t d);
+		bool operator()(uint32_t d, const Frame::DisplayListType::value_type& a);
+		bool operator()(const Frame::DisplayListType::value_type& a, const Frame::DisplayListType::value_type& b);
 	};
 
 	bool PlaceFlagHasClipAction;
@@ -326,13 +322,12 @@ protected:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
-	void assignObjectToList(DisplayObject* obj, MovieClip* parent,
-			std::list<std::pair<PlaceInfo, DisplayObject*> >::iterator listIterator) const;
+	void setProperties(DisplayObject* obj, MovieClip* parent) const;
 
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
+	void execute(MovieClip* parent, Frame::DisplayListType& list);
 };
 
 class PlaceObject3Tag: public PlaceObject2Tag
@@ -395,7 +390,6 @@ public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	void Render(bool maskEnabled);
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual void handleEvent(Event*);
 
@@ -533,7 +527,6 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in,int v=1);
 	int getId(){ return CharacterId; }
 	void Render(bool maskEnabled);
-	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		getMatrix().multiply2D(TextBounds.Xmin/20,TextBounds.Ymin/20,xmin,ymin);
@@ -568,7 +561,6 @@ private:
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
-	virtual Vector2 debugRender(FTFont* font, bool deep);
 	virtual ASObject* instance() const;
 };
 

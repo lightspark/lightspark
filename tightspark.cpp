@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -116,9 +116,7 @@ int main(int argc, char* argv[])
 		ABCContext* context=new ABCContext(f);
 		contexts.push_back(context);
 		f.close();
-		ABCContextInitEvent* e=new ABCContextInitEvent(context);
-		vm->addEvent(NULL,e);
-		e->decRef();
+		vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
 	}
 	sys->setShutdownFlag();
 	sys->wait();

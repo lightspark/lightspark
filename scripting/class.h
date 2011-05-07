@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -62,6 +62,7 @@ public:
 			throw RunTimeException("Class name collision");
 		}
 	}
+	void finalize();
 	void buildInstanceTraits(ASObject* o) const;
 	void bindToTag(DictionaryTag const* t)
 	{
@@ -76,7 +77,7 @@ public:
 		return tag || bindedToRoot;
 	}
 	//Closure stack
-	std::vector<ASObject*> class_scope;
+	std::vector<_R<ASObject>> class_scope;
 };
 
 template< class T>

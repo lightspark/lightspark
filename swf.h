@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -212,11 +212,11 @@ private:
 	/*
 	   The head of the invalidate queue
 	*/
-	DisplayObject* invalidateQueueHead;
+	_NR<DisplayObject> invalidateQueueHead;
 	/*
 	   The tail of the invalidate queue
 	*/
-	DisplayObject* invalidateQueueTail;
+	_NR<DisplayObject> invalidateQueueTail;
 	/*
 	   The lock for the invalidate queue
 	*/
@@ -241,7 +241,6 @@ public:
 
 	//Interative analysis flags
 	bool showProfilingData;
-	bool showDebug;
 	
 	std::string errorCause;
 	void setError(const std::string& c);
@@ -263,6 +262,7 @@ public:
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
 	SystemState(ParseThread* p, uint32_t fileSize) DLL_PUBLIC;
+	void finalize();
 	~SystemState();
 	
 	//Performance profiling
@@ -281,7 +281,6 @@ public:
 
 	//Class map
 	std::map<QName, Class_base*> classes;
-	bool finalizingDestruction;
 
 	//Flags for command line options
 	bool useInterpreter;
@@ -298,8 +297,9 @@ public:
 	float getRenderRate();
 	/*
 	   This is not supposed to be used in the VM, it's only useful to create the Downloader when plugin is being used
+	   So don't create a smart reference
 	*/
-	LoaderInfo* getLoaderInfo() const { return loaderInfo; }
+	LoaderInfo* getLoaderInfo() const { return loaderInfo.getPtr(); }
 
 	//Stuff to be done once for process and not for plugin instance
 	static void staticInit() DLL_PUBLIC;
@@ -327,7 +327,7 @@ public:
 	void registerTag(Tag* t);
 
 	//Invalidation queue management
-	void addToInvalidateQueue(DisplayObject* d);
+	void addToInvalidateQueue(_R<DisplayObject> d);
 	void flushInvalidationQueue();
 
 #ifdef PROFILING_SUPPORT

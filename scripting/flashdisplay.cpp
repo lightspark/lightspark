@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -85,6 +85,13 @@ void LoaderInfo::buildTraits(ASObject* o)
 {
 }
 
+void LoaderInfo::finalize()
+{
+	EventDispatcher::finalize();
+	sharedEvents.reset();
+	loader.reset();
+}
+
 void LoaderInfo::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
@@ -92,13 +99,15 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 		SpinlockLocker l(spinlock);
 		bytesLoaded=b;
 		if(sys && sys->currentVm)
-			sys->currentVm->addEvent(this,Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal));
+		{
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
+		}
 		if(loadStatus==INIT_SENT)
 		{
 			//The clip is also complete now
-			Event* e=Class<Event>::getInstanceS("complete");
-			sys->currentVm->addEvent(this,e);
-			e->decRef();
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 			loadStatus=COMPLETE;
 		}
 	}
@@ -106,18 +115,16 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 
 void LoaderInfo::sendInit()
 {
-	Event* e=Class<Event>::getInstanceS("init");
-	sys->currentVm->addEvent(this,e);
-	e->decRef();
+	this->incRef();
+	sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("init")));
 	SpinlockLocker l(spinlock);
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
 	if(bytesTotal && bytesLoaded==bytesTotal)
 	{
 		//The clip is also complete now
-		e=Class<Event>::getInstanceS("complete");
-		sys->currentVm->addEvent(this,e);
-		e->decRef();
+		this->incRef();
+		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 		loadStatus=COMPLETE;
 	}
 }
@@ -126,7 +133,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
-	th->sharedEvents=Class<EventDispatcher>::getInstanceS();
+	th->sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
 	return NULL;
 }
 
@@ -140,29 +147,29 @@ ASFUNCTIONBODY(LoaderInfo,_getContent)
 {
 	//Use Loader::getContent
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	if(th->loader)
-		return Loader::_getContent(th->loader,NULL,0);
-	else
+	if(th->loader.isNull())
 		return new Undefined;
+	else
+		return Loader::_getContent(th->loader.getPtr(),NULL,0);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getLoader)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	if(th->loader)
+	if(th->loader.isNull())
+		return new Undefined;
+	else
 	{
 		th->loader->incRef();
-		return th->loader;
+		return th->loader.getPtr();
 	}
-	else
-		return new Undefined;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	th->sharedEvents->incRef();
-	return th->sharedEvents;
+	return th->sharedEvents.getPtr();
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getURL)
@@ -192,17 +199,18 @@ ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(th);
+	th->incRef();
+	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(th)));
 	return NULL;
 }
 
 ASFUNCTIONBODY(Loader,_getContent)
 {
 	Loader* th=static_cast<Loader*>(obj);
-	if(th->local_root)
+	if(!th->local_root.isNull())
 	{
 		th->local_root->incRef();
-		return th->local_root;
+		return th->local_root.getPtr();
 	}
 	else
 		return new Undefined;
@@ -212,7 +220,7 @@ ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	th->contentLoaderInfo->incRef();
-	return th->contentLoaderInfo;
+	return th->contentLoaderInfo.getPtr();
 }
 
 ASFUNCTIONBODY(Loader,load)
@@ -240,11 +248,12 @@ ASFUNCTIONBODY(Loader,loadBytes)
 		return NULL;
 	//Find the actual ByteArray object
 	assert_and_throw(argslen>=1);
-	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<ByteArray>::getClass()));
-	th->bytes=static_cast<ByteArray*>(args[0]);
+	assert_and_throw(args[0]->getPrototype() && 
+			args[0]->getPrototype()->isSubClass(Class<ByteArray>::getClass()));
+	args[0]->incRef();
+	th->bytes=_MR(static_cast<ByteArray*>(args[0]));
 	if(th->bytes->bytes)
 	{
-		th->bytes->incRef();
 		th->loading=true;
 		th->source=BYTES;
 		//To be decreffed in jobFence
@@ -254,10 +263,16 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	return NULL;
 }
 
+void Loader::finalize()
+{
+	DisplayObjectContainer::finalize();
+	local_root.reset();
+	contentLoaderInfo.reset();
+	bytes.reset();
+}
+
 Loader::~Loader()
 {
-	if(local_root && !sys->finalizingDestruction)
-		local_root->decRef();
 }
 
 void Loader::jobFence()
@@ -285,23 +300,23 @@ void Loader::execute()
 	assert(source==URL || source==BYTES);
 	//The loaderInfo of the content is our contentLoaderInfo
 	contentLoaderInfo->incRef();
-	local_root=RootMovieClip::getInstance(contentLoaderInfo);
+	local_root=_MR(RootMovieClip::getInstance(contentLoaderInfo.getPtr()));
 	if(source==URL)
 	{
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
-		downloader=sys->downloadManager->download(url, false, contentLoaderInfo);
+		downloader=sys->downloadManager->download(url, false, contentLoaderInfo.getPtr());
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
-			sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("ioError"));
+			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("ioError")));
 			sys->downloadManager->destroy(downloader);
 			return;
 		}
-		sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("open"));
+		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
-		ParseThread* local_pt=new ParseThread(local_root,s);
+		ParseThread* local_pt=new ParseThread(local_root.getPtr(),s);
 		local_pt->run();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
@@ -322,11 +337,11 @@ void Loader::execute()
 		bytes_buf bb(bytes->bytes,bytes->len);
 		istream s(&bb);
 
-		ParseThread* local_pt = new ParseThread(local_root,s);
+		ParseThread* local_pt = new ParseThread(local_root.getPtr(),s);
 		local_pt->run();
 		bytes->decRef();
 		//Add a complete event for this object
-		sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("complete"));
+		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));
 	}
 	loaded=true;
 }
@@ -356,7 +371,7 @@ void Loader::Render(bool maskEnabled)
 
 bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(local_root && local_root->getBounds(xmin,xmax,ymin,ymax))
+	if(!local_root.isNull() && local_root->getBounds(xmin,xmax,ymin,ymax))
 	{
 		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
 		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
@@ -375,6 +390,13 @@ Sprite::Sprite(const Sprite& r):GraphicsContainer(this),constructed(false)
 	assert(!r.isConstructed());
 }
 
+void Sprite::finalize()
+{
+	DisplayObjectContainer::finalize();
+	//The GraphicsContainer parent class may need to release the Graphics object;
+	finalizeGraphics();
+}
+
 void Sprite::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -383,9 +405,14 @@ void Sprite::sinit(Class_base* c)
 	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),true);
 }
 
+void GraphicsContainer::finalizeGraphics()
+{
+	graphics.reset();
+}
+
 void GraphicsContainer::invalidateGraphics()
 {
-	assert(graphics);
+	assert(!graphics.isNull());
 	if(!owner->isOnStage())
 		return;
 	uint32_t x,y,width,height;
@@ -412,11 +439,11 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	bool ret=false;
 	{
 		Locker l(mutexDisplayList);
-		if(dynamicDisplayList.empty() && graphics==NULL)
+		if(dynamicDisplayList.empty() && graphics.isNull())
 			return false;
 
 		//TODO: Check bounds calculation
-		list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 		for(;it!=dynamicDisplayList.end();++it)
 		{
 			number_t txmin,txmax,tymin,tymax;
@@ -440,7 +467,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 			}
 		}
 	}
-	if(graphics)
+	if(!graphics.isNull())
 	{
 		number_t txmin,txmax,tymin,tymax;
 		if(graphics->getBounds(txmin,txmax,tymin,tymax))
@@ -479,38 +506,41 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 void Sprite::invalidate()
 {
-	assert(graphics);
+	assert(!graphics.isNull());
 	invalidateGraphics();
 }
 
 void Sprite::requestInvalidation()
 {
 	DisplayObjectContainer::requestInvalidation();
-	if(graphics)
-		sys->addToInvalidateQueue(this);
+	if(!graphics.isNull())
+	{
+		this->incRef();
+		sys->addToInvalidateQueue(_MR(this));
+	}
 }
 
 void DisplayObject::renderPrologue() const
 {
-	if(mask)
+	if(!mask.isNull())
 	{
-		if(mask->parent)
-			rt->pushMask(mask,mask->parent->getConcatenatedMatrix());
+		if(mask->parent.isNull())
+			rt->pushMask(mask.getPtr(),MATRIX());
 		else
-			rt->pushMask(mask,MATRIX());
+			rt->pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
 	}
 }
 
 void DisplayObject::renderEpilogue() const
 {
-	if(mask)
+	if(!mask.isNull())
 		rt->popMask();
 }
 
 void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//Draw the dynamically added graphics, if any
-	if(graphics)
+	if(!graphics.isNull())
 	{
 		//Should clean only the bounds of the graphics
 		if(!isSimple())
@@ -523,7 +553,7 @@ void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,nu
 	{
 		Locker l(mutexDisplayList);
 		//Now draw also the display list
-		list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 		for(;it!=dynamicDisplayList.end();++it)
 			(*it)->Render(maskEnabled);
 	}
@@ -549,53 +579,55 @@ void Sprite::Render(bool maskEnabled)
 
 void DisplayObject::hitTestPrologue() const
 {
-	if(mask)
-		sys->getInputThread()->pushMask(mask,mask->getConcatenatedMatrix().getInverted());
+	if(!mask.isNull())
+		sys->getInputThread()->pushMask(mask.getPtr(),mask->getConcatenatedMatrix().getInverted());
 }
 
 void DisplayObject::hitTestEpilogue() const
 {
-	if(mask)
+	if(!mask.isNull())
 		sys->getInputThread()->popMask();
 }
 
-InteractiveObject* Sprite::hitTestImpl(number_t x, number_t y)
+_NR<InteractiveObject> Sprite::hitTestImpl(number_t x, number_t y)
 {
-	InteractiveObject* ret=NULL;
+	_NR<InteractiveObject> ret = NullRef;
 	{
 		//Test objects added at runtime, in reverse order
 		Locker l(mutexDisplayList);
-		list<DisplayObject*>::const_reverse_iterator j=dynamicDisplayList.rbegin();
+		list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
 		for(;j!=dynamicDisplayList.rend();++j)
 		{
 			number_t localX, localY;
 			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			ret=(*j)->hitTest(this, localX,localY);
-			if(ret)
+			this->incRef();
+			ret=(*j)->hitTest(_MR(this), localX,localY);
+			if(!ret.isNull())
 				break;
 		}
 	}
 
-	if(ret==NULL && graphics && mouseEnabled)
+	if(ret==NULL && !graphics.isNull() && mouseEnabled)
 	{
 		//The coordinates are locals
 		if(graphics->hitTest(x,y))
 		{
-			ret=this;
+			this->incRef();
+			ret=_MR(this);
 			//Also test if the we are under the mask (if any)
 			if(sys->getInputThread()->isMaskPresent())
 			{
 				number_t globalX, globalY;
 				getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
 				if(!sys->getInputThread()->isMasked(globalX, globalY))
-					ret=NULL;
+					ret=NullRef;
 			}
 		}
 	}
 	return ret;
 }
 
-InteractiveObject* Sprite::hitTest(InteractiveObject*, number_t x, number_t y)
+_NR<InteractiveObject> Sprite::hitTest(_NR<InteractiveObject>, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
 	//TODO: TOLOCK
@@ -603,13 +635,13 @@ InteractiveObject* Sprite::hitTest(InteractiveObject*, number_t x, number_t y)
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
 	if(!notEmpty)
-		return NULL;
+		return NullRef;
 	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NULL;
+		return NullRef;
 
 	hitTestPrologue();
 
-	InteractiveObject* ret=hitTestImpl(x, y);
+	_NR<InteractiveObject> ret=hitTestImpl(x, y);
 
 	hitTestEpilogue();
 	return ret;
@@ -628,11 +660,11 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 {
 	Sprite* th=static_cast<Sprite*>(obj);
 	//Probably graphics is not used often, so create it here
-	if(th->graphics==NULL)
-		th->graphics=Class<Graphics>::getInstanceS(th);
+	if(th->graphics.isNull())
+		th->graphics=_MR(Class<Graphics>::getInstanceS(th));
 
 	th->graphics->incRef();
-	return th->graphics;
+	return th->graphics.getPtr();
 }
 
 void MovieClip::sinit(Class_base* c)
@@ -659,14 +691,21 @@ MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
 	frames.emplace_back();
 	cur_frame=&frames.back();
-	frameScripts.resize(totalFrames,NULL);
+	frameScripts.resize(totalFrames,NullRef);
+}
+
+void MovieClip::finalize()
+{
+	Sprite::finalize();
+	frames.clear();
+	frameScripts.clear();
 }
 
 void MovieClip::setTotalFrames(uint32_t t)
 {
 	assert(totalFrames==1);
 	totalFrames=t;
-	frameScripts.resize(totalFrames,NULL);
+	frameScripts.resize(totalFrames,NullRef);
 }
 
 void MovieClip::addToFrame(DisplayListTag* t)
@@ -702,7 +741,7 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 		IFunction* f=static_cast<IFunction*>(args[i+1]);
 		f->incRef();
 		assert(th->frameScripts.size()==th->totalFrames);
-		th->frameScripts[frame]=f;
+		th->frameScripts[frame]=_MNR(f);
 	}
 	
 	return NULL;
@@ -765,7 +804,8 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->state.max_FP);
-	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,th));
+	th->incRef();
+	sys->currentVm->addEvent(NullRef,_MR(new FrameChangeEvent(th->state.FP+1,_MR(th))));
 	return NULL;
 }
 
@@ -814,7 +854,10 @@ void MovieClip::advanceFrame()
 		//Before assigning the next_FP we initialize the frame
 		//Should initialize all the frames from the current to the next
 		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
-			frames[i].init(this,frames[i-1].displayList);
+		{
+			this->incRef();
+			frames[i].init(_MR(this),frames[i-1].displayList);
+		}
 
 		//Before actually changing the frame verify that it's constructed
 		//If it's not delay the advancement
@@ -827,19 +870,15 @@ void MovieClip::advanceFrame()
 			state.next_FP=imin(state.FP+1,framesLoaded-1);
 		state.explicit_FP=false;
 		assert(state.FP<frameScripts.size());
-		if(frameChanging && frameScripts[state.FP])
-		{
-			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[state.FP]);
-			getVm()->addEvent(NULL, funcEvent);
-			funcEvent->decRef();
-		}
+		if(frameChanging && !frameScripts[state.FP].isNull())
+			getVm()->addEvent(NullRef, _MR(new FunctionEvent(frameScripts[state.FP])));
 
 		Frame& curFrame=frames[state.FP];
 
 		//Set the object on stage
 		if(isOnStage())
 		{
-			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+			Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
 			for(;it!=curFrame.displayList.end();it++)
 				it->second->setOnStage(true);
 		}
@@ -847,7 +886,7 @@ void MovieClip::advanceFrame()
 		//Invalidate the current frame if needed
 		if(curFrame.isInvalid())
 		{
-			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+			Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
 			for(;it!=curFrame.displayList.end();it++)
 				it->second->requestInvalidation();
 			curFrame.setInvalid(false);
@@ -868,7 +907,7 @@ void MovieClip::requestInvalidation()
 		assert(state.FP<framesLoaded);
 		//Actually invalidate the current frame
 		Frame& curFrame=frames[state.FP];
-		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=curFrame.displayList.begin();
+		Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
 		for(;it!=curFrame.displayList.end();it++)
 			it->second->requestInvalidation();
 		curFrame.setInvalid(false);
@@ -883,28 +922,28 @@ void MovieClip::setOnStage(bool staged)
 		//Now notify all the objects in all frames
 		for(uint32_t i=0;i<frames.size();i++)
 		{
-			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
+			Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
 			for(;it!=frames[i].displayList.end();it++)
 				it->second->setOnStage(staged);
 		}
 	}
 }
 
-void MovieClip::setRoot(RootMovieClip* r)
+void MovieClip::setRoot(_NR<RootMovieClip> r)
 {
 	if(r==root)
 		return;
-	if(root)
+	if(!root.isNull())
 		root->unregisterChildClip(this);
 	DisplayObjectContainer::setRoot(r);
 	//Now notify all the objects in all frames
 	for(uint32_t i=0;i<frames.size();i++)
 	{
-		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
+		Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
 		for(;it!=frames[i].displayList.end();it++)
 			it->second->setRoot(root);
 	}
-	if(root)
+	if(!root.isNull())
 		root->registerChildClip(this);
 }
 
@@ -914,7 +953,9 @@ void MovieClip::bootstrap()
 		return;
 	assert_and_throw(framesLoaded>0);
 	assert_and_throw(frames.size()>=1);
-	frames[0].init(this,list<pair<PlaceInfo,DisplayObject*> >());
+	//We must incRef as the reference acquire the object
+	this->incRef();
+	frames[0].init(_MR(this),Frame::DisplayListType());
 }
 
 void MovieClip::Render(bool maskEnabled)
@@ -944,7 +985,7 @@ void MovieClip::Render(bool maskEnabled)
 	renderEpilogue();
 }
 
-InteractiveObject* MovieClip::hitTest(InteractiveObject*, number_t x, number_t y)
+_NR<InteractiveObject> MovieClip::hitTest(_NR<InteractiveObject>, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be tested in the opposite order of Rendering
 
@@ -953,83 +994,33 @@ InteractiveObject* MovieClip::hitTest(InteractiveObject*, number_t x, number_t y
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
 	if(!notEmpty)
-		return NULL;
+		return NullRef;
 	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NULL;
+		return NullRef;
 
 	hitTestPrologue();
 
-	InteractiveObject* ret=NULL;
+	_NR<InteractiveObject> ret = NullRef;
 	if(framesLoaded)
 	{
 		uint32_t curFP=state.FP;
 		assert_and_throw(curFP<framesLoaded);
-		list<pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[curFP].displayList.begin();
+		Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
 		for(;it!=frames[curFP].displayList.end();++it)
 		{
 			number_t localX, localY;
 			it->second->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			ret=it->second->hitTest(this, localX,localY);
-			if(ret)
+			this->incRef();
+			ret=it->second->hitTest(_MR(this), localX,localY);
+			if(!ret.isNull())
 				break;
 		}
 	}
 
-	if(ret==NULL)
+	if(ret.isNull())
 		ret=Sprite::hitTestImpl(x, y);
 
 	hitTestEpilogue();
-	return ret;
-}
-
-Vector2 MovieClip::debugRender(FTFont* font, bool deep)
-{
-	Vector2 ret(0,0);
-	if(!deep)
-	{
-		glColor3f(0.8,0,0);
-		font->Render("MovieClip",-1,FTPoint(0,50));
-		glBegin(GL_LINE_LOOP);
-			glVertex2i(0,0);
-			glVertex2i(100,0);
-			glVertex2i(100,100);
-			glVertex2i(0,100);
-		glEnd();
-		ret+=Vector2(100,100);
-	}
-	else
-	{
-		MatrixApplier ma;
-		if(framesLoaded)
-		{
-			assert_and_throw(state.FP<framesLoaded);
-			int curFP=state.FP;
-			list<pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[curFP].displayList.begin();
-	
-			for(;it!=frames[curFP].displayList.end();++it)
-			{
-				Vector2 off=it->second->debugRender(font, false);
-				glTranslatef(off.x,0,0);
-				ret.x+=off.x;
-				if(ret.x*20>sys->getFrameSize().Xmax)
-				{
-					glTranslatef(-ret.x,off.y,0);
-					ret.x=0;
-				}
-			}
-		}
-
-		{
-			Locker l(mutexDisplayList);
-			/*list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
-			for(;j!=dynamicDisplayList.end();++j)
-				(*j)->Render();*/
-			assert_and_throw(dynamicDisplayList.empty());
-		}
-
-		ma.unapply();
-	}
-	
 	return ret;
 }
 
@@ -1042,7 +1033,7 @@ bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 
 	//Iterate over the displaylist of the current frame
 	uint32_t curFP=state.FP;
-	std::list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[curFP].displayList.begin();
+	Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
 	
 	//Update bounds for all the elements
 	for(;it!=frames[curFP].displayList.end();++it)
@@ -1095,10 +1086,15 @@ DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty
 {
 }
 
-DisplayObject::~DisplayObject()
+void DisplayObject::finalize()
 {
-	if(loaderInfo && !sys->finalizingDestruction)
-		loaderInfo->decRef();
+	EventDispatcher::finalize();
+	maskOf.reset();
+	parent.reset();
+	mask.reset();
+	root.reset();
+	loaderInfo.reset();
+	invalidateQueueNext.reset();
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -1166,44 +1162,43 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 	}
 }
 
-void DisplayObject::becomeMaskOf(DisplayObject* m)
+void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
 {
-	assert_and_throw(mask==NULL);
-	if(m)
-		m->incRef();
-	DisplayObject* tmp=maskOf;
 	maskOf=m;
-	if(tmp)
-	{
-		//We are changing owner
-		tmp->setMask(NULL);
-		tmp->decRef();
-	}
+/*	_NR<DisplayObject> tmp=maskOf;
+	maskOf.reset();
+	if(!tmp.isNull())
+		tmp->setMask(NullRef);*/
 }
 
-void DisplayObject::setMask(DisplayObject* m)
+void DisplayObject::setMask(_NR<DisplayObject> m)
 {
 	bool mustInvalidate=(mask!=m) && onStage;
-	if(m)
-		m->incRef();
-	DisplayObject* tmp=mask;
-	mask=m;
-	if(tmp)
+
+	if(!mask.isNull())
 	{
-		//Drop the previous mask
-		tmp->becomeMaskOf(NULL);
-		tmp->decRef();
+		//Remove previous mask
+		mask->becomeMaskOf(NullRef);
 	}
+
+	mask=m;
+	if(!mask.isNull())
+	{
+		//Use new mask
+		this->incRef();
+		mask->becomeMaskOf(_MR(this));
+	}
+
 	if(mustInvalidate && onStage)
 		requestInvalidation();
 }
 
 MATRIX DisplayObject::getConcatenatedMatrix() const
 {
-	if(parent)
-		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
-	else
+	if(parent.isNull())
 		return getMatrix();
+	else
+		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
 }
 
 MATRIX DisplayObject::getMatrix() const
@@ -1244,7 +1239,7 @@ bool DisplayObject::isSimple() const
 
 bool DisplayObject::skipRender(bool maskEnabled) const
 {
-	return visible==false || alpha==0.0 || (!maskEnabled && maskOf!=NULL);
+	return visible==false || alpha==0.0 || (!maskEnabled && !maskOf.isNull());
 }
 
 void DisplayObject::defaultRender(bool maskEnabled) const
@@ -1313,18 +1308,18 @@ void DisplayObject::invalidate()
 void DisplayObject::requestInvalidation()
 {
 	//Let's invalidate also the mask
-	if(mask)
+	if(!mask.isNull())
 		mask->requestInvalidation();
 }
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	getMatrix().multiply2D(xin, yin, xout, yout);
-	if(parent)
+	if(!parent.isNull())
 		parent->localToGlobal(xout, yout, xout, yout);
 }
 
-void DisplayObject::setRoot(RootMovieClip* r)
+void DisplayObject::setRoot(_NR<RootMovieClip> r)
 {
 	root=r;
 }
@@ -1342,15 +1337,13 @@ void DisplayObject::setOnStage(bool staged)
 			return;
 		if(onStage==true && hasEventListener("addedToStage"))
 		{
-			Event* e=Class<Event>::getInstanceS("addedToStage");
-			getVm()->addEvent(this,e);
-			e->decRef();
+			this->incRef();
+			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("addedToStage")));
 		}
 		else if(onStage==false && hasEventListener("removedFromStage"))
 		{
-			Event* e=Class<Event>::getInstanceS("removedFromStage");
-			getVm()->addEvent(this,e);
-			e->decRef();
+			this->incRef();
+			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("removedFromStage")));
 		}
 	}
 }
@@ -1376,11 +1369,11 @@ ASFUNCTIONBODY(DisplayObject,_getAlpha)
 ASFUNCTIONBODY(DisplayObject,_getMask)
 {
 	DisplayObject* th=Class<DisplayObject>::cast(obj);
-	if(th->mask==NULL)
+	if(th->mask.isNull())
 		return new Null;
 
 	th->mask->incRef();
-	return th->mask;
+	return th->mask.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_setMask)
@@ -1391,11 +1384,11 @@ ASFUNCTIONBODY(DisplayObject,_setMask)
 	{
 		//We received a valid mask object
 		DisplayObject* newMask=Class<DisplayObject>::cast(args[0]);
-		newMask->becomeMaskOf(th);
-		th->setMask(newMask);
+		newMask->incRef();
+		th->setMask(_MR(newMask));
 	}
 	else
-		th->setMask(NULL);
+		th->setMask(NullRef);
 
 	return NULL;
 }
@@ -1538,13 +1531,11 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->loaderInfo)
-	{
-		th->loaderInfo->incRef();
-		return th->loaderInfo;
-	}
-	else
+	if(th->loaderInfo.isNull())
 		return new Undefined;
+
+	th->loaderInfo->incRef();
+	return th->loaderInfo.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getStage)
@@ -1616,7 +1607,7 @@ ASFUNCTIONBODY(DisplayObject,_getName)
 	return Class<ASString>::getInstanceS(th->name);
 }
 
-void DisplayObject::setParent(DisplayObjectContainer* p)
+void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
 {
 	if(parent!=p)
 	{
@@ -1628,23 +1619,21 @@ void DisplayObject::setParent(DisplayObjectContainer* p)
 ASFUNCTIONBODY(DisplayObject,_getParent)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->parent==NULL)
+	if(th->parent.isNull())
 		return new Undefined;
 
 	th->parent->incRef();
-	return th->parent;
+	return th->parent.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->root)
-	{
-		th->root->incRef();
-		return th->root;
-	}
-	else
+	if(th->root.isNull())
 		return new Undefined;
+
+	th->root->incRef();
+	return th->root.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)
@@ -1779,15 +1768,11 @@ DisplayObjectContainer::DisplayObjectContainer():mutexDisplayList("mutexDisplayL
 {
 }
 
-DisplayObjectContainer::~DisplayObjectContainer()
+void DisplayObjectContainer::finalize()
 {
+	InteractiveObject::finalize();
 	//Release every child
-	if(!sys->finalizingDestruction)
-	{
-		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->decRef();
-	}
+	dynamicDisplayList.clear();
 }
 
 InteractiveObject::InteractiveObject():mouseEnabled(true)
@@ -1841,23 +1826,18 @@ void InteractiveObject::sinit(Class_base* c)
 void DisplayObjectContainer::dumpDisplayList()
 {
 	cout << "Size: " << dynamicDisplayList.size() << endl;
-	list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+	list<_R<DisplayObject> >::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
-	{
-		if(*it)
-			cout << (*it)->getPrototype()->class_name << endl;
-		else
-			cout << "UNKNOWN" << endl;
-	}
+		cout << (*it)->getPrototype()->class_name << endl;
 }
 
 //This must be called fromt VM context
-void DisplayObjectContainer::setRoot(RootMovieClip* r)
+void DisplayObjectContainer::setRoot(_NR<RootMovieClip> r)
 {
 	if(r!=root)
 	{
 		DisplayObject::setRoot(r);
-		list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 		for(;it!=dynamicDisplayList.end();++it)
 			(*it)->setRoot(r);
 	}
@@ -1870,7 +1850,7 @@ void DisplayObjectContainer::setOnStage(bool staged)
 		DisplayObject::setOnStage(staged);
 		//Notify childern
 		Locker l(mutexDisplayList);
-		list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 		for(;it!=dynamicDisplayList.end();++it)
 			(*it)->setOnStage(staged);
 	}
@@ -1892,16 +1872,16 @@ void DisplayObjectContainer::requestInvalidation()
 {
 	DisplayObject::requestInvalidation();
 	Locker l(mutexDisplayList);
-	list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();it++)
 		(*it)->requestInvalidation();
 }
 
-void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index)
+void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int index)
 {
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
-	if(child->getParent())
+	if(!child->getParent().isNull())
 	{
 		//Child already in this container
 		if(child->getParent()==this)
@@ -1909,8 +1889,8 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		else
 			child->getParent()->_removeChild(child);
 	}
-	child->setParent(this);
-	incRef();
+	this->incRef();
+	child->setParent(_MR(this));
 
 	//Set the root of the movie to this container
 	child->setRoot(root);
@@ -1923,18 +1903,16 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		else
 		{
 			assert_and_throw(index<=dynamicDisplayList.size());
-			list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
+			list<_R<DisplayObject>>::iterator it=dynamicDisplayList.begin();
 			for(unsigned int i=0;i<index;i++)
 				++it;
 			dynamicDisplayList.insert(it,child);
 		}
-		//We acquire a reference to the child
-		child->incRef();
 	}
 	child->setOnStage(onStage);
 }
 
-bool DisplayObjectContainer::_removeChild(DisplayObject* child)
+bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 {
 	if(child->getParent()==NULL)
 		return false;
@@ -1943,32 +1921,31 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 
 	{
 		Locker l(mutexDisplayList);
-		list<DisplayObject*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
+		list<_R<DisplayObject>>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 		if(it==dynamicDisplayList.end())
 			return false;
 		dynamicDisplayList.erase(it);
 	}
 	//Set the root of the movie to NULL
-	child->setRoot(NULL);
+	child->setRoot(NullRef);
 	//We can release the reference to the child
-	child->getParent()->decRef();
-	child->setParent(NULL);
+	child->setParent(NullRef);
 	child->setOnStage(false);
 	child->decRef();
 	return true;
 }
 
-bool DisplayObjectContainer::_contains(DisplayObject* d)
+bool DisplayObjectContainer::_contains(_R<DisplayObject> d)
 {
 	if(d==this)
 		return true;
 
-	list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		if(*it==d)
 			return true;
-		DisplayObjectContainer* c=dynamic_cast<DisplayObjectContainer*>(*it);
+		DisplayObjectContainer* c=dynamic_cast<DisplayObjectContainer*>((*it).getPtr());
 		if(c && c->_contains(d))
 			return true;
 	}
@@ -1989,8 +1966,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
-
-	bool ret=th->_contains(d);
+	d->incRef();
+	bool ret=th->_contains(_MR(d));
 	return abstract_b(ret);
 }
 
@@ -2010,15 +1987,16 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	int index=args[1]->toInt();
 
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
+	args[0]->incRef();
+	_R<DisplayObject> d=_MR(Class<DisplayObject>::cast(args[0]));
 	th->_addChildAt(d,index);
 
 	//Notify the object
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
+	sys->currentVm->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
 
 	//incRef again as the value is getting returned
 	d->incRef();
-	return d;
+	return d.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,addChild)
@@ -2034,14 +2012,15 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
+	args[0]->incRef();
+	_R<DisplayObject> d=_MR(Class<DisplayObject>::cast(args[0]));
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
+	sys->currentVm->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
 
 	d->incRef();
-	return d;
+	return d.getPtr();
 }
 
 //Only from VM context
@@ -2060,8 +2039,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
-
-	if(!th->_removeChild(d))
+	d->incRef();
+	if(!th->_removeChild(_MR(d)))
 		throw Class<ArgumentError>::getInstanceS("removeChild: child not in list");
 
 	//As we return the child we have to incRef it
@@ -2082,15 +2061,16 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
 			throw Class<RangeError>::getInstanceS("removeChildAt: invalid index");
-		list<DisplayObject*>::iterator it=th->dynamicDisplayList.begin();
+		list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 		for(int32_t i=0;i<index;i++)
 			++it;
-		child=*it;
+		child=(*it).getPtr();
+		//incRef before the refrence is destroyed
+		child->incRef();
 		th->dynamicDisplayList.erase(it);
 	}
 	//We can release the reference to the child
-	child->getParent()->decRef();
-	child->setParent(NULL);
+	child->setParent(NullRef);
 	child->setOnStage(false);
 
 	//As we return the child we don't decRef it
@@ -2103,13 +2083,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildByName)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
 	const tiny_string& wantedName=args[0]->toString();
-	list<DisplayObject*>::iterator it=th->dynamicDisplayList.begin();
+	list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	ASObject* ret=NULL;
 	for(;it!=th->dynamicDisplayList.end();++it)
 	{
 		if((*it)->name==wantedName)
 		{
-			ret=*it;
+			ret=(*it).getPtr();
 			break;
 		}
 	}
@@ -2128,12 +2108,12 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 	unsigned int index=args[0]->toInt();
 	if(index>=th->dynamicDisplayList.size())
 		throw Class<RangeError>::getInstanceS("getChildAt: invalid index");
-	list<DisplayObject*>::iterator it=th->dynamicDisplayList.begin();
+	list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
 
 	(*it)->incRef();
-	return *it;
+	return (*it).getPtr();
 }
 
 //Only from VM context
@@ -2147,7 +2127,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
 
-	list<DisplayObject*>::const_iterator it=th->dynamicDisplayList.begin();
+	list<_R<DisplayObject>>::const_iterator it=th->dynamicDisplayList.begin();
 	int ret=0;
 	do
 	{
@@ -2161,6 +2141,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 	}
 	while(1);
 	return abstract_i(ret);
+}
+
+void Shape::finalize()
+{
+	DisplayObject::finalize();
+	//The GraphicsContainer parent class may need to release the Graphics object;
+	finalizeGraphics();
 }
 
 void Shape::sinit(Class_base* c)
@@ -2177,7 +2164,7 @@ void Shape::buildTraits(ASObject* o)
 
 bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(graphics)
+	if(!graphics.isNull())
 	{
 		bool ret=graphics->getBounds(xmin,xmax,ymin,ymax);
 		if(ret)
@@ -2197,25 +2184,22 @@ bool Shape::isOpaque(number_t x, number_t y) const
 	return false;
 }
 
-InteractiveObject* Shape::hitTest(InteractiveObject* last, number_t x, number_t y)
+_NR<InteractiveObject> Shape::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	//TODO: TOLOCK
-	if(mask)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Support masks in Shape::hitTest");
-		::abort();
-	}
+	if(!mask.isNull())
+		throw UnsupportedException("Support masks in Shape::hitTest");
 
-	if(graphics)
+	if(!graphics.isNull())
 	{
 		//The coordinates are already local
 		if(graphics->hitTest(x,y))
 			return last;
 	}
 
-	return NULL;
+	return NullRef;
 }
 
 void Shape::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
@@ -2235,7 +2219,7 @@ void Shape::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, 
 void Shape::Render(bool maskEnabled)
 {
 	//If graphics is not yet initialized we have nothing to do
-	if(graphics==NULL || skipRender(maskEnabled))
+	if(graphics.isNull() || skipRender(maskEnabled))
 		return;
 
 	number_t t1,t2,t3,t4;
@@ -2257,15 +2241,18 @@ float Shape::getScaleFactor() const
 
 void Shape::invalidate()
 {
-	assert(graphics);
+	assert(!graphics.isNull());
 	invalidateGraphics();
 	cachedTokens=graphics->getGraphicsTokens();
 }
 
 void Shape::requestInvalidation()
 {
-	if(graphics)
-		sys->addToInvalidateQueue(this);
+	if(!graphics.isNull())
+	{
+		this->incRef();
+		sys->addToInvalidateQueue(_MR(this));
+	}
 }
 
 ASFUNCTIONBODY(Shape,_constructor)
@@ -2278,11 +2265,11 @@ ASFUNCTIONBODY(Shape,_getGraphics)
 {
 	Shape* th=static_cast<Shape*>(obj);
 	//Probably graphics is not used often, so create it here
-	if(th->graphics==NULL)
-		th->graphics=Class<Graphics>::getInstanceS(th);
+	if(th->graphics.isNull())
+		th->graphics=_MR(Class<Graphics>::getInstanceS(th));
 
 	th->graphics->incRef();
-	return th->graphics;
+	return th->graphics.getPtr();
 }
 
 void MorphShape::sinit(Class_base* c)

@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -162,6 +162,12 @@ void TextFormat::buildTraits(ASObject* o)
 {
 }
 
+void StyleSheet::finalize()
+{
+	EventDispatcher::finalize();
+	styles.clear();
+}
+
 void StyleSheet::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
@@ -180,10 +186,13 @@ ASFUNCTIONBODY(StyleSheet,setStyle)
 	StyleSheet* th=Class<StyleSheet>::cast(obj);
 	assert_and_throw(argslen==2);
 	const tiny_string& arg0=args[0]->toString();
-	if(th->styles.find(arg0)!=th->styles.end()) //Style already exists
-		th->styles[arg0]->decRef();
-	th->styles[arg0]=args[1];
 	args[1]->incRef(); //TODO: should make a copy, see reference
+	map<tiny_string, _R<ASObject>>::iterator it=th->styles.find(arg0);
+	//NOTE: we cannot use the [] operator as References cannot be non initialized
+	if(it!=th->styles.end()) //Style already exists
+		it->second=_MR(args[1]);
+	else
+		th->styles.insert(make_pair(arg0,_MR(args[1])));
 	return NULL;
 }
 
@@ -192,7 +201,7 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 	StyleSheet* th=Class<StyleSheet>::cast(obj);
 	assert_and_throw(argslen==0);
 	Array* ret=Class<Array>::getInstanceS();
-	map<tiny_string, ASObject*>::const_iterator it=th->styles.begin();
+	map<tiny_string, _R<ASObject>>::const_iterator it=th->styles.begin();
 	for(;it!=th->styles.end();++it)
 		ret->push(Class<ASString>::getInstanceS(it->first));
 	return ret;

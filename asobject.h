@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -141,7 +141,6 @@ private:
 	obj_var* findGettable(const multiname& name) DLL_LOCAL;
 	obj_var* findSettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
 	tiny_string toStringImpl() const;
-
 public:
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -199,6 +198,14 @@ public:
 		if(o && o!=o2)
 			o->decRef();
 	}
+	/*
+	   The finalize function should be implemented in all derived class.
+	   It should decRef all referenced objects. It's guaranteed that the only operations
+	   that will happen on the object after finalization are decRef and delete.
+	   Each class must call BaseClass::finalize in their finalize function. 
+	   The finalize method must be callable multiple time with the same effects (no double frees)*/
+	virtual void finalize();
+
 	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);

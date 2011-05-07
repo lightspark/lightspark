@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <list>
 #include "swftypes.h"
+#include "smartrefs.h"
 
 namespace lightspark
 {
@@ -47,19 +48,19 @@ private:
 	bool invalid;
 	ACQUIRE_RELEASE_FLAG(constructed);
 public:
+	typedef std::list<std::pair<PlaceInfo, _R<DisplayObject> > > DisplayListType;
 	Frame(const Frame& r);
 	Frame(const Frame&& r);
 	Frame& operator=(const Frame& r);
 	tiny_string Label;
 	std::list<DisplayListTag*> blueprint;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
+	DisplayListType displayList;
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
 	Frame():initialized(false),invalid(true),constructed(false){}
-	~Frame();
 	void Render(bool maskEnabled);
-	void init(MovieClip* parent, const std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
-	void construct(MovieClip* parent);
+	void init(_R<MovieClip> parent, const DisplayListType& d);
+	void construct(_R<MovieClip> parent);
 	bool isInitialized() const { return initialized; }
 	bool isInvalid() const { return invalid; }
 	void setInvalid(bool i) { invalid=i; }

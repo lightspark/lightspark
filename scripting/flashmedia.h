@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -51,12 +51,13 @@ private:
 	sem_t mutex;
 	uint32_t width, height, videoWidth, videoHeight;
 	bool initialized;
-	NetStream* netStream;
+	_NR<NetStream> netStream;
 public:
 	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),netStream(NULL)
 	{
 		sem_init(&mutex,0,1);
 	}
+	void finalize();
 	~Video();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -70,7 +71,7 @@ public:
 	ASFUNCTION(attachNetStream);
 	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	InteractiveObject* hitTest(InteractiveObject* last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 };
 
 };

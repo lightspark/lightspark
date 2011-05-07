@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -253,18 +253,16 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 	LOG(LOG_TRACE,_("RemoveObject2 Depth: ") << Depth);
 }
 
-void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& ls)
+void RemoveObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 {
-	list <pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
+	Frame::DisplayListType::iterator it=ls.begin();
 
 	for(;it!=ls.end();++it)
 	{
 		if(it->first.Depth==Depth)
 		{
-			assert(it->second);
-			it->second->setParent(NULL);
-			it->second->setRoot(NULL);
-			it->second->decRef();
+			it->second->setParent(NullRef);
+			it->second->setRoot(NullRef);
 			ls.erase(it);
 			break;
 		}
@@ -322,23 +320,6 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 void DefineEditTextTag::Render(bool maskEnabled)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineEditTextTag: Render"));
-}
-
-Vector2 DefineEditTextTag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0,0.8,0);
-	char buf[20];
-	snprintf(buf,20,"EditText id=%u",(int)CharacterID);
-	font->Render(buf,-1,FTPoint(0,50));
-	
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
 }
 
 ASObject* DefineEditTextTag::instance() const
@@ -423,25 +404,6 @@ ASObject* DefineSpriteTag::instance() const
 	ret->bootstrap();
 	//TODO: should we call the frameScripts?
 	return ret;
-}
-
-Vector2 DefineSpriteTag::debugRender(FTFont* font, bool deep)
-{
-	if(deep)
-		return MovieClip::debugRender(font,deep);
-	
-	glColor3f(0.5,0,0);
-	char buf[20];
-	snprintf(buf,20,"Sprite id=%u",(int)SpriteID);
-	font->Render(buf,-1,FTPoint(0,50));
-	FTBBox tagBox=font->BBox(buf,-1);
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(tagBox.Upper().X(),0);
-		glVertex2i(tagBox.Upper().X(),100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(tagBox.Upper().X(),100);
 }
 
 void lightspark::ignore(istream& i, int count)
@@ -806,22 +768,6 @@ void DefineTextTag::Render(bool maskEnabled)
 	ma.unapply();*/
 }
 
-Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0,0.4,0.4);
-	char buf[20];
-	snprintf(buf,20,"Text id=%u",(int)CharacterId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
-}
-
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),Shapes(1)
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
@@ -914,7 +860,8 @@ void DefineShapeTag::computeCached()
 
 void DefineShapeTag::requestInvalidation()
 {
-	sys->addToInvalidateQueue(this);
+	this->incRef();
+	sys->addToInvalidateQueue(_MR(this));
 }
 
 void DefineShapeTag::invalidate()
@@ -979,19 +926,16 @@ bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, n
 	return true;
 }
 
-InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, number_t y)
+_NR<InteractiveObject> DefineShapeTag::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	//TODO: TOLOCK
-	if(mask)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Support masks in DefineShapeTag::hitTest");
-		::abort();
-	}
+	if(!mask.isNull())
+		throw UnsupportedException("Support masks in DefineShapeTag::hitTest");
 
 	number_t x1,x2,y1,y2;
 	boundsRect(x1,x2,y1,y2);
 	if(x<x1 || x>x2 || y<y1 || y>y2)
-		return NULL;
+		return NullRef;
 
 	bool ret=CairoRenderer::hitTest(cachedTokens, 0.05, x, y);
 	if(ret)
@@ -1002,12 +946,12 @@ InteractiveObject* DefineShapeTag::hitTest(InteractiveObject* last, number_t x, 
 			number_t globalX, globalY;
 			getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
 			if(!sys->getInputThread()->isMasked(globalX, globalY))
-				return NULL;
+				return NullRef;
 		}
 		return last;
 	}
 	else
-		return NULL;
+		return NullRef;
 }
 
 void DefineShapeTag::Render(bool maskEnabled)
@@ -1018,54 +962,6 @@ void DefineShapeTag::Render(bool maskEnabled)
 	number_t t1,t2,t3,t4;
 	DefineShapeTag::boundsRect(t1,t2,t3,t4);
 	Shape::renderImpl(maskEnabled,t1,t2,t3,t4);
-}
-
-Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0,0,0.8);
-	char buf[20];
-	snprintf(buf,20,"Shape id=%u",(int)ShapeId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
-}
-
-Vector2 DefineShape2Tag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0,0.8,0.8);
-	char buf[20];
-	snprintf(buf,20,"Shape2 id=%u",(int)ShapeId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
-}
-
-Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0.8,0,0.8);
-	char buf[20];
-	snprintf(buf,20,"Shape3 id=%u",(int)ShapeId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
@@ -1237,25 +1133,23 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 	LOG(LOG_TRACE,_("ShowFrame"));
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, DisplayObject*>& a, uint32_t d)
+bool PlaceObject2Tag::list_orderer::operator ()(const Frame::DisplayListType::value_type& a, uint32_t d)
 {
 	return a.first.Depth<d;
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(uint32_t d, const pair<PlaceInfo, DisplayObject*>& a)
+bool PlaceObject2Tag::list_orderer::operator ()(uint32_t d, const Frame::DisplayListType::value_type& a)
 {
 	return d<a.first.Depth;
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b)
+bool PlaceObject2Tag::list_orderer::operator ()(const Frame::DisplayListType::value_type& a, const Frame::DisplayListType::value_type& b)
 {
 	return a.first.Depth < b.first.Depth;
 }
 
-void PlaceObject2Tag::assignObjectToList(DisplayObject* obj, MovieClip* parent,
-		list<pair<PlaceInfo, DisplayObject*> >::iterator listIterator) const
+void PlaceObject2Tag::setProperties(DisplayObject* obj, MovieClip* parent) const
 {
-	//listIterator is guaranteed to be valid;
 	assert_and_throw(obj && PlaceFlagHasCharacter);
 
 	//TODO: move these three attributes in PlaceInfo
@@ -1281,24 +1175,14 @@ void PlaceObject2Tag::assignObjectToList(DisplayObject* obj, MovieClip* parent,
 			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
 	}
 
-	if(PlaceFlagMove)
-	{
-		//If we are here we have to erase the previous object at this depth
-		if(listIterator->second)
-			listIterator->second->decRef();
-		else
-			LOG(LOG_ERROR,_("Moving a non existing object at depth ") << listIterator->first.Depth);
-	}
-
-	obj->setParent(parent);
+	parent->incRef();
+	obj->setParent(_MR(parent));
 	obj->setRoot(parent->getRoot());
-	//Assign the object reference to the list
-	listIterator->second=obj;
 	//Invalidate the object now that all properties are correctly set
-	listIterator->second->requestInvalidation();
+	obj->requestInvalidation();
 }
 
-void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, DisplayObject*> >& ls)
+void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 {
 	//TODO: support clipping
 	if(ClipDepth!=0)
@@ -1319,30 +1203,13 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 		if(PlaceFlagHasMatrix)
 			infos.Matrix=Matrix;
 
-		list<pair<PlaceInfo, DisplayObject*> >::iterator it=
-			lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
-			(ls.begin(),ls.end(),Depth,list_orderer());
-		if(it!=ls.end() && it->first.Depth==Depth)
-		{
-			//We found a member of the list already at this depth
-			if(!PlaceFlagMove)
-			{
-				LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
-				return;
-			}
-		}
-		else
-		{
-			//Create a new entry in the list, currently initialized with NULL
-			it=ls.insert(it,std::pair<PlaceInfo, DisplayObject*>(infos,(DisplayObject*)NULL));
-		}
-
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
+		//TODO: clean up this nonsense. Of course the parent is a dictionary tag!
 		if(parentDict)
 			localRoot=parentDict->loadedFrom;
 		else
-			localRoot=parent->getRoot();
+			localRoot=parent->getRoot().getPtr();
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
 
 		//We can create the object right away
@@ -1352,14 +1219,36 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 		toAdd->setMatrix(Matrix);
 		if(toAdd->getPrototype())
 			toAdd->getPrototype()->handleConstruction(toAdd,NULL,0,true);
-		assignObjectToList(toAdd, parent, it);
+
+		setProperties(toAdd, parent);
+
+		Frame::DisplayListType::iterator it=lower_bound< Frame::DisplayListType::iterator, int, list_orderer>
+			(ls.begin(),ls.end(),Depth,list_orderer());
+
+		if(it!=ls.end() && it->first.Depth==Depth)
+		{
+
+			//We found a member of the list already at this depth
+			if(PlaceFlagMove)
+			{
+				//If we are here we have to erase the previous object at this depth
+				it->first=infos;
+				it->second=_MR(toAdd);
+			}
+			else
+				LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
+		}
+		else
+		{
+			//Create a new entry in the list
+			ls.insert(it,std::pair<PlaceInfo, _R<DisplayObject> >(infos,_MR(toAdd)));
+		}
 	}
 	else
 	{
 		//assert_and_throw(!PlaceFlagHasName && !PlaceFlagHasColorTransform && !PlaceFlagHasRatio && !PlaceFlagHasClipDepth);
 		//We're just changing the PlaceInfo
-		list<pair<PlaceInfo, DisplayObject*> >::iterator it=
-			lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
+		Frame::DisplayListType::iterator it=lower_bound< Frame::DisplayListType::iterator, int, list_orderer>
 			(ls.begin(),ls.end(),Depth,list_orderer());
 		if(it==ls.end() || it->first.Depth!=Depth)
 		{
@@ -1582,22 +1471,6 @@ void DefineButton2Tag::Render(bool maskEnabled)
 		for(unsigned int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
 	}*/
-}
-
-Vector2 DefineButton2Tag::debugRender(FTFont* font, bool deep)
-{
-	assert(!deep);
-	glColor3f(0.8,0.8,0.8);
-	char buf[20];
-	snprintf(buf,20,"Button2 id=%u",(int)CharacterId);
-	font->Render(buf,-1,FTPoint(0,50));
-	glBegin(GL_LINE_LOOP);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
-	return Vector2(100,100);
 }
 
 bool DefineButton2Tag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

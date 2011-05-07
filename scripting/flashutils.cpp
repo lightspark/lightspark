@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -396,9 +396,8 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 
 void Timer::tick()
 {
-	TimerEvent* e=Class<TimerEvent>::getInstanceS("timer");
-	sys->currentVm->addEvent(this,e);
-	e->decRef();
+	this->incRef();
+	sys->currentVm->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timer")));
 	if(repeatCount==0)
 		sys->addWait(delay,this);
 	else
@@ -409,9 +408,8 @@ void Timer::tick()
 		else
 		{
 			running=false;
-			TimerEvent* e=Class<TimerEvent>::getInstanceS("timerComplete");
-			sys->currentVm->addEvent(this,e);
-			e->decRef();
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timerComplete")));
 		}
 	}
 }
@@ -617,14 +615,10 @@ ASFUNCTIONBODY(lightspark,getTimer)
 	return abstract_i(ret);
 }
 
-Dictionary::~Dictionary()
+void Dictionary::finalize()
 {
-	if(!sys->finalizingDestruction)
-	{
-		std::map<ASObject*,ASObject*>::iterator it=data.begin();
-		for(;it!=data.end();++it)
-			it->second->decRef();
-	}
+	ASObject::finalize();
+	data.clear();
 }
 
 void Dictionary::sinit(Class_base* c)
@@ -654,11 +648,16 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, ASOb
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
-		data[name.name_o]=o;
+		_R<ASObject> name_o(name.name_o);
 		//This is ugly, but at least we are sure that we own name_o
 		multiname* tmp=const_cast<multiname*>(&name);
 		tmp->name_o=NULL;
+
+		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
+		if(it!=data.end())
+			it->second=_MR(o);
+		else
+			data.insert(make_pair(name_o,_MR(o)));
 	}
 	else
 	{
@@ -677,13 +676,14 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
+		_R<ASObject> name_o(name.name_o);
+		//This is ugly, but at least we are sure that we own name_o
+		multiname* tmp=const_cast<multiname*>(&name);
+		tmp->name_o=NULL;
+
+		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
 		if(it != data.end())
-		{
-			it->first->decRef();
-			it->second->decRef();
 			data.erase(it);
-		}
 	}
 	else
 	{
@@ -702,14 +702,21 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 	{
 		if(name.name_type==multiname::NAME_OBJECT)
 		{
-			map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
+			_R<ASObject> name_o(name.name_o);
+
+			map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
 			if(it != data.end())
 			{
 				//This is ugly, but at least we are sure that we own name_o
 				multiname* tmp=const_cast<multiname*>(&name);
 				tmp->name_o=NULL;
 				it->second->incRef();
-				return it->second;
+				return it->second.getPtr();
+			}
+			else
+			{
+				//Make sure name_o gets not destroyed, it's still owned by name
+				name_o->incRef();
 			}
 		}
 		else
@@ -740,11 +747,12 @@ bool Dictionary::nextName(unsigned int index, ASObject*& out)
 	index--;
 	assert_and_throw(implEnable);
 	assert_and_throw(index<data.size());
-	map<ASObject*,ASObject*>::iterator it=data.begin();
+	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
-	out=it->first;
-	out->incRef();
+
+	it->first->incRef();
+	out=it->first.getPtr();
 	return true;
 }
 
@@ -752,10 +760,11 @@ bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 {
 	assert_and_throw(implEnable);
 	assert(index<data.size());
-	map<ASObject*,ASObject*>::iterator it=data.begin();
+	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
-	out=it->second;
+
+	out=it->second.getPtr();
 	return true;
 }
 
@@ -766,7 +775,7 @@ tiny_string Dictionary::toString(bool debugMsg)
 		
 	std::stringstream retstr;
 	retstr << "{";
-	map<ASObject*,ASObject*>::iterator it=data.begin();
+	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
 	while(it != data.end())
 	{
 		if(it != data.begin())
@@ -902,9 +911,7 @@ bool Proxy::nextName(unsigned int index, ASObject*& out)
 
 ASFUNCTIONBODY(lightspark,setInterval)
 {
-	assert_and_throw(argslen >= 2);
-	//incRef the function
-	args[0]->incRef();
+	assert_and_throw(argslen >= 2 && args[0]->getObjectType()==T_FUNCTION);
 
 	//Build arguments array
 	ASObject* callbackArgs[argslen-2];
@@ -916,16 +923,17 @@ ASFUNCTIONBODY(lightspark,setInterval)
 		args[i+2]->incRef();
 	}
 
+	//incRef the function
+	args[0]->incRef();
+	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add interval through manager
-	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2, new Null, args[1]->toInt());
+	uint32_t id = sys->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
 	return abstract_i(id);
 }
 
 ASFUNCTIONBODY(lightspark,setTimeout)
 {
 	assert_and_throw(argslen >= 2);
-	//incRef the function
-	args[0]->incRef();
 
 	//Build arguments array
 	ASObject* callbackArgs[argslen-2];
@@ -937,8 +945,11 @@ ASFUNCTIONBODY(lightspark,setTimeout)
 		args[i+2]->incRef();
 	}
 
+	//incRef the function
+	args[0]->incRef();
+	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add timeout through manager
-	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2, new Null, args[1]->toInt());
+	uint32_t id = sys->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
 	return abstract_i(id);
 }
 
@@ -956,20 +967,19 @@ ASFUNCTIONBODY(lightspark,clearTimeout)
 	return NULL;
 }
 
-IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, ASObject* _callback, ASObject** _args, const unsigned int _argslen, 
-		ASObject* _obj, uint32_t _interval):
+IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, _R<IFunction> _callback, ASObject** _args,
+		const unsigned int _argslen, _R<ASObject> _obj, uint32_t _interval):
 	type(_type), id(_id), callback(_callback),argslen(_argslen),obj(_obj),interval(_interval)
 {
 	args = new ASObject*[argslen];
-	uint32_t i;
-	for(i=0; i<argslen; i++)
-	{
+	for(uint32_t i=0; i<argslen; i++)
 		args[i] = _args[i];
-	}
 }
 
 IntervalRunner::~IntervalRunner()
 {
+	for(uint32_t i=0; i<argslen; i++)
+		args[i]->decRef();
 	delete[] args;
 }
 
@@ -981,11 +991,8 @@ void IntervalRunner::tick()
 	{
 		args[i]->incRef();
 	}
-	//Incref the this object
-	obj->incRef();
-	FunctionEvent* event = new FunctionEvent(static_cast<IFunction*>(callback), obj, args, argslen);
-	getVm()->addEvent(NULL,event);
-	event->decRef();
+	_R<FunctionEvent> event(new FunctionEvent(callback, obj, args, argslen));
+	getVm()->addEvent(NullRef,event);
 	if(type == TIMEOUT)
 	{
 		//TODO: IntervalRunner deletes itself. Is this allowed?
@@ -1013,7 +1020,7 @@ IntervalManager::~IntervalManager()
 	sem_destroy(&mutex);
 }
 
-uint32_t IntervalManager::setInterval(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, uint32_t interval)
+uint32_t IntervalManager::setInterval(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, uint32_t interval)
 {
 	sem_wait(&mutex);
 
@@ -1030,7 +1037,7 @@ uint32_t IntervalManager::setInterval(ASObject* callback, ASObject** args, const
 	sem_post(&mutex);
 	return currentID-1;
 }
-uint32_t IntervalManager::setTimeout(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, uint32_t interval)
+uint32_t IntervalManager::setTimeout(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, uint32_t interval)
 {
 	sem_wait(&mutex);
 

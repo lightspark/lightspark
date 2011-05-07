@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -57,8 +57,11 @@ Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NU
 {
 }
 
-Event::~Event()
+void Event::finalize()
 {
+	ASObject::finalize();
+	target.reset();
+	currentTarget.reset();
 }
 
 void Event::sinit(Class_base* c)
@@ -116,15 +119,15 @@ ASFUNCTIONBODY(Event,_constructor)
 ASFUNCTIONBODY(Event,_getTarget)
 {
 	Event* th=static_cast<Event*>(obj);
-	if(th->target)
-	{
-		th->target->incRef();
-		return th->target;
-	}
-	else
+	if(th->target.isNull())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,_("Target for event ") << th->type);
 		return new Undefined;
+	}
+	else
+	{
+		th->target->incRef();
+		return th->target.getPtr();
 	}
 }
 
@@ -288,6 +291,12 @@ EventDispatcher::EventDispatcher():handlersMutex("handlersMutex")
 {
 }
 
+void EventDispatcher::finalize()
+{
+	ASObject::finalize();
+	handlers.clear();
+}
+
 void EventDispatcher::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -350,7 +359,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
 		f->incRef();
-		const listener newListener(f, priority);
+		const listener newListener(_MR(f), priority);
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		//Error check
@@ -399,11 +408,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		IFunction* f=static_cast<IFunction*>(args[1]);
 		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),f);
 		if(it!=h->second.end())
-		{
-			//The listener owns the function
-			it->f->decRef();
 			h->second.erase(it);
-		}
 		if(h->second.empty()) //Remove the entry from the map
 			th->handlers.erase(h);
 	}
@@ -424,22 +429,18 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	if(args[0]->getPrototype()==NULL || !(args[0]->getPrototype()->isSubClass(Class<Event>::getClass())))
 		return abstract_b(false);
 
-	Event* e=Class<Event>::cast(args[0]);
-	if(e==NULL || th==NULL)
-		return abstract_b(false);
+	args[0]->incRef();
+	_R<Event> e=_MR(Class<Event>::cast(args[0]));
 	assert_and_throw(e->type!="");
-	if(e->target)
+	if(!e->target.isNull())
 	{
 		//The object must be cloned
 		//TODO: support cloning of actual type
 		LOG(LOG_NOT_IMPLEMENTED,"Event cloning not supported!");
-		Event* newEvent=Class<Event>::getInstanceS(e->type,e->bubbles);
-		e=newEvent;
+		e=_MR(Class<Event>::getInstanceS(e->type,e->bubbles));
 	}
-	else
-		e->incRef();
 	th->incRef();
-	ABCVm::publicHandleEvent(th, e);
+	ABCVm::publicHandleEvent(_MR(th), e);
 	return abstract_b(true);
 }
 
@@ -448,7 +449,7 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 	return NULL;
 }
 
-void EventDispatcher::handleEvent(Event* e)
+void EventDispatcher::handleEvent(_R<Event> e)
 {
 	check();
 	e->check();
@@ -474,7 +475,7 @@ void EventDispatcher::handleEvent(Event* e)
 		//tmpListener is now also owned by the vector
 		tmpListener[i].f->incRef();
 		//If the f is a class method, the 'this' is ignored
-		ASObject* const arg0=e;
+		ASObject* const arg0=e.getPtr();
 		ASObject* ret=tmpListener[i].f->call(this,&arg0,1);
 		if(ret)
 			ret->decRef();
@@ -670,7 +671,8 @@ void HTTPStatusEvent::sinit(Class_base* c)
 	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"));
 }
 
-FunctionEvent::FunctionEvent(IFunction* _f, ASObject* _obj, ASObject** _args, uint32_t _numArgs, ASObject** _result, ASObject** _exception, SynchronizationEvent* _sync, bool _thisOverride):
+FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _args, uint32_t _numArgs, 
+		ASObject** _result, ASObject** _exception, _NR<SynchronizationEvent> _sync, bool _thisOverride):
 		Event("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs),
 		result(_result),exception(_exception),sync(_sync),thisOverride(_thisOverride)
 {
@@ -681,13 +683,9 @@ FunctionEvent::FunctionEvent(IFunction* _f, ASObject* _obj, ASObject** _args, ui
 		args[i] = _args[i];
 	}
 }
+
 FunctionEvent::~FunctionEvent()
 {
 	delete[] args;
 }
 
-ConstructFrameEvent::~ConstructFrameEvent()
-{
-	if(!sys->finalizingDestruction)
-		parent->decRef();
-}

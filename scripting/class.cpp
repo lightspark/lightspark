@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -45,6 +45,12 @@ ASObject* Class<ASObject>::getVariableByMultiname(const multiname& name, bool sk
 
 	}
 	return ret;
+}
+
+void Class_inherit::finalize()
+{
+	Class_base::finalize();
+	class_scope.clear();
 }
 
 ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)

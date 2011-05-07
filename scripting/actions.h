@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -56,7 +56,7 @@ private:
 	std::vector<ActionTag*> actions;
 public:
 	DoActionTag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
+	void execute(MovieClip* parent, Frame::DisplayListType& list);
 	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
@@ -75,7 +75,7 @@ private:
 	bool done;
 public:
 	DoInitActionTag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
+	void execute(MovieClip* parent, Frame::DisplayListType& list);
 	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{

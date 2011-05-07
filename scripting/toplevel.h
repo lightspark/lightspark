@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -61,6 +61,7 @@ private:
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
 	std::set<ASObject*> referencedObjects;
+	void finalizeObjects() const;
 
 public:
 	Class_base* super;
@@ -73,6 +74,7 @@ public:
 	void setConstructor(IFunction* c);
 	Class_base(const QName& name);
 	~Class_base();
+	void finalize();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	ASObject* getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL)
@@ -186,14 +188,15 @@ CLASSBUILDABLE(IFunction);
 protected:
 	IFunction();
 	virtual IFunction* clone()=0;
-	ASObject* closure_this;
+	_NR<ASObject> closure_this;
 	int closure_level;
 	bool bound;
 public:
+	void finalize();
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
 	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false)=0;
-	IFunction* bind(ASObject* c, int level)
+	IFunction* bind(_NR<ASObject> c, int level)
 	{
 		if(!bound)
 		{
@@ -212,8 +215,6 @@ public:
 			}
 			ret->bound=true;
 			ret->closure_this=c;
-			if(c)
-				c->incRef();
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}
@@ -274,9 +275,10 @@ private:
 	}
 	method_info* getMethodInfo() const { return mi; }
 public:
+	void finalize();
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
-	std::vector<ASObject*> func_scope;
+	std::vector<_R<ASObject>> func_scope;
 	bool isEqual(ASObject* r)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
@@ -284,14 +286,12 @@ public:
 			return false;
 		return mi==sf->mi;
 	}
-	void acquireScope(const std::vector<ASObject*>& scope)
+	void acquireScope(const std::vector<_R<ASObject>>& scope)
 	{
 		assert_and_throw(func_scope.empty());
 		func_scope=scope;
-		for(unsigned int i=0;i<func_scope.size();i++)
-			func_scope[i]->incRef();
 	}
-	void addToScope(ASObject* s)
+	void addToScope(_R<ASObject> s)
 	{
 		func_scope.push_back(s);
 	}
@@ -366,7 +366,6 @@ public:
 	double toNumber();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
-	virtual ~Undefined(){}
 };
 
 class ASString: public ASObject
@@ -498,11 +497,11 @@ private:
 	};
 	tiny_string toString_priv() const;
 public:
+	void finalize();
 	//These utility methods are also used by ByteArray 
 	static bool isValidMultiname(const multiname& name, unsigned int& index);
 	static bool isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index);
 
-	virtual ~Array();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 
@@ -670,11 +669,11 @@ private:
 	//The parser will destroy the document and all the childs on destruction
 	xmlpp::DomParser parser;
 	//Pointer to the root XML element, the one that owns the parser that created this node
-	XML* root;
+	_NR<XML> root;
 	//The node this object represent
 	xmlpp::Node* node;
-	static void recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
-			std::vector<XML*>& ret);
+	static void recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
+			std::vector<_R<XML>>& ret);
 	tiny_string toString_priv();
 	void toXMLString_priv(xmlBufferPtr buf);
 	void buildFromString(const std::string& str);
@@ -682,8 +681,8 @@ private:
 public:
 	XML();
 	XML(const std::string& str);
-	XML(XML* _r, xmlpp::Node* _n);
-	~XML();
+	XML(_R<XML> _r, xmlpp::Node* _n);
+	void finalize();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(toXMLString);
@@ -697,7 +696,7 @@ public:
 	ASFUNCTION(_hasComplexContent);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	tiny_string toString(bool debugMsg=false);
 	bool hasSimpleContent() const;
@@ -708,12 +707,12 @@ public:
 class XMLList: public ASObject
 {
 private:
-	std::vector<XML*> nodes;
+	std::vector<_R<XML> > nodes;
 	bool constructed;
 public:
 	XMLList():constructed(false){}
-	XMLList(const std::vector<XML*>& r):nodes(r),constructed(true){}
-	~XMLList();
+	XMLList(const std::vector<_R<XML> >& r):nodes(r),constructed(true){}
+	void finalize();
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
@@ -722,7 +721,7 @@ public:
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
-	XML* convertToXML() const;
+	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 };

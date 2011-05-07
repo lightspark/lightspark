@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -103,9 +103,8 @@ private:
 	ITextureUploadable* getUploadJob();
 	/*
 		Common code to handle the core of the rendering
-		@param testMode True if overlays can be displayed
 	*/
-	void coreRendering(FTFont& font, bool testMode);
+	void coreRendering(FTFont& font);
 	Semaphore initialized;
 	class MaskData
 	{
@@ -189,8 +188,6 @@ public:
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
 	int fragmentTexScaleUniform;
-	
-	InteractiveObject* selectedDebug;
 };
 
 };

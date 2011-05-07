@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -62,6 +62,12 @@ void Video::buildTraits(ASObject* o)
 {
 }
 
+void Video::finalize()
+{
+	DisplayObject::finalize();
+	netStream.reset();
+}
+
 Video::~Video()
 {
 	sem_destroy(&mutex);
@@ -75,7 +81,7 @@ void Video::Render(bool maskEnabled)
 		sem_post(&mutex);
 		return;
 	}
-	if(netStream && netStream->lockIfReady())
+	if(!netStream.isNull() && netStream->lockIfReady())
 	{
 		//All operations here should be non blocking
 		//Get size
@@ -172,7 +178,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED) //Drop the connection
 	{
 		sem_wait(&th->mutex);
-		th->netStream=NULL;
+		th->netStream=NullRef;
 		sem_post(&th->mutex);
 		return NULL;
 	}
@@ -185,21 +191,19 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	args[0]->incRef();
 
 	sem_wait(&th->mutex);
-	if(th->netStream)
-		th->netStream->decRef();
-	th->netStream=Class<NetStream>::cast(args[0]);
+	th->netStream=_MR(Class<NetStream>::cast(args[0]));
 	sem_post(&th->mutex);
 	return NULL;
 }
 
-InteractiveObject* Video::hitTest(InteractiveObject* last, number_t x, number_t y)
+_NR<InteractiveObject> Video::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
-	assert_and_throw(mask==NULL);
+	assert_and_throw(mask.isNull());
 	if(x>=0 && x<=width && y>=0 && y<=height)
 		return last;
 	else
-		return NULL;
+		return NullRef;
 }
 
 void Sound::sinit(Class_base* c)

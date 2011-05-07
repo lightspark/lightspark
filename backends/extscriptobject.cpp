@@ -1,8 +1,8 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2010  Alessandro Pignotti (a.pignotti@sssup.it)
-    Copyright (C) 2010  Timon Van Overveldt (timonvo@gmail.com)
+    Copyright (C) 2010-2011  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2010-2011  Timon Van Overveldt (timonvo@gmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -340,9 +340,12 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	// so add a FunctionEvent to the VM event queue.
 	if(!synchronous)
 	{
-		funcEvent = new FunctionEvent(func, new Null, objArgs, argc, &result, &exception, syncEvent);
+		func->incRef();
+		syncEvent->incRef();
+		funcEvent = new FunctionEvent(_MR(func), _MR(new Null), objArgs, argc, &result, &exception, _MR(syncEvent));
 		// Add the callback function event to the VM event queue
-		bool added=getVm()->addEvent(NULL,funcEvent);
+		funcEvent->incRef();
+		bool added=getVm()->addEvent(NullRef,_MR(funcEvent));
 		if(added==false)
 		{
 			//Could not add the event, so the VM is shutting down

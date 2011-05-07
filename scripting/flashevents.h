@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -42,7 +42,7 @@ class Event: public ASObject
 public:
 	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}
 	Event(const tiny_string& t, bool b=false);
-	virtual ~Event();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -53,8 +53,8 @@ public:
 	tiny_string type;
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
 	//and the handling is serialized
-	ASObject* target;
-	ASObject* currentTarget;
+	_NR<ASObject> target;
+	_NR<ASObject> currentTarget;
 	bool bubbles;
 };
 
@@ -209,10 +209,10 @@ class listener
 {
 friend class EventDispatcher;
 private:
-	IFunction* f;
+	_R<IFunction> f;
 	uint32_t priority;
 public:
-	explicit listener(IFunction* _f, uint32_t _p):f(_f),priority(_p){};
+	explicit listener(_R<IFunction> _f, uint32_t _p):f(_f),priority(_p){};
 	bool operator==(IFunction* r)
 	{
 		return f->isEqual(r);
@@ -237,10 +237,10 @@ private:
 	std::map<tiny_string,std::list<listener> > handlers;
 public:
 	EventDispatcher();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	virtual ~EventDispatcher(){}
-	void handleEvent(Event* e);
+	void handleEvent(_R<Event> e);
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
 
@@ -256,12 +256,12 @@ class BindClassEvent: public Event
 {
 friend class ABCVm;
 private:
-	ASObject* base;
+	_R<ASObject> base;
 	tiny_string class_name;
 	bool isRoot;
 public:
 	enum { NONROOT=0, ISROOT=1 };
-	BindClassEvent(ASObject* b, const tiny_string& c, bool i):
+	BindClassEvent(_R<ASObject> b, const tiny_string& c, bool i):
 		Event("bindClass"),base(b),class_name(c),isRoot(i){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return BIND_CLASS;}
@@ -276,20 +276,23 @@ public:
 };
 
 class SynchronizationEvent;
+
 class FunctionEvent: public Event
 {
 friend class ABCVm;
 private:
-	IFunction* f;
-	ASObject* obj;
+	_R<IFunction> f;
+	_NR<ASObject> obj;
 	ASObject** args;
 	unsigned int numArgs;
 	ASObject** result;
 	ASObject** exception;
-	SynchronizationEvent* sync;
+	_NR<SynchronizationEvent> sync;
 	bool thisOverride;
 public:
-	FunctionEvent(IFunction* _f, ASObject* _obj=NULL, ASObject** _args=NULL, uint32_t _numArgs=0, ASObject** _result=NULL, ASObject** _exception=NULL, SynchronizationEvent* _sync=NULL, bool _thisOverride=false);
+	FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj=NullRef, ASObject** _args=NULL, uint32_t _numArgs=0, 
+			ASObject** _result=NULL, ASObject** _exception=NULL, _NR<SynchronizationEvent> _sync=NullRef, 
+			bool _thisOverride=false);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return FUNCTION; }
@@ -332,10 +335,10 @@ class FrameChangeEvent: public Event
 friend class ABCVm;
 private:
 	int frame;
-	MovieClip* movieClip;
+	_R<MovieClip> movieClip;
 	static void sinit(Class_base*);
 public:
-	FrameChangeEvent(int f, MovieClip* m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
+	FrameChangeEvent(int f, _R<MovieClip> m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
 	EVENT_TYPE getEventType() const { return CHANGE_FRAME; }
 };
 
@@ -345,10 +348,9 @@ class ConstructFrameEvent: public Event
 friend class ABCVm;
 private:
 	Frame& frame;
-	MovieClip* parent;
+	_R<MovieClip> parent;
 public:
-	ConstructFrameEvent(Frame& f, MovieClip* p):Event("ConstructFrameEvent"),frame(f),parent(p){}
-	~ConstructFrameEvent();
+	ConstructFrameEvent(Frame& f, _R<MovieClip> p):Event("ConstructFrameEvent"),frame(f),parent(p){}
 	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
 };
 

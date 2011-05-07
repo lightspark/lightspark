@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -106,10 +106,10 @@ class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
-	std::map<ASObject*,ASObject*> data;
+	std::map<_R<ASObject>,_R<ASObject> > data;
 public:
 	Dictionary(){}
-	virtual ~Dictionary();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -194,13 +194,14 @@ public:
 private:
 	INTERVALTYPE type;
 	uint32_t id;
-	ASObject* callback;
+	_R<IFunction> callback;
 	ASObject** args;
 	const unsigned int argslen;
-	ASObject* obj;
+	_R<ASObject> obj;
 	uint32_t interval;
 public:
-	IntervalRunner(INTERVALTYPE _type, uint32_t _id, ASObject* _callback, ASObject** _args, const unsigned int _argslen, ASObject* _obj, const uint32_t _interval);
+	IntervalRunner(INTERVALTYPE _type, uint32_t _id, _R<IFunction> _callback, ASObject** _args,
+			const unsigned int _argslen, _R<ASObject> _obj, const uint32_t _interval);
 	~IntervalRunner();
 	void tick();
 	INTERVALTYPE getType() { return type; }
@@ -215,8 +216,8 @@ private:
 public:
 	IntervalManager();
 	~IntervalManager();
-	uint32_t setInterval(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, const uint32_t interval);
-	uint32_t setTimeout(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, const uint32_t interval);
+	uint32_t setInterval(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, const uint32_t interval);
+	uint32_t setTimeout(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, const uint32_t interval);
 	uint32_t getFreeID();
 	void clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE type, bool removeJob);
 };

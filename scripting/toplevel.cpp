@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -543,17 +543,15 @@ XML::XML(const string& str):root(NULL),node(NULL),constructed(true)
 	buildFromString(str);
 }
 
-XML::XML(XML* _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
+XML::XML(_R<XML> _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
 {
-	assert(root && node);
+	assert(node);
 }
 
-XML::~XML()
+void XML::finalize()
 {
-	if(sys->finalizingDestruction)
-		return;
-	if(root)
-		root->decRef();
+	ASObject::finalize();
+	root.reset();
 }
 
 void XML::sinit(Class_base* c)
@@ -674,15 +672,20 @@ ASFUNCTIONBODY(XML,appendChild)
 	if(args[0]->getPrototype()==Class<XML>::getClass())
 		arg=Class<XML>::cast(args[0]);
 	else if(args[0]->getPrototype()==Class<XMLList>::getClass())
-		arg=Class<XMLList>::cast(args[0])->convertToXML();
+		arg=Class<XMLList>::cast(args[0])->convertToXML().getPtr();
 
 	if(arg==NULL)
 		throw RunTimeException("Invalid argument for XML::appendChild");
 	//Change the root of the appended XML node
-	XML* rootXML=(th->root)?th->root:th;
-	if(arg->root)
-		arg->root->decRef();
-	rootXML->incRef();
+	_NR<XML> rootXML=NullRef;
+	if(th->root.isNull())
+	{
+		th->incRef();
+		rootXML=_MR(th);
+	}
+	else
+		rootXML=th->root;
+
 	arg->root=rootXML;
 	xmlUnlinkNode(arg->node->cobj());
 	xmlNodePtr ret=xmlAddChild(th->node->cobj(),arg->node->cobj());
@@ -702,13 +705,19 @@ ASFUNCTIONBODY(XML,attributes)
 		return Class<XMLList>::getInstanceS();
 	const xmlpp::Element::AttributeList& list=elem->get_attributes();
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
-	std::vector<XML*> ret;
-	XML* rootXML=(th->root)?(th->root):th;
-	for(;it!=list.end();it++)
+	std::vector<_R<XML>> ret;
+	_NR<XML> rootXML=NullRef;
+	if(th->root.isNull())
 	{
-		rootXML->incRef();
-		ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+		th->incRef();
+		rootXML=_MR(th);
 	}
+	else
+		rootXML=th->root;
+
+	for(;it!=list.end();it++)
+		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
 }
@@ -716,7 +725,15 @@ ASFUNCTIONBODY(XML,attributes)
 void XML::toXMLString_priv(xmlBufferPtr buf) 
 {
 	//NOTE: this function is not thread-safe, as it can modify the xmlNode
-	XML* rootXML=(root)?(root):this;
+	_NR<XML> rootXML=NullRef;
+	if(root.isNull())
+	{
+		this->incRef();
+		rootXML=_MR(this);
+	}
+	else
+		rootXML=root;
+
 	xmlDocPtr xmlDoc=rootXML->parser.get_document()->cobj();
 	assert(xmlDoc);
 	xmlNodePtr cNode=node->cobj();
@@ -774,12 +791,21 @@ ASFUNCTIONBODY(XML,children)
 	assert(th->node);
 	const xmlpp::Node::NodeList& list=th->node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
-	std::vector<XML*> ret;
-	XML* rootXML=(th->root)?(th->root):th;
+	std::vector<_R<XML>> ret;
+
+	_NR<XML> rootXML=NullRef;
+	if(th->root.isNull())
+	{
+		th->incRef();
+		rootXML=_MR(th);
+	}
+	else
+		rootXML=th->root;
+
 	for(;it!=list.end();it++)
 	{
 		rootXML->incRef();
-		ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
@@ -832,14 +858,14 @@ xmlElementType XML::getNodeKind() const
 	return node->cobj()->type;
 }
 
-void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
+void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns,
+		std::vector<_R<XML>>& ret)
 {
-	assert(root);
 	//Check if this node is being requested
 	if(node->get_name()==name.raw_buf())
 	{
 		root->incRef();
-		ret.push_back(Class<XML>::getInstanceS(root, node));
+		ret.push_back(_MR(Class<XML>::getInstanceS(root, node)));
 	}
 	//NOTE: Creating a temporary list is quite a large overhead, but there is no way in libxml++ to access the first child
 	const xmlpp::Node::NodeList& list=node->get_children();
@@ -848,11 +874,20 @@ void XML::recursiveGetDescendantsByQName(XML* root, xmlpp::Node* node, const tin
 		recursiveGetDescendantsByQName(root, *it, name, ns, ret);
 }
 
-void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<XML*>& ret)
+void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret)
 {
 	assert(node);
 	assert_and_throw(ns=="");
-	recursiveGetDescendantsByQName((root)?(root):this, node, name, ns, ret);
+	_NR<XML> rootXML=NullRef;
+	if(root.isNull())
+	{
+		this->incRef();
+		rootXML=_MR(this);
+	}
+	else
+		rootXML=root;
+
+	recursiveGetDescendantsByQName(rootXML, node, name, ns, ret);
 }
 
 ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
@@ -880,8 +915,16 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
 		if(attr==NULL)
 			return NULL;
-		XML* rootXML=(root)?(root):this;
-		rootXML->incRef();
+
+		_NR<XML> rootXML=NullRef;
+		if(root.isNull())
+		{
+			this->incRef();
+			rootXML=_MR(this);
+		}
+		else
+			rootXML=root;
+
 		ASObject* ret=Class<XML>::getInstanceS(rootXML, attr);
 		//The new object will be incReffed by the calling code
 		ret->fake_decRef();
@@ -897,13 +940,19 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
 
-		std::vector<XML*> ret;
-		XML* rootXML=(root)?(root):this;
-		for(;it!=children.end();it++)
+		std::vector<_R<XML>> ret;
+
+		_NR<XML> rootXML=NullRef;
+		if(root.isNull())
 		{
-			rootXML->incRef();
-			ret.push_back(Class<XML>::getInstanceS(rootXML, *it));
+			this->incRef();
+			rootXML=_MR(this);
 		}
+		else
+			rootXML=root;
+
+		for(;it!=children.end();it++)
+			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 		XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 		return retObj;
 	}
@@ -944,12 +993,9 @@ tiny_string XML::toString(bool debugMsg)
 	return toString_priv();
 }
 
-XMLList::~XMLList()
+void XMLList::finalize()
 {
-	if(sys->finalizingDestruction)
-		return;
-	for(uint32_t i=0;i<nodes.size();i++)
-		nodes[i]->decRef();
+	nodes.clear();
 }
 
 void XMLList::sinit(Class_base* c)
@@ -973,7 +1019,7 @@ ASFUNCTIONBODY(XMLList,_constructor)
 	}
 	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	XML* val=Class<XML>::getInstanceS(str->data);
+	_R<XML> val=_MR(Class<XML>::getInstanceS(str->data));
 	th->nodes.push_back(val);
 	return NULL;
 }
@@ -990,7 +1036,7 @@ ASFUNCTIONBODY(XMLList,appendChild)
 	XMLList* th=Class<XMLList>::cast(obj);
 	assert_and_throw(th->nodes.size()==1);
 	//Forward to the XML object
-	return XML::appendChild(th->nodes[0],args,argslen);
+	return XML::appendChild(th->nodes[0].getPtr(),args,argslen);
 }
 
 ASFUNCTIONBODY(XMLList,_hasSimpleContent)
@@ -1021,20 +1067,17 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	if(index<nodes.size())
-		return nodes[index];
+		return nodes[index].getPtr();
 	else
 		return NULL;
 }
 
-XML* XMLList::convertToXML() const
+_NR<XML> XMLList::convertToXML() const
 {
 	if(nodes.size()==1)
-	{
-		nodes[0]->incRef();
 		return nodes[0];
-	}
 	else
-		return NULL;
+		return NullRef;
 }
 
 bool XMLList::hasSimpleContent() const
@@ -1045,8 +1088,8 @@ bool XMLList::hasSimpleContent() const
 		return nodes[0]->hasSimpleContent();
 	else
 	{
-		std::vector<XML*>::const_iterator it;
-		for(it=nodes.begin(); it!=nodes.end(); ++it)
+		std::vector<_R<XML> >::const_iterator it=nodes.begin();
+		for(; it!=nodes.end(); ++it)
 		{
 			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
 				return false;
@@ -1064,8 +1107,8 @@ bool XMLList::hasComplexContent() const
 		return nodes[0]->hasComplexContent();
 	else
 	{
-		std::vector<XML*>::const_iterator it;
-		for(it=nodes.begin(); it!=nodes.end(); ++it)
+		std::vector<_R<XML>>::const_iterator it=nodes.begin();
+		for(; it!=nodes.end(); ++it)
 		{
 			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
 				return true;
@@ -1383,16 +1426,14 @@ void ASString::buildTraits(ASObject* o)
 {
 }
 
-Array::~Array()
+void Array::finalize()
 {
-	if(sys->finalizingDestruction)
-		return;
-
 	for(unsigned int i=0;i<data.size();i++)
 	{
 		if(data[i].type==DATA_OBJECT && data[i].data)
 			data[i].data->decRef();
 	}
+	data.clear();
 }
 
 ASFUNCTIONBODY(ASString,search)
@@ -2284,6 +2325,12 @@ IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false)
 	type=T_FUNCTION;
 }
 
+void IFunction::finalize()
+{
+	ASObject::finalize();
+	closure_this.reset();
+}
+
 ASFUNCTIONBODY(IFunction,apply)
 {
 	IFunction* th=static_cast<IFunction*>(obj);
@@ -2309,7 +2356,7 @@ ASFUNCTIONBODY(IFunction,apply)
 	args[0]->incRef();
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this && th->closure_this->prototype && args[0]->prototype && 
+	if(!(th->closure_this.getPtr() && th->closure_this->prototype && args[0]->prototype && 
 				args[0]->prototype->isSubClass(th->closure_this->prototype)) ||	args[0]->prototype==NULL)
 	{
 		overrideThis=false;
@@ -2343,7 +2390,7 @@ ASFUNCTIONBODY(IFunction,_call)
 	}
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this && th->closure_this->prototype && args[0]->prototype && 
+	if(!(th->closure_this.getPtr() && th->closure_this->prototype && args[0]->prototype && 
 			args[0]->prototype->isSubClass(th->closure_this->prototype)) ||	args[0]->prototype==NULL)
 	{
 		overrideThis=false;
@@ -2358,6 +2405,12 @@ ASFUNCTIONBODY(IFunction,_call)
 SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL)
 {
 //	class_index=-2;
+}
+
+void SyntheticFunction::finalize()
+{
+	IFunction::finalize();
+	func_scope.clear();
 }
 
 ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
@@ -2388,16 +2441,14 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc->code=new istringstream(mi->body->code);
 	uint32_t i=passedToLocals;
 	cc->scope_stack=func_scope;
-	for(unsigned int i=0;i<func_scope.size();i++)
-		func_scope[i]->incRef();
 	cc->initialScopeStack=func_scope.size();
 
-	if(bound && closure_this && !thisOverride)
+	if(bound && !closure_this.isNull() && !thisOverride)
 	{
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		if(obj)
 			obj->decRef();
-		obj=closure_this;
+		obj=closure_this.getPtr();
 	}
 
 	cc->locals[0]=obj;
@@ -2487,8 +2538,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 					cc->code->seekg((uint32_t)exc.target);
 					cc->runtime_stack_clear();
 					cc->runtime_stack_push(excobj);
-					for(uint32_t i=0;i<cc->scope_stack.size();i++)
-						cc->scope_stack[i]->decRef();
 					cc->scope_stack.clear();
 					cc->initialScopeStack=0;
 					break;
@@ -2525,12 +2574,12 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
 {
 	ASObject* ret;
-	if(bound && closure_this && !thisOverride)
+	if(bound && !closure_this.isNull() && !thisOverride)
 	{
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		if(obj)
 			obj->decRef();
-		obj=closure_this;
+		obj=closure_this.getPtr();
 		obj->incRef();
 	}
 	assert_and_throw(obj);
@@ -3487,21 +3536,8 @@ Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",N
 
 Class_base::~Class_base()
 {
-	if(constructor)
-		constructor->decRef();
-
-	if(super)
-		super->decRef();
-	
-	//Destroy all the object reference by us
 	if(!referencedObjects.empty())
-	{
-		LOG(LOG_CALLS, "Class " << class_name << " references " << referencedObjects.size());
-		set<ASObject*>::iterator it=referencedObjects.begin();
-		for(;it!=referencedObjects.end();++it)
-			delete *it;
-	}
-	
+		LOG(LOG_ERROR,_("Class destroyed without cleanUp called"));
 }
 
 ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
@@ -3649,13 +3685,31 @@ void Class_base::abandonObject(ASObject* ob)
 	set<ASObject>::size_type ret=referencedObjects.erase(ob);
 	if(ret!=1)
 	{
-		LOG(LOG_ERROR,_("Failure in reference counting"));
+		LOG(LOG_ERROR,_("Failure in reference counting in ") << class_name);
 	}
 }
 
-void Class_base::cleanUp()
+void Class_base::finalizeObjects() const
 {
-	Variables.destroyContents();
+	set<ASObject*>::iterator it=referencedObjects.begin();
+	for(;it!=referencedObjects.end();)
+	{
+		//A reference is acquired before finalizing the object, to make sure it will survive
+		//the call
+		ASObject* tmp=*it;
+		tmp->incRef();
+		tmp->finalize();
+		//Advance the iterator before decReffing the current object (decReffing may destroy the object right now
+		it++;
+		tmp->decRef();
+	}
+}
+
+void Class_base::finalize()
+{
+	finalizeObjects();
+
+	ASObject::finalize();
 	if(constructor)
 	{
 		constructor->decRef();
@@ -3666,6 +3720,23 @@ void Class_base::cleanUp()
 	{
 		super->decRef();
 		super=NULL;
+	}
+}
+
+void Class_base::cleanUp()
+{
+	//finalize must have been called before using cleanUp
+
+	//cleanUp may be called multiple times, be sure all the code is executable multiple times
+	//without double freeing anything
+	//Destroy all the object reference by us
+	if(!referencedObjects.empty())
+		LOG(LOG_CALLS, "Class " << class_name << " references " << referencedObjects.size());
+
+	while(!referencedObjects.empty())
+	{
+		set<ASObject*>::iterator it=referencedObjects.begin();
+		delete *it;
 	}
 }
 

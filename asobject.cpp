@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -728,8 +728,6 @@ variables_map::~variables_map()
 
 void variables_map::destroyContents()
 {
-	if(sys->finalizingDestruction) //Objects are being destroyed by the relative classes
-		return;
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();++it)
 	{
@@ -783,9 +781,15 @@ void ASObject::setPrototype(Class_base* c)
 	}
 }
 
+void ASObject::finalize()
+{
+	Variables.destroyContents();
+}
+
 ASObject::~ASObject()
 {
-	if(prototype && !sys->finalizingDestruction)
+	finalize();
+	if(prototype)
 	{
 		prototype->decRef();
 		prototype->abandonObject(this);

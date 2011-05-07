@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -59,7 +59,7 @@ RenderThread::RenderThread(SystemState* s):
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),mutexLargeTexture("Large texture"),largeTextureSize(0),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),
-	tempTex(false),hasNPOTTextures(false),selectedDebug(NULL)
+	tempTex(false),hasNPOTTextures(false)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	
@@ -364,7 +364,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			else
 			{
 				glXSwapBuffers(d,glxWin);
-				th->coreRendering(font, false);
+				th->coreRendering(font);
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}
@@ -708,7 +708,7 @@ void RenderThread::renderMaskToTmpBuffer() const
 	glDrawBuffer(GL_BACK);
 }
 
-void RenderThread::coreRendering(FTFont& font, bool testMode)
+void RenderThread::coreRendering(FTFont& font)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
@@ -720,29 +720,6 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 
 	m_sys->Render(false);
 	assert(maskStack.empty());
-
-	if(testMode && m_sys->showDebug)
-	{
-		glLoadIdentity();
-		glScalef(1.0f/scaleX,-1.0f/scaleY,1);
-		glTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
-		glUseProgram(0);
-		glDisable(GL_BLEND);
-		glActiveTexture(GL_TEXTURE1);
-		glDisable(GL_TEXTURE_2D);
-		glActiveTexture(GL_TEXTURE0);
-		glDisable(GL_TEXTURE_2D);
-		if(selectedDebug)
-			selectedDebug->debugRender(&font, true);
-		else
-			m_sys->debugRender(&font, true);
-		glActiveTexture(GL_TEXTURE1);
-		glEnable(GL_TEXTURE_2D);
-		glActiveTexture(GL_TEXTURE0);
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_BLEND);
-		glUseProgram(gpu_program);
-	}
 
 	if(m_sys->showProfilingData)
 	{
@@ -892,7 +869,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			else
 			{
 				SDL_GL_SwapBuffers( );
-				th->coreRendering(font, true);
+				th->coreRendering(font);
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}

@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -156,10 +156,10 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	InteractiveObject* selected=NULL;
+	_NR<InteractiveObject>selected = NullRef;
 	try
 	{
-		selected=m_sys->hitTest(NULL,x,y);
+		selected=m_sys->hitTest(NullRef,x,y);
 	}
 	catch(LightsparkException& e)
 	{
@@ -173,19 +173,16 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	lastMouseDownTarget=selected;
 	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseDown",true));
-	//And select that object for debugging (if needed)
-	if(m_sys->showDebug)
-		m_sys->getRenderThread()->selectedDebug=selected;
+	m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("mouseDown",true)));
 }
 
 void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	InteractiveObject* selected=NULL;
+	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
-		selected=m_sys->hitTest(NULL,x,y);
+		selected=m_sys->hitTest(NullRef,x,y);
 	}
 	catch(LightsparkException& e)
 	{
@@ -198,12 +195,12 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 		return;
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("mouseUp",true));
+	m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("mouseUp",true)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
-		m_sys->currentVm->addEvent(selected,Class<MouseEvent>::getInstanceS("click",true));
-		lastMouseDownTarget=NULL;
+		m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("click",true)));
+		lastMouseDownTarget=NullRef;
 	}
 }
 
@@ -221,9 +218,6 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				switch(event.key.keysym.sym)
 				{
-					case SDLK_d:
-						th->m_sys->showDebug=!th->m_sys->showDebug;
-						break;
 					case SDLK_p:
 						th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 						break;

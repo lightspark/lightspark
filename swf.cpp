@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -57,9 +57,12 @@ extern TLSDATA ParseThread* pt;
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),initialized(false),parsingIsFailed(false),frameRate(0),
 	mutexFrames("mutexFrame"),toBind(false),mutexChildrenClips("mutexChildrenClips")
 {
-	root=this;
+	this->incRef();
+	root=_MR(this);
 	sem_init(&new_frame,0,0);
-	loaderInfo=li;
+	if(li)
+		li->incRef();
+	loaderInfo=_MNR(li);
 	//Reset framesLoaded, as there are still not available
 	framesLoaded=0;
 
@@ -99,7 +102,7 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 	if(origin.getPathFile() == "" && filename != "")
 		origin = origin.goToURL(filename);
 
-	if(loaderInfo)
+	if(!loaderInfo.isNull())
 	{
 		loaderInfo->url=origin.getParsedURL();
 		loaderInfo->loaderURL=origin.getParsedURL();
@@ -179,8 +182,8 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	mutexEnterFrameListeners("mutexEnterFrameListeners"),invalidateQueueHead(NULL),
-	invalidateQueueTail(NULL),showProfilingData(false),showDebug(false),currentVm(NULL),
-	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),
+	invalidateQueueTail(NULL),showProfilingData(false),currentVm(NULL),
+	useInterpreter(true),useJit(false),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
@@ -199,12 +202,13 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	audioManager=new AudioManager(pluginManager);
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
-	loaderInfo=Class<LoaderInfo>::getInstanceS();
+	loaderInfo=_MR(Class<LoaderInfo>::getInstanceS());
 	//If the size is not known those will stay at zero
 	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
 	stage=Class<Stage>::getInstanceS();
-	setParent(stage);
+	stage->incRef();
+	setParent(_MR(stage));
 	startTime=compat_msectiming();
 	
 	setPrototype(Class<MovieClip>::getClass());
@@ -350,6 +354,13 @@ void SystemState::saveProfilingInformation()
 }
 #endif
 
+void SystemState::finalize()
+{
+	RootMovieClip::finalize();
+	invalidateQueueHead.reset();
+	invalidateQueueTail.reset();
+}
+
 SystemState::~SystemState()
 {
 #ifdef PROFILING_SUPPORT
@@ -372,23 +383,30 @@ SystemState::~SystemState()
 		threadPool->forceStop();
 	stopEngines();
 
-	//decRef all our object before destroying classes
-	Variables.destroyContents();
-	loaderInfo->decRef();
-	loaderInfo=NULL;
+	//Finalize ourselves
+	finalize();
 
 	//We are already being destroyed, make our prototype abandon us
 	setPrototype(NULL);
 	
-	//Destroy the contents of all the classes
+	/*
+	   Now we have to kill all objects that are still alive. This is done is two passes
+	   1) call finalize on all objects, this will decRef all referenced objects
+	   2) delete all the objects. Now destroying an object should not cause accesses to
+	   	any other object */
+
 	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
-		it->second->cleanUp();
+		it->second->finalize();
 
-	finalizingDestruction=true;
-	
-	//Also destroy all frames
-	frames.clear();
+	//Destroy the contents of all the classes
+	it=classes.begin();
+	for(;it!=classes.end();++it)
+	{
+		//Make sure classes survives their cleanUp
+		it->second->incRef();
+		it->second->cleanUp();
+	}
 
 	//Destroy all registered classes
 	it=classes.begin();
@@ -450,9 +468,8 @@ void SystemState::setShutdownFlag()
 	Locker l(mutex);
 	if(currentVm)
 	{
-		ShutdownEvent* e=new ShutdownEvent;
-		currentVm->addEvent(NULL,e);
-		e->decRef();
+		_R<ShutdownEvent> e(new ShutdownEvent);
+		currentVm->addEvent(NullRef,e);
 	}
 	shutdown=true;
 
@@ -807,19 +824,21 @@ void SystemState::tick()
 		Locker l(mutexEnterFrameListeners);
 		if(!enterFrameListeners.empty())
 		{
-			Event* e=Class<Event>::getInstanceS("enterFrame");
+			_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
 			auto it=enterFrameListeners.begin();
 			for(;it!=enterFrameListeners.end();it++)
-				getVm()->addEvent(*it,e);
-			e->decRef();
+			{
+				(*it)->incRef();
+				getVm()->addEvent(_MR(*it),e);
+			}
 		}
 	}
 	//Enter frame should be sent to the stage too
 	if(stage->hasEventListener("enterFrame"))
 	{
-		Event* e=Class<Event>::getInstanceS("enterFrame");
-		getVm()->addEvent(stage,e);
-		e->decRef();
+		_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
+		stage->incRef();
+		getVm()->addEvent(_MR(stage),e);
 	}
 }
 
@@ -851,11 +870,11 @@ ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 	return ret;
 }
 
-void SystemState::addToInvalidateQueue(DisplayObject* d)
+void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 {
 	SpinlockLocker l(invalidateQueueLock);
 	//Check if the object is already in the queue
-	if(d->invalidateQueueNext || d==invalidateQueueTail)
+	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail)
 		return;
 	if(invalidateQueueHead==NULL)
 		invalidateQueueHead=invalidateQueueTail=d;
@@ -864,23 +883,21 @@ void SystemState::addToInvalidateQueue(DisplayObject* d)
 		d->invalidateQueueNext=invalidateQueueHead;
 		invalidateQueueHead=d;
 	}
-	d->incRef();
 }
 
 void SystemState::flushInvalidationQueue()
 {
 	SpinlockLocker l(invalidateQueueLock);
-	DisplayObject* cur=invalidateQueueHead;
-	while(cur)
+	_NR<DisplayObject> cur=invalidateQueueHead;
+	while(!cur.isNull())
 	{
 		cur->invalidate();
-		DisplayObject* next=cur->invalidateQueueNext;
-		cur->invalidateQueueNext=NULL;
-		cur->decRef();
+		_NR<DisplayObject> next=cur->invalidateQueueNext;
+		cur->invalidateQueueNext=NullRef;
 		cur=next;
 	}
-	invalidateQueueHead=NULL;
-	invalidateQueueTail=NULL;
+	invalidateQueueHead=NullRef;
+	invalidateQueueTail=NullRef;
 }
 
 #ifdef PROFILING_SUPPORT
@@ -1157,7 +1174,10 @@ void RootMovieClip::initialize()
 		initialized=true;
 		//Let's see if we have to bind the root movie clip itself
 		if(bindName.len()) //The object is constructed after binding
-			sys->currentVm->addEvent(NULL,new BindClassEvent(this,bindName,BindClassEvent::ISROOT));
+		{
+			this->incRef();
+			sys->currentVm->addEvent(NullRef,_MR(new BindClassEvent(_MR(this),bindName,BindClassEvent::ISROOT)));
+		}
 		else
 			setConstructed();
 
@@ -1274,11 +1294,10 @@ void RootMovieClip::commitFrame(bool another)
 		initialize();
 		//Now the bindings are effective
 		//Execute the event registered for the first frame, if any
-		if(frameScripts[0])
+		if(!frameScripts[0].isNull())
 		{
-			FunctionEvent* funcEvent = new FunctionEvent(frameScripts[0]);
-			getVm()->addEvent(NULL, funcEvent);
-			funcEvent->decRef();
+			_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
+			getVm()->addEvent(NullRef, funcEvent);
 		}
 
 		//When the first frame is committed the frame rate is known

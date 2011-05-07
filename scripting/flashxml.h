@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
+#include "smartrefs.h"
 #include <libxml++/parsers/domparser.h>
 
 namespace lightspark
@@ -32,12 +33,12 @@ class XMLDocument;
 class XMLNode: public ASObject
 {
 protected:
-	XMLDocument* root;
+	_NR<XMLDocument> root;
 	xmlpp::Node* node;
 public:
-	XMLNode():root(NULL),node(NULL){}
-	XMLNode(XMLDocument* _r, xmlpp::Node* _n);
-	~XMLNode();
+	XMLNode():root(NullRef),node(NULL){}
+	XMLNode(_R<XMLDocument> _r, xmlpp::Node* _n);
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

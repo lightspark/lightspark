@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -98,7 +98,7 @@ class URLLoader: public EventDispatcher, public IThreadJob
 private:
 	tiny_string dataFormat;
 	URLInfo url;
-	ASObject* data;
+	_NR<ASObject> data;
 	Spinlock downloaderLock;
 	Downloader* downloader;
 	void execute();
@@ -106,6 +106,7 @@ private:
 	void jobFence();
 public:
 	URLLoader();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -149,7 +150,7 @@ private:
 	double frameRate;
 	bool tickStarted;
 	//The NetConnection used by this NetStream
-	NetConnection* connection;
+	_NR<NetConnection> connection;
 	Downloader* downloader;
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
@@ -174,12 +175,13 @@ private:
 	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
 	CONNECTION_TYPE peerID;
 
-	ASObject* client;
+	_NR<ASObject> client;
 	bool checkPolicyFile;
 	bool rawAccessAllowed;
 public:
 	NetStream();
 	~NetStream();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

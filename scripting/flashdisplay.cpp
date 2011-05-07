@@ -2938,15 +2938,15 @@ void SimpleButton::buildTraits(ASObject* o)
 {
 }
 
-InteractiveObject* SimpleButton::hitTest(InteractiveObject* last, number_t x, number_t y)
+_NR<InteractiveObject> SimpleButton::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
-	InteractiveObject *ret = NULL;
-	if (hitTestState) {
+	_NR<InteractiveObject> ret = NullRef;
+	if (hitTestState)
+	{
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		ret = hitTestState->hitTest(last, localX, localY);
 	}
-
 	return ret;
 }
 

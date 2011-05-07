@@ -574,6 +574,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 	if(avioContext==NULL)
 		return;
 
+	avioContext->is_streamed=1;
 	//Probe the stream format.
 	//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
 	AVProbeData probeData;

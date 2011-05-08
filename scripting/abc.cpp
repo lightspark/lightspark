@@ -1157,7 +1157,8 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				// Exceptions aren't expected and shouldn't be ignored
 				else
 				{
-					ev->obj->incRef();
+					if(!ev->obj.isNull())
+						ev->obj->incRef();
 					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs,ev->thisOverride);
 					// We should report the function result
 					if(ev->result != NULL)

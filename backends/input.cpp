@@ -143,6 +143,12 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 			ret=TRUE;
 			break;
 		}
+		case GDK_MOTION_NOTIFY:
+		{
+			th->handleMouseMove(event->motion.x,event->motion.y);
+			ret=TRUE;
+			break;
+		}
 		default:
 //#ifdef EXPENSIVE_DEBUG
 //			cout << "GDKTYPE " << event->type << endl;
@@ -204,6 +210,13 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 	}
 }
 
+void InputThread::handleMouseMove(uint32_t x, uint32_t y)
+{
+	SpinlockLocker locker(inputDataSpinlock);
+	mouseX = x;
+	mouseY = y;
+}
+
 void* InputThread::sdl_worker(InputThread* th)
 {
 	sys=th->m_sys;
@@ -253,6 +266,11 @@ void* InputThread::sdl_worker(InputThread* th)
 			case SDL_MOUSEBUTTONUP:
 			{
 				th->handleMouseUp(event.button.x,event.button.y);
+				break;
+			}
+			case SDL_MOUSEMOTION:
+			{
+				th->handleMouseMove(event.motion.x,event.motion.y);
 				break;
 			}
 			case SDL_VIDEORESIZE:

@@ -398,6 +398,10 @@ public:
 	{
 		return String;
 	}
+	operator const tiny_string() const
+	{
+		return tiny_string(String);
+	}
 	operator const char*() const
 	{
 		return String.c_str();

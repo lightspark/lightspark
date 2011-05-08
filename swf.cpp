@@ -146,6 +146,14 @@ void SystemState::registerTag(Tag* t)
 void RootMovieClip::setOnStage(bool staged)
 {
 	Locker l(mutexFrames);
+
+	//Execute the event registered for the first frame, if any
+	if(!frameScripts[0].isNull())
+	{
+		_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
+		getVm()->addEvent(NullRef, funcEvent);
+	}
+
 	MovieClip::setOnStage(staged);
 }
 
@@ -1304,13 +1312,6 @@ void RootMovieClip::commitFrame(bool another)
 		l.unlock();
 		//Root movie clips are initialized now, after the first frame is really ready 
 		initialize();
-		//Now the bindings are effective
-		//Execute the event registered for the first frame, if any
-		if(!frameScripts[0].isNull())
-		{
-			_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
-			getVm()->addEvent(NullRef, funcEvent);
-		}
 
 		//When the first frame is committed the frame rate is known
 		sys->addTick(1000/frameRate,this);

@@ -1678,15 +1678,15 @@ DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h,
 {
 	LOG(LOG_TRACE,_("DefineSceneAndFrameLabelDataTag"));
 	in >> SceneCount;
-	Offset = new u32[SceneCount];
-	Name = new STRING[SceneCount];
+	Offset.resize(SceneCount);
+	Name.resize(SceneCount);
 	for(uint32_t i=0;i<SceneCount;++i)
 	{
 		in >> Offset[i] >> Name[i];
 	}
 	in >> FrameLabelCount;
-	FrameNum = new u32[FrameLabelCount];
-	FrameLabel = new STRING[FrameLabelCount];
+	FrameNum.resize(FrameLabelCount);
+	FrameLabel.resize(FrameLabelCount);
 	for(uint32_t i=0;i<FrameLabelCount;++i)
 	{
 		in >> FrameNum[i] >> FrameLabel[i];

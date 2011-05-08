@@ -86,15 +86,6 @@ public:
 	operator int32_t(){return val;}
 };
 
-class u32
-{
-friend std::istream& operator>>(std::istream& in, u32& v);
-private:
-	uint32_t val;
-public:
-	operator uint32_t() const{return val;}
-};
-
 class d64
 {
 friend std::istream& operator>>(std::istream& in, d64& v);

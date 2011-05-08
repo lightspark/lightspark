@@ -351,15 +351,13 @@ public:
 	operator uint32_t() const{ return val; }
 };
 
-class EncodedU32
+class u32
 {
-friend std::istream& operator>>(std::istream& s, EncodedU32& v);
-protected:
+friend std::istream& operator>>(std::istream& in, u32& v);
+private:
 	uint32_t val;
 public:
-	EncodedU32():val(0){}
-	EncodedU32(uint32_t v):val(v){}
-	operator uint32_t() const{ return val; }
+	operator uint32_t() const{return val;}
 };
 
 class STRING
@@ -636,37 +634,33 @@ inline std::istream& operator>>(std::istream& s, UI32_FLV& v)
 	return s;
 }
 
-inline std::istream& operator>>(std::istream& s, EncodedU32& v)
+inline std::istream& operator>>(std::istream& in, u32& v)
 {
-	char c;
-
-	s.read(&c,1);
-	v.val = c;
-	if (!(v.val & 0x00000080))
+	int i=0;
+	v.val=0;
+	uint8_t t;
+	do
 	{
-		return s;
+		in.read((char*)&t,1);
+		//No more than 5 bytes should be read
+		if(i==28)
+		{
+			//Only the first 4 bits should be used to reach 32 bits
+			if((t&0xf0))
+				LOG(LOG_ERROR,"Error in u32");
+			uint8_t t2=(t&0xf);
+			v.val|=(t2<<i);
+			break;
+		}
+		else
+		{
+			uint8_t t2=(t&0x7f);
+			v.val|=(t2<<i);
+			i+=7;
+		}
 	}
-	s.read(&c,1);
-	v.val = (v.val & 0x0000007f) | c<<7;
-	if (!(v.val & 0x00004000))
-	{
-		return s;
-	}
-	s.read(&c,1);
-	v.val = (v.val & 0x00003fff) | c<<14;
-	if (!(v.val & 0x00200000))
-	{
-		return s;
-	}
-	s.read(&c,1);
-	v.val = (v.val & 0x001fffff) | c<<21;
-	if (!(v.val & 0x10000000))
-	{
-		return s;
-	}
-	s.read(&c,1);
-	v.val = (v.val & 0x0fffffff) | c<<28;
-	return s;
+	while(t&0x80);
+	return in;
 }
 
 inline std::istream& operator>>(std::istream& s, FLOAT& v)

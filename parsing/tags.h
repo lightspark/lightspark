@@ -656,11 +656,11 @@ public:
 class DefineSceneAndFrameLabelDataTag: public Tag
 {
 public:
-	EncodedU32 SceneCount;
-	EncodedU32* Offset;
+	u32 SceneCount;
+	u32* Offset;
 	STRING* Name;
-	EncodedU32 FrameLabelCount;
-	EncodedU32* FrameNum;
+	u32 FrameLabelCount;
+	u32* FrameNum;
 	STRING* FrameLabel;
 	DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in);
 };

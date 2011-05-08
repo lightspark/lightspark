@@ -144,6 +144,12 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 			ret=TRUE;
 			break;
 		}
+		case GDK_MOTION_NOTIFY:
+		{
+			th->handleMouseMove(event->motion.x,event->motion.y);
+			ret=TRUE;
+			break;
+		}
 		default:
 //#ifdef EXPENSIVE_DEBUG
 //			cout << "GDKTYPE " << event->type << endl;

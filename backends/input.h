@@ -68,7 +68,7 @@ private:
 	void handleMouseUp(uint32_t x, uint32_t y);
 	void handleMouseMove(uint32_t x, uint32_t y);
 
-	Mutex mutexInputData;
+	Spinlock inputDataSpinlock;
 	number_t mouseX;
 	number_t mouseY;
 public:
@@ -108,13 +108,13 @@ public:
 
 	number_t getMouseX()
 	{
-		Locker locker(mutexInputData);
+		SpinlockLocker locker(inputDataSpinlock);
 		return mouseX;
 	}
 
 	number_t getMouseY()
 	{
-		Locker locker(mutexInputData);
+		SpinlockLocker locker(inputDataSpinlock);
 		return mouseY;
 	}
 };

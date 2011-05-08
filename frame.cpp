@@ -30,7 +30,7 @@ extern TLSDATA bool isVmThread;
 
 Frame::Frame(const Frame& r):
 	initialized(r.initialized),invalid(r.invalid),
-	constructed(ACQUIRE_READ(r.constructed)),Label(r.Label),
+	constructed(ACQUIRE_READ(r.constructed)),
 	blueprint(r.blueprint),displayList(r.displayList),
 	controls(r.controls)
 {
@@ -38,7 +38,7 @@ Frame::Frame(const Frame& r):
 
 Frame::Frame(const Frame&& r):
 	initialized(r.initialized),invalid(r.invalid),
-	constructed(ACQUIRE_READ(r.constructed)),Label(r.Label),
+	constructed(ACQUIRE_READ(r.constructed)),
 	blueprint(std::move(r.blueprint)),displayList(std::move(r.displayList)),
 	controls(std::move(r.controls))
 {
@@ -49,7 +49,6 @@ Frame& Frame::operator=(const Frame& r)
 	initialized=r.initialized;
 	invalid=r.invalid;
 	RELEASE_WRITE(constructed,ACQUIRE_READ(r.constructed));
-	Label=r.Label;
 	blueprint=r.blueprint;
 
 	displayList=r.displayList;

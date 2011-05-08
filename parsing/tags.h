@@ -512,6 +512,18 @@ public:
 	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
+class DefineFont4Tag : public FontTag
+{
+private:
+	UB FontFlagsHasFontData;
+	UB FontFlagsItalic;
+	UB FontFlagsBold;
+	STRING FontName;
+public:
+	DefineFont4Tag(RECORDHEADER h, std::istream& in);
+        virtual int getId(){ return FontID; }
+};
+
 class DefineTextTag: public DictionaryTag, public DisplayObject
 {
 	friend class GLYPHENTRY;

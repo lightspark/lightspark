@@ -1673,3 +1673,23 @@ DefineBitsJPEG3Tag::~DefineBitsJPEG3Tag()
 	delete[] data;
 	delete[] alphaData;
 }
+
+DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,_("DefineSceneAndFrameLabelDataTag"));
+	in >> SceneCount;
+	Offset = new EncodedU32[SceneCount];
+	Name = new STRING[SceneCount];
+	for(int i=0;i<SceneCount;++i)
+	{
+		in >> Offset[i] >> Name[i];
+	}
+	in >> FrameLabelCount;
+	FrameNum = new EncodedU32[FrameLabelCount];
+	FrameLabel = new STRING[FrameLabelCount];
+	for(int i=0;i<FrameLabelCount;++i)
+	{
+		in >> FrameNum[i] >> FrameLabel[i];
+	}
+	LOG(LOG_NOT_IMPLEMENTED,"DefineSceneAndFrameLabelDataTag is parsed but not used");
+}

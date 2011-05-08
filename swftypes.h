@@ -351,6 +351,17 @@ public:
 	operator uint32_t() const{ return val; }
 };
 
+class EncodedU32
+{
+friend std::istream& operator>>(std::istream& s, EncodedU32& v);
+protected:
+	uint32_t val;
+public:
+	EncodedU32():val(0){}
+	EncodedU32(uint32_t v):val(v){}
+	operator uint32_t() const{ return val; }
+};
+
 class STRING
 {
 friend std::ostream& operator<<(std::ostream& s, const STRING& r);
@@ -622,6 +633,39 @@ inline std::istream& operator>>(std::istream& s, UI32_FLV& v)
 {
 	s.read((char*)&v.val,4);
 	v.val=BigEndianToHost32(v.val);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, EncodedU32& v)
+{
+	char c;
+
+	s.read(&c,1);
+	v.val = c;
+	if (!(v.val & 0x00000080))
+	{
+		return s;
+	}
+	s.read(&c,1);
+	v.val = (v.val & 0x0000007f) | c<<7;
+	if (!(v.val & 0x00004000))
+	{
+		return s;
+	}
+	s.read(&c,1);
+	v.val = (v.val & 0x00003fff) | c<<14;
+	if (!(v.val & 0x00200000))
+	{
+		return s;
+	}
+	s.read(&c,1);
+	v.val = (v.val & 0x001fffff) | c<<21;
+	if (!(v.val & 0x10000000))
+	{
+		return s;
+	}
+	s.read(&c,1);
+	v.val = (v.val & 0x0fffffff) | c<<28;
 	return s;
 }
 

@@ -735,6 +735,15 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 
 bool Dictionary::hasNext(unsigned int& index, bool& out)
 {
+	// Must iterate the ASObject properties in addition to own
+	// data because primitive keys are stored there
+	if (index>=data.size()) {
+		index-=data.size();
+		ASObject::hasNext(index, out);
+		index+=data.size();
+		return true;
+	}
+
 	assert_and_throw(implEnable);
 	out=index<data.size();
 	index++;
@@ -743,6 +752,9 @@ bool Dictionary::hasNext(unsigned int& index, bool& out)
 
 bool Dictionary::nextName(unsigned int index, ASObject*& out)
 {
+	if (index-1>=data.size())
+		return ASObject::nextName(index-data.size(), out);
+
 	assert(index>0);
 	index--;
 	assert_and_throw(implEnable);
@@ -758,6 +770,9 @@ bool Dictionary::nextName(unsigned int index, ASObject*& out)
 
 bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 {
+	if (index>=data.size())
+		return ASObject::nextValue(index-data.size(), out);
+
 	assert_and_throw(implEnable);
 	assert(index<data.size());
 	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();

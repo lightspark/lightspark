@@ -20,6 +20,12 @@
 		
 		Tests.assertEquals(dict["foo"], 5, "dict[\"foo\"] = 5", true);
 		Tests.assertEquals(dict[o], "muffins", "dict[Object]", true);
+
+		var count:int = 0;
+		for each (var tmp:* in dict)
+			count++;
+
+		Tests.assertEquals(2, count, "iterator: primitive and object keys");
 		
 		delete dict["foo"];
 		

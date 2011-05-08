@@ -41,6 +41,7 @@
 #include "flashexternal.h"
 #include "flashmedia.h"
 #include "flashxml.h"
+#include "mxcore.h"
 #include "class.h"
 #include "exceptions.h"
 #include "compat.h"
@@ -316,6 +317,8 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("isNaN","",Class<IFunction>::getFunction(isNaN));
 	builtin->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite));
+
+	builtin->setVariableByQName("IFlexDisplayObject","mx.core",Class<IFlexDisplayObject>::getClass());
 
 	Global->registerGlobalScope(builtin);
 }

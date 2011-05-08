@@ -165,6 +165,8 @@ public:
 	ASFUNCTION(_getBlendMode);
 	ASFUNCTION(_getScale9Grid);
 	ASFUNCTION(_setRotation);
+	ASFUNCTION(_getMouseX);
+	ASFUNCTION(_getMouseY);
 	ASFUNCTION(localToGlobal);
 };
 

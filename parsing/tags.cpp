@@ -363,9 +363,11 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			case CONTROL_TAG:
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case FRAMELABEL_TAG:
-				frames.back().Label=(const char*)static_cast<FrameLabelTag*>(tag)->Name;
+				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
 				empty=false;
 				break;
+			case SCENEANDLABEL_TAG:
+				throw ParseException("DefineSceneAndLabel tag inside sprite");
 			case TAG:
 				LOG(LOG_NOT_IMPLEMENTED,_("Unclassified tag inside Sprite?"));
 				break;
@@ -1691,5 +1693,4 @@ DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h,
 	{
 		in >> FrameNum[i] >> FrameLabel[i];
 	}
-	LOG(LOG_NOT_IMPLEMENTED,"DefineSceneAndFrameLabelDataTag is parsed but not used");
 }

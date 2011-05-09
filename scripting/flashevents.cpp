@@ -445,10 +445,34 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	assert_and_throw(e->type!="");
 	if(!e->target.isNull())
 	{
-		//The object must be cloned
-		//TODO: support cloning of actual type
-		LOG(LOG_NOT_IMPLEMENTED,"Event cloning not supported!");
-		e=_MR(Class<Event>::getInstanceS(e->type,e->bubbles));
+		//Object must be cloned, closing is implemented with the clone AS method
+		multiname cloneName;
+		cloneName.name_type=multiname::NAME_STRING;
+		cloneName.name_s="clone";
+		cloneName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
+
+		ASObject *clone=e->getVariableByMultiname(cloneName);
+		if(clone && clone->getObjectType()==T_FUNCTION)
+		{
+			IFunction* f = static_cast<IFunction*>(clone);
+			e->incRef();
+			ASObject* funcRet=f->call(e.getPtr(),NULL,0);
+			//Verify that the returned object is actually an event
+			Event* newEvent=dynamic_cast<Event*>(funcRet);
+			if(newEvent==NULL)
+			{
+				if(funcRet)
+					funcRet->decRef();
+				return abstract_b(false);
+			}
+			e=_MR(newEvent);
+		}
+		else
+		{
+			//TODO: support cloning of actual type
+			LOG(LOG_NOT_IMPLEMENTED,"Event cloning not supported!");
+			e=_MR(Class<Event>::getInstanceS(e->type,e->bubbles));
+		}
 	}
 	th->incRef();
 	ABCVm::publicHandleEvent(_MR(th), e);

@@ -155,10 +155,13 @@ for line in p2.communicate()[0].split("\n"):
 		continue
 	if line[0] == 'g':
 		dgetters.add((curClass,line[2:]))
+		continue
 	if line[0] == 's':
 		dsetters.add((curClass,line[2:]))
+		continue
 	if line[0] == 'm' and line[2:] != "constructor":
 		dmethods.add((curClass,line[2:]))
+		continue
 
 mgetters = []
 msetters = []
@@ -172,7 +175,7 @@ for (cls,name) in dgetters:
 		continue #do not list member of missing classes
 	fullName = getFullname(cls,name)
 	if fullName not in getters:
-		if fullName in dsetters and not fullName in setters:
+		if (cls,name) in dsetters and fullName not in setters:
 			missing.append(fullName + " (getter/setter)")
 		else:
 			missing.append(fullName + " (getter)")
@@ -185,10 +188,10 @@ for (cls,name) in dsetters:
 		continue #do not list member of missing classes
 	fullName = getFullname(cls,name)
 	if fullName not in setters:
-		if fullName in dgetters and not fullName in getters:
-			pass #handled above
+		if (cls,name) in dgetters and fullName not in getters:
+			pass #handled abovec
 		else:
-			missing.append(fullName + " (getter)")
+			missing.append(fullName + " (setter)")
 		pmclasses.add(cls)
 		#msetters.append(i)
 		#print "\t" + i

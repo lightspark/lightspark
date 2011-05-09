@@ -55,12 +55,11 @@ private:
 public:
 	Class_inherit(const QName& name):Class_base(name),tag(NULL),bindedToRoot(false)
 	{
-		bool ret=sys->classes.insert(std::make_pair(name,this)).second;
-		if(!ret)
-		{
-			LOG(LOG_ERROR,"Class name collision at: " << name);
-			throw RunTimeException("Class name collision");
-		}
+#ifndef NDEBUG
+		bool ret=
+#endif
+		sys->classes.insert(std::make_pair(name,this)).second;
+		assert(ret);
 	}
 	void finalize();
 	void buildInstanceTraits(ASObject* o) const;

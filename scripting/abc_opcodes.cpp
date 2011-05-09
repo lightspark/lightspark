@@ -2364,14 +2364,28 @@ void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 
 void ABCVm::newClass(call_context* th, int n)
 {
-	LOG(LOG_CALLS, _("newClass ") << n );
+	LOG(LOG_CALLS, "newClass " << n );
 	method_info* constructor=&th->context->methods[th->context->instances[n].init];
 	int name_index=th->context->instances[n].name;
 	assert_and_throw(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
 
+	ASObject* baseClass=th->runtime_stack_pop();
+
 	assert_and_throw(mname->ns.size()==1);
-	Class_inherit* ret=new Class_inherit(QName(mname->name_s,mname->ns[0].name));
+	QName className(mname->name_s,mname->ns[0].name);
+	//Check if this class has been already defined
+	auto oldDefinition=sys->classes.find(className);
+	if(oldDefinition!=sys->classes.end())
+	{
+		LOG(LOG_CALLS,_("Class ") << className << _(" already defined. Pushing previous definition"));
+		baseClass->decRef();
+		oldDefinition->second->incRef();
+		th->runtime_stack_push(oldDefinition->second);
+		return;
+	}
+
+	Class_inherit* ret=new Class_inherit(className);
 #ifdef PROFILING_SUPPORT
 	if(!constructor->validProfName)
 	{
@@ -2380,16 +2394,15 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 #endif
 	ret->class_scope=th->scope_stack;
-	ASObject* tmp=th->runtime_stack_pop();
 
 	assert_and_throw(th->context);
 	ret->context=th->context;
 
 	//Null is a "valid" base class
-	if(tmp->getObjectType()!=T_NULL)
+	if(baseClass->getObjectType()!=T_NULL)
 	{
-		assert_and_throw(tmp->getObjectType()==T_CLASS);
-		ret->super=static_cast<Class_base*>(tmp);
+		assert_and_throw(baseClass->getObjectType()==T_CLASS);
+		ret->super=static_cast<Class_base*>(baseClass);
 		ret->max_level=ret->super->max_level+1;
 		ret->setLevel(ret->max_level);
 	}

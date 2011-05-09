@@ -568,7 +568,7 @@ public:
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
-	bool nextValue(unsigned int index, ASObject*& out);
+	_R<ASObject> nextValue(uint32_t index);
 };
 
 class Integer : public ASObject

@@ -2270,27 +2270,15 @@ uintptr_t ABCVm::increment_i(ASObject* o)
 
 ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 {
-	LOG(LOG_CALLS,_("nextValue"));
+	LOG(LOG_CALLS,"nextValue");
 	if(index->getObjectType()!=T_INTEGER)
 		throw UnsupportedException("Type mismatch in nextValue");
 
-	ASObject* ret=NULL;
-	if(obj->implEnable)
-	{ 
-		if(obj->nextValue(index->toInt()-1,ret))
-		{
-			obj->decRef();
-			index->decRef();
-			ret->incRef();
-			return ret;
-		}
-	}
-
-	ret=obj->getValueAt(index->toInt()-1);
+	_R<ASObject> ret=obj->nextValue(index->toInt());
 	obj->decRef();
 	index->decRef();
 	ret->incRef();
-	return ret;
+	return ret.getPtr();
 }
 
 ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)

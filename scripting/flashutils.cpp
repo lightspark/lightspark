@@ -768,19 +768,22 @@ _R<ASObject> Dictionary::nextName(uint32_t index)
 	}
 }
 
-bool Dictionary::nextValue(unsigned int index, ASObject*& out)
+_R<ASObject> Dictionary::nextValue(uint32_t index)
 {
-	if (index>=data.size())
-		return ASObject::nextValue(index-data.size(), out);
-
 	assert_and_throw(implEnable);
-	assert(index<data.size());
-	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
-	for(unsigned int i=0;i<index;i++)
-		++it;
+	if(index<=data.size())
+	{
+		map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
+		for(unsigned int i=1;i<index;i++)
+			++it;
 
-	out=it->second.getPtr();
-	return true;
+		return it->second;
+	}
+	else
+	{
+		//Fall back on object properties
+		return ASObject::nextName(index-data.size());
+	}
 }
 
 tiny_string Dictionary::toString(bool debugMsg)
@@ -919,6 +922,11 @@ _R<ASObject> Proxy::nextName(uint32_t index)
 	ASObject* arg=abstract_i(index);
 	incRef();
 	return _MR(f->call(this,&arg,1));
+}
+
+_R<ASObject> Proxy::nextValue(uint32_t index)
+{
+	::abort();
 }
 
 ASFUNCTIONBODY(lightspark,setInterval)

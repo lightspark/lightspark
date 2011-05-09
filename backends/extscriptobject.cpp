@@ -207,17 +207,17 @@ ExtVariant::ExtVariant(ASObject* other) :
 	case T_OBJECT:
 		type = EV_OBJECT;
 		{
-			ASObject* nextValue = NULL;
 			unsigned int index = 0;
 			while((index=other->nextNameIndex(index))!=0)
 			{
 				_R<ASObject> nextName=other->nextName(index);
-				other->nextValue(index-1, nextValue);
+				_R<ASObject> nextValue=other->nextValue(index);
 
+				nextValue->incRef();
 				if(nextName->getObjectType() == T_INTEGER)
-					objectValue.setProperty(nextName->toInt(), nextValue);
+					objectValue.setProperty(nextName->toInt(), nextValue.getPtr());
 				else
-					objectValue.setProperty(nextName->toString().raw_buf(), nextValue);
+					objectValue.setProperty(nextName->toString().raw_buf(), nextValue.getPtr());
 			}
 		}
 		break;

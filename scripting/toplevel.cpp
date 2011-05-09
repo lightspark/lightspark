@@ -1730,20 +1730,32 @@ tiny_string Array::toString_priv() const
 	return ret;
 }
 
-bool Array::nextValue(unsigned int index, ASObject*& out)
+_R<ASObject> Array::nextValue(uint32_t index)
 {
 	assert_and_throw(implEnable);
-	assert_and_throw(index<data.size());
-	if(data[index].type==DATA_OBJECT)
-		out=data[index].data;
-	else if(data[index].type==DATA_INT)
+	if(index<=data.size())
 	{
-		out=abstract_i(data[index].data_i);
-		out->fake_decRef();
+		index--;
+		if(data[index].type==DATA_OBJECT)
+		{
+			if(data[index].data==NULL)
+				return _MR(new Undefined);
+			else
+			{
+				data[index].data->incRef();
+				return _MR(data[index].data);
+			}
+		}
+		else if(data[index].type==DATA_INT)
+			return _MR(abstract_i(data[index].data_i));
+		else
+			throw UnsupportedException("Unexpected data type");
 	}
 	else
-		throw UnsupportedException("Unexpected data type");
-	return true;
+	{
+		//Fall back on object properties
+		return ASObject::nextValue(index-data.size());
+	}
 }
 
 uint32_t Array::nextNameIndex(uint32_t cur_index)

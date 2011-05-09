@@ -275,7 +275,7 @@ public:
 	//Enumeration handling
 	virtual uint32_t nextNameIndex(uint32_t cur_index);
 	virtual _R<ASObject> nextName(uint32_t index);
-	virtual bool nextValue(unsigned int index, ASObject*& out);
+	virtual _R<ASObject> nextValue(uint32_t index);
 };
 
 inline void Manager::put(ASObject* o)

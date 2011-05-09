@@ -130,7 +130,7 @@ public:
 	}
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
-	bool nextValue(unsigned int index, ASObject*& out);
+	_R<ASObject> nextValue(uint32_t index);
 };
 
 class Proxy: public ASObject
@@ -171,11 +171,7 @@ public:
 	}
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
-	bool nextValue(unsigned int index, ASObject*& out)
-	{
-		assert_and_throw(implEnable);
-		throw UnsupportedException("Proxy is missing some stuff");
-	}
+	_R<ASObject> nextValue(uint32_t index);
 };
 
 ASObject* getQualifiedClassName(ASObject*, ASObject* const* args, const unsigned int len);

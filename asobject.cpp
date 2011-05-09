@@ -120,14 +120,13 @@ _R<ASObject> ASObject::nextName(uint32_t index)
 	return _MR(Class<ASString>::getInstanceS(getNameAt(index-1)));
 }
 
-bool ASObject::nextValue(unsigned int index, ASObject*& out)
+_R<ASObject> ASObject::nextValue(uint32_t index)
 {
 	assert_and_throw(implEnable);
 
-	out = getValueAt(index);
+	ASObject* out = getValueAt(index-1);
 	out->incRef();
-
-	return true;
+	return _MR(out);
 }
 
 void ASObject::sinit(Class_base* c)

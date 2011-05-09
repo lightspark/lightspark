@@ -710,6 +710,7 @@ class XMLList: public ASObject
 private:
 	std::vector<_R<XML> > nodes;
 	bool constructed;
+	tiny_string toString_priv() const;
 public:
 	XMLList():constructed(false){}
 	/*
@@ -725,12 +726,14 @@ public:
 	ASFUNCTION(appendChild);
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
+	ASFUNCTION(_toString);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 	void append(_R<XML> x);
 	void append(_R<XMLList> x);
+	tiny_string toString(bool debugMsg=false);
 };
 
 class Date: public ASObject

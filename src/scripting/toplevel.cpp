@@ -739,7 +739,7 @@ ASFUNCTIONBODY(XML,attributes)
 	return retObj;
 }
 
-void XML::toXMLString_priv(xmlBufferPtr buf) 
+void XML::toXMLString_priv(xmlBufferPtr buf)
 {
 	//NOTE: this function is not thread-safe, as it can modify the xmlNode
 	_NR<XML> rootXML=NullRef;
@@ -1024,6 +1024,7 @@ void XMLList::sinit(Class_base* c)
 	c->setMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),true);
 	c->setMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),true);
 	c->setMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),true);
+	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),true);
 }
 
 ASFUNCTIONBODY(XMLList,_constructor)
@@ -1157,6 +1158,29 @@ void XMLList::append(_R<XML> x)
 void XMLList::append(_R<XMLList> x)
 {
 	nodes.insert(nodes.end(),x->nodes.begin(),x->nodes.end());
+}
+
+tiny_string XMLList::toString_priv() const
+{
+	//TODO: implement ECMA-356 toString
+	tiny_string ret;
+	for(uint32_t i=0;i<nodes.size();i++)
+		ret+=nodes[i]->toString();
+	return ret;
+}
+
+tiny_string XMLList::toString(bool debugMsg)
+{
+	if(debugMsg)
+		return ASObject::toString(true);
+
+	return toString_priv();
+}
+
+ASFUNCTIONBODY(XMLList,_toString)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	return Class<ASString>::getInstanceS(th->toString_priv());
 }
 
 /*bool XMLList::nextValue(unsigned int index, ASObject*& out)

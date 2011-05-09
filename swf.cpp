@@ -222,6 +222,9 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	
 	setPrototype(Class<MovieClip>::getClass());
 
+	//Override getStage as for SystemState that can't be null
+	setGetterByQName("stage","",Class<IFunction>::getFunction(_getStage),false);
+
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);
 }
@@ -904,6 +907,14 @@ void SystemState::flushInvalidationQueue()
 	}
 	invalidateQueueHead=NullRef;
 	invalidateQueueTail=NullRef;
+}
+
+ASFUNCTIONBODY(SystemState,_getStage)
+{
+	SystemState* th=static_cast<SystemState*>(obj);
+	assert(th->stage);
+	th->stage->incRef();
+	return th->stage;
 }
 
 #ifdef PROFILING_SUPPORT

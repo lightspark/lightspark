@@ -235,6 +235,8 @@ private:
 	*/
 	tiny_string profOut;
 #endif
+	//Special implementations of AS3 function
+	ASFUNCTION(_getStage);
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	ENGINE getEngine() DLL_PUBLIC { return engine; };

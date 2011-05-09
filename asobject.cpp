@@ -284,7 +284,6 @@ void ASObject::setMethodByQName(const tiny_string& name, const nsNameAndKind& ns
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
-	//assert(getObjectType()==T_CLASS);
 	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
 	if(obj->var!=NULL)
 	{
@@ -306,7 +305,6 @@ void ASObject::setGetterByQName(const tiny_string& name, const nsNameAndKind& ns
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
-	assert(getObjectType()==T_CLASS);
 	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
 	if(obj->getter!=NULL)
 	{
@@ -328,7 +326,6 @@ void ASObject::setSetterByQName(const tiny_string& name, const nsNameAndKind& ns
 #ifndef NDEBUG
 	assert_and_throw(!initialized);
 #endif
-	assert(getObjectType()==T_CLASS);
 	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
 	if(obj->setter!=NULL)
 	{

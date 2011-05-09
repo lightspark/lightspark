@@ -105,14 +105,12 @@ TRISTATE ASObject::isLess(ASObject* r)
 	return TFALSE;
 }
 
-bool ASObject::hasNext(unsigned int& index, bool& out)
+uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 {
-	assert_and_throw(implEnable);
-
-	out = index < numVariables();
-	index++;
-
-	return true;
+	if(cur_index < numVariables())
+		return cur_index+1;
+	else
+		return 0;
 }
 
 bool ASObject::nextName(unsigned int index, ASObject*& out)

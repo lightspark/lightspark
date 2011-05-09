@@ -128,7 +128,7 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("isEqual not supported for Dictionary");
 	}
-	bool hasNext(unsigned int& index, bool& out);
+	uint32_t nextNameIndex(uint32_t cur_index);
 	bool nextName(unsigned int index, ASObject*& out);
 	bool nextValue(unsigned int index, ASObject*& out);
 };
@@ -169,7 +169,7 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("Proxy is missing some stuff");
 	}
-	bool hasNext(unsigned int& index, bool& out);
+	uint32_t nextNameIndex(uint32_t cur_index);
 	bool nextName(unsigned int index, ASObject*& out);
 	bool nextValue(unsigned int index, ASObject*& out)
 	{

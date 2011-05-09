@@ -2191,57 +2191,24 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 bool ABCVm::hasNext2(call_context* th, int n, int m)
 {
-	LOG(LOG_CALLS,_("hasNext2 ") << n << ' ' << m);
+	LOG(LOG_CALLS,"hasNext2 " << n << ' ' << m);
 	ASObject* obj=th->locals[n];
-	unsigned int cur_index=th->locals[m]->toUInt();
+	//If the local is not assigned bail out
+	if(obj==NULL)
+		return false;
 
-	if(obj && obj->implEnable)
-	{
-		bool ret;
-		//cur_index is modified with the next index
-		if(obj->hasNext(cur_index,ret))
-		{
-			if(ret)
-			{
-				th->locals[m]->decRef();
-				th->locals[m]=abstract_i(cur_index);
-			}
-			else
-			{
-				th->locals[n]->decRef();
-				th->locals[n]=new Null;
-				th->locals[m]->decRef();
-				th->locals[m]=abstract_i(0);
-			}
-			return ret;
-		}
-	}
+	uint32_t curIndex=th->locals[m]->toUInt();
 
-/*	//Look up if there is a following index which is still an object
-	//(not a method)
-	for(cur_index;cur_index<obj->numVariables();cur_index++)
-	{
-		obj_var* var=obj->Variables.getValueAt(cur_index);
-		if(var->var && var->var->getObjectType()!=T_FUNCTION)
-			break;
-	}*/
-
-	//Our references are 0 based, the AS ones are 1 based
-	//what a mess
-	if(cur_index<obj->numVariables())
-	{
-		th->locals[m]->decRef();
-		th->locals[m]=new Integer(cur_index+1);
-		return true;
-	}
-	else
+	uint32_t newIndex=obj->nextNameIndex(curIndex);
+	th->locals[m]->decRef();
+	th->locals[m]=abstract_i(newIndex);
+	if(newIndex==0)
 	{
 		th->locals[n]->decRef();
 		th->locals[n]=new Null;
-		th->locals[m]->decRef();
-		th->locals[m]=new Integer(0);
 		return false;
 	}
+	return true;
 }
 
 void ABCVm::newObject(call_context* th, int n)

@@ -566,7 +566,7 @@ public:
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);
-	bool hasNext(unsigned int& index, bool& out);
+	uint32_t nextNameIndex(uint32_t cur_index);
 	bool nextName(unsigned int index, ASObject*& out);
 	bool nextValue(unsigned int index, ASObject*& out);
 };

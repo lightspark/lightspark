@@ -271,8 +271,8 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	
-	//TODO: Rework this stuff
-	virtual bool hasNext(unsigned int& index, bool& out);
+	//Enumeration handling
+	virtual uint32_t nextNameIndex(uint32_t cur_index);
 	virtual bool nextName(unsigned int index, ASObject*& out);
 	virtual bool nextValue(unsigned int index, ASObject*& out);
 };

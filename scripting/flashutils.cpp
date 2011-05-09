@@ -733,21 +733,21 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 	return ASObject::getVariableByMultiname(name, skip_impl, base);
 }
 
-bool Dictionary::hasNext(unsigned int& index, bool& out)
+uint32_t Dictionary::nextNameIndex(uint32_t cur_index)
 {
-	// Must iterate the ASObject properties in addition to own
-	// data because primitive keys are stored there
-	if (index>=data.size()) {
-		index-=data.size();
-		ASObject::hasNext(index, out);
-		index+=data.size();
-		return true;
-	}
-
 	assert_and_throw(implEnable);
-	out=index<data.size();
-	index++;
-	return true;
+	if(cur_index<data.size())
+		return cur_index+1;
+	else
+	{
+		//Fall back on object properties
+		uint32_t ret=ASObject::nextNameIndex(cur_index-data.size());
+		if(ret==0)
+			return 0;
+		else
+			return ret+data.size();
+
+	}
 }
 
 bool Dictionary::nextName(unsigned int index, ASObject*& out)
@@ -884,10 +884,10 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 	return ret;
 }
 
-bool Proxy::hasNext(unsigned int& index, bool& out)
+uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 {
 	assert_and_throw(implEnable);
-	LOG(LOG_CALLS,"Proxy::hasNext");
+	LOG(LOG_CALLS,"Proxy::nextNameIndex");
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	multiname nextNameIndexName;
 	nextNameIndexName.name_type=multiname::NAME_STRING;
@@ -896,13 +896,12 @@ bool Proxy::hasNext(unsigned int& index, bool& out)
 	ASObject* o=getVariableByMultiname(nextNameIndexName,true);
 	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o);
-	ASObject* arg=abstract_i(index);
-	incRef();
+	ASObject* arg=abstract_i(cur_index);
+	this->incRef();
 	ASObject* ret=f->call(this,&arg,1);
-	index=ret->toInt();
+	uint32_t newIndex=ret->toInt();
 	ret->decRef();
-	out=(index!=0);
-	return true;
+	return newIndex;
 }
 
 bool Proxy::nextName(unsigned int index, ASObject*& out)

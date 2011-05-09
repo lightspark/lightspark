@@ -1746,12 +1746,21 @@ bool Array::nextValue(unsigned int index, ASObject*& out)
 	return true;
 }
 
-bool Array::hasNext(unsigned int& index, bool& out)
+uint32_t Array::nextNameIndex(uint32_t cur_index)
 {
 	assert_and_throw(implEnable);
-	out=index<data.size();
-	index++;
-	return true;
+	if(cur_index<data.size())
+		return cur_index+1;
+	else
+	{
+		//Fall back on object properties
+		uint32_t ret=ASObject::nextNameIndex(cur_index-data.size());
+		if(ret==0)
+			return 0;
+		else
+			return ret+data.size();
+
+	}
 }
 
 bool Array::nextName(unsigned int index, ASObject*& out)

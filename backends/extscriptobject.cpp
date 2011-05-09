@@ -207,11 +207,10 @@ ExtVariant::ExtVariant(ASObject* other) :
 	case T_OBJECT:
 		type = EV_OBJECT;
 		{
-			bool hasNext = false;
 			ASObject* nextName = NULL;
 			ASObject* nextValue = NULL;
 			unsigned int index = 0;
-			while(other->hasNext(index, hasNext) && hasNext)
+			while((index=other->nextNameIndex(index))!=0)
 			{
 				other->nextName(index, nextName);
 				other->nextValue(index-1, nextValue);

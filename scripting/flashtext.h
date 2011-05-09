@@ -88,6 +88,7 @@ private:
 public:
 	StyleSheet(){}
 	void finalize();
+	ASFUNCTION(getStyle);
 	ASFUNCTION(setStyle);
 	ASFUNCTION(_getStyleNames);
 	static void sinit(Class_base* c);

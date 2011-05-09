@@ -175,6 +175,7 @@ void StyleSheet::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames),true);
 	c->setMethodByQName("setStyle","",Class<IFunction>::getFunction(setStyle),true);
+	c->setMethodByQName("getStyle","",Class<IFunction>::getFunction(getStyle),true);
 }
 
 void StyleSheet::buildTraits(ASObject* o)
@@ -193,6 +194,23 @@ ASFUNCTIONBODY(StyleSheet,setStyle)
 		it->second=_MR(args[1]);
 	else
 		th->styles.insert(make_pair(arg0,_MR(args[1])));
+	return NULL;
+}
+
+ASFUNCTIONBODY(StyleSheet,getStyle)
+{
+	StyleSheet* th=Class<StyleSheet>::cast(obj);
+	assert_and_throw(argslen==1);
+	const tiny_string& arg0=args[0]->toString();
+	map<tiny_string, _R<ASObject>>::iterator it=th->styles.find(arg0);
+	if(it!=th->styles.end()) //Style already exists
+	{
+		//TODO: should make a copy, see reference
+		it->second->incRef();
+		return it->second.getPtr();
+	}
+	else
+		return new Null;
 	return NULL;
 }
 

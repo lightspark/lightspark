@@ -750,22 +750,22 @@ uint32_t Dictionary::nextNameIndex(uint32_t cur_index)
 	}
 }
 
-bool Dictionary::nextName(unsigned int index, ASObject*& out)
+_R<ASObject> Dictionary::nextName(uint32_t index)
 {
-	if (index-1>=data.size())
-		return ASObject::nextName(index-data.size(), out);
-
-	assert(index>0);
-	index--;
 	assert_and_throw(implEnable);
-	assert_and_throw(index<data.size());
-	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
-	for(unsigned int i=0;i<index;i++)
-		++it;
+	if(index<=data.size())
+	{
+		map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
+		for(unsigned int i=1;i<index;i++)
+			++it;
 
-	it->first->incRef();
-	out=it->first.getPtr();
-	return true;
+		return it->first;
+	}
+	else
+	{
+		//Fall back on object properties
+		return ASObject::nextName(index-data.size());
+	}
 }
 
 bool Dictionary::nextValue(unsigned int index, ASObject*& out)
@@ -904,9 +904,8 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	return newIndex;
 }
 
-bool Proxy::nextName(unsigned int index, ASObject*& out)
+_R<ASObject> Proxy::nextName(uint32_t index)
 {
-	assert(index>0);
 	assert_and_throw(implEnable);
 	LOG(LOG_CALLS, _("Proxy::nextName"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
@@ -919,8 +918,7 @@ bool Proxy::nextName(unsigned int index, ASObject*& out)
 	IFunction* f=static_cast<IFunction*>(o);
 	ASObject* arg=abstract_i(index);
 	incRef();
-	out=f->call(this,&arg,1);
-	return true;
+	return _MR(f->call(this,&arg,1));
 }
 
 ASFUNCTIONBODY(lightspark,setInterval)

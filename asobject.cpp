@@ -113,13 +113,11 @@ uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 		return 0;
 }
 
-bool ASObject::nextName(unsigned int index, ASObject*& out)
+_R<ASObject> ASObject::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 
-	out = Class<ASString>::getInstanceS(getNameAt(index-1));
-
-	return true;
+	return _MR(Class<ASString>::getInstanceS(getNameAt(index-1)));
 }
 
 bool ASObject::nextValue(unsigned int index, ASObject*& out)

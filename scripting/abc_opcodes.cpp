@@ -2295,25 +2295,15 @@ ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 
 ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 {
-	LOG(LOG_CALLS,_("nextName"));
+	LOG(LOG_CALLS,"nextName");
 	if(index->getObjectType()!=T_INTEGER)
 		throw UnsupportedException("Type mismatch in nextName");
 
-	ASObject* ret=NULL;
-	if(obj->implEnable)
-	{ 
-		if(obj->nextName(index->toInt(),ret))
-		{
-			obj->decRef();
-			index->decRef();
-			return ret;
-		}
-	}
-
-	ret=Class<ASString>::getInstanceS(obj->getNameAt(index->toInt()-1));
+	_R<ASObject> ret=obj->nextName(index->toInt());
 	obj->decRef();
 	index->decRef();
-	return ret;
+	ret->incRef();
+	return ret.getPtr();
 }
 
 void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)

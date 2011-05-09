@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include "swftypes.h"
+#include "smartrefs.h"
 #include <map>
 
 #define ASFUNCTION(name) \
@@ -273,7 +274,7 @@ public:
 	
 	//Enumeration handling
 	virtual uint32_t nextNameIndex(uint32_t cur_index);
-	virtual bool nextName(unsigned int index, ASObject*& out);
+	virtual _R<ASObject> nextName(uint32_t index);
 	virtual bool nextValue(unsigned int index, ASObject*& out);
 };
 

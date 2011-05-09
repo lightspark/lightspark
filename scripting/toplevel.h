@@ -567,7 +567,7 @@ public:
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
-	bool nextName(unsigned int index, ASObject*& out);
+	_R<ASObject> nextName(uint32_t index);
 	bool nextValue(unsigned int index, ASObject*& out);
 };
 

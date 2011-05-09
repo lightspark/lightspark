@@ -1763,14 +1763,16 @@ uint32_t Array::nextNameIndex(uint32_t cur_index)
 	}
 }
 
-bool Array::nextName(unsigned int index, ASObject*& out)
+_R<ASObject> Array::nextName(uint32_t index)
 {
-	assert(index>0);
-	index--;
 	assert_and_throw(implEnable);
-	assert_and_throw(index<data.size());
-	out=abstract_i(index);
-	return true;
+	if(index<=data.size())
+		return _MR(abstract_i(index-1));
+	else
+	{
+		//Fall back on object properties
+		return ASObject::nextName(index-data.size());
+	}
 }
 
 void Array::outofbounds() const

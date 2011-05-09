@@ -129,7 +129,7 @@ public:
 		throw UnsupportedException("isEqual not supported for Dictionary");
 	}
 	uint32_t nextNameIndex(uint32_t cur_index);
-	bool nextName(unsigned int index, ASObject*& out);
+	_R<ASObject> nextName(uint32_t index);
 	bool nextValue(unsigned int index, ASObject*& out);
 };
 
@@ -170,7 +170,7 @@ public:
 		throw UnsupportedException("Proxy is missing some stuff");
 	}
 	uint32_t nextNameIndex(uint32_t cur_index);
-	bool nextName(unsigned int index, ASObject*& out);
+	_R<ASObject> nextName(uint32_t index);
 	bool nextValue(unsigned int index, ASObject*& out)
 	{
 		assert_and_throw(implEnable);

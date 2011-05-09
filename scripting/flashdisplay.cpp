@@ -2023,7 +2023,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 		return new Null;
 	}
 	//Validate object type
-	assert_and_throw(args[0] && args[0]->getPrototype() && 
+	assert_and_throw(args[0]->getPrototype() &&
 		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 
 	int index=args[1]->toInt();

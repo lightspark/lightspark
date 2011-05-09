@@ -3646,7 +3646,8 @@ ASObject* Class_base::getBorrowedVariableByMultiname(const multiname& name, bool
 			target->incRef();
 			ASObject* ret=getter->call(target,NULL,0);
 			LOG(LOG_CALLS,_("End of getter"));
-			assert_and_throw(ret);
+			if(ret==NULL)
+				ret=new Undefined;
 			//The returned value is already owned by the caller
 			ret->fake_decRef();
 			return ret;

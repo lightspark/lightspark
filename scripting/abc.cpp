@@ -228,8 +228,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("GraphicsGradientFill","flash.display",
 			Class<ASObject>::getClass(QName("GraphicsGradientFill","flash.display")));
 	builtin->setVariableByQName("GraphicsPath","flash.display",Class<ASObject>::getClass(QName("GraphicsPath","flash.display")));
-	builtin->setVariableByQName("FrameLabel","flash.display",Class<ASObject>::getClass(QName("FrameLabel","flash.display")));
-	builtin->setVariableByQName("Scene","flash.display",Class<ASObject>::getClass(QName("Scene","flash.display")));
+	builtin->setVariableByQName("FrameLabel","flash.display",Class<FrameLabel>::getClass());
+	builtin->setVariableByQName("Scene","flash.display",Class<Scene>::getClass());
 
 	builtin->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")));
 	builtin->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass(QName("BitmapFilter","flash.filters")));

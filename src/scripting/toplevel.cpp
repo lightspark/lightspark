@@ -1135,6 +1135,16 @@ bool XMLList::hasComplexContent() const
 	return false;
 }
 
+void XMLList::append(_R<XML> x)
+{
+	nodes.push_back(x);
+}
+
+void XMLList::append(_R<XMLList> x)
+{
+	nodes.insert(nodes.end(),x->nodes.begin(),x->nodes.end());
+}
+
 /*bool XMLList::nextValue(unsigned int index, ASObject*& out)
 {
 	__asm__("int $3");

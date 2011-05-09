@@ -712,6 +712,10 @@ private:
 	bool constructed;
 public:
 	XMLList():constructed(false){}
+	/*
+	   Special constructor to build empty XMLList out of AS code
+	*/
+	XMLList(bool c):constructed(c){assert(c);}
 	XMLList(const std::vector<_R<XML> >& r):nodes(r),constructed(true){}
 	void finalize();
 	static void buildTraits(ASObject* o){};
@@ -725,6 +729,8 @@ public:
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
+	void append(_R<XML> x);
+	void append(_R<XMLList> x);
 };
 
 class Date: public ASObject

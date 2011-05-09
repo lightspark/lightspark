@@ -1109,7 +1109,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	{
 		intptr_t num2=val2->toInt();
 		intptr_t num1=val1->toInt();
-		LOG(LOG_CALLS,_("add ") << num1 << '+' << num2);
+		LOG(LOG_CALLS,"add " << num1 << '+' << num2);
 		val1->decRef();
 		val2->decRef();
 		return abstract_i(num1+num2);
@@ -1125,7 +1125,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	{
 		string a(val1->toString().raw_buf());
 		string b(val2->toString().raw_buf());
-		LOG(LOG_CALLS,_("add ") << a << '+' << b);
+		LOG(LOG_CALLS,"add " << a << '+' << b);
 		val1->decRef();
 		val2->decRef();
 		return Class<ASString>::getInstanceS(a+b);
@@ -1134,15 +1134,41 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
-		LOG(LOG_CALLS,_("add ") << num1 << '+' << num2);
+		LOG(LOG_CALLS,"add " << num1 << '+' << num2);
 		val1->decRef();
 		val2->decRef();
 		return abstract_d(num1+num2);
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Add between types ") << val1->getObjectType() << ' ' << val2->getObjectType());
-		return new Undefined;
+		//Check if the objects are both XML or XMLLists
+		Class_base* xmlClass=Class<XML>::getClass();
+		Class_base* xmlListClass=Class<XMLList>::getClass();
+
+		if((val1->getPrototype()==xmlClass || val1->getPrototype()==xmlListClass) &&
+			(val2->getPrototype()==xmlClass || val2->getPrototype()==xmlListClass))
+		{
+			cout << "XMLADD" << endl;
+			XMLList* newList=Class<XMLList>::getInstanceS(true);
+			if(val1->getPrototype()==xmlClass)
+				newList->append(_MR(static_cast<XML*>(val1)));
+			else //if(val1->getPrototype()==xmlListClass)
+				newList->append(_MR(static_cast<XMLList*>(val1)));
+
+			if(val2->getPrototype()==xmlClass)
+				newList->append(_MR(static_cast<XML*>(val2)));
+			else //if(val2->getPrototype()==xmlListClass)
+				newList->append(_MR(static_cast<XMLList*>(val2)));
+
+			//The references of val1 and val2 have been passed to the smart references
+			//no decRef is needed
+			return newList;
+		}
+		else
+		{
+			LOG(LOG_NOT_IMPLEMENTED,_("Add between types ") << val1->getObjectType() << ' ' << val2->getObjectType());
+			return new Undefined;
+		}
 	}
 
 }

@@ -1,0 +1,238 @@
+#!/usr/bin/python
+#This greps the source for SET_NAMESPACE, REGISTER_CLASS_NAME2,
+#sinit definition and the following ->set{Getter,Setter,Method}ByQName calls
+
+#It greps the documentation for all properties and methods
+#and distinquishes read-only from write-only and dual-access properties
+
+import sys
+import re
+from subprocess import *
+import os
+
+#These regexp are used for finding important pieces in the source
+sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
+rconstructor = re.compile('[^/]*->setConstructor\(Class<IFunction>::getFunction\([^)]*\)\).*')
+#looks like builtin->setVariableByQName("Object","namespace",Class<ASObject>::getClass());
+rclass = re.compile('.*builtin->setVariableByQName\("([^"]*)","([^"]*)",Class<([^>]*)>::getClass\(\)\);.*')
+#looks like builtin->setVariableByQName("BitmapData","flash.display",Class<ASObject>::getClass(QName("BitmapData","flash.display")));
+rstupclass = re.compile('.*builtin->setVariableByQName\("([^"]*)","([^"]*)",Class<([^>]*)>::getClass\(QName.*')
+#the line may start with anything but a comment character
+rget = re.compile('[^/]*->setGetterByQName\("([^"]*)".*')
+rset = re.compile('[^/]*->setSetterByQName\("([^"]*)".*')
+rmet = re.compile('[^/]*->setMethodByQName\("([^"]*)".*')
+
+def getFullname(cls,name):
+	if cls != "":
+		return cls + "." + name
+	else:
+		return name
+
+if not os.path.exists("pygil"):
+	print("This script is stupid! Please got to the scripts directory")
+	print("and run at from there by ./pygil")
+	exit(1)
+
+if len(sys.argv) < 2:
+	print("Call by ./pygil langref-directory")
+	print("If you do not have a langref directory,")
+	print("please download http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/standalone.zip")
+        print("and unpack it.")
+	exit(1)
+
+langref = sys.argv[1]
+if not os.path.exists(langref):
+	print("The langref directory was not found!")
+	print("Please download http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/standalone.zip")
+	print("and unpack it here.")
+	exit(1)
+
+classes = set([])
+getters = set([])
+setters = set([])
+methods = set([])
+stubclasses = set([])
+
+internalToExternal = {}
+curScope = ""
+curNamespace = ""
+
+#1. Step: parse scripting/abc.cpp to map the AS3 names to our class names
+f = open('../scripting/abc.cpp','r')
+for line in f:
+	m = rclass.match(line)
+        if m:
+		internalToExternal[m.group(3)] = getFullname(m.group(2),m.group(1))
+	m = rstupclass.match(line)
+	#Object is the only real implementation of ASObject
+	if m and m.group(1) != "Object":
+		stubclasses.add(m.group(1))
+f.close()
+
+#print internalToExternal
+
+#2. Step: parse the rest of the source files for the implementation of 
+p1 = Popen(["find", "..", "-name",'*.cpp'], stdout=PIPE)
+#return p1.communicate()[0]
+p2 = Popen(["xargs","grep","-h",
+	    "-e","sinit",
+	    "-e","set[a-zA-Z]*ByQName",
+	    "-e","setConstructor"], stdin=p1.stdout, stdout=PIPE)
+p1.stdout.close() 
+
+
+for line in p2.communicate()[0].split("\n"):
+	m = sinit.match(line)
+	if m:
+		curClass = m.group(1)
+		if curClass not in internalToExternal:
+			print "Warning: " + curClass + " is not registered in scripting/abc.cpp"
+		else:
+			curClass = internalToExternal[curClass]
+		curScope = curClass + "."
+		classes.add(curClass)
+		continue
+	m = rconstructor.match(line)
+	if m:
+		#the constructor is named after the class
+		methods.add(curScope + curScope[curScope[:-1].rfind('.')+1:-1])
+		continue
+	m = rget.match(line)
+	if m:
+		getters.add(curScope + m.group(1))
+		continue
+	m = rset.match(line)
+	if m:
+		setters.add(curScope + m.group(1))
+		continue
+	m = rmet.match(line)
+	if m:
+		methods.add(curScope + m.group(1))
+	
+#print getters
+#print setters
+
+#3. Step: parse documenation for classes, properties and methods
+
+#we need a lot of context to not extract inherited properties/methods
+exprstart = '<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>.*summaryTableDescription">'
+args = [ "-e", 's#.*<title>\([a-zA-Z0-9\.]*\) .*#n \\1#p',
+	 "-e", 's#.*'+exprstart +'\[read-only\].*#g \\1#p',
+	 "-e", 's#.*'+exprstart +'\[write-only\].*#s \\1#p',
+	 "-e", 's#.*'+exprstart +'[^\[].*#g \\1\\ns \\1#p',
+	 "-e", 's#.*<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><div class="summarySignature"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>(.*#m \\1#p' ]
+
+toplevelfiles = [ "ArgumentError.html", "Array.html", "Boolean.html", "Class.html", "Date.html", "DefinitionError.html", "Error.html", 
+		  "EvalError.html", "Function.html", "Math.html", "Namespace.html", "Number.html", "Object.html", "QName.html", "RangeError.html",
+		  "ReferenceError.html", "RegExp.html", "SecurityError.html", "String.html", "SyntaxError.html", "TimedTextTags.html",
+		  "TypeError.html", "URIError.html", "Vector.html", "VerifyError.html", "XML.html", "XMLList.html" ]
+findcmd = ["find",langref + "/flash"]
+for i in toplevelfiles:
+	findcmd.append(langref + "/" + i)
+findcmd.extend(["-name","*.html"])
+
+p1 = Popen(findcmd, stdout=PIPE)
+#return p1.communicate()[0]
+arglist = ["xargs", "sed","-n"]
+arglist.extend(args);
+p2 = Popen(arglist, stdin=p1.stdout, stdout=PIPE)
+p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
+dgetters = set([])
+dsetters = set([])
+dmethods = set([])
+dclasses = set([])
+mclasses = set([])
+curClass = ""
+
+for line in p2.communicate()[0].split("\n"):
+	if len(line)== 0:
+		continue
+	if line[0] == 'n':
+		curClass = line[2:]
+		dclasses.add(curClass)
+		if curClass not in classes:
+			mclasses.add(curClass)
+		continue
+	if line[0] == 'g':
+		dgetters.add((curClass,line[2:]))
+	if line[0] == 's':
+		dsetters.add((curClass,line[2:]))
+	if line[0] == 'm' and line[2:] != "constructor":
+		dmethods.add((curClass,line[2:]))
+
+mgetters = []
+msetters = []
+mmethods = []
+pmclasses = set([])
+missing = []
+fclasses = set([])
+
+for (cls,name) in dgetters:
+	if cls in mclasses:
+		continue #do not list member of missing classes
+	fullName = getFullname(cls,name)
+	if fullName not in getters:
+		if fullName in dsetters and not fullName in setters:
+			missing.append(fullName + " (getter/setter)")
+		else:
+			missing.append(fullName + " (getter)")
+		pmclasses.add(cls)
+		#mgetters.append(i)
+		#print "\t" +i
+
+for (cls,name) in dsetters:
+	if cls in mclasses:
+		continue #do not list member of missing classes
+	fullName = getFullname(cls,name)
+	if fullName not in setters:
+		if fullName in dgetters and not fullName in getters:
+			pass #handled above
+		else:
+			missing.append(fullName + " (getter)")
+		pmclasses.add(cls)
+		#msetters.append(i)
+		#print "\t" + i
+
+for (cls,name) in dmethods:
+	if cls in mclasses:
+		continue #do not list member of missing classes
+	fullName = getFullname(cls,name)
+	if fullName not in methods:
+		missing.append(fullName + " (method)")
+		#mmethods.append(i)
+		#print "\t" + i
+		pmclasses.add(cls)
+
+#Fully implemented are classes which are in the reference
+#docs and not in missing classes or partly missing classes
+for i in dclasses:
+	if i not in mclasses and i not in pmclasses:
+		fclasses.add(i)
+
+print "Fully implemented classes:"
+for i in sorted(fclasses):
+	print "\t" + i
+
+print "\nStub classes (currently implemented as ASObject):"
+for i in sorted(stubclasses):
+	print "\t" + i
+
+print "\nFully Missing classes:"
+for i in sorted(mclasses):
+	print "\t" + i
+
+print "\nMissing getters/setters/methods (in partially implemented classes):"
+for i in sorted(missing):
+	print "\t" + i
+#print mgetters
+#print msetters
+#print mmethods
+#print mclasses
+#print pmclasses
+
+print ""
+print "Number of fully implemented classes:           ", len(fclasses)
+print "Number of implemented getters/setters/methods: ", len(setters)+len(getters)+len(methods)
+print "Number of missing classes (of which are stubs):", len(mclasses), len(stubclasses)
+print "Number of missing getters/setters/methods:     ", (len(dsetters)+len(dgetters)+len(dmethods)) - (len(setters)+len(getters)+len(methods))
+print "Overall percentage completed:                  ", float(len(setters)+len(getters)+len(methods))/float(len(dsetters)+len(dgetters)+len(dmethods))*100

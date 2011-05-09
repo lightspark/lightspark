@@ -20,8 +20,6 @@
 #ifndef _SMARTREFS_H
 #define _SMARTREFS_H
 
-#include "asobject.h"
-
 namespace lightspark
 {
 

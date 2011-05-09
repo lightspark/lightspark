@@ -1074,19 +1074,33 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 {
 	if(skip_impl || !implEnable)
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
-		
+
+	//Check if this XMLList contains a single element
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
-
-	if(index<nodes.size())
-		return nodes[index].getPtr();
+	if(Array::isValidMultiname(name,index))
+	{
+		if(index<nodes.size())
+			return nodes[index].getPtr();
+		else
+			return NULL;
+	}
 	else
-		return NULL;
+	{
+		//Check if this XMLList contains a single element, if so forward the request
+		ASObject* ret=NULL;
+		if(nodes.size()==1)
+			ret=nodes[0]->getVariableByMultiname(name, skip_impl, base);
+
+		//No result yet, ask the base object
+		if(ret==NULL)
+			ret=ASObject::getVariableByMultiname(name,skip_impl,base);
+
+		return ret;
+	}
 }
 
 _NR<XML> XMLList::convertToXML() const

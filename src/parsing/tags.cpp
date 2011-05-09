@@ -1511,20 +1511,17 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):Dic
 	in >> CodecID;
 }
 
-void DefineVideoStreamTag::Render(bool maskEnabled)
+ASObject* DefineVideoStreamTag::instance() const
 {
-	LOG(LOG_NO_INFO,_("DefineVideoStreamTag Render"));
-/*	if(alpha==0)
-		return;
-	if(!visible)
-		return;*/
-	glColor4f(1,0,0,0);
-	glBegin(GL_QUADS);
-		glVertex2i(0,0);
-		glVertex2i(Width,0);
-		glVertex2i(Width,Height);
-		glVertex2i(0,Height);
-	glEnd();
+	DefineVideoStreamTag* ret=new DefineVideoStreamTag(*this);
+	if(bindedTo)
+	{
+		//A class is binded to this tag
+		ret->setPrototype(bindedTo);
+	}
+	else
+		ret->setPrototype(Class<Video>::getClass());
+	return ret;
 }
 
 DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):DictionaryTag(h)

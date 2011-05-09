@@ -662,6 +662,7 @@ public:
 	bool isEqual(ASObject* o);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
+	ASFUNCTION(generator);
 };
 
 class XML: public ASObject

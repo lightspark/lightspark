@@ -2189,6 +2189,11 @@ ASFUNCTIONBODY(Number,_toString)
 	return Class<ASString>::getInstanceS(th->Number::toString(false));
 }
 
+ASFUNCTIONBODY(Number,generator)
+{
+	return abstract_d(args[0]->toNumber());
+}
+
 tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];

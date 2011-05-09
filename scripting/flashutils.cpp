@@ -926,7 +926,19 @@ _R<ASObject> Proxy::nextName(uint32_t index)
 
 _R<ASObject> Proxy::nextValue(uint32_t index)
 {
-	::abort();
+	assert_and_throw(implEnable);
+	LOG(LOG_CALLS, _("Proxy::nextValue"));
+	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
+	multiname nextValueName;
+	nextValueName.name_type=multiname::NAME_STRING;
+	nextValueName.name_s="nextValue";
+	nextValueName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	ASObject* o=getVariableByMultiname(nextValueName,true);
+	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
+	IFunction* f=static_cast<IFunction*>(o);
+	ASObject* arg=abstract_i(index);
+	incRef();
+	return _MR(f->call(this,&arg,1));
 }
 
 ASFUNCTIONBODY(lightspark,setInterval)

@@ -1507,7 +1507,7 @@ ASFUNCTIONBODY(ASString,search)
 ASFUNCTIONBODY(ASString,match)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	if(args[0]==NULL || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
+	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 		return new Null;
 	Array* ret=NULL;
 	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
@@ -1537,6 +1537,7 @@ ASFUNCTIONBODY(ASString,match)
 		assert_and_throw(capturingGroups<10);
 		int ovector[30];
 		int offset=0;
+		ret=Class<Array>::getInstanceS();
 		do
 		{
 			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
@@ -1544,13 +1545,8 @@ ASFUNCTIONBODY(ASString,match)
 			{
 				//No matches or error
 				pcre_free(pcreRE);
-				if(ret==NULL)
-					return new Null;
-				else
-					return ret;
+				return ret;
 			}
-			if(ret==NULL)
-				ret=Class<Array>::getInstanceS();
 			ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
 			offset=ovector[1];
 		}

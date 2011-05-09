@@ -23,13 +23,14 @@
 		Tests.assertArrayEquals(["test1", 2.5], array, "push(): second element", true);
 		array.push("test3");
 		Tests.assertArrayEquals(["test1", 2.5, "test3"], array, "push(): third element", true);
+		array["normalMember"]="foo";
 	
 		var names:Array = new Array();
 		for(var name:String in array)
 		{
 			names.push(name);
 		}
-		Tests.assertArrayEquals(["0", "1", "2"], names, "'in' keyword", true);
+		Tests.assertArrayEquals(["0", "1", "2", "normalMember"], names, "'in' keyword", true);
 		
 		var a:Array=[76, 12, "3" ];
 

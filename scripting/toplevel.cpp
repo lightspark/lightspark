@@ -175,16 +175,26 @@ ASFUNCTIONBODY(Array,_concat)
 
 ASFUNCTIONBODY(Array,filter)
 {
-	//TODO: really implement
 	Array* th=static_cast<Array*>(obj);
-	//assert_and_throw(th->data.size()==0);
-	LOG(LOG_NOT_IMPLEMENTED,_("Array::filter STUB"));
+	assert_and_throw(argslen==1);
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[1];
 	Array* ret=Class<Array>::getInstanceS();
-	ret->data=th->data;
+
 	for(unsigned int i=0;i<ret->data.size();i++)
 	{
-		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
-			ret->data[i].data->incRef();
+		assert_and_throw(th->data[i].type==DATA_OBJECT);
+		params[0] = th->data[i].data;
+		ASObject* funcRet=f->call(new Null, params, 1);
+		if(funcRet)
+		{
+			if(Boolean_concrete(funcRet))
+			{
+				th->data[i].data->incRef();
+				ret->push(th->data[i].data);
+			}
+			funcRet->decRef();
+		}
 	}
 	return ret;
 }
@@ -204,6 +214,7 @@ ASFUNCTIONBODY(Array,forEach)
 
 	for(unsigned int i=0; i < th->data.size(); i++)
 	{
+		assert_and_throw(th->data[i].type==DATA_OBJECT);
 		params[0] = th->data[i].data;
 		th->data[i].data->incRef();
 		params[1] = abstract_i(i);

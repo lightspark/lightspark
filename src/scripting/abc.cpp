@@ -228,6 +228,9 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("GraphicsGradientFill","flash.display",
 			Class<ASObject>::getClass(QName("GraphicsGradientFill","flash.display")));
 	builtin->setVariableByQName("GraphicsPath","flash.display",Class<ASObject>::getClass(QName("GraphicsPath","flash.display")));
+	builtin->setVariableByQName("MorphShape","flash.display",Class<MorphShape>::getClass());
+	builtin->setVariableByQName("SpreadMethod","flash.display",Class<SpreadMethod>::getClass());
+	builtin->setVariableByQName("InterpolationMethod","flash.display",Class<InterpolationMethod>::getClass());
 
 	builtin->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")));
 	builtin->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass(QName("BitmapFilter","flash.filters")));

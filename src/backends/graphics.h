@@ -197,18 +197,38 @@ class CairoRenderer: public ITextureUploadable, public IThreadJob, public Sheep
 protected:
 	~CairoRenderer(){delete[] surfaceBytes;}
 	/**
-		The target texture for the rendering, must be non const as the operation will update the size
+	  The target texture for the rendering, must be non const as the operation will update the size
 	*/
 	CachedSurface& surface;
+	/**
+	  The whole transformation matrix that is applied to the rendered object
+	*/
 	MATRIX matrix;
+	/*
+	   The minimal x coordinate for all the points being drawn, in local coordinates
+	*/
 	uint32_t xOffset;
+	/*
+	   The minimal y coordinate for all the points being drawn, in local coordinates
+	*/
 	uint32_t yOffset;
 	uint32_t width;
 	uint32_t height;
+	/*
+	   A pointer to a memory buffer where cairo will draw
+	*/
 	uint8_t* surfaceBytes;
+	/*
+	   The tokens to be drawn
+	*/
 	const std::vector<GeomToken> tokens;
+	/*
+	   The scale to be applied in both the x and y axis.
+	   Useful to adapt points defined in pixels and twips (1/20 of pixel)
+	*/
 	const float scaleFactor;
 	bool uploadNeeded;
+	//Internal helpers
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection);
 	static bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill);
@@ -216,10 +236,27 @@ protected:
 	void cairoClean(cairo_t* cr) const;
 	cairo_surface_t* allocateSurface();
 public:
+	/*
+	   CairoRenderer constructor
+
+	   @param _o Used in a code path that must be reviewed. Please leave it here.
+	   @param _t GL surface where the final drawing will be uploaded
+	   @param _g The tokens to be drawn. This is copied internally.
+	   @param _m The whole transformation matrix
+	   @param _s The scale factor to be applied in both the x and y axis
+	*/
 	CairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, 
 			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s):
 			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),
 			surfaceBytes(NULL),tokens(_g),scaleFactor(_s),uploadNeeded(true){}
+	/*
+	   Hit testing helper. Uses cairo to find if a point in inside the shape
+
+	   @param tokens The tokens of the shape being tested
+	   @param scaleFactor The scale factor to be applied
+	   @param x The X in local coordinates
+	   @param y The Y in local coordinates
+	*/
 	static bool hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;

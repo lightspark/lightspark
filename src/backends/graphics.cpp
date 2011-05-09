@@ -418,6 +418,7 @@ const TextureChunk& CairoRenderer::getTexture()
 
 void CairoRenderer::uploadFence()
 {
+	//CairoRenderer destroys themselves after they're done
 	if(surfaceBytes)
 		Sheep::unlockOwner();
 	delete this;
@@ -442,8 +443,12 @@ void CairoRenderer::threadAbort()
 
 void CairoRenderer::jobFence()
 {
+	//If the data must be uploaded (there were no errors) the Job add itself to the upload queue.
+	//Otherwise it destroys itself
 	if(uploadNeeded)
 		sys->getRenderThread()->addUploadJob(this);
+	else
+		delete this;
 }
 
 void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y)
@@ -462,7 +467,6 @@ void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double contro
 
 cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection)
 {
-
 	cairo_pattern_t* pattern = NULL;
 
 	switch(style.FillStyleType)
@@ -750,6 +754,8 @@ void CairoRenderer::execute()
 	cairo_t* cr=cairo_create(cairoSurface);
 	cairoClean(cr);
 
+	//Make sure the rendering starts at 0,0 in surface coordinates
+	//This also guarantees that all the shape fills in width/height pixels
 	matrix.TranslateX-=xOffset;
 	matrix.TranslateY-=yOffset;
 	const cairo_matrix_t& mat=MATRIXToCairo(matrix);

@@ -419,9 +419,14 @@ class FontTag: public DictionaryTag, public Font
 {
 protected:
 	UI16_SWF FontID;
+	std::vector<SHAPE> GlyphShapeTable;
 public:
-	FontTag(RECORDHEADER h):DictionaryTag(h){}
-	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
+	FontTag(RECORDHEADER h):DictionaryTag(h) {}
+	const std::vector<SHAPE>& getGlyphShapes() const
+	{
+		return GlyphShapeTable;
+	}
+	int getId() { return FontID; }
 };
 
 class DefineFontTag: public FontTag
@@ -429,12 +434,8 @@ class DefineFontTag: public FontTag
 	friend class DefineTextTag; 
 protected:
 	std::vector<uint16_t> OffsetTable;
-	std::vector<SHAPE> GlyphShapeTable;
-
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return FontID; }
-	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFontInfoTag: public Tag
@@ -448,7 +449,6 @@ class DefineFont2Tag: public FontTag
 	friend class DefineTextTag; 
 private:
 	std::vector<uint32_t> OffsetTable;
-	std::vector < SHAPE > GlyphShapeTable;
 	bool FontFlagsHasLayout;
 	bool FontFlagsShiftJIS;
 	bool FontFlagsSmallText;
@@ -473,15 +473,12 @@ private:
 
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return FontID; }
-	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFont3Tag: public FontTag
 {
-private:
+public:
 	std::vector<uint32_t> OffsetTable;
-	std::vector < SHAPE > GlyphShapeTable;
 	UB FontFlagsHasLayout;
 	UB FontFlagsShiftJIS;
 	UB FontFlagsSmallText;
@@ -504,10 +501,7 @@ private:
 	UI16_SWF KerningCount;
 	std::vector <KERNINGRECORD> FontKerningTable;
 
-public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return FontID; }
-	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFont4Tag : public DictionaryTag
@@ -523,7 +517,7 @@ public:
 	virtual int getId() { return FontID; }
 };
 
-class DefineTextTag: public DictionaryTag, public DisplayObject
+class DefineTextTag: public DictionaryTag, public Shape
 {
 	friend class GLYPHENTRY;
 private:
@@ -533,6 +527,10 @@ private:
 	UI8 GlyphBits;
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
+	void computeCached();
+	void invalidate();
+	void requestInvalidation();
+	void boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 public:
 	int version;
 	DefineTextTag(RECORDHEADER h, std::istream& in,int v=1);

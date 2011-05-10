@@ -695,99 +695,132 @@ DefineText2Tag::DefineText2Tag(RECORDHEADER h, istream& in):DefineTextTag(h,in,2
 {
 }
 
+void DefineTextTag::computeCached()
+{
+	if(!cachedTokens.empty())
+		return;
+
+	FontTag* curFont;
+	std::list<FILLSTYLE> fillStyles;
+	Vector2 curPos;
+	FILLSTYLE fs(1);
+	fs.FillStyleType = SOLID_FILL;
+	fs.Color = RGBA(0,0,0,255);
+	fillStyles.push_back(fs);
+
+	for(size_t i=0; i< TextRecords.size();++i)
+	{
+		if(TextRecords[i].StyleFlagsHasFont)
+		{
+			DictionaryTag* it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
+			curFont=dynamic_cast<FontTag*>(it3);
+			assert_and_throw(curFont);
+		}
+		assert_and_throw(curFont);
+		if(TextRecords[i].StyleFlagsHasColor)
+		{
+			fillStyles.front().Color = TextRecords[i].TextColor;
+		}
+		if(TextRecords[i].StyleFlagsHasXOffset)
+		{
+					curPos.x = TextRecords[i].XOffset;
+		}
+		if(TextRecords[i].StyleFlagsHasYOffset)
+		{
+					curPos.y = TextRecords[i].YOffset;
+		}
+		/*
+		 * In DefineFont3Tags, shape's coordinates are 1024*20 times pixels size,
+		 * in all former DefineFont*Tags, its just 1024 times. We scale everything here
+		 * to 1024*20. And, of course, scale by the TextHeight.
+		 */
+		int scaling = TextRecords[i].TextHeight * ((dynamic_cast<DefineFont3Tag*>(curFont)) ? 1 : 20);
+		for(int j=0;j<TextRecords[i].GlyphCount;++j)
+		{
+			GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
+			const std::vector<SHAPERECORD>& sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
+			/* curPos is in pixel, but the glyph coordinates are 1024*20 times pixel size,
+			 * so we scale curPos. This is scaled back to pixels by cairo.
+			 */
+			FromShaperecordListToShapeVector(sr,cachedTokens,fillStyles,curPos*1024*20,scaling);
+			curPos.x += ge.GlyphAdvance;
+		}
+	}
+}
+
+void DefineTextTag::requestInvalidation()
+{
+	this->incRef();
+	sys->addToInvalidateQueue(_MR(this));
+}
+
+void DefineTextTag::invalidate()
+{
+	//Acquire the lock to avoid data changes
+//	SpinlockLocker locker(spinlock);
+	computeCached();
+	if(cachedTokens.empty())
+	{
+		//No contents, nothing to do
+		return;
+	}
+	uint32_t x,y,width,height;
+	number_t bxmin,bxmax,bymin,bymax;
+	boundsRect(bxmin,bxmax,bymin,bymax);
+	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,
+							   x,y,width,height);
+
+	float scale = 1.0f/1024.0f/20.0f/20.0f;
+	CairoRenderer* r=new CairoRenderer(&shepherd, cachedSurface, cachedTokens,
+									   getConcatenatedMatrix(), 0, 0, 1024*20*width, 1024*20*height, scale);
+	sys->addJob(r);
+}
+
+void DefineTextTag::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	int a=TextBounds.Xmin;
+	int b=TextBounds.Ymin;
+	int c=TextBounds.Xmax;
+	int d=TextBounds.Ymax;
+	if(a<0)
+		a-=19;
+	else
+		a+=19;
+	a/=20;
+	if(b<0)
+		b-=19;
+	else
+		b+=19;
+	b/=20;
+	if(c<0)
+		c-=19;
+	else
+		c+=19;
+	c/=20;
+	if(d<0)
+		d-=19;
+	else
+		d+=19;
+	d/=20;
+	xmin=a;
+	ymin=b;
+	xmax=c;
+	ymax=d;
+}
+
 void DefineTextTag::Render(bool maskEnabled)
 {
-	LOG(LOG_TRACE,"DefineText Render");
 	if(alpha==0)
 		return;
 	if(!visible)
 		return;
-	//TODO: reimplement
-/*	if(cached.size()==0)
-	{
-		FontTag* font=NULL;
-		int count=0;
-		std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
-		std::vector < GLYPHENTRY >::iterator it2;
-		for(;it!=TextRecords.end();++it)
-		{
-			if(it->StyleFlagsHasFont)
-			{
-				DictionaryTag* it3=loadedFrom->dictionaryLookup(it->FontID);
-				font=dynamic_cast<FontTag*>(it3);
-				if(font==NULL)
-					LOG(LOG_ERROR,_("Should be a FontTag"));
-			}
-			it2 = it->GlyphEntries.begin();
-			for(;it2!=(it->GlyphEntries.end());++it2)
-			{
-				//TODO: refactor to cache glyphs
-				vector<GeomShape> new_shapes;
-				font->genGlyphShape(new_shapes,it2->GlyphIndex);
-				for(unsigned int i=0;i<new_shapes.size();i++)
-					cached.push_back(GlyphShape(new_shapes[i],count));
 
-				count++;
-			}
-		}
-	}
-	std::vector < TEXTRECORD >::iterator it=TextRecords.begin();
-	if(it==TextRecords.end()) //Nothing to draw
+	if(skipRender(maskEnabled))
 		return;
-	std::vector < GLYPHENTRY >::iterator it2;
-	int x=0,y=0;
 
-	//Build a fake FILLSTYLEs
-	FILLSTYLE f;
-	f.FillStyleType=SOLID_FILL;
-	f.Color=it->TextColor;
-	MatrixApplier ma(getMatrix());
-	ma.concat(TextMatrix);
-	//Shapes are defined in twips, so scale then down
-	glScalef(0.05,0.05,1);
-
-	if(!isSimple())
-		rt->glAcquireTempBuffer(TextBounds.Xmin,TextBounds.Xmax, TextBounds.Ymin,TextBounds.Ymax);
-
-	//The next 1/20 scale is needed by DefineFont3. Should be conditional
-	glScalef(0.05,0.05,1);
-	float scale_cur=1;
-	int count=0;
-	unsigned int shapes_done=0;
-	for(;it!=TextRecords.end();++it)
-	{
-		if(it->StyleFlagsHasFont)
-		{
-			float scale=it->TextHeight;
-			scale/=1024;
-			glScalef(scale/scale_cur,scale/scale_cur,1);
-			scale_cur=scale;
-		}
-		it2 = it->GlyphEntries.begin();
-		int x2=x,y2=y;
-		x2+=(*it).XOffset;
-		y2+=(*it).YOffset;
-
-		for(;it2!=(it->GlyphEntries.end());++it2)
-		{
-			while(shapes_done<cached.size() && cached[shapes_done].id==count)
-			{
-				assert_and_throw(cached[shapes_done].color==1)
-				cached[shapes_done].style=&f;
-
-				cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
-				shapes_done++;
-				if(shapes_done==cached.size())
-					break;
-			}
-			x2+=it2->GlyphAdvance;
-			count++;
-		}
-	}
-
-	if(!isSimple())
-		rt->glBlitTempBuffer(TextBounds.Xmin,TextBounds.Xmax,TextBounds.Ymin,TextBounds.Ymax);
-	ma.unapply();*/
+	number_t t1,t2,t3,t4;
+	boundsRect(t1,t2,t3,t4);
+	Shape::renderImpl(maskEnabled,t1,t2,t3,t4);
 }
 
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),Shapes(1)

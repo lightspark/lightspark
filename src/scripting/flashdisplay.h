@@ -304,7 +304,7 @@ protected:
 	std::vector<GeomToken> cachedTokens;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 public:
-	Shape():GraphicsContainer(this){}
+	Shape();
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

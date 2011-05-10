@@ -2185,6 +2185,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 	return abstract_i(ret);
 }
 
+Shape::Shape():GraphicsContainer(this)
+{
+	graphics = _MR(Class<Graphics>::getInstanceS(this));
+}
+
 void Shape::finalize()
 {
 	DisplayObject::finalize();
@@ -2206,15 +2211,12 @@ void Shape::buildTraits(ASObject* o)
 
 bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(!graphics.isNull())
+	bool ret=graphics->getBounds(xmin,xmax,ymin,ymax);
+	if(ret)
 	{
-		bool ret=graphics->getBounds(xmin,xmax,ymin,ymax);
-		if(ret)
-		{
-			getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-			getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-			return true;
-		}
+		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
+		return true;
 	}
 	return false;
 }
@@ -2234,12 +2236,9 @@ _NR<InteractiveObject> Shape::hitTest(_NR<InteractiveObject> last, number_t x, n
 	if(!mask.isNull())
 		throw UnsupportedException("Support masks in Shape::hitTest");
 
-	if(!graphics.isNull())
-	{
-		//The coordinates are already local
-		if(graphics->hitTest(x,y))
-			return last;
-	}
+	//The coordinates are already local
+	if(graphics->hitTest(x,y))
+		return last;
 
 	return NullRef;
 }
@@ -2261,7 +2260,7 @@ void Shape::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, 
 void Shape::Render(bool maskEnabled)
 {
 	//If graphics is not yet initialized we have nothing to do
-	if(graphics.isNull() || skipRender(maskEnabled))
+	if(skipRender(maskEnabled))
 		return;
 
 	number_t t1,t2,t3,t4;
@@ -2278,18 +2277,14 @@ float Shape::getScaleFactor() const
 
 void Shape::invalidate()
 {
-	assert(!graphics.isNull());
 	invalidateGraphics();
 	cachedTokens=graphics->getGraphicsTokens();
 }
 
 void Shape::requestInvalidation()
 {
-	if(!graphics.isNull())
-	{
-		this->incRef();
-		sys->addToInvalidateQueue(_MR(this));
-	}
+	this->incRef();
+	sys->addToInvalidateQueue(_MR(this));
 }
 
 ASFUNCTIONBODY(Shape,_constructor)
@@ -2301,10 +2296,6 @@ ASFUNCTIONBODY(Shape,_constructor)
 ASFUNCTIONBODY(Shape,_getGraphics)
 {
 	Shape* th=static_cast<Shape*>(obj);
-	//Probably graphics is not used often, so create it here
-	if(th->graphics.isNull())
-		th->graphics=_MR(Class<Graphics>::getInstanceS(th));
-
 	th->graphics->incRef();
 	return th->graphics.getPtr();
 }

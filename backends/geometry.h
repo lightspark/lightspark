@@ -33,7 +33,7 @@ class Vector2
 {
 public:
 	int x,y;
-	Vector2(int a, int b):x(a),y(b){}
+	Vector2(int a=0, int b=0):x(a),y(b){}
 	bool operator==(const Vector2& v)const{return v.x==x && v.y==y;}
 	bool operator!=(const Vector2& v)const{return v.x!=x || v.y!=y;}
 	bool operator<(const Vector2& v) const {return (y==v.y)?(x < v.x):(y < v.y);}

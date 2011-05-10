@@ -104,8 +104,6 @@ private:
 	void computeCached();
 	void invalidate();
 	void requestInvalidation();
-	void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, 
-			std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles);
 	/*
 	   	Computes the bounding rect, this is a non-virtual function!
 	*/

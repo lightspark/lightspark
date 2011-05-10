@@ -320,6 +320,10 @@ public:
 	void requestInvalidation();
 	const std::vector<GeomToken>& getTokens();
 	float getScaleFactor() const;
+
+	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
+			std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles,
+			const Vector2& offset = Vector2(0,0), int scaling=1);
 };
 
 class MorphShape: public DisplayObject

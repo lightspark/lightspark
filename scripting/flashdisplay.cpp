@@ -2297,6 +2297,79 @@ void Shape::requestInvalidation()
 	}
 }
 
+/*! \brief Generate a vector of shapes from a SHAPERECORD list
+* * \param cur SHAPERECORD list head
+* * \param shapes a vector to be populated with the shapes */
+
+void Shape::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens,
+	const std::list<FILLSTYLE>& fillStyles, const Vector2& offset, int scaling)
+{
+	int startX=offset.x;
+	int startY=offset.y;
+	unsigned int color0=0;
+	unsigned int color1=0;
+
+	ShapesBuilder shapesBuilder;
+
+	for(unsigned int i=0;i<shapeRecords.size();i++)
+	{
+		const SHAPERECORD* cur=&shapeRecords[i];
+		if(cur->TypeFlag)
+		{
+			if(cur->StraightFlag)
+			{
+				Vector2 p1(startX,startY);
+				startX+=cur->DeltaX * scaling;
+				startY+=cur->DeltaY * scaling;
+				Vector2 p2(startX,startY);
+
+				if(color0)
+					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
+				if(color1)
+					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+			}
+			else
+			{
+				Vector2 p1(startX,startY);
+				startX+=cur->ControlDeltaX * scaling;
+				startY+=cur->ControlDeltaY * scaling;
+				Vector2 p2(startX,startY);
+				startX+=cur->AnchorDeltaX * scaling;
+				startY+=cur->AnchorDeltaY * scaling;
+				Vector2 p3(startX,startY);
+
+				if(color0)
+					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
+				if(color1)
+					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
+			}
+		}
+		else
+		{
+			if(cur->StateMoveTo)
+			{
+				startX=cur->MoveDeltaX * scaling + offset.x;
+				startY=cur->MoveDeltaY * scaling + offset.y;
+			}
+/*			if(cur->StateLineStyle)
+			{
+				cur_path->state.validStroke=true;
+				cur_path->state.stroke=cur->LineStyle;
+			}*/
+			if(cur->StateFillStyle1)
+			{
+				color1=cur->FillStyle1;
+			}
+			if(cur->StateFillStyle0)
+			{
+				color0=cur->FillStyle0;
+			}
+		}
+	}
+
+	shapesBuilder.outputTokens(fillStyles, tokens);
+}
+
 ASFUNCTIONBODY(Shape,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL,0);

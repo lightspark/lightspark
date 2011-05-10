@@ -58,7 +58,7 @@ curScope = ""
 curNamespace = ""
 
 #1. Step: parse scripting/abc.cpp to map the AS3 names to our class names
-f = open('../scripting/abc.cpp','r')
+f = open('../src/scripting/abc.cpp','r')
 for line in f:
 	m = rclass.match(line)
         if m:

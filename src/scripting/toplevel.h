@@ -680,6 +680,7 @@ private:
 	void toXMLString_priv(xmlBufferPtr buf);
 	void buildFromString(const std::string& str);
 	bool constructed;
+	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
 public:
 	XML();
 	XML(const std::string& str);
@@ -704,6 +705,7 @@ public:
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
         xmlElementType getNodeKind() const;
+	bool isEqual(ASObject* r);
 };
 
 class XMLList: public ASObject
@@ -735,6 +737,7 @@ public:
 	void append(_R<XML> x);
 	void append(_R<XMLList> x);
 	tiny_string toString(bool debugMsg=false);
+	bool isEqual(ASObject* r);
 };
 
 class Date: public ASObject

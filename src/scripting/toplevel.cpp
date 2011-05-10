@@ -2003,8 +2003,17 @@ bool ASString::isEqual(ASObject* r)
 		const ASString* s=static_cast<const ASString*>(r);
 		return s->data==data;
 	}
-	else
-		return false;
+	else if(r->getObjectType()==T_OBJECT)
+	{
+		XMLList *xl=dynamic_cast<XMLList *>(r);
+		if(xl)
+			return xl->isEqual(this);
+		XML *x=dynamic_cast<XML *>(r);
+		if(x && x->hasSimpleContent())
+			return x->toString()==data;
+	}
+	
+	return false;
 }
 
 TRISTATE ASString::isLess(ASObject* r)
@@ -2066,8 +2075,14 @@ bool Undefined::isEqual(ASObject* r)
 		return true;
 	if(r->getObjectType()==T_NULL)
 		return true;
-	else
-		return false;
+	if(r->getObjectType()==T_OBJECT)
+	{
+		XMLList *xl=dynamic_cast<XMLList *>(r);
+		if(xl)
+			return xl->isEqual(this);
+	}
+
+	return false;
 }
 
 int Undefined::toInt()

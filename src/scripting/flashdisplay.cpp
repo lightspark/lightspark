@@ -422,6 +422,18 @@ void GraphicsContainer::invalidateGraphics()
 		//No contents, nothing to do
 		return;
 	}
+	/* scale the bounding box coordinates and round them to a bigger integer box */
+	#define roundDown(x) \
+		copysign(floor(abs(x)), x)
+	#define roundUp(x) \
+		copysign(ceil(abs(x)), x)
+	bxmin = roundDown(bxmin*graphics->scaling);
+	bxmax = roundUp(bxmax*graphics->scaling);
+	bymin = roundDown(bymin*graphics->scaling);
+	bymax = roundUp(bymax*graphics->scaling);
+	#undef roundDown
+	#undef roundUp
+
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
@@ -2188,6 +2200,12 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 Shape::Shape():GraphicsContainer(this)
 {
 	graphics = _MR(Class<Graphics>::getInstanceS(this));
+
+}
+
+Shape::Shape(const std::vector<GeomToken>& tokens, float scaling):GraphicsContainer(this)
+{
+	graphics = _MR(Class<Graphics>::getInstanceS(this, tokens, scaling));
 }
 
 void Shape::finalize()

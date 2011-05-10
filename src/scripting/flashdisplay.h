@@ -254,15 +254,17 @@ private:
 	int curX, curY;
 	GraphicsContainer *const owner;
 	//TODO: Add spinlock
+	const float scaling;
 public:
-	float scaling;
-	Graphics():owner(NULL)
+	Graphics():owner(NULL), scaling(0.0f)
 	{
 		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
 	Graphics(GraphicsContainer* _o):curX(0),curY(0),owner(_o), scaling(1.0f)
 	{
 	}
+	Graphics(GraphicsContainer* _o, const std::vector<GeomToken>& _tokens, float _scaling)
+		: curX(0),curY(0),owner(_o), scaling(_scaling), tokens(_tokens) {}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -305,6 +307,7 @@ protected:
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 public:
 	Shape();
+	Shape(const std::vector<GeomToken>& tokens, float scaling);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

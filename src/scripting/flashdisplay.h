@@ -272,6 +272,10 @@ protected:
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	void Render(bool maskEnabled);
 	bool tokensEmpty() const { return tokens.empty(); }
+public:
+	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
+												 std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles,
+												 const Vector2& offset = Vector2(), int scaling = 1);
 };
 
 /* This objects paints to its owners tokens */

@@ -101,8 +101,6 @@ public:
 class DefineShapeTag: public DictionaryTag
 {
 protected:
-	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
-					std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles);
 	UI16_SWF ShapeId;
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;

@@ -793,21 +793,21 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DefineShapeTag(h,2)
 {
 	LOG(LOG_TRACE,_("DefineShape2Tag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DefineShape2Tag(h,3)
 {
 	LOG(LOG_TRACE,_("DefineShape3Tag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3Tag(h,4)
@@ -820,7 +820,7 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3T
 	UsesNonScalingStrokes=UB(1,bs);
 	UsesScalingStrokes=UB(1,bs);
 	in >> Shapes;
-	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
@@ -875,79 +875,6 @@ void DefineMorphShapeTag::Render(bool maskEnabled)
 		rt->glReleaseIdBuffer();
 	}
 	glPopMatrix();*/
-}
-
-/*! \brief Generate a vector of shapes from a SHAPERECORD list
-* * \param cur SHAPERECORD list head
-* * \param shapes a vector to be populated with the shapes */
-
-void DefineShapeTag::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens,
-	const std::list<FILLSTYLE>& fillStyles)
-{
-	int startX=0;
-	int startY=0;
-	unsigned int color0=0;
-	unsigned int color1=0;
-
-	ShapesBuilder shapesBuilder;
-
-	for(unsigned int i=0;i<shapeRecords.size();i++)
-	{
-		const SHAPERECORD* cur=&shapeRecords[i];
-		if(cur->TypeFlag)
-		{
-			if(cur->StraightFlag)
-			{
-				Vector2 p1(startX,startY);
-				startX+=cur->DeltaX;
-				startY+=cur->DeltaY;
-				Vector2 p2(startX,startY);
-				
-				if(color0)
-					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
-				if(color1)
-					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
-			}
-			else
-			{
-				Vector2 p1(startX,startY);
-				startX+=cur->ControlDeltaX;
-				startY+=cur->ControlDeltaY;
-				Vector2 p2(startX,startY);
-				startX+=cur->AnchorDeltaX;
-				startY+=cur->AnchorDeltaY;
-				Vector2 p3(startX,startY);
-
-				if(color0)
-					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
-				if(color1)
-					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
-			}
-		}
-		else
-		{
-			if(cur->StateMoveTo)
-			{
-				startX=cur->MoveDeltaX;
-				startY=cur->MoveDeltaY;
-			}
-/*			if(cur->StateLineStyle)
-			{
-				cur_path->state.validStroke=true;
-				cur_path->state.stroke=cur->LineStyle;
-			}*/
-			if(cur->StateFillStyle1)
-			{
-				color1=cur->FillStyle1;
-			}
-			if(cur->StateFillStyle0)
-			{
-				color0=cur->FillStyle0;
-			}
-		}
-	}
-
-	shapesBuilder.outputTokens(fillStyles, tokens);
 }
 
 //void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

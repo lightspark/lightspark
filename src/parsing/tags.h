@@ -496,7 +496,7 @@ public:
 	virtual int getId() { return FontID; }
 };
 
-class DefineTextTag: public DictionaryTag, public DisplayObject
+class DefineTextTag: public DictionaryTag
 {
 	friend class GLYPHENTRY;
 private:
@@ -506,25 +506,13 @@ private:
 	UI8 GlyphBits;
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
+	mutable std::vector<GeomToken> tokens;
+	void computeCached() const;
 public:
 	int version;
 	DefineTextTag(RECORDHEADER h, std::istream& in,int v=1);
 	int getId(){ return CharacterId; }
-	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		getMatrix().multiply2D(TextBounds.Xmin/20,TextBounds.Ymin/20,xmin,ymin);
-		getMatrix().multiply2D(TextBounds.Xmax/20,TextBounds.Ymax/20,xmax,ymax);
-		
-		TextMatrix.multiply2D(xmin,ymin,xmin,ymin);
-		TextMatrix.multiply2D(xmax,ymax,xmax,ymax);
-		//TODO: adapt for rotation
-		return true;
-	}
-	ASObject* instance() const
-	{
-		return new DefineTextTag(*this);
-	}
+	ASObject* instance() const;
 };
 
 class DefineSpriteTag: public DictionaryTag, public MovieClip

@@ -81,6 +81,7 @@ char *dataFileRead(const char *fn)
 	const char *paths[] = { 
 		".",
 		"..",
+		"src",
 		DATADIR,
 		"/usr/share/lightspark",
 	};

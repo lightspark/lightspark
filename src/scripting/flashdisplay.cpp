@@ -2535,6 +2535,7 @@ ASFUNCTIONBODY(Graphics,clear)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	th->tokens.clear();
+	th->owner->owner->requestInvalidation();
 	return NULL;
 }
 

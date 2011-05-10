@@ -426,7 +426,7 @@ void GraphicsContainer::invalidateGraphics()
 	if(width==0 || height==0)
 		return;
 	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, graphics->tokens,
-				owner->getConcatenatedMatrix(), x, y, width, height, 1);
+				owner->getConcatenatedMatrix(), x, y, width, height, graphics->scaling);
 	sys->addJob(r);
 }
 

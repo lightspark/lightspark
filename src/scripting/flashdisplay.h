@@ -255,11 +255,12 @@ private:
 	GraphicsContainer *const owner;
 	//TODO: Add spinlock
 public:
+	float scaling;
 	Graphics():owner(NULL)
 	{
 		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
-	Graphics(GraphicsContainer* _o):curX(0),curY(0),owner(_o)
+	Graphics(GraphicsContainer* _o):curX(0),curY(0),owner(_o), scaling(1.0f)
 	{
 	}
 	static void sinit(Class_base* c);

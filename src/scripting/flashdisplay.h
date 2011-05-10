@@ -278,7 +278,8 @@ public:
 	ASFUNCTION(cubicCurveTo);
 	ASFUNCTION(clear);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	std::vector<GeomToken> getGraphicsTokens() const;
+	const std::vector<GeomToken>& getGraphicsTokens() const;
+	void setGraphicsTokens(const std::vector<GeomToken>& tokens);
 	bool hitTest(number_t x, number_t y) const;
 };
 

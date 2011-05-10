@@ -2453,9 +2453,14 @@ void Graphics::buildTraits(ASObject* o)
 {
 }
 
-vector<GeomToken> Graphics::getGraphicsTokens() const
+const vector<GeomToken>& Graphics::getGraphicsTokens() const
 {
 	return tokens;
+}
+
+void Graphics::setGraphicsTokens(const std::vector<GeomToken>& _tokens)
+{
+	tokens = _tokens;
 }
 
 bool Graphics::hitTest(number_t x, number_t y) const

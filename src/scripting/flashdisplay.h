@@ -103,10 +103,6 @@ public:
 	virtual void invalidate();
 	virtual void requestInvalidation();
 	MATRIX getConcatenatedMatrix() const;
-	virtual const std::vector<GeomToken>& getTokens()
-	{
-		throw RunTimeException("DisplayObject::getTokens");
-	}
 	virtual float getScaleFactor() const
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
@@ -318,7 +314,6 @@ public:
 	bool isOpaque(number_t x, number_t y) const;
 	void invalidate();
 	void requestInvalidation();
-	const std::vector<GeomToken>& getTokens();
 	float getScaleFactor() const;
 };
 

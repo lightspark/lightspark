@@ -2271,11 +2271,6 @@ void Shape::Render(bool maskEnabled)
 	Shape::renderImpl(maskEnabled, t1, t2, t3, t4);
 }
 
-const vector<GeomToken>& Shape::getTokens()
-{
-	return cachedTokens;
-}
-
 float Shape::getScaleFactor() const
 {
 	return 1;

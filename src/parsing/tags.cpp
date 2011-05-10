@@ -417,7 +417,7 @@ void lightspark::ignore(istream& i, int count)
 	delete[] buf;
 }
 
-DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h)
+DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h, 20)
 {
 	LOG(LOG_TRACE,_("DefineFont"));
 	in >> FontID;
@@ -442,7 +442,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h)
 	}
 }
 
-DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
+DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h, 20)
 {
 	LOG(LOG_TRACE,_("DefineFont2"));
 	in >> FontID;
@@ -531,7 +531,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	ignore(in,KerningCount*4);
 }
 
-DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
+DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h, 1)
 {
 	LOG(LOG_TRACE,_("DefineFont3"));
 	in >> FontID;

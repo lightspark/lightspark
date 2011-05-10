@@ -392,9 +392,19 @@ class FontTag: public DictionaryTag, public Font
 {
 protected:
 	UI16_SWF FontID;
+	std::vector<SHAPE> GlyphShapeTable;
 public:
-	FontTag(RECORDHEADER h):DictionaryTag(h){}
-	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
+	/* Multiply the coordinates of the SHAPEs by this
+	 * value to get a resolution of 1024*20th pixel
+	 * DefineFont3Tag sets 1 here, the rest set 20
+	 */
+	const int scaling;
+	FontTag(RECORDHEADER h, int _scaling):DictionaryTag(h), scaling(_scaling) {}
+	const std::vector<SHAPE>& getGlyphShapes() const
+	{
+		return GlyphShapeTable;
+	}
+	int getId() { return FontID; }
 };
 
 class DefineFontTag: public FontTag
@@ -402,12 +412,8 @@ class DefineFontTag: public FontTag
 	friend class DefineTextTag; 
 protected:
 	std::vector<uint16_t> OffsetTable;
-	std::vector<SHAPE> GlyphShapeTable;
-
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return FontID; }
-	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFontInfoTag: public Tag
@@ -421,7 +427,6 @@ class DefineFont2Tag: public FontTag
 	friend class DefineTextTag; 
 private:
 	std::vector<uint32_t> OffsetTable;
-	std::vector < SHAPE > GlyphShapeTable;
 	bool FontFlagsHasLayout;
 	bool FontFlagsShiftJIS;
 	bool FontFlagsSmallText;
@@ -446,15 +451,12 @@ private:
 
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return FontID; }
-	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFont3Tag: public FontTag
 {
 private:
 	std::vector<uint32_t> OffsetTable;
-	std::vector < SHAPE > GlyphShapeTable;
 	UB FontFlagsHasLayout;
 	UB FontFlagsShiftJIS;
 	UB FontFlagsSmallText;
@@ -479,8 +481,6 @@ private:
 
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return FontID; }
-	//virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFont4Tag : public DictionaryTag

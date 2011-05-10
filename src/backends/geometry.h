@@ -24,7 +24,6 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <GL/glew.h>
 
 namespace lightspark
 {

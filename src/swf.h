@@ -43,7 +43,6 @@
 
 #include "platforms/pluginutils.h"
 
-#include <GL/glew.h>
 #ifndef WIN32
 #include <GL/glx.h>
 #else

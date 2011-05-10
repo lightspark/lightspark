@@ -19,7 +19,6 @@
 
 #include "compat.h"
 #include <assert.h>
-#include <GL/glew.h>
 
 #include "decoder.h"
 #include "platforms/fastpaths.h"

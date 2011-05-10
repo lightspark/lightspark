@@ -33,7 +33,6 @@
 #include "swf.h"
 #include "logger.h"
 #include "frame.h"
-#include <GL/glew.h>
 #include "compat.h"
 
 #undef RGB

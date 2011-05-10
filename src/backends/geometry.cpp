@@ -21,7 +21,6 @@
 #include <fstream>
 #include <cmath>
 #include <algorithm>
-#include <GL/glew.h>
 #include "swftypes.h"
 #include "logger.h"
 #include "geometry.h"

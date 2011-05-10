@@ -98,32 +98,23 @@ public:
 	virtual void execute(RootMovieClip* root)=0;
 };
 
-class DefineShapeTag: public DictionaryTag, public Shape
+class DefineShapeTag: public DictionaryTag
 {
-private:
-	void computeCached();
-	void invalidate();
-	void requestInvalidation();
-	void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, 
-			std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles);
-	/*
-	   	Computes the bounding rect, this is a non-virtual function!
-	*/
-	void boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 protected:
+	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
+					std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles);
 	UI16_SWF ShapeId;
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;
-	DefineShapeTag(RECORDHEADER h,int v):DictionaryTag(h),Shapes(v){};
+	/* tokens are computed from Shapes */
+	std::vector<GeomToken> tokens;
+	DefineShapeTag(RECORDHEADER h,int v):DictionaryTag(h),Shapes(v) {}
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	ASObject* instance() const
 	{
-		DefineShapeTag* ret=new DefineShapeTag(*this);
+		Shape* ret=new Shape(tokens, 1.0f/20.0f);
 		ret->setPrototype(Class<Shape>::getClass());
 		return ret;
 	}
@@ -135,12 +126,6 @@ protected:
 	DefineShape2Tag(RECORDHEADER h, int v):DefineShapeTag(h,v){};
 public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
-	ASObject* instance() const
-	{
-		DefineShape2Tag* ret=new DefineShape2Tag(*this);
-		ret->setPrototype(Class<Shape>::getClass());
-		return ret;
-	}
 };
 
 class DefineShape3Tag: public DefineShape2Tag
@@ -150,12 +135,6 @@ protected:
 public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	ASObject* instance() const
-	{
-		DefineShape3Tag* ret=new DefineShape3Tag(*this);
-		ret->setPrototype(Class<Shape>::getClass());
-		return ret;
-	}
 };
 
 class DefineShape4Tag: public DefineShape3Tag
@@ -168,12 +147,6 @@ private:
 public:
 	DefineShape4Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	ASObject* instance() const
-	{
-		DefineShape4Tag* ret=new DefineShape4Tag(*this);
-		ret->setPrototype(Class<Shape>::getClass());
-		return ret;
-	}
 };
 
 class DefineMorphShapeTag: public DictionaryTag, public MorphShape

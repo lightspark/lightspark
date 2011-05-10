@@ -793,18 +793,21 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
+	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DefineShapeTag(h,2)
 {
 	LOG(LOG_TRACE,_("DefineShape2Tag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
+	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DefineShape2Tag(h,3)
 {
 	LOG(LOG_TRACE,_("DefineShape3Tag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
+	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3Tag(h,4)
@@ -817,6 +820,7 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3T
 	UsesNonScalingStrokes=UB(1,bs);
 	UsesScalingStrokes=UB(1,bs);
 	in >> Shapes;
+	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
@@ -871,118 +875,6 @@ void DefineMorphShapeTag::Render(bool maskEnabled)
 		rt->glReleaseIdBuffer();
 	}
 	glPopMatrix();*/
-}
-
-void DefineShapeTag::computeCached()
-{
-	if(cachedTokens.empty())
-		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cachedTokens,Shapes.FillStyles.FillStyles);
-}
-
-void DefineShapeTag::requestInvalidation()
-{
-	this->incRef();
-	sys->addToInvalidateQueue(_MR(this));
-}
-
-void DefineShapeTag::invalidate()
-{
-	//Acquire the lock to avoid data changes
-//	SpinlockLocker locker(spinlock);
-	computeCached();
-	if(cachedTokens.empty())
-	{
-		//No contents, nothing to do
-		return;
-	}
-	uint32_t x,y,width,height;
-	number_t bxmin,bxmax,bymin,bymax;
-	boundsRect(bxmin,bxmax,bymin,bymax);
-	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
-	CairoRenderer* r=new CairoRenderer(&shepherd, cachedSurface, cachedTokens, getConcatenatedMatrix(), x, y, width, height, 0.05);
-	sys->addJob(r);
-}
-
-void DefineShapeTag::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	int a=ShapeBounds.Xmin;
-	int b=ShapeBounds.Ymin;
-	int c=ShapeBounds.Xmax;
-	int d=ShapeBounds.Ymax;
-	if(a<0)
-		a-=19;
-	else
-		a+=19;
-	a/=20;
-	if(b<0)
-		b-=19;
-	else
-		b+=19;
-	b/=20;
-	if(c<0)
-		c-=19;
-	else
-		c+=19;
-	c/=20;
-	if(d<0)
-		d-=19;
-	else
-		d+=19;
-	d/=20;
-	xmin=a;
-	ymin=b;
-	xmax=c;
-	ymax=d;
-}
-
-bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	//Apply transformation with the current matrix
-	boundsRect(xmin,xmax,ymin,ymax);
-	getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-	getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-	//getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
-	//getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
-	//TODO: adapt for rotation
-	return true;
-}
-
-_NR<InteractiveObject> DefineShapeTag::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
-{
-	//TODO: TOLOCK
-	if(!mask.isNull())
-		throw UnsupportedException("Support masks in DefineShapeTag::hitTest");
-
-	number_t x1,x2,y1,y2;
-	boundsRect(x1,x2,y1,y2);
-	if(x<x1 || x>x2 || y<y1 || y>y2)
-		return NullRef;
-
-	bool ret=CairoRenderer::hitTest(cachedTokens, 0.05, x, y);
-	if(ret)
-	{
-		//Also test if the we are under the mask (if any)
-		if(sys->getInputThread()->isMaskPresent())
-		{
-			number_t globalX, globalY;
-			getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-			if(!sys->getInputThread()->isMasked(globalX, globalY))
-				return NullRef;
-		}
-		return last;
-	}
-	else
-		return NullRef;
-}
-
-void DefineShapeTag::Render(bool maskEnabled)
-{
-	if(skipRender(maskEnabled))
-		return;
-
-	number_t t1,t2,t3,t4;
-	DefineShapeTag::boundsRect(t1,t2,t3,t4);
-	Shape::renderImpl(maskEnabled,t1,t2,t3,t4);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list

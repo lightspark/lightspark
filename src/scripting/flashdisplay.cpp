@@ -2296,7 +2296,6 @@ float Shape::getScaleFactor() const
 void Shape::invalidate()
 {
 	invalidateGraphics();
-	cachedTokens=graphics->getGraphicsTokens();
 }
 
 void Shape::requestInvalidation()

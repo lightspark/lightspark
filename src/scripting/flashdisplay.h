@@ -303,7 +303,6 @@ protected:
 class Shape: public DisplayObject, public GraphicsContainer
 {
 protected:
-	std::vector<GeomToken> cachedTokens;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 public:
 	Shape();

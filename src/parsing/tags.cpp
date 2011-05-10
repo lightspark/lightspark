@@ -607,7 +607,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	ignore(in,KerningCount*4);
 }
 
-DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):FontTag(h)
+DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_TRACE,_("DefineFont4"));
 	int dest=in.tellg();

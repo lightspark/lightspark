@@ -1143,6 +1143,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				// We should catch exceptions and report them
 				if(ev->exception != NULL)
 				{
+					//SyncEvents are only used in this code path
 					try
 					{
 						ev->obj->incRef();
@@ -1156,10 +1157,21 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 						// Report the exception
 						*(ev->exception) = exception;
 					}
+					catch(LightsparkException& e)
+					{
+						//An internal error happended, sync and rethrow
+						if(!ev->sync.isNull())
+							ev->sync->sync();
+						throw e;
+					}
+					// We should synchronize the passed SynchronizationEvent
+					if(!ev->sync.isNull())
+						ev->sync->sync();
 				}
 				// Exceptions aren't expected and shouldn't be ignored
 				else
 				{
+					assert(ev->sync.isNull());
 					if(!ev->obj.isNull())
 						ev->obj->incRef();
 					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs,ev->thisOverride);
@@ -1167,9 +1179,6 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					if(ev->result != NULL)
 						*(ev->result) = result;
 				}
-				// We should synchronize the passed SynchronizationEvent
-				if(!ev->sync.isNull())
-					ev->sync->sync();
 				break;
 			}
 			case CONTEXT_INIT:

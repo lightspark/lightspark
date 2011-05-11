@@ -203,6 +203,13 @@ ASFUNCTIONBODY(Loader,_constructor)
 	DisplayObjectContainer::_constructor(obj,NULL,0);
 	th->incRef();
 	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(th)));
+	//TODO: the parameters should only be set if the loaded clip uses AS3. See specs.
+	_NR<ASObject> p=sys->getParameters();
+	if(!p.isNull())
+	{
+		p->incRef();
+		th->contentLoaderInfo->setVariableByQName("parameters","",p.getPtr());
+	}
 	return NULL;
 }
 

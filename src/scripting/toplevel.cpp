@@ -565,6 +565,12 @@ XML::XML(_R<XML> _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
 	assert(node);
 }
 
+XML::XML(xmlpp::Node* _n):root(NULL),constructed(true)
+{
+	assert(_n);
+	node=parser.get_document()->create_root_node_by_import(_n);
+}
+
 void XML::finalize()
 {
 	ASObject::finalize();
@@ -1010,6 +1016,12 @@ tiny_string XML::toString(bool debugMsg)
 	return toString_priv();
 }
 
+XMLList::XMLList(const std::string& str)
+:constructed(true)
+{
+	buildFromString(str);
+}
+
 void XMLList::finalize()
 {
 	nodes.clear();
@@ -1029,17 +1041,34 @@ void XMLList::sinit(Class_base* c)
 
 ASFUNCTIONBODY(XMLList,_constructor)
 {
+	assert_and_throw(argslen<=1);
 	XMLList* th=Class<XMLList>::cast(obj);
 	if(argslen==0 && th->constructed)
 	{
 		//Called from internal code
 		return NULL;
 	}
-	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
+	if(argslen==0 ||
+	   args[0]->getObjectType()==T_NULL || 
+	   args[0]->getObjectType()==T_UNDEFINED)
+		return NULL;
+
+	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	_R<XML> val=_MR(Class<XML>::getInstanceS(str->data));
-	th->nodes.push_back(val);
+	th->buildFromString(str->data);
 	return NULL;
+}
+
+void XMLList::buildFromString(const std::string& str)
+{
+	xmlpp::DomParser parser;
+	std::string expanded="<parent>" + str + "</parent>";
+	parser.parse_memory(expanded);
+	const xmlpp::Node::NodeList& children=\
+	  parser.get_document()->get_root_node()->get_children();
+	xmlpp::Node::NodeList::const_iterator it;
+	for(it=children.begin(); it!=children.end(); ++it)
+		nodes.push_back(_MR(Class<XML>::getInstanceS(*it)));
 }
 
 ASFUNCTIONBODY(XMLList,_getLength)
@@ -1069,6 +1098,35 @@ ASFUNCTIONBODY(XMLList,_hasComplexContent)
 	XMLList* th=Class<XMLList>::cast(obj);
 	assert_and_throw(argslen==0);
 	return abstract_b(th->hasComplexContent());
+}
+
+ASFUNCTIONBODY(XMLList,generator)
+{
+	assert(obj==NULL);
+	assert_and_throw(argslen==1);
+	if(args[0]->getObjectType()==T_STRING)
+	{
+		ASString* str=Class<ASString>::cast(args[0]);
+		return Class<XMLList>::getInstanceS(str->data);
+	}
+	else if(args[0]->getPrototype()==Class<XMLList>::getClass())
+	{
+		args[0]->incRef();
+		return args[0];
+	}
+	else if(args[0]->getPrototype()==Class<XML>::getClass())
+	{
+		std::vector< _R<XML> > nodes;
+		nodes.push_back(_MR(Class<XML>::cast(args[0])));
+		return Class<XMLList>::getInstanceS(nodes);
+	}
+	else if(args[0]->getObjectType()==T_NULL ||
+		args[0]->getObjectType()==T_UNDEFINED)
+	{
+		return Class<XMLList>::getInstanceS();
+	}
+	else
+		throw RunTimeException("Type not supported in XMLList()");
 }
 
 ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)

@@ -811,10 +811,11 @@ void MovieClip::addToFrame(DisplayListTag* t)
 uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const
 {
 	for(size_t i=0;i<scenes.size();++i)
+	{
 		for(size_t j=0;j<scenes[i].labels.size();++j)
 			if(scenes[i].labels[j].name == l)
 				return scenes[i].labels[j].frame;
-
+	}
 	return 0xffffffff;
 }
 
@@ -961,10 +962,11 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	for(size_t i=0;i<th->scenes.size();++i)
+	{
 		for(size_t j=0;j<th->scenes[i].labels.size();++j)
 			if(th->scenes[i].labels[j].frame == th->state.FP)
 				return Class<ASString>::getInstanceS(th->scenes[i].labels[j].name);
-
+	}
 	return new Null();
 }
 
@@ -972,7 +974,8 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	tiny_string label;
-	for(size_t i=0;i<th->scenes.size();++i) {
+	for(size_t i=0;i<th->scenes.size();++i)
+	{
 		if(th->scenes[i].startframe > th->state.FP)
 			break;
 		for(size_t j=0;j<th->scenes[i].labels.size();++j)

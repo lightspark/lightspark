@@ -366,8 +366,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
 				empty=false;
 				break;
-			case SCENEANDLABEL_TAG:
-				throw ParseException("DefineSceneAndLabel tag inside sprite");
 			case TAG:
 				LOG(LOG_NOT_IMPLEMENTED,_("Unclassified tag inside Sprite?"));
 				break;
@@ -1676,7 +1674,7 @@ DefineBitsJPEG3Tag::~DefineBitsJPEG3Tag()
 	delete[] alphaData;
 }
 
-DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in):Tag(h)
+DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	LOG(LOG_TRACE,_("DefineSceneAndFrameLabelDataTag"));
 	in >> SceneCount;
@@ -1692,5 +1690,17 @@ DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h,
 	for(uint32_t i=0;i<FrameLabelCount;++i)
 	{
 		in >> FrameNum[i] >> FrameLabel[i];
+	}
+}
+
+void DefineSceneAndFrameLabelDataTag::execute(RootMovieClip* root)
+{
+	for(size_t i=0;i<SceneCount;++i)
+	{
+		root->addScene(i,Offset[i],Name[i]);
+	}
+	for(size_t i=0;i<FrameLabelCount;++i)
+	{
+		root->addFrameLabel(FrameNum[i],FrameLabel[i]);
 	}
 }

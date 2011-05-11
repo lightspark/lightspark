@@ -1144,20 +1144,6 @@ void ParseThread::execute()
 					empty=false;
 					break;
 				}
-				case SCENEANDLABEL_TAG:
-				{
-					DefineSceneAndFrameLabelDataTag* dsl = static_cast<DefineSceneAndFrameLabelDataTag*>(tag);
-					Locker l(root->mutexFrames);
-					for(size_t i=0;i<dsl->SceneCount;++i)
-					{
-						root->addScene(i,dsl->Offset[i],dsl->Name[i]);
-					}
-					for(size_t i=0;i<dsl->FrameLabelCount;++i)
-					{
-						root->addFrameLabel(dsl->FrameNum[i],dsl->FrameLabel[i]);
-					}
-					break;
-				}
 				case TAG:
 					//Not yet implemented tag, ignore it
 					break;

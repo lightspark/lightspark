@@ -36,7 +36,7 @@
 namespace lightspark
 {
 
-enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SCENEANDLABEL_TAG,END_TAG};
+enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
 
@@ -653,7 +653,7 @@ public:
 	UnimplementedTag(RECORDHEADER h, std::istream& in);
 };
 
-class DefineSceneAndFrameLabelDataTag: public Tag
+class DefineSceneAndFrameLabelDataTag: public ControlTag
 {
 public:
 	u32 SceneCount;
@@ -663,7 +663,7 @@ public:
 	std::vector<u32> FrameNum;
 	std::vector<STRING> FrameLabel;
 	DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in);
-	virtual TAGTYPE getType()const{ return SCENEANDLABEL_TAG; }
+	void execute(RootMovieClip* root);
 };
 
 class DefineFontNameTag: public Tag

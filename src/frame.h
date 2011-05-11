@@ -52,7 +52,6 @@ public:
 	Frame(const Frame& r);
 	Frame(const Frame&& r);
 	Frame& operator=(const Frame& r);
-	tiny_string Label;
 	std::list<DisplayListTag*> blueprint;
 	DisplayListType displayList;
 	//A temporary vector for control tags

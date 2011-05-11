@@ -65,6 +65,8 @@ REGISTER_CLASS_NAME(SpreadMethod);
 REGISTER_CLASS_NAME(InterpolationMethod);
 REGISTER_CLASS_NAME(Bitmap);
 REGISTER_CLASS_NAME(SimpleButton);
+REGISTER_CLASS_NAME(FrameLabel);
+REGISTER_CLASS_NAME(Scene);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -667,6 +669,86 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 	return th->graphics.getPtr();
 }
 
+void FrameLabel::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("frame","",Class<IFunction>::getFunction(_getFrame),true);
+	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName),true);
+}
+
+ASFUNCTIONBODY(FrameLabel,_getFrame)
+{
+	FrameLabel* th=static_cast<FrameLabel*>(obj);
+	return abstract_i(th->frame);
+}
+
+ASFUNCTIONBODY(FrameLabel,_getName)
+{
+	FrameLabel* th=static_cast<FrameLabel*>(obj);
+	return Class<ASString>::getInstanceS(th->name);
+}
+
+/*
+ * Adds a frame label to the internal vector and keep
+ * the vector sorted with respect to frame
+ */
+void Scene_data::addFrameLabel(uint32_t frame, const tiny_string& label)
+{
+	for(vector<FrameLabel_data>::iterator j=labels.begin();
+		j != labels.end();++j)
+	{
+		FrameLabel_data& fl = *j;
+		if(fl.frame == frame)
+		{
+			assert_and_throw(fl.name == label);
+			return;
+		}
+		else if(fl.frame > frame)
+		{
+			labels.insert(j,FrameLabel_data(frame,label));
+			return;
+		}
+	}
+
+	labels.push_back(FrameLabel_data(frame,label));
+}
+
+void Scene::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("labels","",Class<IFunction>::getFunction(_getLabels),true);
+	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName),true);
+	c->setGetterByQName("numFrames","",Class<IFunction>::getFunction(_getNumFrames),true);
+}
+
+ASFUNCTIONBODY(Scene,_getLabels)
+{
+	Scene* th=static_cast<Scene*>(obj);
+	Array* ret = Class<Array>::getInstanceS();
+	ret->resize(th->labels.size());
+	for(size_t i=0; i<th->labels.size(); ++i)
+	{
+		ret->set(i, Class<FrameLabel>::getInstanceS(th->labels[i]));
+	}
+	return ret;
+}
+
+ASFUNCTIONBODY(Scene,_getName)
+{
+	Scene* th=static_cast<Scene*>(obj);
+	return Class<ASString>::getInstanceS(th->name);
+}
+
+ASFUNCTIONBODY(Scene,_getNumFrames)
+{
+	Scene* th=static_cast<Scene*>(obj);
+	return abstract_i(th->numFrames);
+}
+
 void MovieClip::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -677,6 +759,8 @@ void MovieClip::sinit(Class_base* c)
 	c->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),true);
 	c->setGetterByQName("currentFrameLabel","",Class<IFunction>::getFunction(_getCurrentFrameLabel),true);
 	c->setGetterByQName("currentLabel","",Class<IFunction>::getFunction(_getCurrentLabel),true);
+	c->setGetterByQName("scenes","",Class<IFunction>::getFunction(_getScenes),true);
+	c->setGetterByQName("currentScene","",Class<IFunction>::getFunction(_getCurrentScene),true);
 	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
 	c->setMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),true);
 	c->setMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),true);
@@ -694,6 +778,7 @@ MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
 	frames.emplace_back();
 	cur_frame=&frames.back();
 	frameScripts.resize(totalFrames,NullRef);
+	scenes.resize(1);
 }
 
 void MovieClip::finalize()
@@ -706,8 +791,16 @@ void MovieClip::finalize()
 void MovieClip::setTotalFrames(uint32_t t)
 {
 	assert(totalFrames==1);
+	//For sprites, this is called after parsing
+	//with the actual frame count
+	//For the root movie, this is called before the parsing
+	//with the frame count from the header
 	totalFrames=t;
 	frameScripts.resize(totalFrames,NullRef);
+	if( scenes.size() > 1)
+		scenes[scenes.size()-1].numFrames = totalFrames-scenes[scenes.size()-2].numFrames;
+	else
+		scenes[0].numFrames = totalFrames;
 }
 
 void MovieClip::addToFrame(DisplayListTag* t)
@@ -717,10 +810,11 @@ void MovieClip::addToFrame(DisplayListTag* t)
 
 uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const
 {
-	for(uint32_t i=0;i<framesLoaded;i++)
+	for(size_t i=0;i<scenes.size();++i)
 	{
-		if(frames[i].Label==l)
-			return i;
+		for(size_t j=0;j<scenes[i].labels.size();++j)
+			if(scenes[i].labels[j].name == l)
+				return scenes[i].labels[j].frame;
 	}
 	return 0xffffffff;
 }
@@ -825,29 +919,73 @@ ASFUNCTIONBODY(MovieClip,_getTotalFrames)
 	return abstract_i(th->totalFrames);
 }
 
+ASFUNCTIONBODY(MovieClip,_getScenes)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	Array* ret = Class<Array>::getInstanceS();
+	ret->resize(th->scenes.size());
+	for(size_t i=0; i<th->scenes.size(); ++i)
+	{
+		ret->set(i, Class<Scene>::getInstanceS(th->scenes[i]));
+	}
+	return ret;
+}
+
+const Scene_data& MovieClip::getCurrentScene()
+{
+	for(size_t i=0;i<scenes.size();++i)
+	{
+		if(scenes[i].startframe <= state.FP
+		&& scenes[i].startframe + scenes[i].numFrames > state.FP )
+		{
+			return scenes[i];
+		}
+	}
+	throw RunTimeException("No current scene! That should never happen");
+}
+
+ASFUNCTIONBODY(MovieClip,_getCurrentScene)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	return Class<Scene>::getInstanceS(th->getCurrentScene());
+	return NULL;
+}
+
 ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	//currentFrame is 1-based
-	return abstract_i(th->state.FP+1);
+	//currentFrame is 1-based and relative to current scene
+	return abstract_i(th->state.FP+1 - th->getCurrentScene().startframe);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	if(th->frames[th->state.FP].Label.len() == 0)
-		return new Null();
-	else
-		return Class<ASString>::getInstanceS(th->frames[th->state.FP].Label);
+	for(size_t i=0;i<th->scenes.size();++i)
+	{
+		for(size_t j=0;j<th->scenes[i].labels.size();++j)
+			if(th->scenes[i].labels[j].frame == th->state.FP)
+				return Class<ASString>::getInstanceS(th->scenes[i].labels[j].name);
+	}
+	return new Null();
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	tiny_string label;
-	for(unsigned int i=0;i<=th->state.FP;++i)
-		if(th->frames[i].Label.len() != 0)
-			label = th->frames[i].Label;
+	for(size_t i=0;i<th->scenes.size();++i)
+	{
+		if(th->scenes[i].startframe > th->state.FP)
+			break;
+		for(size_t j=0;j<th->scenes[i].labels.size();++j)
+		{
+			if(th->scenes[i].labels[j].frame > th->state.FP)
+				break;
+			if(th->scenes[i].labels[j].name.len() != 0)
+				label = th->scenes[i].labels[j].name;
+		}
+	}
 
 	if(label.len() == 0)
 		return new Null();
@@ -1099,6 +1237,45 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
 	}
 	return ret;
+}
+
+void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)
+{
+	if(sceneNo == 0)
+	{
+		//we always have one scene, but this call may set its name
+		scenes[0].name = name;
+	}
+	else
+	{
+		assert(scenes.size() == sceneNo-1);
+		scenes.resize(sceneNo);
+		scenes[sceneNo].name = name;
+		scenes[sceneNo].startframe = startframe;
+		assert(totalFrames); //for the root movie, this should be set before
+		scenes[sceneNo].numFrames = totalFrames - startframe;
+		scenes[sceneNo-1].numFrames -= scenes[sceneNo].numFrames;
+	}
+}
+
+/**
+ * Find the scene to which the given frame belongs and
+ * adds the frame label to that scene.
+ * The labels of the scene will stay sorted by frame.
+ */
+void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
+{
+	uint32_t offset=0;
+	for(size_t i=0; i<scenes.size();++i)
+	{
+		if(frame < offset+scenes[i].numFrames)
+		{
+			scenes[i].addFrameLabel(frame,label);
+			return;
+		}
+		offset += scenes[i].numFrames;
+	}
+	LOG(LOG_ERROR,"addFrameLabel: no scene for frame " << frame);
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),

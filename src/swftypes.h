@@ -351,6 +351,15 @@ public:
 	operator uint32_t() const{ return val; }
 };
 
+class u32
+{
+friend std::istream& operator>>(std::istream& in, u32& v);
+private:
+	uint32_t val;
+public:
+	operator uint32_t() const{return val;}
+};
+
 class STRING
 {
 friend std::ostream& operator<<(std::ostream& s, const STRING& r);
@@ -388,6 +397,10 @@ public:
 	operator const std::string&() const
 	{
 		return String;
+	}
+	operator const tiny_string() const
+	{
+		return tiny_string(String);
 	}
 	operator const char*() const
 	{
@@ -623,6 +636,35 @@ inline std::istream& operator>>(std::istream& s, UI32_FLV& v)
 	s.read((char*)&v.val,4);
 	v.val=BigEndianToHost32(v.val);
 	return s;
+}
+
+inline std::istream& operator>>(std::istream& in, u32& v)
+{
+	int i=0;
+	v.val=0;
+	uint8_t t;
+	do
+	{
+		in.read((char*)&t,1);
+		//No more than 5 bytes should be read
+		if(i==28)
+		{
+			//Only the first 4 bits should be used to reach 32 bits
+			if((t&0xf0))
+				LOG(LOG_ERROR,"Error in u32");
+			uint8_t t2=(t&0xf);
+			v.val|=(t2<<i);
+			break;
+		}
+		else
+		{
+			uint8_t t2=(t&0x7f);
+			v.val|=(t2<<i);
+			i+=7;
+		}
+	}
+	while(t&0x80);
+	return in;
 }
 
 inline std::istream& operator>>(std::istream& s, FLOAT& v)

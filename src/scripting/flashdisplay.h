@@ -438,6 +438,47 @@ public:
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 };
 
+struct FrameLabel_data
+{
+	FrameLabel_data() : frame(0) {}
+	FrameLabel_data(uint32_t _frame, tiny_string _name) : frame(_frame), name(_name) {}
+	uint32_t frame;
+	tiny_string name;
+};
+
+class FrameLabel: public ASObject, public FrameLabel_data
+{
+public:
+	FrameLabel() {}
+	FrameLabel(const FrameLabel_data& data) : FrameLabel_data(data) {}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_getFrame);
+	ASFUNCTION(_getName);
+};
+
+struct Scene_data
+{
+	Scene_data() : numFrames(0), startframe(0) {}
+	//this vector is sorted with respect to frame
+	std::vector<FrameLabel_data> labels;
+	tiny_string name;
+	uint32_t numFrames;
+	uint32_t startframe;
+	void addFrameLabel(uint32_t frame, const tiny_string& label);
+};
+
+class Scene: public ASObject, public Scene_data
+{
+public:
+	Scene() {}
+	Scene(const Scene_data& data) : Scene_data(data) {}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getLabels);
+	ASFUNCTION(_getName);
+	ASFUNCTION(_getNumFrames);
+};
+
 class MovieClip: public Sprite
 {
 private:
@@ -448,6 +489,7 @@ protected:
 	Frame* cur_frame;
 	void bootstrap();
 	std::vector<_NR<IFunction>> frameScripts;
+	std::vector<Scene_data> scenes;
 public:
 	std::vector<Frame> frames;
 	RunState state;
@@ -467,6 +509,8 @@ public:
 	ASFUNCTION(_getCurrentLabel);
 	ASFUNCTION(_getTotalFrames);
 	ASFUNCTION(_getFramesLoaded);
+	ASFUNCTION(_getScenes);
+	ASFUNCTION(_getCurrentScene);
 
 	virtual void addToFrame(DisplayListTag* r);
 
@@ -486,6 +530,9 @@ public:
 	{
 		assert_and_throw(frames.size()==framesLoaded);
 	}
+	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
+	void addFrameLabel(uint32_t frame, const tiny_string& label);
+	const Scene_data& getCurrentScene();
 };
 
 class Stage: public DisplayObjectContainer

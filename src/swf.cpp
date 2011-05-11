@@ -1157,9 +1157,12 @@ void ParseThread::execute()
 					empty=false;
 					break;
 				case FRAMELABEL_TAG:
-					root->labelCurrentFrame(static_cast<FrameLabelTag*>(tag)->Name);
+				{
+					Locker l(root->mutexFrames);
+					root->addFrameLabel(root->frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
 					empty=false;
 					break;
+				}
 				case TAG:
 					//Not yet implemented tag, ignore it
 					break;
@@ -1290,12 +1293,6 @@ void RootMovieClip::addToFrame(DisplayListTag* t)
 {
 	Locker l(mutex);
 	MovieClip::addToFrame(t);
-}
-
-void RootMovieClip::labelCurrentFrame(const STRING& name)
-{
-	Locker l(mutexFrames);
-	frames.back().Label=(const char*)name;
 }
 
 void RootMovieClip::addToFrame(ControlTag* t)

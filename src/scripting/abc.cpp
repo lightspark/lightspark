@@ -231,6 +231,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("MorphShape","flash.display",Class<MorphShape>::getClass());
 	builtin->setVariableByQName("SpreadMethod","flash.display",Class<SpreadMethod>::getClass());
 	builtin->setVariableByQName("InterpolationMethod","flash.display",Class<InterpolationMethod>::getClass());
+	builtin->setVariableByQName("FrameLabel","flash.display",Class<FrameLabel>::getClass());
+	builtin->setVariableByQName("Scene","flash.display",Class<Scene>::getClass());
 
 	builtin->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")));
 	builtin->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass(QName("BitmapFilter","flash.filters")));
@@ -2029,35 +2031,6 @@ ASObject* method_info::getOptional(unsigned int i)
 {
 	assert_and_throw(i<options.size());
 	return context->getConstant(options[i].kind,options[i].val);
-}
-
-istream& lightspark::operator>>(istream& in, u32& v)
-{
-	int i=0;
-	v.val=0;
-	uint8_t t;
-	do
-	{
-		in.read((char*)&t,1);
-		//No more than 5 bytes should be read
-		if(i==28)
-		{
-			//Only the first 4 bits should be used to reach 32 bits
-			if((t&0xf0))
-				LOG(LOG_ERROR,"Error in u32");
-			uint8_t t2=(t&0xf);
-			v.val|=(t2<<i);
-			break;
-		}
-		else
-		{
-			uint8_t t2=(t&0x7f);
-			v.val|=(t2<<i);
-			i+=7;
-		}
-	}
-	while(t&0x80);
-	return in;
 }
 
 istream& lightspark::operator>>(istream& in, s32& v)

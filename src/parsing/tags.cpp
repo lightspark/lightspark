@@ -365,7 +365,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			case CONTROL_TAG:
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case FRAMELABEL_TAG:
-				frames.back().Label=(const char*)static_cast<FrameLabelTag*>(tag)->Name;
+				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
 				empty=false;
 				break;
 			case TAG:
@@ -1690,4 +1690,35 @@ DefineBitsJPEG3Tag::~DefineBitsJPEG3Tag()
 {
 	delete[] data;
 	delete[] alphaData;
+}
+
+DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in):ControlTag(h)
+{
+	LOG(LOG_TRACE,_("DefineSceneAndFrameLabelDataTag"));
+	in >> SceneCount;
+	Offset.resize(SceneCount);
+	Name.resize(SceneCount);
+	for(uint32_t i=0;i<SceneCount;++i)
+	{
+		in >> Offset[i] >> Name[i];
+	}
+	in >> FrameLabelCount;
+	FrameNum.resize(FrameLabelCount);
+	FrameLabel.resize(FrameLabelCount);
+	for(uint32_t i=0;i<FrameLabelCount;++i)
+	{
+		in >> FrameNum[i] >> FrameLabel[i];
+	}
+}
+
+void DefineSceneAndFrameLabelDataTag::execute(RootMovieClip* root)
+{
+	for(size_t i=0;i<SceneCount;++i)
+	{
+		root->addScene(i,Offset[i],Name[i]);
+	}
+	for(size_t i=0;i<FrameLabelCount;++i)
+	{
+		root->addFrameLabel(FrameNum[i],FrameLabel[i]);
+	}
 }

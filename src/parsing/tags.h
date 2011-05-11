@@ -665,10 +665,17 @@ public:
 	UnimplementedTag(RECORDHEADER h, std::istream& in);
 };
 
-class DefineSceneAndFrameLabelDataTag: public Tag
+class DefineSceneAndFrameLabelDataTag: public ControlTag
 {
 public:
+	u32 SceneCount;
+	std::vector<u32> Offset;
+	std::vector<STRING> Name;
+	u32 FrameLabelCount;
+	std::vector<u32> FrameNum;
+	std::vector<STRING> FrameLabel;
 	DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in);
+	void execute(RootMovieClip* root);
 };
 
 class DefineFontNameTag: public Tag

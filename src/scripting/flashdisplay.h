@@ -264,7 +264,7 @@ public:
 	{
 	}
 	Graphics(GraphicsContainer* _o, const std::vector<GeomToken>& _tokens, float _scaling)
-		: curX(0),curY(0),owner(_o), scaling(_scaling), tokens(_tokens) {}
+		: tokens(_tokens), curX(0),curY(0),owner(_o), scaling(_scaling) {}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

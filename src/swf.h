@@ -195,11 +195,16 @@ private:
 	VMVERSION vmVersion;
 	pid_t childPid;
 	bool useGnashFallback;
-	void setParameters(ASObject* p);
+
+	//Parameters/FlashVars
+	_NR<ASObject> parameters;
+	void setParameters(_R<ASObject> p);
 	/*
 	   	Used to keep a copy of the FlashVars, it's useful when gnash fallback is used
 	*/
 	std::string rawParameters;
+
+	//Cookies for Gnash fallback
 	std::string rawCookies;
 	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
 
@@ -287,13 +292,20 @@ public:
 	bool useInterpreter;
 	bool useJit;
 
+	//Parameters/FlashVars
 	void parseParametersFromFile(const char* f) DLL_PUBLIC;
 	void parseParametersFromFlashvars(const char* vars) DLL_PUBLIC;
+	_NR<ASObject> getParameters() const;
+
+	//Cookies management for Gnash fallback
 	void setCookies(const char* c) DLL_PUBLIC;
+
+	//Interfaces to the internal thread pool and timer thread
 	void addJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	bool removeJob(ITickJob* job);
+
 	void setRenderRate(float rate);
 	float getRenderRate();
 	/*

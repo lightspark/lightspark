@@ -190,9 +190,9 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
-	mutexEnterFrameListeners("mutexEnterFrameListeners"),invalidateQueueHead(NULL),
-	invalidateQueueTail(NULL),showProfilingData(false),currentVm(NULL),
-	useInterpreter(true),useJit(false),downloadManager(NULL),
+	parameters(NullRef),mutexEnterFrameListeners("mutexEnterFrameListeners"),
+	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
+	currentVm(NULL),useInterpreter(true),useJit(false),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
@@ -246,7 +246,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 {
 	if(useGnashFallback) //Save a copy of the string
 		rawParameters=v;
-	ASObject* params=Class<ASObject>::getInstanceS();
+	_R<ASObject> params=_MR(Class<ASObject>::getInstanceS());
 	//Add arguments to SystemState
 	string vars(v);
 	uint32_t cur=0;
@@ -311,7 +311,7 @@ void SystemState::parseParametersFromFile(const char* f)
 		LOG(LOG_ERROR,_("Parameters file not found"));
 		return;
 	}
-	ASObject* ret=Class<ASObject>::getInstanceS();
+	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS());
 	while(!i.eof())
 	{
 		string name,value;
@@ -324,9 +324,16 @@ void SystemState::parseParametersFromFile(const char* f)
 	i.close();
 }
 
-void SystemState::setParameters(ASObject* p)
+void SystemState::setParameters(_R<ASObject> p)
 {
-	loaderInfo->setVariableByQName("parameters","",p);
+	parameters=p;
+	p->incRef();
+	loaderInfo->setVariableByQName("parameters","",p.getPtr());
+}
+
+_NR<ASObject> SystemState::getParameters() const
+{
+	return parameters;
 }
 
 void SystemState::stopEngines()
@@ -371,6 +378,7 @@ void SystemState::finalize()
 	RootMovieClip::finalize();
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
+	parameters.reset();
 }
 
 SystemState::~SystemState()

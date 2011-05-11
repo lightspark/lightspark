@@ -254,6 +254,9 @@ private:
 	int curX, curY;
 	GraphicsContainer *const owner;
 	//TODO: Add spinlock
+	/* multiply shapes' coordinates by this
+	 * value to get pixel
+	 */
 	const float scaling;
 public:
 	Graphics():owner(NULL), scaling(0.0f)

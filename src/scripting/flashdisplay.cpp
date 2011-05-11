@@ -422,17 +422,6 @@ void GraphicsContainer::invalidateGraphics()
 		//No contents, nothing to do
 		return;
 	}
-	/* scale the bounding box coordinates and round them to a bigger integer box */
-	#define roundDown(x) \
-		copysign(floor(abs(x)), x)
-	#define roundUp(x) \
-		copysign(ceil(abs(x)), x)
-	bxmin = roundDown(bxmin*graphics->scaling);
-	bxmax = roundUp(bxmax*graphics->scaling);
-	bymin = roundDown(bymin*graphics->scaling);
-	bymax = roundUp(bymax*graphics->scaling);
-	#undef roundDown
-	#undef roundUp
 
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
@@ -2528,6 +2517,20 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 				strokeWidth = (double)(tokens[i].lineStyle.Width / 20.0);
 				break;
 		}
+	}
+	if(hasContent)
+	{
+		/* scale the bounding box coordinates and round them to a bigger integer box */
+		#define roundDown(x) \
+			copysign(floor(abs(x)), x)
+		#define roundUp(x) \
+			copysign(ceil(abs(x)), x)
+		xmin = roundDown(xmin*scaling);
+		xmax = roundUp(xmax*scaling);
+		ymin = roundDown(ymin*scaling);
+		ymax = roundUp(ymax*scaling);
+		#undef roundDown
+		#undef roundUp
 	}
 	return hasContent;
 

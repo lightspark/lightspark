@@ -2545,6 +2545,7 @@ ASFUNCTIONBODY(Graphics,_constructor)
 ASFUNCTIONBODY(Graphics,clear)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
 	th->tokens.clear();
 	th->owner->owner->requestInvalidation();
 	return NULL;
@@ -2553,6 +2554,7 @@ ASFUNCTIONBODY(Graphics,clear)
 ASFUNCTIONBODY(Graphics,moveTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
 	assert_and_throw(argslen==2);
 
 	th->curX=args[0]->toInt();
@@ -2566,6 +2568,7 @@ ASFUNCTIONBODY(Graphics,lineTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==2);
+	th->checkAndSetScaling();
 
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
@@ -2582,6 +2585,7 @@ ASFUNCTIONBODY(Graphics,curveTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==4);
+	th->checkAndSetScaling();
 
 	int controlX=args[0]->toInt();
 	int controlY=args[1]->toInt();
@@ -2603,6 +2607,7 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==6);
+	th->checkAndSetScaling();
 
 	int control1X=args[0]->toInt();
 	int control1Y=args[1]->toInt();
@@ -2637,6 +2642,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==5 || argslen==6);
+	th->checkAndSetScaling();
 
 	double x=args[0]->toNumber();
 	double y=args[1]->toNumber();
@@ -2716,6 +2722,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==3);
+	th->checkAndSetScaling();
 
 	double x=args[0]->toNumber();
 	double y=args[1]->toNumber();
@@ -2759,6 +2766,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==4);
+	th->checkAndSetScaling();
 
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
@@ -2783,6 +2791,8 @@ ASFUNCTIONBODY(Graphics,drawRect)
 ASFUNCTIONBODY(Graphics,lineStyle)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
+
 	if (argslen == 0)
 	{
 		th->tokens.emplace_back(CLEAR_STROKE);
@@ -2809,6 +2819,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen>=4);
+	th->checkAndSetScaling();
 
 	FILLSTYLE style(-1);
 
@@ -2892,6 +2903,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 ASFUNCTIONBODY(Graphics,beginFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
 	uint32_t color=0;
 	uint8_t alpha=255;
 	if(argslen>=1)
@@ -2908,6 +2920,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 ASFUNCTIONBODY(Graphics,endFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
 	th->tokens.emplace_back(CLEAR_FILL);
 	return NULL;
 }

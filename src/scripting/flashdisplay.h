@@ -255,9 +255,24 @@ private:
 	GraphicsContainer *const owner;
 	//TODO: Add spinlock
 	/* multiply shapes' coordinates by this
-	 * value to get pixel
+	 * value to get pixel.
+	 * DefineShapeTags set a scaling of 1/20,
+	 * DefineTextTags set a scaling of 1/1024/20.
+	 * If any drawing function is called and
+	 * scaling is not 1.0f,
+	 * the tokens are cleared and scaling is set
+	 * to 1.0f.
 	 */
-	const float scaling;
+	float scaling;
+	void checkAndSetScaling()
+	{
+		if(scaling != 1.0f)
+		{
+			scaling = 1.0f;
+			tokens.clear();
+			assert(curX == 0 && curY == 0);
+		}
+	}
 public:
 	Graphics():owner(NULL), scaling(0.0f)
 	{

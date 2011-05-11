@@ -721,6 +721,7 @@ public:
 	*/
 	XMLList(bool c):constructed(c){assert(c);}
 	XMLList(const std::vector<_R<XML> >& r):nodes(r),constructed(true){}
+	XMLList(const std::string& str);
 	void finalize();
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
@@ -730,6 +731,7 @@ public:
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
 	ASFUNCTION(_toString);
+	ASFUNCTION(generator);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;

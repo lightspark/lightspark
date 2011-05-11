@@ -199,6 +199,16 @@ bool ASObject::isEqual(ASObject* r)
 		return ret1->isEqual(ret2);
 	}
 
+	if(r->getObjectType()==T_OBJECT)
+	{
+		XMLList *xl=dynamic_cast<XMLList *>(r);
+		if(xl)
+			return xl->isEqual(this);
+		XML *x=dynamic_cast<XML *>(r);
+		if(x && x->hasSimpleContent())
+			return x->toString()==toString();
+	}
+
 	LOG(LOG_CALLS,_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
 	if(prototype)
 		LOG(LOG_CALLS,_("Type ") << prototype->class_name);

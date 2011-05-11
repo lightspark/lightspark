@@ -565,6 +565,12 @@ XML::XML(_R<XML> _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
 	assert(node);
 }
 
+XML::XML(xmlpp::Node* _n):root(NULL),constructed(true)
+{
+	assert(_n);
+	node=parser.get_document()->create_root_node_by_import(_n);
+}
+
 void XML::finalize()
 {
 	ASObject::finalize();
@@ -1029,17 +1035,34 @@ void XMLList::sinit(Class_base* c)
 
 ASFUNCTIONBODY(XMLList,_constructor)
 {
+	assert_and_throw(argslen<=1);
 	XMLList* th=Class<XMLList>::cast(obj);
 	if(argslen==0 && th->constructed)
 	{
 		//Called from internal code
 		return NULL;
 	}
-	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
+	if(argslen==0 ||
+	   args[0]->getObjectType()==T_NULL || 
+	   args[0]->getObjectType()==T_UNDEFINED)
+		return NULL;
+
+	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	_R<XML> val=_MR(Class<XML>::getInstanceS(str->data));
-	th->nodes.push_back(val);
+	th->buildFromString(str->data);
 	return NULL;
+}
+
+void XMLList::buildFromString(const std::string& str)
+{
+	xmlpp::DomParser parser;
+	std::string expanded="<parent>" + str + "</parent>";
+	parser.parse_memory(expanded);
+	const xmlpp::Node::NodeList& children=\
+	  parser.get_document()->get_root_node()->get_children();
+	xmlpp::Node::NodeList::const_iterator it;
+	for(it=children.begin(); it!=children.end(); ++it)
+		nodes.push_back(_MR(Class<XML>::getInstanceS(*it)));
 }
 
 ASFUNCTIONBODY(XMLList,_getLength)

@@ -133,16 +133,18 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	//Check if the object has to be defined
 	if(o->getObjectType()==T_DEFINABLE)
 	{
-		throw UnsupportedException("Defininable in ApplicationDomain::getDefinition");
-/*		LOG(LOG_CALLS,_("We got an object not yet valid"));
-		Definable* d=static_cast<Definable*>(o.obj);
-		d->define(sys->currentVm->last_context->Global);
-		o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);*/
+		LOG(LOG_CALLS,_("Deferred definition of property ") << name);
+		Definable* d=static_cast<Definable*>(o);
+		d->define(target);
+		o=target->getVariableByMultiname(name);
+		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);
 	}
 
-	assert(o->getObjectType()==T_CLASS);
+	//TODO: specs says that also namespaces and function may be returned
+	assert_and_throw(o->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
+	o->incRef();
 	return o;
 }
 

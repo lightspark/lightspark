@@ -146,14 +146,6 @@ void SystemState::registerTag(Tag* t)
 void RootMovieClip::setOnStage(bool staged)
 {
 	Locker l(mutexFrames);
-
-	//Execute the event registered for the first frame, if any
-	if(!frameScripts[0].isNull())
-	{
-		_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
-		getVm()->addEvent(NullRef, funcEvent);
-	}
-
 	MovieClip::setOnStage(staged);
 }
 
@@ -1201,19 +1193,21 @@ void RootMovieClip::initialize()
 	//NOTE: No references to frames must be done here!
 	if(!initialized && sys->currentVm)
 	{
+		initialized=true;
 		if(sys->currentVm)
 		{
-			initialized=true;
 			//Let's see if we have to bind the root movie clip itself
-			if(bindName.len()) //The object is constructed after binding
+			if(bindName.len())
 			{
+				//The object is constructed after binding
 				this->incRef();
 				sys->currentVm->addEvent(NullRef,_MR(new BindClassEvent(_MR(this),bindName,BindClassEvent::ISROOT)));
 				sys->currentVm->addEvent(NullRef,_MR(new SysOnStageEvent()));
 			}
 			else
 			{
-				setConstructed();
+				//Construction can be consider complete
+				constructionComplete();
 				setOnStage(true);
 			}
 
@@ -1222,7 +1216,8 @@ void RootMovieClip::initialize()
 		}
 		else
 		{
-			setConstructed();
+			//Construction can be consider complete
+			constructionComplete();
 			setOnStage(true);
 		}
 	}

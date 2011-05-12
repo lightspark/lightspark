@@ -925,3 +925,7 @@ unsigned int ASObject::numVariables() const
 	return Variables.size();
 }
 
+void ASObject::constructionComplete()
+{
+	//Nothing to be done now
+}

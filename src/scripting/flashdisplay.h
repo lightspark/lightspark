@@ -428,16 +428,13 @@ class Sprite: public DisplayObjectContainer, public TokenContainer
 {
 friend class DisplayObject;
 private:
-	ACQUIRE_RELEASE_FLAG(constructed);
 	_NR<Graphics> graphics;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	_NR<InteractiveObject> hitTestImpl(number_t x, number_t y);
-	void setConstructed() { RELEASE_WRITE(constructed,true); }
 public:
 	Sprite();
-	Sprite(const Sprite& r);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -452,7 +449,6 @@ public:
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void invalidate() { TokenContainer::invalidate(); }
 	void requestInvalidation();
-	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 };
 
 struct FrameLabel_data
@@ -501,6 +497,9 @@ class MovieClip: public Sprite
 private:
 	uint32_t totalFrames;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	uint32_t getCurrentScene();
+	ACQUIRE_RELEASE_FLAG(constructed);
+	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 protected:
 	uint32_t framesLoaded;
 	Frame* cur_frame;
@@ -511,6 +510,7 @@ public:
 	std::vector<Frame> frames;
 	RunState state;
 	MovieClip();
+	MovieClip(const MovieClip& r);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -549,7 +549,8 @@ public:
 	}
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 	void addFrameLabel(uint32_t frame, const tiny_string& label);
-	uint32_t getCurrentScene();
+
+	void constructionComplete();
 };
 
 class Stage: public DisplayObjectContainer

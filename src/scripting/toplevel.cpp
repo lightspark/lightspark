@@ -3950,6 +3950,11 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 		ASObject* ret=constructor->call(target,args,argslen);
 		assert_and_throw(ret==NULL);
 	}
+	if(buildAndLink)
+	{
+		//Tell the object that the construction is complete
+		target->constructionComplete();
+	}
 }
 
 void Class_base::acquireObject(ASObject* ob)

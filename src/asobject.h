@@ -276,6 +276,9 @@ public:
 	virtual uint32_t nextNameIndex(uint32_t cur_index);
 	virtual _R<ASObject> nextName(uint32_t index);
 	virtual _R<ASObject> nextValue(uint32_t index);
+
+	//Called when the object construction is completed. Used by MovieClip implementation
+	virtual void constructionComplete();
 };
 
 inline void Manager::put(ASObject* o)

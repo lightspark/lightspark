@@ -407,13 +407,8 @@ void Loader::setOnStage(bool staged)
 		localRoot->setOnStage(staged);
 }
 
-Sprite::Sprite():TokenContainer(this),constructed(false),graphics(NULL)
+Sprite::Sprite():TokenContainer(this),graphics(NULL)
 {
-}
-
-Sprite::Sprite(const Sprite& r):TokenContainer(this),constructed(false),graphics(NULL)
-{
-	assert(!r.isConstructed());
 }
 
 void Sprite::finalize()
@@ -629,10 +624,8 @@ _NR<InteractiveObject> Sprite::hitTest(_NR<InteractiveObject>, number_t x, numbe
 
 ASFUNCTIONBODY(Sprite,_constructor)
 {
-	Sprite* th=Class<Sprite>::cast(obj);
+	//Sprite* th=Class<Sprite>::cast(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->setConstructed();
-
 	return NULL;
 }
 
@@ -749,7 +742,7 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
+MovieClip::MovieClip():totalFrames(1),constructed(false),framesLoaded(1),cur_frame(NULL)
 {
 	//It's ok to initialize here framesLoaded=1, as it is valid and empty
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
@@ -757,6 +750,13 @@ MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
 	cur_frame=&frames.back();
 	frameScripts.resize(totalFrames,NullRef);
 	scenes.resize(1);
+}
+
+MovieClip::MovieClip(const MovieClip& r):totalFrames(r.totalFrames),constructed(false),
+	framesLoaded(r.framesLoaded),cur_frame(NULL),frameScripts(r.frameScripts),scenes(r.scenes),
+	frames(r.frames),state(r.state)
+{
+	assert(!r.isConstructed());
 }
 
 void MovieClip::finalize()
@@ -1253,6 +1253,18 @@ void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
 		}
 	}
 	scenes.back().addFrameLabel(frame,label);
+}
+
+void MovieClip::constructionComplete()
+{
+	RELEASE_WRITE(constructed,true);
+	//Execute the event registered for the first frame, if any
+	if(sys->currentVm && !frameScripts[0].isNull())
+	{
+		_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
+		getVm()->addEvent(NullRef, funcEvent);
+	}
+
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),

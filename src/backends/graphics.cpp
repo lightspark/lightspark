@@ -783,3 +783,23 @@ bool CairoRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFac
 	cairo_surface_destroy(cairoSurface);
 	return ret;
 }
+
+uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, uint32_t height)
+{
+	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, width);
+	uint8_t* outData = new uint8_t[stride * height];
+	for(uint32_t i = 0; i < height; i++)
+	{
+		for(uint32_t j = 0; j < width; j++)
+		{
+			uint32_t* outDataPos = (uint32_t*)(outData+i*stride) + j;
+			uint8_t pdata[4];
+			pdata[0] = inData[(i*width+j)*3+2];
+			pdata[1] = inData[(i*width+j)*3+1];
+			pdata[2] = inData[(i*width+j)*3+0];
+			//cairo's RGB24 ignores data[3] and wants data in host endianess
+			*outDataPos = LittleEndianToHost32(*(uint32_t*)pdata);
+		}
+	}
+	return outData;
+}

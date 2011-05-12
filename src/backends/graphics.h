@@ -267,6 +267,12 @@ public:
 	void threadAbort();
 	void jobFence();
 	void execute();
+
+	/*
+	 * Converts data (which is in RGB format) to the format internally used by cairo.
+	 * This function new[]'s the returned value, which has to be freed by the caller.
+	 */
+	static uint8_t* convertBitmapToCairo(uint8_t* data, uint32_t width, uint32_t height);
 };
 
 };

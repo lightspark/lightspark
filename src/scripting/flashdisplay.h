@@ -458,20 +458,20 @@ public:
 
 struct Scene_data
 {
-	Scene_data() : numFrames(0), startframe(0) {}
+	Scene_data() : startframe(0) {}
 	//this vector is sorted with respect to frame
 	std::vector<FrameLabel_data> labels;
 	tiny_string name;
-	uint32_t numFrames;
 	uint32_t startframe;
 	void addFrameLabel(uint32_t frame, const tiny_string& label);
 };
 
 class Scene: public ASObject, public Scene_data
 {
+	uint32_t numFrames;
 public:
 	Scene() {}
-	Scene(const Scene_data& data) : Scene_data(data) {}
+	Scene(const Scene_data& data, uint32_t _numFrames) : Scene_data(data), numFrames(_numFrames) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLabels);
@@ -532,7 +532,7 @@ public:
 	}
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 	void addFrameLabel(uint32_t frame, const tiny_string& label);
-	const Scene_data& getCurrentScene();
+	uint32_t getCurrentScene();
 };
 
 class Stage: public DisplayObjectContainer

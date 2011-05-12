@@ -797,10 +797,6 @@ void MovieClip::setTotalFrames(uint32_t t)
 	//with the frame count from the header
 	totalFrames=t;
 	frameScripts.resize(totalFrames,NullRef);
-	if( scenes.size() > 1)
-		scenes[scenes.size()-1].numFrames = totalFrames-scenes[scenes.size()-2].numFrames;
-	else
-		scenes[0].numFrames = totalFrames;
 }
 
 void MovieClip::addToFrame(DisplayListTag* t)
@@ -924,38 +920,46 @@ ASFUNCTIONBODY(MovieClip,_getScenes)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	Array* ret = Class<Array>::getInstanceS();
 	ret->resize(th->scenes.size());
+	uint32_t numFrames;
 	for(size_t i=0; i<th->scenes.size(); ++i)
 	{
-		ret->set(i, Class<Scene>::getInstanceS(th->scenes[i]));
+		if(i == th->scenes.size()-1)
+			numFrames = th->totalFrames - th->scenes[i].startframe;
+		else
+			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
+		ret->set(i, Class<Scene>::getInstanceS(th->scenes[i],numFrames));
 	}
 	return ret;
 }
 
-const Scene_data& MovieClip::getCurrentScene()
+uint32_t MovieClip::getCurrentScene()
 {
 	for(size_t i=0;i<scenes.size();++i)
 	{
-		if(scenes[i].startframe <= state.FP
-		&& scenes[i].startframe + scenes[i].numFrames > state.FP )
-		{
-			return scenes[i];
-		}
+		if(state.FP < scenes[i].startframe)
+			return i-1;
 	}
-	throw RunTimeException("No current scene! That should never happen");
+	return scenes.size()-1;
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentScene)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	return Class<Scene>::getInstanceS(th->getCurrentScene());
-	return NULL;
+	uint32_t numFrames;
+	uint32_t curScene = th->getCurrentScene();
+	if(curScene == th->scenes.size()-1)
+		numFrames = th->totalFrames - th->scenes[curScene].startframe;
+	else
+		numFrames = th->scenes[curScene].startframe - th->scenes[curScene+1].startframe;
+
+	return Class<Scene>::getInstanceS(th->scenes[curScene],numFrames);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based and relative to current scene
-	return abstract_i(th->state.FP+1 - th->getCurrentScene().startframe);
+	return abstract_i(th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
@@ -1252,9 +1256,6 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
 		scenes.resize(sceneNo);
 		scenes[sceneNo].name = name;
 		scenes[sceneNo].startframe = startframe;
-		assert(totalFrames); //for the root movie, this should be set before
-		scenes[sceneNo].numFrames = totalFrames - startframe;
-		scenes[sceneNo-1].numFrames -= scenes[sceneNo].numFrames;
 	}
 }
 
@@ -1265,17 +1266,15 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
  */
 void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
 {
-	uint32_t offset=0;
 	for(size_t i=0; i<scenes.size();++i)
 	{
-		if(frame < offset+scenes[i].numFrames)
+		if(frame < scenes[i].startframe)
 		{
-			scenes[i].addFrameLabel(frame,label);
+			scenes[i-1].addFrameLabel(frame,label);
 			return;
 		}
-		offset += scenes[i].numFrames;
 	}
-	LOG(LOG_ERROR,"addFrameLabel: no scene for frame " << frame);
+	scenes.back().addFrameLabel(frame,label);
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),

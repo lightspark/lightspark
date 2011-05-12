@@ -375,7 +375,8 @@ class Loader: public IThreadJob, public DisplayObjectContainer
 {
 private:
 	enum SOURCE { URL, BYTES };
-	_NR<RootMovieClip> local_root;
+	mutable Spinlock localRootSpinlock;
+	_NR<RootMovieClip> localRoot;
 	bool loading;
 	bool loaded;
 	SOURCE source;
@@ -388,7 +389,7 @@ private:
 	void threadAbort();
 	void jobFence();
 public:
-	Loader():local_root(NULL),loading(false),loaded(false),bytes(NULL),contentLoaderInfo(NULL),downloader(NULL)
+	Loader():localRoot(NullRef),loading(false),loaded(false),bytes(NullRef),contentLoaderInfo(NullRef),downloader(NULL)
 	{
 	}
 	~Loader();
@@ -406,6 +407,7 @@ public:
 	}
 	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	void setOnStage(bool staged);
 };
 
 class Sprite: public DisplayObjectContainer, public GraphicsContainer

@@ -216,13 +216,13 @@ ASFUNCTIONBODY(Loader,_constructor)
 ASFUNCTIONBODY(Loader,_getContent)
 {
 	Loader* th=static_cast<Loader*>(obj);
-	if(!th->local_root.isNull())
-	{
-		th->local_root->incRef();
-		return th->local_root.getPtr();
-	}
-	else
-		return new Undefined;
+	SpinlockLocker l(th->localRootSpinlock);
+	_NR<ASObject> ret=th->localRoot;
+	if(ret.isNull())
+		ret=_MR(new Undefined);
+
+	ret->incRef();
+	return ret.getPtr();
 }
 
 ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
@@ -275,7 +275,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 void Loader::finalize()
 {
 	DisplayObjectContainer::finalize();
-	local_root.reset();
+	localRoot.reset();
 	contentLoaderInfo.reset();
 	bytes.reset();
 }
@@ -309,7 +309,14 @@ void Loader::execute()
 	assert(source==URL || source==BYTES);
 	//The loaderInfo of the content is our contentLoaderInfo
 	contentLoaderInfo->incRef();
-	local_root=_MR(RootMovieClip::getInstance(contentLoaderInfo.getPtr()));
+	//Use a local variable to store the new root, as the localRoot member may change
+	_R<RootMovieClip> newRoot=_MR(RootMovieClip::getInstance(contentLoaderInfo.getPtr()));
+	{
+		SpinlockLocker l(localRootSpinlock);
+		localRoot=newRoot;
+	}
+	if(isOnStage())
+		newRoot->setOnStage(true);
 	if(source==URL)
 	{
 		//TODO: add security checks
@@ -325,7 +332,7 @@ void Loader::execute()
 		}
 		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
-		ParseThread* local_pt=new ParseThread(local_root.getPtr(),s);
+		ParseThread* local_pt=new ParseThread(newRoot.getPtr(),s);
 		local_pt->run();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
@@ -346,7 +353,7 @@ void Loader::execute()
 		bytes_buf bb(bytes->bytes,bytes->len);
 		istream s(&bb);
 
-		ParseThread* local_pt = new ParseThread(local_root.getPtr(),s);
+		ParseThread* local_pt = new ParseThread(newRoot.getPtr(),s);
 		local_pt->run();
 		bytes->decRef();
 		//Add a complete event for this object
@@ -368,19 +375,21 @@ void Loader::threadAbort()
 
 void Loader::Render(bool maskEnabled)
 {
-	if(!loaded || skipRender(maskEnabled))
+	SpinlockLocker l(localRootSpinlock);
+	if(!loaded || skipRender(maskEnabled) || localRoot.isNull())
 		return;
 
 	renderPrologue();
 
-	local_root->Render(maskEnabled);
+	localRoot->Render(maskEnabled);
 
 	renderEpilogue();
 }
 
 bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(!local_root.isNull() && local_root->getBounds(xmin,xmax,ymin,ymax))
+	SpinlockLocker l(localRootSpinlock);
+	if(!localRoot.isNull() && localRoot->getBounds(xmin,xmax,ymin,ymax))
 	{
 		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
 		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
@@ -388,6 +397,14 @@ bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 	}
 	else
 		return false;
+}
+
+void Loader::setOnStage(bool staged)
+{
+	DisplayObjectContainer::setOnStage(staged);
+	SpinlockLocker l(localRootSpinlock);
+	if(!localRoot.isNull())
+		localRoot->setOnStage(staged);
 }
 
 Sprite::Sprite():GraphicsContainer(this),constructed(false)

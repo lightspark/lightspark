@@ -303,11 +303,7 @@ class Class<IFunction>: public Class_base
 {
 private:
 	Class<IFunction>():Class_base(QName("Function","")){}
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
-	{
-		throw UnsupportedException("Class<IFunction>::getInstance");
-		return NULL;
-	}
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
 public:
 	static Class<IFunction>* getClass();
 	static Function* getFunction(Function::as_function v)

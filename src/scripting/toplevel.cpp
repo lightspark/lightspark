@@ -4311,6 +4311,11 @@ bool UInteger::isEqual(ASObject* o)
 	}
 }
 
+ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+{
+	return new Undefined;
+}
+
 Class<IFunction>* Class<IFunction>::getClass()
 {
 	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));

@@ -11,3 +11,4 @@ Official TODO Queue:
 -) Implement AMF0 for flv parsing
 -) Fix memory based downloader
 -) Fix potential deadlock in Timer::tick -> addWait
+-) Add a spinlock in DisplayObject for all data shared in rendering and VM context

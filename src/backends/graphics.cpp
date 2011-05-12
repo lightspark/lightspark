@@ -539,30 +539,36 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double 
 			if(style.bitmap==NULL)
 				throw RunTimeException("Invalid bitmap");
 
-			// IntSize size = style.bitmap->getBitmapSize();
-			// cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.width, size.height);
-			// uint8_t* tmp = cairo_image_surface_get_data(surface);
-			// for(uint32_t i=0;i<size.width*size.height;i++)
-			// {
-			// 	tmp[i*4+1]=i;
-			// 	tmp[i*4+3]=0xff;
-			// }
+			IntSize size = style.bitmap->getBitmapSize();
+			//TODO: ARGB32 always give a white surface
+			cairo_surface_t* surface = cairo_image_surface_create_for_data (style.bitmap->data,
+										CAIRO_FORMAT_RGB24, size.width, size.height,
+										cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, size.width));
 
-			// cairo_set_source_surface(cr, surface, 0, 0);
-			// pattern = cairo_get_source(cr);
-			// if (style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
-			//     style.FillStyleType == REPEATING_BITMAP)
-			// 	cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
-			// else
-			// 	cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
+			pattern = cairo_pattern_create_for_surface(surface);
+			cairo_surface_destroy(surface);
 
-			// if (style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
-			//     style.FillStyle == NON_SMOOTHED_CLIPPED_BITMAP)
-			// 	cairo_pattern_set_filter(pattern, CAIRO_FILTER_NEAREST);
-			// else
-			// 	cairo_pattern_set_filter(pattern, CAIRO_FILTER_BILINEAR);
+			cairo_matrix_t matrix;
+			cairo_matrix_init_scale(&matrix, 1/style.Matrix.ScaleX, 1/style.Matrix.ScaleY);
+			cairo_matrix_translate(&matrix, -20.0*(double)style.Matrix.TranslateX,
+							-20.0*(double)style.Matrix.TranslateY);
+			if(style.Matrix.RotateSkew0 || style.Matrix.RotateSkew1)
+				LOG(LOG_NOT_IMPLEMENTED,"Bitmap fill does not support rotation yet");
+			cairo_pattern_set_matrix (pattern, &matrix);
+			assert(cairo_pattern_status(pattern) == CAIRO_STATUS_SUCCESS);
 
-			// bitmaps not implemented, fall through
+			if(style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
+				style.FillStyleType == REPEATING_BITMAP)
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
+			else
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
+
+			if(style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
+			   style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP)
+				cairo_pattern_set_filter(pattern, CAIRO_FILTER_NEAREST);
+			else
+				cairo_pattern_set_filter(pattern, CAIRO_FILTER_BILINEAR);
+			break;
 		}
 		default:
 			LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style " << (int)style.FillStyleType);

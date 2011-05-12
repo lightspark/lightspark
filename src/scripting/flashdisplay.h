@@ -42,7 +42,7 @@ class Downloader;
 
 class DisplayObject: public EventDispatcher
 {
-friend class GraphicsContainer;
+friend class TokenContainer;
 private:
 	MATRIX Matrix;
 	ACQUIRE_RELEASE_FLAG(useMatrix);
@@ -103,10 +103,6 @@ public:
 	virtual void invalidate();
 	virtual void requestInvalidation();
 	MATRIX getConcatenatedMatrix() const;
-	virtual const std::vector<GeomToken>& getTokens()
-	{
-		throw RunTimeException("DisplayObject::getTokens");
-	}
 	virtual float getScaleFactor() const
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
@@ -248,24 +244,59 @@ public:
 	ASFUNCTION(contains);
 };
 
-class GraphicsContainer;
+class TokenContainer
+{
+	friend class Graphics;
+private:
+	DisplayObject* owner;
+	/* multiply shapes' coordinates by this
+	 * value to get pixel.
+	 * DefineShapeTags set a scaling of 1/20,
+	 * DefineTextTags set a scaling of 1/1024/20.
+	 * If any drawing function is called and
+	 * scaling is not 1.0f,
+	 * the tokens are cleared and scaling is set
+	 * to 1.0f.
+	 */
+	float scaling;
+	std::vector<GeomToken> tokens;
+protected:
+	TokenContainer(DisplayObject* _o) : owner(_o) {}
+	TokenContainer(DisplayObject* _o, const std::vector<GeomToken>& _tokens, float _scaling)
+		: owner(_o), scaling(_scaling), tokens(_tokens) {}
 
+	void invalidate();
+	void requestInvalidation();
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool hitTest(number_t x, number_t y) const;
+	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
+	void Render(bool maskEnabled);
+	bool tokensEmpty() const { return tokens.empty(); }
+};
+
+/* This objects paints to its owners tokens */
 class Graphics: public ASObject
 {
-friend class GraphicsContainer;
 private:
-	std::vector<GeomToken> tokens;
 	int curX, curY;
-	GraphicsContainer *const owner;
+	TokenContainer *const owner;
 	//TODO: Add spinlock
+	void checkAndSetScaling()
+	{
+		if(owner->scaling != 1.0f)
+		{
+			owner->scaling = 1.0f;
+			owner->tokens.clear();
+			assert(curX == 0 && curY == 0);
+		}
+	}
 public:
 	Graphics():owner(NULL)
 	{
 		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
-	Graphics(GraphicsContainer* _o):curX(0),curY(0),owner(_o)
-	{
-	}
+	Graphics(TokenContainer* _o)
+		: curX(0),curY(0),owner(_o) {}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -281,45 +312,28 @@ public:
 	ASFUNCTION(curveTo);
 	ASFUNCTION(cubicCurveTo);
 	ASFUNCTION(clear);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	std::vector<GeomToken> getGraphicsTokens() const;
-	bool hitTest(number_t x, number_t y) const;
 };
 
-class GraphicsContainer
+
+class Shape: public DisplayObject, public TokenContainer
 {
-friend class Graphics;
 protected:
 	_NR<Graphics> graphics;
-	/*It's ok for owner to be a non managed pointer. It's a pointer to the same object.
-	  See Shape for example
-	  */
-	DisplayObject* owner;
-	GraphicsContainer(DisplayObject* _o):graphics(NULL),owner(_o){}
-	void invalidateGraphics();
-	void finalizeGraphics();
-};
-
-class Shape: public DisplayObject, public GraphicsContainer
-{
-protected:
-	std::vector<GeomToken> cachedTokens;
-	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 public:
-	Shape():GraphicsContainer(this){}
+	Shape():TokenContainer(this), graphics(NULL) {}
+	Shape(const std::vector<GeomToken>& tokens, float scaling)
+		: TokenContainer(this, tokens, scaling), graphics(NULL) {}
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void Render(bool maskEnabled);
+	void Render(bool maskEnabled) { TokenContainer::Render(maskEnabled); }
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	bool isOpaque(number_t x, number_t y) const;
-	void invalidate();
-	void requestInvalidation();
-	const std::vector<GeomToken>& getTokens();
-	float getScaleFactor() const;
+	void requestInvalidation() { TokenContainer::requestInvalidation(); }
+	void invalidate() { TokenContainer::invalidate(); }
 };
 
 class MorphShape: public DisplayObject
@@ -408,11 +422,12 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
 
-class Sprite: public DisplayObjectContainer, public GraphicsContainer
+class Sprite: public DisplayObjectContainer, public TokenContainer
 {
 friend class DisplayObject;
 private:
 	ACQUIRE_RELEASE_FLAG(constructed);
+	_NR<Graphics> graphics;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
@@ -433,7 +448,7 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
-	void invalidate();
+	void invalidate() { TokenContainer::invalidate(); }
 	void requestInvalidation();
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 };

@@ -390,11 +390,11 @@ bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 		return false;
 }
 
-Sprite::Sprite():GraphicsContainer(this),constructed(false)
+Sprite::Sprite():TokenContainer(this),constructed(false),graphics(NULL)
 {
 }
 
-Sprite::Sprite(const Sprite& r):GraphicsContainer(this),constructed(false)
+Sprite::Sprite(const Sprite& r):TokenContainer(this),constructed(false),graphics(NULL)
 {
 	assert(!r.isConstructed());
 }
@@ -402,8 +402,7 @@ Sprite::Sprite(const Sprite& r):GraphicsContainer(this),constructed(false)
 void Sprite::finalize()
 {
 	DisplayObjectContainer::finalize();
-	//The GraphicsContainer parent class may need to release the Graphics object;
-	finalizeGraphics();
+	graphics.reset();
 }
 
 void Sprite::sinit(Class_base* c)
@@ -412,31 +411,6 @@ void Sprite::sinit(Class_base* c)
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),true);
-}
-
-void GraphicsContainer::finalizeGraphics()
-{
-	graphics.reset();
-}
-
-void GraphicsContainer::invalidateGraphics()
-{
-	assert(!graphics.isNull());
-	if(!owner->isOnStage())
-		return;
-	uint32_t x,y,width,height;
-	number_t bxmin,bxmax,bymin,bymax;
-	if(graphics->getBounds(bxmin,bxmax,bymin,bymax)==false)
-	{
-		//No contents, nothing to do
-		return;
-	}
-	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
-	if(width==0 || height==0)
-		return;
-	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, graphics->tokens,
-				owner->getConcatenatedMatrix(), x, y, width, height, 1);
-	sys->addJob(r);
 }
 
 void Sprite::buildTraits(ASObject* o)
@@ -448,7 +422,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	bool ret=false;
 	{
 		Locker l(mutexDisplayList);
-		if(dynamicDisplayList.empty() && graphics.isNull())
+		if(dynamicDisplayList.empty() && tokensEmpty())
 			return false;
 
 		//TODO: Check bounds calculation
@@ -476,27 +450,24 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 			}
 		}
 	}
-	if(!graphics.isNull())
+	number_t txmin,txmax,tymin,tymax;
+	if(TokenContainer::getBounds(txmin,txmax,tymin,tymax))
 	{
-		number_t txmin,txmax,tymin,tymax;
-		if(graphics->getBounds(txmin,txmax,tymin,tymax))
+		if(ret==true)
 		{
-			if(ret==true)
-			{
-				xmin = imin(xmin,txmin);
-				xmax = imax(xmax,txmax);
-				ymin = imin(ymin,tymin);
-				ymax = imax(ymax,tymax);
-			}
-			else
-			{
-				xmin=txmin;
-				xmax=txmax;
-				ymin=tymin;
-				ymax=tymax;
-			}
-			ret=true;
+			xmin = imin(xmin,txmin);
+			xmax = imax(xmax,txmax);
+			ymin = imin(ymin,tymin);
+			ymax = imax(ymax,tymax);
 		}
+		else
+		{
+			xmin=txmin;
+			xmax=txmax;
+			ymin=tymin;
+			ymax=tymax;
+		}
+		ret=true;
 	}
 	return ret;
 }
@@ -513,20 +484,10 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 	return ret;
 }
 
-void Sprite::invalidate()
-{
-	assert(!graphics.isNull());
-	invalidateGraphics();
-}
-
 void Sprite::requestInvalidation()
 {
 	DisplayObjectContainer::requestInvalidation();
-	if(!graphics.isNull())
-	{
-		this->incRef();
-		sys->addToInvalidateQueue(_MR(this));
-	}
+	TokenContainer::requestInvalidation();
 }
 
 void DisplayObject::renderPrologue() const
@@ -549,16 +510,10 @@ void DisplayObject::renderEpilogue() const
 void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//Draw the dynamically added graphics, if any
-	if(!graphics.isNull())
-	{
-		//Should clean only the bounds of the graphics
-		//if(!isSimple())
-		//	rt->glAcquireTempBuffer(t1,t2,t3,t4);
+	//Should clean only the bounds of the graphics
+	if(!tokensEmpty())
 		defaultRender(maskEnabled);
-		//if(!isSimple())
-		//	rt->glBlitTempBuffer(t1,t2,t3,t4);
-	}
-	
+
 	{
 		Locker l(mutexDisplayList);
 		//Now draw also the display list
@@ -573,7 +528,6 @@ void Sprite::Render(bool maskEnabled)
 	if(skipRender(maskEnabled))
 		return;
 
-	//TODO: TOLOCK
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
 	if(!notEmpty)
@@ -616,10 +570,10 @@ _NR<InteractiveObject> Sprite::hitTestImpl(number_t x, number_t y)
 		}
 	}
 
-	if(ret==NULL && !graphics.isNull() && mouseEnabled)
+	if(ret==NULL && !tokensEmpty() && mouseEnabled)
 	{
 		//The coordinates are locals
-		if(graphics->hitTest(x,y))
+		if(TokenContainer::hitTest(x,y))
 		{
 			this->incRef();
 			ret=_MR(this);
@@ -2371,8 +2325,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 void Shape::finalize()
 {
 	DisplayObject::finalize();
-	//The GraphicsContainer parent class may need to release the Graphics object;
-	finalizeGraphics();
+	graphics.reset();
 }
 
 void Shape::sinit(Class_base* c)
@@ -2389,15 +2342,12 @@ void Shape::buildTraits(ASObject* o)
 
 bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(!graphics.isNull())
+	bool ret=TokenContainer::getBounds(xmin,xmax,ymin,ymax);
+	if(ret)
 	{
-		bool ret=graphics->getBounds(xmin,xmax,ymin,ymax);
-		if(ret)
-		{
-			getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-			getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-			return true;
-		}
+		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
+		return true;
 	}
 	return false;
 }
@@ -2417,67 +2367,42 @@ _NR<InteractiveObject> Shape::hitTest(_NR<InteractiveObject> last, number_t x, n
 	if(!mask.isNull())
 		throw UnsupportedException("Support masks in Shape::hitTest");
 
-	if(!graphics.isNull())
-	{
-		//The coordinates are already local
-		if(graphics->hitTest(x,y))
-			return last;
-	}
+	//The coordinates are already local
+	if(TokenContainer::hitTest(x,y))
+		return last;
 
 	return NullRef;
 }
 
-void Shape::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
-	renderPrologue();
-
-	if(!isSimple())
+	if(!owner->isSimple())
 		rt->glAcquireTempBuffer(t1,t2,t3,t4);
 
-	defaultRender(maskEnabled);
+	owner->defaultRender(maskEnabled);
 
-	if(!isSimple())
+	if(!owner->isSimple())
 		rt->glBlitTempBuffer(t1,t2,t3,t4);
-	renderEpilogue();
 }
 
-void Shape::Render(bool maskEnabled)
+void TokenContainer::Render(bool maskEnabled)
 {
+	if(tokens.empty())
+		return;
 	//If graphics is not yet initialized we have nothing to do
-	if(graphics.isNull() || skipRender(maskEnabled))
+	if(owner->skipRender(maskEnabled))
 		return;
 
 	number_t t1,t2,t3,t4;
-	bool ret=graphics->getBounds(t1,t2,t3,t4);
+	bool ret=getBounds(t1,t2,t3,t4);
 	if(!ret)
 		return;
-	Shape::renderImpl(maskEnabled, t1, t2, t3, t4);
-}
 
-const vector<GeomToken>& Shape::getTokens()
-{
-	return cachedTokens;
-}
+	owner->renderPrologue();
 
-float Shape::getScaleFactor() const
-{
-	return 1;
-}
+	renderImpl(maskEnabled,t1,t2,t3,t4);
 
-void Shape::invalidate()
-{
-	assert(!graphics.isNull());
-	invalidateGraphics();
-	cachedTokens=graphics->getGraphicsTokens();
-}
-
-void Shape::requestInvalidation()
-{
-	if(!graphics.isNull())
-	{
-		this->incRef();
-		sys->addToInvalidateQueue(_MR(this));
-	}
+	owner->renderEpilogue();
 }
 
 ASFUNCTIONBODY(Shape,_constructor)
@@ -2489,10 +2414,8 @@ ASFUNCTIONBODY(Shape,_constructor)
 ASFUNCTIONBODY(Shape,_getGraphics)
 {
 	Shape* th=static_cast<Shape*>(obj);
-	//Probably graphics is not used often, so create it here
 	if(th->graphics.isNull())
 		th->graphics=_MR(Class<Graphics>::getInstanceS(th));
-
 	th->graphics->incRef();
 	return th->graphics.getPtr();
 }
@@ -2620,38 +2543,40 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 	return NULL;
 }
 
-void Graphics::sinit(Class_base* c)
+void TokenContainer::requestInvalidation()
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setMethodByQName("clear","",Class<IFunction>::getFunction(clear),true);
-	c->setMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),true);
-	c->setMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),true);
-	c->setMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),true);
-	c->setMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),true);
-	c->setMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),true);
-	c->setMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),true);
-	c->setMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),true);
-	c->setMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),true);
-	c->setMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),true);
-	c->setMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),true);
-	c->setMethodByQName("endFill","",Class<IFunction>::getFunction(endFill),true);
+	if(tokens.empty())
+		return;
+	owner->incRef();
+	sys->addToInvalidateQueue(_MR(owner));
 }
 
-void Graphics::buildTraits(ASObject* o)
+void TokenContainer::invalidate()
 {
+	if(!owner->isOnStage())
+		return;
+	uint32_t x,y,width,height;
+	number_t bxmin,bxmax,bymin,bymax;
+	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
+	{
+		//No contents, nothing to do
+		return;
+	}
+
+	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
+	if(width==0 || height==0)
+		return;
+	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, tokens,
+				owner->getConcatenatedMatrix(), x, y, width, height, scaling);
+	sys->addJob(r);
 }
 
-vector<GeomToken> Graphics::getGraphicsTokens() const
-{
-	return tokens;
-}
-
-bool Graphics::hitTest(number_t x, number_t y) const
+bool TokenContainer::hitTest(number_t x, number_t y) const
 {
 	return CairoRenderer::hitTest(tokens, 1, x, y);
 }
 
-bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TokenContainer::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 
 	#define VECTOR_BOUNDS(v) \
@@ -2704,9 +2629,44 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 				break;
 		}
 	}
+	if(hasContent)
+	{
+		/* scale the bounding box coordinates and round them to a bigger integer box */
+		#define roundDown(x) \
+			copysign(floor(abs(x)), x)
+		#define roundUp(x) \
+			copysign(ceil(abs(x)), x)
+		xmin = roundDown(xmin*scaling);
+		xmax = roundUp(xmax*scaling);
+		ymin = roundDown(ymin*scaling);
+		ymax = roundUp(ymax*scaling);
+		#undef roundDown
+		#undef roundUp
+	}
 	return hasContent;
 
 #undef VECTOR_BOUNDS
+}
+
+void Graphics::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setMethodByQName("clear","",Class<IFunction>::getFunction(clear),true);
+	c->setMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),true);
+	c->setMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),true);
+	c->setMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),true);
+	c->setMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),true);
+	c->setMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),true);
+	c->setMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),true);
+	c->setMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),true);
+	c->setMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),true);
+	c->setMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),true);
+	c->setMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),true);
+	c->setMethodByQName("endFill","",Class<IFunction>::getFunction(endFill),true);
+}
+
+void Graphics::buildTraits(ASObject* o)
+{
 }
 
 ASFUNCTIONBODY(Graphics,_constructor)
@@ -2717,19 +2677,22 @@ ASFUNCTIONBODY(Graphics,_constructor)
 ASFUNCTIONBODY(Graphics,clear)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	th->tokens.clear();
+	th->checkAndSetScaling();
+	th->owner->tokens.clear();
+	th->owner->owner->requestInvalidation();
 	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,moveTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
 	assert_and_throw(argslen==2);
 
 	th->curX=args[0]->toInt();
 	th->curY=args[1]->toInt();
 
-	th->tokens.emplace_back(MOVE, Vector2(th->curX, th->curY));
+	th->owner->tokens.emplace_back(MOVE, Vector2(th->curX, th->curY));
 	return NULL;
 }
 
@@ -2737,11 +2700,12 @@ ASFUNCTIONBODY(Graphics,lineTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==2);
+	th->checkAndSetScaling();
 
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
 
-	th->tokens.emplace_back(STRAIGHT, Vector2(x, y));
+	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x, y));
 	th->owner->owner->requestInvalidation();
 
 	th->curX=x;
@@ -2753,6 +2717,7 @@ ASFUNCTIONBODY(Graphics,curveTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==4);
+	th->checkAndSetScaling();
 
 	int controlX=args[0]->toInt();
 	int controlY=args[1]->toInt();
@@ -2760,7 +2725,7 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	int anchorX=args[2]->toInt();
 	int anchorY=args[3]->toInt();
 
-	th->tokens.emplace_back(CURVE_QUADRATIC,
+	th->owner->tokens.emplace_back(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
 	                        Vector2(anchorX, anchorY));
 	th->owner->owner->requestInvalidation();
@@ -2774,6 +2739,7 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==6);
+	th->checkAndSetScaling();
 
 	int control1X=args[0]->toInt();
 	int control1Y=args[1]->toInt();
@@ -2784,7 +2750,7 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 	int anchorX=args[4]->toInt();
 	int anchorY=args[5]->toInt();
 
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(control1X, control1Y),
 	                        Vector2(control2X, control2Y),
 	                        Vector2(anchorX, anchorY));
@@ -2808,6 +2774,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==5 || argslen==6);
+	th->checkAndSetScaling();
 
 	double x=args[0]->toNumber();
 	double y=args[1]->toNumber();
@@ -2840,43 +2807,43 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	 */
 
 	// D
-	th->tokens.emplace_back(MOVE, Vector2(x+width, y+height-ellipseHeight));
+	th->owner->tokens.emplace_back(MOVE, Vector2(x+width, y+height-ellipseHeight));
 
 	// D -> E
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(x+width, y+height-ellipseHeight+kappaH),
 	                        Vector2(x+width-ellipseWidth+kappaW, y+height),
 	                        Vector2(x+width-ellipseWidth, y+height));
 
 	// E -> F
-	th->tokens.emplace_back(STRAIGHT, Vector2(x+ellipseWidth, y+height));
+	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x+ellipseWidth, y+height));
 
 	// F -> G
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(x+ellipseWidth-kappaW, y+height),
 	                        Vector2(x, y+height-kappaH),
 	                        Vector2(x, y+height-ellipseHeight));
 
 	// G -> H
-	th->tokens.emplace_back(STRAIGHT, Vector2(x, y+ellipseHeight));
+	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x, y+ellipseHeight));
 
 	// H -> A
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(x, y+ellipseHeight-kappaH),
 	                        Vector2(x+ellipseWidth-kappaW, y),
 	                        Vector2(x+ellipseWidth, y));
 
 	// A -> B
-	th->tokens.emplace_back(STRAIGHT, Vector2(x+width-ellipseWidth, y));
+	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x+width-ellipseWidth, y));
 
 	// B -> C
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(x+width-ellipseWidth+kappaW, y),
 	                        Vector2(x+width, y+kappaH),
 	                        Vector2(x+width, y+ellipseHeight));
 
 	// C -> D
-	th->tokens.emplace_back(STRAIGHT, Vector2(x+width, y+height-ellipseHeight));
+	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x+width, y+height-ellipseHeight));
 
 	th->owner->owner->requestInvalidation();
 	
@@ -2887,6 +2854,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==3);
+	th->checkAndSetScaling();
 
 	double x=args[0]->toNumber();
 	double y=args[1]->toNumber();
@@ -2895,28 +2863,28 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	double kappa = KAPPA*radius;
 
 	// right
-	th->tokens.emplace_back(MOVE, Vector2(x+radius, y));
+	th->owner->tokens.emplace_back(MOVE, Vector2(x+radius, y));
 
 	// bottom
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(x+radius, y+kappa ),
 	                        Vector2(x+kappa , y+radius),
 	                        Vector2(x       , y+radius));
 
 	// left
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(x-kappa , y+radius),
 	                        Vector2(x-radius, y+kappa ),
 	                        Vector2(x-radius, y       ));
 
 	// top
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(x-radius, y-kappa ),
 	                        Vector2(x-kappa , y-radius),
 	                        Vector2(x       , y-radius));
 
 	// back to right
-	th->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(x+kappa , y-radius),
 	                        Vector2(x+radius, y-kappa ),
 	                        Vector2(x+radius, y       ));
@@ -2930,6 +2898,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==4);
+	th->checkAndSetScaling();
 
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
@@ -2941,11 +2910,11 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	const Vector2 c(x+width,y+height);
 	const Vector2 d(x,y+height);
 
-	th->tokens.emplace_back(MOVE, a);
-	th->tokens.emplace_back(STRAIGHT, b);
-	th->tokens.emplace_back(STRAIGHT, c);
-	th->tokens.emplace_back(STRAIGHT, d);
-	th->tokens.emplace_back(STRAIGHT, a);
+	th->owner->tokens.emplace_back(MOVE, a);
+	th->owner->tokens.emplace_back(STRAIGHT, b);
+	th->owner->tokens.emplace_back(STRAIGHT, c);
+	th->owner->tokens.emplace_back(STRAIGHT, d);
+	th->owner->tokens.emplace_back(STRAIGHT, a);
 	th->owner->owner->requestInvalidation();
 	
 	return NULL;
@@ -2954,9 +2923,11 @@ ASFUNCTIONBODY(Graphics,drawRect)
 ASFUNCTIONBODY(Graphics,lineStyle)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
+
 	if (argslen == 0)
 	{
-		th->tokens.emplace_back(CLEAR_STROKE);
+		th->owner->tokens.emplace_back(CLEAR_STROKE);
 		return NULL;
 	}
 	uint32_t color = 0;
@@ -2972,7 +2943,7 @@ ASFUNCTIONBODY(Graphics,lineStyle)
 	LINESTYLE2 style(-1);
 	style.Color = RGBA(color, alpha);
 	style.Width = thickness;
-	th->tokens.emplace_back(SET_STROKE, style);
+	th->owner->tokens.emplace_back(SET_STROKE, style);
 	return NULL;
 }
 
@@ -2980,6 +2951,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen>=4);
+	th->checkAndSetScaling();
 
 	FILLSTYLE style(-1);
 
@@ -3056,13 +3028,14 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	}
 
 	style.Gradient = grad;
-	th->tokens.emplace_back(SET_FILL, style);
+	th->owner->tokens.emplace_back(SET_FILL, style);
 	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,beginFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
 	uint32_t color=0;
 	uint8_t alpha=255;
 	if(argslen>=1)
@@ -3072,14 +3045,15 @@ ASFUNCTIONBODY(Graphics,beginFill)
 	FILLSTYLE style(-1);
 	style.FillStyleType = SOLID_FILL;
 	style.Color         = RGBA(color, alpha);
-	th->tokens.emplace_back(SET_FILL, style);
+	th->owner->tokens.emplace_back(SET_FILL, style);
 	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,endFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	th->tokens.emplace_back(CLEAR_FILL);
+	th->checkAndSetScaling();
+	th->owner->tokens.emplace_back(CLEAR_FILL);
 	return NULL;
 }
 

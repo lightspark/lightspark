@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/toplevel.h"
 #include <algorithm>
+#include <limits>
 #include "compat.h"
 
 using namespace lightspark;

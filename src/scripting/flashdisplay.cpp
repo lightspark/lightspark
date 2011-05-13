@@ -1805,7 +1805,8 @@ void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
 	if(parent!=p)
 	{
 		parent=p;
-		requestInvalidation();
+		if(onStage)
+			requestInvalidation();
 	}
 }
 

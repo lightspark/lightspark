@@ -527,16 +527,6 @@ public:
 	}
 };
 
-class DefineText2Tag: public DefineTextTag
-{
-public:
-	DefineText2Tag(RECORDHEADER h, std::istream& in);
-	ASObject* instance() const
-	{
-		return new DefineText2Tag(*this);
-	}
-};
-
 class DefineSpriteTag: public DictionaryTag, public MovieClip
 {
 private:

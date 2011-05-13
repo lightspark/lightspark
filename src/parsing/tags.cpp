@@ -117,7 +117,7 @@ Tag* TagFactory::readTag()
 			ret=new DefineShape3Tag(h,f);
 			break;
 		case 33:
-			ret=new DefineText2Tag(h,f);
+			ret=new DefineTextTag(h,f,2);
 			break;
 		case 34:
 			ret=new DefineButton2Tag(h,f);
@@ -688,10 +688,6 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, int v):DictionaryTag(h
 			break;
 		TextRecords.push_back(t);
 	}
-}
-
-DefineText2Tag::DefineText2Tag(RECORDHEADER h, istream& in):DefineTextTag(h,in,2)
-{
 }
 
 void DefineTextTag::Render(bool maskEnabled)

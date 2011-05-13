@@ -67,6 +67,7 @@ REGISTER_CLASS_NAME(Bitmap);
 REGISTER_CLASS_NAME(SimpleButton);
 REGISTER_CLASS_NAME(FrameLabel);
 REGISTER_CLASS_NAME(Scene);
+REGISTER_CLASS_NAME(StaticText);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -3440,3 +3441,29 @@ void InterpolationMethod::sinit(Class_base* c)
 	c->setVariableByQName("LINEAR_RGB","",Class<ASString>::getInstanceS("linearRGB"));
 }
 
+void StaticText::sinit(Class_base* c)
+{
+	//TODO: spec says that constructor should throw ArgumentError
+	c->setConstructor(NULL);
+	c->super=Class<InteractiveObject>::getClass();
+	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("text","",Class<IFunction>::getFunction(_getText),true);
+}
+
+bool StaticText::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	bool ret=TokenContainer::getBounds(xmin,xmax,ymin,ymax);
+	if(ret)
+	{
+		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
+		return true;
+	}
+	return false;
+}
+
+ASFUNCTIONBODY(StaticText,_getText)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"flash.display.StaticText.text is not implemented");
+	return Class<ASString>::getInstanceS("");
+}

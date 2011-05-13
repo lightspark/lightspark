@@ -350,6 +350,20 @@ public:
 	//void Render();
 };
 
+class StaticText: public DisplayObject, public TokenContainer
+{
+private:
+	ASFUNCTION(_getText);
+public:
+	StaticText() : TokenContainer(this) {};
+	StaticText(const std::vector<GeomToken>& tokens) : TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {};
+	static void sinit(Class_base* c);
+	void Render(bool maskEnabled) { TokenContainer::Render(maskEnabled); }
+	void requestInvalidation() { TokenContainer::requestInvalidation(); }
+	void invalidate() { TokenContainer::invalidate(); }
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+};
+
 class Loader;
 
 class LoaderInfo: public EventDispatcher

@@ -548,13 +548,13 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double 
 			pattern = cairo_pattern_create_for_surface(surface);
 			cairo_surface_destroy(surface);
 
-			cairo_matrix_t matrix;
-			cairo_matrix_init_scale(&matrix, 1/style.Matrix.ScaleX, 1/style.Matrix.ScaleY);
-			cairo_matrix_translate(&matrix, -20.0*(double)style.Matrix.TranslateX,
-							-20.0*(double)style.Matrix.TranslateY);
-			if(style.Matrix.RotateSkew0 || style.Matrix.RotateSkew1)
-				LOG(LOG_NOT_IMPLEMENTED,"Bitmap fill does not support rotation yet");
-			cairo_pattern_set_matrix (pattern, &matrix);
+			cairo_matrix_t mat = MATRIXToCairo(style.Matrix);
+			cairo_status_t st = cairo_matrix_invert(&mat);
+			assert(st == CAIRO_STATUS_SUCCESS);
+			mat.x0 /= scaleCorrection;
+			mat.y0 /= scaleCorrection;
+
+			cairo_pattern_set_matrix (pattern, &mat);
 			assert(cairo_pattern_status(pattern) == CAIRO_STATUS_SUCCESS);
 
 			if(style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||

@@ -2581,8 +2581,6 @@ void TokenContainer::requestInvalidation()
 
 void TokenContainer::invalidate()
 {
-	if(!owner->isOnStage())
-		return;
 	uint32_t x,y,width,height;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(getBounds(bxmin,bxmax,bymin,bymax)==false)

@@ -2137,10 +2137,9 @@ bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 		dynamicDisplayList.erase(it);
 	}
 	//Set the root of the movie to NULL
-	child->setRoot(NullRef);
-	//We can release the reference to the child
-	child->setParent(NullRef);
 	child->setOnStage(false);
+	child->setRoot(NullRef);
+	child->setParent(NullRef);
 	return true;
 }
 
@@ -2278,9 +2277,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 		child->incRef();
 		th->dynamicDisplayList.erase(it);
 	}
-	//We can release the reference to the child
-	child->setParent(NullRef);
 	child->setOnStage(false);
+	child->setParent(NullRef);
 
 	//As we return the child we don't decRef it
 	return child;

@@ -32,7 +32,7 @@ namespace lightspark
 {
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_TAG, CHANGE_FRAME, CONSTRUCT_FRAME,
-			SYS_ON_STAGE };
+			SYS_ON_STAGE, FLUSH_INVALIDATION_QUEUE };
 
 class ABCContext;
 class DictionaryTag;
@@ -362,6 +362,14 @@ class SysOnStageEvent: public Event
 public:
 	SysOnStageEvent():Event("SysOnStageEvent"){};
 	EVENT_TYPE getEventType() const { return SYS_ON_STAGE; };
+};
+
+//Event to flush the invalidation queue
+class FlushInvalidationQueueEvent: public Event
+{
+public:
+	FlushInvalidationQueueEvent():Event("FlushInvalidationQueueEvent"){};
+	EVENT_TYPE getEventType() const { return FLUSH_INVALIDATION_QUEUE; };
 };
 
 };

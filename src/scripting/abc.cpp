@@ -1204,7 +1204,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case SYS_ON_STAGE:
 			{
-				sys->setOnStage(true);
+				m_sys->setOnStage(true);
+				break;
+			}
+			case FLUSH_INVALIDATION_QUEUE:
+			{
+				//Flush the invalidation queue
+				m_sys->flushInvalidationQueue();
 				break;
 			}
 			default:
@@ -1558,8 +1564,6 @@ void ABCVm::Run(ABCVm* th)
 			th->handleEvent(e);
 			if(th->shuttingdown)
 				bailOut=true;
-			//Flush the invalidation queue
-			th->m_sys->flushInvalidationQueue();
 			profile->accountTime(chronometer.checkpoint());
 		}
 		catch(LightsparkException& e)

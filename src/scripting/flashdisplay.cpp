@@ -1074,24 +1074,6 @@ void MovieClip::setOnStage(bool staged)
 	}
 }
 
-void MovieClip::setRoot(_NR<RootMovieClip> r)
-{
-	if(r==root)
-		return;
-	if(!root.isNull())
-		root->unregisterChildClip(this);
-	DisplayObjectContainer::setRoot(r);
-	//Now notify all the objects in all frames
-	for(uint32_t i=0;i<frames.size();i++)
-	{
-		Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
-		for(;it!=frames[i].displayList.end();it++)
-			it->second->setRoot(root);
-	}
-	if(!root.isNull())
-		root->registerChildClip(this);
-}
-
 void MovieClip::bootstrap()
 {
 	if(totalFrames==0)
@@ -1268,12 +1250,12 @@ void MovieClip::constructionComplete()
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),
-	root(NULL),loaderInfo(NULL),alpha(1.0),visible(true),invalidateQueueNext(NULL)
+	loaderInfo(NULL),alpha(1.0),visible(true),invalidateQueueNext(NULL)
 {
 }
 
 DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(NULL),
-	parent(NULL),mask(NULL),onStage(false),root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),invalidateQueueNext(NULL)
+	parent(NULL),mask(NULL),onStage(false),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),invalidateQueueNext(NULL)
 {
 }
 
@@ -1283,7 +1265,6 @@ void DisplayObject::finalize()
 	maskOf.reset();
 	parent.reset();
 	mask.reset();
-	root.reset();
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
 }
@@ -1512,11 +1493,6 @@ void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, nu
 		parent->localToGlobal(xout, yout, xout, yout);
 }
 
-void DisplayObject::setRoot(_NR<RootMovieClip> r)
-{
-	root=r;
-}
-
 void DisplayObject::setOnStage(bool staged)
 {
 	//TODO: When removing from stage released the cachedTex
@@ -1734,14 +1710,12 @@ ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 ASFUNCTIONBODY(DisplayObject,_getStage)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->onStage)
-	{
-		assert(sys->stage);
-		sys->stage->incRef();
-		return sys->stage;
-	}
-	else
+	_NR<Stage> ret=th->getStage();
+	if(ret.isNull())
 		return new Null;
+
+	ret->incRef();
+	return ret.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
@@ -1823,11 +1797,12 @@ ASFUNCTIONBODY(DisplayObject,_getParent)
 ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->root.isNull())
+	_NR<RootMovieClip> ret=th->getRoot();
+	if(ret.isNull())
 		return new Undefined;
 
-	th->root->incRef();
-	return th->root.getPtr();
+	ret->incRef();
+	return ret.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)
@@ -1870,6 +1845,22 @@ int DisplayObject::computeWidth()
 	bool ret=getBounds(x1,x2,y1,y2);
 
 	return (ret)?(x2-x1):0;
+}
+
+_NR<RootMovieClip> DisplayObject::getRoot()
+{
+	if(parent.isNull())
+		return NullRef;
+
+	return parent->getRoot();
+}
+
+_NR<Stage> DisplayObject::getStage() const
+{
+	if(parent.isNull())
+		return NullRef;
+
+	return parent->getStage();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getWidth)
@@ -2041,18 +2032,6 @@ void DisplayObjectContainer::dumpDisplayList()
 		cout << (*it)->getPrototype()->class_name << endl;
 }
 
-//This must be called fromt VM context
-void DisplayObjectContainer::setRoot(_NR<RootMovieClip> r)
-{
-	if(r!=root)
-	{
-		DisplayObject::setRoot(r);
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->setRoot(r);
-	}
-}
-
 void DisplayObjectContainer::setOnStage(bool staged)
 {
 	if(staged!=onStage)
@@ -2102,9 +2081,6 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 	this->incRef();
 	child->setParent(_MR(this));
 
-	//Set the root of the movie to this container
-	child->setRoot(root);
-
 	{
 		Locker l(mutexDisplayList);
 		//We insert the object in the back of the list
@@ -2127,7 +2103,6 @@ bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 	if(child->getParent()==NULL)
 		return false;
 	assert_and_throw(child->getParent()==this);
-	assert_and_throw(child->getRoot()==root);
 
 	{
 		Locker l(mutexDisplayList);
@@ -2136,9 +2111,7 @@ bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 			return false;
 		dynamicDisplayList.erase(it);
 	}
-	//Set the root of the movie to NULL
 	child->setOnStage(false);
-	child->setRoot(NullRef);
 	child->setParent(NullRef);
 	return true;
 }

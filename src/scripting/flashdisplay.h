@@ -33,6 +33,7 @@
 namespace lightspark
 {
 
+class Stage;
 class RootMovieClip;
 class DisplayListTag;
 class LoaderInfo;
@@ -67,7 +68,6 @@ protected:
 			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
 	bool onStage;
-	_NR<RootMovieClip> root;
 	_NR<LoaderInfo> loaderInfo;
 	int computeWidth();
 	int computeHeight();
@@ -124,10 +124,10 @@ public:
 	{
 		throw RunTimeException("DisplayObject::isOpaque");
 	}
-	virtual void setRoot(_NR<RootMovieClip> root);
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
-	_NR<RootMovieClip> getRoot() { return root; }
+	virtual _NR<RootMovieClip> getRoot();
+	virtual _NR<Stage> getStage() const;
 	void setMatrix(const MATRIX& m);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -223,7 +223,6 @@ protected:
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
-	void setRoot(_NR<RootMovieClip> r);
 	void setOnStage(bool staged);
 public:
 	void dumpDisplayList();
@@ -539,7 +538,6 @@ public:
 	void Render(bool maskEnabled);
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void requestInvalidation();
-	void setRoot(_NR<RootMovieClip> r);
 	void setOnStage(bool staged);
 	
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;

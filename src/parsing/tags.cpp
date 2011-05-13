@@ -264,7 +264,6 @@ void RemoveObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 		if(it->first.Depth==Depth)
 		{
 			it->second->setParent(NullRef);
-			it->second->setRoot(NullRef);
 			ls.erase(it);
 			break;
 		}
@@ -1090,7 +1089,6 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, MovieClip* parent) const
 
 	parent->incRef();
 	obj->setParent(_MR(parent));
-	obj->setRoot(parent->getRoot());
 }
 
 void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)

@@ -120,6 +120,8 @@ public:
 	void registerChildClip(MovieClip* clip);
 	void unregisterChildClip(MovieClip* clip);
 	static RootMovieClip* getInstance(LoaderInfo* li);
+	//DisplayObject interface
+	_NR<RootMovieClip> getRoot();
 };
 
 class ThreadProfile
@@ -239,8 +241,6 @@ private:
 	*/
 	tiny_string profOut;
 #endif
-	//Special implementations of AS3 function
-	ASFUNCTION(_getStage);
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	ENGINE getEngine() DLL_PUBLIC { return engine; };
@@ -264,6 +264,8 @@ public:
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 	void enableGnashFallback() DLL_PUBLIC;
 	void needsAVM2(bool n);
+	//DisplayObject interface
+	_NR<Stage> getStage() const;
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started

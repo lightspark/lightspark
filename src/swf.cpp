@@ -58,7 +58,6 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),init
 	mutexFrames("mutexFrame"),toBind(false),mutexChildrenClips("mutexChildrenClips")
 {
 	this->incRef();
-	root=_MR(this);
 	sem_init(&new_frame,0,0);
 	if(li)
 		li->incRef();
@@ -914,12 +913,10 @@ void SystemState::flushInvalidationQueue()
 	invalidateQueueTail=NullRef;
 }
 
-ASFUNCTIONBODY(SystemState,_getStage)
+_NR<Stage> SystemState::getStage() const
 {
-	SystemState* th=static_cast<SystemState*>(obj);
-	assert(th->stage);
-	th->stage->incRef();
-	return th->stage;
+	stage->incRef();
+	return _MR(stage);
 }
 
 #ifdef PROFILING_SUPPORT
@@ -1370,6 +1367,12 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	}
 	DictionaryTag* ret=*it;
 	return ret;
+}
+
+_NR<RootMovieClip> RootMovieClip::getRoot()
+{
+	this->incRef();
+	return _MR(this);
 }
 
 void RootMovieClip::tick()

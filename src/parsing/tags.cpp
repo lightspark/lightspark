@@ -1091,8 +1091,6 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, MovieClip* parent) const
 	parent->incRef();
 	obj->setParent(_MR(parent));
 	obj->setRoot(parent->getRoot());
-	//Invalidate the object now that all properties are correctly set
-	obj->requestInvalidation();
 }
 
 void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)

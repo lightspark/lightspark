@@ -647,7 +647,7 @@ protected:
 	/* the bitmaps data in cairo's internal representation */
 	uint8_t* data;
 public:
-	Bitmap() : size(0,0), data(0) {}
+	Bitmap() : size(0,0), data(NULL) {}
 	static void sinit(Class_base* c);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual IntSize getBitmapSize() const;

@@ -799,12 +799,13 @@ uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, ui
 		for(uint32_t j = 0; j < width; j++)
 		{
 			uint32_t* outDataPos = (uint32_t*)(outData+i*stride) + j;
-			uint8_t pdata[4];
-			pdata[0] = inData[(i*width+j)*3+2];
-			pdata[1] = inData[(i*width+j)*3+1];
-			pdata[2] = inData[(i*width+j)*3+0];
-			//cairo's RGB24 ignores data[3] and wants data in host endianess
-			*outDataPos = LittleEndianToHost32(*(uint32_t*)pdata);
+			uint32_t pdata = 0;
+			/* the alpha channel is set to zero above */
+			uint8_t* rgbData = ((uint8_t*)&pdata)+1;
+			/* copy the RGB bytes to rgbData */
+			memcpy(rgbData, inData+(i*width+j)*3, 3);
+			/* cairo needs this in host endianess */
+			*outDataPos = BigEndianToHost32(pdata);
 		}
 	}
 	return outData;

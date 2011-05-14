@@ -734,6 +734,7 @@ void MovieClip::sinit(Class_base* c)
 	c->setGetterByQName("currentScene","",Class<IFunction>::getFunction(_getCurrentScene),true);
 	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
 	c->setMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),true);
+	c->setMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(gotoAndPlay),true);
 	c->setMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),true);
 	c->setMethodByQName("addFrameScript","",Class<IFunction>::getFunction(addFrameScript),true);
 }
@@ -849,25 +850,55 @@ ASFUNCTIONBODY(MovieClip,stop)
 	return NULL;
 }
 
+ASObject* MovieClip::gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop)
+{
+	uint32_t next_FP;
+	assert_and_throw(argslen==1 || argslen==2);
+	if(argslen==2)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"MovieClip.gotoAndStop/Play with two args is not supported yet");
+		return NULL;
+	}
+	if(args[0]->getObjectType()==T_STRING)
+	{
+		uint32_t dest=getFrameIdByLabel(args[0]->toString());
+		if(dest==0xffffffff)
+			throw Class<ArgumentError>::getInstanceS("gotoAndPlay/Stop: label not found");
+
+		next_FP = dest;
+	}
+	else
+	{
+		uint32_t inFrameNo = args[0]->toInt();
+		if(inFrameNo == 0)
+			return NULL; /*this behavior was observed by testing */
+		/* "the current scene determines the global frame number" */
+		next_FP = scenes[getCurrentScene()].startframe + inFrameNo - 1;
+		if(next_FP >= state.max_FP)
+		{
+			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << state.max_FP);
+			/* spec says we should throw an error, but then YT breaks */
+			//throw Class<ArgumentError>::getInstanceS("gotoAndPlay/Stop: frame not found");
+			next_FP = state.max_FP-1;
+		}
+	}
+
+	state.next_FP = next_FP;
+	state.explicit_FP = true;
+	state.stop_FP = stop;
+	return NULL;
+}
+
 ASFUNCTIONBODY(MovieClip,gotoAndStop)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	assert_and_throw(argslen==1);
-	if(args[0]->getObjectType()==T_STRING)
-	{
-		uint32_t dest=th->getFrameIdByLabel(args[0]->toString());
-		if(dest==0xffffffff)
-			throw RunTimeException("MovieClip::gotoAndStop frame does not exists");
-		th->state.next_FP=dest;
-	}
-	else
-		th->state.next_FP=args[0]->toInt();
+	return th->gotoAnd(args,argslen,true);
+}
 
-	//TODO: check, should wrap around?
-	th->state.next_FP%=th->state.max_FP;
-	th->state.explicit_FP=true;
-	th->state.stop_FP=true;
-	return NULL;
+ASFUNCTIONBODY(MovieClip,gotoAndPlay)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	return th->gotoAnd(args,argslen,false);
 }
 
 ASFUNCTIONBODY(MovieClip,nextFrame)

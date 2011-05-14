@@ -32,7 +32,6 @@
 #include "swftypes.h"
 #include "swf.h"
 #include "logger.h"
-#include "frame.h"
 #include "compat.h"
 
 #undef RGB
@@ -255,19 +254,9 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 	LOG(LOG_TRACE,_("RemoveObject2 Depth: ") << Depth);
 }
 
-void RemoveObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
+void RemoveObject2Tag::execute(DisplayObjectContainer* parent)
 {
-	Frame::DisplayListType::iterator it=ls.begin();
-
-	for(;it!=ls.end();++it)
-	{
-		if(it->first.Depth==Depth)
-		{
-			it->second->setParent(NullRef);
-			ls.erase(it);
-			break;
-		}
-	}
+	parent->deleteLegacyChildAt(Depth);
 }
 
 SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -345,7 +334,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	do
 	{
 		tag=factory.readTag();
-		sys->registerTag(tag);
+		if(tag->getType() != CONTROL_TAG)
+			sys->registerTag(tag);
 		switch(tag->getType())
 		{
 			case DICT_TAG:
@@ -357,7 +347,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			case SHOW_TAG:
 			{
 				frames.emplace_back();
-				cur_frame=&frames.back();
 				empty=true;
 				break;
 			}
@@ -1045,22 +1034,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 	LOG(LOG_TRACE,_("ShowFrame"));
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const Frame::DisplayListType::value_type& a, uint32_t d)
-{
-	return a.first.Depth<d;
-}
-
-bool PlaceObject2Tag::list_orderer::operator ()(uint32_t d, const Frame::DisplayListType::value_type& a)
-{
-	return d<a.first.Depth;
-}
-
-bool PlaceObject2Tag::list_orderer::operator ()(const Frame::DisplayListType::value_type& a, const Frame::DisplayListType::value_type& b)
-{
-	return a.first.Depth < b.first.Depth;
-}
-
-void PlaceObject2Tag::setProperties(DisplayObject* obj, MovieClip* parent) const
+void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const
 {
 	assert_and_throw(obj && PlaceFlagHasCharacter);
 
@@ -1080,22 +1054,21 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, MovieClip* parent) const
 		LOG(LOG_NO_INFO,_("Registering ID ") << CharacterId << _(" with name ") << Name);
 		if(!PlaceFlagMove)
 		{
-			obj->incRef();
-			parent->setVariableByQName((const char*)Name,"",obj);
+			obj->name = (const char*)Name;
 		}
 		else
 			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
 	}
-
-	parent->incRef();
-	obj->setParent(_MR(parent));
 }
 
-void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
+void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 {
 	//TODO: support clipping
 	if(ClipDepth!=0)
+	{
+		LOG(LOG_ERROR,"ClipDepth is not supported");
 		return;
+	}
 
 	if(!PlaceFlagHasCharacter && !PlaceFlagMove)
 	{
@@ -1107,10 +1080,6 @@ void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 	{
 		//A new character must be placed
 		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
-
-		PlaceInfo infos(Depth);
-		if(PlaceFlagHasMatrix)
-			infos.Matrix=Matrix;
 
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
@@ -1131,42 +1100,26 @@ void PlaceObject2Tag::execute(MovieClip* parent, Frame::DisplayListType& ls)
 
 		setProperties(toAdd, parent);
 
-		Frame::DisplayListType::iterator it=lower_bound< Frame::DisplayListType::iterator, int, list_orderer>
-			(ls.begin(),ls.end(),Depth,list_orderer());
-
-		if(it!=ls.end() && it->first.Depth==Depth)
+		if( parent->hasLegacyChildAt(Depth) )
 		{
-
-			//We found a member of the list already at this depth
 			if(PlaceFlagMove)
 			{
-				//If we are here we have to erase the previous object at this depth
-				it->first=infos;
-				it->second=_MR(toAdd);
+				parent->deleteLegacyChildAt(Depth);
+				/* parent becomes the owner of toAdd */
+				parent->insertLegacyChildAt(Depth,toAdd);
 			}
 			else
 				LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
 		}
 		else
 		{
-			//Create a new entry in the list
-			ls.insert(it,std::pair<PlaceInfo, _R<DisplayObject> >(infos,_MR(toAdd)));
+			/* parent becomes the owner of toAdd */
+			parent->insertLegacyChildAt(Depth,toAdd);
 		}
 	}
 	else
 	{
-		//assert_and_throw(!PlaceFlagHasName && !PlaceFlagHasColorTransform && !PlaceFlagHasRatio && !PlaceFlagHasClipDepth);
-		//We're just changing the PlaceInfo
-		Frame::DisplayListType::iterator it=lower_bound< Frame::DisplayListType::iterator, int, list_orderer>
-			(ls.begin(),ls.end(),Depth,list_orderer());
-		if(it==ls.end() || it->first.Depth!=Depth)
-		{
-			LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that moves a non existing object"));
-			return;
-		}
-		if(PlaceFlagHasMatrix)
-			it->first.Matrix=Matrix;
-		//The Depth cannot change when moving
+		parent->transformLegacyChildAt(Depth,Matrix);
 	}
 }
 

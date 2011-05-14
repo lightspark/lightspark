@@ -720,6 +720,13 @@ ASFUNCTIONBODY(Scene,_getNumFrames)
 	return abstract_i(th->numFrames);
 }
 
+void Frame::execute(_R<DisplayObjectContainer> displayList)
+{
+	std::list<DisplayListTag*>::iterator it=blueprint.begin();
+	for(;it!=blueprint.end();++it)
+		(*it)->execute(displayList.getPtr());
+}
+
 void MovieClip::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -743,18 +750,17 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip():totalFrames(1),constructed(false),framesLoaded(1),cur_frame(NULL)
+MovieClip::MovieClip():totalFrames(1),constructed(false),framesLoaded(1)
 {
 	//It's ok to initialize here framesLoaded=1, as it is valid and empty
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
 	frames.emplace_back();
-	cur_frame=&frames.back();
 	frameScripts.resize(totalFrames,NullRef);
 	scenes.resize(1);
 }
 
 MovieClip::MovieClip(const MovieClip& r):totalFrames(r.totalFrames),constructed(false),
-	framesLoaded(r.framesLoaded),cur_frame(NULL),frameScripts(r.frameScripts),scenes(r.scenes),
+	framesLoaded(r.framesLoaded),frameScripts(r.frameScripts),scenes(r.scenes),
 	frames(r.frames),state(r.state)
 {
 	assert(!r.isConstructed());
@@ -780,7 +786,7 @@ void MovieClip::setTotalFrames(uint32_t t)
 
 void MovieClip::addToFrame(DisplayListTag* t)
 {
-	cur_frame->blueprint.push_back(t);
+	frames.back().blueprint.push_back(t);
 }
 
 uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const
@@ -1027,18 +1033,27 @@ void MovieClip::advanceFrame()
 			LOG(LOG_NOT_IMPLEMENTED,_("Not enough frames loaded"));
 			return;
 		}
-		//Before assigning the next_FP we initialize the frame
-		//Should initialize all the frames from the current to the next
-		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
-		{
-			this->incRef();
-			frames[i].init(_MR(this),frames[i-1].displayList);
-		}
 
-		//Before actually changing the frame verify that it's constructed
-		//If it's not delay the advancement
-		if(!frames[state.next_FP].isConstructed())
-			return;
+		if(state.next_FP >= state.FP)
+		{
+			for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
+			{
+				this->incRef();
+				_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[i], _MR(this), false));
+				sys->currentVm->addEvent(NullRef, ce);
+			}
+		}
+		else
+		{
+			bool purge = true; /* this clears all legacy objects */
+			for(uint32_t i=0;i<=state.next_FP;i++)
+			{
+				this->incRef();
+				_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[i], _MR(this), purge));
+				sys->currentVm->addEvent(NullRef, ce);
+				purge = false;
+			}
+		}
 
 		bool frameChanging=(state.FP!=state.next_FP);
 		state.FP=state.next_FP;
@@ -1049,12 +1064,12 @@ void MovieClip::advanceFrame()
 		if(frameChanging && !frameScripts[state.FP].isNull())
 			getVm()->addEvent(NullRef, _MR(new FunctionEvent(frameScripts[state.FP])));
 
-		Frame& curFrame=frames[state.FP];
-
+		/*
+		 Frame& curFrame=frames[state.FP];
 		//Set the object on stage
 		if(isOnStage())
 		{
-			Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
+			DisplayListType::const_iterator it=curFrame.displayList.begin();
 			for(;it!=curFrame.displayList.end();it++)
 				it->second->setOnStage(true);
 		}
@@ -1062,47 +1077,13 @@ void MovieClip::advanceFrame()
 		//Invalidate the current frame if needed
 		if(curFrame.isInvalid())
 		{
-			Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
+			DisplayListType::const_iterator it=curFrame.displayList.begin();
 			for(;it!=curFrame.displayList.end();it++)
 				it->second->requestInvalidation();
 			curFrame.setInvalid(false);
-		}
+		}*/
 	}
 
-}
-
-void MovieClip::requestInvalidation()
-{
-	Sprite::requestInvalidation();
-	//Mark all frames as not valid
-	for(uint32_t i=0;i<frames.size();i++)
-		frames[i].setInvalid(true);
-
-	if(framesLoaded)
-	{
-		assert(state.FP<framesLoaded);
-		//Actually invalidate the current frame
-		Frame& curFrame=frames[state.FP];
-		Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
-		for(;it!=curFrame.displayList.end();it++)
-			it->second->requestInvalidation();
-		curFrame.setInvalid(false);
-	}
-}
-
-void MovieClip::setOnStage(bool staged)
-{
-	if(staged!=onStage)
-	{
-		DisplayObjectContainer::setOnStage(staged);
-		//Now notify all the objects in all frames
-		for(uint32_t i=0;i<frames.size();i++)
-		{
-			Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
-			for(;it!=frames[i].displayList.end();it++)
-				it->second->setOnStage(staged);
-		}
-	}
 }
 
 void MovieClip::bootstrap()
@@ -1111,127 +1092,9 @@ void MovieClip::bootstrap()
 		return;
 	assert_and_throw(framesLoaded>0);
 	assert_and_throw(frames.size()>=1);
-	//We must incRef as the reference acquire the object
 	this->incRef();
-	frames[0].init(_MR(this),Frame::DisplayListType());
-}
-
-void MovieClip::Render(bool maskEnabled)
-{
-	if(!isConstructed()) //The constructor has not been run yet for this clip
-		return;
-	if(skipRender(maskEnabled))
-		return;
-
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return;
-
-	renderPrologue();
-
-	Sprite::renderImpl(maskEnabled,t1,t2,t3,t4);
-
-	if(framesLoaded)
-	{
-		//Save current frame, this may change during rendering
-		uint32_t curFP=state.FP;
-		assert_and_throw(curFP<framesLoaded);
-		frames[curFP].Render(maskEnabled);
-	}
-
-	renderEpilogue();
-}
-
-_NR<InteractiveObject> MovieClip::hitTest(_NR<InteractiveObject>, number_t x, number_t y)
-{
-	//NOTE: in hitTest the stuff must be tested in the opposite order of Rendering
-
-	//TODO: TOLOCK
-	//First of all firter using the BBOX
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return NullRef;
-	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NullRef;
-
-	hitTestPrologue();
-
-	_NR<InteractiveObject> ret = NullRef;
-	if(framesLoaded)
-	{
-		uint32_t curFP=state.FP;
-		assert_and_throw(curFP<framesLoaded);
-		Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
-		for(;it!=frames[curFP].displayList.end();++it)
-		{
-			number_t localX, localY;
-			it->second->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			this->incRef();
-			ret=it->second->hitTest(_MR(this), localX,localY);
-			if(!ret.isNull())
-				break;
-		}
-	}
-
-	if(ret.isNull())
-		ret=Sprite::hitTestImpl(x, y);
-
-	hitTestEpilogue();
-	return ret;
-}
-
-bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	bool valid=Sprite::boundsRect(xmin,xmax,ymin,ymax);
-	
-	if(framesLoaded==0) //We end here
-		return valid;
-
-	//Iterate over the displaylist of the current frame
-	uint32_t curFP=state.FP;
-	Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
-	
-	//Update bounds for all the elements
-	for(;it!=frames[curFP].displayList.end();++it)
-	{
-		number_t t1,t2,t3,t4;
-		if(it->second->getBounds(t1,t2,t3,t4))
-		{
-			if(valid==false)
-			{
-				xmin=t1;
-				xmax=t2;
-				ymin=t3;
-				ymax=t4;
-				valid=true;
-				//Now values are valid
-				continue;
-			}
-			else
-			{
-				xmin=imin(xmin,t1);
-				xmax=imax(xmax,t2);
-				ymin=imin(ymin,t3);
-				ymax=imax(ymax,t4);
-			}
-			break;
-		}
-	}
-	return valid;
-}
-
-bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	bool ret=boundsRect(xmin,xmax,ymin,ymax);
-	if(ret)
-	{
-		//TODO: take rotation into account
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-	}
-	return ret;
+	_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[0], _MR(this), false));
+	sys->currentVm->addEvent(NullRef, ce);
 }
 
 void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)
@@ -2000,6 +1863,73 @@ DisplayObjectContainer::DisplayObjectContainer():mutexDisplayList("mutexDisplayL
 {
 }
 
+bool DisplayObjectContainer::hasLegacyChildAt(uint32_t depth)
+{
+	std::map<uint32_t,DisplayObject*>::iterator i = depthToLegacyChild.find(depth);
+	return i != depthToLegacyChild.end();
+}
+
+void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
+{
+	if(!hasLegacyChildAt(depth))
+	{
+		LOG(LOG_ERROR,"deleteLegacyChildAt: no child at that depth");
+		return;
+	}
+	DisplayObject* obj = depthToLegacyChild[depth];
+	if(obj->name.len() > 0)
+	{
+		multiname objName;
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s=obj->name;
+		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		deleteVariableByMultiname(objName);
+	}
+
+	obj->incRef();
+	bool ret = _removeChild(_MR(obj));
+	assert_and_throw(ret);
+
+	depthToLegacyChild.erase(depth);
+}
+
+void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* obj)
+{
+	if(hasLegacyChildAt(depth))
+	{
+		LOG(LOG_ERROR,"insertLegacyChildAt: there is already one child at that depth");
+		return;
+	}
+	_addChildAt(_MR(obj),depth-1); /* depth is 1 based in SWF */
+	if(obj->name.len() > 0)
+	{
+		obj->incRef();
+		setVariableByQName(obj->name,"",obj);
+	}
+
+	depthToLegacyChild[depth] = obj;
+}
+
+void DisplayObjectContainer::transformLegacyChildAt(uint32_t depth, const MATRIX& mat)
+{
+	if(!hasLegacyChildAt(depth))
+	{
+		LOG(LOG_ERROR,"transformLegacyChildAt: no child at that depth");
+		return;
+	}
+	depthToLegacyChild[depth]->setMatrix(mat);
+}
+
+void DisplayObjectContainer::purgeLegacyChildren()
+{
+	std::map<uint32_t,DisplayObject*>::iterator i = depthToLegacyChild.begin();
+	while( i != depthToLegacyChild.end() )
+	{
+		deleteLegacyChildAt(i->first);
+		i = depthToLegacyChild.begin();
+	}
+}
+
 void DisplayObjectContainer::finalize()
 {
 	InteractiveObject::finalize();
@@ -2111,15 +2041,13 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 	}
 	this->incRef();
 	child->setParent(_MR(this));
-
 	{
 		Locker l(mutexDisplayList);
 		//We insert the object in the back of the list
-		if(index==numeric_limits<unsigned int>::max())
+		if(index >= dynamicDisplayList.size())
 			dynamicDisplayList.push_back(child);
 		else
 		{
-			assert_and_throw(index<=dynamicDisplayList.size());
 			list<_R<DisplayObject>>::iterator it=dynamicDisplayList.begin();
 			for(unsigned int i=0;i<index;i++)
 				++it;
@@ -2201,6 +2129,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	//Cast to object
 	args[0]->incRef();
 	_R<DisplayObject> d=_MR(Class<DisplayObject>::cast(args[0]));
+	assert_and_throw(index >= 0 && (size_t)index<=th->dynamicDisplayList.size());
 	th->_addChildAt(d,index);
 
 	//Notify the object
@@ -2596,7 +2525,7 @@ void TokenContainer::invalidate()
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
-	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, tokens,
+	CairoRenderer* r=new CairoRenderer(owner, owner->cachedSurface, tokens,
 				owner->getConcatenatedMatrix(), x, y, width, height, scaling);
 	sys->addJob(r);
 }

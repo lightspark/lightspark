@@ -23,7 +23,6 @@
 #include <vector>
 #include <set>
 #include "asobject.h"
-#include "frame.h"
 #include "exceptions.h"
 #include "threading.h"
 #include <libxml/tree.h>

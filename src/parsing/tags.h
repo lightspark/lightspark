@@ -90,6 +90,10 @@ public:
 	void setLoadedFrom(RootMovieClip* r){loadedFrom=r;}
 };
 
+/*
+ * See p.53ff in the SWF spec. Those tags are ::executed directly after parsing
+ * and then delete'ed.
+ */
 class ControlTag: public Tag
 {
 public:

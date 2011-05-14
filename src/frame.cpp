@@ -31,16 +31,14 @@ extern TLSDATA bool isVmThread;
 Frame::Frame(const Frame& r):
 	initialized(r.initialized),invalid(r.invalid),
 	constructed(ACQUIRE_READ(r.constructed)),
-	blueprint(r.blueprint),displayList(r.displayList),
-	controls(r.controls)
+	blueprint(r.blueprint),displayList(r.displayList)
 {
 }
 
 Frame::Frame(const Frame&& r):
 	initialized(r.initialized),invalid(r.invalid),
 	constructed(ACQUIRE_READ(r.constructed)),
-	blueprint(std::move(r.blueprint)),displayList(std::move(r.displayList)),
-	controls(std::move(r.controls))
+	blueprint(std::move(r.blueprint)),displayList(std::move(r.displayList))
 {
 }
 
@@ -52,7 +50,6 @@ Frame& Frame::operator=(const Frame& r)
 	blueprint=r.blueprint;
 
 	displayList=r.displayList;
-	controls=r.controls;
 	return *this;
 }
 
@@ -104,16 +101,6 @@ void Frame::init(_R<MovieClip> parent, const DisplayListType& d)
 {
 	if(!initialized)
 	{
-		//Execute control tags for this frame
-		//Only the root movie clip can have control tags
-		if(!controls.empty())
-		{
-			assert_and_throw(parent->getRoot()==parent);
-			for(unsigned int i=0;i<controls.size();i++)
-				controls[i]->execute(parent->getRoot().getPtr());
-			controls.clear();
-		}
-
 		displayList=d;
 
 		if(sys->currentVm && !isVmThread)

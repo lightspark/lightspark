@@ -1125,7 +1125,8 @@ void ParseThread::execute()
 		while(!done)
 		{
 			Tag* tag=factory.readTag();
-			sys->registerTag(tag);
+			if(tag->getType() != CONTROL_TAG)
+				sys->registerTag(tag);
 			switch(tag->getType())
 			{
 				case END_TAG:
@@ -1155,9 +1156,12 @@ void ParseThread::execute()
 					empty=true;
 					break;
 				case CONTROL_TAG:
-					root->addToFrame(static_cast<ControlTag*>(tag));
-					empty=false;
+				{
+					ControlTag* ctag = static_cast<ControlTag*>(tag);
+					ctag->execute(root);
+					delete ctag;
 					break;
+				}
 				case FRAMELABEL_TAG:
 				{
 					Locker l(root->mutexFrames);
@@ -1298,11 +1302,6 @@ void RootMovieClip::addToFrame(DisplayListTag* t)
 {
 	Locker l(mutex);
 	MovieClip::addToFrame(t);
-}
-
-void RootMovieClip::addToFrame(ControlTag* t)
-{
-	cur_frame->controls.push_back(t);
 }
 
 void RootMovieClip::commitFrame(bool another)

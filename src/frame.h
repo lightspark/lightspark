@@ -55,7 +55,6 @@ public:
 	std::list<DisplayListTag*> blueprint;
 	DisplayListType displayList;
 	//A temporary vector for control tags
-	std::vector < ControlTag* > controls;
 	Frame():initialized(false),invalid(true),constructed(false){}
 	void Render(bool maskEnabled);
 	void init(_R<MovieClip> parent, const DisplayListType& d);

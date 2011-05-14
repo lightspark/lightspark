@@ -1056,19 +1056,6 @@ void MovieClip::advanceFrame()
 
 }
 
-void MovieClip::requestInvalidation()
-{
-	Sprite::requestInvalidation();
-}
-
-void MovieClip::setOnStage(bool staged)
-{
-	if(staged!=onStage)
-	{
-		DisplayObjectContainer::setOnStage(staged);
-	}
-}
-
 void MovieClip::bootstrap()
 {
 	if(totalFrames==0)
@@ -1078,68 +1065,6 @@ void MovieClip::bootstrap()
 	this->incRef();
 	_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[0], _MR(this), false));
 	sys->currentVm->addEvent(NullRef, ce);
-}
-
-void MovieClip::Render(bool maskEnabled)
-{
-	if(!isConstructed()) //The constructor has not been run yet for this clip
-		return;
-	if(skipRender(maskEnabled))
-		return;
-
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return;
-
-	renderPrologue();
-
-	Sprite::renderImpl(maskEnabled,t1,t2,t3,t4);
-
-	renderEpilogue();
-}
-
-_NR<InteractiveObject> MovieClip::hitTest(_NR<InteractiveObject>, number_t x, number_t y)
-{
-	//NOTE: in hitTest the stuff must be tested in the opposite order of Rendering
-
-	//TODO: TOLOCK
-	//First of all firter using the BBOX
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return NullRef;
-	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NullRef;
-
-	hitTestPrologue();
-
-	_NR<InteractiveObject> ret = NullRef;
-
-	if(ret.isNull())
-		ret=Sprite::hitTestImpl(x, y);
-
-	hitTestEpilogue();
-	return ret;
-}
-
-bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	bool valid=Sprite::boundsRect(xmin,xmax,ymin,ymax);
-	
-	return valid;
-}
-
-bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	bool ret=boundsRect(xmin,xmax,ymin,ymax);
-	if(ret)
-	{
-		//TODO: take rotation into account
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-	}
-	return ret;
 }
 
 void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)

@@ -1298,12 +1298,6 @@ void RootMovieClip::addToDictionary(DictionaryTag* r)
 	dictionary.push_back(r);
 }
 
-void RootMovieClip::addToFrame(DisplayListTag* t)
-{
-	Locker l(mutex);
-	MovieClip::addToFrame(t);
-}
-
 void RootMovieClip::commitFrame(bool another)
 {
 	Locker l(mutexFrames);

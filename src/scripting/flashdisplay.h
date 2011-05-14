@@ -508,7 +508,6 @@ class MovieClip: public Sprite
 {
 private:
 	uint32_t totalFrames;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	uint32_t getCurrentScene();
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
@@ -547,13 +546,6 @@ public:
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 	void setTotalFrames(uint32_t t);
 
-	//DisplayObject interface
-	void Render(bool maskEnabled);
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
-	void requestInvalidation();
-	void setOnStage(bool staged);
-	
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void check() const
 	{
 		assert_and_throw(frames.size()==framesLoaded);

@@ -27,7 +27,7 @@ extern "C" {
 }
 
 #include <setjmp.h>
-#include "jpeg.h"
+#include "image.h"
 
 namespace lightspark
 {
@@ -73,7 +73,7 @@ void error_exit(j_common_ptr cinfo) {
 	longjmp(error->jmpBuf, -1);
 }
 
-uint8_t* decodeJPEG(uint8_t* inData, int len, uint32_t* width, uint32_t* height)
+uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, uint32_t* width, uint32_t* height)
 {
 	struct jpeg_decompress_struct cinfo;
 	struct error_mgr err;
@@ -104,7 +104,7 @@ uint8_t* decodeJPEG(uint8_t* inData, int len, uint32_t* width, uint32_t* height)
 		LOG(LOG_NOT_IMPLEMENTED,"Only RGB JPEG's are supported");
 		/* TODO: is this the right thing for aborting? */
 		jpeg_abort_decompress(&cinfo);
-	        jpeg_destroy_decompress(&cinfo);
+		jpeg_destroy_decompress(&cinfo);
 		return NULL;
 	}
 

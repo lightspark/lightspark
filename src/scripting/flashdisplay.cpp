@@ -31,7 +31,7 @@
 #include "class.h"
 #include "backends/rendering.h"
 #include "backends/geometry.h"
-#include "backends/jpeg.h"
+#include "backends/image.h"
 #include "compat.h"
 
 #include <GL/glew.h>
@@ -3148,7 +3148,7 @@ IntSize Bitmap::getBitmapSize() const
 bool Bitmap::fromJPEG(uint8_t *inData, int len)
 {
 	assert(!data);
-	uint8_t* rgbData = ::decodeJPEG(inData, len, &size.width, &size.height);
+	uint8_t* rgbData = ImageDecoder::decodeJPEG(inData, len, &size.width, &size.height);
 	data = CairoRenderer::convertBitmapToCairo(rgbData, size.width, size.height);
 	delete[] rgbData;
 	if(!data)

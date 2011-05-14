@@ -36,7 +36,7 @@ SET(LIBSPARK_SOURCES
   backends/extscriptobject.cpp
   backends/geometry.cpp
   backends/graphics.cpp
-  backends/jpeg.cpp
+  backends/image.cpp
   backends/input.cpp
   backends/netutils.cpp
   backends/pluginmanager.cpp

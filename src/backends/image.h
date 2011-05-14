@@ -21,10 +21,14 @@
 namespace lightspark
 {
 
-/*
- * Returns a new[]'ed array of decompressed data and sets width, height and format
- * Return NULL on error
- */
-uint8_t* decodeJPEG(uint8_t* inData, int len, uint32_t* width, uint32_t* height);
+class ImageDecoder
+{
+public:
+	/*
+	 * Returns a new[]'ed array of decompressed data and sets width, height and format
+	 * Return NULL on error
+	 */
+	static uint8_t* decodeJPEG(uint8_t* inData, int len, uint32_t* width, uint32_t* height);
+};
 
 }

@@ -37,6 +37,7 @@ enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CO
 class ABCContext;
 class DictionaryTag;
 class PlaceObject2Tag;
+class MovieClip;
 
 class Event: public ASObject
 {

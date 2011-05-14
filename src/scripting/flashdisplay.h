@@ -260,7 +260,7 @@ private:
 	float scaling;
 	std::vector<GeomToken> tokens;
 protected:
-	TokenContainer(DisplayObject* _o) : owner(_o) {}
+	TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f) {}
 	TokenContainer(DisplayObject* _o, const std::vector<GeomToken>& _tokens, float _scaling)
 		: owner(_o), scaling(_scaling), tokens(_tokens) {}
 

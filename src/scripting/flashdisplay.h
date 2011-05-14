@@ -214,7 +214,7 @@ public:
 class DisplayObjectContainer: public InteractiveObject
 {
 private:
-	void _addChildAt(_R<DisplayObject> child, unsigned int index);
+	std::map<uint32_t,DisplayObject*> depthToLegacyChild;
 	bool _contains(_R<DisplayObject> child);
 protected:
 	void requestInvalidation();
@@ -225,10 +225,15 @@ protected:
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged);
 public:
+	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList();
 	bool _removeChild(_R<DisplayObject> child);
 	DisplayObjectContainer();
 	void finalize();
+	bool hasLegacyChildAt(uint32_t depth);
+	void deleteLegacyChildAt(uint32_t depth);
+	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
+	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

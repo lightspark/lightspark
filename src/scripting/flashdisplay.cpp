@@ -1969,6 +1969,63 @@ DisplayObjectContainer::DisplayObjectContainer():mutexDisplayList("mutexDisplayL
 {
 }
 
+bool DisplayObjectContainer::hasLegacyChildAt(uint32_t depth)
+{
+	std::map<uint32_t,DisplayObject*>::iterator i = depthToLegacyChild.find(depth);
+	return i != depthToLegacyChild.end();
+}
+
+void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
+{
+	if(!hasLegacyChildAt(depth))
+	{
+		LOG(LOG_ERROR,"deleteLegacyChildAt: no child at that depth");
+		return;
+	}
+	DisplayObject* obj = depthToLegacyChild[depth];
+	if(obj->name.len() > 0)
+	{
+		multiname objName;
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s=obj->name;
+		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		deleteVariableByMultiname(objName);
+	}
+
+	obj->incRef();
+	bool ret = _removeChild(_MR(obj));
+	assert_and_throw(ret);
+
+	depthToLegacyChild.erase(depth);
+}
+
+void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* obj)
+{
+	if(hasLegacyChildAt(depth))
+	{
+		LOG(LOG_ERROR,"insertLegacyChildAt: there is already one child at that depth");
+		return;
+	}
+	_addChildAt(_MR(obj),depth-1); /* depth is 1 based in SWF */
+	if(obj->name.len() > 0)
+	{
+		obj->incRef();
+		setVariableByQName(obj->name,"",obj);
+	}
+
+	depthToLegacyChild[depth] = obj;
+}
+
+void DisplayObjectContainer::transformLegacyChildAt(uint32_t depth, const MATRIX& mat)
+{
+	if(!hasLegacyChildAt(depth))
+	{
+		LOG(LOG_ERROR,"transformLegacyChildAt: no child at that depth");
+		return;
+	}
+	depthToLegacyChild[depth]->setMatrix(mat);
+}
+
 void DisplayObjectContainer::finalize()
 {
 	InteractiveObject::finalize();
@@ -2080,15 +2137,13 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 	}
 	this->incRef();
 	child->setParent(_MR(this));
-
 	{
 		Locker l(mutexDisplayList);
 		//We insert the object in the back of the list
-		if(index==numeric_limits<unsigned int>::max())
+		if(index >= dynamicDisplayList.size())
 			dynamicDisplayList.push_back(child);
 		else
 		{
-			assert_and_throw(index<=dynamicDisplayList.size());
 			list<_R<DisplayObject>>::iterator it=dynamicDisplayList.begin();
 			for(unsigned int i=0;i<index;i++)
 				++it;
@@ -2170,6 +2225,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	//Cast to object
 	args[0]->incRef();
 	_R<DisplayObject> d=_MR(Class<DisplayObject>::cast(args[0]));
+	assert_and_throw(index >= 0 && (size_t)index<=th->dynamicDisplayList.size());
 	th->_addChildAt(d,index);
 
 	//Notify the object

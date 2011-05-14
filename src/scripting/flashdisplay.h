@@ -513,7 +513,6 @@ private:
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 protected:
 	uint32_t framesLoaded;
-	Frame* cur_frame;
 	void bootstrap();
 	std::vector<_NR<IFunction>> frameScripts;
 	std::vector<Scene_data> scenes;

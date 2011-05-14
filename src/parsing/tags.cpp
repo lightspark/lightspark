@@ -347,7 +347,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			case SHOW_TAG:
 			{
 				frames.emplace_back();
-				cur_frame=&frames.back();
 				empty=true;
 				break;
 			}

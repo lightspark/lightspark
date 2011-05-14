@@ -749,18 +749,17 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip():totalFrames(1),constructed(false),framesLoaded(1),cur_frame(NULL)
+MovieClip::MovieClip():totalFrames(1),constructed(false),framesLoaded(1)
 {
 	//It's ok to initialize here framesLoaded=1, as it is valid and empty
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
 	frames.emplace_back();
-	cur_frame=&frames.back();
 	frameScripts.resize(totalFrames,NullRef);
 	scenes.resize(1);
 }
 
 MovieClip::MovieClip(const MovieClip& r):totalFrames(r.totalFrames),constructed(false),
-	framesLoaded(r.framesLoaded),cur_frame(NULL),frameScripts(r.frameScripts),scenes(r.scenes),
+	framesLoaded(r.framesLoaded),frameScripts(r.frameScripts),scenes(r.scenes),
 	frames(r.frames),state(r.state)
 {
 	assert(!r.isConstructed());
@@ -786,7 +785,7 @@ void MovieClip::setTotalFrames(uint32_t t)
 
 void MovieClip::addToFrame(DisplayListTag* t)
 {
-	cur_frame->blueprint.push_back(t);
+	frames.back().blueprint.push_back(t);
 }
 
 uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const

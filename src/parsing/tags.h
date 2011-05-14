@@ -515,6 +515,12 @@ public:
 	ASObject* instance() const;
 };
 
+class DefineText2Tag: public DefineTextTag
+{
+public:
+	DefineText2Tag(RECORDHEADER h, std::istream& in) : DefineTextTag(h,in,2) {}
+};
+
 class DefineSpriteTag: public DictionaryTag, public MovieClip
 {
 private:

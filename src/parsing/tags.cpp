@@ -117,7 +117,7 @@ Tag* TagFactory::readTag()
 			ret=new DefineShape3Tag(h,f);
 			break;
 		case 33:
-			ret=new DefineTextTag(h,f,2);
+			ret=new DefineText2Tag(h,f);
 			break;
 		case 34:
 			ret=new DefineButton2Tag(h,f);

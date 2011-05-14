@@ -511,6 +511,7 @@ public:
 	MovieClip();
 	MovieClip(const MovieClip& r);
 	void finalize();
+	ASObject* gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -519,6 +520,7 @@ public:
 	ASFUNCTION(addFrameScript);
 	ASFUNCTION(stop);
 	ASFUNCTION(gotoAndStop);
+	ASFUNCTION(gotoAndPlay);
 	ASFUNCTION(nextFrame);
 	ASFUNCTION(_getCurrentFrame);
 	ASFUNCTION(_getCurrentFrameLabel);

@@ -37,6 +37,7 @@ enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CO
 class ABCContext;
 class DictionaryTag;
 class PlaceObject2Tag;
+class MovieClip;
 
 class Event: public ASObject
 {
@@ -344,15 +345,18 @@ public:
 	EVENT_TYPE getEventType() const { return CHANGE_FRAME; }
 };
 
+class Frame;
 //Event to construct a Frame in the VM context
 class ConstructFrameEvent: public Event
 {
 friend class ABCVm;
 private:
-	Frame& frame;
+	Frame* frame;
 	_R<MovieClip> parent;
+	bool purge;
 public:
-	ConstructFrameEvent(Frame& f, _R<MovieClip> p):Event("ConstructFrameEvent"),frame(f),parent(p){}
+	ConstructFrameEvent(Frame* f, _R<MovieClip> p, bool _purge)
+		: Event("ConstructFrameEvent"),frame(f),parent(p),purge(_purge){}
 	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
 };
 

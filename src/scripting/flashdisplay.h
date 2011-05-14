@@ -214,7 +214,7 @@ public:
 class DisplayObjectContainer: public InteractiveObject
 {
 private:
-	void _addChildAt(_R<DisplayObject> child, unsigned int index);
+	std::map<uint32_t,DisplayObject*> depthToLegacyChild;
 	bool _contains(_R<DisplayObject> child);
 protected:
 	void requestInvalidation();
@@ -225,10 +225,16 @@ protected:
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged);
 public:
+	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList();
 	bool _removeChild(_R<DisplayObject> child);
 	DisplayObjectContainer();
 	void finalize();
+	bool hasLegacyChildAt(uint32_t depth);
+	void deleteLegacyChildAt(uint32_t depth);
+	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
+	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);
+	void purgeLegacyChildren();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -491,17 +497,22 @@ public:
 	ASFUNCTION(_getNumFrames);
 };
 
+class Frame
+{
+public:
+	std::list<DisplayListTag*> blueprint;
+	void execute(_R<DisplayObjectContainer> displayList);
+};
+
 class MovieClip: public Sprite
 {
 private:
 	uint32_t totalFrames;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	uint32_t getCurrentScene();
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 protected:
 	uint32_t framesLoaded;
-	Frame* cur_frame;
 	void bootstrap();
 	std::vector<_NR<IFunction>> frameScripts;
 	std::vector<Scene_data> scenes;
@@ -536,13 +547,6 @@ public:
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 	void setTotalFrames(uint32_t t);
 
-	//DisplayObject interface
-	void Render(bool maskEnabled);
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
-	void requestInvalidation();
-	void setOnStage(bool staged);
-	
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void check() const
 	{
 		assert_and_throw(frames.size()==framesLoaded);

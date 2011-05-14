@@ -1125,7 +1125,8 @@ void ParseThread::execute()
 		while(!done)
 		{
 			Tag* tag=factory.readTag();
-			sys->registerTag(tag);
+			if(tag->getType() != CONTROL_TAG)
+				sys->registerTag(tag);
 			switch(tag->getType())
 			{
 				case END_TAG:
@@ -1155,9 +1156,12 @@ void ParseThread::execute()
 					empty=true;
 					break;
 				case CONTROL_TAG:
-					root->addToFrame(static_cast<ControlTag*>(tag));
-					empty=false;
+				{
+					ControlTag* ctag = static_cast<ControlTag*>(tag);
+					ctag->execute(root);
+					delete ctag;
 					break;
+				}
 				case FRAMELABEL_TAG:
 				{
 					Locker l(root->mutexFrames);
@@ -1259,12 +1263,9 @@ void RootMovieClip::setFrameCount(int f)
 	Locker l(mutexFrames);
 	setTotalFrames(f);
 	state.max_FP=f;
-	//TODO, maybe the next is a regular assert
-	assert_and_throw(cur_frame==&frames.back());
 	//Reserving guarantees than the vector is never invalidated
 	//Add 1 as the commit procedure will add one more (see commitFrame)
 	frames.reserve(f+1);
-	cur_frame=&frames.back();
 }
 
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
@@ -1294,28 +1295,12 @@ void RootMovieClip::addToDictionary(DictionaryTag* r)
 	dictionary.push_back(r);
 }
 
-void RootMovieClip::addToFrame(DisplayListTag* t)
-{
-	Locker l(mutex);
-	MovieClip::addToFrame(t);
-}
-
-void RootMovieClip::addToFrame(ControlTag* t)
-{
-	cur_frame->controls.push_back(t);
-}
-
 void RootMovieClip::commitFrame(bool another)
 {
 	Locker l(mutexFrames);
 	framesLoaded=frames.size();
 	if(another)
-	{
 		frames.emplace_back();
-		cur_frame=&frames.back();
-	}
-	else
-		cur_frame=NULL;
 
 	if(framesLoaded==1)
 	{
@@ -1338,7 +1323,6 @@ void RootMovieClip::revertFrame()
 	//TODO: The next should be a regular assert
 	assert_and_throw(frames.size() && framesLoaded==(frames.size()-1));
 	frames.pop_back();
-	cur_frame=NULL;
 }
 
 RGB RootMovieClip::getBackground()

@@ -192,10 +192,16 @@ public:
 	The base class for render jobs based on cairo
 	Stores an internal copy of the data to be rendered
 */
-class CairoRenderer: public ITextureUploadable, public IThreadJob, public Sheep
+class CairoRenderer: public ITextureUploadable, public IThreadJob
 {
 protected:
-	~CairoRenderer(){delete[] surfaceBytes;}
+	virtual ~CairoRenderer();
+	/**
+	 * The ASObject owning this render request. We incRef/decRef it
+	 * in our constructor/destructor to make sure that it does no go away
+	 * (especially the CachedSurface reference below) while we do our work.
+	 */
+	ASObject* owner;
 	/**
 	  The target texture for the rendering, must be non const as the operation will update the size
 	*/
@@ -245,10 +251,8 @@ public:
 	   @param _m The whole transformation matrix
 	   @param _s The scale factor to be applied in both the x and y axis
 	*/
-	CairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, 
-			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s):
-			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),
-			surfaceBytes(NULL),tokens(_g),scaleFactor(_s),uploadNeeded(true){}
+	CairoRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
+			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 

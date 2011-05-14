@@ -394,6 +394,20 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	return false;
 }
 
+CairoRenderer::CairoRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
+		uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s)
+	: owner(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),
+	surfaceBytes(NULL),tokens(_g),scaleFactor(_s),uploadNeeded(true)
+{
+	owner->incRef();
+}
+
+CairoRenderer::~CairoRenderer()
+{
+	delete[] surfaceBytes;
+	owner->decRef();
+}
+
 void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h) const
 {
 	w=width;
@@ -418,9 +432,6 @@ const TextureChunk& CairoRenderer::getTexture()
 
 void CairoRenderer::uploadFence()
 {
-	//CairoRenderer destroys themselves after they're done
-	if(surfaceBytes)
-		Sheep::unlockOwner();
 	delete this;
 }
 
@@ -727,9 +738,9 @@ cairo_surface_t* CairoRenderer::allocateSurface()
 
 void CairoRenderer::execute()
 {
-	//Will be unlocked after uploadFence
-	if(!Sheep::lockOwner())
-		return;
+	if(owner->getRefCount() == 1)
+		return; /* we are the only one keeping our owner alive */
+
 	if(width==0 || height==0)
 	{
 		//Nothing to do, move on

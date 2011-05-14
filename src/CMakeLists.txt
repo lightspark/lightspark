@@ -22,7 +22,6 @@
 SET(LIBSPARK_SOURCES 
   asobject.cpp
   compat.cpp
-  frame.cpp
   logger.cpp
   swf.cpp
   swftypes.cpp

@@ -28,7 +28,6 @@
 #include <semaphore.h>
 #include <string>
 #include "swftypes.h"
-#include "frame.h"
 #include "scripting/flashdisplay.h"
 #include "scripting/flashnet.h"
 #include "scripting/flashsystem.h"
@@ -101,8 +100,6 @@ public:
 	void setOnStage(bool staged);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
-	void addToFrame(DisplayListTag* t);
-	void addToFrame(ControlTag* t);
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();

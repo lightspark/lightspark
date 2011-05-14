@@ -2494,7 +2494,7 @@ void TokenContainer::invalidate()
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
-	CairoRenderer* r=new CairoRenderer(&owner->shepherd, owner->cachedSurface, tokens,
+	CairoRenderer* r=new CairoRenderer(owner, owner->cachedSurface, tokens,
 				owner->getConcatenatedMatrix(), x, y, width, height, scaling);
 	sys->addJob(r);
 }

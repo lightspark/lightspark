@@ -784,6 +784,9 @@ void MovieClip::setTotalFrames(uint32_t t)
 	frameScripts.resize(totalFrames,NullRef);
 }
 
+/* This runs in vm's thread context,
+ * but no locking is needed here as it only accesses the last frame.
+ * See comment on the 'frames' member. */
 void MovieClip::addToFrame(DisplayListTag* t)
 {
 	frames.back().blueprint.push_back(t);

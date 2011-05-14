@@ -517,6 +517,17 @@ protected:
 	std::vector<_NR<IFunction>> frameScripts;
 	std::vector<Scene_data> scenes;
 public:
+	/* This vector is accessed by both the vm thread and the parsing thread,
+	 * but the parsing thread only accesses frames.back(), while
+	 * the vm thread only accesses the frames before that frame (until
+	 * the parsing finished; then it can also access the last frame).
+	 * To make that easier for the vm thread, the member framesLoaded keep
+	 * track of how many frames the vm may access.
+	 * For non-RootMovieClips, the parser fills the frames member before
+	 * handing the object to the vm, so there is no issue here.
+	 * RootMovieClips use mutexFrames and the new_frame semaphore
+	 * to wait for a finished frame from the parser.
+	 */
 	std::vector<Frame> frames;
 	RunState state;
 	MovieClip();

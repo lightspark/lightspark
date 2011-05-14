@@ -1157,18 +1157,26 @@ void ParseThread::execute()
 					break;
 				case CONTROL_TAG:
 				{
+					/* The spec is not clear about that,
+					 * but it seems that all the CONTROL_TAGs
+					 * (=not one of the other tag types here)
+					 * appear in the first frame only.
+					 * We rely on that by not using
+					 * locking in ctag->execute's implementation.
+					 */
+					assert(root->frames.size()==1);
 					ControlTag* ctag = static_cast<ControlTag*>(tag);
 					ctag->execute(root);
 					delete ctag;
 					break;
 				}
 				case FRAMELABEL_TAG:
-				{
-					Locker l(root->mutexFrames);
+					/* No locking required, as the last frames is not
+					 * commited to the vm yet.
+					 */
 					root->addFrameLabel(root->frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
 					empty=false;
 					break;
-				}
 				case TAG:
 					//Not yet implemented tag, ignore it
 					break;

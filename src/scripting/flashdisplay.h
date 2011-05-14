@@ -496,6 +496,13 @@ public:
 	ASFUNCTION(_getNumFrames);
 };
 
+class Frame
+{
+public:
+	std::list<DisplayListTag*> blueprint;
+	void execute(_R<DisplayObjectContainer> displayList);
+};
+
 class MovieClip: public Sprite
 {
 private:

@@ -19,7 +19,6 @@
 
 #include "compat.h"
 #include "parsing/tags.h"
-#include "frame.h"
 #include "logger.h"
 #include <vector>
 
@@ -56,7 +55,7 @@ private:
 	std::vector<ActionTag*> actions;
 public:
 	DoActionTag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, Frame::DisplayListType& list);
+	void execute(DisplayObjectContainer* parent);
 	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
@@ -75,7 +74,7 @@ private:
 	bool done;
 public:
 	DoInitActionTag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, Frame::DisplayListType& list);
+	void execute(DisplayObjectContainer* parent);
 	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{

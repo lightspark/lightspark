@@ -28,7 +28,6 @@
 #include <semaphore.h>
 #include <string>
 #include "swftypes.h"
-#include "frame.h"
 #include "scripting/flashdisplay.h"
 #include "scripting/flashnet.h"
 #include "scripting/flashsystem.h"

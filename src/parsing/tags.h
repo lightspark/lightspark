@@ -68,7 +68,7 @@ class DisplayListTag: public Tag
 public:
 	DisplayListTag(RECORDHEADER h):Tag(h){}
 	virtual TAGTYPE getType() const{ return DISPLAY_LIST_TAG; }
-	virtual void execute(MovieClip* parent, Frame::DisplayListType& list)=0;
+	virtual void execute(DisplayObjectContainer* parent)=0;
 };
 
 class DictionaryTag: public Tag
@@ -269,20 +269,12 @@ private:
 
 public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, Frame::DisplayListType& list);
+	void execute(DisplayObjectContainer* parent);
 };
 
 class PlaceObject2Tag: public DisplayListTag
 {
 protected:
-	class list_orderer
-	{
-	public:
-		bool operator()(const Frame::DisplayListType::value_type& a, uint32_t d);
-		bool operator()(uint32_t d, const Frame::DisplayListType::value_type& a);
-		bool operator()(const Frame::DisplayListType::value_type& a, const Frame::DisplayListType::value_type& b);
-	};
-
 	bool PlaceFlagHasClipAction;
 	bool PlaceFlagHasClipDepth;
 	bool PlaceFlagHasName;
@@ -299,12 +291,12 @@ protected:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
-	void setProperties(DisplayObject* obj, MovieClip* parent) const;
+	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
 
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, Frame::DisplayListType& list);
+	void execute(DisplayObjectContainer* parent);
 };
 
 class PlaceObject3Tag: public PlaceObject2Tag

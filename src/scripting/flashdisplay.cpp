@@ -720,6 +720,13 @@ ASFUNCTIONBODY(Scene,_getNumFrames)
 	return abstract_i(th->numFrames);
 }
 
+void Frame::execute(_R<DisplayObjectContainer> displayList)
+{
+	std::list<DisplayListTag*>::iterator it=blueprint.begin();
+	for(;it!=blueprint.end();++it)
+		(*it)->execute(displayList.getPtr());
+}
+
 void MovieClip::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -996,18 +1003,13 @@ void MovieClip::advanceFrame()
 			LOG(LOG_NOT_IMPLEMENTED,_("Not enough frames loaded"));
 			return;
 		}
-		//Before assigning the next_FP we initialize the frame
-		//Should initialize all the frames from the current to the next
+
 		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
 		{
 			this->incRef();
-			frames[i].init(_MR(this),frames[i-1].displayList);
+			_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[i], _MR(this)));
+			sys->currentVm->addEvent(NullRef, ce);
 		}
-
-		//Before actually changing the frame verify that it's constructed
-		//If it's not delay the advancement
-		if(!frames[state.next_FP].isConstructed())
-			return;
 
 		bool frameChanging=(state.FP!=state.next_FP);
 		state.FP=state.next_FP;
@@ -1018,12 +1020,12 @@ void MovieClip::advanceFrame()
 		if(frameChanging && !frameScripts[state.FP].isNull())
 			getVm()->addEvent(NullRef, _MR(new FunctionEvent(frameScripts[state.FP])));
 
-		Frame& curFrame=frames[state.FP];
-
+		/*
+		 Frame& curFrame=frames[state.FP];
 		//Set the object on stage
 		if(isOnStage())
 		{
-			Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
+			DisplayListType::const_iterator it=curFrame.displayList.begin();
 			for(;it!=curFrame.displayList.end();it++)
 				it->second->setOnStage(true);
 		}
@@ -1031,11 +1033,11 @@ void MovieClip::advanceFrame()
 		//Invalidate the current frame if needed
 		if(curFrame.isInvalid())
 		{
-			Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
+			DisplayListType::const_iterator it=curFrame.displayList.begin();
 			for(;it!=curFrame.displayList.end();it++)
 				it->second->requestInvalidation();
 			curFrame.setInvalid(false);
-		}
+		}*/
 	}
 
 }
@@ -1043,20 +1045,6 @@ void MovieClip::advanceFrame()
 void MovieClip::requestInvalidation()
 {
 	Sprite::requestInvalidation();
-	//Mark all frames as not valid
-	for(uint32_t i=0;i<frames.size();i++)
-		frames[i].setInvalid(true);
-
-	if(framesLoaded)
-	{
-		assert(state.FP<framesLoaded);
-		//Actually invalidate the current frame
-		Frame& curFrame=frames[state.FP];
-		Frame::DisplayListType::const_iterator it=curFrame.displayList.begin();
-		for(;it!=curFrame.displayList.end();it++)
-			it->second->requestInvalidation();
-		curFrame.setInvalid(false);
-	}
 }
 
 void MovieClip::setOnStage(bool staged)
@@ -1064,13 +1052,6 @@ void MovieClip::setOnStage(bool staged)
 	if(staged!=onStage)
 	{
 		DisplayObjectContainer::setOnStage(staged);
-		//Now notify all the objects in all frames
-		for(uint32_t i=0;i<frames.size();i++)
-		{
-			Frame::DisplayListType::const_iterator it=frames[i].displayList.begin();
-			for(;it!=frames[i].displayList.end();it++)
-				it->second->setOnStage(staged);
-		}
 	}
 }
 
@@ -1080,9 +1061,9 @@ void MovieClip::bootstrap()
 		return;
 	assert_and_throw(framesLoaded>0);
 	assert_and_throw(frames.size()>=1);
-	//We must incRef as the reference acquire the object
 	this->incRef();
-	frames[0].init(_MR(this),Frame::DisplayListType());
+	_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[0], _MR(this)));
+	sys->currentVm->addEvent(NullRef, ce);
 }
 
 void MovieClip::Render(bool maskEnabled)
@@ -1100,14 +1081,6 @@ void MovieClip::Render(bool maskEnabled)
 	renderPrologue();
 
 	Sprite::renderImpl(maskEnabled,t1,t2,t3,t4);
-
-	if(framesLoaded)
-	{
-		//Save current frame, this may change during rendering
-		uint32_t curFP=state.FP;
-		assert_and_throw(curFP<framesLoaded);
-		frames[curFP].Render(maskEnabled);
-	}
 
 	renderEpilogue();
 }
@@ -1128,21 +1101,6 @@ _NR<InteractiveObject> MovieClip::hitTest(_NR<InteractiveObject>, number_t x, nu
 	hitTestPrologue();
 
 	_NR<InteractiveObject> ret = NullRef;
-	if(framesLoaded)
-	{
-		uint32_t curFP=state.FP;
-		assert_and_throw(curFP<framesLoaded);
-		Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
-		for(;it!=frames[curFP].displayList.end();++it)
-		{
-			number_t localX, localY;
-			it->second->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			this->incRef();
-			ret=it->second->hitTest(_MR(this), localX,localY);
-			if(!ret.isNull())
-				break;
-		}
-	}
 
 	if(ret.isNull())
 		ret=Sprite::hitTestImpl(x, y);
@@ -1155,39 +1113,6 @@ bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 {
 	bool valid=Sprite::boundsRect(xmin,xmax,ymin,ymax);
 	
-	if(framesLoaded==0) //We end here
-		return valid;
-
-	//Iterate over the displaylist of the current frame
-	uint32_t curFP=state.FP;
-	Frame::DisplayListType::const_iterator it=frames[curFP].displayList.begin();
-	
-	//Update bounds for all the elements
-	for(;it!=frames[curFP].displayList.end();++it)
-	{
-		number_t t1,t2,t3,t4;
-		if(it->second->getBounds(t1,t2,t3,t4))
-		{
-			if(valid==false)
-			{
-				xmin=t1;
-				xmax=t2;
-				ymin=t3;
-				ymax=t4;
-				valid=true;
-				//Now values are valid
-				continue;
-			}
-			else
-			{
-				xmin=imin(xmin,t1);
-				xmax=imax(xmax,t2);
-				ymin=imin(ymin,t3);
-				ymax=imax(ymax,t4);
-			}
-			break;
-		}
-	}
 	return valid;
 }
 

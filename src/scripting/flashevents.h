@@ -345,15 +345,16 @@ public:
 	EVENT_TYPE getEventType() const { return CHANGE_FRAME; }
 };
 
+class Frame;
 //Event to construct a Frame in the VM context
 class ConstructFrameEvent: public Event
 {
 friend class ABCVm;
 private:
-	Frame& frame;
+	Frame* frame;
 	_R<MovieClip> parent;
 public:
-	ConstructFrameEvent(Frame& f, _R<MovieClip> p):Event("ConstructFrameEvent"),frame(f),parent(p){}
+	ConstructFrameEvent(Frame* f, _R<MovieClip> p):Event("ConstructFrameEvent"),frame(f),parent(p){}
 	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
 };
 

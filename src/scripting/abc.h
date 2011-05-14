@@ -28,7 +28,6 @@
 #include <llvm/PassManager.h> 
 #include <llvm/LLVMContext.h>
 #include "parsing/tags.h"
-#include "frame.h"
 #include "logger.h"
 #include <vector>
 #include <deque>

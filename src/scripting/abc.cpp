@@ -1195,7 +1195,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case CONSTRUCT_FRAME:
 			{
 				ConstructFrameEvent* ev=static_cast<ConstructFrameEvent*>(e.second.getPtr());
-				ev->frame.construct(ev->parent);
+				ev->frame->execute(ev->parent);
 				break;
 			}
 			case SYS_ON_STAGE:

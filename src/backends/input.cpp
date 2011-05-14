@@ -33,7 +33,8 @@ using namespace lightspark;
 using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
-	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
+	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL),
+	mouseX(0), mouseY(0)
 {
 	LOG(LOG_NO_INFO,_("Creating input thread"));
 }

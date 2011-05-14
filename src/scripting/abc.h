@@ -449,6 +449,7 @@ class ABCVm
 friend class ABCContext;
 friend class method_info;
 private:
+	std::vector<ABCContext*> contexts;
 	SystemState* m_sys;
 	pthread_t t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
@@ -674,7 +675,6 @@ private:
 	pthread_t thread;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
-	~DoABCTag();
 	void execute(RootMovieClip* root);
 };
 
@@ -687,7 +687,6 @@ private:
 	pthread_t thread;
 public:
 	DoABCDefineTag(RECORDHEADER h, std::istream& in);
-	~DoABCDefineTag();
 	void execute(RootMovieClip* root);
 };
 

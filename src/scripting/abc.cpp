@@ -1195,6 +1195,8 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case CONSTRUCT_FRAME:
 			{
 				ConstructFrameEvent* ev=static_cast<ConstructFrameEvent*>(e.second.getPtr());
+				if(ev->purge)
+					ev->parent->purgeLegacyChildren();
 				ev->frame->execute(ev->parent);
 				break;
 			}

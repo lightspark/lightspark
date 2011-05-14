@@ -234,6 +234,7 @@ public:
 	void deleteLegacyChildAt(uint32_t depth);
 	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
 	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);
+	void purgeLegacyChildren();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

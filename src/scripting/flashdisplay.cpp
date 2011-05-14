@@ -1004,11 +1004,25 @@ void MovieClip::advanceFrame()
 			return;
 		}
 
-		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
+		if(state.next_FP >= state.FP)
 		{
-			this->incRef();
-			_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[i], _MR(this)));
-			sys->currentVm->addEvent(NullRef, ce);
+			for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
+			{
+				this->incRef();
+				_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[i], _MR(this), false));
+				sys->currentVm->addEvent(NullRef, ce);
+			}
+		}
+		else
+		{
+			bool purge = true; /* this clears all legacy objects */
+			for(uint32_t i=0;i<=state.next_FP;i++)
+			{
+				this->incRef();
+				_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[i], _MR(this), purge));
+				sys->currentVm->addEvent(NullRef, ce);
+				purge = false;
+			}
 		}
 
 		bool frameChanging=(state.FP!=state.next_FP);
@@ -1062,7 +1076,7 @@ void MovieClip::bootstrap()
 	assert_and_throw(framesLoaded>0);
 	assert_and_throw(frames.size()>=1);
 	this->incRef();
-	_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[0], _MR(this)));
+	_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[0], _MR(this), false));
 	sys->currentVm->addEvent(NullRef, ce);
 }
 
@@ -1949,6 +1963,16 @@ void DisplayObjectContainer::transformLegacyChildAt(uint32_t depth, const MATRIX
 		return;
 	}
 	depthToLegacyChild[depth]->setMatrix(mat);
+}
+
+void DisplayObjectContainer::purgeLegacyChildren()
+{
+	std::map<uint32_t,DisplayObject*>::iterator i = depthToLegacyChild.begin();
+	while( i != depthToLegacyChild.end() )
+	{
+		deleteLegacyChildAt(i->first);
+		i = depthToLegacyChild.begin();
+	}
 }
 
 void DisplayObjectContainer::finalize()

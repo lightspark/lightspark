@@ -55,15 +55,13 @@ using namespace lightspark;
 extern TLSDATA ParseThread* pt;
 
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),initialized(false),parsingIsFailed(false),frameRate(0),
-	mutexFrames("mutexFrame"),toBind(false),mutexChildrenClips("mutexChildrenClips")
+	toBind(false),mutexChildrenClips("mutexChildrenClips")
 {
 	this->incRef();
 	sem_init(&new_frame,0,0);
 	if(li)
 		li->incRef();
 	loaderInfo=_MNR(li);
-	//Reset framesLoaded, as there are still not available
-	framesLoaded=0;
 
 	//We set the protoype to a generic MovieClip
 	if(!isSys)
@@ -144,7 +142,6 @@ void SystemState::registerTag(Tag* t)
 
 void RootMovieClip::setOnStage(bool staged)
 {
-	Locker l(mutexFrames);
 	MovieClip::setOnStage(staged);
 }
 
@@ -1096,7 +1093,7 @@ void ParseThread::parseSWFHeader()
 	//TODO: setting render rate should be done when the clip is added to the displaylist
 	sys->setRenderRate(frameRate);
 	root->setFrameSize(FrameSize);
-	root->setFrameCount(FrameCount);
+	root->totalFrames_unreliable = FrameCount;
 }
 
 void ParseThread::execute()
@@ -1249,31 +1246,18 @@ bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 
 void RootMovieClip::Render(bool maskEnabled)
 {
-	Locker l(mutexFrames);
 	while(1)
 	{
 		//Check if the next frame we are going to play is available
-		if(state.FP<frames.size())
+		if(state.next_FP<getFramesLoaded())
 			break;
 
-		l.unlock();
 		sem_wait(&new_frame);
 		if(parsingIsFailed)
 			return;
-		l.lock();
 	}
 
 	MovieClip::Render(maskEnabled);
-}
-
-void RootMovieClip::setFrameCount(int f)
-{
-	Locker l(mutexFrames);
-	setTotalFrames(f);
-	state.max_FP=f;
-	//Reserving guarantees than the vector is never invalidated
-	//Add 1 as the commit procedure will add one more (see commitFrame)
-	frames.reserve(f+1);
 }
 
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
@@ -1297,25 +1281,18 @@ float RootMovieClip::getFrameRate() const
 	return frameRate;
 }
 
-void RootMovieClip::addToDictionary(DictionaryTag* r)
-{
-	SpinlockLocker l(dictSpinlock);
-	dictionary.push_back(r);
-}
-
 void RootMovieClip::commitFrame(bool another)
 {
-	Locker l(mutexFrames);
-	framesLoaded=frames.size();
+	setFramesLoaded(frames.size());
+
 	if(another)
 		frames.emplace_back();
 
-	if(framesLoaded==1)
+	if(getFramesLoaded()==1)
 	{
 		//Let's initialize the first frame of this movieclip
 		bootstrap();
-		//From now on no more references to frames must be done! See NOTE in initialize
-		l.unlock();
+
 		//Root movie clips are initialized now, after the first frame is really ready 
 		initialize();
 
@@ -1327,9 +1304,8 @@ void RootMovieClip::commitFrame(bool another)
 
 void RootMovieClip::revertFrame()
 {
-	Locker l(mutexFrames);
 	//TODO: The next should be a regular assert
-	assert_and_throw(frames.size() && framesLoaded==(frames.size()-1));
+	assert_and_throw(frames.size() && getFramesLoaded()==(frames.size()-1));
 	frames.pop_back();
 }
 
@@ -1343,6 +1319,14 @@ void RootMovieClip::setBackground(const RGB& bg)
 	Background=bg;
 }
 
+/* called in parser's thread context */
+void RootMovieClip::addToDictionary(DictionaryTag* r)
+{
+	SpinlockLocker l(dictSpinlock);
+	dictionary.push_back(r);
+}
+
+/* called in vm's thread context */
 DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
 	SpinlockLocker l(dictSpinlock);

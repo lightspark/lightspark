@@ -506,29 +506,38 @@ public:
 
 class MovieClip: public Sprite
 {
+friend class ParserThread;
 private:
-	uint32_t totalFrames;
 	uint32_t getCurrentScene();
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
-protected:
-	uint32_t framesLoaded;
-	void bootstrap();
-	std::vector<_NR<IFunction>> frameScripts;
-	std::vector<Scene_data> scenes;
-public:
-	/* This vector is accessed by both the vm thread and the parsing thread,
+	/* This list is accessed by both the vm thread and the parsing thread,
 	 * but the parsing thread only accesses frames.back(), while
 	 * the vm thread only accesses the frames before that frame (until
 	 * the parsing finished; then it can also access the last frame).
 	 * To make that easier for the vm thread, the member framesLoaded keep
-	 * track of how many frames the vm may access.
+	 * track of how many frames the vm may access. Access to framesLoaded
+	 * is guarded by a spinlock.
 	 * For non-RootMovieClips, the parser fills the frames member before
 	 * handing the object to the vm, so there is no issue here.
-	 * RootMovieClips use mutexFrames and the new_frame semaphore
-	 * to wait for a finished frame from the parser.
+	 * RootMovieClips use the new_frame semaphore to wait
+	 * for a finished frame from the parser.
+	 * It cannot be implemented as std::vector, because then reallocation
+	 * would break concurrent access.
 	 */
-	std::vector<Frame> frames;
+protected:
+	std::list<Frame> frames;
+	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
+	uint32_t totalFrames_unreliable;
+	uint32_t getFramesLoaded() { SpinlockLocker l(framesLoadedLock); return framesLoaded; }
+	void setFramesLoaded(uint32_t fl) { SpinlockLocker l(framesLoadedLock); framesLoaded = fl; }
+	void bootstrap();
+private:
+	Spinlock framesLoadedLock;
+	uint32_t framesLoaded;
+	std::map<uint32_t,_NR<IFunction> > frameScripts;
+	std::vector<Scene_data> scenes;
+public:
 	RunState state;
 	MovieClip();
 	MovieClip(const MovieClip& r);

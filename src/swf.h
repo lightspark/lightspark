@@ -79,8 +79,6 @@ private:
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
 	float frameRate;
-	//Frames mutex (shared with drawing thread)
-	Mutex mutexFrames;
 	bool toBind;
 	tiny_string bindName;
 	Mutex mutexChildrenClips;
@@ -96,7 +94,6 @@ public:
 	RECT getFrameSize() const;
 	float getFrameRate() const;
 	void setFrameRate(float f);
-	void setFrameCount(int f);
 	void setOnStage(bool staged);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);

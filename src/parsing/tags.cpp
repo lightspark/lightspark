@@ -376,9 +376,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 		//This condition is not critical as Sprites are not executed while being parsed
 		LOG(LOG_CALLS,_("Inconsistent frame count in Sprite ID ") << SpriteID);
 	}
-	framesLoaded=frames.size();
-	setTotalFrames(framesLoaded);
-	state.max_FP=framesLoaded;
+
+	setFramesLoaded(frames.size());
 
 	LOG(LOG_TRACE,_("EndDefineSprite ID: ") << SpriteID);
 }

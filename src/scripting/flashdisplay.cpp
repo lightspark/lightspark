@@ -750,18 +750,16 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip():totalFrames(1),constructed(false),framesLoaded(1)
+MovieClip::MovieClip():constructed(false),totalFrames_unreliable(1),framesLoaded(0)
 {
-	//It's ok to initialize here framesLoaded=1, as it is valid and empty
-	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
 	frames.emplace_back();
-	frameScripts.resize(totalFrames,NullRef);
 	scenes.resize(1);
 }
 
-MovieClip::MovieClip(const MovieClip& r):totalFrames(r.totalFrames),constructed(false),
-	framesLoaded(r.framesLoaded),frameScripts(r.frameScripts),scenes(r.scenes),
-	frames(r.frames),state(r.state)
+MovieClip::MovieClip(const MovieClip& r):constructed(false),frames(r.frames),
+	totalFrames_unreliable(r.totalFrames_unreliable),framesLoaded(r.framesLoaded),
+	frameScripts(r.frameScripts),scenes(r.scenes),
+	state(r.state)
 {
 	assert(!r.isConstructed());
 }
@@ -775,13 +773,11 @@ void MovieClip::finalize()
 
 void MovieClip::setTotalFrames(uint32_t t)
 {
-	assert(totalFrames==1);
 	//For sprites, this is called after parsing
 	//with the actual frame count
 	//For the root movie, this is called before the parsing
 	//with the frame count from the header
-	totalFrames=t;
-	frameScripts.resize(totalFrames,NullRef);
+	totalFrames_unreliable=t;
 }
 
 /* This runs in vm's thread context,
@@ -811,8 +807,7 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 	for(uint32_t i=0;i<argslen;i+=2)
 	{
 		uint32_t frame=args[i]->toInt();
-		if(frame>=th->totalFrames)
-			return NULL;
+
 		if(args[i+1]->getObjectType()!=T_FUNCTION)
 		{
 			LOG(LOG_ERROR,_("Not a function"));
@@ -820,7 +815,6 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 		}
 		IFunction* f=static_cast<IFunction*>(args[i+1]);
 		f->incRef();
-		assert(th->frameScripts.size()==th->totalFrames);
 		th->frameScripts[frame]=_MNR(f);
 	}
 	
@@ -883,12 +877,12 @@ ASObject* MovieClip::gotoAnd(ASObject* const* args, const unsigned int argslen, 
 			return NULL; /*this behavior was observed by testing */
 		/* "the current scene determines the global frame number" */
 		next_FP = scenes[getCurrentScene()].startframe + inFrameNo - 1;
-		if(next_FP >= state.max_FP)
+		if(next_FP >= getFramesLoaded())
 		{
-			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << state.max_FP);
+			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded());
 			/* spec says we should throw an error, but then YT breaks */
 			//throw Class<ArgumentError>::getInstanceS("gotoAndPlay/Stop: frame not found");
-			next_FP = state.max_FP-1;
+			next_FP = getFramesLoaded()-1;
 		}
 	}
 
@@ -913,7 +907,7 @@ ASFUNCTIONBODY(MovieClip,gotoAndPlay)
 ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	assert_and_throw(th->state.FP<th->state.max_FP);
+	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->incRef();
 	sys->currentVm->addEvent(NullRef,_MR(new FrameChangeEvent(th->state.FP+1,_MR(th))));
 	return NULL;
@@ -922,15 +916,13 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 ASFUNCTIONBODY(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	//currentFrame is 1-based
-	return abstract_i(th->framesLoaded);
+	return abstract_i(th->getFramesLoaded());
 }
 
 ASFUNCTIONBODY(MovieClip,_getTotalFrames)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	//currentFrame is 1-based
-	return abstract_i(th->totalFrames);
+	return abstract_i(th->totalFrames_unreliable);
 }
 
 ASFUNCTIONBODY(MovieClip,_getScenes)
@@ -942,7 +934,7 @@ ASFUNCTIONBODY(MovieClip,_getScenes)
 	for(size_t i=0; i<th->scenes.size(); ++i)
 	{
 		if(i == th->scenes.size()-1)
-			numFrames = th->totalFrames - th->scenes[i].startframe;
+			numFrames = th->totalFrames_unreliable - th->scenes[i].startframe;
 		else
 			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
 		ret->set(i, Class<Scene>::getInstanceS(th->scenes[i],numFrames));
@@ -966,7 +958,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentScene)
 	uint32_t numFrames;
 	uint32_t curScene = th->getCurrentScene();
 	if(curScene == th->scenes.size()-1)
-		numFrames = th->totalFrames - th->scenes[curScene].startframe;
+		numFrames = th->totalFrames_unreliable - th->scenes[curScene].startframe;
 	else
 		numFrames = th->scenes[curScene].startframe - th->scenes[curScene+1].startframe;
 
@@ -1028,43 +1020,45 @@ void MovieClip::advanceFrame()
 {
 	if(!isConstructed()) //The constructor has not been run yet for this clip
 		return;
-	if((!state.stop_FP || state.explicit_FP) && totalFrames!=0 && getPrototype()->isSubClass(Class<MovieClip>::getClass()))
+	if((!state.stop_FP || state.explicit_FP) && getFramesLoaded()!=0 && getPrototype()->isSubClass(Class<MovieClip>::getClass()))
 	{
 		//If we have not yet loaded enough frames delay advancement
-		if(state.next_FP>=framesLoaded)
+		if(state.next_FP>=getFramesLoaded())
 		{
 			LOG(LOG_NOT_IMPLEMENTED,_("Not enough frames loaded"));
 			return;
 		}
 
-		if(state.next_FP >= state.FP)
+		/* Go through the list of frames.
+		 * If our next_FP is after our current,
+		 * we construct all frames from current
+		 * to next_FP.
+		 * If our next_FP is before our current,
+		 * we purge all objects on the 0th frame
+		 * and then construct all frames from
+		 * the 0th to the next_FP.
+		 */
+		bool purge;
+		std::list<Frame>::iterator iter=frames.begin();
+		for(uint32_t i=0;i<=state.next_FP;i++)
 		{
-			for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
+			if(state.next_FP < state.FP || i > state.FP)
 			{
+				purge = (i==0);
 				this->incRef();
-				_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[i], _MR(this), false));
+				_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&(*iter), _MR(this), purge));
 				sys->currentVm->addEvent(NullRef, ce);
 			}
-		}
-		else
-		{
-			bool purge = true; /* this clears all legacy objects */
-			for(uint32_t i=0;i<=state.next_FP;i++)
-			{
-				this->incRef();
-				_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[i], _MR(this), purge));
-				sys->currentVm->addEvent(NullRef, ce);
-				purge = false;
-			}
+			++iter;
 		}
 
 		bool frameChanging=(state.FP!=state.next_FP);
 		state.FP=state.next_FP;
-		if(!state.stop_FP && framesLoaded>0)
-			state.next_FP=imin(state.FP+1,framesLoaded-1);
+		if(!state.stop_FP && getFramesLoaded()>0)
+			state.next_FP=imin(state.FP+1,getFramesLoaded()-1);
 		state.explicit_FP=false;
-		assert(state.FP<frameScripts.size());
-		if(frameChanging && !frameScripts[state.FP].isNull())
+
+		if(frameChanging && frameScripts.count(state.FP))
 			getVm()->addEvent(NullRef, _MR(new FunctionEvent(frameScripts[state.FP])));
 
 		/*
@@ -1091,12 +1085,9 @@ void MovieClip::advanceFrame()
 
 void MovieClip::bootstrap()
 {
-	if(totalFrames==0)
-		return;
-	assert_and_throw(framesLoaded>0);
-	assert_and_throw(frames.size()>=1);
+	assert_and_throw(getFramesLoaded()>0);
 	this->incRef();
-	_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames[0], _MR(this), false));
+	_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames.front(), _MR(this), false));
 	sys->currentVm->addEvent(NullRef, ce);
 }
 
@@ -1138,7 +1129,7 @@ void MovieClip::constructionComplete()
 {
 	RELEASE_WRITE(constructed,true);
 	//Execute the event registered for the first frame, if any
-	if(sys->currentVm && !frameScripts[0].isNull())
+	if(sys->currentVm && frameScripts.count(0))
 	{
 		_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
 		getVm()->addEvent(NullRef, funcEvent);

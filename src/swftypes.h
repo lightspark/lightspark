@@ -1294,7 +1294,6 @@ class RunState
 public:
 	unsigned int FP;
 	unsigned int next_FP;
-	unsigned int max_FP;
 	bool stop_FP;
 	bool explicit_FP;
 	RunState();

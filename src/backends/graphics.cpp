@@ -738,9 +738,6 @@ cairo_surface_t* CairoRenderer::allocateSurface()
 
 void CairoRenderer::execute()
 {
-	if(owner->getRefCount() == 1)
-		return; /* we are the only one keeping our owner alive */
-
 	if(width==0 || height==0)
 	{
 		//Nothing to do, move on

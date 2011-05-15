@@ -806,3 +806,36 @@ uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, ui
 	}
 	return outData;
 }
+
+Mutex CairoPangoRenderer::pangoMutex("pangoMutex");
+
+void CairoPangoRenderer::executeDraw(cairo_t* cr)
+{
+	/* TODO: pango is not fully thread-safe,
+	 * but we may be able to use finer grained locking.
+	 */
+	Locker l(pangoMutex);
+	PangoLayout* layout;
+	PangoFontDescription* desc;
+
+	layout = pango_cairo_create_layout(cr);
+	pango_layout_set_text(layout, textData.text.raw_buf(), -1);
+
+	/* setup font description */
+	desc = pango_font_description_new();
+	pango_font_description_set_family(desc, textData.format.font.raw_buf());
+	pango_font_description_set_size(desc, PANGO_SCALE*textData.format.size);
+	pango_layout_set_font_description(layout, desc);
+	pango_font_description_free(desc);
+
+	if(textData.background)
+	{
+		cairo_set_source_rgb (cr, textData.backgroundColor.Red, textData.backgroundColor.Green, textData.backgroundColor.Blue);
+		cairo_paint(cr);
+	}
+	cairo_set_source_rgb (cr, textData.textColor.Red, textData.textColor.Green, textData.textColor.Blue);
+	/* draw the text */
+	pango_cairo_show_layout(cr, layout);
+
+	g_object_unref(layout);
+}

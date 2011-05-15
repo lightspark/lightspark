@@ -33,6 +33,7 @@ REGISTER_CLASS_NAME(TextFieldAutoSize);
 REGISTER_CLASS_NAME(TextFormatAlign);
 REGISTER_CLASS_NAME(TextFormat);
 REGISTER_CLASS_NAME(StyleSheet);
+REGISTER_CLASS_NAME(StaticText);
 
 void lightspark::Font::sinit(Class_base* c)
 {
@@ -223,4 +224,31 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 	for(;it!=th->styles.end();++it)
 		ret->push(Class<ASString>::getInstanceS(it->first));
 	return ret;
+}
+
+void StaticText::sinit(Class_base* c)
+{
+	//TODO: spec says that constructor should throw ArgumentError
+	c->setConstructor(NULL);
+	c->super=Class<InteractiveObject>::getClass();
+	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("text","",Class<IFunction>::getFunction(_getText),true);
+}
+
+bool StaticText::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	bool ret=TokenContainer::getBounds(xmin,xmax,ymin,ymax);
+	if(ret)
+	{
+		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
+		return true;
+	}
+	return false;
+}
+
+ASFUNCTIONBODY(StaticText,_getText)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"flash.display.StaticText.text is not implemented");
+	return Class<ASString>::getInstanceS("");
 }

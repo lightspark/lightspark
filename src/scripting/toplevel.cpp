@@ -3939,6 +3939,14 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	#ifndef NDEBUG
 		target->initialized=true;
 	#endif
+		/* We set this before the actual call to the constructor
+		 * or any superclass constructor
+		 * so that functions called from within the constructor see
+		 * the object as already constructed.
+		 * We also have to set this for objects without constructor,
+		 * so they are not tried to buildAndLink again.
+		 */
+		RELEASE_WRITE(target->constructed,true);
 	}
 
 	//As constructors are not binded, we should change here the level

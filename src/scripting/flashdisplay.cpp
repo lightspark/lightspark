@@ -757,18 +757,17 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip():constructed(false),totalFrames_unreliable(1),framesLoaded(0)
+MovieClip::MovieClip():totalFrames_unreliable(1),framesLoaded(0)
 {
 	frames.emplace_back();
 	scenes.resize(1);
 }
 
-MovieClip::MovieClip(const MovieClip& r):constructed(false),frames(r.frames),
+MovieClip::MovieClip(const MovieClip& r):frames(r.frames),
 	totalFrames_unreliable(r.totalFrames_unreliable),framesLoaded(r.framesLoaded),
 	frameScripts(r.frameScripts),scenes(r.scenes),
 	state(r.state)
 {
-	assert(!r.isConstructed());
 }
 
 void MovieClip::finalize()
@@ -1140,14 +1139,12 @@ void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
 
 void MovieClip::constructionComplete()
 {
-	RELEASE_WRITE(constructed,true);
 	//Execute the event registered for the first frame, if any
 	if(sys->currentVm && frameScripts.count(0))
 	{
 		_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
 		getVm()->addEvent(NullRef, funcEvent);
 	}
-
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),
@@ -1158,6 +1155,7 @@ DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(
 DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(NULL),
 	parent(NULL),mask(NULL),onStage(false),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),invalidateQueueNext(NULL)
 {
+	assert(!d.isConstructed());
 }
 
 void DisplayObject::finalize()

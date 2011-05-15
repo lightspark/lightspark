@@ -513,8 +513,6 @@ class MovieClip: public Sprite
 friend class ParserThread;
 private:
 	uint32_t getCurrentScene();
-	ACQUIRE_RELEASE_FLAG(constructed);
-	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 	/* This list is accessed by both the vm thread and the parsing thread,
 	 * but the parsing thread only accesses frames.back(), while
 	 * the vm thread only accesses the frames before that frame (until

@@ -275,7 +275,7 @@ protected:
 public:
 	SI16_SWF():val(0){}
 	SI16_SWF(int16_t v):val(v){}
-	operator int16_t(){ return val; }
+	operator int16_t() const { return val; }
 };
 
 class SI16_FLV

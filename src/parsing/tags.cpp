@@ -405,7 +405,7 @@ void lightspark::ignore(istream& i, int count)
 	delete[] buf;
 }
 
-DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h)
+DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h, 20)
 {
 	LOG(LOG_TRACE,_("DefineFont"));
 	in >> FontID;
@@ -430,7 +430,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h)
 	}
 }
 
-DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
+DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h, 20)
 {
 	LOG(LOG_TRACE,_("DefineFont2"));
 	in >> FontID;
@@ -519,7 +519,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	ignore(in,KerningCount*4);
 }
 
-DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
+DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h, 1)
 {
 	LOG(LOG_TRACE,_("DefineFont3"));
 	in >> FontID;
@@ -595,7 +595,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 	ignore(in,KerningCount*4);
 }
 
-DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):FontTag(h)
+DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_TRACE,_("DefineFont4"));
 	int dest=in.tellg();
@@ -678,124 +678,92 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, int v):DictionaryTag(h
 	}
 }
 
-DefineText2Tag::DefineText2Tag(RECORDHEADER h, istream& in):DefineTextTag(h,in,2)
+ASObject* DefineTextTag::instance() const
 {
+	/* we cannot call computeCached in the constructor
+	 * because loadedFrom is not available there for dictionary lookups
+	 */
+	if(tokens.empty())
+		computeCached();
+
+	StaticText* ret=new StaticText(tokens);
+	ret->setPrototype(Class<StaticText>::getClass());
+	return ret;
 }
 
-void DefineTextTag::Render(bool maskEnabled)
+void DefineTextTag::computeCached() const
 {
-	LOG(LOG_TRACE,"DefineText Render");
-	if(alpha==0)
+	if(!tokens.empty())
 		return;
-	if(!visible)
-		return;
-	//TODO: reimplement
-/*	if(cached.size()==0)
-	{
-		FontTag* font=NULL;
-		int count=0;
-		std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
-		std::vector < GLYPHENTRY >::iterator it2;
-		for(;it!=TextRecords.end();++it)
-		{
-			if(it->StyleFlagsHasFont)
-			{
-				DictionaryTag* it3=loadedFrom->dictionaryLookup(it->FontID);
-				font=dynamic_cast<FontTag*>(it3);
-				if(font==NULL)
-					LOG(LOG_ERROR,_("Should be a FontTag"));
-			}
-			it2 = it->GlyphEntries.begin();
-			for(;it2!=(it->GlyphEntries.end());++it2)
-			{
-				//TODO: refactor to cache glyphs
-				vector<GeomShape> new_shapes;
-				font->genGlyphShape(new_shapes,it2->GlyphIndex);
-				for(unsigned int i=0;i<new_shapes.size();i++)
-					cached.push_back(GlyphShape(new_shapes[i],count));
 
-				count++;
-			}
+	FontTag* curFont;
+	std::list<FILLSTYLE> fillStyles;
+	Vector2 curPos;
+	FILLSTYLE fs(1);
+	fs.FillStyleType = SOLID_FILL;
+	fs.Color = RGBA(0,0,0,255);
+	fillStyles.push_back(fs);
+
+	for(size_t i=0; i< TextRecords.size();++i)
+	{
+		if(TextRecords[i].StyleFlagsHasFont)
+		{
+			DictionaryTag* it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
+			curFont=dynamic_cast<FontTag*>(it3);
+			assert_and_throw(curFont);
+		}
+		assert_and_throw(curFont);
+		if(TextRecords[i].StyleFlagsHasColor)
+		{
+			fillStyles.front().Color = TextRecords[i].TextColor;
+		}
+		if(TextRecords[i].StyleFlagsHasXOffset)
+		{
+					curPos.x = TextRecords[i].XOffset;
+		}
+		if(TextRecords[i].StyleFlagsHasYOffset)
+		{
+					curPos.y = TextRecords[i].YOffset;
+		}
+		/*
+		 * In DefineFont3Tags, shape's coordinates are 1024*20 times pixels size,
+		 * in all former DefineFont*Tags, its just 1024 times. We scale everything here
+		 * to 1024*20, so curFont->scaling=20 for DefineFont2Tags and DefineFontTags.
+		 * And, of course, scale by the TextHeight.
+		 */
+		int scaling = TextRecords[i].TextHeight * curFont->scaling;
+		for(int j=0;j<TextRecords[i].GlyphCount;++j)
+		{
+			const GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
+			const std::vector<SHAPERECORD>& sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
+			/* curPos is in pixel, but the glyph coordinates are 1024*20 times pixel size,
+			 * so we scale curPos. This is scaled back to pixels by cairo.
+			 */
+			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,curPos*1024*20,scaling);
+			curPos.x += ge.GlyphAdvance;
 		}
 	}
-	std::vector < TEXTRECORD >::iterator it=TextRecords.begin();
-	if(it==TextRecords.end()) //Nothing to draw
-		return;
-	std::vector < GLYPHENTRY >::iterator it2;
-	int x=0,y=0;
-
-	//Build a fake FILLSTYLEs
-	FILLSTYLE f;
-	f.FillStyleType=SOLID_FILL;
-	f.Color=it->TextColor;
-	MatrixApplier ma(getMatrix());
-	ma.concat(TextMatrix);
-	//Shapes are defined in twips, so scale then down
-	glScalef(0.05,0.05,1);
-
-	if(!isSimple())
-		rt->glAcquireTempBuffer(TextBounds.Xmin,TextBounds.Xmax, TextBounds.Ymin,TextBounds.Ymax);
-
-	//The next 1/20 scale is needed by DefineFont3. Should be conditional
-	glScalef(0.05,0.05,1);
-	float scale_cur=1;
-	int count=0;
-	unsigned int shapes_done=0;
-	for(;it!=TextRecords.end();++it)
-	{
-		if(it->StyleFlagsHasFont)
-		{
-			float scale=it->TextHeight;
-			scale/=1024;
-			glScalef(scale/scale_cur,scale/scale_cur,1);
-			scale_cur=scale;
-		}
-		it2 = it->GlyphEntries.begin();
-		int x2=x,y2=y;
-		x2+=(*it).XOffset;
-		y2+=(*it).YOffset;
-
-		for(;it2!=(it->GlyphEntries.end());++it2)
-		{
-			while(shapes_done<cached.size() && cached[shapes_done].id==count)
-			{
-				assert_and_throw(cached[shapes_done].color==1)
-				cached[shapes_done].style=&f;
-
-				cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
-				shapes_done++;
-				if(shapes_done==cached.size())
-					break;
-			}
-			x2+=it2->GlyphAdvance;
-			count++;
-		}
-	}
-
-	if(!isSimple())
-		rt->glBlitTempBuffer(TextBounds.Xmin,TextBounds.Xmax,TextBounds.Ymin,TextBounds.Ymax);
-	ma.unapply();*/
 }
 
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),Shapes(1)
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DefineShapeTag(h,2)
 {
 	LOG(LOG_TRACE,_("DefineShape2Tag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DefineShape2Tag(h,3)
 {
 	LOG(LOG_TRACE,_("DefineShape3Tag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3Tag(h,4)
@@ -808,7 +776,7 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3T
 	UsesNonScalingStrokes=UB(1,bs);
 	UsesScalingStrokes=UB(1,bs);
 	in >> Shapes;
-	FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
@@ -863,79 +831,6 @@ void DefineMorphShapeTag::Render(bool maskEnabled)
 		rt->glReleaseIdBuffer();
 	}
 	glPopMatrix();*/
-}
-
-/*! \brief Generate a vector of shapes from a SHAPERECORD list
-* * \param cur SHAPERECORD list head
-* * \param shapes a vector to be populated with the shapes */
-
-void DefineShapeTag::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens,
-	const std::list<FILLSTYLE>& fillStyles)
-{
-	int startX=0;
-	int startY=0;
-	unsigned int color0=0;
-	unsigned int color1=0;
-
-	ShapesBuilder shapesBuilder;
-
-	for(unsigned int i=0;i<shapeRecords.size();i++)
-	{
-		const SHAPERECORD* cur=&shapeRecords[i];
-		if(cur->TypeFlag)
-		{
-			if(cur->StraightFlag)
-			{
-				Vector2 p1(startX,startY);
-				startX+=cur->DeltaX;
-				startY+=cur->DeltaY;
-				Vector2 p2(startX,startY);
-				
-				if(color0)
-					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
-				if(color1)
-					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
-			}
-			else
-			{
-				Vector2 p1(startX,startY);
-				startX+=cur->ControlDeltaX;
-				startY+=cur->ControlDeltaY;
-				Vector2 p2(startX,startY);
-				startX+=cur->AnchorDeltaX;
-				startY+=cur->AnchorDeltaY;
-				Vector2 p3(startX,startY);
-
-				if(color0)
-					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
-				if(color1)
-					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
-			}
-		}
-		else
-		{
-			if(cur->StateMoveTo)
-			{
-				startX=cur->MoveDeltaX;
-				startY=cur->MoveDeltaY;
-			}
-/*			if(cur->StateLineStyle)
-			{
-				cur_path->state.validStroke=true;
-				cur_path->state.stroke=cur->LineStyle;
-			}*/
-			if(cur->StateFillStyle1)
-			{
-				color1=cur->FillStyle1;
-			}
-			if(cur->StateFillStyle0)
-			{
-				color0=cur->FillStyle0;
-			}
-		}
-	}
-
-	shapesBuilder.outputTokens(fillStyles, tokens);
 }
 
 //void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

@@ -52,10 +52,9 @@ getters = set([])
 setters = set([])
 methods = set([])
 stubclasses = set([])
-
+warnNotRegistered = set([])
 internalToExternal = {}
-curScope = ""
-curNamespace = ""
+curClass = ""
 
 #1. Step: parse scripting/abc.cpp to map the AS3 names to our class names
 f = open('../src/scripting/abc.cpp','r')
@@ -86,28 +85,28 @@ for line in p2.communicate()[0].split("\n"):
 	if m:
 		curClass = m.group(1)
 		if curClass not in internalToExternal:
-			print "Warning: " + curClass + " is not registered in scripting/abc.cpp"
+			warnNotRegistered.add(curClass)
 		else:
 			curClass = internalToExternal[curClass]
-		curScope = curClass + "."
+		curScope = curClass
 		classes.add(curClass)
 		continue
 	m = rconstructor.match(line)
 	if m:
 		#the constructor is named after the class
-		methods.add(curScope + curScope[curScope[:-1].rfind('.')+1:-1])
+		methods.add((curClass,curClass[curClass.rfind('.')+1:]))
 		continue
 	m = rget.match(line)
 	if m:
-		getters.add(curScope + m.group(1))
+		getters.add((curClass, m.group(1)))
 		continue
 	m = rset.match(line)
 	if m:
-		setters.add(curScope + m.group(1))
+		setters.add((curClass, m.group(1)))
 		continue
 	m = rmet.match(line)
 	if m:
-		methods.add(curScope + m.group(1))
+		methods.add((curClass, m.group(1)))
 	
 #print getters
 #print setters
@@ -115,12 +114,12 @@ for line in p2.communicate()[0].split("\n"):
 #3. Step: parse documenation for classes, properties and methods
 
 #we need a lot of context to not extract inherited properties/methods
-exprstart = '<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>.*summaryTableDescription">'
-args = [ "-e", 's#.*<title>\([a-zA-Z0-9\.]*\) .*#n \\1#p',
-	 "-e", 's#.*'+exprstart +'\[read-only\].*#g \\1#p',
-	 "-e", 's#.*'+exprstart +'\[write-only\].*#s \\1#p',
-	 "-e", 's#.*'+exprstart +'[^\[].*#g \\1\\ns \\1#p',
-	 "-e", 's#.*<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><div class="summarySignature"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>(.*#m \\1#p' ]
+exprstart = r'<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>.*summaryTableDescription">'
+args = [ "-e", r's#.*<title>\([a-zA-Z0-9\.]*\) .*#n \1#p',
+	 "-e", r's#.*'+exprstart +r'\(\[static\] \)\?\[read-only\].*#g \1#p',
+	 "-e", r's#.*'+exprstart +r'\(\[static\] \)\?\[write-only\].*#s \1#p',
+	 "-e", r's#.*'+exprstart +r'\(\[static\] \)\?[^\[].*#g \1\ns \1#p',
+	 "-e", r's#.*<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><div class="summarySignature"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>(.*#m \1#p' ]
 
 toplevelfiles = [ "ArgumentError.html", "Array.html", "Boolean.html", "Class.html", "Date.html", "DefinitionError.html", "Error.html", 
 		  "EvalError.html", "Function.html", "Math.html", "Namespace.html", "Number.html", "Object.html", "QName.html", "RangeError.html",
@@ -174,8 +173,8 @@ for (cls,name) in dgetters:
 	if cls in mclasses:
 		continue #do not list member of missing classes
 	fullName = getFullname(cls,name)
-	if fullName not in getters:
-		if (cls,name) in dsetters and fullName not in setters:
+	if (cls,name) not in getters:
+		if (cls,name) in dsetters and (cls,name) not in setters:
 			missing.append(fullName + " (getter/setter)")
 		else:
 			missing.append(fullName + " (getter)")
@@ -187,8 +186,8 @@ for (cls,name) in dsetters:
 	if cls in mclasses:
 		continue #do not list member of missing classes
 	fullName = getFullname(cls,name)
-	if fullName not in setters:
-		if (cls,name) in dgetters and fullName not in getters:
+	if (cls,name) not in setters:
+		if (cls,name) in dgetters and (cls,name) not in getters:
 			pass #handled abovec
 		else:
 			missing.append(fullName + " (setter)")
@@ -200,7 +199,7 @@ for (cls,name) in dmethods:
 	if cls in mclasses:
 		continue #do not list member of missing classes
 	fullName = getFullname(cls,name)
-	if fullName not in methods:
+	if (cls,name) not in methods:
 		missing.append(fullName + " (method)")
 		#mmethods.append(i)
 		#print "\t" + i
@@ -227,6 +226,22 @@ for i in sorted(mclasses):
 print "\nMissing getters/setters/methods (in partially implemented classes):"
 for i in sorted(missing):
 	print "\t" + i
+
+print ""
+
+for (cls,name) in sorted(getters):
+	if (cls,name) not in dgetters:
+		print "Warning: Implemented non-spec getter", getFullname(cls,name) 
+for (cls,name) in sorted(setters):
+	if (cls,name) not in dsetters:
+		print "Warning: Implemented non-spec setter", getFullname(cls,name) 
+for (cls,name) in sorted(methods):
+	if (cls,name) not in dmethods:
+		print "Warning: Implemented non-spec method", getFullname(cls,name) 
+print ""
+for i in warnNotRegistered:
+	print "Warning: " + i + " is not registered in scripting/abc.cpp"
+
 #print mgetters
 #print msetters
 #print mmethods

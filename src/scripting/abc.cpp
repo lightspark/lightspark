@@ -239,6 +239,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("TextFieldAutoSize","flash.text",Class<TextFieldAutoSize>::getClass());
 	builtin->setVariableByQName("TextFormat","flash.text",Class<TextFormat>::getClass());
 	builtin->setVariableByQName("TextFormatAlign","flash.text",Class<TextFormatAlign>::getClass());
+	builtin->setVariableByQName("StaticText","flash.text",Class<StaticText>::getClass());
 
 	builtin->setVariableByQName("XMLDocument","flash.xml",Class<XMLDocument>::getClass());
 	builtin->setVariableByQName("XMLNode","flash.xml",Class<XMLNode>::getClass());

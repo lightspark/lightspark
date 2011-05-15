@@ -113,6 +113,7 @@ class NullableRef
 private:
 	T* m;
 public:
+	NullableRef(): m(NULL) {}
 	explicit NullableRef(T* o):m(o){}
 	NullableRef(NullRef_t):m(NULL){}
 	NullableRef(const NullableRef& r):m(r.m)

@@ -702,7 +702,7 @@ public:
 
 class Bitmap: public DisplayObject
 {
-friend class CairoRenderer;
+friend class CairoTokenRenderer;
 protected:
 	bool fromJPEG( uint8_t* data, int len);
 	IntSize size;

@@ -550,30 +550,36 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double 
 			if(style.bitmap==NULL)
 				throw RunTimeException("Invalid bitmap");
 
-			// IntSize size = style.bitmap->getBitmapSize();
-			// cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size.width, size.height);
-			// uint8_t* tmp = cairo_image_surface_get_data(surface);
-			// for(uint32_t i=0;i<size.width*size.height;i++)
-			// {
-			// 	tmp[i*4+1]=i;
-			// 	tmp[i*4+3]=0xff;
-			// }
+			IntSize size = style.bitmap->getBitmapSize();
+			//TODO: ARGB32 always give a white surface
+			cairo_surface_t* surface = cairo_image_surface_create_for_data (style.bitmap->data,
+										CAIRO_FORMAT_RGB24, size.width, size.height,
+										cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, size.width));
 
-			// cairo_set_source_surface(cr, surface, 0, 0);
-			// pattern = cairo_get_source(cr);
-			// if (style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
-			//     style.FillStyleType == REPEATING_BITMAP)
-			// 	cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
-			// else
-			// 	cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
+			pattern = cairo_pattern_create_for_surface(surface);
+			cairo_surface_destroy(surface);
 
-			// if (style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
-			//     style.FillStyle == NON_SMOOTHED_CLIPPED_BITMAP)
-			// 	cairo_pattern_set_filter(pattern, CAIRO_FILTER_NEAREST);
-			// else
-			// 	cairo_pattern_set_filter(pattern, CAIRO_FILTER_BILINEAR);
+			cairo_matrix_t mat = MATRIXToCairo(style.Matrix);
+			cairo_status_t st = cairo_matrix_invert(&mat);
+			assert(st == CAIRO_STATUS_SUCCESS);
+			mat.x0 /= scaleCorrection;
+			mat.y0 /= scaleCorrection;
 
-			// bitmaps not implemented, fall through
+			cairo_pattern_set_matrix (pattern, &mat);
+			assert(cairo_pattern_status(pattern) == CAIRO_STATUS_SUCCESS);
+
+			if(style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
+				style.FillStyleType == REPEATING_BITMAP)
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
+			else
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
+
+			if(style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
+			   style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP)
+				cairo_pattern_set_filter(pattern, CAIRO_FILTER_NEAREST);
+			else
+				cairo_pattern_set_filter(pattern, CAIRO_FILTER_BILINEAR);
+			break;
 		}
 		default:
 			LOG(LOG_NOT_IMPLEMENTED, "Unsupported fill style " << (int)style.FillStyleType);
@@ -790,4 +796,25 @@ bool CairoRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFac
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
 	return ret;
+}
+
+uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, uint32_t height)
+{
+	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, width);
+	uint8_t* outData = new uint8_t[stride * height];
+	for(uint32_t i = 0; i < height; i++)
+	{
+		for(uint32_t j = 0; j < width; j++)
+		{
+			uint32_t* outDataPos = (uint32_t*)(outData+i*stride) + j;
+			uint32_t pdata = 0;
+			/* the alpha channel is set to zero above */
+			uint8_t* rgbData = ((uint8_t*)&pdata)+1;
+			/* copy the RGB bytes to rgbData */
+			memcpy(rgbData, inData+(i*width+j)*3, 3);
+			/* cairo needs this in host endianess */
+			*outDataPos = BigEndianToHost32(pdata);
+		}
+	}
+	return outData;
 }

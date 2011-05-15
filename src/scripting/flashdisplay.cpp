@@ -31,6 +31,7 @@
 #include "class.h"
 #include "backends/rendering.h"
 #include "backends/geometry.h"
+#include "backends/image.h"
 #include "compat.h"
 
 #include <GL/glew.h>
@@ -3071,7 +3072,21 @@ bool Bitmap::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 IntSize Bitmap::getBitmapSize() const
 {
-	return IntSize(100,100);
+	return size;
+}
+
+bool Bitmap::fromJPEG(uint8_t *inData, int len)
+{
+	assert(!data);
+	uint8_t* rgbData = ImageDecoder::decodeJPEG(inData, len, &size.width, &size.height);
+	data = CairoRenderer::convertBitmapToCairo(rgbData, size.width, size.height);
+	delete[] rgbData;
+	if(!data)
+	{
+		LOG(LOG_ERROR, "Error decoding jpeg");
+		return false;
+	}
+	return true;
 }
 
 void SimpleButton::sinit(Class_base* c)

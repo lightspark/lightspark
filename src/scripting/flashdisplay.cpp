@@ -2559,7 +2559,7 @@ void TokenContainer::invalidate()
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
-	CairoRenderer* r=new CairoRenderer(owner, owner->cachedSurface, tokens,
+	CairoRenderer* r=new CairoTokenRenderer(owner, owner->cachedSurface, tokens,
 				owner->getConcatenatedMatrix(), x, y, width, height, scaling,
 				owner->getConcatenatedAlpha());
 	sys->addJob(r);
@@ -2567,13 +2567,13 @@ void TokenContainer::invalidate()
 
 bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const
 {
-	return CairoRenderer::isOpaque(tokens, scaling, x, y);
+	return CairoTokenRenderer::isOpaque(tokens, scaling, x, y);
 }
 
 _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const
 {
 	//TODO: test against the CachedSurface
-	if(CairoRenderer::hitTest(tokens, scaling, x, y))
+	if(CairoTokenRenderer::hitTest(tokens, scaling, x, y))
 	{
 		if(sys->getInputThread()->isMaskPresent())
 		{

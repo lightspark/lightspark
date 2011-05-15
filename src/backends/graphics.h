@@ -216,35 +216,62 @@ protected:
 	*/
 	uint8_t* surfaceBytes;
 	/*
-	   The tokens to be drawn
-	*/
-	const std::vector<GeomToken> tokens;
-	/*
 	   The scale to be applied in both the x and y axis.
 	   Useful to adapt points defined in pixels and twips (1/20 of pixel)
 	*/
 	const float scaleFactor;
 	bool uploadNeeded;
-	//Internal helpers
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
+	static void cairoClean(cairo_t* cr);
+	cairo_surface_t* allocateSurface();
+	virtual void executeDraw(cairo_t* cr)=0;
+public:
+	CairoRenderer(ASObject* _o, CachedSurface& _t, const MATRIX& _m,
+				int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a);
+	//ITextureUploadable interface
+	void sizeNeeded(uint32_t& w, uint32_t& h) const;
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
+	const TextureChunk& getTexture();
+	void uploadFence();
+	//IThreadJob interface
+	void threadAbort();
+	void jobFence();
+	void execute();
+	/*
+	 * Converts data (which is in RGB format) to the format internally used by cairo.
+	 * This function new[]'s the returned value, which has to be freed by the caller.
+	 */
+	static uint8_t* convertBitmapToCairo(uint8_t* data, uint32_t width, uint32_t height);
+};
+
+class CairoTokenRenderer : public CairoRenderer
+{
+private:
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection);
 	static bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
-	static void cairoClean(cairo_t* cr);
-	cairo_surface_t* allocateSurface();
+	/*
+	   The tokens to be drawn
+	*/
+	const std::vector<GeomToken> tokens;
+	/*
+	 * This is run by CairoRenderer::execute()
+	 */
+	void executeDraw(cairo_t* cr);
 public:
 	/*
-	   CairoRenderer constructor
+	   CairoTokenRenderer constructor
 
-	   @param _o Used in a code path that must be reviewed. Please leave it here.
+	   @param _o Owner of the surface _t. See comments on 'owner' member.
 	   @param _t GL surface where the final drawing will be uploaded
 	   @param _g The tokens to be drawn. This is copied internally.
 	   @param _m The whole transformation matrix
 	   @param _s The scale factor to be applied in both the x and y axis
 	   @param _a The alpha factor to be applied
 	*/
-	CairoRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
-			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a);
+	CairoTokenRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
+					   int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
+		: CairoRenderer(_o,_t,_m,_x,_y,_w,_h,_s,_a), tokens(_g) {}
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -263,21 +290,6 @@ public:
 	   @param y The Y in local coordinates
 	*/
 	static bool isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
-	//ITextureUploadable interface
-	void sizeNeeded(uint32_t& w, uint32_t& h) const;
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
-	const TextureChunk& getTexture();
-	void uploadFence();
-	//IThreadJob interface
-	void threadAbort();
-	void jobFence();
-	void execute();
-
-	/*
-	 * Converts data (which is in RGB format) to the format internally used by cairo.
-	 * This function new[]'s the returned value, which has to be freed by the caller.
-	 */
-	static uint8_t* convertBitmapToCairo(uint8_t* data, uint32_t width, uint32_t height);
 };
 
 };

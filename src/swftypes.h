@@ -522,6 +522,7 @@ class RGB
 public:
 	RGB(){};
 	RGB(int r,int g, int b):Red(r),Green(g),Blue(b){};
+	RGB(uint color):Red((color>>16)&0xFF),Green((color>>8)&0xFF),Blue(color&0xFF){}
 	UI8 Red;
 	UI8 Green;
 	UI8 Blue;

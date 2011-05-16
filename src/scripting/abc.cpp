@@ -1279,10 +1279,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 		assert_and_throw(base);
 		//Let's override the class
 		base->setPrototype(derived_class_tmp);
-		getVm()->pushObjAndLevel(base,derived_class_tmp->max_level);
 		derived_class_tmp->handleConstruction(base,args,argslen,true);
-		thisAndLevel tl=getVm()->popObjAndLevel();
-		assert_and_throw(tl.cur_this==base);
 		derived_class_tmp->bindToRoot();
 	}
 	else

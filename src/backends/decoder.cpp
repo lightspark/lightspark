@@ -604,12 +604,12 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 	LOG(LOG_CALLS,_("FFMpeg found ") << formatCtx->nb_streams << _(" streams"));
 	for(uint32_t i=0;i<formatCtx->nb_streams;i++)
 	{
-		if(formatCtx->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO && videoFound==false)
+		if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO && videoFound==false)
 		{
 			videoFound=true;
 			videoIndex=i;
 		}
-		else if(formatCtx->streams[i]->codec->codec_type==CODEC_TYPE_AUDIO && audioFound==false)
+		else if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO && audioFound==false)
 		{
 			audioFound=true;
 			audioIndex=i;

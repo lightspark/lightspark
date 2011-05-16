@@ -699,7 +699,7 @@ void DefineTextTag::computeCached() const
 	if(!tokens.empty())
 		return;
 
-	FontTag* curFont;
+	FontTag* curFont = NULL;
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
 	FILLSTYLE fs(1);

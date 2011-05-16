@@ -353,6 +353,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				empty=true;
 				break;
 			}
+			case ABC_TAG:
 			case CONTROL_TAG:
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case FRAMELABEL_TAG:

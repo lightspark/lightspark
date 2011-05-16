@@ -334,8 +334,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	do
 	{
 		tag=factory.readTag();
-		if(tag->getType() != CONTROL_TAG)
-			sys->registerTag(tag);
 		/* We need no locking here, because the vm can only
 		 * access this object after construction
 		 */

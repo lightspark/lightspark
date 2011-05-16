@@ -1153,15 +1153,18 @@ void ParseThread::execute()
 					empty=true;
 					break;
 				case CONTROL_TAG:
-				{
 					/* The spec is not clear about that,
 					 * but it seems that all the CONTROL_TAGs
 					 * (=not one of the other tag types here)
 					 * appear in the first frame only.
 					 * We rely on that by not using
 					 * locking in ctag->execute's implementation.
+					 * ABC_TAG's are an exception, as they require no locking.
 					 */
 					assert(root->frames.size()==1);
+					//fall through
+				case ABC_TAG:
+				{
 					ControlTag* ctag = static_cast<ControlTag*>(tag);
 					ctag->execute(root);
 					delete ctag;

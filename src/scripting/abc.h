@@ -674,6 +674,7 @@ private:
 	pthread_t thread;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const{ return ABC_TAG; }
 	void execute(RootMovieClip* root);
 };
 
@@ -686,6 +687,7 @@ private:
 	pthread_t thread;
 public:
 	DoABCDefineTag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const{ return ABC_TAG; }
 	void execute(RootMovieClip* root);
 };
 

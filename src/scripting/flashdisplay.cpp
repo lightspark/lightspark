@@ -381,40 +381,6 @@ void Loader::threadAbort()
 	}
 }
 
-void Loader::Render(bool maskEnabled)
-{
-	SpinlockLocker l(localRootSpinlock);
-	if(!loaded || skipRender(maskEnabled) || localRoot.isNull())
-		return;
-
-	renderPrologue();
-
-	localRoot->Render(maskEnabled);
-
-	renderEpilogue();
-}
-
-bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	SpinlockLocker l(localRootSpinlock);
-	if(!localRoot.isNull() && localRoot->getBounds(xmin,xmax,ymin,ymax))
-	{
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-		return true;
-	}
-	else
-		return false;
-}
-
-void Loader::setOnStage(bool staged)
-{
-	DisplayObjectContainer::setOnStage(staged);
-	SpinlockLocker l(localRootSpinlock);
-	if(!localRoot.isNull())
-		localRoot->setOnStage(staged);
-}
-
 Sprite::Sprite():TokenContainer(this),graphics(NULL)
 {
 }

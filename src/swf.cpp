@@ -1122,7 +1122,7 @@ void ParseThread::execute()
 		while(!done)
 		{
 			Tag* tag=factory.readTag();
-			if(tag->getType() != CONTROL_TAG)
+			if(tag->getType() != CONTROL_TAG && tag->getType() != ABC_TAG)
 				sys->registerTag(tag);
 			switch(tag->getType())
 			{

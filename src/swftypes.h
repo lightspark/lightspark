@@ -1292,12 +1292,12 @@ public:
 class RunState
 {
 public:
+	int last_FP;
 	unsigned int FP;
 	unsigned int next_FP;
 	bool stop_FP;
 	bool explicit_FP;
 	RunState();
-	void prepareNextFP();
 };
 
 ASObject* abstract_i(intptr_t i);

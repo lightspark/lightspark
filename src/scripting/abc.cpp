@@ -121,6 +121,10 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			//We have to bind this root movieclip itself, let's tell it.
 			//This will be done later
 			root->bindToName((const char*)Names[i]);
+			root->incRef();
+			sys->currentVm->addEvent(NullRef,
+					_MR(new BindClassEvent(_MR(root),(const char*)Names[i],BindClassEvent::ISROOT)));
+
 		}
 		else
 		{
@@ -1193,12 +1197,16 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				ev->movieClip->state.explicit_FP=true;
 				break;
 			}
-			case CONSTRUCT_FRAME:
+			case INIT_FRAME:
 			{
-				ConstructFrameEvent* ev=static_cast<ConstructFrameEvent*>(e.second.getPtr());
-				if(ev->purge)
-					ev->parent->purgeLegacyChildren();
-				ev->frame->execute(ev->parent);
+				LOG(LOG_CALLS,"INIT_FRAME");
+				sys->initFrame();
+				break;
+			}
+			case ADVANCE_FRAME:
+			{
+				LOG(LOG_CALLS,"ADVANCE_FRAME");
+				sys->advanceFrame();
 				break;
 			}
 			case SYS_ON_STAGE:
@@ -1279,7 +1287,6 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 		assert_and_throw(base);
 		//Let's override the class
 		base->setPrototype(derived_class_tmp);
-		derived_class_tmp->handleConstruction(base,args,argslen,true);
 		derived_class_tmp->bindToRoot();
 	}
 	else

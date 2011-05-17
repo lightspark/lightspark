@@ -54,8 +54,8 @@ using namespace lightspark;
 
 extern TLSDATA ParseThread* pt;
 
-RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),initialized(false),parsingIsFailed(false),frameRate(0),
-	toBind(false),mutexChildrenClips("mutexChildrenClips")
+RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),parsingIsFailed(false),frameRate(0),
+	toBind(false)
 {
 	this->incRef();
 	sem_init(&new_frame,0,0);
@@ -70,8 +70,6 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),init
 
 RootMovieClip::~RootMovieClip()
 {
-	if(this!=sys)
-		sys->removeJob(this);
 	sem_destroy(&new_frame);
 }
 
@@ -104,20 +102,6 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 		loaderInfo->url=origin.getParsedURL();
 		loaderInfo->loaderURL=origin.getParsedURL();
 	}
-}
-
-void RootMovieClip::registerChildClip(MovieClip* clip)
-{
-	Locker l(mutexChildrenClips);
-	clip->incRef();
-	childrenClips.insert(clip);
-}
-
-void RootMovieClip::unregisterChildClip(MovieClip* clip)
-{
-	Locker l(mutexChildrenClips);
-	if(childrenClips.erase(clip))
-		clip->decRef();
 }
 
 void SystemState::registerEnterFrameListener(DisplayObject* obj)
@@ -815,38 +799,6 @@ void SystemState::setRenderRate(float rate)
 	startRenderTicks();
 }
 
-void SystemState::tick()
-{
-	RootMovieClip::tick();
-	{
-		SpinlockLocker l(profileDataSpinlock);
-		list<ThreadProfile>::iterator it=profilingData.begin();
-		for(;it!=profilingData.end();++it)
-			it->tick();
-	}
-	//Send enterFrame events, if needed
-	{
-		Locker l(mutexEnterFrameListeners);
-		if(!enterFrameListeners.empty())
-		{
-			_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
-			auto it=enterFrameListeners.begin();
-			for(;it!=enterFrameListeners.end();it++)
-			{
-				(*it)->incRef();
-				getVm()->addEvent(_MR(*it),e);
-			}
-		}
-	}
-	//Enter frame should be sent to the stage too
-	if(stage->hasEventListener("enterFrame"))
-	{
-		_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
-		stage->incRef();
-		getVm()->addEvent(_MR(stage),e);
-	}
-}
-
 void SystemState::addJob(IThreadJob* j)
 {
 	threadPool->addJob(j);
@@ -1206,41 +1158,6 @@ void ParseThread::threadAbort()
 	root->parsingFailed();
 }
 
-void RootMovieClip::initialize()
-{
-	//NOTE: No references to frames must be done here!
-	if(!initialized && sys->currentVm)
-	{
-		initialized=true;
-		if(sys->currentVm)
-		{
-			//Let's see if we have to bind the root movie clip itself
-			if(bindName.len())
-			{
-				//The object is constructed after binding
-				this->incRef();
-				sys->currentVm->addEvent(NullRef,_MR(new BindClassEvent(_MR(this),bindName,BindClassEvent::ISROOT)));
-				sys->currentVm->addEvent(NullRef,_MR(new SysOnStageEvent()));
-			}
-			else
-			{
-				//Construction can be consider complete
-				constructionComplete();
-				setOnStage(true);
-			}
-
-			//Now signal the completion for this root
-			loaderInfo->sendInit();
-		}
-		else
-		{
-			//Construction can be consider complete
-			constructionComplete();
-			setOnStage(true);
-		}
-	}
-}
-
 bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	RECT f=getFrameSize();
@@ -1249,22 +1166,6 @@ bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	xmax=f.Xmax/20;
 	ymax=f.Ymax/20;
 	return true;
-}
-
-void RootMovieClip::Render(bool maskEnabled)
-{
-	while(1)
-	{
-		//Check if the next frame we are going to play is available
-		if(state.next_FP<getFramesLoaded())
-			break;
-
-		sem_wait(&new_frame);
-		if(parsingIsFailed)
-			return;
-	}
-
-	MovieClip::Render(maskEnabled);
 }
 
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
@@ -1295,16 +1196,11 @@ void RootMovieClip::commitFrame(bool another)
 	if(another)
 		frames.emplace_back();
 
-	if(getFramesLoaded()==1)
+	if(getFramesLoaded()==1 && this == sys)
 	{
-		//Let's initialize the first frame of this movieclip
-		bootstrap();
-
-		//Root movie clips are initialized now, after the first frame is really ready 
-		initialize();
-
-		//When the first frame is committed the frame rate is known
-		sys->addTick(1000/frameRate,this);
+		/* now the frameRate is available and all SymbolClass tags have created their classes */
+		sys->currentVm->addEvent(NullRef,_MR(new SysOnStageEvent()));
+		sys->addTick(1000/frameRate,sys);
 	}
 	sem_post(&new_frame);
 }
@@ -1356,33 +1252,6 @@ _NR<RootMovieClip> RootMovieClip::getRoot()
 {
 	this->incRef();
 	return _MR(this);
-}
-
-void RootMovieClip::tick()
-{
-	//Frame advancement may cause exceptions
-	try
-	{
-		advanceFrame();
-		//advanceFrame may be blocking (if Frame init happens)
-		Locker l(mutexChildrenClips);
-		vector<MovieClip*> tmpChildren(childrenClips.begin(),childrenClips.end());
-		for(uint32_t i=0;i<tmpChildren.size();i++)
-			tmpChildren[i]->incRef();
-		l.unlock();
-		//Advance all the children to the next frame using the temporary copy
-		for(uint32_t i=0;i<tmpChildren.size();i++)
-		{
-			tmpChildren[i]->advanceFrame();
-			//Release when done
-			tmpChildren[i]->decRef();
-		}
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR,_("Exception in RootMovieClip::tick ") << e.cause);
-		sys->setError(e.cause);
-	}
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
@@ -1443,3 +1312,90 @@ void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 }*/
 
 
+void SystemState::tick()
+{
+	{
+		SpinlockLocker l(profileDataSpinlock);
+		list<ThreadProfile>::iterator it=profilingData.begin();
+		for(;it!=profilingData.end();++it)
+			it->tick();
+	}
+	/* See http://www.senocular.com/flash/tutorials/orderofoperations/
+	 * for the description of steps.
+	 */
+	/* TODO: Step 1: declare new objects */
+
+	/* Step 2: Send enterFrame events, if needed */
+	/* TODO: make this a child of the stage (spec says so)
+	 * so we only need to send this to the stage.
+	 * TODO: This event will be handled much later
+	 * than we send it, so until then there may already
+	 * be an eventListern.
+	 * Example of send vs. handled events:
+	 *  tick() -> initFrame,advanceFrame,initFrame,advanceFrame, enterFrame,initFrame,advanceFrame
+	 *  vm()   ->                                              | handle first initFrame, add event Listener
+	 *  We could make tick() wait for the completion of advanceFrame event.
+	 */
+	{
+		Locker l(mutexEnterFrameListeners);
+		if(!enterFrameListeners.empty())
+		{
+			_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
+			auto it=enterFrameListeners.begin();
+			for(;it!=enterFrameListeners.end();it++)
+			{
+				(*it)->incRef();
+				getVm()->addEvent(_MR(*it),e);
+			}
+		}
+	}
+	//Enter frame should be sent to the stage too
+	if(stage->hasEventListener("enterFrame"))
+	{
+		_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
+		stage->incRef();
+		getVm()->addEvent(_MR(stage),e);
+	}
+
+	/* Step 3: create legacy objects, which are new in this frame (top-down),
+	 * run their constructors (bottom-up)
+	 * and their frameScripts (Step 5) (bottom-up) */
+	sys->currentVm->addEvent(NullRef, _MR(new InitFrameEvent()));
+
+	/* TODO: Step 4: dispatch frameConstructed */
+	/* TODO: Step 6: dispatch exitFrame event */
+	/* TODO: Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
+
+	/* Step 0: Set current frame number to the next frame */
+	sys->currentVm->addEvent(NullRef, _MR(new AdvanceFrameEvent()));
+}
+
+/* This is run in vm's thread context */
+void RootMovieClip::initFrame()
+{
+	LOG(LOG_CALLS,"Root:initFrame " << getFramesLoaded() << " " << state.FP);
+	/* We have to wait for at least one frame
+	 * so our class get the right prototype. Else we will
+	 * call the wrong constructor. */
+	if(getFramesLoaded() == 0)
+		return;
+
+	MovieClip::initFrame();
+}
+
+/* This is run in vm's thread context */
+void RootMovieClip::advanceFrame()
+{
+	/* We have to wait for at least one frame */
+	if(getFramesLoaded() == 0)
+		return;
+
+	MovieClip::advanceFrame();
+}
+
+void RootMovieClip::constructionComplete()
+{
+	LOG(LOG_ERROR,"RootMovieClip::constructionComplete");
+	MovieClip::constructionComplete();
+	loaderInfo->sendInit();
+}

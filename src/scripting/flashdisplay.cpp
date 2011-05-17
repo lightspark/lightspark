@@ -312,8 +312,9 @@ void Loader::execute()
 	contentLoaderInfo->incRef();
 	//Use a local variable to store the new root, as the localRoot member may change
 	_R<RootMovieClip> newRoot=_MR(RootMovieClip::getInstance(contentLoaderInfo.getPtr()));
-	if(isOnStage())
-		newRoot->setOnStage(true);
+
+	_addChildAt(newRoot,0);
+
 	if(source==URL)
 	{
 		//TODO: add security checks
@@ -1015,92 +1016,10 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
-	//MovieClip* th=Class<MovieClip>::cast(obj);
 	Sprite::_constructor(obj,NULL,0);
 /*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(createEmptyMovieClip));*/
 	return NULL;
-}
-
-void MovieClip::advanceFrame()
-{
-	if(!isConstructed()) //The constructor has not been run yet for this clip
-		return;
-	if((!state.stop_FP || state.explicit_FP) && getFramesLoaded()!=0 && getPrototype()->isSubClass(Class<MovieClip>::getClass()))
-	{
-		//If we have not yet loaded enough frames delay advancement
-		if(state.next_FP>=getFramesLoaded())
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Not enough frames loaded"));
-			return;
-		}
-
-		/* Go through the list of frames.
-		 * If our next_FP is after our current,
-		 * we construct all frames from current
-		 * to next_FP.
-		 * If our next_FP is before our current,
-		 * we purge all objects on the 0th frame
-		 * and then construct all frames from
-		 * the 0th to the next_FP.
-		 */
-		bool purge;
-		std::list<Frame>::iterator iter=frames.begin();
-		for(uint32_t i=0;i<=state.next_FP;i++)
-		{
-			if(state.next_FP < state.FP || i > state.FP)
-			{
-				purge = (i==0);
-				if(sys->currentVm)
-				{
-					this->incRef();
-					_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&(*iter), _MR(this), purge));
-					sys->currentVm->addEvent(NullRef, ce);
-				}
-			}
-			++iter;
-		}
-
-		bool frameChanging=(state.FP!=state.next_FP);
-		state.FP=state.next_FP;
-		if(!state.stop_FP && getFramesLoaded()>0)
-			state.next_FP=imin(state.FP+1,getFramesLoaded()-1);
-		state.explicit_FP=false;
-
-		if(frameChanging && frameScripts.count(state.FP))
-			getVm()->addEvent(NullRef, _MR(new FunctionEvent(frameScripts[state.FP])));
-
-		/*
-		 Frame& curFrame=frames[state.FP];
-		//Set the object on stage
-		if(isOnStage())
-		{
-			DisplayListType::const_iterator it=curFrame.displayList.begin();
-			for(;it!=curFrame.displayList.end();it++)
-				it->second->setOnStage(true);
-		}
-
-		//Invalidate the current frame if needed
-		if(curFrame.isInvalid())
-		{
-			DisplayListType::const_iterator it=curFrame.displayList.begin();
-			for(;it!=curFrame.displayList.end();it++)
-				it->second->requestInvalidation();
-			curFrame.setInvalid(false);
-		}*/
-	}
-
-}
-
-void MovieClip::bootstrap()
-{
-	assert_and_throw(getFramesLoaded()>0);
-	if(sys->currentVm)
-	{
-		this->incRef();
-		_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames.front(), _MR(this), false));
-		sys->currentVm->addEvent(NullRef, ce);
-	}
 }
 
 void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)
@@ -1135,16 +1054,6 @@ void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
 		}
 	}
 	scenes.back().addFrameLabel(frame,label);
-}
-
-void MovieClip::constructionComplete()
-{
-	//Execute the event registered for the first frame, if any
-	if(sys->currentVm && frameScripts.count(0))
-	{
-		_R<FunctionEvent> funcEvent(new FunctionEvent(_MR(frameScripts[0])));
-		getVm()->addEvent(NullRef, funcEvent);
-	}
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),
@@ -1403,7 +1312,7 @@ void DisplayObject::setOnStage(bool staged)
 			requestInvalidation();
 		if(getVm()==NULL)
 			return;
-		if(onStage==true && hasEventListener("addedToStage"))
+		if(onStage==true && isConstructed() && hasEventListener("addedToStage"))
 		{
 			this->incRef();
 			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("addedToStage")));
@@ -3388,4 +3297,142 @@ void InterpolationMethod::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setVariableByQName("RGB","",Class<ASString>::getInstanceS("rgb"));
 	c->setVariableByQName("LINEAR_RGB","",Class<ASString>::getInstanceS("linearRGB"));
+}
+
+/* Display objects have no children in general,
+ * so we skip to calling the constructor, if necessary.
+ * This is called in vm's thread context */
+void DisplayObject::initFrame()
+{
+	if(!isConstructed() && getPrototype())
+	{
+		LOG(LOG_ERROR,"Constructing " << name);
+		getPrototype()->handleConstruction(this,NULL,0,true);
+		/* addChild has already been called for this object,
+		 * but addedToStage is delayed until after construction.
+		 * This is from "Order of Operations".
+		 */
+		/* TODO: also dispatch event "added" */
+		/* TODO: should we directly call handleEventPublic? */
+		this->incRef();
+		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("addedToStage")));
+	}
+}
+
+/* Go through the hierarchy and add all
+ * legacy objects which are new in the current
+ * frame top-down. At the same time, call their
+ * constructors in reverse order (bottom-up).
+ * This is called in vm's thread context */
+void DisplayObjectContainer::initFrame()
+{
+	/* init the frames and call constructors of our children first */
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();it++)
+		(*it)->initFrame();
+	/* call our own constructor, if necassary */
+	DisplayObject::initFrame();
+}
+
+/* Go through the hierarchy and add all
+ * legacy objects which are new in the current
+ * frame top-down. At the same time, call their
+ * constructors in reverse order (bottom-up).
+ * This is called in vm's thread context */
+void MovieClip::initFrame()
+{
+	/* Go through the list of frames.
+	 * If our next_FP is after our current,
+	 * we construct all frames from current
+	 * to next_FP.
+	 * If our next_FP is before our current,
+	 * we purge all objects on the 0th frame
+	 * and then construct all frames from
+	 * the 0th to the next_FP.
+	 * TODO: do not purge legacy objects that were also there at state.FP,
+	 * we saw that their constructor is not run again.
+	 * We also will run the constructor on objects that got placed and deleted
+	 * before state.FP (which may get us an segfault).
+	 *
+	 */
+	if((int)state.FP < state.last_FP)
+		purgeLegacyChildren();
+
+	std::list<Frame>::iterator iter=frames.begin();
+	for(uint32_t i=0;i<=state.FP;i++)
+	{
+		if((int)state.FP < state.last_FP || (int)i > state.last_FP)
+		{
+			this->incRef(); //TODO kill ref from execute's declaration
+			iter->execute(_MR(this));
+		}
+		++iter;
+	}
+
+	/* Now the new legacy display objects are there, so we can also init their
+	 * first frame (top-down) and call their constructors (bottom-up) */
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();it++)
+		(*it)->initFrame();
+
+	/* Set last_FP to reflect the frame that we have initialized currently.
+	 * This must be set before the constructor of this MovieClip is run,
+	 * or it will call initFrame(). */
+	bool newFrame = (int)state.FP != state.last_FP;
+	state.last_FP=state.FP;
+
+	/* call our own constructor, if necassary */
+	DisplayObject::initFrame();
+
+	/* Run framescripts if this is a new frame. We do it at the end because our constructor
+	 * may just have registered one. */
+	//TODO: check order: child or parent first?
+	if(newFrame && frameScripts.count(state.FP))
+		frameScripts[state.FP]->call(NULL,NULL,0,false);
+
+}
+
+/* This is run in vm's thread context */
+void DisplayObjectContainer::advanceFrame()
+{
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();it++)
+		(*it)->advanceFrame();
+}
+
+/* Update state.last_FP. If enough frames
+ * are available, set state.FP to state.next_FP.
+ * This is run in vm's thread context.
+ */
+void MovieClip::advanceFrame()
+{
+	//TODO check order: child or parent first?
+	DisplayObjectContainer::advanceFrame();
+
+	/* DefineSpriteTag may be exported as Sprite, so we should not
+	 * advance the frame.
+	 */
+	if(!getPrototype()->isSubClass(Class<MovieClip>::getClass()))
+		return;
+
+	//If we have not yet loaded enough frames delay advancement
+	if(state.next_FP>=(uint32_t)getFramesLoaded())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,_("Not enough frames loaded"));
+		return;
+	}
+
+	state.FP=state.next_FP;
+	state.explicit_FP=false;
+	if(!state.stop_FP && getFramesLoaded()>0)
+		state.next_FP=imin(state.FP+1,getFramesLoaded()-1);
+}
+
+void MovieClip::constructionComplete()
+{
+	/* If this object was 'new'ed from AS code, the first
+	 * frame has not been initalized yet, so init the frame
+	 * now */
+	if(state.last_FP == -1)
+		initFrame();
 }

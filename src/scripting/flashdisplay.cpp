@@ -915,8 +915,8 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
-	th->incRef();
-	sys->currentVm->addEvent(NullRef,_MR(new FrameChangeEvent(th->state.FP+1,_MR(th))));
+	th->state.next_FP = th->state.FP+1;
+	th->state.explicit_FP=true;
 	return NULL;
 }
 

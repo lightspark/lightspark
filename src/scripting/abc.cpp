@@ -1190,13 +1190,6 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				contexts.push_back(ev->context);
 				break;
 			}
-			case CHANGE_FRAME:
-			{
-				FrameChangeEvent* ev=static_cast<FrameChangeEvent*>(e.second.getPtr());
-				ev->movieClip->state.next_FP=ev->frame;
-				ev->movieClip->state.explicit_FP=true;
-				break;
-			}
 			case INIT_FRAME:
 			{
 				LOG(LOG_CALLS,"INIT_FRAME");

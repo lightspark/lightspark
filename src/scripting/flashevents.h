@@ -31,7 +31,7 @@
 namespace lightspark
 {
 
-enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_TAG, CHANGE_FRAME, INIT_FRAME,
+enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, INIT_FRAME,
 			SYS_ON_STAGE, FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME };
 
 class ABCContext;
@@ -330,19 +330,6 @@ public:
 	ABCContextInitEvent(ABCContext* c) DLL_PUBLIC;
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return CONTEXT_INIT; }
-};
-
-//Event to change the current frame
-class FrameChangeEvent: public Event
-{
-friend class ABCVm;
-private:
-	int frame;
-	_R<MovieClip> movieClip;
-	static void sinit(Class_base*);
-public:
-	FrameChangeEvent(int f, _R<MovieClip> m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
-	EVENT_TYPE getEventType() const { return CHANGE_FRAME; }
 };
 
 class Frame;

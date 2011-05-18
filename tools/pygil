@@ -21,6 +21,7 @@ rstupclass = re.compile('.*builtin->setVariableByQName\("([^"]*)","([^"]*)",Clas
 rget = re.compile('[^/]*->setGetterByQName\("([^"]*)".*')
 rset = re.compile('[^/]*->setSetterByQName\("([^"]*)".*')
 rmet = re.compile('[^/]*->setMethodByQName\("([^"]*)".*')
+rconst = re.compile('[^/]*->setVariableByQName\("([^"]*)","",Class<[^>]*>::getInstanceS.*');
 
 def getFullname(cls,name):
 	if cls != "":
@@ -51,6 +52,7 @@ classes = set([])
 getters = set([])
 setters = set([])
 methods = set([])
+const = set([])
 stubclasses = set([])
 warnNotRegistered = set([])
 internalToExternal = {}
@@ -107,6 +109,11 @@ for line in p2.communicate()[0].split("\n"):
 	m = rmet.match(line)
 	if m:
 		methods.add((curClass, m.group(1)))
+		continue
+	m = rconst.match(line)
+	if m:
+		const.add((curClass,m.group(1)))
+		continue
 	
 #print getters
 #print setters
@@ -114,12 +121,13 @@ for line in p2.communicate()[0].split("\n"):
 #3. Step: parse documenation for classes, properties and methods
 
 #we need a lot of context to not extract inherited properties/methods
-exprstart = r'<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>.*summaryTableDescription">'
+exprstart = r'<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">\([^<]*\)</a> : <[^>]*>[^=<]*</a><div class="summaryTableDescription">'
 args = [ "-e", r's#.*<title>\([a-zA-Z0-9\.]*\) .*#n \1#p',
 	 "-e", r's#.*'+exprstart +r'\(\[static\] \)\?\[read-only\].*#g \1#p',
 	 "-e", r's#.*'+exprstart +r'\(\[static\] \)\?\[write-only\].*#s \1#p',
 	 "-e", r's#.*'+exprstart +r'\(\[static\] \)\?[^\[].*#g \1\ns \1#p',
-	 "-e", r's#.*<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><div class="summarySignature"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>(.*#m \1#p' ]
+	 "-e", r's#.*<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><div class="summarySignature"><a href="[^"]*" class="signatureLink">\([^<]*\)</a>(.*#m \1#p',
+	 "-e", r's#.*<td class="summaryTableInheritanceCol">&nbsp;</td><td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">\([^>]*\)</a> : .*> = .*#c \1#p']
 
 toplevelfiles = [ "ArgumentError.html", "Array.html", "Boolean.html", "Class.html", "Date.html", "DefinitionError.html", "Error.html", 
 		  "EvalError.html", "Function.html", "Math.html", "Namespace.html", "Number.html", "Object.html", "QName.html", "RangeError.html",
@@ -141,6 +149,7 @@ dsetters = set([])
 dmethods = set([])
 dclasses = set([])
 mclasses = set([])
+dconst = set([])
 curClass = ""
 
 for line in p2.communicate()[0].split("\n"):
@@ -160,6 +169,9 @@ for line in p2.communicate()[0].split("\n"):
 		continue
 	if line[0] == 'm' and line[2:] != "constructor":
 		dmethods.add((curClass,line[2:]))
+		continue
+	if line[0] == 'c':
+		dconst.add((curClass,line[2:]))
 		continue
 
 mgetters = []
@@ -205,6 +217,14 @@ for (cls,name) in dmethods:
 		#print "\t" + i
 		pmclasses.add(cls)
 
+for (cls,name) in dconst:
+	if cls in mclasses:
+		continue
+	fullName = getFullname(cls,name)
+	if (cls,name) not in const:
+		missing.append(fullName + " (constant)")
+		pmclasses.add(cls)
+
 #Fully implemented are classes which are in the reference
 #docs and not in missing classes or partly missing classes
 for i in dclasses:
@@ -242,15 +262,16 @@ print ""
 for i in warnNotRegistered:
 	print "Warning: " + i + " is not registered in scripting/abc.cpp"
 
-#print mgetters
-#print msetters
+
 #print mmethods
 #print mclasses
 #print pmclasses
 
 print ""
-print "Number of fully implemented classes:           ", len(fclasses)
-print "Number of implemented getters/setters/methods: ", len(setters)+len(getters)+len(methods)
-print "Number of missing classes (of which are stubs):", len(mclasses), len(stubclasses)
-print "Number of missing getters/setters/methods:     ", (len(dsetters)+len(dgetters)+len(dmethods)) - (len(setters)+len(getters)+len(methods))
-print "Overall percentage completed:                  ", float(len(setters)+len(getters)+len(methods))/float(len(dsetters)+len(dgetters)+len(dmethods))*100
+print "Number of fully implemented classes:                ", len(fclasses)
+print "Number of implemented getters/setters/methods/const:", len(setters),len(getters),len(methods),len(const)
+print "Total number of implemented                        :", len(setters)+len(getters)+len(methods)+len(const)
+print "Number of missing classes (of which are stubs):     ", len(mclasses), len(stubclasses)
+print "Number of missing getters/setters/methods/consts:   ", (len(dsetters)-len(setters)), len(dgetters)-len(getters), len(dmethods)-len(methods), len(dconst)-len(const)
+print "Total number of missing:                            ", (len(dsetters)+len(dgetters)+len(dmethods)+len(dconst)) - (len(setters)+len(getters)+len(methods)-len(const))
+print "Overall percentage completed:                       ", float(len(setters)+len(getters)+len(methods)+len(const))/float(len(dsetters)+len(dgetters)+len(dmethods)+len(dconst))*100

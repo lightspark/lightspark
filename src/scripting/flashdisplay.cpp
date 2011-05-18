@@ -1046,9 +1046,12 @@ void MovieClip::advanceFrame()
 			if(state.next_FP < state.FP || i > state.FP)
 			{
 				purge = (i==0);
-				this->incRef();
-				_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&(*iter), _MR(this), purge));
-				sys->currentVm->addEvent(NullRef, ce);
+				if(sys->currentVm)
+				{
+					this->incRef();
+					_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&(*iter), _MR(this), purge));
+					sys->currentVm->addEvent(NullRef, ce);
+				}
 			}
 			++iter;
 		}
@@ -1087,9 +1090,12 @@ void MovieClip::advanceFrame()
 void MovieClip::bootstrap()
 {
 	assert_and_throw(getFramesLoaded()>0);
-	this->incRef();
-	_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames.front(), _MR(this), false));
-	sys->currentVm->addEvent(NullRef, ce);
+	if(sys->currentVm)
+	{
+		this->incRef();
+		_R<ConstructFrameEvent> ce(new ConstructFrameEvent(&frames.front(), _MR(this), false));
+		sys->currentVm->addEvent(NullRef, ce);
+	}
 }
 
 void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)

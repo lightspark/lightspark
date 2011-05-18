@@ -885,8 +885,12 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 	{
 		invalidateQueueHead=invalidateQueueTail=d;
 		//This is the first object added to the invalidation queue
-		//Let's ask the VM to invalidate the queue ater all events already queued are run
-		currentVm->addEvent(NullRef,_MR(new FlushInvalidationQueueEvent));
+		//TODO: support the case without the VM
+		if(currentVm)
+		{
+			//Let's ask the VM to invalidate the queue ater all events already queued are run
+			currentVm->addEvent(NullRef,_MR(new FlushInvalidationQueueEvent));
+		}
 	}
 	else
 	{

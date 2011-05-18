@@ -43,6 +43,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(firstChild);
+	ASFUNCTION(childNodes);
 	ASFUNCTION(attributes);
 };
 

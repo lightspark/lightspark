@@ -47,6 +47,7 @@ void XMLNode::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("firstChild","",Class<IFunction>::getFunction(XMLNode::firstChild),true);
+	c->setGetterByQName("childNodes","",Class<IFunction>::getFunction(XMLNode::childNodes),true);
 	c->setGetterByQName("attributes","",Class<IFunction>::getFunction(attributes),true);
 }
 
@@ -75,6 +76,26 @@ ASFUNCTIONBODY(XMLNode,firstChild)
 	assert_and_throw(!th->root.isNull());
 	return Class<XMLNode>::getInstanceS(th->root,newNode);
 }
+
+ASFUNCTIONBODY(XMLNode,childNodes)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	Array* ret = Class<Array>::getInstanceS();
+	assert_and_throw(argslen==0);
+	if(th->node==NULL) //We assume NULL node is like empty node
+		return ret;
+	assert_and_throw(!th->root.isNull());
+	const xmlpp::Node::NodeList& children=th->node->get_children();
+	xmlpp::Node::NodeList::const_iterator it = children.begin();
+	for(;it!=children.end();it++)
+	{
+		if((*it)->cobj()->type!=XML_TEXT_NODE) {
+			ret->push(Class<XMLNode>::getInstanceS(th->root, *it));
+		}
+	}
+	return ret;
+}
+
 
 ASFUNCTIONBODY(XMLNode,attributes)
 {

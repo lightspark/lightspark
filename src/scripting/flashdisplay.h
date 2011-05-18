@@ -219,13 +219,13 @@ private:
 	std::map<uint32_t,DisplayObject*> depthToLegacyChild;
 	bool _contains(_R<DisplayObject> child);
 protected:
-	virtual void requestInvalidation();
+	void requestInvalidation();
 	//This is shared between RenderThread and VM
 	std::list < _R<DisplayObject> > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
-	virtual void setOnStage(bool staged);
+	void setOnStage(bool staged);
 public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList();
@@ -237,8 +237,8 @@ public:
 	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
 	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);
 	void purgeLegacyChildren();
-	virtual void advanceFrame();
-	virtual void initFrame();
+	void advanceFrame();
+	void initFrame();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -460,8 +460,8 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
-	virtual void invalidate() { TokenContainer::invalidate(); }
-	virtual void requestInvalidation();
+	void invalidate() { TokenContainer::invalidate(); }
+	void requestInvalidation();
 };
 
 struct FrameLabel_data
@@ -537,7 +537,7 @@ protected:
 	uint32_t totalFrames_unreliable;
 	uint32_t getFramesLoaded() { SpinlockLocker l(framesLoadedLock); return framesLoaded; }
 	void setFramesLoaded(uint32_t fl) { SpinlockLocker l(framesLoadedLock); framesLoaded = fl; }
-	virtual void constructionComplete();
+	void constructionComplete();
 private:
 	Spinlock framesLoadedLock;
 	uint32_t framesLoaded;
@@ -569,8 +569,8 @@ public:
 
 	virtual void addToFrame(DisplayListTag* r);
 
-	virtual void advanceFrame();
-	virtual void initFrame();
+	void advanceFrame();
+	void initFrame();
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 	void setTotalFrames(uint32_t t);
 

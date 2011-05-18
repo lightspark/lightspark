@@ -3306,7 +3306,6 @@ void DisplayObject::initFrame()
 {
 	if(!isConstructed() && getPrototype())
 	{
-		LOG(LOG_ERROR,"Constructing " << name);
 		getPrototype()->handleConstruction(this,NULL,0,true);
 		/* addChild has already been called for this object,
 		 * but addedToStage is delayed until after construction.

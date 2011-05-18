@@ -1395,7 +1395,6 @@ void RootMovieClip::advanceFrame()
 
 void RootMovieClip::constructionComplete()
 {
-	LOG(LOG_ERROR,"RootMovieClip::constructionComplete");
 	MovieClip::constructionComplete();
 	loaderInfo->sendInit();
 }

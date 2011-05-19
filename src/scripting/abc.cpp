@@ -1131,6 +1131,11 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 			(*i)->handleEvent(event);
 		}
 	}
+	/* TODO: trigger some default behavior if !event->preventDefault.
+	 * Even when stop*Propagation() had been called.
+	 * Maybe call dispatcher->doDefault(event)
+	 */
+
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
 	event->target=NullRef;

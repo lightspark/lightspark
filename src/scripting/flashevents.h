@@ -42,7 +42,8 @@ class MovieClip;
 class Event: public ASObject
 {
 public:
-	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}
+	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false),
+		defaultPrevented(false) {}
 	Event(const tiny_string& t, bool b=false);
 	void finalize();
 	static void sinit(Class_base*);
@@ -52,6 +53,8 @@ public:
 	ASFUNCTION(_getTarget);
 	ASFUNCTION(_getCurrentTarget);
 	ASFUNCTION(_getEventPhase);
+	ASFUNCTION(_preventDefault);
+	ASFUNCTION(_isDefaultPrevented);
 	ASFUNCTION(formatToString);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
 	tiny_string type;
@@ -61,6 +64,7 @@ public:
 	_NR<ASObject> currentTarget;
 	bool bubbles;
 	uint32_t eventPhase;
+	bool defaultPrevented;
 };
 
 class EventPhase: public ASObject

@@ -97,6 +97,8 @@ void Event::sinit(Class_base* c)
 	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType),true);
 	c->setGetterByQName("eventPhase","",Class<IFunction>::getFunction(_getType),true);
 	c->setMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),true);
+	c->setMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),true);
+	c->setMethodByQName("preventDefault","",Class<IFunction>::getFunction(_preventDefault),true);
 }
 
 void Event::buildTraits(ASObject* o)
@@ -154,6 +156,19 @@ ASFUNCTIONBODY(Event,_getEventPhase)
 {
 	Event* th=static_cast<Event*>(obj);
 	return abstract_i(th->eventPhase);
+}
+
+ASFUNCTIONBODY(Event,_isDefaultPrevented)
+{
+	Event* th=static_cast<Event*>(obj);
+	return abstract_b(th->defaultPrevented);
+}
+
+ASFUNCTIONBODY(Event,_preventDefault)
+{
+	Event* th=static_cast<Event*>(obj);
+	th->defaultPrevented = true;
+	return NULL;
 }
 
 ASFUNCTIONBODY(Event,formatToString)

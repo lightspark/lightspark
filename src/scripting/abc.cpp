@@ -1089,22 +1089,44 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 {
-	//TODO: implement capture phase
-	//Do target phase
 	assert_and_throw(event->target==NULL);
 	event->target=dispatcher;
+	//TODO:set eventPhase
+	std::deque<_R<DisplayObject>> parents;
+	//capture phase
+	if(dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
+	{
+		dispatcher->incRef();
+		_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
+		while(true)
+		{
+			if(cur->getParent() == NULL)
+				break;
+			cur = cur->getParent();
+			parents.push_back(cur);
+		}
+		auto i = parents.rbegin();
+		for(;i!=parents.rend();++i)
+		{
+			(*i)->incRef();
+			event->currentTarget=*i;
+			(*i)->handleEvent(event);
+		}
+	}
+
+	//Do target phase
 	event->currentTarget=dispatcher;
 	dispatcher->handleEvent(event);
+
 	//Do bubbling phase
-	if(event->bubbles && dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
+	if(event->bubbles && !parents.empty())
 	{
-		DisplayObjectContainer* cur=static_cast<DisplayObject*>(dispatcher.getPtr())->getParent().getPtr();
-		while(cur)
+		auto i = parents.begin();
+		for(;i!=parents.end();++i)
 		{
-			cur->incRef();
-			event->currentTarget=_MR(cur);
-			cur->handleEvent(event);
-			cur=cur->getParent().getPtr();
+			(*i)->incRef();
+			event->currentTarget=*i;
+			(*i)->handleEvent(event);
 		}
 	}
 	//Reset events so they might be recycled

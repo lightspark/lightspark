@@ -353,9 +353,6 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	if(argslen>=4)
 		priority=args[3]->toInt();
 
-	if(useCapture)
-		LOG(LOG_NOT_IMPLEMENTED,_("Not implemented mode for addEventListener"));
-
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);
 
@@ -370,11 +367,12 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
 		f->incRef();
-		const listener newListener(_MR(f), priority);
+		const listener newListener(_MR(f), priority, useCapture);
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		//Error check
-		if(insertionPoint!=listeners.end() && insertionPoint->f==f)
+		if(insertionPoint!=listeners.end() && insertionPoint->f==f
+				&& insertionPoint->use_capture == useCapture )
 		{
 			LOG(LOG_CALLS,_("Weird event reregistration"));
 			return NULL;
@@ -407,6 +405,10 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 
 	const tiny_string& eventName=args[0]->toString();
 
+	bool useCapture=false;
+	if(argslen>=3)
+		useCapture=Boolean_concrete(args[2]);
+
 	{
 		Locker l(th->handlersMutex);
 		map<tiny_string, list<listener> >::iterator h=th->handlers.find(eventName);
@@ -417,7 +419,8 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		}
 
 		IFunction* f=static_cast<IFunction*>(args[1]);
-		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),f);
+		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),
+											make_pair(f,useCapture));
 		if(it!=h->second.end())
 			h->second.erase(it);
 		if(h->second.empty()) //Remove the entry from the map
@@ -504,6 +507,9 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	//TODO: check, ok we should also bind the level
 	for(unsigned int i=0;i<tmpListener.size();i++)
 	{
+		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
+		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
+			continue;
 		incRef();
 		//The object needs to be used multiple times
 		e->incRef();

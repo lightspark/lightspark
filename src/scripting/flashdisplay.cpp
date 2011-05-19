@@ -312,10 +312,6 @@ void Loader::execute()
 	contentLoaderInfo->incRef();
 	//Use a local variable to store the new root, as the localRoot member may change
 	_R<RootMovieClip> newRoot=_MR(RootMovieClip::getInstance(contentLoaderInfo.getPtr()));
-	{
-		SpinlockLocker l(localRootSpinlock);
-		localRoot=newRoot;
-	}
 	if(isOnStage())
 		newRoot->setOnStage(true);
 	if(source==URL)
@@ -341,6 +337,11 @@ void Loader::execute()
 			sys->downloadManager->destroy(downloader);
 			downloader=NULL;
 		}
+		if(local_pt->getFileType()==ParseThread::SWF)
+		{
+			SpinlockLocker l(localRootSpinlock);
+			localRoot=newRoot;
+		}
 		//complete event is dispatched when the LoaderInfo has sent init and bytesTotal==bytesLoaded
 	}
 	else if(source==BYTES)
@@ -356,6 +357,11 @@ void Loader::execute()
 
 		ParseThread* local_pt = new ParseThread(newRoot.getPtr(),s);
 		local_pt->run();
+		if(local_pt->getFileType()==ParseThread::SWF)
+		{
+			SpinlockLocker l(localRootSpinlock);
+			localRoot=newRoot;
+		}
 		bytes->decRef();
 		//Add a complete event for this object
 		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));

@@ -349,6 +349,14 @@ public:
 
 class ParseThread: public IThreadJob
 {
+public:
+	RootMovieClip* root;
+	int version;
+	bool useAVM2;
+	ParseThread(RootMovieClip* r,std::istream& in) DLL_PUBLIC;
+	~ParseThread();
+	enum FILE_TYPE { NONE=0, SWF, COMPRESSED_SWF, PNG, JPEG, GIF };
+	FILE_TYPE getFileType() const { return fileType; }
 private:
 	std::istream& f;
 	std::streambuf* zlibFilter;
@@ -361,16 +369,9 @@ private:
 	/*
 	   parseHeader takes the first four characters as argument
 	*/
-	enum FILE_TYPE { NONE=0, SWF, COMPRESSED_SWF, PNG, JPEG, GIF };
 	void parseSWFHeader();
 	void checkType(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
 	FILE_TYPE fileType;
-public:
-	RootMovieClip* root;
-	int version;
-	bool useAVM2;
-	ParseThread(RootMovieClip* r,std::istream& in) DLL_PUBLIC;
-	~ParseThread();
 };
 
 };

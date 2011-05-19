@@ -274,6 +274,7 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
 	builtin->setVariableByQName("Event","flash.events",Class<Event>::getClass());
+	builtin->setVariableByQName("EventPhase","flash.events",Class<EventPhase>::getClass());
 	builtin->setVariableByQName("MouseEvent","flash.events",Class<MouseEvent>::getClass());
 	builtin->setVariableByQName("ProgressEvent","flash.events",Class<ProgressEvent>::getClass());
 	builtin->setVariableByQName("TimerEvent","flash.events",Class<TimerEvent>::getClass());
@@ -1096,6 +1097,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 	//capture phase
 	if(dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
 	{
+		event->eventPhase = EventPhase::CAPTURING_PHASE;
 		dispatcher->incRef();
 		_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
 		while(true)
@@ -1115,12 +1117,14 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 	}
 
 	//Do target phase
+	event->eventPhase = EventPhase::AT_TARGET;
 	event->currentTarget=dispatcher;
 	dispatcher->handleEvent(event);
 
 	//Do bubbling phase
 	if(event->bubbles && !parents.empty())
 	{
+		event->eventPhase = EventPhase::BUBBLING_PHASE;
 		auto i = parents.begin();
 		for(;i!=parents.end();++i)
 		{

@@ -31,6 +31,7 @@ SET_NAMESPACE("flash.events");
 REGISTER_CLASS_NAME(IEventDispatcher);
 REGISTER_CLASS_NAME(EventDispatcher);
 REGISTER_CLASS_NAME(Event);
+REGISTER_CLASS_NAME(EventPhase);
 REGISTER_CLASS_NAME(MouseEvent);
 REGISTER_CLASS_NAME(TimerEvent);
 REGISTER_CLASS_NAME(ProgressEvent);
@@ -94,6 +95,7 @@ void Event::sinit(Class_base* c)
 	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget),true);
 	c->setGetterByQName("currentTarget","",Class<IFunction>::getFunction(_getCurrentTarget),true);
 	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType),true);
+	c->setGetterByQName("eventPhase","",Class<IFunction>::getFunction(_getType),true);
 	c->setMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),true);
 }
 
@@ -148,6 +150,12 @@ ASFUNCTIONBODY(Event,_getType)
 	return Class<ASString>::getInstanceS(th->type);
 }
 
+ASFUNCTIONBODY(Event,_getEventPhase)
+{
+	Event* th=static_cast<Event*>(obj);
+	return abstract_i(th->eventPhase);
+}
+
 ASFUNCTIONBODY(Event,formatToString)
 {
 	assert_and_throw(argslen>=1);
@@ -173,6 +181,16 @@ ASFUNCTIONBODY(Event,formatToString)
 	msg += "]";
 
 	return Class<ASString>::getInstanceS(msg);
+}
+
+void EventPhase::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+	c->setVariableByQName("CAPTURING_PHASE","",abstract_i(CAPTURING_PHASE));
+	c->setVariableByQName("BUBBLING_PHASE","",abstract_i(BUBBLING_PHASE));
+	c->setVariableByQName("AT_TARGET","",abstract_i(AT_TARGET));
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")

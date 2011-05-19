@@ -1193,13 +1193,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case INIT_FRAME:
 			{
 				LOG(LOG_CALLS,"INIT_FRAME");
-				sys->initFrame();
+				sys->getStage()->initFrame();
 				break;
 			}
 			case ADVANCE_FRAME:
 			{
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
-				sys->advanceFrame();
+				sys->getStage()->advanceFrame();
 				break;
 			}
 			case SYS_ON_STAGE:

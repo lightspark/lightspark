@@ -2413,6 +2413,7 @@ void Stage::buildTraits(ASObject* o)
 
 Stage::Stage()
 {
+	onStage = true;
 }
 
 ASFUNCTIONBODY(Stage,_constructor)

@@ -403,41 +403,47 @@ void Sprite::buildTraits(ASObject* o)
 {
 }
 
-bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	bool ret=false;
-	{
-		Locker l(mutexDisplayList);
-		if(dynamicDisplayList.empty() && tokensEmpty())
-			return false;
+	bool ret = false;
 
-		//TODO: Check bounds calculation
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
+	if(dynamicDisplayList.empty())
+		return false;
+
+	Locker l(mutexDisplayList);
+	//TODO: Check bounds calculation
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		number_t txmin,txmax,tymin,tymax;
+		if((*it)->getBounds(txmin,txmax,tymin,tymax))
 		{
-			number_t txmin,txmax,tymin,tymax;
-			if((*it)->getBounds(txmin,txmax,tymin,tymax))
+			if(ret==true)
 			{
-				if(ret==true)
-				{
-					xmin = imin(xmin,txmin);
-					xmax = imax(xmax,txmax);
-					ymin = imin(ymin,txmin);
-					ymax = imax(ymax,tymax);
-				}
-				else
-				{
-					xmin=txmin;
-					xmax=txmax;
-					ymin=tymin;
-					ymax=tymax;
-					ret=true;
-				}
+				xmin = imin(xmin,txmin);
+				xmax = imax(xmax,txmax);
+				ymin = imin(ymin,txmin);
+				ymax = imax(ymax,tymax);
+			}
+			else
+			{
+				xmin=txmin;
+				xmax=txmax;
+				ymin=tymin;
+				ymax=tymax;
+				ret=true;
 			}
 		}
 	}
+	return ret;
+}
+
+bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	bool ret;
+	ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax);
 	number_t txmin,txmax,tymin,tymax;
-	if(TokenContainer::getBounds(txmin,txmax,tymin,tymax))
+	if(TokenContainer::boundsRect(txmin,txmax,tymin,tymax))
 	{
 		if(ret==true)
 		{
@@ -458,7 +464,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return ret;
 }
 
-bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	bool ret=boundsRect(xmin,xmax,ymin,ymax);
 	if(ret)
@@ -2179,19 +2185,6 @@ void Shape::buildTraits(ASObject* o)
 {
 }
 
-bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	bool ret=TokenContainer::getBounds(xmin,xmax,ymin,ymax);
-	if(ret)
-	{
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-		return true;
-	}
-	return false;
-}
-
-
 bool Shape::isOpaque(number_t x, number_t y) const
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Shape::isOpaque not really implemented");
@@ -2240,7 +2233,7 @@ void TokenContainer::Render(bool maskEnabled)
 		return;
 
 	number_t t1,t2,t3,t4;
-	bool ret=getBounds(t1,t2,t3,t4);
+	bool ret=owner->getBounds(t1,t2,t3,t4);
 	if(!ret)
 		return;
 
@@ -2478,7 +2471,7 @@ void TokenContainer::invalidate()
 	int32_t x,y;
 	uint32_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
+	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
 	{
 		//No contents, nothing to do
 		return;
@@ -2497,7 +2490,7 @@ bool TokenContainer::hitTest(number_t x, number_t y) const
 	return CairoRenderer::hitTest(tokens, 1, x, y);
 }
 
-bool TokenContainer::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 
 	#define VECTOR_BOUNDS(v) \
@@ -3069,51 +3062,6 @@ void SimpleButton::sinit(Class_base* c)
 
 void SimpleButton::buildTraits(ASObject* o)
 {
-}
-
-bool SimpleButton::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	/* TODO: this is the same as Sprite::getBounds/boundsRect. See my other
-	 * patches to unify that code into DisplayObjectContainer. This function
-	 * can then be removed.
-	 */
-	bool ret=false;
-	{
-		Locker l(mutexDisplayList);
-		if(dynamicDisplayList.empty())
-			return false;
-
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-		{
-			number_t txmin,txmax,tymin,tymax;
-			if((*it)->getBounds(txmin,txmax,tymin,tymax))
-			{
-				if(ret==true)
-				{
-					xmin = imin(xmin,txmin);
-					xmax = imax(xmax,txmax);
-					ymin = imin(ymin,txmin);
-					ymax = imax(ymax,tymax);
-				}
-				else
-				{
-					xmin=txmin;
-					xmax=txmax;
-					ymin=tymin;
-					ymax=tymax;
-					ret=true;
-				}
-			}
-		}
-	}
-	if(ret)
-	{
-		//TODO: take rotation into account
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-	}
-	return ret;
 }
 
 void SimpleButton::Render(bool maskEnabled)

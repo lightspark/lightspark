@@ -229,11 +229,19 @@ friend class EventDispatcher;
 private:
 	_R<IFunction> f;
 	uint32_t priority;
+	/* true: get events in the capture phase
+	 * false: get events in the bubble phase
+	 */
+	bool use_capture;
 public:
-	explicit listener(_R<IFunction> _f, uint32_t _p):f(_f),priority(_p){};
-	bool operator==(IFunction* r)
+	explicit listener(_R<IFunction> _f, uint32_t _p, bool _c)
+		:f(_f),priority(_p),use_capture(_c){};
+	bool operator==(std::pair<IFunction*,bool> r)
 	{
-		return f->isEqual(r);
+		/* One can register the same handle for the same event with
+		 * different values of use_capture
+		 */
+		return (use_capture == r.second) && f->isEqual(r.first);
 	}
 	bool operator<(const listener& r) const
 	{

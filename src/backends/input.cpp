@@ -166,7 +166,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 	_NR<InteractiveObject>selected = NullRef;
 	try
 	{
-		selected=m_sys->hitTest(NullRef,x,y);
+		selected=m_sys->getStage()->hitTest(NullRef,x,y);
 	}
 	catch(LightsparkException& e)
 	{
@@ -175,8 +175,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 		return;
 	}
 	assert(maskStack.empty());
-	if(selected==NULL)
-		return;
+	assert(selected!=NULL); /* atleast we hit the stage */
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	lastMouseDownTarget=selected;
 	//Add event to the event queue
@@ -189,7 +188,7 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
-		selected=m_sys->hitTest(NullRef,x,y);
+		selected=m_sys->getStage()->hitTest(NullRef,x,y);
 	}
 	catch(LightsparkException& e)
 	{
@@ -198,8 +197,7 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 		return;
 	}
 	assert(maskStack.empty());
-	if(selected==NULL)
-		return;
+	assert(selected!=NULL); /* atleast we hit the stage */
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
 	//Add event to the event queue
 	m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("mouseUp",true)));

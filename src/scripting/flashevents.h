@@ -32,7 +32,7 @@ namespace lightspark
 {
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, INIT_FRAME,
-			SYS_ON_STAGE, FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME };
+			FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME };
 
 class ABCContext;
 class DictionaryTag;
@@ -374,14 +374,6 @@ class AdvanceFrameEvent: public Event
 public:
 	AdvanceFrameEvent(): Event("AdvanceFrameEvent") {}
 	EVENT_TYPE getEventType() const { return ADVANCE_FRAME; }
-};
-
-//Event to put the SystemState on stage
-class SysOnStageEvent: public Event
-{
-public:
-	SysOnStageEvent():Event("SysOnStageEvent"){};
-	EVENT_TYPE getEventType() const { return SYS_ON_STAGE; };
 };
 
 //Event to flush the invalidation queue

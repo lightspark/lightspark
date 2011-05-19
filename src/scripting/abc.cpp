@@ -1232,11 +1232,6 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				sys->getStage()->advanceFrame();
 				break;
 			}
-			case SYS_ON_STAGE:
-			{
-				m_sys->setOnStage(true);
-				break;
-			}
 			case FLUSH_INVALIDATION_QUEUE:
 			{
 				//Flush the invalidation queue

@@ -610,6 +610,7 @@ private:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
 public:
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}
 	Stage();
 	static void sinit(Class_base* c);

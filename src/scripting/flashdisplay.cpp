@@ -2353,6 +2353,19 @@ ASFUNCTIONBODY(Stage,_constructor)
 	return NULL;
 }
 
+_NR<InteractiveObject> Stage::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	_NR<InteractiveObject> ret;
+	ret = DisplayObjectContainer::hitTest(last, x, y);
+	if(ret == NULL)
+	{
+		/* If nothing else is hit, we hit the stage */
+		this->incRef();
+		ret = _MNR(this);
+	}
+	return ret;
+}
+
 uint32_t Stage::internalGetWidth() const
 {
 	uint32_t width;

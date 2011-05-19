@@ -80,6 +80,14 @@ private:
 	bool toBind;
 	tiny_string bindName;
 	void constructionComplete();
+	/* those are private because you shouldn't call sys->*,
+	 * but sys->getStage()->* instead.
+	 */
+	void initFrame();
+	void advanceFrame();
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+		{ return MovieClip::hitTest(last, x, y); }
+	void setOnStage(bool staged);
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
 	~RootMovieClip();
@@ -91,14 +99,11 @@ public:
 	RECT getFrameSize() const;
 	float getFrameRate() const;
 	void setFrameRate(float f);
-	void setOnStage(bool staged);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();
-	void initFrame();
-	void advanceFrame();
 	void parsingFailed();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);

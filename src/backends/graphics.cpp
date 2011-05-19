@@ -395,7 +395,7 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 }
 
 CairoRenderer::CairoRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
-		uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s)
+		int32_t _x, int32_t _y, uint32_t _w, uint32_t _h, float _s)
 	: owner(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),
 	surfaceBytes(NULL),tokens(_g),scaleFactor(_s),uploadNeeded(true)
 {
@@ -753,7 +753,7 @@ void CairoRenderer::execute()
 	uint32_t windowWidth=sys->getRenderThread()->windowWidth;
 	uint32_t windowHeight=sys->getRenderThread()->windowHeight;
 	//Discard stuff that it's outside the visible part
-	if(xOffset >= windowWidth || yOffset >= windowHeight)
+	if(xOffset >= (int32_t)windowWidth || yOffset >= (int32_t)windowHeight)
 	{
 		uploadNeeded=false;
 		return;

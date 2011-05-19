@@ -1,0 +1,108 @@
+#!/usr/bin/python
+#This greps the source for SET_NAMESPACE, REGISTER_CLASS_NAME2,
+#sinit definition and the following ->set{Getter,Setter,Method}ByQName calls
+
+#It greps the documentation for all properties and methods
+#and distinquishes read-only from write-only and dual-access properties
+
+import sys
+import re
+from subprocess import *
+import os
+import pickle
+
+def getFullname(cls,name):
+	if cls != "":
+		return cls + "." + name
+	else:
+		return name
+
+if len(sys.argv) < 2:
+	print("Call by langref_parser langref-directory")
+	print("If you do not have a langref directory,")
+	print("please download http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/standalone.zip")
+        print("and unpack it.")
+	exit(1)
+
+langref = sys.argv[1]
+if not os.path.exists(langref):
+	print("The langref directory was not found!")
+	print("Please download http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/standalone.zip")
+	print("and unpack it here.")
+	exit(1)
+
+dclasses = set([])
+dproperties = set([])
+dmethods = set([])
+curClass = ""
+
+#We cannot destinguish public properties and public consts just by their definition,
+#so we wait for an "Public Constants" to be matched, and all properties after that
+#are constants
+isConst = False
+
+toplevelfiles = [ "ArgumentError.html", "Array.html", "Boolean.html", "Class.html", "Date.html", "DefinitionError.html", "Error.html",
+                  "EvalError.html", "Function.html", "Math.html", "Namespace.html", "Number.html", "Object.html", "QName.html", "RangeError.html",
+                  "ReferenceError.html", "RegExp.html", "SecurityError.html", "String.html", "SyntaxError.html",
+                  "TypeError.html", "URIError.html", "Vector.html", "VerifyError.html", "XML.html", "XMLList.html" ]
+
+regclass = re.compile(r'<title>([a-zA-Z0-9\.]*)')
+regconst = re.compile(r'Public Constants')
+notinherited = r'<td class="summaryTableInheritanceCol">&nbsp;</td>'
+regproperty = re.compile(notinherited + r'<td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">([^<]*)</a>.*?<div class="summaryTableDescription">(\[override\])?(\[static\] )?(\[read-only\])?(\[write-only\])?')
+regmethod = re.compile(notinherited + r'<td class="summaryTableSignatureCol"><div class="summarySignature"><a href="[^"]*" class="signatureLink">([^<]*)</a>\(')
+
+for dirpath, dirnames, filenames in os.walk(langref):
+	if dirpath==langref:
+		#In the toplevel dir, just include the specified files
+		filenames=toplevelfiles
+	elif not dirpath.startswith(os.path.join(langref,"flash/")):
+		#only descent to flash/
+		continue
+	for filename in filenames:
+		if filename == "package-detail.html" or filename == "package.html" or filename=="class-list.html":
+			continue
+		#print os.path.join(dirpath, filename)
+		f = open(os.path.join(dirpath, filename), 'r')
+		for line in f:
+			#There maybe multiple matches on one line (seen in one case)
+			while(True):
+				m = regclass.search(line)
+				if m:
+					curClass = m.group(1)
+			                dclasses.add(curClass)
+			                isConst = False
+					break
+				m = regconst.search(line)
+				if m:
+					isConst = True
+					line = line[m.end():]
+					continue
+					#there may be another match on this line
+				m = regproperty.search(line)
+				if m:
+					name = m.group(1)
+					isOverride = m.group(2) != None
+					isStatic = m.group(3) != None
+					isReadOnly = m.group(4) != None
+					isWriteOnly = m.group(5) != None
+					dproperties.add((curClass,name,isConst,isStatic,isReadOnly,isWriteOnly,isOverride))
+					line = line[m.end():]
+					continue
+				m = regmethod.search(line)
+				if m:
+					name = m.group(1)
+					dmethods.add((curClass,name))
+					line = line[m.end():]
+					continue
+				break
+
+		f.close()
+
+version = 1
+langRefDB = (version, dclasses, dproperties, dmethods)
+
+dbFile = open("langref.db", 'w')
+pickle.dump( langRefDB, dbFile )
+dbFile.close()
+print "Wrote langref.db"

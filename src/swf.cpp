@@ -1348,13 +1348,6 @@ void SystemState::tick()
 			}
 		}
 	}
-	//Enter frame should be sent to the stage too
-	if(stage->hasEventListener("enterFrame"))
-	{
-		_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
-		stage->incRef();
-		getVm()->addEvent(_MR(stage),e);
-	}
 
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
 	 * run their constructors (bottom-up)

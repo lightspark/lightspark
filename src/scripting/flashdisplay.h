@@ -65,7 +65,7 @@ protected:
 	_NR<DisplayObject> mask;
 	mutable Spinlock spinlock;
 	void computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
-			uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
+			int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
 	bool onStage;
 	_NR<LoaderInfo> loaderInfo;

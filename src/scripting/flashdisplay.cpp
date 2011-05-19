@@ -1344,7 +1344,7 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 }
 
 void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
-		uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const
+		int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const
 {
 	//As the transformation is arbitrary we have to check all the four vertices
 	number_t coords[8];
@@ -2596,7 +2596,8 @@ void TokenContainer::requestInvalidation()
 
 void TokenContainer::invalidate()
 {
-	uint32_t x,y,width,height;
+	int32_t x,y;
+	uint32_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
 	{

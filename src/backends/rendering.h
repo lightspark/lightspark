@@ -138,7 +138,7 @@ public:
 	/**
 		Render a quad of given size using the given chunk
 	*/
-	void renderTextured(const TextureChunk& chunk, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
+	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h);
 	/**
 		Load the given data in the given texture chunk
 	*/

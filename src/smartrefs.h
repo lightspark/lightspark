@@ -181,6 +181,10 @@ public:
 	{
 		return m!=r.getPtr();
 	}
+	bool operator!=(T* r) const
+	{
+		return m!=r;
+	}
 	~NullableRef()
 	{
 		if(m)

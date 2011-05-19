@@ -93,6 +93,11 @@ protected:
 	{
 		throw("DisplayObject::renderImpl: Derived class must implement this!");
 	}
+	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+	{
+		throw("DisplayObject::hitTestImpl: Derived class must implement this!");
+		return NullRef;
+	}
 public:
 	tiny_string name;
 	UI16_SWF CharacterId;
@@ -118,10 +123,7 @@ public:
 	}
 	virtual void Render(bool maskEnabled);
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	virtual _NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
-	{
-		throw RunTimeException("DisplayObject::hitTest");
-	}
+	virtual _NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	//API to handle mask support in hit testing
 	virtual bool isOpaque(number_t x, number_t y) const
 	{
@@ -199,6 +201,7 @@ protected:
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 public:
@@ -253,7 +256,7 @@ private:
 		DOWN
 	} currentState;
 	void reflectState();
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e);
 public:
@@ -299,8 +302,8 @@ protected:
 
 	void invalidate();
 	void requestInvalidation();
-	bool hitTest(number_t x, number_t y) const;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool tokensEmpty() const { return tokens.empty(); }
 public:
@@ -358,6 +361,8 @@ protected:
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+		{ return TokenContainer::hitTestImpl(last,x,y); }
 public:
 	Shape():TokenContainer(this), graphics(NULL) {}
 	Shape(const std::vector<GeomToken>& tokens, float scaling)
@@ -367,7 +372,6 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	bool isOpaque(number_t x, number_t y) const;
 	void requestInvalidation() { TokenContainer::requestInvalidation(); }
 	void invalidate() { TokenContainer::invalidate(); }
@@ -466,7 +470,7 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
-	_NR<InteractiveObject> hitTestImpl(number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 public:
 	Sprite();
 	void finalize();
@@ -478,7 +482,6 @@ public:
 	{
 		return 0;
 	}
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void invalidate() { TokenContainer::invalidate(); }
 	void requestInvalidation();
 };

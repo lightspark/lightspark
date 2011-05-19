@@ -547,61 +547,41 @@ void DisplayObject::hitTestEpilogue() const
 		sys->getInputThread()->popMask();
 }
 
-_NR<InteractiveObject> Sprite::hitTestImpl(number_t x, number_t y)
+_NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	_NR<InteractiveObject> ret = NullRef;
+	//Test objects added at runtime, in reverse order
+	Locker l(mutexDisplayList);
+	list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
+	for(;j!=dynamicDisplayList.rend();++j)
 	{
-		//Test objects added at runtime, in reverse order
-		Locker l(mutexDisplayList);
-		list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
-		for(;j!=dynamicDisplayList.rend();++j)
-		{
-			number_t localX, localY;
-			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			this->incRef();
-			ret=(*j)->hitTest(_MR(this), localX,localY);
-			if(!ret.isNull())
-				break;
-		}
+		number_t localX, localY;
+		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
+		this->incRef();
+		ret=(*j)->hitTest(_MR(this), localX,localY);
+		if(!ret.isNull())
+			break;
 	}
-
-	if(ret==NULL && !tokensEmpty() && mouseEnabled)
+	/* When mouseChildren is false, we should get all events of our children */
+	if(ret != NULL && !mouseChildren)
 	{
-		//The coordinates are locals
-		if(TokenContainer::hitTest(x,y))
-		{
-			this->incRef();
-			ret=_MR(this);
-			//Also test if the we are under the mask (if any)
-			if(sys->getInputThread()->isMaskPresent())
-			{
-				number_t globalX, globalY;
-				getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-				if(!sys->getInputThread()->isMasked(globalX, globalY))
-					ret=NullRef;
-			}
-		}
+		this->incRef();
+		ret = _MNR(this);
 	}
 	return ret;
 }
 
-_NR<InteractiveObject> Sprite::hitTest(_NR<InteractiveObject>, number_t x, number_t y)
+_NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, number_t y)
 {
-	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
-	//TODO: TOLOCK
-	//First of all filter using the BBOX
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return NullRef;
-	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NullRef;
-
-	hitTestPrologue();
-
-	_NR<InteractiveObject> ret=hitTestImpl(x, y);
-
-	hitTestEpilogue();
+	_NR<InteractiveObject> ret = NullRef;
+	this->incRef();
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y);
+	if(ret==NULL && mouseEnabled)
+	{
+		//The coordinates are locals
+		this->incRef();
+		return TokenContainer::hitTestImpl(_MR(this),x,y);
+	}
 	return ret;
 }
 
@@ -1834,6 +1814,21 @@ InteractiveObject::~InteractiveObject()
 		sys->getInputThread()->removeListener(this);
 }
 
+_NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	/*number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return NullRef;
+	if(x<t1 || x>t2 || y<t3 || y>t4)
+		return NullRef;
+	 */
+	hitTestPrologue();
+	_NR<InteractiveObject> ret = hitTestImpl(last, x,y);
+	hitTestEpilogue();
+	return ret;
+}
+
 ASFUNCTIONBODY(InteractiveObject,_constructor)
 {
 	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
@@ -2208,28 +2203,6 @@ bool Shape::isOpaque(number_t x, number_t y) const
 	return false;
 }
 
-_NR<InteractiveObject> Shape::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
-{
-	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
-	//TODO: TOLOCK
-	if(!mask.isNull())
-		throw UnsupportedException("Support masks in Shape::hitTest");
-
-	//The coordinates are already local
-	if(!TokenContainer::hitTest(x,y))
-		return NullRef;
-
-	//The point is inside the shape, also test if the we are under the mask (if any)
-	if(sys->getInputThread()->isMaskPresent())
-	{
-		number_t globalX, globalY;
-		getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-		if(!sys->getInputThread()->isMasked(globalX, globalY))
-			return NullRef;
-	}
-	return last;
-}
-
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
 	if(!owner->isSimple())
@@ -2482,9 +2455,21 @@ void TokenContainer::invalidate()
 	sys->addJob(r);
 }
 
-bool TokenContainer::hitTest(number_t x, number_t y) const
+_NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const
 {
-	return CairoRenderer::hitTest(tokens, 1, x, y);
+	//TODO: test against the CachedSurface
+	if(CairoRenderer::hitTest(tokens, 1, x, y))
+	{
+		if(sys->getInputThread()->isMaskPresent())
+		{
+			number_t globalX, globalY;
+			owner->getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
+			if(sys->getInputThread()->isMasked(globalX, globalY))
+				return NullRef;
+		}
+		return last;
+	}
+	return NullRef;
 }
 
 bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -3061,14 +3046,15 @@ void SimpleButton::buildTraits(ASObject* o)
 {
 }
 
-_NR<InteractiveObject> SimpleButton::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	_NR<InteractiveObject> ret = NullRef;
 	if(hitTestState != NULL)
 	{
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		ret = hitTestState->hitTest(last, localX, localY);
+		this->incRef();
+		ret = hitTestState->hitTest(_MR(this), localX, localY);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been

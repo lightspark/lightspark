@@ -51,6 +51,7 @@ public:
 	ASFUNCTION(_getType);
 	ASFUNCTION(_getTarget);
 	ASFUNCTION(_getCurrentTarget);
+	ASFUNCTION(_getEventPhase);
 	ASFUNCTION(formatToString);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
 	tiny_string type;
@@ -59,6 +60,20 @@ public:
 	_NR<ASObject> target;
 	_NR<ASObject> currentTarget;
 	bool bubbles;
+	uint32_t eventPhase;
+};
+
+class EventPhase: public ASObject
+{
+public:
+	enum
+	{
+		CAPTURING_PHASE = 1,
+		AT_TARGET = 2,
+		BUBBLING_PHASE = 3
+	};
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
 };
 
 class KeyboardEvent: public Event

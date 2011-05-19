@@ -274,6 +274,7 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
 	builtin->setVariableByQName("Event","flash.events",Class<Event>::getClass());
+	builtin->setVariableByQName("EventPhase","flash.events",Class<EventPhase>::getClass());
 	builtin->setVariableByQName("MouseEvent","flash.events",Class<MouseEvent>::getClass());
 	builtin->setVariableByQName("ProgressEvent","flash.events",Class<ProgressEvent>::getClass());
 	builtin->setVariableByQName("TimerEvent","flash.events",Class<TimerEvent>::getClass());

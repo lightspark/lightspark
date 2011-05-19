@@ -499,6 +499,15 @@ void DisplayObject::renderEpilogue() const
 		rt->popMask();
 }
 
+void DisplayObjectContainer::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+{
+	Locker l(mutexDisplayList);
+	//Now draw also the display list
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+		(*it)->Render(maskEnabled);
+}
+
 void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//Draw the dynamically added graphics, if any
@@ -506,16 +515,10 @@ void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,nu
 	if(!tokensEmpty())
 		defaultRender(maskEnabled);
 
-	{
-		Locker l(mutexDisplayList);
-		//Now draw also the display list
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->Render(maskEnabled);
-	}
+	DisplayObjectContainer::renderImpl(maskEnabled, t1, t2, t3, t4);
 }
 
-void Sprite::Render(bool maskEnabled)
+void DisplayObject::Render(bool maskEnabled)
 {
 	if(skipRender(maskEnabled))
 		return;
@@ -2224,26 +2227,6 @@ void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, numb
 		rt->glBlitTempBuffer(t1,t2,t3,t4);
 }
 
-void TokenContainer::Render(bool maskEnabled)
-{
-	if(tokens.empty())
-		return;
-	//If graphics is not yet initialized we have nothing to do
-	if(owner->skipRender(maskEnabled))
-		return;
-
-	number_t t1,t2,t3,t4;
-	bool ret=owner->getBounds(t1,t2,t3,t4);
-	if(!ret)
-		return;
-
-	owner->renderPrologue();
-
-	renderImpl(maskEnabled,t1,t2,t3,t4);
-
-	owner->renderEpilogue();
-}
-
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
@@ -3062,28 +3045,6 @@ void SimpleButton::sinit(Class_base* c)
 
 void SimpleButton::buildTraits(ASObject* o)
 {
-}
-
-void SimpleButton::Render(bool maskEnabled)
-{
-	/* TODO: this is the same as Sprite::Render/renderImpl. See my other
-	 * patches to unify that code into DisplayObjectContainer. This function
-	 * can then be removed.
-	 */
-	if(skipRender(maskEnabled))
-		return;
-
-	renderPrologue();
-
-	{
-		Locker l(mutexDisplayList);
-		//Now draw also the display list
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->Render(maskEnabled);
-	}
-
-	renderEpilogue();
 }
 
 _NR<InteractiveObject> SimpleButton::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)

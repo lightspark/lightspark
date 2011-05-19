@@ -89,6 +89,10 @@ protected:
 		throw("DisplayObject::boundsRect: Derived class must implement this!");
 		return false;
 	}
+	virtual void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+	{
+		throw("DisplayObject::renderImpl: Derived class must implement this!");
+	}
 public:
 	tiny_string name;
 	UI16_SWF CharacterId;
@@ -112,10 +116,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	virtual void Render(bool maskEnabled)
-	{
-		throw RunTimeException("DisplayObject::Render");
-	}
+	virtual void Render(bool maskEnabled);
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual _NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 	{
@@ -198,6 +199,7 @@ protected:
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList();
@@ -249,7 +251,6 @@ private:
 	} currentState;
 	void reflectState();
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
-	void Render(bool maskEnabled);
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e);
 public:
@@ -298,7 +299,6 @@ protected:
 	bool hitTest(number_t x, number_t y) const;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
-	void Render(bool maskEnabled);
 	bool tokensEmpty() const { return tokens.empty(); }
 public:
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
@@ -353,6 +353,8 @@ protected:
 	_NR<Graphics> graphics;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
+	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
 public:
 	Shape():TokenContainer(this), graphics(NULL) {}
 	Shape(const std::vector<GeomToken>& tokens, float scaling)
@@ -362,7 +364,6 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
-	void Render(bool maskEnabled) { TokenContainer::Render(maskEnabled); }
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	bool isOpaque(number_t x, number_t y) const;
 	void requestInvalidation() { TokenContainer::requestInvalidation(); }
@@ -474,7 +475,6 @@ public:
 	{
 		return 0;
 	}
-	void Render(bool maskEnabled);
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void invalidate() { TokenContainer::invalidate(); }
 	void requestInvalidation();

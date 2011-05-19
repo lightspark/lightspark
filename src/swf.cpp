@@ -1199,7 +1199,6 @@ void RootMovieClip::commitFrame(bool another)
 	if(getFramesLoaded()==1 && this == sys)
 	{
 		/* now the frameRate is available and all SymbolClass tags have created their classes */
-		sys->currentVm->addEvent(NullRef,_MR(new SysOnStageEvent()));
 		sys->addTick(1000/frameRate,sys);
 	}
 	sem_post(&new_frame);

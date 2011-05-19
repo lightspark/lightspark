@@ -235,18 +235,6 @@ void StaticText::sinit(Class_base* c)
 	c->setGetterByQName("text","",Class<IFunction>::getFunction(_getText),true);
 }
 
-bool StaticText::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	bool ret=TokenContainer::getBounds(xmin,xmax,ymin,ymax);
-	if(ret)
-	{
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-		return true;
-	}
-	return false;
-}
-
 ASFUNCTIONBODY(StaticText,_getText)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.display.StaticText.text is not implemented");

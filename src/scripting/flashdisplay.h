@@ -84,6 +84,11 @@ protected:
 	void renderEpilogue() const;
 	void hitTestPrologue() const;
 	void hitTestEpilogue() const;
+	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	{
+		throw("DisplayObject::boundsRect: Derived class must implement this!");
+		return false;
+	}
 public:
 	tiny_string name;
 	UI16_SWF CharacterId;
@@ -111,10 +116,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::Render");
 	}
-	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		throw RunTimeException("DisplayObject::getBounds");
-	}
+	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual _NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 	{
 		throw RunTimeException("DisplayObject::hitTest");
@@ -226,6 +228,7 @@ protected:
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged);
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList();
@@ -276,8 +279,8 @@ protected:
 
 	void invalidate();
 	void requestInvalidation();
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	bool hitTest(number_t x, number_t y) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	void Render(bool maskEnabled);
 	bool tokensEmpty() const { return tokens.empty(); }
@@ -332,6 +335,8 @@ class Shape: public DisplayObject, public TokenContainer
 {
 protected:
 	_NR<Graphics> graphics;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 public:
 	Shape():TokenContainer(this), graphics(NULL) {}
 	Shape(const std::vector<GeomToken>& tokens, float scaling)
@@ -341,7 +346,6 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled) { TokenContainer::Render(maskEnabled); }
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	bool isOpaque(number_t x, number_t y) const;
@@ -454,7 +458,6 @@ public:
 	{
 		return 0;
 	}
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render(bool maskEnabled);
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	void invalidate() { TokenContainer::invalidate(); }

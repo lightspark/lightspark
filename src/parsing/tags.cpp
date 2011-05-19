@@ -1231,7 +1231,7 @@ void DefineButton2Tag::Render(bool maskEnabled)
 	}*/
 }
 
-bool DefineButton2Tag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DefineButton2Tag::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	return false;
 }

@@ -353,11 +353,12 @@ private:
 
 	//Transition flags
 	bool IdleToOverUp;
+protected:
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual void handleEvent(Event*);
 
 	ASObject* instance() const;

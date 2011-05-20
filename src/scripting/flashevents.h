@@ -273,7 +273,7 @@ public:
 	void handleEvent(_R<Event> e);
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
-
+	virtual void defaultEventBehavior(_R<Event> e) {};
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
 	ASFUNCTION(removeEventListener);

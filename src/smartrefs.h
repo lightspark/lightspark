@@ -144,12 +144,12 @@ public:
 	}
 	template<class D> NullableRef<T>& operator=(const NullableRef<D>& r)
 	{
-		if(r.m)
-			r.m->incRef();
+		if(r.getPtr())
+			r->incRef();
 
 		if(m)
 			m->decRef();
-		m=r.m;
+		m=r.getPtr();
 		return *this;
 	}
 	template<class D> NullableRef<T>& operator=(const Ref<D>& r)
@@ -180,6 +180,10 @@ public:
 	template<class D> bool operator!=(const Ref<D>& r) const
 	{
 		return m!=r.getPtr();
+	}
+	bool operator!=(T* r) const
+	{
+		return m!=r;
 	}
 	~NullableRef()
 	{

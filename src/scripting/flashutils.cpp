@@ -425,15 +425,15 @@ void Timer::sinit(Class_base* c)
 	c->setGetterByQName("running","",Class<IFunction>::getFunction(_getRunning),true);
 	c->setGetterByQName("delay","",Class<IFunction>::getFunction(_getDelay),true);
 	c->setSetterByQName("delay","",Class<IFunction>::getFunction(_setDelay),true);
+	c->setMethodByQName("start","",Class<IFunction>::getFunction(start),true);
+	c->setMethodByQName("reset","",Class<IFunction>::getFunction(reset),true);
+	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
 }
 
 ASFUNCTIONBODY(Timer,_constructor)
 {
 	EventDispatcher::_constructor(obj,NULL,0);
 	Timer* th=static_cast<Timer*>(obj);
-	obj->setVariableByQName("start","",Class<IFunction>::getFunction(start));
-	obj->setVariableByQName("reset","",Class<IFunction>::getFunction(reset));
-	obj->setVariableByQName("stop","",Class<IFunction>::getFunction(stop));
 
 	th->delay=args[0]->toInt();
 	if(argslen>=2)

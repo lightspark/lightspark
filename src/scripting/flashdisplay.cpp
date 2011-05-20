@@ -1104,6 +1104,15 @@ void MovieClip::bootstrap()
 	}
 }
 
+void MovieClip::setParent(_NR<DisplayObjectContainer> p)
+{
+	if(!getParent().isNull() && !getParent()->getRoot().isNull())
+		getParent()->getRoot()->unregisterChildClip(this);
+	Sprite::setParent(p);
+	if(!getParent().isNull() && !getParent()->getRoot().isNull())
+		getParent()->getRoot()->registerChildClip(this);
+}
+
 void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)
 {
 	if(sceneNo == 0)

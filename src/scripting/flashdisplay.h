@@ -92,7 +92,7 @@ public:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
-	void setParent(_NR<DisplayObjectContainer> p);
+	virtual void setParent(_NR<DisplayObjectContainer> p);
 	/*
 	   Used to link DisplayObjects the invalidation queue
 	*/
@@ -570,6 +570,9 @@ public:
 	void advanceFrame();
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 	void setTotalFrames(uint32_t t);
+
+	//DisplayObject interface
+	void setParent(_NR<DisplayObjectContainer> p);
 
 	void check() const
 	{

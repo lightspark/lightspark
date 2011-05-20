@@ -213,13 +213,13 @@ protected:
 	/*
 	   The minimal x coordinate for all the points being drawn, in local coordinates
 	*/
-	uint32_t xOffset;
+	int32_t xOffset;
 	/*
 	   The minimal y coordinate for all the points being drawn, in local coordinates
 	*/
-	uint32_t yOffset;
-	uint32_t width;
-	uint32_t height;
+	int32_t yOffset;
+	int32_t width;
+	int32_t height;
 	/*
 	   A pointer to a memory buffer where cairo will draw
 	*/
@@ -252,7 +252,7 @@ public:
 	   @param _s The scale factor to be applied in both the x and y axis
 	*/
 	CairoRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
-			uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h, float _s);
+			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 

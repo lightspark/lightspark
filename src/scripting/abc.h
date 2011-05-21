@@ -699,6 +699,7 @@ private:
 	std::vector<STRING> Names;
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const{ return ABC_TAG; }
 	void execute(RootMovieClip* root);
 };
 

@@ -1094,6 +1094,33 @@ bool XML::nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const
 	return true;
 }
 
+uint32_t XML::nextNameIndex(uint32_t cur_index)
+{
+	if(cur_index < 1)
+		return 1;
+	else
+		return 0;
+}
+
+_R<ASObject> XML::nextName(uint32_t index)
+{
+	if(index<=1)
+		return _MR(abstract_i(index-1));
+	else
+		throw RunTimeException("XML::nextName out of bounds");
+}
+
+_R<ASObject> XML::nextValue(uint32_t index)
+{
+	if(index<=1)
+	{
+		incRef();
+		return _MR(this);
+	}
+	else
+		throw RunTimeException("XML::nextValue out of bounds");
+}
+
 bool XML::isEqual(ASObject* r)
 {
 	XML *x=dynamic_cast<XML *>(r);

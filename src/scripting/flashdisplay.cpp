@@ -2237,16 +2237,23 @@ bool Shape::isOpaque(number_t x, number_t y) const
 _NR<InteractiveObject> Shape::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
-	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	//TODO: TOLOCK
 	if(!mask.isNull())
 		throw UnsupportedException("Support masks in Shape::hitTest");
 
 	//The coordinates are already local
-	if(TokenContainer::hitTest(x,y))
-		return last;
+	if(!TokenContainer::hitTest(x,y))
+		return NullRef;
 
-	return NullRef;
+	//The point is inside the shape, also test if the we are under the mask (if any)
+	if(sys->getInputThread()->isMaskPresent())
+	{
+		number_t globalX, globalY;
+		getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
+		if(!sys->getInputThread()->isMasked(globalX, globalY))
+			return NullRef;
+	}
+	return last;
 }
 
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const

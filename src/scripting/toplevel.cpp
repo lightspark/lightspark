@@ -1314,11 +1314,25 @@ void XMLList::append(_R<XMLList> x)
 
 tiny_string XMLList::toString_priv() const
 {
-	//TODO: implement ECMA-356 toString
-	tiny_string ret;
-	for(uint32_t i=0;i<nodes.size();i++)
-		ret+=nodes[i]->toString();
-	return ret;
+	if(hasSimpleContent())
+	{
+		tiny_string ret;
+		for(uint32_t i=0;i<nodes.size();i++)
+		{
+			xmlElementType kind=nodes[i]->getNodeKind();
+			if(kind!=XML_COMMENT_NODE && kind!=XML_PI_NODE)
+				ret+=nodes[i]->toString();
+		}
+		return ret;
+	}
+	else
+	{
+		xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
+		toXMLString_priv(xmlBuffer);
+		tiny_string ret((char*)xmlBuffer->content, true);
+		xmlBufferFree(xmlBuffer);
+		return ret;
+	}
 }
 
 tiny_string XMLList::toString(bool debugMsg)

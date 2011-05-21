@@ -1130,6 +1130,7 @@ void XMLList::sinit(Class_base* c)
 	c->setMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),true);
 	c->setMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),true);
 	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),true);
+	c->setMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),true);
 }
 
 ASFUNCTIONBODY(XMLList,_constructor)
@@ -1332,6 +1333,27 @@ ASFUNCTIONBODY(XMLList,_toString)
 {
 	XMLList* th=Class<XMLList>::cast(obj);
 	return Class<ASString>::getInstanceS(th->toString_priv());
+}
+
+void XMLList::toXMLString_priv(xmlBufferPtr buf) const
+{
+	for(size_t i=0; i<nodes.size(); i++)
+	{
+		if(i>0)
+			xmlBufferWriteChar(buf, "\n");
+		nodes[i].getPtr()->toXMLString_priv(buf);
+	}
+}
+
+ASFUNCTIONBODY(XMLList,toXMLString)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	assert_and_throw(argslen==0);
+	xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
+	th->toXMLString_priv(xmlBuffer);
+	ASString* ret=Class<ASString>::getInstanceS((char*)xmlBuffer->content);
+	xmlBufferFree(xmlBuffer);
+	return ret;
 }
 
 bool XMLList::isEqual(ASObject* r)

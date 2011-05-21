@@ -1819,6 +1819,9 @@ _NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, numbe
 	if(x<t1 || x>t2 || y<t3 || y>t4)
 		return NullRef;
 	 */
+	if(!visible)
+		return NullRef;
+
 	hitTestPrologue();
 	_NR<InteractiveObject> ret = hitTestImpl(last, x,y);
 	hitTestEpilogue();

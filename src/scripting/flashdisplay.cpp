@@ -1639,7 +1639,7 @@ ASFUNCTIONBODY(DisplayObject,_getVisible)
 	return abstract_b(th->visible);
 }
 
-int DisplayObject::computeHeight()
+number_t DisplayObject::computeHeight()
 {
 	number_t x1,x2,y1,y2;
 	bool ret=getBounds(x1,x2,y1,y2);
@@ -1647,7 +1647,7 @@ int DisplayObject::computeHeight()
 	return (ret)?(y2-y1):0;
 }
 
-int DisplayObject::computeWidth()
+number_t DisplayObject::computeWidth()
 {
 	number_t x1,x2,y1,y2;
 	bool ret=getBounds(x1,x2,y1,y2);
@@ -1674,16 +1674,15 @@ _NR<Stage> DisplayObject::getStage() const
 ASFUNCTIONBODY(DisplayObject,_getWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	int ret=th->computeWidth();
-	return abstract_i(ret);
+	return abstract_d(th->computeWidth());
 }
 
 ASFUNCTIONBODY(DisplayObject,_setWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	int newwidth=args[0]->toInt();
+	number_t newwidth=args[0]->toNumber();
 	//Should actually scale the object
-	int computed=th->computeWidth();
+	number_t computed=th->computeWidth();
 	if(computed==0) //Cannot scale, nothing to do (See Reference)
 		return NULL;
 	
@@ -1706,16 +1705,15 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 ASFUNCTIONBODY(DisplayObject,_getHeight)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	int ret=th->computeHeight();;
-	return abstract_i(ret);
+	return abstract_d(th->computeHeight());
 }
 
 ASFUNCTIONBODY(DisplayObject,_setHeight)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	int newheight=args[0]->toInt();
+	number_t newheight=args[0]->toNumber();
 	//Should actually scale the object
-	int computed=th->computeHeight();
+	number_t computed=th->computeHeight();
 	if(computed==0) //Cannot scale, nothing to do (See Reference)
 		return NULL;
 	

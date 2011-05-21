@@ -31,8 +31,8 @@
 namespace lightspark
 {
 
-enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_TAG, CHANGE_FRAME, CONSTRUCT_FRAME,
-			SYS_ON_STAGE, FLUSH_INVALIDATION_QUEUE };
+enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, INIT_FRAME,
+			SYS_ON_STAGE, FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME };
 
 class ABCContext;
 class DictionaryTag;
@@ -332,32 +332,22 @@ public:
 	EVENT_TYPE getEventType() const { return CONTEXT_INIT; }
 };
 
-//Event to change the current frame
-class FrameChangeEvent: public Event
+class Frame;
+
+//Event to construct a Frame in the VM context
+class InitFrameEvent: public Event
 {
 friend class ABCVm;
-private:
-	int frame;
-	_R<MovieClip> movieClip;
-	static void sinit(Class_base*);
 public:
-	FrameChangeEvent(int f, _R<MovieClip> m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
-	EVENT_TYPE getEventType() const { return CHANGE_FRAME; }
+	InitFrameEvent() : Event("InitFrameEvent") {}
+	EVENT_TYPE getEventType() const { return INIT_FRAME; }
 };
 
-class Frame;
-//Event to construct a Frame in the VM context
-class ConstructFrameEvent: public Event
+class AdvanceFrameEvent: public Event
 {
-friend class ABCVm;
-private:
-	Frame* frame;
-	_R<MovieClip> parent;
-	bool purge;
 public:
-	ConstructFrameEvent(Frame* f, _R<MovieClip> p, bool _purge)
-		: Event("ConstructFrameEvent"),frame(f),parent(p),purge(_purge){}
-	EVENT_TYPE getEventType() const { return CONSTRUCT_FRAME; }
+	AdvanceFrameEvent(): Event("AdvanceFrameEvent") {}
+	EVENT_TYPE getEventType() const { return ADVANCE_FRAME; }
 };
 
 //Event to put the SystemState on stage

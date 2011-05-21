@@ -61,14 +61,12 @@ class ParseThread;
 class Tag;
 
 //RootMovieClip is used as a ThreadJob for timed rendering purpose
-class RootMovieClip: public MovieClip, public ITickJob
+class RootMovieClip: public MovieClip
 {
 friend class ParseThread;
 protected:
 	Mutex mutex;
-	bool initialized;
 	URLInfo origin;
-	void tick();
 private:
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
@@ -81,8 +79,7 @@ private:
 	float frameRate;
 	bool toBind;
 	tiny_string bindName;
-	Mutex mutexChildrenClips;
-	std::set<MovieClip*> childrenClips;
+	void constructionComplete();
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
 	~RootMovieClip();
@@ -100,19 +97,17 @@ public:
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();
-	void Render(bool maskEnabled);
+	void initFrame();
+	void advanceFrame();
 	void parsingFailed();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
-	void initialize();
 	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
 	URLInfo& getOrigin() DLL_PUBLIC { return origin; };
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
 	void setVariableByString(const std::string& s, ASObject* o);*/
-	void registerChildClip(MovieClip* clip);
-	void unregisterChildClip(MovieClip* clip);
 	static RootMovieClip* getInstance(LoaderInfo* li);
 	//DisplayObject interface
 	_NR<RootMovieClip> getRoot();
@@ -142,7 +137,7 @@ public:
 	void plot(uint32_t max, FTFont* font);
 };
 
-class SystemState: public RootMovieClip
+class SystemState: public RootMovieClip, public ITickJob
 {
 private:
 	class EngineCreator: public IThreadJob

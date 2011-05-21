@@ -392,8 +392,7 @@ ASObject* DefineSpriteTag::instance() const
 	}
 	else
 		ret->setPrototype(Class<MovieClip>::getClass());
-	ret->bootstrap();
-	//TODO: should we call the frameScripts?
+
 	return ret;
 }
 
@@ -988,11 +987,10 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 
 		//We can create the object right away
 		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(dict->instance());
+
 		assert_and_throw(toAdd);
 		//The matrix must be set before invoking the constructor
 		toAdd->setMatrix(Matrix);
-		if(toAdd->getPrototype())
-			toAdd->getPrototype()->handleConstruction(toAdd,NULL,0,true);
 
 		setProperties(toAdd, parent);
 

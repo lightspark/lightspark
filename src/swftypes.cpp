@@ -1146,7 +1146,7 @@ void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_s
 	ns="";
 }
 
-RunState::RunState():FP(0),next_FP(0),stop_FP(0),explicit_FP(false)
+RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(0),explicit_FP(false)
 {
 }
 

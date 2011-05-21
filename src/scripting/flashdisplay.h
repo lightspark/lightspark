@@ -129,6 +129,8 @@ public:
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage() const;
 	void setMatrix(const MATRIX& m);
+	virtual void advanceFrame() {}
+	virtual void initFrame();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -235,6 +237,8 @@ public:
 	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
 	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);
 	void purgeLegacyChildren();
+	void advanceFrame();
+	void initFrame();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -513,8 +517,6 @@ class MovieClip: public Sprite
 friend class ParserThread;
 private:
 	uint32_t getCurrentScene();
-	ACQUIRE_RELEASE_FLAG(constructed);
-	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 	/* This list is accessed by both the vm thread and the parsing thread,
 	 * but the parsing thread only accesses frames.back(), while
 	 * the vm thread only accesses the frames before that frame (until
@@ -535,7 +537,7 @@ protected:
 	uint32_t totalFrames_unreliable;
 	uint32_t getFramesLoaded() { SpinlockLocker l(framesLoadedLock); return framesLoaded; }
 	void setFramesLoaded(uint32_t fl) { SpinlockLocker l(framesLoadedLock); framesLoaded = fl; }
-	void bootstrap();
+	void constructionComplete();
 private:
 	Spinlock framesLoadedLock;
 	uint32_t framesLoaded;
@@ -568,6 +570,7 @@ public:
 	virtual void addToFrame(DisplayListTag* r);
 
 	void advanceFrame();
+	void initFrame();
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 	void setTotalFrames(uint32_t t);
 
@@ -577,8 +580,6 @@ public:
 	}
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 	void addFrameLabel(uint32_t frame, const tiny_string& label);
-
-	void constructionComplete();
 };
 
 class Stage: public DisplayObjectContainer

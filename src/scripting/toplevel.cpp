@@ -1094,6 +1094,33 @@ bool XML::nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const
 	return true;
 }
 
+uint32_t XML::nextNameIndex(uint32_t cur_index)
+{
+	if(cur_index < 1)
+		return 1;
+	else
+		return 0;
+}
+
+_R<ASObject> XML::nextName(uint32_t index)
+{
+	if(index<=1)
+		return _MR(abstract_i(index-1));
+	else
+		throw RunTimeException("XML::nextName out of bounds");
+}
+
+_R<ASObject> XML::nextValue(uint32_t index)
+{
+	if(index<=1)
+	{
+		incRef();
+		return _MR(this);
+	}
+	else
+		throw RunTimeException("XML::nextValue out of bounds");
+}
+
 bool XML::isEqual(ASObject* r)
 {
 	XML *x=dynamic_cast<XML *>(r);
@@ -1359,34 +1386,32 @@ bool XMLList::isEqual(ASObject* r)
 	return false;
 }
 
-/*bool XMLList::nextValue(unsigned int index, ASObject*& out)
+uint32_t XMLList::nextNameIndex(uint32_t cur_index)
 {
-	__asm__("int $3");
-	assert_and_throw(implEnable);
-	assert_and_throw(index<nodes.size());
-	out=nodes[index];
-	return true;
+	if(cur_index < nodes.size())
+		return cur_index+1;
+	else
+		return 0;
 }
 
-bool XMLList::hasNext(unsigned int& index, bool& out)
+_R<ASObject> XMLList::nextName(uint32_t index)
 {
-	__asm__("int $3");
-	assert_and_throw(implEnable);
-	out=index<nodes.size();
-	index++;
-	return true;
+	if(index<=nodes.size())
+		return _MR(abstract_i(index-1));
+	else
+		throw RunTimeException("XMLList::nextName out of bounds");
 }
 
-bool XMLList::nextName(unsigned int index, ASObject*& out)
+_R<ASObject> XMLList::nextValue(uint32_t index)
 {
-	__asm__("int $3");
-	assert(index>0);
-	index--;
-	assert_and_throw(implEnable);
-	assert_and_throw(index<nodes.size());
-	out=abstract_i(index);
-	return true;
-}*/
+	if(index<=nodes.size())
+	{
+		nodes[index-1]->incRef();
+		return nodes[index-1];
+	}
+	else
+		throw RunTimeException("XMLList::nextValue out of bounds");
+}
 
 bool Array::isEqual(ASObject* r)
 {

@@ -672,7 +672,6 @@ private:
 	static void recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
 			std::vector<_R<XML>>& ret);
 	tiny_string toString_priv();
-	void toXMLString_priv(xmlBufferPtr buf);
 	void buildFromString(const std::string& str);
 	bool constructed;
 	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
@@ -698,6 +697,7 @@ public:
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	tiny_string toString(bool debugMsg=false);
+	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
         xmlElementType getNodeKind() const;
@@ -714,6 +714,7 @@ private:
 	bool constructed;
 	tiny_string toString_priv() const;
 	void buildFromString(const std::string& str);
+	void toXMLString_priv(xmlBufferPtr buf) const;
 public:
 	XMLList():constructed(false){}
 	/*
@@ -731,6 +732,7 @@ public:
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
 	ASFUNCTION(_toString);
+	ASFUNCTION(toXMLString);
 	ASFUNCTION(generator);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	_NR<XML> convertToXML() const;

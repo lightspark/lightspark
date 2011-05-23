@@ -792,7 +792,13 @@ bool CairoRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFac
 	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true);
 	bool ret=false;
 	if(!empty)
+	{
+		/* reset the matrix so x and y are not scaled
+		 * by the current cairo transformation
+		 */
+		cairo_identity_matrix(cr);
 		ret=cairo_in_fill(cr, x, y);
+	}
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
 	return ret;

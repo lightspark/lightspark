@@ -2456,7 +2456,7 @@ void TokenContainer::invalidate()
 _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const
 {
 	//TODO: test against the CachedSurface
-	if(CairoRenderer::hitTest(tokens, 1, x, y))
+	if(CairoRenderer::hitTest(tokens, scaling, x, y))
 	{
 		if(sys->getInputThread()->isMaskPresent())
 		{

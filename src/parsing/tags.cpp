@@ -1178,7 +1178,9 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 
 ASObject* DefineButton2Tag::instance() const
 {
-	return new DefineButton2Tag(*this);
+	DefineButton2Tag *ret = new DefineButton2Tag(*this);
+	ret->setPrototype(Class<DisplayObject>::getClass());
+	return ret;
 }
 
 void DefineButton2Tag::handleEvent(Event* e)

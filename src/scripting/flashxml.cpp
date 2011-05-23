@@ -49,6 +49,8 @@ void XMLNode::sinit(Class_base* c)
 	c->setGetterByQName("firstChild","",Class<IFunction>::getFunction(XMLNode::firstChild),true);
 	c->setGetterByQName("childNodes","",Class<IFunction>::getFunction(XMLNode::childNodes),true);
 	c->setGetterByQName("attributes","",Class<IFunction>::getFunction(attributes),true);
+	c->setGetterByQName("nodeType","",Class<IFunction>::getFunction(_getNodeType),true);
+	c->setGetterByQName("nodeName","",Class<IFunction>::getFunction(_getNodeName),true);
 }
 
 void XMLNode::buildTraits(ASObject* o)
@@ -120,6 +122,18 @@ ASFUNCTIONBODY(XMLNode,attributes)
 		ret->setVariableByQName(attrName,"",attrValue);
 	}
 	return ret;
+}
+
+ASFUNCTIONBODY(XMLNode,_getNodeType)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	return abstract_i(th->node->cobj()->type);
+}
+
+ASFUNCTIONBODY(XMLNode,_getNodeName)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	return Class<ASString>::getInstanceS((const char*)th->node->cobj()->name);
 }
 
 void XMLDocument::sinit(Class_base* c)

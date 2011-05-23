@@ -45,6 +45,8 @@ public:
 	ASFUNCTION(firstChild);
 	ASFUNCTION(childNodes);
 	ASFUNCTION(attributes);
+	ASFUNCTION(_getNodeType);
+	ASFUNCTION(_getNodeName);
 };
 
 class XMLDocument: public XMLNode

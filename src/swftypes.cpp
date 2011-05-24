@@ -234,6 +234,12 @@ MATRIX MATRIX::getInverted() const
 	return ret;
 }
 
+bool MATRIX::isInvertible() const
+{
+	const number_t den=ScaleX*ScaleY+RotateSkew0*RotateSkew1;
+	return (fabs(den) > 1e-6);
+}
+
 void MATRIX::get4DMatrix(float matrix[16]) const
 {
 	memset(matrix,0,sizeof(float)*16);

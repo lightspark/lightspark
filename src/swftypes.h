@@ -849,6 +849,7 @@ public:
 	MATRIX multiplyMatrix(const MATRIX& r) const;
 	const bool operator!=(const MATRIX& r) const;
 	MATRIX getInverted() const;
+	bool isInvertible() const;
 };
 
 class GRADRECORD

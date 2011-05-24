@@ -1738,15 +1738,15 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setMethodByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt),true);
 	c->setMethodByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt),true);
 	c->setMethodByQName("contains","",Class<IFunction>::getFunction(contains),true);
-	//c->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
-	//c->setGetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(_setMouseChildren),true);
+	c->setGetterByQName("mouseChildren","",Class<IFunction>::getFunction(_getMouseChildren),true);
 }
 
 void DisplayObjectContainer::buildTraits(ASObject* o)
 {
 }
 
-DisplayObjectContainer::DisplayObjectContainer():mutexDisplayList("mutexDisplayList")
+DisplayObjectContainer::DisplayObjectContainer():mouseChildren(true),mutexDisplayList("mutexDisplayList")
 {
 }
 
@@ -1903,6 +1903,20 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	return abstract_i(th->dynamicDisplayList.size());
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,_getMouseChildren)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	return abstract_b(th->mouseChildren);
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,_setMouseChildren)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	assert_and_throw(argslen==1);
+	th->mouseChildren=Boolean_concrete(args[0]);
+	return NULL;
 }
 
 void DisplayObjectContainer::requestInvalidation()

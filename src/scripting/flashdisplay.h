@@ -190,6 +190,7 @@ class DisplayObjectContainer: public InteractiveObject
 private:
 	std::map<uint32_t,DisplayObject*> depthToLegacyChild;
 	bool _contains(_R<DisplayObject> child);
+	bool mouseChildren;
 protected:
 	void requestInvalidation();
 	//This is shared between RenderThread and VM
@@ -225,6 +226,8 @@ public:
 	ASFUNCTION(getChildAt);
 	ASFUNCTION(getChildByName);
 	ASFUNCTION(contains);
+	ASFUNCTION(_getMouseChildren);
+	ASFUNCTION(_setMouseChildren);
 };
 
 /* This is really ugly, but the parent of the current
@@ -276,7 +279,7 @@ public:
 class TokenContainer
 {
 	friend class Graphics;
-private:
+public:
 	DisplayObject* owner;
 	/* multiply shapes' coordinates by this
 	 * value to get pixel.

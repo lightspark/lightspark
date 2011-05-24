@@ -1,6 +1,10 @@
 lightspark: An open source flash player implementation
 
-Version 0.4.8
+Version 0.4.8 RC2
+	* Reduced memory usage on streaming videos
+	* Fixed a couple of refcounting bugs
+
+Version 0.4.8 RC1
 	* Experimental Vimeo support
 	* Cleaned up Shape support
 	* Improved Timer support

@@ -191,7 +191,7 @@ class TimerEvent: public Event
 {
 public:
 	TimerEvent():Event("DEPRECATED"){}
-	TimerEvent(const tiny_string& t):Event(t){};
+	TimerEvent(const tiny_string& t):Event(t,true){};
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{

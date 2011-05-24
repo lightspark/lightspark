@@ -65,6 +65,11 @@ void TextField::buildTraits(ASObject* o)
 {
 }
 
+_NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	return NullRef;
+}
+
 bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	xmin=0;

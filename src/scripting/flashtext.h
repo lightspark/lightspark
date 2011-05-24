@@ -41,6 +41,7 @@ private:
 	intptr_t width;
 	intptr_t height;
 	tiny_string text;
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 public:
 	TextField():width(0),height(0){}
 	static void sinit(Class_base* c);

@@ -136,7 +136,15 @@ ASFUNCTIONBODY(XMLDocument,parseXML)
 	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
 	th->clear();
 	ASString* str=Class<ASString>::cast(args[0]);
-	th->parser.parse_memory_raw((const unsigned char*)str->data.c_str(), str->data.size());
+	try
+	{
+		th->parser.parse_memory_raw((const unsigned char*)str->data.c_str(), str->data.size());
+	}
+	catch(const exception& e)
+	{
+		//libxml++ throwed an exception
+		throw RunTimeException("Error while parsing XML");
+	}
 	th->document=th->parser.get_document();
 	return NULL;
 }

@@ -603,7 +603,14 @@ void XML::buildFromString(const string& str)
 	}
 	else
 	{
-		parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
+		try
+		{
+			parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
+		}
+		catch(const exception& e)
+		{
+			throw RunTimeException("Error while parsing XML");
+		}
 		node=parser.get_document()->get_root_node();
 	}
 }
@@ -1156,7 +1163,14 @@ void XMLList::buildFromString(const std::string& str)
 {
 	xmlpp::DomParser parser;
 	std::string expanded="<parent>" + str + "</parent>";
-	parser.parse_memory(expanded);
+	try
+	{
+		parser.parse_memory(expanded);
+	}
+	catch(const exception& e)
+	{
+		throw RunTimeException("Error while parsing XML");
+	}
 	const xmlpp::Node::NodeList& children=\
 	  parser.get_document()->get_root_node()->get_children();
 	xmlpp::Node::NodeList::const_iterator it;

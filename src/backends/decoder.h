@@ -169,7 +169,7 @@ public:
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
-	FFMpegVideoDecoder(AVCodecContext* codecContext);
+	FFMpegVideoDecoder(AVCodecContext* codecContext, double frameRateHint);
 	~FFMpegVideoDecoder();
 	/*
 	   Specialized decoding used by FFMpegStreamDecoder

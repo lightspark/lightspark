@@ -154,7 +154,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 	frameIn=avcodec_alloc_frame();
 }
 
-FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c):
+FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint):
 	curBuffer(0),curBufferOffset(0),codecContext(_c),ownedContext(false),mutex("VideoDecoder")
 {
 	status=INIT;
@@ -176,6 +176,8 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c):
 	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
 	if(avcodec_open(codecContext, codec)<0)
 		return;
+
+	frameRate=frameRateHint;
 
 	if(fillDataAndCheckValidity())
 		status=VALID;
@@ -201,7 +203,7 @@ void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 		while(discardFrame());
 
 		//As the size chaged, reset the buffer
-		uint32_t bufferSize=frameWidth*frameHeight*4;
+		uint32_t bufferSize=frameWidth*frameHeight/**4*/;
 		buffers.regen(YUVBufferGenerator(bufferSize));
 	}
 }
@@ -618,7 +620,9 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 	}
 	if(videoFound)
 	{
-		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codec);
+		//Pass the frame rate from the container, the once from the codec is often wrong
+		double frameRate=av_q2d(formatCtx->streams[videoIndex]->r_frame_rate);
+		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codec,frameRate);
 		videoDecoder=customVideoDecoder;
 	}
 

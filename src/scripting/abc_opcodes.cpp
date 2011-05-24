@@ -470,13 +470,6 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 
 number_t ABCVm::divide(ASObject* val2, ASObject* val1)
 {
-	if(val1->getObjectType()==T_UNDEFINED ||
-		val2->getObjectType()==T_UNDEFINED)
-	{
-		//HACK
-		LOG(LOG_NOT_IMPLEMENTED,_("divide: HACK"));
-		return 0;
-	}
 	double num1=val1->toNumber();
 	double num2=val2->toNumber();
 
@@ -1063,13 +1056,6 @@ intptr_t ABCVm::subtract_i(ASObject* val2, ASObject* val1)
 
 number_t ABCVm::subtract(ASObject* val2, ASObject* val1)
 {
-	if(val1->getObjectType()==T_UNDEFINED ||
-		val2->getObjectType()==T_UNDEFINED)
-	{
-		//HACK
-		LOG(LOG_NOT_IMPLEMENTED,_("subtract: HACK"));
-		return 0;
-	}
 	number_t num2=val2->toNumber();
 	number_t num1=val1->toNumber();
 

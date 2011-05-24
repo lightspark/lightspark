@@ -431,6 +431,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* index_obj=context->runtime_stack_pop();
 				assert_and_throw(index_obj->getObjectType()==T_INTEGER);
 				unsigned int index=index_obj->toUInt();
+				index_obj->decRef();
 
 				int dest=defaultdest;
 				if(index>=0 && index<=count)

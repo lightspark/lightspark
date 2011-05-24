@@ -98,45 +98,7 @@ TextureBuffer::TextureBuffer(bool initNow, uint32_t w, uint32_t h, GLenum f):tex
 	width(w),height(h),horizontalAlignment(1),verticalAlignment(1),inited(false)
 {
 	if(initNow)
-		init();
-}
-
-void TextureBuffer::init()
-{
-	assert(!inited);
-	inited=true;
-	cleanGLErrors();
-	
-	setAllocSize(width,height);
-	assert(texId==0);
-	glGenTextures(1,&texId);
-	assert(texId!=0);
-	assert(glGetError()!=GL_INVALID_OPERATION);
-	
-	assert(filtering==GL_NEAREST || filtering==GL_LINEAR);
-	
-	//If the previous call has not failed these should not fail (in specs, we trust)
-	glBindTexture(GL_TEXTURE_2D,texId);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,filtering);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,filtering);
-	//Wrapping should not be very useful, we use textures carefully
-	//glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-	
-	//Allocate the texture
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-	GLenum err=glGetError();
-	assert(err!=GL_INVALID_OPERATION);
-	if(err==GL_INVALID_VALUE)
-	{
-		LOG(LOG_ERROR,_("GL_INVALID_VALUE after glTexImage2D, width=") << allocWidth << _(" height=") << allocHeight);
-		throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::init");
-	}
-	
-	glBindTexture(GL_TEXTURE_2D,0);
-	
-#ifdef EXPENSIVE_DEBUG
-	cleanGLErrors();
-#endif
+		init(w, h, f);
 }
 
 void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)

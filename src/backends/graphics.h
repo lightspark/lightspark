@@ -73,12 +73,6 @@ public:
 	*/
 	GLuint getId() {return texId;}
 	/**
-	  	Initialize the texture from the values stored
-
-		@pre Running inside the RenderThread
-	*/
-	void init();
-	/**
 	  	Initialize the texture using new values
 
 		@param width The requested width

@@ -560,7 +560,10 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double 
 			cairo_surface_destroy(surface);
 
 			cairo_matrix_t mat = MATRIXToCairo(style.Matrix);
-			cairo_status_t st = cairo_matrix_invert(&mat);
+			#ifndef NDEBUG
+			cairo_status_t st =
+			#endif
+			cairo_matrix_invert(&mat);
 			assert(st == CAIRO_STATUS_SUCCESS);
 			mat.x0 /= scaleCorrection;
 			mat.y0 /= scaleCorrection;

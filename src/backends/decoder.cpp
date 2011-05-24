@@ -203,7 +203,7 @@ void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 		while(discardFrame());
 
 		//As the size chaged, reset the buffer
-		uint32_t bufferSize=frameWidth*frameHeight/**4*/;
+		uint32_t bufferSize=frameWidth*frameHeight;
 		buffers.regen(YUVBufferGenerator(bufferSize));
 	}
 }

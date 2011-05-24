@@ -21,7 +21,6 @@
 #define _DECODER_H
 
 #include "compat.h"
-#include <GL/glew.h>
 #include <inttypes.h>
 #include "threading.h"
 #include "graphics.h"
@@ -153,7 +152,6 @@ private:
 		YUVBufferGenerator(uint32_t b):bufferSize(b){}
 		void init(YUVBuffer& buf) const;
 	};
-	GLuint videoBuffers[2];
 	uint32_t curBuffer;
 	uint32_t curBufferOffset;
 	AVCodecContext* codecContext;

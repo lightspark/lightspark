@@ -555,6 +555,9 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 	list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
+		if(!(*j)->getMatrix().isInvertible())
+			continue; /* The object is shrunk to zero size */
+
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();

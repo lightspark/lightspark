@@ -54,10 +54,6 @@ void IEventDispatcher::linkTraits(Class_base* c)
 	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
 }
 
-Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NULL),bubbles(b)
-{
-}
-
 void Event::finalize()
 {
 	ASObject::finalize();

@@ -42,9 +42,8 @@ class MovieClip;
 class Event: public ASObject
 {
 public:
-	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false),
-		defaultPrevented(false) {}
-	Event(const tiny_string& t, bool b=false);
+	Event(const tiny_string& t = "Event", bool b=false)
+		: type(t),target(NULL),currentTarget(NULL),bubbles(b),eventPhase(0),defaultPrevented(false) {}
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

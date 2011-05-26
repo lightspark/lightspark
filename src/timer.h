@@ -35,8 +35,17 @@ namespace lightspark
 //For longer jobs use ThreadPool
 class ITickJob
 {
+friend class TimerThread;
+protected:
+	/*
+	   Helper flag to remove a job
+
+	   If the flag is true no more ticks will happen
+	*/
+	bool stopMe;
 public:
 	virtual void tick()=0;
+	ITickJob():stopMe(false){}
 	virtual ~ITickJob(){};
 };
 

@@ -174,6 +174,13 @@ void* TimerThread::timer_worker(TimerThread* th)
 		TimingEvent* e=th->pendingEvents.front();
 		th->pendingEvents.pop_front();
 
+		if(e->job && e->job->stopMe)
+		{
+			//Abort the tick by invalidating the job
+			e->job=NULL;
+			e->isTick=false;
+		}
+
 		th->currentJob=e->job;
 
 		bool destroyEvent=true;

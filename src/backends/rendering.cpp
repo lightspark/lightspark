@@ -483,7 +483,7 @@ void RenderThread::commonGLDeinit()
 	for(;it!=uploadJobs.end();it++)
 		(*it)->uploadFence();
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
-	glDeleteFramebuffers(1,&rt->fboId);
+	glDeleteFramebuffers(1,&fboId);
 	tempTex.shutdown();
 	for(uint32_t i=0;i<largeTextures.size();i++)
 	{

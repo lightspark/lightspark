@@ -396,20 +396,20 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 
 void Timer::tick()
 {
+	//This will be executed once if repeatCount was originally 1
+	//Otherwise it's executed until stopMe is set to true
 	this->incRef();
 	sys->currentVm->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timer")));
-	if(repeatCount==0)
-		sys->addWait(delay,this);
-	else
+
+	if(repeatCount!=0)
 	{
 		currentCount++;
-		if(currentCount<repeatCount)
-			sys->addWait(delay,this);
-		else
+		if(repeatCount<currentCount)
 		{
-			running=false;
 			this->incRef();
 			sys->currentVm->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timerComplete")));
+			stopMe=true;
+			running=false;
 		}
 	}
 }
@@ -498,9 +498,12 @@ ASFUNCTIONBODY(Timer,start)
 {
 	Timer* th=static_cast<Timer*>(obj);
 	th->running=true;
+	th->stopMe=false;
 	th->incRef();
-	//TODO: use addTick when more than s single shot is used
-	sys->addWait(th->delay,th);
+	if(th->repeatCount==1)
+		sys->addWait(th->delay,th);
+	else
+		sys->addTick(th->delay,th);
 	return NULL;
 }
 

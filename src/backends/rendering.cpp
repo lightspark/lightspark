@@ -1131,7 +1131,9 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	assert(chunk.getNumberOfChunks()==((chunk.width+127)/128)*((chunk.height+127)/128));
 	
 	uint32_t curChunk=0;
-	for(uint32_t i=0;i<chunk.height;i+=128)
+	GLint *vertex_coords = new GLint[chunk.getNumberOfChunks()*8];
+	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*8];
+	for(uint32_t i=0, k=0;i<chunk.height;i+=128)
 	{
 		startY=h*i/chunk.height;
 		endY=min(h*(i+128)/chunk.height,h);
@@ -1152,22 +1154,38 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 			endU/=largeTextureSize;
 			float endV=blockY+availY;
 			endV/=largeTextureSize;
-			glBegin(GL_QUADS);
-				glTexCoord2f(startU,startV);
-				glVertex2i(x+startX,y+startY);
 
-				glTexCoord2f(endU,startV);
-				glVertex2i(x+endX,y+startY);
+			texture_coords[k] = startU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = x+startX;
+			vertex_coords[k+1] = y+startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+endY;
+			k+=2;
+			texture_coords[k] = startU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = x+startX;
+			vertex_coords[k+1] = y+endY;
+			k+=2;
 
-				glTexCoord2f(endU,endV);
-				glVertex2i(x+endX,y+endY);
-
-				glTexCoord2f(startU,endV);
-				glVertex2i(x+startX,y+endY);
-			glEnd();
 			curChunk++;
 		}
 	}
+	glVertexPointer(2, GL_INT, 0, vertex_coords);
+	glTexCoordPointer(2, GL_FLOAT, 0, texture_coords);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDrawArrays(GL_QUADS, 0, curChunk*4);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)

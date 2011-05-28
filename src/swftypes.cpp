@@ -225,7 +225,7 @@ MATRIX MATRIX::getInverted() const
 {
 	MATRIX ret;
 	assert(isInvertible());
-	const number_t den=ScaleX*ScaleY+RotateSkew0*RotateSkew1;
+	const number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
 	ret.ScaleX=ScaleY/den;
 	ret.RotateSkew1=-RotateSkew1/den;
 	ret.RotateSkew0=-RotateSkew0/den;
@@ -237,7 +237,7 @@ MATRIX MATRIX::getInverted() const
 
 bool MATRIX::isInvertible() const
 {
-	const number_t den=ScaleX*ScaleY+RotateSkew0*RotateSkew1;
+	const number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
 	return (fabs(den) > 1e-6);
 }
 

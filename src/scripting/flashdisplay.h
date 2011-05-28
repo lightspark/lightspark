@@ -69,8 +69,8 @@ protected:
 	void valFromMatrix();
 	bool onStage;
 	_NR<LoaderInfo> loaderInfo;
-	int computeWidth();
-	int computeHeight();
+	number_t computeWidth();
+	number_t computeHeight();
 	bool isSimple() const;
 	bool skipRender(bool maskEnabled) const;
 	float alpha;

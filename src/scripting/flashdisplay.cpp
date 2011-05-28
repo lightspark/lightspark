@@ -1342,6 +1342,8 @@ void DisplayObject::valFromMatrix()
 	ty=Matrix.TranslateY;
 	sx=Matrix.ScaleX;
 	sy=Matrix.ScaleY;
+	if(Matrix.RotateSkew0 || Matrix.RotateSkew1)
+		LOG(LOG_ERROR,"valFromMatrix may has dropped rotation!");
 }
 
 bool DisplayObject::isSimple() const

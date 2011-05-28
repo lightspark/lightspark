@@ -548,8 +548,12 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h, 1)
 			in >> t;
 			OffsetTable.push_back(t);
 		}
-		in >> t;
-		CodeTableOffset=t;
+		//CodeTableOffset is missing with zero NumGlyphs
+		if(NumGlyphs)
+		{
+			in >> t;
+			CodeTableOffset=t;
+		}
 	}
 	else
 	{
@@ -559,8 +563,12 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h, 1)
 			in >> t;
 			OffsetTable.push_back(t);
 		}
-		in >> t;
-		CodeTableOffset=t;
+		//CodeTableOffset is missing with zero NumGlyphs
+		if(NumGlyphs)
+		{
+			in >> t;
+			CodeTableOffset=t;
+		}
 	}
 	GlyphShapeTable.resize(NumGlyphs);
 	for(int i=0;i<NumGlyphs;i++)

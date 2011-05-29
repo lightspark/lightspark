@@ -3104,41 +3104,169 @@ void SimpleButton::buildTraits(ASObject* o)
 {
 }
 
+bool SimpleButton::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	/* TODO: this is the same as Sprite::getBounds/boundsRect. See my other
+	 * patches to unify that code into DisplayObjectContainer. This function
+	 * can then be removed.
+	 */
+	bool ret=false;
+	{
+		Locker l(mutexDisplayList);
+		if(dynamicDisplayList.empty())
+			return false;
+
+		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();++it)
+		{
+			number_t txmin,txmax,tymin,tymax;
+			if((*it)->getBounds(txmin,txmax,tymin,tymax))
+			{
+				if(ret==true)
+				{
+					xmin = imin(xmin,txmin);
+					xmax = imax(xmax,txmax);
+					ymin = imin(ymin,txmin);
+					ymax = imax(ymax,tymax);
+				}
+				else
+				{
+					xmin=txmin;
+					xmax=txmax;
+					ymin=tymin;
+					ymax=tymax;
+					ret=true;
+				}
+			}
+		}
+	}
+	if(ret)
+	{
+		//TODO: take rotation into account
+		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
+	}
+	return ret;
+}
+
+void SimpleButton::Render(bool maskEnabled)
+{
+	/* TODO: this is the same as Sprite::Render/renderImpl. See my other
+	 * patches to unify that code into DisplayObjectContainer. This function
+	 * can then be removed.
+	 */
+	if(skipRender(maskEnabled))
+		return;
+
+	renderPrologue();
+
+	{
+		Locker l(mutexDisplayList);
+		//Now draw also the display list
+		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();++it)
+			(*it)->Render(maskEnabled);
+	}
+
+	renderEpilogue();
+}
+
 _NR<InteractiveObject> SimpleButton::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	_NR<InteractiveObject> ret = NullRef;
-	if (hitTestState)
+	if(hitTestState != NULL)
 	{
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		ret = hitTestState->hitTest(last, localX, localY);
 	}
+	/* mouseDown events, for example, are never dispatched to the hitTestState,
+	 * but directly to this button (and with event.target = this). This has been
+	 * tested with the official flash player. It cannot work otherwise, as
+	 * hitTestState->parent == NULL. (This has also been verified)
+	 */
+	if(ret != NULL)
+	{
+		this->incRef();
+		ret = _MR(this);
+	}
 	return ret;
+}
+
+void SimpleButton::defaultEventBehavior(_R<Event> e)
+{
+	if(e->type == "mouseDown")
+	{
+		currentState = DOWN;
+		reflectState();
+	}
+	else if(e->type == "mouseUp")
+	{
+		currentState = UP;
+		reflectState();
+	}
+}
+
+SimpleButton::SimpleButton(DisplayObject *dS, DisplayObject *hTS,
+						   DisplayObject *oS, DisplayObject *uS)
+	: downState(dS), hitTestState(hTS), overState(oS), upState(uS),
+	  currentState(UP)
+{
+	/* When called from DefineButton2Tag::instance, they are not constructed yet
+	 * TODO: construct them here for once, or each time they become visible?
+	 */
+	if(dS) dS->initFrame();
+	if(hTS) hTS->initFrame();
+	if(oS) oS->initFrame();
+	if(uS) uS->initFrame();
 }
 
 ASFUNCTIONBODY(SimpleButton,_constructor)
 {
+	/* This _must_ not call the DisplayObjectContainer
+	 * see note at the class declaration.
+	 */
 	InteractiveObject::_constructor(obj,NULL,0);
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	th->upState = NULL;
-	th->downState = NULL;
-	th->hitTestState = NULL;
-	th->overState = NULL;
 
 	if (argslen >= 1)
-		th->upState = static_cast<DisplayObject*>(args[0]);
-	if (argslen >= 2)
-		th->overState = static_cast<DisplayObject*>(args[1]);
-	if (argslen >= 3)
-		th->downState = static_cast<DisplayObject*>(args[2]);
-	if (argslen == 4)
-		th->hitTestState = static_cast<DisplayObject*>(args[3]);
-
-	if (th->upState) {
-		th->upState->setOnStage(true);
-		th->upState->requestInvalidation();
+	{
+		th->upState = _MNR(static_cast<DisplayObject*>(args[0]));
+		th->upState->incRef();
 	}
+	if (argslen >= 2)
+	{
+		th->overState = _MNR(static_cast<DisplayObject*>(args[1]));
+		th->overState->incRef();
+	}
+	if (argslen >= 3)
+	{
+		th->downState = _MNR(static_cast<DisplayObject*>(args[2]));
+		th->downState->incRef();
+	}
+	if (argslen == 4)
+	{
+		th->hitTestState = _MNR(static_cast<DisplayObject*>(args[3]));
+		th->hitTestState->incRef();
+	}
+
+	th->reflectState();
+
 	return NULL;
+}
+
+void SimpleButton::reflectState()
+{
+	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
+	if(!dynamicDisplayList.empty())
+		_removeChild(dynamicDisplayList.front());
+
+	if(currentState == UP && !upState.isNull())
+		_addChildAt(upState,0);
+	else if(currentState == DOWN && !downState.isNull())
+		_addChildAt(downState,0);
+	else if(currentState == OVER && !overState.isNull())
+		_addChildAt(overState,0);
 }
 
 ASFUNCTIONBODY(SimpleButton,_getUpState)
@@ -3148,17 +3276,16 @@ ASFUNCTIONBODY(SimpleButton,_getUpState)
 		return new Null;
 
 	th->upState->incRef();
-
-	return th->upState;
+	return th->upState.getPtr();
 }
 
 ASFUNCTIONBODY(SimpleButton,_setUpState)
 {
 	assert_and_throw(argslen == 1);
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	th->upState =Class<DisplayObject>::cast(args[0]);
-	th->upState->setOnStage(true);
-	th->upState->requestInvalidation();
+	th->upState = _MNR(Class<DisplayObject>::cast(args[0]));
+	th->upState->incRef();
+	th->reflectState();
 	return NULL;
 }
 
@@ -3169,15 +3296,15 @@ ASFUNCTIONBODY(SimpleButton,_getHitTestState)
 		return new Null;
 
 	th->hitTestState->incRef();
-
-	return th->hitTestState;
+	return th->hitTestState.getPtr();
 }
 
 ASFUNCTIONBODY(SimpleButton,_setHitTestState)
 {
 	assert_and_throw(argslen == 1);
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	th->hitTestState =Class<DisplayObject>::cast(args[0]);
+	th->hitTestState = _MNR(Class<DisplayObject>::cast(args[0]));
+	th->hitTestState->incRef();
 	return NULL;
 }
 
@@ -3188,15 +3315,16 @@ ASFUNCTIONBODY(SimpleButton,_getOverState)
 		return new Null;
 
 	th->overState->incRef();
-
-	return th->overState;
+	return th->overState.getPtr();
 }
 
 ASFUNCTIONBODY(SimpleButton,_setOverState)
 {
 	assert_and_throw(argslen == 1);
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	th->overState =Class<DisplayObject>::cast(args[0]);
+	th->overState = _MNR(Class<DisplayObject>::cast(args[0]));
+	th->overState->incRef();
+	th->reflectState();
 	return NULL;
 }
 
@@ -3207,15 +3335,16 @@ ASFUNCTIONBODY(SimpleButton,_getDownState)
 		return new Null;
 
 	th->downState->incRef();
-
-	return th->downState;
+	return th->downState.getPtr();
 }
 
 ASFUNCTIONBODY(SimpleButton,_setDownState)
 {
 	assert_and_throw(argslen == 1);
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	th->downState =Class<DisplayObject>::cast(args[0]);
+	th->downState = _MNR(Class<DisplayObject>::cast(args[0]));
+	th->downState->incRef();
+	th->reflectState();
 	return NULL;
 }
 
@@ -3245,22 +3374,6 @@ ASFUNCTIONBODY(SimpleButton,_getUseHandCursor)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	return abstract_b(th->useHandCursor);
-}
-
-bool SimpleButton::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	//FIXME: handle mouse down and over states too
-	if (upState)
-		return upState->getBounds(xmin, xmax, ymin, ymax);
-
-	return false;
-}
-
-void SimpleButton::Render(bool maskEnabled)
-{
-	//FIXME: handle mouse down and over states too
-	if (upState)
-		upState->Render(maskEnabled);
 }
 
 void GradientType::sinit(Class_base* c)

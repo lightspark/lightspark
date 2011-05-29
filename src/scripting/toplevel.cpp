@@ -4801,3 +4801,49 @@ ASFUNCTIONBODY(lightspark,trace)
 	cerr << endl;
 	return NULL;
 }
+
+template<>
+number_t toConcrete<number_t>(ASObject* obj)
+{
+	/* TODO: throw ArgumentError if object is not convertible to number */
+	return obj->toNumber();
+}
+
+template<>
+bool toConcrete<bool>(ASObject* obj)
+{
+	/* TODO: throw ArgumentError if object is not convertible to number */
+	return Boolean_concrete(obj);
+}
+
+template<>
+uint32_t toConcrete<uint32_t>(ASObject* obj)
+{
+	/* TODO: throw ArgumentError if object is not convertible to number */
+	return obj->toUInt();
+}
+
+template<>
+int32_t toConcrete<int32_t>(ASObject* obj)
+{
+	/* TODO: throw ArgumentError if object is not convertible to number */
+	return obj->toInt();
+}
+
+template<>
+ASObject* toAbstract<int32_t>(const int32_t& val)
+{
+	return abstract_i(val);
+}
+
+template<>
+ASObject* toAbstract<number_t>(const number_t& val)
+{
+	return abstract_d(val);
+}
+
+template<>
+ASObject* toAbstract<bool>(const bool& val)
+{
+	return abstract_b(val);
+}

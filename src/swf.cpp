@@ -981,7 +981,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 }
 
 ParseThread::ParseThread(RootMovieClip* r,istream& in):root(NULL),version(0),useAVM2(false),
-	f(in),zlibFilter(NULL),backend(NULL),isEnded(false),fileType(NONE)
+	useNetwork(false),f(in),zlibFilter(NULL),backend(NULL),isEnded(false),fileType(NONE)
 {
 	root=r;
 	sem_init(&ended,0,0);

@@ -227,7 +227,15 @@ Tag* TagFactory::readTag()
 
 	//Check if this clip is the main clip and if AVM2 has been enabled by a FileAttributes tag
 	if(topLevel && firstTag && pt->root==sys)
+	{
 		sys->needsAVM2(pt->useAVM2);
+		if(pt->useNetwork
+		&& sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+		{
+			sys->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
+			LOG(LOG_NO_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
+		}
+	}
 	firstTag=false;
 
 	unsigned int end=f.tellg();
@@ -1294,6 +1302,8 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 
 	if(ActionScript3)
 		pt->useAVM2=true;
+
+	pt->useNetwork = UseNetwork;
 }
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)

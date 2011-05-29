@@ -274,6 +274,7 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
 	builtin->setVariableByQName("Event","flash.events",Class<Event>::getClass());
+	builtin->setVariableByQName("EventPhase","flash.events",Class<EventPhase>::getClass());
 	builtin->setVariableByQName("MouseEvent","flash.events",Class<MouseEvent>::getClass());
 	builtin->setVariableByQName("ProgressEvent","flash.events",Class<ProgressEvent>::getClass());
 	builtin->setVariableByQName("TimerEvent","flash.events",Class<TimerEvent>::getClass());
@@ -1089,24 +1090,51 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 {
-	//TODO: implement capture phase
-	//Do target phase
+	std::deque<_R<DisplayObject>> parents;
 	assert_and_throw(event->target==NULL);
 	event->target=dispatcher;
-	event->currentTarget=dispatcher;
-	dispatcher->handleEvent(event);
-	//Do bubbling phase
-	if(event->bubbles && dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
+
+	//capture phase
+	if(dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
 	{
-		DisplayObjectContainer* cur=static_cast<DisplayObject*>(dispatcher.getPtr())->getParent().getPtr();
-		while(cur)
+		event->eventPhase = EventPhase::CAPTURING_PHASE;
+		dispatcher->incRef();
+		_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
+		while(true)
 		{
-			cur->incRef();
-			event->currentTarget=_MR(cur);
-			cur->handleEvent(event);
-			cur=cur->getParent().getPtr();
+			if(cur->getParent() == NULL)
+				break;
+			cur = cur->getParent();
+			parents.push_back(cur);
+		}
+		auto i = parents.rbegin();
+		for(;i!=parents.rend();++i)
+		{
+			event->currentTarget=*i;
+			(*i)->handleEvent(event);
 		}
 	}
+
+	//Do target phase
+	event->eventPhase = EventPhase::AT_TARGET;
+	event->currentTarget=dispatcher;
+	dispatcher->handleEvent(event);
+
+	//Do bubbling phase
+	if(event->bubbles && !parents.empty())
+	{
+		event->eventPhase = EventPhase::BUBBLING_PHASE;
+		auto i = parents.begin();
+		for(;i!=parents.end();++i)
+		{
+			event->currentTarget=*i;
+			(*i)->handleEvent(event);
+		}
+	}
+	/* This must even be called if stop*Propagation has been called */
+	if(!event->defaultPrevented)
+		dispatcher->defaultEventBehavior(event);
+
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
 	event->target=NullRef;

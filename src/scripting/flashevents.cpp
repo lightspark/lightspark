@@ -31,6 +31,7 @@ SET_NAMESPACE("flash.events");
 REGISTER_CLASS_NAME(IEventDispatcher);
 REGISTER_CLASS_NAME(EventDispatcher);
 REGISTER_CLASS_NAME(Event);
+REGISTER_CLASS_NAME(EventPhase);
 REGISTER_CLASS_NAME(MouseEvent);
 REGISTER_CLASS_NAME(TimerEvent);
 REGISTER_CLASS_NAME(ProgressEvent);
@@ -51,10 +52,6 @@ void IEventDispatcher::linkTraits(Class_base* c)
 	lookupAndLink(c,"removeEventListener","flash.events:IEventDispatcher");
 	lookupAndLink(c,"dispatchEvent","flash.events:IEventDispatcher");
 	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
-}
-
-Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NULL),bubbles(b)
-{
 }
 
 void Event::finalize()
@@ -94,7 +91,10 @@ void Event::sinit(Class_base* c)
 	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget),true);
 	c->setGetterByQName("currentTarget","",Class<IFunction>::getFunction(_getCurrentTarget),true);
 	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType),true);
+	c->setGetterByQName("eventPhase","",Class<IFunction>::getFunction(_getType),true);
 	c->setMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),true);
+	c->setMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),true);
+	c->setMethodByQName("preventDefault","",Class<IFunction>::getFunction(_preventDefault),true);
 }
 
 void Event::buildTraits(ASObject* o)
@@ -148,6 +148,25 @@ ASFUNCTIONBODY(Event,_getType)
 	return Class<ASString>::getInstanceS(th->type);
 }
 
+ASFUNCTIONBODY(Event,_getEventPhase)
+{
+	Event* th=static_cast<Event*>(obj);
+	return abstract_i(th->eventPhase);
+}
+
+ASFUNCTIONBODY(Event,_isDefaultPrevented)
+{
+	Event* th=static_cast<Event*>(obj);
+	return abstract_b(th->defaultPrevented);
+}
+
+ASFUNCTIONBODY(Event,_preventDefault)
+{
+	Event* th=static_cast<Event*>(obj);
+	th->defaultPrevented = true;
+	return NULL;
+}
+
 ASFUNCTIONBODY(Event,formatToString)
 {
 	assert_and_throw(argslen>=1);
@@ -173,6 +192,16 @@ ASFUNCTIONBODY(Event,formatToString)
 	msg += "]";
 
 	return Class<ASString>::getInstanceS(msg);
+}
+
+void EventPhase::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+	c->setVariableByQName("CAPTURING_PHASE","",abstract_i(CAPTURING_PHASE));
+	c->setVariableByQName("BUBBLING_PHASE","",abstract_i(BUBBLING_PHASE));
+	c->setVariableByQName("AT_TARGET","",abstract_i(AT_TARGET));
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
@@ -353,9 +382,6 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	if(argslen>=4)
 		priority=args[3]->toInt();
 
-	if(useCapture)
-		LOG(LOG_NOT_IMPLEMENTED,_("Not implemented mode for addEventListener"));
-
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);
 
@@ -370,11 +396,12 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
 		f->incRef();
-		const listener newListener(_MR(f), priority);
+		const listener newListener(_MR(f), priority, useCapture);
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		//Error check
-		if(insertionPoint!=listeners.end() && insertionPoint->f==f)
+		if(insertionPoint!=listeners.end() && insertionPoint->f==f
+				&& insertionPoint->use_capture == useCapture )
 		{
 			LOG(LOG_CALLS,_("Weird event reregistration"));
 			return NULL;
@@ -407,6 +434,10 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 
 	const tiny_string& eventName=args[0]->toString();
 
+	bool useCapture=false;
+	if(argslen>=3)
+		useCapture=Boolean_concrete(args[2]);
+
 	{
 		Locker l(th->handlersMutex);
 		map<tiny_string, list<listener> >::iterator h=th->handlers.find(eventName);
@@ -417,7 +448,8 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		}
 
 		IFunction* f=static_cast<IFunction*>(args[1]);
-		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),f);
+		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),
+											make_pair(f,useCapture));
 		if(it!=h->second.end())
 			h->second.erase(it);
 		if(h->second.empty()) //Remove the entry from the map
@@ -504,6 +536,9 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	//TODO: check, ok we should also bind the level
 	for(unsigned int i=0;i<tmpListener.size();i++)
 	{
+		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
+		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
+			continue;
 		incRef();
 		//The object needs to be used multiple times
 		e->incRef();

@@ -42,8 +42,8 @@ class MovieClip;
 class Event: public ASObject
 {
 public:
-	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}
-	Event(const tiny_string& t, bool b=false);
+	Event(const tiny_string& t = "Event", bool b=false)
+		: type(t),target(NULL),currentTarget(NULL),bubbles(b),eventPhase(0),defaultPrevented(false) {}
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -51,6 +51,9 @@ public:
 	ASFUNCTION(_getType);
 	ASFUNCTION(_getTarget);
 	ASFUNCTION(_getCurrentTarget);
+	ASFUNCTION(_getEventPhase);
+	ASFUNCTION(_preventDefault);
+	ASFUNCTION(_isDefaultPrevented);
 	ASFUNCTION(formatToString);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
 	tiny_string type;
@@ -59,6 +62,21 @@ public:
 	_NR<ASObject> target;
 	_NR<ASObject> currentTarget;
 	bool bubbles;
+	uint32_t eventPhase;
+	bool defaultPrevented;
+};
+
+class EventPhase: public ASObject
+{
+public:
+	enum
+	{
+		CAPTURING_PHASE = 1,
+		AT_TARGET = 2,
+		BUBBLING_PHASE = 3
+	};
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
 };
 
 class KeyboardEvent: public Event
@@ -214,11 +232,19 @@ friend class EventDispatcher;
 private:
 	_R<IFunction> f;
 	uint32_t priority;
+	/* true: get events in the capture phase
+	 * false: get events in the bubble phase
+	 */
+	bool use_capture;
 public:
-	explicit listener(_R<IFunction> _f, uint32_t _p):f(_f),priority(_p){};
-	bool operator==(IFunction* r)
+	explicit listener(_R<IFunction> _f, uint32_t _p, bool _c)
+		:f(_f),priority(_p),use_capture(_c){};
+	bool operator==(std::pair<IFunction*,bool> r)
 	{
-		return f->isEqual(r);
+		/* One can register the same handle for the same event with
+		 * different values of use_capture
+		 */
+		return (use_capture == r.second) && f->isEqual(r.first);
 	}
 	bool operator<(const listener& r) const
 	{
@@ -246,7 +272,7 @@ public:
 	void handleEvent(_R<Event> e);
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
-
+	virtual void defaultEventBehavior(_R<Event> e) {};
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
 	ASFUNCTION(removeEventListener);

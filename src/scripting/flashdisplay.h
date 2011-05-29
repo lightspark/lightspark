@@ -383,8 +383,6 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	//bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	//void Render();
 };
 
 class Loader;
@@ -610,7 +608,7 @@ private:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
 public:
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}
 	Stage();
 	static void sinit(Class_base* c);
@@ -702,7 +700,7 @@ protected:
 public:
 	Bitmap() : size(0,0), data(NULL) {}
 	static void sinit(Class_base* c);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual IntSize getBitmapSize() const;
 };
 

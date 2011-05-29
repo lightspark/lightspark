@@ -1158,7 +1158,7 @@ void ParseThread::threadAbort()
 	root->parsingFailed();
 }
 
-bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	RECT f=getFrameSize();
 	xmin=0;

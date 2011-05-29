@@ -2356,10 +2356,10 @@ ASFUNCTIONBODY(Stage,_constructor)
 	return NULL;
 }
 
-_NR<InteractiveObject> Stage::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	_NR<InteractiveObject> ret;
-	ret = DisplayObjectContainer::hitTest(last, x, y);
+	ret = DisplayObjectContainer::hitTestImpl(last, x, y);
 	if(ret == NULL)
 	{
 		/* If nothing else is hit, we hit the stage */
@@ -3020,7 +3020,7 @@ void Bitmap::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 }
 
-bool Bitmap::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	return false;
 }

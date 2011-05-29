@@ -85,8 +85,6 @@ private:
 	 */
 	void initFrame();
 	void advanceFrame();
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
-		{ return MovieClip::hitTest(last, x, y); }
 	void setOnStage(bool staged);
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
@@ -105,7 +103,7 @@ public:
 	void commitFrame(bool another);
 	void revertFrame();
 	void parsingFailed();
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
 	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
 	URLInfo& getOrigin() DLL_PUBLIC { return origin; };

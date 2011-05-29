@@ -46,8 +46,8 @@ public:
 	TextField():width(0),height(0){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void Render(bool maskEnabled);
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	ASFUNCTION(appendText);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
@@ -105,6 +105,8 @@ protected:
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+		{ return TokenContainer::hitTestImpl(last, x, y); }
 public:
 	StaticText() : TokenContainer(this) {};
 	StaticText(const std::vector<GeomToken>& tokens) : TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {};

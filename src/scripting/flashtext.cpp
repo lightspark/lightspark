@@ -70,7 +70,7 @@ _NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, numbe
 	return NullRef;
 }
 
-bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	xmin=0;
 	xmax=width;
@@ -129,7 +129,7 @@ ASFUNCTIONBODY(TextField, appendText)
 	return NULL;
 }
 
-void TextField::Render(bool maskEnabled)
+void TextField::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//TODO: implement
 	LOG(LOG_NOT_IMPLEMENTED,_("TextField::Render ") << text);

@@ -315,11 +315,6 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 		in >> InitialText;
 }
 
-void DefineEditTextTag::Render(bool maskEnabled)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("DefineEditTextTag: Render"));
-}
-
 ASObject* DefineEditTextTag::instance() const
 {
 	DefineEditTextTag* ret=new DefineEditTextTag(*this);
@@ -670,11 +665,6 @@ ASObject* DefineBitsLossless2Tag::instance() const
 	return ret;
 }
 
-void DefineBitsLossless2Tag::Render(bool maskEnabled)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"DefineBitsLossless2Tag::Render");
-}
-
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, int v):DictionaryTag(h),version(v)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
@@ -812,7 +802,7 @@ ASObject* DefineMorphShapeTag::instance() const
 	return ret;
 }
 
-void DefineMorphShapeTag::Render(bool maskEnabled)
+void DefineMorphShapeTag::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	if(alpha==0)
 		return;

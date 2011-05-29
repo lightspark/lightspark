@@ -70,50 +70,6 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 	}
 }
 
-void DoActionTag::execute(DisplayObjectContainer* parent)
-{
-	//this->incRef();
-	//ls.push_back(make_pair(PlaceInfo(0x20000),this));
-}
-
-void DoActionTag::Render(bool maskEnabled)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("AVM1 not supported"));
-/*
-	ts = get_current_time_ms();
-	ExecutionContext* exec_bak=rt->execContext;
-	rt->execContext=this;
-	for(unsigned int i=0;i<actions.size();i++)
-	{
-		actions[i]->Execute();
-		if(jumpOffset<0)
-		{
-			int off=-jumpOffset;
-			while(off>0)
-			{
-				off-=actions[i]->Length;
-				i--;
-			}
-			if(off<0)
-				LOG(LOG_ERROR,_("Invalid jump offset"));
-		}
-		else if(jumpOffset>0)
-		{
-			while(jumpOffset>0)
-			{
-				i++;
-				jumpOffset-=actions[i]->Length;
-			}
-			if(jumpOffset<0)
-				LOG(LOG_ERROR,_("Invalid jump offset"));
-		}
-	}
-	rt->execContext=exec_bak;
-	td = get_current_time_ms();
-	sys->fps_prof->action_time=td-ts;
-*/
-}
-
 DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
 	LOG(LOG_CALLS,_("DoInitActionTag"));
@@ -135,50 +91,6 @@ DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTa
 			break;
 		}
 	}
-}
-
-void DoInitActionTag::execute(DisplayObjectContainer* parent)
-{
-	//this->incRef();
-	//ls.push_back(make_pair(PlaceInfo(0x10000),this));
-}
-
-void DoInitActionTag::Render(bool maskEnabled)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("AVM1 not supported"));
-/*
-	ts = get_current_time_ms();
-	ExecutionContext* exec_bak=rt->execContext;
-	rt->execContext=this;
-	for(unsigned int i=0;i<actions.size();i++)
-	{
-		actions[i]->Execute();
-		if(jumpOffset<0)
-		{
-			int off=-jumpOffset;
-			while(off>0)
-			{
-				off-=actions[i]->Length;
-				i--;
-			}
-			if(off<0)
-				LOG(LOG_ERROR,_("Invalid jump offset"));
-		}
-		else if(jumpOffset>0)
-		{
-			while(jumpOffset>0)
-			{
-				i++;
-				jumpOffset-=actions[i]->Length;
-			}
-			if(jumpOffset<0)
-				LOG(LOG_ERROR,_("Invalid jump offset"));
-		}
-	}
-	rt->execContext=exec_bak;
-	td=get_current_time_ms();
-	sys->fps_prof->action_time=td-ts;
-*/
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)

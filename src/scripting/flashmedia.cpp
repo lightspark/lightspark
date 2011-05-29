@@ -32,6 +32,7 @@ SET_NAMESPACE("flash.media");
 REGISTER_CLASS_NAME(SoundTransform);
 REGISTER_CLASS_NAME(Video);
 REGISTER_CLASS_NAME(Sound);
+REGISTER_CLASS_NAME(SoundLoaderContext);
 
 void SoundTransform::sinit(Class_base* c)
 {
@@ -222,3 +223,27 @@ ASFUNCTIONBODY(Sound,_constructor)
 	return NULL;
 }
 
+void SoundLoaderContext::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+	REGISTER_GETTER_SETTER(c,bufferTime);
+	REGISTER_GETTER_SETTER(c,checkPolicyFile);
+}
+
+ASFUNCTIONBODY(SoundLoaderContext,_constructor)
+{
+	SoundLoaderContext* th=Class<SoundLoaderContext>::cast(obj);
+	assert_and_throw(argslen<=2);
+	th->bufferTime = 1000;
+	th->checkPolicyFile = false;
+	if(0 < argslen)
+		th->bufferTime = toConcrete<number_t>(args[0]);
+	if(1 < argslen)
+		th->checkPolicyFile = toConcrete<bool>(args[1]);
+	return NULL;
+}
+
+ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,number_t,bufferTime);
+ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bool,checkPolicyFile);

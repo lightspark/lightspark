@@ -27,8 +27,54 @@
 
 #define ASFUNCTION(name) \
 	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
+
+#define ASPROPERTY_GETTER(type,name) \
+	type name; \
+	ASFUNCTION( _getter_##name)
+
+#define ASPROPERTY_SETTER(type,name) \
+	type name; \
+	ASFUNCTION( _setter_##name)
+
+#define ASPROPERTY_GETTER_SETTER(type, name) \
+	type name; \
+	ASFUNCTION( _getter_##name); \
+	ASFUNCTION( _setter_##name)
+
 #define ASFUNCTIONBODY(c,name) \
 	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
+
+#define ASFUNCTIONBODY_GETTER(c,type,name) \
+	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	{ \
+		c* th = Class<c>::cast(obj); \
+		if(argslen != 0) \
+			throw ArgumentError("Arguments provided in getter"); \
+		return toAbstract<type>(th->name); \
+	}
+
+#define ASFUNCTIONBODY_SETTER(c,type,name) \
+	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	{ \
+		c* th = Class<c>::cast(obj); \
+		if(argslen != 1) \
+			throw ArgumentError("Wrong number of arguments in setter"); \
+		th->name = toConcrete<type>(args[0]); \
+		return NULL; \
+	}
+
+#define ASFUNCTIONBODY_GETTER_SETTER(c,type,name) \
+		ASFUNCTIONBODY_GETTER(c,type,name) \
+		ASFUNCTIONBODY_SETTER(c,type,name)
+
+#define REGISTER_GETTER(c,name) \
+	c->setGetterByQName(#name,"",Class<IFunction>::getFunction(_getter_##name),true)
+#define REGISTER_SETTER(c,name) \
+	c->setSetterByQName(#name,"",Class<IFunction>::getFunction(_setter_##name),true)
+
+#define REGISTER_GETTER_SETTER(c,name) \
+		REGISTER_GETTER(c,name); \
+		REGISTER_SETTER(c,name)
 
 #define CLASSBUILDABLE(className) \
 	friend class Class<className>; 

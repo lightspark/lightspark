@@ -121,9 +121,9 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	virtual void Render(bool maskEnabled);
-	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	virtual _NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
+	void Render(bool maskEnabled);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 	//API to handle mask support in hit testing
 	virtual bool isOpaque(number_t x, number_t y) const
 	{

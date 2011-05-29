@@ -1162,9 +1162,8 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 	}
 }
 
-DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),IdleToOverUp(false)
+DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
-	state=BUTTON_UP;
 	in >> ButtonId;
 	BitStream bs(in);
 	UB(7,bs);
@@ -1176,12 +1175,15 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	do
 	{
 		in >> br;
+		if(br.isNull())
+			break;
 		Characters.push_back(br);
 	}
-	while(!br.isNull());
+	while(true);
 
 	if(ActionOffset)
 	{
+		LOG(LOG_NOT_IMPLEMENTED,"DefineButton2Tag: Actions are not supported");
 		BUTTONCONDACTION bca;
 		do
 		{
@@ -1194,62 +1196,61 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 
 ASObject* DefineButton2Tag::instance() const
 {
-	DefineButton2Tag *ret = new DefineButton2Tag(*this);
-	ret->setPrototype(Class<DisplayObject>::getClass());
-	return ret;
-}
+	DisplayObject* states[4] = {NULL, NULL, NULL, NULL};
+	bool isSprite[4] = {false, false, false, false};
+	uint32_t curDepth[4];
 
-void DefineButton2Tag::handleEvent(Event* e)
-{
-	state=BUTTON_OVER;
-	IdleToOverUp=true;
-}
+	/* There maybe multiple DisplayObjects for one state. The official
+	 * implementation seems to create a Sprite in that case with
+	 * all DisplayObjects as children.
+	 */
 
-void DefineButton2Tag::Render(bool maskEnabled)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("DefineButton2Tag::Render"));
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-	/*	for(unsigned int i=0;i<Characters.size();i++)
+	auto i = Characters.begin();
+	for(;i != Characters.end(); ++i)
 	{
-		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
+		for(int j=0;j<4;++j)
 		{
+			if(j==0 && !i->ButtonStateDown)
+				continue;
+			if(j==1 && !i->ButtonStateHitTest)
+				continue;
+			if(j==2 && !i->ButtonStateOver)
+				continue;
+			if(j==3 && !i->ButtonStateUp)
+				continue;
+			DictionaryTag* dict=loadedFrom->dictionaryLookup(i->CharacterID);
+
+			//We can create the object right away
+			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());
+			assert_and_throw(state);
+			//The matrix must be set before invoking the constructor
+			state->setMatrix(i->PlaceMatrix);
+			/*
+			 * TODO: BlendMode, filerList, PlaceDepth, ColorTransfrom
+			 */
+			if(states[j] == NULL)
+			{
+				states[j] = state;
+				curDepth[j] = i->PlaceDepth;
+			}
+			else
+			{
+				if(!isSprite[j])
+				{
+					Sprite* spr = Class<Sprite>::getInstanceS();
+					spr->insertLegacyChildAt(curDepth[j],states[j]);
+					states[j] = spr;
+					spr->name = "Button_spr";
+				}
+				Sprite* spr = Class<Sprite>::cast(states[j]);
+				spr->insertLegacyChildAt(i->PlaceDepth,state);
+			}
 		}
-		else if(Characters[i].ButtonStateOver && state==BUTTON_OVER)
-		{
-		}
-		else
-			continue;
-		DictionaryTag* r=sys->dictionaryLookup(Characters[i].CharacterID);
-		IRenderObject* c=dynamic_cast<IRenderObject*>(r);
-		if(c==NULL)
-			LOG(ERROR,_("Rendering something strange"));
-		float matrix[16];
-		Characters[i].PlaceMatrix.get4DMatrix(matrix);
-		glPushMatrix();
-		glMultMatrixf(matrix);
-		c->Render();
-		glPopMatrix();
 	}
-	for(unsigned int i=0;i<Actions.size();i++)
-	{
-		if(IdleToOverUp && Actions[i].CondIdleToOverUp)
-		{
-			IdleToOverUp=false;
-		}
-		else
-			continue;
 
-		for(unsigned int j=0;j<Actions[i].Actions.size();j++)
-			Actions[i].Actions[j]->Execute();
-	}*/
-}
-
-bool DefineButton2Tag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	return false;
+	SimpleButton* ret=new SimpleButton(states[0], states[1], states[2], states[3]);
+	ret->setPrototype(Class<SimpleButton>::getClass());
+	return ret;
 }
 
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)

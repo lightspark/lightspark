@@ -339,7 +339,7 @@ public:
 
 class BUTTONCONDACTION;
 
-class DefineButton2Tag: public DictionaryTag, public DisplayObject
+class DefineButton2Tag: public DictionaryTag
 {
 private:
 	UI16_SWF ButtonId;
@@ -348,18 +348,9 @@ private:
 	UI16_SWF ActionOffset;
 	std::vector<BUTTONRECORD> Characters;
 	std::vector<BUTTONCONDACTION> Actions;
-	enum BUTTON_STATE { BUTTON_UP=0, BUTTON_OVER};
-	BUTTON_STATE state;
-
-	//Transition flags
-	bool IdleToOverUp;
 public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
-	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	virtual void handleEvent(Event*);
-
 	ASObject* instance() const;
 };
 

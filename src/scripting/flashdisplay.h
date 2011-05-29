@@ -182,37 +182,6 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
-class SimpleButton: public InteractiveObject
-{
-private:
-	DisplayObject *downState;
-	DisplayObject *hitTestState;
-	DisplayObject *overState;
-	DisplayObject *upState;
-	bool enabled;
-	bool useHandCursor;
-public:
-	SimpleButton(){}
-	void Render(bool maskEnabled);
-	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_getUpState);
-	ASFUNCTION(_setUpState);
-	ASFUNCTION(_getDownState);
-	ASFUNCTION(_setDownState);
-	ASFUNCTION(_getOverState);
-	ASFUNCTION(_setOverState);
-	ASFUNCTION(_getHitTestState);
-	ASFUNCTION(_setHitTestState);
-	ASFUNCTION(_getEnabled);
-	ASFUNCTION(_setEnabled);
-	ASFUNCTION(_getUseHandCursor);
-	ASFUNCTION(_setUseHandCursor);
-};
-
 class DisplayObjectContainer: public InteractiveObject
 {
 private:
@@ -251,6 +220,54 @@ public:
 	ASFUNCTION(getChildAt);
 	ASFUNCTION(getChildByName);
 	ASFUNCTION(contains);
+};
+
+/* This is really ugly, but the parent of the current
+ * active state (e.g. upState) is set to the owning SimpleButton,
+ * which is not a DisplayObjectContainer per spec.
+ * We let it derive from DisplayObjectContainer, but
+ * call only the InteractiveObject::_constructor
+ * to make it look like an InteractiveObject to AS.
+ */
+class SimpleButton: public DisplayObjectContainer
+{
+private:
+	_NR<DisplayObject> downState;
+	_NR<DisplayObject> hitTestState;
+	_NR<DisplayObject> overState;
+	_NR<DisplayObject> upState;
+	bool enabled;
+	bool useHandCursor;
+	enum
+	{
+		UP,
+		OVER,
+		DOWN
+	} currentState;
+	void reflectState();
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
+	void Render(bool maskEnabled);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	/* This is called by when an event is dispatched */
+	void defaultEventBehavior(_R<Event> e);
+public:
+	SimpleButton(DisplayObject *dS = NULL, DisplayObject *hTS = NULL,
+				 DisplayObject *oS = NULL, DisplayObject *uS = NULL);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getUpState);
+	ASFUNCTION(_setUpState);
+	ASFUNCTION(_getDownState);
+	ASFUNCTION(_setDownState);
+	ASFUNCTION(_getOverState);
+	ASFUNCTION(_setOverState);
+	ASFUNCTION(_getHitTestState);
+	ASFUNCTION(_setHitTestState);
+	ASFUNCTION(_getEnabled);
+	ASFUNCTION(_setEnabled);
+	ASFUNCTION(_getUseHandCursor);
+	ASFUNCTION(_setUseHandCursor);
 };
 
 class TokenContainer

@@ -2097,6 +2097,26 @@ _R<ASObject> Array::nextName(uint32_t index)
 	}
 }
 
+ASObject* Array::at(unsigned int index) const
+{
+	if(data.size()<=index)
+		outofbounds();
+
+	switch(data[index].type)
+	{
+		case DATA_OBJECT:
+		{
+			if(data[index].data)
+				return data[index].data;
+		}
+		case DATA_INT:
+			return abstract_i(index);
+	}
+
+	//We should be here only if data is an object and is NULL
+	return new Undefined;
+}
+
 void Array::outofbounds() const
 {
 	throw ParseException("Array access out of bounds");

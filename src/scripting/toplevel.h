@@ -519,19 +519,7 @@ public:
 	ASFUNCTION(_map);
 	ASFUNCTION(_toString);
 
-	ASObject* at(unsigned int index) const
-	{
-		if(index<data.size())
-		{
-			assert_and_throw(data[index].data);
-			return data[index].data;
-		}
-		else
-		{
-			outofbounds();
-			return NULL;
-		}
-	}
+	ASObject* at(unsigned int index) const;
 	void set(unsigned int index, ASObject* o)
 	{
 		if(index<data.size())

@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 #ifdef PROFILING_SUPPORT
 	char* profilingFileName=NULL;
 #endif
-	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::REMOTE;
+	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
 	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
@@ -195,6 +195,7 @@ int main(int argc, char* argv[])
 	if(url)
 	{
 		sys->setOrigin(url, fileName);
+		sandboxType = SecurityManager::REMOTE;
 	}
 #ifndef WIN32
 	//When running in a local sandbox, set the root URL to the current working dir

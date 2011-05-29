@@ -348,6 +348,7 @@ public:
 	RootMovieClip* root;
 	int version;
 	bool useAVM2;
+	bool useNetwork;
 	ParseThread(RootMovieClip* r,std::istream& in) DLL_PUBLIC;
 	~ParseThread();
 	enum FILE_TYPE { NONE=0, SWF, COMPRESSED_SWF, PNG, JPEG, GIF };

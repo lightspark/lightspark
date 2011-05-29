@@ -466,6 +466,9 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 
 bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
+	if(!isConstructed())
+		return false;
+
 	bool ret=boundsRect(xmin,xmax,ymin,ymax);
 	if(ret)
 	{
@@ -520,7 +523,7 @@ void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,nu
 
 void DisplayObject::Render(bool maskEnabled)
 {
-	if(skipRender(maskEnabled))
+	if(!isConstructed() || skipRender(maskEnabled))
 		return;
 
 	number_t t1,t2,t3,t4;
@@ -1826,7 +1829,7 @@ _NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, numbe
 	if(x<t1 || x>t2 || y<t3 || y>t4)
 		return NullRef;
 	 */
-	if(!visible)
+	if(!visible || !isConstructed())
 		return NullRef;
 
 	hitTestPrologue();

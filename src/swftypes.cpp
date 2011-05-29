@@ -95,6 +95,7 @@ tiny_string tiny_string::substr(uint32_t start, uint32_t end) const
 		ret.createBuffer(subSize);
 	strncpy(ret.buf,buf+start,end-start);
 	ret.buf[end-start]=0;
+	ret.stringSize = subSize;
 	return ret;
 }
 

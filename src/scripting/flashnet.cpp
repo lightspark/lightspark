@@ -403,8 +403,10 @@ ASFUNCTIONBODY(NetConnection,connect)
 
 	//This seems strange:
 	//LOCAL_WITH_FILE may not use connect(), even if it tries to connect to a local file.
-	//I'm following the specification to the letter
-	if(sys->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
+	//I'm following the specification to the letter. Testing showed
+	//that the official player allows connect(null) in localWithFile.
+	if(args[0]->getObjectType() != T_NULL
+	&& sys->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetConnection::connect "
 				"from LOCAL_WITH_FILE sandbox");
 	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.

@@ -771,7 +771,7 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	// Used to signal completion of asynchronous external call
 	sem_t callStatus;
 	sem_init(&callStatus, 0, 0);
-	// Add this callStatus semaphore to the list of running call statusses to be cleaned up on shutdown
+	// Add this callStatus semaphore to the list of running call statuses to be cleaned up on shutdown
 	callStatusses.push(&callStatus);
 	std::string scriptString = "(" + id.getString() + ")";
 	EXT_CALL_DATA data = {

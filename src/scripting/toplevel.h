@@ -689,6 +689,7 @@ public:
 	ASFUNCTION(attributes);
 	ASFUNCTION(appendChild);
 	ASFUNCTION(localName);
+	ASFUNCTION(descendants);
 	ASFUNCTION(generator);
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);

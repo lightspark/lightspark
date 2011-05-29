@@ -15,6 +15,24 @@
 		dict[this]="Test";
 		Tests.assertEquals(false, dict.hasOwnProperty(this), "hasOwnProperty on existant Dictionary item");
 
+		var str1:String = "test123";
+		var str2:String = new String(str1);
+		var key:String = "123";
+		var dict1:flash.utils.Dictionary=new flash.utils.Dictionary;
+		var dict2:flash.utils.Dictionary=new flash.utils.Dictionary;
+		var dict3:flash.utils.Dictionary=new flash.utils.Dictionary;
+		var dict4:flash.utils.Dictionary;
+
+		dict1[key] = str1;
+		dict2[key] = str1;
+		dict3[key] = str2;
+		dict4 = dict1;
+
+		Tests.assertTrue(dict1["123"] == dict2["123"], "Values equal");
+		Tests.assertFalse(dict1 == dict2, "Dictionaries equal with same value object");
+		Tests.assertFalse(dict1 == dict3, "Dictionaries equal with different value object");
+		Tests.assertTrue(dict1 == dict4, "Dictionaries equal with itsself");
+
 		Tests.report(visual, this.name);
 	}
  ]]>

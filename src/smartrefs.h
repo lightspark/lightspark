@@ -75,6 +75,10 @@ public:
 	{
 		return m==r.getPtr();
 	}
+	template<class D> bool operator!=(const Ref<D>& r) const
+	{
+		return m!=r.getPtr();
+	}
 	template<class D> bool operator==(const NullableRef<D>&r) const;
 	bool operator==(T* r) const
 	{

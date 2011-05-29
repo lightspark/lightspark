@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_utils_Proxy_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import TestProxy;
+	private function appComplete():void
+	{
+		var slc:flash.media.SoundLoaderContext;
+		slc = new flash.media.SoundLoaderContext();
+		Tests.assertEquals(1000, slc.bufferTime, "bufferTime default");
+		Tests.assertEquals(false, slc.checkPolicyFile, "checkPolicyFile default");
+		slc = new flash.media.SoundLoaderContext(500, true);
+		Tests.assertEquals(500, slc.bufferTime, "bufferTime constructor");
+		Tests.assertEquals(true, slc.checkPolicyFile, "checkPolicyFile constructor");
+
+		slc.bufferTime = 300;
+		slc.checkPolicyFile = false;
+		Tests.assertEquals(300, slc.bufferTime, "bufferTime setter/getter");
+		Tests.assertEquals(false, slc.checkPolicyFile, "checkPolicyFile setter/getter");
+
+		Tests.report(visual, this.name);
+	}
+ ]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

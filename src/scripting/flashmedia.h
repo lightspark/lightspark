@@ -74,6 +74,16 @@ public:
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
 };
 
+class SoundLoaderContext : public ASObject
+{
+private:
+	ASPROPERTY_GETTER_SETTER(number_t,bufferTime);
+	ASPROPERTY_GETTER_SETTER(bool,checkPolicyFile);
+public:
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
+
 };
 
 #endif

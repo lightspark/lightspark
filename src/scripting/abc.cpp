@@ -314,6 +314,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass());
 	builtin->setVariableByQName("Video","flash.media",Class<Video>::getClass());
 	builtin->setVariableByQName("Sound","flash.media",Class<Sound>::getClass());
+	builtin->setVariableByQName("SoundLoaderContext","flash.media",Class<SoundLoaderContext>::getClass());
 
 	builtin->setVariableByQName("ContextMenu","flash.ui",Class<ASObject>::getClass(QName("ContextMenu","flash.ui")));
 	builtin->setVariableByQName("ContextMenuItem","flash.ui",Class<ASObject>::getClass(QName("ContextMenuItem","flash.ui")));

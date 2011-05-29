@@ -969,6 +969,34 @@ public:
 };
 
 bool Boolean_concrete(ASObject* obj);
+
+template<class T>
+T toConcrete(ASObject* obj)
+{
+	assert_and_throw("No specialization for toConcrete");
+}
+template<>
+number_t toConcrete<number_t>(ASObject* obj);
+template<>
+bool toConcrete<bool>(ASObject* obj);
+template<>
+uint32_t toConcrete<uint32_t>(ASObject* obj);
+template<>
+int32_t toConcrete<int32_t>(ASObject* obj);
+
+template<class T>
+ASObject* toAbstract(const T& val)
+{
+	assert_and_throw("No specialization for toAbstract");
+}
+template<>
+ASObject* toAbstract<int32_t>(const int32_t& val);
+/* TODO: implement abstract_ui and number manager for uints */
+template<>
+ASObject* toAbstract<number_t>(const number_t& val);
+template<>
+ASObject* toAbstract<bool>(const bool& val);
+
 ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);

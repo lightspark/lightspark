@@ -2462,8 +2462,18 @@ TRISTATE Number::isLess(ASObject* o)
 ASFUNCTIONBODY(Number,_toString)
 {
 	Number* th=static_cast<Number*>(obj);
-	assert_and_throw(argslen==0);
-	return Class<ASString>::getInstanceS(th->Number::toString(false));
+	int radix=10;
+	char buf[20];
+	if(argslen==1)
+		radix=args[0]->toUInt();
+	assert_and_throw(radix==10 || radix==16);
+
+	if(radix==10)
+		snprintf(buf,20,"%g",th->val);
+	else if(radix==16)
+		snprintf(buf,20,"%lx",(int64_t)th->val);
+
+	return Class<ASString>::getInstanceS(buf);
 }
 
 ASFUNCTIONBODY(Number,generator)
@@ -2474,7 +2484,7 @@ ASFUNCTIONBODY(Number,generator)
 tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
-	snprintf(buf,20,"%.18g",val);
+	snprintf(buf,20,"%g",val);
 	return tiny_string(buf,true);
 }
 

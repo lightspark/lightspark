@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Number_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var num:Number = 12.34;
+		Tests.assertEquals("12.34",num.toString(10),"Number::toString(10)");
+		Tests.assertEquals("c",num.toString(16),"Number::toString(16)");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

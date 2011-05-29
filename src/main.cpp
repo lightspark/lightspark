@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
 		char * cwd = get_current_dir_name();
-		string cwdStr = string("file://") + string(cwd, true);
+		string cwdStr = string("file://") + string(cwd);
 		free(cwd);
 		cwdStr += "/";
 		sys->setOrigin(cwdStr, fileName);

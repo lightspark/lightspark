@@ -186,7 +186,7 @@ public:
 };
 
 
-class DefineEditTextTag: public DictionaryTag, public TextField
+class DefineEditTextTag: public DictionaryTag
 {
 private:
 	UI16_SWF CharacterID;
@@ -219,12 +219,10 @@ private:
 	SI16_SWF Leading;
 	STRING VariableName;
 	STRING InitialText;
-
+	TextData textData;
 public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
 	int getId(){ return CharacterID; }
-	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
-		{ LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag: renderImpl"); }
 	ASObject* instance() const;
 };
 

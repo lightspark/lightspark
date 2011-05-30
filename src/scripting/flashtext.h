@@ -45,6 +45,8 @@ private:
 	void requestInvalidation();
 	void updateText(const tiny_string& new_text);
 public:
+	TextField() {};
+	TextField(const TextData& textData) : TextData(textData) {};
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(appendText);

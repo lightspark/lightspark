@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_implicit_casting_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import ImplicitTestCase;
+	import flash.utils.getQualifiedClassName;
+	private function appComplete():void
+	{
+		var test:ImplicitTestCase = new ImplicitTestCase();
+		test.testMember = 2;
+		Tests.assertEquals("String",getQualifiedClassName(test.testMember),"Implicit casting to String");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

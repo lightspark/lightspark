@@ -355,18 +355,23 @@ class KERNINGRECORD
 {
 };
 
-class DefineBinaryDataTag: public DictionaryTag, public ByteArray
+class DefineBinaryDataTag: public DictionaryTag
 {
 private:
 	UI16_SWF Tag;
 	UI32_SWF Reserved;
+	uint8_t* bytes;
+	uint32_t len;
 public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
+	~DefineBinaryDataTag() { delete bytes; }
 	virtual int getId(){return Tag;} 
 
 	ASObject* instance() const
 	{
-		DefineBinaryDataTag* ret=new DefineBinaryDataTag(*this);
+		uint8_t* b = new uint8_t[len];
+		memcpy(b,bytes,len);
+		ByteArray* ret=new ByteArray(b, len);
 		ret->setPrototype(Class<ByteArray>::getClass());
 		return ret;
 	}

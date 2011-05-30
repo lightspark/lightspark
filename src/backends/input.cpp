@@ -224,6 +224,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 			return;
 		}
 		local = parent->getConcatenatedMatrix().getInverted().multiply2D(mousePos);
+		local += dragOffset;
 		if(dragLimit)
 			local = local.projectInto(*dragLimit);
 

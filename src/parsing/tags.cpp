@@ -301,6 +301,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 		if(HasFontClass)
 			in >> FontClass;
 		in >> FontHeight;
+		textData.format.size = FontHeight;
 	}
 	if(HasTextColor)
 		in >> TextColor;
@@ -313,12 +314,16 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 	in >> VariableName;
 	LOG(LOG_NOT_IMPLEMENTED,_("Sync to variable name ") << VariableName);
 	if(HasText)
+	{
 		in >> InitialText;
+		textData.text = (const char*)InitialText;
+	}
+	LOG(LOG_NOT_IMPLEMENTED, "DefineEditTextTag does not parse many attributes");
 }
 
 ASObject* DefineEditTextTag::instance() const
 {
-	DefineEditTextTag* ret=new DefineEditTextTag(*this);
+	TextField* ret=new TextField(textData);
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
 	ret->setPrototype(Class<TextField>::getClass());

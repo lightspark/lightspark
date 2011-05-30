@@ -1694,20 +1694,21 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 	return NULL;
 }
 
+Vector2f DisplayObject::getLocalMousePos()
+{
+	return getConcatenatedMatrix().getInverted().multiply2D(sys->getInputThread()->getMousePos());
+}
+
 ASFUNCTIONBODY(DisplayObject,_getMouseX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	number_t temp, outX;
-	th->getConcatenatedMatrix().getInverted().multiply2D(sys->getInputThread()->getMouseX(), temp, outX, temp);
-	return abstract_d(outX);
+	return abstract_d(th->getLocalMousePos().x);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getMouseY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	number_t temp, outY;
-	th->getConcatenatedMatrix().getInverted().multiply2D(temp, sys->getInputThread()->getMouseY(), temp, outY);
-	return abstract_d(outY);
+	return abstract_d(th->getLocalMousePos().y);
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)

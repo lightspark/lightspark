@@ -136,6 +136,7 @@ public:
 	void setMatrix(const MATRIX& m);
 	virtual void advanceFrame() {}
 	virtual void initFrame();
+	Vector2f getLocalMousePos();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

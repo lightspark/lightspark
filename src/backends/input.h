@@ -21,6 +21,7 @@
 #define INPUT_H
 
 #include "compat.h"
+#include "geometry.h"
 #include "threading.h"
 #include "platforms/pluginutils.h"
 #include "swftypes.h"
@@ -69,8 +70,7 @@ private:
 	void handleMouseMove(uint32_t x, uint32_t y);
 
 	Spinlock inputDataSpinlock;
-	number_t mouseX;
-	number_t mouseY;
+	Vector2 mousePos;
 public:
 	InputThread(SystemState* s);
 	~InputThread();
@@ -106,16 +106,10 @@ public:
 	*/
 	bool isMasked(number_t x, number_t y) const;
 
-	number_t getMouseX()
+	Vector2 getMousePos()
 	{
 		SpinlockLocker locker(inputDataSpinlock);
-		return mouseX;
-	}
-
-	number_t getMouseY()
-	{
-		SpinlockLocker locker(inputDataSpinlock);
-		return mouseY;
+		return mousePos;
 	}
 };
 

@@ -33,8 +33,7 @@ using namespace lightspark;
 using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
-	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL),
-	mouseX(0), mouseY(0)
+	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
 	LOG(LOG_NO_INFO,_("Creating input thread"));
 }
@@ -212,8 +211,7 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 {
 	SpinlockLocker locker(inputDataSpinlock);
-	mouseX = x;
-	mouseY = y;
+	mousePos = Vector2(x,y);
 }
 
 void* InputThread::sdl_worker(InputThread* th)

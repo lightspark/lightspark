@@ -120,6 +120,11 @@ function jsExceptionTest()
 	throw "succes";
 	return "failure";
 }
+
+var foo = new Object();
+foo.bar1=function() { alert("Bar1 "+this); }
+foo.bar2=function() { alert("Bar2 "+this); }
+
 </script>
 </head>
 <body onload="window.testPlayer = document.getElementById('testPlayer'); document.getElementById('trace').value = ''">
@@ -130,7 +135,7 @@ function jsExceptionTest()
 <param name="movie" value="external_ExternalInterface_test.swf"/>
 <param name="allowFullScreen" value="true"/>
 <param name="allowscriptaccess" value="always"/>
-<embed width="200" height="200" src="external_ExternalInterface_test.swf" id="testPlayer" name="testPlayer"/>
+<embed width="200" height="200" src="external_ExternalInterface_test.swf" id="testPlayer" name="testPlayer" AllowScriptAccess="always"></embed>
 </object>
 
 <button onclick="testAll();" style="display: none;" id="testButton">Test all</button>

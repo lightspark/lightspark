@@ -76,6 +76,11 @@
 		);
 
 		ExternalInterface.call("ready");
+
+		ExternalInterface.call("foo.bar1");
+		ExternalInterface.call("foo.bar2()");
+		ExternalInterface.call("function() { alert('Executed eval');}");
+		ExternalInterface.call("alert('Complex thing'), function() { alert('Inside complex thing');}");
 	}
 	]]>
 </mx:Script>

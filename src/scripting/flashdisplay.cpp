@@ -397,10 +397,43 @@ void Sprite::sinit(Class_base* c)
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),true);
+	c->setMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),true);
+	c->setMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),true);
 }
 
 void Sprite::buildTraits(ASObject* o)
 {
+}
+
+ASFUNCTIONBODY(Sprite,_startDrag)
+{
+	Sprite* th=Class<Sprite>::cast(obj);
+	bool lockCenter = false;
+	const RECT* bounds = NULL;
+	if(argslen > 0)
+		lockCenter = ArgumentConversion<bool>::toConcrete(args[0]);
+	if(argslen > 1)
+	{
+		Rectangle* rect = Class<Rectangle>::cast(args[1]);
+		if(!rect)
+			throw ArgumentError("Wrong type");
+		bounds = new RECT(rect->getRect());
+	}
+
+	Vector2f offset;
+	if(!lockCenter)
+		offset = -th->getLocalMousePos();
+
+	th->incRef();
+	sys->getInputThread()->startDrag(_MR(th), bounds, offset);
+	return NULL;
+}
+
+ASFUNCTIONBODY(Sprite,_stopDrag)
+{
+	Sprite* th=Class<Sprite>::cast(obj);
+	sys->getInputThread()->stopDrag(th);
+	return NULL;
 }
 
 bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

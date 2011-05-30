@@ -479,6 +479,8 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
+	ASFUNCTION(_startDrag);
+	ASFUNCTION(_stopDrag);
 	int getDepth() const
 	{
 		return 0;

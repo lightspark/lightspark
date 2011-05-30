@@ -141,6 +141,7 @@ public:
 	ASFUNCTION(_getURI);
 };
 
+class SoundTransform;
 class NetStream: public EventDispatcher, public IThreadJob, public ITickJob
 {
 private:
@@ -175,6 +176,8 @@ private:
 	_NR<ASObject> client;
 	bool checkPolicyFile;
 	bool rawAccessAllowed;
+	number_t oldVolume;
+	ASPROPERTY_GETTER_SETTER(NullableRef<SoundTransform>,soundTransform);
 public:
 	NetStream();
 	~NetStream();

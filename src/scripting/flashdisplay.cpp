@@ -1390,19 +1390,36 @@ ASFUNCTIONBODY(DisplayObject,_getX)
 		return abstract_d(th->tx);
 }
 
+void DisplayObject::setX(number_t val)
+{
+	if(ACQUIRE_READ(useMatrix))
+	{
+		valFromMatrix();
+		RELEASE_WRITE(useMatrix,false);
+	}
+	tx=val;
+	if(onStage)
+		requestInvalidation();
+}
+
+void DisplayObject::setY(number_t val)
+{
+	if(ACQUIRE_READ(useMatrix))
+	{
+		valFromMatrix();
+		RELEASE_WRITE(useMatrix,false);
+	}
+	ty=val;
+	if(onStage)
+		requestInvalidation();
+}
+
 ASFUNCTIONBODY(DisplayObject,_setX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert_and_throw(argslen==1);
 	number_t val=args[0]->toNumber();
-	if(ACQUIRE_READ(th->useMatrix))
-	{
-		th->valFromMatrix();
-		RELEASE_WRITE(th->useMatrix,false);
-	}
-	th->tx=val;
-	if(th->onStage)
-		th->requestInvalidation();
+	th->setX(val);
 	return NULL;
 }
 
@@ -1420,14 +1437,7 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert_and_throw(argslen==1);
 	number_t val=args[0]->toNumber();
-	if(ACQUIRE_READ(th->useMatrix))
-	{
-		th->valFromMatrix();
-		RELEASE_WRITE(th->useMatrix,false);
-	}
-	th->ty=val;
-	if(th->onStage)
-		th->requestInvalidation();
+	th->setY(val);
 	return NULL;
 }
 

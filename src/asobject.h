@@ -111,11 +111,11 @@ class ABCContext;
 struct obj_var
 {
 	ASObject* var;
+	Class_base* type;
 	IFunction* setter;
 	IFunction* getter;
-	obj_var():var(NULL),setter(NULL),getter(NULL){}
-	explicit obj_var(ASObject* v):var(v),setter(NULL),getter(NULL){}
-	explicit obj_var(ASObject* v,IFunction* g,IFunction* s):var(v),setter(s),getter(g){}
+	obj_var():var(NULL),type(NULL),setter(NULL),getter(NULL){}
+	obj_var(ASObject* _v, Class_base* _t):var(_v),type(_t),setter(NULL),getter(NULL){}
 };
 
 enum TRAIT_KIND { OWNED_TRAIT=0, BORROWED_TRAIT=1 };
@@ -126,6 +126,7 @@ struct variable
 	obj_var var;
 	TRAIT_KIND kind;
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k):ns(_ns),kind(_k){}
+	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, Class_base* _c):ns(_ns),var(_v,_c),kind(_k){}
 };
 
 class variables_map
@@ -146,6 +147,8 @@ private:
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
 	obj_var* findObjVar(const tiny_string& name, const nsNameAndKind& ns, bool create, bool borrowedMode);
 	obj_var* findObjVar(const multiname& mname, bool create, bool borrowedMode);
+	//Initialize a new variable specifying the type (TODO: add support for const)
+	void initializeVar(const multiname& mname, ASObject* obj, Class_base* type);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
@@ -275,6 +278,7 @@ public:
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
+	void initializeVariableByMultiname(const multiname& name, ASObject* o, Class_base* type);
 	virtual void deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances

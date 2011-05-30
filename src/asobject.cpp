@@ -480,6 +480,23 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	check();
 }
 
+void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, Class_base* c)
+{
+	check();
+
+	obj_var* obj=findSettable(name, false);
+	if(obj)
+	{
+		//Initializing an already existing variable
+		LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << " already initialized");
+		o->decRef();
+		assert_and_throw(obj->type==c);
+		return;
+	}
+
+	Variables.initializeVar(name, o, c);
+}
+
 void variables_map::killObjVar(const multiname& mname)
 {
 	tiny_string name=mname.normalizedName();
@@ -545,6 +562,12 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create, bool bor
 	}
 	else
 		return NULL;
+}
+
+void variables_map::initializeVar(const multiname& mname, ASObject* obj, Class_base* type)
+{
+	tiny_string name=mname.normalizedName();
+	Variables.insert(make_pair(name, variable(mname.ns[0], OWNED_TRAIT, obj, type)));
 }
 
 ASFUNCTIONBODY(ASObject,generator)

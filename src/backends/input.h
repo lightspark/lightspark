@@ -54,9 +54,10 @@ private:
 	Mutex mutexListeners;
 	Mutex mutexDragged;
 
-	Sprite* curDragged;
+	_NR<Sprite> curDragged;
 	_NR<InteractiveObject> lastMouseDownTarget;
-	RECT dragLimit;
+	const RECT* dragLimit;
+	Vector2f dragOffset;
 	class MaskData
 	{
 	public:
@@ -78,8 +79,8 @@ public:
 	void start(ENGINE e, void* param);
 	void addListener(InteractiveObject* ob);
 	void removeListener(InteractiveObject* ob);
-	void enableDrag(Sprite* s, const RECT& limit);
-	void disableDrag();
+	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);
+	void stopDrag(Sprite* s);
 	/**
 	  	Add a mask to the stack mask
 		@param d The DisplayObject used as a mask

@@ -149,7 +149,7 @@ void TextField::invalidate()
 	int32_t x,y;
 	uint32_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
+	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
 	{
 		//No contents, nothing to do
 		return;

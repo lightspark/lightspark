@@ -54,7 +54,8 @@ private:
 	bool initialized;
 	_NR<NetStream> netStream;
 public:
-	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),netStream(NULL)
+	Video(uint32_t w=320, uint32_t h=240)
+		: width(w),height(h),videoWidth(0),videoHeight(0),initialized(false),netStream(NULL)
 	{
 		sem_init(&mutex,0,1);
 	}

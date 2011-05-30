@@ -44,6 +44,7 @@ class Downloader;
 class DisplayObject: public EventDispatcher
 {
 friend class TokenContainer;
+friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 private:
 	MATRIX Matrix;
 	ACQUIRE_RELEASE_FLAG(useMatrix);

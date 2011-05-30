@@ -100,6 +100,12 @@ public:
 #define _R Ref
 
 template<class T>
+inline std::ostream& operator<<(std::ostream& s, const Ref<T>& r)
+{
+	return s << "Ref: ";
+}
+
+template<class T>
 Ref<T> _MR(T* a)
 {
 	return Ref<T>(a);
@@ -211,6 +217,16 @@ public:
 
 //Shorthand notation
 #define _NR NullableRef
+
+template<class T>
+inline std::ostream& operator<<(std::ostream& s, const NullableRef<T>& r)
+{
+	s << "NullableRef: ";
+	if(r.isNull())
+		return s << "null";
+	else
+		return s << *r.getPtr();
+}
 
 template<class T>
 Ref<T> _MR(NullableRef<T> a)

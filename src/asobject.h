@@ -50,7 +50,7 @@
 		c* th = Class<c>::cast(obj); \
 		if(argslen != 0) \
 			throw ArgumentError("Arguments provided in getter"); \
-		return toAbstract<type>(th->name); \
+		return ArgumentConversion<type>::toAbstract(th->name); \
 	}
 
 #define ASFUNCTIONBODY_SETTER(c,type,name) \
@@ -59,7 +59,7 @@
 		c* th = Class<c>::cast(obj); \
 		if(argslen != 1) \
 			throw ArgumentError("Wrong number of arguments in setter"); \
-		th->name = toConcrete<type>(args[0]); \
+		th->name = ArgumentConversion<type>::toConcrete(args[0]); \
 		return NULL; \
 	}
 

@@ -377,7 +377,7 @@ public:
 	}
 };
 
-class FontTag: public DictionaryTag, public Font
+class FontTag: public DictionaryTag
 {
 protected:
 	UI16_SWF FontID;

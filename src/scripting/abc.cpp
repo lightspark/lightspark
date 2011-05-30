@@ -32,6 +32,7 @@
 #include <limits>
 #include <cmath>
 #include "swf.h"
+#include "flashaccessibility.h"
 #include "flashevents.h"
 #include "flashdisplay.h"
 #include "flashnet.h"
@@ -198,7 +199,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 
 	builtin->setVariableByQName("AccessibilityProperties","flash.accessibility",
-					Class<ASObject>::getClass(QName("AccessibilityProperties","flash.accessibility")));
+					Class<AccessibilityProperties>::getClass());
 
 	builtin->setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass());
 	builtin->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass());

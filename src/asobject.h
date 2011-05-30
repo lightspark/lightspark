@@ -44,28 +44,28 @@
 #define ASFUNCTIONBODY(c,name) \
 	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 
-#define ASFUNCTIONBODY_GETTER(c,type,name) \
+#define ASFUNCTIONBODY_GETTER(c,name) \
 	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
 		c* th = Class<c>::cast(obj); \
 		if(argslen != 0) \
 			throw ArgumentError("Arguments provided in getter"); \
-		return ArgumentConversion<type>::toAbstract(th->name); \
+		return ArgumentConversion<decltype(th->name)>::toAbstract(th->name); \
 	}
 
-#define ASFUNCTIONBODY_SETTER(c,type,name) \
+#define ASFUNCTIONBODY_SETTER(c,name) \
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
 		c* th = Class<c>::cast(obj); \
 		if(argslen != 1) \
 			throw ArgumentError("Wrong number of arguments in setter"); \
-		th->name = ArgumentConversion<type>::toConcrete(args[0]); \
+		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
 		return NULL; \
 	}
 
-#define ASFUNCTIONBODY_GETTER_SETTER(c,type,name) \
-		ASFUNCTIONBODY_GETTER(c,type,name) \
-		ASFUNCTIONBODY_SETTER(c,type,name)
+#define ASFUNCTIONBODY_GETTER_SETTER(c,name) \
+		ASFUNCTIONBODY_GETTER(c,name) \
+		ASFUNCTIONBODY_SETTER(c,name)
 
 #define REGISTER_GETTER(c,name) \
 	c->setGetterByQName(#name,"",Class<IFunction>::getFunction(_getter_##name),true)

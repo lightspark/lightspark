@@ -245,5 +245,5 @@ ASFUNCTIONBODY(SoundLoaderContext,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,number_t,bufferTime);
-ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bool,checkPolicyFile);
+ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
+ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);

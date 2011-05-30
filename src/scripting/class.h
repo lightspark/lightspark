@@ -148,7 +148,7 @@ public:
 	}
 	static T* cast(ASObject* o)
 	{
-		return static_cast<T*>(o);
+		return dynamic_cast<T*>(o);
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{

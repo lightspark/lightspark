@@ -69,6 +69,14 @@ REGISTER_CLASS_NAME(SimpleButton);
 REGISTER_CLASS_NAME(FrameLabel);
 REGISTER_CLASS_NAME(Scene);
 
+std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
+{
+	s << "[" << r.getPrototype()->class_name << "]";
+	if(r.name.len() > 0)
+		s << " name: " << r.name;
+	return s;
+}
+
 void LoaderInfo::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

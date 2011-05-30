@@ -224,7 +224,8 @@ std::ostream& lightspark::operator<<(std::ostream& s, const RGB& r)
 MATRIX MATRIX::getInverted() const
 {
 	MATRIX ret;
-	const number_t den=ScaleX*ScaleY+RotateSkew0*RotateSkew1;
+	assert(isInvertible());
+	const number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
 	ret.ScaleX=ScaleY/den;
 	ret.RotateSkew1=-RotateSkew1/den;
 	ret.RotateSkew0=-RotateSkew0/den;
@@ -232,6 +233,12 @@ MATRIX MATRIX::getInverted() const
 	ret.TranslateX=(RotateSkew1*TranslateY-ScaleY*TranslateX)/den;
 	ret.TranslateY=(RotateSkew0*TranslateX-ScaleX*TranslateY)/den;
 	return ret;
+}
+
+bool MATRIX::isInvertible() const
+{
+	const number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
+	return (fabs(den) > 1e-6);
 }
 
 void MATRIX::get4DMatrix(float matrix[16]) const

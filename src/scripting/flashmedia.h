@@ -48,8 +48,9 @@ public:
 class Video: public DisplayObject
 {
 private:
-	sem_t mutex;
-	uint32_t width, height, videoWidth, videoHeight;
+	mutable sem_t mutex;
+	uint32_t width, height;
+	mutable uint32_t videoWidth, videoHeight;
 	bool initialized;
 	_NR<NetStream> netStream;
 public:
@@ -69,9 +70,9 @@ public:
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_setHeight);
 	ASFUNCTION(attachNetStream);
-	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
+	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 };
 
 class SoundLoaderContext : public ASObject

@@ -165,11 +165,7 @@ private:
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }
-	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		return false;
-	}
+	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	virtual ASObject* instance() const;
 };
 
@@ -211,7 +207,8 @@ private:
 public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
 	int getId(){ return CharacterID; }
-	void Render(bool maskEnabled);
+	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+		{ LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag: renderImpl"); }
 	ASObject* instance() const;
 };
 
@@ -584,11 +581,9 @@ public:
 	DefineBitsLossless2Tag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }
 	ASObject* instance() const;
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		return false;
-	}
-	void Render(bool maskEnabled);
+	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+		{ LOG(LOG_NOT_IMPLEMENTED,"DefineBitsLossless2Tag: renderImpl"); }
+
 };
 
 class DefineScalingGridTag: public Tag

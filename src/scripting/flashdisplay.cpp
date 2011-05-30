@@ -381,40 +381,6 @@ void Loader::threadAbort()
 	}
 }
 
-void Loader::Render(bool maskEnabled)
-{
-	SpinlockLocker l(localRootSpinlock);
-	if(!loaded || skipRender(maskEnabled) || localRoot.isNull())
-		return;
-
-	renderPrologue();
-
-	localRoot->Render(maskEnabled);
-
-	renderEpilogue();
-}
-
-bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	SpinlockLocker l(localRootSpinlock);
-	if(!localRoot.isNull() && localRoot->getBounds(xmin,xmax,ymin,ymax))
-	{
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-		return true;
-	}
-	else
-		return false;
-}
-
-void Loader::setOnStage(bool staged)
-{
-	DisplayObjectContainer::setOnStage(staged);
-	SpinlockLocker l(localRootSpinlock);
-	if(!localRoot.isNull())
-		localRoot->setOnStage(staged);
-}
-
 Sprite::Sprite():TokenContainer(this),graphics(NULL)
 {
 }
@@ -437,41 +403,47 @@ void Sprite::buildTraits(ASObject* o)
 {
 }
 
-bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	bool ret=false;
-	{
-		Locker l(mutexDisplayList);
-		if(dynamicDisplayList.empty() && tokensEmpty())
-			return false;
+	bool ret = false;
 
-		//TODO: Check bounds calculation
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
+	if(dynamicDisplayList.empty())
+		return false;
+
+	Locker l(mutexDisplayList);
+	//TODO: Check bounds calculation
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		number_t txmin,txmax,tymin,tymax;
+		if((*it)->getBounds(txmin,txmax,tymin,tymax))
 		{
-			number_t txmin,txmax,tymin,tymax;
-			if((*it)->getBounds(txmin,txmax,tymin,tymax))
+			if(ret==true)
 			{
-				if(ret==true)
-				{
-					xmin = imin(xmin,txmin);
-					xmax = imax(xmax,txmax);
-					ymin = imin(ymin,txmin);
-					ymax = imax(ymax,tymax);
-				}
-				else
-				{
-					xmin=txmin;
-					xmax=txmax;
-					ymin=tymin;
-					ymax=tymax;
-					ret=true;
-				}
+				xmin = imin(xmin,txmin);
+				xmax = imax(xmax,txmax);
+				ymin = imin(ymin,txmin);
+				ymax = imax(ymax,tymax);
+			}
+			else
+			{
+				xmin=txmin;
+				xmax=txmax;
+				ymin=tymin;
+				ymax=tymax;
+				ret=true;
 			}
 		}
 	}
+	return ret;
+}
+
+bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	bool ret;
+	ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax);
 	number_t txmin,txmax,tymin,tymax;
-	if(TokenContainer::getBounds(txmin,txmax,tymin,tymax))
+	if(TokenContainer::boundsRect(txmin,txmax,tymin,tymax))
 	{
 		if(ret==true)
 		{
@@ -492,8 +464,11 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return ret;
 }
 
-bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
+	if(!isConstructed())
+		return false;
+
 	bool ret=boundsRect(xmin,xmax,ymin,ymax);
 	if(ret)
 	{
@@ -527,6 +502,15 @@ void DisplayObject::renderEpilogue() const
 		rt->popMask();
 }
 
+void DisplayObjectContainer::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+{
+	Locker l(mutexDisplayList);
+	//Now draw also the display list
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+		(*it)->Render(maskEnabled);
+}
+
 void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//Draw the dynamically added graphics, if any
@@ -534,18 +518,12 @@ void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,nu
 	if(!tokensEmpty())
 		defaultRender(maskEnabled);
 
-	{
-		Locker l(mutexDisplayList);
-		//Now draw also the display list
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->Render(maskEnabled);
-	}
+	DisplayObjectContainer::renderImpl(maskEnabled, t1, t2, t3, t4);
 }
 
-void Sprite::Render(bool maskEnabled)
+void DisplayObject::Render(bool maskEnabled)
 {
-	if(skipRender(maskEnabled))
+	if(!isConstructed() || skipRender(maskEnabled))
 		return;
 
 	number_t t1,t2,t3,t4;
@@ -572,61 +550,44 @@ void DisplayObject::hitTestEpilogue() const
 		sys->getInputThread()->popMask();
 }
 
-_NR<InteractiveObject> Sprite::hitTestImpl(number_t x, number_t y)
+_NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	_NR<InteractiveObject> ret = NullRef;
+	//Test objects added at runtime, in reverse order
+	Locker l(mutexDisplayList);
+	list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
+	for(;j!=dynamicDisplayList.rend();++j)
 	{
-		//Test objects added at runtime, in reverse order
-		Locker l(mutexDisplayList);
-		list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
-		for(;j!=dynamicDisplayList.rend();++j)
-		{
-			number_t localX, localY;
-			(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			this->incRef();
-			ret=(*j)->hitTest(_MR(this), localX,localY);
-			if(!ret.isNull())
-				break;
-		}
-	}
+		if(!(*j)->getMatrix().isInvertible())
+			continue; /* The object is shrunk to zero size */
 
-	if(ret==NULL && !tokensEmpty() && mouseEnabled)
+		number_t localX, localY;
+		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
+		this->incRef();
+		ret=(*j)->hitTest(_MR(this), localX,localY);
+		if(!ret.isNull())
+			break;
+	}
+	/* When mouseChildren is false, we should get all events of our children */
+	if(ret != NULL && !mouseChildren)
 	{
-		//The coordinates are locals
-		if(TokenContainer::hitTest(x,y))
-		{
-			this->incRef();
-			ret=_MR(this);
-			//Also test if the we are under the mask (if any)
-			if(sys->getInputThread()->isMaskPresent())
-			{
-				number_t globalX, globalY;
-				getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-				if(!sys->getInputThread()->isMasked(globalX, globalY))
-					ret=NullRef;
-			}
-		}
+		this->incRef();
+		ret = _MNR(this);
 	}
 	return ret;
 }
 
-_NR<InteractiveObject> Sprite::hitTest(_NR<InteractiveObject>, number_t x, number_t y)
+_NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, number_t y)
 {
-	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
-	//TODO: TOLOCK
-	//First of all filter using the BBOX
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return NullRef;
-	if(x<t1 || x>t2 || y<t3 || y>t4)
-		return NullRef;
-
-	hitTestPrologue();
-
-	_NR<InteractiveObject> ret=hitTestImpl(x, y);
-
-	hitTestEpilogue();
+	_NR<InteractiveObject> ret = NullRef;
+	this->incRef();
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y);
+	if(ret==NULL && mouseEnabled)
+	{
+		//The coordinates are locals
+		this->incRef();
+		return TokenContainer::hitTestImpl(_MR(this),x,y);
+	}
 	return ret;
 }
 
@@ -1763,15 +1724,15 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setMethodByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt),true);
 	c->setMethodByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt),true);
 	c->setMethodByQName("contains","",Class<IFunction>::getFunction(contains),true);
-	//c->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
-	//c->setGetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(_setMouseChildren),true);
+	c->setGetterByQName("mouseChildren","",Class<IFunction>::getFunction(_getMouseChildren),true);
 }
 
 void DisplayObjectContainer::buildTraits(ASObject* o)
 {
 }
 
-DisplayObjectContainer::DisplayObjectContainer():mutexDisplayList("mutexDisplayList")
+DisplayObjectContainer::DisplayObjectContainer():mouseChildren(true),mutexDisplayList("mutexDisplayList")
 {
 }
 
@@ -1859,6 +1820,24 @@ InteractiveObject::~InteractiveObject()
 		sys->getInputThread()->removeListener(this);
 }
 
+_NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	/*number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return NullRef;
+	if(x<t1 || x>t2 || y<t3 || y>t4)
+		return NullRef;
+	 */
+	if(!visible || !isConstructed())
+		return NullRef;
+
+	hitTestPrologue();
+	_NR<InteractiveObject> ret = hitTestImpl(last, x,y);
+	hitTestEpilogue();
+	return ret;
+}
+
 ASFUNCTIONBODY(InteractiveObject,_constructor)
 {
 	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
@@ -1928,6 +1907,20 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	return abstract_i(th->dynamicDisplayList.size());
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,_getMouseChildren)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	return abstract_b(th->mouseChildren);
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,_setMouseChildren)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	assert_and_throw(argslen==1);
+	th->mouseChildren=Boolean_concrete(args[0]);
+	return NULL;
 }
 
 void DisplayObjectContainer::requestInvalidation()
@@ -2213,45 +2206,10 @@ void Shape::buildTraits(ASObject* o)
 {
 }
 
-bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	bool ret=TokenContainer::getBounds(xmin,xmax,ymin,ymax);
-	if(ret)
-	{
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-		return true;
-	}
-	return false;
-}
-
-
 bool Shape::isOpaque(number_t x, number_t y) const
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Shape::isOpaque not really implemented");
 	return false;
-}
-
-_NR<InteractiveObject> Shape::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
-{
-	//NOTE: in hitTest the stuff must be rendered in the opposite order of Rendering
-	//TODO: TOLOCK
-	if(!mask.isNull())
-		throw UnsupportedException("Support masks in Shape::hitTest");
-
-	//The coordinates are already local
-	if(!TokenContainer::hitTest(x,y))
-		return NullRef;
-
-	//The point is inside the shape, also test if the we are under the mask (if any)
-	if(sys->getInputThread()->isMaskPresent())
-	{
-		number_t globalX, globalY;
-		getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-		if(!sys->getInputThread()->isMasked(globalX, globalY))
-			return NullRef;
-	}
-	return last;
 }
 
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
@@ -2263,26 +2221,6 @@ void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, numb
 
 	if(!owner->isSimple())
 		rt->glBlitTempBuffer(t1,t2,t3,t4);
-}
-
-void TokenContainer::Render(bool maskEnabled)
-{
-	if(tokens.empty())
-		return;
-	//If graphics is not yet initialized we have nothing to do
-	if(owner->skipRender(maskEnabled))
-		return;
-
-	number_t t1,t2,t3,t4;
-	bool ret=getBounds(t1,t2,t3,t4);
-	if(!ret)
-		return;
-
-	owner->renderPrologue();
-
-	renderImpl(maskEnabled,t1,t2,t3,t4);
-
-	owner->renderEpilogue();
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
@@ -2413,11 +2351,25 @@ void Stage::buildTraits(ASObject* o)
 
 Stage::Stage()
 {
+	onStage = true;
 }
 
 ASFUNCTIONBODY(Stage,_constructor)
 {
 	return NULL;
+}
+
+_NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	_NR<InteractiveObject> ret;
+	ret = DisplayObjectContainer::hitTestImpl(last, x, y);
+	if(ret == NULL)
+	{
+		/* If nothing else is hit, we hit the stage */
+		this->incRef();
+		ret = _MNR(this);
+	}
+	return ret;
 }
 
 uint32_t Stage::internalGetWidth() const
@@ -2511,7 +2463,7 @@ void TokenContainer::invalidate()
 	int32_t x,y;
 	uint32_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(getBounds(bxmin,bxmax,bymin,bymax)==false)
+	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
 	{
 		//No contents, nothing to do
 		return;
@@ -2525,12 +2477,24 @@ void TokenContainer::invalidate()
 	sys->addJob(r);
 }
 
-bool TokenContainer::hitTest(number_t x, number_t y) const
+_NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const
 {
-	return CairoRenderer::hitTest(tokens, 1, x, y);
+	//TODO: test against the CachedSurface
+	if(CairoRenderer::hitTest(tokens, scaling, x, y))
+	{
+		if(sys->getInputThread()->isMaskPresent())
+		{
+			number_t globalX, globalY;
+			owner->getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
+			if(sys->getInputThread()->isMasked(globalX, globalY))
+				return NullRef;
+		}
+		return last;
+	}
+	return NullRef;
 }
 
-bool TokenContainer::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 
 	#define VECTOR_BOUNDS(v) \
@@ -3059,7 +3023,7 @@ void Bitmap::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 }
 
-bool Bitmap::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	return false;
 }
@@ -3104,81 +3068,15 @@ void SimpleButton::buildTraits(ASObject* o)
 {
 }
 
-bool SimpleButton::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	/* TODO: this is the same as Sprite::getBounds/boundsRect. See my other
-	 * patches to unify that code into DisplayObjectContainer. This function
-	 * can then be removed.
-	 */
-	bool ret=false;
-	{
-		Locker l(mutexDisplayList);
-		if(dynamicDisplayList.empty())
-			return false;
-
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-		{
-			number_t txmin,txmax,tymin,tymax;
-			if((*it)->getBounds(txmin,txmax,tymin,tymax))
-			{
-				if(ret==true)
-				{
-					xmin = imin(xmin,txmin);
-					xmax = imax(xmax,txmax);
-					ymin = imin(ymin,txmin);
-					ymax = imax(ymax,tymax);
-				}
-				else
-				{
-					xmin=txmin;
-					xmax=txmax;
-					ymin=tymin;
-					ymax=tymax;
-					ret=true;
-				}
-			}
-		}
-	}
-	if(ret)
-	{
-		//TODO: take rotation into account
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-	}
-	return ret;
-}
-
-void SimpleButton::Render(bool maskEnabled)
-{
-	/* TODO: this is the same as Sprite::Render/renderImpl. See my other
-	 * patches to unify that code into DisplayObjectContainer. This function
-	 * can then be removed.
-	 */
-	if(skipRender(maskEnabled))
-		return;
-
-	renderPrologue();
-
-	{
-		Locker l(mutexDisplayList);
-		//Now draw also the display list
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
-			(*it)->Render(maskEnabled);
-	}
-
-	renderEpilogue();
-}
-
-_NR<InteractiveObject> SimpleButton::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	_NR<InteractiveObject> ret = NullRef;
 	if(hitTestState != NULL)
 	{
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		ret = hitTestState->hitTest(last, localX, localY);
+		this->incRef();
+		ret = hitTestState->hitTest(_MR(this), localX, localY);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been

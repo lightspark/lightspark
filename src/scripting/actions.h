@@ -49,23 +49,18 @@ public:
 	virtual ~ActionTag(){}
 };
 
-class DoActionTag: public DisplayListTag, public ExecutionContext, public DisplayObject
+class DoActionTag: public DisplayListTag, public ExecutionContext
 {
 private:
 	std::vector<ActionTag*> actions;
 public:
 	DoActionTag(RECORDHEADER h, std::istream& in);
-	void execute(DisplayObjectContainer* parent);
-	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		//abort();
-		return false;
-	}
+	void execute(DisplayObjectContainer* parent)
+		{ LOG(LOG_NOT_IMPLEMENTED,"DoActionTag::execute"); }
 };
 
 //This should be a control tag
-class DoInitActionTag: public DisplayListTag, public ExecutionContext, public DisplayObject
+class DoInitActionTag: public DisplayListTag, public ExecutionContext
 {
 private:
 	UI16_SWF SpriteID;
@@ -74,13 +69,8 @@ private:
 	bool done;
 public:
 	DoInitActionTag(RECORDHEADER h, std::istream& in);
-	void execute(DisplayObjectContainer* parent);
-	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		//abort();
-		return false;
-	}
+	void execute(DisplayObjectContainer* parent)
+	{ LOG(LOG_NOT_IMPLEMENTED,"DoInitActionTag::execute"); }
 };
 
 class ExportAssetsTag: public Tag

@@ -188,8 +188,8 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
 	stage=Class<Stage>::getInstanceS();
-	stage->incRef();
-	setParent(_MR(stage));
+	this->incRef();
+	stage->_addChildAt(_MR(this),0);
 	startTime=compat_msectiming();
 	
 	setPrototype(Class<MovieClip>::getClass());
@@ -1158,7 +1158,7 @@ void ParseThread::threadAbort()
 	root->parsingFailed();
 }
 
-bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	RECT f=getFrameSize();
 	xmin=0;
@@ -1199,8 +1199,6 @@ void RootMovieClip::commitFrame(bool another)
 	if(getFramesLoaded()==1 && this == sys)
 	{
 		/* now the frameRate is available and all SymbolClass tags have created their classes */
-		if(sys->currentVm)
-			sys->currentVm->addEvent(NullRef,_MR(new SysOnStageEvent()));
 		sys->addTick(1000/frameRate,sys);
 	}
 	sem_post(&new_frame);

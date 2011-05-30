@@ -74,7 +74,7 @@ Video::~Video()
 	sem_destroy(&mutex);
 }
 
-void Video::Render(bool maskEnabled)
+void Video::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	sem_wait(&mutex);
 	if(skipRender(maskEnabled))
@@ -108,7 +108,7 @@ void Video::Render(bool maskEnabled)
 	sem_post(&mutex);
 }
 
-bool Video::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	xmin=0;
 	xmax=width;
@@ -197,7 +197,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	return NULL;
 }
 
-_NR<InteractiveObject> Video::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
 {
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	assert_and_throw(mask.isNull());

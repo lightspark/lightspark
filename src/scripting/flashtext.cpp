@@ -65,7 +65,12 @@ void TextField::buildTraits(ASObject* o)
 {
 }
 
-bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+_NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	return NullRef;
+}
+
+bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	xmin=0;
 	xmax=width;
@@ -124,7 +129,7 @@ ASFUNCTIONBODY(TextField, appendText)
 	return NULL;
 }
 
-void TextField::Render(bool maskEnabled)
+void TextField::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//TODO: implement
 	LOG(LOG_NOT_IMPLEMENTED,_("TextField::Render ") << text);
@@ -233,18 +238,6 @@ void StaticText::sinit(Class_base* c)
 	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("text","",Class<IFunction>::getFunction(_getText),true);
-}
-
-bool StaticText::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-{
-	bool ret=TokenContainer::getBounds(xmin,xmax,ymin,ymax);
-	if(ret)
-	{
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-		return true;
-	}
-	return false;
 }
 
 ASFUNCTIONBODY(StaticText,_getText)

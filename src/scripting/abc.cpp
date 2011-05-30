@@ -123,14 +123,13 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			root->bindToName((const char*)Names[i]);
 			root->incRef();
 			sys->currentVm->addEvent(NullRef,
-					_MR(new BindClassEvent(_MR(root),(const char*)Names[i],BindClassEvent::ISROOT)));
+					_MR(new BindClassEvent(_MR(root),(const char*)Names[i])));
 
 		}
 		else
 		{
 			_R<DictionaryTag> t=root->dictionaryLookup(Tags[i]);
-			_R<ASObject> base=t;
-			_R<BindClassEvent> e(new BindClassEvent(base,(const char*)Names[i],BindClassEvent::NONROOT));
+			_R<BindClassEvent> e(new BindClassEvent(t,(const char*)Names[i]));
 			sys->currentVm->addEvent(NullRef,e);
 		}
 	}
@@ -1154,7 +1153,10 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,_("Binding of ") << ev->class_name);
-				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base.getPtr(),NULL,0,ev->isRoot);
+				if(ev->tag != NULL)
+					buildClassAndBindTag(ev->class_name.raw_buf(),ev->tag);
+				else
+					buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base);
 				LOG(LOG_CALLS,_("End of binding of ") << ev->class_name);
 				break;
 			}
@@ -1266,7 +1268,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	return true;
 }
 
-void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* const* args, const unsigned int argslen, bool isRoot)
+Class_inherit* ABCVm::findClassInherit(const string& s)
 {
 	LOG(LOG_CALLS,_("Setting class name to ") << s);
 	ASObject* target;
@@ -1295,31 +1297,36 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 	if(derived_class_tmp->isBinded())
 	{
 		LOG(LOG_ERROR, "Class already binded to a tag. Not binding");
+		return NULL;
+	}
+	return derived_class_tmp;
+}
+
+void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
+{
+	Class_inherit* derived_class_tmp = findClassInherit(s);
+	if(!derived_class_tmp)
 		return;
-	}
 
-	if(isRoot)
-	{
-		assert_and_throw(base);
-		//Let's override the class
-		base->setPrototype(derived_class_tmp);
-		derived_class_tmp->bindToRoot();
-	}
-	else
-	{
-		DictionaryTag* t=dynamic_cast<DictionaryTag*>(base);
-		//If this is not a root movie clip, then the base has to be a DictionaryTag
-		assert(t);
+	//Let's override the class
+	base->setPrototype(derived_class_tmp);
+	derived_class_tmp->bindToRoot();
+}
 
-		//It seems to be acceptable for the same base to be binded multiple times.
-		//In such cases the first binding is bidirectional (instances created using PlaceObject
-		//use the binded class and instances created using 'new' use the binded tag). Any other
-		//bindings will be unidirectional (only instances created using new will use the binded tag)
-		if(t->bindedTo==NULL)
-			t->bindedTo=derived_class_tmp;
+void ABCVm::buildClassAndBindTag(const string& s, _R<DictionaryTag> t)
+{
+	Class_inherit* derived_class_tmp = findClassInherit(s);
+	if(!derived_class_tmp)
+		return;
 
-		derived_class_tmp->bindToTag(t);
-	}
+	//It seems to be acceptable for the same base to be binded multiple times.
+	//In such cases the first binding is bidirectional (instances created using PlaceObject
+	//use the binded class and instances created using 'new' use the binded tag). Any other
+	//bindings will be unidirectional (only instances created using new will use the binded tag)
+	if(t->bindedTo==NULL)
+		t->bindedTo=derived_class_tmp;
+
+	derived_class_tmp->bindToTag(t.getPtr());
 }
 
 inline method_info* ABCContext::get_method(unsigned int m)

@@ -280,18 +280,18 @@ public:
 	ASFUNCTION(_hasEventListener);
 };
 
+class RootMovieClip;
 //Internal events from now on, used to pass data to the execution thread
 class BindClassEvent: public Event
 {
 friend class ABCVm;
 private:
-	_R<ASObject> base;
+	_NR<RootMovieClip> base;
+	_NR<DictionaryTag> tag;
 	tiny_string class_name;
-	bool isRoot;
 public:
-	enum { NONROOT=0, ISROOT=1 };
-	BindClassEvent(_R<ASObject> b, const tiny_string& c, bool i):
-		Event("bindClass"),base(b),class_name(c),isRoot(i){}
+	BindClassEvent(_R<RootMovieClip> b, const tiny_string& c);
+	BindClassEvent(_R<DictionaryTag> t, const tiny_string& c);
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return BIND_CLASS;}
 };

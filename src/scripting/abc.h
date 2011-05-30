@@ -622,8 +622,9 @@ private:
 	bool shuttingdown;
 	std::deque<std::pair<_NR<EventDispatcher>,_R<Event> > > events_queue;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
-
-	void buildClassAndInjectBase(const std::string& n, ASObject*, ASObject* const* a, const unsigned int argslen, bool isRoot);
+	void buildClassAndBindTag(const std::string& s, _R<DictionaryTag> t);
+	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
+	Class_inherit* findClassInherit(const std::string& s);
 
 	//These are used to keep track of the current 'this' for class methods, and relative level
 	//It's sane to have them per-Vm, as anyway the vm is single by specs, single threaded

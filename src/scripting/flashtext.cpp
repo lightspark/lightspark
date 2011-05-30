@@ -68,11 +68,6 @@ void TextField::buildTraits(ASObject* o)
 {
 }
 
-_NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
-{
-	return NullRef;
-}
-
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	xmin=0;
@@ -80,6 +75,17 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	ymin=0;
 	ymax=height;
 	return true;
+}
+
+_NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	/* I suppose one does not have to actually hit a character */
+	number_t xmin,xmax,ymin,ymax;
+	boundsRect(xmin,xmax,ymin,ymax);
+	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax )
+		return last;
+	else
+		return NullRef;
 }
 
 ASFUNCTIONBODY(TextField,_getWidth)

@@ -668,6 +668,11 @@ bool FFMpegStreamDecoder::getMetadataInteger(const char* name, uint32_t& ret) co
 
 bool FFMpegStreamDecoder::getMetadataDouble(const char* name, double& ret) const
 {
+	if( string(name) == "duration" )
+	{
+		ret = double(formatCtx->duration) / double(AV_TIME_BASE);
+		return true;
+	}
 	return false;
 }
 

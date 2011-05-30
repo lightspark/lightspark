@@ -82,6 +82,7 @@ class PulseAudioStream: public AudioStream
 
 	void mute();
 	void unmute();
+	void setVolume(double volume);
 };
 
 #endif

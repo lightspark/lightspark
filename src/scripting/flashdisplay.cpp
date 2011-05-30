@@ -732,7 +732,7 @@ ASFUNCTIONBODY(Scene,_getNumFrames)
 
 void Frame::execute(_R<DisplayObjectContainer> displayList)
 {
-	std::list<DisplayListTag*>::iterator it=blueprint.begin();
+	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
 		(*it)->execute(displayList.getPtr());
 }
@@ -792,7 +792,7 @@ void MovieClip::setTotalFrames(uint32_t t)
 /* This runs in vm's thread context,
  * but no locking is needed here as it only accesses the last frame.
  * See comment on the 'frames' member. */
-void MovieClip::addToFrame(DisplayListTag* t)
+void MovieClip::addToFrame(_R<DisplayListTag> t)
 {
 	frames.back().blueprint.push_back(t);
 }

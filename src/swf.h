@@ -73,7 +73,7 @@ private:
 	bool parsingIsFailed;
 	RGB Background;
 	Spinlock dictSpinlock;
-	std::list < DictionaryTag* > dictionary;
+	std::list < _R<DictionaryTag> > dictionary;
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
 	float frameRate;
@@ -97,8 +97,8 @@ public:
 	RECT getFrameSize() const;
 	float getFrameRate() const;
 	void setFrameRate(float f);
-	void addToDictionary(DictionaryTag* r);
-	DictionaryTag* dictionaryLookup(int id);
+	void addToDictionary(_R<DictionaryTag> r);
+	_R<DictionaryTag> dictionaryLookup(int id);
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();
@@ -219,14 +219,6 @@ private:
 	   The lock for the invalidate queue
 	*/
 	Spinlock invalidateQueueLock;
-	/*
-	   Vector to keep track of the created tags
-	*/
-	std::vector<Tag*> tagsStorage;
-	/*
-	   The lock for the tags storage
-	*/
-	Spinlock tagsStorageLock;
 #ifdef PROFILING_SUPPORT
 	/*
 	   Output file for the profiling data

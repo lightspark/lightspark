@@ -42,6 +42,8 @@ void ignore(std::istream& i, int count);
 
 class Tag
 {
+private:
+	ATOMIC_INT32(ref_count);
 protected:
 	RECORDHEADER Header;
 	void skip(std::istream& in) const
@@ -49,11 +51,25 @@ protected:
 		ignore(in,Header.getLength());
 	}
 public:
-	Tag(RECORDHEADER h):Header(h)
-	{
-	}
+	Tag(const Tag& t):ref_count(1),Header(t.Header) {}
+	Tag(RECORDHEADER h):ref_count(1),Header(h) {}
 	virtual TAGTYPE getType() const{ return TAG; }
 	virtual ~Tag(){}
+	void incRef()
+	{
+		ATOMIC_INCREMENT(ref_count);
+		assert(ref_count>0);
+	}
+	void decRef()
+	{
+		assert(ref_count>0);
+		uint32_t t=ATOMIC_DECREMENT(ref_count);
+		if(t==0)
+		{
+			ref_count=-1024;
+			delete this;
+		}
+	}
 };
 
 class EndTag:public Tag
@@ -735,7 +751,7 @@ private:
 	bool topLevel;
 public:
 	TagFactory(std::istream& in, bool t):f(in),firstTag(true),topLevel(t){}
-	Tag* readTag();
+	_NR<Tag> readTag();
 };
 
 };

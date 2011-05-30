@@ -128,11 +128,9 @@ void SymbolClassTag::execute(RootMovieClip* root)
 		}
 		else
 		{
-			DictionaryTag* t=root->dictionaryLookup(Tags[i]);
-			ASObject* base=dynamic_cast<ASObject*>(t);
-			assert_and_throw(base!=NULL);
-			base->incRef();
-			_R<BindClassEvent> e(new BindClassEvent(_MR(base),(const char*)Names[i],BindClassEvent::NONROOT));
+			_R<DictionaryTag> t=root->dictionaryLookup(Tags[i]);
+			_R<ASObject> base=t;
+			_R<BindClassEvent> e(new BindClassEvent(base,(const char*)Names[i],BindClassEvent::NONROOT));
 			sys->currentVm->addEvent(NullRef,e);
 		}
 	}

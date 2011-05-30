@@ -81,6 +81,16 @@
 		ExternalInterface.call("foo.bar2()");
 		ExternalInterface.call("function() { alert('Executed eval');}");
 		ExternalInterface.call("alert('Complex thing'), function() { alert('Inside complex thing');}");
+		ExternalInterface.call("alert","Passing arguments");
+		ExternalInterface.call("alert",true);
+		ExternalInterface.call("alert",2.4);
+
+		var obj:Object = new Object();
+		obj["prop1"] = "val1";
+		obj["prop2"] = true;
+		obj["prop3"] = 2.4;
+
+		ExternalInterface.call("alert",obj);
 	}
 	]]>
 </mx:Script>

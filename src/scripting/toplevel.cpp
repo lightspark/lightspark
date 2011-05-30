@@ -4831,6 +4831,16 @@ int32_t lightspark::ArgumentConversion<int32_t>::toConcrete(ASObject* obj)
 }
 
 template<>
+tiny_string lightspark::ArgumentConversion<tiny_string>::toConcrete(ASObject* obj)
+{
+	ASString* str = Class<ASString>::cast(obj);
+	if(!str)
+		throw ArgumentError("Not an ASString");
+
+	return str->toString();
+}
+
+template<>
 ASObject* lightspark::ArgumentConversion<int32_t>::toAbstract(const int32_t& val)
 {
 	return abstract_i(val);
@@ -4846,4 +4856,10 @@ template<>
 ASObject* lightspark::ArgumentConversion<bool>::toAbstract(const bool& val)
 {
 	return abstract_b(val);
+}
+
+template<>
+ASObject* lightspark::ArgumentConversion<tiny_string>::toAbstract(const tiny_string& val)
+{
+	return Class<ASString>::getInstanceS(val);
 }

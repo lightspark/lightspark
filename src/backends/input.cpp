@@ -34,7 +34,7 @@ using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL),
-	mouseX(0), mouseY(0)
+	dragLimit(NULL)
 {
 	LOG(LOG_NO_INFO,_("Creating input thread"));
 }
@@ -212,8 +212,25 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 {
 	SpinlockLocker locker(inputDataSpinlock);
-	mouseX = x;
-	mouseY = y;
+	mousePos = Vector2(x,y);
+	Locker locker2(mutexDragged);
+	if(curDragged != NULL)
+	{
+		Vector2f local;
+		_NR<DisplayObjectContainer> parent = curDragged->getParent();
+		if(parent == NULL)
+		{
+			stopDrag(curDragged.getPtr());
+			return;
+		}
+		local = parent->getConcatenatedMatrix().getInverted().multiply2D(mousePos);
+		local += dragOffset;
+		if(dragLimit)
+			local = local.projectInto(*dragLimit);
+
+		curDragged->setX(local.x);
+		curDragged->setY(local.y);
+	}
 }
 
 void* InputThread::sdl_worker(InputThread* th)
@@ -317,30 +334,25 @@ void InputThread::removeListener(InteractiveObject* ob)
 	listeners.erase(it);
 }
 
-void InputThread::enableDrag(Sprite* s, const lightspark::RECT& limit)
+void InputThread::startDrag(_R<Sprite> s, const lightspark::RECT* limit, Vector2f offset)
 {
 	Locker locker(mutexDragged);
 	if(s==curDragged)
 		return;
-	
-	if(curDragged) //Stop dragging the previous sprite
-		curDragged->decRef();
-	
-	assert(s);
-	//We need to avoid that the object is destroyed
-	s->incRef();
-	
+
 	curDragged=s;
 	dragLimit=limit;
+	dragOffset=offset;
 }
 
-void InputThread::disableDrag()
+void InputThread::stopDrag(Sprite* s)
 {
 	Locker locker(mutexDragged);
-	if(curDragged)
+	if(curDragged == s)
 	{
-		curDragged->decRef();
-		curDragged=NULL;
+		curDragged = NullRef;
+		delete dragLimit;
+		dragLimit = 0;
 	}
 }
 

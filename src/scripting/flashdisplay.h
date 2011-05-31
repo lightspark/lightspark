@@ -137,6 +137,9 @@ public:
 	void setMatrix(const MATRIX& m);
 	virtual void advanceFrame() {}
 	virtual void initFrame();
+	Vector2f getLocalMousePos();
+	void setX(number_t x);
+	void setY(number_t y);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -477,6 +480,8 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
+	ASFUNCTION(_startDrag);
+	ASFUNCTION(_stopDrag);
 	int getDepth() const
 	{
 		return 0;

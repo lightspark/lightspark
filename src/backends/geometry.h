@@ -28,21 +28,37 @@
 namespace lightspark
 {
 
-class Vector2
+template<class T>
+class Vector2Tmpl
 {
+
 public:
-	int x,y;
-	Vector2(int a=0, int b=0):x(a),y(b){}
-	bool operator==(const Vector2& v)const{return v.x==x && v.y==y;}
-	bool operator!=(const Vector2& v)const{return v.x!=x || v.y!=y;}
-	bool operator<(const Vector2& v) const {return (y==v.y)?(x < v.x):(y < v.y);}
-	const Vector2 operator-(const Vector2& v)const { return Vector2(x-v.x,y-v.y);}
-	const Vector2 operator+(const Vector2& v)const { return Vector2(x+v.x,y+v.y);}
-	Vector2& operator+=(const Vector2& v){ x+=v.x; y+=v.y; return *this;}
-	const Vector2 operator*(int p)const { return Vector2(x*p,y*p);}
-	Vector2& operator/=(int v) { x/=v; y/=v; return *this;}
-	int dot(const Vector2& r) const { return x*r.x+y*r.y;}
+	T x,y;
+	Vector2Tmpl(T a=0, T b=0):x(a),y(b){}
+	/* conversion Vector2 -> Vector2f is implicit */
+	Vector2Tmpl(const Vector2Tmpl<int>& o) : x(o.x),y(o.y) {}
+	/* conversion Vector2f -> Vector2 is explicit */
+	Vector2Tmpl<int> round() const { return Vector2Tmpl<int>(x,y); }
+	bool operator==(const Vector2Tmpl<T>& v)const{return v.x==x && v.y==y;}
+	bool operator!=(const Vector2Tmpl<T>& v)const{return v.x!=x || v.y!=y;}
+	bool operator<(const Vector2Tmpl<T>& v) const {return (y==v.y)?(x < v.x):(y < v.y);}
+	Vector2Tmpl<T> operator-() const { return Vector2Tmpl<T>(-x,-y); }
+	Vector2Tmpl<T> operator-(const Vector2Tmpl<T>& v)const { return Vector2Tmpl<T>(x-v.x,y-v.y);}
+	Vector2Tmpl<T> operator+(const Vector2Tmpl<T>& v)const { return Vector2Tmpl<T>(x+v.x,y+v.y);}
+	Vector2Tmpl<T>& operator+=(const Vector2Tmpl<T>& v){ x+=v.x; y+=v.y; return *this;}
+	Vector2Tmpl<T> operator*(int p)const { return Vector2Tmpl<T>(x*p,y*p);}
+	Vector2Tmpl<T>& operator/=(T v) { x/=v; y/=v; return *this;}
+	int dot(const Vector2Tmpl<T>& r) const { return x*r.x+y*r.y;}
+	Vector2Tmpl<T> projectInto(const RECT& r) const
+	{
+		Vector2Tmpl<T> out;
+		out.x = maxTmpl<T>(minTmpl<T>(x,r.Xmax),r.Xmin);
+		out.y = maxTmpl<T>(minTmpl<T>(y,r.Ymax),r.Ymin);
+		return out;
+	}
 };
+typedef Vector2Tmpl<int> Vector2;
+typedef Vector2Tmpl<double> Vector2f;
 
 enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CLEAR_FILL, CLEAR_STROKE, CURVE_CUBIC };
 

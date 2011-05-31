@@ -4803,47 +4803,47 @@ ASFUNCTIONBODY(lightspark,trace)
 }
 
 template<>
-number_t toConcrete<number_t>(ASObject* obj)
+number_t lightspark::ArgumentConversion<number_t>::toConcrete(ASObject* obj)
 {
 	/* TODO: throw ArgumentError if object is not convertible to number */
 	return obj->toNumber();
 }
 
 template<>
-bool toConcrete<bool>(ASObject* obj)
+bool lightspark::ArgumentConversion<bool>::toConcrete(ASObject* obj)
 {
 	/* TODO: throw ArgumentError if object is not convertible to number */
 	return Boolean_concrete(obj);
 }
 
 template<>
-uint32_t toConcrete<uint32_t>(ASObject* obj)
+uint32_t lightspark::ArgumentConversion<uint32_t>::toConcrete(ASObject* obj)
 {
 	/* TODO: throw ArgumentError if object is not convertible to number */
 	return obj->toUInt();
 }
 
 template<>
-int32_t toConcrete<int32_t>(ASObject* obj)
+int32_t lightspark::ArgumentConversion<int32_t>::toConcrete(ASObject* obj)
 {
 	/* TODO: throw ArgumentError if object is not convertible to number */
 	return obj->toInt();
 }
 
 template<>
-ASObject* toAbstract<int32_t>(const int32_t& val)
+ASObject* lightspark::ArgumentConversion<int32_t>::toAbstract(const int32_t& val)
 {
 	return abstract_i(val);
 }
 
 template<>
-ASObject* toAbstract<number_t>(const number_t& val)
+ASObject* lightspark::ArgumentConversion<number_t>::toAbstract(const number_t& val)
 {
 	return abstract_d(val);
 }
 
 template<>
-ASObject* toAbstract<bool>(const bool& val)
+ASObject* lightspark::ArgumentConversion<bool>::toAbstract(const bool& val)
 {
 	return abstract_b(val);
 }

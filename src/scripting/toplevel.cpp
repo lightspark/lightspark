@@ -966,7 +966,9 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		else
 			rootXML=root;
 
-		ASObject* ret=Class<XML>::getInstanceS(rootXML, attr);
+		std::vector<_R<XML> > retnode;
+		retnode.push_back(_MR(Class<XML>::getInstanceS(rootXML, attr)));
+		XMLList* ret=Class<XMLList>::getInstanceS(retnode);
 		//The new object will be incReffed by the calling code
 		ret->fake_decRef();
 		return ret;

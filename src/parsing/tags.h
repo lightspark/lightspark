@@ -625,7 +625,7 @@ public:
 	DefineFontAlignZonesTag(RECORDHEADER h, std::istream& in);
 };
 
-class DefineVideoStreamTag: public DictionaryTag, public Video
+class DefineVideoStreamTag: public DictionaryTag
 {
 private:
 	UI16_SWF CharacterID;

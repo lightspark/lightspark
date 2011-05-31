@@ -1284,7 +1284,6 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 	if(skip_impl || !implEnable)
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
-	//Check if this XMLList contains a single element
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
@@ -1299,15 +1298,27 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 	}
 	else
 	{
-		//Check if this XMLList contains a single element, if so forward the request
-		ASObject* ret=NULL;
-		if(nodes.size()==1)
-			ret=nodes[0]->getVariableByMultiname(name, skip_impl, base);
+		std::vector<_R<XML> > retnodes;
+		std::vector<_R<XML> >::iterator it=nodes.begin();
+		for(; it!=nodes.end(); ++it)
+		{
+			ASObject *o=(*it)->getVariableByMultiname(name,skip_impl,base);
+			XMLList *x=dynamic_cast<XMLList *>(o);
+			if(!x)
+				continue;
 
-		//No result yet, ask the base object
-		if(ret==NULL)
-			ret=ASObject::getVariableByMultiname(name,skip_impl,base);
+			retnodes.insert(retnodes.end(), x->nodes.begin(), x->nodes.end());
 
+			// Hack to delete o that was fake_decRef'ed by
+			// XML::getVariableByMultiname. This can be
+			// removed when the refcounting in
+			// getVariableByMultiname is fixed.
+			o->incRef();
+			o->decRef();
+		}
+
+		XMLList *ret=Class<XMLList>::getInstanceS(retnodes);
+		ret->fake_decRef();
 		return ret;
 	}
 }

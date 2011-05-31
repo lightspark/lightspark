@@ -588,6 +588,7 @@ public:
 	ASFUNCTION(_getCurrentFrame);
 	ASFUNCTION(_getCurrentFrameLabel);
 	ASFUNCTION(_getCurrentLabel);
+	ASFUNCTION(_getCurrentLabels);
 	ASFUNCTION(_getTotalFrames);
 	ASFUNCTION(_getFramesLoaded);
 	ASFUNCTION(_getScenes);

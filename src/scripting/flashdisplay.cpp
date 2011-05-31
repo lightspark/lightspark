@@ -747,6 +747,7 @@ void MovieClip::sinit(Class_base* c)
 	c->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),true);
 	c->setGetterByQName("currentFrameLabel","",Class<IFunction>::getFunction(_getCurrentFrameLabel),true);
 	c->setGetterByQName("currentLabel","",Class<IFunction>::getFunction(_getCurrentLabel),true);
+	c->setGetterByQName("currentLabels","",Class<IFunction>::getFunction(_getCurrentLabels),true);
 	c->setGetterByQName("scenes","",Class<IFunction>::getFunction(_getScenes),true);
 	c->setGetterByQName("currentScene","",Class<IFunction>::getFunction(_getCurrentScene),true);
 	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
@@ -1014,6 +1015,20 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 		return new Null();
 	else
 		return Class<ASString>::getInstanceS(label);
+}
+
+ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	Scene_data& sc = th->scenes[th->getCurrentScene()];
+
+	Array* ret = Class<Array>::getInstanceS();
+	ret->resize(sc.labels.size());
+	for(size_t i=0; i<sc.labels.size(); ++i)
+	{
+		ret->set(i, Class<FrameLabel>::getInstanceS(sc.labels[i]));
+	}
+	return ret;
 }
 
 ASFUNCTIONBODY(MovieClip,_constructor)

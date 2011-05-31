@@ -831,6 +831,9 @@ public:
 	RECT(int xmin, int xmax, int ymin, int ymax);
 };
 
+template<class T> class Vector2Tmpl;
+typedef Vector2Tmpl<double> Vector2f;
+
 class MATRIX
 {
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
@@ -846,6 +849,7 @@ public:
 	MATRIX():ScaleX(1),ScaleY(1),RotateSkew0(0),RotateSkew1(0),TranslateX(0),TranslateY(0){}
 	void get4DMatrix(float matrix[16]) const;
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	Vector2f multiply2D(const Vector2f& in) const;
 	MATRIX multiplyMatrix(const MATRIX& r) const;
 	const bool operator!=(const MATRIX& r) const;
 	MATRIX getInverted() const;

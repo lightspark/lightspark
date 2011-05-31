@@ -257,6 +257,13 @@ void MATRIX::get4DMatrix(float matrix[16]) const
 	matrix[15]=1;
 }
 
+Vector2f MATRIX::multiply2D(const Vector2f& in) const
+{
+	Vector2f out;
+	multiply2D(in.x,in.y,out.x,out.y);
+	return out;
+}
+
 void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	xout=xin*ScaleX + yin*RotateSkew1 + TranslateX;

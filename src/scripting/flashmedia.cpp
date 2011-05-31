@@ -239,11 +239,11 @@ ASFUNCTIONBODY(SoundLoaderContext,_constructor)
 	th->bufferTime = 1000;
 	th->checkPolicyFile = false;
 	if(0 < argslen)
-		th->bufferTime = toConcrete<number_t>(args[0]);
+		th->bufferTime = ArgumentConversion<number_t>::toConcrete(args[0]);
 	if(1 < argslen)
-		th->checkPolicyFile = toConcrete<bool>(args[1]);
+		th->checkPolicyFile = ArgumentConversion<bool>::toConcrete(args[1]);
 	return NULL;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,number_t,bufferTime);
-ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bool,checkPolicyFile);
+ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
+ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);

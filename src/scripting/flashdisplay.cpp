@@ -405,10 +405,43 @@ void Sprite::sinit(Class_base* c)
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),true);
+	c->setMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),true);
+	c->setMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),true);
 }
 
 void Sprite::buildTraits(ASObject* o)
 {
+}
+
+ASFUNCTIONBODY(Sprite,_startDrag)
+{
+	Sprite* th=Class<Sprite>::cast(obj);
+	bool lockCenter = false;
+	const RECT* bounds = NULL;
+	if(argslen > 0)
+		lockCenter = ArgumentConversion<bool>::toConcrete(args[0]);
+	if(argslen > 1)
+	{
+		Rectangle* rect = Class<Rectangle>::cast(args[1]);
+		if(!rect)
+			throw ArgumentError("Wrong type");
+		bounds = new RECT(rect->getRect());
+	}
+
+	Vector2f offset;
+	if(!lockCenter)
+		offset = -th->getLocalMousePos();
+
+	th->incRef();
+	sys->getInputThread()->startDrag(_MR(th), bounds, offset);
+	return NULL;
+}
+
+ASFUNCTIONBODY(Sprite,_stopDrag)
+{
+	Sprite* th=Class<Sprite>::cast(obj);
+	sys->getInputThread()->stopDrag(th);
+	return NULL;
 }
 
 bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -1398,19 +1431,36 @@ ASFUNCTIONBODY(DisplayObject,_getX)
 		return abstract_d(th->tx);
 }
 
+void DisplayObject::setX(number_t val)
+{
+	if(ACQUIRE_READ(useMatrix))
+	{
+		valFromMatrix();
+		RELEASE_WRITE(useMatrix,false);
+	}
+	tx=val;
+	if(onStage)
+		requestInvalidation();
+}
+
+void DisplayObject::setY(number_t val)
+{
+	if(ACQUIRE_READ(useMatrix))
+	{
+		valFromMatrix();
+		RELEASE_WRITE(useMatrix,false);
+	}
+	ty=val;
+	if(onStage)
+		requestInvalidation();
+}
+
 ASFUNCTIONBODY(DisplayObject,_setX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert_and_throw(argslen==1);
 	number_t val=args[0]->toNumber();
-	if(ACQUIRE_READ(th->useMatrix))
-	{
-		th->valFromMatrix();
-		RELEASE_WRITE(th->useMatrix,false);
-	}
-	th->tx=val;
-	if(th->onStage)
-		th->requestInvalidation();
+	th->setX(val);
 	return NULL;
 }
 
@@ -1428,14 +1478,7 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert_and_throw(argslen==1);
 	number_t val=args[0]->toNumber();
-	if(ACQUIRE_READ(th->useMatrix))
-	{
-		th->valFromMatrix();
-		RELEASE_WRITE(th->useMatrix,false);
-	}
-	th->ty=val;
-	if(th->onStage)
-		th->requestInvalidation();
+	th->setY(val);
 	return NULL;
 }
 
@@ -1702,20 +1745,21 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 	return NULL;
 }
 
+Vector2f DisplayObject::getLocalMousePos()
+{
+	return getConcatenatedMatrix().getInverted().multiply2D(sys->getInputThread()->getMousePos());
+}
+
 ASFUNCTIONBODY(DisplayObject,_getMouseX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	number_t temp, outX;
-	th->getConcatenatedMatrix().getInverted().multiply2D(sys->getInputThread()->getMouseX(), temp, outX, temp);
-	return abstract_d(outX);
+	return abstract_d(th->getLocalMousePos().x);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getMouseY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	number_t temp, outY;
-	th->getConcatenatedMatrix().getInverted().multiply2D(temp, sys->getInputThread()->getMouseY(), temp, outY);
-	return abstract_d(outY);
+	return abstract_d(th->getLocalMousePos().y);
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)

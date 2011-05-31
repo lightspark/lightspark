@@ -155,25 +155,20 @@ void *ExtractLibContent(HMODULE hLib, std::string WhatToExtract);
 void CloseLib(HMODULE hLib);
 /*****************/
 
-inline int imin(int a, int b)
+template<class T>
+inline T minTmpl(T a, T b)
 {
 	return (a<b)?a:b;
 }
-
-inline int imax(int a, int b)
+template<class T>
+inline T maxTmpl(T a, T b)
 {
 	return (a>b)?a:b;
 }
-
-inline double dmin(double a,double b)
-{
-	return (a<b)?a:b;
-}
-
-inline double dmax(double a,double b)
-{
-	return (a>b)?a:b;
-}
+#define imin minTmpl<int>
+#define imax maxTmpl<int>
+#define dmin minTmpl<double>
+#define dmax maxTmpl<double>
 
 #include <cstdint>
 #include <sys/types.h>

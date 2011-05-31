@@ -2010,10 +2010,33 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				return;
 
 			multiname* type=getMultiname(t->type_name,NULL);
+
+			Class_base* typeClass=NULL;
+			if(t->type_name)
+			{
+				//Get the class object for the type
+				ASObject* target;
+				ASObject* typeObject=getGlobal()->getVariableAndTargetByMultiname(*type,target);
+				if(typeObject)
+				{
+					//Check if the object has to be defined
+					if(typeObject->getObjectType()==T_DEFINABLE)
+					{
+						LOG(LOG_CALLS,_("We got an object not yet valid"));
+						Definable* d=static_cast<Definable*>(typeObject);
+						d->define(target);
+						typeObject=target->getVariableByMultiname(*type);
+					}
+
+					assert_and_throw(typeObject->getObjectType()==T_CLASS);
+					typeClass=static_cast<Class_base*>(typeObject);
+				}
+			}
+
 			if(t->vindex)
 			{
 				ASObject* ret=getConstant(t->vkind,t->vindex);
-				obj->setVariableByMultiname(mname, ret);
+				obj->initializeVariableByMultiname(mname, ret, typeClass);
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, mname);
 
@@ -2046,7 +2069,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 					else
 						ret=new Undefined;
 				}
-				obj->setVariableByMultiname(mname, ret);
+				obj->initializeVariableByMultiname(mname, ret, typeClass);
 
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, mname);

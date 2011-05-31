@@ -1306,6 +1306,7 @@ public:
 };
 
 ASObject* abstract_i(intptr_t i);
+ASObject* abstract_ui(uint32_t i);
 ASObject* abstract_b(bool i);
 ASObject* abstract_d(number_t i);
 

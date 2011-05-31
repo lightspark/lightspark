@@ -634,6 +634,7 @@ private:
 public:
 	GlobalObject* Global;
 	Manager* int_manager;
+	Manager* uint_manager;
 	Manager* number_manager;
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;

@@ -1133,6 +1133,13 @@ ASObject* lightspark::abstract_i(intptr_t i)
 	return ret;
 }
 
+ASObject* lightspark::abstract_ui(uint32_t i)
+{
+	UInteger* ret=getVm()->uint_manager->get<UInteger>();
+	ret->val=i;
+	return ret;
+}
+
 void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns)
 {
 	//Ok, let's split our string into namespace and name part

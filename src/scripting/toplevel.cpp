@@ -4847,6 +4847,12 @@ ASObject* lightspark::ArgumentConversion<int32_t>::toAbstract(const int32_t& val
 }
 
 template<>
+ASObject* lightspark::ArgumentConversion<uint32_t>::toAbstract(const uint32_t& val)
+{
+	return abstract_ui(val);
+}
+
+template<>
 ASObject* lightspark::ArgumentConversion<number_t>::toAbstract(const number_t& val)
 {
 	return abstract_d(val);

@@ -1046,6 +1046,7 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
 	sem_init(&sem_event_count,0,0);
 	m_sys=s;
 	int_manager=new Manager(15);
+	uint_manager=new Manager(15);
 	number_manager=new Manager(15);
 	Global=new GlobalObject;
 	LOG(LOG_NO_INFO,_("Global is ") << Global);
@@ -1082,6 +1083,7 @@ ABCVm::~ABCVm()
 	sem_destroy(&sem_event_count);
 	sem_destroy(&event_queue_mutex);
 	delete int_manager;
+	delete uint_manager;
 	delete number_manager;
 	delete Global;
 }

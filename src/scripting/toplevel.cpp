@@ -3617,6 +3617,12 @@ ASFUNCTIONBODY(ASString,concat)
 	return ret;
 }
 
+ASFUNCTIONBODY(ASString,generator)
+{
+	assert(argslen==1);
+	return Class<ASString>::getInstanceS(args[0]->toString());
+}
+
 ASFUNCTIONBODY(ASError,getStackTrace)
 {
 	ASError* th=static_cast<ASError*>(obj);

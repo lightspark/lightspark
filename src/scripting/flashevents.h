@@ -42,27 +42,25 @@ class MovieClip;
 class Event: public ASObject
 {
 public:
-	Event(const tiny_string& t = "Event", bool b=false)
-		: type(t),target(NULL),currentTarget(NULL),bubbles(b),eventPhase(0),defaultPrevented(false) {}
+	Event(const tiny_string& t = "Event", bool b=false, bool c=false)
+		: type(t),target(NULL),currentTarget(NULL),bubbles(b),cancelable(c),
+		  eventPhase(0),defaultPrevented(false) {}
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(_getType);
-	ASFUNCTION(_getTarget);
-	ASFUNCTION(_getCurrentTarget);
-	ASFUNCTION(_getEventPhase);
 	ASFUNCTION(_preventDefault);
 	ASFUNCTION(_isDefaultPrevented);
 	ASFUNCTION(formatToString);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
-	tiny_string type;
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
 	//and the handling is serialized
-	_NR<ASObject> target;
-	_NR<ASObject> currentTarget;
-	bool bubbles;
-	uint32_t eventPhase;
+	ASPROPERTY_GETTER(tiny_string,type);
+	ASPROPERTY_GETTER(_NR<ASObject>,target);
+	ASPROPERTY_GETTER(_NR<ASObject>,currentTarget);
+	ASPROPERTY_GETTER(bool,bubbles);
+	ASPROPERTY_GETTER(bool,cancelable);
+	ASPROPERTY_GETTER(uint32_t,eventPhase);
 	bool defaultPrevented;
 };
 

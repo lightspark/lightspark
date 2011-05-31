@@ -222,7 +222,6 @@ public:
 	typedef struct {
 		pthread_t* mainThread;
 		NPP instance;
-		NPIdentifier id;
 		const char* scriptString;
 		const lightspark::ExtVariant** args;
 		uint32_t argc;

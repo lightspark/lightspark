@@ -543,7 +543,7 @@ ASFUNCTIONBODY(Timer,stop)
 
 ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 {
-	//CHECK: what to do is ns is empty
+	//CHECK: what to do if ns is empty
 	ASObject* target=args[0];
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)

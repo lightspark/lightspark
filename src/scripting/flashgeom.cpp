@@ -105,7 +105,7 @@ tiny_string Rectangle::toString(bool debugMsg)
 
 const lightspark::RECT Rectangle::getRect() const
 {
-	return lightspark::RECT(x,y,x+width,y+height);
+	return lightspark::RECT(x,x+width,y,y+height);
 }
 
 ASFUNCTIONBODY(Rectangle,_constructor)

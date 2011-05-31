@@ -1256,7 +1256,7 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):Dic
 
 ASObject* DefineVideoStreamTag::instance() const
 {
-	DefineVideoStreamTag* ret=new DefineVideoStreamTag(*this);
+	Video* ret=new Video(Width, Height);
 	if(bindedTo)
 	{
 		//A class is binded to this tag

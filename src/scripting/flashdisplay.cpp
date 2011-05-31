@@ -33,6 +33,7 @@
 #include "backends/geometry.h"
 #include "backends/image.h"
 #include "compat.h"
+#include "flashaccessibility.h"
 
 #include <GL/glew.h>
 #include <fstream>
@@ -1084,6 +1085,8 @@ DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty
 	assert(!d.isConstructed());
 }
 
+DisplayObject::~DisplayObject() {}
+
 void DisplayObject::finalize()
 {
 	EventDispatcher::finalize();
@@ -1137,7 +1140,10 @@ void DisplayObject::sinit(Class_base* c)
 	c->setGetterByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),true);
 	c->setGetterByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),true);
 	c->setMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),true);
+	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 
 void DisplayObject::buildTraits(ASObject* o)
 {

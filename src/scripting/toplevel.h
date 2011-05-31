@@ -985,8 +985,11 @@ class ArgumentConversion<Ref<T>>
 public:
 	static Ref<T> toConcrete(ASObject* obj)
 	{
-		obj->incRef();
-		return _MR(obj);
+		T* o = dynamic_cast<T*>(obj);
+		if(!o)
+			throw ArgumentError("Wrong type");
+		o->incRef();
+		return _MR(o);
 	}
 	static ASObject* toAbstract(const Ref<T>& val)
 	{
@@ -1001,8 +1004,11 @@ class ArgumentConversion<NullableRef<T>>
 public:
 	static NullableRef<T> toConcrete(ASObject* obj)
 	{
-		obj->incRef();
-		return _MNR(obj);
+		T* o = dynamic_cast<T*>(obj);
+		if(!o)
+			throw ArgumentError("Wrong type");
+		o->incRef();
+		return _MNR(o);
 	}
 	static ASObject* toAbstract(const NullableRef<T>& val)
 	{

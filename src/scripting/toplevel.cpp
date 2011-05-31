@@ -997,6 +997,8 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		for(;it!=children.end();it++)
 			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 		XMLList* retObj=Class<XMLList>::getInstanceS(ret);
+		//The new object will be incReffed by the calling code
+		retObj->fake_decRef();
 		return retObj;
 	}
 }

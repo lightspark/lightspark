@@ -301,6 +301,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("SharedObject","flash.net",Class<SharedObject>::getClass());
 	builtin->setVariableByQName("ObjectEncoding","flash.net",Class<ObjectEncoding>::getClass());
 	builtin->setVariableByQName("Socket","flash.net",Class<ASObject>::getClass(QName("Socket","flash.net")));
+	builtin->setVariableByQName("Responder","flash.net",Class<ASObject>::getClass(QName("Responder","flash.net")));
 
 	builtin->setVariableByQName("fscommand","flash.system",Class<IFunction>::getFunction(fscommand));
 	builtin->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());

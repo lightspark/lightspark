@@ -116,6 +116,7 @@ struct obj_var
 	IFunction* getter;
 	obj_var():var(NULL),type(NULL),setter(NULL),getter(NULL){}
 	obj_var(ASObject* _v, Class_base* _t):var(_v),type(_t),setter(NULL),getter(NULL){}
+	void setVar(ASObject* v);
 };
 
 enum TRAIT_KIND { OWNED_TRAIT=0, BORROWED_TRAIT=1 };

@@ -300,7 +300,7 @@ void ASObject::setMethodByQName(const tiny_string& name, const nsNameAndKind& ns
 		assert_and_throw(o==obj->var);
 		return;
 	}
-	obj->var=o;
+	obj->setVar(o);
 }
 
 void ASObject::setMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed)
@@ -442,9 +442,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 	else
 	{
 		assert_and_throw(!obj->getter);
-		if(obj->var)
-			obj->var->decRef();
-		obj->var=o;
+		obj->setVar(o);
 	}
 }
 
@@ -473,9 +471,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	else
 	{
 		assert_and_throw(!obj->getter);
-		if(obj->var)
-			obj->var->decRef();
-		obj->var=o;
+		obj->setVar(o);
 	}
 	check();
 }
@@ -495,6 +491,18 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 	}
 
 	Variables.initializeVar(name, o, c);
+}
+
+void obj_var::setVar(ASObject* v)
+{
+	if(var)
+		var->decRef();
+	if(type)
+	{
+		if(v->getPrototype()==NULL || !v->getPrototype()->isSubClass(type))
+			v=type->generator(&v,1);
+	}
+	var=v;
 }
 
 void variables_map::killObjVar(const multiname& mname)
@@ -885,8 +893,7 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 		assert_and_throw(slots_vars[n-1]!=Variables.end());
 		if(slots_vars[n-1]->second.var.setter)
 			throw UnsupportedException("setSlot has setters");
-		slots_vars[n-1]->second.var.var->decRef();
-		slots_vars[n-1]->second.var.var=o;
+		slots_vars[n-1]->second.var.setVar(o);
 	}
 	else
 		throw RunTimeException("setSlot out of bounds");

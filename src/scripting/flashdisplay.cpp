@@ -1642,24 +1642,26 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	number_t newwidth=args[0]->toNumber();
-	//Should actually scale the object
-	number_t computed=th->computeWidth();
-	if(computed==0) //Cannot scale, nothing to do (See Reference)
+
+	number_t xmin,xmax,y1,y2;
+	if(!th->boundsRect(xmin,xmax,y1,y2))
+		return NULL;
+
+	number_t width=xmax-xmin;
+	if(width==0) //Cannot scale, nothing to do (See Reference)
 		return NULL;
 	
-	if(computed!=newwidth) //If the width is changing, calculate new scale
+	if(width*th->sx!=newwidth) //If the width is changing, calculate new scale
 	{
-		number_t newscale=newwidth;
-		newscale/=computed;
 		if(ACQUIRE_READ(th->useMatrix))
 		{
 			th->valFromMatrix();
 			RELEASE_WRITE(th->useMatrix,false);
 		}
-		th->sx=newscale;
+		th->sx = newwidth/width;
+		if(th->onStage)
+			th->requestInvalidation();
 	}
-	if(th->onStage)
-		th->requestInvalidation();
 	return NULL;
 }
 
@@ -1673,24 +1675,26 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	number_t newheight=args[0]->toNumber();
-	//Should actually scale the object
-	number_t computed=th->computeHeight();
-	if(computed==0) //Cannot scale, nothing to do (See Reference)
+
+	number_t x1,x2,ymin,ymax;
+	if(!th->boundsRect(x1,x2,ymin,ymax))
+		return NULL;
+
+	number_t height=ymax-ymin;
+	if(height==0) //Cannot scale, nothing to do (See Reference)
 		return NULL;
 	
-	if(computed!=newheight) //If the height is changing, calculate new scale
+	if(height*th->sy!=newheight) //If the height is changing, calculate new scale
 	{
-		number_t newscale=newheight;
-		newscale/=computed;
 		if(ACQUIRE_READ(th->useMatrix))
 		{
 			th->valFromMatrix();
 			RELEASE_WRITE(th->useMatrix,false);
 		}
-		th->sy=newscale;
+		th->sy=newheight/height;
+		if(th->onStage)
+			th->requestInvalidation();
 	}
-	if(th->onStage)
-		th->requestInvalidation();
 	return NULL;
 }
 

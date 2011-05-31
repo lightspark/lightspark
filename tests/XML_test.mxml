@@ -20,8 +20,9 @@
 		Tests.assertEquals(xml4.localName(),null,"localName for empty string");
 		Tests.assertEquals(xml4.nodeKind(),"text","nodeKind for empty string");
 
-		var xmllist2:XMLList=new XMLList("<test/><test2/>");
+		var xmllist2:XMLList=new XMLList("<test><child/></test><test2><child2/></test2>");
 		Tests.assertEquals(xmllist2.length(), 2, "XMLList constructed from a string");
+		Tests.assertEquals(xmllist2.child.length(), 1, "XMLList property accessor");
 
 		var xml5:XML=new XML("<person age='22'><name>Alice</name></person>");
 		var xml6:XML=new XML("<person age='22'><name>Alice</name></person>");

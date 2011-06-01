@@ -41,7 +41,7 @@ using namespace lightspark;
 
 extern TLSDATA ParseThread* pt;
 
-Tag* TagFactory::readTag()
+_NR<Tag> TagFactory::readTag()
 {
 	RECORDHEADER h;
 	f >> h;
@@ -253,7 +253,7 @@ Tag* TagFactory::readTag()
 		throw ParseException("Malformed SWF file");
 	}
 	
-	return ret;
+	return _MNR(ret);
 }
 
 RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
@@ -331,7 +331,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	LOG(LOG_TRACE,_("DefineSprite ID: ") << SpriteID);
 	//Create a non top level TagFactory
 	TagFactory factory(in, false);
-	Tag* tag;
+	_NR<Tag> tag;
 	bool done=false;
 	bool empty=true;
 	do
@@ -345,7 +345,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			case DICT_TAG:
 				throw ParseException("Dictionary tag inside a sprite. Should not happen.");
 			case DISPLAY_LIST_TAG:
-				addToFrame(static_cast<DisplayListTag*>(tag));
+				addToFrame(tag.cast<DisplayListTag>());
 				empty=false;
 				break;
 			case SHOW_TAG:
@@ -358,7 +358,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			case CONTROL_TAG:
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case FRAMELABEL_TAG:
-				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
+				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag.getPtr())->Name);
 				empty=false;
 				break;
 			case TAG:
@@ -714,8 +714,8 @@ void DefineTextTag::computeCached() const
 	{
 		if(TextRecords[i].StyleFlagsHasFont)
 		{
-			DictionaryTag* it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
-			curFont=dynamic_cast<FontTag*>(it3);
+			_R<DictionaryTag> it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
+			curFont=dynamic_cast<FontTag*>(it3.getPtr());
 			assert_and_throw(curFont);
 		}
 		assert_and_throw(curFont);
@@ -989,7 +989,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 			localRoot=parentDict->loadedFrom;
 		else
 			localRoot=parent->getRoot().getPtr();
-		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
+		_R<DictionaryTag> dict=localRoot->dictionaryLookup(CharacterId);
 
 		//We can create the object right away
 		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(dict->instance());
@@ -1208,7 +1208,7 @@ ASObject* DefineButton2Tag::instance() const
 				continue;
 			if(j==3 && !i->ButtonStateUp)
 				continue;
-			DictionaryTag* dict=loadedFrom->dictionaryLookup(i->CharacterID);
+			_R<DictionaryTag> dict=loadedFrom->dictionaryLookup(i->CharacterID);
 
 			//We can create the object right away
 			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());

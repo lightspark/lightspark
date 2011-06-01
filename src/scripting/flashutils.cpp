@@ -35,7 +35,7 @@ REGISTER_CLASS_NAME(Timer);
 REGISTER_CLASS_NAME(Dictionary);
 REGISTER_CLASS_NAME(Proxy);
 
-ByteArray::ByteArray():bytes(NULL),len(0),position(0)
+ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),len(l),position(0)
 {
 }
 

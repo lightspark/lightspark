@@ -42,7 +42,7 @@ protected:
 	uint32_t position;
 	ByteArray(const ByteArray& b);
 public:
-	ByteArray();
+	ByteArray(uint8_t* b = NULL, uint32_t l = 0);
 	~ByteArray();
 	ASFUNCTION(_getBytesAvailable);
 	ASFUNCTION(_getLength);

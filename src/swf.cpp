@@ -117,13 +117,6 @@ void SystemState::unregisterEnterFrameListener(DisplayObject* obj)
 	if(enterFrameListeners.erase(obj))
 		obj->decRef();
 }
-
-void SystemState::registerTag(Tag* t)
-{
-	SpinlockLocker l(tagsStorageLock);
-	tagsStorage.push_back(t);
-}
-
 void RootMovieClip::setOnStage(bool staged)
 {
 	MovieClip::setOnStage(staged);
@@ -414,10 +407,6 @@ SystemState::~SystemState()
 	//Some objects needs to remove the jobs when destroyed so keep the timerThread until now
 	delete timerThread;
 	timerThread=NULL;
-
-	//Also destroy all tags
-	for(unsigned int i=0;i<tagsStorage.size();i++)
-		delete tagsStorage[i];
 
 	delete renderThread;
 	renderThread=NULL;
@@ -1077,9 +1066,7 @@ void ParseThread::execute()
 		bool empty=true;
 		while(!done)
 		{
-			Tag* tag=factory.readTag();
-			if(tag->getType() != CONTROL_TAG && tag->getType() != ABC_TAG)
-				sys->registerTag(tag);
+			_NR<Tag> tag=factory.readTag();
 			switch(tag->getType())
 			{
 				case END_TAG:
@@ -1095,13 +1082,13 @@ void ParseThread::execute()
 				}
 				case DICT_TAG:
 				{
-					DictionaryTag* d=static_cast<DictionaryTag*>(tag);
+					_R<DictionaryTag> d=tag.cast<DictionaryTag>();
 					d->setLoadedFrom(root);
 					root->addToDictionary(d);
 					break;
 				}
 				case DISPLAY_LIST_TAG:
-					root->addToFrame(static_cast<DisplayListTag*>(tag));
+					root->addToFrame(tag.cast<DisplayListTag>());
 					empty=false;
 					break;
 				case SHOW_TAG:
@@ -1121,16 +1108,15 @@ void ParseThread::execute()
 					//fall through
 				case ABC_TAG:
 				{
-					ControlTag* ctag = static_cast<ControlTag*>(tag);
+					_R<ControlTag> ctag = tag.cast<ControlTag>();
 					ctag->execute(root);
-					delete ctag;
 					break;
 				}
 				case FRAMELABEL_TAG:
 					/* No locking required, as the last frames is not
 					 * commited to the vm yet.
 					 */
-					root->addFrameLabel(root->frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
+					root->addFrameLabel(root->frames.size()-1,static_cast<FrameLabelTag*>(tag.getPtr())->Name);
 					empty=false;
 					break;
 				case TAG:
@@ -1222,17 +1208,17 @@ void RootMovieClip::setBackground(const RGB& bg)
 }
 
 /* called in parser's thread context */
-void RootMovieClip::addToDictionary(DictionaryTag* r)
+void RootMovieClip::addToDictionary(_R<DictionaryTag> r)
 {
 	SpinlockLocker l(dictSpinlock);
 	dictionary.push_back(r);
 }
 
 /* called in vm's thread context */
-DictionaryTag* RootMovieClip::dictionaryLookup(int id)
+_R<DictionaryTag> RootMovieClip::dictionaryLookup(int id)
 {
 	SpinlockLocker l(dictSpinlock);
-	list< DictionaryTag*>::iterator it = dictionary.begin();
+	auto it = dictionary.begin();
 	for(;it!=dictionary.end();++it)
 	{
 		if((*it)->getId()==id)
@@ -1243,8 +1229,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 		LOG(LOG_ERROR,_("No such Id on dictionary ") << id);
 		throw RunTimeException("Could not find an object on the dictionary");
 	}
-	DictionaryTag* ret=*it;
-	return ret;
+	return *it;
 }
 
 _NR<RootMovieClip> RootMovieClip::getRoot()

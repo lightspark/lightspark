@@ -90,17 +90,15 @@ protected:
 	void hitTestEpilogue() const;
 	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
-		throw("DisplayObject::boundsRect: Derived class must implement this!");
-		return false;
+		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
 	virtual void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 	{
-		throw("DisplayObject::renderImpl: Derived class must implement this!");
+		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
 	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
 	{
-		throw("DisplayObject::hitTestImpl: Derived class must implement this!");
-		return NullRef;
+		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
 public:
 	tiny_string name;

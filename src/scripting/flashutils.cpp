@@ -612,6 +612,12 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	return o;
 }
 
+ASFUNCTIONBODY(lightspark,describeType)
+{
+	assert_and_throw(argslen==1);
+	return new Undefined;
+}
+
 ASFUNCTIONBODY(lightspark,getTimer)
 {
 	uint64_t ret=compat_msectiming() - sys->startTime;

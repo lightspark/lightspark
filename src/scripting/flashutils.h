@@ -177,6 +177,7 @@ ASObject* setInterval(ASObject* obj,ASObject* const* args, const unsigned int ar
 ASObject* setTimeout(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* clearInterval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* clearTimeout(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* describeType(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 class IntervalRunner : public ITickJob, public EventDispatcher
 {

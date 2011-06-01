@@ -624,6 +624,7 @@ private:
 	Number(){}
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
+	static void purgeTrailingZeroes(char* buf, int bufLen);
 public:
 	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg);

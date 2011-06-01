@@ -2479,6 +2479,19 @@ TRISTATE Number::isLess(ASObject* o)
 	}
 }
 
+void Number::purgeTrailingZeroes(char* buf, int bufLen)
+{
+	int i=bufLen-1;
+	for(;i>0;i--)
+	{
+		if(buf[i]!='0')
+			break;
+	}
+	if(buf[i]==',' || buf[i]=='.')
+		i--;
+	buf[i+1]='\0';
+}
+
 ASFUNCTIONBODY(Number,_toString)
 {
 	Number* th=static_cast<Number*>(obj);
@@ -2489,7 +2502,10 @@ ASFUNCTIONBODY(Number,_toString)
 	assert_and_throw(radix==10 || radix==16);
 
 	if(radix==10)
-		snprintf(buf,20,"%g",th->val);
+	{
+		int bufLen=snprintf(buf,20,"%f",th->val);
+		purgeTrailingZeroes(buf,bufLen);
+	}
 	else if(radix==16)
 		snprintf(buf,20,"%lx",(int64_t)th->val);
 
@@ -2504,7 +2520,8 @@ ASFUNCTIONBODY(Number,generator)
 tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
-	snprintf(buf,20,"%g",val);
+	int bufLen=snprintf(buf,20,"%f",val);
+	purgeTrailingZeroes(buf,bufLen);
 	return tiny_string(buf,true);
 }
 

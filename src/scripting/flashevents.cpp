@@ -759,3 +759,11 @@ FunctionEvent::~FunctionEvent()
 	delete[] args;
 }
 
+BindClassEvent::BindClassEvent(_R<RootMovieClip> b, const tiny_string& c)
+	: Event("bindClass"),base(b),class_name(c)
+{
+}
+BindClassEvent::BindClassEvent(_R<DictionaryTag> t, const tiny_string& c)
+	: Event("bindClass"),tag(t),class_name(c)
+{
+}

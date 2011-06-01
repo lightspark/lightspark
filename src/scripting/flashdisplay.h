@@ -534,7 +534,7 @@ public:
 class Frame
 {
 public:
-	std::list<DisplayListTag*> blueprint;
+	std::list<_R<DisplayListTag>> blueprint;
 	void execute(_R<DisplayObjectContainer> displayList);
 };
 
@@ -593,7 +593,7 @@ public:
 	ASFUNCTION(_getScenes);
 	ASFUNCTION(_getCurrentScene);
 
-	virtual void addToFrame(DisplayListTag* r);
+	virtual void addToFrame(_R<DisplayListTag> r);
 
 	void advanceFrame();
 	void initFrame();

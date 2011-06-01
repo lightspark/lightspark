@@ -89,6 +89,12 @@ public:
 	{
 		return m<r.m;
 	}
+	template<class D> Ref<D> cast() const
+	{
+		D* p = static_cast<D*>(m);
+		p->incRef();
+		return _MR(p);
+	}
 	~Ref()
 	{
 		m->decRef();
@@ -212,6 +218,14 @@ public:
 	void fakeRelease()
 	{
 		m=NULL;
+	}
+	template<class D> NullableRef<D> cast() const
+	{
+		if(!m)
+			return NullRef;
+		D* p = static_cast<D*>(m);
+		p->incRef();
+		return _MNR(p);
 	}
 };
 

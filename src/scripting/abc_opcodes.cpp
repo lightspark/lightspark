@@ -2241,7 +2241,7 @@ void ABCVm::newObject(call_context* th, int n)
 void ABCVm::getDescendants(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th);
-	LOG(LOG_NOT_IMPLEMENTED,"getDescendants " << *name);
+	LOG(LOG_CALLS,"getDescendants " << *name);
 	ASObject* obj=th->runtime_stack_pop();
 	//HACK: to be removed when describeType is implemented
 	if(obj->getObjectType()==T_UNDEFINED)

@@ -2110,7 +2110,7 @@ ASObject* Array::at(unsigned int index) const
 				return data[index].data;
 		}
 		case DATA_INT:
-			return abstract_i(index);
+			return abstract_i(data[index].data_i);
 	}
 
 	//We should be here only if data is an object and is NULL

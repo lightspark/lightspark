@@ -709,6 +709,7 @@ public:
 	Bitmap() : size(0,0), data(NULL) {}
 	static void sinit(Class_base* c);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 	virtual IntSize getBitmapSize() const;
 };
 

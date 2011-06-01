@@ -3105,6 +3105,11 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return false;
 }
 
+_NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+{
+	return NullRef;
+}
+
 IntSize Bitmap::getBitmapSize() const
 {
 	return size;

@@ -88,13 +88,15 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"));
 	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));
 
-	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget),true);
-	c->setGetterByQName("currentTarget","",Class<IFunction>::getFunction(_getCurrentTarget),true);
-	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType),true);
-	c->setGetterByQName("eventPhase","",Class<IFunction>::getFunction(_getType),true);
 	c->setMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),true);
 	c->setMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),true);
 	c->setMethodByQName("preventDefault","",Class<IFunction>::getFunction(_preventDefault),true);
+	REGISTER_GETTER(c,currentTarget);
+	REGISTER_GETTER(c,target);
+	REGISTER_GETTER(c,type);
+	REGISTER_GETTER(c,eventPhase);
+	REGISTER_GETTER(c,bubbles);
+	REGISTER_GETTER(c,cancelable);
 }
 
 void Event::buildTraits(ASObject* o)
@@ -117,42 +119,12 @@ ASFUNCTIONBODY(Event,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(Event,_getCurrentTarget)
-{
-	Event* th=static_cast<Event*>(obj);
-	if(th->currentTarget.isNull())
-		return new Undefined;
-
-	th->currentTarget->incRef();
-	return th->currentTarget.getPtr();
-}
-
-ASFUNCTIONBODY(Event,_getTarget)
-{
-	Event* th=static_cast<Event*>(obj);
-	if(th->target.isNull())
-	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Target for event ") << th->type);
-		return new Undefined;
-	}
-	else
-	{
-		th->target->incRef();
-		return th->target.getPtr();
-	}
-}
-
-ASFUNCTIONBODY(Event,_getType)
-{
-	Event* th=static_cast<Event*>(obj);
-	return Class<ASString>::getInstanceS(th->type);
-}
-
-ASFUNCTIONBODY(Event,_getEventPhase)
-{
-	Event* th=static_cast<Event*>(obj);
-	return abstract_i(th->eventPhase);
-}
+ASFUNCTIONBODY_GETTER(Event,currentTarget);
+ASFUNCTIONBODY_GETTER(Event,target);
+ASFUNCTIONBODY_GETTER(Event,type);
+ASFUNCTIONBODY_GETTER(Event,eventPhase);
+ASFUNCTIONBODY_GETTER(Event,bubbles);
+ASFUNCTIONBODY_GETTER(Event,cancelable);
 
 ASFUNCTIONBODY(Event,_isDefaultPrevented)
 {

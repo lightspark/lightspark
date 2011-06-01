@@ -32,6 +32,7 @@
 #include <limits>
 #include <cmath>
 #include "swf.h"
+#include "flashaccessibility.h"
 #include "flashevents.h"
 #include "flashdisplay.h"
 #include "flashnet.h"
@@ -195,7 +196,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 
 	builtin->setVariableByQName("AccessibilityProperties","flash.accessibility",
-					Class<ASObject>::getClass(QName("AccessibilityProperties","flash.accessibility")));
+					Class<AccessibilityProperties>::getClass());
 
 	builtin->setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass());
 	builtin->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass());
@@ -1042,6 +1043,7 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
 	sem_init(&sem_event_count,0,0);
 	m_sys=s;
 	int_manager=new Manager(15);
+	uint_manager=new Manager(15);
 	number_manager=new Manager(15);
 	Global=new GlobalObject;
 	LOG(LOG_NO_INFO,_("Global is ") << Global);
@@ -1078,6 +1080,7 @@ ABCVm::~ABCVm()
 	sem_destroy(&sem_event_count);
 	sem_destroy(&event_queue_mutex);
 	delete int_manager;
+	delete uint_manager;
 	delete number_manager;
 	delete Global;
 }

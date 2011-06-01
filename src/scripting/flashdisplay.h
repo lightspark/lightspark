@@ -40,12 +40,14 @@ class LoaderInfo;
 class DisplayObjectContainer;
 class InteractiveObject;
 class Downloader;
+class AccessibilityProperties;
 
 class DisplayObject: public EventDispatcher
 {
 friend class TokenContainer;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 private:
+	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	MATRIX Matrix;
 	ACQUIRE_RELEASE_FLAG(useMatrix);
 	number_t tx,ty;
@@ -60,6 +62,7 @@ private:
 	void setMask(_NR<DisplayObject> m);
 	_NR<DisplayObjectContainer> parent;
 protected:
+	~DisplayObject();
 	/**
 	  	The object that masks us, if any
 	*/
@@ -588,6 +591,7 @@ public:
 	ASFUNCTION(_getCurrentFrame);
 	ASFUNCTION(_getCurrentFrameLabel);
 	ASFUNCTION(_getCurrentLabel);
+	ASFUNCTION(_getCurrentLabels);
 	ASFUNCTION(_getTotalFrames);
 	ASFUNCTION(_getFramesLoaded);
 	ASFUNCTION(_getScenes);

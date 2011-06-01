@@ -726,6 +726,7 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 			{
 				//Make sure name_o gets not destroyed, it's still owned by name
 				name_o->incRef();
+				return NULL;
 			}
 		}
 		else

@@ -586,8 +586,11 @@ public:
 
 class UInteger: public ASObject
 {
+friend ASObject* abstract_ui(uint32_t i);
+CLASSBUILDABLE(UInteger);
 private:
 	uint32_t val;
+	UInteger(Manager* m):ASObject(m),val(0){type=T_UINTEGER;}
 public:
 	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
 
@@ -1027,14 +1030,19 @@ template<>
 uint32_t ArgumentConversion<uint32_t>::toConcrete(ASObject* obj);
 template<>
 int32_t ArgumentConversion<int32_t>::toConcrete(ASObject* obj);
+template<>
+tiny_string ArgumentConversion<tiny_string>::toConcrete(ASObject* obj);
 
 template<>
 ASObject* ArgumentConversion<int32_t>::toAbstract(const int32_t& val);
-/* TODO: implement abstract_ui and number manager for uints */
+template<>
+ASObject* ArgumentConversion<uint32_t>::toAbstract(const uint32_t& val);
 template<>
 ASObject* ArgumentConversion<number_t>::toAbstract(const number_t& val);
 template<>
 ASObject* ArgumentConversion<bool>::toAbstract(const bool& val);
+template<>
+ASObject* ArgumentConversion<tiny_string>::toAbstract(const tiny_string& val);
 
 ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);

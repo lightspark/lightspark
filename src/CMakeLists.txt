@@ -58,6 +58,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_opcodes.cpp
   scripting/actions.cpp
   scripting/class.cpp
+  scripting/flashaccessibility.cpp
   scripting/flashdisplay.cpp
   scripting/flashevents.cpp
   scripting/flashexternal.cpp

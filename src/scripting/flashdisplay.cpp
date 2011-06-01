@@ -33,6 +33,7 @@
 #include "backends/geometry.h"
 #include "backends/image.h"
 #include "compat.h"
+#include "flashaccessibility.h"
 
 #include <GL/glew.h>
 #include <fstream>
@@ -747,6 +748,7 @@ void MovieClip::sinit(Class_base* c)
 	c->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),true);
 	c->setGetterByQName("currentFrameLabel","",Class<IFunction>::getFunction(_getCurrentFrameLabel),true);
 	c->setGetterByQName("currentLabel","",Class<IFunction>::getFunction(_getCurrentLabel),true);
+	c->setGetterByQName("currentLabels","",Class<IFunction>::getFunction(_getCurrentLabels),true);
 	c->setGetterByQName("scenes","",Class<IFunction>::getFunction(_getScenes),true);
 	c->setGetterByQName("currentScene","",Class<IFunction>::getFunction(_getCurrentScene),true);
 	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
@@ -1016,6 +1018,20 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 		return Class<ASString>::getInstanceS(label);
 }
 
+ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	Scene_data& sc = th->scenes[th->getCurrentScene()];
+
+	Array* ret = Class<Array>::getInstanceS();
+	ret->resize(sc.labels.size());
+	for(size_t i=0; i<sc.labels.size(); ++i)
+	{
+		ret->set(i, Class<FrameLabel>::getInstanceS(sc.labels[i]));
+	}
+	return ret;
+}
+
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
 	Sprite::_constructor(obj,NULL,0);
@@ -1068,6 +1084,8 @@ DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty
 {
 	assert(!d.isConstructed());
 }
+
+DisplayObject::~DisplayObject() {}
 
 void DisplayObject::finalize()
 {
@@ -1122,7 +1140,10 @@ void DisplayObject::sinit(Class_base* c)
 	c->setGetterByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),true);
 	c->setGetterByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),true);
 	c->setMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),true);
+	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 
 void DisplayObject::buildTraits(ASObject* o)
 {

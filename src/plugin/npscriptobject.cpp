@@ -616,6 +616,8 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	if(it == methods.end())
 		return false;
 
+	LOG(LOG_CALLS,"Plugin callback from the browser: " << objId.getString());
+
 	// Convert raw arguments to objects
 	const lightspark::ExtVariant* objArgs[argc];
 	for(uint32_t i = 0; i < argc; i++)
@@ -790,7 +792,7 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	scriptString += ") { return (" + id.getString();
 	scriptString += ")(" + argsString + "); }";
 
-	cout << "calling " << scriptString << endl;
+	LOG(LOG_CALLS,"Invoking " << scriptString << " in the browser ");
 
 	EXT_CALL_DATA data = {
 		&mainThread,

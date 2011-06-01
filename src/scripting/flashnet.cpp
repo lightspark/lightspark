@@ -505,7 +505,8 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 
 NetStream::NetStream():frameRate(0),tickStarted(false),connection(NULL),downloader(NULL),
 	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),
-	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false)
+	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false),
+	oldVolume(-1.0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -548,11 +549,14 @@ void NetStream::sinit(Class_base* c)
 	c->setSetterByQName("client","",Class<IFunction>::getFunction(_setClient),true);
 	c->setGetterByQName("checkPolicyFile","",Class<IFunction>::getFunction(_getCheckPolicyFile),true);
 	c->setSetterByQName("checkPolicyFile","",Class<IFunction>::getFunction(_setCheckPolicyFile),true);
+	REGISTER_GETTER_SETTER(c,soundTransform);
 }
 
 void NetStream::buildTraits(ASObject* o)
 {
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(NetStream,soundTransform);
 
 ASFUNCTIONBODY(NetStream,_getClient)
 {
@@ -769,22 +773,22 @@ ASFUNCTIONBODY(NetStream,seek)
 void NetStream::tick()
 {
 	//Check if the stream is paused
-	if(paused)
+	if(audioStream && audioStream->isValid())
 	{
-		//If sound is enabled, pause the sound stream too. This will stop all time from running.
-		if(audioStream && audioStream->isValid() && !audioStream->paused())
-		{
+		if(paused && !audioStream->paused())
 			sys->audioManager->pauseStreamPlugin(audioStream);
-		}
-		return;
-	}
-	//If sound is enabled, and the stream is not paused anymore, resume the sound stream.
-	//This will restart time.
-	else if(audioStream && audioStream->isValid() && audioStream->paused())
-	{
-		sys->audioManager->resumeStreamPlugin(audioStream);
-	}
+		else if(!paused && audioStream->paused())
+			sys->audioManager->resumeStreamPlugin(audioStream);
 
+		//TODO: use soundTransform->pan
+		if(soundTransform != NULL && soundTransform->volume != oldVolume)
+		{
+			audioStream->setVolume(soundTransform->volume);
+			oldVolume = soundTransform->volume;
+		}
+	}
+	if(paused)
+		return;
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
 	if(audioStream && sys->audioManager->isTimingAvailablePlugin())

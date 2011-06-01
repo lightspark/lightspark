@@ -471,6 +471,19 @@ void PulseAudioStream::unmute()
 			);
 }
 
+void PulseAudioStream::setVolume(double vol)
+{
+	struct pa_cvolume volume;
+	pa_cvolume_set(&volume, pa_stream_get_sample_spec(stream)->channels,
+					pa_sw_volume_from_linear(vol));
+	pa_context_set_sink_input_volume(
+			pa_stream_get_context(stream),
+			pa_stream_get_index(stream),
+			&volume,
+			NULL,
+			NULL
+			);
+}
 
 // Plugin factory function
 extern "C" DLL_PUBLIC IPlugin *create()

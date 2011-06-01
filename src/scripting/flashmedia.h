@@ -41,6 +41,8 @@ public:
 class SoundTransform: public ASObject
 {
 public:
+	ASPROPERTY_GETTER_SETTER(number_t,volume);
+	ASPROPERTY_GETTER_SETTER(number_t,pan);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 };

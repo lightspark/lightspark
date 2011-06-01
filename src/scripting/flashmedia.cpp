@@ -37,11 +37,25 @@ REGISTER_CLASS_NAME(SoundLoaderContext);
 void SoundTransform::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+	REGISTER_GETTER_SETTER(c,volume);
+	REGISTER_GETTER_SETTER(c,pan);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,volume);
+ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,pan);
 
 ASFUNCTIONBODY(SoundTransform,_constructor)
 {
-	LOG(LOG_CALLS,_("SoundTransform constructor"));
+	SoundTransform* th=Class<SoundTransform>::cast(obj);
+	assert_and_throw(argslen<=2);
+	th->volume = 1.0;
+	th->pan = 0.0;
+	if(0 < argslen)
+		th->volume = ArgumentConversion<number_t>::toConcrete(args[0]);
+	if(1 < argslen)
+		th->pan = ArgumentConversion<number_t>::toConcrete(args[1]);
 	return NULL;
 }
 

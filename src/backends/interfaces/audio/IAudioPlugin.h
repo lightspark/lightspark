@@ -39,6 +39,8 @@ class AudioStream
 	virtual uint32_t getPlayedTime() = 0;
 	virtual void fill() = 0;
 	virtual ~AudioStream() {};
+	virtual void setVolume(double volume)
+		{LOG(LOG_NOT_IMPLEMENTED,"setVolume not implemented in plugin");}
 };
 
 /**********************

@@ -2518,7 +2518,7 @@ ASFUNCTIONBODY(Number,_toString)
 
 	if(radix==10)
 	{
-		int bufLen=snprintf(buf,20,"%f",th->val);
+		int bufLen=snprintf(buf,20,"%#f",th->val);
 		purgeTrailingZeroes(buf,bufLen);
 	}
 	else if(radix==16)
@@ -2535,7 +2535,7 @@ ASFUNCTIONBODY(Number,generator)
 tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
-	int bufLen=snprintf(buf,20,"%f",val);
+	int bufLen=snprintf(buf,20,"%#f",val);
 	purgeTrailingZeroes(buf,bufLen);
 	return tiny_string(buf,true);
 }

@@ -101,6 +101,7 @@ private:
 	_NR<ASObject> data;
 	Spinlock downloaderLock;
 	Downloader* downloader;
+	std::vector<uint8_t> postData;
 	void execute();
 	void threadAbort();
 	void jobFence();

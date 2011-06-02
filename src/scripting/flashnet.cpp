@@ -217,13 +217,9 @@ ASFUNCTIONBODY(URLLoader,load)
 			sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
 			return NULL;
 		}
-		//The URL is valid so we can start the download and add ourself as a job
-		//Don't cache our downloaded files
-		th->downloader=sys->downloadManager->download(th->url, false);
 	}
 	else //POST
 	{
-		vector<uint8_t> postData;
 		if(data)
 		{
 			if(data->getPrototype()==Class<ByteArray>::getClass())
@@ -231,7 +227,7 @@ ASFUNCTIONBODY(URLLoader,load)
 			else
 			{
 				const tiny_string& strData=data->toString();
-				postData.insert(postData.end(),strData.raw_buf(),strData.raw_buf()+strData.len());
+				th->postData.insert(th->postData.end(),strData.raw_buf(),strData.raw_buf()+strData.len());
 			}
 		}
 		if(!th->url.isValid())
@@ -241,12 +237,9 @@ ASFUNCTIONBODY(URLLoader,load)
 			sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
 			return NULL;
 		}
-		//The URL is valid so we can start the download and add ourself as a job
-		th->downloader=sys->downloadManager->downloadWithData(th->url, postData);
 	}
 	//To be decreffed in jobFence
 	th->incRef();
-	assert(th->downloader);
 	sys->addJob(th);
 	return NULL;
 }
@@ -259,6 +252,22 @@ void URLLoader::jobFence()
 void URLLoader::execute()
 {
 	//TODO: support httpStatus, progress, securityError, open events
+	{
+		SpinlockLocker l(downloaderLock);
+		//All the checks passed, create the downloader
+		if(postData.empty())
+		{
+			//This is a GET request
+			//Don't cache our downloaded files
+			downloader=sys->downloadManager->download(url, false);
+		}
+		else
+		{
+			downloader=sys->downloadManager->downloadWithData(url, postData);
+			//Clean up the postData for the next load
+			postData.clear();
+		}
+	}
 
 	if(!downloader->hasFailed())
 	{
@@ -644,7 +653,7 @@ ASFUNCTIONBODY(NetStream,play)
 	//Reset the paused states
 	th->paused = false;
 //	th->audioPaused = false;
-
+	assert(!th->connection.isNull());
 	
 	if(th->connection->uri.isValid())
 	{

@@ -126,15 +126,14 @@ public:
 		NA_REMOTE_SANDBOX, 	NA_LOCAL_SANDBOX,
 		NA_CROSSDOMAIN_POLICY, NA_PORT, NA_HEADER };
 	
-	//Evaluates an URL by checking allowed sandboxes and checking URL policy files
-	EVALUATIONRESULT evaluateURL(const tiny_string& url, bool loadPendingPolicies, 
-			int allowedSandboxesRemote, int allowedSandboxesLocal, bool restrictLocalDirectory)
+	//Evaluates an URL by checking allowed sandboxes (URL policy files are not checked)
+	EVALUATIONRESULT evaluateURLStatic(const tiny_string& url, int allowedSandboxesRemote,
+			int allowedSandboxesLocal, bool restrictLocalDirectory)
 	{
-		return evaluateURL(URLInfo(url), loadPendingPolicies,
-			allowedSandboxesRemote, allowedSandboxesLocal);
+		return evaluateURLStatic(URLInfo(url), allowedSandboxesRemote, allowedSandboxesLocal);
 	}
-	EVALUATIONRESULT evaluateURL(const URLInfo& url, bool loadPendingPolicies, 
-			int allowedSandboxesRemote, int allowedSandboxesLocal, bool restrictLocalDirectory=true);
+	EVALUATIONRESULT evaluateURLStatic(const URLInfo& url, int allowedSandboxesRemote, 
+			int allowedSandboxesLocal, bool restrictLocalDirectory=true);
 	
 	//Evaluates an URL by checking if the type of URL (local/remote) matches the allowed sandboxes
 	EVALUATIONRESULT evaluateSandboxURL(const URLInfo& url,

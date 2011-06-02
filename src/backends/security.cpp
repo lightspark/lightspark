@@ -310,16 +310,13 @@ bool SecurityManager::evaluateSandbox(SANDBOXTYPE sandbox, int allowedSandboxes)
 }
 
 /**
- * \brief Evaluates an URL to see if it is allowed by the various security features.
+ * \brief Evaluates an URL static properties to see if it is allowed by the various security features.
  *
  * This first checks if the current sandbox is allowed access to the URL.
  * Next the port is checked to see if isn't restricted.
  * Then, if requested, the URL is checked to see if it doesn't point to a resource 
  * above the current directory in the directory hierarchy (only applicable to local URLs).
- * And finally the URL policy files are checked to see if they allow the player 
- * to access the given URL.
  * \param url The URL to evaluate
- * \param loadPendingPolicies Whether or not to load pending policy files while checking
  * \param allowedSandboxesRemote The sandboxes that are allowed to access remote URLs in this case.
  *                               Can be a bitwise expression of sandboxes.
  * \param allowedSandboxesLocal The sandboxes that are allowed to access local URLs in this case.
@@ -328,11 +325,9 @@ bool SecurityManager::evaluateSandbox(SANDBOXTYPE sandbox, int allowedSandboxes)
  * \see SecurityManager::evaluateSandboxURL()
  * \see SecurityManager::evaluatePortURL()
  * \see SecurityManager::evaluateLocalDirectoryURL()
- * \see SecurityManager::evaluatePoliciesURL()
  */
-SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& url,
-		bool loadPendingPolicies,	int allowedSandboxesRemote, int allowedSandboxesLocal,
-		bool restrictLocalDirectory)
+SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURLStatic(const URLInfo& url,
+		int allowedSandboxesRemote, int allowedSandboxesLocal, bool restrictLocalDirectory)
 {
 	//Check the sandbox first
 	EVALUATIONRESULT sandboxResult =
@@ -352,11 +347,6 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& ur
 		if(restrictLocalDirResult != ALLOWED)
 			return restrictLocalDirResult;
 	}
-
-	//Finally, check policy files
-	EVALUATIONRESULT policiesResult = evaluatePoliciesURL(url, loadPendingPolicies);
-	if(policiesResult != ALLOWED)
-		return policiesResult;
 
 	//All checks passed, so we allow the URL connection
 	return ALLOWED;

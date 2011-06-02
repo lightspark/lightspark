@@ -160,10 +160,8 @@ ASFUNCTIONBODY(URLLoader,load)
 	//TODO: support the right events (like SecurityErrorEvent)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
 	SecurityManager::EVALUATIONRESULT evaluationResult = 
-		sys->securityManager->evaluateURL(th->url, true,
-			~(SecurityManager::LOCAL_WITH_FILE),
-			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
-			true);
+		sys->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
+			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
 	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
@@ -178,12 +176,6 @@ ASFUNCTIONBODY(URLLoader,load)
 	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
 				"not allowed to navigate up for local files");
-	else if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
-	{
-		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
-		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
-				"connection to domain not allowed by securityManager");
-	}
 
 	//TODO: should we disallow accessing local files in a directory above 
 	//the current one like we do with NetStream.play?
@@ -251,7 +243,18 @@ void URLLoader::jobFence()
 
 void URLLoader::execute()
 {
-	//TODO: support httpStatus, progress, securityError, open events
+	//TODO: support httpStatus, progress, open events
+
+	//Check for URL policies and send SecurityErrorEvent if needed
+	SecurityManager::EVALUATIONRESULT evaluationResult = sys->securityManager->evaluatePoliciesURL(url, true);
+	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
+	{
+		this->incRef();
+		getVm()->addEvent(_MR(this),_MR(Class<SecurityErrorEvent>::getInstanceS("SecurityError: URLLoader::load: "
+					"connection to domain not allowed by securityManager")));
+		return;
+	}
+
 	{
 		SpinlockLocker l(downloaderLock);
 		//All the checks passed, create the downloader
@@ -671,12 +674,9 @@ ASFUNCTIONBODY(NetStream,play)
 		//args[0] is the url
 		//what is the meaning of the other arguments
 		th->url = sys->getOrigin().goToURL(args[0]->toString());
-		//checkPolicyFile only applies to per-pixel access, loading and playing is always allowed.
-		//So there is no need to disallow playing if policy files disallow it.
-		//We do need to check if per-pixel access is allowed.
+
 		SecurityManager::EVALUATIONRESULT evaluationResult = 
-			sys->securityManager->evaluateURL(th->url, th->checkPolicyFile, 
-				~(SecurityManager::LOCAL_WITH_FILE),
+			sys->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
 				SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 				true); //Check for navigating up in local directories (not allowed)
 		if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
@@ -692,8 +692,6 @@ ASFUNCTIONBODY(NetStream,play)
 		else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 			throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 					"not allowed to navigate up for local files");
-		else if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
-			th->rawAccessAllowed = true;
 	}
 
 	assert_and_throw(th->downloader==NULL);
@@ -841,6 +839,13 @@ void NetStream::unlock()
 
 void NetStream::execute()
 {
+	//checkPolicyFile only applies to per-pixel access, loading and playing is always allowed.
+	//So there is no need to disallow playing if policy files disallow it.
+	//We do need to check if per-pixel access is allowed.
+	SecurityManager::EVALUATIONRESULT evaluationResult = sys->securityManager->evaluatePoliciesURL(url, true);
+	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
+		rawAccessAllowed = true;
+
 	if(downloader->hasFailed())
 	{
 		this->incRef();
@@ -1302,8 +1307,7 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	//TODO: support the right events (like SecurityErrorEvent)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
 	SecurityManager::EVALUATIONRESULT evaluationResult = 
-		sys->securityManager->evaluateURL(url, true,
-			~(SecurityManager::LOCAL_WITH_FILE),
+		sys->securityManager->evaluateURLStatic(url, ~(SecurityManager::LOCAL_WITH_FILE),
 			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 			true);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
@@ -1320,7 +1324,10 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
 				"not allowed to navigate up for local files");
-	else if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
+
+	//Also check cross domain policies. TODO: this should be async as it could block if invoked from ExternalInterface
+	evaluationResult = sys->securityManager->evaluatePoliciesURL(url, true);
+	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 	{
 		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
 		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "

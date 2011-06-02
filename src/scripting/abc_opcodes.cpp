@@ -1134,7 +1134,6 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		if((val1->getPrototype()==xmlClass || val1->getPrototype()==xmlListClass) &&
 			(val2->getPrototype()==xmlClass || val2->getPrototype()==xmlListClass))
 		{
-			cout << "XMLADD" << endl;
 			XMLList* newList=Class<XMLList>::getInstanceS(true);
 			if(val1->getPrototype()==xmlClass)
 				newList->append(_MR(static_cast<XML*>(val1)));

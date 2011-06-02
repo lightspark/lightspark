@@ -639,7 +639,7 @@ ASFUNCTIONBODY(TextEvent,_constructor)
 	return NULL;
 }
 
-ErrorEvent::ErrorEvent()
+ErrorEvent::ErrorEvent(const std::string& e):errorMsg(e)
 {
 }
 
@@ -658,7 +658,7 @@ ASFUNCTIONBODY(ErrorEvent,_constructor)
 	return NULL;
 }
 
-SecurityErrorEvent::SecurityErrorEvent()
+SecurityErrorEvent::SecurityErrorEvent(const std::string& e):ErrorEvent(e)
 {
 }
 

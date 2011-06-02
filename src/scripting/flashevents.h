@@ -147,8 +147,11 @@ public:
 
 class ErrorEvent: public TextEvent
 {
+private:
+	std::string errorMsg;
 public:
-	ErrorEvent();
+	ErrorEvent() {};
+	ErrorEvent(const std::string& e);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -169,7 +172,8 @@ public:
 class SecurityErrorEvent: public ErrorEvent
 {
 public:
-	SecurityErrorEvent();
+	SecurityErrorEvent() {};
+	SecurityErrorEvent(const std::string& e);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{

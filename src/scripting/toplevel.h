@@ -729,6 +729,7 @@ public:
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(generator);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;

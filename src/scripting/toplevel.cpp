@@ -1323,6 +1323,21 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 	}
 }
 
+void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+{
+	assert_and_throw(implEnable);
+	unsigned int index=0;
+	if(!Array::isValidMultiname(name,index))
+		return ASObject::setVariableByMultiname(name,o,base);
+
+	XML* newNode=dynamic_cast<XML*>(o);
+	if(newNode==NULL)
+		return ASObject::setVariableByMultiname(name,o,base);
+
+	//Nodes are always added at the end. The requested index are ignored. This is a tested behaviour.
+	nodes.push_back(_MR(newNode));
+}
+
 _NR<XML> XMLList::convertToXML() const
 {
 	if(nodes.size()==1)

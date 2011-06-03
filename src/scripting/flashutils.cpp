@@ -615,7 +615,11 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 ASFUNCTIONBODY(lightspark,describeType)
 {
 	assert_and_throw(argslen==1);
-	assert_and_throw(args[0]->getObjectType()!=T_CLASS);
+
+	//HACK: TODO: support classes. YouTube needs this
+	if(args[0]->getObjectType()==T_CLASS)
+		return new Undefined;
+
 	Class_base* type=args[0]->getPrototype();
 	assert_and_throw(type);
 	//TODO: add support in type for base, isDynamic, isFinal, isStatic

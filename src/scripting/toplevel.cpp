@@ -916,8 +916,8 @@ xmlElementType XML::getNodeKind() const
 void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns,
 		std::vector<_R<XML>>& ret)
 {
-	//Check if this node is being requested
-	if(node->get_name()==name.raw_buf())
+	//Check if this node is being requested. The empty string means ALL
+	if(name.len()==0 || node->get_name()==name.raw_buf())
 	{
 		root->incRef();
 		ret.push_back(_MR(Class<XML>::getInstanceS(root, node)));

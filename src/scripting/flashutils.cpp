@@ -615,7 +615,43 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 ASFUNCTIONBODY(lightspark,describeType)
 {
 	assert_and_throw(argslen==1);
-	return new Undefined;
+	assert_and_throw(args[0]->getObjectType()!=T_CLASS);
+	Class_base* type=args[0]->getPrototype();
+	assert_and_throw(type);
+	//TODO: add support in type for base, isDynamic, isFinal, isStatic
+	string ret = "<type name=\"";
+	if(type->class_name.ns.len())
+	{
+		ret+=type->class_name.ns.raw_buf();
+		ret+=".";
+	}
+	ret+=type->class_name.name.raw_buf();
+	ret+="\">";
+	//TODO: add support for extendsClass and implementsInterface and factory
+	auto it=args[0]->Variables.Variables.begin();
+	for(;it!=args[0]->Variables.Variables.end();it++)
+	{
+		//TODO: add support for constant, method, parameter
+		if(it->second.var.getter)
+		{
+			//Output an accessor
+			//TODO: add support in accessor for access,type,declaredBy
+			ret+="<accessor name=\"";
+			ret+=it->first.raw_buf();
+			ret+="\"/>";
+		}
+		else if(it->second.var.var)
+		{
+			//Output a variable
+			//TODO: add support in variable for type
+			ret+="<variable name=\"";
+			ret+=it->first.raw_buf();
+			ret+="\"/>";
+		}
+	}
+	ret+="</type>";
+
+	return Class<XML>::getInstanceS(ret);;
 }
 
 ASFUNCTIONBODY(lightspark,getTimer)

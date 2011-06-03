@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_XMLList_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var xml1:XML=new XML("<test1></test1>");
+		var xml2:XML=new XML("<test2></test2>");
+		var list:XMLList=new XMLList();
+
+		list[10]=xml1;
+		list[2]=xml2;
+
+		Tests.assertEquals(2,list.length(),"Sparse XMLList: length");
+		var str:String = "";
+		for each(var x:XML in list)
+			str+=x.toXMLString();
+		Tests.assertEquals("<test1/><test2/>",str,"Sparse XMLList: elements order");
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

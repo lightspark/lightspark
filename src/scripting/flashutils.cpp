@@ -63,10 +63,12 @@ void ByteArray::sinit(Class_base* c)
 	sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
 	c->setMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),true);
 	c->setMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),true);
+	c->setMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),true);
 	c->setMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),true);
 	c->setMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),true);
 	c->setMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),true);
 	c->setMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),true);
+	c->setMethodByQName("writeInt","",Class<IFunction>::getFunction(writeInt),true);
 //	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),true);
 	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),true);
 }
@@ -258,17 +260,51 @@ ASFUNCTIONBODY(ByteArray,writeByte)
 	return NULL;
 }
 
+ASFUNCTIONBODY(ByteArray,writeInt)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==1);
+
+	int32_t value=args[0]->toInt();
+
+	th->getBuffer(th->position+4,true);
+	memcpy(th->bytes+th->position,&value,4);
+	th->position+=4;
+
+	return NULL;
+}
+
 ASFUNCTIONBODY(ByteArray, readByte)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
-	if (th->len <= th->position) {
+	if (th->len <= th->position)
+	{
 		LOG(LOG_ERROR,"ByteArray::readByte not enough data");
 		//TODO: throw AS exceptions
 		return NULL;
 	}
 	return abstract_i(th->bytes[th->position++]);
+}
+
+ASFUNCTIONBODY(ByteArray,readInt)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==0);
+
+	if(th->len < th->position+4)
+	{
+		LOG(LOG_ERROR,"ByteArray::readInt not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+
+	int32_t ret;
+	memcpy(&ret,th->bytes+th->position,4);
+	th->position+=4;
+
+	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readObject)

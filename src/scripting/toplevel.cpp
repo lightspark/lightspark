@@ -588,6 +588,7 @@ void XML::sinit(Class_base* c)
 	c->setMethodByQName("children",AS3,Class<IFunction>::getFunction(children),true);
 	c->setMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),true);
 	c->setMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),true);
+	c->setMethodByQName("name",AS3,Class<IFunction>::getFunction(name),true);
 	c->setMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),true);
 	c->setMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),true);
 	c->setMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),true);
@@ -689,6 +690,19 @@ ASFUNCTIONBODY(XML,localName)
 	assert_and_throw(argslen==0);
 	assert(th->node);
 	xmlElementType nodetype=th->node->cobj()->type;
+	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
+		return new Null;
+	else
+		return Class<ASString>::getInstanceS(th->node->get_name());
+}
+
+ASFUNCTIONBODY(XML,name)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==0);
+	assert(th->node);
+	xmlElementType nodetype=th->node->cobj()->type;
+	//TODO: add namespace
 	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
 		return new Null;
 	else

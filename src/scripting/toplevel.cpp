@@ -1174,6 +1174,12 @@ bool XML::isEqual(ASObject* r)
 	return false;
 }
 
+void XML::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	throw UnsupportedException("XML::serialize not implemented");
+}
+
 XMLList::XMLList(const std::string& str):constructed(true)
 {
 	buildFromString(str);
@@ -2167,6 +2173,28 @@ void Array::outofbounds() const
 	throw ParseException("Array access out of bounds");
 }
 
+void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	assert_and_throw(objMap.find(this)==objMap.end());
+	out->writeByte(0x90);
+	uint32_t denseCount = data.size();
+	assert_and_throw(denseCount<0x20000000);
+	uint32_t value = (denseCount << 1) | 1;
+	out->writeU29(value);
+	serializeDynamicProperties(out, stringMap, objMap);
+	for(uint32_t i=0;i<denseCount;i++)
+	{
+		switch(data[i].type)
+		{
+			case DATA_INT:
+				throw UnsupportedException("int not supported in Array::serialize");
+			case DATA_OBJECT:
+				data[i].data->serialize(out, stringMap, objMap);
+		}
+	}
+}
+
 tiny_string Boolean::toString(bool debugMsg)
 {
 	return (val)?"true":"false";
@@ -2241,6 +2269,13 @@ TRISTATE ASString::isLess(ASObject* r)
 	return (a<b)?TTRUE:TFALSE;
 }
 
+void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	out->writeByte(0x06);
+	out->writeStringVR(stringMap, data);
+}
+
 bool Boolean::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_BOOLEAN)
@@ -2301,6 +2336,12 @@ int Undefined::toInt()
 double Undefined::toNumber()
 {
 	return numeric_limits<double>::quiet_NaN();
+}
+
+void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	throw UnsupportedException("Undefined::serialize not implemented");
 }
 
 ASFUNCTIONBODY(Integer,_toString)
@@ -2433,6 +2474,13 @@ void Integer::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),true);
+}
+
+void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	out->writeByte(0x04);
+	out->writeU29(val);
 }
 
 tiny_string UInteger::toString(bool debugMsg)
@@ -2588,6 +2636,19 @@ void Number::sinit(Class_base* c)
 	c->setVariableByQName("MAX_VALUE","",pmax);
 	c->setVariableByQName("MIN_VALUE","",pmin);
 	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),true);
+}
+
+void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	out->writeByte(0x05);
+	//We have to write the double in network byte order (big endian)
+	const uint64_t* tmpPtr=reinterpret_cast<const uint64_t*>(&val);
+	uint64_t bigEndianVal=BigEndianToHost64(*tmpPtr);
+	uint8_t* bigEndianPtr=reinterpret_cast<uint8_t*>(&bigEndianVal);
+
+	for(uint32_t i=0;i<8;i++)
+		out->writeByte(bigEndianPtr[i]);
 }
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
@@ -2766,6 +2827,12 @@ tiny_string Date::toString(bool debugMsg)
 tiny_string Date::toString_priv() const
 {
 	return "Wed Dec 31 16:00:00 GMT-0800 1969";
+}
+
+void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	throw UnsupportedException("Date::serialize not implemented");
 }
 
 IFunction* SyntheticFunction::toFunction()
@@ -3274,6 +3341,12 @@ int Null::toInt()
 double Null::toNumber()
 {
 	return 0.0;
+}
+
+void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	throw UnsupportedException("Null::serialize not implemented");
 }
 
 RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)
@@ -4671,6 +4744,12 @@ ASFUNCTIONBODY(Boolean,_toString)
 void Boolean::sinit(Class_base* c)
 {
 	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(Boolean::_toString),true);
+}
+
+void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	throw UnsupportedException("Boolean:serialize not implemented");
 }
 
 ASFUNCTIONBODY(lightspark,parseInt)

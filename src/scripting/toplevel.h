@@ -33,6 +33,7 @@ namespace lightspark
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
 
 class Event;
+class ABCContext;
 class method_info;
 struct call_context;
 
@@ -349,6 +350,9 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_toString);
 	ASFUNCTION(generator);
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 class Undefined : public ASObject
@@ -361,6 +365,9 @@ public:
 	double toNumber();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 class ASString: public ASObject
@@ -401,6 +408,9 @@ public:
 	double toNumber();
 	int32_t toInt();
 	ASFUNCTION(generator);
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 class Null: public ASObject
@@ -412,6 +422,9 @@ public:
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
 	double toNumber();
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 class ASQName: public ASObject
@@ -553,6 +566,9 @@ public:
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 class Integer : public ASObject
@@ -583,6 +599,9 @@ public:
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 	ASFUNCTION(generator);
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 class UInteger: public ASObject
@@ -611,6 +630,7 @@ public:
 	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
+	//CHECK: should this have a special serialization?
 };
 
 class Number : public ASObject
@@ -651,6 +671,9 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(generator);
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 class XML: public ASObject
@@ -700,6 +723,9 @@ public:
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 class XMLList: public ASObject
@@ -775,6 +801,9 @@ public:
 	ASFUNCTION(valueOf);
 	tiny_string toString(bool debugMsg=false);
 	tiny_string toString_priv() const;
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 //Internal objects used to store traits declared in scripts and object placed, but not yet valid

@@ -961,3 +961,34 @@ void ASObject::constructionComplete()
 {
 	//Nothing to be done now
 }
+
+void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	//Pairs of name, value
+	auto it=Variables.Variables.begin();
+	for(;it!=Variables.Variables.end();it++)
+	{
+		assert_and_throw(it->second.ns.name=="");
+		out->writeStringVR(stringMap,it->first);
+		it->second.var.var->serialize(out, stringMap, objMap);
+	}
+	//The empty string closes the object
+	out->writeStringVR(stringMap, "");
+}
+
+void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	Class_base* type=getPrototype();
+	if(type!=Class<ASObject>::getClass())
+		throw UnsupportedException("ASObject::serialize not completely implemented");
+
+	//0x0A -> object marker
+	out->writeByte(0x0A);
+	//0x0B -> a dynamic instance follows
+	out->writeByte(0x0B);
+	//The class name, empty if no alias is registered
+	out->writeStringVR(stringMap, "");
+	serializeDynamicProperties(out, stringMap, objMap);
+}

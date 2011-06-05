@@ -106,7 +106,7 @@ class IFunction;
 class Manager;
 template<class T> class Class;
 class Class_base;
-class ABCContext;
+class ByteArray;
 
 struct obj_var
 {
@@ -201,6 +201,8 @@ protected:
 	ASObject(const ASObject& o);
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;
+	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const;
 private:
 	ATOMIC_INT32(ref_count);
 	Manager* manager;
@@ -350,6 +352,15 @@ public:
 
 	//Called when the object construction is completed. Used by MovieClip implementation
 	virtual void constructionComplete();
+
+	/**
+	  Serialization interface
+
+	  The various maps are used to implement reference type of the AMF3 spec
+	  TODO:	Add traits map
+	*/
+	virtual void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
 inline void Manager::put(ASObject* o)

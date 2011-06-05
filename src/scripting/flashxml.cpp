@@ -165,6 +165,12 @@ void XMLDocument::clear()
 	}
 }
 
+void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	throw UnsupportedException("XMLDocument::serialize not implemented");
+}
+
 ASFUNCTIONBODY(XMLDocument,parseXML)
 {
 	XMLDocument* th=Class<XMLDocument>::cast(obj);

@@ -58,11 +58,16 @@
 		Tests.assertEquals(e.lastIndexOf(2, 1), 0, "lastIndexOf() positive offset");
 		Tests.assertEquals(e.lastIndexOf(2, -3), 0, "lastIndexOf() negative offset (1)");
 		Tests.assertEquals(e.lastIndexOf(2, -2), 2, "lastIndexOf() negative offset (2)");
-		Tests.assertEquals(e.lastIndexOf(2, NaN), 2, "lastIndexOf() NaN offset");
-		Tests.assertEquals(e.lastIndexOf(2, undefined), 2, "lastIndexOf() undefined offset");
-		Tests.assertEquals(e.lastIndexOf(2, "a"), 2, "lastIndexOf() string offset (1)");
+		Tests.assertEquals(e.lastIndexOf(2, NaN), 0, "lastIndexOf() NaN offset");
+		Tests.assertEquals(e.lastIndexOf(2, undefined), 0, "lastIndexOf() undefined offset");
+		Tests.assertEquals(e.lastIndexOf(2, "a"), 0, "lastIndexOf() string offset (1)");
 		Tests.assertEquals(e.lastIndexOf(2, "1"), 0, "lastIndexOf() string offset (2)");
 		Tests.assertEquals(e.lastIndexOf(2, 20), 2, "lastIndexOf() too big");
+
+		var f:Array=[ 2, 3, 4, 5];
+		var g:Array=f.splice(1,1000);
+		Tests.assertArrayEquals(f, [ 2 ], "splice with huge deleteCount: original array");
+		Tests.assertArrayEquals(g, [ 3, 4, 5], "splice with huge deleteCount: returned array");
 
 		Tests.report(visual, this.name);
 	}

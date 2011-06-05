@@ -51,13 +51,13 @@ public:
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(_getDefaultObjectEncoding);
 	ASFUNCTION(_setDefaultObjectEncoding);
+	ASFUNCTION(readByte);
 	ASFUNCTION(readBytes);
+	ASFUNCTION(readInt);
 	ASFUNCTION(readObject);
 	ASFUNCTION(writeByte);
-	ASFUNCTION(writeInt);
-	ASFUNCTION(readByte);
-	ASFUNCTION(readInt);
 	ASFUNCTION(writeBytes);
+	ASFUNCTION(writeInt);
 	ASFUNCTION(writeUTFBytes);
 	ASFUNCTION(_toString);
 

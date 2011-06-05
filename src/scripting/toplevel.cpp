@@ -2580,9 +2580,26 @@ void Number::purgeTrailingZeroes(char* buf, int bufLen)
 		if(buf[i]!='0')
 			break;
 	}
+	bool commaFound=false;
 	if(buf[i]==',' || buf[i]=='.')
+	{
 		i--;
+		commaFound=true;
+	}
 	buf[i+1]='\0';
+
+	if(commaFound)
+		return;
+
+	//Also change the comma to the point if needed
+	for(;i>0;i--)
+	{
+		if(buf[i]==',')
+		{
+			buf[i]='.';
+			break;
+		}
+	}
 }
 
 ASFUNCTIONBODY(Number,_toString)

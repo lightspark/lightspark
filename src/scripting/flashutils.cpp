@@ -247,6 +247,12 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	return NULL;
 }
 
+void ByteArray::writeByte(uint8_t b)
+{
+	getBuffer(position+1,true);
+	bytes[position++] = b;
+}
+
 ASFUNCTIONBODY(ByteArray,writeByte)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
@@ -254,8 +260,7 @@ ASFUNCTIONBODY(ByteArray,writeByte)
 
 	int32_t value=args[0]->toInt();
 
-	th->getBuffer(th->position+1,true);
-	th->bytes[th->position++] = value & 0xFF;
+	th->writeByte(value&0xff);
 
 	return NULL;
 }
@@ -274,18 +279,54 @@ ASFUNCTIONBODY(ByteArray,writeInt)
 	return NULL;
 }
 
+bool ByteArray::readByte(uint8_t& b)
+{
+	if (len <= position)
+		return false;
+
+	b=bytes[position++];
+	return true;
+}
+
+bool ByteArray::readU29(int32_t& ret)
+{
+	ret=0;
+	for(uint32_t i=0;i<4;i++)
+	{
+		if (len <= position)
+			return false;
+
+		uint8_t tmp=bytes[position++];
+		if(i<3)
+		{
+			ret|=((tmp&0x7f) << i*7);
+			if((tmp&0x80)==0)
+				break;
+		}
+		else
+		{
+			ret|=(tmp << 21);
+			//Sign extend
+			if(tmp&0x80)
+				ret|=0xe0000000;
+		}
+	}
+	return true;
+}
+
 ASFUNCTIONBODY(ByteArray, readByte)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
-	if (th->len <= th->position)
+	uint8_t ret;
+	if(!th->readByte(ret))
 	{
 		LOG(LOG_ERROR,"ByteArray::readByte not enough data");
 		//TODO: throw AS exceptions
 		return NULL;
 	}
-	return abstract_i(th->bytes[th->position++]);
+	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readInt)
@@ -428,6 +469,47 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 	bytes=buf;
 	len=bufLen;
 	position=0;
+}
+
+void ByteArray::writeU29(int32_t val)
+{
+	if(val>=0x40000000 || val<=(int32_t)0xbfffffff)
+		throw AssertionException("Range exception in writeU29");
+
+	for(uint32_t i=0;i<4;i++)
+	{
+		uint8_t b;
+		if(i<3)
+		{
+			b=val&0x7f;
+			val>>=7;
+			if(val)
+				b|=0x80;
+		}
+		else
+			b=val&0xff;
+
+		writeByte(b);
+		if(val==0)
+			break;
+	}
+}
+
+void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_string& s)
+{
+	//TODO: use U29 format
+	const uint32_t len=s.len();
+	assert_and_throw(len<0x40);
+
+	if(len!=0)
+		assert_and_throw(stringMap.find(s)==stringMap.end());
+
+	//A new string
+	writeByte((len<<1)|1);
+	
+	getBuffer(position+len,true);
+	memcpy(bytes+position,s.raw_buf(),len);
+	position+=len;
 }
 
 void Timer::tick()

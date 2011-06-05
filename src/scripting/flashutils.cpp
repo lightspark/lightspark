@@ -367,7 +367,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception caught while parsing AMF3");
+		LOG(LOG_ERROR,"Exception caught while parsing AMF3: " << e.cause);
 		//TODO: throw AS exception
 	}
 

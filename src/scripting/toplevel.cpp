@@ -304,7 +304,8 @@ ASFUNCTIONBODY(Array,splice)
 	//A negative startIndex is relative to the end
 	assert_and_throw(abs(startIndex)<totalSize);
 	startIndex=(startIndex+totalSize)%totalSize;
-	assert_and_throw((startIndex+deleteCount)<=totalSize);
+	if((startIndex+deleteCount)>totalSize)
+		deleteCount=totalSize-startIndex;
 	
 	Array* ret=Class<Array>::getInstanceS();
 	ret->data.reserve(deleteCount);

@@ -69,6 +69,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),true);
 	c->setMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),true);
 	c->setMethodByQName("writeInt","",Class<IFunction>::getFunction(writeInt),true);
+	c->setMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),true);
 //	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),true);
 	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),true);
 }
@@ -212,6 +213,20 @@ ASFUNCTIONBODY(ByteArray,writeUTFBytes)
 	ASString* str=Class<ASString>::cast(args[0]);
 	th->getBuffer(th->position+str->data.size()+1,true);
 	memcpy(th->bytes+th->position,str->data.c_str(),str->data.size()+1);
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,writeObject)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	//Validate parameters
+	assert_and_throw(argslen==1);
+	//TODO: support AMF0
+	//TODO: support custom serialization
+	map<tiny_string, uint32_t> stringMap;
+	map<const ASObject*, uint32_t> objMap;
+	args[0]->serialize(th, stringMap, objMap);
 
 	return NULL;
 }

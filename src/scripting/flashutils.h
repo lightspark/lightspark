@@ -64,6 +64,7 @@ public:
 	ASFUNCTION(writeByte);
 	ASFUNCTION(writeBytes);
 	ASFUNCTION(writeInt);
+	ASFUNCTION(writeObject);
 	ASFUNCTION(writeUTFBytes);
 	ASFUNCTION(_toString);
 

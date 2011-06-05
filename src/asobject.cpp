@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <limits>
 #include "compat.h"
+#include "parsing/amf3_generator.h"
 
 using namespace lightspark;
 using namespace std;
@@ -985,7 +986,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		throw UnsupportedException("ASObject::serialize not completely implemented");
 
 	//0x0A -> object marker
-	out->writeByte(0x0A);
+	out->writeByte(amf3::object_marker);
 	//0x0B -> a dynamic instance follows
 	out->writeByte(0x0B);
 	//The class name, empty if no alias is registered

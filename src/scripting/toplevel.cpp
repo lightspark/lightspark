@@ -36,6 +36,7 @@
 #include "class.h"
 #include "exceptions.h"
 #include "backends/urlutils.h"
+#include "parsing/amf3_generator.h"
 #include <libxml++/nodes/textnode.h>
 
 using namespace std;
@@ -2177,7 +2178,7 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
 	assert_and_throw(objMap.find(this)==objMap.end());
-	out->writeByte(0x90);
+	out->writeByte(amf3::array_marker);
 	uint32_t denseCount = data.size();
 	assert_and_throw(denseCount<0x20000000);
 	uint32_t value = (denseCount << 1) | 1;
@@ -2272,7 +2273,7 @@ TRISTATE ASString::isLess(ASObject* r)
 void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
-	out->writeByte(0x06);
+	out->writeByte(amf3::string_marker);
 	out->writeStringVR(stringMap, data);
 }
 
@@ -2479,7 +2480,7 @@ void Integer::sinit(Class_base* c)
 void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
-	out->writeByte(0x04);
+	out->writeByte(amf3::integer_marker);
 	out->writeU29(val);
 }
 
@@ -2658,7 +2659,7 @@ void Number::sinit(Class_base* c)
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
-	out->writeByte(0x05);
+	out->writeByte(amf3::double_marker);
 	//We have to write the double in network byte order (big endian)
 	const uint64_t* tmpPtr=reinterpret_cast<const uint64_t*>(&val);
 	uint64_t bigEndianVal=BigEndianToHost64(*tmpPtr);

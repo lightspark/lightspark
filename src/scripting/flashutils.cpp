@@ -373,9 +373,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 		return NULL;
 	}
 	std::vector<ASObject*> ret;
-	char* start=(char*)th->bytes;
-	char* end=(char*)th->bytes+th->len;
-	Amf3Deserializer d(start,end);
+	Amf3Deserializer d(th);
 	try
 	{
 		d.generateObjects(ret);

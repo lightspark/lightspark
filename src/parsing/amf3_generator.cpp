@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include "amf3_generator.h"
-#include "amf3_parser_simple.h"
 #include "scripting/toplevel.h"
 #include "scripting/class.h"
 #include <iostream>

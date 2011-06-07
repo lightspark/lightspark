@@ -745,19 +745,16 @@ void RenderThread::mapTexture(cairo_t *cr, int w, int h)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, profileTextureData);
 
-	glBegin(GL_QUADS);
-		glTexCoord2f(0, 0);
-		glVertex2i(0, 0);
+	GLint vertex_coords[] = {0,0, w,0, w,h, 0,h};
+	GLfloat texture_coords[] = {0,0, 1,0, 1,1, 0,1};
 
-		glTexCoord2f(1, 0);
-		glVertex2i(w, 0);
-
-		glTexCoord2f(1, 1);
-		glVertex2i(w,h);
-
-		glTexCoord2f(0, 1);
-		glVertex2i(0, h);
-	glEnd();
+	glVertexPointer(2, GL_INT, 0, vertex_coords);
+	glTexCoordPointer(2, GL_FLOAT, 0, texture_coords);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDrawArrays(GL_QUADS, 0, 4);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDeleteTextures(1, &profileTextureID);
 }
 

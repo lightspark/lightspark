@@ -783,44 +783,38 @@ void RenderThread::renderErrorPage(RenderThread *th, FTFont &font, bool standalo
 	glLoadIdentity();
 	glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
 	glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE1);
-	glDisable(GL_TEXTURE_2D);
-	glActiveTexture(GL_TEXTURE0);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_BACK);
+	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
 
-	glClearColor(0,0,0,1);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glColor3f(0.8,0.8,0.8);
+	cairo_set_source_rgb(cr, 0, 0, 0);
+	cairo_paint(cr);
+	cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
 
-	font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-			-1,FTPoint(0,th->windowHeight/2+20));
+	renderText(cr, "We're sorry, Lightspark encountered a yet unsupported Flash file",
+			0,th->windowHeight/2+20);
 
 	stringstream errorMsg;
 	errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
-	font.Render(errorMsg.str().c_str(),
-			-1,FTPoint(0,th->windowHeight/2));
+	renderText(cr, errorMsg.str().c_str(),0,th->windowHeight/2);
 
 	errorMsg.str("");
 	errorMsg << "Cause: " << th->m_sys->errorCause;
-	font.Render(errorMsg.str().c_str(),
-			-1,FTPoint(0,th->windowHeight/2-20));
+	renderText(cr, errorMsg.str().c_str(),0,th->windowHeight/2-20);
 
 	if (standalone)
 	{
-		font.Render("Please look at the console output to copy this error",
-			-1,FTPoint(0,th->windowHeight/2-40));
+		renderText(cr, "Please look at the console output to copy this error",
+			0,th->windowHeight/2-40);
 
-		font.Render("Press 'Q' to exit",-1,FTPoint(0,th->windowHeight/2-60));
+		renderText(cr, "Press 'Q' to exit",0,th->windowHeight/2-60);
 	}
 	else
 	{
-		font.Render("Press C to copy this error to clipboard",
-				-1,FTPoint(0,th->windowHeight/2-40));
+		renderText(cr, "Press C to copy this error to clipboard",
+				0,th->windowHeight/2-40);
 	}
 
+	mapTexture(cr, windowWidth, windowHeight);
 	glFlush();
 }
 

@@ -105,6 +105,7 @@ private:
 		Common code to handle the core of the rendering
 	*/
 	void coreRendering(FTFont& font);
+	void plotProfilingData(FTFont& font);
 	Semaphore initialized;
 	class MaskData
 	{

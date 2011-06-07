@@ -1,5 +1,4 @@
 uniform sampler2D g_tex1, g_tex2;
-uniform vec2 texScale;
 uniform float yuv;
 uniform float mask;
 

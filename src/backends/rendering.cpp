@@ -327,38 +327,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 			if(th->m_sys->isOnError())
 			{
-				glLoadIdentity();
-				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
-				glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
-				glUseProgram(0);
-				glActiveTexture(GL_TEXTURE1);
-				glDisable(GL_TEXTURE_2D);
-				glActiveTexture(GL_TEXTURE0);
-
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-
-				glClearColor(0,0,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-				glColor3f(0.8,0.8,0.8);
-					    
-				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-						-1,FTPoint(0,th->windowHeight/2+20));
-
-				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2));
-					    
-				errorMsg.str("");
-				errorMsg << "Cause: " << th->m_sys->errorCause;
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2-20));
-
-				font.Render("Press C to copy this error to clipboard",
-						-1,FTPoint(0,th->windowHeight/2-40));
-				
-				glFlush();
+				th->renderErrorPage(th, font, false);
 				glXSwapBuffers(d,glxWin);
 			}
 			else
@@ -808,6 +777,53 @@ void RenderThread::coreRendering(FTFont& font)
 		plotProfilingData();
 }
 
+//Renders the error message which caused the VM to stop.
+void RenderThread::renderErrorPage(RenderThread *th, FTFont &font, bool standalone)
+{
+	glLoadIdentity();
+	glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
+	glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
+	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE1);
+	glDisable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
+
+	glClearColor(0,0,0,1);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glColor3f(0.8,0.8,0.8);
+
+	font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
+			-1,FTPoint(0,th->windowHeight/2+20));
+
+	stringstream errorMsg;
+	errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
+	font.Render(errorMsg.str().c_str(),
+			-1,FTPoint(0,th->windowHeight/2));
+
+	errorMsg.str("");
+	errorMsg << "Cause: " << th->m_sys->errorCause;
+	font.Render(errorMsg.str().c_str(),
+			-1,FTPoint(0,th->windowHeight/2-20));
+
+	if (standalone)
+	{
+		font.Render("Please look at the console output to copy this error",
+			-1,FTPoint(0,th->windowHeight/2-40));
+
+		font.Render("Press 'Q' to exit",-1,FTPoint(0,th->windowHeight/2-60));
+	}
+	else
+	{
+		font.Render("Press C to copy this error to clipboard",
+				-1,FTPoint(0,th->windowHeight/2-40));
+	}
+
+	glFlush();
+}
+
 void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -881,40 +897,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			SDL_PumpEvents();
 			if(th->m_sys->isOnError())
 			{
-				glLoadIdentity();
-				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
-				glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
-				glUseProgram(0);
-				glActiveTexture(GL_TEXTURE1);
-				glDisable(GL_TEXTURE_2D);
-				glActiveTexture(GL_TEXTURE0);
-
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-
-				glClearColor(0,0,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-				glColor3f(0.8,0.8,0.8);
-					    
-				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-						-1,FTPoint(0,th->windowHeight/2+20));
-
-				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2));
-					    
-				errorMsg.str("");
-				errorMsg << "Cause: " << th->m_sys->errorCause;
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2-20));
-				
-				font.Render("Please look at the console output to copy this error",
-						-1,FTPoint(0,th->windowHeight/2-40));
-
-				font.Render("Press 'Q' to exit",-1,FTPoint(0,th->windowHeight/2-60));
-				
-				glFlush();
+				th->renderErrorPage(th, font, true);
 				SDL_GL_SwapBuffers( );
 			}
 			else

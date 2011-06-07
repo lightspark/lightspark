@@ -191,6 +191,7 @@ public:
 	int yuvUniform;
 	int maskUniform;
 
+	void renderErrorPage(RenderThread *rt, FTFont &font, bool standalone);
 	//Profile data plotting
 	void plotProfilingData();
 	cairo_t *profile_cr;

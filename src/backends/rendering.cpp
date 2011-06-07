@@ -534,6 +534,12 @@ void RenderThread::commonGLInit(int width, int height)
 	tex=glGetUniformLocation(gpu_program,"g_tex2");
 	if(tex!=-1)
 		glUniform1i(tex,1);
+
+	//The uniform that enables YUV->RGB transform on the texels (needed for video)
+	yuvUniform =glGetUniformLocation(gpu_program,"yuv");
+	//The uniform that tells the shader if a mask is being rendered
+	maskUniform =glGetUniformLocation(gpu_program,"mask");
+
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
 	if(fragmentTexScaleUniform!=-1)
 		glUniform2f(fragmentTexScaleUniform,1.0f/width,1.0f/height);

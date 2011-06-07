@@ -190,6 +190,8 @@ public:
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
 	int fragmentTexScaleUniform;
+	int yuvUniform;
+	int maskUniform;
 };
 
 };

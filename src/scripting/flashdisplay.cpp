@@ -1260,7 +1260,8 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 	{
 		rt->renderMaskToTmpBuffer();
 		enableMaskLookup=1.0f;
-		glColor4f(1,0,0,0);
+		glUniform1f(rt->maskUniform, enableMaskLookup);
+		glUniform1f(rt->yuvUniform, 0);
 		glBegin(GL_QUADS);
 			glVertex2i(-1000,-1000);
 			glVertex2i(1000,-1000);
@@ -1270,7 +1271,8 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 	}
 	glPushMatrix();
 	glLoadIdentity();
-	glColor4f(enableMaskLookup,0,1,0);
+	glUniform1f(rt->maskUniform, enableMaskLookup);
+	glUniform1f(rt->yuvUniform, 0);
 	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	glPopMatrix();
 }

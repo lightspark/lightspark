@@ -559,13 +559,10 @@ void RenderThread::commonGLInit(int width, int height)
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	glEnable(GL_TEXTURE_2D);
-	//Default to replace
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	//At least two texture unit are guaranteed in OpenGL 1.3
 	//The second unit will be used to access the temporary buffer
 	glActiveTexture(GL_TEXTURE1);
 	glEnable(GL_TEXTURE_2D);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	glBindTexture(GL_TEXTURE_2D, tempTex.getId());
 
 	glActiveTexture(GL_TEXTURE0);

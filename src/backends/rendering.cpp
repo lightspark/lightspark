@@ -711,6 +711,41 @@ void RenderThread::renderMaskToTmpBuffer() const
 	glDrawBuffer(GL_BACK);
 }
 
+void RenderThread::plotProfilingData(FTFont& font)
+{
+	glLoadIdentity();
+	glScalef(1.0f/scaleX,-1.0f/scaleY,1);
+	glTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
+	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE1);
+	glDisable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glDisable(GL_TEXTURE_2D);
+	glColor3f(0,0,0);
+	char frameBuf[20];
+	snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
+	font.Render(frameBuf,-1,FTPoint(0,0));
+
+	//Draw bars
+	glColor4f(0.7,0.7,0.7,0.7);
+	glBegin(GL_LINES);
+	for(int i=1;i<10;i++)
+	{
+		glVertex2i(0,(i*windowHeight/10));
+		glVertex2i(windowWidth,(i*windowHeight/10));
+	}
+	glEnd();
+
+	list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
+	for(;it!=m_sys->profilingData.end();it++)
+		it->plot(1000000/m_sys->getFrameRate(),&font);
+	glActiveTexture(GL_TEXTURE1);
+	glEnable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_TEXTURE_2D);
+	glUseProgram(gpu_program);
+}
+
 void RenderThread::coreRendering(FTFont& font)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -725,39 +760,7 @@ void RenderThread::coreRendering(FTFont& font)
 	assert(maskStack.empty());
 
 	if(m_sys->showProfilingData)
-	{
-		glLoadIdentity();
-		glScalef(1.0f/scaleX,-1.0f/scaleY,1);
-		glTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
-		glUseProgram(0);
-		glActiveTexture(GL_TEXTURE1);
-		glDisable(GL_TEXTURE_2D);
-		glActiveTexture(GL_TEXTURE0);
-		glDisable(GL_TEXTURE_2D);
-		glColor3f(0,0,0);
-		char frameBuf[20];
-		snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
-		font.Render(frameBuf,-1,FTPoint(0,0));
-
-		//Draw bars
-		glColor4f(0.7,0.7,0.7,0.7);
-		glBegin(GL_LINES);
-		for(int i=1;i<10;i++)
-		{
-			glVertex2i(0,(i*windowHeight/10));
-			glVertex2i(windowWidth,(i*windowHeight/10));
-		}
-		glEnd();
-		
-		list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
-		for(;it!=m_sys->profilingData.end();it++)
-			it->plot(1000000/m_sys->getFrameRate(),&font);
-		glActiveTexture(GL_TEXTURE1);
-		glEnable(GL_TEXTURE_2D);
-		glActiveTexture(GL_TEXTURE0);
-		glEnable(GL_TEXTURE_2D);
-		glUseProgram(gpu_program);
-	}
+		plotProfilingData(font);
 }
 
 void* RenderThread::sdl_worker(RenderThread* th)

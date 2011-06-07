@@ -711,39 +711,87 @@ void RenderThread::renderMaskToTmpBuffer() const
 	glDrawBuffer(GL_BACK);
 }
 
-void RenderThread::plotProfilingData(FTFont& font)
+cairo_t* RenderThread::getCairoContext(int w, int h)
+{
+	if (!profile_cr) {
+		profileTextureData = new unsigned char[w*h*4];
+		profile_surf = cairo_image_surface_create_for_data(profileTextureData, CAIRO_FORMAT_ARGB32, w, h, w*4);
+		profile_cr = cairo_create(profile_surf);
+
+		cairo_select_font_face (profile_cr, "serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+		cairo_set_font_size(profile_cr, 11);
+	}
+	return profile_cr;
+}
+
+//Render strings using Cairo's 'toy' text API
+void RenderThread::renderText(cairo_t *cr, const char *text, int x, int y)
+{
+	cairo_move_to(cr, x, y);
+	cairo_save(cr);
+	cairo_scale(cr, 1.0, -1.0);
+	cairo_show_text(cr, text);
+	cairo_restore(cr);
+}
+
+//Send the texture drawn by Cairo to the GPU
+void RenderThread::mapTexture(cairo_t *cr, int w, int h)
+{
+	glEnable(GL_TEXTURE_2D);
+	glGenTextures(1, &profileTextureID);
+	glBindTexture(GL_TEXTURE_2D, profileTextureID);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, profileTextureData);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0, 0);
+		glVertex2i(0, 0);
+
+		glTexCoord2f(1, 0);
+		glVertex2i(w, 0);
+
+		glTexCoord2f(1, 1);
+		glVertex2i(w,h);
+
+		glTexCoord2f(0, 1);
+		glVertex2i(0, h);
+	glEnd();
+	glDeleteTextures(1, &profileTextureID);
+}
+
+void RenderThread::plotProfilingData()
 {
 	glLoadIdentity();
 	glScalef(1.0f/scaleX,-1.0f/scaleY,1);
 	glTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE1);
-	glDisable(GL_TEXTURE_2D);
-	glActiveTexture(GL_TEXTURE0);
-	glDisable(GL_TEXTURE_2D);
-	glColor3f(0,0,0);
+	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
 	char frameBuf[20];
 	snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
-	font.Render(frameBuf,-1,FTPoint(0,0));
+	renderText(cr, frameBuf, 20, 20);
 
 	//Draw bars
-	glColor4f(0.7,0.7,0.7,0.7);
-	glBegin(GL_LINES);
-	for(int i=1;i<10;i++)
+	cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 0.7);
+
+	for (int i=1;i<10;i++)
 	{
-		glVertex2i(0,(i*windowHeight/10));
-		glVertex2i(windowWidth,(i*windowHeight/10));
+		cairo_move_to(cr, 0, i*windowHeight/10);
+		cairo_line_to(cr, windowWidth, i*windowHeight/10);
 	}
-	glEnd();
+	cairo_stroke(cr);
 
 	list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();it++)
-		it->plot(1000000/m_sys->getFrameRate(),&font);
-	glActiveTexture(GL_TEXTURE1);
-	glEnable(GL_TEXTURE_2D);
-	glActiveTexture(GL_TEXTURE0);
-	glEnable(GL_TEXTURE_2D);
-	glUseProgram(gpu_program);
+		it->plot(1000000/m_sys->getFrameRate(),cr);
+	mapTexture(cr, windowWidth, windowHeight);
+
+	//clear the surface
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(cr);
+	cairo_restore(cr);
 }
 
 void RenderThread::coreRendering(FTFont& font)
@@ -760,7 +808,7 @@ void RenderThread::coreRendering(FTFont& font)
 	assert(maskStack.empty());
 
 	if(m_sys->showProfilingData)
-		plotProfilingData(font);
+		plotProfilingData();
 }
 
 void* RenderThread::sdl_worker(RenderThread* th)

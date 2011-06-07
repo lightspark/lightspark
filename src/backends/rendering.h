@@ -105,7 +105,6 @@ private:
 		Common code to handle the core of the rendering
 	*/
 	void coreRendering(FTFont& font);
-	void plotProfilingData(FTFont& font);
 	Semaphore initialized;
 	class MaskData
 	{
@@ -191,6 +190,16 @@ public:
 	int fragmentTexScaleUniform;
 	int yuvUniform;
 	int maskUniform;
+
+	//Profile data plotting
+	void plotProfilingData();
+	cairo_t *profile_cr;
+	cairo_surface_t *profile_surf;
+	unsigned char* profileTextureData;
+	GLuint profileTextureID;
+	cairo_t* getCairoContext(int w, int h);
+	void mapTexture(cairo_t *cr, int w, int h);
+	void renderText(cairo_t *cr, const char *text, int x, int y);
 };
 
 };

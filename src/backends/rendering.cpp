@@ -29,7 +29,6 @@
 #include <GL/glew.h>
 #ifndef WIN32
 #include <GL/glx.h>
-#include <fontconfig/fontconfig.h>
 #endif
 
 //The interpretation of texture data change with the endianness
@@ -69,27 +68,7 @@ RenderThread::RenderThread(SystemState* s):
 #ifdef WIN32
 	fontPath = "TimesNewRoman.ttf";
 #else
-	FcPattern *pat, *match;
-	FcResult result = FcResultMatch;
-	char *font = NULL;
-
-	pat = FcPatternCreate();
-	FcPatternAddString(pat, FC_FAMILY, (const FcChar8 *)"Serif");
-	FcConfigSubstitute(NULL, pat, FcMatchPattern);
-	FcDefaultSubstitute(pat);
-	match = FcFontMatch(NULL, pat, &result);
-	FcPatternDestroy(pat);
-
-	if (result != FcResultMatch)
-	{
-		LOG(LOG_ERROR,_("Unable to find suitable Serif font"));
-		throw RunTimeException("Unable to find Serif font");
-	}
-
-	FcPatternGetString(match, FC_FILE, 0, (FcChar8 **) &font);
-	fontPath = font;
-	FcPatternDestroy(match);
-	LOG(LOG_NO_INFO, _("Font File is ") << fontPath);
+	fontPath = "Serif";
 #endif
 	time_s = compat_get_current_time_ms();
 }
@@ -275,14 +254,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font(th->fontPath.c_str());
-	if(font.Error())
-	{
-		LOG(LOG_ERROR,_("Unable to load serif font"));
-		throw RunTimeException("Unable to load font");
-	}
-	
-	font.FaceSize(12);
 
 	glEnable(GL_TEXTURE_2D);
 	try
@@ -327,13 +298,13 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 			if(th->m_sys->isOnError())
 			{
-				th->renderErrorPage(th, font, false);
+				th->renderErrorPage(th, false);
 				glXSwapBuffers(d,glxWin);
 			}
 			else
 			{
 				glXSwapBuffers(d,glxWin);
-				th->coreRendering(font);
+				th->coreRendering();
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}
@@ -687,7 +658,7 @@ cairo_t* RenderThread::getCairoContext(int w, int h)
 		profile_surf = cairo_image_surface_create_for_data(profileTextureData, CAIRO_FORMAT_ARGB32, w, h, w*4);
 		profile_cr = cairo_create(profile_surf);
 
-		cairo_select_font_face (profile_cr, "serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+		cairo_select_font_face (profile_cr, fontPath.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
 		cairo_set_font_size(profile_cr, 11);
 	}
 	return profile_cr;
@@ -760,7 +731,7 @@ void RenderThread::plotProfilingData()
 	cairo_restore(cr);
 }
 
-void RenderThread::coreRendering(FTFont& font)
+void RenderThread::coreRendering()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
@@ -778,7 +749,7 @@ void RenderThread::coreRendering(FTFont& font)
 }
 
 //Renders the error message which caused the VM to stop.
-void RenderThread::renderErrorPage(RenderThread *th, FTFont &font, bool standalone)
+void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 {
 	glLoadIdentity();
 	glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
@@ -843,11 +814,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font(th->fontPath.c_str());
-	if(font.Error())
-		throw RunTimeException("Unable to load font");
-	
-	font.FaceSize(12);
 	try
 	{
 		Chronometer chronometer;
@@ -891,13 +857,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			SDL_PumpEvents();
 			if(th->m_sys->isOnError())
 			{
-				th->renderErrorPage(th, font, true);
+				th->renderErrorPage(th, true);
 				SDL_GL_SwapBuffers( );
 			}
 			else
 			{
 				SDL_GL_SwapBuffers( );
-				th->coreRendering(font);
+				th->coreRendering();
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}

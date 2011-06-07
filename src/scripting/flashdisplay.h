@@ -21,7 +21,6 @@
 #define _FLASH_DISPLAY_H
 
 #include "compat.h"
-#include <FTGL/ftgl.h>
 
 #include "swftypes.h"
 #include "flashevents.h"

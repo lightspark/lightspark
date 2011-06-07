@@ -21,7 +21,6 @@
 #define RENDERING_H
 
 #include "timer.h"
-#include <FTGL/ftgl.h>
 
 namespace lightspark
 {
@@ -104,7 +103,7 @@ private:
 	/*
 		Common code to handle the core of the rendering
 	*/
-	void coreRendering(FTFont& font);
+	void coreRendering();
 	Semaphore initialized;
 	class MaskData
 	{
@@ -191,7 +190,7 @@ public:
 	int yuvUniform;
 	int maskUniform;
 
-	void renderErrorPage(RenderThread *rt, FTFont &font, bool standalone);
+	void renderErrorPage(RenderThread *rt, bool standalone);
 	//Profile data plotting
 	void plotProfilingData();
 	cairo_t *profile_cr;

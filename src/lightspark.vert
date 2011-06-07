@@ -3,7 +3,7 @@ uniform vec2 texScale;
 void main()
 {
 	// Transforming The Vertex
-	gl_Position=ftransform();
+	gl_Position=gl_ModelViewProjectionMatrix * gl_Vertex;
 	gl_FrontColor=gl_Color;
 	vec4 t=vec4(0,0,0,1);
 	//Position is in normalized screen coords

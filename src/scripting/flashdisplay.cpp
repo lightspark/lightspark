@@ -36,7 +36,7 @@
 #include "compat.h"
 #include "flashaccessibility.h"
 
-#include <GL/glew.h>
+#include <GL/gl.h>
 #include <fstream>
 #include <limits>
 #include <cmath>

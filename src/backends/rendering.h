@@ -20,6 +20,12 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
+#ifndef WIN32
+#include <GL/glx.h>
+#else
+//#include <windows.h>
+#endif
+
 #include "timer.h"
 
 namespace lightspark

@@ -264,7 +264,6 @@ ASFUNCTIONBODY(Sound,load)
 	//TODO: args[1] is the SoundLoaderContext
 	th->url = urlRequest->getRequestURL();
 	urlRequest->getPostData(th->postData);
-	assert_and_throw(th->postData.empty());
 
 	if(!th->url.isValid())
 	{
@@ -276,8 +275,18 @@ ASFUNCTIONBODY(Sound,load)
 
 	//The URL is valid so we can start the download
 
-	//Use disk cache our downloaded files
-	th->downloader=sys->downloadManager->download(th->url, true);
+	if(th->postData.empty())
+	{
+		//This is a GET request
+		//Use disk cache our downloaded files
+		th->downloader=sys->downloadManager->download(th->url, true);
+	}
+	else
+	{
+		th->downloader=sys->downloadManager->downloadWithData(th->url, th->postData);
+		//Clean up the postData for the next load
+		th->postData.clear();
+	}
 	//th->downloader->waitForTermination();
 	th->incRef();
 	if(th->downloader->hasFailed())

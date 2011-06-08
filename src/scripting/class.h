@@ -150,6 +150,10 @@ public:
 	{
 		return static_cast<T*>(o);
 	}
+	static T* dyncast(ASObject* o)
+	{
+		return dynamic_cast<T*>(o);
+	}
 	void buildInstanceTraits(ASObject* o) const
 	{
 		T::buildTraits(o);

@@ -94,6 +94,17 @@ void URLRequest::getPostData(vector<uint8_t>& outData) const
 
 	if(data->getPrototype()==Class<ByteArray>::getClass())
 		throw RunTimeException("ByteArray not support in URLRequest");
+	else if(data->getPrototype()==Class<URLVariables>::getClass())
+	{
+		//Prepend the Content-Type header
+		tiny_string strData="Content-type: application/x-www-form-urlencoded\r\nContent-length: ";
+		const tiny_string& tmpStr=data->toString();
+		char buf[20];
+		snprintf(buf,20,"%u\r\n\r\n",tmpStr.len());
+		strData+=buf;
+		strData+=tmpStr;
+		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.len());
+	}
 	else
 	{
 		const tiny_string& strData=data->toString();

@@ -102,24 +102,32 @@ RenderThread::~RenderThread()
 void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	::abort();
+	GLint vertex_coords[8];
+	static GLfloat color_coords[16];
 	assert(tempBufferAcquired==false);
 	tempBufferAcquired=true;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	
-	glColor4f(0,0,0,0); //No output is fairly ok to clear
-	glBegin(GL_QUADS);
-		glVertex2f(xmin,ymin);
-		glVertex2f(xmax,ymin);
-		glVertex2f(xmax,ymax);
-		glVertex2f(xmin,ymax);
-	glEnd();
+	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
+	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
+	vertex_coords[4] = xmax;vertex_coords[5] = ymax;
+	vertex_coords[6] = xmin;vertex_coords[7] = ymax;
+
+	glVertexPointer(2, GL_INT, 0, vertex_coords);
+	glColorPointer(4, GL_FLOAT, 0, color_coords);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glDrawArrays(GL_QUADS, 0, 4);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
 }
 
 void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(tempBufferAcquired==true);
+	GLint vertex_coords[8];
 	tempBufferAcquired=false;
 
 	//Use the blittler program to blit only the used buffer
@@ -128,12 +136,17 @@ void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, n
 	glDrawBuffer(GL_BACK);
 
 	rt->tempTex.bind();
-	glBegin(GL_QUADS);
-		glVertex2f(xmin,ymin);
-		glVertex2f(xmax,ymin);
-		glVertex2f(xmax,ymax);
-		glVertex2f(xmin,ymax);
-	glEnd();
+
+	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
+	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
+	vertex_coords[4] = xmax;vertex_coords[5] = ymax;
+	vertex_coords[6] = xmin;vertex_coords[7] = ymax;
+
+	glVertexPointer(2, GL_INT, 0, vertex_coords);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glDrawArrays(GL_QUADS, 0, 4);
+	glDisableClientState(GL_VERTEX_ARRAY);
+
 	glUseProgram(gpu_program);
 }
 

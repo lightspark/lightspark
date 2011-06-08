@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/abc.h"
 #include "flashmedia.h"
 #include "class.h"
 #include "compat.h"
@@ -221,11 +222,27 @@ _NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t 
 		return NullRef;
 }
 
+Sound::Sound():downloader(NULL),mutex("Sound mutex"),stopped(false),audioDecoder(NULL),audioStream(NULL),
+	bytesLoaded(100),bytesTotal(100),length(60*1000)
+{
+}
+
+Sound::~Sound()
+{
+	if(downloader && sys->downloadManager)
+		sys->downloadManager->destroy(downloader);
+}
+
 void Sound::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setMethodByQName("load","",Class<IFunction>::getFunction(load),true);
+	c->setMethodByQName("play","",Class<IFunction>::getFunction(play),true);
+	REGISTER_GETTER(c,bytesLoaded);
+	REGISTER_GETTER(c,bytesTotal);
+	REGISTER_GETTER(c,length);
 }
 
 void Sound::buildTraits(ASObject* o)
@@ -234,8 +251,151 @@ void Sound::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Sound,_constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	return NULL;
 }
+
+ASFUNCTIONBODY(Sound,load)
+{
+	Sound* th=Class<Sound>::cast(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	URLRequest* urlRequest=Class<URLRequest>::dyncast(args[0]);
+	assert_and_throw(urlRequest);
+	//TODO: args[1] is the SoundLoaderContext
+	th->url = sys->getOrigin().goToURL(urlRequest->url);
+
+	if(!th->url.isValid())
+	{
+		//Notify an error during loading
+		th->incRef();
+		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
+		return NULL;
+	}
+
+	//The URL is valid so we can start the download
+
+	//Use disk cache our downloaded files
+	th->downloader=sys->downloadManager->download(th->url, true);
+	//th->downloader->waitForTermination();
+	th->incRef();
+	if(th->downloader->hasFailed())
+		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
+	else
+		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("complete")));
+	return NULL;
+}
+
+ASFUNCTIONBODY(Sound,play)
+{
+	Sound* th=Class<Sound>::cast(obj);
+	assert_and_throw(argslen==0);
+
+	if(th->downloader && !th->downloader->hasFailed())
+	{
+		//Add the object as a job so that playback starts
+		th->incRef();
+		sys->addJob(th);
+	}
+
+	return new Undefined;
+}
+
+void Sound::execute()
+{
+	istream s(downloader);
+	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+
+	bool waitForFlush=true;
+	StreamDecoder* streamDecoder=NULL;
+	//We need to catch possible EOF and other error condition in the non reliable stream
+	try
+	{
+		streamDecoder=new FFMpegStreamDecoder(s);
+		if(!streamDecoder->isValid())
+			threadAbort();
+
+		while(!ACQUIRE_READ(stopped))
+		{
+			bool decodingSuccess=streamDecoder->decodeNextFrame();
+			if(decodingSuccess==false)
+				break;
+
+			if(audioDecoder==NULL && streamDecoder->audioDecoder)
+				audioDecoder=streamDecoder->audioDecoder;
+
+			//TODO: Move the audio plugin check before
+			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
+			{
+				audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
+				//sys->audioManager->resumeStreamPlugin(audioStream);
+			}
+			if(audioStream && audioStream->paused() && !audioStream->pause)
+			{
+				//The audio stream is paused but should not!
+				//As we have new data fill the stream
+				audioStream->fill();
+			}
+
+			if(aborting)
+				throw JobTerminationException();
+		}
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR, "Exception in Sound " << e.cause);
+		threadAbort();
+		waitForFlush=false;
+	}
+	catch(JobTerminationException& e)
+	{
+		waitForFlush=false;
+	}
+	catch(exception& e)
+	{
+		LOG(LOG_ERROR, _("Exception in reading: ")<<e.what());
+	}
+	if(waitForFlush)
+	{
+		//Put the decoders in the flushing state and wait for the complete consumption of contents
+		if(audioDecoder)
+		{
+			audioDecoder->setFlushing();
+			audioDecoder->waitFlushed();
+		}
+	}
+
+	{
+		Locker l(mutex);
+		audioDecoder=NULL;
+		if(audioStream)
+			sys->audioManager->freeStreamPlugin(audioStream);
+		audioStream=NULL;
+	}
+	delete streamDecoder;
+}
+
+void Sound::jobFence()
+{
+	this->decRef();
+}
+
+void Sound::threadAbort()
+{
+	RELEASE_WRITE(stopped,true);
+	Locker l(mutex);
+	if(audioDecoder)
+	{
+		//Clear everything we have in buffers, discard all frames
+		audioDecoder->setFlushing();
+		audioDecoder->skipAll();
+	}
+	/*if(downloader)
+		downloader->stop();*/
+}
+
+ASFUNCTIONBODY_GETTER(Sound,bytesLoaded);
+ASFUNCTIONBODY_GETTER(Sound,bytesTotal);
+ASFUNCTIONBODY_GETTER(Sound,length);
 
 void SoundLoaderContext::sinit(Class_base* c)
 {

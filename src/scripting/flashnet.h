@@ -34,14 +34,10 @@ namespace lightspark
 
 class URLRequest: public ASObject
 {
-friend class Loader;
-friend class URLLoader;
-friend ASObject* sendToURL(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-private:
-	tiny_string url;
 public:
 	enum METHOD { GET=0, POST };
 	METHOD method;
+	tiny_string url;
 	URLRequest();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

@@ -1313,16 +1313,8 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 
 ASObject* DefineSoundTag::instance() const
 {
-	DefineSoundTag* ret=new DefineSoundTag(*this);
-	//TODO: check
-	if(bindedTo)
-	{
-		//A class is binded to this tag
-		ret->setPrototype(bindedTo);
-	}
-	else
-		ret->setPrototype(Class<Sound>::getClass());
-	return ret;
+	//TODO: use the tag sound data
+	return Class<Sound>::getInstanceS();
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)

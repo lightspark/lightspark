@@ -228,7 +228,7 @@ public:
 	ASObject* instance() const;
 };
 
-class DefineSoundTag: public DictionaryTag, public Sound
+class DefineSoundTag: public DictionaryTag
 {
 private:
 	UI16_SWF SoundId;

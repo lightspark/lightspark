@@ -42,12 +42,6 @@
 
 #include "platforms/pluginutils.h"
 
-#ifndef WIN32
-#include <GL/glx.h>
-#else
-//#include <windows.h>
-#endif
-
 namespace lightspark
 {
 

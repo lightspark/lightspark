@@ -32,7 +32,6 @@
 #include "backends/rendering.h"
 
 #include "SDL.h"
-#include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif

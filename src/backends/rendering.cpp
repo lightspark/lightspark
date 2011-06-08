@@ -27,9 +27,6 @@
 #include <SDL.h>
 
 #include <GL/glew.h>
-#ifndef WIN32
-#include <GL/glx.h>
-#endif
 
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN

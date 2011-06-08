@@ -112,13 +112,13 @@ void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin
 	vertex_coords[4] = xmax;vertex_coords[5] = ymax;
 	vertex_coords[6] = xmin;vertex_coords[7] = ymax;
 
-	glVertexPointer(2, GL_INT, 0, vertex_coords);
-	glColorPointer(4, GL_FLOAT, 0, color_coords);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(COLOR_ATTRIB);
 	glDrawArrays(GL_QUADS, 0, 4);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(COLOR_ATTRIB);
 }
 
 void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
@@ -139,10 +139,10 @@ void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, n
 	vertex_coords[4] = xmax;vertex_coords[5] = ymax;
 	vertex_coords[6] = xmin;vertex_coords[7] = ymax;
 
-	glVertexPointer(2, GL_INT, 0, vertex_coords);
-	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glDrawArrays(GL_QUADS, 0, 4);
-	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
 
 	glUseProgram(gpu_program);
 }
@@ -378,6 +378,9 @@ bool RenderThread::loadShaderPrograms()
 
 	assert(glCreateProgram);
 	gpu_program = glCreateProgram();
+	glBindAttribLocation(gpu_program, VERTEX_ATTRIB, "ls_Vertex");
+	glBindAttribLocation(gpu_program, COLOR_ATTRIB, "ls_Color");
+	glBindAttribLocation(gpu_program, TEXCOORD_ATTRIB, "ls_TexCoord");
 	assert(glAttachShader);
 	glAttachShader(gpu_program,f);
 	glAttachShader(gpu_program,g);
@@ -698,13 +701,14 @@ void RenderThread::mapTexture(cairo_t *cr, int w, int h)
 	GLint vertex_coords[] = {0,0, w,0, w,h, 0,h};
 	GLfloat texture_coords[] = {0,0, 1,0, 1,1, 0,1};
 
-	glVertexPointer(2, GL_INT, 0, vertex_coords);
-	glTexCoordPointer(2, GL_FLOAT, 0, texture_coords);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
 	glDrawArrays(GL_QUADS, 0, 4);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+
 	glDeleteTextures(1, &profileTextureID);
 }
 
@@ -1177,13 +1181,14 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 			curChunk++;
 		}
 	}
-	glVertexPointer(2, GL_INT, 0, vertex_coords);
-	glTexCoordPointer(2, GL_FLOAT, 0, texture_coords);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
 	glDrawArrays(GL_QUADS, 0, curChunk*4);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 }
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)

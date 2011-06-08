@@ -1270,10 +1270,10 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 		vertex_coords[4] = 1000;vertex_coords[5] = 1000;
 		vertex_coords[6] = -1000;vertex_coords[7] = 1000;
 
-		glVertexPointer(2, GL_INT, 0, vertex_coords);
-		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+		glEnableVertexAttribArray(VERTEX_ATTRIB);
 		glDrawArrays(GL_QUADS, 0, 4);
-		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableVertexAttribArray(VERTEX_ATTRIB);
 	}
 	glPushMatrix();
 	glLoadIdentity();

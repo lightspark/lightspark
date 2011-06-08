@@ -58,8 +58,9 @@ void DownloadManager::cleanUp()
 	sem_wait(&mutex);
 	//-- Lock acquired
 
-	for(std::list<Downloader*>::iterator it=downloaders.begin(); it!=downloaders.end(); ++it)
+	while(!downloaders.empty())
 	{
+		std::list<Downloader*>::iterator it=downloaders.begin();
 		(*it)->stop();
 
 		//++ Release lock

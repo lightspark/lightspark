@@ -42,7 +42,6 @@ private:
 public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
-	lightspark::Downloader* download(const lightspark::tiny_string& url, bool cached=false, lightspark::LoaderInfo* owner=NULL);
 	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached=false, lightspark::LoaderInfo* owner=NULL);
 	lightspark::Downloader* downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
 			lightspark::LoaderInfo* owner=NULL);

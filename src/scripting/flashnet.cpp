@@ -52,10 +52,59 @@ void URLRequest::sinit(Class_base* c)
 	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL),true);
 	c->setSetterByQName("method","",Class<IFunction>::getFunction(_setMethod),true);
 	c->setGetterByQName("method","",Class<IFunction>::getFunction(_getMethod),true);
+	c->setSetterByQName("data","",Class<IFunction>::getFunction(_setData),true);
+	c->setGetterByQName("data","",Class<IFunction>::getFunction(_getData),true);
 }
 
 void URLRequest::buildTraits(ASObject* o)
 {
+}
+
+URLInfo URLRequest::getRequestURL() const
+{
+	URLInfo ret=sys->getOrigin().goToURL(url);
+	if(method!=GET)
+		return ret;
+
+	if(data.isNull())
+		return ret;
+
+	if(data->getPrototype()==Class<ByteArray>::getClass())
+		throw RunTimeException("ByteArray data not supported in URLRequest");
+	else
+	{
+		tiny_string newURL = ret.getParsedURL();
+		if(ret.getQuery() == "")
+			newURL += "?";
+		else
+			newURL += "&amp;";
+		newURL += data->toString();
+		ret=ret.goToURL(newURL);
+	}
+	return ret;
+}
+
+void URLRequest::getPostData(vector<uint8_t>& outData) const
+{
+	if(method!=POST)
+		return;
+
+	if(data.isNull())
+		return;
+
+	if(data->getPrototype()==Class<ByteArray>::getClass())
+		throw RunTimeException("ByteArray not support in URLRequest");
+	else
+	{
+		const tiny_string& strData=data->toString();
+		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.len());
+	}
+}
+
+void URLRequest::finalize()
+{
+	ASObject::finalize();
+	data.reset();
 }
 
 ASFUNCTIONBODY(URLRequest,_constructor)
@@ -71,6 +120,7 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 ASFUNCTIONBODY(URLRequest,_setURL)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj);
+	assert_and_throw(argslen==1);
 	th->url=args[0]->toString();
 	return NULL;
 }
@@ -84,6 +134,7 @@ ASFUNCTIONBODY(URLRequest,_getURL)
 ASFUNCTIONBODY(URLRequest,_setMethod)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj);
+	assert_and_throw(argslen==1);
 	const tiny_string& tmp=args[0]->toString();
 	if(tmp=="GET")
 		th->method=GET;
@@ -104,6 +155,27 @@ ASFUNCTIONBODY(URLRequest,_getMethod)
 		case POST:
 			return Class<ASString>::getInstanceS("POST");
 	}
+	return NULL;
+}
+
+ASFUNCTIONBODY(URLRequest,_getData)
+{
+	URLRequest* th=static_cast<URLRequest*>(obj);
+	if(th->data.isNull())
+		return new Undefined;
+
+	th->data->incRef();
+	return th->data.getPtr();
+}
+
+ASFUNCTIONBODY(URLRequest,_setData)
+{
+	URLRequest* th=static_cast<URLRequest*>(obj);
+	assert_and_throw(argslen==1);
+
+	args[0]->incRef();
+	th->data=_MR(args[0]);
+
 	return NULL;
 }
 
@@ -148,14 +220,19 @@ ASFUNCTIONBODY(URLLoader,load)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj);
 	ASObject* arg=args[0];
-	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
-	assert_and_throw(th->downloader==NULL);
-	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
-	//Check for URLRequest.url != null
-	if(urlRequest->url.len() == 0)
-		throw Class<TypeError>::getInstanceS();
+	URLRequest* urlRequest=Class<URLRequest>::dyncast(arg);
+	assert_and_throw(urlRequest);
 
-	th->url=sys->getOrigin().goToURL(urlRequest->url);
+	assert_and_throw(th->downloader==NULL);
+	th->url=urlRequest->getRequestURL();
+
+	if(!th->url.isValid())
+	{
+		//Notify an error during loading
+		th->incRef();
+		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
+		return NULL;
+	}
 
 	//TODO: support the right events (like SecurityErrorEvent)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
@@ -180,56 +257,8 @@ ASFUNCTIONBODY(URLLoader,load)
 	//TODO: should we disallow accessing local files in a directory above 
 	//the current one like we do with NetStream.play?
 
-	multiname dataName;
-	dataName.name_type=multiname::NAME_STRING;
-	dataName.name_s="data";
-	dataName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	ASObject* data=arg->getVariableByMultiname(dataName);
-	if(urlRequest->method==URLRequest::GET)
-	{
-		if(data)
-		{
-			if(data->getPrototype()==Class<ByteArray>::getClass())
-				throw RunTimeException("ByteArray not support in URLLoader::load");
-			else
-			{
-				tiny_string newURL = th->url.getParsedURL();
-				if(th->url.getQuery() == "")
-					newURL += "?";
-				else
-					newURL += "&amp;";
-				newURL += data->toString();
-				th->url=th->url.goToURL(newURL);
-			}
-		}
-		if(!th->url.isValid())
-		{
-			//Notify an error during loading
-			th->incRef();
-			sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
-			return NULL;
-		}
-	}
-	else //POST
-	{
-		if(data)
-		{
-			if(data->getPrototype()==Class<ByteArray>::getClass())
-				throw RunTimeException("ByteArray not support in URLLoader::load");
-			else
-			{
-				const tiny_string& strData=data->toString();
-				th->postData.insert(th->postData.end(),strData.raw_buf(),strData.raw_buf()+strData.len());
-			}
-		}
-		if(!th->url.isValid())
-		{
-			//Notify an error during loading
-			th->incRef();
-			sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
-			return NULL;
-		}
-	}
+	urlRequest->getPostData(th->postData);
+
 	//To be decreffed in jobFence
 	th->incRef();
 	sys->addJob(th);
@@ -954,9 +983,7 @@ void NetStream::execute()
 			}
 			profile->accountTime(chronometer.checkpoint());
 			if(aborting)
-			{
 				throw JobTerminationException();
-			}
 		}
 		while(!done);
 
@@ -1296,13 +1323,13 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 {
 	assert_and_throw(argslen == 1);
 	ASObject* arg=args[0];
-	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
-	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
-	//Check for URLRequest.url != null
-	if(urlRequest->url.len() == 0)
-		throw Class<TypeError>::getInstanceS();
+	URLRequest* urlRequest=Class<URLRequest>::dyncast(arg);
+	assert_and_throw(urlRequest);
 
-	URLInfo url=sys->getOrigin().goToURL(urlRequest->url);
+	URLInfo url=urlRequest->getRequestURL();
+
+	if(!url.isValid())
+		return NULL;
 
 	//TODO: support the right events (like SecurityErrorEvent)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
@@ -1337,35 +1364,14 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	//TODO: should we disallow accessing local files in a directory above 
 	//the current one like we do with NetStream.play?
 
-	multiname dataName;
-	dataName.name_type=multiname::NAME_STRING;
-	dataName.name_s="data";
-	dataName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	ASObject* data=arg->getVariableByMultiname(dataName);
-	if(data)
-	{
-		if(data->getPrototype()==Class<URLVariables>::getClass())
-			throw RunTimeException("Type mismatch in sendToURL parameter: "
-					"URLVariables instead of URLRequest");
-		else
-		{
-			tiny_string newURL = url.getParsedURL();
-			if(url.getQuery() == "")
-				newURL += "?";
-			else
-				newURL += "&amp;";
-			newURL += data->toString();
-			url=url.goToURL(newURL);
-		}
-	}
-	
-	if(url.isValid())
-	{
-		//Don't cache our downloaded files
-		Downloader* downloader=sys->downloadManager->download(url, false);
-		//TODO: make the download asynchronous instead of waiting for an unused response
-		downloader->waitForTermination();
-		sys->downloadManager->destroy(downloader);
-	}
+	vector<uint8_t> postData;
+	urlRequest->getPostData(postData);
+	assert_and_throw(postData.empty());
+
+	//Don't cache our downloaded files
+	Downloader* downloader=sys->downloadManager->download(url, false);
+	//TODO: make the download asynchronous instead of waiting for an unused response
+	downloader->waitForTermination();
+	sys->downloadManager->destroy(downloader);
 	return NULL;
 }

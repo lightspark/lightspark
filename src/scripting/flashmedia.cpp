@@ -262,7 +262,9 @@ ASFUNCTIONBODY(Sound,load)
 	URLRequest* urlRequest=Class<URLRequest>::dyncast(args[0]);
 	assert_and_throw(urlRequest);
 	//TODO: args[1] is the SoundLoaderContext
-	th->url = sys->getOrigin().goToURL(urlRequest->url);
+	th->url = urlRequest->getRequestURL();
+	urlRequest->getPostData(th->postData);
+	assert_and_throw(th->postData.empty());
 
 	if(!th->url.isValid())
 	{

@@ -249,10 +249,11 @@ ASFUNCTIONBODY(Loader,load)
 		return NULL;
 	th->loading=true;
 	assert_and_throw(argslen > 0 && args[0] && argslen <= 2);
-	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<URLRequest>::getClass()));
-	URLRequest* r=static_cast<URLRequest*>(args[0]);
-	assert_and_throw(r->method==URLRequest::GET);
-	th->url=r->url;
+	URLRequest* r=Class<URLRequest>::dyncast(args[0]);
+	if(r==NULL)
+		throw Class<ArgumentError>::getInstanceS("Wrong argument in Loader::load");
+	th->url=r->getRequestURL();
+	r->getPostData(th->postData);
 	th->source=URL;
 	//To be decreffed in jobFence
 	th->incRef();
@@ -328,6 +329,7 @@ void Loader::execute()
 	{
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
+		assert_and_throw(postData.empty());
 		downloader=sys->downloadManager->download(url, false, contentLoaderInfo.getPtr());
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason

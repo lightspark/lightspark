@@ -34,11 +34,14 @@ namespace lightspark
 
 class URLRequest: public ASObject
 {
-public:
+private:
+	tiny_string url;
+	_NR<ASObject> data;
 	enum METHOD { GET=0, POST };
 	METHOD method;
-	tiny_string url;
+public:
 	URLRequest();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -46,6 +49,10 @@ public:
 	ASFUNCTION(_setURL);
 	ASFUNCTION(_getMethod);
 	ASFUNCTION(_setMethod);
+	ASFUNCTION(_setData);
+	ASFUNCTION(_getData);
+	URLInfo getRequestURL() const;
+	void getPostData(std::vector<uint8_t>& data) const;
 };
 
 class URLRequestMethod: public ASObject

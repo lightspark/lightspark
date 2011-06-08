@@ -35,6 +35,7 @@ class Sound: public EventDispatcher, public IThreadJob
 friend class SoundChannel;
 private:
 	URLInfo url;
+	std::vector<uint8_t> postData;
 	Downloader* downloader;
 	Mutex mutex;
 	ACQUIRE_RELEASE_FLAG(stopped);

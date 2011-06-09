@@ -34,6 +34,7 @@ SET(LIBSPARK_SOURCES
   backends/decoder.cpp
   backends/extscriptobject.cpp
   backends/geometry.cpp
+  backends/glmatrices.cpp
   backends/graphics.cpp
   backends/image.cpp
   backends/input.cpp

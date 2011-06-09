@@ -27,6 +27,7 @@
 #include "threading.h"
 #include <cairo.h>
 #include "backends/geometry.h"
+#include "backends/glmatrices.h"
 
 namespace lightspark
 {

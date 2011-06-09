@@ -221,9 +221,7 @@ TextureBuffer::~TextureBuffer()
 MatrixApplier::MatrixApplier()
 {
 	//First of all try to preserve current matrix
-	glPushMatrix();
-	if(glGetError()==GL_STACK_OVERFLOW)
-		throw RunTimeException("GL matrix stack exceeded");
+	lsglPushMatrix();
 
 	//TODO: implement smart stack flush
 	//Save all the current stack, compute using SSE the final matrix and push that one
@@ -234,27 +232,23 @@ MatrixApplier::MatrixApplier()
 MatrixApplier::MatrixApplier(const MATRIX& m)
 {
 	//First of all try to preserve current matrix
-	glPushMatrix();
-	if(glGetError()==GL_STACK_OVERFLOW)
-	{
-		::abort();
-	}
+	lsglPushMatrix();
 
 	float matrix[16];
 	m.get4DMatrix(matrix);
-	glMultMatrixf(matrix);
+	lsglMultMatrixf(matrix);
 }
 
 void MatrixApplier::concat(const MATRIX& m)
 {
 	float matrix[16];
 	m.get4DMatrix(matrix);
-	glMultMatrixf(matrix);
+	lsglMultMatrixf(matrix);
 }
 
 void MatrixApplier::unapply()
 {
-	glPopMatrix();
+	lsglPopMatrix();
 }
 
 TextureChunk::TextureChunk(uint32_t w, uint32_t h)

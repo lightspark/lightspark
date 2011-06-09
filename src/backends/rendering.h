@@ -196,6 +196,8 @@ public:
 	int fragmentTexScaleUniform;
 	int yuvUniform;
 	int maskUniform;
+	int projectionMatrixUniform;
+	int modelviewMatrixUniform;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
 	//Profile data plotting

@@ -848,6 +848,9 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 void NPScriptObject::callExternal(void* d)
 {
 	EXT_CALL_DATA* data = static_cast<EXT_CALL_DATA*>(d);
+	nsPluginInstance* plugin = (nsPluginInstance*)data->instance->pdata;
+	sys=plugin->m_sys;
+
 
 	// Assert we are in the main plugin thread
 	assert(pthread_equal(pthread_self(), *data->mainThread));
@@ -903,6 +906,7 @@ void NPScriptObject::callExternal(void* d)
 	}
 
 	sem_post(data->callStatus);
+	sys=NULL;
 }
 
 void NPScriptObject::setException(const std::string& message) const

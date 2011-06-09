@@ -138,7 +138,7 @@ public:
 	virtual bool getBoolean() const { return booleanValue; }
 	// Returned pointer should get "delete"d by caller after use
 	virtual ExtObject* getObject() const { return new ExtObject(objectValue); }
-	virtual ASObject* getASObject() const;
+	ASObject* getASObject() const;
 private:
 	EV_TYPE type;
 	std::string strValue;

@@ -27,7 +27,11 @@
 
 #include <SDL.h>
 
+#ifndef ENABLE_GLES2
 #include <GL/glew.h>
+#else
+#include <GLES2/gl2.h>
+#endif
 
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN

@@ -21,7 +21,11 @@
 #define _GRAPHICS_H
 
 #include "compat.h"
+#ifndef ENABLE_GLES2
 #include <GL/glew.h>
+#else
+#include <GLES2/gl2.h>
+#endif
 #include <vector>
 #include "swftypes.h"
 #include "threading.h"

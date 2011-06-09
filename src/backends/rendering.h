@@ -21,9 +21,11 @@
 #define RENDERING_H
 
 #ifndef WIN32
+#ifndef ENABLE_GLES2
 #include <GL/glx.h>
 #else
-//#include <windows.h>
+#include <EGL/egl.h>
+#endif
 #endif
 
 #include "timer.h"
@@ -91,8 +93,13 @@ private:
 
 #ifndef WIN32
 	Display* mDisplay;
+#ifndef ENABLE_GLES2
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
+#else
+	EGLContext mEGLContext;
+	EGLConfig mEGLConfig;
+#endif
 	Window mWindow;
 #endif
 	uint64_t time_s, time_d;

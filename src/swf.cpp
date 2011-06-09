@@ -1182,7 +1182,7 @@ void RootMovieClip::commitFrame(bool another)
 	if(another)
 		frames.emplace_back();
 
-	if(getFramesLoaded()==1 && this == sys)
+	if(getFramesLoaded()==1 && this == sys && frameRate!=0)
 	{
 		/* now the frameRate is available and all SymbolClass tags have created their classes */
 		sys->addTick(1000/frameRate,sys);

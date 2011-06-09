@@ -104,27 +104,18 @@ ASFUNCTIONBODY(ExternalInterface,call)
 	const ExtVariant* callArgs[argslen-1];
 	for(uint32_t i = 0; i < argslen-1; i++)
 		callArgs[i] = new ExtVariant(args[i+1]);
-	ExtVariant* result = NULL;
 
 	ASObject* asobjResult = NULL;
 	// Let the external script object call the external method
-	bool callSuccess = sys->extScriptObject->callExternal(args[0]->toString().raw_buf(), callArgs, argslen-1, &result);
+	bool callSuccess = sys->extScriptObject->callExternal(args[0]->toString().raw_buf(), callArgs, argslen-1, &asobjResult);
 
 	// Delete converted arguments
 	for(uint32_t i = 0; i < argslen-1; i++)
 		delete callArgs[i];
 	
-	if(callSuccess)
+	if(!callSuccess)
 	{
-		// Convert & copy result to ASObject and delete it
-		if(result != NULL)
-		{
-			asobjResult = result->getASObject();
-			delete result;
-		}
-	}
-	else
-	{
+		assert(asobjResult==NULL);
 		LOG(LOG_NO_INFO, "External function failed, returning null: " << args[0]->toString().raw_buf());
 		// If the call fails, return null
 		asobjResult = new Null;

@@ -251,7 +251,7 @@ public:
 
 	virtual bool enumerate(ExtIdentifier*** ids, uint32_t* count) const = 0;
 
-	virtual bool callExternal(const ExtIdentifier& id, const ExtVariant** args, uint32_t argc, ExtVariant** result) = 0;
+	virtual bool callExternal(const ExtIdentifier& id, const ExtVariant** args, uint32_t argc, ASObject** result) = 0;
 
 	virtual void setException(const std::string& message) const = 0;
 	virtual void setMarshallExceptions(bool marshall) = 0;

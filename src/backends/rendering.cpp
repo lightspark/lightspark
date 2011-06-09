@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <sstream>
 //#include "swf.h"
+#include <stack>
 
 #include <SDL.h>
 
@@ -536,6 +537,107 @@ void RenderThread::commonGLInit(int width, int height)
 		}
 		::abort();
 	}
+}
+
+GLfloat lsIdentityMatrix[16] = {
+								1, 0, 0, 0,
+								0, 1, 0, 0,
+								0, 0, 1, 0,
+								0, 0, 0, 1
+								};
+
+stack<GLfloat*> *lsglMatrixStack = new stack<GLfloat*>;
+
+GLfloat lsMVPMatrix[16];
+
+void lsglLoadMatrixf(const GLfloat *m)
+{
+	memcpy(lsMVPMatrix, m, LSGL_MATRIX_SIZE);
+}
+
+void lsglLoadIdentity()
+{
+	lsglLoadMatrixf(lsIdentityMatrix);
+}
+
+void lsglPushMatrix()
+{
+	GLfloat *top = new GLfloat[16];
+	memcpy(top, lsMVPMatrix, LSGL_MATRIX_SIZE);
+	lsglMatrixStack->push(top);
+}
+
+void lsglPopMatrix()
+{
+	if (lsglMatrixStack->size() == 0)
+	{
+		LOG(LOG_ERROR, "Popping from empty stack!");
+		::abort();
+	}
+	memcpy(lsMVPMatrix, lsglMatrixStack->top(), LSGL_MATRIX_SIZE);
+	lsglMatrixStack->pop();
+}
+
+//Multiply current matrix with argument
+void lsglMultMatrixf(const GLfloat *m)
+{
+	GLfloat tmp[16];
+	for(int i=0;i<4;i++)
+	{
+		for(int j=0;j<4;j++)
+		{
+			GLfloat sum=0;
+			for (int k=0;k<4;k++)
+			{
+				sum += lsMVPMatrix[i+k*4]*m[j*4+k];
+			}
+			tmp[i+j*4] = sum;
+		}
+	}
+	memcpy(lsMVPMatrix, tmp, LSGL_MATRIX_SIZE);
+}
+
+void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ)
+{
+	static GLfloat scale[16];
+
+	memcpy(scale, lsIdentityMatrix, LSGL_MATRIX_SIZE);
+	scale[0] = scaleX;
+	scale[5] = scaleY;
+	scale[10] = scaleZ;
+	lsglMultMatrixf(scale);
+}
+
+void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ)
+{
+	static GLfloat trans[16];
+
+	memcpy(trans, lsIdentityMatrix, LSGL_MATRIX_SIZE);
+	trans[12] = translateX;
+	trans[13] = translateY;
+	trans[14] = translateZ;
+	lsglMultMatrixf(trans);
+}
+
+void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+{
+	GLfloat ortho[16];
+	memset(ortho, 0, sizeof(ortho));
+	ortho[0] = 2/(r-l);
+	ortho[5] = 2/(t-b);
+	ortho[10] = 2/(n-f);
+	ortho[12] = -(r+l)/(r-l);
+	ortho[13] = -(t+b)/(t-b);
+	ortho[14] = -(f+n)/(f-n);
+	ortho[15] = 1;
+
+	lsglMultMatrixf(ortho);
+}
+
+//Send matrix uniform to shader
+void setMatrixUniform(bool mv)
+{
+	glUniformMatrix4fv(mv?rt->modelviewMatrixUniform:rt->projectionMatrixUniform, 1, GL_FALSE, lsMVPMatrix);
 }
 
 void RenderThread::commonGLResize()

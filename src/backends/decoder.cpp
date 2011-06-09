@@ -648,6 +648,11 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 
 FFMpegStreamDecoder::~FFMpegStreamDecoder()
 {
+	//Delete the decoders before deleting the input stream to avoid a crash in ffmpeg code
+	delete audioDecoder;
+	delete videoDecoder;
+	audioDecoder=NULL;
+	videoDecoder=NULL;
 	if(formatCtx)
 		av_close_input_stream(formatCtx);
 	if(avioContext)

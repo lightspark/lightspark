@@ -120,7 +120,7 @@ RenderThread::~RenderThread()
 	LOG(LOG_NO_INFO,_("~RenderThread this=") << this);
 }
 
-void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
+void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	::abort();
 	assert(tempBufferAcquired==false);
@@ -138,7 +138,7 @@ void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ym
 	glEnd();
 }
 
-void RenderThread::glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
+void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(tempBufferAcquired==true);
 	tempBufferAcquired=false;

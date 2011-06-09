@@ -107,7 +107,7 @@ void Video::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,num
 		MatrixApplier ma(getConcatenatedMatrix());
 
 		if(!isSimple())
-			rt->glAcquireTempBuffer(0,width,0,height);
+			rt->acquireTempBuffer(0,width,0,height);
 
 		//Enable texture lookup and YUV to RGB conversion
 		glColor4f(0,0,0,1);
@@ -115,7 +115,7 @@ void Video::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,num
 		rt->renderTextured(netStream->getTexture(), 0, 0, width, height);
 
 		if(!isSimple())
-			rt->glBlitTempBuffer(0,width,0,height);
+			rt->blitTempBuffer(0,width,0,height);
 		
 		ma.unapply();
 		netStream->unlock();

@@ -822,19 +822,19 @@ void DefineMorphShapeTag::renderImpl(bool maskEnabled, number_t t1,number_t t2,n
 	glPushMatrix();
 	glMultMatrixf(matrix);
 
-	rt->glAcquireFramebuffer();
+	rt->acquireFramebuffer();
 
 	std::vector < GeomShape >::iterator it=shapes.begin();
 	for(;it!=shapes.end();++it)
 		it->Render();
 
-	rt->glBlitFramebuffer();
-	if(rt->glAcquireIdBuffer())
+	rt->blitFramebuffer();
+	if(rt->acquireIdBuffer())
 	{
 		std::vector < GeomShape >::iterator it=shapes.begin();
 		for(;it!=shapes.end();++it)
 			it->Render();
-		rt->glReleaseIdBuffer();
+		rt->releaseIdBuffer();
 	}
 	glPopMatrix();*/
 }

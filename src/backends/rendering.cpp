@@ -114,14 +114,14 @@ void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin
 	
 	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
 	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
-	vertex_coords[4] = xmax;vertex_coords[5] = ymax;
-	vertex_coords[6] = xmin;vertex_coords[7] = ymax;
+	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
+	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
 
 	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(COLOR_ATTRIB);
-	glDrawArrays(GL_QUADS, 0, 4);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 	glDisableVertexAttribArray(COLOR_ATTRIB);
 }
@@ -141,12 +141,12 @@ void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, n
 
 	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
 	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
-	vertex_coords[4] = xmax;vertex_coords[5] = ymax;
-	vertex_coords[6] = xmin;vertex_coords[7] = ymax;
+	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
+	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
 
 	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
-	glDrawArrays(GL_QUADS, 0, 4);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 
 	glUseProgram(gpu_program);
@@ -805,14 +805,14 @@ void RenderThread::mapTexture(cairo_t *cr, int w, int h)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, profileTextureData);
 
-	GLint vertex_coords[] = {0,0, w,0, w,h, 0,h};
-	GLfloat texture_coords[] = {0,0, 1,0, 1,1, 0,1};
+	GLint vertex_coords[] = {0,0, w,0, 0,h, w,h};
+	GLfloat texture_coords[] = {0,0, 1,0, 0,1, 1,1};
 
 	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
-	glDrawArrays(GL_QUADS, 0, 4);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 
@@ -1244,8 +1244,10 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	assert(chunk.getNumberOfChunks()==((chunk.width+127)/128)*((chunk.height+127)/128));
 	
 	uint32_t curChunk=0;
-	GLint *vertex_coords = new GLint[chunk.getNumberOfChunks()*8];
-	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*8];
+	//The 4 corners of each texture are specified as the vertices of 2 triangles,
+	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
+	GLint *vertex_coords = new GLint[chunk.getNumberOfChunks()*12];
+	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*12];
 	for(uint32_t i=0, k=0;i<chunk.height;i+=128)
 	{
 		startY=h*i/chunk.height;
@@ -1268,6 +1270,7 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 			float endV=blockY+availY;
 			endV/=largeTextureSize;
 
+			//Upper-right triangle of the quad
 			texture_coords[k] = startU;
 			texture_coords[k+1] = startV;
 			vertex_coords[k] = x+startX;
@@ -1276,6 +1279,18 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 			texture_coords[k] = endU;
 			texture_coords[k+1] = startV;
 			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+endY;
+			k+=2;
+
+			//Lower-left triangle of the quad
+			texture_coords[k] = startU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = x+startX;
 			vertex_coords[k+1] = y+startY;
 			k+=2;
 			texture_coords[k] = endU;
@@ -1297,7 +1312,7 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
-	glDrawArrays(GL_QUADS, 0, curChunk*4);
+	glDrawArrays(GL_TRIANGLES, 0, curChunk*6);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 }

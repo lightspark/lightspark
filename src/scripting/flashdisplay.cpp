@@ -1272,12 +1272,12 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 
 		vertex_coords[0] = -1000;vertex_coords[1] = -1000;
 		vertex_coords[2] = 1000;vertex_coords[3] = -1000;
-		vertex_coords[4] = 1000;vertex_coords[5] = 1000;
-		vertex_coords[6] = -1000;vertex_coords[7] = 1000;
+		vertex_coords[4] = -1000;vertex_coords[5] = 1000;
+		vertex_coords[6] = 1000;vertex_coords[7] = 1000;
 
 		glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
 		glEnableVertexAttribArray(VERTEX_ATTRIB);
-		glDrawArrays(GL_QUADS, 0, 4);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glDisableVertexAttribArray(VERTEX_ATTRIB);
 	}
 	lsglPushMatrix();

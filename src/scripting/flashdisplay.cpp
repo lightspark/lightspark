@@ -1359,7 +1359,8 @@ bool DisplayObject::skipRender(bool maskEnabled) const
 
 void DisplayObject::defaultRender(bool maskEnabled) const
 {
-	//TODO: TOLOCK
+	/* cachedSurface is only modified from within the render thread
+	 * so we need no locking here */
 	if(!cachedSurface.tex.isValid())
 		return;
 	float enableMaskLookup=0.0f;

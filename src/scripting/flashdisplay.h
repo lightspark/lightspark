@@ -81,9 +81,9 @@ protected:
 	bool skipRender(bool maskEnabled) const;
 	float alpha;
 	bool visible;
-	//Data to handle async rendering
-	Shepherd shepherd;
+	/* cachedSurface may only be read/written from within the render thread */
 	CachedSurface cachedSurface;
+
 	void defaultRender(bool maskEnabled) const;
 	DisplayObject(const DisplayObject& d);
 	void renderPrologue() const;

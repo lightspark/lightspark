@@ -366,6 +366,8 @@ void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h) const
 
 const TextureChunk& CairoRenderer::getTexture()
 {
+	/* This is called in the render thread,
+	 * so we need no locking for surface */
 	//Verify that the texture is large enough
 	if(!surface.tex.resizeIfLargeEnough(width, height))
 		surface.tex=sys->getRenderThread()->allocateTexture(width, height,false);

@@ -121,7 +121,7 @@ void URLRequest::finalize()
 ASFUNCTIONBODY(URLRequest,_constructor)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj);
-	if(argslen>0 && args[0]->getObjectType()==T_STRING)
+	if(argslen==1 && args[0]->getObjectType()==T_STRING)
 	{
 		th->url=args[0]->toString();
 	}

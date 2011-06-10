@@ -1100,6 +1100,22 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		val2->decRef();
 		return abstract_i(num1+num2);
 	}
+	else if (val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_UNDEFINED)
+	{
+		intptr_t num1=val1->toInt();
+		LOG(LOG_CALLS,"add " << num1 << "+ undefined");
+		val1->decRef();
+		val2->decRef();
+		return abstract_i(num1);
+	}
+	else if (val1->getObjectType()==T_UNDEFINED && val2->getObjectType()==T_INTEGER)
+	{
+		intptr_t num2=val2->toInt();
+		LOG(LOG_CALLS,"add undefined + " << num2);
+		val1->decRef();
+		val2->decRef();
+		return abstract_i(num2);
+	}
 	else if(val1->getObjectType()==T_ARRAY)
 	{
 		//Array concatenation

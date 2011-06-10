@@ -338,10 +338,8 @@ void Sound::execute()
 
 			//TODO: Move the audio plugin check before
 			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
-			{
 				audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
-				//sys->audioManager->resumeStreamPlugin(audioStream);
-			}
+
 			if(audioStream && audioStream->paused() && !audioStream->pause)
 			{
 				//The audio stream is paused but should not!

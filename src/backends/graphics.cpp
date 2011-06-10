@@ -170,23 +170,6 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 	}
 }
 
-void TextureBuffer::setBGRAData(uint8_t* bgraData, uint32_t w, uint32_t h)
-{
-	cleanGLErrors();
-
-	//First of all resize the texture (if needed)
-	resize(w, h);
-
-	glBindTexture(GL_TEXTURE_2D,texId);
-
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, bgraData);
-	assert(glGetError()==GL_NO_ERROR);
-	
-#ifdef EXPENSIVE_DEBUG
-	cleanGLErrors();
-#endif
-}
-
 void TextureBuffer::setRequestedAlignment(uint32_t w, uint32_t h)
 {
 	assert(w && h);

@@ -105,12 +105,7 @@ public:
 		@pre Running inside the RenderThread
 	*/
 	void setTexScale(GLuint uniformLocation);
-	/**
-		Load data inside the texture
 
-		@pre Running inside the RenderThread
-	*/
-	void setBGRAData(uint8_t* bgraData, uint32_t w, uint32_t h);
 	void resize(uint32_t width, uint32_t height);
 	/**
 		Request a minimum alignment for width and height

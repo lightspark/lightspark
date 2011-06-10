@@ -1158,7 +1158,7 @@ GLuint RenderThread::allocateNewGLTexture() const
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	//Allocate the texture
 	while(glGetError()!=GL_NO_ERROR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, 0);
 	GLenum err=glGetError();
 	if(err)
 	{

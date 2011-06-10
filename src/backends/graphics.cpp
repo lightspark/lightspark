@@ -127,7 +127,7 @@ void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)
 	//glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 	
 	//Allocate the texture
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 	GLenum err=glGetError();
 	assert(err!=GL_INVALID_OPERATION);
 	if(err==GL_INVALID_VALUE)
@@ -153,7 +153,7 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 			LOG(LOG_CALLS,_("Reallocating texture to size ") << w << 'x' << h);
 			setAllocSize(w,h);
 			while(glGetError()!=GL_NO_ERROR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 			GLenum err=glGetError();
 			assert(err!=GL_INVALID_OPERATION);
 			if(err==GL_INVALID_VALUE)

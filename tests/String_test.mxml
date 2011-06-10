@@ -152,6 +152,11 @@
 		//charCodeAt tests
 		e=String.fromCharCode(128);
 		Tests.assertEquals(0x80,e.charCodeAt(0),"charCodeAt");
+
+		//Type conversions
+		e="10.0";
+		Tests.assertEquals(Number(e),10.0,"String to Number");
+
 		Tests.report(visual, this.name);
 	}
 	private function func1():String

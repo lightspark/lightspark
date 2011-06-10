@@ -380,7 +380,7 @@ private:
 	uint32_t len;
 public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
-	~DefineBinaryDataTag() { delete bytes; }
+	~DefineBinaryDataTag() { delete[] bytes; }
 	virtual int getId(){return Tag;} 
 
 	ASObject* instance() const

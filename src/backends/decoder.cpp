@@ -545,7 +545,18 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 {
 	FrameSamples& curTail=samplesBuffer.acquireLast();
 	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
-	uint32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
+	int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
+	if(ret==-1)
+	{
+		//A decoding error occurred, create an empty sample buffer
+		LOG(LOG_ERROR,_("Malformed audio packet"));
+		curTail.len=0;
+		curTail.current=curTail.samples;
+		curTail.time=time;
+		samplesBuffer.commitLast();
+		return maxLen;
+	}
+
 	assert_and_throw(ret==pkt->size);
 
 	if(status==INIT && fillDataAndCheckValidity())
@@ -637,6 +648,11 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 
 FFMpegStreamDecoder::~FFMpegStreamDecoder()
 {
+	//Delete the decoders before deleting the input stream to avoid a crash in ffmpeg code
+	delete audioDecoder;
+	delete videoDecoder;
+	audioDecoder=NULL;
+	videoDecoder=NULL;
 	if(formatCtx)
 		av_close_input_stream(formatCtx);
 	if(avioContext)

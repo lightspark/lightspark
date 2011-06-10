@@ -30,12 +30,33 @@
 namespace lightspark
 {
 
-class Sound: public EventDispatcher
+class Sound: public EventDispatcher, public IThreadJob
 {
+friend class SoundChannel;
+private:
+	URLInfo url;
+	std::vector<uint8_t> postData;
+	Downloader* downloader;
+	Mutex mutex;
+	ACQUIRE_RELEASE_FLAG(stopped);
+	AudioDecoder* audioDecoder;
+	AudioStream* audioStream;
+	ASPROPERTY_GETTER(int32_t,bytesLoaded);
+	ASPROPERTY_GETTER(int32_t,bytesTotal);
+	ASPROPERTY_GETTER(number_t,length);
 public:
+	Sound();
+	~Sound();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(load);
+	ASFUNCTION(play);
+
+	//IThreadJob interface
+	void execute();
+	void jobFence();
+	void threadAbort();
 };
 
 class SoundTransform: public ASObject

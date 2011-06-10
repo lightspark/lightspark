@@ -750,7 +750,7 @@ bool NPScriptObject::enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count
 
 // ExtScriptObject interface: calling external methods
 bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
-		const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result)
+		const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result)
 {
 	// Make sure we are the only external call being executed
 	sem_wait(&mutex);
@@ -848,6 +848,9 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 void NPScriptObject::callExternal(void* d)
 {
 	EXT_CALL_DATA* data = static_cast<EXT_CALL_DATA*>(d);
+	nsPluginInstance* plugin = (nsPluginInstance*)data->instance->pdata;
+	sys=plugin->m_sys;
+
 
 	// Assert we are in the main plugin thread
 	assert(pthread_equal(pthread_self(), *data->mainThread));
@@ -894,7 +897,8 @@ void NPScriptObject::callExternal(void* d)
 
 			if(*(data->success))
 			{
-				*(data->result) = new NPVariantObject(data->instance, resultVariant);
+				NPVariantObject tmp(data->instance, resultVariant);
+				*(data->result) = tmp.getASObject();
 				NPN_ReleaseVariantValue(&resultVariant);
 			}
 
@@ -902,6 +906,7 @@ void NPScriptObject::callExternal(void* d)
 	}
 
 	sem_post(data->callStatus);
+	sys=NULL;
 }
 
 void NPScriptObject::setException(const std::string& message) const

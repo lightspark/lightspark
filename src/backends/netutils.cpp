@@ -58,8 +58,9 @@ void DownloadManager::cleanUp()
 	sem_wait(&mutex);
 	//-- Lock acquired
 
-	for(std::list<Downloader*>::iterator it=downloaders.begin(); it!=downloaders.end(); ++it)
+	while(!downloaders.empty())
 	{
+		std::list<Downloader*>::iterator it=downloaders.begin();
 		(*it)->stop();
 
 		//++ Release lock
@@ -145,20 +146,6 @@ StandaloneDownloadManager::StandaloneDownloadManager()
 StandaloneDownloadManager::~StandaloneDownloadManager()
 {
 	cleanUp();
-}
-
-/**
- * \brief Create a Downloader for an URL.
- *
- * Returns a pointer to a newly created \c Downloader for the given URL.
- * \param[in] url The URL (as a \c tiny_string) the \c Downloader is requested for
- * \param[in] cached Whether or not to disk-cache the download (default=false)
- * \return A pointer to a newly created \c Downloader for the given URL.
- * \see DownloadManager::destroy()
- */
-Downloader* StandaloneDownloadManager::download(const tiny_string& url, bool cached, LoaderInfo* owner)
-{
-	return download(sys->getOrigin().goToURL(url), cached, owner);
 }
 
 /**

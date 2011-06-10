@@ -29,6 +29,7 @@
 #include "thread_pool.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
+#include "backends/netutils.h"
 
 namespace lightspark
 {
@@ -438,7 +439,8 @@ private:
 	bool loading;
 	bool loaded;
 	SOURCE source;
-	tiny_string url;
+	URLInfo url;
+	std::vector<uint8_t> postData;
 	_NR<ByteArray> bytes;
 	_NR<LoaderInfo> contentLoaderInfo;
 	Spinlock downloaderLock;

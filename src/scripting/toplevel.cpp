@@ -419,7 +419,11 @@ bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_sl
 		else
 			s2="undefined";
 
-		return s1<s2;
+		//TODO: unicode support
+		if(isCaseInsensitive)
+			return strcasecmp(s1.raw_buf(),s2.raw_buf())<0;
+		else
+			return s1<s2;
 	}
 }
 
@@ -457,6 +461,7 @@ ASFUNCTIONBODY(Array,_sort)
 	Array* th=static_cast<Array*>(obj);
 	IFunction* comp=NULL;
 	bool isNumeric=false;
+	bool isCaseInsensitive=false;
 	for(uint32_t i=0;i<argslen;i++)
 	{
 		if(args[i]->getObjectType()==T_FUNCTION) //Comparison func
@@ -469,7 +474,9 @@ ASFUNCTIONBODY(Array,_sort)
 			uint32_t options=args[i]->toInt();
 			if(options&NUMERIC)
 				isNumeric=true;
-			if(options&(~NUMERIC))
+			if(options&CASEINSENSITIVE)
+				isCaseInsensitive=true;
+			if(options&(~(NUMERIC|CASEINSENSITIVE)))
 				throw UnsupportedException("Array::sort not completely implemented");
 		}
 	}
@@ -477,7 +484,7 @@ ASFUNCTIONBODY(Array,_sort)
 	if(comp)
 		sort(th->data.begin(),th->data.end(),sortComparatorWrapper(comp));
 	else
-		sort(th->data.begin(),th->data.end(),sortComparatorDefault(isNumeric));
+		sort(th->data.begin(),th->data.end(),sortComparatorDefault(isNumeric,isCaseInsensitive));
 
 	obj->incRef();
 	return obj;
@@ -2217,7 +2224,7 @@ double ASString::toNumber()
 	assert_and_throw(implEnable);
 	for(unsigned int i=0;i<data.size();i++)
 	{
-		if(!(data[i]>='0' && data[i]<='9' && data[i]!='.')) //not a number
+		if(!((data[i]>='0' && data[i]<='9') || data[i]=='.')) //not a number
 			return numeric_limits<double>::quiet_NaN();
 	}
 	return atof(data.c_str());

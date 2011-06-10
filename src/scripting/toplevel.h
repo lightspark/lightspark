@@ -492,8 +492,9 @@ private:
 	{
 	private:
 		bool isNumeric;
+		bool isCaseInsensitive;
 	public:
-		sortComparatorDefault(bool n):isNumeric(n){}
+		sortComparatorDefault(bool n, bool ci):isNumeric(n),isCaseInsensitive(ci){}
 		bool operator()(const data_slot& d1, const data_slot& d2);
 	};
 	class sortComparatorWrapper

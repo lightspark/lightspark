@@ -67,7 +67,8 @@ public:
 
 class PulseAudioStream: public AudioStream
 {
-  public:
+friend class PulsePlugin;
+public:
 	enum STREAM_STATUS { STREAM_STARTING = 0, STREAM_READY = 1, STREAM_DEAD = 2 };
 	PulseAudioStream ( PulsePlugin *m );
 	uint32_t getPlayedTime ();
@@ -75,7 +76,7 @@ class PulseAudioStream: public AudioStream
 	bool isValid();
 	void fill ();
 
-//  private:
+private:
 	pa_stream *stream;
 	PulsePlugin *manager;
 	volatile STREAM_STATUS streamStatus;
@@ -83,6 +84,7 @@ class PulseAudioStream: public AudioStream
 	void mute();
 	void unmute();
 	void setVolume(double volume);
+	void fillStream(size_t frameSize);
 };
 
 #endif

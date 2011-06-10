@@ -217,7 +217,7 @@ public:
 	bool enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count) const;
 	
 	// Calling methods in the external container
-	bool callExternal(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+	bool callExternal(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result);
 
 	typedef struct {
 		pthread_t* mainThread;
@@ -225,7 +225,7 @@ public:
 		const char* scriptString;
 		const lightspark::ExtVariant** args;
 		uint32_t argc;
-		lightspark::ExtVariant** result;
+		lightspark::ASObject** result;
 		sem_t* callStatus;
 		bool* success;
 	} EXT_CALL_DATA;

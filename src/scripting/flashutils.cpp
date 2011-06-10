@@ -749,7 +749,10 @@ ASFUNCTIONBODY(lightspark,describeType)
 
 	//HACK: TODO: support classes. YouTube needs this
 	if(args[0]->getObjectType()==T_CLASS)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Classes not supported in describeType");
 		return new Undefined;
+	}
 
 	Class_base* type=args[0]->getPrototype();
 	assert_and_throw(type);

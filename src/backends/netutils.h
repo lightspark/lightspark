@@ -49,7 +49,6 @@ protected:
 	void cleanUp();
 public:
 	virtual ~DownloadManager() {};
-	virtual Downloader* download(const tiny_string& url, bool cached=false, LoaderInfo* owner=NULL)=0;
 	virtual Downloader* download(const URLInfo& url, bool cached=false, LoaderInfo* owner=NULL)=0;
 	virtual Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, LoaderInfo* owner=NULL)=0;
 	virtual void destroy(Downloader* downloader)=0;
@@ -63,7 +62,6 @@ class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 public:
 	StandaloneDownloadManager();
 	~StandaloneDownloadManager();
-	Downloader* download(const tiny_string& url, bool cached=false, LoaderInfo* owner=NULL);
 	Downloader* download(const URLInfo& url, bool cached=false, LoaderInfo* owner=NULL);
 	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, LoaderInfo* owner=NULL);
 	void destroy(Downloader* downloader);

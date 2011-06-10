@@ -86,6 +86,9 @@ URLInfo::URLInfo(const tiny_string& u)
 
 		if(portPos == hostnamePos || pathPos == hostnamePos || queryPos == hostnamePos)
 			invalidReason = MISSING_HOSTNAME;
+
+		//Rebuild the work string using the escaped url
+		str = std::string(url.raw_buf());
 	}
 
 	//Parse the host string

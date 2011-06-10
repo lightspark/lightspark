@@ -138,7 +138,7 @@ public:
 	virtual bool getBoolean() const { return booleanValue; }
 	// Returned pointer should get "delete"d by caller after use
 	virtual ExtObject* getObject() const { return new ExtObject(objectValue); }
-	virtual ASObject* getASObject() const;
+	ASObject* getASObject() const;
 private:
 	EV_TYPE type;
 	std::string strValue;
@@ -251,7 +251,7 @@ public:
 
 	virtual bool enumerate(ExtIdentifier*** ids, uint32_t* count) const = 0;
 
-	virtual bool callExternal(const ExtIdentifier& id, const ExtVariant** args, uint32_t argc, ExtVariant** result) = 0;
+	virtual bool callExternal(const ExtIdentifier& id, const ExtVariant** args, uint32_t argc, ASObject** result) = 0;
 
 	virtual void setException(const std::string& message) const = 0;
 	virtual void setMarshallExceptions(bool marshall) = 0;

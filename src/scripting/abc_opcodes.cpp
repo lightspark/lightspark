@@ -1579,6 +1579,7 @@ void ABCVm::getLex(call_context* th, int n)
 	if(o->getObjectType()==T_FUNCTION)
 	{
 		LOG(LOG_CALLS,_("Attaching this to function ") << name);
+		target->incRef();
 		IFunction* f=static_cast<IFunction*>(o)->bind(_MR(target),-1);
 		o=f;
 	}

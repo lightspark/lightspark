@@ -249,10 +249,11 @@ ASFUNCTIONBODY(Loader,load)
 		return NULL;
 	th->loading=true;
 	assert_and_throw(argslen > 0 && args[0] && argslen <= 2);
-	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<URLRequest>::getClass()));
-	URLRequest* r=static_cast<URLRequest*>(args[0]);
-	assert_and_throw(r->method==URLRequest::GET);
-	th->url=r->url;
+	URLRequest* r=Class<URLRequest>::dyncast(args[0]);
+	if(r==NULL)
+		throw Class<ArgumentError>::getInstanceS("Wrong argument in Loader::load");
+	th->url=r->getRequestURL();
+	r->getPostData(th->postData);
 	th->source=URL;
 	//To be decreffed in jobFence
 	th->incRef();
@@ -328,6 +329,7 @@ void Loader::execute()
 	{
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
+		assert_and_throw(postData.empty());
 		downloader=sys->downloadManager->download(url, false, contentLoaderInfo.getPtr());
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
@@ -3455,15 +3457,18 @@ void MovieClip::initFrame()
 	if((int)state.FP < state.last_FP)
 		purgeLegacyChildren();
 
-	std::list<Frame>::iterator iter=frames.begin();
-	for(uint32_t i=0;i<=state.FP;i++)
+	if(framesLoaded)
 	{
-		if((int)state.FP < state.last_FP || (int)i > state.last_FP)
+		std::list<Frame>::iterator iter=frames.begin();
+		for(uint32_t i=0;i<=state.FP;i++)
 		{
-			this->incRef(); //TODO kill ref from execute's declaration
-			iter->execute(_MR(this));
+			if((int)state.FP < state.last_FP || (int)i > state.last_FP)
+			{
+				this->incRef(); //TODO kill ref from execute's declaration
+				iter->execute(_MR(this));
+			}
+			++iter;
 		}
-		++iter;
 	}
 
 	/* Now the new legacy display objects are there, so we can also init their

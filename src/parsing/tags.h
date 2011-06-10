@@ -228,7 +228,7 @@ public:
 	ASObject* instance() const;
 };
 
-class DefineSoundTag: public DictionaryTag, public Sound
+class DefineSoundTag: public DictionaryTag
 {
 private:
 	UI16_SWF SoundId;
@@ -380,7 +380,7 @@ private:
 	uint32_t len;
 public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
-	~DefineBinaryDataTag() { delete bytes; }
+	~DefineBinaryDataTag() { delete[] bytes; }
 	virtual int getId(){return Tag;} 
 
 	ASObject* instance() const

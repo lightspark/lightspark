@@ -382,7 +382,8 @@ public:
 class AdvanceFrameEvent: public Event
 {
 public:
-	AdvanceFrameEvent(): Event("AdvanceFrameEvent") {}
+	Semaphore done;
+	AdvanceFrameEvent(): Event("AdvanceFrameEvent"), done(0) {}
 	EVENT_TYPE getEventType() const { return ADVANCE_FRAME; }
 };
 

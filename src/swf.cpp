@@ -1421,16 +1421,6 @@ void SystemState::tick()
 	/* TODO: Step 1: declare new objects */
 
 	/* Step 2: Send enterFrame events, if needed */
-	/* TODO: make this a child of the stage (spec says so)
-	 * so we only need to send this to the stage.
-	 * TODO: This event will be handled much later
-	 * than we send it, so until then there may already
-	 * be an eventListern.
-	 * Example of send vs. handled events:
-	 *  tick() -> initFrame,advanceFrame,initFrame,advanceFrame, enterFrame,initFrame,advanceFrame
-	 *  vm()   ->                                              | handle first initFrame, add event Listener
-	 *  We could make tick() wait for the completion of advanceFrame event.
-	 */
 	{
 		Locker l(mutexFrameListeners);
 		if(!frameListeners.empty())
@@ -1473,7 +1463,9 @@ void SystemState::tick()
 	/* TODO: Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 
 	/* Step 0: Set current frame number to the next frame */
-	sys->currentVm->addEvent(NullRef, _MR(new AdvanceFrameEvent()));
+	_R<AdvanceFrameEvent> advFrame = _MR(new AdvanceFrameEvent());
+	sys->currentVm->addEvent(NullRef, advFrame);
+	advFrame->done.wait();
 }
 
 void SystemState::resizeCompleted() const

@@ -1346,8 +1346,10 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case ADVANCE_FRAME:
 			{
+				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
 				sys->getStage()->advanceFrame();
+				ev->done.signal();
 				break;
 			}
 			case FLUSH_INVALIDATION_QUEUE:

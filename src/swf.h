@@ -193,8 +193,8 @@ private:
 	URLInfo url;
 	Spinlock profileDataSpinlock;
 
-	Mutex mutexEnterFrameListeners;
-	std::set<DisplayObject*> enterFrameListeners;
+	Mutex mutexFrameListeners;
+	std::set<_R<DisplayObject>> frameListeners;
 	/*
 	   The head of the invalidate queue
 	*/
@@ -307,8 +307,8 @@ public:
 	ObjectEncoding::ENCODING staticByteArrayDefaultObjectEncoding;
 	
 	//enterFrame event management
-	void registerEnterFrameListener(DisplayObject* clip);
-	void unregisterEnterFrameListener(DisplayObject* clip);
+	void registerFrameListener(_R<DisplayObject> clip);
+	void unregisterFrameListener(_R<DisplayObject> clip);
 
 	//tags management
 	void registerTag(Tag* t);

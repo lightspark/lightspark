@@ -417,9 +417,12 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	IFunction* f=static_cast<IFunction*>(args[1]);
 
 	DisplayObject* dispobj=dynamic_cast<DisplayObject*>(th);
-	if(eventName=="enterFrame" && dispobj)
+	if(dispobj && (eventName=="enterFrame"
+				|| eventName=="exitFrame"
+				|| eventName=="frameConstructed") )
 	{
-		sys->registerEnterFrameListener(dispobj);
+		dispobj->incRef();
+		sys->registerFrameListener(_MR(dispobj));
 	}
 
 	{
@@ -482,9 +485,15 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 
 	// Only unregister the enterFrame listener _after_ the handlers have been erased.
 	DisplayObject* dispobj=dynamic_cast<DisplayObject*>(th);
-	if(eventName=="enterFrame" && dispobj)
+	if(dispobj && (eventName=="enterFrame"
+					|| eventName=="exitFrame"
+					|| eventName=="frameConstructed")
+				&& (!th->hasEventListener("enterFrame")
+					&& !th->hasEventListener("exitFrame")
+					&& !th->hasEventListener("frameConstructed")) )
 	{
-		sys->unregisterEnterFrameListener(dispobj);
+		dispobj->incRef();
+		sys->unregisterFrameListener(_MR(dispobj));
 	}
 
 	return NULL;

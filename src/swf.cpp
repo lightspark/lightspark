@@ -105,19 +105,19 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 	}
 }
 
-void SystemState::registerEnterFrameListener(DisplayObject* obj)
+void SystemState::registerFrameListener(_R<DisplayObject> obj)
 {
-	Locker l(mutexEnterFrameListeners);
+	Locker l(mutexFrameListeners);
 	obj->incRef();
-	enterFrameListeners.insert(obj);
+	frameListeners.insert(obj);
 }
 
-void SystemState::unregisterEnterFrameListener(DisplayObject* obj)
+void SystemState::unregisterFrameListener(_R<DisplayObject> obj)
 {
-	Locker l(mutexEnterFrameListeners);
-	if(enterFrameListeners.erase(obj))
-		obj->decRef();
+	Locker l(mutexFrameListeners);
+	frameListeners.erase(obj);
 }
+
 void RootMovieClip::setOnStage(bool staged)
 {
 	MovieClip::setOnStage(staged);
@@ -156,7 +156,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
-	parameters(NullRef),mutexEnterFrameListeners("mutexEnterFrameListeners"),
+	parameters(NullRef),mutexFrameListeners("mutexFrameListeners"),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
 	currentVm(NULL),useInterpreter(true),useJit(false),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
@@ -1432,24 +1432,14 @@ void SystemState::tick()
 	 *  We could make tick() wait for the completion of advanceFrame event.
 	 */
 	{
-		Locker l(mutexEnterFrameListeners);
-		if(!enterFrameListeners.empty())
+		Locker l(mutexFrameListeners);
+		if(!frameListeners.empty())
 		{
 			_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
-			auto it=enterFrameListeners.begin();
-			for(;it!=enterFrameListeners.end();it++)
-			{
-				(*it)->incRef();
-				getVm()->addEvent(_MR(*it),e);
-			}
+			auto it=frameListeners.begin();
+			for(;it!=frameListeners.end();it++)
+				getVm()->addEvent(*it,e);
 		}
-	}
-	//Enter frame should be sent to the stage too
-	if(stage->hasEventListener("enterFrame"))
-	{
-		_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
-		stage->incRef();
-		getVm()->addEvent(_MR(stage),e);
 	}
 
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
@@ -1457,8 +1447,29 @@ void SystemState::tick()
 	 * and their frameScripts (Step 5) (bottom-up) */
 	sys->currentVm->addEvent(NullRef, _MR(new InitFrameEvent()));
 
-	/* TODO: Step 4: dispatch frameConstructed */
-	/* TODO: Step 6: dispatch exitFrame event */
+	/* Step 4: dispatch frameConstructed events */
+	/* (TODO: should be run between step 3 and 5 */
+	{
+		Locker l(mutexFrameListeners);
+		if(!frameListeners.empty())
+		{
+			_R<Event> e(Class<Event>::getInstanceS("frameConstructed"));
+			auto it=frameListeners.begin();
+			for(;it!=frameListeners.end();it++)
+				getVm()->addEvent(*it,e);
+		}
+	}
+	/* Step 6: dispatch exitFrame event */
+	{
+		Locker l(mutexFrameListeners);
+		if(!frameListeners.empty())
+		{
+			_R<Event> e(Class<Event>::getInstanceS("exitFrame"));
+			auto it=frameListeners.begin();
+			for(;it!=frameListeners.end();it++)
+				getVm()->addEvent(*it,e);
+		}
+	}
 	/* TODO: Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 
 	/* Step 0: Set current frame number to the next frame */

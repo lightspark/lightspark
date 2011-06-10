@@ -3457,15 +3457,18 @@ void MovieClip::initFrame()
 	if((int)state.FP < state.last_FP)
 		purgeLegacyChildren();
 
-	std::list<Frame>::iterator iter=frames.begin();
-	for(uint32_t i=0;i<=state.FP;i++)
+	if(framesLoaded)
 	{
-		if((int)state.FP < state.last_FP || (int)i > state.last_FP)
+		std::list<Frame>::iterator iter=frames.begin();
+		for(uint32_t i=0;i<=state.FP;i++)
 		{
-			this->incRef(); //TODO kill ref from execute's declaration
-			iter->execute(_MR(this));
+			if((int)state.FP < state.last_FP || (int)i > state.last_FP)
+			{
+				this->incRef(); //TODO kill ref from execute's declaration
+				iter->execute(_MR(this));
+			}
+			++iter;
 		}
-		++iter;
 	}
 
 	/* Now the new legacy display objects are there, so we can also init their

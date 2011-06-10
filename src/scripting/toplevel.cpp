@@ -2224,7 +2224,7 @@ double ASString::toNumber()
 	assert_and_throw(implEnable);
 	for(unsigned int i=0;i<data.size();i++)
 	{
-		if(!(data[i]>='0' && data[i]<='9' && data[i]!='.')) //not a number
+		if(!((data[i]>='0' && data[i]<='9') || data[i]=='.')) //not a number
 			return numeric_limits<double>::quiet_NaN();
 	}
 	return atof(data.c_str());

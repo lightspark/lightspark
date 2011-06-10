@@ -326,7 +326,7 @@ private:
 	uint8_t avioBuffer[4096];
 	static int avioReadPacket(void* t, uint8_t* buf, int buf_size);
 	//NOTE: this will become AVIOContext in FFMpeg 0.7
-#if LIBAVUTIL_VERSION_MAJOR < 51
+#if LIBAVUTIL_VERSION_MAJOR < 50
 	ByteIOContext* avioContext;
 #else
 	AVIOContext* avioContext;

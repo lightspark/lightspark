@@ -33,23 +33,23 @@ using namespace lightspark;
 void lightspark::cleanGLErrors()
 {
 #ifdef EXPENSIVE_DEBUG
-	int glErrorCount = 0;
+	int errorCount = 0;
 	GLenum err;
 	while(1)
 	{
 		err=glGetError();
 		if(err!=GL_NO_ERROR)
 		{
-			glErrorCount++;
+			errorCount++;
 			LOG(LOG_ERROR,_("GL error ")<< err);
 		}
 		else
 			break;
 	}
 
-	if(glErrorCount)
+	if(errorCount)
 	{
-		LOG(LOG_ERROR,_("Ignoring ") << glErrorCount << _(" openGL errors"));
+		LOG(LOG_ERROR,_("Ignoring ") << errorCount << _(" openGL errors"));
 	}
 #else
 	while(glGetError()!=GL_NO_ERROR);
@@ -168,23 +168,6 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 		cleanGLErrors();
 #endif
 	}
-}
-
-void TextureBuffer::setBGRAData(uint8_t* bgraData, uint32_t w, uint32_t h)
-{
-	cleanGLErrors();
-
-	//First of all resize the texture (if needed)
-	resize(w, h);
-
-	glBindTexture(GL_TEXTURE_2D,texId);
-
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, bgraData);
-	assert(glGetError()==GL_NO_ERROR);
-	
-#ifdef EXPENSIVE_DEBUG
-	cleanGLErrors();
-#endif
 }
 
 void TextureBuffer::setRequestedAlignment(uint32_t w, uint32_t h)

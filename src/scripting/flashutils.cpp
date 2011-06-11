@@ -754,6 +754,9 @@ ASFUNCTIONBODY(lightspark,describeType)
 		return new Undefined;
 	}
 
+	if(args[0]->getObjectType()==T_UNDEFINED)
+		return new Undefined;
+
 	Class_base* type=args[0]->getPrototype();
 	assert_and_throw(type);
 	//TODO: add support in type for base, isDynamic, isFinal, isStatic

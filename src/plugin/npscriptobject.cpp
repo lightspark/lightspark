@@ -787,10 +787,10 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 		argsString += buf;
 	}
 
-	std::string scriptString = "function(";
+	std::string scriptString = "(function(";
 	scriptString += argsString;
 	scriptString += ") { return (" + id.getString();
-	scriptString += ")(" + argsString + "); }";
+	scriptString += ")(" + argsString + "); })";
 
 	LOG(LOG_CALLS,"Invoking " << scriptString << " in the browser ");
 

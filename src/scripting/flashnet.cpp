@@ -912,7 +912,7 @@ void NetStream::execute()
 			threadAbort();
 
 		bool done=false;
-		do
+		while(!done)
 		{
 			//Check if threadAbort has been called, if so, stop this loop
 			if(closed)
@@ -937,6 +937,13 @@ void NetStream::execute()
 
 			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
 				audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
+
+			if(audioStream && audioStream->paused() && !audioStream->pause)
+			{
+				//The audio stream is paused but should not!
+				//As we have new data fill the stream
+				audioStream->fill();
+			}
 
 			if(!tickStarted && isReady())
 			{
@@ -996,7 +1003,6 @@ void NetStream::execute()
 			if(aborting)
 				throw JobTerminationException();
 		}
-		while(!done);
 
 	}
 	catch(LightsparkException& e)

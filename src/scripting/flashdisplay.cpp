@@ -2294,12 +2294,12 @@ bool Shape::isOpaque(number_t x, number_t y) const
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
 	if(!owner->isSimple())
-		rt->glAcquireTempBuffer(t1,t2,t3,t4);
+		rt->acquireTempBuffer(t1,t2,t3,t4);
 
 	owner->defaultRender(maskEnabled);
 
 	if(!owner->isSimple())
-		rt->glBlitTempBuffer(t1,t2,t3,t4);
+		rt->blitTempBuffer(t1,t2,t3,t4);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list

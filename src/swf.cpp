@@ -44,9 +44,7 @@ extern "C" {
 }
 #endif
 
-#ifdef COMPILE_PLUGIN
 #include <gdk/gdkx.h>
-#endif
 
 using namespace std;
 using namespace lightspark;
@@ -152,7 +150,7 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),
+	renderThread(NULL),inputThread(NULL),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	parameters(NullRef),mutexEnterFrameListeners("mutexEnterFrameListeners"),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
@@ -504,7 +502,6 @@ void SystemState::enableGnashFallback()
 	f.close();
 }
 
-#ifdef COMPILE_PLUGIN
 
 void SystemState::delayedCreation(SystemState* th)
 {
@@ -522,8 +519,8 @@ void SystemState::delayedCreation(SystemState* th)
 	Locker l(th->mutex);
 	if(th->shutdown)
 		return;
-	th->renderThread->start(th->engine, &th->npapiParams);
-	th->inputThread->start(th->engine, &th->npapiParams);
+	th->renderThread->start(th->npapiParams);
+	th->inputThread->start(th->npapiParams);
 	//If the render rate is known start the render ticks
 	if(th->renderRate)
 		th->startRenderTicks();
@@ -538,8 +535,6 @@ void SystemState::delayedStopping(SystemState* th)
 	sys=NULL;
 }
 
-#endif
-
 void SystemState::createEngines()
 {
 	Locker l(mutex);
@@ -548,9 +543,8 @@ void SystemState::createEngines()
 		//A shutdown request has arrived before the creation of engines
 		return;
 	}
-#ifdef COMPILE_PLUGIN
 	//Check if we should fall back on gnash
-	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
+	if(useGnashFallback && vmVersion!=AVM2)
 	{
 		if(dumpedSWFPath.len()==0) //The path is not known yet
 		{
@@ -706,23 +700,11 @@ void SystemState::createEngines()
 			return;
 		}
 	}
-#else 
-	//COMPILE_PLUGIN not defined
-	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
-	{
-		throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
-	}
-#endif
 
 	l.unlock();
-	if(engine==GTKPLUG) //The engines must be created in the context of the main thread
-	{
-#ifdef COMPILE_PLUGIN
-		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
-#else
-		throw new UnsupportedException("Plugin engine not available when not built with COMPILE_PLUGIN");
-#endif
-	}
+	//The engines must be created in the context of the main thread
+	npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
+
 	renderThread->waitForInitialization();
 	l.lock();
 	//As we lost the lock the shutdown procesure might have started
@@ -745,16 +727,15 @@ void SystemState::needsAVM2(bool n)
 	}
 	else
 		vmVersion=AVM1;
-	if(engine)
+
+	if(npapiParams.display)
 		addJob(new EngineCreator);
 }
 
-void SystemState::setParamsAndEngine(ENGINE e, NPAPI_params* p)
+void SystemState::setParamsAndEngine(const NPAPI_params& p)
 {
 	Locker l(mutex);
-	if(p)
-		npapiParams=*p;
-	engine=e;
+	npapiParams=p;
 	if(vmVersion)
 		addJob(new EngineCreator);
 }

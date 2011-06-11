@@ -91,16 +91,11 @@ RenderThread::RenderThread(SystemState* s):
 	time_s = compat_get_current_time_ms();
 }
 
-void RenderThread::start(ENGINE e,void* params)
+void RenderThread::start(const NPAPI_params& params)
 {
 	status=STARTED;
-#ifdef COMPILE_PLUGIN
-	if(e==GTKPLUG)
-	{
-		npapi_params=(NPAPI_params*)params;
-		pthread_create(&t,NULL,(thread_worker)gtkplug_worker,this);
-	}
-#endif
+	npapi_params=&params;
+	pthread_create(&t,NULL,(thread_worker)worker,this);
 }
 
 void RenderThread::stop()
@@ -207,12 +202,11 @@ void RenderThread::handleUpload()
 	prevUploadJob=u;
 }
 
-#ifdef COMPILE_PLUGIN
-void* RenderThread::gtkplug_worker(RenderThread* th)
+void* RenderThread::worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
-	NPAPI_params* p=th->npapi_params;
+	const NPAPI_params* p=th->npapi_params;
 	SemaphoreLighter lighter(th->initialized);
 
 	th->windowWidth=p->width;
@@ -379,7 +373,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	XCloseDisplay(d);
 	return NULL;
 }
-#endif
 
 bool RenderThread::loadShaderPrograms()
 {

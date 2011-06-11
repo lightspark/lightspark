@@ -20,17 +20,13 @@
 #ifndef PLUGINUTILS_H
 #define PLUGINUTILS_H
 
-#ifdef COMPILE_PLUGIN
 #include <X11/Xlib.h>
 #include <gtk/gtk.h>
-#endif
 
 namespace lightspark
 {
 
-enum ENGINE { NONE=0, GTKPLUG};
 typedef void(*helper_t)(void*);
-#ifdef COMPILE_PLUGIN
 struct NPAPI_params
 {
 	Display* display;
@@ -42,12 +38,8 @@ struct NPAPI_params
 	void (*helper)(void* th, helper_t func, void* privArg);
 	void* helperArg;
 	void (*stopDownloaderHelper)(void* th);
+	NPAPI_params():display(NULL){}
 };
-#else
-struct NPAPI_params
-{
-};
-#endif
 
 };
 #endif

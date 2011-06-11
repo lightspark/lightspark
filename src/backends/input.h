@@ -43,11 +43,9 @@ private:
 	pthread_t t;
 	bool terminated;
 	bool threaded;
-#ifdef COMPILE_PLUGIN
-	NPAPI_params* npapi_params;
-	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
+	const NPAPI_params* npapi_params;
+	static gboolean worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
 	static void delayedCreation(InputThread* th);
-#endif
 
 	std::vector<InteractiveObject* > listeners;
 	Mutex mutexListeners;
@@ -75,7 +73,7 @@ public:
 	InputThread(SystemState* s);
 	~InputThread();
 	void wait();
-	void start(ENGINE e, void* param);
+	void start(const NPAPI_params& params);
 	void addListener(InteractiveObject* ob);
 	void removeListener(InteractiveObject* ob);
 	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);

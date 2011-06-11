@@ -414,7 +414,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p.helperArg=this;
 		p.stopDownloaderHelper=StopDownloaderHelper;
 		LOG(LOG_NO_INFO,"X Window " << hex << p.window << dec << " Width: " << p.width << " Height: " << p.height);
-		m_sys->setParamsAndEngine(lightspark::GTKPLUG,&p);
+		m_sys->setParamsAndEngine(p);
 	}
 	//draw();
 	return TRUE;

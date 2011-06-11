@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
 	p.helperArg=NULL;
 	p.stopDownloaderHelper=NULL;
 
-	sys->setParamsAndEngine(GTKPLUG, &p);
+	sys->setParamsAndEngine(p);
 	gdk_threads_leave();
 
 	sys->securityManager->setSandboxType(sandboxType);

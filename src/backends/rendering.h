@@ -34,10 +34,10 @@ private:
 	pthread_t t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
-#ifdef COMPILE_PLUGIN
-	NPAPI_params* npapi_params;
-	static void* gtkplug_worker(RenderThread*);
-#endif
+
+	const NPAPI_params* npapi_params;
+	static void* worker(RenderThread*);
+
 	void commonGLInit(int width, int height);
 	void commonGLResize();
 	void commonGLDeinit();
@@ -116,7 +116,7 @@ private:
 public:
 	RenderThread(SystemState* s);
 	~RenderThread();
-	void start(ENGINE e,void* param);
+	void start(const NPAPI_params& params);
 	/*
 	   The stop function should be call on exit even if the thread is not started
 	*/

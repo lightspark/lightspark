@@ -28,7 +28,7 @@
 namespace lightspark
 {
 
-enum ENGINE { NONE=0, SDL, GTKPLUG};
+enum ENGINE { NONE=0, GTKPLUG};
 typedef void(*helper_t)(void*);
 #ifdef COMPILE_PLUGIN
 struct NPAPI_params

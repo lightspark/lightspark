@@ -31,7 +31,6 @@
 #include "scripting/class.h"
 #include "backends/rendering.h"
 
-#include "SDL.h"
 #include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
@@ -460,15 +459,6 @@ void SystemState::setShutdownFlag()
 void SystemState::wait()
 {
 	sem_wait(&terminated);
-	if(engine==SDL)
-	{
-		SDL_Event event;
-		event.type = SDL_USEREVENT;
-		event.user.code = SHUTDOWN;
-		event.user.data1 = 0;
-		event.user.data1 = 0;
-		SDL_PushEvent(&event);
-	}
 	//Acquire the mutex to sure that the engines are not being started right now
 	Locker l(mutex);
 	renderThread->wait();
@@ -732,14 +722,6 @@ void SystemState::createEngines()
 #else
 		throw new UnsupportedException("Plugin engine not available when not built with COMPILE_PLUGIN");
 #endif
-	}
-	else //SDL engine
-	{
-		renderThread->start(engine, NULL);
-		inputThread->start(engine, NULL);
-		//If the render rate is known start the render ticks
-		if(renderRate)
-			startRenderTicks();
 	}
 	renderThread->waitForInitialization();
 	l.lock();

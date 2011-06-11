@@ -34,7 +34,6 @@ private:
 	pthread_t t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
-	static void* sdl_worker(RenderThread*);
 #ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
 	static void* gtkplug_worker(RenderThread*);

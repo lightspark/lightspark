@@ -43,7 +43,6 @@ private:
 	pthread_t t;
 	bool terminated;
 	bool threaded;
-	static void* sdl_worker(InputThread*);
 #ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
 	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);

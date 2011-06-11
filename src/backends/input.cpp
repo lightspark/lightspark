@@ -35,10 +35,9 @@ InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(fal
 	LOG(LOG_NO_INFO,_("Creating input thread"));
 }
 
-void InputThread::start(const NPAPI_params& params)
+void InputThread::start(const EngineData* e)
 {
-	npapi_params=&params;
-	GtkWidget* container=npapi_params->container;
+	GtkWidget* container=e->container;
 	gtk_widget_set_can_focus(container,True);
 	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
 					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |

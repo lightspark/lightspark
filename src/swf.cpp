@@ -150,7 +150,7 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),fileDumpAvailable(0),
+	renderThread(NULL),inputThread(NULL),engineData(NULL),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	parameters(NullRef),mutexEnterFrameListeners("mutexEnterFrameListeners"),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
@@ -409,6 +409,7 @@ SystemState::~SystemState()
 	renderThread=NULL;
 	delete inputThread;
 	inputThread=NULL;
+	delete engineData;
 	sem_destroy(&terminated);
 }
 
@@ -505,22 +506,23 @@ void SystemState::enableGnashFallback()
 
 void SystemState::delayedCreation(SystemState* th)
 {
-	NPAPI_params& p=th->npapiParams;
+	EngineData* d=th->engineData;
 	//Create a plug in the XEmbed window
-	p.container=gtk_plug_new((GdkNativeWindow)p.window);
+	GtkWidget* plug=gtk_plug_new((GdkNativeWindow)d->window);
+	d->container = plug;
 	//Realize the widget now, as we need the X window
-	gtk_widget_realize(p.container);
+	gtk_widget_realize(plug);
 	//Show it now
-	gtk_widget_show(p.container);
-	gtk_widget_map(p.container);
-	p.window=GDK_WINDOW_XWINDOW(p.container->window);
-	XSync(p.display, False);
+	gtk_widget_show(plug);
+	gtk_widget_map(plug);
+	d->window=GDK_WINDOW_XWINDOW(plug->window);
+	XSync(d->display, False);
 	//The lock is needed to avoid thread creation/destruction races
 	Locker l(th->mutex);
 	if(th->shutdown)
 		return;
-	th->renderThread->start(th->npapiParams);
-	th->inputThread->start(th->npapiParams);
+	th->renderThread->start(th->engineData);
+	th->inputThread->start(th->engineData);
 	//If the render rate is known start the render ticks
 	if(th->renderRate)
 		th->startRenderTicks();
@@ -530,7 +532,7 @@ void SystemState::delayedStopping(SystemState* th)
 {
 	sys=th;
 	//This is called from the plugin, also kill the stream
-	th->npapiParams.stopDownloaderHelper(th->npapiParams.helperArg);
+	th->engineData->stopMainDownload();
 	th->stopEngines();
 	sys=NULL;
 }
@@ -611,9 +613,9 @@ void SystemState::createEngines()
 			char bufXid[32];
 			char bufWidth[32];
 			char bufHeight[32];
-			snprintf(bufXid,32,"%lu",npapiParams.window);
-			snprintf(bufWidth,32,"%u",npapiParams.width);
-			snprintf(bufHeight,32,"%u",npapiParams.height);
+			snprintf(bufXid,32,"%lu",engineData->window);
+			snprintf(bufWidth,32,"%u",engineData->width);
+			snprintf(bufHeight,32,"%u",engineData->height);
 			string params("FlashVars=");
 			params+=rawParameters;
 			char *const args[] =
@@ -696,14 +698,14 @@ void SystemState::createEngines()
 			//Engines should not be started, stop everything
 			l.unlock();
 			//We cannot stop the engines now, as this is inside a ThreadPool job
-			npapiParams.helper(npapiParams.helperArg, (helper_t)delayedStopping, this);
+			engineData->setupMainThreadCallback((ls_callback_t)delayedStopping, this);
 			return;
 		}
 	}
 
 	l.unlock();
 	//The engines must be created in the context of the main thread
-	npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
+	engineData->setupMainThreadCallback((ls_callback_t)delayedCreation, this);
 
 	renderThread->waitForInitialization();
 	l.lock();
@@ -728,14 +730,14 @@ void SystemState::needsAVM2(bool n)
 	else
 		vmVersion=AVM1;
 
-	if(npapiParams.display)
+	if(engineData)
 		addJob(new EngineCreator);
 }
 
-void SystemState::setParamsAndEngine(const NPAPI_params& p)
+void SystemState::setParamsAndEngine(EngineData* e)
 {
 	Locker l(mutex);
-	npapiParams=p;
+	engineData=e;
 	if(vmVersion)
 		addJob(new EngineCreator);
 }

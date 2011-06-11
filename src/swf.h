@@ -40,7 +40,7 @@
 #include "backends/urlutils.h"
 #include "backends/extscriptobject.h"
 
-#include "platforms/pluginutils.h"
+#include "platforms/engineutils.h"
 
 #ifndef WIN32
 #include <GL/glx.h>
@@ -163,7 +163,7 @@ private:
 	bool shutdown;
 	RenderThread* renderThread;
 	InputThread* inputThread;
-	NPAPI_params npapiParams;
+	EngineData* engineData;
 	void startRenderTicks();
 	/**
 		Create the rendering and input engines
@@ -241,7 +241,7 @@ public:
 	void wait() DLL_PUBLIC;
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
-	void setParamsAndEngine(const NPAPI_params& p) DLL_PUBLIC;
+	void setParamsAndEngine(EngineData* e) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 	void enableGnashFallback() DLL_PUBLIC;
 	void needsAVM2(bool n);

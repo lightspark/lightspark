@@ -91,10 +91,10 @@ RenderThread::RenderThread(SystemState* s):
 	time_s = compat_get_current_time_ms();
 }
 
-void RenderThread::start(const NPAPI_params& params)
+void RenderThread::start(const EngineData* data)
 {
 	status=STARTED;
-	npapi_params=&params;
+	engineData=data;
 	pthread_create(&t,NULL,(thread_worker)worker,this);
 }
 
@@ -206,11 +206,11 @@ void* RenderThread::worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
-	const NPAPI_params* p=th->npapi_params;
+	const EngineData* e=th->engineData;
 	SemaphoreLighter lighter(th->initialized);
 
-	th->windowWidth=p->width;
-	th->windowHeight=p->height;
+	th->windowWidth=e->width;
+	th->windowHeight=e->height;
 	
 	Display* d=XOpenDisplay(NULL);
 
@@ -239,7 +239,7 @@ void* RenderThread::worker(RenderThread* th)
 	{
 		int id;
 		glXGetFBConfigAttrib(d,fb[i],GLX_VISUAL_ID,&id);
-		if(id==(int)p->visual)
+		if(id==(int)e->visual)
 			break;
 	}
 	if(i==a)
@@ -253,7 +253,7 @@ void* RenderThread::worker(RenderThread* th)
 	XFree(fb);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	GLXWindow glxWin=p->window;
+	GLXWindow glxWin=e->window;
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		cout << "Indirect!!" << endl;

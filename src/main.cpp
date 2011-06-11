@@ -42,13 +42,26 @@ TLSDATA DLL_PUBLIC SystemState* sys;
 TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
 TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
 
-static void StandaloneAsyncHelper(void* th_void, helper_t func, void* privArg)
+class StandaloneEngineData: public EngineData
 {
-	//Synchronizing with the main gtk thread is what we actually need
-	gdk_threads_enter();
-	func(privArg);
-	gdk_threads_leave();
-}
+public:
+	StandaloneEngineData(Display* d, VisualID v, Window win, int w, int h):
+		EngineData(d,v,win,w,h){}
+	void setupMainThreadCallback(ls_callback_t func, void* arg)
+	{
+		//Synchronizing with the main gtk thread is what we actually need
+		gdk_threads_enter();
+		func(arg);
+		gdk_threads_leave();
+	}
+	void stopMainDownload()
+	{
+	}
+	bool isSizable() const
+	{
+		return true;
+	}
+};
 
 static void StandaloneDestroy(GtkWidget *widget, gpointer data)
 {
@@ -257,20 +270,13 @@ int main(int argc, char* argv[])
 	gtk_widget_show(socket);
 	gtk_widget_show(window);
 
-	lightspark::NPAPI_params p;
+	VisualID visual=XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
+	Display* display=gdk_x11_display_get_xdisplay(gdk_display_get_default());
+	Window xembedWindow=gtk_socket_get_id((GtkSocket*)socket);
 
-	p.visual=XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
-	p.container=NULL;
-	p.display=gdk_x11_display_get_xdisplay(gdk_display_get_default());
-	p.window=gtk_socket_get_id((GtkSocket*)socket);
-	p.width=465;
-	p.height=232;
-	//TODO: Refactor into virtual interface
-	p.helper=StandaloneAsyncHelper;
-	p.helperArg=NULL;
-	p.stopDownloaderHelper=NULL;
+	StandaloneEngineData* e=new StandaloneEngineData(display, visual, xembedWindow, 465, 232);
 
-	sys->setParamsAndEngine(p);
+	sys->setParamsAndEngine(e);
 	gdk_threads_leave();
 
 	sys->securityManager->setSandboxType(sandboxType);

@@ -724,6 +724,7 @@ void SystemState::createEngines()
 	}
 #endif
 
+	l.unlock();
 	if(engine==GTKPLUG) //The engines must be created in the context of the main thread
 	{
 #ifdef COMPILE_PLUGIN
@@ -740,7 +741,6 @@ void SystemState::createEngines()
 		if(renderRate)
 			startRenderTicks();
 	}
-	l.unlock();
 	renderThread->waitForInitialization();
 	l.lock();
 	//As we lost the lock the shutdown procesure might have started

@@ -24,6 +24,7 @@
 #ifndef WIN32
 #include <sys/resource.h>
 #include <unistd.h>
+#include <gdk/gdkx.h>
 #endif
 #include <iostream>
 #include <fstream>
@@ -31,9 +32,6 @@
 
 #ifdef WIN32
 #include <windows.h>
-#endif
-#include <SDL.h>
-#ifdef WIN32
 #undef main
 #endif
 
@@ -43,6 +41,20 @@ using namespace lightspark;
 TLSDATA DLL_PUBLIC SystemState* sys;
 TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
 TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
+
+static void StandaloneAsyncHelper(void* th_void, helper_t func, void* privArg)
+{
+	//Synchronizing with the main gtk thread is what we actually need
+	gdk_threads_enter();
+	func(privArg);
+	gdk_threads_leave();
+}
+
+static void StandaloneDestroy(GtkWidget *widget, gpointer data)
+{
+	sys->setShutdownFlag();
+	gtk_main_quit();
+}
 
 int main(int argc, char* argv[])
 {
@@ -62,6 +74,12 @@ int main(int argc, char* argv[])
 	textdomain("lightspark");
 
 	cout << "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others" << endl;
+
+	//Make GTK thread enabled
+	g_thread_init(NULL);
+	gdk_threads_init();
+	//Give GTK a chance to parse its own options
+	gtk_init (&argc, &argv);
 
 	for(int i=1;i<argc;i++)
 	{
@@ -228,9 +246,33 @@ int main(int argc, char* argv[])
 	if(profilingFileName)
 		sys->setProfilingOutput(profilingFileName);
 #endif
-	
-	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
-	sys->setParamsAndEngine(SDL, NULL);
+
+	gdk_threads_enter();
+	//Create the main window
+	GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_default_size((GtkWindow*)window,465,232);
+	g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),NULL);
+	GtkWidget* socket=gtk_socket_new();
+	gtk_container_add(GTK_CONTAINER(window), socket);
+	gtk_widget_show(socket);
+	gtk_widget_show(window);
+
+	lightspark::NPAPI_params p;
+
+	p.visual=XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
+	p.container=NULL;
+	p.display=gdk_x11_display_get_xdisplay(gdk_display_get_default());
+	p.window=gtk_socket_get_id((GtkSocket*)socket);
+	p.width=465;
+	p.height=232;
+	//TODO: Refactor into virtual interface
+	p.helper=StandaloneAsyncHelper;
+	p.helperArg=NULL;
+	p.stopDownloaderHelper=NULL;
+
+	sys->setParamsAndEngine(GTKPLUG, &p);
+	gdk_threads_leave();
+
 	sys->securityManager->setSandboxType(sandboxType);
 	if(sandboxType == SecurityManager::REMOTE)
 		LOG(LOG_NO_INFO, _("Running in remote sandbox"));
@@ -246,12 +288,15 @@ int main(int argc, char* argv[])
 	//Start the parser
 	sys->addJob(pt);
 
+	gdk_threads_enter();
+	gtk_main();
+	gdk_threads_leave();
+
 	sys->wait();
 	delete sys;
 	delete pt;
 
 	SystemState::staticDeinit();
-	SDL_Quit();
 	return 0;
 }
 

@@ -32,6 +32,9 @@ class SDLAudioStream;
 
 class SDLPlugin : public IAudioPlugin
 {
+private:
+	int sdl_available;
+
 public:
 	SDLPlugin ( std::string init_Name = "SDL plugin", std::string init_audiobackend = "sdl", bool init_stopped = false );
 

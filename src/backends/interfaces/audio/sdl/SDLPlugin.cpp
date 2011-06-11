@@ -29,7 +29,11 @@ using namespace std;
 SDLPlugin::SDLPlugin(string init_Name, string init_audiobackend, bool init_stopped ) :
 		IAudioPlugin ( init_Name, init_audiobackend, init_stopped )
 {
-  SDL_Init ( SDL_INIT_AUDIO |SDL_INIT_EVENTTHREAD );
+	sdl_available = 0;
+	if (SDL_WasInit(0)) // some part of SDL already was initialized 
+		sdl_available = !SDL_InitSubSystem ( SDL_INIT_AUDIO );
+	else
+		sdl_available = !SDL_Init ( SDL_INIT_AUDIO );
 }
 
 void SDLPlugin::set_device(std::string desiredDevice,
@@ -40,12 +44,15 @@ void SDLPlugin::set_device(std::string desiredDevice,
 
 AudioStream* SDLPlugin::createStream(AudioDecoder* decoder)
 {
+	if (!sdl_available)
+		return NULL;
+
     SDLAudioStream *stream = new SDLAudioStream();
     stream->decoder = decoder;
     if (!stream->init())
     {
-      	delete stream;
-	return NULL;
+		delete stream;
+		return NULL;
     }
     streams.push_back(stream);
     return stream;
@@ -78,7 +85,12 @@ SDLPlugin::~SDLPlugin()
 	for (stream_iterator it = streams.begin(); it != streams.end(); ++it) {
 		delete *it;
 	}
-	SDL_Quit();
+	if (sdl_available)
+	{
+		SDL_QuitSubSystem ( SDL_INIT_AUDIO );
+		if (!SDL_WasInit(0))
+			SDL_Quit ();
+	}
 }
 
 

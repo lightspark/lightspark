@@ -498,7 +498,7 @@ void obj_var::setVar(ASObject* v)
 {
 	if(var)
 		var->decRef();
-	if(type)
+	if(type && v->getObjectType()!=T_NULL)
 	{
 		if(v->getPrototype()==NULL || !v->getPrototype()->isSubClass(type))
 			v=type->generator(&v,1);

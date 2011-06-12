@@ -650,7 +650,7 @@ public:
 	/**
 	  	Start the VM thread
 	*/
-	void start();
+	void start() DLL_PUBLIC;
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;

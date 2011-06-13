@@ -44,8 +44,8 @@ Log::~Log()
 
 std::ostream& Log::operator()()
 {
-	std::cout << level_names[cur_level] << ": ";
-	return std::cout;
+	std::cerr << level_names[cur_level] << ": ";
+	return std::cerr;
 }
 
 void Log::initLogging(LOG_LEVEL l)

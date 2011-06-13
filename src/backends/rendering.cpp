@@ -23,13 +23,14 @@
 #include "compat.h"
 #include <sstream>
 //#include "swf.h"
+#include <stack>
 
 #include <SDL.h>
 
+#ifndef ENABLE_GLES2
 #include <GL/glew.h>
-#ifndef WIN32
-#include <GL/glx.h>
-#include <fontconfig/fontconfig.h>
+#else
+#include <GLES2/gl2.h>
 #endif
 
 //The interpretation of texture data change with the endianness
@@ -69,27 +70,7 @@ RenderThread::RenderThread(SystemState* s):
 #ifdef WIN32
 	fontPath = "TimesNewRoman.ttf";
 #else
-	FcPattern *pat, *match;
-	FcResult result = FcResultMatch;
-	char *font = NULL;
-
-	pat = FcPatternCreate();
-	FcPatternAddString(pat, FC_FAMILY, (const FcChar8 *)"Serif");
-	FcConfigSubstitute(NULL, pat, FcMatchPattern);
-	FcDefaultSubstitute(pat);
-	match = FcFontMatch(NULL, pat, &result);
-	FcPatternDestroy(pat);
-
-	if (result != FcResultMatch)
-	{
-		LOG(LOG_ERROR,_("Unable to find suitable Serif font"));
-		throw RunTimeException("Unable to find Serif font");
-	}
-
-	FcPatternGetString(match, FC_FILE, 0, (FcChar8 **) &font);
-	fontPath = font;
-	FcPatternDestroy(match);
-	LOG(LOG_NO_INFO, _("Font File is ") << fontPath);
+	fontPath = "Serif";
 #endif
 	time_s = compat_get_current_time_ms();
 }
@@ -123,24 +104,32 @@ RenderThread::~RenderThread()
 void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	::abort();
+	GLint vertex_coords[8];
+	static GLfloat color_coords[16];
 	assert(tempBufferAcquired==false);
 	tempBufferAcquired=true;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	
-	glColor4f(0,0,0,0); //No output is fairly ok to clear
-	glBegin(GL_QUADS);
-		glVertex2f(xmin,ymin);
-		glVertex2f(xmax,ymin);
-		glVertex2f(xmax,ymax);
-		glVertex2f(xmin,ymax);
-	glEnd();
+	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
+	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
+	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
+	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(COLOR_ATTRIB);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(COLOR_ATTRIB);
 }
 
 void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(tempBufferAcquired==true);
+	GLint vertex_coords[8];
 	tempBufferAcquired=false;
 
 	//Use the blittler program to blit only the used buffer
@@ -149,12 +138,17 @@ void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, n
 	glDrawBuffer(GL_BACK);
 
 	rt->tempTex.bind();
-	glBegin(GL_QUADS);
-		glVertex2f(xmin,ymin);
-		glVertex2f(xmax,ymin);
-		glVertex2f(xmax,ymax);
-		glVertex2f(xmin,ymax);
-	glEnd();
+
+	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
+	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
+	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
+	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+
 	glUseProgram(gpu_program);
 }
 
@@ -224,7 +218,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	th->windowHeight=p->height;
 	
 	Display* d=XOpenDisplay(NULL);
-
+#ifndef ENABLE_GLES2
 	int a,b;
 	Bool glx_present=glXQueryVersion(d,&a,&b);
 	if(!glx_present)
@@ -268,6 +262,67 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		cout << "Indirect!!" << endl;
+#else
+	int a;
+    eglBindAPI(EGL_OPENGL_API);
+    EGLDisplay ed = EGL_NO_DISPLAY;
+    ed = eglGetDisplay(d);
+
+    if (ed == EGL_NO_DISPLAY) {
+        LOG(LOG_ERROR, _("EGL not present"));
+        return NULL;
+    }
+
+    EGLint major, minor;
+    if (eglInitialize(ed, &major, &minor) == EGL_FALSE) {
+        LOG(LOG_ERROR, _("EGL initialization failed"));
+        return NULL;
+    }
+
+    LOG(LOG_NO_INFO, _("EGL version: ") << eglQueryString(ed, EGL_VERSION));
+
+	EGLint attrib[]={EGL_BUFFER_SIZE, 24, EGL_NONE};
+	if (!eglGetConfigs(ed, NULL, 0, &a)) {
+		LOG(LOG_ERROR,_("Could not get number of EGL configurations"));
+	} else {
+	    LOG(LOG_NO_INFO, "Number of EGL configurations: " << a);
+    }
+	EGLConfig *conf = new EGLConfig[a];
+	if (!eglChooseConfig(ed, attrib, conf, a, &a))
+	{
+		LOG(LOG_ERROR,_("Could not find any EGL configuration"));
+		::abort();
+	}
+
+	int i;
+	for(i=0;i<a;i++)
+	{
+		EGLint id;
+		eglGetConfigAttrib(ed,conf[i], EGL_NATIVE_VISUAL_ID, &id);
+		if(id==(int)p->visual)
+			break;
+	}
+	if(i==a)
+	{
+		//No suitable id found
+		LOG(LOG_ERROR,_("No suitable graphics configuration available"));
+		return NULL;
+	}
+	th->mEGLConfig=conf[i];
+	cout << "Chosen config " << hex << conf[i] << dec << endl;
+
+	th->mEGLContext = eglCreateContext(ed, th->mEGLConfig, EGL_NO_CONTEXT, NULL);
+	if (th->mEGLContext == EGL_NO_CONTEXT) {
+		LOG(LOG_ERROR,_("Could not create EGL context"));
+		return NULL;
+	}
+    EGLSurface win = eglCreateWindowSurface(ed, th->mEGLConfig, p->window, NULL);
+	if (win == EGL_NO_SURFACE) {
+		LOG(LOG_ERROR,_("Could not create EGL surface"));
+		return NULL;
+	}
+    eglMakeCurrent(ed, win, win, th->mEGLContext);
+#endif
 
 	th->commonGLInit(th->windowWidth, th->windowHeight);
 	th->commonGLResize();
@@ -275,14 +330,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font(th->fontPath.c_str());
-	if(font.Error())
-	{
-		LOG(LOG_ERROR,_("Unable to load serif font"));
-		throw RunTimeException("Unable to load font");
-	}
-	
-	font.FaceSize(12);
 
 	glEnable(GL_TEXTURE_2D);
 	try
@@ -327,44 +374,21 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 			if(th->m_sys->isOnError())
 			{
-				glLoadIdentity();
-				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
-				glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
-				glUseProgram(0);
-				glActiveTexture(GL_TEXTURE1);
-				glDisable(GL_TEXTURE_2D);
-				glActiveTexture(GL_TEXTURE0);
-
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-
-				glClearColor(0,0,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-				glColor3f(0.8,0.8,0.8);
-					    
-				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-						-1,FTPoint(0,th->windowHeight/2+20));
-
-				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2));
-					    
-				errorMsg.str("");
-				errorMsg << "Cause: " << th->m_sys->errorCause;
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2-20));
-
-				font.Render("Press C to copy this error to clipboard",
-						-1,FTPoint(0,th->windowHeight/2-40));
-				
-				glFlush();
+				th->renderErrorPage(th, false);
+#ifndef ENABLE_GLES2
 				glXSwapBuffers(d,glxWin);
+#else
+                eglSwapBuffers(ed, win);
+#endif
 			}
 			else
 			{
+#ifndef ENABLE_GLES2
 				glXSwapBuffers(d,glxWin);
-				th->coreRendering(font);
+#else
+                eglSwapBuffers(ed, win);
+#endif
+				th->coreRendering();
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}
@@ -379,8 +403,13 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	}
 	glDisable(GL_TEXTURE_2D);
 	th->commonGLDeinit();
+#ifndef ENABLE_GLES2
 	glXMakeCurrent(d,None,NULL);
 	glXDestroyContext(d,th->mContext);
+#else
+    eglMakeCurrent(ed, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(ed, th->mEGLContext);
+#endif
 	XCloseDisplay(d);
 	return NULL;
 }
@@ -428,6 +457,9 @@ bool RenderThread::loadShaderPrograms()
 
 	assert(glCreateProgram);
 	gpu_program = glCreateProgram();
+	glBindAttribLocation(gpu_program, VERTEX_ATTRIB, "ls_Vertex");
+	glBindAttribLocation(gpu_program, COLOR_ATTRIB, "ls_Color");
+	glBindAttribLocation(gpu_program, TEXCOORD_ATTRIB, "ls_TexCoord");
 	assert(glAttachShader);
 	glAttachShader(gpu_program,f);
 	glAttachShader(gpu_program,g);
@@ -495,9 +527,12 @@ void RenderThread::commonGLDeinit()
 
 void RenderThread::commonGLInit(int width, int height)
 {
+	GLenum err;
+//For now GLEW does not work with GLES2
+#ifndef ENABLE_GLES2
 	//Now we can initialize GLEW
 	glewExperimental = GL_TRUE;
-	GLenum err = glewInit();
+	err = glewInit();
 	if (GLEW_OK != err)
 	{
 		LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));;
@@ -510,7 +545,7 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 	if(GLEW_ARB_texture_non_power_of_two)
 		hasNPOTTextures=true;
-
+#endif
 	//Load shaders
 	loadShaderPrograms();
 
@@ -546,6 +581,15 @@ void RenderThread::commonGLInit(int width, int height)
 	tex=glGetUniformLocation(gpu_program,"g_tex2");
 	if(tex!=-1)
 		glUniform1i(tex,1);
+
+	//The uniform that enables YUV->RGB transform on the texels (needed for video)
+	yuvUniform =glGetUniformLocation(gpu_program,"yuv");
+	//The uniform that tells the shader if a mask is being rendered
+	maskUniform =glGetUniformLocation(gpu_program,"mask");
+	//The uniform that contains the coordinate matrix
+	projectionMatrixUniform =glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
+	modelviewMatrixUniform =glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
+
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
 	if(fragmentTexScaleUniform!=-1)
 		glUniform2f(fragmentTexScaleUniform,1.0f/width,1.0f/height);
@@ -553,13 +597,10 @@ void RenderThread::commonGLInit(int width, int height)
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	glEnable(GL_TEXTURE_2D);
-	//Default to replace
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	//At least two texture unit are guaranteed in OpenGL 1.3
 	//The second unit will be used to access the temporary buffer
 	glActiveTexture(GL_TEXTURE1);
 	glEnable(GL_TEXTURE_2D);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	glBindTexture(GL_TEXTURE_2D, tempTex.getId());
 
 	glActiveTexture(GL_TEXTURE0);
@@ -580,6 +621,107 @@ void RenderThread::commonGLInit(int width, int height)
 		}
 		::abort();
 	}
+}
+
+GLfloat lsIdentityMatrix[16] = {
+								1, 0, 0, 0,
+								0, 1, 0, 0,
+								0, 0, 1, 0,
+								0, 0, 0, 1
+								};
+
+stack<GLfloat*> *lsglMatrixStack = new stack<GLfloat*>;
+
+GLfloat lsMVPMatrix[16];
+
+void lsglLoadMatrixf(const GLfloat *m)
+{
+	memcpy(lsMVPMatrix, m, LSGL_MATRIX_SIZE);
+}
+
+void lsglLoadIdentity()
+{
+	lsglLoadMatrixf(lsIdentityMatrix);
+}
+
+void lsglPushMatrix()
+{
+	GLfloat *top = new GLfloat[16];
+	memcpy(top, lsMVPMatrix, LSGL_MATRIX_SIZE);
+	lsglMatrixStack->push(top);
+}
+
+void lsglPopMatrix()
+{
+	if (lsglMatrixStack->size() == 0)
+	{
+		LOG(LOG_ERROR, "Popping from empty stack!");
+		::abort();
+	}
+	memcpy(lsMVPMatrix, lsglMatrixStack->top(), LSGL_MATRIX_SIZE);
+	lsglMatrixStack->pop();
+}
+
+//Multiply current matrix with argument
+void lsglMultMatrixf(const GLfloat *m)
+{
+	GLfloat tmp[16];
+	for(int i=0;i<4;i++)
+	{
+		for(int j=0;j<4;j++)
+		{
+			GLfloat sum=0;
+			for (int k=0;k<4;k++)
+			{
+				sum += lsMVPMatrix[i+k*4]*m[j*4+k];
+			}
+			tmp[i+j*4] = sum;
+		}
+	}
+	memcpy(lsMVPMatrix, tmp, LSGL_MATRIX_SIZE);
+}
+
+void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ)
+{
+	static GLfloat scale[16];
+
+	memcpy(scale, lsIdentityMatrix, LSGL_MATRIX_SIZE);
+	scale[0] = scaleX;
+	scale[5] = scaleY;
+	scale[10] = scaleZ;
+	lsglMultMatrixf(scale);
+}
+
+void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ)
+{
+	static GLfloat trans[16];
+
+	memcpy(trans, lsIdentityMatrix, LSGL_MATRIX_SIZE);
+	trans[12] = translateX;
+	trans[13] = translateY;
+	trans[14] = translateZ;
+	lsglMultMatrixf(trans);
+}
+
+void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+{
+	GLfloat ortho[16];
+	memset(ortho, 0, sizeof(ortho));
+	ortho[0] = 2/(r-l);
+	ortho[5] = 2/(t-b);
+	ortho[10] = 2/(n-f);
+	ortho[12] = -(r+l)/(r-l);
+	ortho[13] = -(t+b)/(t-b);
+	ortho[14] = -(f+n)/(f-n);
+	ortho[15] = 1;
+
+	lsglMultMatrixf(ortho);
+}
+
+//Send matrix uniform to shader
+void setMatrixUniform(bool mv)
+{
+	glUniformMatrix4fv(mv?rt->modelviewMatrixUniform:rt->projectionMatrixUniform, 1, GL_FALSE, lsMVPMatrix);
 }
 
 void RenderThread::commonGLResize()
@@ -656,16 +798,13 @@ void RenderThread::commonGLResize()
 			break;
 	}
 	glViewport(0,0,windowWidth,windowHeight);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0,windowWidth,0,windowHeight,-100,0);
+	lsglLoadIdentity();
+	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);
 	//scaleY is negated to adapt the flash and gl coordinates system
 	//An additional translation is added for the same reason
-	glTranslatef(offsetX,windowHeight-offsetY,0);
-	glScalef(scaleX,-scaleY,1);
-
-	glMatrixMode(GL_MODELVIEW);
-
+	lsglTranslatef(offsetX,windowHeight-offsetY,0);
+	lsglScalef(scaleX,-scaleY,1);
+	setMatrixUniform(false);
 	tempTex.resize(windowWidth, windowHeight);
 }
 
@@ -701,14 +840,97 @@ void RenderThread::renderMaskToTmpBuffer() const
 	{
 		float matrix[16];
 		maskStack[i].m.get4DMatrix(matrix);
-		glLoadMatrixf(matrix);
+		lsglLoadMatrixf(matrix);
+		setMatrixUniform(true);
 		maskStack[i].d->Render(true);
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 }
 
-void RenderThread::coreRendering(FTFont& font)
+cairo_t* RenderThread::getCairoContext(int w, int h)
+{
+	if (!profile_cr) {
+		profileTextureData = new unsigned char[w*h*4];
+		profile_surf = cairo_image_surface_create_for_data(profileTextureData, CAIRO_FORMAT_ARGB32, w, h, w*4);
+		profile_cr = cairo_create(profile_surf);
+
+		cairo_select_font_face (profile_cr, fontPath.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+		cairo_set_font_size(profile_cr, 11);
+	}
+	return profile_cr;
+}
+
+//Render strings using Cairo's 'toy' text API
+void RenderThread::renderText(cairo_t *cr, const char *text, int x, int y)
+{
+	cairo_move_to(cr, x, y);
+	cairo_save(cr);
+	cairo_scale(cr, 1.0, -1.0);
+	cairo_show_text(cr, text);
+	cairo_restore(cr);
+}
+
+//Send the texture drawn by Cairo to the GPU
+void RenderThread::mapTexture(cairo_t *cr, int w, int h)
+{
+	glEnable(GL_TEXTURE_2D);
+	glGenTextures(1, &profileTextureID);
+	glBindTexture(GL_TEXTURE_2D, profileTextureID);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, profileTextureData);
+
+	GLint vertex_coords[] = {0,0, w,0, 0,h, w,h};
+	GLfloat texture_coords[] = {0,0, 1,0, 0,1, 1,1};
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+
+	glDeleteTextures(1, &profileTextureID);
+}
+
+void RenderThread::plotProfilingData()
+{
+	lsglLoadIdentity();
+	lsglScalef(1.0f/scaleX,-1.0f/scaleY,1);
+	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
+	setMatrixUniform(true);
+	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
+	char frameBuf[20];
+	snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
+	renderText(cr, frameBuf, 20, 20);
+
+	//Draw bars
+	cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 0.7);
+
+	for (int i=1;i<10;i++)
+	{
+		cairo_move_to(cr, 0, i*windowHeight/10);
+		cairo_line_to(cr, windowWidth, i*windowHeight/10);
+	}
+	cairo_stroke(cr);
+
+	list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
+	for(;it!=m_sys->profilingData.end();it++)
+		it->plot(1000000/m_sys->getFrameRate(),cr);
+	mapTexture(cr, windowWidth, windowHeight);
+
+	//clear the surface
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(cr);
+	cairo_restore(cr);
+}
+
+void RenderThread::coreRendering()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
@@ -716,45 +938,57 @@ void RenderThread::coreRendering(FTFont& font)
 	RGB bg=sys->getBackground();
 	glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glLoadIdentity();
+	lsglLoadIdentity();
+	setMatrixUniform(true);
 
 	m_sys->Render(false);
 	assert(maskStack.empty());
 
 	if(m_sys->showProfilingData)
-	{
-		glLoadIdentity();
-		glScalef(1.0f/scaleX,-1.0f/scaleY,1);
-		glTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
-		glUseProgram(0);
-		glActiveTexture(GL_TEXTURE1);
-		glDisable(GL_TEXTURE_2D);
-		glActiveTexture(GL_TEXTURE0);
-		glDisable(GL_TEXTURE_2D);
-		glColor3f(0,0,0);
-		char frameBuf[20];
-		snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
-		font.Render(frameBuf,-1,FTPoint(0,0));
+		plotProfilingData();
+}
 
-		//Draw bars
-		glColor4f(0.7,0.7,0.7,0.7);
-		glBegin(GL_LINES);
-		for(int i=1;i<10;i++)
-		{
-			glVertex2i(0,(i*windowHeight/10));
-			glVertex2i(windowWidth,(i*windowHeight/10));
-		}
-		glEnd();
-		
-		list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
-		for(;it!=m_sys->profilingData.end();it++)
-			it->plot(1000000/m_sys->getFrameRate(),&font);
-		glActiveTexture(GL_TEXTURE1);
-		glEnable(GL_TEXTURE_2D);
-		glActiveTexture(GL_TEXTURE0);
-		glEnable(GL_TEXTURE_2D);
-		glUseProgram(gpu_program);
+//Renders the error message which caused the VM to stop.
+void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
+{
+	lsglLoadIdentity();
+	lsglScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
+	lsglTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
+
+	setMatrixUniform(true);
+
+	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
+	cairo_set_source_rgb(cr, 0, 0, 0);
+	cairo_paint(cr);
+	cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+
+	renderText(cr, "We're sorry, Lightspark encountered a yet unsupported Flash file",
+			0,th->windowHeight/2+20);
+
+	stringstream errorMsg;
+	errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
+	renderText(cr, errorMsg.str().c_str(),0,th->windowHeight/2);
+
+	errorMsg.str("");
+	errorMsg << "Cause: " << th->m_sys->errorCause;
+	renderText(cr, errorMsg.str().c_str(),0,th->windowHeight/2-20);
+
+	if (standalone)
+	{
+		renderText(cr, "Please look at the console output to copy this error",
+			0,th->windowHeight/2-40);
+
+		renderText(cr, "Press 'Q' to exit",0,th->windowHeight/2-60);
 	}
+	else
+	{
+		renderText(cr, "Press C to copy this error to clipboard",
+				0,th->windowHeight/2-40);
+	}
+
+	mapTexture(cr, windowWidth, windowHeight);
+	glFlush();
 }
 
 void* RenderThread::sdl_worker(RenderThread* th)
@@ -782,11 +1016,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font(th->fontPath.c_str());
-	if(font.Error())
-		throw RunTimeException("Unable to load font");
-	
-	font.FaceSize(12);
 	try
 	{
 		Chronometer chronometer;
@@ -830,46 +1059,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			SDL_PumpEvents();
 			if(th->m_sys->isOnError())
 			{
-				glLoadIdentity();
-				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
-				glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
-				glUseProgram(0);
-				glActiveTexture(GL_TEXTURE1);
-				glDisable(GL_TEXTURE_2D);
-				glActiveTexture(GL_TEXTURE0);
-
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-
-				glClearColor(0,0,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-				glColor3f(0.8,0.8,0.8);
-					    
-				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-						-1,FTPoint(0,th->windowHeight/2+20));
-
-				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2));
-					    
-				errorMsg.str("");
-				errorMsg << "Cause: " << th->m_sys->errorCause;
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2-20));
-				
-				font.Render("Please look at the console output to copy this error",
-						-1,FTPoint(0,th->windowHeight/2-40));
-
-				font.Render("Press 'Q' to exit",-1,FTPoint(0,th->windowHeight/2-60));
-				
-				glFlush();
+				th->renderErrorPage(th, true);
 				SDL_GL_SwapBuffers( );
 			}
 			else
 			{
 				SDL_GL_SwapBuffers( );
-				th->coreRendering(font);
+				th->coreRendering();
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}
@@ -962,7 +1158,7 @@ GLuint RenderThread::allocateNewGLTexture() const
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	//Allocate the texture
 	while(glGetError()!=GL_NO_ERROR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, 0);
 	GLenum err=glGetError();
 	if(err)
 	{
@@ -1125,7 +1321,11 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	assert(chunk.getNumberOfChunks()==((chunk.width+127)/128)*((chunk.height+127)/128));
 	
 	uint32_t curChunk=0;
-	for(uint32_t i=0;i<chunk.height;i+=128)
+	//The 4 corners of each texture are specified as the vertices of 2 triangles,
+	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
+	GLint *vertex_coords = new GLint[chunk.getNumberOfChunks()*12];
+	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*12];
+	for(uint32_t i=0, k=0;i<chunk.height;i+=128)
 	{
 		startY=h*i/chunk.height;
 		endY=min(h*(i+128)/chunk.height,h);
@@ -1146,22 +1346,52 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 			endU/=largeTextureSize;
 			float endV=blockY+availY;
 			endV/=largeTextureSize;
-			glBegin(GL_QUADS);
-				glTexCoord2f(startU,startV);
-				glVertex2i(x+startX,y+startY);
 
-				glTexCoord2f(endU,startV);
-				glVertex2i(x+endX,y+startY);
+			//Upper-right triangle of the quad
+			texture_coords[k] = startU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = x+startX;
+			vertex_coords[k+1] = y+startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+endY;
+			k+=2;
 
-				glTexCoord2f(endU,endV);
-				glVertex2i(x+endX,y+endY);
+			//Lower-left triangle of the quad
+			texture_coords[k] = startU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = x+startX;
+			vertex_coords[k+1] = y+startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+endY;
+			k+=2;
+			texture_coords[k] = startU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = x+startX;
+			vertex_coords[k+1] = y+endY;
+			k+=2;
 
-				glTexCoord2f(startU,endV);
-				glVertex2i(x+startX,y+endY);
-			glEnd();
 			curChunk++;
 		}
 	}
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+	glDrawArrays(GL_TRIANGLES, 0, curChunk*6);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 }
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)

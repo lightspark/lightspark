@@ -20,12 +20,22 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
+#ifndef WIN32
+#ifndef ENABLE_GLES2
+#include <GL/glx.h>
+#else
+#include <EGL/egl.h>
+#endif
+#else
+//#include <windows.h>
+#endif
+
 #include "timer.h"
-#include <FTGL/ftgl.h>
 
 namespace lightspark
 {
 
+enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
 class RenderThread: public ITickJob
 {
 friend class DisplayObject;
@@ -84,8 +94,13 @@ private:
 
 #ifndef WIN32
 	Display* mDisplay;
+#ifndef ENABLE_GLES2
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
+#else
+	EGLContext mEGLContext;
+	EGLConfig mEGLConfig;
+#endif
 	Window mWindow;
 #endif
 	uint64_t time_s, time_d;
@@ -104,7 +119,7 @@ private:
 	/*
 		Common code to handle the core of the rendering
 	*/
-	void coreRendering(FTFont& font);
+	void coreRendering();
 	Semaphore initialized;
 	class MaskData
 	{
@@ -188,6 +203,21 @@ public:
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
 	int fragmentTexScaleUniform;
+	int yuvUniform;
+	int maskUniform;
+	int projectionMatrixUniform;
+	int modelviewMatrixUniform;
+
+	void renderErrorPage(RenderThread *rt, bool standalone);
+	//Profile data plotting
+	void plotProfilingData();
+	cairo_t *profile_cr;
+	cairo_surface_t *profile_surf;
+	unsigned char* profileTextureData;
+	GLuint profileTextureID;
+	cairo_t* getCairoContext(int w, int h);
+	void mapTexture(cairo_t *cr, int w, int h);
+	void renderText(cairo_t *cr, const char *text, int x, int y);
 };
 
 };

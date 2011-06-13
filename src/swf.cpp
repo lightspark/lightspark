@@ -32,7 +32,6 @@
 #include "backends/rendering.h"
 
 #include "SDL.h"
-#include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif
@@ -905,7 +904,7 @@ void ThreadProfile::tick()
 	}
 }
 
-void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
+void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 {
 	if(data.size()<=1)
 		return;
@@ -919,26 +918,28 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 	if(int32_t(data[0].index-start)>0)
 		start=data[0].index;
 	
-	glPushAttrib(GL_TEXTURE_BIT | GL_LINE_BIT);
-	glColor3ub(color.Red,color.Green,color.Blue);
-	glDisable(GL_TEXTURE_2D);
-	glLineWidth(2);
+	cairo_set_source_rgb(cr, float(color.Red)/255, float(color.Green)/255, float(color.Blue)/255);
+	cairo_set_line_width(cr, 2);
 
-	glBegin(GL_LINE_STRIP);
-		for(unsigned int i=0;i<data.size();i++)
+	for(unsigned int i=0;i<data.size();i++)
 		{
+
 			int32_t relx=int32_t(data[i].index-start)*width/len;
-			glVertex2i(relx,data[i].timing*height/maxTime);
+			int32_t rely=data[i].timing*height/maxTime;
+			if (i==0)
+				cairo_move_to(cr,relx,rely);
+			else
+				cairo_line_to(cr,relx,rely);
 		}
-	glEnd();
-	glPopAttrib();
-	
+	cairo_stroke(cr);
+
 	//Draw tags
 	string* curTag=NULL;
 	int curTagX=0;
 	int curTagY=maxTime;
 	int curTagLen=0;
 	int curTagH=0;
+	cairo_text_extents_t te;
 	for(unsigned int i=0;i<data.size();i++)
 	{
 		int32_t relx=int32_t(data[i].index-start)*width/len;
@@ -946,11 +947,11 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 		{
 			//New tag, flush the old one if present
 			if(curTag)
-				font->Render(curTag->c_str() ,-1,FTPoint(curTagX,imax(curTagY-curTagH,0)));
+				rt->renderText(cr, curTag->c_str(),curTagX,imax(curTagY-curTagH,0));
 			//Measure tag
-			FTBBox tagBox=font->BBox(data[i].tag.c_str(),-1);
-			curTagLen=(tagBox.Upper()-tagBox.Lower()).X();
-			curTagH=(tagBox.Upper()-tagBox.Lower()).Y();
+			cairo_text_extents (cr, data[i].tag.c_str(), &te);
+			curTagLen=te.width;
+			curTagH=te.height;
 			curTag=&data[i].tag;
 			curTagX=relx;
 			curTagY=maxTime;
@@ -962,7 +963,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 			else
 			{
 				//Tag is before this sample
-				font->Render(curTag->c_str() ,-1,FTPoint(curTagX,imax(curTagY-curTagH,0)));
+				rt->renderText(cr, curTag->c_str(), curTagX, imax(curTagY-curTagH,0));
 				curTag=NULL;
 			}
 		}

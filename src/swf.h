@@ -42,12 +42,6 @@
 
 #include "platforms/pluginutils.h"
 
-#ifndef WIN32
-#include <GL/glx.h>
-#else
-//#include <windows.h>
-#endif
-
 namespace lightspark
 {
 
@@ -137,7 +131,7 @@ public:
 	void accountTime(uint32_t time);
 	void setTag(const std::string& tag);
 	void tick();
-	void plot(uint32_t max, FTFont* font);
+	void plot(uint32_t max, cairo_t* cr);
 };
 
 class SystemState: public RootMovieClip, public ITickJob

@@ -263,6 +263,7 @@ int main(int argc, char* argv[])
 	gdk_threads_enter();
 	//Create the main window
 	GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_title((GtkWindow*)window,"Lightspark");
 	g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),NULL);
 	GtkWidget* socket=gtk_socket_new();
 	gtk_container_add(GTK_CONTAINER(window), socket);

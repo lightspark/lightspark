@@ -849,6 +849,7 @@ void NPScriptObject::callExternal(void* d)
 {
 	EXT_CALL_DATA* data = static_cast<EXT_CALL_DATA*>(d);
 	nsPluginInstance* plugin = (nsPluginInstance*)data->instance->pdata;
+	lightspark::SystemState* prevSys = sys;
 	sys=plugin->m_sys;
 
 
@@ -906,7 +907,7 @@ void NPScriptObject::callExternal(void* d)
 	}
 
 	sem_post(data->callStatus);
-	sys=NULL;
+	sys=prevSys;
 }
 
 void NPScriptObject::setException(const std::string& message) const

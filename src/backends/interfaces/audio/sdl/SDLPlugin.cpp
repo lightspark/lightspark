@@ -19,8 +19,8 @@
 **************************************************************************/
 
 #include "SDLPlugin.h"
-#include "SDL.h"
-#include "SDL_audio.h"
+#include <SDL.h>
+#include <SDL_audio.h>
 
 using lightspark::AudioDecoder;
 using namespace std;

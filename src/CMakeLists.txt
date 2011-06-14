@@ -140,7 +140,4 @@ IF(COMPILE_PLUGIN)
   ADD_SUBDIRECTORY(plugin)
 ENDIF(COMPILE_PLUGIN)
 
-ADD_SUBDIRECTORY(backends/interfaces/audio/pulse)
-#ADD_SUBDIRECTORY(backends/interfaces/audio/alsa)
-#ADD_SUBDIRECTORY(backends/interfaces/audio/openal)
-ADD_SUBDIRECTORY(backends/interfaces/audio/sdl)
+ADD_SUBDIRECTORY(backends/interfaces)

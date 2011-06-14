@@ -147,7 +147,12 @@ void ABCVm::coerce_a()
 
 ASObject* ABCVm::checkfilter(ASObject* o)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"checkfilter");
+	Class_base* xmlClass=Class<XML>::getClass();
+	Class_base* xmlListClass=Class<XMLList>::getClass();
+
+	if (o->getPrototype()!=xmlClass && o->getPrototype()!=xmlListClass)
+		throw Class<TypeError>::getInstanceS();
+
 	return o;
 }
 
@@ -1655,8 +1660,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		//Skip implementation
-		o=(*it)->getVariableByMultiname(*name, true);
+		o=(*it)->getVariableByMultiname(*name, false);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
@@ -1692,8 +1696,8 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
-		//Skip special behaviour
-		o=(*it)->getVariableByMultiname(*name, true);
+
+		o=(*it)->getVariableByMultiname(*name, false);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 		if(o)

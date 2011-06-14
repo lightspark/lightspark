@@ -113,24 +113,32 @@ RenderThread::~RenderThread()
 void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	::abort();
+	GLint vertex_coords[8];
+	GLfloat color_coords[16];
 	assert(tempBufferAcquired==false);
 	tempBufferAcquired=true;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	
-	glColor4f(0,0,0,0); //No output is fairly ok to clear
-	glBegin(GL_QUADS);
-		glVertex2f(xmin,ymin);
-		glVertex2f(xmax,ymin);
-		glVertex2f(xmax,ymax);
-		glVertex2f(xmin,ymax);
-	glEnd();
+	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
+	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
+	vertex_coords[4] = xmax;vertex_coords[5] = ymax;
+	vertex_coords[6] = xmin;vertex_coords[7] = ymax;
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(COLOR_ATTRIB);
+	glDrawArrays(GL_QUADS, 0, 4);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(COLOR_ATTRIB);
 }
 
 void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(tempBufferAcquired==true);
+	GLint vertex_coords[8];
 	tempBufferAcquired=false;
 
 	//Use the blittler program to blit only the used buffer
@@ -139,12 +147,17 @@ void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, n
 	glDrawBuffer(GL_BACK);
 
 	rt->tempTex.bind();
-	glBegin(GL_QUADS);
-		glVertex2f(xmin,ymin);
-		glVertex2f(xmax,ymin);
-		glVertex2f(xmax,ymax);
-		glVertex2f(xmin,ymax);
-	glEnd();
+
+	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
+	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
+	vertex_coords[4] = xmax;vertex_coords[5] = ymax;
+	vertex_coords[6] = xmin;vertex_coords[7] = ymax;
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glDrawArrays(GL_QUADS, 0, 4);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+
 	glUseProgram(gpu_program);
 }
 
@@ -416,6 +429,9 @@ bool RenderThread::loadShaderPrograms()
 
 	assert(glCreateProgram);
 	gpu_program = glCreateProgram();
+	glBindAttribLocation(gpu_program, VERTEX_ATTRIB, "ls_Vertex");
+	glBindAttribLocation(gpu_program, COLOR_ATTRIB, "ls_Color");
+	glBindAttribLocation(gpu_program, TEXCOORD_ATTRIB, "ls_TexCoord");
 	assert(glAttachShader);
 	glAttachShader(gpu_program,f);
 	glAttachShader(gpu_program,g);
@@ -534,6 +550,12 @@ void RenderThread::commonGLInit(int width, int height)
 	tex=glGetUniformLocation(gpu_program,"g_tex2");
 	if(tex!=-1)
 		glUniform1i(tex,1);
+
+	//The uniform that enables YUV->RGB transform on the texels (needed for video)
+	yuvUniform =glGetUniformLocation(gpu_program,"yuv");
+	//The uniform that tells the shader if a mask is being rendered
+	maskUniform =glGetUniformLocation(gpu_program,"mask");
+
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
 	if(fragmentTexScaleUniform!=-1)
 		glUniform2f(fragmentTexScaleUniform,1.0f/width,1.0f/height);
@@ -541,13 +563,10 @@ void RenderThread::commonGLInit(int width, int height)
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	glEnable(GL_TEXTURE_2D);
-	//Default to replace
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	//At least two texture unit are guaranteed in OpenGL 1.3
 	//The second unit will be used to access the temporary buffer
 	glActiveTexture(GL_TEXTURE1);
 	glEnable(GL_TEXTURE_2D);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	glBindTexture(GL_TEXTURE_2D, tempTex.getId());
 
 	glActiveTexture(GL_TEXTURE0);
@@ -984,7 +1003,9 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	assert(chunk.getNumberOfChunks()==((chunk.width+127)/128)*((chunk.height+127)/128));
 	
 	uint32_t curChunk=0;
-	for(uint32_t i=0;i<chunk.height;i+=128)
+	GLint *vertex_coords = new GLint[chunk.getNumberOfChunks()*8];
+	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*8];
+	for(uint32_t i=0, k=0;i<chunk.height;i+=128)
 	{
 		startY=h*i/chunk.height;
 		endY=min(h*(i+128)/chunk.height,h);
@@ -1005,22 +1026,41 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 			endU/=largeTextureSize;
 			float endV=blockY+availY;
 			endV/=largeTextureSize;
-			glBegin(GL_QUADS);
-				glTexCoord2f(startU,startV);
-				glVertex2i(x+startX,y+startY);
 
-				glTexCoord2f(endU,startV);
-				glVertex2i(x+endX,y+startY);
+			texture_coords[k] = startU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = x+startX;
+			vertex_coords[k+1] = y+startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = x+endX;
+			vertex_coords[k+1] = y+endY;
+			k+=2;
+			texture_coords[k] = startU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = x+startX;
+			vertex_coords[k+1] = y+endY;
+			k+=2;
 
-				glTexCoord2f(endU,endV);
-				glVertex2i(x+endX,y+endY);
-
-				glTexCoord2f(startU,endV);
-				glVertex2i(x+startX,y+endY);
-			glEnd();
 			curChunk++;
 		}
 	}
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+	glDrawArrays(GL_QUADS, 0, curChunk*4);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+	delete[] vertex_coords;
+	delete[] texture_coords;
 }
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)

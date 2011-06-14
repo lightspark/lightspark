@@ -110,7 +110,8 @@ void Video::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,num
 			rt->acquireTempBuffer(0,width,0,height);
 
 		//Enable texture lookup and YUV to RGB conversion
-		glColor4f(0,0,0,1);
+		glUniform1f(rt->maskUniform, 0);
+		glUniform1f(rt->yuvUniform, 1);
 		//width and height will not change now (the Video mutex is acquired)
 		rt->renderTextured(netStream->getTexture(), 0, 0, width, height);
 

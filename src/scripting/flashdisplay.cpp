@@ -1258,19 +1258,27 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 	//If the maskEnabled is already set we are the mask!
 	if(!maskEnabled && rt->isMaskPresent())
 	{
+		GLint vertex_coords[8];
 		rt->renderMaskToTmpBuffer();
 		enableMaskLookup=1.0f;
-		glColor4f(1,0,0,0);
-		glBegin(GL_QUADS);
-			glVertex2i(-1000,-1000);
-			glVertex2i(1000,-1000);
-			glVertex2i(1000,1000);
-			glVertex2i(-1000,1000);
-		glEnd();
+
+		glUniform1f(rt->maskUniform, enableMaskLookup);
+		glUniform1f(rt->yuvUniform, 0);
+
+		vertex_coords[0] = -1000;vertex_coords[1] = -1000;
+		vertex_coords[2] = 1000;vertex_coords[3] = -1000;
+		vertex_coords[4] = 1000;vertex_coords[5] = 1000;
+		vertex_coords[6] = -1000;vertex_coords[7] = 1000;
+
+		glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+		glEnableVertexAttribArray(VERTEX_ATTRIB);
+		glDrawArrays(GL_QUADS, 0, 4);
+		glDisableVertexAttribArray(VERTEX_ATTRIB);
 	}
 	glPushMatrix();
 	glLoadIdentity();
-	glColor4f(enableMaskLookup,0,1,0);
+	glUniform1f(rt->maskUniform, enableMaskLookup);
+	glUniform1f(rt->yuvUniform, 0);
 	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	glPopMatrix();
 }

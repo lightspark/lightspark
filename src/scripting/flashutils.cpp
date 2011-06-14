@@ -969,7 +969,7 @@ _R<ASObject> Dictionary::nextValue(uint32_t index)
 	else
 	{
 		//Fall back on object properties
-		return ASObject::nextName(index-data.size());
+		return ASObject::nextValue(index-data.size());
 	}
 }
 

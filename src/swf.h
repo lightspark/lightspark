@@ -40,7 +40,7 @@
 #include "backends/urlutils.h"
 #include "backends/extscriptobject.h"
 
-#include "platforms/pluginutils.h"
+#include "platforms/engineutils.h"
 
 #ifndef WIN32
 #include <GL/glx.h>
@@ -163,8 +163,7 @@ private:
 	bool shutdown;
 	RenderThread* renderThread;
 	InputThread* inputThread;
-	NPAPI_params npapiParams;
-	ENGINE engine;
+	EngineData* engineData;
 	void startRenderTicks();
 	/**
 		Create the rendering and input engines
@@ -175,11 +174,10 @@ private:
 	/**
 	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
 	*/
-#ifdef COMPILE_PLUGIN
+	void stopEngines();
+
 	static void delayedCreation(SystemState* th);
 	static void delayedStopping(SystemState* th);
-#endif
-	void stopEngines();
 	//Useful to wait for complete download of the SWF
 	Semaphore fileDumpAvailable;
 	tiny_string dumpedSWFPath;
@@ -227,7 +225,6 @@ private:
 #endif
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
-	ENGINE getEngine() DLL_PUBLIC { return engine; };
 
 	//Interative analysis flags
 	bool showProfilingData;
@@ -244,7 +241,7 @@ public:
 	void wait() DLL_PUBLIC;
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
-	void setParamsAndEngine(ENGINE e, NPAPI_params* p) DLL_PUBLIC;
+	void setParamsAndEngine(EngineData* e) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 	void enableGnashFallback() DLL_PUBLIC;
 	void needsAVM2(bool n);

@@ -32,7 +32,6 @@
 
 #include "swf.h"
 #include "asobject.h"
-#include "platforms/pluginutils.h"
 
 #include "backends/extscriptobject.h"
 

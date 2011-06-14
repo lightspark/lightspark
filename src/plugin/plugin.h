@@ -63,8 +63,20 @@ public:
 	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::LoaderInfo* owner);
 };
 
+class PluginEngineData: public lightspark::EngineData
+{
+private:
+	nsPluginInstance* instance;
+public:
+	PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h);
+	void setupMainThreadCallback(lightspark::ls_callback_t func, void* arg);
+	void stopMainDownload();
+	bool isSizable() const;
+};
+
 class nsPluginInstance : public nsPluginInstanceBase
 {
+friend class PluginEngineData;
 public:
 	nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv);
 	virtual ~nsPluginInstance();
@@ -86,8 +98,6 @@ public:
 
 	lightspark::SystemState* m_sys;
 private:
-	static void AsyncHelper(void* th, helper_t func, void* privArg);
-	static void StopDownloaderHelper(void* th_void);
 	std::string getPageURL() const;
 
 	NPP mInstance;

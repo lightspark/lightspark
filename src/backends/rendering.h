@@ -34,11 +34,10 @@ private:
 	pthread_t t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
-	static void* sdl_worker(RenderThread*);
-#ifdef COMPILE_PLUGIN
-	NPAPI_params* npapi_params;
-	static void* gtkplug_worker(RenderThread*);
-#endif
+
+	const EngineData* engineData;
+	static void* worker(RenderThread*);
+
 	void commonGLInit(int width, int height);
 	void commonGLResize();
 	void commonGLDeinit();
@@ -117,7 +116,10 @@ private:
 public:
 	RenderThread(SystemState* s);
 	~RenderThread();
-	void start(ENGINE e,void* param);
+	/**
+	   The EngineData object must survive for the whole life of this RenderThread
+	*/
+	void start(const EngineData* data);
 	/*
 	   The stop function should be call on exit even if the thread is not started
 	*/

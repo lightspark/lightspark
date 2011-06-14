@@ -23,11 +23,7 @@
 #include "rendering.h"
 #include "compat.h"
 
-#include <SDL.h>
-
-#ifdef COMPILE_PLUGIN
 #include <gdk/gdkkeysyms.h>
-#endif
 
 using namespace lightspark;
 using namespace std;
@@ -39,27 +35,14 @@ InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(fal
 	LOG(LOG_NO_INFO,_("Creating input thread"));
 }
 
-void InputThread::start(ENGINE e,void* param)
+void InputThread::start(const EngineData* e)
 {
-	if(e==SDL)
-	{
-		threaded=true;
-		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
-	}
-#ifdef COMPILE_PLUGIN
-	else if(e==GTKPLUG)
-	{
-		npapi_params=(NPAPI_params*)param;
-		GtkWidget* container=npapi_params->container;
-		gtk_widget_set_can_focus(container,True);
-		gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-						GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
-						GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
-		g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), this);
-	}
-#endif
-	else
-		::abort();
+	GtkWidget* container=e->container;
+	gtk_widget_set_can_focus(container,True);
+	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
+					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
+					GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
+	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(worker), this);
 }
 
 InputThread::~InputThread()
@@ -76,9 +59,8 @@ void InputThread::wait()
 	terminated=true;
 }
 
-#ifdef COMPILE_PLUGIN
 //This is a GTK event handler and the gdk lock is already acquired
-gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
+gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
 {
 	//Set sys to this SystemState
 	sys=th->m_sys;
@@ -158,7 +140,6 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 	}
 	return ret;
 }
-#endif
 
 void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 {
@@ -231,80 +212,6 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 		curDragged->setX(local.x);
 		curDragged->setY(local.y);
 	}
-}
-
-void* InputThread::sdl_worker(InputThread* th)
-{
-	sys=th->m_sys;
-	SDL_Event event;
-	while(SDL_WaitEvent(&event))
-	{
-		if(sys->isShuttingDown())
-			break;
-		switch(event.type)
-		{
-			case SDL_KEYDOWN:
-			{
-				switch(event.key.keysym.sym)
-				{
-					case SDLK_p:
-						th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
-						break;
-					case SDLK_m:
-						if (!th->m_sys->audioManager->pluginLoaded())
-							break;
-						th->m_sys->audioManager->toggleMuteAll();
-						if(th->m_sys->audioManager->allMuted())
-							LOG(LOG_NO_INFO, "All sounds muted");
-						else
-							LOG(LOG_NO_INFO, "All sounds unmuted");
-						break;
-					case SDLK_q:
-						th->m_sys->setShutdownFlag();
-						if(th->m_sys->currentVm)
-							LOG(LOG_CALLS,_("We still miss ") << sys->currentVm->getEventQueueSize() << _(" events"));
-						pthread_exit(0);
-						break;
-					case SDLK_s:
-						th->m_sys->state.stop_FP=true;
-						break;
-					//Ignore any other keystrokes
-					default:
-						break;
-				}
-				break;
-			}
-			case SDL_MOUSEBUTTONDOWN:
-			{
-				th->handleMouseDown(event.button.x,event.button.y);
-				break;
-			}
-			case SDL_MOUSEBUTTONUP:
-			{
-				th->handleMouseUp(event.button.x,event.button.y);
-				break;
-			}
-			case SDL_MOUSEMOTION:
-			{
-				th->handleMouseMove(event.motion.x,event.motion.y);
-				break;
-			}
-			case SDL_VIDEORESIZE:
-			{
-				th->m_sys->getRenderThread()->requestResize(event.resize.w, event.resize.h);
-				break;
-			}
-			case SDL_QUIT:
-			{
-				th->m_sys->setShutdownFlag();
-				if(th->m_sys->currentVm)
-					LOG(LOG_CALLS,_("We still miss ") << sys->currentVm->getEventQueueSize() << _(" events"));
-				pthread_exit(0);
-				break;
-			}
-		}
-	}
-	return NULL;
 }
 
 void InputThread::addListener(InteractiveObject* ob)

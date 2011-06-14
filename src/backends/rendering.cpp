@@ -22,9 +22,6 @@
 #include "rendering.h"
 #include "compat.h"
 #include <sstream>
-//#include "swf.h"
-
-#include <SDL.h>
 
 #include <GL/glew.h>
 #ifndef WIN32
@@ -94,18 +91,11 @@ RenderThread::RenderThread(SystemState* s):
 	time_s = compat_get_current_time_ms();
 }
 
-void RenderThread::start(ENGINE e,void* params)
+void RenderThread::start(const EngineData* data)
 {
 	status=STARTED;
-	if(e==SDL)
-		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
-#ifdef COMPILE_PLUGIN
-	else if(e==GTKPLUG)
-	{
-		npapi_params=(NPAPI_params*)params;
-		pthread_create(&t,NULL,(thread_worker)gtkplug_worker,this);
-	}
-#endif
+	engineData=data;
+	pthread_create(&t,NULL,(thread_worker)worker,this);
 }
 
 void RenderThread::stop()
@@ -212,16 +202,15 @@ void RenderThread::handleUpload()
 	prevUploadJob=u;
 }
 
-#ifdef COMPILE_PLUGIN
-void* RenderThread::gtkplug_worker(RenderThread* th)
+void* RenderThread::worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
-	NPAPI_params* p=th->npapi_params;
+	const EngineData* e=th->engineData;
 	SemaphoreLighter lighter(th->initialized);
 
-	th->windowWidth=p->width;
-	th->windowHeight=p->height;
+	th->windowWidth=e->width;
+	th->windowHeight=e->height;
 	
 	Display* d=XOpenDisplay(NULL);
 
@@ -250,7 +239,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	{
 		int id;
 		glXGetFBConfigAttrib(d,fb[i],GLX_VISUAL_ID,&id);
-		if(id==(int)p->visual)
+		if(id==(int)e->visual)
 			break;
 	}
 	if(i==a)
@@ -264,7 +253,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	XFree(fb);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	GLXWindow glxWin=p->window;
+	GLXWindow glxWin=e->window;
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		cout << "Indirect!!" << endl;
@@ -384,7 +373,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	XCloseDisplay(d);
 	return NULL;
 }
-#endif
 
 bool RenderThread::loadShaderPrograms()
 {
@@ -755,135 +743,6 @@ void RenderThread::coreRendering(FTFont& font)
 		glEnable(GL_TEXTURE_2D);
 		glUseProgram(gpu_program);
 	}
-}
-
-void* RenderThread::sdl_worker(RenderThread* th)
-{
-	sys=th->m_sys;
-	rt=th;
-	SemaphoreLighter lighter(th->initialized);
-	RECT size=sys->getFrameSize();
-	int initialWidth=size.Xmax/20;
-	int initialHeight=size.Ymax/20;
-	th->windowWidth=initialWidth;
-	th->windowHeight=initialHeight;
-	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
-	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
-	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-
-	SDL_SetVideoMode(th->windowWidth, th->windowHeight, 24, SDL_OPENGL|SDL_RESIZABLE);
-	SDL_WM_SetCaption("Lightspark","Lightspark");
-	th->commonGLInit(th->windowWidth, th->windowHeight);
-	th->commonGLResize();
-	lighter.light();
-
-	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
-	profile->setTag("Render");
-	FTTextureFont font(th->fontPath.c_str());
-	if(font.Error())
-		throw RunTimeException("Unable to load font");
-	
-	font.FaceSize(12);
-	try
-	{
-		Chronometer chronometer;
-		while(1)
-		{
-			sem_wait(&th->event);
-			if(th->m_sys->isShuttingDown())
-				break;
-			chronometer.checkpoint();
-
-			if(th->resizeNeeded)
-			{
-				if(th->windowWidth!=th->newWidth ||
-					th->windowHeight!=th->newHeight)
-				{
-					th->windowWidth=th->newWidth;
-					th->windowHeight=th->newHeight;
-					SDL_SetVideoMode(th->windowWidth, th->windowHeight, 24, SDL_OPENGL|SDL_RESIZABLE);
-				}
-				th->newWidth=0;
-				th->newHeight=0;
-				th->resizeNeeded=false;
-				th->commonGLResize();
-				profile->accountTime(chronometer.checkpoint());
-				continue;
-			}
-
-			if(th->newTextureNeeded)
-				th->handleNewTexture();
-
-			if(th->prevUploadJob)
-				th->finalizeUpload();
-
-			if(th->uploadNeeded)
-			{
-				th->handleUpload();
-				profile->accountTime(chronometer.checkpoint());
-				continue;
-			}
-
-			SDL_PumpEvents();
-			if(th->m_sys->isOnError())
-			{
-				glLoadIdentity();
-				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
-				glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
-				glUseProgram(0);
-				glActiveTexture(GL_TEXTURE1);
-				glDisable(GL_TEXTURE_2D);
-				glActiveTexture(GL_TEXTURE0);
-
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-
-				glClearColor(0,0,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-				glColor3f(0.8,0.8,0.8);
-					    
-				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-						-1,FTPoint(0,th->windowHeight/2+20));
-
-				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2));
-					    
-				errorMsg.str("");
-				errorMsg << "Cause: " << th->m_sys->errorCause;
-				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->windowHeight/2-20));
-				
-				font.Render("Please look at the console output to copy this error",
-						-1,FTPoint(0,th->windowHeight/2-40));
-
-				font.Render("Press 'Q' to exit",-1,FTPoint(0,th->windowHeight/2-60));
-				
-				glFlush();
-				SDL_GL_SwapBuffers( );
-			}
-			else
-			{
-				SDL_GL_SwapBuffers( );
-				th->coreRendering(font);
-				//Call glFlush to offload work on the GPU
-				glFlush();
-			}
-			profile->accountTime(chronometer.checkpoint());
-			th->renderNeeded=false;
-		}
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR,_("Exception in RenderThread ") << e.cause);
-		sys->setError(e.cause);
-	}
-	th->commonGLDeinit();
-	return NULL;
 }
 
 void RenderThread::addUploadJob(ITextureUploadable* u)

@@ -17,37 +17,33 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef PLUGINUTILS_H
-#define PLUGINUTILS_H
+#ifndef ENGINEUTILS_H
+#define ENGINEUTILS_H
 
-#ifdef COMPILE_PLUGIN
 #include <X11/Xlib.h>
 #include <gtk/gtk.h>
-#endif
 
 namespace lightspark
 {
 
-enum ENGINE { NONE=0, SDL, GTKPLUG};
-typedef void(*helper_t)(void*);
-#ifdef COMPILE_PLUGIN
-struct NPAPI_params
+typedef void (*ls_callback_t)(void*);
+
+class EngineData
 {
+public:
 	Display* display;
-	GtkWidget* container;
 	VisualID visual;
 	Window window;
+	GtkWidget* container;
 	int width;
 	int height;
-	void (*helper)(void* th, helper_t func, void* privArg);
-	void* helperArg;
-	void (*stopDownloaderHelper)(void* th);
+	EngineData(Display* d, VisualID v, Window win, int w, int h):
+		display(d),visual(v),window(win),container(NULL),width(w),height(h){}
+	virtual ~EngineData() {}
+	virtual void setupMainThreadCallback(ls_callback_t func, void* arg) = 0;
+	virtual void stopMainDownload() = 0;
+	virtual bool isSizable() const = 0;
 };
-#else
-struct NPAPI_params
-{
-};
-#endif
 
 };
 #endif

@@ -1800,6 +1800,8 @@ void ASString::sinit(Class_base* c)
 	c->setMethodByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt),true);
 	c->setMethodByQName("charAt",AS3,Class<IFunction>::getFunction(charAt),true);
 	c->setMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),true);
+	c->setMethodByQName("toLocaleLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase),true);
+	c->setMethodByQName("toLocaleUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase),true);
 	c->setMethodByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase),true);
 	c->setMethodByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase),true);
 	c->setMethodByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode),false);

@@ -509,6 +509,14 @@ void SystemState::delayedCreation(SystemState* th)
 	EngineData* d=th->engineData;
 	//Create a plug in the XEmbed window
 	GtkWidget* plug=gtk_plug_new((GdkNativeWindow)d->window);
+	if(d->isSizable())
+	{
+		int32_t reqWidth=th->getFrameSize().Xmax/20;
+		int32_t reqHeight=th->getFrameSize().Ymax/20;
+		gtk_widget_set_size_request(plug, reqWidth, reqHeight);
+		d->width=reqWidth;
+		d->height=reqHeight;
+	}
 	d->container = plug;
 	//Realize the widget now, as we need the X window
 	gtk_widget_realize(plug);

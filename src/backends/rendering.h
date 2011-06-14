@@ -26,6 +26,7 @@
 namespace lightspark
 {
 
+enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
 class RenderThread: public ITickJob
 {
 friend class DisplayObject;
@@ -190,6 +191,8 @@ public:
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
 	int fragmentTexScaleUniform;
+	int yuvUniform;
+	int maskUniform;
 };
 
 };

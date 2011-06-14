@@ -118,11 +118,9 @@ int main(int argc, char* argv[])
 		f.close();
 		vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
 	}
+	vm->start();
 	sys->setShutdownFlag();
 	sys->wait();
 	delete sys;
-	//Clean up (mostly useful to clean up valgrind logs)
-	for(unsigned int i=0;i<contexts.size();i++)
-		delete contexts[i];
 	SystemState::staticDeinit();
 }

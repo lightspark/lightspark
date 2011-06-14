@@ -33,7 +33,7 @@ INCLUDE_DIRECTORIES(".")
 INCLUDE_DIRECTORIES("..")
 
 pkg_check_modules(SDL REQUIRED sdl)
-INCLUDE_DIRECTORIES(${SDL_LIBS_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIRS})
 if(!Boost_FOUND)
   find_package(Boost COMPONENTS filesystem system regex)
   if(Boost_FOUND)

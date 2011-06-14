@@ -43,6 +43,7 @@ Config::Config():
 	audioBackendNames[0] = "pulseaudio";
 	audioBackendNames[1] = "openal";
 	audioBackendNames[2] = "alsa";
+	audioBackendNames[3] = "sdl";
 }
 
 Config::~Config()
@@ -114,6 +115,8 @@ void Config::handleEntry()
 		audioBackend = OPENAL;
 	else if(group == "audio" && key == "backend" && value == audioBackendNames[ALSA])
 		audioBackend = ALSA;
+	else if(group == "audio" && key == "backend" && value == audioBackendNames[SDL])
+		audioBackend = SDL;
 	//Cache directory
 	else if(group == "cache" && key == "directory")
 		cacheDirectory = value;

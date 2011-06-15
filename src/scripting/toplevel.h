@@ -76,12 +76,12 @@ public:
 	~Class_base();
 	void finalize();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
-	ASObject* getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL)
+	ASObject* getBorrowedVariableByMultiname(const multiname& name, ASObject* base);
+	ASObject* getVariableByMultiname(const multiname& name, ASObject* base=NULL)
 	{
-		ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, base);
+		ASObject* ret=ASObject::getVariableByMultiname(name, base);
 		if(ret==NULL && super)
-			ret=super->getVariableByMultiname(name, skip_impl, base);
+			ret=super->getVariableByMultiname(name, base);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -156,11 +156,11 @@ private:
 	}
 public:
 	Class_function(IFunction* _f, ASObject* _p);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL)
+	ASObject* getVariableByMultiname(const multiname& name, ASObject* base=NULL)
 	{
-		ASObject* ret=Class_base::getVariableByMultiname(name,skip_impl, base);
+		ASObject* ret=Class_base::getVariableByMultiname(name,base);
 		if(ret==NULL && asprototype)
-			ret=asprototype->getVariableByMultiname(name,skip_impl, base);
+			ret=asprototype->getVariableByMultiname(name,base);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -558,7 +558,7 @@ public:
 	{
 		data.resize(n);
 	}
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
@@ -714,7 +714,7 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, ASObject* base=NULL);
 	tiny_string toString(bool debugMsg=false);
 	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;
@@ -756,7 +756,7 @@ public:
 	ASFUNCTION(_toString);
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(generator);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, ASObject* base=NULL);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;

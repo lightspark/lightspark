@@ -662,7 +662,7 @@ obj_var* ASObject::findGettable(const multiname& name)
 	return ret;
 }
 
-ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject* base)
 {
 	check();
 
@@ -701,10 +701,10 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	else if(prototype && getActualPrototype())
 	{
 		//First of all see if the prototype chain contains some borrowed properties
-		ASObject* ret=getActualPrototype()->getBorrowedVariableByMultiname(name,skip_impl,this);
+		ASObject* ret=getActualPrototype()->getBorrowedVariableByMultiname(name,this);
   		//If it has not been found yet, ask the prototype
 		if(!ret)
-			ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,this);
+			ret=getActualPrototype()->getVariableByMultiname(name,this);
 		return ret;
 	}
 

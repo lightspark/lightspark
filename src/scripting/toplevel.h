@@ -794,6 +794,7 @@ public:
 	ASFUNCTION(getFullYear);
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
+	ASFUNCTION(getMilliseconds);
 	ASFUNCTION(getUTCFullYear);
 	ASFUNCTION(getUTCMonth);
 	ASFUNCTION(getUTCDate);

@@ -2693,6 +2693,7 @@ void Date::sinit(Class_base* c)
 	c->setMethodByQName("getFullYear",AS3,Class<IFunction>::getFunction(getFullYear),true);
 	c->setMethodByQName("getHours",AS3,Class<IFunction>::getFunction(getHours),true);
 	c->setMethodByQName("getMinutes",AS3,Class<IFunction>::getFunction(getMinutes),true);
+	c->setMethodByQName("getMilliseconds",AS3,Class<IFunction>::getFunction(getMilliseconds),true);
 	c->setMethodByQName("getSeconds",AS3,Class<IFunction>::getFunction(getMinutes),true);
 	c->setMethodByQName("getUTCFullYear",AS3,Class<IFunction>::getFunction(getUTCFullYear),true);
 	c->setMethodByQName("getUTCMonth",AS3,Class<IFunction>::getFunction(getUTCMonth),true);
@@ -2772,6 +2773,12 @@ ASFUNCTIONBODY(Date,getMinutes)
 {
 	Date* th=static_cast<Date*>(obj);
 	return abstract_d(th->minute);
+}
+
+ASFUNCTIONBODY(Date,getMilliseconds)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(th->millisecond);
 }
 
 ASFUNCTIONBODY(Date,getTime)

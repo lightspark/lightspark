@@ -1049,27 +1049,47 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable || skip_impl)
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
+	//TODO: pass as ASQName, implement isAttribute
+	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
+
+	ASObject* o;
+	ASObject* ret;
+	IFunction* f;
+
+	//Do we have the property?
+	multiname hasPropertyName;
+	hasPropertyName.name_type=multiname::NAME_STRING;
+	hasPropertyName.name_s="hasProperty";
+	hasPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	o=getVariableByMultiname(hasPropertyName,true);
+	assert_and_throw(o!=NULL && o->getObjectType()==T_FUNCTION);
+	f=static_cast<IFunction*>(o);
+
+	implEnable=false;
+	LOG(LOG_CALLS,"Proxy::hasProperty");
+	incRef();
+	arg->incRef();
+	ret=f->call(this,&arg,1);
+	implEnable=true;
+
+	bool hasprop=Boolean_concrete(ret);
+	if(hasprop == false)
+		return NULL;
+
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
 	multiname getPropertyName;
 	getPropertyName.name_type=multiname::NAME_STRING;
 	getPropertyName.name_s="getProperty";
 	getPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-	ASObject* o=getVariableByMultiname(getPropertyName,true);
+	o=getVariableByMultiname(getPropertyName,true);
+	assert_and_throw(o!=NULL && o->getObjectType()==T_FUNCTION);
+	f=static_cast<IFunction*>(o);
 
-	if(o==NULL)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
-
-	assert_and_throw(o->getObjectType()==T_FUNCTION);
-
-	IFunction* f=static_cast<IFunction*>(o);
-
-	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::getProperty");
 	incRef();
-	ASObject* ret=f->call(this,&arg,1);
+	ret=f->call(this,&arg,1);
 	implEnable=true;
 	return ret;
 }

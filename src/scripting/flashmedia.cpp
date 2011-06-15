@@ -316,6 +316,7 @@ ASFUNCTIONBODY(Sound,play)
 
 void Sound::execute()
 {
+	downloader->waitForData();
 	istream s(downloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 

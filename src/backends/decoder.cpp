@@ -591,11 +591,11 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 	//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
 	AVProbeData probeData;
 	probeData.filename="lightspark_stream";
-	probeData.buf=new uint8_t[64+AVPROBE_PADDING_SIZE];
-	memset(probeData.buf,0,64+AVPROBE_PADDING_SIZE);
-	stream.read((char*)probeData.buf,64);
+	probeData.buf=new uint8_t[8192+AVPROBE_PADDING_SIZE];
+	memset(probeData.buf,0,8192+AVPROBE_PADDING_SIZE);
+	stream.read((char*)probeData.buf,8192);
 	int read=stream.gcount();
-	if(read!=64)
+	if(read!=8192)
 		LOG(LOG_ERROR,_("Not sufficient data is available from the stream"));
 	probeData.buf_size=read;
 
@@ -607,7 +607,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 		return;
 
 	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, NULL);
-	if(ret!=0)
+	if(ret<0)
 		return;
 	
 	ret=av_find_stream_info(formatCtx);

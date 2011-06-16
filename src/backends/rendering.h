@@ -194,6 +194,7 @@ public:
 	int fragmentTexScaleUniform;
 	int yuvUniform;
 	int maskUniform;
+	void renderErrorPage(RenderThread *rt, FTFont &font, bool standalone);
 };
 
 };

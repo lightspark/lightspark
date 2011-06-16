@@ -114,7 +114,7 @@ void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin
 {
 	::abort();
 	GLint vertex_coords[8];
-	GLfloat color_coords[16];
+	static GLfloat color_coords[16];
 	assert(tempBufferAcquired==false);
 	tempBufferAcquired=true;
 

@@ -464,6 +464,7 @@ void RenderThread::commonGLDeinit()
 		delete[] largeTextures[i].bitmap;
 	}
 	glDeleteBuffers(2,pixelBuffers);
+	glDeleteTextures(1, &cairoTextureID);
 }
 
 void RenderThread::commonGLInit(int width, int height)
@@ -556,6 +557,7 @@ void RenderThread::commonGLInit(int width, int height)
 		}
 		::abort();
 	}
+	glGenTextures(1, &cairoTextureID);
 }
 
 void RenderThread::commonGLResize()
@@ -683,6 +685,52 @@ void RenderThread::renderMaskToTmpBuffer() const
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 }
+
+cairo_t* RenderThread::getCairoContext(int w, int h)
+{
+	if (!cairoTextureContext) {
+		cairoTextureData = new uint8_t[w*h*4];
+		cairoTextureSurface = cairo_image_surface_create_for_data(cairoTextureData, CAIRO_FORMAT_ARGB32, w, h, w*4);
+		cairoTextureContext = cairo_create(cairoTextureSurface);
+
+		cairo_select_font_face (cairoTextureContext, "serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+		cairo_set_font_size(cairoTextureContext, 11);
+	}
+	return cairoTextureContext;
+}
+
+//Render strings using Cairo's 'toy' text API
+void RenderThread::renderText(cairo_t *cr, const char *text, int x, int y)
+{
+	cairo_move_to(cr, x, y);
+	cairo_save(cr);
+	cairo_scale(cr, 1.0, -1.0);
+	cairo_show_text(cr, text);
+	cairo_restore(cr);
+}
+
+//Send the texture drawn by Cairo to the GPU
+void RenderThread::mapCairoTexture(int w, int h)
+{
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, cairoTextureID);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, cairoTextureData);
+
+	GLint vertex_coords[] = {0,0, w,0, 0,h, w,h};
+	GLfloat texture_coords[] = {0,0, 1,0, 0,1, 1,1};
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+
+}
+
 
 void RenderThread::plotProfilingData(FTFont& font)
 {

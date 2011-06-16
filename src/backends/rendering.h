@@ -195,6 +195,14 @@ public:
 	int yuvUniform;
 	int maskUniform;
 	void renderErrorPage(RenderThread *rt, FTFont &font, bool standalone);
+
+	cairo_t *cairoTextureContext;
+	cairo_surface_t *cairoTextureSurface;
+	uint8_t *cairoTextureData;
+	GLuint cairoTextureID;
+	cairo_t* getCairoContext(int w, int h);
+	void mapCairoTexture(int w, int h);
+	void renderText(cairo_t *cr, const char *text, int x, int y);
 };
 
 };

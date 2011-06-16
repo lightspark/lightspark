@@ -523,6 +523,11 @@ void SystemState::delayedCreation(SystemState* th)
 	//Show it now
 	gtk_widget_show(plug);
 	gtk_widget_map(plug);
+	if (th->standalone)
+	{
+		gtk_widget_set_can_focus(plug, true);
+		gtk_widget_grab_focus(plug);
+	}
 	d->window=GDK_WINDOW_XWINDOW(plug->window);
 	XSync(d->display, False);
 	//The lock is needed to avoid thread creation/destruction races

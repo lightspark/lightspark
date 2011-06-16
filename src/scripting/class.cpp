@@ -23,9 +23,9 @@
 
 using namespace lightspark;
 
-ASObject* Class<ASObject>::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Class<ASObject>::getVariableByMultiname(const multiname& name, ASObject* base)
 {
-	ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, base);
+	ASObject* ret=ASObject::getVariableByMultiname(name, base);
 	//No super here, ever
 	if(!ret)
 	{

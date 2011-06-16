@@ -309,8 +309,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 	if(tl.cur_this==obj)
 		obj->resetLevel();
 
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name);
 
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
@@ -366,7 +365,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s="callProperty";
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
+			ASObject* o=obj->getVariableByMultiname(callPropertyName);
 
 			if(o)
 			{
@@ -774,7 +773,7 @@ void ABCVm::construct(call_context* th, int m)
 				prototypeName.name_type=multiname::NAME_STRING;
 				prototypeName.name_s="prototype";
 				prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-				ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
+				ASObject* asp=sf->getVariableByMultiname(prototypeName);
 				if(asp)
 					asp->incRef();
 
@@ -888,8 +887,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 	if(tl.cur_this==obj)
 		obj->resetLevel();
 
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name,true);
+	ASObject* o=obj->getVariableByMultiname(*name);
 
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
@@ -923,12 +921,12 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 		//If the object is a Proxy subclass, try to use callProperty
 		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
 		{
-			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
+			//Check if there is a custom caller defined
 			multiname callPropertyName;
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s="callProperty";
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
+			ASObject* o=obj->getVariableByMultiname(callPropertyName);
 			if(o)
 			{
 				assert_and_throw(o->getObjectType()==T_FUNCTION);
@@ -1525,8 +1523,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	//We modify the cur_level of obj
 	obj->decLevel();
 
-	//Should we skip implementation? I think it's reasonable
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name);
 	//TODO: should bind if the return type is Function
 
 	tl=getVm()->getCurObjAndLevel();
@@ -1572,7 +1569,7 @@ void ABCVm::getLex(call_context* th, int n)
 			tl.cur_this->resetLevel();
 
 		//Skip implementation
-		ASObject* tmpo=(*it)->getVariableByMultiname(*name, true);
+		ASObject* tmpo=(*it)->getVariableByMultiname(*name);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
@@ -1660,7 +1657,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		o=(*it)->getVariableByMultiname(*name, false);
+		o=(*it)->getVariableByMultiname(*name);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
@@ -1697,7 +1694,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		o=(*it)->getVariableByMultiname(*name, false);
+		o=(*it)->getVariableByMultiname(*name);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 		if(o)
@@ -1793,8 +1790,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info*& called_mi)
 	//We modify the cur_level of obj
 	obj->decLevel();
 
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -1880,8 +1876,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m, method_info*& called_m
 	//We modify the cur_level of obj
 	obj->decLevel();
 
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -2203,7 +2198,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 			prototypeName.name_type=multiname::NAME_STRING;
 			prototypeName.name_s="prototype";
 			prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-			ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
+			ASObject* asp=sf->getVariableByMultiname(prototypeName);
 			if(asp)
 				asp->incRef();
 

@@ -954,11 +954,8 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 	recursiveGetDescendantsByQName(rootXML, node, name, ns, ret);
 }
 
-ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* XML::getVariableByMultiname(const multiname& name, ASObject* base)
 {
-	if(skip_impl)
-		return ASObject::getVariableByMultiname(name, skip_impl, base);
-
 	const tiny_string& normalizedName=name.normalizedName();
 	if(node==NULL)
 	{
@@ -1308,14 +1305,14 @@ ASFUNCTIONBODY(XMLList,generator)
 		throw RunTimeException("Type not supported in XMLList()");
 }
 
-ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* XMLList::getVariableByMultiname(const multiname& name, ASObject* base)
 {
-	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+	if(!implEnable)
+		return ASObject::getVariableByMultiname(name,base);
 
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,base);
 
 	unsigned int index=0;
 	if(Array::isValidMultiname(name,index))
@@ -1331,7 +1328,7 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 		std::vector<_R<XML> >::iterator it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
-			ASObject *o=(*it)->getVariableByMultiname(name,skip_impl,base);
+			ASObject *o=(*it)->getVariableByMultiname(name,base);
 			XMLList *x=dynamic_cast<XMLList *>(o);
 			if(!x)
 				continue;
@@ -1591,18 +1588,18 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Array::getVariableByMultiname(const multiname& name, ASObject* base)
 {
-	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+	if(!implEnable)
+		return ASObject::getVariableByMultiname(name,base);
 		
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,base);
 
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,base);
 
 	if(index<data.size())
 	{
@@ -4149,7 +4146,7 @@ void Class_base::setConstructor(IFunction* c)
 	constructor=c;
 }
 
-ASObject* Class_base::getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Class_base::getBorrowedVariableByMultiname(const multiname& name, ASObject* base)
 {
 	check();
 	assert(base);
@@ -4196,7 +4193,7 @@ ASObject* Class_base::getBorrowedVariableByMultiname(const multiname& name, bool
 	}
 	else if(super)
 	{
-		ASObject* ret=super->getBorrowedVariableByMultiname(name, skip_impl, base);
+		ASObject* ret=super->getBorrowedVariableByMultiname(name, base);
 		return ret;
 	}
 	//If it has not been found
@@ -4675,14 +4672,14 @@ ASObject* GlobalObject::getVariableAndTargetByMultiname(const multiname& name, A
 	return o;
 }
 
-/*ASObject* GlobalObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+/*ASObject* GlobalObject::getVariableByMultiname(const multiname& name, bool enableOverride, ASObject* base)
 {
-	ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride, base);
+	ASObject* ret=ASObject::getVariableByMultiname(name, enableOverride, base);
 	if(ret==NULL)
 	{
 		for(uint32_t i=0;i<globalScopes.size();i++)
 		{
-			ret=globalScopes[i]->getVariableByMultiname(name, skip_impl, enableOverride, base);
+			ret=globalScopes[i]->getVariableByMultiname(name, enableOverride, base);
 			if(ret)
 				break;
 		}

@@ -405,12 +405,12 @@ ASFUNCTIONBODY(ByteArray,_toString)
 	return Class<ASString>::getInstanceS((char*)th->bytes,th->len);
 }
 
-ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* ByteArray::getVariableByMultiname(const multiname& name, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(skip_impl || !Array::isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+	if(!Array::isValidMultiname(name,index))
+		return ASObject::getVariableByMultiname(name,base);
 
 	assert_and_throw(index<len);
 	ASObject* ret=abstract_i(bytes[index]);
@@ -882,9 +882,9 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	}
 }
 
-ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Dictionary::getVariableByMultiname(const multiname& name, ASObject* base)
 {
-	if(!skip_impl && implEnable)
+	if(implEnable)
 	{
 		if(name.name_type==multiname::NAME_OBJECT)
 		{
@@ -913,11 +913,11 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 			assert(name.name_type==multiname::NAME_STRING ||
 				name.name_type==multiname::NAME_INT ||
 				name.name_type==multiname::NAME_NUMBER);
-			return ASObject::getVariableByMultiname(name, skip_impl, base);
+			return ASObject::getVariableByMultiname(name, base);
 		}
 	}
 	//Try with the base implementation
-	return ASObject::getVariableByMultiname(name, skip_impl, base);
+	return ASObject::getVariableByMultiname(name, base);
 }
 
 uint32_t Dictionary::nextNameIndex(uint32_t cur_index)
@@ -1017,7 +1017,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, ASObject*
 	setPropertyName.name_type=multiname::NAME_STRING;
 	setPropertyName.name_s="setProperty";
 	setPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-	ASObject* proxySetter=getVariableByMultiname(setPropertyName,true);
+	ASObject* proxySetter=getVariableByMultiname(setPropertyName);
 
 	if(proxySetter==NULL)
 	{
@@ -1042,34 +1042,54 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, ASObject*
 	implEnable=true;
 }
 
-ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Proxy::getVariableByMultiname(const multiname& name, ASObject* base)
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable || skip_impl)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable)
+		return ASObject::getVariableByMultiname(name,base);
+
+	//TODO: pass as ASQName, implement isAttribute
+	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
+
+	ASObject* o;
+	ASObject* ret;
+	IFunction* f;
+
+	//Do we have the property?
+	multiname hasPropertyName;
+	hasPropertyName.name_type=multiname::NAME_STRING;
+	hasPropertyName.name_s="hasProperty";
+	hasPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	o=getVariableByMultiname(hasPropertyName);
+	assert_and_throw(o!=NULL && o->getObjectType()==T_FUNCTION);
+	f=static_cast<IFunction*>(o);
+
+	implEnable=false;
+	LOG(LOG_CALLS,"Proxy::hasProperty");
+	incRef();
+	arg->incRef();
+	ret=f->call(this,&arg,1);
+	implEnable=true;
+
+	bool hasprop=Boolean_concrete(ret);
+	if(hasprop == false)
+		return NULL;
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
 	multiname getPropertyName;
 	getPropertyName.name_type=multiname::NAME_STRING;
 	getPropertyName.name_s="getProperty";
 	getPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-	ASObject* o=getVariableByMultiname(getPropertyName,true);
+	o=getVariableByMultiname(getPropertyName);
+	assert_and_throw(o!=NULL && o->getObjectType()==T_FUNCTION);
+	f=static_cast<IFunction*>(o);
 
-	if(o==NULL)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
-
-	assert_and_throw(o->getObjectType()==T_FUNCTION);
-
-	IFunction* f=static_cast<IFunction*>(o);
-
-	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::getProperty");
 	incRef();
-	ASObject* ret=f->call(this,&arg,1);
+	ret=f->call(this,&arg,1);
 	implEnable=true;
 	return ret;
 }
@@ -1083,7 +1103,7 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	nextNameIndexName.name_type=multiname::NAME_STRING;
 	nextNameIndexName.name_s="nextNameIndex";
 	nextNameIndexName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-	ASObject* o=getVariableByMultiname(nextNameIndexName,true);
+	ASObject* o=getVariableByMultiname(nextNameIndexName);
 	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o);
 	ASObject* arg=abstract_i(cur_index);
@@ -1103,7 +1123,7 @@ _R<ASObject> Proxy::nextName(uint32_t index)
 	nextNameName.name_type=multiname::NAME_STRING;
 	nextNameName.name_s="nextName";
 	nextNameName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-	ASObject* o=getVariableByMultiname(nextNameName,true);
+	ASObject* o=getVariableByMultiname(nextNameName);
 	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o);
 	ASObject* arg=abstract_i(index);
@@ -1120,7 +1140,7 @@ _R<ASObject> Proxy::nextValue(uint32_t index)
 	nextValueName.name_type=multiname::NAME_STRING;
 	nextValueName.name_s="nextValue";
 	nextValueName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-	ASObject* o=getVariableByMultiname(nextValueName,true);
+	ASObject* o=getVariableByMultiname(nextValueName);
 	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o);
 	ASObject* arg=abstract_i(index);

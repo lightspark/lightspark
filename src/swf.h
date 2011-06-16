@@ -228,6 +228,7 @@ public:
 
 	//Interative analysis flags
 	bool showProfilingData;
+	bool standalone;
 	
 	std::string errorCause;
 	void setError(const std::string& c);
@@ -241,7 +242,7 @@ public:
 	void wait() DLL_PUBLIC;
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
-	void setParamsAndEngine(EngineData* e) DLL_PUBLIC;
+	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 	void enableGnashFallback() DLL_PUBLIC;
 	void needsAVM2(bool n);

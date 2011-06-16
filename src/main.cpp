@@ -276,7 +276,7 @@ int main(int argc, char* argv[])
 
 	StandaloneEngineData* e=new StandaloneEngineData(display, visual, xembedWindow);
 
-	sys->setParamsAndEngine(e);
+	sys->setParamsAndEngine(e, true);
 	gdk_threads_leave();
 
 	sys->securityManager->setSandboxType(sandboxType);

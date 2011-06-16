@@ -742,10 +742,11 @@ void SystemState::needsAVM2(bool n)
 		addJob(new EngineCreator);
 }
 
-void SystemState::setParamsAndEngine(EngineData* e)
+void SystemState::setParamsAndEngine(EngineData* e, bool s)
 {
 	Locker l(mutex);
 	engineData=e;
+	standalone=s;
 	if(vmVersion)
 		addJob(new EngineCreator);
 }

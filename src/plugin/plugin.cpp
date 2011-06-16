@@ -391,7 +391,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		VisualID visual=XVisualIDFromVisual(mVisual);
 		PluginEngineData* e= new PluginEngineData(this, mDisplay, visual, mWindow, mWidth, mHeight);
 		LOG(LOG_NO_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
-		m_sys->setParamsAndEngine(e);
+		m_sys->setParamsAndEngine(e, false);
 	}
 	//draw();
 	return TRUE;

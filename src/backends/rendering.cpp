@@ -277,14 +277,6 @@ void* RenderThread::worker(RenderThread* th)
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font(th->fontPath.c_str());
-	if(font.Error())
-	{
-		LOG(LOG_ERROR,_("Unable to load serif font"));
-		throw RunTimeException("Unable to load font");
-	}
-	
-	font.FaceSize(12);
 
 	glEnable(GL_TEXTURE_2D);
 	try
@@ -335,7 +327,7 @@ void* RenderThread::worker(RenderThread* th)
 			else
 			{
 				glXSwapBuffers(d,glxWin);
-				th->coreRendering(font);
+				th->coreRendering();
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}
@@ -765,7 +757,7 @@ void RenderThread::plotProfilingData()
 	cairo_restore(cr);
 }
 
-void RenderThread::coreRendering(FTFont& font)
+void RenderThread::coreRendering()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);

@@ -21,7 +21,6 @@
 #define RENDERING_H
 
 #include "timer.h"
-#include <FTGL/ftgl.h>
 
 namespace lightspark
 {
@@ -104,7 +103,7 @@ private:
 	/*
 		Common code to handle the core of the rendering
 	*/
-	void coreRendering(FTFont& font);
+	void coreRendering();
 	void plotProfilingData();
 	Semaphore initialized;
 	class MaskData

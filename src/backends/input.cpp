@@ -72,6 +72,13 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 			//cout << "key press" << endl;
 			switch(event->key.keyval)
 			{
+				case GDK_q:
+					if(th->m_sys->standalone)
+					{
+						th->m_sys->setShutdownFlag();
+						gtk_main_quit();
+					}
+					break;
 				case GDK_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;

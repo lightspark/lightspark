@@ -194,7 +194,7 @@ public:
 	int fragmentTexScaleUniform;
 	int yuvUniform;
 	int maskUniform;
-	void renderErrorPage(RenderThread *rt, FTFont &font, bool standalone);
+	void renderErrorPage(RenderThread *rt, bool standalone);
 
 	cairo_t *cairoTextureContext;
 	cairo_surface_t *cairoTextureSurface;

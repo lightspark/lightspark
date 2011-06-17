@@ -27,7 +27,6 @@
 #include <GL/glew.h>
 #ifndef WIN32
 #include <GL/glx.h>
-#include <fontconfig/fontconfig.h>
 #endif
 
 //The interpretation of texture data change with the endianness
@@ -67,27 +66,7 @@ RenderThread::RenderThread(SystemState* s):
 #ifdef WIN32
 	fontPath = "TimesNewRoman.ttf";
 #else
-	FcPattern *pat, *match;
-	FcResult result = FcResultMatch;
-	char *font = NULL;
-
-	pat = FcPatternCreate();
-	FcPatternAddString(pat, FC_FAMILY, (const FcChar8 *)"Serif");
-	FcConfigSubstitute(NULL, pat, FcMatchPattern);
-	FcDefaultSubstitute(pat);
-	match = FcFontMatch(NULL, pat, &result);
-	FcPatternDestroy(pat);
-
-	if (result != FcResultMatch)
-	{
-		LOG(LOG_ERROR,_("Unable to find suitable Serif font"));
-		throw RunTimeException("Unable to find Serif font");
-	}
-
-	FcPatternGetString(match, FC_FILE, 0, (FcChar8 **) &font);
-	fontPath = font;
-	FcPatternDestroy(match);
-	LOG(LOG_NO_INFO, _("Font File is ") << fontPath);
+	fontPath = "Serif";
 #endif
 	time_s = compat_get_current_time_ms();
 }
@@ -687,7 +666,7 @@ cairo_t* RenderThread::getCairoContext(int w, int h)
 		cairoTextureSurface = cairo_image_surface_create_for_data(cairoTextureData, CAIRO_FORMAT_ARGB32, w, h, w*4);
 		cairoTextureContext = cairo_create(cairoTextureSurface);
 
-		cairo_select_font_face (cairoTextureContext, "serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+		cairo_select_font_face (cairoTextureContext, fontPath.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
 		cairo_set_font_size(cairoTextureContext, 11);
 	}
 	return cairoTextureContext;

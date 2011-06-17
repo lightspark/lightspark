@@ -293,7 +293,7 @@ public:
 	void setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
 	void setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
-	bool hasPropertyByMultiname(const multiname& name);
+	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	ASObject* getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);

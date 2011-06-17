@@ -53,7 +53,7 @@ tiny_string ASObject::toString(bool debugMsg)
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s="toString";
 	toStringName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
-	if(debugMsg==false && hasPropertyByMultiname(toStringName))
+	if(debugMsg==false && hasPropertyByMultiname(toStringName, true))
 	{
 		ASObject* obj_toString=getVariableByMultiname(toStringName);
 		if(obj_toString->getObjectType()==T_FUNCTION)
@@ -77,9 +77,9 @@ TRISTATE ASObject::isLess(ASObject* r)
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s="valueOf";
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	if(hasPropertyByMultiname(valueOfName))
+	if(hasPropertyByMultiname(valueOfName, true))
 	{
-		if(r->hasPropertyByMultiname(valueOfName)==false)
+		if(r->hasPropertyByMultiname(valueOfName, true)==false)
 			throw RunTimeException("Missing valueof for second operand");
 
 		ASObject* obj1=getVariableByMultiname(valueOfName);
@@ -155,7 +155,7 @@ bool ASObject::isEqual(ASObject* r)
 	equalsName.name_type=multiname::NAME_STRING;
 	equalsName.name_s="equals";
 	equalsName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	if(hasPropertyByMultiname(equalsName))
+	if(hasPropertyByMultiname(equalsName, true))
 	{
 		ASObject* func_equals=getVariableByMultiname(equalsName);
 
@@ -178,9 +178,9 @@ bool ASObject::isEqual(ASObject* r)
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s="valueOf";
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	if(hasPropertyByMultiname(valueOfName))
+	if(hasPropertyByMultiname(valueOfName, true))
 	{
-		if(r->hasPropertyByMultiname(valueOfName)==false)
+		if(r->hasPropertyByMultiname(valueOfName, true)==false)
 			throw RunTimeException("Not handled less comparison for objects");
 
 		ASObject* obj1=getVariableByMultiname(valueOfName);
@@ -268,11 +268,13 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns
 		return NULL;
 }
 
-bool ASObject::hasPropertyByMultiname(const multiname& name)
+bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 {
-	check();
+	bool ret=false;
 	//We look in all the object's levels
-	bool ret=(Variables.findObjVar(name, false, false)!=NULL);
+	if(considerDynamic)
+		ret=(Variables.findObjVar(name, false, false)!=NULL);
+
 	if(!ret) //Ask the prototype chain for borrowed traits
 	{
 		Class_base* cur=prototype;
@@ -600,7 +602,7 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	name.name_type=multiname::NAME_STRING;
 	name.name_s=args[0]->toString();
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
-	bool ret=obj->hasPropertyByMultiname(name);
+	bool ret=obj->hasPropertyByMultiname(name, true);
 	return abstract_b(ret);
 }
 

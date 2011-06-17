@@ -89,6 +89,7 @@ public:
 		throw UnsupportedException("Class_base::getVariableByMultiname_i");
 		return 0;
 	}
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
@@ -160,6 +161,7 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 };
 
 class IFunction: public ASObject
@@ -542,6 +544,7 @@ public:
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
@@ -695,6 +698,7 @@ public:
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;
@@ -738,6 +742,7 @@ public:
 	ASFUNCTION(generator);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;

@@ -959,12 +959,13 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 	if(skip_impl)
 		return ASObject::getVariableByMultiname(name, skip_impl, base);
 
-	const tiny_string& normalizedName=name.normalizedName();
 	if(node==NULL)
 	{
 		//This is possible if the XML object was created from an empty string
 		return NULL;
 	}
+
+	const tiny_string& normalizedName=name.normalizedName();
 	if(name.isAttribute)
 	{
 		//Lookup attribute
@@ -1023,6 +1024,44 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASO
 		//The new object will be incReffed by the calling code
 		retObj->fake_decRef();
 		return retObj;
+	}
+}
+
+bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	if(node==NULL)
+	{
+		//This is possible if the XML object was created from an empty string
+		return NULL;
+	}
+
+	if(considerDynamic==false)
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	const tiny_string& normalizedName=name.normalizedName();
+	if(name.isAttribute)
+	{
+		//Lookup attribute
+		//TODO: support namespaces
+		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
+		//Normalize the name to the string form
+		assert(node);
+		//To have attributes we must be an Element
+		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
+		if(element==NULL)
+			return NULL;
+		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
+		return attr!=NULL;
+	}
+	else
+	{
+		//Lookup children
+		//TODO: support namespaces
+		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
+		//Normalize the name to the string form
+		assert(node);
+		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
+		return children.empty()==false;
 	}
 }
 
@@ -1352,6 +1391,32 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 	}
 }
 
+bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	if(considerDynamic==false)
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	assert_and_throw(name.ns.size()>0);
+	if(name.ns[0].name!="")
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	unsigned int index=0;
+	if(Array::isValidMultiname(name,index))
+		return index<nodes.size();
+	else
+	{
+		std::vector<_R<XML> > retnodes;
+		std::vector<_R<XML> >::iterator it=nodes.begin();
+		for(; it!=nodes.end(); ++it)
+		{
+			bool ret=(*it)->hasPropertyByMultiname(name, considerDynamic);
+			if(ret)
+				return ret;
+		}
+		return false;
+	}
+}
+
 void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
 	assert_and_throw(implEnable);
@@ -1651,6 +1716,19 @@ void Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
 		data[index].data->decRef();
 	data[index].data_i=value;
 	data[index].type=DATA_INT;
+}
+
+
+bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	if(considerDynamic==false)
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	unsigned int index=0;
+	if(!isValidMultiname(name,index))
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	return index<data.size();
 }
 
 bool Array::isValidMultiname(const multiname& name, unsigned int& index)
@@ -4355,6 +4433,14 @@ Class_function::Class_function(IFunction* _f, ASObject* _p):Class_base(QName("Fu
 	setPrototype(Class<IFunction>::getClass());
 }
 
+bool Class_function::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	bool ret=Class_base::hasPropertyByMultiname(name, considerDynamic);
+	if(ret==false && asprototype)
+		ret=asprototype->hasPropertyByMultiname(name, considerDynamic);
+	return ret;
+}
+
 const std::vector<Class_base*>& Class_base::getInterfaces() const
 {
 	if(!interfaces.empty())
@@ -4437,6 +4523,13 @@ tiny_string Class_base::getQualifiedClassName() const
 		const multiname* mname=context->getMultiname(name_index,NULL);
 		return mname->qualifiedString();
 	}
+}
+
+bool Class_base::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	//The specs says that hasOwnProperty does not consider inherited properties for classes
+	bool ret=ASObject::hasPropertyByMultiname(name, considerDynamic);
+	return ret;
 }
 
 void ASQName::sinit(Class_base* c)

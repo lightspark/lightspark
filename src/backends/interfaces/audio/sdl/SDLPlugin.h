@@ -57,6 +57,7 @@ class SDLAudioStream: public AudioStream
 private:
 	int curvolume;
 	int unmutevolume;
+	uint32_t playedtime;
 	struct timeval starttime;
 	static void async_callback(void *unused, uint8_t *stream, int len);
 public:

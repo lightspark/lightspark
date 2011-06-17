@@ -124,7 +124,7 @@ uint32_t SDLAudioStream::getPlayedTime()
 	struct timeval now;
 	gettimeofday(&now, NULL);
 
-	ret = (now.tv_sec * 1000 + now.tv_usec / 1000) - (starttime.tv_sec * 1000 + starttime.tv_usec / 1000);
+	ret = playedtime + (now.tv_sec * 1000 + now.tv_usec / 1000) - (starttime.tv_sec * 1000 + starttime.tv_usec / 1000);
 	return ret;
 }
 
@@ -142,6 +142,7 @@ bool SDLAudioStream::init()
 		return false;
 	}
 	unmutevolume = curvolume = SDL_MIX_MAXVOLUME;
+	playedtime = 0;
 	gettimeofday(&starttime, NULL);
 	SDL_PauseAudio(0);
 	return true;
@@ -176,6 +177,14 @@ void SDLAudioStream::fill ()
 void SDLAudioStream::SetPause(bool pause_on) 
 {
 	pause = pause_on;
+	if (pause_on)
+	{
+		playedtime = getPlayedTime();
+	}
+	else
+	{
+		gettimeofday(&starttime, NULL);
+	}
 	SDL_PauseAudio(pause_on);
 }
 bool SDLAudioStream::paused()

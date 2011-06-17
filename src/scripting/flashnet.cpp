@@ -304,11 +304,11 @@ void URLLoader::execute()
 		{
 			//This is a GET request
 			//Don't cache our downloaded files
-			downloader=sys->downloadManager->download(url, false);
+			downloader=sys->downloadManager->download(url, false, NULL);
 		}
 		else
 		{
-			downloader=sys->downloadManager->downloadWithData(url, postData);
+			downloader=sys->downloadManager->downloadWithData(url, postData, NULL);
 			//Clean up the postData for the next load
 			postData.clear();
 		}
@@ -747,7 +747,7 @@ ASFUNCTIONBODY(NetStream,play)
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
 		//Cache our downloaded files
-		th->downloader=sys->downloadManager->download(th->url, true);
+		th->downloader=sys->downloadManager->download(th->url, true, NULL);
 		th->streamTime=0;
 		//To be decreffed in jobFence
 		th->incRef();
@@ -1388,7 +1388,7 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	assert_and_throw(postData.empty());
 
 	//Don't cache our downloaded files
-	Downloader* downloader=sys->downloadManager->download(url, false);
+	Downloader* downloader=sys->downloadManager->download(url, false, NULL);
 	//TODO: make the download asynchronous instead of waiting for an unused response
 	downloader->waitForTermination();
 	sys->downloadManager->destroy(downloader);

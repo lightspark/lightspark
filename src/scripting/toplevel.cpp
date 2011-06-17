@@ -177,16 +177,30 @@ ASFUNCTIONBODY(Array,_concat)
 ASFUNCTIONBODY(Array,filter)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1);
+	assert_and_throw(argslen==1 || argslen==2);
 	IFunction* f = static_cast<IFunction*>(args[0]);
-	ASObject* params[1];
+	ASObject* params[3];
 	Array* ret=Class<Array>::getInstanceS();
+	ASObject *funcRet;
 
-	for(unsigned int i=0;i<ret->data.size();i++)
+	for(unsigned int i=0;i<th->data.size();i++)
 	{
 		assert_and_throw(th->data[i].type==DATA_OBJECT);
 		params[0] = th->data[i].data;
-		ASObject* funcRet=f->call(new Null, params, 1);
+		th->data[i].data->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if(argslen==1)
+		{
+			funcRet=f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			funcRet=f->call(args[1], params, 3);
+		}
 		if(funcRet)
 		{
 			if(Boolean_concrete(funcRet))

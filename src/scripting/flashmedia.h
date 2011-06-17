@@ -35,7 +35,7 @@ namespace lightspark
 class AudioDecoder;
 class NetStream;
 
-class Sound: public EventDispatcher, public IThreadJob
+class Sound: public EventDispatcher, public IThreadJob, public ILoadable
 {
 friend class SoundChannel;
 private:
@@ -46,9 +46,12 @@ private:
 	ACQUIRE_RELEASE_FLAG(stopped);
 	AudioDecoder* audioDecoder;
 	AudioStream* audioStream;
-	ASPROPERTY_GETTER(int32_t,bytesLoaded);
-	ASPROPERTY_GETTER(int32_t,bytesTotal);
+	ASPROPERTY_GETTER(uint32_t,bytesLoaded);
+	ASPROPERTY_GETTER(uint32_t,bytesTotal);
 	ASPROPERTY_GETTER(number_t,length);
+	//ILoadable interface
+	void setBytesTotal(uint32_t b);
+	void setBytesLoaded(uint32_t b);
 public:
 	Sound();
 	~Sound();

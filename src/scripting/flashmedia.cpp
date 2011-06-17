@@ -226,7 +226,7 @@ _NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t 
 }
 
 Sound::Sound():downloader(NULL),mutex("Sound mutex"),stopped(false),audioDecoder(NULL),audioStream(NULL),
-	bytesLoaded(100),bytesTotal(100),length(60*1000)
+	bytesLoaded(0),bytesTotal(0),length(60*1000)
 {
 }
 
@@ -282,20 +282,19 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//This is a GET request
 		//Use disk cache our downloaded files
-		th->downloader=sys->downloadManager->download(th->url, true);
+		th->downloader=sys->downloadManager->download(th->url, true, th);
 	}
 	else
 	{
-		th->downloader=sys->downloadManager->downloadWithData(th->url, th->postData);
+		th->downloader=sys->downloadManager->downloadWithData(th->url, th->postData, th);
 		//Clean up the postData for the next load
 		th->postData.clear();
 	}
-	//th->downloader->waitForTermination();
-	th->incRef();
 	if(th->downloader->hasFailed())
+	{
+		th->incRef();
 		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
-	else
-		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("complete")));
+	}
 	return NULL;
 }
 
@@ -406,6 +405,26 @@ void Sound::threadAbort()
 	}
 	/*if(downloader)
 		downloader->stop();*/
+}
+
+void Sound::setBytesTotal(uint32_t b)
+{
+	bytesTotal=b;
+}
+
+void Sound::setBytesLoaded(uint32_t b)
+{
+	if(b!=bytesLoaded)
+	{
+		bytesLoaded=b;
+		this->incRef();
+		sys->currentVm->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
+		if(bytesLoaded==bytesTotal)
+		{
+			this->incRef();
+			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
+		}
+	}
 }
 
 ASFUNCTIONBODY_GETTER(Sound,bytesLoaded);

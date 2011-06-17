@@ -114,9 +114,8 @@ void NPDownloadManager::destroy(lightspark::Downloader* downloader)
  * \param[in] _url The URL for the Downloader.
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner):
-	Downloader(_url, false),instance(NULL),started(false)
+	Downloader(_url, false, owner),instance(NULL),started(false)
 {
-	setOwner(owner);
 }
 
 /**
@@ -128,9 +127,8 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoa
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cached),instance(_instance),started(false)
+	Downloader(_url, _cached, owner),instance(_instance),started(false)
 {
-	setOwner(owner);
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
 
@@ -143,9 +141,8 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NP
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _data),instance(_instance),started(false)
+	Downloader(_url, _data, owner),instance(_instance),started(false)
 {
-	setOwner(owner);
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
 

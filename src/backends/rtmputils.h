@@ -25,6 +25,8 @@
 namespace lightspark
 {
 
+class ILoadable;
+
 class RTMPDownloader: public ThreadedDownloader
 {
 private:
@@ -32,7 +34,7 @@ private:
 	void threadAbort();
 	tiny_string stream;
 public:
-	RTMPDownloader(const tiny_string& _url, const tiny_string& _stream);
+	RTMPDownloader(const tiny_string& _url, const tiny_string& _stream, ILoadable* o);
 };
 
 };

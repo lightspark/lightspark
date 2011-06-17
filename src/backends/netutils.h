@@ -88,8 +88,8 @@ private:
 	pos_type getOffset() const;
 protected:
 	//Abstract base class, can't be constructed
-	Downloader(const tiny_string& _url, bool _cached);
-	Downloader(const tiny_string& _url, const std::vector<uint8_t>& data);
+	Downloader(const tiny_string& _url, bool _cached, ILoadable* o);
+	Downloader(const tiny_string& _url, const std::vector<uint8_t>& data, ILoadable* o);
 	//-- LOCKING
 	//Provides internal mutual exclusing
 	sem_t mutex;
@@ -227,7 +227,6 @@ public:
 	const tiny_string& getOriginalURL() { return originalURL; }
 	uint16_t getRequestStatus() { return requestStatus; }
 
-	void setOwner(ILoadable* li) { owner=li; }
 };
 
 class ThreadedDownloader : public Downloader, public IThreadJob
@@ -240,8 +239,8 @@ public:
 	void waitFencing();
 protected:
 	//Abstract base class, can not be constructed
-	ThreadedDownloader(const tiny_string& url, bool cached);
-	ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data);
+	ThreadedDownloader(const tiny_string& url, bool cached, ILoadable* o);
+	ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data, ILoadable* o);
 //	//This class can only get destroyed by DownloadManager
 //	virtual ~ThreadedDownloader();
 };
@@ -256,8 +255,8 @@ private:
 	void execute();
 	void threadAbort();
 public:
-	CurlDownloader(const tiny_string& _url, bool _cached);
-	CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& data);
+	CurlDownloader(const tiny_string& _url, bool _cached, ILoadable* o);
+	CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& data, ILoadable* o);
 };
 
 //LocalDownloader can be used as a thread job, standalone or as a streambuf
@@ -273,7 +272,7 @@ private:
 	//Size of the reading buffer
 	static const size_t bufSize = 8192;
 public:
-	LocalDownloader(const tiny_string& _url, bool _cached);
+	LocalDownloader(const tiny_string& _url, bool _cached, ILoadable* o);
 };
 
 };

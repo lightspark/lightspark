@@ -21,7 +21,6 @@
 #define SWF_H
 
 #include "compat.h"
-#include <iostream>
 #include <fstream>
 #include <list>
 #include <map>
@@ -30,15 +29,7 @@
 #include "swftypes.h"
 #include "scripting/flashdisplay.h"
 #include "scripting/flashnet.h"
-#include "scripting/flashsystem.h"
 #include "timer.h"
-#include "backends/audio.h"
-#include "backends/config.h"
-#include "backends/graphics.h"
-#include "backends/pluginmanager.h"
-#include "backends/security.h"
-#include "backends/urlutils.h"
-#include "backends/extscriptobject.h"
 
 #include "platforms/engineutils.h"
 
@@ -51,13 +42,18 @@
 namespace lightspark
 {
 
+class ABCVm;
+class AudioManager;
+class Config;
 class DownloadManager;
 class DisplayListTag;
 class DictionaryTag;
-class ABCVm;
+class ExtScriptObject;
 class InputThread;
-class RenderThread;
 class ParseThread;
+class PluginManager;
+class RenderThread;
+class SecurityManager;
 class Tag;
 
 //RootMovieClip is used as a ThreadJob for timed rendering purpose

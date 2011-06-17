@@ -21,6 +21,7 @@
 #include "logger.h"
 #include "parsing/streams.h"
 #include "backends/netutils.h"
+#include "backends/security.h"
 #ifndef WIN32
 #include <sys/resource.h>
 #include <unistd.h>

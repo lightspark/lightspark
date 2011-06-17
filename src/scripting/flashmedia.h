@@ -23,12 +23,17 @@
 #include "compat.h"
 #include "asobject.h"
 #include "flashdisplay.h"
-#include "flashnet.h"
 #include "timer.h"
 #include "backends/graphics.h"
+#include "backends/netutils.h"
+
+class AudioStream;
 
 namespace lightspark
 {
+
+class AudioDecoder;
+class NetStream;
 
 class Sound: public EventDispatcher, public IThreadJob
 {

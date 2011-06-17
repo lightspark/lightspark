@@ -19,6 +19,7 @@
 
 #include "swf.h"
 #include "audio.h"
+#include "config.h"
 #include <iostream>
 #include "../logger.h"
 

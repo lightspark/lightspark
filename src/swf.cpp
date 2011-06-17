@@ -29,7 +29,11 @@
 #include "parsing/streams.h"
 #include "asobject.h"
 #include "scripting/class.h"
+#include "backends/audio.h"
+#include "backends/config.h"
+#include "backends/pluginmanager.h"
 #include "backends/rendering.h"
+#include "backends/security.h"
 
 #include <GL/glew.h>
 #ifdef ENABLE_CURL

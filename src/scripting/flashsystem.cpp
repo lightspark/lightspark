@@ -24,6 +24,7 @@
 #include "abc.h"
 #include "class.h"
 #include "compat.h"
+#include "backends/security.h"
 
 #include <istream>
 

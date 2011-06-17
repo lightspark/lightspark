@@ -19,6 +19,7 @@
 **************************************************************************/
 
 #include "swf.h"
+#include "config.h"
 #include "netutils.h"
 #include "rtmputils.h"
 #include "compat.h"

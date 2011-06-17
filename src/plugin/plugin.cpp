@@ -24,6 +24,7 @@
 #include <string>
 #include <algorithm>
 #include "backends/urlutils.h"
+#include "backends/security.h"
 
 #include "npscriptobject.h"
 

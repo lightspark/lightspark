@@ -23,8 +23,10 @@
 #include "class.h"
 #include "scripting/flashsystem.h"
 #include "compat.h"
-#include "backends/rendering.h"
+#include "backends/audio.h"
 #include "backends/builtindecoder.h"
+#include "backends/rendering.h"
+#include "backends/security.h"
 
 using namespace std;
 using namespace lightspark;

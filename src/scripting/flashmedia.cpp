@@ -19,11 +19,13 @@
 
 #include "scripting/abc.h"
 #include "flashmedia.h"
+#include "flashnet.h"
 #include "class.h"
 #include "compat.h"
 #include <iostream>
-#include "backends/rendering.h"
+#include "backends/audio.h"
 #include "backends/input.h"
+#include "backends/rendering.h"
 
 using namespace lightspark;
 using namespace std;

@@ -69,7 +69,7 @@ NPDownloadManager::~NPDownloadManager()
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached, lightspark::LoaderInfo* owner)
+lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner)
 {
 	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
@@ -88,7 +88,7 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
  * \see DownloadManager::destroy()
  */
 lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
-		lightspark::LoaderInfo* owner)
+		lightspark::ILoadable* owner)
 {
 	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
 	//Register this download
@@ -112,7 +112,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* downloader)
  *
  * \param[in] _url The URL for the Downloader.
  */
-NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::LoaderInfo* owner):
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner):
 	Downloader(_url, false),instance(NULL),started(false)
 {
 	setOwner(owner);
@@ -126,7 +126,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::Load
  * \param[in] _instance The netscape plugin instance
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
-NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::LoaderInfo* owner):
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::ILoadable* owner):
 	Downloader(_url, _cached),instance(_instance),started(false)
 {
 	setOwner(owner);
@@ -141,7 +141,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NP
  * \param[in] _instance The netscape plugin instance
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
-NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::LoaderInfo* owner):
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::ILoadable* owner):
 	Downloader(_url, _data),instance(_instance),started(false)
 {
 	setOwner(owner);

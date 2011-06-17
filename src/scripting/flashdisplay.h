@@ -392,7 +392,7 @@ public:
 
 class Loader;
 
-class LoaderInfo: public EventDispatcher
+class LoaderInfo: public EventDispatcher, public ILoadable
 {
 friend class RootMovieClip;
 private:
@@ -421,12 +421,13 @@ public:
 	ASFUNCTION(_getLoader);
 	ASFUNCTION(_getContent);
 	ASFUNCTION(_getSharedEvents);
+	void sendInit();
+	//ILoadable interface
 	void setBytesTotal(uint32_t b)
 	{
 		bytesTotal=b;
 	}
 	void setBytesLoaded(uint32_t b);
-	void sendInit();
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer

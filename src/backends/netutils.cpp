@@ -157,7 +157,7 @@ StandaloneDownloadManager::~StandaloneDownloadManager()
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached, LoaderInfo* owner)
+Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached, ILoadable* owner)
 {
 	LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager::download '") << url.getParsedURL()
 			<< "'" << (cached ? _(" - cached") : ""));
@@ -193,7 +193,7 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached,
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, LoaderInfo* owner)
+Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, ILoadable* owner)
 {
 	LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager::downloadWithData '") << url.getParsedURL());
 	ThreadedDownloader* downloader;

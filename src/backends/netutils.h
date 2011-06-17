@@ -35,7 +35,15 @@ namespace lightspark
 {
 
 class Downloader;
-class LoaderInfo;
+
+class ILoadable
+{
+protected:
+	~ILoadable(){}
+public:
+	virtual void setBytesTotal(uint32_t b) = 0;
+	virtual void setBytesLoaded(uint32_t b) = 0;
+};
 
 class DLL_PUBLIC DownloadManager
 {
@@ -49,8 +57,8 @@ protected:
 	void cleanUp();
 public:
 	virtual ~DownloadManager() {};
-	virtual Downloader* download(const URLInfo& url, bool cached=false, LoaderInfo* owner=NULL)=0;
-	virtual Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, LoaderInfo* owner=NULL)=0;
+	virtual Downloader* download(const URLInfo& url, bool cached=false, ILoadable* owner=NULL)=0;
+	virtual Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, ILoadable* owner=NULL)=0;
 	virtual void destroy(Downloader* downloader)=0;
 
 	enum MANAGERTYPE { NPAPI, STANDALONE };
@@ -62,8 +70,8 @@ class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 public:
 	StandaloneDownloadManager();
 	~StandaloneDownloadManager();
-	Downloader* download(const URLInfo& url, bool cached=false, LoaderInfo* owner=NULL);
-	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, LoaderInfo* owner=NULL);
+	Downloader* download(const URLInfo& url, bool cached=false, ILoadable* owner=NULL);
+	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, ILoadable* owner=NULL);
 	void destroy(Downloader* downloader);
 };
 
@@ -176,7 +184,7 @@ protected:
 	const std::vector<uint8_t> data;
 
 	//-- PROGRESS MONITORING
-	LoaderInfo* owner;
+	ILoadable* owner;
 	void notifyOwnerAboutBytesTotal() const;
 	void notifyOwnerAboutBytesLoaded() const;
 public:
@@ -219,7 +227,7 @@ public:
 	const tiny_string& getOriginalURL() { return originalURL; }
 	uint16_t getRequestStatus() { return requestStatus; }
 
-	void setOwner(LoaderInfo* li) { owner=li; }
+	void setOwner(ILoadable* li) { owner=li; }
 };
 
 class ThreadedDownloader : public Downloader, public IThreadJob

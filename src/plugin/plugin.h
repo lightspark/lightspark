@@ -42,9 +42,9 @@ private:
 public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
-	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached=false, lightspark::LoaderInfo* owner=NULL);
+	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached=false, lightspark::ILoadable* owner=NULL);
 	lightspark::Downloader* downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
-			lightspark::LoaderInfo* owner=NULL);
+			lightspark::ILoadable* owner=NULL);
 	void destroy(lightspark::Downloader* downloader);
 };
 
@@ -58,9 +58,9 @@ private:
 	static void dlStartCallback(void* th);
 public:
 	//Constructor used for the main file
-	NPDownloader(const lightspark::tiny_string& _url, lightspark::LoaderInfo* owner);
-	NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::LoaderInfo* owner);
-	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::LoaderInfo* owner);
+	NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner);
+	NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::ILoadable* owner);
+	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::ILoadable* owner);
 };
 
 class PluginEngineData: public lightspark::EngineData

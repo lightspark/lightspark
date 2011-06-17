@@ -1,12 +1,14 @@
 attribute vec4 ls_Color;
 attribute vec2 ls_Vertex;
 attribute vec2 ls_TexCoord;
+uniform mat4 ls_ProjectionMatrix;
+uniform mat4 ls_ModelViewMatrix;
 uniform vec2 texScale;
 
 void main()
 {
 	// Transforming The Vertex
-	gl_Position=gl_ModelViewProjectionMatrix * vec4(ls_Vertex,0,1);
+	gl_Position=ls_ProjectionMatrix * ls_ModelViewMatrix * vec4(ls_Vertex,0,1);
 	gl_FrontColor=ls_Color;
 	vec4 t=vec4(0,0,0,1);
 	//Position is in normalized screen coords

@@ -26,6 +26,8 @@ namespace lightspark
 {
 
 enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
+enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
+
 class RenderThread: public ITickJob
 {
 friend class DisplayObject;
@@ -190,9 +192,12 @@ public:
 	uint32_t windowWidth;
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
-	int fragmentTexScaleUniform;
-	int yuvUniform;
-	int maskUniform;
+	GLint fragmentTexScaleUniform;
+	GLint yuvUniform;
+	GLint maskUniform;
+	GLint projectionMatrixUniform;
+	GLint modelviewMatrixUniform;
+
 	void renderErrorPage(RenderThread *rt, bool standalone);
 
 	cairo_t *cairoTextureContext;
@@ -202,6 +207,7 @@ public:
 	cairo_t* getCairoContext(int w, int h);
 	void mapCairoTexture(int w, int h);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
+	void setMatrixUniform(LSGL_MATRIX m) const;
 };
 
 };

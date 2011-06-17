@@ -88,23 +88,7 @@ public:
 	{
 		throw UnsupportedException("Class_base::getVariableByMultiname_i");
 		return 0;
-/*		intptr_t ret=ASObject::getVariableByMultiname(name);
-		if(==NULL && super)
-			ret=super->getVariableByMultiname(name);
-		return ret;*/
 	}
-/*	void setVariableByMultiname_i(const multiname& name, intptr_t value)
-	{
-		abort();
-	}
-	void setVariableByMultiname(const multiname& name, ASObject* o)
-	{
-		abort();
-	}
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true)
-	{
-		abort();
-	}*/
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
@@ -167,10 +151,6 @@ public:
 	{
 		throw UnsupportedException("Class_function::getVariableByMultiname_i");
 		return 0;
-/*		intptr_t ret=ASObject::getVariableByMultiname(name);
-		if(ret==NULL && super)
-			ret=super->getVariableByMultiname(name);
-		return ret;*/
 	}
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{

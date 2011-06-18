@@ -32,6 +32,7 @@
 #include "backends/rendering.h"
 #include "backends/geometry.h"
 #include "backends/image.h"
+#include "backends/glmatrices.h"
 #include "compat.h"
 #include "flashaccessibility.h"
 
@@ -1275,12 +1276,13 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glDisableVertexAttribArray(VERTEX_ATTRIB);
 	}
-	glPushMatrix();
-	glLoadIdentity();
+	lsglPushMatrix();
+	lsglLoadIdentity();
+	rt->setMatrixUniform(LSGL_MODELVIEW);
 	glUniform1f(rt->maskUniform, enableMaskLookup);
 	glUniform1f(rt->yuvUniform, 0);
 	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
-	glPopMatrix();
+	lsglPopMatrix();
 }
 
 void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,

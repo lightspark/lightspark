@@ -820,8 +820,9 @@ void DefineMorphShapeTag::renderImpl(bool maskEnabled, number_t t1,number_t t2,n
 
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
+	lsglPushMatrix();
+	lsglMultMatrixf(matrix);
+	setMatrixUniform(LSGL_MODELVIEW);
 
 	rt->acquireFramebuffer();
 
@@ -837,7 +838,7 @@ void DefineMorphShapeTag::renderImpl(bool maskEnabled, number_t t1,number_t t2,n
 			it->Render();
 		rt->releaseIdBuffer();
 	}
-	glPopMatrix();*/
+	lsglPopMatrix();*/
 }
 
 //void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

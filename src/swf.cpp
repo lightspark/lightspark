@@ -189,7 +189,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	setPrototype(Class<MovieClip>::getClass());
 
 	//Override getStage as for SystemState that can't be null
-	setGetterByQName("stage","",Class<IFunction>::getFunction(_getStage),false);
+	setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(_getStage),GETTER_METHOD,false);
 
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);

@@ -39,7 +39,7 @@ void lightspark::Font::sinit(Class_base* c)
 {
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
-	c->setMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts),true);
+	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(lightspark::Font,enumerateFonts)
@@ -52,13 +52,13 @@ void TextField::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),true);
-	c->setSetterByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),true);
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),true);
-	c->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),true);
-	c->setGetterByQName("text","",Class<IFunction>::getFunction(TextField::_getText),true);
-	c->setSetterByQName("text","",Class<IFunction>::getFunction(TextField::_setText),true);
-	c->setMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
 }
 
 void TextField::buildTraits(ASObject* o)
@@ -179,9 +179,9 @@ void StyleSheet::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames),true);
-	c->setMethodByQName("setStyle","",Class<IFunction>::getFunction(setStyle),true);
-	c->setMethodByQName("getStyle","",Class<IFunction>::getFunction(getStyle),true);
+	c->setDeclaredMethodByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("setStyle","",Class<IFunction>::getFunction(setStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getStyle","",Class<IFunction>::getFunction(getStyle),NORMAL_METHOD,true);
 }
 
 void StyleSheet::buildTraits(ASObject* o)
@@ -237,7 +237,7 @@ void StaticText::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("text","",Class<IFunction>::getFunction(_getText),true);
+	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(_getText),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY(StaticText,_getText)

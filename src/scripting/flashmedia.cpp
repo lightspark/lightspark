@@ -67,13 +67,13 @@ void Video::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth),true);
-	c->setGetterByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight),true);
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(Video::_getWidth),true);
-	c->setSetterByQName("width","",Class<IFunction>::getFunction(Video::_setWidth),true);
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(Video::_getHeight),true);
-	c->setSetterByQName("height","",Class<IFunction>::getFunction(Video::_setHeight),true);
-	c->setMethodByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream),true);
+	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(Video::_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(Video::_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(Video::_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(Video::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream),NORMAL_METHOD,true);
 }
 
 void Video::buildTraits(ASObject* o)
@@ -241,8 +241,8 @@ void Sound::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setMethodByQName("load","",Class<IFunction>::getFunction(load),true);
-	c->setMethodByQName("play","",Class<IFunction>::getFunction(play),true);
+	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,bytesLoaded);
 	REGISTER_GETTER(c,bytesTotal);
 	REGISTER_GETTER(c,length);

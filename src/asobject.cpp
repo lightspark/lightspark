@@ -290,67 +290,54 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	return ret;
 }
 
-void ASObject::setMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed)
+void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
+{
+	setDeclaredMethodByQName(name, nsNameAndKind(ns, NAMESPACE), o, type, isBorrowed);
+}
+
+void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
 {
 	check();
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
 	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
-	if(obj->var!=NULL)
+	switch(type)
 	{
-		//This happens when interfaces are declared multiple times
-		assert_and_throw(o==obj->var);
-		return;
+		case NORMAL_METHOD:
+		{
+			if(obj->var!=NULL)
+			{
+				//This happens when interfaces are declared multiple times
+				assert_and_throw(o==obj->var);
+				return;
+			}
+			obj->setVar(o);
+			break;
+		}
+		case GETTER_METHOD:
+		{
+			if(obj->getter!=NULL)
+			{
+				//This happens when interfaces are declared multiple times
+				assert_and_throw(o==obj->getter);
+				return;
+			}
+			obj->getter=o;
+			break;
+		}
+		case SETTER_METHOD:
+		{
+			if(obj->setter!=NULL)
+			{
+				//This happens when interfaces are declared multiple times
+				assert_and_throw(o==obj->setter);
+				return;
+			}
+			obj->setter=o;
+			break;
+		}
 	}
-	obj->setVar(o);
-}
-
-void ASObject::setMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed)
-{
-	setMethodByQName(name, nsNameAndKind(ns, NAMESPACE), o, isBorrowed);
-}
-
-void ASObject::setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed)
-{
-	check();
-#ifndef NDEBUG
-	assert(!initialized);
-#endif
-	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
-	if(obj->getter!=NULL)
-	{
-		//This happens when interfaces are declared multiple times
-		assert_and_throw(o==obj->getter);
-		return;
-	}
-	obj->getter=o;
-}
-
-void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed)
-{
-	setGetterByQName(name, nsNameAndKind(ns, NAMESPACE), o, isBorrowed);
-}
-
-void ASObject::setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed)
-{
-	check();
-#ifndef NDEBUG
-	assert_and_throw(!initialized);
-#endif
-	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
-	if(obj->setter!=NULL)
-	{
-		//This happens when interfaces are declared multiple times
-		assert_and_throw(o==obj->setter);
-		return;
-	}
-	obj->setter=o;
-}
-
-void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed)
-{
-	setSetterByQName(name, nsNameAndKind(ns, NAMESPACE), o, isBorrowed);
 }
 
 void ASObject::deleteVariableByMultiname(const multiname& name)

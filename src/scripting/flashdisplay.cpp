@@ -84,14 +84,14 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderURL),true);
-	c->setGetterByQName("loader","",Class<IFunction>::getFunction(_getLoader),true);
-	c->setGetterByQName("content","",Class<IFunction>::getFunction(_getContent),true);
-	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL),true);
-	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
-	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
-	c->setGetterByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain),true);
-	c->setGetterByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents),true);
+	c->setDeclaredMethodByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderURL),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loader","",Class<IFunction>::getFunction(_getLoader),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_getURL),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents),GETTER_METHOD,true);
 }
 
 void LoaderInfo::buildTraits(ASObject* o)
@@ -306,10 +306,10 @@ void Loader::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),true);
-	c->setGetterByQName("content","",Class<IFunction>::getFunction(_getContent),true);
-	c->setMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),true);
-	c->setMethodByQName("load","",Class<IFunction>::getFunction(load),true);
+	c->setDeclaredMethodByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 }
 
 void Loader::buildTraits(ASObject* o)
@@ -408,9 +408,9 @@ void Sprite::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),true);
-	c->setMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),true);
-	c->setMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),true);
+	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),NORMAL_METHOD,true);
 }
 
 void Sprite::buildTraits(ASObject* o)
@@ -659,8 +659,8 @@ void FrameLabel::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("frame","",Class<IFunction>::getFunction(_getFrame),true);
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName),true);
+	c->setDeclaredMethodByQName("frame","",Class<IFunction>::getFunction(_getFrame),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY(FrameLabel,_getFrame)
@@ -705,9 +705,9 @@ void Scene::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("labels","",Class<IFunction>::getFunction(_getLabels),true);
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName),true);
-	c->setGetterByQName("numFrames","",Class<IFunction>::getFunction(_getNumFrames),true);
+	c->setDeclaredMethodByQName("labels","",Class<IFunction>::getFunction(_getLabels),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numFrames","",Class<IFunction>::getFunction(_getNumFrames),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY(Scene,_getLabels)
@@ -746,19 +746,19 @@ void MovieClip::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<Sprite>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame),true);
-	c->setGetterByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames),true);
-	c->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),true);
-	c->setGetterByQName("currentFrameLabel","",Class<IFunction>::getFunction(_getCurrentFrameLabel),true);
-	c->setGetterByQName("currentLabel","",Class<IFunction>::getFunction(_getCurrentLabel),true);
-	c->setGetterByQName("currentLabels","",Class<IFunction>::getFunction(_getCurrentLabels),true);
-	c->setGetterByQName("scenes","",Class<IFunction>::getFunction(_getScenes),true);
-	c->setGetterByQName("currentScene","",Class<IFunction>::getFunction(_getCurrentScene),true);
-	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
-	c->setMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),true);
-	c->setMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(gotoAndPlay),true);
-	c->setMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),true);
-	c->setMethodByQName("addFrameScript","",Class<IFunction>::getFunction(addFrameScript),true);
+	c->setDeclaredMethodByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFrameLabel","",Class<IFunction>::getFunction(_getCurrentFrameLabel),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentLabel","",Class<IFunction>::getFunction(_getCurrentLabel),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentLabels","",Class<IFunction>::getFunction(_getCurrentLabels),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scenes","",Class<IFunction>::getFunction(_getScenes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentScene","",Class<IFunction>::getFunction(_getCurrentScene),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(gotoAndPlay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addFrameScript","",Class<IFunction>::getFunction(addFrameScript),NORMAL_METHOD,true);
 }
 
 void MovieClip::buildTraits(ASObject* o)
@@ -1105,44 +1105,44 @@ void DisplayObject::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),true);
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth),true);
-	c->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth),true);
-	c->setGetterByQName("scaleX","",Class<IFunction>::getFunction(_getScaleX),true);
-	c->setSetterByQName("scaleX","",Class<IFunction>::getFunction(_setScaleX),true);
-	c->setGetterByQName("scaleY","",Class<IFunction>::getFunction(_getScaleY),true);
-	c->setSetterByQName("scaleY","",Class<IFunction>::getFunction(_setScaleY),true);
-	c->setGetterByQName("x","",Class<IFunction>::getFunction(_getX),true);
-	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX),true);
-	c->setGetterByQName("y","",Class<IFunction>::getFunction(_getY),true);
-	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY),true);
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight),true);
-	c->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight),true);
-	c->setGetterByQName("visible","",Class<IFunction>::getFunction(_getVisible),true);
-	c->setSetterByQName("visible","",Class<IFunction>::getFunction(_setVisible),true);
-	c->setGetterByQName("rotation","",Class<IFunction>::getFunction(_getRotation),true);
-	c->setSetterByQName("rotation","",Class<IFunction>::getFunction(_setRotation),true);
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName),true);
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName),true);
-	c->setGetterByQName("parent","",Class<IFunction>::getFunction(_getParent),true);
-	c->setGetterByQName("root","",Class<IFunction>::getFunction(_getRoot),true);
-	c->setGetterByQName("blendMode","",Class<IFunction>::getFunction(_getBlendMode),true);
-	c->setSetterByQName("blendMode","",Class<IFunction>::getFunction(undefinedFunction),true);
-	c->setGetterByQName("scale9Grid","",Class<IFunction>::getFunction(_getScale9Grid),true);
-	c->setSetterByQName("scale9Grid","",Class<IFunction>::getFunction(undefinedFunction),true);
-	c->setGetterByQName("stage","",Class<IFunction>::getFunction(_getStage),true);
-	c->setGetterByQName("mask","",Class<IFunction>::getFunction(_getMask),true);
-	c->setSetterByQName("mask","",Class<IFunction>::getFunction(_setMask),true);
-	c->setGetterByQName("alpha","",Class<IFunction>::getFunction(_getAlpha),true);
-	c->setSetterByQName("alpha","",Class<IFunction>::getFunction(_setAlpha),true);
-	c->setGetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction),true);
-	c->setSetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction),true);
-	c->setGetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),true);
-	c->setSetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),true);
-	c->setMethodByQName("getBounds","",Class<IFunction>::getFunction(_getBounds),true);
-	c->setGetterByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),true);
-	c->setGetterByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),true);
-	c->setMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),true);
+	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(_getScaleX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(_setScaleX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(_getScaleY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(_setScaleY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_getX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_setX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_getY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_setY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(_getVisible),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(_setVisible),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(_getRotation),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(_setRotation),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_setName),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("parent","",Class<IFunction>::getFunction(_getParent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("root","",Class<IFunction>::getFunction(_getRoot),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(_getBlendMode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(_getScale9Grid),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(_getStage),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(_getMask),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(_setMask),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(_getAlpha),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(_setAlpha),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(_getBounds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 }
 
@@ -1804,17 +1804,17 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren),true);
-	c->setMethodByQName("getChildIndex","",Class<IFunction>::getFunction(getChildIndex),true);
-	c->setMethodByQName("getChildAt","",Class<IFunction>::getFunction(getChildAt),true);
-	c->setMethodByQName("getChildByName","",Class<IFunction>::getFunction(getChildByName),true);
-	c->setMethodByQName("addChild","",Class<IFunction>::getFunction(addChild),true);
-	c->setMethodByQName("removeChild","",Class<IFunction>::getFunction(removeChild),true);
-	c->setMethodByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt),true);
-	c->setMethodByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt),true);
-	c->setMethodByQName("contains","",Class<IFunction>::getFunction(contains),true);
-	c->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(_setMouseChildren),true);
-	c->setGetterByQName("mouseChildren","",Class<IFunction>::getFunction(_getMouseChildren),true);
+	c->setDeclaredMethodByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getChildIndex","",Class<IFunction>::getFunction(getChildIndex),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getChildAt","",Class<IFunction>::getFunction(getChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getChildByName","",Class<IFunction>::getFunction(getChildByName),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addChild","",Class<IFunction>::getFunction(addChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeChild","",Class<IFunction>::getFunction(removeChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_setMouseChildren),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_getMouseChildren),GETTER_METHOD,true);
 }
 
 void DisplayObjectContainer::buildTraits(ASObject* o)
@@ -1961,8 +1961,8 @@ void InteractiveObject::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setSetterByQName("mouseEnabled","",Class<IFunction>::getFunction(_setMouseEnabled),true);
-	c->setGetterByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),true);
+	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_setMouseEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),GETTER_METHOD,true);
 }
 
 void DisplayObjectContainer::dumpDisplayList()
@@ -2288,7 +2288,7 @@ void Shape::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),true);
+	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),GETTER_METHOD,true);
 }
 
 void Shape::buildTraits(ASObject* o)
@@ -2425,13 +2425,13 @@ void Stage::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth),true);
-	c->setGetterByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight),true);
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(_getStageWidth),true);
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getStageHeight),true);
-	c->setGetterByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode),true);
-	c->setSetterByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),true);
-	c->setGetterByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),true);
+	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
 }
 
 void Stage::buildTraits(ASObject* o)
@@ -2658,18 +2658,18 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 void Graphics::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setMethodByQName("clear","",Class<IFunction>::getFunction(clear),true);
-	c->setMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),true);
-	c->setMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),true);
-	c->setMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),true);
-	c->setMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),true);
-	c->setMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),true);
-	c->setMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),true);
-	c->setMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),true);
-	c->setMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),true);
-	c->setMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),true);
-	c->setMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),true);
-	c->setMethodByQName("endFill","",Class<IFunction>::getFunction(endFill),true);
+	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(endFill),NORMAL_METHOD,true);
 }
 
 void Graphics::buildTraits(ASObject* o)
@@ -3146,16 +3146,16 @@ void SimpleButton::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("upState","",Class<IFunction>::getFunction(_getUpState),true);
-	c->setSetterByQName("upState","",Class<IFunction>::getFunction(_setUpState),true);
-	c->setGetterByQName("downState","",Class<IFunction>::getFunction(_getDownState),true);
-	c->setSetterByQName("downState","",Class<IFunction>::getFunction(_setDownState),true);
-	c->setGetterByQName("overState","",Class<IFunction>::getFunction(_getOverState),true);
-	c->setSetterByQName("overState","",Class<IFunction>::getFunction(_setOverState),true);
-	c->setGetterByQName("hitTestState","",Class<IFunction>::getFunction(_getHitTestState),true);
-	c->setSetterByQName("hitTestState","",Class<IFunction>::getFunction(_setHitTestState),true);
-	c->setGetterByQName("enabled","",Class<IFunction>::getFunction(_getEnabled),true);
-	c->setSetterByQName("enabled","",Class<IFunction>::getFunction(_setEnabled),true);
+	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(_getUpState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(_setUpState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(_getDownState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(_setDownState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("overState","",Class<IFunction>::getFunction(_getOverState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("overState","",Class<IFunction>::getFunction(_setOverState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(_getHitTestState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(_setHitTestState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(_getEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(_setEnabled),SETTER_METHOD,true);
 }
 
 void SimpleButton::buildTraits(ASObject* o)

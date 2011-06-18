@@ -84,9 +84,9 @@
 		ASFUNCTIONBODY_SETTER(c,name,callback)
 
 #define REGISTER_GETTER(c,name) \
-	c->setGetterByQName(#name,"",Class<IFunction>::getFunction(_getter_##name),true)
+	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(_getter_##name),GETTER_METHOD,true)
 #define REGISTER_SETTER(c,name) \
-	c->setSetterByQName(#name,"",Class<IFunction>::getFunction(_setter_##name),true)
+	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(_setter_##name),SETTER_METHOD,true)
 
 #define REGISTER_GETTER_SETTER(c,name) \
 		REGISTER_GETTER(c,name); \
@@ -182,6 +182,8 @@ template<class T>
 	T* get();
 	void put(ASObject* o);
 };
+
+enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 
 class ASObject
 {
@@ -287,12 +289,8 @@ public:
 	virtual void deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
-	void setMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
-	void setMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
-	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
-	void setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
-	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
-	void setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
+	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
+	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
 	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	ASObject* getSlot(unsigned int n)
 	{

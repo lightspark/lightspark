@@ -88,9 +88,9 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"));
 	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));
 
-	c->setMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),true);
-	c->setMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),true);
-	c->setMethodByQName("preventDefault","",Class<IFunction>::getFunction(_preventDefault),true);
+	c->setDeclaredMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("preventDefault","",Class<IFunction>::getFunction(_preventDefault),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,currentTarget);
 	REGISTER_GETTER(c,target);
 	REGISTER_GETTER(c,type);
@@ -220,8 +220,8 @@ void ProgressEvent::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"));
-	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
-	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
+	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
 }
 
 void ProgressEvent::buildTraits(ASObject* o)
@@ -316,10 +316,10 @@ void EventDispatcher::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setMethodByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener),true);
-	c->setMethodByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener),true);
-	c->setMethodByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener),true);
-	c->setMethodByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent),true);
+	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent),NORMAL_METHOD,true);
 
 	IEventDispatcher::linkTraits(c);
 }

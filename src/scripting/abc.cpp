@@ -1706,7 +1706,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				assert_and_throw(var->getter);
 
 				var->getter->incRef();
-				c->setGetterByQName(name,mname.ns[0],var->getter,true);
+				c->setDeclaredMethodByQName(name,mname.ns[0],var->getter,GETTER_METHOD,true);
 			}
 			else
 			{
@@ -1737,7 +1737,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				assert_and_throw(var->setter);
 
 				var->setter->incRef();
-				c->setSetterByQName(name,mname.ns[0],var->setter,true);
+				c->setDeclaredMethodByQName(name,mname.ns[0],var->setter,SETTER_METHOD,true);
 			}
 			else
 			{
@@ -1846,7 +1846,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 							assert(var->getter);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setGetterByQName(mname.name_s,cur->protected_ns,f,isBorrowed);
+							obj->setDeclaredMethodByQName(mname.name_s,cur->protected_ns,f,GETTER_METHOD,isBorrowed);
 						}
 					}
 					cur=cur->super;
@@ -1854,7 +1854,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setGetterByQName(mname.name_s,mname.ns[0],f,isBorrowed);
+			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,GETTER_METHOD,isBorrowed);
 			
 			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
 			break;
@@ -1892,7 +1892,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 							assert(var->setter);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setSetterByQName(mname.name_s,cur->protected_ns,f,isBorrowed);
+							obj->setDeclaredMethodByQName(mname.name_s,cur->protected_ns,f,SETTER_METHOD,isBorrowed);
 						}
 					}
 					cur=cur->super;
@@ -1900,7 +1900,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setSetterByQName(mname.name_s,mname.ns[0],f,isBorrowed);
+			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,SETTER_METHOD,isBorrowed);
 			
 			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
 			break;
@@ -1940,7 +1940,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 								assert(var->var);
 								//A superclass defined a protected method that we have to override.
 								f->incRef();
-								obj->setMethodByQName(mname.name_s,cur->protected_ns,f,isBorrowed);
+								obj->setDeclaredMethodByQName(mname.name_s,cur->protected_ns,f,NORMAL_METHOD,isBorrowed);
 							}
 						}
 						cur=cur->super;
@@ -1966,7 +1966,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				assert_and_throw(obj->getObjectType()==T_CLASS || deferred_initialization);
 			
 			f->bindLevel(obj->getLevel());
-			obj->setMethodByQName(mname.name_s,mname.ns[0],f,isBorrowed);
+			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,NORMAL_METHOD,isBorrowed);
 
 			LOG(LOG_TRACE,_("End Method trait: ") << mname);
 			break;

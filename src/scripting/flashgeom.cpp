@@ -37,56 +37,56 @@ void Rectangle::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	IFunction* gleft=Class<IFunction>::getFunction(_getLeft);
-	c->setGetterByQName("left","",gleft,true);
+	c->setDeclaredMethodByQName("left","",gleft,GETTER_METHOD,true);
 	gleft->incRef();
-	c->setGetterByQName("x","",gleft,true);
+	c->setDeclaredMethodByQName("x","",gleft,GETTER_METHOD,true);
 	IFunction* sleft=Class<IFunction>::getFunction(_setLeft);
-	c->setSetterByQName("left","",sleft,true);
+	c->setDeclaredMethodByQName("left","",sleft,SETTER_METHOD,true);
 	sleft->incRef();
-	c->setSetterByQName("x","",sleft,true);
-	c->setGetterByQName("right","",Class<IFunction>::getFunction(_getRight),true);
-	c->setSetterByQName("right","",Class<IFunction>::getFunction(_setRight),true);
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth),true);
-	c->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth),true);
+	c->setDeclaredMethodByQName("x","",sleft,SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("right","",Class<IFunction>::getFunction(_getRight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("right","",Class<IFunction>::getFunction(_setRight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_setWidth),SETTER_METHOD,true);
 
 	IFunction* gtop=Class<IFunction>::getFunction(_getTop);
-	c->setGetterByQName("top","",gtop,true);
+	c->setDeclaredMethodByQName("top","",gtop,GETTER_METHOD,true);
 	gtop->incRef();
-	c->setGetterByQName("y","",gtop,true);
+	c->setDeclaredMethodByQName("y","",gtop,GETTER_METHOD,true);
 	IFunction* stop=Class<IFunction>::getFunction(_setTop);
-	c->setSetterByQName("top","",stop,true);
+	c->setDeclaredMethodByQName("top","",stop,SETTER_METHOD,true);
 	stop->incRef();
-	c->setSetterByQName("y","",stop,true);
+	c->setDeclaredMethodByQName("y","",stop,SETTER_METHOD,true);
 
-	c->setGetterByQName("bottom","",Class<IFunction>::getFunction(_getBottom),true);
-	c->setSetterByQName("bottom","",Class<IFunction>::getFunction(_setBottom),true);
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight),true);
-	c->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight),true);
+	c->setDeclaredMethodByQName("bottom","",Class<IFunction>::getFunction(_getBottom),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottom","",Class<IFunction>::getFunction(_setBottom),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_setHeight),SETTER_METHOD,true);
 
-	c->setGetterByQName("bottomRight","",Class<IFunction>::getFunction(_getBottomRight),true);
-	c->setSetterByQName("bottomRight","",Class<IFunction>::getFunction(_setBottomRight),true);
+	c->setDeclaredMethodByQName("bottomRight","",Class<IFunction>::getFunction(_getBottomRight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottomRight","",Class<IFunction>::getFunction(_setBottomRight),SETTER_METHOD,true);
 
-	c->setGetterByQName("size","",Class<IFunction>::getFunction(_getSize),true);
-	c->setSetterByQName("size","",Class<IFunction>::getFunction(_setSize),true);
+	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(_getSize),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(_setSize),SETTER_METHOD,true);
 
-	c->setGetterByQName("topLeft","",Class<IFunction>::getFunction(_getTopLeft),true);
-	c->setSetterByQName("topLeft","",Class<IFunction>::getFunction(_setTopLeft),true);
+	c->setDeclaredMethodByQName("topLeft","",Class<IFunction>::getFunction(_getTopLeft),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("topLeft","",Class<IFunction>::getFunction(_setTopLeft),SETTER_METHOD,true);
 
-	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
-	c->setMethodByQName("contains","",Class<IFunction>::getFunction(contains),true);
-	c->setMethodByQName("containsPoint","",Class<IFunction>::getFunction(containsPoint),true);
-	c->setMethodByQName("containsRect","",Class<IFunction>::getFunction(containsRect),true);
-	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
-	c->setMethodByQName("inflate","",Class<IFunction>::getFunction(inflate),true);
-	c->setMethodByQName("inflatePoint","",Class<IFunction>::getFunction(inflatePoint),true);
-	c->setMethodByQName("intersection","",Class<IFunction>::getFunction(intersection),true);
-	c->setMethodByQName("intersects","",Class<IFunction>::getFunction(intersects),true);
-	c->setMethodByQName("isEmpty","",Class<IFunction>::getFunction(isEmpty),true);
-	c->setMethodByQName("offset","",Class<IFunction>::getFunction(offset),true);
-	c->setMethodByQName("offsetPoint","",Class<IFunction>::getFunction(offsetPoint),true);
-	c->setMethodByQName("setEmpty","",Class<IFunction>::getFunction(setEmpty),true);
-	c->setMethodByQName("union","",Class<IFunction>::getFunction(_union),true);
-	c->setMethodByQName("toString","",Class<IFunction>::getFunction(_toString),true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("containsPoint","",Class<IFunction>::getFunction(containsPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("containsRect","",Class<IFunction>::getFunction(containsRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(equals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("inflate","",Class<IFunction>::getFunction(inflate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("inflatePoint","",Class<IFunction>::getFunction(inflatePoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("intersection","",Class<IFunction>::getFunction(intersection),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("intersects","",Class<IFunction>::getFunction(intersects),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isEmpty","",Class<IFunction>::getFunction(isEmpty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(offset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("offsetPoint","",Class<IFunction>::getFunction(offsetPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setEmpty","",Class<IFunction>::getFunction(setEmpty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("union","",Class<IFunction>::getFunction(_union),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -503,29 +503,29 @@ void ColorTransform::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 
 	// properties
-	c->setGetterByQName("color","",Class<IFunction>::getFunction(getColor),true);
-	c->setSetterByQName("color","",Class<IFunction>::getFunction(setColor),true);
+	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(getColor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(setColor),SETTER_METHOD,true);
 
-	c->setGetterByQName("redMultiplier","",Class<IFunction>::getFunction(getRedMultiplier),true);
-	c->setSetterByQName("redMultiplier","",Class<IFunction>::getFunction(setRedMultiplier),true);
-	c->setGetterByQName("greenMultiplier","",Class<IFunction>::getFunction(getGreenMultiplier),true);
-	c->setSetterByQName("greenMultiplier","",Class<IFunction>::getFunction(setGreenMultiplier),true);
-	c->setGetterByQName("blueMultiplier","",Class<IFunction>::getFunction(getBlueMultiplier),true);
-	c->setSetterByQName("blueMultiplier","",Class<IFunction>::getFunction(setBlueMultiplier),true);
-	c->setGetterByQName("alphaMultiplier","",Class<IFunction>::getFunction(getAlphaMultiplier),true);
-	c->setSetterByQName("alphaMultiplier","",Class<IFunction>::getFunction(setAlphaMultiplier),true);
+	c->setDeclaredMethodByQName("redMultiplier","",Class<IFunction>::getFunction(getRedMultiplier),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("redMultiplier","",Class<IFunction>::getFunction(setRedMultiplier),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenMultiplier","",Class<IFunction>::getFunction(getGreenMultiplier),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenMultiplier","",Class<IFunction>::getFunction(setGreenMultiplier),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueMultiplier","",Class<IFunction>::getFunction(getBlueMultiplier),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueMultiplier","",Class<IFunction>::getFunction(setBlueMultiplier),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaMultiplier","",Class<IFunction>::getFunction(getAlphaMultiplier),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaMultiplier","",Class<IFunction>::getFunction(setAlphaMultiplier),SETTER_METHOD,true);
 
-	c->setGetterByQName("redOffset","",Class<IFunction>::getFunction(getRedOffset),true);
-	c->setSetterByQName("redOffset","",Class<IFunction>::getFunction(setRedOffset),true);
-	c->setGetterByQName("greenOffset","",Class<IFunction>::getFunction(getGreenOffset),true);
-	c->setSetterByQName("greenOffset","",Class<IFunction>::getFunction(setGreenOffset),true);
-	c->setGetterByQName("blueOffset","",Class<IFunction>::getFunction(getBlueOffset),true);
-	c->setSetterByQName("blueOffset","",Class<IFunction>::getFunction(setBlueOffset),true);
-	c->setGetterByQName("alphaOffset","",Class<IFunction>::getFunction(getAlphaOffset),true);
-	c->setSetterByQName("alphaOffset","",Class<IFunction>::getFunction(setAlphaOffset),true);
+	c->setDeclaredMethodByQName("redOffset","",Class<IFunction>::getFunction(getRedOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("redOffset","",Class<IFunction>::getFunction(setRedOffset),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenOffset","",Class<IFunction>::getFunction(getGreenOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenOffset","",Class<IFunction>::getFunction(setGreenOffset),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueOffset","",Class<IFunction>::getFunction(getBlueOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueOffset","",Class<IFunction>::getFunction(setBlueOffset),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaOffset","",Class<IFunction>::getFunction(getAlphaOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaOffset","",Class<IFunction>::getFunction(setAlphaOffset),SETTER_METHOD,true);
 
 	// methods
-	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
+	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(concat),NORMAL_METHOD,true);
 }
 
 void ColorTransform::buildTraits(ASObject* o)
@@ -748,20 +748,20 @@ tiny_string ColorTransform::toString(bool debugMsg)
 void Point::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setGetterByQName("x","",Class<IFunction>::getFunction(_getX),true);
-	c->setGetterByQName("y","",Class<IFunction>::getFunction(_getY),true);
-	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getlength),true);
-	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX),true);
-	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY),true);
-	c->setMethodByQName("interpolate","",Class<IFunction>::getFunction(interpolate),false);
-	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),false);
-	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
-	c->setMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),true);
-	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
-	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
-	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
-	c->setMethodByQName("offset","",Class<IFunction>::getFunction(offset),true);
-	c->setMethodByQName("polar","",Class<IFunction>::getFunction(polar),false);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_getX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_getY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getlength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_setX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_setY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("interpolate","",Class<IFunction>::getFunction(interpolate),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("distance","",Class<IFunction>::getFunction(distance),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("add","",Class<IFunction>::getFunction(add),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(equals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(offset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("polar","",Class<IFunction>::getFunction(polar),NORMAL_METHOD,false);
 }
 
 void Point::buildTraits(ASObject* o)
@@ -927,7 +927,7 @@ void Transform::sinit(Class_base* c)
 {
 	//c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
-	c->setSetterByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction),true);
+	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
 }
 
 void Transform::buildTraits(ASObject* o)
@@ -939,32 +939,32 @@ void Matrix::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	
 	//Properties
-	c->setGetterByQName("a","",Class<IFunction>::getFunction(_get_a),true);
-	c->setGetterByQName("b","",Class<IFunction>::getFunction(_get_b),true);
-	c->setGetterByQName("c","",Class<IFunction>::getFunction(_get_c),true);
-	c->setGetterByQName("d","",Class<IFunction>::getFunction(_get_d),true);
-	c->setGetterByQName("tx","",Class<IFunction>::getFunction(_get_tx),true);
-	c->setGetterByQName("ty","",Class<IFunction>::getFunction(_get_ty),true);
+	c->setDeclaredMethodByQName("a","",Class<IFunction>::getFunction(_get_a),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("b","",Class<IFunction>::getFunction(_get_b),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("c","",Class<IFunction>::getFunction(_get_c),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("d","",Class<IFunction>::getFunction(_get_d),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tx","",Class<IFunction>::getFunction(_get_tx),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("ty","",Class<IFunction>::getFunction(_get_ty),GETTER_METHOD,true);
 	
-	c->setSetterByQName("a","",Class<IFunction>::getFunction(_set_a),true);
-	c->setSetterByQName("b","",Class<IFunction>::getFunction(_set_b),true);
-	c->setSetterByQName("c","",Class<IFunction>::getFunction(_set_c),true);
-	c->setSetterByQName("d","",Class<IFunction>::getFunction(_set_d),true);
-	c->setSetterByQName("tx","",Class<IFunction>::getFunction(_set_tx),true);
-	c->setSetterByQName("ty","",Class<IFunction>::getFunction(_set_ty),true);
+	c->setDeclaredMethodByQName("a","",Class<IFunction>::getFunction(_set_a),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("b","",Class<IFunction>::getFunction(_set_b),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("c","",Class<IFunction>::getFunction(_set_c),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("d","",Class<IFunction>::getFunction(_set_d),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tx","",Class<IFunction>::getFunction(_set_tx),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("ty","",Class<IFunction>::getFunction(_set_ty),SETTER_METHOD,true);
 	
 	//Methods 
-	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
-	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
-	c->setMethodByQName("createBox","",Class<IFunction>::getFunction(createBox),true);
-	c->setMethodByQName("createGradientBox","",Class<IFunction>::getFunction(createGradientBox),true);
-	c->setMethodByQName("deltaTransformPoint","",Class<IFunction>::getFunction(deltaTransformPoint),true);
-	c->setMethodByQName("identity","",Class<IFunction>::getFunction(identity),true);
-	c->setMethodByQName("invert","",Class<IFunction>::getFunction(invert),true);
-	c->setMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),true);
-	c->setMethodByQName("scale","",Class<IFunction>::getFunction(scale),true);
-	c->setMethodByQName("transformPoint","",Class<IFunction>::getFunction(transformPoint),true);
-	c->setMethodByQName("translate","",Class<IFunction>::getFunction(translate),true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(concat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createBox","",Class<IFunction>::getFunction(createBox),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createGradientBox","",Class<IFunction>::getFunction(createGradientBox),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("deltaTransformPoint","",Class<IFunction>::getFunction(deltaTransformPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("identity","",Class<IFunction>::getFunction(identity),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("invert","",Class<IFunction>::getFunction(invert),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("scale","",Class<IFunction>::getFunction(scale),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("transformPoint","",Class<IFunction>::getFunction(transformPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("translate","",Class<IFunction>::getFunction(translate),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(Matrix,_constructor)
@@ -1336,34 +1336,34 @@ void Vector3D::sinit(Class_base* c)
 	c->setVariableByQName("Z_AXIS","", tz);
 
 	// properties
-	c->setGetterByQName("w","",Class<IFunction>::getFunction(_get_w),true);
-	c->setGetterByQName("x","",Class<IFunction>::getFunction(_get_x),true);
-	c->setGetterByQName("y","",Class<IFunction>::getFunction(_get_y),true);
-	c->setGetterByQName("z","",Class<IFunction>::getFunction(_get_z),true);
-	c->setGetterByQName("length","",Class<IFunction>::getFunction(_get_length),true);
-	c->setGetterByQName("lengthSquared","",Class<IFunction>::getFunction(_get_lengthSquared),true);
+	c->setDeclaredMethodByQName("w","",Class<IFunction>::getFunction(_get_w),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_get_x),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_get_y),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(_get_z),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_get_length),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("lengthSquared","",Class<IFunction>::getFunction(_get_lengthSquared),GETTER_METHOD,true);
 	
-	c->setSetterByQName("w","",Class<IFunction>::getFunction(_set_w),true);
-	c->setSetterByQName("x","",Class<IFunction>::getFunction(_set_x),true);
-	c->setSetterByQName("y","",Class<IFunction>::getFunction(_set_y),true);
-	c->setSetterByQName("z","",Class<IFunction>::getFunction(_set_z),true);
+	c->setDeclaredMethodByQName("w","",Class<IFunction>::getFunction(_set_w),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_set_x),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_set_y),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(_set_z),SETTER_METHOD,true);
 	
 	// methods 
-	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
-	c->setMethodByQName("angleBetween","",Class<IFunction>::getFunction(angleBetween),true);
-	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
-	c->setMethodByQName("crossProduct","",Class<IFunction>::getFunction(crossProduct),true);
-	c->setMethodByQName("decrementBy","",Class<IFunction>::getFunction(decrementBy),true);
-	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),true);
-	c->setMethodByQName("dotProduct","",Class<IFunction>::getFunction(dotProduct),true);
-	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
-	c->setMethodByQName("incrementBy","",Class<IFunction>::getFunction(incrementBy),true);
-	c->setMethodByQName("nearEquals","",Class<IFunction>::getFunction(nearEquals),true);
-	c->setMethodByQName("negate","",Class<IFunction>::getFunction(negate),true);
-	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
-	c->setMethodByQName("project","",Class<IFunction>::getFunction(project),true);
-	c->setMethodByQName("scaleBy","",Class<IFunction>::getFunction(scaleBy),true);
-	c->setMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),true);
+	c->setDeclaredMethodByQName("add","",Class<IFunction>::getFunction(add),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("angleBetween","",Class<IFunction>::getFunction(angleBetween),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("crossProduct","",Class<IFunction>::getFunction(crossProduct),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("decrementBy","",Class<IFunction>::getFunction(decrementBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("distance","",Class<IFunction>::getFunction(distance),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dotProduct","",Class<IFunction>::getFunction(dotProduct),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(equals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("incrementBy","",Class<IFunction>::getFunction(incrementBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nearEquals","",Class<IFunction>::getFunction(nearEquals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("negate","",Class<IFunction>::getFunction(negate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("project","",Class<IFunction>::getFunction(project),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("scaleBy","",Class<IFunction>::getFunction(scaleBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)

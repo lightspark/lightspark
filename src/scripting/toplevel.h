@@ -27,6 +27,7 @@
 #include "threading.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
+#include "abcutils.h"
 
 namespace lightspark
 {
@@ -260,7 +261,7 @@ public:
 	void finalize();
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
-	std::vector<_R<ASObject>> func_scope;
+	std::vector<scope_entry> func_scope;
 	bool isEqual(ASObject* r)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
@@ -268,14 +269,14 @@ public:
 			return false;
 		return mi==sf->mi;
 	}
-	void acquireScope(const std::vector<_R<ASObject>>& scope)
+	void acquireScope(const std::vector<scope_entry>& scope)
 	{
 		assert_and_throw(func_scope.empty());
 		func_scope=scope;
 	}
-	void addToScope(_R<ASObject> s)
+	void addToScope(const scope_entry& s)
 	{
-		func_scope.push_back(s);
+		func_scope.emplace_back(s);
 	}
 };
 

@@ -1953,7 +1953,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			{
 				//Script method
 				obj->incRef();
-				f->addToScope(_MR(obj));
+				f->addToScope(scope_entry(_MR(obj),false));
 #ifdef PROFILING_SUPPORT
 				if(!m->validProfName)
 				{

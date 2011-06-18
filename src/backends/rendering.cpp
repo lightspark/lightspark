@@ -56,7 +56,7 @@ RenderThread::RenderThread(SystemState* s):
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),mutexLargeTexture("Large texture"),largeTextureSize(0),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),
-	tempTex(false),hasNPOTTextures(false)
+	tempTex(false),hasNPOTTextures(false),cairoTextureContext(NULL)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	

@@ -1579,7 +1579,6 @@ void ABCVm::getLex(call_context* th, int n)
 		o=tmpo;
 		if(o)
 		{
-			(*it)->incRef();
 			target=(*it).getPtr();
 			break;
 		}

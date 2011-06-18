@@ -34,6 +34,7 @@
 #include <map>
 #include <set>
 #include "swf.h"
+#include "abcutils.h"
 
 namespace lightspark
 {
@@ -154,35 +155,6 @@ struct option_detail
 	u8 kind;
 };
 
-struct method_body_info;
-class method_info;
-class ABCContext;
-class ABCVm;
-
-struct call_context
-{
-#include "packed_begin.h"
-	struct
-	{
-		ASObject** locals;
-		ASObject** stack;
-		uint32_t stack_index;
-	} PACKED;
-#include "packed_end.h"
-	ABCContext* context;
-	int locals_size;
-	std::vector<_R<ASObject>> scope_stack;
-	int initialScopeStack;
-	void runtime_stack_push(ASObject* s);
-	void runtime_stack_clear();
-	ASObject* runtime_stack_pop();
-	ASObject* runtime_stack_peek();
-	method_info* mi;
-	std::istringstream* code;
-	call_context(method_info* th, int l, ASObject* const* args, const unsigned int numArgs);
-	~call_context();
-};
-
 struct block_info
 {
 	llvm::BasicBlock* BB;
@@ -206,6 +178,8 @@ inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
 {
 	return std::make_pair(v, t);
 }
+
+class method_body_info;
 
 class method_info
 {

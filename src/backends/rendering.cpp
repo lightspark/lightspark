@@ -20,6 +20,7 @@
 #include "scripting/abc.h"
 #include "parsing/textfile.h"
 #include "rendering.h"
+#include "glmatrices.h"
 #include "compat.h"
 #include <sstream>
 
@@ -517,6 +518,9 @@ void RenderThread::commonGLInit(int width, int height)
 	yuvUniform =glGetUniformLocation(gpu_program,"yuv");
 	//The uniform that tells the shader if a mask is being rendered
 	maskUniform =glGetUniformLocation(gpu_program,"mask");
+	//The uniform that contains the coordinate matrix
+	projectionMatrixUniform =glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
+	modelviewMatrixUniform =glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
 
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
 	if(fragmentTexScaleUniform!=-1)
@@ -626,16 +630,13 @@ void RenderThread::commonGLResize()
 			break;
 	}
 	glViewport(0,0,windowWidth,windowHeight);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0,windowWidth,0,windowHeight,-100,0);
+	lsglLoadIdentity();
+	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);
 	//scaleY is negated to adapt the flash and gl coordinates system
 	//An additional translation is added for the same reason
-	glTranslatef(offsetX,windowHeight-offsetY,0);
-	glScalef(scaleX,-scaleY,1);
-
-	glMatrixMode(GL_MODELVIEW);
-
+	lsglTranslatef(offsetX,windowHeight-offsetY,0);
+	lsglScalef(scaleX,-scaleY,1);
+	setMatrixUniform(LSGL_PROJECTION);
 	tempTex.resize(windowWidth, windowHeight);
 }
 
@@ -671,7 +672,8 @@ void RenderThread::renderMaskToTmpBuffer() const
 	{
 		float matrix[16];
 		maskStack[i].m.get4DMatrix(matrix);
-		glLoadMatrixf(matrix);
+		lsglLoadMatrixf(matrix);
+		setMatrixUniform(LSGL_MODELVIEW);
 		maskStack[i].d->Render(true);
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -726,9 +728,10 @@ void RenderThread::mapCairoTexture(int w, int h)
 
 void RenderThread::plotProfilingData()
 {
-	glLoadIdentity();
-	glScalef(1.0f/scaleX,-1.0f/scaleY,1);
-	glTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
+	lsglLoadIdentity();
+	lsglScalef(1.0f/scaleX,-1.0f/scaleY,1);
+	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
+	setMatrixUniform(LSGL_MODELVIEW);
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
 
 	char frameBuf[20];
@@ -765,7 +768,8 @@ void RenderThread::coreRendering()
 	RGB bg=sys->getBackground();
 	glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glLoadIdentity();
+	lsglLoadIdentity();
+	setMatrixUniform(LSGL_MODELVIEW);
 
 	m_sys->Render(false);
 	assert(maskStack.empty());
@@ -777,9 +781,11 @@ void RenderThread::coreRendering()
 //Renders the error message which caused the VM to stop.
 void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 {
-	glLoadIdentity();
-	glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
-	glTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
+	lsglLoadIdentity();
+	lsglScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
+	lsglTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
+
+	setMatrixUniform(LSGL_MODELVIEW);
 
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
 
@@ -1161,4 +1167,11 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS,0);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH,0);
+}
+
+void RenderThread::setMatrixUniform(LSGL_MATRIX m) const
+{
+	GLint uni = (m == LSGL_MODELVIEW) ? modelviewMatrixUniform:projectionMatrixUniform;
+
+	glUniformMatrix4fv(uni, 1, GL_FALSE, lsMVPMatrix);
 }

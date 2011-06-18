@@ -318,24 +318,30 @@ ASFUNCTIONBODY(Array,shift)
 ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
-	
+
 	int startIndex=args[0]->toInt();
 	int deleteCount=args[1]->toUInt();
 	int totalSize=th->data.size();
-	
-	//A negative startIndex is relative to the end
-	assert_and_throw(abs(startIndex)<totalSize);
-	startIndex=(startIndex+totalSize)%totalSize;
+	Array* ret=Class<Array>::getInstanceS();
+
+	if(totalSize)
+	{
+		//A negative startIndex is relative to the end
+		assert_and_throw(abs(startIndex)<totalSize);
+		startIndex=(startIndex+totalSize)%totalSize;
+	}
 	if((startIndex+deleteCount)>totalSize)
 		deleteCount=totalSize-startIndex;
-	
-	Array* ret=Class<Array>::getInstanceS();
-	ret->data.reserve(deleteCount);
 
-	for(int i=0;i<deleteCount;i++)
-		ret->data.push_back(th->data[startIndex+i]);
-	
-	th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+	if(deleteCount)
+	{
+		ret->data.reserve(deleteCount);
+
+		for(int i=0;i<deleteCount;i++)
+			ret->data.push_back(th->data[startIndex+i]);
+
+		th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+	}
 
 	//Insert requested values starting at startIndex
 	for(unsigned int i=2,n=0;i<argslen;i++,n++)

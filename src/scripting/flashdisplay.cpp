@@ -349,7 +349,7 @@ void Loader::execute()
 			sys->downloadManager->destroy(downloader);
 			downloader=NULL;
 		}
-		if(local_pt->getFileType()==ParseThread::SWF)
+		if(local_pt->getFileType()==ParseThread::SWF || local_pt->getFileType()==ParseThread::COMPRESSED_SWF)
 		{
 			SpinlockLocker l(localRootSpinlock);
 			localRoot=newRoot;

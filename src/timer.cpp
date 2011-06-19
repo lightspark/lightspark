@@ -55,6 +55,8 @@ timespec lightspark::msecsToTimespec(uint64_t time)
 TimerThread::TimerThread(SystemState* s):m_sys(s),currentJob(NULL),stopped(false),joined(false)
 {
 	sem_init(&mutex,0,1);
+	//Workaround for an issue in Ubuntu Oneiric
+	memset(&newEvent, 0, sizeof(newEvent));
 	sem_init(&newEvent,0,0);
 
 	pthread_create(&t,NULL,(thread_worker)timer_worker,this);

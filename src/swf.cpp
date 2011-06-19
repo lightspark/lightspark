@@ -189,7 +189,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	setPrototype(Class<MovieClip>::getClass());
 
 	//Override getStage as for SystemState that can't be null
-	setGetterByQName("stage","",Class<IFunction>::getFunction(_getStage),false);
+	setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(_getStage),GETTER_METHOD,false);
 
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);
@@ -262,7 +262,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 		{
 			//cout << varName << ' ' << varValue << endl;
 			params->setVariableByQName(varName.c_str(),"",
-					lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
+					lightspark::Class<lightspark::ASString>::getInstanceS(varValue),DYNAMIC_TRAIT);
 		}
 		cur=n2+1;
 	}
@@ -284,7 +284,7 @@ void SystemState::parseParametersFromFile(const char* f)
 		getline(i,name);
 		getline(i,value);
 
-		ret->setVariableByQName(name,"",Class<ASString>::getInstanceS(value));
+		ret->setVariableByQName(name,"",Class<ASString>::getInstanceS(value),DYNAMIC_TRAIT);
 	}
 	setParameters(ret);
 	i.close();
@@ -294,7 +294,7 @@ void SystemState::setParameters(_R<ASObject> p)
 {
 	parameters=p;
 	p->incRef();
-	loaderInfo->setVariableByQName("parameters","",p.getPtr());
+	loaderInfo->setVariableByQName("parameters","",p.getPtr(), DECLARED_TRAIT);
 }
 
 _NR<ASObject> SystemState::getParameters() const

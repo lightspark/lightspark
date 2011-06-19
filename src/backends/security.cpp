@@ -723,7 +723,7 @@ void URLPolicyFile::load()
 	}
 
 	//No caching needed for this download, we don't expect very big files
-	Downloader* downloader=sys->downloadManager->download(url, false);
+	Downloader* downloader=sys->downloadManager->download(url, false, NULL);
 
 	//Wait until the file is fetched
 	downloader->waitForTermination();

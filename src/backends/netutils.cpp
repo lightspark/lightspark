@@ -166,19 +166,18 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached,
 	if(url.getProtocol() == "file")
 	{
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: local file"));
-		downloader=new LocalDownloader(url.getPath(), cached);
+		downloader=new LocalDownloader(url.getPath(), cached, owner);
 	}
 	else if(url.getProtocol() == "rtmpe")
 	{
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: RTMPE stream"));
-		downloader=new RTMPDownloader(url.getParsedURL(), url.getStream());
+		downloader=new RTMPDownloader(url.getParsedURL(), url.getStream(), owner);
 	}
 	else
 	{
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
-		downloader=new CurlDownloader(url.getParsedURL(), cached);
+		downloader=new CurlDownloader(url.getParsedURL(), cached, owner);
 	}
-	downloader->setOwner(owner);
 	downloader->enableFencingWaiting();
 	addDownloader(downloader);
 	sys->addJob(downloader);
@@ -201,16 +200,15 @@ Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, cons
 	if(url.getProtocol() == "file")
 	{
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: local file - Ignoring data field"));
-		downloader=new LocalDownloader(url.getPath(), false);
+		downloader=new LocalDownloader(url.getPath(), false, owner);
 	}
 	else if(url.getProtocol() == "rtmpe")
 		throw RunTimeException("RTMPE does not support additional data");
 	else
 	{
 		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
-		downloader=new CurlDownloader(url.getParsedURL(), data);
+		downloader=new CurlDownloader(url.getParsedURL(), data, owner);
 	}
-	downloader->setOwner(owner);
 	downloader->enableFencingWaiting();
 	addDownloader(downloader);
 	sys->addJob(downloader);
@@ -224,7 +222,7 @@ Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, cons
  * \param[in] _url The URL for the Downloader.
  * \param[in] _cached Whether or not to cache this download.
  */
-Downloader::Downloader(const tiny_string& _url, bool _cached):
+Downloader::Downloader(const tiny_string& _url, bool _cached, ILoadable* o):
 	cacheHasOpened(false),hasTerminated(false),                   //LOCKING
 	waitingForCache(false),waitingForData(false),waitingForTermination(false), //STATUS
 	forceStop(true),failed(false),finished(false),                //FLAGS
@@ -233,7 +231,7 @@ Downloader::Downloader(const tiny_string& _url, bool _cached):
 	cached(_cached),cachePos(0),cacheSize(0),keepCache(false),    //CACHING
 	length(0),receivedLength(0),                                  //DOWNLOADED DATA
 	redirected(false),requestStatus(0),                           //HTTP REDIR, STATUS & HEADERS
-	owner(NULL)                                                   //PROGRESS
+	owner(o)                                                   //PROGRESS
 {
 	sem_init(&mutex,0,1);
 	//== Lock initialized 
@@ -256,7 +254,7 @@ Downloader::Downloader(const tiny_string& _url, bool _cached):
  * \param[in] _url The URL for the Downloader.
  * \param[in] data Additional data to send to the host
  */
-Downloader::Downloader(const tiny_string& _url, const std::vector<uint8_t>& _data):
+Downloader::Downloader(const tiny_string& _url, const std::vector<uint8_t>& _data, ILoadable* o):
 	cacheHasOpened(false),hasTerminated(false),                   //LOCKING
 	waitingForCache(false),waitingForData(false),waitingForTermination(false), //STATUS
 	forceStop(true),failed(false),finished(false),                //FLAGS
@@ -265,7 +263,7 @@ Downloader::Downloader(const tiny_string& _url, const std::vector<uint8_t>& _dat
 	cached(false),cachePos(0),cacheSize(0),keepCache(false),      //CACHING
 	length(0),receivedLength(0),                                  //DOWNLOADED DATA
 	redirected(false),requestStatus(0),data(_data),               //HTTP REDIR, STATUS & HEADERS
-	owner(NULL)                                                   //PROGRESS
+	owner(o)                                                   //PROGRESS
 {
 	sem_init(&mutex,0,1);
 	//== Lock initialized 
@@ -1124,8 +1122,8 @@ void ThreadedDownloader::waitFencing()
  * \param[in] _url The URL for the Downloader.
  * \param[in] _cached Whether or not to cache this download.
  */
-ThreadedDownloader::ThreadedDownloader(const tiny_string& url, bool cached):
-	Downloader(url, cached),fenceState(false)
+ThreadedDownloader::ThreadedDownloader(const tiny_string& url, bool cached, ILoadable* o):
+	Downloader(url, cached, o),fenceState(false)
 {
 }
 
@@ -1136,8 +1134,8 @@ ThreadedDownloader::ThreadedDownloader(const tiny_string& url, bool cached):
  * \param[in] _url The URL for the Downloader.
  * \param[in] data Additional data to send to the host
  */
-ThreadedDownloader::ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data):
-	Downloader(url, data),fenceState(false)
+ThreadedDownloader::ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data, ILoadable* o):
+	Downloader(url, data, o),fenceState(false)
 {
 }
 
@@ -1159,7 +1157,7 @@ ThreadedDownloader::~ThreadedDownloader()
  * \param[in] _url The URL for the Downloader.
  * \param[in] _cached Whether or not to cache this download.
  */
-CurlDownloader::CurlDownloader(const tiny_string& _url, bool _cached):ThreadedDownloader(_url, _cached)
+CurlDownloader::CurlDownloader(const tiny_string& _url, bool _cached, ILoadable* o):ThreadedDownloader(_url, _cached, o)
 {
 }
 
@@ -1169,7 +1167,7 @@ CurlDownloader::CurlDownloader(const tiny_string& _url, bool _cached):ThreadedDo
  * \param[in] _url The URL for the Downloader.
  * \param[in] data Additional data to send to the host
  */
-CurlDownloader::CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& _data):ThreadedDownloader(_url, _data)
+CurlDownloader::CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& _data, ILoadable* o):ThreadedDownloader(_url, _data, o)
 {
 }
 
@@ -1304,7 +1302,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
  * \param[in] _url The URL for the Downloader.
  * \param[in] _cached Whether or not to cache this download.
  */
-LocalDownloader::LocalDownloader(const tiny_string& _url, bool _cached):ThreadedDownloader(_url, _cached)
+LocalDownloader::LocalDownloader(const tiny_string& _url, bool _cached, ILoadable* o):ThreadedDownloader(_url, _cached, o)
 {
 }
 

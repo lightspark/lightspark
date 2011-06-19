@@ -40,14 +40,14 @@ REGISTER_CLASS_NAME(Security);
 void Capabilities::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setGetterByQName("language","",Class<IFunction>::getFunction(_getLanguage),true);
-	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"));
-	c->setVariableByQName("serverString","",Class<ASString>::getInstanceS(""));
+	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(_getLanguage),GETTER_METHOD,true);
+	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"),DECLARED_TRAIT);
+	c->setVariableByQName("serverString","",Class<ASString>::getInstanceS(""),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(Capabilities,_constructor)
 {
-	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS("AVMPlus"));
+	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS("AVMPlus"),DECLARED_TRAIT);
 	return NULL;
 }
 
@@ -60,10 +60,10 @@ void ApplicationDomain::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Static
-	c->setGetterByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),false);
+	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),GETTER_METHOD,false);
 	//Instance
-	c->setMethodByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition),true);
-	c->setMethodByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition),true);
+	c->setDeclaredMethodByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition),NORMAL_METHOD,true);
 }
 
 void ApplicationDomain::buildTraits(ASObject* o)
@@ -153,7 +153,7 @@ void SecurityDomain::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Static
-	c->setGetterByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),false);
+	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),GETTER_METHOD,false);
 }
 
 void SecurityDomain::buildTraits(ASObject* o)
@@ -174,21 +174,21 @@ void Security::sinit(Class_base* c)
 {
 	//Fully static class
 	c->setConstructor(NULL);
-	c->setGetterByQName("exactSettings","",Class<IFunction>::getFunction(_getExactSettings),false);
-	c->setSetterByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings),false);
-	c->setGetterByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType),false);
+	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(_getExactSettings),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType),GETTER_METHOD,false);
 	c->setVariableByQName("LOCAL_TRUSTED","",
-			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)));
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)),DECLARED_TRAIT);
 	c->setVariableByQName("LOCAL_WITH_FILE","",
-			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)));
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)),DECLARED_TRAIT);
 	c->setVariableByQName("LOCAL_WITH_NETWORK","",
-			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)));
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)),DECLARED_TRAIT);
 	c->setVariableByQName("REMOTE","",
-			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::REMOTE)));
-	c->setMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),false);
-	c->setMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),false);
-	c->setMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile),false);
-	c->setMethodByQName("showSettings","",Class<IFunction>::getFunction(showSettings),false);
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::REMOTE)),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("showSettings","",Class<IFunction>::getFunction(showSettings),NORMAL_METHOD,false);
 
 	sys->securityManager->setExactSettings(true, false);
 }

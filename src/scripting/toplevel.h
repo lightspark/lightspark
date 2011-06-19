@@ -27,6 +27,7 @@
 #include "threading.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
+#include "abcutils.h"
 
 namespace lightspark
 {
@@ -88,23 +89,8 @@ public:
 	{
 		throw UnsupportedException("Class_base::getVariableByMultiname_i");
 		return 0;
-/*		intptr_t ret=ASObject::getVariableByMultiname(name);
-		if(==NULL && super)
-			ret=super->getVariableByMultiname(name);
-		return ret;*/
 	}
-/*	void setVariableByMultiname_i(const multiname& name, intptr_t value)
-	{
-		abort();
-	}
-	void setVariableByMultiname(const multiname& name, ASObject* o)
-	{
-		abort();
-	}
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true)
-	{
-		abort();
-	}*/
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
@@ -167,10 +153,6 @@ public:
 	{
 		throw UnsupportedException("Class_function::getVariableByMultiname_i");
 		return 0;
-/*		intptr_t ret=ASObject::getVariableByMultiname(name);
-		if(ret==NULL && super)
-			ret=super->getVariableByMultiname(name);
-		return ret;*/
 	}
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
@@ -180,6 +162,7 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 };
 
 class IFunction: public ASObject
@@ -278,7 +261,7 @@ public:
 	void finalize();
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
-	std::vector<_R<ASObject>> func_scope;
+	std::vector<scope_entry> func_scope;
 	bool isEqual(ASObject* r)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
@@ -286,14 +269,14 @@ public:
 			return false;
 		return mi==sf->mi;
 	}
-	void acquireScope(const std::vector<_R<ASObject>>& scope)
+	void acquireScope(const std::vector<scope_entry>& scope)
 	{
 		assert_and_throw(func_scope.empty());
 		func_scope=scope;
 	}
-	void addToScope(_R<ASObject> s)
+	void addToScope(const scope_entry& s)
 	{
-		func_scope.push_back(s);
+		func_scope.emplace_back(s);
 	}
 };
 
@@ -562,6 +545,7 @@ public:
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
@@ -715,6 +699,7 @@ public:
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;
@@ -758,6 +743,7 @@ public:
 	ASFUNCTION(generator);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;

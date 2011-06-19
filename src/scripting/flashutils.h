@@ -84,6 +84,7 @@ public:
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	bool isEqual(ASObject* r);
 };
 
@@ -131,6 +132,7 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	void deleteVariableByMultiname(const multiname& name);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
@@ -161,6 +163,7 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("deleteVariableByMultiName not supported for Proxy");
 	}
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false)
 	{
 		if(debugMsg)

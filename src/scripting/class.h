@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/abcutils.h"
 #include "compat.h"
 #include "asobject.h"
 #include "swf.h"
@@ -76,7 +77,7 @@ public:
 		return tag || bindedToRoot;
 	}
 	//Closure stack
-	std::vector<_R<ASObject>> class_scope;
+	std::vector<scope_entry> class_scope;
 };
 
 template< class T>

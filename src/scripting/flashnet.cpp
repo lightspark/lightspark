@@ -50,12 +50,12 @@ URLRequest::URLRequest():method(GET)
 void URLRequest::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSetterByQName("url","",Class<IFunction>::getFunction(_setURL),true);
-	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL),true);
-	c->setSetterByQName("method","",Class<IFunction>::getFunction(_setMethod),true);
-	c->setGetterByQName("method","",Class<IFunction>::getFunction(_getMethod),true);
-	c->setSetterByQName("data","",Class<IFunction>::getFunction(_setData),true);
-	c->setGetterByQName("data","",Class<IFunction>::getFunction(_getData),true);
+	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_setURL),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_getURL),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(_setMethod),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(_getMethod),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_setData),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
 }
 
 void URLRequest::buildTraits(ASObject* o)
@@ -194,8 +194,8 @@ ASFUNCTIONBODY(URLRequest,_setData)
 
 void URLRequestMethod::sinit(Class_base* c)
 {
-	c->setVariableByQName("GET","",Class<ASString>::getInstanceS("GET"));
-	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"));
+	c->setVariableByQName("GET","",Class<ASString>::getInstanceS("GET"),DECLARED_TRAIT);
+	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"),DECLARED_TRAIT);
 }
 
 URLLoader::URLLoader():dataFormat("text"),data(NULL),downloader(NULL)
@@ -213,10 +213,10 @@ void URLLoader::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat),true);
-	c->setGetterByQName("data","",Class<IFunction>::getFunction(_getData),true);
-	c->setSetterByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat),true);
-	c->setMethodByQName("load","",Class<IFunction>::getFunction(load),true);
+	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 }
 
 void URLLoader::buildTraits(ASObject* o)
@@ -304,11 +304,11 @@ void URLLoader::execute()
 		{
 			//This is a GET request
 			//Don't cache our downloaded files
-			downloader=sys->downloadManager->download(url, false);
+			downloader=sys->downloadManager->download(url, false, NULL);
 		}
 		else
 		{
-			downloader=sys->downloadManager->downloadWithData(url, postData);
+			downloader=sys->downloadManager->downloadWithData(url, postData, NULL);
 			//Clean up the postData for the next load
 			postData.clear();
 		}
@@ -402,9 +402,9 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 
 void URLLoaderDataFormat::sinit(Class_base* c)
 {
-	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables"));
-	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text"));
-	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"));
+	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables"),DECLARED_TRAIT);
+	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text"),DECLARED_TRAIT);
+	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"),DECLARED_TRAIT);
 }
 
 void SharedObject::sinit(Class_base* c)
@@ -413,9 +413,9 @@ void SharedObject::sinit(Class_base* c)
 
 void ObjectEncoding::sinit(Class_base* c)
 {
-	c->setVariableByQName("AMF0","",abstract_i(AMF0));
-	c->setVariableByQName("AMF3","",abstract_i(AMF3));
-	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT));
+	c->setVariableByQName("AMF0","",abstract_i(AMF0),DECLARED_TRAIT);
+	c->setVariableByQName("AMF3","",abstract_i(AMF3),DECLARED_TRAIT);
+	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
 };
 
 NetConnection::NetConnection():_connected(false)
@@ -428,15 +428,15 @@ void NetConnection::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setMethodByQName("connect","",Class<IFunction>::getFunction(connect),true);
-	c->setGetterByQName("connected","",Class<IFunction>::getFunction(_getConnected),true);
-	c->setGetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),false);
-	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),false);
+	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(_getConnected),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
-	c->setGetterByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),true);
-	c->setSetterByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),true);
-	c->setGetterByQName("protocol","",Class<IFunction>::getFunction(_getProtocol),true);
-	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getURI),true);
+	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("protocol","",Class<IFunction>::getFunction(_getProtocol),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 }
 
 void NetConnection::buildTraits(ASObject* o)
@@ -587,22 +587,22 @@ void NetStream::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"));
-	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"));
-	c->setMethodByQName("play","",Class<IFunction>::getFunction(play),true);
-	c->setMethodByQName("resume","",Class<IFunction>::getFunction(resume),true);
-	c->setMethodByQName("pause","",Class<IFunction>::getFunction(pause),true);
-	c->setMethodByQName("togglePause","",Class<IFunction>::getFunction(togglePause),true);
-	c->setMethodByQName("close","",Class<IFunction>::getFunction(close),true);
-	c->setMethodByQName("seek","",Class<IFunction>::getFunction(seek),true);
-	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
-	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
-	c->setGetterByQName("time","",Class<IFunction>::getFunction(_getTime),true);
-	c->setGetterByQName("currentFPS","",Class<IFunction>::getFunction(_getCurrentFPS),true);
-	c->setGetterByQName("client","",Class<IFunction>::getFunction(_getClient),true);
-	c->setSetterByQName("client","",Class<IFunction>::getFunction(_setClient),true);
-	c->setGetterByQName("checkPolicyFile","",Class<IFunction>::getFunction(_getCheckPolicyFile),true);
-	c->setSetterByQName("checkPolicyFile","",Class<IFunction>::getFunction(_setCheckPolicyFile),true);
+	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"),DECLARED_TRAIT);
+	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("resume","",Class<IFunction>::getFunction(resume),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pause","",Class<IFunction>::getFunction(pause),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("togglePause","",Class<IFunction>::getFunction(togglePause),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("seek","",Class<IFunction>::getFunction(seek),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(_getTime),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFPS","",Class<IFunction>::getFunction(_getCurrentFPS),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("client","",Class<IFunction>::getFunction(_getClient),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("client","",Class<IFunction>::getFunction(_setClient),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(_getCheckPolicyFile),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(_setCheckPolicyFile),SETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,soundTransform);
 }
 
@@ -747,7 +747,7 @@ ASFUNCTIONBODY(NetStream,play)
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
 		//Cache our downloaded files
-		th->downloader=sys->downloadManager->download(th->url, true);
+		th->downloader=sys->downloadManager->download(th->url, true, NULL);
 		th->streamTime=0;
 		//To be decreffed in jobFence
 		th->incRef();
@@ -961,23 +961,23 @@ void NetStream::execute()
 					double d;
 					uint32_t i;
 					if(streamDecoder->getMetadataDouble("width",d))
-						metadata->setVariableByQName("width", "",abstract_d(d));
+						metadata->setVariableByQName("width", "",abstract_d(d),DYNAMIC_TRAIT);
 					else
-						metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()));
+						metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("height",d))
-						metadata->setVariableByQName("height", "",abstract_d(d));
+						metadata->setVariableByQName("height", "",abstract_d(d),DYNAMIC_TRAIT);
 					else
-						metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()));
+						metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("framerate",d))
-						metadata->setVariableByQName("framerate", "",abstract_d(d));
+						metadata->setVariableByQName("framerate", "",abstract_d(d),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("duration",d))
-						metadata->setVariableByQName("duration", "",abstract_d(d));
+						metadata->setVariableByQName("duration", "",abstract_d(d),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataInteger("canseekontime",i))
-						metadata->setVariableByQName("canSeekToEnd", "",abstract_b(i == 1));
+						metadata->setVariableByQName("canSeekToEnd", "",abstract_b(i == 1),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("audiodatarate",d))
-						metadata->setVariableByQName("audiodatarate", "",abstract_d(d));
+						metadata->setVariableByQName("audiodatarate", "",abstract_d(d),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("videodatarate",d))
-						metadata->setVariableByQName("videodatarate", "",abstract_d(d));
+						metadata->setVariableByQName("videodatarate", "",abstract_d(d),DYNAMIC_TRAIT);
 
 					//TODO: missing: audiocodecid (Number), cuePoints (Object[]),
 					//videocodecid (Number), custommetadata's
@@ -1240,8 +1240,8 @@ void URLVariables::decode(const tiny_string& s)
 void URLVariables::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setMethodByQName("decode","",Class<IFunction>::getFunction(decode),true);
-	c->setMethodByQName("toString","",Class<IFunction>::getFunction(_toString),true);
+	c->setDeclaredMethodByQName("decode","",Class<IFunction>::getFunction(decode),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 }
 
 void URLVariables::buildTraits(ASObject* o)
@@ -1388,7 +1388,7 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	assert_and_throw(postData.empty());
 
 	//Don't cache our downloaded files
-	Downloader* downloader=sys->downloadManager->download(url, false);
+	Downloader* downloader=sys->downloadManager->download(url, false, NULL);
 	//TODO: make the download asynchronous instead of waiting for an unused response
 	downloader->waitForTermination();
 	sys->downloadManager->destroy(downloader);

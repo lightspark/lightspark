@@ -46,11 +46,11 @@ void XMLNode::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("firstChild","",Class<IFunction>::getFunction(XMLNode::firstChild),true);
-	c->setGetterByQName("childNodes","",Class<IFunction>::getFunction(XMLNode::childNodes),true);
-	c->setGetterByQName("attributes","",Class<IFunction>::getFunction(attributes),true);
-	c->setGetterByQName("nodeType","",Class<IFunction>::getFunction(_getNodeType),true);
-	c->setGetterByQName("nodeName","",Class<IFunction>::getFunction(_getNodeName),true);
+	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(XMLNode::firstChild),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("childNodes","",Class<IFunction>::getFunction(XMLNode::childNodes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attributes","",Class<IFunction>::getFunction(attributes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeType","",Class<IFunction>::getFunction(_getNodeType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeName","",Class<IFunction>::getFunction(_getNodeName),GETTER_METHOD,true);
 }
 
 void XMLNode::buildTraits(ASObject* o)
@@ -119,7 +119,7 @@ ASFUNCTIONBODY(XMLNode,attributes)
 		if(nsName!="")
 			attrName=nsName+":"+attrName;
 		ASString* attrValue=Class<ASString>::getInstanceS((*it)->get_value().c_str());
-		ret->setVariableByQName(attrName,"",attrValue);
+		ret->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
 	}
 	return ret;
 }
@@ -141,8 +141,8 @@ void XMLDocument::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<XMLNode>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setMethodByQName("parseXML","",Class<IFunction>::getFunction(parseXML),true);
-	c->setGetterByQName("firstChild","",Class<IFunction>::getFunction(XMLDocument::firstChild),true);
+	c->setDeclaredMethodByQName("parseXML","",Class<IFunction>::getFunction(parseXML),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(XMLDocument::firstChild),GETTER_METHOD,true);
 }
 
 void XMLDocument::buildTraits(ASObject* o)

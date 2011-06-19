@@ -30,16 +30,17 @@ ASObject* Class<ASObject>::getVariableByMultiname(const multiname& name, bool sk
 	if(!ret)
 	{
 		//Check if we should do lazy definition
+		//TODO: is DECLARED_TRAIT the right kind?
 		if(name.name_s=="toString")
 		{
 			ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
-			setVariableByQName("toString","",ret);
+			setVariableByQName("toString","",ret,DECLARED_TRAIT);
 			return ret;
 		}
 		else if(name.name_s=="hasOwnProperty")
 		{
 			ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
-			setVariableByQName("hasOwnProperty","",ret);
+			setVariableByQName("hasOwnProperty",AS3,ret,DECLARED_TRAIT);
 			return ret;
 		}
 

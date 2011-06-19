@@ -53,25 +53,25 @@ ByteArray::~ByteArray()
 
 void ByteArray::sinit(Class_base* c)
 {
-	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength),true);
-	c->setSetterByQName("length","",Class<IFunction>::getFunction(_setLength),true);
-	c->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),true);
-	c->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition),true);
-	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition),true);
-	c->setGetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),false);
-	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),false);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_setLength),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(_getPosition),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(_setPosition),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
-	c->setMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),true);
-	c->setMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),true);
-	c->setMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),true);
-	c->setMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),true);
-	c->setMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),true);
-	c->setMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),true);
-	c->setMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),true);
-	c->setMethodByQName("writeInt","",Class<IFunction>::getFunction(writeInt),true);
-	c->setMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),true);
-//	c->setMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),true);
-	c->setMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),true);
+	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeInt","",Class<IFunction>::getFunction(writeInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),NORMAL_METHOD,true);
+//	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),NORMAL_METHOD,true);
 }
 
 void ByteArray::buildTraits(ASObject* o)
@@ -405,6 +405,18 @@ ASFUNCTIONBODY(ByteArray,_toString)
 	return Class<ASString>::getInstanceS((char*)th->bytes,th->len);
 }
 
+bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	if(considerDynamic==false)
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	unsigned int index=0;
+	if(!Array::isValidMultiname(name,index))
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	return index<len;
+}
+
 ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	assert_and_throw(implEnable);
@@ -550,15 +562,15 @@ void Timer::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("currentCount","",Class<IFunction>::getFunction(_getCurrentCount),true);
-	c->setGetterByQName("repeatCount","",Class<IFunction>::getFunction(_getRepeatCount),true);
-	c->setSetterByQName("repeatCount","",Class<IFunction>::getFunction(_setRepeatCount),true);
-	c->setGetterByQName("running","",Class<IFunction>::getFunction(_getRunning),true);
-	c->setGetterByQName("delay","",Class<IFunction>::getFunction(_getDelay),true);
-	c->setSetterByQName("delay","",Class<IFunction>::getFunction(_setDelay),true);
-	c->setMethodByQName("start","",Class<IFunction>::getFunction(start),true);
-	c->setMethodByQName("reset","",Class<IFunction>::getFunction(reset),true);
-	c->setMethodByQName("stop","",Class<IFunction>::getFunction(stop),true);
+	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(_getCurrentCount),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_getRepeatCount),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_setRepeatCount),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("running","",Class<IFunction>::getFunction(_getRunning),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(_getDelay),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(_setDelay),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(start),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("reset","",Class<IFunction>::getFunction(reset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(Timer,_constructor)
@@ -920,6 +932,29 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 	return ASObject::getVariableByMultiname(name, skip_impl, base);
 }
 
+bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	if(considerDynamic==false)
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	if(name.name_type==multiname::NAME_OBJECT)
+	{
+		_R<ASObject> name_o(name.name_o);
+
+		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
+		return it != data.end();
+	}
+	else
+	{
+		//Primitive types _must_ be handled by the normal ASObject path
+		//REFERENCE: Dictionary Object on AS3 reference
+		assert(name.name_type==multiname::NAME_STRING ||
+			name.name_type==multiname::NAME_INT ||
+			name.name_type==multiname::NAME_NUMBER);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+	}
+}
+
 uint32_t Dictionary::nextNameIndex(uint32_t cur_index)
 {
 	assert_and_throw(implEnable);
@@ -1005,8 +1040,8 @@ void Proxy::buildTraits(ASObject* o)
 
 void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
-	//If a variable named like this already exist, return that
-	if(hasPropertyByMultiname(name) || !implEnable)
+	//If a variable named like this already exist, use that
+	if(ASObject::hasPropertyByMultiname(name, true) || !implEnable)
 	{
 		ASObject::setVariableByMultiname(name,o,base);
 		return;
@@ -1046,7 +1081,7 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable || skip_impl)
+	if(name.ns[0].name!="" || ASObject::hasPropertyByMultiname(name, true) || !implEnable || skip_impl)
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
@@ -1072,6 +1107,14 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 	ASObject* ret=f->call(this,&arg,1);
 	implEnable=true;
 	return ret;
+}
+
+bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	if(considerDynamic==false)
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	throw UnsupportedException("Proxy::hasProperty");
 }
 
 uint32_t Proxy::nextNameIndex(uint32_t cur_index)

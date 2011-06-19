@@ -31,12 +31,12 @@ REGISTER_CLASS_NAME(ExternalInterface);
 void ExternalInterface::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
-	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable),false);
-	c->setGetterByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),false);
-	c->setGetterByQName("marshallExceptions","",Class<IFunction>::getFunction(_getMarshallExceptions),false);
-	c->setSetterByQName("marshallExceptions","",Class<IFunction>::getFunction(_setMarshallExceptions),false);
-	c->setMethodByQName("addCallback","",Class<IFunction>::getFunction(addCallback),false);
-	c->setMethodByQName("call","",Class<IFunction>::getFunction(call),false);
+	c->setDeclaredMethodByQName("available","",Class<IFunction>::getFunction(_getAvailable),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(_getMarshallExceptions),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(_setMarshallExceptions),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("addCallback","",Class<IFunction>::getFunction(addCallback),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(call),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)

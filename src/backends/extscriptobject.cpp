@@ -284,11 +284,15 @@ ASObject* ExtVariant::getASObject() const
 						property = objValue->getProperty(*ids[i]);
 
 						if(ids[i]->getType() == ExtIdentifier::EI_STRING)
-							asobj->setVariableByQName(ids[i]->getString(), "", property->getASObject());
+						{
+							asobj->setVariableByQName(ids[i]->getString(), "",
+									property->getASObject(), DYNAMIC_TRAIT);
+						}
 						else
 						{
 							conv << ids[i]->getInt();
-							asobj->setVariableByQName(conv.str().c_str(), "", property->getASObject());
+							asobj->setVariableByQName(conv.str().c_str(), "",
+									property->getASObject(), DYNAMIC_TRAIT);
 						}
 						delete property;
 						delete ids[i];

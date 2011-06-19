@@ -119,7 +119,7 @@ ASFUNCTIONBODY(XMLNode,attributes)
 		if(nsName!="")
 			attrName=nsName+":"+attrName;
 		ASString* attrValue=Class<ASString>::getInstanceS((*it)->get_value().c_str());
-		ret->setVariableByQName(attrName,"",attrValue);
+		ret->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
 	}
 	return ret;
 }

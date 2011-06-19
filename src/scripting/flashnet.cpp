@@ -194,8 +194,8 @@ ASFUNCTIONBODY(URLRequest,_setData)
 
 void URLRequestMethod::sinit(Class_base* c)
 {
-	c->setVariableByQName("GET","",Class<ASString>::getInstanceS("GET"));
-	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"));
+	c->setVariableByQName("GET","",Class<ASString>::getInstanceS("GET"),DECLARED_TRAIT);
+	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"),DECLARED_TRAIT);
 }
 
 URLLoader::URLLoader():dataFormat("text"),data(NULL),downloader(NULL)
@@ -402,9 +402,9 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 
 void URLLoaderDataFormat::sinit(Class_base* c)
 {
-	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables"));
-	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text"));
-	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"));
+	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables"),DECLARED_TRAIT);
+	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text"),DECLARED_TRAIT);
+	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"),DECLARED_TRAIT);
 }
 
 void SharedObject::sinit(Class_base* c)
@@ -413,9 +413,9 @@ void SharedObject::sinit(Class_base* c)
 
 void ObjectEncoding::sinit(Class_base* c)
 {
-	c->setVariableByQName("AMF0","",abstract_i(AMF0));
-	c->setVariableByQName("AMF3","",abstract_i(AMF3));
-	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT));
+	c->setVariableByQName("AMF0","",abstract_i(AMF0),DECLARED_TRAIT);
+	c->setVariableByQName("AMF3","",abstract_i(AMF3),DECLARED_TRAIT);
+	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
 };
 
 NetConnection::NetConnection():_connected(false)
@@ -587,8 +587,8 @@ void NetStream::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"));
-	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"));
+	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"),DECLARED_TRAIT);
+	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("resume","",Class<IFunction>::getFunction(resume),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("pause","",Class<IFunction>::getFunction(pause),NORMAL_METHOD,true);
@@ -961,23 +961,23 @@ void NetStream::execute()
 					double d;
 					uint32_t i;
 					if(streamDecoder->getMetadataDouble("width",d))
-						metadata->setVariableByQName("width", "",abstract_d(d));
+						metadata->setVariableByQName("width", "",abstract_d(d),DYNAMIC_TRAIT);
 					else
-						metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()));
+						metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("height",d))
-						metadata->setVariableByQName("height", "",abstract_d(d));
+						metadata->setVariableByQName("height", "",abstract_d(d),DYNAMIC_TRAIT);
 					else
-						metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()));
+						metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("framerate",d))
-						metadata->setVariableByQName("framerate", "",abstract_d(d));
+						metadata->setVariableByQName("framerate", "",abstract_d(d),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("duration",d))
-						metadata->setVariableByQName("duration", "",abstract_d(d));
+						metadata->setVariableByQName("duration", "",abstract_d(d),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataInteger("canseekontime",i))
-						metadata->setVariableByQName("canSeekToEnd", "",abstract_b(i == 1));
+						metadata->setVariableByQName("canSeekToEnd", "",abstract_b(i == 1),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("audiodatarate",d))
-						metadata->setVariableByQName("audiodatarate", "",abstract_d(d));
+						metadata->setVariableByQName("audiodatarate", "",abstract_d(d),DYNAMIC_TRAIT);
 					if(streamDecoder->getMetadataDouble("videodatarate",d))
-						metadata->setVariableByQName("videodatarate", "",abstract_d(d));
+						metadata->setVariableByQName("videodatarate", "",abstract_d(d),DYNAMIC_TRAIT);
 
 					//TODO: missing: audiocodecid (Number), cuePoints (Object[]),
 					//videocodecid (Number), custommetadata's

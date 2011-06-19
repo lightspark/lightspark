@@ -1323,17 +1323,17 @@ void Vector3D::sinit(Class_base* c)
 	Vector3D* tx = new Vector3D();
 	tx->x = 1;
 	tx->setPrototype(c);
-	c->setVariableByQName("X_AXIS","", tx);
+	c->setVariableByQName("X_AXIS","", tx, DECLARED_TRAIT);
 
 	Vector3D* ty = new Vector3D();
 	ty->y = 1;
 	ty->setPrototype(c);
-	c->setVariableByQName("Y_AXIS","", ty);
+	c->setVariableByQName("Y_AXIS","", ty, DECLARED_TRAIT);
 
 	Vector3D* tz = new Vector3D();
 	tz->z = 1;
 	tz->setPrototype(c);
-	c->setVariableByQName("Z_AXIS","", tz);
+	c->setVariableByQName("Z_AXIS","", tz, DECLARED_TRAIT);
 
 	// properties
 	c->setDeclaredMethodByQName("w","",Class<IFunction>::getFunction(_get_w),GETTER_METHOD,true);

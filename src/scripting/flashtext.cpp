@@ -137,24 +137,24 @@ void TextField::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3
 
 void TextFieldAutoSize ::sinit(Class_base* c)
 {
-	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"));
-	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"));
-	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"));
-	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"));
+	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"),DECLARED_TRAIT);
+	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"),DECLARED_TRAIT);
+	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
+	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"),DECLARED_TRAIT);
 }
 
 void TextFieldType ::sinit(Class_base* c)
 {
-	c->setVariableByQName("DYNAMIC","",Class<ASString>::getInstanceS("dynamic"));
-	c->setVariableByQName("INPUT","",Class<ASString>::getInstanceS("input"));
+	c->setVariableByQName("DYNAMIC","",Class<ASString>::getInstanceS("dynamic"),DECLARED_TRAIT);
+	c->setVariableByQName("INPUT","",Class<ASString>::getInstanceS("input"),DECLARED_TRAIT);
 }
 
 void TextFormatAlign ::sinit(Class_base* c)
 {
-	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"));
-	c->setVariableByQName("JUSTIFY","",Class<ASString>::getInstanceS("justify"));
-	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"));
-	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"));
+	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"),DECLARED_TRAIT);
+	c->setVariableByQName("JUSTIFY","",Class<ASString>::getInstanceS("justify"),DECLARED_TRAIT);
+	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"),DECLARED_TRAIT);
+	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"),DECLARED_TRAIT);
 }
 
 void TextFormat::sinit(Class_base* c)

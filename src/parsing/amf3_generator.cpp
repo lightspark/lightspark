@@ -75,7 +75,7 @@ static ASObject* createObject(Amf3Deserializer* th, const amf3::ObjectType& t)
 	{
 		const tiny_string& varName=getString(th, o.m_associativeSection[i].name);
 		ASObject* obj=createValue(th, o.m_associativeSection[i].value);
-		ret->setVariableByQName(varName,"",obj);
+		ret->setVariableByQName(varName,"",obj,DYNAMIC_TRAIT);
 	}
 	return ret;
 }
@@ -93,7 +93,7 @@ static ASObject* createArray(Amf3Deserializer* th, const amf3::ArrayType& t)
 	{
 		const tiny_string& varName=getString(th, a.m_associativeSection[i].name);
 		ASObject* obj=createValue(th, a.m_associativeSection[i].value);
-		ret->setVariableByQName(varName,"",obj);
+		ret->setVariableByQName(varName,"",obj, DYNAMIC_TRAIT);
 	}
 	for(uint32_t i=0;i<a.m_denseSection.size();i++)
 	{

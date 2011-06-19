@@ -119,7 +119,7 @@ struct obj_var
 	void setVar(ASObject* v);
 };
 
-enum TRAIT_KIND { OWNED_TRAIT=0, BORROWED_TRAIT=1 };
+enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, BORROWED_TRAIT=4 };
 
 struct variable
 {
@@ -146,9 +146,15 @@ private:
 	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
 	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
-	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	obj_var* findObjVar(const tiny_string& name, const nsNameAndKind& ns, bool create, bool borrowedMode);
-	obj_var* findObjVar(const multiname& mname, bool create, bool borrowedMode);
+	/**
+	   Find a variable in the map
+
+	   @param createKind If this is different from NO_CREATE_TRAIT and no variable is found
+				a new one is created with the given kind
+	   @param traitKinds Bitwise OR of accepted trait kinds
+	*/
+	obj_var* findObjVar(const tiny_string& name, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
+	obj_var* findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(const multiname& mname, ASObject* obj, Class_base* type);
 	void killObjVar(const multiname& mname);
@@ -287,7 +293,8 @@ public:
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, Class_base* type);
 	virtual void deleteVariableByMultiname(const multiname& name);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind);
+	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);

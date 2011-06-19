@@ -67,26 +67,26 @@ void Event::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS("enterFrame"));
-	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS("render"));
-	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS("addedToStage"));
-	c->setVariableByQName("REMOVED_FROM_STAGE","",Class<ASString>::getInstanceS("removedFromStage"));
-	c->setVariableByQName("INIT","",Class<ASString>::getInstanceS("init"));
-	c->setVariableByQName("OPEN","",Class<ASString>::getInstanceS("open"));
-	c->setVariableByQName("CLOSE","",Class<ASString>::getInstanceS("close"));
-	c->setVariableByQName("ADDED","",Class<ASString>::getInstanceS("added"));
-	c->setVariableByQName("COMPLETE","",Class<ASString>::getInstanceS("complete"));
-	c->setVariableByQName("REMOVED","",Class<ASString>::getInstanceS("removed"));
-	c->setVariableByQName("UNLOAD","",Class<ASString>::getInstanceS("unload"));
-	c->setVariableByQName("ACTIVATE","",Class<ASString>::getInstanceS("activate"));
-	c->setVariableByQName("DEACTIVATE","",Class<ASString>::getInstanceS("deactivate"));
-	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS("change"));
-	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS("resize"));
-	c->setVariableByQName("MOUSE_LEAVE","",Class<ASString>::getInstanceS("mouseLeave"));
-	c->setVariableByQName("SELECT","",Class<ASString>::getInstanceS("select"));
-	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange"));
-	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"));
-	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));
+	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS("enterFrame"),DECLARED_TRAIT);
+	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS("render"),DECLARED_TRAIT);
+	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS("addedToStage"),DECLARED_TRAIT);
+	c->setVariableByQName("REMOVED_FROM_STAGE","",Class<ASString>::getInstanceS("removedFromStage"),DECLARED_TRAIT);
+	c->setVariableByQName("INIT","",Class<ASString>::getInstanceS("init"),DECLARED_TRAIT);
+	c->setVariableByQName("OPEN","",Class<ASString>::getInstanceS("open"),DECLARED_TRAIT);
+	c->setVariableByQName("CLOSE","",Class<ASString>::getInstanceS("close"),DECLARED_TRAIT);
+	c->setVariableByQName("ADDED","",Class<ASString>::getInstanceS("added"),DECLARED_TRAIT);
+	c->setVariableByQName("COMPLETE","",Class<ASString>::getInstanceS("complete"),DECLARED_TRAIT);
+	c->setVariableByQName("REMOVED","",Class<ASString>::getInstanceS("removed"),DECLARED_TRAIT);
+	c->setVariableByQName("UNLOAD","",Class<ASString>::getInstanceS("unload"),DECLARED_TRAIT);
+	c->setVariableByQName("ACTIVATE","",Class<ASString>::getInstanceS("activate"),DECLARED_TRAIT);
+	c->setVariableByQName("DEACTIVATE","",Class<ASString>::getInstanceS("deactivate"),DECLARED_TRAIT);
+	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS("change"),DECLARED_TRAIT);
+	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS("resize"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_LEAVE","",Class<ASString>::getInstanceS("mouseLeave"),DECLARED_TRAIT);
+	c->setVariableByQName("SELECT","",Class<ASString>::getInstanceS("select"),DECLARED_TRAIT);
+	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange"),DECLARED_TRAIT);
+	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"),DECLARED_TRAIT);
+	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"),DECLARED_TRAIT);
 
 	c->setDeclaredMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),NORMAL_METHOD,true);
@@ -171,9 +171,9 @@ void EventPhase::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setVariableByQName("CAPTURING_PHASE","",abstract_i(CAPTURING_PHASE));
-	c->setVariableByQName("BUBBLING_PHASE","",abstract_i(BUBBLING_PHASE));
-	c->setVariableByQName("AT_TARGET","",abstract_i(AT_TARGET));
+	c->setVariableByQName("CAPTURING_PHASE","",abstract_i(CAPTURING_PHASE),DECLARED_TRAIT);
+	c->setVariableByQName("BUBBLING_PHASE","",abstract_i(BUBBLING_PHASE),DECLARED_TRAIT);
+	c->setVariableByQName("AT_TARGET","",abstract_i(AT_TARGET),DECLARED_TRAIT);
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
@@ -186,10 +186,10 @@ void FocusEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS("focusIn"));
-	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS("focusOut"));
-	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",Class<ASString>::getInstanceS("mouseFocusChange"));
-	c->setVariableByQName("KEY_FOCUS_CHANGE","",Class<ASString>::getInstanceS("keyFocusChange"));
+	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS("focusIn"),DECLARED_TRAIT);
+	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS("focusOut"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",Class<ASString>::getInstanceS("mouseFocusChange"),DECLARED_TRAIT);
+	c->setVariableByQName("KEY_FOCUS_CHANGE","",Class<ASString>::getInstanceS("keyFocusChange"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(FocusEvent,_constructor)
@@ -219,7 +219,7 @@ void ProgressEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"));
+	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
 }
@@ -257,8 +257,8 @@ void TimerEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS("timer"));
-	c->setVariableByQName("TIMER_COMPLETE","",Class<ASString>::getInstanceS("timerComplete"));
+	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS("timer"),DECLARED_TRAIT);
+	c->setVariableByQName("TIMER_COMPLETE","",Class<ASString>::getInstanceS("timerComplete"),DECLARED_TRAIT);
 }
 
 void MouseEvent::sinit(Class_base* c)
@@ -267,23 +267,23 @@ void MouseEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click"));
-	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS("doubleClick"));
-	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS("mouseDown"));
-	c->setVariableByQName("MOUSE_OUT","",Class<ASString>::getInstanceS("mouseOut"));
-	c->setVariableByQName("MOUSE_OVER","",Class<ASString>::getInstanceS("mouseOver"));
-	c->setVariableByQName("MOUSE_UP","",Class<ASString>::getInstanceS("mouseUp"));
-	c->setVariableByQName("MOUSE_WHEEL","",Class<ASString>::getInstanceS("mouseWheel"));
-	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS("mouseMove"));
-	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver"));
-	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"));
+	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click"),DECLARED_TRAIT);
+	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS("doubleClick"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS("mouseDown"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_OUT","",Class<ASString>::getInstanceS("mouseOut"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_OVER","",Class<ASString>::getInstanceS("mouseOver"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_UP","",Class<ASString>::getInstanceS("mouseUp"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_WHEEL","",Class<ASString>::getInstanceS("mouseWheel"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS("mouseMove"),DECLARED_TRAIT);
+	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver"),DECLARED_TRAIT);
+	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"),DECLARED_TRAIT);
 }
 
 void MouseEvent::buildTraits(ASObject* o)
 {
 	//TODO: really handle local[XY]
-	o->setVariableByQName("localX","",abstract_d(0));
-	o->setVariableByQName("localY","",abstract_d(0));
+	o->setVariableByQName("localX","",abstract_d(0),DECLARED_TRAIT);
+	o->setVariableByQName("localY","",abstract_d(0),DECLARED_TRAIT);
 }
 
 IOErrorEvent::IOErrorEvent()
@@ -296,7 +296,7 @@ void IOErrorEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"));
+	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),DECLARED_TRAIT);
 }
 
 EventDispatcher::EventDispatcher():handlersMutex("handlersMutex")
@@ -541,9 +541,9 @@ NetStatusEvent::NetStatusEvent(const tiny_string& l, const tiny_string& c):Event
 {
 	//The object has been initialized internally
 	ASObject* info=Class<ASObject>::getInstanceS();
-	info->setVariableByQName("level","",Class<ASString>::getInstanceS(level));
-	info->setVariableByQName("code","",Class<ASString>::getInstanceS(code));
-	setVariableByQName("info","",info);
+	info->setVariableByQName("level","",Class<ASString>::getInstanceS(level),DECLARED_TRAIT);
+	info->setVariableByQName("code","",Class<ASString>::getInstanceS(code),DECLARED_TRAIT);
+	setVariableByQName("info","",info, DECLARED_TRAIT);
 }
 
 void NetStatusEvent::sinit(Class_base* c)
@@ -552,7 +552,7 @@ void NetStatusEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS("netStatus"));
+	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS("netStatus"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
@@ -579,7 +579,7 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 		//Uninitialized info
 		info=new Null;
 	}
-	obj->setVariableByQName("info","",info);
+	obj->setVariableByQName("info","",info,DECLARED_TRAIT);
 	return NULL;
 }
 
@@ -593,7 +593,7 @@ void FullScreenEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"));
+	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(FullScreenEvent,_constructor)
@@ -611,8 +611,8 @@ void KeyboardEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS("keyDown"));
-	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS("keyUp"));
+	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS("keyDown"),DECLARED_TRAIT);
+	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS("keyUp"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(KeyboardEvent,_constructor)
@@ -630,7 +630,7 @@ void TextEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS("textInput"));
+	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS("textInput"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(TextEvent,_constructor)
@@ -649,7 +649,7 @@ void ErrorEvent::sinit(Class_base* c)
 	c->super=Class<TextEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS("error"));
+	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS("error"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(ErrorEvent,_constructor)
@@ -668,7 +668,7 @@ void SecurityErrorEvent::sinit(Class_base* c)
 	c->super=Class<ErrorEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS("securityError"));
+	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS("securityError"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(SecurityErrorEvent,_constructor)
@@ -687,7 +687,7 @@ void AsyncErrorEvent::sinit(Class_base* c)
 	c->super=Class<ErrorEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("ASYNC_ERROR","",Class<ASString>::getInstanceS("asyncError"));
+	c->setVariableByQName("ASYNC_ERROR","",Class<ASString>::getInstanceS("asyncError"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
@@ -710,7 +710,7 @@ void HTTPStatusEvent::sinit(Class_base* c)
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"));
+	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"),DECLARED_TRAIT);
 }
 
 FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _args, uint32_t _numArgs, 

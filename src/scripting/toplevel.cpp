@@ -84,11 +84,11 @@ void Array::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE));
-	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING));
-	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC));
-	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY));
-	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT));
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE),DECLARED_TRAIT);
+	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING),DECLARED_TRAIT);
+	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC),DECLARED_TRAIT);
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY),DECLARED_TRAIT);
+	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT),DECLARED_TRAIT);
 
 	// properties
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
@@ -2571,8 +2571,8 @@ tiny_string Integer::toString(bool debugMsg)
 
 void Integer::sinit(Class_base* c)
 {
-	c->setVariableByQName("MAX_VALUE","",new Integer(2147483647));
-	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648));
+	c->setVariableByQName("MAX_VALUE","",new Integer(2147483647),DECLARED_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648),DECLARED_TRAIT);
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),NORMAL_METHOD,true);
@@ -2750,10 +2750,10 @@ void Number::sinit(Class_base* c)
 	pinf->setPrototype(c);
 	pmax->setPrototype(c);
 	pmin->setPrototype(c);
-	c->setVariableByQName("NEGATIVE_INFINITY","",ninf);
-	c->setVariableByQName("POSITIVE_INFINITY","",pinf);
-	c->setVariableByQName("MAX_VALUE","",pmax);
-	c->setVariableByQName("MIN_VALUE","",pmin);
+	c->setVariableByQName("NEGATIVE_INFINITY","",ninf,DECLARED_TRAIT);
+	c->setVariableByQName("POSITIVE_INFINITY","",pinf,DECLARED_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",pmax,DECLARED_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",pmin,DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),NORMAL_METHOD,true);
 }
 
@@ -3142,7 +3142,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			argumentsArray->set(j+args_len,args[passedToLocals+j]);
 		//Add ourself as the callee property
 		incRef();
-		argumentsArray->setVariableByQName("callee","",this);
+		argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT);
 
 		cc->locals[i+1]=argumentsArray;
 	}
@@ -3245,14 +3245,14 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 void Math::sinit(Class_base* c)
 {
 	// public constants
-	c->setVariableByQName("E","",abstract_d(2.71828182845905));
-	c->setVariableByQName("LN10","",abstract_d(2.302585092994046));
-	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453));
-	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518));
-	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387));
-	c->setVariableByQName("PI","",abstract_d(3.141592653589793));
-	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476));
-	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951));
+	c->setVariableByQName("E","",abstract_d(2.71828182845905),DECLARED_TRAIT);
+	c->setVariableByQName("LN10","",abstract_d(2.302585092994046),DECLARED_TRAIT);
+	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453),DECLARED_TRAIT);
+	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518),DECLARED_TRAIT);
+	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387),DECLARED_TRAIT);
+	c->setVariableByQName("PI","",abstract_d(3.141592653589793),DECLARED_TRAIT);
+	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476),DECLARED_TRAIT);
+	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951),DECLARED_TRAIT);
 
 	// public methods
 	c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(abs),NORMAL_METHOD,false);
@@ -3602,15 +3602,15 @@ ASFUNCTIONBODY(RegExp,exec)
 	for(int i=0;i<capturingGroups+1;i++)
 		a->push(Class<ASString>::getInstanceS(str+ovector[i*2],ovector[i*2+1]-ovector[i*2]));
 	args[0]->incRef();
-	a->setVariableByQName("input","",args[0]);
-	a->setVariableByQName("index","",abstract_i(ovector[0]));
+	a->setVariableByQName("input","",args[0],DYNAMIC_TRAIT);
+	a->setVariableByQName("index","",abstract_i(ovector[0]),DYNAMIC_TRAIT);
 	for(int i=0;i<namedGroups;i++)
 	{
 		nameEntry* entry=(nameEntry*)entries;
 		uint16_t num=BigEndianToHost16(entry->number);
 		ASObject* captured=a->at(num);
 		captured->incRef();
-		a->setVariableByQName(entry->name,"",captured);
+		a->setVariableByQName(entry->name,"",captured,DYNAMIC_TRAIT);
 		entries+=namedSize;
 	}
 	th->lastIndex=ovector[1];
@@ -4246,7 +4246,7 @@ ASObject* Class_base::getBorrowedVariableByMultiname(const multiname& name, bool
 	check();
 	assert(base);
 
-	obj_var* obj=Variables.findObjVar(name,false,true);
+	obj_var* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -4686,21 +4686,21 @@ void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const
 	//Find the origin
 	while(cur)
 	{
-		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false,true);
+		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 		if(var)
 			break;
 		cur=cur->super;
 	}
 	assert_and_throw(var->var);
 	var->var->incRef();
-	c->setVariableByQName(name,interfaceNs,var->var);
+	c->setVariableByQName(name,interfaceNs,var->var,DECLARED_TRAIT);
 }
 
 void UInteger::sinit(Class_base* c)
 {
 	//TODO: add in the JIT support for unsigned number
 	//Right now we pretend to be signed, to make comparisons work
-	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff));
+	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff),DECLARED_TRAIT);
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }

@@ -41,13 +41,13 @@ void Capabilities::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(_getLanguage),GETTER_METHOD,true);
-	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"));
-	c->setVariableByQName("serverString","",Class<ASString>::getInstanceS(""));
+	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"),DECLARED_TRAIT);
+	c->setVariableByQName("serverString","",Class<ASString>::getInstanceS(""),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(Capabilities,_constructor)
 {
-	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS("AVMPlus"));
+	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS("AVMPlus"),DECLARED_TRAIT);
 	return NULL;
 }
 
@@ -178,13 +178,13 @@ void Security::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType),GETTER_METHOD,false);
 	c->setVariableByQName("LOCAL_TRUSTED","",
-			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)));
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)),DECLARED_TRAIT);
 	c->setVariableByQName("LOCAL_WITH_FILE","",
-			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)));
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)),DECLARED_TRAIT);
 	c->setVariableByQName("LOCAL_WITH_NETWORK","",
-			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)));
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)),DECLARED_TRAIT);
 	c->setVariableByQName("REMOTE","",
-			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::REMOTE)));
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::REMOTE)),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile),NORMAL_METHOD,false);

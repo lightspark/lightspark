@@ -1651,7 +1651,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	LOG(LOG_CALLS, _("findProperty ") << *name );
 
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
-	ASObject* o=NULL;
+	bool found=false;
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	for(;it!=th->scope_stack.rend();++it)
@@ -1659,23 +1659,24 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 		if(it->object==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		o=it->object->getVariableByMultiname(*name, false);
+		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic);
 		if(it->object==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
-		if(o)
+		if(found)
 		{
 			//We have to return the object, not the property
 			ret=it->object.getPtr();
 			break;
 		}
 	}
-	if(o==NULL)
+	if(!found)
 	{
 		LOG(LOG_CALLS, _("NOT found, pushing global") );
 		ret=th->scope_stack[0].object.getPtr();
 	}
 
+	//TODO: make this a regular assert
 	assert_and_throw(ret);
 	ret->incRef();
 	return ret;
@@ -1687,7 +1688,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	LOG(LOG_CALLS, _("findPropStrict ") << *name );
 
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
-	ASObject* o=NULL;
+	bool found=false;
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 
@@ -1696,24 +1697,24 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 		if(it->object==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		o=it->object->getVariableByMultiname(*name, false);
+		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic);
 		if(it->object==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
-		if(o)
+		if(found)
 		{
 			//We have to return the object, not the property
 			ret=it->object.getPtr();
 			break;
 		}
 	}
-	if(o==NULL)
+	if(!found)
 	{
 		LOG(LOG_CALLS, _("NOT found, trying Global") );
 		ASObject* target;
-		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+		ASObject* o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 		if(o)
 			ret=target;
-		if(o==NULL)
+		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED, _("NOT found, pushing Undefined"));
 			ret=new Undefined;
@@ -2250,7 +2251,7 @@ void ABCVm::newObject(call_context* th, int n)
 	{
 		ASObject* value=th->runtime_stack_pop();
 		ASObject* name=th->runtime_stack_pop();
-		ret->setVariableByQName(name->toString(),"",value);
+		ret->setVariableByQName(name->toString(),"",value,DYNAMIC_TRAIT);
 		name->decRef();
 	}
 
@@ -2423,7 +2424,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
 	ret->incRef();
-	ret->setVariableByQName("constructor","",ret);
+	ret->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
 
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->context->instances[n].interface_count;i++)

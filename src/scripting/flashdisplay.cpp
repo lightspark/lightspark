@@ -1866,7 +1866,11 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 	if(obj->name.len() > 0)
 	{
 		obj->incRef();
-		setVariableByQName(obj->name,"",obj);
+		multiname objName;
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s=obj->name;
+		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		setVariableByMultiname(objName,obj);
 	}
 
 	depthToLegacyChild[depth] = obj;

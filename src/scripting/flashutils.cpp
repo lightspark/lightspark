@@ -1111,6 +1111,9 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 
 bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 {
+	if(considerDynamic==false)
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
 	throw UnsupportedException("Proxy::hasProperty");
 }
 

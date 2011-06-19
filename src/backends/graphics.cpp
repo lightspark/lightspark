@@ -252,6 +252,7 @@ void MatrixApplier::concat(const MATRIX& m)
 void MatrixApplier::unapply()
 {
 	lsglPopMatrix();
+	rt->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 TextureChunk::TextureChunk(uint32_t w, uint32_t h)

@@ -1283,6 +1283,7 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 	glUniform1f(rt->yuvUniform, 0);
 	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	lsglPopMatrix();
+	rt->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,

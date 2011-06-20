@@ -1066,7 +1066,8 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		if(element==NULL)
 			return NULL;
 		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
-		return attr!=NULL;
+		if(attr!=NULL)
+			return true;
 	}
 	else
 	{
@@ -1076,8 +1077,12 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		//Normalize the name to the string form
 		assert(node);
 		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
-		return children.empty()==false;
+		if(!children.empty())
+			return true;
 	}
+
+	//Try the normal path as the last resource
+	return ASObject::hasPropertyByMultiname(name, considerDynamic);
 }
 
 ASFUNCTIONBODY(XML,_toString)

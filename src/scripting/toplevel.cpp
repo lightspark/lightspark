@@ -2724,7 +2724,7 @@ ASFUNCTIONBODY(Number,_toString)
 		purgeTrailingZeroes(buf,bufLen);
 	}
 	else if(radix==16)
-		snprintf(buf,20,"%lx",(int64_t)th->val);
+		snprintf(buf,20,"%llx",(int64_t)th->val);
 
 	return Class<ASString>::getInstanceS(buf);
 }

@@ -1098,6 +1098,7 @@ void DisplayObject::finalize()
 	mask.reset();
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
+	accessibilityProperties.reset();
 }
 
 void DisplayObject::sinit(Class_base* c)

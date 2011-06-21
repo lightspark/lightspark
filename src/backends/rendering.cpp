@@ -30,6 +30,8 @@
 #include <GLES2/gl2.h>
 #endif
 
+#define PBO  !ENABLE_GLES2
+
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8_REV
@@ -154,16 +156,23 @@ void RenderThread::handleNewTexture()
 	newTextureNeeded=false;
 }
 
+uint8_t* pbuf;
+
 void RenderThread::finalizeUpload()
 {
 	ITextureUploadable* u=prevUploadJob;
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
 	const TextureChunk& tex=u->getTexture();
+#if PBO
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[currentPixelBuffer]);
 	//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
 	loadChunkBGRA(tex, w, h, (uint8_t*)currentPixelBufferOffset);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#else
+	loadChunkBGRA(tex, w, h, pbuf);
+	free(pbuf);
+#endif
 	u->uploadFence();
 	prevUploadJob=NULL;
 }
@@ -177,8 +186,8 @@ void RenderThread::handleUpload()
 	if(w>pixelBufferWidth || h>pixelBufferHeight)
 		resizePixelBuffers(w,h);
 	//Increment and wrap current buffer index
+#if PBO
 	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
-
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[nextBuffer]);
 	uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
 	uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
@@ -190,7 +199,10 @@ void RenderThread::handleUpload()
 
 	currentPixelBufferOffset=alignedBuf-buf;
 	currentPixelBuffer=nextBuffer;
-
+#else
+	if (!posix_memalign((void **)&pbuf, 16, w*h*4))
+		u->upload(pbuf, w, h);
+#endif
 	//Get the texture to be sure it's allocated when the upload comes
 	u->getTexture();
 	prevUploadJob=u;
@@ -281,11 +293,11 @@ void* RenderThread::worker(RenderThread* th)
 	LOG(LOG_NO_INFO, _("EGL version: ") << eglQueryString(ed, EGL_VERSION));
 
 	EGLint config_attribs[] = {
+				EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 				EGL_RED_SIZE, 8,
 				EGL_GREEN_SIZE, 8,
 				EGL_BLUE_SIZE, 8,
 				EGL_ALPHA_SIZE, 8,
-				EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 				EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
 				EGL_NONE
 	};
@@ -295,7 +307,8 @@ void* RenderThread::worker(RenderThread* th)
 		EGL_NONE
 	};
 
-	if (!eglGetConfigs(ed, NULL, 0, &a)) {
+	//if (!eglGetConfigs(ed, NULL, 0, &a)) {
+	if (!eglChooseConfig(ed, config_attribs, 0, 0, &a)) {
 		LOG(LOG_ERROR,_("Could not get number of EGL configurations"));
 	} else {
 	    LOG(LOG_NO_INFO, "Number of EGL configurations: " << a);
@@ -311,8 +324,9 @@ void* RenderThread::worker(RenderThread* th)
 	for(i=0;i<a;i++)
 	{
 		EGLint id;
-		eglGetConfigAttrib(ed,conf[i], EGL_NATIVE_VISUAL_ID, &id);
-		if(id==(int)e->visual)
+		eglGetConfigAttrib(ed, conf[i], EGL_NATIVE_VISUAL_ID, &id);
+		LOG(LOG_ERROR, id <<" -> "<<e->visual);
+//		if(id==(int)e->visual)
 			break;
 	}
 	if(i==a)
@@ -735,12 +749,14 @@ void RenderThread::requestResize(uint32_t w, uint32_t h)
 
 void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 {
+#if PBO
 	//Add enough room to realign to 16
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[0]);
 	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[1]);
 	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#endif
 	pixelBufferWidth=w;
 	pixelBufferHeight=h;
 }
@@ -1158,7 +1174,8 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	const uint32_t blocksPerSide=largeTextureSize/128;
 	uint32_t startX, startY, endX, endY;
 	assert(chunk.getNumberOfChunks()==((chunk.width+127)/128)*((chunk.height+127)/128));
-	
+
+	LOG(LOG_ERROR, "CHUNKS "<<chunk.getNumberOfChunks());
 	uint32_t curChunk=0;
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
@@ -1234,6 +1251,10 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	delete[] vertex_coords;
 	delete[] texture_coords;
 }
+
+#if !PBO
+#define glPixelStorei(...)
+#endif
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
 {

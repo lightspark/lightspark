@@ -22,6 +22,8 @@
 #include <pcre.h>
 #include <string.h>
 #include <sstream>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <iomanip>
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -2725,7 +2727,7 @@ ASFUNCTIONBODY(Number,_toString)
 		purgeTrailingZeroes(buf,bufLen);
 	}
 	else if(radix==16)
-		snprintf(buf,20,"%llx",(int64_t)th->val);
+		snprintf(buf,20,"%"PRIx64,(int64_t)th->val);
 
 	return Class<ASString>::getInstanceS(buf);
 }

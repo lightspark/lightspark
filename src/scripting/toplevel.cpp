@@ -1913,6 +1913,7 @@ void ASString::buildTraits(ASObject* o)
 
 void Array::finalize()
 {
+	ASObject::finalize();
 	for(unsigned int i=0;i<data.size();i++)
 	{
 		if(data[i].type==DATA_OBJECT && data[i].data)

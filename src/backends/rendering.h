@@ -20,6 +20,7 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
+#include "lsopengl.h"
 #ifndef WIN32
 #ifndef ENABLE_GLES2
 #include <GL/glx.h>

@@ -36,11 +36,7 @@
 #include "compat.h"
 #include "flashaccessibility.h"
 
-#ifndef ENABLE_GLES2
-#include <GL/gl.h>
-#else
-#include <GLES2/gl2.h>
-#endif
+#include "backends/lsopengl.h"
 #include <fstream>
 #include <limits>
 #include <cmath>

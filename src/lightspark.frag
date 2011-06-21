@@ -1,6 +1,7 @@
 uniform sampler2D g_tex1, g_tex2;
 uniform float yuv;
 uniform float mask;
+varying vec4 ls_TexCoords[2];
 
 const mat3 YUVtoRGB = mat3(	1, 1, 1, //First coloumn
 				0, -0.344, 1.772, //Second coloumn
@@ -8,11 +9,11 @@ const mat3 YUVtoRGB = mat3(	1, 1, 1, //First coloumn
 
 void main()
 {
-	if(mask==1.0 && texture2D(g_tex2,gl_TexCoord[1].xy).a==0.0)
+	if(mask==1.0 && texture2D(g_tex2,ls_TexCoords[1].xy).a==0.0)
 		discard;
 
 	//Tranform the value from YUV to RGB
-	vec4 vbase = texture2D(g_tex1,gl_TexCoord[0].xy);
+	vec4 vbase = texture2D(g_tex1,ls_TexCoords[0].xy);
 	vec4 val = vbase.bgra-vec4(0,0.5,0.5,0);
 	val.rgb = YUVtoRGB*(val.rgb);
 

@@ -4699,9 +4699,10 @@ void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const
 			break;
 		cur=cur->super;
 	}
-	assert_and_throw(var->var);
-	var->var->incRef();
-	c->setVariableByQName(name,interfaceNs,var->var,DECLARED_TRAIT);
+	assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
+	IFunction* f=static_cast<IFunction*>(var->var);
+	f->incRef();
+	c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
 }
 
 void UInteger::sinit(Class_base* c)

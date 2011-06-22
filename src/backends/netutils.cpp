@@ -46,6 +46,16 @@ DownloadManager::DownloadManager()
 }
 
 /**
+ * \brief Download manager destructor
+ */
+DownloadManager::~DownloadManager()
+{
+	cleanUp();
+	//== Destroy lock
+	sem_destroy(&mutex);
+}
+
+/**
  * \brief Destroyes all the pending downloads, must be called in the destructor of each derived class
  *
  * Traverses the list of active downloaders, calling \c stop() and \c destroy() on all of them.
@@ -71,8 +81,8 @@ void DownloadManager::cleanUp()
 		//-- Lock acquired
 	}
 
-	//== Destroy lock
-	sem_destroy(&mutex);
+	//++ Release lock
+	sem_post(&mutex);
 }
 
 /**
@@ -142,11 +152,6 @@ bool DownloadManager::removeDownloader(Downloader* downloader)
 StandaloneDownloadManager::StandaloneDownloadManager()
 {
 	type = STANDALONE;
-}
-
-StandaloneDownloadManager::~StandaloneDownloadManager()
-{
-	cleanUp();
 }
 
 /**

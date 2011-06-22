@@ -60,6 +60,7 @@ public:
 	virtual Downloader* download(const URLInfo& url, bool cached, ILoadable* owner)=0;
 	virtual Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, ILoadable* owner)=0;
 	virtual void destroy(Downloader* downloader)=0;
+	void stopAll();
 
 	enum MANAGERTYPE { NPAPI, STANDALONE };
 	MANAGERTYPE type;

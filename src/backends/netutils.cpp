@@ -56,6 +56,22 @@ DownloadManager::~DownloadManager()
 }
 
 /**
+ * \brief Stops all the currently running downloaders
+ */
+void DownloadManager::stopAll()
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+
+	std::list<Downloader*>::iterator it=downloaders.begin();
+	for(;it!=downloaders.end();it++)
+		(*it)->stop();
+
+	//++ Release lock
+	sem_post(&mutex);
+}
+
+/**
  * \brief Destroyes all the pending downloads, must be called in the destructor of each derived class
  *
  * Traverses the list of active downloaders, calling \c stop() and \c destroy() on all of them.

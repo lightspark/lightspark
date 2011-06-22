@@ -364,6 +364,13 @@ SystemState::~SystemState()
 	assert(shutdown);
 
 	renderThread->stop();
+	/*
+	   Stop the downloads so that the thread pool does not keep waiting for data.
+	   Standalone downloader does not really need this as the downloading threads will
+	   be stopped with the whole thread pool, but in plugin mode this is necessary.
+	*/
+	if(downloadManager)
+		downloadManager->stopAll();
 	//The thread pool should be stopped before everything
 	if(threadPool)
 		threadPool->forceStop();

@@ -2371,6 +2371,8 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 #endif
 	ret->class_scope=th->scope_stack;
+	ret->incRef();
+	ret->class_scope.emplace_back(_MR(ret),false);
 
 	assert_and_throw(th->context);
 	ret->context=th->context;
@@ -2388,9 +2390,6 @@ void ABCVm::newClass(call_context* th, int n)
 	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(m);
 	//cinit must inherit the current scope
 	cinit->acquireScope(th->scope_stack);
-	//and the created class
-	ret->incRef();
-	cinit->addToScope(scope_entry(_MR(ret),false));
 
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)

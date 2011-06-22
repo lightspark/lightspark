@@ -78,19 +78,6 @@ public:
 	void finalize();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	ASObject* getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL)
-	{
-		ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, base);
-		if(ret==NULL && super)
-			ret=super->getVariableByMultiname(name, skip_impl, base);
-		return ret;
-	}
-	intptr_t getVariableByMultiname_i(const multiname& name)
-	{
-		throw UnsupportedException("Class_base::getVariableByMultiname_i");
-		return 0;
-	}
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;

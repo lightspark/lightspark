@@ -4547,13 +4547,6 @@ tiny_string Class_base::getQualifiedClassName() const
 	}
 }
 
-bool Class_base::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
-{
-	//The specs says that hasOwnProperty does not consider inherited properties for classes
-	bool ret=ASObject::hasPropertyByMultiname(name, considerDynamic);
-	return ret;
-}
-
 void ASQName::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();

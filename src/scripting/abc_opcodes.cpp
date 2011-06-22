@@ -2415,8 +2415,7 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(constructor);
-	//Also the constructor should have the script as the global object
-	constructorFunc->addToScope(th->scope_stack[0]);
+	constructorFunc->acquireScope(ret->class_scope);
 	//add Constructor the the class methods
 	ret->constructor=constructorFunc;
 	ret->class_index=n;

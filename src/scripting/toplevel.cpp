@@ -992,8 +992,15 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 		return NULL;
 	}
 
+	bool isAttr=name.isAttribute;
 	const tiny_string& normalizedName=name.normalizedName();
-	if(name.isAttribute)
+	const char *buf=normalizedName.raw_buf();
+	if(normalizedName[0]=='@')
+	{
+		isAttr=true;
+		buf+=1;
+	}
+	if(isAttr)
 	{
 		//Lookup attribute
 		//TODO: support namespaces
@@ -1004,7 +1011,7 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		if(element==NULL)
 			return NULL;
-		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
+		xmlpp::Attribute* attr=element->get_attribute(buf);
 		if(attr==NULL)
 			return NULL;
 
@@ -1031,7 +1038,7 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
 		//Normalize the name to the string form
 		assert(node);
-		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
+		const xmlpp::Node::NodeList& children=node->get_children(buf);
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
 
 		std::vector<_R<XML>> ret;
@@ -1065,8 +1072,15 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	if(considerDynamic==false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
+	bool isAttr=name.isAttribute;
 	const tiny_string& normalizedName=name.normalizedName();
-	if(name.isAttribute)
+	const char *buf=normalizedName.raw_buf();
+	if(normalizedName[0]=='@')
+	{
+		isAttr=true;
+		buf+=1;
+	}
+	if(isAttr)
 	{
 		//Lookup attribute
 		//TODO: support namespaces
@@ -1077,7 +1091,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		if(element==NULL)
 			return NULL;
-		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
+		xmlpp::Attribute* attr=element->get_attribute(buf);
 		if(attr!=NULL)
 			return true;
 	}
@@ -1088,7 +1102,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
 		//Normalize the name to the string form
 		assert(node);
-		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
+		const xmlpp::Node::NodeList& children=node->get_children(buf);
 		if(!children.empty())
 			return true;
 	}

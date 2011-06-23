@@ -556,6 +556,7 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	name.name_type=multiname::NAME_STRING;
 	name.name_s=args[0]->toString();
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.isAttribute=false;
 	bool ret=obj->hasPropertyByMultiname(name, true);
 	return abstract_b(ret);
 }

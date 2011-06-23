@@ -784,36 +784,52 @@ ASFUNCTIONBODY(lightspark,describeType)
 	ret+=(isStatic)?"\"true\"":"\"false\"";
 	ret+=">";
 	//TODO: add support for extendsClass and implementsInterface and factory
-	auto it=args[0]->Variables.Variables.begin();
-	for(;it!=args[0]->Variables.Variables.end();it++)
+	type=static_cast<Class_base*>(args[0]);
+	do
 	{
-		if(isStatic && it->second.kind==BORROWED_TRAIT)
-			continue;
+		auto it=type->Variables.Variables.begin();
+		for(;it!=type->Variables.Variables.end();it++)
+		{
+			if(isStatic && it->second.kind==BORROWED_TRAIT)
+				continue;
 
-		//TODO: add support for constant, method, parameter
-		if(it->second.var.getter)
-		{
-			//Output an accessor
-			//TODO: add support in accessor for access,type,declaredBy
-			ret+="<accessor name=\"";
-			ret+=it->first.raw_buf();
-			ret+="\"/>";
-		}
-		else if(it->second.var.var)
-		{
-			//Output a variable
-			ret+="<variable name=\"";
-			ret+=it->first.raw_buf();
-			ret+="\"";
-			if(it->second.var.type)
+			//TODO: add support for constant, method, parameter
+			if(it->second.var.getter)
 			{
-				ret+=" type=\"";
-				ret+=it->second.var.type->class_name.getQualifiedName().raw_buf();
-				ret+="\"";
+				//Output an accessor
+				//TODO: add support in accessor for access,type,declaredBy
+				ret+="<accessor name=\"";
+				ret+=it->first.raw_buf();
+				ret+="\"/>";
 			}
-			ret+="/>";
+			else if(it->second.var.var)
+			{
+				if(it->second.var.var->getObjectType()==T_FUNCTION)
+				{
+					//Output a method
+					//TODO: add support in method for declaredBy,returnType
+					ret+="<method name=\"";
+					ret+=it->first.raw_buf();
+					ret+="\"/>";
+				}
+				else
+				{
+					//Output a variable
+					ret+="<variable name=\"";
+					ret+=it->first.raw_buf();
+					ret+="\"";
+					if(it->second.var.type)
+					{
+						ret+=" type=\"";
+						ret+=it->second.var.type->class_name.getQualifiedName().raw_buf();
+						ret+="\"";
+					}
+					ret+="/>";
+				}
+			}
 		}
 	}
+	while((type=type->getPrototype())!=NULL);
 	ret+="</type>";
 
 	return Class<XML>::getInstanceS(ret);;

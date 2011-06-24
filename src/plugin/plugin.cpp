@@ -54,6 +54,14 @@ NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
 }
 
 /**
+ * \brief Destructor for NPDownloaderManager
+ */
+NPDownloadManager::~NPDownloadManager()
+{
+	cleanUp();
+}
+
+/**
  * \brief Create a Downloader for an URL.
  *
  * Returns a pointer to a newly created Downloader for the given URL.

@@ -50,7 +50,6 @@ DownloadManager::DownloadManager()
  */
 DownloadManager::~DownloadManager()
 {
-	cleanUp();
 	//== Destroy lock
 	sem_destroy(&mutex);
 }
@@ -97,8 +96,8 @@ void DownloadManager::cleanUp()
 		//-- Lock acquired
 	}
 
-	//++ Release lock
-	sem_post(&mutex);
+	//== Destroy lock
+	sem_destroy(&mutex);
 }
 
 /**
@@ -168,6 +167,11 @@ bool DownloadManager::removeDownloader(Downloader* downloader)
 StandaloneDownloadManager::StandaloneDownloadManager()
 {
 	type = STANDALONE;
+}
+
+StandaloneDownloadManager::~StandaloneDownloadManager()
+{
+	cleanUp();
 }
 
 /**

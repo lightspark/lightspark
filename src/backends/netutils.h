@@ -50,11 +50,11 @@ class DLL_PUBLIC DownloadManager
 private:
 	sem_t mutex;
 	std::list<Downloader*> downloaders;
-	void cleanUp();
 protected:
 	DownloadManager();
 	void addDownloader(Downloader* downloader);
 	bool removeDownloader(Downloader* downloader);
+	void cleanUp();
 public:
 	virtual ~DownloadManager();
 	virtual Downloader* download(const URLInfo& url, bool cached, ILoadable* owner)=0;
@@ -70,6 +70,7 @@ class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 {
 public:
 	StandaloneDownloadManager();
+	~StandaloneDownloadManager();
 	Downloader* download(const URLInfo& url, bool cached, ILoadable* owner);
 	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, ILoadable* owner);
 	void destroy(Downloader* downloader);

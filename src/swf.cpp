@@ -261,7 +261,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 		if(ok)
 		{
 			//cout << varName << ' ' << varValue << endl;
-			params->setVariableByQName(varName.c_str(),"",
+			params->setVariableByQName(varName,"",
 					lightspark::Class<lightspark::ASString>::getInstanceS(varValue),DYNAMIC_TRAIT);
 		}
 		cur=n2+1;
@@ -364,6 +364,13 @@ SystemState::~SystemState()
 	assert(shutdown);
 
 	renderThread->stop();
+	/*
+	   Stop the downloads so that the thread pool does not keep waiting for data.
+	   Standalone downloader does not really need this as the downloading threads will
+	   be stopped with the whole thread pool, but in plugin mode this is necessary.
+	*/
+	if(downloadManager)
+		downloadManager->stopAll();
 	//The thread pool should be stopped before everything
 	if(threadPool)
 		threadPool->forceStop();
@@ -957,6 +964,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 ParseThread::ParseThread(RootMovieClip* r,istream& in):root(NULL),version(0),useAVM2(false),
 	useNetwork(false),f(in),zlibFilter(NULL),backend(NULL),isEnded(false),fileType(NONE)
 {
+	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	root=r;
 	sem_init(&ended,0,0);
 }
@@ -1117,6 +1125,11 @@ void ParseThread::execute()
 		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
 		root->parsingFailed();
 		sys->setError(e.cause);
+	}
+	catch(std::exception& e)
+	{
+		LOG(LOG_ERROR,_("Stream exception in ParseThread"));
+		root->parsingFailed();
 	}
 	pt=NULL;
 

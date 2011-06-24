@@ -128,6 +128,13 @@ public:
 	}
 	tiny_string(const tiny_string& r):buf(_buf_static),stringSize(r.stringSize),type(STATIC)
 	{
+		//Fast path for static read-only strings
+		if(r.type==READONLY)
+		{
+			type=READONLY;
+			buf=r.buf;
+			return;
+		}
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
 		strcpy(buf,r.buf);
@@ -154,9 +161,18 @@ public:
 	{
 		resetToStatic();
 		stringSize=s.stringSize;
-		if(stringSize > STATIC_SIZE)
-			createBuffer(stringSize);
-		strcpy(buf,s.buf);
+		//Fast path for static read-only strings
+		if(s.type==READONLY)
+		{
+			type=READONLY;
+			buf=s.buf;
+		}
+		else
+		{
+			if(stringSize > STATIC_SIZE)
+				createBuffer(stringSize);
+			strcpy(buf,s.buf);
+		}
 		return *this;
 	}
 	tiny_string& operator=(const std::string& s)
@@ -232,6 +248,7 @@ public:
 		else
 			return ns<r.ns;
 	}
+	tiny_string getQualifiedName() const;
 };
 
 class UI8 

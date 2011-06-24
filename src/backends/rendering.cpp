@@ -690,7 +690,7 @@ void RenderThread::mapCairoTexture(int w, int h)
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, cairoTextureData);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, cairoTextureData);
 
 	GLint vertex_coords[] = {0,0, w,0, 0,h, w,h};
 	GLfloat texture_coords[] = {0,0, 1,0, 0,1, 1,1};

@@ -93,8 +93,8 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	{
 		//Resize the buffer
 		uint8_t* bytes2=new uint8_t[size];
-		len=size;
 		memcpy(bytes2,bytes,len);
+		len=size;
 		delete[] bytes;
 		bytes=bytes2;
 	}
@@ -417,12 +417,12 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 	return index<len;
 }
 
-ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(skip_impl || !Array::isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	assert_and_throw(index<len);
 	ASObject* ret=abstract_i(bytes[index]);
@@ -441,12 +441,12 @@ intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
 	return bytes[index];
 }
 
-void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,base);
+		return ASObject::setVariableByMultiname(name,o);
 
 	if(index>=len)
 	{
@@ -759,31 +759,37 @@ ASFUNCTIONBODY(lightspark,describeType)
 {
 	assert_and_throw(argslen==1);
 
-	//HACK: TODO: support classes. YouTube needs this
-	if(args[0]->getObjectType()==T_CLASS)
+	if(args[0]->getObjectType()==T_FUNCTION)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Classes not supported in describeType");
+		LOG(LOG_NOT_IMPLEMENTED,"Functions not supported in describeType");
 		return new Undefined;
 	}
 
 	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 
-	Class_base* type=args[0]->getPrototype();
-	assert_and_throw(type);
-	//TODO: add support in type for base, isDynamic, isFinal, isStatic
+	bool isStatic=(args[0]->getObjectType()==T_CLASS);
+
+	//TODO: add support in type for base, isDynamic, isFinal
 	string ret = "<type name=\"";
-	if(type->class_name.ns.len())
-	{
-		ret+=type->class_name.ns.raw_buf();
-		ret+=".";
-	}
-	ret+=type->class_name.name.raw_buf();
-	ret+="\">";
+	Class_base* type=NULL;
+	if(isStatic)
+		type=static_cast<Class_base*>(args[0]);
+	else
+		type=args[0]->getPrototype();
+
+	assert_and_throw(type);
+	ret+=type->class_name.getQualifiedName().raw_buf();
+	ret+="\" isStatic=";
+	ret+=(isStatic)?"\"true\"":"\"false\"";
+	ret+=">";
 	//TODO: add support for extendsClass and implementsInterface and factory
 	auto it=args[0]->Variables.Variables.begin();
 	for(;it!=args[0]->Variables.Variables.end();it++)
 	{
+		if(isStatic && it->second.kind==BORROWED_TRAIT)
+			continue;
+
 		//TODO: add support for constant, method, parameter
 		if(it->second.var.getter)
 		{
@@ -796,10 +802,16 @@ ASFUNCTIONBODY(lightspark,describeType)
 		else if(it->second.var.var)
 		{
 			//Output a variable
-			//TODO: add support in variable for type
 			ret+="<variable name=\"";
 			ret+=it->first.raw_buf();
-			ret+="\"/>";
+			ret+="\"";
+			if(it->second.var.type)
+			{
+				ret+=" type=\"";
+				ret+=it->second.var.type->class_name.getQualifiedName().raw_buf();
+				ret+="\"";
+			}
+			ret+="/>";
 		}
 	}
 	ret+="</type>";
@@ -841,7 +853,7 @@ void Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	Dictionary::setVariableByMultiname(name,abstract_i(value));
 }
 
-void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
@@ -864,7 +876,7 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, ASOb
 		assert(name.name_type==multiname::NAME_STRING ||
 			name.name_type==multiname::NAME_INT ||
 			name.name_type==multiname::NAME_NUMBER);
-		ASObject::setVariableByMultiname(name, o, base);
+		ASObject::setVariableByMultiname(name, o);
 	}
 }
 
@@ -894,7 +906,7 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	}
 }
 
-ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	if(!skip_impl && implEnable)
 	{
@@ -925,11 +937,11 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 			assert(name.name_type==multiname::NAME_STRING ||
 				name.name_type==multiname::NAME_INT ||
 				name.name_type==multiname::NAME_NUMBER);
-			return ASObject::getVariableByMultiname(name, skip_impl, base);
+			return ASObject::getVariableByMultiname(name, skip_impl);
 		}
 	}
 	//Try with the base implementation
-	return ASObject::getVariableByMultiname(name, skip_impl, base);
+	return ASObject::getVariableByMultiname(name, skip_impl);
 }
 
 bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
@@ -1038,12 +1050,12 @@ void Proxy::buildTraits(ASObject* o)
 {
 }
 
-void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	//If a variable named like this already exist, use that
 	if(ASObject::hasPropertyByMultiname(name, true) || !implEnable)
 	{
-		ASObject::setVariableByMultiname(name,o,base);
+		ASObject::setVariableByMultiname(name,o);
 		return;
 	}
 
@@ -1077,12 +1089,12 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, ASObject*
 	implEnable=true;
 }
 
-ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="" || ASObject::hasPropertyByMultiname(name, true) || !implEnable || skip_impl)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
 	multiname getPropertyName;
@@ -1092,7 +1104,7 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 	ASObject* o=getVariableByMultiname(getPropertyName,true);
 
 	if(o==NULL)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	assert_and_throw(o->getObjectType()==T_FUNCTION);
 

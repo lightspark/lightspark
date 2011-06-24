@@ -1572,7 +1572,7 @@ void ABCVm::getLex(call_context* th, int n)
 			tl.cur_this->resetLevel();
 
 		//Skip implementation
-		ASObject* tmpo=it->object->getVariableByMultiname(*name, true);
+		ASObject* tmpo=it->object->getVariableByMultiname(*name, !it->considerDynamic);
 		if(it->object==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
@@ -2247,12 +2247,17 @@ void ABCVm::newObject(call_context* th, int n)
 {
 	LOG(LOG_CALLS,_("newObject ") << n);
 	ASObject* ret=Class<ASObject>::getInstanceS();
+	//Duplicated keys overwrite the previous value
+	multiname propertyName;
+	propertyName.name_type=multiname::NAME_STRING;
+	propertyName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	for(int i=0;i<n;i++)
 	{
 		ASObject* value=th->runtime_stack_pop();
 		ASObject* name=th->runtime_stack_pop();
-		ret->setVariableByQName(name->toString(),"",value,DYNAMIC_TRAIT);
+		propertyName.name_s=name->toString();
 		name->decRef();
+		ret->setVariableByMultiname(propertyName, value);
 	}
 
 	th->runtime_stack_push(ret);
@@ -2263,13 +2268,6 @@ void ABCVm::getDescendants(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,"getDescendants " << *name);
 	ASObject* obj=th->runtime_stack_pop();
-	//HACK: to be removed when describeType is implemented
-	if(obj->getObjectType()==T_UNDEFINED)
-	{
-		obj->decRef();
-		th->runtime_stack_push(new Undefined);
-		return;
-	}
 	assert_and_throw(obj->getPrototype()==Class<XML>::getClass());
 	XML* xmlObj=Class<XML>::cast(obj);
 	//The name must be a QName
@@ -2371,6 +2369,8 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 #endif
 	ret->class_scope=th->scope_stack;
+	ret->incRef();
+	ret->class_scope.emplace_back(_MR(ret),false);
 
 	assert_and_throw(th->context);
 	ret->context=th->context;
@@ -2388,9 +2388,6 @@ void ABCVm::newClass(call_context* th, int n)
 	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(m);
 	//cinit must inherit the current scope
 	cinit->acquireScope(th->scope_stack);
-	//and the created class
-	ret->incRef();
-	cinit->addToScope(scope_entry(_MR(ret),false));
 
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
@@ -2416,8 +2413,7 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(constructor);
-	//Also the constructor should have the script as the global object
-	constructorFunc->addToScope(th->scope_stack[0]);
+	constructorFunc->acquireScope(ret->class_scope);
 	//add Constructor the the class methods
 	ret->constructor=constructorFunc;
 	ret->class_index=n;

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Object_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var o:Object = {foo: "bar", foo2: "bar2", foo: "bar3"};
+		Tests.assertEquals(o.foo2,"bar2","Simple assignment in object literal");
+		Tests.assertEquals(o.foo,"bar","Duplicated assignment in object literal");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

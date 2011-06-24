@@ -22,6 +22,8 @@
 #include <pcre.h>
 #include <string.h>
 #include <sstream>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <iomanip>
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -969,10 +971,10 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 	recursiveGetDescendantsByQName(rootXML, node, name, ns, ret);
 }
 
-ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	if(skip_impl)
-		return ASObject::getVariableByMultiname(name, skip_impl, base);
+		return ASObject::getVariableByMultiname(name, skip_impl);
 
 	if(node==NULL)
 	{
@@ -1066,7 +1068,8 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		if(element==NULL)
 			return NULL;
 		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
-		return attr!=NULL;
+		if(attr!=NULL)
+			return true;
 	}
 	else
 	{
@@ -1076,8 +1079,12 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		//Normalize the name to the string form
 		assert(node);
 		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
-		return children.empty()==false;
+		if(!children.empty())
+			return true;
 	}
+
+	//Try the normal path as the last resource
+	return ASObject::hasPropertyByMultiname(name, considerDynamic);
 }
 
 ASFUNCTIONBODY(XML,_toString)
@@ -1362,14 +1369,14 @@ ASFUNCTIONBODY(XMLList,generator)
 		throw RunTimeException("Type not supported in XMLList()");
 }
 
-ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	unsigned int index=0;
 	if(Array::isValidMultiname(name,index))
@@ -1385,7 +1392,7 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 		std::vector<_R<XML> >::iterator it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
-			ASObject *o=(*it)->getVariableByMultiname(name,skip_impl,base);
+			ASObject *o=(*it)->getVariableByMultiname(name,skip_impl);
 			XMLList *x=dynamic_cast<XMLList *>(o);
 			if(!x)
 				continue;
@@ -1432,16 +1439,16 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 	}
 }
 
-void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void XMLList::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,base);
+		return ASObject::setVariableByMultiname(name,o);
 
 	XML* newNode=dynamic_cast<XML*>(o);
 	if(newNode==NULL)
-		return ASObject::setVariableByMultiname(name,o,base);
+		return ASObject::setVariableByMultiname(name,o);
 
 	//Nodes are always added at the end. The requested index are ignored. This is a tested behaviour.
 	nodes.push_back(_MR(newNode));
@@ -1671,18 +1678,18 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 		
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	if(index<data.size())
 	{
@@ -1785,12 +1792,12 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 	return true;
 }
 
-void Array::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void Array::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,base);
+		return ASObject::setVariableByMultiname(name,o);
 
 	if(index>=data.capacity())
 	{
@@ -1908,6 +1915,7 @@ void ASString::buildTraits(ASObject* o)
 
 void Array::finalize()
 {
+	ASObject::finalize();
 	for(unsigned int i=0;i<data.size();i++)
 	{
 		if(data[i].type==DATA_OBJECT && data[i].data)
@@ -2719,7 +2727,7 @@ ASFUNCTIONBODY(Number,_toString)
 		purgeTrailingZeroes(buf,bufLen);
 	}
 	else if(radix==16)
-		snprintf(buf,20,"%lx",(int64_t)th->val);
+		snprintf(buf,20,"%"PRIx64,(int64_t)th->val);
 
 	return Class<ASString>::getInstanceS(buf);
 }
@@ -4241,60 +4249,6 @@ void Class_base::setConstructor(IFunction* c)
 	constructor=c;
 }
 
-ASObject* Class_base::getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
-{
-	check();
-	assert(base);
-
-	obj_var* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
-	if(obj)
-	{
-		//It seems valid for a class to redefine only the setter, so if we can't find
-		//something to get, it's ok
-		if(!(obj->getter || obj->var))
-			obj=NULL;
-	}
-
-	if(obj!=NULL)
-	{
-		if(obj->getter)
-		{
-			//Call the getter
-			ASObject* target=base;
-			if(target->prototype)
-			{
-				LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);
-			}
-			else
-			{
-				LOG(LOG_CALLS,_("Calling the getter"));
-			}
-			IFunction* getter=obj->getter;
-			target->incRef();
-			ASObject* ret=getter->call(target,NULL,0);
-			LOG(LOG_CALLS,_("End of getter"));
-			if(ret==NULL)
-				ret=new Undefined;
-			//The returned value is already owned by the caller
-			ret->fake_decRef();
-			return ret;
-		}
-		else
-		{
-			assert_and_throw(!obj->setter);
-			assert_and_throw(obj->var);
-			return obj->var;
-		}
-	}
-	else if(super)
-	{
-		ASObject* ret=super->getBorrowedVariableByMultiname(name, skip_impl, base);
-		return ret;
-	}
-	//If it has not been found
-	return NULL;
-}
-
 void Class_base::handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink)
 {
 /*	if(getActualPrototype()->class_index==-2)
@@ -4539,13 +4493,6 @@ tiny_string Class_base::getQualifiedClassName() const
 	}
 }
 
-bool Class_base::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
-{
-	//The specs says that hasOwnProperty does not consider inherited properties for classes
-	bool ret=ASObject::hasPropertyByMultiname(name, considerDynamic);
-	return ret;
-}
-
 void ASQName::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
@@ -4691,9 +4638,10 @@ void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const
 			break;
 		cur=cur->super;
 	}
-	assert_and_throw(var->var);
-	var->var->incRef();
-	c->setVariableByQName(name,interfaceNs,var->var,DECLARED_TRAIT);
+	assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
+	IFunction* f=static_cast<IFunction*>(var->var);
+	f->incRef();
+	c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
 }
 
 void UInteger::sinit(Class_base* c)

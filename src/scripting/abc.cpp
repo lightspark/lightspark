@@ -117,20 +117,20 @@ void SymbolClassTag::execute(RootMovieClip* root)
 	for(int i=0;i<NumSymbols;i++)
 	{
 		LOG(LOG_CALLS,_("Binding ") << Tags[i] << ' ' << Names[i]);
+		tiny_string className((const char*)Names[i],true);
 		if(Tags[i]==0)
 		{
 			//We have to bind this root movieclip itself, let's tell it.
 			//This will be done later
-			root->bindToName((const char*)Names[i]);
+			root->bindToName(className);
 			root->incRef();
-			sys->currentVm->addEvent(NullRef,
-					_MR(new BindClassEvent(_MR(root),(const char*)Names[i])));
+			sys->currentVm->addEvent(NullRef, _MR(new BindClassEvent(_MR(root),className)));
 
 		}
 		else
 		{
 			_R<DictionaryTag> t=root->dictionaryLookup(Tags[i]);
-			_R<BindClassEvent> e(new BindClassEvent(t,(const char*)Names[i]));
+			_R<BindClassEvent> e(new BindClassEvent(t,className));
 			sys->currentVm->addEvent(NullRef,e);
 		}
 	}
@@ -1689,10 +1689,11 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			if(var)
 			{
-				assert_and_throw(var->var);
+				assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
 
-				var->var->incRef();
-				c->setVariableByMultiname(mname,var->var);
+				IFunction* f=static_cast<IFunction*>(var->var);
+				f->incRef();
+				c->setDeclaredMethodByQName(name,mname.ns[0],f,NORMAL_METHOD,true);
 			}
 			else
 			{
@@ -1874,6 +1875,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			f->bindLevel(obj->getLevel());
 			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,GETTER_METHOD,isBorrowed);
 			
+			//Methods save a copy of the scope stack of the class
+			f->acquireScope(prot->class_scope);
+
 			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
 			break;
 		}
@@ -1883,12 +1887,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 
-			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
+			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
 			assert_and_throw(obj->getObjectType()==T_CLASS);
-			Class_base* prot=static_cast<Class_base*>(obj);
+			Class_inherit* prot=static_cast<Class_inherit*>(obj);
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
 			{
@@ -1921,6 +1925,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			f->bindLevel(obj->getLevel());
 			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,SETTER_METHOD,isBorrowed);
 			
+			//Methods save a copy of the scope stack of the class
+			f->acquireScope(prot->class_scope);
+
 			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
 			break;
 		}
@@ -1967,7 +1974,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 						cur=cur->super;
 					}
 				}
-				//Methods save inside the scope stack of the class
+				//Methods save a copy of the scope stack of the class
 				f->acquireScope(prot->class_scope);
 			}
 			else if(deferred_initialization)

@@ -218,7 +218,7 @@ private:
 	virtual int _maxlevel();
 	Class_base* prototype;
 	ACQUIRE_RELEASE_FLAG(constructed);
-	obj_var* findGettable(const multiname& name) DLL_LOCAL;
+	obj_var* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
 	obj_var* findSettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
 	tiny_string toStringImpl() const;
 public:
@@ -287,10 +287,10 @@ public:
 	   The finalize method must be callable multiple time with the same effects (no double frees)*/
 	virtual void finalize();
 
-	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL);
+	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	virtual void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
+	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, Class_base* type);
 	virtual void deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind);

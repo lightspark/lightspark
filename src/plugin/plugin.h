@@ -30,7 +30,6 @@
 #include "backends/netutils.h"
 #include "backends/urlutils.h"
 #include "npscriptobject.h"
-#include <GL/glx.h>
 
 class NPDownloader;
 typedef void(*helper_t)(void*);

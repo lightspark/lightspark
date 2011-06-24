@@ -228,7 +228,7 @@ protected:
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection);
 	static bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
-	void cairoClean(cairo_t* cr) const;
+	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface();
 public:
 	/*
@@ -251,6 +251,15 @@ public:
 	   @param y The Y in local coordinates
 	*/
 	static bool hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
+	/*
+	   Opacity test helper. Uses cairo to render a single pixel and see if it's opaque or not
+
+	   @param tokens The tokens of the shape being tested
+	   @param scaleFactor The scale factor to be applied
+	   @param x The X in local coordinates
+	   @param y The Y in local coordinates
+	*/
+	static bool isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
 	void upload(uint8_t* data, uint32_t w, uint32_t h) const;

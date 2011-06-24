@@ -59,6 +59,7 @@ tiny_string ASObject::toString(bool debugMsg)
 		if(obj_toString->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
+			incRef();
 			ASObject* ret=f_toString->call(this,NULL,0);
 			assert_and_throw(ret->getObjectType()==T_STRING);
 			tiny_string retS=ret->toString();
@@ -274,12 +275,12 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 
 	ret=(Variables.findObjVar(name, NO_CREATE_TRAIT, validTraits)!=NULL);
 
-	if(!ret) //Ask the prototype chain for borrowed and declared traits
+	if(!ret) //Ask the prototype chain for borrowed traits
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT|DECLARED_TRAIT)!=NULL);
+			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
@@ -376,7 +377,7 @@ obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode)
 	return ret;
 }
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	check();
 
@@ -395,18 +396,6 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 				break;
 			cur=cur->super;
 		}
-		if(obj==NULL)
-		{
-			cur=getActualPrototype();
-			while(cur)
-			{
-				//TODO: should be only findSetter
-				obj=cur->findSettable(name, false);
-				if(obj)
-					break;
-				cur=cur->super;
-			}
-		}
 	}
 	if(obj==NULL)
 		obj=Variables.findObjVar(name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
@@ -418,7 +407,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 		//Overriding function is automatically done by using cur_level
 		IFunction* setter=obj->setter;
 		//One argument can be passed without creating an array
-		ASObject* target=(base)?base:this;
+		ASObject* target=this;
 		target->incRef();
 		ASObject* ret=setter->call(target,&o,1);
 		assert_and_throw(ret==NULL);
@@ -465,14 +454,16 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 
 void obj_var::setVar(ASObject* v)
 {
+	//Do the conversion early, so that errors does not leave the object in an half baked state
+	ASObject* newV=v;
+	if(type && v->getObjectType()!=T_NULL && (v->getPrototype()==NULL || !v->getPrototype()->isSubClass(type)))
+	{
+		newV=type->generator(&v,1);
+		v->decRef();
+	}
 	if(var)
 		var->decRef();
-	if(type && v->getObjectType()!=T_NULL)
-	{
-		if(v->getPrototype()==NULL || !v->getPrototype()->isSubClass(type))
-			v=type->generator(&v,1);
-	}
-	var=v;
+	var=newV;
 }
 
 void variables_map::killObjVar(const multiname& mname)
@@ -603,8 +594,6 @@ void ASObject::initSlot(unsigned int n, const multiname& name)
 	Variables.initSlot(n,name.name_s,name.ns[0]);
 }
 
-//In all the getter function we first ask the interface, so that special handling (e.g. Array)
-//can be done
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
@@ -614,9 +603,9 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-obj_var* ASObject::findGettable(const multiname& name)
+obj_var* ASObject::findGettable(const multiname& name, bool borrowedMode)
 {
-	obj_var* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+	obj_var* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -627,54 +616,64 @@ obj_var* ASObject::findGettable(const multiname& name)
 	return ret;
 }
 
-ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	check();
 
-	obj_var* obj=findGettable(name);
+	//Get from the current object without considering borrowed properties
+	obj_var* obj=findGettable(name, false);
 
-	if(obj!=NULL)
+	if(obj==NULL && prototype)
 	{
-		if(obj->getter)
+		//Look for borrowed traits before
+		Class_base* cur=getActualPrototype();
+		while(cur)
 		{
-			//Call the getter
-			ASObject* target=(base)?base:this;
-			if(target->prototype)
-			{
-				LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);
-			}
-			else
-			{
-				LOG(LOG_CALLS,_("Calling the getter"));
-			}
-			IFunction* getter=obj->getter;
-			target->incRef();
-			ASObject* ret=getter->call(target,NULL,0);
-			LOG(LOG_CALLS,_("End of getter"));
-			assert_and_throw(ret);
-			//The returned value is already owned by the caller
-			ret->fake_decRef();
-			return ret;
+			obj=cur->findGettable(name,true);
+			if(obj)
+				break;
+			cur=cur->super;
 		}
-		else
-		{
-			assert_and_throw(!obj->setter);
-			assert_and_throw(obj->var);
-			return obj->var;
-		}
-	}
-	else if(prototype && getActualPrototype())
-	{
-		//First of all see if the prototype chain contains some borrowed properties
-		ASObject* ret=getActualPrototype()->getBorrowedVariableByMultiname(name,skip_impl,this);
-  		//If it has not been found yet, ask the prototype
-		if(!ret)
-			ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,this);
-		return ret;
 	}
 
 	//If it has not been found
-	return NULL;
+	if(obj==NULL)
+	{
+		if(prototype==NULL)
+			return NULL;
+
+		//Check if we can lazily define the requested property
+		return Class<ASObject>::getClass()->lazyDefine(name);
+	}
+
+	if(obj->getter)
+	{
+		//Call the getter
+		ASObject* target=this;
+		if(target->prototype)
+		{
+			LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);
+		}
+		else
+		{
+			LOG(LOG_CALLS,_("Calling the getter"));
+		}
+		IFunction* getter=obj->getter;
+		target->incRef();
+		ASObject* ret=getter->call(target,NULL,0);
+		LOG(LOG_CALLS,_("End of getter"));
+		if(ret==NULL)
+			ret=new Undefined;
+		//The returned value is already owned by the caller
+		ret->fake_decRef();
+		return ret;
+	}
+	else
+	{
+		assert_and_throw(!obj->setter);
+		assert_and_throw(obj->var);
+		return obj->var;
+	}
 }
 
 void ASObject::check() const

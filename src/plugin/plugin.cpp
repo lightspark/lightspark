@@ -504,7 +504,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 void nsPluginInstance::StreamAsFile(NPStream* stream, const char* fname)
 {
 	assert(stream->notifyData==NULL);
-	m_sys->setDownloadedPath(fname);
+	m_sys->setDownloadedPath(lightspark::tiny_string(fname,true));
 }
 
 int32_t nsPluginInstance::WriteReady(NPStream *stream)

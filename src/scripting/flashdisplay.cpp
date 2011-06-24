@@ -1098,6 +1098,7 @@ void DisplayObject::finalize()
 	mask.reset();
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
+	accessibilityProperties.reset();
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -2302,8 +2303,7 @@ void Shape::buildTraits(ASObject* o)
 
 bool Shape::isOpaque(number_t x, number_t y) const
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Shape::isOpaque not really implemented");
-	return false;
+	return TokenContainer::isOpaqueImpl(x, y);
 }
 
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
@@ -2571,6 +2571,11 @@ void TokenContainer::invalidate()
 	sys->addJob(r);
 }
 
+bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const
+{
+	return CairoRenderer::isOpaque(tokens, scaling, x, y);
+}
+
 _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const
 {
 	//TODO: test against the CachedSurface
@@ -2580,7 +2585,7 @@ _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, 
 		{
 			number_t globalX, globalY;
 			owner->getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-			if(sys->getInputThread()->isMasked(globalX, globalY))
+			if(!sys->getInputThread()->isMasked(globalX, globalY))
 				return NullRef;
 		}
 		return last;

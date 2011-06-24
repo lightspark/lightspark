@@ -300,6 +300,9 @@ public:
 	 */
 	float scaling;
 	std::vector<GeomToken> tokens;
+	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
+					 std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles,
+					 const Vector2& offset = Vector2(), int scaling = 1);
 protected:
 	TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f) {}
 	TokenContainer(DisplayObject* _o, const std::vector<GeomToken>& _tokens, float _scaling)
@@ -311,10 +314,6 @@ protected:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool tokensEmpty() const { return tokens.empty(); }
-public:
-	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
-												 std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles,
-												 const Vector2& offset = Vector2(), int scaling = 1);
 };
 
 /* This objects paints to its owners tokens */

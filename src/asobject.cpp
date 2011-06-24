@@ -618,50 +618,56 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 {
 	check();
 
+	//Get from the current object without considering borrowed properties
 	obj_var* obj=findGettable(name, false);
 
-	if(obj!=NULL)
+	if(obj==NULL && prototype)
 	{
-		if(obj->getter)
+		//Look for borrowed traits before
+		Class_base* cur=getActualPrototype();
+		while(cur)
 		{
-			//Call the getter
-			ASObject* target=(base)?base:this;
-			if(target->prototype)
-			{
-				LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);
-			}
-			else
-			{
-				LOG(LOG_CALLS,_("Calling the getter"));
-			}
-			IFunction* getter=obj->getter;
-			target->incRef();
-			ASObject* ret=getter->call(target,NULL,0);
-			LOG(LOG_CALLS,_("End of getter"));
-			assert_and_throw(ret);
-			//The returned value is already owned by the caller
-			ret->fake_decRef();
-			return ret;
+			obj=cur->findGettable(name,true);
+			if(obj)
+				break;
+			cur=cur->super;
 		}
-		else
-		{
-			assert_and_throw(!obj->setter);
-			assert_and_throw(obj->var);
-			return obj->var;
-		}
-	}
-	else if(prototype && getActualPrototype())
-	{
-		//First of all see if the prototype chain contains some borrowed properties
-		ASObject* ret=getActualPrototype()->getBorrowedVariableByMultiname(name,skip_impl,this);
-  		//If it has not been found yet, ask the prototype
-		if(!ret)
-			ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,this);
-		return ret;
 	}
 
 	//If it has not been found
-	return NULL;
+	if(obj==NULL)
+	{
+		//Check if we can lazily define the requested property
+		return Class<ASObject>::getClass()->lazyDefine(name);
+	}
+
+	if(obj->getter)
+	{
+		//Call the getter
+		ASObject* target=(base)?base:this;
+		if(target->prototype)
+		{
+			LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);
+		}
+		else
+		{
+			LOG(LOG_CALLS,_("Calling the getter"));
+		}
+		IFunction* getter=obj->getter;
+		target->incRef();
+		ASObject* ret=getter->call(target,NULL,0);
+		LOG(LOG_CALLS,_("End of getter"));
+		assert_and_throw(ret);
+		//The returned value is already owned by the caller
+		ret->fake_decRef();
+		return ret;
+	}
+	else
+	{
+		assert_and_throw(!obj->setter);
+		assert_and_throw(obj->var);
+		return obj->var;
+	}
 }
 
 void ASObject::check() const

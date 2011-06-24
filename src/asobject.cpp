@@ -377,7 +377,7 @@ obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode)
 	return ret;
 }
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	check();
 
@@ -407,7 +407,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 		//Overriding function is automatically done by using cur_level
 		IFunction* setter=obj->setter;
 		//One argument can be passed without creating an array
-		ASObject* target=(base)?base:this;
+		ASObject* target=this;
 		target->incRef();
 		ASObject* ret=setter->call(target,&o,1);
 		assert_and_throw(ret==NULL);
@@ -616,7 +616,7 @@ obj_var* ASObject::findGettable(const multiname& name, bool borrowedMode)
 	return ret;
 }
 
-ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	check();
 
@@ -649,7 +649,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	if(obj->getter)
 	{
 		//Call the getter
-		ASObject* target=(base)?base:this;
+		ASObject* target=this;
 		if(target->prototype)
 		{
 			LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);

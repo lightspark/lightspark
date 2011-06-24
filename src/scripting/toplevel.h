@@ -128,11 +128,11 @@ private:
 	}
 public:
 	Class_function(IFunction* _f, ASObject* _p);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL)
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false)
 	{
-		ASObject* ret=Class_base::getVariableByMultiname(name,skip_impl, base);
+		ASObject* ret=Class_base::getVariableByMultiname(name,skip_impl);
 		if(ret==NULL && asprototype)
-			ret=asprototype->getVariableByMultiname(name,skip_impl, base);
+			ret=asprototype->getVariableByMultiname(name,skip_impl);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -144,7 +144,7 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname_i");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL)
+	void setVariableByMultiname(const multiname& name, ASObject* o)
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
@@ -527,9 +527,9 @@ public:
 	{
 		data.resize(n);
 	}
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
 	intptr_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
+	void setVariableByMultiname(const multiname& name, ASObject* o);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
@@ -684,7 +684,7 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	void toXMLString_priv(xmlBufferPtr buf);
@@ -727,8 +727,8 @@ public:
 	ASFUNCTION(_toString);
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(generator);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
-	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
+	void setVariableByMultiname(const multiname& name, ASObject* o);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;

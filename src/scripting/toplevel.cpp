@@ -971,10 +971,10 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 	recursiveGetDescendantsByQName(rootXML, node, name, ns, ret);
 }
 
-ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	if(skip_impl)
-		return ASObject::getVariableByMultiname(name, skip_impl, base);
+		return ASObject::getVariableByMultiname(name, skip_impl);
 
 	if(node==NULL)
 	{
@@ -1369,14 +1369,14 @@ ASFUNCTIONBODY(XMLList,generator)
 		throw RunTimeException("Type not supported in XMLList()");
 }
 
-ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	unsigned int index=0;
 	if(Array::isValidMultiname(name,index))
@@ -1392,7 +1392,7 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl,
 		std::vector<_R<XML> >::iterator it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
-			ASObject *o=(*it)->getVariableByMultiname(name,skip_impl,base);
+			ASObject *o=(*it)->getVariableByMultiname(name,skip_impl);
 			XMLList *x=dynamic_cast<XMLList *>(o);
 			if(!x)
 				continue;
@@ -1439,16 +1439,16 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 	}
 }
 
-void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void XMLList::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,base);
+		return ASObject::setVariableByMultiname(name,o);
 
 	XML* newNode=dynamic_cast<XML*>(o);
 	if(newNode==NULL)
-		return ASObject::setVariableByMultiname(name,o,base);
+		return ASObject::setVariableByMultiname(name,o);
 
 	//Nodes are always added at the end. The requested index are ignored. This is a tested behaviour.
 	nodes.push_back(_MR(newNode));
@@ -1678,18 +1678,18 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 		
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,base);
+		return ASObject::getVariableByMultiname(name,skip_impl);
 
 	if(index<data.size())
 	{
@@ -1792,12 +1792,12 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 	return true;
 }
 
-void Array::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
+void Array::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,base);
+		return ASObject::setVariableByMultiname(name,o);
 
 	if(index>=data.capacity())
 	{

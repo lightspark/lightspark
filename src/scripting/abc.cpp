@@ -1875,6 +1875,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			f->bindLevel(obj->getLevel());
 			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,GETTER_METHOD,isBorrowed);
 			
+			//Methods save a copy of the scope stack of the class
+			f->acquireScope(prot->class_scope);
+
 			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
 			break;
 		}
@@ -1884,12 +1887,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 
-			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
+			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
 			assert_and_throw(obj->getObjectType()==T_CLASS);
-			Class_base* prot=static_cast<Class_base*>(obj);
+			Class_inherit* prot=static_cast<Class_inherit*>(obj);
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
 			{
@@ -1922,6 +1925,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			f->bindLevel(obj->getLevel());
 			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,SETTER_METHOD,isBorrowed);
 			
+			//Methods save a copy of the scope stack of the class
+			f->acquireScope(prot->class_scope);
+
 			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
 			break;
 		}
@@ -1968,7 +1974,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 						cur=cur->super;
 					}
 				}
-				//Methods save inside the scope stack of the class
+				//Methods save a copy of the scope stack of the class
 				f->acquireScope(prot->class_scope);
 			}
 			else if(deferred_initialization)

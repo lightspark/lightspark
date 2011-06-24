@@ -604,8 +604,6 @@ void ASObject::initSlot(unsigned int n, const multiname& name)
 	Variables.initSlot(n,name.name_s,name.ns[0]);
 }
 
-//In all the getter function we first ask the interface, so that special handling (e.g. Array)
-//can be done
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();

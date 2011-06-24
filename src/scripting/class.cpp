@@ -23,29 +23,23 @@
 
 using namespace lightspark;
 
-ASObject* Class<ASObject>::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
+ASObject* Class<ASObject>::lazyDefine(const multiname& name)
 {
-	ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, base);
-	//No super here, ever
-	if(!ret)
+	//Check if we should do lazy definition
+	if(name.name_s=="toString")
 	{
-		//Check if we should do lazy definition
-		//TODO: is DECLARED_TRAIT the right kind?
-		if(name.name_s=="toString")
-		{
-			ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
-			setVariableByQName("toString","",ret,DECLARED_TRAIT);
-			return ret;
-		}
-		else if(name.name_s=="hasOwnProperty")
-		{
-			ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
-			setVariableByQName("hasOwnProperty",AS3,ret,DECLARED_TRAIT);
-			return ret;
-		}
-
+		ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
+		setVariableByQName("toString","",ret,BORROWED_TRAIT);
+		return ret;
 	}
-	return ret;
+	else if(name.name_s=="hasOwnProperty")
+	{
+		ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
+		setVariableByQName("hasOwnProperty",AS3,ret,BORROWED_TRAIT);
+		return ret;
+	}
+	else
+		return NULL;
 }
 
 void Class_inherit::finalize()

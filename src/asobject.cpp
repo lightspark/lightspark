@@ -613,9 +613,9 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-obj_var* ASObject::findGettable(const multiname& name)
+obj_var* ASObject::findGettable(const multiname& name, bool borrowedMode)
 {
-	obj_var* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+	obj_var* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -630,7 +630,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 {
 	check();
 
-	obj_var* obj=findGettable(name);
+	obj_var* obj=findGettable(name, false);
 
 	if(obj!=NULL)
 	{

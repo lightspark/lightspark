@@ -275,12 +275,12 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 
 	ret=(Variables.findObjVar(name, NO_CREATE_TRAIT, validTraits)!=NULL);
 
-	if(!ret) //Ask the prototype chain for borrowed and declared traits
+	if(!ret) //Ask the prototype chain for borrowed traits
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT|DECLARED_TRAIT)!=NULL);
+			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;

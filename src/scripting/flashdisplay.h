@@ -314,6 +314,7 @@ protected:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool tokensEmpty() const { return tokens.empty(); }
+	bool isOpaqueImpl(number_t x, number_t y) const;
 };
 
 /* This objects paints to its owners tokens */

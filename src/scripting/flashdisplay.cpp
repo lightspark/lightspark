@@ -2572,6 +2572,11 @@ void TokenContainer::invalidate()
 	sys->addJob(r);
 }
 
+bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const
+{
+	return CairoRenderer::isOpaque(tokens, scaling, x, y);
+}
+
 _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const
 {
 	//TODO: test against the CachedSurface

@@ -1689,10 +1689,11 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			if(var)
 			{
-				assert_and_throw(var->var);
+				assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
 
-				var->var->incRef();
-				c->setVariableByMultiname(mname,var->var);
+				IFunction* f=static_cast<IFunction*>(var->var);
+				f->incRef();
+				c->setDeclaredMethodByQName(name,mname.ns[0],f,NORMAL_METHOD,true);
 			}
 			else
 			{

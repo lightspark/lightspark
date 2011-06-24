@@ -232,6 +232,7 @@ public:
 		else
 			return ns<r.ns;
 	}
+	tiny_string getQualifiedName() const;
 };
 
 class UI8 

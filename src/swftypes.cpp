@@ -1172,3 +1172,14 @@ RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(0),explicit_FP(false)
 {
 }
 
+tiny_string QName::getQualifiedName() const
+{
+	tiny_string ret;
+	if(ns.len())
+	{
+		ret+=ns;
+		ret+="::";
+	}
+	ret+=name;
+	return ret;
+}

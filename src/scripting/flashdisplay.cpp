@@ -2303,8 +2303,7 @@ void Shape::buildTraits(ASObject* o)
 
 bool Shape::isOpaque(number_t x, number_t y) const
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Shape::isOpaque not really implemented");
-	return false;
+	return TokenContainer::isOpaqueImpl(x, y);
 }
 
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const

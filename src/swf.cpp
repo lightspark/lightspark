@@ -261,7 +261,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 		if(ok)
 		{
 			//cout << varName << ' ' << varValue << endl;
-			params->setVariableByQName(varName.c_str(),"",
+			params->setVariableByQName(varName,"",
 					lightspark::Class<lightspark::ASString>::getInstanceS(varValue),DYNAMIC_TRAIT);
 		}
 		cur=n2+1;

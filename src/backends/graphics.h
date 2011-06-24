@@ -228,7 +228,7 @@ protected:
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection);
 	static bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
-	void cairoClean(cairo_t* cr) const;
+	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface();
 public:
 	/*

@@ -669,7 +669,7 @@ bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken
 	return empty;
 }
 
-void CairoRenderer::cairoClean(cairo_t* cr) const
+void CairoRenderer::cairoClean(cairo_t* cr)
 {
 	cairo_set_source_rgba(cr, 0, 0, 0, 0);
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);

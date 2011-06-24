@@ -2247,12 +2247,17 @@ void ABCVm::newObject(call_context* th, int n)
 {
 	LOG(LOG_CALLS,_("newObject ") << n);
 	ASObject* ret=Class<ASObject>::getInstanceS();
+	//Duplicated keys overwrite the previous value
+	multiname propertyName;
+	propertyName.name_type=multiname::NAME_STRING;
+	propertyName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	for(int i=0;i<n;i++)
 	{
 		ASObject* value=th->runtime_stack_pop();
 		ASObject* name=th->runtime_stack_pop();
-		ret->setVariableByQName(name->toString(),"",value,DYNAMIC_TRAIT);
+		propertyName.name_s=name->toString();
 		name->decRef();
+		ret->setVariableByMultiname(propertyName, value);
 	}
 
 	th->runtime_stack_push(ret);

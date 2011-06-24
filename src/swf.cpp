@@ -964,6 +964,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 ParseThread::ParseThread(RootMovieClip* r,istream& in):root(NULL),version(0),useAVM2(false),
 	useNetwork(false),f(in),zlibFilter(NULL),backend(NULL),isEnded(false),fileType(NONE)
 {
+	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	root=r;
 	sem_init(&ended,0,0);
 }
@@ -1124,6 +1125,11 @@ void ParseThread::execute()
 		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
 		root->parsingFailed();
 		sys->setError(e.cause);
+	}
+	catch(std::exception& e)
+	{
+		LOG(LOG_ERROR,_("Stream exception in ParseThread"));
+		root->parsingFailed();
 	}
 	pt=NULL;
 

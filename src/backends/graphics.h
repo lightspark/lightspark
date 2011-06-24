@@ -251,6 +251,15 @@ public:
 	   @param y The Y in local coordinates
 	*/
 	static bool hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
+	/*
+	   Opacity test helper. Uses cairo to render a single pixel and see if it's opaque or not
+
+	   @param tokens The tokens of the shape being tested
+	   @param scaleFactor The scale factor to be applied
+	   @param x The X in local coordinates
+	   @param y The Y in local coordinates
+	*/
+	static bool isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
 	void upload(uint8_t* data, uint32_t w, uint32_t h) const;

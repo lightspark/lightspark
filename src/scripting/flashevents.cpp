@@ -108,11 +108,6 @@ ASFUNCTIONBODY(Event,_constructor)
 	Event* th=static_cast<Event*>(obj);
 	if(argslen>=1)
 	{
-		if(args[0]->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,"HACK: undefined type passed to Event constructor");
-			return NULL;
-		}
 		assert_and_throw(args[0]->getObjectType()==T_STRING);
 		th->type=args[0]->toString();
 	}
@@ -338,11 +333,6 @@ void EventDispatcher::dumpHandlers()
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
 	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
-	if(args[0]->getObjectType()==T_UNDEFINED)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"HACK: undefined event type passed to addEventListener");
-		return NULL;
-	}
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 
@@ -396,11 +386,6 @@ ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
-	if(args[0]->getObjectType()==T_UNDEFINED)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"HACK: undefined event type passed to addEventListener");
-		return NULL;
-	}
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 

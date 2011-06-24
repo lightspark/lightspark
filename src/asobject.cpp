@@ -637,6 +637,9 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	//If it has not been found
 	if(obj==NULL)
 	{
+		if(prototype==NULL)
+			return NULL;
+
 		//Check if we can lazily define the requested property
 		return Class<ASObject>::getClass()->lazyDefine(name);
 	}

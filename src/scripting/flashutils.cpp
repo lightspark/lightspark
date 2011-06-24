@@ -759,31 +759,37 @@ ASFUNCTIONBODY(lightspark,describeType)
 {
 	assert_and_throw(argslen==1);
 
-	//HACK: TODO: support classes. YouTube needs this
-	if(args[0]->getObjectType()==T_CLASS)
+	if(args[0]->getObjectType()==T_FUNCTION)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Classes not supported in describeType");
+		LOG(LOG_NOT_IMPLEMENTED,"Functions not supported in describeType");
 		return new Undefined;
 	}
 
 	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 
-	Class_base* type=args[0]->getPrototype();
-	assert_and_throw(type);
-	//TODO: add support in type for base, isDynamic, isFinal, isStatic
+	bool isStatic=(args[0]->getObjectType()==T_CLASS);
+
+	//TODO: add support in type for base, isDynamic, isFinal
 	string ret = "<type name=\"";
-	if(type->class_name.ns.len())
-	{
-		ret+=type->class_name.ns.raw_buf();
-		ret+=".";
-	}
-	ret+=type->class_name.name.raw_buf();
-	ret+="\">";
+	Class_base* type=NULL;
+	if(isStatic)
+		type=static_cast<Class_base*>(args[0]);
+	else
+		type=args[0]->getPrototype();
+
+	assert_and_throw(type);
+	ret+=type->class_name.getQualifiedName().raw_buf();
+	ret+="\" isStatic=";
+	ret+=(isStatic)?"\"true\"":"\"false\"";
+	ret+=">";
 	//TODO: add support for extendsClass and implementsInterface and factory
 	auto it=args[0]->Variables.Variables.begin();
 	for(;it!=args[0]->Variables.Variables.end();it++)
 	{
+		if(isStatic && it->second.kind==BORROWED_TRAIT)
+			continue;
+
 		//TODO: add support for constant, method, parameter
 		if(it->second.var.getter)
 		{
@@ -796,10 +802,16 @@ ASFUNCTIONBODY(lightspark,describeType)
 		else if(it->second.var.var)
 		{
 			//Output a variable
-			//TODO: add support in variable for type
 			ret+="<variable name=\"";
 			ret+=it->first.raw_buf();
-			ret+="\"/>";
+			ret+="\"";
+			if(it->second.var.type)
+			{
+				ret+=" type=\"";
+				ret+=it->second.var.type->class_name.getQualifiedName().raw_buf();
+				ret+="\"";
+			}
+			ret+="/>";
 		}
 	}
 	ret+="</type>";

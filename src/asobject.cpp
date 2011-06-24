@@ -396,18 +396,6 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 				break;
 			cur=cur->super;
 		}
-		if(obj==NULL)
-		{
-			cur=getActualPrototype();
-			while(cur)
-			{
-				//TODO: should be only findSetter
-				obj=cur->findSettable(name, false);
-				if(obj)
-					break;
-				cur=cur->super;
-			}
-		}
 	}
 	if(obj==NULL)
 		obj=Variables.findObjVar(name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);

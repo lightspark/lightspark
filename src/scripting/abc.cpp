@@ -117,20 +117,20 @@ void SymbolClassTag::execute(RootMovieClip* root)
 	for(int i=0;i<NumSymbols;i++)
 	{
 		LOG(LOG_CALLS,_("Binding ") << Tags[i] << ' ' << Names[i]);
+		tiny_string className((const char*)Names[i],true);
 		if(Tags[i]==0)
 		{
 			//We have to bind this root movieclip itself, let's tell it.
 			//This will be done later
-			root->bindToName((const char*)Names[i]);
+			root->bindToName(className);
 			root->incRef();
-			sys->currentVm->addEvent(NullRef,
-					_MR(new BindClassEvent(_MR(root),(const char*)Names[i])));
+			sys->currentVm->addEvent(NullRef, _MR(new BindClassEvent(_MR(root),className)));
 
 		}
 		else
 		{
 			_R<DictionaryTag> t=root->dictionaryLookup(Tags[i]);
-			_R<BindClassEvent> e(new BindClassEvent(t,(const char*)Names[i]));
+			_R<BindClassEvent> e(new BindClassEvent(t,className));
 			sys->currentVm->addEvent(NullRef,e);
 		}
 	}

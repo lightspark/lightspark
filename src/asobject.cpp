@@ -454,14 +454,16 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 
 void obj_var::setVar(ASObject* v)
 {
+	//Do the conversion early, so that errors does not leave the object in an half baked state
+	ASObject* newV=v;
+	if(type && v->getObjectType()!=T_NULL && (v->getPrototype()==NULL || !v->getPrototype()->isSubClass(type)))
+	{
+		newV=type->generator(&v,1);
+		v->decRef();
+	}
 	if(var)
 		var->decRef();
-	if(type && v->getObjectType()!=T_NULL)
-	{
-		if(v->getPrototype()==NULL || !v->getPrototype()->isSubClass(type))
-			v=type->generator(&v,1);
-	}
-	var=v;
+	var=newV;
 }
 
 void variables_map::killObjVar(const multiname& mname)

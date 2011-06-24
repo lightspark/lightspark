@@ -4249,60 +4249,6 @@ void Class_base::setConstructor(IFunction* c)
 	constructor=c;
 }
 
-ASObject* Class_base::getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
-{
-	check();
-	assert(base);
-
-	obj_var* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
-	if(obj)
-	{
-		//It seems valid for a class to redefine only the setter, so if we can't find
-		//something to get, it's ok
-		if(!(obj->getter || obj->var))
-			obj=NULL;
-	}
-
-	if(obj!=NULL)
-	{
-		if(obj->getter)
-		{
-			//Call the getter
-			ASObject* target=base;
-			if(target->prototype)
-			{
-				LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);
-			}
-			else
-			{
-				LOG(LOG_CALLS,_("Calling the getter"));
-			}
-			IFunction* getter=obj->getter;
-			target->incRef();
-			ASObject* ret=getter->call(target,NULL,0);
-			LOG(LOG_CALLS,_("End of getter"));
-			if(ret==NULL)
-				ret=new Undefined;
-			//The returned value is already owned by the caller
-			ret->fake_decRef();
-			return ret;
-		}
-		else
-		{
-			assert_and_throw(!obj->setter);
-			assert_and_throw(obj->var);
-			return obj->var;
-		}
-	}
-	else if(super)
-	{
-		ASObject* ret=super->getBorrowedVariableByMultiname(name, skip_impl, base);
-		return ret;
-	}
-	//If it has not been found
-	return NULL;
-}
-
 void Class_base::handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink)
 {
 /*	if(getActualPrototype()->class_index==-2)

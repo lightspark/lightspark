@@ -77,7 +77,6 @@ public:
 	~Class_base();
 	void finalize();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
-	ASObject* getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base);
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;

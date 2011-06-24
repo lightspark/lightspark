@@ -1572,7 +1572,7 @@ void ABCVm::getLex(call_context* th, int n)
 			tl.cur_this->resetLevel();
 
 		//Skip implementation
-		ASObject* tmpo=it->object->getVariableByMultiname(*name, true);
+		ASObject* tmpo=it->object->getVariableByMultiname(*name, !it->considerDynamic);
 		if(it->object==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 

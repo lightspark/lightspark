@@ -2263,13 +2263,6 @@ void ABCVm::getDescendants(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,"getDescendants " << *name);
 	ASObject* obj=th->runtime_stack_pop();
-	//HACK: to be removed when describeType is implemented
-	if(obj->getObjectType()==T_UNDEFINED)
-	{
-		obj->decRef();
-		th->runtime_stack_push(new Undefined);
-		return;
-	}
 	assert_and_throw(obj->getPrototype()==Class<XML>::getClass());
 	XML* xmlObj=Class<XML>::cast(obj);
 	//The name must be a QName

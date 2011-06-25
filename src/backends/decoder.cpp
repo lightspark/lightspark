@@ -606,6 +606,8 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 	if(fmt==NULL)
 		return;
 
+	formatCtx = avformat_alloc_context();
+	formatCtx->pb = avioContext;
 	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, NULL);
 	if(ret<0)
 		return;

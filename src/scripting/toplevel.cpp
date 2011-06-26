@@ -4565,10 +4565,11 @@ ASFUNCTIONBODY(Namespace,_constructor)
 	//The Namespace class has two constructors, this is the one with a single argument, uriValue:*
 	assert_and_throw(argslen<2);
 
-	th->prefix = "";
-	th->uri = "";
+	//Return before resetting the value to preserve those eventually set by the C++ constructor
 	if (argslen == 0)
 	    return NULL;
+	th->prefix = "";
+	th->uri = "";
 
 	switch(args[0]->getObjectType())
 	{

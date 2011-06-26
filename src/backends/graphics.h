@@ -153,10 +153,11 @@ public:
 class CachedSurface
 {
 public:
-	CachedSurface():xOffset(0),yOffset(0){}
+	CachedSurface():xOffset(0),yOffset(0),alpha(1.0){}
 	TextureChunk tex;
 	int32_t xOffset;
 	int32_t yOffset;
+	float alpha;
 };
 
 class ITextureUploadable
@@ -207,6 +208,7 @@ protected:
 	   The minimal y coordinate for all the points being drawn, in local coordinates
 	*/
 	int32_t yOffset;
+	float alpha;
 	int32_t width;
 	int32_t height;
 	/*
@@ -239,9 +241,10 @@ public:
 	   @param _g The tokens to be drawn. This is copied internally.
 	   @param _m The whole transformation matrix
 	   @param _s The scale factor to be applied in both the x and y axis
+	   @param _a The alpha factor to be applied
 	*/
 	CairoRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
-			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s);
+			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 

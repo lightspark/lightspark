@@ -195,6 +195,7 @@ public:
 	GLint fragmentTexScaleUniform;
 	GLint yuvUniform;
 	GLint maskUniform;
+	GLint alphaUniform;
 	GLint projectionMatrixUniform;
 	GLint modelviewMatrixUniform;
 

@@ -1206,6 +1206,14 @@ MATRIX DisplayObject::getConcatenatedMatrix() const
 		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
 }
 
+float DisplayObject::getConcatenatedAlpha() const
+{
+	if(parent.isNull())
+		return alpha;
+	else
+		return parent->getConcatenatedAlpha()*alpha;
+}
+
 MATRIX DisplayObject::getMatrix() const
 {
 	MATRIX ret;

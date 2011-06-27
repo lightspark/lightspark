@@ -119,6 +119,7 @@ public:
 	virtual void invalidate();
 	virtual void requestInvalidation();
 	MATRIX getConcatenatedMatrix() const;
+	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");

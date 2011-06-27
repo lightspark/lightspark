@@ -497,6 +497,8 @@ void RenderThread::commonGLInit(int width, int height)
 	yuvUniform =glGetUniformLocation(gpu_program,"yuv");
 	//The uniform that tells the shader if a mask is being rendered
 	maskUniform =glGetUniformLocation(gpu_program,"mask");
+	//The uniform that tells the alpha value multiplied to the alpha of every pixel
+	alphaUniform =glGetUniformLocation(gpu_program,"alpha");
 	//The uniform that contains the coordinate matrix
 	projectionMatrixUniform =glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
 	modelviewMatrixUniform =glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");

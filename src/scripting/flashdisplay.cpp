@@ -2559,7 +2559,8 @@ void TokenContainer::invalidate()
 	if(width==0 || height==0)
 		return;
 	CairoRenderer* r=new CairoRenderer(owner, owner->cachedSurface, tokens,
-				owner->getConcatenatedMatrix(), x, y, width, height, scaling, owner->alpha);
+				owner->getConcatenatedMatrix(), x, y, width, height, scaling,
+				owner->getConcatenatedAlpha());
 	sys->addJob(r);
 }
 

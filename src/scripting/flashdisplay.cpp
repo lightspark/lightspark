@@ -1361,6 +1361,8 @@ ASFUNCTIONBODY(DisplayObject,_setAlpha)
 	val=dmax(0,val);
 	val=dmin(val,1);
 	th->alpha=val;
+	if(th->onStage)
+		th->requestInvalidation();
 	return NULL;
 }
 

@@ -1174,10 +1174,6 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
 {
 	maskOf=m;
-/*	_NR<DisplayObject> tmp=maskOf;
-	maskOf.reset();
-	if(!tmp.isNull())
-		tmp->setMask(NullRef);*/
 }
 
 void DisplayObject::setMask(_NR<DisplayObject> m)

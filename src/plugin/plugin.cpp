@@ -100,6 +100,20 @@ lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::UR
 
 void NPDownloadManager::destroy(lightspark::Downloader* downloader)
 {
+	//Convert to a dynamic_cast if any other downloader is ever created by NPDownloadManager
+	NPDownloader* d=static_cast<NPDownloader*>(downloader);
+	/*If the NP stream is already destroyed we can surely destroy the Downloader.
+	  Moreover, if ASYNC_DESTROY is already set, destroy is being called for the second time.
+	  This may happen when:
+	  1) destroy is called by any NPP callback the checks the ASYNC_DESTROY flag and destroys the downloader
+	  2) At shutdown destroy is called on every active download
+	  In both cases it's safe to destroy the downloader, no more NPP call for this downloader will be received */
+	if(d->state!=NPDownloader::STREAM_DESTROYED && d->state!=NPDownloader::ASYNC_DESTROY)
+	{
+		//The NP stream is still alive. Flag this downloader for aync destruction
+		d->state=NPDownloader::ASYNC_DESTROY;
+		return;
+	}
 	//If the downloader was still in the active-downloader list, delete it
 	if(removeDownloader(downloader))
 	{
@@ -114,7 +128,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* downloader)
  * \param[in] _url The URL for the Downloader.
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner):
-	Downloader(_url, false, owner),instance(NULL),started(false)
+	Downloader(_url, false, owner),instance(NULL),state(INIT)
 {
 }
 
@@ -127,7 +141,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoa
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cached, owner),instance(_instance),started(false)
+	Downloader(_url, _cached, owner),instance(_instance),state(INIT)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
@@ -141,7 +155,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NP
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _data, owner),instance(_instance),started(false)
+	Downloader(_url, _data, owner),instance(_instance),state(INIT)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
@@ -156,7 +170,6 @@ void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
 	cerr << _("Start download for ") << th->url << endl;
-	th->started=true;
 	NPError e=NPERR_NO_ERROR;
 	if(th->data.empty())
 		e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
@@ -444,6 +457,14 @@ string nsPluginInstance::getPageURL() const
 	return ret;
 }
 
+void nsPluginInstance::asyncDownloaderDestruction(NPStream* stream, NPDownloader* dl) const
+{
+	LOG(LOG_NO_INFO,_("Async destructin for ") << stream->url);
+	NPError e=NPN_DestroyStream(mInstance, stream, NPRES_USER_BREAK);
+	assert(e==NPERR_NO_ERROR);
+	m_sys->downloadManager->destroy(dl);
+}
+
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
@@ -451,7 +472,12 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	sys=m_sys;
 	if(dl)
 	{
-		cerr << "via NPDownloader" << endl;
+		//Check if async destructin of this downloader has been requested
+		if(dl->state==NPDownloader::ASYNC_DESTROY)
+		{
+			asyncDownloaderDestruction(stream, dl);
+			return NPERR_NO_ERROR;
+		}
 		dl->setLength(stream->end);
 		//TODO: confirm that growing buffers are normal. This does fix a bug I found though. (timonvo)
 		*stype=NP_NORMAL;
@@ -521,6 +547,14 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 	{
 		sys=m_sys;
 		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
+
+		//Check if async destructin of this downloader has been requested
+		if(dl->state==NPDownloader::ASYNC_DESTROY)
+		{
+			asyncDownloaderDestruction(stream, dl);
+			return -1;
+		}
+
 		if(dl->hasFailed())
 			return -1;
 		dl->append((uint8_t*)buffer,len);
@@ -535,6 +569,13 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 	assert(dl);
+	//Check if async destructin of this downloader has been requested
+	if(dl->state==NPDownloader::ASYNC_DESTROY)
+	{
+		asyncDownloaderDestruction(stream, dl);
+		return NPERR_NO_ERROR;
+	}
+	dl->state=NPDownloader::STREAM_DESTROYED;
 	//Notify our downloader of what happened
 	switch(reason)
 	{

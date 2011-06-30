@@ -514,7 +514,6 @@ void SystemState::enableGnashFallback()
 	f.close();
 }
 
-
 void SystemState::delayedCreation(SystemState* th)
 {
 	EngineData* d=th->engineData;
@@ -524,7 +523,8 @@ void SystemState::delayedCreation(SystemState* th)
 	{
 		int32_t reqWidth=th->getFrameSize().Xmax/20;
 		int32_t reqHeight=th->getFrameSize().Ymax/20;
-		gtk_widget_set_size_request(plug, reqWidth, reqHeight);
+		if(th->standalone)
+			gtk_widget_set_size_request(plug, reqWidth, reqHeight);
 		d->width=reqWidth;
 		d->height=reqHeight;
 	}

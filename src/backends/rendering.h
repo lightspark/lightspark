@@ -116,6 +116,8 @@ private:
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
 	std::vector<MaskData> maskStack;
+
+	static void SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data);
 public:
 	RenderThread(SystemState* s);
 	~RenderThread();

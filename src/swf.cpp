@@ -519,7 +519,7 @@ void SystemState::delayedCreation(SystemState* th)
 {
 	EngineData* d=th->engineData;
 	//Create a plug in the XEmbed window
-	GtkWidget* plug=gtk_plug_new((GdkNativeWindow)d->window);
+	GtkWidget* plug=gtk_plug_new(d->window);
 	if(d->isSizable())
 	{
 		int32_t reqWidth=th->getFrameSize().Xmax/20;
@@ -539,7 +539,7 @@ void SystemState::delayedCreation(SystemState* th)
 		gtk_widget_set_can_focus(plug, true);
 		gtk_widget_grab_focus(plug);
 	}
-	d->window=GDK_WINDOW_XWINDOW(plug->window);
+	d->window=GDK_WINDOW_XID(gtk_widget_get_window(plug));
 	XSync(d->display, False);
 	//The lock is needed to avoid thread creation/destruction races
 	Locker l(th->mutex);

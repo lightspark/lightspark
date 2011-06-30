@@ -73,17 +73,17 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 			//cout << "key press" << endl;
 			switch(event->key.keyval)
 			{
-				case GDK_q:
+				case GDK_KEY_q:
 					if(th->m_sys->standalone)
 					{
 						th->m_sys->setShutdownFlag();
 						gtk_main_quit();
 					}
 					break;
-				case GDK_p:
+				case GDK_KEY_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;
-				case GDK_m:
+				case GDK_KEY_m:
 					if (!th->m_sys->audioManager->pluginLoaded())
 						break;
 					th->m_sys->audioManager->toggleMuteAll();
@@ -92,7 +92,7 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 					else
 						LOG(LOG_NO_INFO, "All sounds unmuted");
 					break;
-				case GDK_c:
+				case GDK_KEY_c:
 					if(th->m_sys->hasError())
 					{
 						GtkClipboard *clipboard;

@@ -91,6 +91,8 @@ public:
 	int32_t Write(NPStream *stream, int32_t offset, int32_t len, void *buffer);
 	int32_t WriteReady(NPStream *stream);
 	void    StreamAsFile(NPStream* stream, const char* fname);
+	void    URLNotify(const char* url, NPReason reason,
+			void* notifyData);
 
 	// locals
 	const char * getVersion();

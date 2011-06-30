@@ -169,7 +169,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vecto
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
-	cerr << _("Start download for ") << th->url << endl;
+	LOG(LOG_NO_INFO,_("Start download for ") << th->url);
 	NPError e=NPERR_NO_ERROR;
 	if(th->data.empty())
 		e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
@@ -580,15 +580,15 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 	switch(reason)
 	{
 		case NPRES_DONE:
-			cout << "Done" <<endl;
+			LOG(LOG_NO_INFO,_("Download complete ") << stream->url);
 			dl->setFinished();
 			break;
 		case NPRES_USER_BREAK:
-			cout << "User Break" <<endl;
+			LOG(LOG_ERROR,_("Download stopped ") << stream->url);
 			dl->setFailed();
 			break;
 		case NPRES_NETWORK_ERR:
-			cout << "Network Error" <<endl;
+			LOG(LOG_ERROR,_("Download error ") << stream->url);
 			dl->setFailed();
 			break;
 	}

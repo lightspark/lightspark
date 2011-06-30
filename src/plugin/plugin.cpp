@@ -582,21 +582,7 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 		return NPERR_NO_ERROR;
 	}
 	//Notify our downloader of what happened
-	switch(reason)
-	{
-		case NPRES_DONE:
-			LOG(LOG_NO_INFO,_("Download complete ") << stream->url);
-			dl->setFinished();
-			break;
-		case NPRES_USER_BREAK:
-			LOG(LOG_ERROR,_("Download stopped ") << stream->url);
-			dl->setFailed();
-			break;
-		case NPRES_NETWORK_ERR:
-			LOG(LOG_ERROR,_("Download error ") << stream->url);
-			dl->setFailed();
-			break;
-	}
+	URLNotify(stream->url, reason, stream->pdata);
 	return NPERR_NO_ERROR;
 }
 

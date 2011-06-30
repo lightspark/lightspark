@@ -195,12 +195,21 @@ void RenderThread::handleUpload()
 	prevUploadJob=u;
 }
 
+void RenderThread::SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data)
+{
+	RenderThread* th=static_cast<RenderThread*>(data);
+	th->requestResize(allocation->width, allocation->height);
+}
+
 void* RenderThread::worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
 	const EngineData* e=th->engineData;
 	SemaphoreLighter lighter(th->initialized);
+
+	//Get information about changes in the available space
+	g_signal_connect(e->container,"size-allocate",G_CALLBACK(SizeAllocateCallback),th);
 
 	th->windowWidth=e->width;
 	th->windowHeight=e->height;
@@ -271,17 +280,14 @@ void* RenderThread::worker(RenderThread* th)
 			
 			if(th->resizeNeeded)
 			{
-				if(th->windowWidth!=th->newWidth ||
-					th->windowHeight!=th->newHeight)
-				{
-					th->windowWidth=th->newWidth;
-					th->windowHeight=th->newHeight;
-					LOG(LOG_ERROR,_("Window resize not supported in plugin"));
-				}
+				th->windowWidth=th->newWidth;
+				th->windowHeight=th->newHeight;
 				th->newWidth=0;
 				th->newHeight=0;
 				th->resizeNeeded=false;
+				LOG(LOG_NO_INFO,_("Window resized to ") << th->windowWidth << 'x' << th->windowHeight);
 				th->commonGLResize();
+				th->m_sys->resizeCompleted();
 				profile->accountTime(chronometer.checkpoint());
 				continue;
 			}

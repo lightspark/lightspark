@@ -1354,6 +1354,15 @@ void SystemState::tick()
 	sys->currentVm->addEvent(NullRef, _MR(new AdvanceFrameEvent()));
 }
 
+void SystemState::resizeCompleted() const
+{
+	if(currentVm && scaleMode==NO_SCALE)
+	{
+		stage->incRef();
+		currentVm->addEvent(_MR(stage),_MR(Class<Event>::getInstanceS("resize",false)));
+	}
+}
+
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
 {

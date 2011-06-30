@@ -460,8 +460,6 @@ string nsPluginInstance::getPageURL() const
 void nsPluginInstance::asyncDownloaderDestruction(NPStream* stream, NPDownloader* dl) const
 {
 	LOG(LOG_NO_INFO,_("Async destructin for ") << stream->url);
-	NPError e=NPN_DestroyStream(mInstance, stream, NPRES_USER_BREAK);
-	assert(e==NPERR_NO_ERROR);
 	m_sys->downloadManager->destroy(dl);
 }
 
@@ -475,8 +473,10 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 		//Check if async destructin of this downloader has been requested
 		if(dl->state==NPDownloader::ASYNC_DESTROY)
 		{
-			asyncDownloaderDestruction(stream, dl);
-			return NPERR_NO_ERROR;
+			//NPN_DestroyStream will call NPP_DestroyStream
+			NPError e=NPN_DestroyStream(mInstance, stream, NPRES_USER_BREAK);
+			assert(e==NPERR_NO_ERROR);
+			return e;
 		}
 		dl->setLength(stream->end);
 		//TODO: confirm that growing buffers are normal. This does fix a bug I found though. (timonvo)
@@ -551,7 +551,9 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 		//Check if async destructin of this downloader has been requested
 		if(dl->state==NPDownloader::ASYNC_DESTROY)
 		{
-			asyncDownloaderDestruction(stream, dl);
+			//NPN_DestroyStream will call NPP_DestroyStream
+			NPError e=NPN_DestroyStream(mInstance, stream, NPRES_USER_BREAK);
+			assert(e==NPERR_NO_ERROR);
 			return -1;
 		}
 
@@ -572,6 +574,7 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 	//Check if async destructin of this downloader has been requested
 	if(dl->state==NPDownloader::ASYNC_DESTROY)
 	{
+		dl->setFailed();
 		asyncDownloaderDestruction(stream, dl);
 		return NPERR_NO_ERROR;
 	}

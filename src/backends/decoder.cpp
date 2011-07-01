@@ -511,6 +511,14 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 	else
 		return false;
 
+	if(initialTime==(uint32_t)-1 && !samplesBuffer.isEmpty())
+	{
+		initialTime=getFrontTime();
+		LOG(LOG_NO_INFO,_("AUDIO DEC: Initial timestamp ") << initialTime);
+	}
+	else
+		return false;
+
 	return true;
 }
 

@@ -940,7 +940,7 @@ void NetStream::execute()
 			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
 				audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
 
-			if(audioStream && audioStream->paused() && !audioStream->pause)
+			if(audioStream && audioStream->paused() && !paused)
 			{
 				//The audio stream is paused but should not!
 				//As we have new data fill the stream

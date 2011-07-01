@@ -824,11 +824,6 @@ void NetStream::tick()
 	//Check if the stream is paused
 	if(audioStream && audioStream->isValid())
 	{
-		if(paused && !audioStream->paused())
-			sys->audioManager->pauseStreamPlugin(audioStream);
-		else if(!paused && audioStream->paused())
-			sys->audioManager->resumeStreamPlugin(audioStream);
-
 		//TODO: use soundTransform->pan
 		if(soundTransform != NULL && soundTransform->volume != oldVolume)
 		{

@@ -167,19 +167,19 @@ void PulsePlugin::freeStream ( AudioStream *audioStream )
 	delete s;
 }
 
-void overflow_notify()
+void PulsePlugin::streamOverflowCB( pa_stream *p, void *userdata )
 {
-	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____overflow!!!!");
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: Stream overflow");
 }
 
-void underflow_notify()
+void PulsePlugin::streamUnderflowCB( pa_stream *p, void *userdata )
 {
-	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____underflow!!!!");
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: Stream underflow");
 }
 
-void started_notify()
+void PulsePlugin::streamStartedCB( pa_stream *p, void *userdata )
 {
-	LOG(LOG_NO_INFO, "AUDIO BACKEND: ____started!!!!");
+	LOG(LOG_NO_INFO, "AUDIO BACKEND: Stream started");
 }
 
 AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
@@ -206,9 +206,9 @@ AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 		audioStream->stream = pa_stream_new ( context, "AudioStream", &ss, NULL );
 		pa_stream_set_state_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamStatusCB, audioStream );
 		pa_stream_set_write_callback ( audioStream->stream, ( pa_stream_request_cb_t ) streamWriteCB, audioStream );
-		pa_stream_set_underflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) underflow_notify, NULL );
-		pa_stream_set_overflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) overflow_notify, NULL );
-		pa_stream_set_started_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) started_notify, NULL );
+		pa_stream_set_underflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamUnderflowCB, NULL );
+		pa_stream_set_overflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamUnderflowCB, NULL );
+		pa_stream_set_started_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamStartedCB, NULL );
 		pa_stream_flags flags = (pa_stream_flags) PA_STREAM_START_CORKED;
 		if(muteAllStreams)
 			flags = (pa_stream_flags) (flags | PA_STREAM_START_MUTED);

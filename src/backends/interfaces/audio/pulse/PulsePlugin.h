@@ -40,9 +40,13 @@ private:
 	static void playbackListCB ( pa_context *context, const pa_sink_info *list, int eol, void *th );
 	static void captureListCB ( pa_context *context, const pa_source_info *list, int eol, void *th );
 	void addDeviceToList ( std::vector<std::string *> *devicesList, std::string *deviceName );
-	void generateDevicesList ( std::vector<std::string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
+	//To populate the devices lists, devicesType must be playback or capture
+	void generateDevicesList ( std::vector<std::string *> *devicesList, DEVICE_TYPES desiredType );
 	static void streamStatusCB ( pa_stream *stream, PulseAudioStream *th );
 	static void streamWriteCB ( pa_stream *stream, size_t nbytes, PulseAudioStream *th );
+	static void streamStartedCB ( pa_stream *p, void *userdata );
+	static void streamUnderflowCB ( pa_stream *p, void *userdata );
+	static void streamOverflowCB ( pa_stream *p, void *userdata );
 	bool contextReady;
 	bool noServer;
 

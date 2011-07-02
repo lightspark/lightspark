@@ -767,6 +767,10 @@ ASFUNCTIONBODY(NetStream,resume)
 	if(th->paused)
 	{
 		th->paused = false;
+		sem_wait(&th->mutex);
+		if(th->audioStream)
+			sys->audioManager->resumeStreamPlugin(th->audioStream);
+		sem_post(&th->mutex);
 		th->incRef();
 		getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify")));
 	}
@@ -779,6 +783,10 @@ ASFUNCTIONBODY(NetStream,pause)
 	if(!th->paused)
 	{
 		th->paused = true;
+		sem_wait(&th->mutex);
+		if(th->audioStream)
+			sys->audioManager->pauseStreamPlugin(th->audioStream);
+		sem_post(&th->mutex);
 		th->incRef();
 		getVm()->addEvent(_MR(th),_MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify")));
 	}

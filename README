@@ -2,7 +2,7 @@ INSTALLATION:
 To compile this software you need to install development packages for llvm-2.7,
 opengl, curl, zlib, libavcodec, libglew, pcre.
 If sound is enabled (on by default), you will also need the development package
-for pulseaudio-libs.
+for pulseaudio-libs and/or libsdl.
 If the browser plugin is enabled (on by default), you will need the development
 package for xulrunner.
 Install also cmake and nasm.
@@ -29,6 +29,7 @@ To enable debug mode change the cmake command like this:
 
 CMAKE_BUILD_TYPE available: Debug Release RelWithDebInfo Profile
 Sound support may be disabled using the following option: -DENABLE_SOUND=0
+The audio backend can be set using -DAUDIO_BACKEND=<pulseaudio|sdl> (default is pulseaudio)
 
 EXECUTION:
 Using `make install`, lightspark is installed in the system wide Firefox plugin

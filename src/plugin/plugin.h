@@ -53,9 +53,10 @@ class NPDownloader: public lightspark::Downloader
 	friend class nsPluginInstance;
 private:
 	NPP instance;
-	bool started;
 	static void dlStartCallback(void* th);
 public:
+	enum STATE { INIT=0, STREAM_DESTROYED, ASYNC_DESTROY };
+	STATE state;
 	//Constructor used for the main file
 	NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner);
 	NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::ILoadable* owner);
@@ -90,6 +91,8 @@ public:
 	int32_t Write(NPStream *stream, int32_t offset, int32_t len, void *buffer);
 	int32_t WriteReady(NPStream *stream);
 	void    StreamAsFile(NPStream* stream, const char* fname);
+	void    URLNotify(const char* url, NPReason reason,
+			void* notifyData);
 
 	// locals
 	const char * getVersion();
@@ -98,6 +101,7 @@ public:
 	lightspark::SystemState* m_sys;
 private:
 	std::string getPageURL() const;
+	void asyncDownloaderDestruction(NPStream* stream, NPDownloader* dl) const;
 
 	NPP mInstance;
 	NPBool mInitialized;

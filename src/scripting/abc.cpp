@@ -1091,6 +1091,14 @@ void ABCVm::shutdown()
 	}
 }
 
+void ABCVm::finalize()
+{
+	if(!events_queue.empty())
+		LOG(LOG_ERROR, "Events queue is not empty as expected");
+	events_queue.clear();
+}
+
+
 ABCVm::~ABCVm()
 {
 	for(size_t i=0;i<contexts.size();++i)
@@ -1275,7 +1283,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	if(m_sys->shouldTerminate())
 		return false;
 	//If the event is a synchronization and we are running in the VM context
-	//we should handle it immidiately to avoid deadlock
+	//we should handle it immediately to avoid deadlock
 	if(isVmThread && (ev->getEventType()==SYNC))
 	{
 		assert(obj.isNull());

@@ -1,6 +1,7 @@
 uniform sampler2D g_tex1, g_tex2;
 uniform float yuv;
 uniform float mask;
+uniform float alpha;
 varying vec4 ls_TexCoords[2];
 
 const mat3 YUVtoRGB = mat3(	1, 1, 1, //First coloumn
@@ -14,6 +15,7 @@ void main()
 
 	//Tranform the value from YUV to RGB
 	vec4 vbase = texture2D(g_tex1,ls_TexCoords[0].xy);
+	vbase *= alpha;
 	vec4 val = vbase.bgra-vec4(0,0.5,0.5,0);
 	val.rgb = YUVtoRGB*(val.rgb);
 

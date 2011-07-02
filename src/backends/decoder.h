@@ -222,7 +222,7 @@ public:
 	*/
 	void* operator new(size_t);
 	void operator delete(void*);
-	AudioDecoder():sampleRate(0){}
+	AudioDecoder():sampleRate(0),channelCount(0),initialTime(-1){}
 	virtual ~AudioDecoder(){};
 	virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	bool hasDecodedFrames() const DLL_PUBLIC
@@ -258,6 +258,8 @@ public:
 	}
 	uint32_t sampleRate;
 	uint32_t channelCount;
+	//Saves the timestamp of the first decoded frame
+	uint32_t initialTime;
 };
 
 class NullAudioDecoder: public AudioDecoder

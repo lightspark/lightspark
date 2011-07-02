@@ -1174,10 +1174,6 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
 {
 	maskOf=m;
-/*	_NR<DisplayObject> tmp=maskOf;
-	maskOf.reset();
-	if(!tmp.isNull())
-		tmp->setMask(NullRef);*/
 }
 
 void DisplayObject::setMask(_NR<DisplayObject> m)
@@ -1208,6 +1204,14 @@ MATRIX DisplayObject::getConcatenatedMatrix() const
 		return getMatrix();
 	else
 		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
+}
+
+float DisplayObject::getConcatenatedAlpha() const
+{
+	if(parent.isNull())
+		return alpha;
+	else
+		return parent->getConcatenatedAlpha()*alpha;
 }
 
 MATRIX DisplayObject::getMatrix() const
@@ -1260,28 +1264,15 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 	//If the maskEnabled is already set we are the mask!
 	if(!maskEnabled && rt->isMaskPresent())
 	{
-		GLint vertex_coords[8];
 		rt->renderMaskToTmpBuffer();
 		enableMaskLookup=1.0f;
-
-		glUniform1f(rt->maskUniform, enableMaskLookup);
-		glUniform1f(rt->yuvUniform, 0);
-
-		vertex_coords[0] = -1000;vertex_coords[1] = -1000;
-		vertex_coords[2] = 1000;vertex_coords[3] = -1000;
-		vertex_coords[4] = -1000;vertex_coords[5] = 1000;
-		vertex_coords[6] = 1000;vertex_coords[7] = 1000;
-
-		glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
-		glEnableVertexAttribArray(VERTEX_ATTRIB);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		glDisableVertexAttribArray(VERTEX_ATTRIB);
 	}
 	lsglPushMatrix();
 	lsglLoadIdentity();
 	rt->setMatrixUniform(LSGL_MODELVIEW);
 	glUniform1f(rt->maskUniform, enableMaskLookup);
 	glUniform1f(rt->yuvUniform, 0);
+	glUniform1f(rt->alphaUniform, cachedSurface.alpha);
 	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	lsglPopMatrix();
 	rt->setMatrixUniform(LSGL_MODELVIEW);
@@ -1371,6 +1362,8 @@ ASFUNCTIONBODY(DisplayObject,_setAlpha)
 	val=dmax(0,val);
 	val=dmin(val,1);
 	th->alpha=val;
+	if(th->onStage)
+		th->requestInvalidation();
 	return NULL;
 }
 
@@ -2567,7 +2560,8 @@ void TokenContainer::invalidate()
 	if(width==0 || height==0)
 		return;
 	CairoRenderer* r=new CairoRenderer(owner, owner->cachedSurface, tokens,
-				owner->getConcatenatedMatrix(), x, y, width, height, scaling);
+				owner->getConcatenatedMatrix(), x, y, width, height, scaling,
+				owner->getConcatenatedAlpha());
 	sys->addJob(r);
 }
 

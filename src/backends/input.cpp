@@ -41,8 +41,7 @@ void InputThread::start(const EngineData* e)
 	GtkWidget* container=e->container;
 	gtk_widget_set_can_focus(container,True);
 	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
-					GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
+					GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK);
 	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(worker), this);
 }
 
@@ -73,17 +72,17 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 			//cout << "key press" << endl;
 			switch(event->key.keyval)
 			{
-				case GDK_q:
+				case GDK_KEY_q:
 					if(th->m_sys->standalone)
 					{
 						th->m_sys->setShutdownFlag();
 						gtk_main_quit();
 					}
 					break;
-				case GDK_p:
+				case GDK_KEY_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;
-				case GDK_m:
+				case GDK_KEY_m:
 					if (!th->m_sys->audioManager->pluginLoaded())
 						break;
 					th->m_sys->audioManager->toggleMuteAll();
@@ -92,7 +91,7 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 					else
 						LOG(LOG_NO_INFO, "All sounds unmuted");
 					break;
-				case GDK_c:
+				case GDK_KEY_c:
 					if(th->m_sys->hasError())
 					{
 						GtkClipboard *clipboard;

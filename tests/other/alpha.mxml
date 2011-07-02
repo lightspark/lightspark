@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_ALPHA_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import mx.core.UIComponent;
+	private function appComplete():void
+	{
+		/* The upper and lower couples of squares should be equal */
+		var s1:UIComponent=new UIComponent();
+		var s2:UIComponent=new UIComponent();
+		s1.graphics.beginFill(0x00ff00);
+		s1.graphics.drawRect(0,0,100,100);
+		s1.graphics.endFill();
+		s2.graphics.beginFill(0x0000ff);
+		s2.graphics.drawRect(0,0,100,100);
+		s2.graphics.endFill();
+		s2.alpha=0.5;
+		s2.x=30;
+		s2.y=30;
+		addChild(s1);
+		addChild(s2);
+
+		var s3:UIComponent=new UIComponent();
+		var s4:UIComponent=new UIComponent();
+		s3.graphics.beginFill(0x00ff00);
+		s3.graphics.drawRect(0,0,100,100);
+		s3.graphics.endFill();
+		s4.graphics.beginFill(0x0000ff,0.5);
+		s4.graphics.drawRect(0,0,100,100);
+		s4.graphics.endFill();
+		s3.y=140;
+		s4.x=30;
+		s4.y=170;
+		addChild(s3);
+		addChild(s4);
+	}
+	]]>
+</mx:Script>
+
+</mx:Application>

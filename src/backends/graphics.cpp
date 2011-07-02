@@ -338,8 +338,8 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 }
 
 CairoRenderer::CairoRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
-		int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s)
-	: owner(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),
+		int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
+	: owner(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),alpha(_a),width(_w),height(_h),
 	surfaceBytes(NULL),tokens(_g),scaleFactor(_s),uploadNeeded(true)
 {
 	owner->incRef();
@@ -370,6 +370,7 @@ const TextureChunk& CairoRenderer::getTexture()
 		surface.tex=sys->getRenderThread()->allocateTexture(width, height,false);
 	surface.xOffset=xOffset;
 	surface.yOffset=yOffset;
+	surface.alpha=alpha;
 	return surface.tex;
 }
 

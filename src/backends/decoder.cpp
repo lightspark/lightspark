@@ -26,6 +26,11 @@
 #include "graphics.h"
 #include "backends/rendering.h"
 
+#if LIBAVUTIL_VERSION_MAJOR < 52
+#define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
+#define AVMEDIA_TYPE_AUDIO CODEC_TYPE_AUDIO
+#endif
+
 using namespace lightspark;
 using namespace std;
 
@@ -270,7 +275,13 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 {
 	int frameOk=0;
+
+#if HAVE_AVCODEC_DECODE_VIDEO2
 	int ret=avcodec_decode_video2(codecContext, frameIn, &frameOk, pkt);
+#else
+	int ret=avcodec_decode_video(codecContext, frameIn, &frameOk, pkt->data, pkt->size);
+#endif
+
 	assert_and_throw(ret==(int)pkt->size);
 	if(frameOk)
 	{
@@ -511,6 +522,14 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 	else
 		return false;
 
+	if(initialTime==(uint32_t)-1 && !samplesBuffer.isEmpty())
+	{
+		initialTime=getFrontTime();
+		LOG(LOG_NO_INFO,_("AUDIO DEC: Initial timestamp ") << initialTime);
+	}
+	else
+		return false;
+
 	return true;
 }
 
@@ -545,7 +564,13 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 {
 	FrameSamples& curTail=samplesBuffer.acquireLast();
 	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+
+#if HAVE_AVCODEC_DECODE_AUDIO3
 	int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
+#else
+	int ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, pkt->data, pkt->size);
+#endif
+
 	if(ret==-1)
 	{
 		//A decoding error occurred, create an empty sample buffer

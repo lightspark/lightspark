@@ -87,7 +87,8 @@ void DownloadManager::cleanUp()
 	while(!downloaders.empty())
 	{
 		std::list<Downloader*>::iterator it=downloaders.begin();
-		(*it)->stop();
+		//cleanUp should only happen after stopAll has been called
+		assert((*it)->hasFinished());
 
 		//++ Release lock
 		sem_post(&mutex);

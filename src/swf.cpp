@@ -402,7 +402,8 @@ SystemState::~SystemState()
 	}
 
 	//Here we clean the events queue
-	currentVm->finalize();
+	if(currentVm)
+		currentVm->finalize();
 
 	//Destroy all registered classes
 	it=classes.begin();

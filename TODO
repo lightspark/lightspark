@@ -3,9 +3,7 @@ Official TODO Queue:
 -) Implement ScalingGrid for correct positioning of some objects
 -) Understand the semantics of nextname on methods and the like
 -) Handle private methods, which should be getted on the same level
--) Add Named Objects to frames and not to clips
 -) Conditional scaling of FontGlyph based on version
--) Rework SpriteTag to avoid having the display list cached in frames and build them using the tags
 -) Rework and reorder the various getMultiname
 -) Do not use _constructor when building internally
 -) Implement AMF0 for flv parsing

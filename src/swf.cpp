@@ -401,6 +401,9 @@ SystemState::~SystemState()
 		it->second->cleanUp();
 	}
 
+	//Here we clean the events queue
+	currentVm->finalize();
+
 	//Destroy all registered classes
 	it=classes.begin();
 	for(;it!=classes.end();++it)

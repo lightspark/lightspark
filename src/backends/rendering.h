@@ -131,9 +131,11 @@ public:
 	void stop();
 	void wait();
 	void draw(bool force);
+
 	//The calling context MUST call this function with the transformation matrix ready
-	void acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
-	void blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
+	//void acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
+	//void blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
+
 	/**
 		Allocates a chunk from the shared texture
 	*/

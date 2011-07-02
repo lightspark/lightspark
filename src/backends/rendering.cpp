@@ -90,7 +90,7 @@ RenderThread::~RenderThread()
 	LOG(LOG_NO_INFO,_("~RenderThread this=") << this);
 }
 
-void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
+/*void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	::abort();
 	GLint vertex_coords[8];
@@ -139,7 +139,7 @@ void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, n
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 
 	glUseProgram(gpu_program);
-}
+}*/
 
 void RenderThread::handleNewTexture()
 {

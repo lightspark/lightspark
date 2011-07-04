@@ -172,13 +172,13 @@ void TextField::invalidate()
 
 void TextField::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
-	if(!isSimple())
-		rt->acquireTempBuffer(t1,t2,t3,t4);
+	//if(!isSimple())
+	//	rt->acquireTempBuffer(t1,t2,t3,t4);
 
 	defaultRender(maskEnabled);
 
-	if(!isSimple())
-		rt->blitTempBuffer(t1,t2,t3,t4);
+	//if(!isSimple())
+	//	rt->blitTempBuffer(t1,t2,t3,t4);
 }
 
 void TextFieldAutoSize ::sinit(Class_base* c)

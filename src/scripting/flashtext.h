@@ -35,19 +35,20 @@ public:
 	ASFUNCTION(enumerateFonts);
 };
 
-class TextField: public DisplayObject
+class TextField: public DisplayObject, public TextData
 {
 private:
-	intptr_t width;
-	intptr_t height;
-	tiny_string text;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
+	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	void invalidate();
+	void requestInvalidation();
+	void updateText(const tiny_string& new_text);
 public:
-	TextField():width(0),height(0){}
+	TextField() {};
+	TextField(const TextData& textData) : TextData(textData) {};
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	ASFUNCTION(appendText);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
@@ -57,7 +58,7 @@ public:
 	ASFUNCTION(_setText);
 };
 
-class TextFormat: public ASObject
+class TextFormat: public ASObject, public TextFormat_data
 {
 public:
 	static void sinit(Class_base* c);

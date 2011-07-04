@@ -271,6 +271,10 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 
 	int unsigned i = th->data.size()-1;
 	int j;
+
+	if(argslen == 2 && std::isnan(args[1]->toNumber()))
+		return abstract_i(0);
+
 	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 	{
 		j = args[1]->toInt(); //Preserve sign

@@ -704,12 +704,6 @@ void CairoRenderer::execute()
 		return;
 	}
 
-	if(owner->getRefCount() == 1)
-	{
-		/* we are the only one keeping it alive */
-		uploadNeeded = false;
-		return;
-	}
 	int32_t windowWidth=sys->getRenderThread()->windowWidth;
 	int32_t windowHeight=sys->getRenderThread()->windowHeight;
 	//Discard stuff that it's outside the visible part

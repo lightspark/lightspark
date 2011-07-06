@@ -167,7 +167,7 @@ if(Boost_FOUND)
 ENDIF(Boost_FOUND) 
 IF(UNIX)
   INCLUDE(FindPkgConfig REQUIRED)
-  pkg_check_modules(EXTRA_LIBS REQUIRED x11 fontconfig cairo pangocairo)
+  pkg_check_modules(EXTRA_LIBS REQUIRED x11 cairo pangocairo)
 ENDIF(UNIX)
 
 IF(WIN32)

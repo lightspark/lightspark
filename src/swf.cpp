@@ -468,6 +468,8 @@ void SystemState::setShutdownFlag()
 	shutdown=true;
 
 	sem_post(&terminated);
+	if(standalone)
+		gtk_main_quit();
 }
 
 void SystemState::wait()

@@ -1134,7 +1134,7 @@ void ParseThread::execute()
 	}
 	catch(std::exception& e)
 	{
-		LOG(LOG_ERROR,_("Stream exception in ParseThread"));
+		LOG(LOG_ERROR,_("Stream exception in ParseThread ") << e.what());
 		root->parsingFailed();
 	}
 	pt=NULL;

@@ -332,14 +332,14 @@ std::string URLInfo::encode(const std::string& u, ENCODING type)
 				str += '+';
 			//Additionally ENCODE_URICOMPONENT and ENCODE_URI don't encode:
 			//- _ . ! ~ * ' ( )
-			else if((type == ENCODE_URI || ENCODE_URICOMPONENT) && 
+			else if((type == ENCODE_URI || type == ENCODE_URICOMPONENT || type == ENCODE_ESCAPE) && 
 					(u[i] == '-' || u[i] == '_' || u[i] == '.' || u[i] == '!' || 
 					 u[i] == '~' || u[i] == '*' || u[i] == '\'' ||	u[i] == '(' || 
 					 u[i] == ')'))
 				str += u[i];
 			//Additionally ENCODE_URI doesn't encode:
 			//; / ? : @ & = + $ , # 
-			else if(type == ENCODE_URI && 
+			else if((type == ENCODE_URI || type == ENCODE_ESCAPE) && 
 						(u[i] == ';' || u[i] == '/' || u[i] == '?' || u[i] == ':' || 
 						 u[i] == '@' || u[i] == '&' || u[i] == '=' || u[i] == '+' || 
 						 u[i] == '$' || u[i] == ',' || u[i] == '#'))

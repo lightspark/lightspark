@@ -44,6 +44,9 @@
 		Tests.assertTrue(Object("123")==simplexml, "equality: string and simple XML");
 		Tests.assertTrue(Object(123)==simplexml, "equality: integer and simple XML");
 
+		var cdata:XML = new XML("<![CDATA[Lightspark]"+"]>");
+		Tests.assertEquals(cdata, "Lightspark", "Only CDATA node in file");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

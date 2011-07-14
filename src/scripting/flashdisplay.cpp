@@ -2973,7 +2973,10 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	assert_and_throw(args[2]->getObjectType()==T_ARRAY);
 	Array* alphas=Class<Array>::cast(args[2]);
 
-	assert_and_throw(args[3]->getObjectType()==T_ARRAY);
+	//assert_and_throw(args[3]->getObjectType()==T_ARRAY);
+	//Work around for bug in YouTube player of July 13 2011
+	if(args[3]->getObjectType()==T_UNDEFINED)
+		return NULL;
 	Array* ratios=Class<Array>::cast(args[3]);
 
 	int NumGradient = colors->size();

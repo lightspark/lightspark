@@ -681,7 +681,6 @@ void Downloader::allocateBuffer(size_t size)
 	//Create buffer
 	if(buffer == NULL)
 	{
-
 		buffer = (uint8_t*) calloc(size, sizeof(uint8_t));
 		stableBuffer = buffer;
 		setg((char*)buffer,(char*)buffer,(char*)buffer);
@@ -690,7 +689,7 @@ void Downloader::allocateBuffer(size_t size)
 	else
 	{
 		assert(!cached);
-		intptr_t curLen = (intptr_t) (egptr()-eback());
+		intptr_t curLen = receivedLength;
 		//We have to extend the buffer, so create a new one
 		if(stableBuffer!=buffer)
 		{

@@ -505,6 +505,8 @@ void RenderThread::commonGLInit(int width, int height)
 	maskUniform =glGetUniformLocation(gpu_program,"mask");
 	//The uniform that tells the alpha value multiplied to the alpha of every pixel
 	alphaUniform =glGetUniformLocation(gpu_program,"alpha");
+	//The uniform that tells to draw directly using the selected color
+	directUniform =glGetUniformLocation(gpu_program,"direct");
 	//The uniform that contains the coordinate matrix
 	projectionMatrixUniform =glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
 	modelviewMatrixUniform =glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
@@ -709,9 +711,7 @@ void RenderThread::mapCairoTexture(int w, int h)
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
-
 }
-
 
 void RenderThread::plotProfilingData()
 {
@@ -719,25 +719,41 @@ void RenderThread::plotProfilingData()
 	lsglScalef(1.0f/scaleX,-1.0f/scaleY,1);
 	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
 	setMatrixUniform(LSGL_MODELVIEW);
+
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
+	glUniform1f(rt->directUniform, 1);
 
 	char frameBuf[20];
 	snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
-	renderText(cr, frameBuf, 20, 20);
+
+	GLint vertex_coords[40];
+	GLfloat color_coords[80];
 
 	//Draw bars
-	cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 0.7);
-
-	for (int i=1;i<10;i++)
+	for (int i=0;i<9;i++)
 	{
-		cairo_move_to(cr, 0, i*windowHeight/10);
-		cairo_line_to(cr, windowWidth, i*windowHeight/10);
+		vertex_coords[i*4] = 0;
+		vertex_coords[i*4+1] = (i+1)*windowHeight/10;
+		vertex_coords[i*4+2] = windowWidth;
+		vertex_coords[i*4+3] = (i+1)*windowHeight/10;
 	}
-	cairo_stroke(cr);
+	for (int i=0;i<80;i++)
+		color_coords[i] = 0.7;
 
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(COLOR_ATTRIB);
+	glDrawArrays(GL_LINES, 0, 20);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(COLOR_ATTRIB);
+ 
 	list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();it++)
 		it->plot(1000000/m_sys->getFrameRate(),cr);
+	glUniform1f(rt->directUniform, 0);
+
 	mapCairoTexture(windowWidth, windowHeight);
 
 	//clear the surface
@@ -745,6 +761,7 @@ void RenderThread::plotProfilingData()
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cr);
 	cairo_restore(cr);
+
 }
 
 void RenderThread::coreRendering()

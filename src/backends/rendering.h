@@ -200,6 +200,7 @@ public:
 	GLint yuvUniform;
 	GLint maskUniform;
 	GLint alphaUniform;
+	GLint directUniform;
 	GLint projectionMatrixUniform;
 	GLint modelviewMatrixUniform;
 

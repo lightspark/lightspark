@@ -2,7 +2,9 @@ uniform sampler2D g_tex1, g_tex2;
 uniform float yuv;
 uniform float mask;
 uniform float alpha;
+uniform float direct;
 varying vec4 ls_TexCoords[2];
+varying vec4 ls_FrontColor;
 
 const mat3 YUVtoRGB = mat3(	1, 1, 1, //First coloumn
 				0, -0.344, 1.772, //Second coloumn
@@ -20,5 +22,9 @@ void main()
 	val.rgb = YUVtoRGB*(val.rgb);
 
 	//Select the right value
-	gl_FragColor=(vbase*(1.0-yuv))+(val*yuv);
+	if (direct == 1.0) {
+		gl_FragColor = ls_FrontColor;
+	} else {
+		gl_FragColor=(vbase*(1.0-yuv))+(val*yuv);
+	}
 }

@@ -223,13 +223,13 @@ void* RenderThread::worker(RenderThread* th)
 		LOG(LOG_ERROR,_("glX not present"));
 		return NULL;
 	}
-	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_DOUBLEBUFFER,True,None};
+	int attrib[10]={GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, GLX_DOUBLEBUFFER, True, None};
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 	if(!fb)
 	{
-		attrib[2]=None;
-		fb=glXChooseFBConfig(d, 0, attrib, &a);
+		attrib[6]=None;
 		LOG(LOG_ERROR,_("Falling back to no double buffering"));
+		fb=glXChooseFBConfig(d, 0, attrib, &a);
 	}
 	if(!fb)
 	{

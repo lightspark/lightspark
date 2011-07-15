@@ -569,6 +569,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
+	sys=m_sys;
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 	assert(dl);
 	//Check if async destructin of this downloader has been requested
@@ -586,6 +587,7 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 	}
 	//Notify our downloader of what happened
 	URLNotify(stream->url, reason, stream->pdata);
+	sys=NULL;
 	return NPERR_NO_ERROR;
 }
 

@@ -975,3 +975,30 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	out->writeStringVR(stringMap, "");
 	serializeDynamicProperties(out, stringMap, objMap);
 }
+
+ASObject *ASObject::describeType() const
+{
+	xmlpp::DomParser p;
+	xmlpp::Element* root=p.get_document()->create_root_node("type");
+
+	// type attributes
+	Class_base* prot=getPrototype();
+	if(prot)
+	{
+		root->set_attribute("name", prot->getQualifiedClassName().raw_buf());
+		if(prot->super)
+			root->set_attribute("base", prot->super->getQualifiedClassName().raw_buf());
+	}
+	bool isDynamic=type==T_ARRAY; // FIXME
+	root->set_attribute("isDynamic", isDynamic?"true":"false");
+	bool isFinal=!(type==T_OBJECT || type==T_ARRAY); // FIXME
+	root->set_attribute("isFinal", isFinal?"true":"false");
+	root->set_attribute("isStatic", "false");
+
+	if(prot)
+		prot->describeInstance(root);
+
+	// TODO: undocumented constructor node
+
+	return Class<XML>::getInstanceS(root);
+}

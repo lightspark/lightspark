@@ -37,6 +37,7 @@ class Event;
 class ABCContext;
 class method_info;
 struct call_context;
+struct traits_info;
 
 class InterfaceClass: public ASObject
 {
@@ -59,6 +60,7 @@ private:
 	}
 	void recursiveBuild(ASObject* target);
 	IFunction* constructor;
+	void describeTraits(xmlpp::Element* root, std::vector<traits_info>& traits) const;
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
 	std::set<ASObject*> referencedObjects;
@@ -86,6 +88,8 @@ public:
 	tiny_string getQualifiedClassName() const;
 	tiny_string toString(bool debugMsg);
 	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
+	ASObject *describeType() const;
+	void describeInstance(xmlpp::Element* root) const;
 	
 	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob);
@@ -199,6 +203,7 @@ public:
 	}
 	virtual method_info* getMethodInfo() const=0;
 	static void sinit(Class_base* c);
+	virtual ASObject *describeType() const;
 };
 
 class Function : public IFunction
@@ -334,6 +339,7 @@ public:
 	double toNumber();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
+	ASObject *describeType() const;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;

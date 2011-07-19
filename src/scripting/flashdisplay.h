@@ -717,6 +717,14 @@ public:
 	virtual IntSize getBitmapSize() const;
 };
 
+class AVM1Movie: public DisplayObject
+{
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+};
+
 };
 
 #endif

@@ -323,12 +323,12 @@ void Loader::execute()
 	contentLoaderInfo->incRef();
 	//Use a local variable to store the new root, as the localRoot member may change
 	_R<RootMovieClip> newRoot=_MR(RootMovieClip::getInstance(contentLoaderInfo.getPtr()));
-	newRoot->setOrigin(url.getParsedURL(), "");
 
 	_addChildAt(newRoot,0);
 
 	if(source==URL)
 	{
+		newRoot->setOrigin(url.getParsedURL(), "");
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
 		assert_and_throw(postData.empty());

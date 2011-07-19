@@ -2435,6 +2435,12 @@ ASFUNCTIONBODY(MorphShape,_constructor)
 	return NULL;
 }
 
+bool MorphShape::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	LOG(LOG_NOT_IMPLEMENTED, "MorphShape::boundsRect is a stub");
+	return false;
+}
+
 void Stage::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

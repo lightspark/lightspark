@@ -3221,6 +3221,15 @@ SimpleButton::SimpleButton(DisplayObject *dS, DisplayObject *hTS,
 	if(uS) uS->initFrame();
 }
 
+void SimpleButton::finalize()
+{
+	DisplayObjectContainer::finalize();
+	downState.reset();
+	hitTestState.reset();
+	overState.reset();
+	upState.reset();
+}
+
 ASFUNCTIONBODY(SimpleButton,_constructor)
 {
 	/* This _must_ not call the DisplayObjectContainer

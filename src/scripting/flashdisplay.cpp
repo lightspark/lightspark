@@ -3517,7 +3517,7 @@ void MovieClip::initFrame()
 	 * may just have registered one. */
 	//TODO: check order: child or parent first?
 	if(newFrame && frameScripts.count(state.FP))
-		frameScripts[state.FP]->call(NULL,NULL,0,false);
+		frameScripts[state.FP]->call(NULL,NULL,0);
 
 }
 

@@ -158,6 +158,8 @@ public:
 class IFunction: public ASObject
 {
 CLASSBUILDABLE(IFunction);
+private:
+	virtual ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)=0;
 protected:
 	IFunction();
 	virtual IFunction* clone()=0;
@@ -168,7 +170,7 @@ public:
 	void finalize();
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
-	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false)=0;
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* bind(_NR<ASObject> c, int level)
 	{
 		if(!bound)
@@ -220,8 +222,8 @@ private:
 		return new Function(*this);
 	}
 	method_info* getMethodInfo() const { return NULL; }
+	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
@@ -248,9 +250,9 @@ private:
 		return new SyntheticFunction(*this);
 	}
 	method_info* getMethodInfo() const { return mi; }
+	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 public:
 	void finalize();
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
 	std::vector<scope_entry> func_scope;
 	bool isEqual(ASObject* r)
@@ -786,7 +788,7 @@ public:
 			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
-//Internal objects used to store traits declared in scripts and object placed, but not yet valid
+//Internal objects used to store traits declared in scripts but not yet valid
 class Definable : public ASObject
 {
 public:

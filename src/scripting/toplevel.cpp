@@ -3019,6 +3019,11 @@ void IFunction::finalize()
 	closure_this.reset();
 }
 
+ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_args)
+{
+	return callImpl(obj, args, num_args, false);
+}
+
 ASFUNCTIONBODY(IFunction,apply)
 {
 	IFunction* th=static_cast<IFunction*>(obj);
@@ -3049,7 +3054,7 @@ ASFUNCTIONBODY(IFunction,apply)
 	{
 		overrideThis=false;
 	}
-	ASObject* ret=th->call(args[0],newArgs,newArgsLen,overrideThis);
+	ASObject* ret=th->callImpl(args[0],newArgs,newArgsLen,overrideThis);
 	if(ret==NULL)
 		ret=new Undefined;
 	delete[] newArgs;
@@ -3083,7 +3088,7 @@ ASFUNCTIONBODY(IFunction,_call)
 	{
 		overrideThis=false;
 	}
-	ASObject* ret=th->call(newObj,newArgs,newArgsLen,overrideThis);
+	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen,overrideThis);
 	if(ret==NULL)
 		ret=new Undefined;
 	delete[] newArgs;
@@ -3121,7 +3126,7 @@ void SyntheticFunction::finalize()
 	func_scope.clear();
 }
 
-ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
+ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -3279,7 +3284,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	return ret;
 }
 
-ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
+ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
 {
 	ASObject* ret;
 	if(bound && !closure_this.isNull() && !thisOverride)

@@ -2127,6 +2127,17 @@ ASObject* method_info::getOptional(unsigned int i)
 	return context->getConstant(options[i].kind,options[i].val);
 }
 
+const multiname* method_info::paramTypeName(unsigned int i) const
+{
+	assert_and_throw(i<param_type.size());
+	return context->getMultiname(param_type[i],NULL);
+}
+
+const multiname* method_info::returnTypeName() const
+{
+	return context->getMultiname(return_type,NULL);
+}
+
 istream& lightspark::operator>>(istream& in, s32& v)
 {
 	int i=0;

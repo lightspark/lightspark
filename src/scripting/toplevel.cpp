@@ -2472,6 +2472,11 @@ double Undefined::toNumber()
 	return numeric_limits<double>::quiet_NaN();
 }
 
+ASObject *Undefined::describeType() const
+{
+	return new Undefined;
+}
+
 void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
@@ -3083,6 +3088,26 @@ ASFUNCTIONBODY(IFunction,_call)
 		ret=new Undefined;
 	delete[] newArgs;
 	return ret;
+}
+
+ASObject *IFunction::describeType() const
+{
+	xmlpp::DomParser p;
+	xmlpp::Element* root=p.get_document()->create_root_node("type");
+
+	root->set_attribute("name", "Function");
+	root->set_attribute("base", "Object");
+	root->set_attribute("isDynamic", "true");
+	root->set_attribute("isFinal", "false");
+	root->set_attribute("isStatic", "false");
+
+	xmlpp::Element* node=root->add_child("extendsClass");
+	node->set_attribute("type", "Object");
+
+	// TODO: accessor
+	LOG(LOG_NOT_IMPLEMENTED, "describeType for Function not completely implemented");
+
+	return Class<XML>::getInstanceS(root);
 }
 
 SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL)
@@ -4514,6 +4539,169 @@ tiny_string Class_base::getQualifiedClassName() const
 		assert_and_throw(name_index);
 		const multiname* mname=context->getMultiname(name_index,NULL);
 		return mname->qualifiedString();
+	}
+}
+
+ASObject *Class_base::describeType() const
+{
+	xmlpp::DomParser p;
+	xmlpp::Element* root=p.get_document()->create_root_node("type");
+
+	root->set_attribute("name", getQualifiedClassName().raw_buf());
+	root->set_attribute("base", "Class");
+	root->set_attribute("isDynamic", "true");
+	root->set_attribute("isFinal", "true");
+	root->set_attribute("isStatic", "true");
+
+	// extendsClass
+	xmlpp::Element* extends_class=root->add_child("extendsClass");
+	extends_class->set_attribute("type", "Class");
+	extends_class=root->add_child("extendsClass");
+	extends_class->set_attribute("type", "Object");
+
+	// variable
+	if(class_index>=0)
+		describeTraits(root, context->classes[class_index].traits);
+
+	// factory
+	xmlpp::Element* factory=root->add_child("factory");
+	factory->set_attribute("type", getQualifiedClassName().raw_buf());
+	describeInstance(factory);
+	
+	return Class<XML>::getInstanceS(root);
+}
+
+void Class_base::describeInstance(xmlpp::Element* root) const
+{
+	// extendsClass
+	const Class_base* c=super;
+	while(c)
+	{
+		xmlpp::Element* extends_class=root->add_child("extendsClass");
+		extends_class->set_attribute("type", c->getQualifiedClassName().raw_buf());
+		c=c->super;
+	}
+
+	// implementsInterface
+	c=this;
+	while(c && c->class_index>=0)
+	{
+		const std::vector<Class_base*>& interfaces=c->getInterfaces();
+		auto it=interfaces.begin();
+		for(; it!=interfaces.end(); ++it)
+		{
+			xmlpp::Element* node=root->add_child("implementsInterface");
+			node->set_attribute("type", (*it)->getQualifiedClassName().raw_buf());
+		}
+		c=c->super;
+	}
+
+	// variables, methods, accessors
+	c=this;
+	while(c && c->class_index>=0)
+	{
+		c->describeTraits(root, c->context->instances[c->class_index].traits);
+		c=c->super;
+	}
+}
+
+void Class_base::describeTraits(xmlpp::Element* root,
+				std::vector<traits_info>& traits) const
+{
+	std::map<u30, xmlpp::Element*> accessorNodes;
+	for(unsigned int i=0;i<traits.size();i++)
+	{
+		traits_info& t=traits[i];
+		int kind=t.kind&0xf;
+		multiname* mname=context->getMultiname(t.name,NULL);
+		if (mname->name_type!=multiname::NAME_STRING ||
+		    (mname->ns.size()==1 && mname->ns[0].name!="") ||
+		    mname->ns.size() > 1)
+			continue;
+		
+		if(kind==traits_info::Slot || kind==traits_info::Const)
+		{
+			multiname* type=context->getMultiname(t.type_name,NULL);
+			assert(type->name_type==multiname::NAME_STRING);
+
+			const char *nodename=kind==traits_info::Const?"constant":"variable";
+			xmlpp::Element* node=root->add_child(nodename);
+			node->set_attribute("name", mname->name_s.raw_buf());
+			node->set_attribute("type", type->name_s.raw_buf());
+		}
+		else if (kind==traits_info::Method)
+		{
+			xmlpp::Element* node=root->add_child("method");
+			node->set_attribute("name", mname->name_s.raw_buf());
+			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
+
+			method_info& method=context->methods[t.method];
+			const multiname* rtname=method.returnTypeName();
+			assert(rtname->name_type==multiname::NAME_STRING);
+			node->set_attribute("returnType", rtname->name_s.raw_buf());
+
+			int firstOpt=method.numArgs() - method.option_count;
+			for(int j=0;j<method.numArgs(); j++)
+			{
+				xmlpp::Element* param=node->add_child("parameter");
+				param->set_attribute("index", tiny_string(j+1).raw_buf());
+				param->set_attribute("type", method.paramTypeName(j)->name_s.raw_buf());
+				param->set_attribute("optional", j>=firstOpt?"true":"false");
+			}
+		}
+		else if (kind==traits_info::Getter || kind==traits_info::Setter)
+		{
+			// The getters and setters are separate
+			// traits. Check if we have already created a
+			// node for this multiname with the
+			// complementary accessor. If we have, update
+			// the access attribute to "readwrite".
+			xmlpp::Element* node;
+			auto existing=accessorNodes.find(t.name);
+			if(existing==accessorNodes.end())
+			{
+				node=root->add_child("accessor");
+				accessorNodes[t.name]=node;
+			}
+			else
+				node=existing->second;
+
+			node->set_attribute("name", mname->name_s.raw_buf());
+
+			const char* access=NULL;
+			tiny_string oldAccess;
+			xmlpp::Attribute* oldAttr=node->get_attribute("access");
+			if(oldAttr)
+				oldAccess=oldAttr->get_value();
+
+			if(kind==traits_info::Getter && oldAccess=="")
+				access="readonly";
+			else if(kind==traits_info::Setter && oldAccess=="")
+				access="writeonly";
+			else if((kind==traits_info::Getter && oldAccess=="writeonly") || 
+				(kind==traits_info::Setter && oldAccess=="readonly"))
+				access="readwrite";
+
+			if(access)
+				node->set_attribute("access", access);
+
+			const char* type=NULL;
+			method_info& method=context->methods[t.method];
+			if(kind==traits_info::Getter)
+			{
+				const multiname* rtname=method.returnTypeName();
+				assert(rtname->name_type==multiname::NAME_STRING);
+				type=rtname->name_s.raw_buf();
+			}
+			else if(method.numArgs()>0) // setter
+			{
+				type=method.paramTypeName(0)->name_s.raw_buf();
+			}
+			if(type)
+				node->set_attribute("type", type);
+
+			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
+		}
 	}
 }
 

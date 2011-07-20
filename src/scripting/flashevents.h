@@ -319,11 +319,9 @@ private:
 	ASObject** result;
 	ASObject** exception;
 	_NR<SynchronizationEvent> sync;
-	bool thisOverride;
 public:
 	FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj=NullRef, ASObject** _args=NULL, uint32_t _numArgs=0, 
-			ASObject** _result=NULL, ASObject** _exception=NULL, _NR<SynchronizationEvent> _sync=NullRef, 
-			bool _thisOverride=false);
+			ASObject** _result=NULL, ASObject** _exception=NULL, _NR<SynchronizationEvent> _sync=NullRef);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return FUNCTION; }

@@ -1209,7 +1209,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					try
 					{
 						ev->obj->incRef();
-						ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs,ev->thisOverride);
+						ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs);
 						// We should report the function result
 						if(ev->result != NULL)
 							*(ev->result) = result;
@@ -1236,7 +1236,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					assert(ev->sync.isNull());
 					if(!ev->obj.isNull())
 						ev->obj->incRef();
-					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs,ev->thisOverride);
+					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs);
 					// We should report the function result
 					if(ev->result != NULL)
 						*(ev->result) = result;

@@ -34,7 +34,7 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 	return ret;
 }
 
-ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* context)
+ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context* context)
 {
 	method_info* mi=function->mi;
 

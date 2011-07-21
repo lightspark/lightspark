@@ -629,7 +629,7 @@ public:
 	void start() DLL_PUBLIC;
 	void finalize();
 	static void Run(ABCVm* th);
-	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
+	static ASObject* executeFunction(const SyntheticFunction* function, call_context* context);
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();

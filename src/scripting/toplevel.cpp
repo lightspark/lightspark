@@ -641,9 +641,16 @@ void XML::buildFromString(const string& str)
 	}
 	else
 	{
+		string buf(str.c_str());
+		//if this is a CDATA node replace CDATA tags to make it look like a text-node
+		//for compatibility with the Adobe player
+		if (str.compare(0, 9, "<![CDATA[") == 0) {
+			buf = "<a>"+str.substr(9, str.size()-12)+"</a>";
+		}
+
 		try
 		{
-			parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
+			parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
 		}
 		catch(const exception& e)
 		{

@@ -248,6 +248,8 @@ public:
 	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
 	ASObject* getOptional(unsigned int i);
 	int numArgs() { return param_count; }
+	const multiname* paramTypeName(unsigned int i) const;
+	const multiname* returnTypeName() const;
 	method_info():
 #ifdef PROFILING_SUPPORT
 		profTime(0),

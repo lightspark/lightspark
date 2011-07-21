@@ -140,7 +140,6 @@ friend class Class_base;
 friend class InterfaceClass;
 //ABCContext uses findObjVar when building and linking traits
 friend class ABCContext;
-friend ASObject* describeType(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 private:
 	std::multimap<tiny_string,variable> Variables;
 	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
@@ -199,7 +198,6 @@ friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
 friend class InterfaceClass;
 friend class IFunction; //Needed for clone
-friend ASObject* describeType(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 CLASSBUILDABLE(ASObject);
 protected:
 	//ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed
@@ -366,6 +364,8 @@ public:
 	*/
 	virtual void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const;
+
+	virtual ASObject *describeType() const;
 };
 
 inline void Manager::put(ASObject* o)

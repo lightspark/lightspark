@@ -34,8 +34,7 @@
 	//there are no multiple buffers in GLES 2.0
 	#define glDrawBuffer(x)
 #else
-	#include <GL/gl.h>
-	#include <GL/glext.h>
+	#include <GL/glew.h>
 #endif
 
 #endif

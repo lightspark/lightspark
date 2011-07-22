@@ -93,7 +93,7 @@ RenderThread::~RenderThread()
 /*void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	::abort();
-	GLint vertex_coords[8];
+	GLfloat vertex_coords[8];
 	static GLfloat color_coords[16];
 	assert(tempBufferAcquired==false);
 	tempBufferAcquired=true;
@@ -106,7 +106,7 @@ RenderThread::~RenderThread()
 	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
 	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(COLOR_ATTRIB);
@@ -118,7 +118,7 @@ RenderThread::~RenderThread()
 void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(tempBufferAcquired==true);
-	GLint vertex_coords[8];
+	GLfloat vertex_coords[8];
 	tempBufferAcquired=false;
 
 	//Use the blittler program to blit only the used buffer
@@ -133,7 +133,7 @@ void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, n
 	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
 	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
@@ -702,9 +702,9 @@ void RenderThread::mapCairoTexture(int w, int h)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, cairoTextureData);
 
-	GLint vertex_coords[] = {0,0, w,0, 0,h, w,h};
+	GLfloat vertex_coords[] = {0,0, GLfloat(w),0, 0,GLfloat(h), GLfloat(w),GLfloat(h)};
 	GLfloat texture_coords[] = {0,0, 1,0, 0,1, 1,1};
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
@@ -727,7 +727,7 @@ void RenderThread::plotProfilingData()
 	char frameBuf[20];
 	snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
 
-	GLint vertex_coords[40];
+	GLfloat vertex_coords[40];
 	GLfloat color_coords[80];
 
 	//Draw bars
@@ -741,7 +741,7 @@ void RenderThread::plotProfilingData()
 	for (int i=0;i<80;i++)
 		color_coords[i] = 0.7;
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(COLOR_ATTRIB);
@@ -1066,7 +1066,7 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	uint32_t curChunk=0;
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
-	GLint *vertex_coords = new GLint[chunk.getNumberOfChunks()*12];
+	GLfloat *vertex_coords = new GLfloat[chunk.getNumberOfChunks()*12];
 	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*12];
 	for(uint32_t i=0, k=0;i<chunk.height;i+=128)
 	{
@@ -1128,7 +1128,7 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 		}
 	}
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB);

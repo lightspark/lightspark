@@ -911,7 +911,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	int width=size.Xmax/20;
 	int height=size.Ymax/20;
 	
-	GLint *vertex_coords = new GLint[data.size()*2];
+	GLfloat *vertex_coords = new GLfloat[data.size()*2];
 	GLfloat *color_coords = new GLfloat[data.size()*4];
 
 	int32_t start=tickCount-len;
@@ -928,7 +928,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		color_coords[i*4+3] = 1;
 	}
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(COLOR_ATTRIB);

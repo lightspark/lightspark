@@ -69,6 +69,21 @@
 		Tests.assertArrayEquals(f, [ 2 ], "splice with huge deleteCount: original array");
 		Tests.assertArrayEquals(g, [ 3, 4, 5], "splice with huge deleteCount: returned array");
 
+		var f2:Array=[ 2, 3, 4, 5];
+		var g2:Array=f2.splice(-1,1000);
+		Tests.assertArrayEquals(f2, [ 2, 3, 4], "splice with huge deleteCount and -1 as start index: original array");
+		Tests.assertArrayEquals(g2, [ 5 ], "splice with huge deleteCount and -1 as start index: returned array");
+
+		var f3:Array=[ 2, 3, 4, 5];
+		var g3:Array=f3.splice(6,1000);
+		Tests.assertArrayEquals(f3, [ 2, 3, 4, 5 ], "splice with huge deleteCount and huge startIndex: original array");
+		Tests.assertArrayEquals(g3, [ ], "splice with huge deleteCount and huge startIndex: returned array");
+
+		var f4:Array=[ 2, 3, 4, 5];
+		var g4:Array=f4.splice(-6,1000);
+		Tests.assertArrayEquals(f4, [ ], "splice with huge deleteCount and huge negative startIndex: original array");
+		Tests.assertArrayEquals(g4, [ 2, 3, 4, 5], "splice with huge deleteCount and huge negative startIndex: returned array");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

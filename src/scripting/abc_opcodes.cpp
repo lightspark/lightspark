@@ -2368,10 +2368,6 @@ void ABCVm::newClass(call_context* th, int n)
 		constructor->validProfName=true;
 	}
 #endif
-	ret->class_scope=th->scope_stack;
-	ret->incRef();
-	ret->class_scope.emplace_back(_MR(ret),false);
-
 	assert_and_throw(th->context);
 	ret->context=th->context;
 
@@ -2384,14 +2380,13 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->setLevel(ret->max_level);
 	}
 
-	method_info* m=&th->context->methods[th->context->classes[n].cinit];
-	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(m);
-	//cinit must inherit the current scope
-	cinit->acquireScope(th->scope_stack);
-
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
+
+	ret->class_scope=th->scope_stack;
+	ret->incRef();
+	ret->class_scope.emplace_back(_MR(ret),false);
 
 	//Add protected namespace if needed
 	if((th->context->instances[n].flags)&0x08)
@@ -2456,6 +2451,10 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG(LOG_CALLS,_("Calling Class init ") << ret);
 	ret->incRef();
 	//Class init functions are called with global as this
+	method_info* m=&th->context->methods[th->context->classes[n].cinit];
+	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(m);
+	//cinit must inherit the current scope
+	cinit->acquireScope(th->scope_stack);
 	ASObject* ret2=cinit->call(ret,NULL,0);
 	assert_and_throw(ret2==NULL);
 	LOG(LOG_CALLS,_("End of Class init ") << ret);

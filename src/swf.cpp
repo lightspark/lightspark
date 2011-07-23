@@ -392,6 +392,10 @@ SystemState::~SystemState()
 	for(;it!=classes.end();++it)
 		it->second->finalize();
 
+	//Here we clean the events queue
+	if(currentVm)
+		currentVm->finalize();
+
 	//Destroy the contents of all the classes
 	it=classes.begin();
 	for(;it!=classes.end();++it)
@@ -400,10 +404,6 @@ SystemState::~SystemState()
 		it->second->incRef();
 		it->second->cleanUp();
 	}
-
-	//Here we clean the events queue
-	if(currentVm)
-		currentVm->finalize();
 
 	//Destroy all registered classes
 	it=classes.begin();

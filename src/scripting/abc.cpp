@@ -1093,7 +1093,8 @@ void ABCVm::shutdown()
 
 void ABCVm::finalize()
 {
-	if(!events_queue.empty())
+	//The event queue may be not empty if the VM has been been started
+	if(status==CREATED && !events_queue.empty())
 		LOG(LOG_ERROR, "Events queue is not empty as expected");
 	events_queue.clear();
 }

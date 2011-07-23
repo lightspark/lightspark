@@ -324,12 +324,17 @@ ASFUNCTIONBODY(Array,splice)
 	int totalSize=th->data.size();
 	Array* ret=Class<Array>::getInstanceS();
 
-	if(totalSize)
+	//cap startIndex
+	if(startIndex<0 && -startIndex > totalSize)
+		startIndex=0;
+	else if(startIndex>0 && startIndex > totalSize)
+		startIndex=totalSize;
+	else if(totalSize)
 	{
 		//A negative startIndex is relative to the end
-		assert_and_throw(abs(startIndex)<totalSize);
 		startIndex=(startIndex+totalSize)%totalSize;
 	}
+
 	if((startIndex+deleteCount)>totalSize)
 		deleteCount=totalSize-startIndex;
 

@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_display_Loader_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+
+	private var localLoader:Loader;
+	private var remoteLoader:Loader;
+
+	//Compile LoaderTestMovie.swf with
+	// mxmlc -static-link-runtime-shared-libraries LoaderTestMovie.as
+
+	//This is the path for a local file. 
+	private var localFilePath:String = "file://LoaderTestMovie.swf";
+
+	//This shouldn't be allowed when we implement allowed domains, security policy files
+	private var remoteFilePath:String = "http://localhost/LoaderTestMovie.swf";
+
+	private var received:uint = 0;
+	private function appComplete():void
+	{
+		try
+		{
+			if(Security.sandboxType == Security.REMOTE || 
+				Security.sandboxType == Security.LOCAL_WITH_NETWORK ||
+				Security.sandboxType == Security.LOCAL_TRUSTED) 
+			{
+				Tests.info("Sandbox allows loading remote files");
+				remoteLoader = new Loader();
+				remoteLoader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, remoteErrorHandler);
+				remoteLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, remoteLoaderCompleteHandler);
+				remoteLoader.load(new URLRequest(remoteFilePath));
+                        }
+			if(Security.sandboxType == Security.LOCAL_WITH_FILE ||
+				Security.sandboxType == Security.LOCAL_TRUSTED)
+			{
+				Tests.info("Sandbox allows loading local files");
+			        localLoader = new Loader();
+                        	localLoader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, localErrorHandler);
+                                localLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, localLoaderCompleteHandler);
+                                localLoader.load(new URLRequest(localFilePath));
+                        }
+		}
+		catch(e:SecurityError)
+		{
+			Tests.assertDontReach("SecurityError thrown");
+			Tests.info("Error:", e.toString());
+			Tests.report(visual, this.name);
+		}
+	}
+	private function remoteErrorHandler(e:Event):void
+	{
+		Tests.assertDontReach("IOErrorEvent.IO_ERROR: an error ocurred (remote)");
+		received++
+		finishUp();
+	}
+	private function localErrorHandler(e:Event):void
+	{
+		Tests.assertDontReach("IOErrorEvent.IO_ERROR: an error ocurred (local)");
+		received++
+		finishUp();
+	}
+	private function remoteLoaderCompleteHandler(e:Event):void
+	{
+		Tests.assertNotNull(remoteLoader.content, "Event.COMPLETE: data received");
+		received++
+		finishUp();
+	}
+	private function localLoaderCompleteHandler(e:Event):void
+	{
+		Tests.assertNotNull(localLoader.content, "Event.COMPLETE: data received");
+		received++
+		finishUp();
+	}
+	private function finishUp():void
+	{
+		if((Security.sandboxType == Security.LOCAL_TRUSTED && received == 2) || (Security.sandboxType != Security.LOCAL_TRUSTED && received == 1))
+			Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

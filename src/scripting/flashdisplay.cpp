@@ -3589,6 +3589,10 @@ void DisplayObject::initFrame()
 	if(!isConstructed() && getPrototype())
 	{
 		getPrototype()->handleConstruction(this,NULL,0,true);
+
+		if(!onStage)
+			return;
+
 		/* addChild has already been called for this object,
 		 * but addedToStage is delayed until after construction.
 		 * This is from "Order of Operations".

@@ -1564,11 +1564,16 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->loaderInfo.isNull())
-		return new Undefined;
 
-	th->loaderInfo->incRef();
-	return th->loaderInfo.getPtr();
+	/* According to tests returning root.loaderInfo is the correct
+	 * behaviour, even though the documentation states that only
+	 * the main class should have non-null loaderInfo. */
+	_NR<RootMovieClip> r=th->getRoot();
+	if(r.isNull() || r->loaderInfo.isNull())
+		return new Undefined;
+	
+	r->loaderInfo->incRef();
+	return r->loaderInfo.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getStage)

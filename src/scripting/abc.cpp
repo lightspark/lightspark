@@ -1253,8 +1253,12 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case INIT_FRAME:
 			{
+				InitFrameEvent* ev=static_cast<InitFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"INIT_FRAME");
-				sys->getStage()->initFrame();
+				if(!ev->clip.isNull())
+					ev->clip->initFrame();
+				else
+					sys->getStage()->initFrame();
 				break;
 			}
 			case ADVANCE_FRAME:

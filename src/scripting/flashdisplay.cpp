@@ -1341,15 +1341,30 @@ void DisplayObject::setOnStage(bool staged)
 			requestInvalidation();
 		if(getVm()==NULL)
 			return;
-		if(onStage==true && isConstructed() && hasEventListener("addedToStage"))
+		/*NOTE: By tests we can assert that added/addedToStage is dispatched
+		  immediately when addChild is called. On the other hand setOnStage may
+		  be also called outside of the VM thread (for example by Loader::execute)
+		  so we have to check isVmThread and act accordingly. If in the future
+		  asynchronous uses of setOnStage are removed the code can be simplified
+		  by removing the !isVmThread case.
+		*/
+		if(onStage==true && isConstructed())
 		{
 			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("addedToStage")));
+			_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));
+			if(isVmThread)
+				ABCVm::publicHandleEvent(_MR(this),e);
+			else
+				getVm()->addEvent(_MR(this),e);
 		}
-		else if(onStage==false && hasEventListener("removedFromStage"))
+		else if(onStage==false)
 		{
 			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("removedFromStage")));
+			_R<Event> e=_MR(Class<Event>::getInstanceS("removedFromStage"));
+			if(isVmThread)
+				ABCVm::publicHandleEvent(_MR(this),e);
+			else
+				getVm()->addEvent(_MR(this),e);
 		}
 	}
 }

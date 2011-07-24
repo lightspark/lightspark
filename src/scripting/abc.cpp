@@ -49,7 +49,7 @@
 using namespace std;
 using namespace lightspark;
 
-TLSDATA bool isVmThread=false;
+TLSDATA bool lightspark::isVmThread=false;
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {

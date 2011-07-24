@@ -39,6 +39,8 @@
 namespace lightspark
 {
 
+extern TLSDATA bool isVmThread;
+
 class u8
 {
 friend std::istream& operator>>(std::istream& in, u8& v);

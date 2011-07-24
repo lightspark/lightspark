@@ -26,6 +26,7 @@
 #include "backends/rendering.h"
 #include "glmatrices.h"
 #include "compat.h"
+#include "scripting/flashtext.h"
 
 #include <iostream>
 
@@ -828,6 +829,15 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 		cairo_paint(cr);
 	}
 	cairo_set_source_rgb (cr, textData.textColor.Red, textData.textColor.Green, textData.textColor.Blue);
+
+	TextField* tf=dynamic_cast<TextField*>(owner);
+	if(tf)
+	{
+		int width, height;
+		pango_layout_get_pixel_size(layout, &width, &height);
+		tf->setTextSize(width, height);
+	}
+
 	/* draw the text */
 	pango_cairo_show_layout(cr, layout);
 

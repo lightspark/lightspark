@@ -84,6 +84,15 @@
 		Tests.assertArrayEquals(f4, [ ], "splice with huge deleteCount and huge negative startIndex: original array");
 		Tests.assertArrayEquals(g4, [ 2, 3, 4, 5], "splice with huge deleteCount and huge negative startIndex: returned array");
 
+		var h:Array=[2, 3, 4, 5];
+		Tests.assertArrayEquals(h.slice(1), [3, 4, 5], "slice with one argument");
+		Tests.assertArrayEquals(h.slice(-2), [4, 5], "slice with negative start index");
+		Tests.assertArrayEquals(h.slice(1000), [], "slice with huge start index");
+		Tests.assertArrayEquals(h.slice(-1000), [2, 3, 4, 5], "slice with huge negative start index");
+		Tests.assertArrayEquals(h.slice(1, 3), [3, 4], "slice with two arguments");
+		Tests.assertArrayEquals(h.slice(1, -1), [3, 4], "slice with positive start index and negative end index");
+		Tests.assertArrayEquals(h.slice(1, -1000), [], "slice with small start index and huge end index");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

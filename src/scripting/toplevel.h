@@ -483,6 +483,7 @@ private:
 		bool operator()(const data_slot& d1, const data_slot& d2);
 	};
 	tiny_string toString_priv() const;
+	int capIndex(int i) const;
 public:
 	void finalize();
 	//These utility methods are also used by ByteArray 
@@ -510,6 +511,7 @@ public:
 	ASFUNCTION(lastIndexOf);
 	ASFUNCTION(_map);
 	ASFUNCTION(_toString);
+	ASFUNCTION(slice);
 
 	ASObject* at(unsigned int index) const;
 	void set(unsigned int index, ASObject* o)

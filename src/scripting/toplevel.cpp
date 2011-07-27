@@ -259,7 +259,8 @@ ASFUNCTIONBODY(Array, _reverse)
 
 	reverse(th->data.begin(), th->data.end());
 
-	return NULL;
+	th->incRef();
+	return th;
 }
 
 ASFUNCTIONBODY(Array,lastIndexOf)

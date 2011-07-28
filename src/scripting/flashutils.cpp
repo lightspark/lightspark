@@ -640,6 +640,8 @@ ASFUNCTIONBODY(Timer,_setDelay)
 ASFUNCTIONBODY(Timer,start)
 {
 	Timer* th=static_cast<Timer*>(obj);
+	if(th->running)
+		return NULL;
 	th->running=true;
 	th->stopMe=false;
 	th->incRef();

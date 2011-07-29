@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_accessor_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import flash.display.Sprite;
+
+	private function appComplete():void
+	{
+		var x:ReadOnlyTest = new ReadOnlyTest();
+
+		try
+		{
+			x["readOnlyProperty"] = 99;
+			Tests.assertDontReach("Exception wasn't raised");
+		}
+		catch (e:ReferenceError)
+		{
+			Tests.assertTrue(true, "ReferenceError raised when writing to a read-only property");
+		}
+		catch (e:Object)
+		{
+			Tests.assertDontReach("Unexcepted exception")
+		}
+
+		Tests.assertEquals(0, x.readOnlyProperty, "Value of the property afterwards");
+
+		try
+		{
+			x.name = "test";
+			Tests.assertTrue(true, "Calling setter when getter is overridden");
+		}
+		catch (e:Object)
+		{
+			Tests.assertDontReach("Exception when calling super class setter");
+		}
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

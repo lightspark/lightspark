@@ -217,7 +217,7 @@ private:
 	Class_base* prototype;
 	ACQUIRE_RELEASE_FLAG(constructed);
 	obj_var* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
-	obj_var* findSettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
+	obj_var* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
 	tiny_string toStringImpl() const;
 public:
 #ifndef NDEBUG

@@ -71,6 +71,7 @@ REGISTER_CLASS_NAME(SimpleButton);
 REGISTER_CLASS_NAME(FrameLabel);
 REGISTER_CLASS_NAME(Scene);
 REGISTER_CLASS_NAME(AVM1Movie);
+REGISTER_CLASS_NAME(Shader);
 
 std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 {
@@ -3603,5 +3604,18 @@ void AVM1Movie::buildTraits(ASObject* o)
 ASFUNCTIONBODY(AVM1Movie,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL,0);
+	return NULL;
+}
+
+void Shader::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+ASFUNCTIONBODY(Shader,_constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED, _("Shader class is unimplemented."));
 	return NULL;
 }

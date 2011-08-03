@@ -727,6 +727,13 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class Shader : public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
 };
 
 #endif

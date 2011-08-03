@@ -286,6 +286,10 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 			cur=cur->super;
 		}
 	}
+
+	if(!ret && prototype)
+		ret=(Class<ASObject>::getClass()->lazyDefine(name)!=NULL);
+
 	//Must not ask for non borrowed traits as static class member are not valid
 	return ret;
 }

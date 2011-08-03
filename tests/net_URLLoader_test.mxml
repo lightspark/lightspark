@@ -9,7 +9,9 @@
 	<![CDATA[
 	import Tests;
 	private var remoteLoader:URLLoader;
+	private var remoteLoader2:URLLoader;
 	private var localLoader:URLLoader;
+	private var localLoader2:URLLoader;
 	
 	//This is the path for a local file. 
 	private var localFilePath:String = "test.data";
@@ -33,6 +35,9 @@
 				remoteLoader.addEventListener(IOErrorEvent.IO_ERROR, remoteErrorHandler);
 				remoteLoader.addEventListener(Event.COMPLETE, remoteLoaderCompleteHandler);
 				remoteLoader.load(new URLRequest(remoteFilePath));
+				remoteLoader2 = new URLLoader(new URLRequest(remoteFilePath));
+				remoteLoader2.addEventListener(IOErrorEvent.IO_ERROR, remoteErrorHandler);
+				remoteLoader2.addEventListener(Event.COMPLETE, remoteLoaderCompleteHandler2);
 			}
 			if(Security.sandboxType == Security.LOCAL_WITH_FILE ||
 				Security.sandboxType == Security.LOCAL_TRUSTED)
@@ -42,7 +47,14 @@
 				localLoader.addEventListener(IOErrorEvent.IO_ERROR, localErrorHandler);
 				localLoader.addEventListener(Event.COMPLETE, localLoaderCompleteHandler);
 				localLoader.load(new URLRequest(localFilePath));
+				localLoader2 = new URLLoader(new URLRequest(localFilePath));
+				localLoader2.addEventListener(IOErrorEvent.IO_ERROR, localErrorHandler);
+				localLoader2.addEventListener(Event.COMPLETE, localLoaderCompleteHandler2);
 			}
+			// Add a timer to let the test fail after a certain amount of time has passed.
+			var timeout:Timer = new Timer(2000, 0);
+			timeout.addEventListener(TimerEvent.TIMER, killScript);
+			timeout.start();
 		}
 		catch(e:SecurityError)
 		{
@@ -75,10 +87,37 @@
 		received++
 		finishUp();
 	}
+	private function remoteLoaderCompleteHandler2(e:Event):void
+	{
+		Tests.assertEquals("Remote data\n", remoteLoader2.data, "Event.COMPLETE: data received");
+		received++
+		finishUp();
+	}
+	private function localLoaderCompleteHandler2(e:Event):void
+	{
+		Tests.assertEquals("Local data\n", localLoader2.data, "Event.COMPLETE: data received");
+		received++
+		finishUp();
+	}
 	private function finishUp():void
 	{
-		if((Security.sandboxType == Security.LOCAL_TRUSTED && received == 2) || (Security.sandboxType != Security.LOCAL_TRUSTED && received == 1))
+		if((Security.sandboxType == Security.LOCAL_TRUSTED && received == 4) || (Security.sandboxType != Security.LOCAL_TRUSTED && received == 2))
 			Tests.report(visual, this.name);
+		else if(Security.sandboxType == Security.LOCAL_TRUSTED && received > 4)
+		{
+			Tests.assertEquals(4, received);
+			Tests.report(visual, this.name);
+		}
+		else if(Security.sandboxType != Security.LOCAL_TRUSTED && received > 2)
+		{
+			Tests.assertEquals(2, received);
+			Tests.report(visual, this.name);
+		}
+	}
+	private function killScript():void
+	{
+		Tests.assertDontReach("Test timed out. Probably some request was never made.");
+		Tests.report(visual, this.name);
 	}
 	]]>
 </mx:Script>

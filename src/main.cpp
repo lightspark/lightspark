@@ -271,7 +271,7 @@ int main(int argc, char* argv[])
 	gtk_widget_show(socket);
 	gtk_widget_show(window);
 
-	VisualID visual=XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
+	VisualID visual=XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_best()));
 	Display* display=gdk_x11_display_get_xdisplay(gdk_display_get_default());
 	Window xembedWindow=gtk_socket_get_id((GtkSocket*)socket);
 

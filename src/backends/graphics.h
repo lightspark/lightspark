@@ -21,7 +21,7 @@
 #define _GRAPHICS_H
 
 #include "compat.h"
-#include <GL/glew.h>
+#include "lsopengl.h"
 #include <vector>
 #include "swftypes.h"
 #include "threading.h"

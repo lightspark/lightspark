@@ -17,22 +17,24 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef GLMATRICES_H
-#define GLMATRICES_H
+#ifndef LSOPENGL_H
+#define LSOPENGL_H
 
-#include "lsopengl.h"
+#ifdef ENABLE_GLES2
+	#include <GLES2/gl2.h>
+	#include <GLES2/gl2ext.h>
+	//Texture formats
+	#ifdef GL_EXT_texture_format_BGRA8888
+		#define GL_RGBA8 GL_RGBA
+		#define GL_BGRA GL_RGBA
+	#else
+		#error GL_EXT_texture_format_BGRA8888 extension needed
+	#endif
 
-#define LSGL_MATRIX_SIZE (16*sizeof(GLfloat))
-
-extern GLfloat lsIdentityMatrix[16];
-extern GLfloat lsMVPMatrix[16];
-void lsglLoadMatrixf(const GLfloat *m);
-void lsglLoadIdentity();
-void lsglPushMatrix();
-void lsglPopMatrix();
-void lsglMultMatrixf(const GLfloat *m);
-void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
-void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
-void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+	//there are no multiple buffers in GLES 2.0
+	#define glDrawBuffer(x)
+#else
+	#include <GL/glew.h>
+#endif
 
 #endif

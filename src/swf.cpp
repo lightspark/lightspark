@@ -35,7 +35,6 @@
 #include "backends/rendering.h"
 #include "backends/security.h"
 
-#include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif

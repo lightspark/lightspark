@@ -25,11 +25,10 @@ using namespace lightspark;
 
 ASObject* Class<ASObject>::lazyDefine(const multiname& name)
 {
-	if(name.ns.empty())
-		return NULL;
+	assert(!name.ns.empty());
 
 	//Check if we should do lazy definition
-	if(binary_search(name.ns.begin(),name.ns.end(),nsNameAndKind("",NAMESPACE)) && name.name_s=="toString")
+	if(name.ns[0].name=="" && name.name_s=="toString")
 	{
 		ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
 		setVariableByQName("toString","",ret,BORROWED_TRAIT);

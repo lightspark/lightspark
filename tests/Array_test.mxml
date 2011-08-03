@@ -45,8 +45,9 @@
 		Tests.assertArrayEquals(b, new Array(3, 6, 9), "forEach()");
 
 		var c:Array=[ 1, 2, 3 ];
-		c.reverse();
+		var c2:Array=c.reverse();
 		Tests.assertArrayEquals(c, new Array(3, 2, 1), "reverse()");
+		Tests.assertTrue(c == c2, "reverse() return value");
 
 		var d:Array=[ 2, 1, 2, 3 ];
 		Tests.assertEquals(d.indexOf(2), 0, "indexOf() single parameter");
@@ -83,6 +84,15 @@
 		var g4:Array=f4.splice(-6,1000);
 		Tests.assertArrayEquals(f4, [ ], "splice with huge deleteCount and huge negative startIndex: original array");
 		Tests.assertArrayEquals(g4, [ 2, 3, 4, 5], "splice with huge deleteCount and huge negative startIndex: returned array");
+
+		var h:Array=[2, 3, 4, 5];
+		Tests.assertArrayEquals(h.slice(1), [3, 4, 5], "slice with one argument");
+		Tests.assertArrayEquals(h.slice(-2), [4, 5], "slice with negative start index");
+		Tests.assertArrayEquals(h.slice(1000), [], "slice with huge start index");
+		Tests.assertArrayEquals(h.slice(-1000), [2, 3, 4, 5], "slice with huge negative start index");
+		Tests.assertArrayEquals(h.slice(1, 3), [3, 4], "slice with two arguments");
+		Tests.assertArrayEquals(h.slice(1, -1), [3, 4], "slice with positive start index and negative end index");
+		Tests.assertArrayEquals(h.slice(1, -1000), [], "slice with small start index and huge end index");
 
 		Tests.report(visual, this.name);
 	}

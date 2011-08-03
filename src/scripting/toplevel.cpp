@@ -108,7 +108,7 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(_push),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
-	//c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
 	//c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
 	//c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),NORMAL_METHOD,true);
@@ -259,7 +259,8 @@ ASFUNCTIONBODY(Array, _reverse)
 
 	reverse(th->data.begin(), th->data.end());
 
-	return NULL;
+	th->incRef();
+	return th;
 }
 
 ASFUNCTIONBODY(Array,lastIndexOf)
@@ -315,6 +316,45 @@ ASFUNCTIONBODY(Array,shift)
 	return ret;
 }
 
+int Array::capIndex(int i) const
+{
+	int totalSize=data.size();
+
+	if(totalSize <= 0)
+		return 0;
+	else if(i < -totalSize)
+		return 0;
+	else if(i > totalSize)
+		return totalSize;
+	else if(i>=0)     // 0 <= i < totalSize
+		return i;
+	else              // -totalSize <= i < 0
+	{
+		//A negative i is relative to the end
+		return i+totalSize;
+	}
+}
+
+ASFUNCTIONBODY(Array,slice)
+{
+	Array* th=static_cast<Array*>(obj);
+
+	int startIndex=0;
+	int endIndex=16777215;
+	if(argslen>0)
+		startIndex=args[0]->toInt();
+	if(argslen>1)
+		endIndex=args[1]->toInt();
+
+	startIndex=th->capIndex(startIndex);
+	endIndex=th->capIndex(endIndex);
+	
+	Array* ret=Class<Array>::getInstanceS();
+	for(int i=startIndex; i<endIndex; i++)
+		ret->data.push_back(th->data[i]);
+	return ret;
+}
+
 ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
@@ -324,16 +364,7 @@ ASFUNCTIONBODY(Array,splice)
 	int totalSize=th->data.size();
 	Array* ret=Class<Array>::getInstanceS();
 
-	//cap startIndex
-	if(startIndex<0 && -startIndex > totalSize)
-		startIndex=0;
-	else if(startIndex>0 && startIndex > totalSize)
-		startIndex=totalSize;
-	else if(totalSize)
-	{
-		//A negative startIndex is relative to the end
-		startIndex=(startIndex+totalSize)%totalSize;
-	}
+	startIndex=th->capIndex(startIndex);
 
 	if((startIndex+deleteCount)>totalSize)
 		deleteCount=totalSize-startIndex;

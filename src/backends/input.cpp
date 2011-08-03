@@ -24,7 +24,11 @@
 #include "rendering.h"
 #include "compat.h"
 
+#if GTK_CHECK_VERSION (2,21,8)
+#include <gdk/gdkkeysyms-compat.h> 
+#else
 #include <gdk/gdkkeysyms.h>
+#endif 
 
 using namespace lightspark;
 using namespace std;
@@ -72,17 +76,17 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 			//cout << "key press" << endl;
 			switch(event->key.keyval)
 			{
-				case GDK_KEY_q:
+				case GDK_q:
 					if(th->m_sys->standalone)
 					{
 						th->m_sys->setShutdownFlag();
 						gtk_main_quit();
 					}
 					break;
-				case GDK_KEY_p:
+				case GDK_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;
-				case GDK_KEY_m:
+				case GDK_m:
 					if (!th->m_sys->audioManager->pluginLoaded())
 						break;
 					th->m_sys->audioManager->toggleMuteAll();
@@ -91,7 +95,7 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 					else
 						LOG(LOG_NO_INFO, "All sounds unmuted");
 					break;
-				case GDK_KEY_c:
+				case GDK_c:
 					if(th->m_sys->hasError())
 					{
 						GtkClipboard *clipboard;

@@ -368,7 +368,7 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
-obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode)
+obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode, bool* has_getter)
 {
 	obj_var* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if(ret)
@@ -376,7 +376,11 @@ obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode)
 		//It seems valid for a class to redefine only the getter, so if we can't find
 		//something to get, it's ok
 		if(!(ret->setter || ret->var))
+		{
 			ret=NULL;
+			if(has_getter)
+				*has_getter=true;
+		}
 	}
 	return ret;
 }
@@ -386,23 +390,36 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	check();
 
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualPrototype)
-	obj_var* obj=findSettable(name, false);
+	bool has_getter=false;
+	obj_var* obj=findSettable(name, false, &has_getter);
 
 	if(obj==NULL && prototype)
 	{
 		//Look for borrowed traits before
+		//It's valid to override only a getter, so keep
+		//looking for a settable even if a super class sets
+		//has_getter to true.
 		Class_base* cur=getActualPrototype();
 		while(cur)
 		{
-			//TODO: should be only findSetter
-			obj=cur->findSettable(name,true);
+			obj=cur->findSettable(name,true,&has_getter);
 			if(obj)
 				break;
 			cur=cur->super;
 		}
 	}
 	if(obj==NULL)
+	{
+		if(has_getter)
+		{
+			tiny_string err=tiny_string("Illegal write to read-only property ")+name.normalizedName();
+			if(prototype)
+				err+=tiny_string(" on type ")+prototype->getQualifiedClassName();
+			throw Class<ReferenceError>::getInstanceS(err);
+		}
+
 		obj=Variables.findObjVar(name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
+	}
 
 	if(obj->setter)
 	{

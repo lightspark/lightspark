@@ -38,6 +38,8 @@ public:
 class TextField: public DisplayObject, public TextData
 {
 private:
+        int textWidth, textHeight;
+
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
@@ -45,10 +47,11 @@ private:
 	void requestInvalidation();
 	void updateText(const tiny_string& new_text);
 public:
-	TextField() {};
-	TextField(const TextData& textData) : TextData(textData) {};
+	TextField() : textWidth(0),textHeight(0) {};
+	TextField(const TextData& textData) : TextData(textData),textWidth(0),textHeight(0) {};
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	void setTextSize(int textwidth, int textheight);
 	ASFUNCTION(appendText);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
@@ -56,6 +59,8 @@ public:
 	ASFUNCTION(_setHeight);
 	ASFUNCTION(_getText);
 	ASFUNCTION(_setText);
+	ASFUNCTION(_getTextWidth);
+	ASFUNCTION(_getTextHeight);
 };
 
 class TextFormat: public ASObject, public TextFormat_data

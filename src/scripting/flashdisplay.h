@@ -386,6 +386,8 @@ public:
 
 class MorphShape: public DisplayObject
 {
+protected:
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -715,6 +717,14 @@ public:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
 	virtual IntSize getBitmapSize() const;
+};
+
+class AVM1Movie: public DisplayObject
+{
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
 };
 
 };

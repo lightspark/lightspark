@@ -59,6 +59,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(TextField::_getTextHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getTextWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
@@ -116,6 +118,18 @@ ASFUNCTIONBODY(TextField,_setHeight)
 	return NULL;
 }
 
+ASFUNCTIONBODY(TextField,_getTextWidth)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_i(th->textWidth);
+}
+
+ASFUNCTIONBODY(TextField,_getTextHeight)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_i(th->textHeight);
+}
+
 ASFUNCTIONBODY(TextField,_getText)
 {
 	TextField* th=Class<TextField>::cast(obj);
@@ -138,6 +152,14 @@ ASFUNCTIONBODY(TextField, appendText)
 	return NULL;
 }
 
+void TextField::setTextSize(int twidth, int theight)
+{
+	// TOOD: textWidth and textHeight should be updated in one
+	// atomic step
+	textWidth=twidth;
+	textHeight=theight;
+}
+
 void TextField::updateText(const tiny_string& new_text)
 {
 	text = new_text;
@@ -148,6 +170,9 @@ void TextField::requestInvalidation()
 {
 	incRef();
 	sys->addToInvalidateQueue(_MR(this));
+
+	// Note: textWidth and textHeight should be updated now.
+	// Currently updating is delayed until rendering step.
 }
 
 void TextField::invalidate()

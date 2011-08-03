@@ -197,6 +197,8 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("AccessibilityProperties","flash.accessibility",
 			Class<AccessibilityProperties>::getClass(),DECLARED_TRAIT);
+	builtin->setVariableByQName("AccessibilityImplementation","flash.accessibility",
+			Class<AccessibilityImplementation>::getClass(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass(),DECLARED_TRAIT);
@@ -231,6 +233,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("FrameLabel","flash.display",Class<FrameLabel>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Scene","flash.display",Class<Scene>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("AVM1Movie","flash.display",Class<AVM1Movie>::getClass(),DECLARED_TRAIT);
+	builtin->setVariableByQName("Shader","flash.display",Class<Shader>::getClass(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("DropShadowFilter","flash.filters",
 			Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")),DECLARED_TRAIT);

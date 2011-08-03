@@ -34,5 +34,12 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class AccessibilityImplementation : public ASObject
+{
+public:
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
+
 }
 #endif

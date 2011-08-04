@@ -1825,6 +1825,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("removeChild","",Class<IFunction>::getFunction(removeChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("swapChildren","",Class<IFunction>::getFunction(swapChildren),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_setMouseChildren),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_getMouseChildren),GETTER_METHOD,true);
@@ -2226,6 +2227,39 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 
 	//As we return the child we don't decRef it
 	return child;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	assert_and_throw(argslen==2);
+	
+	//Validate object type
+	assert_and_throw(args[0] && args[0]->getPrototype() && 
+		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[1] && args[1]->getPrototype() && 
+		args[1]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+
+	//Cast to object
+	args[0]->incRef();
+	_R<DisplayObject> child1=_MR(Class<DisplayObject>::cast(args[0]));
+	args[1]->incRef();
+	_R<DisplayObject> child2=_MR(Class<DisplayObject>::cast(args[1]));
+
+	{
+		Locker l(th->mutexDisplayList);
+		std::list<_R<DisplayObject>>::iterator it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
+		std::list<_R<DisplayObject>>::iterator it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
+		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
+			throw Class<ArgumentError>::getInstanceS("Argument is not child of this object");
+
+		th->dynamicDisplayList.insert(it1, child2);
+		th->dynamicDisplayList.insert(it2, child1);
+		th->dynamicDisplayList.erase(it1);
+		th->dynamicDisplayList.erase(it2);
+	}
+	
+	return NULL;
 }
 
 //Only from VM context

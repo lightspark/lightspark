@@ -237,6 +237,7 @@ public:
 	ASFUNCTION(contains);
 	ASFUNCTION(_getMouseChildren);
 	ASFUNCTION(_setMouseChildren);
+	ASFUNCTION(swapChildren);
 };
 
 /* This is really ugly, but the parent of the current

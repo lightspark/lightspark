@@ -32,6 +32,27 @@
 		//should be [42, 1, 100, 200, 300] now
 		Tests.assertEquals(5, ba.length, "Length after writeBytes");
 		Tests.assertEquals(200, ba[3], "Read value written by writeBytes");
+
+		var ba3:ByteArray = new ByteArray();
+		ba3.writeDouble(-4.404500509e-300);
+		Tests.assertEquals(8, ba3.length, "Length after writeDouble");
+		ba3.position = 0;
+		Tests.assertEquals(-4.404500509e-300, ba3.readDouble(), "Read value written by writeDouble");
+
+		var ba4:ByteArray = new ByteArray();
+		ba4.writeFloat(-4.5504006e-10);
+		Tests.assertEquals(4, ba4.length, "Length after writeFloat");
+		ba4.position = 0;
+		Tests.assertEqualsDelta(-4.5504006e-10, ba4.readFloat(), 0.0000000001, "Read value written by writeFloat");
+
+		var ba5:ByteArray = new ByteArray();
+		ba5.writeDouble(-4.404500509e-300);
+		Tests.assertEquals(8, ba5.length, "Length after writeDouble");
+		ba5.writeFloat(-4.5504006e-10);
+		Tests.assertEquals(12, ba5.length, "Length after writeFloat");
+		ba5.position = 0;
+		Tests.assertEquals(-4.404500509e-300, ba5.readDouble(), "Read value written by writeDouble");
+		Tests.assertEqualsDelta(-4.5504006e-10, ba5.readFloat(), 0.0000000001, "Read value written by writeFloat");
 		
 		Tests.report(visual, this.name);
 	}

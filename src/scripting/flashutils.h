@@ -59,10 +59,14 @@ public:
 	ASFUNCTION(_setDefaultObjectEncoding);
 	ASFUNCTION(readByte);
 	ASFUNCTION(readBytes);
+	ASFUNCTION(readDouble);
+	ASFUNCTION(readFloat);
 	ASFUNCTION(readInt);
 	ASFUNCTION(readObject);
 	ASFUNCTION(writeByte);
 	ASFUNCTION(writeBytes);
+	ASFUNCTION(writeDouble);
+	ASFUNCTION(writeFloat);
 	ASFUNCTION(writeInt);
 	ASFUNCTION(writeObject);
 	ASFUNCTION(writeUTFBytes);

@@ -666,6 +666,10 @@ void FrameLabel::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
 }
 
+void FrameLabel::buildTraits(ASObject* o)
+{
+}
+
 ASFUNCTIONBODY(FrameLabel,_getFrame)
 {
 	FrameLabel* th=static_cast<FrameLabel*>(obj);

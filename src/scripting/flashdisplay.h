@@ -512,6 +512,7 @@ public:
 	FrameLabel() {}
 	FrameLabel(const FrameLabel_data& data) : FrameLabel_data(data) {}
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_getFrame);
 	ASFUNCTION(_getName);
 };

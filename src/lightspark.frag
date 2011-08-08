@@ -1,3 +1,6 @@
+#ifdef GL_ES
+precision highp float;
+#endif
 uniform sampler2D g_tex1, g_tex2;
 uniform float yuv;
 uniform float mask;

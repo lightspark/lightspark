@@ -875,8 +875,8 @@ void RenderThread::tick()
 
 void RenderThread::releaseTexture(const TextureChunk& chunk)
 {
-	uint32_t blocksW=(chunk.width+127)/128;
-	uint32_t blocksH=(chunk.height+127)/128;
+	uint32_t blocksW=(chunk.width+CHUNKSIZE-1)/CHUNKSIZE;
+	uint32_t blocksH=(chunk.height+CHUNKSIZE-1)/CHUNKSIZE;
 	uint32_t numberOfBlocks=blocksW*blocksH;
 	Locker l(mutexLargeTexture);
 	LargeTexture& tex=largeTextures[chunk.texId];
@@ -915,8 +915,8 @@ RenderThread::LargeTexture& RenderThread::allocateNewTexture()
 {
 	//Signal that a new texture is needed
 	newTextureNeeded=true;
-	//Let's allocate the bitmap for the texture blocks, minumum block size is 128
-	uint32_t bitmapSize=(largeTextureSize/128)*(largeTextureSize/128)/8;
+	//Let's allocate the bitmap for the texture blocks, minumum block size is CHUNKSIZE
+	uint32_t bitmapSize=(largeTextureSize/CHUNKSIZE)*(largeTextureSize/CHUNKSIZE)/8;
 	uint8_t* bitmap=new uint8_t[bitmapSize];
 	memset(bitmap,0,bitmapSize);
 	largeTextures.emplace_back(bitmap);
@@ -927,7 +927,7 @@ bool RenderThread::allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk
 {
 	//Find a contiguos set of blocks
 	uint32_t start;
-	uint32_t blockPerSide=largeTextureSize/128;
+	uint32_t blockPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t bitmapSize=blockPerSide*blockPerSide;
 	for(start=0;start<bitmapSize;start++)
 	{
@@ -974,7 +974,7 @@ bool RenderThread::allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk&
 {
 	//Allocate a sparse set of texture chunks
 	uint32_t found=0;
-	uint32_t blockPerSide=largeTextureSize/128;
+	uint32_t blockPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t bitmapSize=blockPerSide*blockPerSide;
 	//TODO: use the already allocated array
 	uint32_t* tmp=new uint32_t[blocksW*blocksH];
@@ -1014,8 +1014,8 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 	assert(w && h);
 	Locker l(mutexLargeTexture);
 	//Find the number of blocks needed for the given w and h
-	uint32_t blocksW=(w+127)/128;
-	uint32_t blocksH=(h+127)/128;
+	uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
+	uint32_t blocksH=(h+CHUNKSIZE-1)/CHUNKSIZE;
 	TextureChunk ret(w, h);
 	//Try to find a good place in the available textures
 	uint32_t index=0;
@@ -1059,28 +1059,28 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h)
 {
 	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
-	const uint32_t blocksPerSide=largeTextureSize/128;
+	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t startX, startY, endX, endY;
-	assert(chunk.getNumberOfChunks()==((chunk.width+127)/128)*((chunk.height+127)/128));
+	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE-1)/CHUNKSIZE)*((chunk.height+CHUNKSIZE-1)/CHUNKSIZE));
 	
 	uint32_t curChunk=0;
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
 	GLfloat *vertex_coords = new GLfloat[chunk.getNumberOfChunks()*12];
 	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*12];
-	for(uint32_t i=0, k=0;i<chunk.height;i+=128)
+	for(uint32_t i=0, k=0;i<chunk.height;i+=CHUNKSIZE)
 	{
 		startY=h*i/chunk.height;
-		endY=min(h*(i+128)/chunk.height,h);
-		for(uint32_t j=0;j<chunk.width;j+=128)
+		endY=min(h*(i+CHUNKSIZE)/chunk.height,h);
+		for(uint32_t j=0;j<chunk.width;j+=CHUNKSIZE)
 		{
 			startX=w*j/chunk.width;
-			endX=min(w*(j+128)/chunk.width,w);
+			endX=min(w*(j+CHUNKSIZE)/chunk.width,w);
 			const uint32_t curChunkId=chunk.chunks[curChunk];
-			const uint32_t blockX=((curChunkId%blocksPerSide)*128);
-			const uint32_t blockY=((curChunkId/blocksPerSide)*128);
-			const uint32_t availX=min(int(chunk.width-j),128);
-			const uint32_t availY=min(int(chunk.height-i),128);
+			const uint32_t blockX=((curChunkId%blocksPerSide)*CHUNKSIZE);
+			const uint32_t blockY=((curChunkId/blocksPerSide)*CHUNKSIZE);
+			const uint32_t availX=min(int(chunk.width-j),CHUNKSIZE);
+			const uint32_t availY=min(int(chunk.height-i),CHUNKSIZE);
 			float startU=blockX;
 			startU/=largeTextureSize;
 			float startV=blockY;
@@ -1148,22 +1148,22 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	//TODO: Detect continuos
 	//The size is ok if doesn't grow over the allocated size
 	//this allows some alignment freedom
-	assert(w<=((chunk.width+127)&0xffffff80));
-	assert(h<=((chunk.height+127)&0xffffff80));
+	assert(w<=((chunk.width+CHUNKSIZE-1)&0xffffff80));
+	assert(h<=((chunk.height+CHUNKSIZE-1)&0xffffff80));
 	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
-	const uint32_t blocksPerSide=largeTextureSize/128;
-	const uint32_t blocksW=(w+127)/128;
+	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
+	const uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
 	glPixelStorei(GL_UNPACK_ROW_LENGTH,w);
 	for(uint32_t i=0;i<numberOfChunks;i++)
 	{
-		uint32_t curX=(i%blocksW)*128;
-		uint32_t curY=(i/blocksW)*128;
-		uint32_t sizeX=min(int(w-curX),128);
-		uint32_t sizeY=min(int(h-curY),128);
+		uint32_t curX=(i%blocksW)*CHUNKSIZE;
+		uint32_t curY=(i/blocksW)*CHUNKSIZE;
+		uint32_t sizeX=min(int(w-curX),CHUNKSIZE);
+		uint32_t sizeY=min(int(h-curY),CHUNKSIZE);
 		glPixelStorei(GL_UNPACK_SKIP_PIXELS,curX);
 		glPixelStorei(GL_UNPACK_SKIP_ROWS,curY);
-		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*128);
-		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*128);
+		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*CHUNKSIZE);
+		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*CHUNKSIZE);
 		while(glGetError()!=GL_NO_ERROR);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, data);
 		assert(glGetError()!=GL_INVALID_OPERATION);

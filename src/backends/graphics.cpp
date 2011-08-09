@@ -265,8 +265,8 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 		chunks=NULL;
 		return;
 	}
-	const uint32_t blocksW=(w+127)/128;
-	const uint32_t blocksH=(h+127)/128;
+	const uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
+	const uint32_t blocksH=(h+CHUNKSIZE-1)/CHUNKSIZE;
 	chunks=new uint32_t[blocksW*blocksH];
 }
 
@@ -288,8 +288,8 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 	}
 	width=r.width;
 	height=r.height;
-	uint32_t blocksW=(width+127)/128;
-	uint32_t blocksH=(height+127)/128;
+	uint32_t blocksW=(width+CHUNKSIZE-1)/CHUNKSIZE;
+	uint32_t blocksH=(height+CHUNKSIZE-1)/CHUNKSIZE;
 	texId=r.texId;
 	if(r.chunks)
 	{
@@ -327,9 +327,9 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 		height=h;
 		return true;
 	}
-	const uint32_t blocksW=(width+127)/128;
-	const uint32_t blocksH=(height+127)/128;
-	if(w<=blocksW*128 && h<=blocksH*128)
+	const uint32_t blocksW=(width+CHUNKSIZE-1)/CHUNKSIZE;
+	const uint32_t blocksH=(height+CHUNKSIZE-1)/CHUNKSIZE;
+	if(w<=blocksW*CHUNKSIZE && h<=blocksH*CHUNKSIZE)
 	{
 		width=w;
 		height=h;

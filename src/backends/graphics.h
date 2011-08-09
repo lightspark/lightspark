@@ -20,6 +20,8 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
+#define CHUNKSIZE 128
+
 #include "compat.h"
 #include <GL/glew.h>
 #include <vector>
@@ -143,7 +145,7 @@ public:
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();
 	bool resizeIfLargeEnough(uint32_t w, uint32_t h);
-	uint32_t getNumberOfChunks() const { return ((width+127)/128)*((height+127)/128); }
+	uint32_t getNumberOfChunks() const { return ((width+CHUNKSIZE-1)/CHUNKSIZE)*((height+CHUNKSIZE-1)/CHUNKSIZE); }
 	bool isValid() const { return chunks; }
 	void makeEmpty();
 	uint32_t width;

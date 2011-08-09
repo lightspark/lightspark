@@ -30,7 +30,6 @@
 
 #include <string.h>
 #include <stack>
-#include <GL/gl.h>
 #include "glmatrices.h"
 #include "../logger.h"
 

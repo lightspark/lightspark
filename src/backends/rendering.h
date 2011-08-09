@@ -20,6 +20,7 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
+#include "lsopengl.h"
 #include "timer.h"
 
 namespace lightspark

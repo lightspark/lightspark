@@ -148,7 +148,7 @@ void RenderThread::handleNewTexture()
 	newTextureNeeded=false;
 }
 
-#if ENABLE_GLES2
+#ifdef ENABLE_GLES2
 uint8_t* pixelBuf = 0;
 #endif
 
@@ -175,7 +175,7 @@ void RenderThread::handleUpload()
 	if(w>pixelBufferWidth || h>pixelBufferHeight)
 		resizePixelBuffers(w,h);
 	//Increment and wrap current buffer index
-#if !ENABLE_GLES2
+#ifndef ENABLE_GLES2
 	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[nextBuffer]);
 	uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
@@ -749,7 +749,7 @@ void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 	pixelBufferWidth=w;
 	pixelBufferHeight=h;
-#if ENABLE_GLES2
+#ifdef ENABLE_GLES2
 	if (pixelBuf) {
 		free(pixelBuf);
 		pixelBuf = 0;

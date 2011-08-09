@@ -20,7 +20,7 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
-#if ENABLE_GLES2
+#ifdef ENABLE_GLES2
 #define CHUNKSIZE 1024
 #else
 #define CHUNKSIZE 128

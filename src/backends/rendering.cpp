@@ -531,9 +531,12 @@ void RenderThread::commonGLDeinit()
 
 void RenderThread::commonGLInit(int width, int height)
 {
+	GLenum err;
+//For now GLEW does not work with GLES2
+#ifndef ENABLE_GLES2
 	//Now we can initialize GLEW
 	glewExperimental = GL_TRUE;
-	GLenum err = glewInit();
+	err = glewInit();
 	if (GLEW_OK != err)
 	{
 		LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));;
@@ -546,7 +549,10 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 	if(GLEW_ARB_texture_non_power_of_two)
 		hasNPOTTextures=true;
-
+#else
+		//Open GLES 2.0 has NPOT textures
+		hasNPOTTextures=true;
+#endif
 	//Load shaders
 	loadShaderPrograms();
 

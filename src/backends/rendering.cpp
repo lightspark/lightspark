@@ -211,6 +211,7 @@ void* RenderThread::worker(RenderThread* th)
 	
 	Display* d=XOpenDisplay(NULL);
 
+#ifndef ENABLE_GLES2
 	int a,b;
 	Bool glx_present=glXQueryVersion(d,&a,&b);
 	if(!glx_present)
@@ -254,6 +255,81 @@ void* RenderThread::worker(RenderThread* th)
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		cout << "Indirect!!" << endl;
+#else
+	int a;
+	eglBindAPI(EGL_OPENGL_ES_API);
+	EGLDisplay ed = EGL_NO_DISPLAY;
+	ed = eglGetDisplay(d);
+
+	if (ed == EGL_NO_DISPLAY) {
+		LOG(LOG_ERROR, _("EGL not present"));
+		return NULL;
+	}
+
+	EGLint major, minor;
+	if (eglInitialize(ed, &major, &minor) == EGL_FALSE) {
+		LOG(LOG_ERROR, _("EGL initialization failed"));
+		return NULL;
+	}
+
+	LOG(LOG_NO_INFO, _("EGL version: ") << eglQueryString(ed, EGL_VERSION));
+
+	EGLint config_attribs[] = {
+				EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+				EGL_RED_SIZE, 8,
+				EGL_GREEN_SIZE, 8,
+				EGL_BLUE_SIZE, 8,
+				EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+				EGL_NONE
+	};
+
+	EGLint context_attribs[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE
+	};
+
+	if (!eglChooseConfig(ed, config_attribs, 0, 0, &a)) {
+		LOG(LOG_ERROR,_("Could not get number of EGL configurations"));
+	} else {
+	    LOG(LOG_NO_INFO, "Number of EGL configurations: " << a);
+	}
+	EGLConfig *conf = new EGLConfig[a];
+	if (!eglChooseConfig(ed, config_attribs, conf, a, &a))
+	{
+		LOG(LOG_ERROR,_("Could not find any EGL configuration"));
+		::abort();
+	}
+
+	int i;
+	for(i=0;i<a;i++)
+	{
+		EGLint id;
+		eglGetConfigAttrib(ed, conf[i], EGL_NATIVE_VISUAL_ID, &id);
+		LOG(LOG_ERROR, id <<" -> "<<e->visual);
+		if(id==(int)e->visual)
+			break;
+	}
+	if(i==a)
+	{
+		//No suitable id found
+		LOG(LOG_ERROR,_("No suitable graphics configuration available"));
+		return NULL;
+	}
+	th->mEGLConfig=conf[i];
+	cout << "Chosen config " << hex << conf[i] << dec << endl;
+
+	th->mEGLContext = eglCreateContext(ed, th->mEGLConfig, EGL_NO_CONTEXT, context_attribs);
+	if (th->mEGLContext == EGL_NO_CONTEXT) {
+		LOG(LOG_ERROR,_("Could not create EGL context"));
+		return NULL;
+	}
+	EGLSurface win = eglCreateWindowSurface(ed, th->mEGLConfig, e->window, NULL);
+	if (win == EGL_NO_SURFACE) {
+		LOG(LOG_ERROR,_("Could not create EGL surface"));
+		return NULL;
+	}
+	eglMakeCurrent(ed, win, win, th->mEGLContext);
+#endif
 
 	th->commonGLInit(th->windowWidth, th->windowHeight);
 	th->commonGLResize();
@@ -303,11 +379,19 @@ void* RenderThread::worker(RenderThread* th)
 			if(th->m_sys->isOnError())
 			{
 				th->renderErrorPage(th, th->m_sys->standalone);
+#ifndef ENABLE_GLES2
 				glXSwapBuffers(d,glxWin);
+#else
+				eglSwapBuffers(ed, win);
+#endif
 			}
 			else
 			{
+#ifndef ENABLE_GLES2
 				glXSwapBuffers(d,glxWin);
+#else
+				eglSwapBuffers(ed, win);
+#endif
 				th->coreRendering();
 				//Call glFlush to offload work on the GPU
 				glFlush();
@@ -323,8 +407,13 @@ void* RenderThread::worker(RenderThread* th)
 	}
 	glDisable(GL_TEXTURE_2D);
 	th->commonGLDeinit();
+#ifndef ENABLE_GLES2
 	glXMakeCurrent(d,None,NULL);
 	glXDestroyContext(d,th->mContext);
+#else
+	eglMakeCurrent(ed, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	eglDestroyContext(ed, th->mEGLContext);
+#endif
 	XCloseDisplay(d);
 	return NULL;
 }

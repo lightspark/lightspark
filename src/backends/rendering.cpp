@@ -148,6 +148,10 @@ void RenderThread::handleNewTexture()
 	newTextureNeeded=false;
 }
 
+#if ENABLE_GLES2
+uint8_t* pixelBuf = 0;
+#endif
+
 void RenderThread::finalizeUpload()
 {
 	ITextureUploadable* u=prevUploadJob;
@@ -171,8 +175,8 @@ void RenderThread::handleUpload()
 	if(w>pixelBufferWidth || h>pixelBufferHeight)
 		resizePixelBuffers(w,h);
 	//Increment and wrap current buffer index
+#if !ENABLE_GLES2
 	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
-
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[nextBuffer]);
 	uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
 	uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
@@ -184,7 +188,15 @@ void RenderThread::handleUpload()
 
 	currentPixelBufferOffset=alignedBuf-buf;
 	currentPixelBuffer=nextBuffer;
-
+#else
+	//TODO See if a more elegant way of handling the non-PBO case can be found.
+	//for now, each frame is uploaded one at a time synchronously to the server
+	if(!pixelBuf)
+		posix_memalign((void **)&pixelBuf, 16, w*h*4);
+	u->upload(pixelBuf, w, h);
+	//When not using Pixel Buffer Objects, this offset is actually the pointer to the texture buffer
+	currentPixelBufferOffset = (int32_t)pixelBuf;
+#endif
 	//Get the texture to be sure it's allocated when the upload comes
 	u->getTexture();
 	prevUploadJob=u;
@@ -737,6 +749,12 @@ void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 	pixelBufferWidth=w;
 	pixelBufferHeight=h;
+#if ENABLE_GLES2
+	if (pixelBuf) {
+		free(pixelBuf);
+		pixelBuf = 0;
+	}
+#endif
 }
 
 void RenderThread::renderMaskToTmpBuffer() const
@@ -1231,6 +1249,9 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
 {
+	//FIXME. This works now for GLES, where glPixelStorei(GL_UNPACK_ROW_LENGTH,..) is unavailable
+	//by using a large 1024x1024 chunk instead of many 128x128 ones.
+
 	//Fast bailout if the TextureChunk is not valid
 	if(chunk.chunks==NULL)
 		return;

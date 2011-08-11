@@ -1454,6 +1454,9 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("isinstance ") << *name);
 
+	if(name->qualifiedString() == "::any")
+		return true;
+	
 	ASObject* target;
 	ASObject* ret=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 	if(!ret) //Could not retrieve type

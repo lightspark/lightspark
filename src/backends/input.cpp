@@ -34,7 +34,7 @@ using namespace lightspark;
 using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
-	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL),
+	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),currentMouseOver(NULL),lastMouseDownTarget(NULL),
 	dragLimit(NULL)
 {
 	LOG(LOG_NO_INFO,_("Creating input thread"));
@@ -127,7 +127,15 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 		{
 			//Grab focus, to receive keypresses
 			gtk_widget_grab_focus(widget);
-			th->handleMouseDown(event->button.x,event->button.y);
+			if(event->button.button == 1)
+				th->handleMouseDown(event->button.x,event->button.y);
+			ret=TRUE;
+			break;
+		}
+		case GDK_2BUTTON_PRESS:
+		{
+			if(event->button.button == 1)
+				th->handleMouseDoubleClick(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
@@ -152,31 +160,8 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 	return ret;
 }
 
-void InputThread::handleMouseDown(uint32_t x, uint32_t y)
+_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y)
 {
-	Locker locker(mutexListeners);
-	_NR<InteractiveObject>selected = NullRef;
-	try
-	{
-		selected=m_sys->getStage()->hitTest(NullRef,x,y);
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR,_("Error in input handling ") << e.cause);
-		m_sys->setError(e.cause);
-		return;
-	}
-	assert(maskStack.empty());
-	assert(selected!=NULL); /* atleast we hit the stage */
-	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
-	lastMouseDownTarget=selected;
-	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("mouseDown",true)));
-}
-
-void InputThread::handleMouseUp(uint32_t x, uint32_t y)
-{
-	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
@@ -186,19 +171,44 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 	{
 		LOG(LOG_ERROR,_("Error in input handling ") << e.cause);
 		m_sys->setError(e.cause);
-		return;
+		return NullRef;
 	}
 	assert(maskStack.empty());
 	assert(selected!=NULL); /* atleast we hit the stage */
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
-	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("mouseUp",true)));
+	return selected;
+}
+
+void InputThread::handleMouseDown(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y);
+	m_sys->currentVm->addEvent(selected,
+		_MR(Class<MouseEvent>::getInstanceS("mouseDown",true)));
+	lastMouseDownTarget=selected;
+}
+
+void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y);
+	m_sys->currentVm->addEvent(selected,
+		_MR(Class<MouseEvent>::getInstanceS("doubleClick",true)));
+}
+
+void InputThread::handleMouseUp(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y);
+	m_sys->currentVm->addEvent(selected,
+		_MR(Class<MouseEvent>::getInstanceS("mouseUp",true)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
-		m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("click",true)));
-		lastMouseDownTarget=NullRef;
+		m_sys->currentVm->addEvent(selected,
+			_MR(Class<MouseEvent>::getInstanceS("click",true)));
 	}
+	lastMouseDownTarget=NullRef;
 }
 
 void InputThread::handleMouseMove(uint32_t x, uint32_t y)
@@ -206,6 +216,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 	SpinlockLocker locker(inputDataSpinlock);
 	mousePos = Vector2(x,y);
 	Locker locker2(mutexDragged);
+	// Handle current drag operation
 	if(curDragged != NULL)
 	{
 		Vector2f local;
@@ -222,6 +233,22 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 
 		curDragged->setX(local.x);
 		curDragged->setY(local.y);
+	}
+	// Handle non-drag mouse movement
+	else
+	{
+		_NR<InteractiveObject> selected = getMouseTarget(x, y);
+		m_sys->currentVm->addEvent(selected,
+			_MR(Class<MouseEvent>::getInstanceS("mouseMove",true)));
+		if(currentMouseOver != selected)
+		{
+			if(!currentMouseOver.isNull())
+				m_sys->currentVm->addEvent(currentMouseOver,
+					_MR(Class<MouseEvent>::getInstanceS("mouseOut",true)));
+			m_sys->currentVm->addEvent(selected,
+				_MR(Class<MouseEvent>::getInstanceS("mouseOver",true)));
+			currentMouseOver = selected;
+		}
 	}
 }
 

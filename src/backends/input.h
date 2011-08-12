@@ -68,7 +68,7 @@ private:
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
 	std::vector<MaskData> maskStack;
-	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y);
+	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type);
 	void handleMouseDown(uint32_t x, uint32_t y);
 	void handleMouseDoubleClick(uint32_t x, uint32_t y);
 	void handleMouseUp(uint32_t x, uint32_t y);

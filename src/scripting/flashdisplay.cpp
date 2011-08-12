@@ -596,8 +596,14 @@ void DisplayObject::hitTestEpilogue() const
 	if(!mask.isNull())
 		sys->getInputThread()->popMask();
 }
-
-_NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+/*
+ Any subclass of DisplayObjectContainer should use this hitTestImpl.
+ This method will also check if the container should accept mouse and/or double-click events.
+ This method will return it's given "last" argument if-and-only-if none of its children are hit
+ and only the DisplayObjectContainer itself remains as a potential candidate.
+ The subclass can then decide for itself if it is really hit or not.
+*/
+_NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret = NullRef;
 	//Test objects added at runtime, in reverse order
@@ -611,7 +617,7 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
-		ret=(*j)->hitTest(_MR(this), localX,localY);
+		ret=(*j)->hitTest(_MR(this), localX,localY, type);
 		if(!ret.isNull())
 			break;
 	}
@@ -621,21 +627,25 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 		this->incRef();
 		ret = _MNR(this);
 	}
+
+	if(ret == NULL && isHittable(type))
+		return last;
 	return ret;
 }
 
-_NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, number_t y)
+_NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret = NullRef;
 	this->incRef();
-	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y);
-	if(ret==NULL && mouseEnabled)
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type);
+	if(ret==this)
 	{
 		//The coordinates are locals
 		this->incRef();
-		return TokenContainer::hitTestImpl(_MR(this),x,y);
+		return TokenContainer::hitTestImpl(_MR(this),x,y, type);
 	}
-	return ret;
+	else
+		return ret;
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)
@@ -1920,7 +1930,7 @@ void DisplayObjectContainer::finalize()
 	dynamicDisplayList.clear();
 }
 
-InteractiveObject::InteractiveObject():mouseEnabled(true)
+InteractiveObject::InteractiveObject():mouseEnabled(true),doubleClickEnabled(false)
 {
 }
 
@@ -1930,7 +1940,7 @@ InteractiveObject::~InteractiveObject()
 		sys->getInputThread()->removeListener(this);
 }
 
-_NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
 {
 	/*number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -1943,7 +1953,7 @@ _NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, numbe
 		return NullRef;
 
 	hitTestPrologue();
-	_NR<InteractiveObject> ret = hitTestImpl(last, x,y);
+	_NR<InteractiveObject> ret = hitTestImpl(last, x,y, type);
 	hitTestEpilogue();
 	return ret;
 }
@@ -1973,6 +1983,20 @@ ASFUNCTIONBODY(InteractiveObject,_getMouseEnabled)
 	return abstract_b(th->mouseEnabled);
 }
 
+ASFUNCTIONBODY(InteractiveObject,_setDoubleClickEnabled)
+{
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
+	assert_and_throw(argslen==1);
+	th->doubleClickEnabled=Boolean_concrete(args[0]);
+	return NULL;
+}
+
+ASFUNCTIONBODY(InteractiveObject,_getDoubleClickEnabled)
+{
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
+	return abstract_b(th->doubleClickEnabled);
+}
+
 void InteractiveObject::buildTraits(ASObject* o)
 {
 }
@@ -1984,6 +2008,8 @@ void InteractiveObject::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_setMouseEnabled),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_setDoubleClickEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_getDoubleClickEnabled),GETTER_METHOD,true);
 }
 
 void DisplayObjectContainer::dumpDisplayList()
@@ -2507,11 +2533,11 @@ ASFUNCTIONBODY(Stage,_constructor)
 	return NULL;
 }
 
-_NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret;
-	ret = DisplayObjectContainer::hitTestImpl(last, x, y);
-	if(ret == NULL)
+	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type);
+	if(ret == last)
 	{
 		/* If nothing else is hit, we hit the stage */
 		this->incRef();
@@ -2631,7 +2657,7 @@ bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const
 	return CairoTokenRenderer::isOpaque(tokens, scaling, x, y);
 }
 
-_NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const
+_NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const
 {
 	//TODO: test against the CachedSurface
 	if(CairoTokenRenderer::hitTest(tokens, scaling, x, y))
@@ -3185,7 +3211,7 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return false;
 }
 
-_NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	return NullRef;
 }
@@ -3230,7 +3256,7 @@ void SimpleButton::buildTraits(ASObject* o)
 {
 }
 
-_NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret = NullRef;
 	if(hitTestState != NULL)
@@ -3238,7 +3264,7 @@ _NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, nu
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
-		ret = hitTestState->hitTest(_MR(this), localX, localY);
+		ret = hitTestState->hitTest(_MR(this), localX, localY, type);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
@@ -3247,6 +3273,9 @@ _NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, nu
 	 */
 	if(ret != NULL)
 	{
+		if(!isHittable(type))
+			return NullRef;
+			
 		this->incRef();
 		ret = _MR(this);
 	}

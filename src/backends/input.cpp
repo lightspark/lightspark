@@ -160,12 +160,12 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 	return ret;
 }
 
-_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y)
+_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
-		selected=m_sys->getStage()->hitTest(NullRef,x,y);
+		selected=m_sys->getStage()->hitTest(NullRef,x,y, type);
 	}
 	catch(LightsparkException& e)
 	{
@@ -182,7 +182,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y)
 void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	_NR<InteractiveObject> selected = getMouseTarget(x, y);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS("mouseDown",true)));
 	lastMouseDownTarget=selected;
@@ -191,7 +191,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	_NR<InteractiveObject> selected = getMouseTarget(x, y);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS("doubleClick",true)));
 }
@@ -199,7 +199,7 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
 void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	_NR<InteractiveObject> selected = getMouseTarget(x, y);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS("mouseUp",true)));
 	if(lastMouseDownTarget==selected)
@@ -237,7 +237,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 	// Handle non-drag mouse movement
 	else
 	{
-		_NR<InteractiveObject> selected = getMouseTarget(x, y);
+		_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
 		m_sys->currentVm->addEvent(selected,
 			_MR(Class<MouseEvent>::getInstanceS("mouseMove",true)));
 		if(currentMouseOver != selected)

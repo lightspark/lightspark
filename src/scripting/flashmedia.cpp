@@ -216,7 +216,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	return NULL;
 }
 
-_NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	assert_and_throw(mask.isNull());

@@ -237,6 +237,7 @@ public:
 	void purgeLegacyChildren();
 	void advanceFrame();
 	void initFrame();
+	bool isOpaque(number_t x, number_t y) const;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -510,6 +511,7 @@ public:
 	}
 	void invalidate() { TokenContainer::invalidate(); }
 	void requestInvalidation();
+	bool isOpaque(number_t x, number_t y) const;
 };
 
 struct FrameLabel_data

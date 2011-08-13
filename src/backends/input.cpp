@@ -183,8 +183,10 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
+	number_t localX, localY;
+	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS("mouseDown",true)));
+		_MR(Class<MouseEvent>::getInstanceS("mouseDown",localX,localY,true)));
 	lastMouseDownTarget=selected;
 }
 
@@ -192,21 +194,25 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
+	number_t localX, localY;
+	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS("doubleClick",true)));
+		_MR(Class<MouseEvent>::getInstanceS("doubleClick",localX,localY,true)));
 }
 
 void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
+	number_t localX, localY;
+	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS("mouseUp",true)));
+		_MR(Class<MouseEvent>::getInstanceS("mouseUp",localX,localY,true)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
 		m_sys->currentVm->addEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS("click",true)));
+			_MR(Class<MouseEvent>::getInstanceS("click",localX,localY,true)));
 	}
 	lastMouseDownTarget=NullRef;
 }
@@ -238,15 +244,21 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 	else
 	{
 		_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
+		number_t localX, localY;
+		selected->globalToLocal(x,y,localX,localY);
 		m_sys->currentVm->addEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS("mouseMove",true)));
-		if(currentMouseOver != selected)
+			_MR(Class<MouseEvent>::getInstanceS("mouseMove",localX,localY,true)));
+		else
 		{
 			if(!currentMouseOver.isNull())
+			{
+				number_t clocalX, clocalY;
+				currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
 				m_sys->currentVm->addEvent(currentMouseOver,
-					_MR(Class<MouseEvent>::getInstanceS("mouseOut",true)));
+					_MR(Class<MouseEvent>::getInstanceS("mouseOut",clocalX,clocalY,true,selected)));
+			}
 			m_sys->currentVm->addEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS("mouseOver",true)));
+				_MR(Class<MouseEvent>::getInstanceS("mouseOver",localX,localY,true,currentMouseOver)));
 			currentMouseOver = selected;
 		}
 	}

@@ -419,6 +419,22 @@ void Sprite::buildTraits(ASObject* o)
 {
 }
 
+Vector2f DisplayObject::getXY()
+{
+	Vector2f ret;
+	if(ACQUIRE_READ(useMatrix))
+	{
+		ret.x = getMatrix().TranslateX;
+		ret.y = getMatrix().TranslateY;
+	}
+	else
+	{
+		ret.x = tx;
+		ret.y = ty;
+	}
+	return ret;
+}
+
 ASFUNCTIONBODY(Sprite,_startDrag)
 {
 	Sprite* th=Class<Sprite>::cast(obj);
@@ -436,7 +452,10 @@ ASFUNCTIONBODY(Sprite,_startDrag)
 
 	Vector2f offset;
 	if(!lockCenter)
-		offset = -th->getLocalMousePos();
+	{
+		offset = -th->getParent()->getLocalMousePos();
+		offset += th->getXY();
+	}
 
 	th->incRef();
 	sys->getInputThread()->startDrag(_MR(th), bounds, offset);
@@ -1160,6 +1179,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 }
 
@@ -1337,12 +1357,18 @@ void DisplayObject::requestInvalidation()
 	if(!mask.isNull())
 		mask->requestInvalidation();
 }
-
+//TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
+//this way they have less pb with precision.
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	getMatrix().multiply2D(xin, yin, xout, yout);
 	if(!parent.isNull())
 		parent->localToGlobal(xout, yout, xout, yout);
+}
+//TODO: Fix precision issues
+void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
+{
+	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
 }
 
 void DisplayObject::setOnStage(bool staged)
@@ -1618,7 +1644,21 @@ ASFUNCTIONBODY(DisplayObject,localToGlobal)
 
 	number_t tempx, tempy;
 
-	th->getMatrix().multiply2D(pt->getX(), pt->getY(), tempx, tempy);
+	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy);
+
+	return Class<Point>::getInstanceS(tempx, tempy);
+}
+
+ASFUNCTIONBODY(DisplayObject,globalToLocal)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen == 1);
+
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t tempx, tempy;
+
+	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy);
 
 	return Class<Point>::getInstanceS(tempx, tempy);
 }
@@ -2380,6 +2420,27 @@ bool Shape::isOpaque(number_t x, number_t y) const
 	return TokenContainer::isOpaqueImpl(x, y);
 }
 
+bool Sprite::isOpaque(number_t x, number_t y) const
+{
+	return (TokenContainer::isOpaqueImpl(x, y)) || (DisplayObjectContainer::isOpaque(x,y));
+}
+
+bool DisplayObjectContainer::isOpaque(number_t x, number_t y) const
+{
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	number_t lx, ly;
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		//x y are local coordinates of the container, should be local coord of *it
+		((*it)->getMatrix()).getInverted().multiply2D(x,y,lx,ly);
+		if(((*it)->isOpaque(lx,ly)))
+		{			
+			return true;		
+		}
+	}
+	return false;
+}
+
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
 	//if(!owner->isSimple())
@@ -2666,7 +2727,7 @@ _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, 
 		{
 			number_t globalX, globalY;
 			owner->getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-			if(!sys->getInputThread()->isMasked(globalX, globalY))
+			if(!sys->getInputThread()->isMasked(globalX, globalY))//You must be under the mask to be hit
 				return NullRef;
 		}
 		return last;
@@ -3290,6 +3351,16 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		reflectState();
 	}
 	else if(e->type == "mouseUp")
+	{
+		currentState = UP;
+		reflectState();
+	}
+	else if(e->type == "mouseOver")
+	{
+		currentState = OVER;
+		reflectState();
+	}
+	else if(e->type == "mouseOut")
 	{
 		currentState = UP;
 		reflectState();

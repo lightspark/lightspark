@@ -59,7 +59,6 @@ private:
 	  	The object we are masking, if any
 	*/
 	_NR<DisplayObject> maskOf;
-	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void becomeMaskOf(_NR<DisplayObject> m);
 	void setMask(_NR<DisplayObject> m);
 	_NR<DisplayObjectContainer> parent;
@@ -121,6 +120,8 @@ public:
 	virtual void invalidate();
 	virtual void requestInvalidation();
 	MATRIX getConcatenatedMatrix() const;
+	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const
 	{
@@ -142,6 +143,7 @@ public:
 	virtual void advanceFrame() {}
 	virtual void initFrame();
 	Vector2f getLocalMousePos();
+	Vector2f getXY();
 	void setX(number_t x);
 	void setY(number_t y);
 	static void sinit(Class_base* c);
@@ -179,6 +181,7 @@ public:
 	ASFUNCTION(_getMouseX);
 	ASFUNCTION(_getMouseY);
 	ASFUNCTION(localToGlobal);
+	ASFUNCTION(globalToLocal);
 };
 
 class InteractiveObject: public DisplayObject
@@ -234,6 +237,7 @@ public:
 	void purgeLegacyChildren();
 	void advanceFrame();
 	void initFrame();
+	bool isOpaque(number_t x, number_t y) const;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -507,6 +511,7 @@ public:
 	}
 	void invalidate() { TokenContainer::invalidate(); }
 	void requestInvalidation();
+	bool isOpaque(number_t x, number_t y) const;
 };
 
 struct FrameLabel_data

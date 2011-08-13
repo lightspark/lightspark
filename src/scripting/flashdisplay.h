@@ -60,6 +60,7 @@ private:
 	*/
 	_NR<DisplayObject> maskOf;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void becomeMaskOf(_NR<DisplayObject> m);
 	void setMask(_NR<DisplayObject> m);
 	_NR<DisplayObjectContainer> parent;
@@ -179,6 +180,7 @@ public:
 	ASFUNCTION(_getMouseX);
 	ASFUNCTION(_getMouseY);
 	ASFUNCTION(localToGlobal);
+	ASFUNCTION(globalToLocal);
 };
 
 class InteractiveObject: public DisplayObject

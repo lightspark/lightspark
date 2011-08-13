@@ -246,8 +246,9 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 		_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
 		number_t localX, localY;
 		selected->globalToLocal(x,y,localX,localY);
-		m_sys->currentVm->addEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS("mouseMove",localX,localY,true)));
+		if(currentMouseOver == selected)
+			m_sys->currentVm->addEvent(selected,
+				_MR(Class<MouseEvent>::getInstanceS("mouseMove",localX,localY,true)));
 		else
 		{
 			if(!currentMouseOver.isNull())

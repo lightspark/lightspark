@@ -257,9 +257,13 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 				currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
 				m_sys->currentVm->addEvent(currentMouseOver,
 					_MR(Class<MouseEvent>::getInstanceS("mouseOut",clocalX,clocalY,true,selected)));
+				m_sys->currentVm->addEvent(currentMouseOver,
+					_MR(Class<MouseEvent>::getInstanceS("rollOut",clocalX,clocalY,true,selected)));
 			}
 			m_sys->currentVm->addEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS("mouseOver",localX,localY,true,currentMouseOver)));
+			m_sys->currentVm->addEvent(selected,
+				_MR(Class<MouseEvent>::getInstanceS("rollOver",localX,localY,true,currentMouseOver)));
 			currentMouseOver = selected;
 		}
 	}

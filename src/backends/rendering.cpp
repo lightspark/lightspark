@@ -1201,35 +1201,35 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 			//Upper-right triangle of the quad
 			texture_coords[k] = startU;
 			texture_coords[k+1] = startV;
-			vertex_coords[k] = x+startX;
-			vertex_coords[k+1] = y+startY;
+			vertex_coords[k] = (x<0)?startX:x+startX;
+			vertex_coords[k+1] = (y<0)?startY:y+startY;
 			k+=2;
 			texture_coords[k] = endU;
 			texture_coords[k+1] = startV;
-			vertex_coords[k] = x+endX;
-			vertex_coords[k+1] = y+startY;
+			vertex_coords[k] = (x<0)?endX:x+endX;
+			vertex_coords[k+1] = (y<0)?startY:y+startY;
 			k+=2;
 			texture_coords[k] = endU;
 			texture_coords[k+1] = endV;
-			vertex_coords[k] = x+endX;
-			vertex_coords[k+1] = y+endY;
+			vertex_coords[k] = (x<0)?endX:x+endX;
+			vertex_coords[k+1] = (y<0)?endY:y+endY;
 			k+=2;
 
 			//Lower-left triangle of the quad
 			texture_coords[k] = startU;
 			texture_coords[k+1] = startV;
-			vertex_coords[k] = x+startX;
-			vertex_coords[k+1] = y+startY;
+			vertex_coords[k] = (x<0)?startX:x+startX;
+			vertex_coords[k+1] = (y<0)?startY:y+startY;
 			k+=2;
 			texture_coords[k] = endU;
 			texture_coords[k+1] = endV;
-			vertex_coords[k] = x+endX;
-			vertex_coords[k+1] = y+endY;
+			vertex_coords[k] = (x<0)?endX:x+endX;
+			vertex_coords[k+1] = (y<0)?endY:y+endY;
 			k+=2;
 			texture_coords[k] = startU;
 			texture_coords[k+1] = endV;
-			vertex_coords[k] = x+startX;
-			vertex_coords[k+1] = y+endY;
+			vertex_coords[k] = (x<0)?startX:x+startX;
+			vertex_coords[k+1] = (y<0)?endY:y+endY;
 			k+=2;
 
 			curChunk++;

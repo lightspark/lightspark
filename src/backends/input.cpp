@@ -323,10 +323,10 @@ bool InputThread::isMasked(number_t x, number_t y) const
 	for(uint32_t i=0;i<maskStack.size();i++)
 	{
 		number_t localX, localY;
-		maskStack[i].m.multiply2D(x,y,localX,localY);
-		if(!maskStack[i].d->isOpaque(localX, localY))
-			return false;
+		maskStack[i].m.multiply2D(x,y,localX,localY);//m is the concatenated matrix
+		if(maskStack[i].d->isOpaque(localX, localY))//If one of the masks is opaque then you are masked
+			return true;
 	}
 
-	return true;
+	return false;
 }

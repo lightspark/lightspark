@@ -2420,6 +2420,27 @@ bool Shape::isOpaque(number_t x, number_t y) const
 	return TokenContainer::isOpaqueImpl(x, y);
 }
 
+bool Sprite::isOpaque(number_t x, number_t y) const
+{
+	return (TokenContainer::isOpaqueImpl(x, y)) || (DisplayObjectContainer::isOpaque(x,y));
+}
+
+bool DisplayObjectContainer::isOpaque(number_t x, number_t y) const
+{
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	number_t lx, ly;
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		//x y are local coordinates of the container, should be local coord of *it
+		((*it)->getMatrix()).getInverted().multiply2D(x,y,lx,ly);
+		if(((*it)->isOpaque(lx,ly)))
+		{			
+			return true;		
+		}
+	}
+	return false;
+}
+
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
 	//if(!owner->isSimple())
@@ -2706,7 +2727,7 @@ _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, 
 		{
 			number_t globalX, globalY;
 			owner->getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-			if(!sys->getInputThread()->isMasked(globalX, globalY))
+			if(!sys->getInputThread()->isMasked(globalX, globalY))//You must be under the mask to be hit
 				return NullRef;
 		}
 		return last;

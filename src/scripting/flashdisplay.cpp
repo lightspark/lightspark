@@ -419,6 +419,22 @@ void Sprite::buildTraits(ASObject* o)
 {
 }
 
+Vector2f DisplayObject::getXY()
+{
+	Vector2f ret;
+	if(ACQUIRE_READ(useMatrix))
+	{
+		ret.x = getMatrix().TranslateX;
+		ret.y = getMatrix().TranslateY;
+	}
+	else
+	{
+		ret.x = tx;
+		ret.y = ty;
+	}
+	return ret;
+}
+
 ASFUNCTIONBODY(Sprite,_startDrag)
 {
 	Sprite* th=Class<Sprite>::cast(obj);
@@ -436,7 +452,10 @@ ASFUNCTIONBODY(Sprite,_startDrag)
 
 	Vector2f offset;
 	if(!lockCenter)
-		offset = -th->getLocalMousePos();
+	{
+		offset = -th->getParent()->getLocalMousePos();
+		offset += th->getXY();
+	}
 
 	th->incRef();
 	sys->getInputThread()->startDrag(_MR(th), bounds, offset);

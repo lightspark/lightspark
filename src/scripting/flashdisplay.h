@@ -143,6 +143,7 @@ public:
 	virtual void advanceFrame() {}
 	virtual void initFrame();
 	Vector2f getLocalMousePos();
+	Vector2f getXY();
 	void setX(number_t x);
 	void setY(number_t y);
 	static void sinit(Class_base* c);

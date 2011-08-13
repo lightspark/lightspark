@@ -1126,7 +1126,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 {
 	std::deque<_R<DisplayObject>> parents;
 	assert_and_throw(event->target==NULL);
-	event->target=dispatcher;
+	event->setTarget(dispatcher);
 
 	//capture phase
 	if(dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
@@ -1171,7 +1171,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
-	event->target=NullRef;
+	event->setTarget(NullRef);
 }
 
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)

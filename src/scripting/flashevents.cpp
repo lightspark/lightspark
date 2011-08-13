@@ -197,7 +197,8 @@ MouseEvent::MouseEvent():Event("mouseEvent"), localX(0), localY(0), stageX(0), s
 {
 }
 
-MouseEvent::MouseEvent(const tiny_string& t, bool b):Event(t,b), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
+MouseEvent::MouseEvent(const tiny_string& t, number_t lx, number_t ly, bool b, _NR<InteractiveObject> relObj):Event(t,b),
+	 localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
 {
 }
 

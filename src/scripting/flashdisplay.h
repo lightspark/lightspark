@@ -59,8 +59,6 @@ private:
 	  	The object we are masking, if any
 	*/
 	_NR<DisplayObject> maskOf;
-	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
-	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void becomeMaskOf(_NR<DisplayObject> m);
 	void setMask(_NR<DisplayObject> m);
 	_NR<DisplayObjectContainer> parent;
@@ -122,6 +120,8 @@ public:
 	virtual void invalidate();
 	virtual void requestInvalidation();
 	MATRIX getConcatenatedMatrix() const;
+	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const
 	{

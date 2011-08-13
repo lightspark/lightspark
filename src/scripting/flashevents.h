@@ -224,7 +224,7 @@ class MouseEvent: public Event
 {
 public:
 	MouseEvent();
-	MouseEvent(const tiny_string& t, bool b=true);
+	MouseEvent(const tiny_string& t, number_t lx, number_t ly, bool b=true, _NR<InteractiveObject> relObj);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void setTarget(_NR<ASObject> t);

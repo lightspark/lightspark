@@ -3334,6 +3334,16 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		currentState = UP;
 		reflectState();
 	}
+	else if(e->type == "mouseOver")
+	{
+		currentState = OVER;
+		reflectState();
+	}
+	else if(e->type == "mouseOut")
+	{
+		currentState = UP;
+		reflectState();
+	}
 }
 
 SimpleButton::SimpleButton(DisplayObject *dS, DisplayObject *hTS,

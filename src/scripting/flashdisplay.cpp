@@ -615,12 +615,10 @@ void DisplayObject::hitTestEpilogue() const
 	if(!mask.isNull())
 		sys->getInputThread()->popMask();
 }
+
 /*
- Any subclass of DisplayObjectContainer should use this hitTestImpl.
- This method will also check if the container should accept mouse and/or double-click events.
- This method will return it's given "last" argument if-and-only-if none of its children are hit
- and only the DisplayObjectContainer itself remains as a potential candidate.
- The subclass can then decide for itself if it is really hit or not.
+Subclasses of DisplayObjectContainer must still check
+isHittable() to see if they should send out events.
 */
 _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
@@ -646,9 +644,6 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 		this->incRef();
 		ret = _MNR(this);
 	}
-
-	if(ret == NULL && isHittable(type))
-		return last;
 	return ret;
 }
 
@@ -657,7 +652,7 @@ _NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, n
 	_NR<InteractiveObject> ret = NullRef;
 	this->incRef();
 	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type);
-	if(ret==this)
+	if(ret==NULL && isHittable(type))
 	{
 		//The coordinates are locals
 		this->incRef();
@@ -2598,7 +2593,7 @@ _NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t 
 {
 	_NR<InteractiveObject> ret;
 	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type);
-	if(ret == last)
+	if(ret == NULL && isHittable(type))
 	{
 		/* If nothing else is hit, we hit the stage */
 		this->incRef();

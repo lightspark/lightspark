@@ -781,6 +781,31 @@ bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float sc
 	return pixelBytes[0]!=0x00;
 }
 
+
+bool CairoTokenRenderer::getBounds(const std::vector<GeomToken>& tokens, float scaleFactor, const MATRIX& m,
+					number_t& x1, number_t& y1, number_t& x2, number_t& y2)
+{
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+
+	cairo_t *cr=cairo_create(cairoSurface);
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true);
+	if(!empty)
+	{		
+		double xx1,xx2,yy1,yy2; 
+		cairo_identity_matrix(cr);
+		const cairo_matrix_t& mat=MATRIXToCairo(m);
+		cairo_transform(cr, &mat);
+		cairo_path_extents(cr, &xx1, &yy1, &xx2, &yy2);//TODO: check other cairo functions.
+		x1 = xx1;
+		y1 = yy1;
+		x2 = xx2;
+		y2 = yy2;
+	}
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+	return !empty;
+}
+
 uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, uint32_t height)
 {
 	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, width);

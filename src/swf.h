@@ -93,7 +93,7 @@ public:
 	void commitFrame(bool another);
 	void revertFrame();
 	void parsingFailed();
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const;
 	void bindToName(const tiny_string& n);
 	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
 	URLInfo& getOrigin() DLL_PUBLIC { return origin; };

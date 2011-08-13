@@ -127,7 +127,7 @@ void Video::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,num
 	sem_post(&mutex);
 }
 
-bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 {
 	xmin=0;
 	xmax=width;

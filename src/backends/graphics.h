@@ -296,6 +296,18 @@ public:
 	   @param y The Y in local coordinates
 	*/
 	static bool isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
+	/*
+		getBounds helper. Uses Cairo to find a bounding box in adequate coordinates (given by m) 
+		TODO: this uses cairo_path_extents, so check if it really is the right behavior. There are other 
+		cairo function that could do the trick. This is also not the best way to do it since we re-render all the tokens,
+		but the cachedSurface is already clipped...
+		@param tokens The tokens of the shape being tested
+		@param scaleFactor The scale factor to be applied
+		@param m The change of coordinates matrix
+		@param x1,y1,x2,y2 are vertices of the box in adequate coords.
+	*/
+	static bool getBounds(const std::vector<GeomToken>& tokens, float scaleFactor, const MATRIX& m, 
+					number_t& x1, number_t& y1, number_t& x2, number_t& y2);
 };
 
 class TextFormat_data

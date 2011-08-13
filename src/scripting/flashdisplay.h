@@ -71,6 +71,10 @@ protected:
 	*/
 	_NR<DisplayObject> mask;
 	mutable Spinlock spinlock;
+	/**
+		This takes the local coordinates of a bounding box and gives global coordinates of a 
+		(possibly if rotation involved) larger bounding box.
+	*/
 	void computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
@@ -91,7 +95,12 @@ protected:
 	void renderEpilogue() const;
 	void hitTestPrologue() const;
 	void hitTestEpilogue() const;
-	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	/**
+		This gives a horizontal bounding box in the wanted coordinates. The box may not be horizontal in other coords!
+		coords: change of coordinates matrix from the local coords to the wanted coords. (identity matrix gives the local coords)
+		xmin,xmax,ymin,ymax: coordinates of the vertices of the bounding rectangle in the new coords.		
+	*/
+	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
@@ -111,6 +120,8 @@ public:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
+	//Returns true if dobj is an ancestor of this
+	bool isAncestor(const DisplayObject* dobj) const;
 	void setParent(_NR<DisplayObjectContainer> p);
 	/*
 	   Used to link DisplayObjects the invalidation queue
@@ -123,12 +134,20 @@ public:
 	virtual void requestInvalidation();
 	MATRIX getConcatenatedMatrix() const;
 	float getConcatenatedAlpha() const;
+	/**
+		This is useful for getBounds and getRect. It returns a matrix changing
+		local coords of this into local coords of newReference
+	*/
+	MATRIX getNewCoordinates(const DisplayObject* newReference) const;
 	virtual float getScaleFactor() const
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
 	void Render(bool maskEnabled);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	/**
+		This gives a bounding box in parent's coordinates, 
+	*/
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const;
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 	//API to handle mask support in hit testing
 	virtual bool isOpaque(number_t x, number_t y) const
@@ -221,7 +240,7 @@ protected:
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged);
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
@@ -326,7 +345,7 @@ protected:
 
 	void invalidate();
 	void requestInvalidation();
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool tokensEmpty() const { return tokens.empty(); }
@@ -378,8 +397,8 @@ class Shape: public DisplayObject, public TokenContainer
 {
 protected:
 	_NR<Graphics> graphics;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
+		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax,coords); }
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
@@ -401,7 +420,7 @@ public:
 class MorphShape: public DisplayObject
 {
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const;
 public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -491,7 +510,7 @@ friend class DisplayObject;
 private:
 	_NR<Graphics> graphics;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
@@ -729,7 +748,7 @@ protected:
 public:
 	Bitmap() : size(0,0), data(NULL) {}
 	static void sinit(Class_base* c);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
 };

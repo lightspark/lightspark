@@ -42,7 +42,7 @@ private:
 
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const;
 	void invalidate();
 	void requestInvalidation();
 	void updateText(const tiny_string& new_text);
@@ -107,8 +107,8 @@ class StaticText: public DisplayObject, public TokenContainer
 private:
 	ASFUNCTION(_getText);
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
+		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax,coords); }
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)

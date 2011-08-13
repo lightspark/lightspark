@@ -471,7 +471,7 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 			{
 				xmin = imin(xmin,txmin);
 				xmax = imax(xmax,txmax);
-				ymin = imin(ymin,txmin);
+				ymin = imin(ymin,tymin);
 				ymax = imax(ymax,tymax);
 			}
 			else

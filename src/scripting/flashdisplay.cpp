@@ -1160,6 +1160,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 }
 
@@ -1337,12 +1338,18 @@ void DisplayObject::requestInvalidation()
 	if(!mask.isNull())
 		mask->requestInvalidation();
 }
-
+//TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
+//this way they have less pb with precision.
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	getMatrix().multiply2D(xin, yin, xout, yout);
 	if(!parent.isNull())
 		parent->localToGlobal(xout, yout, xout, yout);
+}
+//TODO: Fix precision issues
+void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
+{
+	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
 }
 
 void DisplayObject::setOnStage(bool staged)
@@ -1618,7 +1625,21 @@ ASFUNCTIONBODY(DisplayObject,localToGlobal)
 
 	number_t tempx, tempy;
 
-	th->getMatrix().multiply2D(pt->getX(), pt->getY(), tempx, tempy);
+	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy);
+
+	return Class<Point>::getInstanceS(tempx, tempy);
+}
+
+ASFUNCTIONBODY(DisplayObject,globalToLocal)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen == 1);
+
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t tempx, tempy;
+
+	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy);
 
 	return Class<Point>::getInstanceS(tempx, tempy);
 }

@@ -70,7 +70,7 @@ void TextField::buildTraits(ASObject* o)
 {
 }
 
-bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 {
 	xmin=0;
 	xmax=width;
@@ -83,7 +83,8 @@ _NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, numbe
 {
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
-	boundsRect(xmin,xmax,ymin,ymax);
+	MATRIX identity;
+	boundsRect(xmin,xmax,ymin,ymax,identity);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && isHittable(type))
 		return last;
 	else
@@ -180,7 +181,8 @@ void TextField::invalidate()
 	int32_t x,y;
 	uint32_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
+	MATRIX identity;
+	if(boundsRect(bxmin,bxmax,bymin,bymax,identity)==false)
 	{
 		//No contents, nothing to do
 		return;

@@ -872,6 +872,7 @@ public:
 	const bool operator!=(const MATRIX& r) const;
 	MATRIX getInverted() const;
 	bool isInvertible() const;
+	bool hasNoRotation() const {return ((ScaleX >= 0) && (fabs(RotateSkew0) == 0));} //TODO: is this the right precision?
 };
 
 class GRADRECORD

@@ -450,7 +450,7 @@ ASFUNCTIONBODY(Sprite,_stopDrag)
 	return NULL;
 }
 
-bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 {
 	bool ret = false;
 
@@ -463,13 +463,15 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		number_t txmin,txmax,tymin,tymax;
-		if((*it)->getBounds(txmin,txmax,tymin,tymax))
+		//The change of coords matrix must take into account the child matrix too
+		MATRIX childCoords = coords.multiplyMatrix((*it)->getMatrix());
+		if((*it)->getBounds(txmin,txmax,tymin,tymax,childCoords))
 		{
 			if(ret==true)
 			{
 				xmin = imin(xmin,txmin);
 				xmax = imax(xmax,txmax);
-				ymin = imin(ymin,txmin);
+				ymin = imin(ymin,tymin);
 				ymax = imax(ymax,tymax);
 			}
 			else
@@ -485,12 +487,12 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 	return ret;
 }
 
-bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 {
 	bool ret;
-	ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax);
+	ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax,coords);
 	number_t txmin,txmax,tymin,tymax;
-	if(TokenContainer::boundsRect(txmin,txmax,tymin,tymax))
+	if(TokenContainer::boundsRect(txmin,txmax,tymin,tymax,coords))
 	{
 		if(ret==true)
 		{
@@ -511,18 +513,11 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return ret;
 }
 
-bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 {
 	if(!isConstructed())
 		return false;
-
-	bool ret=boundsRect(xmin,xmax,ymin,ymax);
-	if(ret)
-	{
-		//TODO: take rotation into account
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-	}
+	bool ret=boundsRect(xmin,xmax,ymin,ymax,coords);
 	return ret;
 }
 
@@ -574,7 +569,9 @@ void DisplayObject::Render(bool maskEnabled)
 		return;
 
 	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	//We use local coordinates to do the rendering
+	MATRIX identity;
+	bool notEmpty=boundsRect(t1,t2,t3,t4,identity);
 	if(!notEmpty)
 		return;
 
@@ -1160,6 +1157,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 }
 
@@ -1220,6 +1218,44 @@ MATRIX DisplayObject::getConcatenatedMatrix() const
 		return getMatrix();
 	else
 		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
+}
+
+MATRIX DisplayObject::getNewCoordinates(const DisplayObject* newReference) const
+{
+	MATRIX ret;	
+	if(isAncestor(newReference))
+	{
+		const DisplayObject* cur = this;
+		while(cur != newReference)
+		{
+			ret = ret.multiplyMatrix(getMatrix());
+			cur = cur->getParent().getPtr();
+		}
+		return ret;
+	}
+	if(newReference->isAncestor(this))
+	{
+		const DisplayObject* cur = newReference;
+		while(cur != this)
+		{
+			ret = ret.multiplyMatrix(getMatrix());
+			cur = cur->getParent().getPtr();
+		}
+		return ret.getInverted();
+	}
+	//If all this fails then we have no choice but to go through the global coord system
+	ret = getConcatenatedMatrix();
+	ret = (newReference->getMatrix().getInverted()).multiplyMatrix(ret);
+	return ret;
+}
+
+bool DisplayObject::isAncestor(const DisplayObject* dobj) const
+{
+	if(parent == NULL)
+		return false;
+	if(this == dobj)
+		return true;
+	return parent->isAncestor(dobj);
 }
 
 float DisplayObject::getConcatenatedAlpha() const
@@ -1337,12 +1373,18 @@ void DisplayObject::requestInvalidation()
 	if(!mask.isNull())
 		mask->requestInvalidation();
 }
-
+//TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
+//this way they have less pb with precision.
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	getMatrix().multiply2D(xin, yin, xout, yout);
 	if(!parent.isNull())
 		parent->localToGlobal(xout, yout, xout, yout);
+}
+//TODO: Fix precision issues
+void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
+{
+	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
 }
 
 void DisplayObject::setOnStage(bool staged)
@@ -1548,7 +1590,9 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 
 	Rectangle* ret=Class<Rectangle>::getInstanceS();
 	number_t x1,x2,y1,y2;
-	bool r=th->getBounds(x1,x2,y1,y2);
+	DisplayObject* targetcs = static_cast<DisplayObject*>(args[0]);	
+	MATRIX newCoords = th->getNewCoordinates(targetcs);
+	bool r=th->getBounds(x1,x2,y1,y2,newCoords);
 	if(r)
 	{
 		//Bounds are in the form [XY]{min,max}
@@ -1618,7 +1662,21 @@ ASFUNCTIONBODY(DisplayObject,localToGlobal)
 
 	number_t tempx, tempy;
 
-	th->getMatrix().multiply2D(pt->getX(), pt->getY(), tempx, tempy);
+	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy);
+
+	return Class<Point>::getInstanceS(tempx, tempy);
+}
+
+ASFUNCTIONBODY(DisplayObject,globalToLocal)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen == 1);
+
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t tempx, tempy;
+
+	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy);
 
 	return Class<Point>::getInstanceS(tempx, tempy);
 }
@@ -1713,7 +1771,9 @@ ASFUNCTIONBODY(DisplayObject,_getVisible)
 number_t DisplayObject::computeHeight()
 {
 	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2);
+	//The height is the height of the bounding box in this parent's coords
+	MATRIX coords = getMatrix();
+	bool ret=getBounds(x1,x2,y1,y2,coords);	
 
 	return (ret)?(y2-y1):0;
 }
@@ -1721,8 +1781,10 @@ number_t DisplayObject::computeHeight()
 number_t DisplayObject::computeWidth()
 {
 	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2);
-
+	//The width is the width of the bounding box in this parent's coords
+	MATRIX coords = getMatrix();
+	bool ret=getBounds(x1,x2,y1,y2,coords);
+	
 	return (ret)?(x2-x1):0;
 }
 
@@ -1754,7 +1816,8 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 	number_t newwidth=args[0]->toNumber();
 
 	number_t xmin,xmax,y1,y2;
-	if(!th->boundsRect(xmin,xmax,y1,y2))
+	MATRIX identity;
+	if(!th->boundsRect(xmin,xmax,y1,y2,identity))
 		return NULL;
 
 	number_t width=xmax-xmin;
@@ -1787,7 +1850,8 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 	number_t newheight=args[0]->toNumber();
 
 	number_t x1,x2,ymin,ymax;
-	if(!th->boundsRect(x1,x2,ymin,ymax))
+	MATRIX identity;
+	if(!th->boundsRect(x1,x2,ymin,ymax,identity))
 		return NULL;
 
 	number_t height=ymax-ymin;
@@ -2499,7 +2563,7 @@ ASFUNCTIONBODY(MorphShape,_constructor)
 	return NULL;
 }
 
-bool MorphShape::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool MorphShape::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 {
 	LOG(LOG_NOT_IMPLEMENTED, "MorphShape::boundsRect is a stub");
 	return false;
@@ -2512,8 +2576,8 @@ void Stage::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
+	//c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
+	//c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
@@ -2637,7 +2701,8 @@ void TokenContainer::invalidate()
 	int32_t x,y;
 	uint32_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
+	MATRIX identity;
+	if(boundsRect(bxmin,bxmax,bymin,bymax,identity)==false)
 	{
 		//No contents, nothing to do
 		return;
@@ -2674,7 +2739,7 @@ _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, 
 	return NullRef;
 }
 
-bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 {
 
 	#define VECTOR_BOUNDS(v) \
@@ -2692,54 +2757,70 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 	ymax = -numeric_limits<double>::infinity();
 
 	bool hasContent = false;
-	double strokeWidth = 0;
-
-	for(unsigned int i=0;i<tokens.size();i++)
+	//We have two paths : one is when the change of coords has no rotation. In that case the computation is simple
+	//if coords has rotation, then we use Cairo
+	//TODO: this is perhaps not the best way to do it
+	if(coords.hasNoRotation())
 	{
-		switch(tokens[i].type)
+		double strokeWidth = 0;
+
+		for(unsigned int i=0;i<tokens.size();i++)
 		{
-			case CURVE_CUBIC:
+			switch(tokens[i].type)
 			{
-				VECTOR_BOUNDS(tokens[i].p3);
-				// fall through
+				case CURVE_CUBIC:
+				{
+					VECTOR_BOUNDS(tokens[i].p3);
+					// fall through
+				}
+				case CURVE_QUADRATIC:
+				{
+					VECTOR_BOUNDS(tokens[i].p2);
+					// fall through
+				}
+				case STRAIGHT:
+				{
+					hasContent = true;
+					// fall through
+				}
+				case MOVE:
+				{
+					VECTOR_BOUNDS(tokens[i].p1);
+					break;
+				}
+				case CLEAR_FILL:
+				case CLEAR_STROKE:
+				case SET_FILL:
+					break;
+				case SET_STROKE:
+					strokeWidth = (double)(tokens[i].lineStyle.Width / 20.0);
+					break;
 			}
-			case CURVE_QUADRATIC:
-			{
-				VECTOR_BOUNDS(tokens[i].p2);
-				// fall through
-			}
-			case STRAIGHT:
-			{
-				hasContent = true;
-				// fall through
-			}
-			case MOVE:
-			{
-				VECTOR_BOUNDS(tokens[i].p1);
-				break;
-			}
-			case CLEAR_FILL:
-			case CLEAR_STROKE:
-			case SET_FILL:
-				break;
-			case SET_STROKE:
-				strokeWidth = (double)(tokens[i].lineStyle.Width / 20.0);
-				break;
+		}
+		if(hasContent)
+		{
+			/* scale the bounding box coordinates and round them to a bigger integer box */
+			#define roundDown(x) \
+				copysign(floor(abs(x)), x)
+			#define roundUp(x) \
+				copysign(ceil(abs(x)), x)
+			xmin = roundDown(xmin*scaling);
+			xmax = roundUp(xmax*scaling);
+			ymin = roundDown(ymin*scaling);
+			ymax = roundUp(ymax*scaling);
+			#undef roundDown
+			#undef roundUp
+
+			//Now we change the coords
+			coords.multiply2D(xmin,ymin,xmin,ymin);
+			coords.multiply2D(xmax,ymax,xmax,ymax);	
 		}
 	}
-	if(hasContent)
+	else
 	{
-		/* scale the bounding box coordinates and round them to a bigger integer box */
-		#define roundDown(x) \
-			copysign(floor(abs(x)), x)
-		#define roundUp(x) \
-			copysign(ceil(abs(x)), x)
-		xmin = roundDown(xmin*scaling);
-		xmax = roundUp(xmax*scaling);
-		ymin = roundDown(ymin*scaling);
-		ymax = roundUp(ymax*scaling);
-		#undef roundDown
-		#undef roundUp
+		//We use Cairo
+		coords = coords.getInverted();//TODO: take care of that
+		hasContent = CairoTokenRenderer::getBounds(tokens,scaling,coords,xmin,ymin,xmax,ymax);
 	}
 	return hasContent;
 
@@ -3206,7 +3287,7 @@ void Bitmap::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 }
 
-bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, MATRIX& coords) const
 {
 	return false;
 }

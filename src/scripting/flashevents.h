@@ -372,8 +372,10 @@ class Frame;
 class InitFrameEvent: public Event
 {
 friend class ABCVm;
+private:
+	_NR<MovieClip> clip;
 public:
-	InitFrameEvent() : Event("InitFrameEvent") {}
+	InitFrameEvent(_NR<MovieClip> m=NullRef) : Event("InitFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const { return INIT_FRAME; }
 };
 

@@ -1571,12 +1571,20 @@ void ABCVm::getLex(call_context* th, int n)
 		if(it->object==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		//Skip implementation
-		ASObject* tmpo=it->object->getVariableByMultiname(*name, !it->considerDynamic);
+		// Calling hasPropertyByMultiname first is necessary
+		// for skipping over XMLs and XMLLists that do not
+		// contain the property. getVariableByMultiname alone
+		// is not enough because XML/XMLList returns an empty
+		// XMLList when querying for a non-existing property.
+		if(it->object->hasPropertyByMultiname(*name, it->considerDynamic))
+		{
+			o=it->object->getVariableByMultiname(*name, !it->considerDynamic);
+			assert_and_throw(o);
+		}
+
 		if(it->object==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
-		o=tmpo;
 		if(o)
 		{
 			target=it->object.getPtr();

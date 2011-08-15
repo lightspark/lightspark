@@ -63,11 +63,15 @@ void ByteArray::sinit(Class_base* c)
 	sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
 	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(readDouble),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readFloat","",Class<IFunction>::getFunction(readFloat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeDouble","",Class<IFunction>::getFunction(writeDouble),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeFloat","",Class<IFunction>::getFunction(writeFloat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeInt","",Class<IFunction>::getFunction(writeInt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),NORMAL_METHOD,true);
@@ -280,6 +284,34 @@ ASFUNCTIONBODY(ByteArray,writeByte)
 	return NULL;
 }
 
+ASFUNCTIONBODY(ByteArray,writeDouble)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==1);
+
+	double value=args[0]->toNumber();
+
+	th->getBuffer(th->position+8,true);
+	memcpy(th->bytes+th->position,&value,8);
+	th->position+=8;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,writeFloat)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==1);
+
+	float value=args[0]->toNumber();
+
+	th->getBuffer(th->position+4,true);
+	memcpy(th->bytes+th->position,&value,4);
+	th->position+=4;
+
+	return NULL;
+}
+
 ASFUNCTIONBODY(ByteArray,writeInt)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
@@ -342,6 +374,44 @@ ASFUNCTIONBODY(ByteArray, readByte)
 		return NULL;
 	}
 	return abstract_i(ret);
+}
+
+ASFUNCTIONBODY(ByteArray,readDouble)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==0);
+
+	if(th->len < th->position+8)
+	{
+		LOG(LOG_ERROR,"ByteArray::readDouble not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+
+	double ret;
+	memcpy(&ret,th->bytes+th->position,8);
+	th->position+=8;
+
+	return abstract_d(ret);
+}
+
+ASFUNCTIONBODY(ByteArray,readFloat)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==0);
+
+	if(th->len < th->position+4)
+	{
+		LOG(LOG_ERROR,"ByteArray::readFloat not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+
+	float ret;
+	memcpy(&ret,th->bytes+th->position,4);
+	th->position+=4;
+
+	return abstract_d(ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readInt)
@@ -640,6 +710,8 @@ ASFUNCTIONBODY(Timer,_setDelay)
 ASFUNCTIONBODY(Timer,start)
 {
 	Timer* th=static_cast<Timer*>(obj);
+	if(th->running)
+		return NULL;
 	th->running=true;
 	th->stopMe=false;
 	th->incRef();
@@ -758,65 +830,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 ASFUNCTIONBODY(lightspark,describeType)
 {
 	assert_and_throw(argslen==1);
-
-	if(args[0]->getObjectType()==T_FUNCTION)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Functions not supported in describeType");
-		return new Undefined;
-	}
-
-	if(args[0]->getObjectType()==T_UNDEFINED)
-		return new Undefined;
-
-	bool isStatic=(args[0]->getObjectType()==T_CLASS);
-
-	//TODO: add support in type for base, isDynamic, isFinal
-	string ret = "<type name=\"";
-	Class_base* type=NULL;
-	if(isStatic)
-		type=static_cast<Class_base*>(args[0]);
-	else
-		type=args[0]->getPrototype();
-
-	assert_and_throw(type);
-	ret+=type->class_name.getQualifiedName().raw_buf();
-	ret+="\" isStatic=";
-	ret+=(isStatic)?"\"true\"":"\"false\"";
-	ret+=">";
-	//TODO: add support for extendsClass and implementsInterface and factory
-	auto it=args[0]->Variables.Variables.begin();
-	for(;it!=args[0]->Variables.Variables.end();it++)
-	{
-		if(isStatic && it->second.kind==BORROWED_TRAIT)
-			continue;
-
-		//TODO: add support for constant, method, parameter
-		if(it->second.var.getter)
-		{
-			//Output an accessor
-			//TODO: add support in accessor for access,type,declaredBy
-			ret+="<accessor name=\"";
-			ret+=it->first.raw_buf();
-			ret+="\"/>";
-		}
-		else if(it->second.var.var)
-		{
-			//Output a variable
-			ret+="<variable name=\"";
-			ret+=it->first.raw_buf();
-			ret+="\"";
-			if(it->second.var.type)
-			{
-				ret+=" type=\"";
-				ret+=it->second.var.type->class_name.getQualifiedName().raw_buf();
-				ret+="\"";
-			}
-			ret+="/>";
-		}
-	}
-	ret+="</type>";
-
-	return Class<XML>::getInstanceS(ret);;
+	return args[0]->describeType();
 }
 
 ASFUNCTIONBODY(lightspark,getTimer)

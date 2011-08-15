@@ -20,6 +20,9 @@
 #include "flashtext.h"
 #include "class.h"
 #include "compat.h"
+#include "backends/rendering.h"
+#include "backends/geometry.h"
+#include "backends/graphics.h"
 
 using namespace std;
 using namespace lightspark;
@@ -56,6 +59,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(TextField::_getTextHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getTextWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
@@ -65,11 +70,6 @@ void TextField::buildTraits(ASObject* o)
 {
 }
 
-_NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
-{
-	return NullRef;
-}
-
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	xmin=0;
@@ -77,6 +77,17 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	ymin=0;
 	ymax=height;
 	return true;
+}
+
+_NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+{
+	/* I suppose one does not have to actually hit a character */
+	number_t xmin,xmax,ymin,ymax;
+	boundsRect(xmin,xmax,ymin,ymax);
+	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && isHittable(type))
+		return last;
+	else
+		return NullRef;
 }
 
 ASFUNCTIONBODY(TextField,_getWidth)
@@ -107,6 +118,18 @@ ASFUNCTIONBODY(TextField,_setHeight)
 	return NULL;
 }
 
+ASFUNCTIONBODY(TextField,_getTextWidth)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_i(th->textWidth);
+}
+
+ASFUNCTIONBODY(TextField,_getTextHeight)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_i(th->textHeight);
+}
+
 ASFUNCTIONBODY(TextField,_getText)
 {
 	TextField* th=Class<TextField>::cast(obj);
@@ -117,7 +140,7 @@ ASFUNCTIONBODY(TextField,_setText)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
-	th->text=args[0]->toString();
+	th->updateText(args[0]->toString());
 	return NULL;
 }
 
@@ -125,14 +148,62 @@ ASFUNCTIONBODY(TextField, appendText)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
-	th->text += args[0]->toString();
+	th->updateText(th->text + args[0]->toString());
 	return NULL;
 }
 
-void TextField::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+void TextField::setTextSize(int twidth, int theight)
 {
-	//TODO: implement
-	LOG(LOG_NOT_IMPLEMENTED,_("TextField::Render ") << text);
+	// TOOD: textWidth and textHeight should be updated in one
+	// atomic step
+	textWidth=twidth;
+	textHeight=theight;
+}
+
+void TextField::updateText(const tiny_string& new_text)
+{
+	text = new_text;
+	requestInvalidation();
+}
+
+void TextField::requestInvalidation()
+{
+	incRef();
+	sys->addToInvalidateQueue(_MR(this));
+
+	// Note: textWidth and textHeight should be updated now.
+	// Currently updating is delayed until rendering step.
+}
+
+void TextField::invalidate()
+{
+	int32_t x,y;
+	uint32_t width,height;
+	number_t bxmin,bxmax,bymin,bymax;
+	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
+	{
+		//No contents, nothing to do
+		return;
+	}
+
+	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
+	if(width==0 || height==0)
+		return;
+	CairoPangoRenderer* r=new CairoPangoRenderer(this, cachedSurface, *this,
+				getConcatenatedMatrix(), x, y, width, height, 1.0f,
+				getConcatenatedAlpha());
+	sys->addJob(r);
+}
+
+void TextField::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+{
+	//if(!isSimple())
+	//	rt->acquireTempBuffer(t1,t2,t3,t4);
+
+	defaultRender(maskEnabled);
+
+	//if(!isSimple())
+	//	rt->blitTempBuffer(t1,t2,t3,t4);
 }
 
 void TextFieldAutoSize ::sinit(Class_base* c)
@@ -143,7 +214,7 @@ void TextFieldAutoSize ::sinit(Class_base* c)
 	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"),DECLARED_TRAIT);
 }
 
-void TextFieldType ::sinit(Class_base* c)
+void TextFieldType::sinit(Class_base* c)
 {
 	c->setVariableByQName("DYNAMIC","",Class<ASString>::getInstanceS("dynamic"),DECLARED_TRAIT);
 	c->setVariableByQName("INPUT","",Class<ASString>::getInstanceS("input"),DECLARED_TRAIT);

@@ -25,7 +25,7 @@
 
 		var matm1:Matrix = new Matrix(1, 4, 2, 5, 3, 5);
 		var matm2:Matrix = new Matrix(2, 4, 5, 7, 9, 11);
-		var matm3:Matrix = new Matrix(10, 28, 19, 55, 34, 96);
+		var matm3:Matrix = new Matrix(22, 32, 29, 43, 40, 58);
 		matm1.concat(matm2);
 		Tests.assertTrue(matrixEqual(matm1, matm3), "matrix.concat");
 

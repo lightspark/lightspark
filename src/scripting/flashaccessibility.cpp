@@ -24,13 +24,33 @@ using namespace lightspark;
 SET_NAMESPACE("flash.accessibility");
 
 REGISTER_CLASS_NAME(AccessibilityProperties);
+REGISTER_CLASS_NAME(AccessibilityImplementation);
 
 void AccessibilityProperties::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	REGISTER_GETTER_SETTER(c,name);
 }
 
+ASFUNCTIONBODY(AccessibilityProperties,_constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED, _("AccessibilityProperties class is unimplemented."));
+	return NULL;
+}
+
 ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties,name);
+
+void AccessibilityImplementation::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+ASFUNCTIONBODY(AccessibilityImplementation,_constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED, _("AccessibilityImplementation class is unimplemented."));
+	return NULL;
+}

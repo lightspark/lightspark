@@ -31,9 +31,15 @@ paramfile="$(mktemp)"
 playerfile="$(mktemp)"
 
 basedir="$(dirname "$0")"
-sh "$basedir"/youtube-args-dumper.sh "$1" > "$paramfile"
 
-wget "$(sh "$basedir"/youtube-get-player.sh "$1")" -O "$playerfile"
+if test $# -eq 0; then
+	URL="http://www.youtube.com/watch?v=XSGBVzeBUbk"
+else
+	URL=$1
+fi
+
+sh "$basedir"/youtube-args-dumper.sh "$URL" > "$paramfile"
+wget "$(sh "$basedir"/youtube-get-player.sh "$URL")" -O "$playerfile"
 
 $LIGHTSPARK "$playerfile" -p "$paramfile"
 rm "$playerfile" "$paramfile"

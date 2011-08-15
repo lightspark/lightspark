@@ -36,6 +36,7 @@ enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CO
 
 class ABCContext;
 class DictionaryTag;
+class InteractiveObject;
 class PlaceObject2Tag;
 class MovieClip;
 
@@ -48,6 +49,7 @@ public:
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+	virtual void setTarget(_NR<ASObject> t) {target = t; }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_preventDefault);
 	ASFUNCTION(_isDefaultPrevented);
@@ -222,10 +224,16 @@ class MouseEvent: public Event
 {
 public:
 	MouseEvent();
-	MouseEvent(const tiny_string& t, bool b=true);
+	MouseEvent(const tiny_string& t, number_t lx, number_t ly, bool b=true, _NR<InteractiveObject> relObj = NullRef);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+	void setTarget(_NR<ASObject> t);
 	EVENT_TYPE getEventType() const { return MOUSE_EVENT;}
+	ASPROPERTY_GETTER_SETTER(number_t,localX);
+	ASPROPERTY_GETTER_SETTER(number_t,localY);
+	ASPROPERTY_GETTER(number_t,stageX);
+	ASPROPERTY_GETTER(number_t,stageY);
+	ASPROPERTY_GETTER(_NR<InteractiveObject>,relatedObject);	
 };
 
 class listener
@@ -319,11 +327,9 @@ private:
 	ASObject** result;
 	ASObject** exception;
 	_NR<SynchronizationEvent> sync;
-	bool thisOverride;
 public:
 	FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj=NullRef, ASObject** _args=NULL, uint32_t _numArgs=0, 
-			ASObject** _result=NULL, ASObject** _exception=NULL, _NR<SynchronizationEvent> _sync=NullRef, 
-			bool _thisOverride=false);
+			ASObject** _result=NULL, ASObject** _exception=NULL, _NR<SynchronizationEvent> _sync=NullRef);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return FUNCTION; }

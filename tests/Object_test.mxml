@@ -13,6 +13,11 @@
 		var o:Object = {foo: "bar", foo2: "bar2", foo: "bar3"};
 		Tests.assertEquals(o.foo2,"bar2","Simple assignment in object literal");
 		Tests.assertEquals(o.foo,"bar","Duplicated assignment in object literal");
+
+		var s:String = "Lightspark";
+		var c:Class = s.constructor;
+		Tests.assertTrue(c == String, "Constructor property");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

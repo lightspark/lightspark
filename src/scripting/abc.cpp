@@ -49,7 +49,7 @@
 using namespace std;
 using namespace lightspark;
 
-TLSDATA bool isVmThread=false;
+TLSDATA bool lightspark::isVmThread=false;
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
@@ -197,6 +197,8 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("AccessibilityProperties","flash.accessibility",
 			Class<AccessibilityProperties>::getClass(),DECLARED_TRAIT);
+	builtin->setVariableByQName("AccessibilityImplementation","flash.accessibility",
+			Class<AccessibilityImplementation>::getClass(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass(),DECLARED_TRAIT);
@@ -230,6 +232,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("InterpolationMethod","flash.display",Class<InterpolationMethod>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("FrameLabel","flash.display",Class<FrameLabel>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Scene","flash.display",Class<Scene>::getClass(),DECLARED_TRAIT);
+	builtin->setVariableByQName("AVM1Movie","flash.display",Class<AVM1Movie>::getClass(),DECLARED_TRAIT);
+	builtin->setVariableByQName("Shader","flash.display",Class<Shader>::getClass(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("DropShadowFilter","flash.filters",
 			Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")),DECLARED_TRAIT);
@@ -1093,7 +1097,8 @@ void ABCVm::shutdown()
 
 void ABCVm::finalize()
 {
-	if(!events_queue.empty())
+	//The event queue may be not empty if the VM has been been started
+	if(status==CREATED && !events_queue.empty())
 		LOG(LOG_ERROR, "Events queue is not empty as expected");
 	events_queue.clear();
 }
@@ -1121,20 +1126,93 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 {
 	std::deque<_R<DisplayObject>> parents;
 	assert_and_throw(event->target==NULL);
-	event->target=dispatcher;
+	event->setTarget(dispatcher);
+	/** rollOver/Out are special: according to spec 
+	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?  		
+	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver 
+	*
+	*   The relatedObject is the object that was previously under the pointing device. 
+	*   The rollOver events are dispatched consecutively down the parent chain of the object, 
+	*   starting with the highest parent that is neither the root nor an ancestor of the relatedObject
+	*   and ending with the object.
+	*
+	*   So no bubbling phase, a truncated capture phase, and sometimes no target phase (when the target is an ancestor 
+	*	of the relatedObject).
+	*/
+	//This is to take care of rollOver/Out
+	bool doTarget = true;
 
 	//capture phase
 	if(dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
 	{
 		event->eventPhase = EventPhase::CAPTURING_PHASE;
 		dispatcher->incRef();
-		_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
-		while(true)
+		//We fetch the relatedObject in the case of rollOver/Out
+		_NR<DisplayObject> rcur;
+		if(event->type == "rollOver" || event->type == "rollOut")
 		{
-			if(cur->getParent() == NULL)
-				break;
-			cur = cur->getParent();
-			parents.push_back(cur);
+			event->incRef();
+			_R<MouseEvent> mevent = _MR(dynamic_cast<MouseEvent*>(event.getPtr()));  
+			if(mevent->relatedObject != NULL) 
+			{  
+				mevent->relatedObject->incRef();
+				rcur = mevent->relatedObject;
+			}
+		}
+		//If the relObj is non null, we get its ancestors to build a truncated parents queue for the target 
+		if(rcur != NULL)
+		{
+			std::vector<_NR<DisplayObject>> rparents;
+			rparents.push_back(rcur);        
+			while(true)
+			{
+				if(rcur->getParent() == NULL)
+					break;
+				rcur = rcur->getParent();
+				rparents.push_back(rcur);
+			}
+			_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
+			//Check if cur is an ancestor of rcur
+			auto i = rparents.begin();
+			for(;i!=rparents.end();++i)
+			{
+				if((*i) == cur)
+				{
+					doTarget = false;//If the dispatcher is an ancestor of the relatedObject, no target phase
+					break;
+				}
+			}
+			//Get the parents of cur that are not ancestors of rcur
+			while(true && doTarget)
+			{
+				if(cur->getParent() == NULL)
+					break;        
+				cur = cur->getParent();
+				auto i = rparents.begin();        
+				bool stop = false;
+				for(;i!=rparents.end();++i)
+				{
+					if((*i) == cur) 
+					{
+						stop = true;
+						break;
+					}
+				}
+				if (stop) break;
+				parents.push_back(cur);
+			}          
+		}
+		//The standard behavior
+		else
+		{
+			_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
+			while(true)
+			{
+				if(cur->getParent() == NULL)
+					break;
+				cur = cur->getParent();
+				parents.push_back(cur);
+			}
 		}
 		auto i = parents.rbegin();
 		for(;i!=parents.rend();++i)
@@ -1145,9 +1223,12 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 	}
 
 	//Do target phase
-	event->eventPhase = EventPhase::AT_TARGET;
-	event->currentTarget=dispatcher;
-	dispatcher->handleEvent(event);
+	if(doTarget)
+	{
+		event->eventPhase = EventPhase::AT_TARGET;
+		event->currentTarget=dispatcher;
+		dispatcher->handleEvent(event);
+	}
 
 	//Do bubbling phase
 	if(event->bubbles && !parents.empty())
@@ -1166,7 +1247,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
-	event->target=NullRef;
+	event->setTarget(NullRef);
 }
 
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
@@ -1209,7 +1290,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					try
 					{
 						ev->obj->incRef();
-						ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs,ev->thisOverride);
+						ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs);
 						// We should report the function result
 						if(ev->result != NULL)
 							*(ev->result) = result;
@@ -1236,7 +1317,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					assert(ev->sync.isNull());
 					if(!ev->obj.isNull())
 						ev->obj->incRef();
-					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs,ev->thisOverride);
+					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs);
 					// We should report the function result
 					if(ev->result != NULL)
 						*(ev->result) = result;
@@ -1449,6 +1530,9 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("isinstance ") << *name);
 
+	if(name->qualifiedString() == "::any")
+		return true;
+	
 	ASObject* target;
 	ASObject* ret=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 	if(!ret) //Could not retrieve type
@@ -2125,6 +2209,17 @@ ASObject* method_info::getOptional(unsigned int i)
 {
 	assert_and_throw(i<options.size());
 	return context->getConstant(options[i].kind,options[i].val);
+}
+
+const multiname* method_info::paramTypeName(unsigned int i) const
+{
+	assert_and_throw(i<param_type.size());
+	return context->getMultiname(param_type[i],NULL);
+}
+
+const multiname* method_info::returnTypeName() const
+{
+	return context->getMultiname(return_type,NULL);
 }
 
 istream& lightspark::operator>>(istream& in, s32& v)

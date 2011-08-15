@@ -26,7 +26,7 @@
 #include "graphics.h"
 #include "backends/rendering.h"
 
-#if LIBAVUTIL_VERSION_MAJOR < 52
+#if LIBAVUTIL_VERSION_MAJOR < 51
 #define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
 #define AVMEDIA_TYPE_AUDIO CODEC_TYPE_AUDIO
 #endif

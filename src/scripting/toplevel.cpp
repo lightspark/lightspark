@@ -108,7 +108,7 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(_push),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
-	//c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
 	//c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
 	//c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),NORMAL_METHOD,true);
@@ -259,7 +259,8 @@ ASFUNCTIONBODY(Array, _reverse)
 
 	reverse(th->data.begin(), th->data.end());
 
-	return NULL;
+	th->incRef();
+	return th;
 }
 
 ASFUNCTIONBODY(Array,lastIndexOf)
@@ -271,6 +272,10 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 
 	int unsigned i = th->data.size()-1;
 	int j;
+
+	if(argslen == 2 && std::isnan(args[1]->toNumber()))
+		return abstract_i(0);
+
 	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 	{
 		j = args[1]->toInt(); //Preserve sign
@@ -311,27 +316,68 @@ ASFUNCTIONBODY(Array,shift)
 	return ret;
 }
 
+int Array::capIndex(int i) const
+{
+	int totalSize=data.size();
+
+	if(totalSize <= 0)
+		return 0;
+	else if(i < -totalSize)
+		return 0;
+	else if(i > totalSize)
+		return totalSize;
+	else if(i>=0)     // 0 <= i < totalSize
+		return i;
+	else              // -totalSize <= i < 0
+	{
+		//A negative i is relative to the end
+		return i+totalSize;
+	}
+}
+
+ASFUNCTIONBODY(Array,slice)
+{
+	Array* th=static_cast<Array*>(obj);
+
+	int startIndex=0;
+	int endIndex=16777215;
+	if(argslen>0)
+		startIndex=args[0]->toInt();
+	if(argslen>1)
+		endIndex=args[1]->toInt();
+
+	startIndex=th->capIndex(startIndex);
+	endIndex=th->capIndex(endIndex);
+	
+	Array* ret=Class<Array>::getInstanceS();
+	for(int i=startIndex; i<endIndex; i++)
+		ret->data.push_back(th->data[i]);
+	return ret;
+}
+
 ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
-	
+
 	int startIndex=args[0]->toInt();
 	int deleteCount=args[1]->toUInt();
 	int totalSize=th->data.size();
-	
-	//A negative startIndex is relative to the end
-	assert_and_throw(abs(startIndex)<totalSize);
-	startIndex=(startIndex+totalSize)%totalSize;
+	Array* ret=Class<Array>::getInstanceS();
+
+	startIndex=th->capIndex(startIndex);
+
 	if((startIndex+deleteCount)>totalSize)
 		deleteCount=totalSize-startIndex;
-	
-	Array* ret=Class<Array>::getInstanceS();
-	ret->data.reserve(deleteCount);
 
-	for(int i=0;i<deleteCount;i++)
-		ret->data.push_back(th->data[startIndex+i]);
-	
-	th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+	if(deleteCount)
+	{
+		ret->data.reserve(deleteCount);
+
+		for(int i=0;i<deleteCount;i++)
+			ret->data.push_back(th->data[startIndex+i]);
+
+		th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+	}
 
 	//Insert requested values starting at startIndex
 	for(unsigned int i=2,n=0;i<argslen;i++,n++)
@@ -631,9 +677,16 @@ void XML::buildFromString(const string& str)
 	}
 	else
 	{
+		string buf(str.c_str());
+		//if this is a CDATA node replace CDATA tags to make it look like a text-node
+		//for compatibility with the Adobe player
+		if (str.compare(0, 9, "<![CDATA[") == 0) {
+			buf = "<a>"+str.substr(9, str.size()-12)+"</a>";
+		}
+
 		try
 		{
-			parser.parse_memory_raw((const unsigned char*)str.c_str(), str.size());
+			parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
 		}
 		catch(const exception& e)
 		{
@@ -982,8 +1035,15 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 		return NULL;
 	}
 
+	bool isAttr=name.isAttribute;
 	const tiny_string& normalizedName=name.normalizedName();
-	if(name.isAttribute)
+	const char *buf=normalizedName.raw_buf();
+	if(normalizedName[0]=='@')
+	{
+		isAttr=true;
+		buf+=1;
+	}
+	if(isAttr)
 	{
 		//Lookup attribute
 		//TODO: support namespaces
@@ -994,7 +1054,7 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		if(element==NULL)
 			return NULL;
-		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
+		xmlpp::Attribute* attr=element->get_attribute(buf);
 		if(attr==NULL)
 			return NULL;
 
@@ -1021,7 +1081,7 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
 		//Normalize the name to the string form
 		assert(node);
-		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
+		const xmlpp::Node::NodeList& children=node->get_children(buf);
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
 
 		std::vector<_R<XML>> ret;
@@ -1055,8 +1115,15 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	if(considerDynamic==false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
+	bool isAttr=name.isAttribute;
 	const tiny_string& normalizedName=name.normalizedName();
-	if(name.isAttribute)
+	const char *buf=normalizedName.raw_buf();
+	if(normalizedName[0]=='@')
+	{
+		isAttr=true;
+		buf+=1;
+	}
+	if(isAttr)
 	{
 		//Lookup attribute
 		//TODO: support namespaces
@@ -1067,7 +1134,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		if(element==NULL)
 			return NULL;
-		xmlpp::Attribute* attr=element->get_attribute(normalizedName.raw_buf());
+		xmlpp::Attribute* attr=element->get_attribute(buf);
 		if(attr!=NULL)
 			return true;
 	}
@@ -1078,7 +1145,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
 		//Normalize the name to the string form
 		assert(node);
-		const xmlpp::Node::NodeList& children=node->get_children(normalizedName.raw_buf());
+		const xmlpp::Node::NodeList& children=node->get_children(buf);
 		if(!children.empty())
 			return true;
 	}
@@ -2448,6 +2515,11 @@ double Undefined::toNumber()
 	return numeric_limits<double>::quiet_NaN();
 }
 
+ASObject *Undefined::describeType() const
+{
+	return new Undefined;
+}
+
 void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
@@ -2990,6 +3062,11 @@ void IFunction::finalize()
 	closure_this.reset();
 }
 
+ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_args)
+{
+	return callImpl(obj, args, num_args, false);
+}
+
 ASFUNCTIONBODY(IFunction,apply)
 {
 	IFunction* th=static_cast<IFunction*>(obj);
@@ -3020,7 +3097,7 @@ ASFUNCTIONBODY(IFunction,apply)
 	{
 		overrideThis=false;
 	}
-	ASObject* ret=th->call(args[0],newArgs,newArgsLen,overrideThis);
+	ASObject* ret=th->callImpl(args[0],newArgs,newArgsLen,overrideThis);
 	if(ret==NULL)
 		ret=new Undefined;
 	delete[] newArgs;
@@ -3054,11 +3131,31 @@ ASFUNCTIONBODY(IFunction,_call)
 	{
 		overrideThis=false;
 	}
-	ASObject* ret=th->call(newObj,newArgs,newArgsLen,overrideThis);
+	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen,overrideThis);
 	if(ret==NULL)
 		ret=new Undefined;
 	delete[] newArgs;
 	return ret;
+}
+
+ASObject *IFunction::describeType() const
+{
+	xmlpp::DomParser p;
+	xmlpp::Element* root=p.get_document()->create_root_node("type");
+
+	root->set_attribute("name", "Function");
+	root->set_attribute("base", "Object");
+	root->set_attribute("isDynamic", "true");
+	root->set_attribute("isFinal", "false");
+	root->set_attribute("isStatic", "false");
+
+	xmlpp::Element* node=root->add_child("extendsClass");
+	node->set_attribute("type", "Object");
+
+	// TODO: accessor
+	LOG(LOG_NOT_IMPLEMENTED, "describeType for Function not completely implemented");
+
+	return Class<XML>::getInstanceS(root);
 }
 
 SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL)
@@ -3072,7 +3169,7 @@ void SyntheticFunction::finalize()
 	func_scope.clear();
 }
 
-ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
+ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -3230,7 +3327,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	return ret;
 }
 
-ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
+ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
 {
 	ASObject* ret;
 	if(bound && !closure_this.isNull() && !thisOverride)
@@ -4490,6 +4587,169 @@ tiny_string Class_base::getQualifiedClassName() const
 		assert_and_throw(name_index);
 		const multiname* mname=context->getMultiname(name_index,NULL);
 		return mname->qualifiedString();
+	}
+}
+
+ASObject *Class_base::describeType() const
+{
+	xmlpp::DomParser p;
+	xmlpp::Element* root=p.get_document()->create_root_node("type");
+
+	root->set_attribute("name", getQualifiedClassName().raw_buf());
+	root->set_attribute("base", "Class");
+	root->set_attribute("isDynamic", "true");
+	root->set_attribute("isFinal", "true");
+	root->set_attribute("isStatic", "true");
+
+	// extendsClass
+	xmlpp::Element* extends_class=root->add_child("extendsClass");
+	extends_class->set_attribute("type", "Class");
+	extends_class=root->add_child("extendsClass");
+	extends_class->set_attribute("type", "Object");
+
+	// variable
+	if(class_index>=0)
+		describeTraits(root, context->classes[class_index].traits);
+
+	// factory
+	xmlpp::Element* factory=root->add_child("factory");
+	factory->set_attribute("type", getQualifiedClassName().raw_buf());
+	describeInstance(factory);
+	
+	return Class<XML>::getInstanceS(root);
+}
+
+void Class_base::describeInstance(xmlpp::Element* root) const
+{
+	// extendsClass
+	const Class_base* c=super;
+	while(c)
+	{
+		xmlpp::Element* extends_class=root->add_child("extendsClass");
+		extends_class->set_attribute("type", c->getQualifiedClassName().raw_buf());
+		c=c->super;
+	}
+
+	// implementsInterface
+	c=this;
+	while(c && c->class_index>=0)
+	{
+		const std::vector<Class_base*>& interfaces=c->getInterfaces();
+		auto it=interfaces.begin();
+		for(; it!=interfaces.end(); ++it)
+		{
+			xmlpp::Element* node=root->add_child("implementsInterface");
+			node->set_attribute("type", (*it)->getQualifiedClassName().raw_buf());
+		}
+		c=c->super;
+	}
+
+	// variables, methods, accessors
+	c=this;
+	while(c && c->class_index>=0)
+	{
+		c->describeTraits(root, c->context->instances[c->class_index].traits);
+		c=c->super;
+	}
+}
+
+void Class_base::describeTraits(xmlpp::Element* root,
+				std::vector<traits_info>& traits) const
+{
+	std::map<u30, xmlpp::Element*> accessorNodes;
+	for(unsigned int i=0;i<traits.size();i++)
+	{
+		traits_info& t=traits[i];
+		int kind=t.kind&0xf;
+		multiname* mname=context->getMultiname(t.name,NULL);
+		if (mname->name_type!=multiname::NAME_STRING ||
+		    (mname->ns.size()==1 && mname->ns[0].name!="") ||
+		    mname->ns.size() > 1)
+			continue;
+		
+		if(kind==traits_info::Slot || kind==traits_info::Const)
+		{
+			multiname* type=context->getMultiname(t.type_name,NULL);
+			assert(type->name_type==multiname::NAME_STRING);
+
+			const char *nodename=kind==traits_info::Const?"constant":"variable";
+			xmlpp::Element* node=root->add_child(nodename);
+			node->set_attribute("name", mname->name_s.raw_buf());
+			node->set_attribute("type", type->name_s.raw_buf());
+		}
+		else if (kind==traits_info::Method)
+		{
+			xmlpp::Element* node=root->add_child("method");
+			node->set_attribute("name", mname->name_s.raw_buf());
+			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
+
+			method_info& method=context->methods[t.method];
+			const multiname* rtname=method.returnTypeName();
+			assert(rtname->name_type==multiname::NAME_STRING);
+			node->set_attribute("returnType", rtname->name_s.raw_buf());
+
+			int firstOpt=method.numArgs() - method.option_count;
+			for(int j=0;j<method.numArgs(); j++)
+			{
+				xmlpp::Element* param=node->add_child("parameter");
+				param->set_attribute("index", tiny_string(j+1).raw_buf());
+				param->set_attribute("type", method.paramTypeName(j)->name_s.raw_buf());
+				param->set_attribute("optional", j>=firstOpt?"true":"false");
+			}
+		}
+		else if (kind==traits_info::Getter || kind==traits_info::Setter)
+		{
+			// The getters and setters are separate
+			// traits. Check if we have already created a
+			// node for this multiname with the
+			// complementary accessor. If we have, update
+			// the access attribute to "readwrite".
+			xmlpp::Element* node;
+			auto existing=accessorNodes.find(t.name);
+			if(existing==accessorNodes.end())
+			{
+				node=root->add_child("accessor");
+				accessorNodes[t.name]=node;
+			}
+			else
+				node=existing->second;
+
+			node->set_attribute("name", mname->name_s.raw_buf());
+
+			const char* access=NULL;
+			tiny_string oldAccess;
+			xmlpp::Attribute* oldAttr=node->get_attribute("access");
+			if(oldAttr)
+				oldAccess=oldAttr->get_value();
+
+			if(kind==traits_info::Getter && oldAccess=="")
+				access="readonly";
+			else if(kind==traits_info::Setter && oldAccess=="")
+				access="writeonly";
+			else if((kind==traits_info::Getter && oldAccess=="writeonly") || 
+				(kind==traits_info::Setter && oldAccess=="readonly"))
+				access="readwrite";
+
+			if(access)
+				node->set_attribute("access", access);
+
+			const char* type=NULL;
+			method_info& method=context->methods[t.method];
+			if(kind==traits_info::Getter)
+			{
+				const multiname* rtname=method.returnTypeName();
+				assert(rtname->name_type==multiname::NAME_STRING);
+				type=rtname->name_s.raw_buf();
+			}
+			else if(method.numArgs()>0) // setter
+			{
+				type=method.paramTypeName(0)->name_s.raw_buf();
+			}
+			if(type)
+				node->set_attribute("type", type);
+
+			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
+		}
 	}
 }
 

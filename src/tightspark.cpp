@@ -113,10 +113,17 @@ int main(int argc, char* argv[])
 	for(unsigned int i=0;i<fileNames.size();i++)
 	{
 		ifstream f(fileNames[i]);
-		ABCContext* context=new ABCContext(f);
-		contexts.push_back(context);
-		f.close();
-		vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
+		if(f.is_open())
+		{
+			ABCContext* context=new ABCContext(f);
+			contexts.push_back(context);
+			f.close();
+			vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
+		}
+		else
+		{
+			LOG(LOG_ERROR, fileNames[i] << _(" could not be opened for execution"));
+		}
 	}
 	vm->start();
 	sys->setShutdownFlag();

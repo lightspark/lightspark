@@ -46,6 +46,8 @@ class DisplayObject: public EventDispatcher
 {
 friend class TokenContainer;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
+public:
+	enum HIT_TYPE { GENERIC_HIT, DOUBLE_CLICK };
 private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	MATRIX Matrix;
@@ -57,7 +59,6 @@ private:
 	  	The object we are masking, if any
 	*/
 	_NR<DisplayObject> maskOf;
-	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void becomeMaskOf(_NR<DisplayObject> m);
 	void setMask(_NR<DisplayObject> m);
 	_NR<DisplayObjectContainer> parent;
@@ -96,7 +97,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
-	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
 	{
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
@@ -119,6 +120,8 @@ public:
 	virtual void invalidate();
 	virtual void requestInvalidation();
 	MATRIX getConcatenatedMatrix() const;
+	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const
 	{
@@ -126,7 +129,7 @@ public:
 	}
 	void Render(bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 	//API to handle mask support in hit testing
 	virtual bool isOpaque(number_t x, number_t y) const
 	{
@@ -140,6 +143,7 @@ public:
 	virtual void advanceFrame() {}
 	virtual void initFrame();
 	Vector2f getLocalMousePos();
+	Vector2f getXY();
 	void setX(number_t x);
 	void setY(number_t y);
 	static void sinit(Class_base* c);
@@ -177,18 +181,28 @@ public:
 	ASFUNCTION(_getMouseX);
 	ASFUNCTION(_getMouseY);
 	ASFUNCTION(localToGlobal);
+	ASFUNCTION(globalToLocal);
 };
 
 class InteractiveObject: public DisplayObject
 {
 protected:
 	bool mouseEnabled;
+	bool doubleClickEnabled;
+	bool isHittable(DisplayObject::HIT_TYPE type)
+	{
+		if(type == DisplayObject::DOUBLE_CLICK)
+			return doubleClickEnabled && mouseEnabled;
+		return mouseEnabled;
+	}
 public:
 	InteractiveObject();
 	~InteractiveObject();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_setMouseEnabled);
 	ASFUNCTION(_getMouseEnabled);
+	ASFUNCTION(_setDoubleClickEnabled);
+	ASFUNCTION(_getDoubleClickEnabled);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -207,7 +221,7 @@ protected:
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged);
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 public:
@@ -223,6 +237,7 @@ public:
 	void purgeLegacyChildren();
 	void advanceFrame();
 	void initFrame();
+	bool isOpaque(number_t x, number_t y) const;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -237,6 +252,7 @@ public:
 	ASFUNCTION(contains);
 	ASFUNCTION(_getMouseChildren);
 	ASFUNCTION(_setMouseChildren);
+	ASFUNCTION(swapChildren);
 };
 
 /* This is really ugly, but the parent of the current
@@ -262,12 +278,13 @@ private:
 		DOWN
 	} currentState;
 	void reflectState();
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e);
 public:
 	SimpleButton(DisplayObject *dS = NULL, DisplayObject *hTS = NULL,
 				 DisplayObject *oS = NULL, DisplayObject *uS = NULL);
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -312,7 +329,7 @@ protected:
 	void invalidate();
 	void requestInvalidation();
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const;
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool tokensEmpty() const { return tokens.empty(); }
 	bool isOpaqueImpl(number_t x, number_t y) const;
@@ -367,8 +384,8 @@ protected:
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
-		{ return TokenContainer::hitTestImpl(last,x,y); }
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
 	Shape():TokenContainer(this), graphics(NULL) {}
 	Shape(const std::vector<GeomToken>& tokens, float scaling)
@@ -385,6 +402,8 @@ public:
 
 class MorphShape: public DisplayObject
 {
+protected:
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -476,7 +495,7 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
 	Sprite();
 	void finalize();
@@ -492,6 +511,7 @@ public:
 	}
 	void invalidate() { TokenContainer::invalidate(); }
 	void requestInvalidation();
+	bool isOpaque(number_t x, number_t y) const;
 };
 
 struct FrameLabel_data
@@ -508,6 +528,7 @@ public:
 	FrameLabel() {}
 	FrameLabel(const FrameLabel_data& data) : FrameLabel_data(data) {}
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_getFrame);
 	ASFUNCTION(_getName);
 };
@@ -619,7 +640,7 @@ private:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
 public:
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}
 	Stage();
 	static void sinit(Class_base* c);
@@ -702,7 +723,7 @@ public:
 
 class Bitmap: public DisplayObject
 {
-friend class CairoRenderer;
+friend class CairoTokenRenderer;
 protected:
 	bool fromJPEG( uint8_t* data, int len);
 	IntSize size;
@@ -712,8 +733,23 @@ public:
 	Bitmap() : size(0,0), data(NULL) {}
 	static void sinit(Class_base* c);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y);
+	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
+};
+
+class AVM1Movie: public DisplayObject
+{
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+};
+
+class Shader : public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
 };
 
 };

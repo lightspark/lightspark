@@ -35,7 +35,6 @@
 #include "backends/rendering.h"
 #include "backends/security.h"
 
-#include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif
@@ -392,6 +391,10 @@ SystemState::~SystemState()
 	for(;it!=classes.end();++it)
 		it->second->finalize();
 
+	//Here we clean the events queue
+	if(currentVm)
+		currentVm->finalize();
+
 	//Destroy the contents of all the classes
 	it=classes.begin();
 	for(;it!=classes.end();++it)
@@ -400,10 +403,6 @@ SystemState::~SystemState()
 		it->second->incRef();
 		it->second->cleanUp();
 	}
-
-	//Here we clean the events queue
-	if(currentVm)
-		currentVm->finalize();
 
 	//Destroy all registered classes
 	it=classes.begin();
@@ -468,6 +467,8 @@ void SystemState::setShutdownFlag()
 	shutdown=true;
 
 	sem_post(&terminated);
+	if(standalone)
+		gtk_main_quit();
 }
 
 void SystemState::wait()
@@ -909,24 +910,32 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	int width=size.Xmax/20;
 	int height=size.Ymax/20;
 	
+	GLfloat *vertex_coords = new GLfloat[data.size()*2];
+	GLfloat *color_coords = new GLfloat[data.size()*4];
+
 	int32_t start=tickCount-len;
 	if(int32_t(data[0].index-start)>0)
 		start=data[0].index;
 	
-	cairo_set_source_rgb(cr, float(color.Red)/255, float(color.Green)/255, float(color.Blue)/255);
-	cairo_set_line_width(cr, 2);
-
 	for(unsigned int i=0;i<data.size();i++)
-		{
+	{
+		vertex_coords[i*2] = int32_t(data[i].index-start)*width/len;
+		vertex_coords[i*2+1] = data[i].timing*height/maxTime;
+		color_coords[i*4] = color.Red;
+		color_coords[i*4+1] = color.Green;
+		color_coords[i*4+2] = color.Blue;
+		color_coords[i*4+3] = 1;
+	}
 
-			int32_t relx=int32_t(data[i].index-start)*width/len;
-			int32_t rely=data[i].timing*height/maxTime;
-			if (i==0)
-				cairo_move_to(cr,relx,rely);
-			else
-				cairo_line_to(cr,relx,rely);
-		}
-	cairo_stroke(cr);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(COLOR_ATTRIB);
+	glDrawArrays(GL_LINE_STRIP, 0, data.size());
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(COLOR_ATTRIB);
+
+	cairo_set_source_rgb(cr, float(color.Red)/255, float(color.Green)/255, float(color.Blue)/255);
 
 	//Draw tags
 	string* curTag=NULL;
@@ -1132,7 +1141,7 @@ void ParseThread::execute()
 	}
 	catch(std::exception& e)
 	{
-		LOG(LOG_ERROR,_("Stream exception in ParseThread"));
+		LOG(LOG_ERROR,_("Stream exception in ParseThread ") << e.what());
 		root->parsingFailed();
 	}
 	pt=NULL;

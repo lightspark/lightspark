@@ -43,31 +43,6 @@ public:
 	~zlib_filter();
 };
 
-class DLL_PUBLIC sync_stream: public std::streambuf
-{
-public:
-	sync_stream();
-	void stop();
-	void eof();
-	~sync_stream();
-	uint32_t write(char* buf, int len);
-	uint32_t getFree();
-	virtual int_type underflow();
-	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
-private:
-	char* buffer;
-	int head;
-	int tail;
-	sem_t mutex;
-	sem_t notfull;
-	sem_t notempty;
-	bool wait_notfull;
-	bool wait_notempty;
-	const int buf_size;
-	bool failed;
-	bool ended;
-	int consumed;
-};
 
 class bytes_buf:public std::streambuf
 {

@@ -24,13 +24,17 @@
 #include "rendering.h"
 #include "compat.h"
 
+#if GTK_CHECK_VERSION (2,21,8)
+#include <gdk/gdkkeysyms-compat.h> 
+#else
 #include <gdk/gdkkeysyms.h>
+#endif 
 
 using namespace lightspark;
 using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
-	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL),
+	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),currentMouseOver(NULL),lastMouseDownTarget(NULL),
 	dragLimit(NULL)
 {
 	LOG(LOG_NO_INFO,_("Creating input thread"));
@@ -72,17 +76,17 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 			//cout << "key press" << endl;
 			switch(event->key.keyval)
 			{
-				case GDK_KEY_q:
+				case GDK_q:
 					if(th->m_sys->standalone)
 					{
 						th->m_sys->setShutdownFlag();
 						gtk_main_quit();
 					}
 					break;
-				case GDK_KEY_p:
+				case GDK_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;
-				case GDK_KEY_m:
+				case GDK_m:
 					if (!th->m_sys->audioManager->pluginLoaded())
 						break;
 					th->m_sys->audioManager->toggleMuteAll();
@@ -91,7 +95,7 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 					else
 						LOG(LOG_NO_INFO, "All sounds unmuted");
 					break;
-				case GDK_KEY_c:
+				case GDK_c:
 					if(th->m_sys->hasError())
 					{
 						GtkClipboard *clipboard;
@@ -123,7 +127,15 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 		{
 			//Grab focus, to receive keypresses
 			gtk_widget_grab_focus(widget);
-			th->handleMouseDown(event->button.x,event->button.y);
+			if(event->button.button == 1)
+				th->handleMouseDown(event->button.x,event->button.y);
+			ret=TRUE;
+			break;
+		}
+		case GDK_2BUTTON_PRESS:
+		{
+			if(event->button.button == 1)
+				th->handleMouseDoubleClick(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
@@ -148,53 +160,61 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 	return ret;
 }
 
-void InputThread::handleMouseDown(uint32_t x, uint32_t y)
+_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type)
 {
-	Locker locker(mutexListeners);
-	_NR<InteractiveObject>selected = NullRef;
+	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
-		selected=m_sys->getStage()->hitTest(NullRef,x,y);
+		selected=m_sys->getStage()->hitTest(NullRef,x,y, type);
 	}
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR,_("Error in input handling ") << e.cause);
 		m_sys->setError(e.cause);
-		return;
+		return NullRef;
 	}
 	assert(maskStack.empty());
 	assert(selected!=NULL); /* atleast we hit the stage */
 	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
+	return selected;
+}
+
+void InputThread::handleMouseDown(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
+	number_t localX, localY;
+	selected->globalToLocal(x,y,localX,localY);
+	m_sys->currentVm->addEvent(selected,
+		_MR(Class<MouseEvent>::getInstanceS("mouseDown",localX,localY,true)));
 	lastMouseDownTarget=selected;
-	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("mouseDown",true)));
+}
+
+void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
+{
+	Locker locker(mutexListeners);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
+	number_t localX, localY;
+	selected->globalToLocal(x,y,localX,localY);
+	m_sys->currentVm->addEvent(selected,
+		_MR(Class<MouseEvent>::getInstanceS("doubleClick",localX,localY,true)));
 }
 
 void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 {
 	Locker locker(mutexListeners);
-	_NR<InteractiveObject> selected = NullRef;
-	try
-	{
-		selected=m_sys->getStage()->hitTest(NullRef,x,y);
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR,_("Error in input handling ") << e.cause);
-		m_sys->setError(e.cause);
-		return;
-	}
-	assert(maskStack.empty());
-	assert(selected!=NULL); /* atleast we hit the stage */
-	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
-	//Add event to the event queue
-	m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("mouseUp",true)));
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
+	number_t localX, localY;
+	selected->globalToLocal(x,y,localX,localY);
+	m_sys->currentVm->addEvent(selected,
+		_MR(Class<MouseEvent>::getInstanceS("mouseUp",localX,localY,true)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
-		m_sys->currentVm->addEvent(selected,_MR(Class<MouseEvent>::getInstanceS("click",true)));
-		lastMouseDownTarget=NullRef;
+		m_sys->currentVm->addEvent(selected,
+			_MR(Class<MouseEvent>::getInstanceS("click",localX,localY,true)));
 	}
+	lastMouseDownTarget=NullRef;
 }
 
 void InputThread::handleMouseMove(uint32_t x, uint32_t y)
@@ -202,6 +222,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 	SpinlockLocker locker(inputDataSpinlock);
 	mousePos = Vector2(x,y);
 	Locker locker2(mutexDragged);
+	// Handle current drag operation
 	if(curDragged != NULL)
 	{
 		Vector2f local;
@@ -218,6 +239,33 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 
 		curDragged->setX(local.x);
 		curDragged->setY(local.y);
+	}
+	// Handle non-drag mouse movement
+	else
+	{
+		_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
+		number_t localX, localY;
+		selected->globalToLocal(x,y,localX,localY);
+		if(currentMouseOver == selected)
+			m_sys->currentVm->addEvent(selected,
+				_MR(Class<MouseEvent>::getInstanceS("mouseMove",localX,localY,true)));
+		else
+		{
+			if(!currentMouseOver.isNull())
+			{
+				number_t clocalX, clocalY;
+				currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
+				m_sys->currentVm->addEvent(currentMouseOver,
+					_MR(Class<MouseEvent>::getInstanceS("mouseOut",clocalX,clocalY,true,selected)));
+				m_sys->currentVm->addEvent(currentMouseOver,
+					_MR(Class<MouseEvent>::getInstanceS("rollOut",clocalX,clocalY,true,selected)));
+			}
+			m_sys->currentVm->addEvent(selected,
+				_MR(Class<MouseEvent>::getInstanceS("mouseOver",localX,localY,true,currentMouseOver)));
+			m_sys->currentVm->addEvent(selected,
+				_MR(Class<MouseEvent>::getInstanceS("rollOver",localX,localY,true,currentMouseOver)));
+			currentMouseOver = selected;
+		}
 	}
 }
 
@@ -275,10 +323,10 @@ bool InputThread::isMasked(number_t x, number_t y) const
 	for(uint32_t i=0;i<maskStack.size();i++)
 	{
 		number_t localX, localY;
-		maskStack[i].m.multiply2D(x,y,localX,localY);
-		if(!maskStack[i].d->isOpaque(localX, localY))
-			return false;
+		maskStack[i].m.multiply2D(x,y,localX,localY);//m is the concatenated matrix
+		if(maskStack[i].d->isOpaque(localX, localY))//If one of the masks is opaque then you are masked
+			return true;
 	}
 
-	return true;
+	return false;
 }

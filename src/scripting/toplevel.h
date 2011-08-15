@@ -37,6 +37,7 @@ class Event;
 class ABCContext;
 class method_info;
 struct call_context;
+struct traits_info;
 
 class InterfaceClass: public ASObject
 {
@@ -59,6 +60,7 @@ private:
 	}
 	void recursiveBuild(ASObject* target);
 	IFunction* constructor;
+	void describeTraits(xmlpp::Element* root, std::vector<traits_info>& traits) const;
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
 	std::set<ASObject*> referencedObjects;
@@ -86,6 +88,8 @@ public:
 	tiny_string getQualifiedClassName() const;
 	tiny_string toString(bool debugMsg);
 	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
+	ASObject *describeType() const;
+	void describeInstance(xmlpp::Element* root) const;
 	
 	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob);
@@ -154,6 +158,8 @@ public:
 class IFunction: public ASObject
 {
 CLASSBUILDABLE(IFunction);
+private:
+	virtual ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)=0;
 protected:
 	IFunction();
 	virtual IFunction* clone()=0;
@@ -164,7 +170,7 @@ public:
 	void finalize();
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
-	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false)=0;
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* bind(_NR<ASObject> c, int level)
 	{
 		if(!bound)
@@ -199,6 +205,7 @@ public:
 	}
 	virtual method_info* getMethodInfo() const=0;
 	static void sinit(Class_base* c);
+	virtual ASObject *describeType() const;
 };
 
 class Function : public IFunction
@@ -215,8 +222,8 @@ private:
 		return new Function(*this);
 	}
 	method_info* getMethodInfo() const { return NULL; }
+	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
@@ -243,9 +250,9 @@ private:
 		return new SyntheticFunction(*this);
 	}
 	method_info* getMethodInfo() const { return mi; }
+	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 public:
 	void finalize();
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
 	IFunction* toFunction();
 	std::vector<scope_entry> func_scope;
 	bool isEqual(ASObject* r)
@@ -334,6 +341,7 @@ public:
 	double toNumber();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
+	ASObject *describeType() const;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;
@@ -475,6 +483,7 @@ private:
 		bool operator()(const data_slot& d1, const data_slot& d2);
 	};
 	tiny_string toString_priv() const;
+	int capIndex(int i) const;
 public:
 	void finalize();
 	//These utility methods are also used by ByteArray 
@@ -502,6 +511,7 @@ public:
 	ASFUNCTION(lastIndexOf);
 	ASFUNCTION(_map);
 	ASFUNCTION(_toString);
+	ASFUNCTION(slice);
 
 	ASObject* at(unsigned int index) const;
 	void set(unsigned int index, ASObject* o)
@@ -780,7 +790,7 @@ public:
 			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
-//Internal objects used to store traits declared in scripts and object placed, but not yet valid
+//Internal objects used to store traits declared in scripts but not yet valid
 class Definable : public ASObject
 {
 public:

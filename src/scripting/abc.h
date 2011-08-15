@@ -39,6 +39,8 @@
 namespace lightspark
 {
 
+extern TLSDATA bool isVmThread;
+
 class u8
 {
 friend std::istream& operator>>(std::istream& in, u8& v);
@@ -248,6 +250,8 @@ public:
 	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
 	ASObject* getOptional(unsigned int i);
 	int numArgs() { return param_count; }
+	const multiname* paramTypeName(unsigned int i) const;
+	const multiname* returnTypeName() const;
 	method_info():
 #ifdef PROFILING_SUPPORT
 		profTime(0),
@@ -627,7 +631,7 @@ public:
 	void start() DLL_PUBLIC;
 	void finalize();
 	static void Run(ABCVm* th);
-	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
+	static ASObject* executeFunction(const SyntheticFunction* function, call_context* context);
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();

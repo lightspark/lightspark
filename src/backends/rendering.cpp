@@ -24,11 +24,6 @@
 #include "compat.h"
 #include <sstream>
 
-#include <GL/glew.h>
-#ifndef WIN32
-#include <GL/glx.h>
-#endif
-
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8_REV
@@ -93,7 +88,7 @@ RenderThread::~RenderThread()
 /*void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	::abort();
-	GLint vertex_coords[8];
+	GLfloat vertex_coords[8];
 	static GLfloat color_coords[16];
 	assert(tempBufferAcquired==false);
 	tempBufferAcquired=true;
@@ -106,7 +101,7 @@ RenderThread::~RenderThread()
 	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
 	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(COLOR_ATTRIB);
@@ -118,7 +113,7 @@ RenderThread::~RenderThread()
 void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(tempBufferAcquired==true);
-	GLint vertex_coords[8];
+	GLfloat vertex_coords[8];
 	tempBufferAcquired=false;
 
 	//Use the blittler program to blit only the used buffer
@@ -133,7 +128,7 @@ void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, n
 	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
 	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
@@ -152,6 +147,10 @@ void RenderThread::handleNewTexture()
 	}
 	newTextureNeeded=false;
 }
+
+#ifdef ENABLE_GLES2
+uint8_t* pixelBuf = 0;
+#endif
 
 void RenderThread::finalizeUpload()
 {
@@ -176,8 +175,8 @@ void RenderThread::handleUpload()
 	if(w>pixelBufferWidth || h>pixelBufferHeight)
 		resizePixelBuffers(w,h);
 	//Increment and wrap current buffer index
+#ifndef ENABLE_GLES2
 	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
-
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[nextBuffer]);
 	uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
 	uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
@@ -189,7 +188,15 @@ void RenderThread::handleUpload()
 
 	currentPixelBufferOffset=alignedBuf-buf;
 	currentPixelBuffer=nextBuffer;
-
+#else
+	//TODO See if a more elegant way of handling the non-PBO case can be found.
+	//for now, each frame is uploaded one at a time synchronously to the server
+	if(!pixelBuf)
+		posix_memalign((void **)&pixelBuf, 16, w*h*4);
+	u->upload(pixelBuf, w, h);
+	//When not using Pixel Buffer Objects, this offset is actually the pointer to the texture buffer
+	currentPixelBufferOffset = (int32_t)pixelBuf;
+#endif
 	//Get the texture to be sure it's allocated when the upload comes
 	u->getTexture();
 	prevUploadJob=u;
@@ -216,6 +223,7 @@ void* RenderThread::worker(RenderThread* th)
 	
 	Display* d=XOpenDisplay(NULL);
 
+#ifndef ENABLE_GLES2
 	int a,b;
 	Bool glx_present=glXQueryVersion(d,&a,&b);
 	if(!glx_present)
@@ -223,13 +231,13 @@ void* RenderThread::worker(RenderThread* th)
 		LOG(LOG_ERROR,_("glX not present"));
 		return NULL;
 	}
-	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_DOUBLEBUFFER,True,None};
+	int attrib[10]={GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, GLX_DOUBLEBUFFER, True, None};
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 	if(!fb)
 	{
-		attrib[2]=None;
-		fb=glXChooseFBConfig(d, 0, attrib, &a);
+		attrib[6]=None;
 		LOG(LOG_ERROR,_("Falling back to no double buffering"));
+		fb=glXChooseFBConfig(d, 0, attrib, &a);
 	}
 	if(!fb)
 	{
@@ -259,6 +267,81 @@ void* RenderThread::worker(RenderThread* th)
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		cout << "Indirect!!" << endl;
+#else
+	int a;
+	eglBindAPI(EGL_OPENGL_ES_API);
+	EGLDisplay ed = EGL_NO_DISPLAY;
+	ed = eglGetDisplay(d);
+
+	if (ed == EGL_NO_DISPLAY) {
+		LOG(LOG_ERROR, _("EGL not present"));
+		return NULL;
+	}
+
+	EGLint major, minor;
+	if (eglInitialize(ed, &major, &minor) == EGL_FALSE) {
+		LOG(LOG_ERROR, _("EGL initialization failed"));
+		return NULL;
+	}
+
+	LOG(LOG_NO_INFO, _("EGL version: ") << eglQueryString(ed, EGL_VERSION));
+
+	EGLint config_attribs[] = {
+				EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+				EGL_RED_SIZE, 8,
+				EGL_GREEN_SIZE, 8,
+				EGL_BLUE_SIZE, 8,
+				EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+				EGL_NONE
+	};
+
+	EGLint context_attribs[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE
+	};
+
+	if (!eglChooseConfig(ed, config_attribs, 0, 0, &a)) {
+		LOG(LOG_ERROR,_("Could not get number of EGL configurations"));
+	} else {
+	    LOG(LOG_NO_INFO, "Number of EGL configurations: " << a);
+	}
+	EGLConfig *conf = new EGLConfig[a];
+	if (!eglChooseConfig(ed, config_attribs, conf, a, &a))
+	{
+		LOG(LOG_ERROR,_("Could not find any EGL configuration"));
+		::abort();
+	}
+
+	int i;
+	for(i=0;i<a;i++)
+	{
+		EGLint id;
+		eglGetConfigAttrib(ed, conf[i], EGL_NATIVE_VISUAL_ID, &id);
+		LOG(LOG_ERROR, id <<" -> "<<e->visual);
+		if(id==(int)e->visual)
+			break;
+	}
+	if(i==a)
+	{
+		//No suitable id found
+		LOG(LOG_ERROR,_("No suitable graphics configuration available"));
+		return NULL;
+	}
+	th->mEGLConfig=conf[i];
+	cout << "Chosen config " << hex << conf[i] << dec << endl;
+
+	th->mEGLContext = eglCreateContext(ed, th->mEGLConfig, EGL_NO_CONTEXT, context_attribs);
+	if (th->mEGLContext == EGL_NO_CONTEXT) {
+		LOG(LOG_ERROR,_("Could not create EGL context"));
+		return NULL;
+	}
+	EGLSurface win = eglCreateWindowSurface(ed, th->mEGLConfig, e->window, NULL);
+	if (win == EGL_NO_SURFACE) {
+		LOG(LOG_ERROR,_("Could not create EGL surface"));
+		return NULL;
+	}
+	eglMakeCurrent(ed, win, win, th->mEGLContext);
+#endif
 
 	th->commonGLInit(th->windowWidth, th->windowHeight);
 	th->commonGLResize();
@@ -308,11 +391,19 @@ void* RenderThread::worker(RenderThread* th)
 			if(th->m_sys->isOnError())
 			{
 				th->renderErrorPage(th, th->m_sys->standalone);
+#ifndef ENABLE_GLES2
 				glXSwapBuffers(d,glxWin);
+#else
+				eglSwapBuffers(ed, win);
+#endif
 			}
 			else
 			{
+#ifndef ENABLE_GLES2
 				glXSwapBuffers(d,glxWin);
+#else
+				eglSwapBuffers(ed, win);
+#endif
 				th->coreRendering();
 				//Call glFlush to offload work on the GPU
 				glFlush();
@@ -328,8 +419,13 @@ void* RenderThread::worker(RenderThread* th)
 	}
 	glDisable(GL_TEXTURE_2D);
 	th->commonGLDeinit();
+#ifndef ENABLE_GLES2
 	glXMakeCurrent(d,None,NULL);
 	glXDestroyContext(d,th->mContext);
+#else
+	eglMakeCurrent(ed, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	eglDestroyContext(ed, th->mEGLContext);
+#endif
 	XCloseDisplay(d);
 	return NULL;
 }
@@ -447,9 +543,12 @@ void RenderThread::commonGLDeinit()
 
 void RenderThread::commonGLInit(int width, int height)
 {
+	GLenum err;
+//For now GLEW does not work with GLES2
+#ifndef ENABLE_GLES2
 	//Now we can initialize GLEW
 	glewExperimental = GL_TRUE;
-	GLenum err = glewInit();
+	err = glewInit();
 	if (GLEW_OK != err)
 	{
 		LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));;
@@ -462,7 +561,10 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 	if(GLEW_ARB_texture_non_power_of_two)
 		hasNPOTTextures=true;
-
+#else
+		//Open GLES 2.0 has NPOT textures
+		hasNPOTTextures=true;
+#endif
 	//Load shaders
 	loadShaderPrograms();
 
@@ -505,6 +607,8 @@ void RenderThread::commonGLInit(int width, int height)
 	maskUniform =glGetUniformLocation(gpu_program,"mask");
 	//The uniform that tells the alpha value multiplied to the alpha of every pixel
 	alphaUniform =glGetUniformLocation(gpu_program,"alpha");
+	//The uniform that tells to draw directly using the selected color
+	directUniform =glGetUniformLocation(gpu_program,"direct");
 	//The uniform that contains the coordinate matrix
 	projectionMatrixUniform =glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
 	modelviewMatrixUniform =glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
@@ -645,6 +749,12 @@ void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 	pixelBufferWidth=w;
 	pixelBufferHeight=h;
+#ifdef ENABLE_GLES2
+	if (pixelBuf) {
+		free(pixelBuf);
+		pixelBuf = 0;
+	}
+#endif
 }
 
 void RenderThread::renderMaskToTmpBuffer() const
@@ -700,18 +810,16 @@ void RenderThread::mapCairoTexture(int w, int h)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, cairoTextureData);
 
-	GLint vertex_coords[] = {0,0, w,0, 0,h, w,h};
+	GLfloat vertex_coords[] = {0,0, GLfloat(w),0, 0,GLfloat(h), GLfloat(w),GLfloat(h)};
 	GLfloat texture_coords[] = {0,0, 1,0, 0,1, 1,1};
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
-
 }
-
 
 void RenderThread::plotProfilingData()
 {
@@ -719,25 +827,41 @@ void RenderThread::plotProfilingData()
 	lsglScalef(1.0f/scaleX,-1.0f/scaleY,1);
 	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
 	setMatrixUniform(LSGL_MODELVIEW);
+
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
+	glUniform1f(rt->directUniform, 1);
 
 	char frameBuf[20];
 	snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
-	renderText(cr, frameBuf, 20, 20);
+
+	GLfloat vertex_coords[40];
+	GLfloat color_coords[80];
 
 	//Draw bars
-	cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 0.7);
-
-	for (int i=1;i<10;i++)
+	for (int i=0;i<9;i++)
 	{
-		cairo_move_to(cr, 0, i*windowHeight/10);
-		cairo_line_to(cr, windowWidth, i*windowHeight/10);
+		vertex_coords[i*4] = 0;
+		vertex_coords[i*4+1] = (i+1)*windowHeight/10;
+		vertex_coords[i*4+2] = windowWidth;
+		vertex_coords[i*4+3] = (i+1)*windowHeight/10;
 	}
-	cairo_stroke(cr);
+	for (int i=0;i<80;i++)
+		color_coords[i] = 0.7;
 
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(COLOR_ATTRIB);
+	glDrawArrays(GL_LINES, 0, 20);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(COLOR_ATTRIB);
+ 
 	list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();it++)
 		it->plot(1000000/m_sys->getFrameRate(),cr);
+	glUniform1f(rt->directUniform, 0);
+
 	mapCairoTexture(windowWidth, windowHeight);
 
 	//clear the surface
@@ -745,6 +869,7 @@ void RenderThread::plotProfilingData()
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cr);
 	cairo_restore(cr);
+
 }
 
 void RenderThread::coreRendering()
@@ -858,8 +983,8 @@ void RenderThread::tick()
 
 void RenderThread::releaseTexture(const TextureChunk& chunk)
 {
-	uint32_t blocksW=(chunk.width+127)/128;
-	uint32_t blocksH=(chunk.height+127)/128;
+	uint32_t blocksW=(chunk.width+CHUNKSIZE-1)/CHUNKSIZE;
+	uint32_t blocksH=(chunk.height+CHUNKSIZE-1)/CHUNKSIZE;
 	uint32_t numberOfBlocks=blocksW*blocksH;
 	Locker l(mutexLargeTexture);
 	LargeTexture& tex=largeTextures[chunk.texId];
@@ -898,8 +1023,8 @@ RenderThread::LargeTexture& RenderThread::allocateNewTexture()
 {
 	//Signal that a new texture is needed
 	newTextureNeeded=true;
-	//Let's allocate the bitmap for the texture blocks, minumum block size is 128
-	uint32_t bitmapSize=(largeTextureSize/128)*(largeTextureSize/128)/8;
+	//Let's allocate the bitmap for the texture blocks, minumum block size is CHUNKSIZE
+	uint32_t bitmapSize=(largeTextureSize/CHUNKSIZE)*(largeTextureSize/CHUNKSIZE)/8;
 	uint8_t* bitmap=new uint8_t[bitmapSize];
 	memset(bitmap,0,bitmapSize);
 	largeTextures.emplace_back(bitmap);
@@ -910,7 +1035,7 @@ bool RenderThread::allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk
 {
 	//Find a contiguos set of blocks
 	uint32_t start;
-	uint32_t blockPerSide=largeTextureSize/128;
+	uint32_t blockPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t bitmapSize=blockPerSide*blockPerSide;
 	for(start=0;start<bitmapSize;start++)
 	{
@@ -957,7 +1082,7 @@ bool RenderThread::allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk&
 {
 	//Allocate a sparse set of texture chunks
 	uint32_t found=0;
-	uint32_t blockPerSide=largeTextureSize/128;
+	uint32_t blockPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t bitmapSize=blockPerSide*blockPerSide;
 	//TODO: use the already allocated array
 	uint32_t* tmp=new uint32_t[blocksW*blocksH];
@@ -997,8 +1122,8 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 	assert(w && h);
 	Locker l(mutexLargeTexture);
 	//Find the number of blocks needed for the given w and h
-	uint32_t blocksW=(w+127)/128;
-	uint32_t blocksH=(h+127)/128;
+	uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
+	uint32_t blocksH=(h+CHUNKSIZE-1)/CHUNKSIZE;
 	TextureChunk ret(w, h);
 	//Try to find a good place in the available textures
 	uint32_t index=0;
@@ -1042,28 +1167,28 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h)
 {
 	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
-	const uint32_t blocksPerSide=largeTextureSize/128;
+	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t startX, startY, endX, endY;
-	assert(chunk.getNumberOfChunks()==((chunk.width+127)/128)*((chunk.height+127)/128));
+	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE-1)/CHUNKSIZE)*((chunk.height+CHUNKSIZE-1)/CHUNKSIZE));
 	
 	uint32_t curChunk=0;
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
-	GLint *vertex_coords = new GLint[chunk.getNumberOfChunks()*12];
+	GLfloat *vertex_coords = new GLfloat[chunk.getNumberOfChunks()*12];
 	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*12];
-	for(uint32_t i=0, k=0;i<chunk.height;i+=128)
+	for(uint32_t i=0, k=0;i<chunk.height;i+=CHUNKSIZE)
 	{
 		startY=h*i/chunk.height;
-		endY=min(h*(i+128)/chunk.height,h);
-		for(uint32_t j=0;j<chunk.width;j+=128)
+		endY=min(h*(i+CHUNKSIZE)/chunk.height,h);
+		for(uint32_t j=0;j<chunk.width;j+=CHUNKSIZE)
 		{
 			startX=w*j/chunk.width;
-			endX=min(w*(j+128)/chunk.width,w);
+			endX=min(w*(j+CHUNKSIZE)/chunk.width,w);
 			const uint32_t curChunkId=chunk.chunks[curChunk];
-			const uint32_t blockX=((curChunkId%blocksPerSide)*128);
-			const uint32_t blockY=((curChunkId/blocksPerSide)*128);
-			const uint32_t availX=min(int(chunk.width-j),128);
-			const uint32_t availY=min(int(chunk.height-i),128);
+			const uint32_t blockX=((curChunkId%blocksPerSide)*CHUNKSIZE);
+			const uint32_t blockY=((curChunkId/blocksPerSide)*CHUNKSIZE);
+			const uint32_t availX=min(int(chunk.width-j),CHUNKSIZE);
+			const uint32_t availY=min(int(chunk.height-i),CHUNKSIZE);
 			float startU=blockX;
 			startU/=largeTextureSize;
 			float startV=blockY;
@@ -1111,7 +1236,7 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 		}
 	}
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_INT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
 	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
 	glEnableVertexAttribArray(VERTEX_ATTRIB);
 	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
@@ -1124,6 +1249,9 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
 {
+	//FIXME. This works now for GLES, where glPixelStorei(GL_UNPACK_ROW_LENGTH,..) is unavailable
+	//by using a large 1024x1024 chunk instead of many 128x128 ones.
+
 	//Fast bailout if the TextureChunk is not valid
 	if(chunk.chunks==NULL)
 		return;
@@ -1131,22 +1259,22 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	//TODO: Detect continuos
 	//The size is ok if doesn't grow over the allocated size
 	//this allows some alignment freedom
-	assert(w<=((chunk.width+127)&0xffffff80));
-	assert(h<=((chunk.height+127)&0xffffff80));
+	assert(w<=((chunk.width+CHUNKSIZE-1)&0xffffff80));
+	assert(h<=((chunk.height+CHUNKSIZE-1)&0xffffff80));
 	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
-	const uint32_t blocksPerSide=largeTextureSize/128;
-	const uint32_t blocksW=(w+127)/128;
+	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
+	const uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
 	glPixelStorei(GL_UNPACK_ROW_LENGTH,w);
 	for(uint32_t i=0;i<numberOfChunks;i++)
 	{
-		uint32_t curX=(i%blocksW)*128;
-		uint32_t curY=(i/blocksW)*128;
-		uint32_t sizeX=min(int(w-curX),128);
-		uint32_t sizeY=min(int(h-curY),128);
+		uint32_t curX=(i%blocksW)*CHUNKSIZE;
+		uint32_t curY=(i/blocksW)*CHUNKSIZE;
+		uint32_t sizeX=min(int(w-curX),CHUNKSIZE);
+		uint32_t sizeY=min(int(h-curY),CHUNKSIZE);
 		glPixelStorei(GL_UNPACK_SKIP_PIXELS,curX);
 		glPixelStorei(GL_UNPACK_SKIP_ROWS,curY);
-		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*128);
-		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*128);
+		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*CHUNKSIZE);
+		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*CHUNKSIZE);
 		while(glGetError()!=GL_NO_ERROR);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, data);
 		assert(glGetError()!=GL_INVALID_OPERATION);

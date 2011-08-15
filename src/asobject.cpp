@@ -286,6 +286,10 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 			cur=cur->super;
 		}
 	}
+
+	if(!ret && prototype)
+		ret=(Class<ASObject>::getClass()->lazyDefine(name)!=NULL);
+
 	//Must not ask for non borrowed traits as static class member are not valid
 	return ret;
 }
@@ -364,7 +368,7 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
-obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode)
+obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode, bool* has_getter)
 {
 	obj_var* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if(ret)
@@ -372,7 +376,11 @@ obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode)
 		//It seems valid for a class to redefine only the getter, so if we can't find
 		//something to get, it's ok
 		if(!(ret->setter || ret->var))
+		{
 			ret=NULL;
+			if(has_getter)
+				*has_getter=true;
+		}
 	}
 	return ret;
 }
@@ -382,23 +390,36 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	check();
 
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualPrototype)
-	obj_var* obj=findSettable(name, false);
+	bool has_getter=false;
+	obj_var* obj=findSettable(name, false, &has_getter);
 
 	if(obj==NULL && prototype)
 	{
 		//Look for borrowed traits before
+		//It's valid to override only a getter, so keep
+		//looking for a settable even if a super class sets
+		//has_getter to true.
 		Class_base* cur=getActualPrototype();
 		while(cur)
 		{
-			//TODO: should be only findSetter
-			obj=cur->findSettable(name,true);
+			obj=cur->findSettable(name,true,&has_getter);
 			if(obj)
 				break;
 			cur=cur->super;
 		}
 	}
 	if(obj==NULL)
+	{
+		if(has_getter)
+		{
+			tiny_string err=tiny_string("Illegal write to read-only property ")+name.normalizedName();
+			if(prototype)
+				err+=tiny_string(" on type ")+prototype->getQualifiedClassName();
+			throw Class<ReferenceError>::getInstanceS(err);
+		}
+
 		obj=Variables.findObjVar(name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
+	}
 
 	if(obj->setter)
 	{
@@ -556,6 +577,7 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	name.name_type=multiname::NAME_STRING;
 	name.name_s=args[0]->toString();
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.isAttribute=false;
 	bool ret=obj->hasPropertyByMultiname(name, true);
 	return abstract_b(ret);
 }
@@ -973,4 +995,31 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	//The class name, empty if no alias is registered
 	out->writeStringVR(stringMap, "");
 	serializeDynamicProperties(out, stringMap, objMap);
+}
+
+ASObject *ASObject::describeType() const
+{
+	xmlpp::DomParser p;
+	xmlpp::Element* root=p.get_document()->create_root_node("type");
+
+	// type attributes
+	Class_base* prot=getPrototype();
+	if(prot)
+	{
+		root->set_attribute("name", prot->getQualifiedClassName().raw_buf());
+		if(prot->super)
+			root->set_attribute("base", prot->super->getQualifiedClassName().raw_buf());
+	}
+	bool isDynamic=type==T_ARRAY; // FIXME
+	root->set_attribute("isDynamic", isDynamic?"true":"false");
+	bool isFinal=!(type==T_OBJECT || type==T_ARRAY); // FIXME
+	root->set_attribute("isFinal", isFinal?"true":"false");
+	root->set_attribute("isStatic", "false");
+
+	if(prot)
+		prot->describeInstance(root);
+
+	// TODO: undocumented constructor node
+
+	return Class<XML>::getInstanceS(root);
 }

@@ -26,6 +26,7 @@
 #include "backends/rendering.h"
 #include "glmatrices.h"
 #include "compat.h"
+#include "scripting/flashtext.h"
 
 #include <iostream>
 
@@ -264,8 +265,8 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 		chunks=NULL;
 		return;
 	}
-	const uint32_t blocksW=(w+127)/128;
-	const uint32_t blocksH=(h+127)/128;
+	const uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
+	const uint32_t blocksH=(h+CHUNKSIZE-1)/CHUNKSIZE;
 	chunks=new uint32_t[blocksW*blocksH];
 }
 
@@ -287,8 +288,8 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 	}
 	width=r.width;
 	height=r.height;
-	uint32_t blocksW=(width+127)/128;
-	uint32_t blocksH=(height+127)/128;
+	uint32_t blocksW=(width+CHUNKSIZE-1)/CHUNKSIZE;
+	uint32_t blocksH=(height+CHUNKSIZE-1)/CHUNKSIZE;
 	texId=r.texId;
 	if(r.chunks)
 	{
@@ -326,9 +327,9 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 		height=h;
 		return true;
 	}
-	const uint32_t blocksW=(width+127)/128;
-	const uint32_t blocksH=(height+127)/128;
-	if(w<=blocksW*128 && h<=blocksH*128)
+	const uint32_t blocksW=(width+CHUNKSIZE-1)/CHUNKSIZE;
+	const uint32_t blocksH=(height+CHUNKSIZE-1)/CHUNKSIZE;
+	if(w<=blocksW*CHUNKSIZE && h<=blocksH*CHUNKSIZE)
 	{
 		width=w;
 		height=h;
@@ -337,10 +338,10 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	return false;
 }
 
-CairoRenderer::CairoRenderer(ASObject* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, const MATRIX& _m,
+CairoRenderer::CairoRenderer(ASObject* _o, CachedSurface& _t, const MATRIX& _m,
 		int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
 	: owner(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),alpha(_a),width(_w),height(_h),
-	surfaceBytes(NULL),tokens(_g),scaleFactor(_s),uploadNeeded(true)
+	surfaceBytes(NULL),scaleFactor(_s),uploadNeeded(true)
 {
 	owner->incRef();
 }
@@ -406,7 +407,7 @@ void CairoRenderer::jobFence()
 		delete this;
 }
 
-void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y)
+void CairoTokenRenderer::quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y)
 {
 	double start_x, start_y;
 	cairo_get_current_point(cr, &start_x, &start_y);
@@ -420,7 +421,7 @@ void CairoRenderer::quadraticBezier(cairo_t* cr, double control_x, double contro
 	               end_x, end_y);
 }
 
-cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection)
+cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection)
 {
 	cairo_pattern_t* pattern = NULL;
 
@@ -533,7 +534,7 @@ cairo_pattern_t* CairoRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double 
 	return pattern;
 }
 
-bool CairoRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipPaint)
+bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipPaint)
 {
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 
@@ -688,22 +689,31 @@ cairo_surface_t* CairoRenderer::allocateSurface()
 	return cairo_image_surface_create_for_data(surfaceBytes, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
 }
 
+void CairoTokenRenderer::executeDraw(cairo_t* cr)
+{
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+
+	cairoPathFromTokens(cr, tokens, scaleFactor, false);
+}
+
 void CairoRenderer::execute()
 {
 	if(width==0 || height==0)
 	{
-		//Nothing to do, move on
-		uploadNeeded=false;
+		uploadNeeded = false;
 		return;
 	}
+
 	int32_t windowWidth=sys->getRenderThread()->windowWidth;
 	int32_t windowHeight=sys->getRenderThread()->windowHeight;
 	//Discard stuff that it's outside the visible part
 	if(xOffset >= windowWidth || yOffset >= windowHeight)
 	{
-		uploadNeeded=false;
+		uploadNeeded = false;
 		return;
 	}
+
 	//Clip the size to the screen borders
 	if((width+xOffset) > windowWidth)
 		width=windowWidth-xOffset;
@@ -712,6 +722,7 @@ void CairoRenderer::execute()
 	cairo_surface_t* cairoSurface=allocateSurface();
 
 	cairo_t* cr=cairo_create(cairoSurface);
+	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
 	cairoClean(cr);
 
 	//Make sure the rendering starts at 0,0 in surface coordinates
@@ -721,16 +732,12 @@ void CairoRenderer::execute()
 	const cairo_matrix_t& mat=MATRIXToCairo(matrix);
 	cairo_transform(cr, &mat);
 
-	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-
-	cairoPathFromTokens(cr, tokens, scaleFactor, false);
+	executeDraw(cr);
 
 	cairo_destroy(cr);
-	cairo_surface_destroy(cairoSurface);
 }
 
-bool CairoRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
+bool CairoTokenRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 
@@ -750,7 +757,7 @@ bool CairoRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFac
 	return ret;
 }
 
-bool CairoRenderer::isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
+bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
 {
 	//We render the alpha value of a single pixel, hopefully this is not too slow
 	int32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_A8, 1);
@@ -793,4 +800,46 @@ uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, ui
 		}
 	}
 	return outData;
+}
+
+Mutex CairoPangoRenderer::pangoMutex("pangoMutex");
+
+void CairoPangoRenderer::executeDraw(cairo_t* cr)
+{
+	/* TODO: pango is not fully thread-safe,
+	 * but we may be able to use finer grained locking.
+	 */
+	Locker l(pangoMutex);
+	PangoLayout* layout;
+	PangoFontDescription* desc;
+
+	layout = pango_cairo_create_layout(cr);
+	pango_layout_set_text(layout, textData.text.raw_buf(), -1);
+
+	/* setup font description */
+	desc = pango_font_description_new();
+	pango_font_description_set_family(desc, textData.format.font.raw_buf());
+	pango_font_description_set_size(desc, PANGO_SCALE*textData.format.size);
+	pango_layout_set_font_description(layout, desc);
+	pango_font_description_free(desc);
+
+	if(textData.background)
+	{
+		cairo_set_source_rgb (cr, textData.backgroundColor.Red, textData.backgroundColor.Green, textData.backgroundColor.Blue);
+		cairo_paint(cr);
+	}
+	cairo_set_source_rgb (cr, textData.textColor.Red, textData.textColor.Green, textData.textColor.Blue);
+
+	TextField* tf=dynamic_cast<TextField*>(owner);
+	if(tf)
+	{
+		int width, height;
+		pango_layout_get_pixel_size(layout, &width, &height);
+		tf->setTextSize(width, height);
+	}
+
+	/* draw the text */
+	pango_cairo_show_layout(cr, layout);
+
+	g_object_unref(layout);
 }

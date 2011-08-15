@@ -1127,12 +1127,12 @@ ASFUNCTIONBODY(Matrix,concat)
 
 	number_t ta, tb, tc, td, tx, ty;
 
-	ta = th->a * m->a + th->c * m->b;
-	tb = th->b * m->a + th->d * m->b;
-	tc = th->a * m->c + th->c * m->d;
-	td = th->b * m->c + th->d * m->d;
-	tx = th->a * m->tx + th->c * m->ty + th->tx;
-	ty = th->b * m->tx + th->d * m->ty + th->ty;
+	ta = m->a * th->a + m->c * th->b;
+	tb = m->b * th->a + m->d * th->b;
+	tc = m->a * th->c + m->c * th->d;
+	td = m->b * th->c + m->d * th->d;
+	tx = m->a * th->tx + m->c * th->ty + m->tx;
+	ty = m->b * th->tx + m->d * th->ty + m->ty;
 
 	th->a = ta;
 	th->b = tb;

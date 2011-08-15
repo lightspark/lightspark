@@ -36,7 +36,6 @@
 #include "compat.h"
 #include "flashaccessibility.h"
 
-#include <GL/glew.h>
 #include <fstream>
 #include <limits>
 #include <cmath>
@@ -70,6 +69,8 @@ REGISTER_CLASS_NAME(Bitmap);
 REGISTER_CLASS_NAME(SimpleButton);
 REGISTER_CLASS_NAME(FrameLabel);
 REGISTER_CLASS_NAME(Scene);
+REGISTER_CLASS_NAME(AVM1Movie);
+REGISTER_CLASS_NAME(Shader);
 
 std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 {
@@ -328,6 +329,7 @@ void Loader::execute()
 
 	if(source==URL)
 	{
+		newRoot->setOrigin(url.getParsedURL(), "");
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
 		assert_and_throw(postData.empty());
@@ -417,6 +419,22 @@ void Sprite::buildTraits(ASObject* o)
 {
 }
 
+Vector2f DisplayObject::getXY()
+{
+	Vector2f ret;
+	if(ACQUIRE_READ(useMatrix))
+	{
+		ret.x = getMatrix().TranslateX;
+		ret.y = getMatrix().TranslateY;
+	}
+	else
+	{
+		ret.x = tx;
+		ret.y = ty;
+	}
+	return ret;
+}
+
 ASFUNCTIONBODY(Sprite,_startDrag)
 {
 	Sprite* th=Class<Sprite>::cast(obj);
@@ -434,7 +452,10 @@ ASFUNCTIONBODY(Sprite,_startDrag)
 
 	Vector2f offset;
 	if(!lockCenter)
-		offset = -th->getLocalMousePos();
+	{
+		offset = -th->getParent()->getLocalMousePos();
+		offset += th->getXY();
+	}
 
 	th->incRef();
 	sys->getInputThread()->startDrag(_MR(th), bounds, offset);
@@ -595,7 +616,11 @@ void DisplayObject::hitTestEpilogue() const
 		sys->getInputThread()->popMask();
 }
 
-_NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+/*
+Subclasses of DisplayObjectContainer must still check
+isHittable() to see if they should send out events.
+*/
+_NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret = NullRef;
 	//Test objects added at runtime, in reverse order
@@ -609,7 +634,7 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
-		ret=(*j)->hitTest(_MR(this), localX,localY);
+		ret=(*j)->hitTest(_MR(this), localX,localY, type);
 		if(!ret.isNull())
 			break;
 	}
@@ -622,18 +647,19 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 	return ret;
 }
 
-_NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, number_t y)
+_NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret = NullRef;
 	this->incRef();
-	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y);
-	if(ret==NULL && mouseEnabled)
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type);
+	if(ret==NULL && isHittable(type))
 	{
 		//The coordinates are locals
 		this->incRef();
-		return TokenContainer::hitTestImpl(_MR(this),x,y);
+		return TokenContainer::hitTestImpl(_MR(this),x,y, type);
 	}
-	return ret;
+	else
+		return ret;
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)
@@ -661,6 +687,10 @@ void FrameLabel::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("frame","",Class<IFunction>::getFunction(_getFrame),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
+}
+
+void FrameLabel::buildTraits(ASObject* o)
+{
 }
 
 ASFUNCTIONBODY(FrameLabel,_getFrame)
@@ -1144,6 +1174,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 }
 
@@ -1321,12 +1352,18 @@ void DisplayObject::requestInvalidation()
 	if(!mask.isNull())
 		mask->requestInvalidation();
 }
-
+//TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
+//this way they have less pb with precision.
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	getMatrix().multiply2D(xin, yin, xout, yout);
 	if(!parent.isNull())
 		parent->localToGlobal(xout, yout, xout, yout);
+}
+//TODO: Fix precision issues
+void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
+{
+	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
 }
 
 void DisplayObject::setOnStage(bool staged)
@@ -1340,15 +1377,30 @@ void DisplayObject::setOnStage(bool staged)
 			requestInvalidation();
 		if(getVm()==NULL)
 			return;
-		if(onStage==true && isConstructed() && hasEventListener("addedToStage"))
+		/*NOTE: By tests we can assert that added/addedToStage is dispatched
+		  immediately when addChild is called. On the other hand setOnStage may
+		  be also called outside of the VM thread (for example by Loader::execute)
+		  so we have to check isVmThread and act accordingly. If in the future
+		  asynchronous uses of setOnStage are removed the code can be simplified
+		  by removing the !isVmThread case.
+		*/
+		if(onStage==true && isConstructed())
 		{
 			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("addedToStage")));
+			_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));
+			if(isVmThread)
+				ABCVm::publicHandleEvent(_MR(this),e);
+			else
+				getVm()->addEvent(_MR(this),e);
 		}
-		else if(onStage==false && hasEventListener("removedFromStage"))
+		else if(onStage==false)
 		{
 			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("removedFromStage")));
+			_R<Event> e=_MR(Class<Event>::getInstanceS("removedFromStage"));
+			if(isVmThread)
+				ABCVm::publicHandleEvent(_MR(this),e);
+			else
+				getVm()->addEvent(_MR(this),e);
 		}
 	}
 }
@@ -1587,7 +1639,21 @@ ASFUNCTIONBODY(DisplayObject,localToGlobal)
 
 	number_t tempx, tempy;
 
-	th->getMatrix().multiply2D(pt->getX(), pt->getY(), tempx, tempy);
+	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy);
+
+	return Class<Point>::getInstanceS(tempx, tempy);
+}
+
+ASFUNCTIONBODY(DisplayObject,globalToLocal)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen == 1);
+
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t tempx, tempy;
+
+	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy);
 
 	return Class<Point>::getInstanceS(tempx, tempy);
 }
@@ -1807,6 +1873,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("removeChild","",Class<IFunction>::getFunction(removeChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("swapChildren","",Class<IFunction>::getFunction(swapChildren),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_setMouseChildren),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_getMouseChildren),GETTER_METHOD,true);
@@ -1898,7 +1965,7 @@ void DisplayObjectContainer::finalize()
 	dynamicDisplayList.clear();
 }
 
-InteractiveObject::InteractiveObject():mouseEnabled(true)
+InteractiveObject::InteractiveObject():mouseEnabled(true),doubleClickEnabled(false)
 {
 }
 
@@ -1908,7 +1975,7 @@ InteractiveObject::~InteractiveObject()
 		sys->getInputThread()->removeListener(this);
 }
 
-_NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
 {
 	/*number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -1921,7 +1988,7 @@ _NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, numbe
 		return NullRef;
 
 	hitTestPrologue();
-	_NR<InteractiveObject> ret = hitTestImpl(last, x,y);
+	_NR<InteractiveObject> ret = hitTestImpl(last, x,y, type);
 	hitTestEpilogue();
 	return ret;
 }
@@ -1951,6 +2018,20 @@ ASFUNCTIONBODY(InteractiveObject,_getMouseEnabled)
 	return abstract_b(th->mouseEnabled);
 }
 
+ASFUNCTIONBODY(InteractiveObject,_setDoubleClickEnabled)
+{
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
+	assert_and_throw(argslen==1);
+	th->doubleClickEnabled=Boolean_concrete(args[0]);
+	return NULL;
+}
+
+ASFUNCTIONBODY(InteractiveObject,_getDoubleClickEnabled)
+{
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
+	return abstract_b(th->doubleClickEnabled);
+}
+
 void InteractiveObject::buildTraits(ASObject* o)
 {
 }
@@ -1962,6 +2043,8 @@ void InteractiveObject::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_setMouseEnabled),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_setDoubleClickEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_getDoubleClickEnabled),GETTER_METHOD,true);
 }
 
 void DisplayObjectContainer::dumpDisplayList()
@@ -2210,6 +2293,39 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 	return child;
 }
 
+ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	assert_and_throw(argslen==2);
+	
+	//Validate object type
+	assert_and_throw(args[0] && args[0]->getPrototype() && 
+		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[1] && args[1]->getPrototype() && 
+		args[1]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+
+	//Cast to object
+	args[0]->incRef();
+	_R<DisplayObject> child1=_MR(Class<DisplayObject>::cast(args[0]));
+	args[1]->incRef();
+	_R<DisplayObject> child2=_MR(Class<DisplayObject>::cast(args[1]));
+
+	{
+		Locker l(th->mutexDisplayList);
+		std::list<_R<DisplayObject>>::iterator it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
+		std::list<_R<DisplayObject>>::iterator it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
+		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
+			throw Class<ArgumentError>::getInstanceS("Argument is not child of this object");
+
+		th->dynamicDisplayList.insert(it1, child2);
+		th->dynamicDisplayList.insert(it2, child1);
+		th->dynamicDisplayList.erase(it1);
+		th->dynamicDisplayList.erase(it2);
+	}
+	
+	return NULL;
+}
+
 //Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,getChildByName)
 {
@@ -2297,6 +2413,27 @@ void Shape::buildTraits(ASObject* o)
 bool Shape::isOpaque(number_t x, number_t y) const
 {
 	return TokenContainer::isOpaqueImpl(x, y);
+}
+
+bool Sprite::isOpaque(number_t x, number_t y) const
+{
+	return (TokenContainer::isOpaqueImpl(x, y)) || (DisplayObjectContainer::isOpaque(x,y));
+}
+
+bool DisplayObjectContainer::isOpaque(number_t x, number_t y) const
+{
+	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	number_t lx, ly;
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		//x y are local coordinates of the container, should be local coord of *it
+		((*it)->getMatrix()).getInverted().multiply2D(x,y,lx,ly);
+		if(((*it)->isOpaque(lx,ly)))
+		{			
+			return true;		
+		}
+	}
+	return false;
 }
 
 void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
@@ -2418,6 +2555,12 @@ ASFUNCTIONBODY(MorphShape,_constructor)
 	return NULL;
 }
 
+bool MorphShape::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	LOG(LOG_NOT_IMPLEMENTED, "MorphShape::boundsRect is a stub");
+	return false;
+}
+
 void Stage::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -2446,11 +2589,11 @@ ASFUNCTIONBODY(Stage,_constructor)
 	return NULL;
 }
 
-_NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret;
-	ret = DisplayObjectContainer::hitTestImpl(last, x, y);
-	if(ret == NULL)
+	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type);
+	if(ret == NULL && isHittable(type))
 	{
 		/* If nothing else is hit, we hit the stage */
 		this->incRef();
@@ -2559,7 +2702,7 @@ void TokenContainer::invalidate()
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
-	CairoRenderer* r=new CairoRenderer(owner, owner->cachedSurface, tokens,
+	CairoRenderer* r=new CairoTokenRenderer(owner, owner->cachedSurface, tokens,
 				owner->getConcatenatedMatrix(), x, y, width, height, scaling,
 				owner->getConcatenatedAlpha());
 	sys->addJob(r);
@@ -2567,19 +2710,19 @@ void TokenContainer::invalidate()
 
 bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const
 {
-	return CairoRenderer::isOpaque(tokens, scaling, x, y);
+	return CairoTokenRenderer::isOpaque(tokens, scaling, x, y);
 }
 
-_NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y) const
+_NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const
 {
 	//TODO: test against the CachedSurface
-	if(CairoRenderer::hitTest(tokens, scaling, x, y))
+	if(CairoTokenRenderer::hitTest(tokens, scaling, x, y))
 	{
 		if(sys->getInputThread()->isMaskPresent())
 		{
 			number_t globalX, globalY;
 			owner->getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-			if(!sys->getInputThread()->isMasked(globalX, globalY))
+			if(!sys->getInputThread()->isMasked(globalX, globalY))//You must be under the mask to be hit
 				return NullRef;
 		}
 		return last;
@@ -2972,7 +3115,10 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	assert_and_throw(args[2]->getObjectType()==T_ARRAY);
 	Array* alphas=Class<Array>::cast(args[2]);
 
-	assert_and_throw(args[3]->getObjectType()==T_ARRAY);
+	//assert_and_throw(args[3]->getObjectType()==T_ARRAY);
+	//Work around for bug in YouTube player of July 13 2011
+	if(args[3]->getObjectType()==T_UNDEFINED)
+		return NULL;
 	Array* ratios=Class<Array>::cast(args[3]);
 
 	int NumGradient = colors->size();
@@ -3121,7 +3267,7 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return false;
 }
 
-_NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	return NullRef;
 }
@@ -3166,7 +3312,7 @@ void SimpleButton::buildTraits(ASObject* o)
 {
 }
 
-_NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret = NullRef;
 	if(hitTestState != NULL)
@@ -3174,7 +3320,7 @@ _NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, nu
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
-		ret = hitTestState->hitTest(_MR(this), localX, localY);
+		ret = hitTestState->hitTest(_MR(this), localX, localY, type);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
@@ -3183,6 +3329,9 @@ _NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, nu
 	 */
 	if(ret != NULL)
 	{
+		if(!isHittable(type))
+			return NullRef;
+			
 		this->incRef();
 		ret = _MR(this);
 	}
@@ -3201,6 +3350,16 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		currentState = UP;
 		reflectState();
 	}
+	else if(e->type == "mouseOver")
+	{
+		currentState = OVER;
+		reflectState();
+	}
+	else if(e->type == "mouseOut")
+	{
+		currentState = UP;
+		reflectState();
+	}
 }
 
 SimpleButton::SimpleButton(DisplayObject *dS, DisplayObject *hTS,
@@ -3215,6 +3374,15 @@ SimpleButton::SimpleButton(DisplayObject *dS, DisplayObject *hTS,
 	if(hTS) hTS->initFrame();
 	if(oS) oS->initFrame();
 	if(uS) uS->initFrame();
+}
+
+void SimpleButton::finalize()
+{
+	DisplayObjectContainer::finalize();
+	downState.reset();
+	hitTestState.reset();
+	overState.reset();
+	upState.reset();
 }
 
 ASFUNCTIONBODY(SimpleButton,_constructor)
@@ -3504,7 +3672,7 @@ void MovieClip::initFrame()
 	 * may just have registered one. */
 	//TODO: check order: child or parent first?
 	if(newFrame && frameScripts.count(state.FP))
-		frameScripts[state.FP]->call(NULL,NULL,0,false);
+		frameScripts[state.FP]->call(NULL,NULL,0);
 
 }
 
@@ -3551,4 +3719,35 @@ void MovieClip::constructionComplete()
 	 * now */
 	if(state.last_FP == -1)
 		initFrame();
+}
+
+void AVM1Movie::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<DisplayObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void AVM1Movie::buildTraits(ASObject* o)
+{
+	//No traits
+}
+
+ASFUNCTIONBODY(AVM1Movie,_constructor)
+{
+	DisplayObject::_constructor(obj,NULL,0);
+	return NULL;
+}
+
+void Shader::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+ASFUNCTIONBODY(Shader,_constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED, _("Shader class is unimplemented."));
+	return NULL;
 }

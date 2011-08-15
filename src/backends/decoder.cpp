@@ -611,7 +611,11 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 	if(avioContext==NULL)
 		return;
 
+#if LIBAVFORMAT_VERSION_MAJOR > 52 || (LIBAVFORMAT_VERSION_MAJOR == 52  && LIBAVFORMAT_VERSION_MINOR > 64)
+	avioContext->seekable = 0;
+#else
 	avioContext->is_streamed=1;
+#endif
 	//Probe the stream format.
 	//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
 	AVProbeData probeData;

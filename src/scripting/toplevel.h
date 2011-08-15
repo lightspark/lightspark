@@ -512,6 +512,7 @@ public:
 	ASFUNCTION(_map);
 	ASFUNCTION(_toString);
 	ASFUNCTION(slice);
+	ASFUNCTION(every);
 
 	ASObject* at(unsigned int index) const;
 	void set(unsigned int index, ASObject* o)

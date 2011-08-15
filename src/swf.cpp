@@ -737,6 +737,14 @@ void SystemState::createEngines()
 	engineData->setupMainThreadCallback((ls_callback_t)delayedCreation, this);
 
 	renderThread->waitForInitialization();
+
+	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
+	if(vmVersion != AVM2)
+	{
+		LOG(LOG_NO_INFO, "Unsupported flash file (AVM1), shutting down...");
+		setShutdownFlag();
+	}
+
 	l.lock();
 	//As we lost the lock the shutdown procesure might have started
 	if(shutdown)

@@ -513,6 +513,7 @@ public:
 	ASFUNCTION(_toString);
 	ASFUNCTION(slice);
 	ASFUNCTION(every);
+	ASFUNCTION(some);
 
 	ASObject* at(unsigned int index) const;
 	void set(unsigned int index, ASObject* o)

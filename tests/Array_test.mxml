@@ -103,6 +103,10 @@
 		Tests.assertEquals(i1.every(isNumeric), true, "every on int array with callback checking if value is numeric");
 		Tests.assertEquals(i2.every(isNumeric), false, "every on mixed type array with callback checking if value is numeric");
 
+		var i3:Array=["x", "y", "z"];
+		var i4:Array=["x", "y", 3];
+		Test.assertEquals(i3.some(isNumeric), false, "some on character array with callback checking if value is numeric");
+		Test.assertEquals(i4.some(isNumeric), true, "some on mixed type array with callback checking if value is numeric");
 		Tests.report(visual, this.name);
 	}
 	]]>

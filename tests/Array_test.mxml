@@ -94,6 +94,15 @@
 		Tests.assertArrayEquals(h.slice(1, -1), [3, 4], "slice with positive start index and negative end index");
 		Tests.assertArrayEquals(h.slice(1, -1000), [], "slice with small start index and huge end index");
 
+		function isNumeric(element:*, index:int, arr:Array):Boolean {
+			return (element is Number);
+		}
+
+		var i1:Array=[1, 2, 3];
+		var i2:Array=["x", 2, 3];
+		Tests.assertEquals(i1.every(isNumeric), true, "every on int array with callback checking if value is numeric");
+		Tests.assertEquals(i2.every(isNumeric), false, "every on mixed type array with callback checking if value is numeric");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

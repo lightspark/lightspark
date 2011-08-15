@@ -217,6 +217,44 @@ ASFUNCTIONBODY(Array,filter)
 	return ret;
 }
 
+ASFUNCTIONBODY(Array, some)
+{
+	Array* th=static_cast<Array*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+	ASObject *funcRet;
+
+	for(unsigned int i=0; i < th->data.size(); i++)
+	{
+		assert_and_throw(th->data[i].type==DATA_OBJECT);
+		params[0] = th->data[i].data;
+		th->data[i].data->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if(argslen==1)
+		{
+			funcRet=f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			funcRet=f->call(args[1], params, 3);
+		}
+		if(funcRet)
+		{
+			if(Boolean_concrete(funcRet))
+			{
+				return funcRet;
+			}
+			funcRet->decRef();
+		}
+	}
+	return abstract_b(false);
+}
+
 ASFUNCTIONBODY(Array, every)
 {
 	Array* th=static_cast<Array*>(obj);

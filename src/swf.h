@@ -133,10 +133,10 @@ public:
 class SystemState: public RootMovieClip, public ITickJob
 {
 private:
-	class EngineCreator: public IThreadJob
+	class SystemStarter: public IThreadJob
 	{
 	public:
-		EngineCreator()
+		SystemStarter()
 		{
 			destroyMe=true;
 		}
@@ -144,7 +144,7 @@ private:
 		void threadAbort();
 		void jobFence(){}
 	};
-	friend class SystemState::EngineCreator;
+	friend class SystemState::SystemStarter;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
 	sem_t terminated;
@@ -157,17 +157,17 @@ private:
 	void startRenderTicks();
 	void fallbackToGnash(Locker& l);
 	/**
-		Create the rendering and input engines
+		Starts the rendering and input engines through a callback on the main thread
 
 		@pre engine and useAVM2 are known
 	*/
-	void createEngines();
+	void start();
 	/**
 	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
 	*/
 	void stopEngines();
 
-	static void delayedCreation(SystemState* th);
+	static void delayedStart(SystemState* th);
 	static void delayedStopping(SystemState* th);
 	//Useful to wait for complete download of the SWF
 	Semaphore fileDumpAvailable;

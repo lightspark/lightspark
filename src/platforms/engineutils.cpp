@@ -24,7 +24,7 @@ using namespace lightspark;
 
 TLSDATA DLL_PUBLIC SystemState* sys;
 
-void GtkEngineData::onDelayedCreation(int32_t requestedWidth, int32_t requestedHeight)
+void GtkEngineData::onDelayedStart(int32_t requestedWidth, int32_t requestedHeight)
 {
 	//Create a plug in the XEmbed window
 	GtkWidget* plug=gtk_plug_new(window);
@@ -85,7 +85,7 @@ void StandaloneEngineData::gtkDestroy(GtkWidget *widget, gpointer data)
 	gtk_main_quit();
 }
 
-void StandaloneEngineData::setupMainThreadCallback(ls_callback_t func, void* arg)
+void StandaloneEngineData::mainThreadCallback(ls_callback_t func, void* arg)
 {
 	//Synchronizing with the main gtk thread is what we actually need
 	gdk_threads_enter();

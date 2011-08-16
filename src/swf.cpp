@@ -492,12 +492,12 @@ void SystemState::startRenderTicks()
 	addTick(1000/renderRate,renderThread);
 }
 
-void SystemState::EngineCreator::execute()
+void SystemState::SystemStarter::execute()
 {
-	sys->createEngines();
+	sys->start();
 }
 
-void SystemState::EngineCreator::threadAbort()
+void SystemState::SystemStarter::threadAbort()
 {
 	sys->fileDumpAvailable.signal();
 	sys->getRenderThread()->forceInitialization();
@@ -516,9 +516,9 @@ void SystemState::enableGnashFallback()
 	f.close();
 }
 
-void SystemState::delayedCreation(SystemState* th)
+void SystemState::delayedStart(SystemState* th)
 {
-	th->engineData->onDelayedCreation(
+	th->engineData->onDelayedStart(
 		th->getFrameSize().Xmax/20, th->getFrameSize().Ymax/20);
 	//The lock is needed to avoid thread creation/destruction races
 	Locker l(th->mutex);
@@ -696,13 +696,13 @@ void SystemState::fallbackToGnash(Locker& l)
 		//Engines should not be started, stop everything
 		l.unlock();
 		//We cannot stop the engines now, as this is inside a ThreadPool job
-		engineData->setupMainThreadCallback((ls_callback_t)delayedStopping, this);
+		engineData->mainThreadCallback((ls_callback_t)delayedStopping, this);
 		return;
 	}
 	return;
 }
 
-void SystemState::createEngines()
+void SystemState::start()
 {
 	Locker l(mutex);
 	if(shutdown)
@@ -716,7 +716,7 @@ void SystemState::createEngines()
 
 	l.unlock();
 	//The engines must be created in the context of the main thread
-	engineData->setupMainThreadCallback((ls_callback_t)delayedCreation, this);
+	engineData->mainThreadCallback((ls_callback_t)delayedStart, this);
 
 	renderThread->waitForInitialization();
 
@@ -750,7 +750,7 @@ void SystemState::needsAVM2(bool n)
 		vmVersion=AVM1;
 
 	if(engineData)
-		addJob(new EngineCreator);
+		addJob(new SystemStarter);
 }
 
 void SystemState::setEngineData(EngineData* e)
@@ -758,7 +758,7 @@ void SystemState::setEngineData(EngineData* e)
 	Locker l(mutex);
 	engineData=e;
 	if(vmVersion)
-		addJob(new EngineCreator);
+		addJob(new SystemStarter);
 }
 
 void SystemState::setRenderRate(float rate)

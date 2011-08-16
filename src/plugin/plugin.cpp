@@ -618,7 +618,7 @@ PluginEngineData::PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, 
 {
 }
 
-void PluginEngineData::setupMainThreadCallback(lightspark::ls_callback_t func, void* arg)
+void PluginEngineData::mainThreadCallback(lightspark::ls_callback_t func, void* arg)
 {
 	NPN_PluginThreadAsyncCall(instance->mInstance, func, arg);
 }

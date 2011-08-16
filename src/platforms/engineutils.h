@@ -40,12 +40,12 @@ private:
 public:
 	EngineData(RENDER_MODE r): renderMode(r) {}
 	virtual ~EngineData() {}
-	virtual void setupMainThreadCallback(ls_callback_t func, void* arg)
+	virtual void mainThreadCallback(ls_callback_t func, void* arg)
 	{ func(arg); }
 	virtual void stopMainDownload() {}
 	virtual bool isVisual() const { return false; }
 	virtual bool isStandalone() const { return true; }
-	virtual void onDelayedCreation(int32_t requestedWidth, int32_t requestedHeight) {}
+	virtual void onDelayedStart(int32_t requestedWidth, int32_t requestedHeight) {}
 	virtual void onSetShutdownFlag() {}
 	virtual void doMain() {};
 	RENDER_MODE getRenderMode() const { return renderMode; }
@@ -71,7 +71,7 @@ public:
 	virtual bool isSizable() const = 0;
 	bool isVisual() const { return true; }
 
-	void onDelayedCreation(int32_t requestedWidth, int32_t requestedHeight);
+	void onDelayedStart(int32_t requestedWidth, int32_t requestedHeight);
 };
 
 // EngineData for the standalone GTK lightspark instances
@@ -81,7 +81,7 @@ public:
 	StandaloneEngineData(RENDER_MODE r, int argc, char** argv);
 	static void init(int argc, char** argv);
 	static void gtkDestroy(GtkWidget *widget, gpointer data);
-	void setupMainThreadCallback(ls_callback_t func, void* arg);
+	void mainThreadCallback(ls_callback_t func, void* arg);
 	bool isSizable() const { return true; }
 	bool isStandalone() const { return true; }
 

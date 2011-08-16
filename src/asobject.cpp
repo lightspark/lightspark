@@ -450,7 +450,6 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
 {
 	obj_var* obj=Variables.findObjVar(name,ns,NO_CREATE_TRAIT,traitKind);
-	assert(obj==NULL);
 	assert_and_throw(obj==NULL);
 	obj=Variables.findObjVar(name,ns,traitKind,traitKind);
 	obj->setVar(o);

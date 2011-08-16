@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
 	bool useJit=false;
-	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
+	LOG_LEVEL log_level=LOG_NO_INFO;
 
 	setlocale(LC_ALL, "");
 	bindtextdomain("lightspark", "/usr/share/locale");

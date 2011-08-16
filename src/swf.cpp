@@ -749,16 +749,13 @@ void SystemState::needsAVM2(bool n)
 	else
 		vmVersion=AVM1;
 
-	if(engineData)
-		addJob(new SystemStarter);
+	addJob(new SystemStarter);
 }
 
 void SystemState::setEngineData(EngineData* e)
 {
 	Locker l(mutex);
 	engineData=e;
-	if(vmVersion)
-		addJob(new SystemStarter);
 }
 
 void SystemState::setRenderRate(float rate)

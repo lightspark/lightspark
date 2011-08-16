@@ -215,6 +215,7 @@ private:
 	tiny_string profOut;
 #endif
 public:
+	EngineData* getEngineData() const { return engineData; }
 	void engineMain() { return engineData->doMain(); }
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 

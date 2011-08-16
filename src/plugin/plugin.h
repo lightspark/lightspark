@@ -68,7 +68,8 @@ class PluginEngineData: public lightspark::GtkEngineData
 private:
 	nsPluginInstance* instance;
 public:
-	PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h);
+	PluginEngineData(nsPluginInstance* i);
+	void setWindow(Display* d, VisualID v, Window win, int w, int h);
 	void mainThreadCallback(lightspark::ls_callback_t func, void* arg);
 	void stopMainDownload();
 	bool isSizable() const { return false; }

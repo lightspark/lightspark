@@ -283,6 +283,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	}
 	else
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
+		
+	sys->setEngineData(new PluginEngineData(this));
 
 	//The sys var should be NULL in this thread
 	sys=NULL;
@@ -400,9 +402,8 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		mColormap = ws_info->colormap;
 
 		VisualID visual=XVisualIDFromVisual(mVisual);
-		PluginEngineData* e= new PluginEngineData(this, mDisplay, visual, mWindow, mWidth, mHeight);
+		static_cast<PluginEngineData*>(m_sys->getEngineData())->setWindow(mDisplay, visual, mWindow, mWidth, mHeight);
 		LOG(LOG_NO_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
-		m_sys->setEngineData(e);
 	}
 	//draw();
 	return TRUE;
@@ -613,9 +614,17 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 	}
 }
 
-PluginEngineData::PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h):
-	GtkEngineData(lightspark::RENDER_AUDIOVIDEO, d,v,win,w,h),instance(i)
+PluginEngineData::PluginEngineData(nsPluginInstance* i):
+	GtkEngineData(lightspark::RENDER_AUDIOVIDEO),instance(i)
 {
+}
+void PluginEngineData::setWindow(Display* d, VisualID v, Window win, int w, int h)
+{
+	display = d;
+	visual = v;
+	window = win;
+	width = w;
+	height = h;
 }
 
 void PluginEngineData::mainThreadCallback(lightspark::ls_callback_t func, void* arg)

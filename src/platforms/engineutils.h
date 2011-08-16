@@ -55,11 +55,7 @@ public:
 class DLL_PUBLIC GtkEngineData : public EngineData
 {
 protected:
-	GtkEngineData(RENDER_MODE r): EngineData(r) {}
-	GtkEngineData(RENDER_MODE r,
-		Display* d, VisualID v, Window win, int w, int h):
-		EngineData(r),
-		display(d),visual(v),window(win),container(NULL),width(w),height(h){}
+	GtkEngineData(RENDER_MODE r): EngineData(r),container(NULL) {}
 public:
 	Display* display;
 	VisualID visual;

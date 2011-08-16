@@ -105,11 +105,11 @@
 
 		var i3:Array=["x", "y", "z"];
 		var i4:Array=["x", "y", 3];
-		Test.assertEquals(i3.some(isNumeric), false, "some on character array with callback checking if value is numeric");
-		Test.assertEquals(i4.some(isNumeric), true, "some on mixed type array with callback checking if value is numeric");
+		Tests.assertEquals(i3.some(isNumeric), false, "some on character array with callback checking if value is numeric");
+		Tests.assertEquals(i4.some(isNumeric), true, "some on mixed type array with callback checking if value is numeric");
 
-		Test.assertEquals(i3.toString(), "x,y,z", "toString()");
-		Test.assertEquals(i3.toLocaleString(), "x,y,z", "toLocaleString()");
+		Tests.assertEquals(i3.toString(), "x,y,z", "toString()");
+		Tests.assertEquals(i3.toLocaleString(), "x,y,z", "toLocaleString()");
 
 		Tests.report(visual, this.name);
 	}

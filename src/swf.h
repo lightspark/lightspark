@@ -155,6 +155,7 @@ private:
 	InputThread* inputThread;
 	EngineData* engineData;
 	void startRenderTicks();
+	void fallbackToGnash(Locker& l);
 	/**
 		Create the rendering and input engines
 

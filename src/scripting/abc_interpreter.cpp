@@ -919,7 +919,22 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				context->runtime_stack_push(convert_s(val));
 				break;
 			}
-			case 0x73:
+			case 0x71:
+			{
+				//FIXME: Properly escape as described in ECMA-357 section 10.2
+				//esc_xelem
+				ASObject* val=context->runtime_stack_pop();
+				context->runtime_stack_push(convert_s(val));
+				break;
+			}
+			case 0x72:
+			{
+				//FIXME: Properly escape as described in ECMA-357 section 10.2
+				//esc_xattr
+				ASObject* val=context->runtime_stack_pop();
+				context->runtime_stack_push(convert_s(val));
+				break;
+			}case 0x73:
 			{
 				//convert_i
 				ASObject* val=context->runtime_stack_pop();

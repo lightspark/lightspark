@@ -66,7 +66,7 @@ RenderThread::RenderThread(SystemState* s):
 	time_s = compat_get_current_time_ms();
 }
 
-void RenderThread::start(const EngineData* data)
+void RenderThread::start(const GtkEngineData* data)
 {
 	status=STARTED;
 	engineData=data;
@@ -212,7 +212,7 @@ void* RenderThread::worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
-	const EngineData* e=th->engineData;
+	const GtkEngineData* e=th->engineData;
 	SemaphoreLighter lighter(th->initialized);
 
 	//Get information about changes in the available space
@@ -390,7 +390,7 @@ void* RenderThread::worker(RenderThread* th)
 
 			if(th->m_sys->isOnError())
 			{
-				th->renderErrorPage(th, th->m_sys->standalone);
+				th->renderErrorPage(th, th->m_sys->isStandalone());
 #ifndef ENABLE_GLES2
 				glXSwapBuffers(d,glxWin);
 #else

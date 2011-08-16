@@ -215,11 +215,13 @@ private:
 	tiny_string profOut;
 #endif
 public:
+	void engineMain() { return engineData->doMain(); }
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 
 	//Interative analysis flags
 	bool showProfilingData;
-	bool standalone;
+
+	bool isStandalone() { return engineData->isStandalone(); }
 	
 	std::string errorCause;
 	void setError(const std::string& c);
@@ -233,7 +235,7 @@ public:
 	void wait() DLL_PUBLIC;
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
-	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;
+	void setEngineData(EngineData* e) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 	void enableGnashFallback() DLL_PUBLIC;
 	void needsAVM2(bool n);

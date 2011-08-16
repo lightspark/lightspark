@@ -52,6 +52,7 @@ SET(LIBSPARK_SOURCES
   parsing/tags.cpp
   parsing/tags_stub.cpp
   parsing/textfile.cpp
+	platforms/engineutils.cpp
   scripting/abc.cpp
   scripting/abc_codesynt.cpp
   scripting/abc_interpreter.cpp

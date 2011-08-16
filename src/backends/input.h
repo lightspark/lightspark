@@ -80,7 +80,7 @@ public:
 	InputThread(SystemState* s);
 	~InputThread();
 	void wait();
-	void start(const EngineData* data);
+	void start(const GtkEngineData* data);
 	void addListener(InteractiveObject* ob);
 	void removeListener(InteractiveObject* ob);
 	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);

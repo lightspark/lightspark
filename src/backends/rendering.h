@@ -38,7 +38,7 @@ private:
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 
-	const EngineData* engineData;
+	const GtkEngineData* engineData;
 	static void* worker(RenderThread*);
 
 	void commonGLInit(int width, int height);
@@ -128,9 +128,9 @@ public:
 	RenderThread(SystemState* s);
 	~RenderThread();
 	/**
-	   The EngineData object must survive for the whole life of this RenderThread
+	   The GtkEngineData object must survive for the whole life of this RenderThread
 	*/
-	void start(const EngineData* data);
+	void start(const GtkEngineData* data);
 	/*
 	   The stop function should be call on exit even if the thread is not started
 	*/

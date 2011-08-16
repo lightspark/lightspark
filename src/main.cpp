@@ -22,10 +22,10 @@
 #include "parsing/streams.h"
 #include "backends/netutils.h"
 #include "backends/security.h"
+#include "backends/rendering.h"
 #ifndef WIN32
 #include <sys/resource.h>
 #include <unistd.h>
-#include <gdk/gdkx.h>
 #endif
 #include <iostream>
 #include <fstream>
@@ -43,33 +43,6 @@ TLSDATA DLL_PUBLIC SystemState* sys;
 TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
 TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
 
-class StandaloneEngineData: public EngineData
-{
-public:
-	StandaloneEngineData(Display* d, VisualID v, Window win):
-		EngineData(d,v,win,0,0){}
-	void setupMainThreadCallback(ls_callback_t func, void* arg)
-	{
-		//Synchronizing with the main gtk thread is what we actually need
-		gdk_threads_enter();
-		func(arg);
-		gdk_threads_leave();
-	}
-	void stopMainDownload()
-	{
-	}
-	bool isSizable() const
-	{
-		return true;
-	}
-};
-
-static void StandaloneDestroy(GtkWidget *widget, gpointer data)
-{
-	sys->setShutdownFlag();
-	gtk_main_quit();
-}
-
 int main(int argc, char* argv[])
 {
 	char* fileName=NULL;
@@ -82,18 +55,13 @@ int main(int argc, char* argv[])
 	bool useInterpreter=true;
 	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NO_INFO;
+	RENDER_MODE renderMode = RENDER_AUDIOVIDEO;
 
 	setlocale(LC_ALL, "");
 	bindtextdomain("lightspark", "/usr/share/locale");
 	textdomain("lightspark");
 
 	cout << "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others" << endl;
-
-	//Make GTK thread enabled
-	g_thread_init(NULL);
-	gdk_threads_init();
-	//Give GTK a chance to parse its own options
-	gtk_init (&argc, &argv);
 
 	for(int i=1;i<argc;i++)
 	{
@@ -171,6 +139,14 @@ int main(int argc, char* argv[])
 		{
 			exit(0);
 		}
+		else if(strcmp(argv[i], "-r") == 0 ||
+			strcmp(argv[i], "--render-mode") == 0)
+		{
+			i++;
+			if(i == argc)
+				break;
+			renderMode = (RENDER_MODE) min(3, max(0, atoi(argv[i])));
+		}
 		else
 		{
 			//No options flag, so set the swf file name
@@ -188,6 +164,7 @@ int main(int argc, char* argv[])
 		cout << endl << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 
 			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" << 
 			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
+			" [--render-mode|-r 0-3 (0: no sound, no video; 1: no sound; 2: no video; 3: both video and sound)]" <<
 #ifdef PROFILING_SUPPORT
 			" [--profiling-output|-o profiling-file]" << 
 #endif
@@ -261,24 +238,10 @@ int main(int argc, char* argv[])
 		sys->setProfilingOutput(profilingFileName);
 #endif
 
-	gdk_threads_enter();
-	//Create the main window
-	GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title((GtkWindow*)window,"Lightspark");
-	g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),NULL);
-	GtkWidget* socket=gtk_socket_new();
-	gtk_container_add(GTK_CONTAINER(window), socket);
-	gtk_widget_show(socket);
-	gtk_widget_show(window);
-
-	VisualID visual=XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
-	Display* display=gdk_x11_display_get_xdisplay(gdk_display_get_default());
-	Window xembedWindow=gtk_socket_get_id((GtkSocket*)socket);
-
-	StandaloneEngineData* e=new StandaloneEngineData(display, visual, xembedWindow);
-
-	sys->setParamsAndEngine(e, true);
-	gdk_threads_leave();
+	if(renderMode & RENDER_VIDEO)
+		sys->setEngineData(new StandaloneEngineData(renderMode, argc, argv));
+	else
+		sys->setEngineData(new EngineData(renderMode));
 
 	sys->securityManager->setSandboxType(sandboxType);
 	if(sandboxType == SecurityManager::REMOTE)
@@ -295,9 +258,8 @@ int main(int argc, char* argv[])
 	//Start the parser
 	sys->addJob(pt);
 
-	gdk_threads_enter();
-	gtk_main();
-	gdk_threads_leave();
+	if(renderMode & RENDER_VIDEO)
+		sys->engineMain();
 
 	sys->wait();
 	delete sys;

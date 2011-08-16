@@ -40,7 +40,7 @@ InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(fal
 	LOG(LOG_NO_INFO,_("Creating input thread"));
 }
 
-void InputThread::start(const EngineData* e)
+void InputThread::start(const GtkEngineData* e)
 {
 	GtkWidget* container=e->container;
 	gtk_widget_set_can_focus(container,True);
@@ -77,7 +77,7 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 			switch(event->key.keyval)
 			{
 				case GDK_q:
-					if(th->m_sys->standalone)
+					if(th->m_sys->isStandalone())
 					{
 						th->m_sys->setShutdownFlag();
 						gtk_main_quit();

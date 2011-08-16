@@ -47,8 +47,6 @@ extern "C" {
 }
 #endif
 
-#include <gdk/gdkx.h>
-
 using namespace std;
 using namespace lightspark;
 
@@ -467,8 +465,7 @@ void SystemState::setShutdownFlag()
 	shutdown=true;
 
 	sem_post(&terminated);
-	if(standalone)
-		gtk_main_quit();
+	engineData->onSetShutdownFlag();
 }
 
 void SystemState::wait()
@@ -521,37 +518,17 @@ void SystemState::enableGnashFallback()
 
 void SystemState::delayedCreation(SystemState* th)
 {
-	EngineData* d=th->engineData;
-	//Create a plug in the XEmbed window
-	GtkWidget* plug=gtk_plug_new(d->window);
-	if(d->isSizable())
-	{
-		int32_t reqWidth=th->getFrameSize().Xmax/20;
-		int32_t reqHeight=th->getFrameSize().Ymax/20;
-		if(th->standalone)
-			gtk_widget_set_size_request(plug, reqWidth, reqHeight);
-		d->width=reqWidth;
-		d->height=reqHeight;
-	}
-	d->container = plug;
-	//Realize the widget now, as we need the X window
-	gtk_widget_realize(plug);
-	//Show it now
-	gtk_widget_show(plug);
-	gtk_widget_map(plug);
-	if (th->standalone)
-	{
-		gtk_widget_set_can_focus(plug, true);
-		gtk_widget_grab_focus(plug);
-	}
-	d->window=GDK_WINDOW_XID(gtk_widget_get_window(plug));
-	XSync(d->display, False);
+	th->engineData->onDelayedCreation(
+		th->getFrameSize().Xmax/20, th->getFrameSize().Ymax/20);
 	//The lock is needed to avoid thread creation/destruction races
 	Locker l(th->mutex);
 	if(th->shutdown)
 		return;
-	th->renderThread->start(th->engineData);
-	th->inputThread->start(th->engineData);
+	if(th->engineData->isVisual())
+	{
+		th->renderThread->start(static_cast<GtkEngineData*>(th->engineData));
+		th->inputThread->start(static_cast<GtkEngineData*>(th->engineData));
+	}
 	//If the render rate is known start the render ticks
 	if(th->renderRate)
 		th->startRenderTicks();
@@ -633,9 +610,10 @@ void SystemState::fallbackToGnash(Locker& l)
 		char bufXid[32];
 		char bufWidth[32];
 		char bufHeight[32];
-		snprintf(bufXid,32,"%lu",engineData->window);
-		snprintf(bufWidth,32,"%u",engineData->width);
-		snprintf(bufHeight,32,"%u",engineData->height);
+		// We know we are using a GTK engine
+		snprintf(bufXid,32,"%lu",static_cast<GtkEngineData*>(engineData)->window);
+		snprintf(bufWidth,32,"%u",static_cast<GtkEngineData*>(engineData)->width);
+		snprintf(bufHeight,32,"%u",static_cast<GtkEngineData*>(engineData)->height);
 		string params("FlashVars=");
 		params+=rawParameters;
 		char *const args[] =
@@ -775,11 +753,10 @@ void SystemState::needsAVM2(bool n)
 		addJob(new EngineCreator);
 }
 
-void SystemState::setParamsAndEngine(EngineData* e, bool s)
+void SystemState::setEngineData(EngineData* e)
 {
 	Locker l(mutex);
 	engineData=e;
-	standalone=s;
 	if(vmVersion)
 		addJob(new EngineCreator);
 }

@@ -20,16 +20,46 @@
 #ifndef ENGINEUTILS_H
 #define ENGINEUTILS_H
 
+#include "compat.h"
 #include <X11/Xlib.h>
 #include <gtk/gtk.h>
+#include <gdk/gdkx.h>
 
 namespace lightspark
 {
 
+enum RENDER_MODE { RENDER_NONE=0, RENDER_AUDIO=1, RENDER_VIDEO=2, RENDER_AUDIOVIDEO=3 };
+
 typedef void (*ls_callback_t)(void*);
 
-class EngineData
+// Use this class for headless instances.
+class DLL_PUBLIC EngineData
 {
+private:
+	RENDER_MODE renderMode;
+public:
+	EngineData(RENDER_MODE r): renderMode(r) {}
+	virtual ~EngineData() {}
+	virtual void setupMainThreadCallback(ls_callback_t func, void* arg)
+	{ func(arg); }
+	virtual void stopMainDownload() {}
+	virtual bool isVisual() const { return false; }
+	virtual bool isStandalone() const { return true; }
+	virtual void onDelayedCreation(int32_t requestedWidth, int32_t requestedHeight) {}
+	virtual void onSetShutdownFlag() {}
+	virtual void doMain() {};
+	RENDER_MODE getRenderMode() const { return renderMode; }
+};
+
+// Derive this class for instances that use GTK to output video (and possibly audio)
+class DLL_PUBLIC GtkEngineData : public EngineData
+{
+protected:
+	GtkEngineData(RENDER_MODE r): EngineData(r) {}
+	GtkEngineData(RENDER_MODE r,
+		Display* d, VisualID v, Window win, int w, int h):
+		EngineData(r),
+		display(d),visual(v),window(win),container(NULL),width(w),height(h){}
 public:
 	Display* display;
 	VisualID visual;
@@ -37,12 +67,26 @@ public:
 	GtkWidget* container;
 	int width;
 	int height;
-	EngineData(Display* d, VisualID v, Window win, int w, int h):
-		display(d),visual(v),window(win),container(NULL),width(w),height(h){}
-	virtual ~EngineData() {}
-	virtual void setupMainThreadCallback(ls_callback_t func, void* arg) = 0;
-	virtual void stopMainDownload() = 0;
+	virtual ~GtkEngineData() {}
 	virtual bool isSizable() const = 0;
+	bool isVisual() const { return true; }
+
+	void onDelayedCreation(int32_t requestedWidth, int32_t requestedHeight);
+};
+
+// EngineData for the standalone GTK lightspark instances
+class DLL_PUBLIC StandaloneEngineData: public GtkEngineData
+{
+public:
+	StandaloneEngineData(RENDER_MODE r, int argc, char** argv);
+	static void init(int argc, char** argv);
+	static void gtkDestroy(GtkWidget *widget, gpointer data);
+	void setupMainThreadCallback(ls_callback_t func, void* arg);
+	bool isSizable() const { return true; }
+	bool isStandalone() const { return true; }
+
+	void onSetShutdownFlag();
+	virtual void doMain();
 };
 
 };

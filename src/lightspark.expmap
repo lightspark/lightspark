@@ -7,9 +7,9 @@ global:
 		*zlib_filter*;
 		*sync_stream*;
 		*lightspark::Class_base*;
-		*lightspark::Event*;
 		*lightspark::Downloader*;
 		*lightspark::DownloadManager*;
+		*lightspark::Event*;
 		*lightspark::ExtVariant*;
 		*lightspark::ExtIdentifier*;
 		*lightspark::ExtObject*;
@@ -17,6 +17,7 @@ global:
 		*lightspark::ExtASCallback*;
 		*lightspark::ExtBuiltinCallback*;
 		*lightspark::ExtScriptObject*;
+		*lightspark::*EngineData*;
 		rt;
 		sys;
 		pt;

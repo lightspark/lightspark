@@ -63,7 +63,7 @@ public:
 	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::ILoadable* owner);
 };
 
-class PluginEngineData: public lightspark::EngineData
+class PluginEngineData: public lightspark::GtkEngineData
 {
 private:
 	nsPluginInstance* instance;
@@ -71,7 +71,8 @@ public:
 	PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h);
 	void setupMainThreadCallback(lightspark::ls_callback_t func, void* arg);
 	void stopMainDownload();
-	bool isSizable() const;
+	bool isSizable() const { return false; }
+	bool isStandalone() const { return true; }
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

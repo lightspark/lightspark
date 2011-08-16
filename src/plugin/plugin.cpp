@@ -402,7 +402,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		VisualID visual=XVisualIDFromVisual(mVisual);
 		PluginEngineData* e= new PluginEngineData(this, mDisplay, visual, mWindow, mWidth, mHeight);
 		LOG(LOG_NO_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
-		m_sys->setParamsAndEngine(e, false);
+		m_sys->setEngineData(e);
 	}
 	//draw();
 	return TRUE;
@@ -614,7 +614,7 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 }
 
 PluginEngineData::PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h):
-	EngineData(d,v,win,w,h),instance(i)
+	GtkEngineData(lightspark::RENDER_AUDIOVIDEO, d,v,win,w,h),instance(i)
 {
 }
 
@@ -627,9 +627,4 @@ void PluginEngineData::stopMainDownload()
 {
 	if(instance->mainDownloader)
 		instance->mainDownloader->stop();
-}
-
-bool PluginEngineData::isSizable() const
-{
-	return false;
 }

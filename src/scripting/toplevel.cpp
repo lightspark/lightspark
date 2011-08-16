@@ -3346,7 +3346,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 		{
 			if(val==NULL && sys->useInterpreter)
 			{
-				//This is not an hot function, execute it using the intepreter
+				//This is not a hot function, execute it using the interpreter
 				ret=ABCVm::executeFunction(this,cc);
 			}
 			else

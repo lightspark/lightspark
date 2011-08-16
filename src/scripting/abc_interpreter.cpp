@@ -62,7 +62,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 #endif
 		code >> opcode;
 		if(code.eof())
-			throw ParseException("End of code in intepreter");
+			throw ParseException("End of code in interpreter");
 
 		switch(opcode)
 		{
@@ -123,7 +123,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -143,7 +143,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -163,7 +163,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -183,7 +183,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -199,7 +199,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 				//Now 'jump' to the destination, validate on the length
 				if(dest >= code_len)
-					throw ParseException("Jump out of bounds in intepreter");
+					throw ParseException("Jump out of bounds in interpreter");
 				code.seekg(dest);
 				break;
 			}
@@ -218,7 +218,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -238,7 +238,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -259,7 +259,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -280,7 +280,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -301,7 +301,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -322,7 +322,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -343,7 +343,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -364,7 +364,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -385,7 +385,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -406,7 +406,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 					//Now 'jump' to the destination, validate on the length
 					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in intepreter");
+						throw ParseException("Jump out of bounds in interpreter");
 					code.seekg(dest);
 				}
 				break;
@@ -438,7 +438,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 					dest=here+offsets[index];
 
 				if(dest >= code_len)
-					throw ParseException("Jump out of bounds in intepreter");
+					throw ParseException("Jump out of bounds in interpreter");
 				code.seekg(dest);
 				break;
 			}
@@ -919,7 +919,22 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				context->runtime_stack_push(convert_s(val));
 				break;
 			}
-			case 0x73:
+			case 0x71:
+			{
+				//FIXME: Properly escape as described in ECMA-357 section 10.2
+				//esc_xelem
+				ASObject* val=context->runtime_stack_pop();
+				context->runtime_stack_push(convert_s(val));
+				break;
+			}
+			case 0x72:
+			{
+				//FIXME: Properly escape as described in ECMA-357 section 10.2
+				//esc_xattr
+				ASObject* val=context->runtime_stack_pop();
+				context->runtime_stack_push(convert_s(val));
+				break;
+			}case 0x73:
 			{
 				//convert_i
 				ASObject* val=context->runtime_stack_pop();
@@ -1393,7 +1408,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,_("Not intepreted instruction @") << code.tellg());
+				LOG(LOG_ERROR,_("Not interpreted instruction @") << code.tellg());
 				LOG(LOG_ERROR,_("dump ") << hex << (unsigned int)opcode << dec);
 				throw ParseException("Not implemented instruction in interpreter");
 		}

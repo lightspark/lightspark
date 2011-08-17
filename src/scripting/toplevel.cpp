@@ -97,7 +97,7 @@ void Array::sinit(Class_base* c)
 
 	// public functions
 	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(_concat),NORMAL_METHOD,true);
-	//c->setDeclaredMethodByQName("every",AS3,Class<IFunction>::getFunction(every),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("every",AS3,Class<IFunction>::getFunction(every),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("filter",AS3,Class<IFunction>::getFunction(filter),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("forEach",AS3,Class<IFunction>::getFunction(forEach),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),NORMAL_METHOD,true);
@@ -109,11 +109,11 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
-	//c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
 	//c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice),NORMAL_METHOD,true);
-	//c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(toLocaleString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),NORMAL_METHOD,true);
 
@@ -215,6 +215,82 @@ ASFUNCTIONBODY(Array,filter)
 		}
 	}
 	return ret;
+}
+
+ASFUNCTIONBODY(Array, some)
+{
+	Array* th=static_cast<Array*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+	ASObject *funcRet;
+
+	for(unsigned int i=0; i < th->data.size(); i++)
+	{
+		assert_and_throw(th->data[i].type==DATA_OBJECT);
+		params[0] = th->data[i].data;
+		th->data[i].data->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if(argslen==1)
+		{
+			funcRet=f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			funcRet=f->call(args[1], params, 3);
+		}
+		if(funcRet)
+		{
+			if(Boolean_concrete(funcRet))
+			{
+				return funcRet;
+			}
+			funcRet->decRef();
+		}
+	}
+	return abstract_b(false);
+}
+
+ASFUNCTIONBODY(Array, every)
+{
+	Array* th=static_cast<Array*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+	ASObject *funcRet;
+
+	for(unsigned int i=0; i < th->data.size(); i++)
+	{
+		assert_and_throw(th->data[i].type==DATA_OBJECT);
+		params[0] = th->data[i].data;
+		th->data[i].data->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if(argslen==1)
+		{
+			funcRet=f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			funcRet=f->call(args[1], params, 3);
+		}
+		if(funcRet)
+		{
+			if(!Boolean_concrete(funcRet))
+			{
+				return funcRet;
+			}
+			funcRet->decRef();
+		}
+	}
+	return abstract_b(true);
 }
 
 ASFUNCTIONBODY(Array,_getLength)
@@ -3270,7 +3346,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 		{
 			if(val==NULL && sys->useInterpreter)
 			{
-				//This is not an hot function, execute it using the intepreter
+				//This is not a hot function, execute it using the interpreter
 				ret=ABCVm::executeFunction(this,cc);
 			}
 			else

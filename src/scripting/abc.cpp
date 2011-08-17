@@ -37,6 +37,7 @@
 #include "flashdisplay.h"
 #include "flashnet.h"
 #include "flashsystem.h"
+#include "flashsensors.h"
 #include "flashutils.h"
 #include "flashgeom.h"
 #include "flashexternal.h"
@@ -339,6 +340,8 @@ void ABCVm::registerClasses()
 			Class<ASObject>::getClass(QName("ContextMenu","flash.ui")),DECLARED_TRAIT);
 	builtin->setVariableByQName("ContextMenuItem","flash.ui",
 			Class<ASObject>::getClass(QName("ContextMenuItem","flash.ui")),DECLARED_TRAIT);
+
+	builtin->setVariableByQName("Accelerometer", "flash.sensors", Class<Accelerometer>::getClass(), DECLARED_TRAIT);
 
 	builtin->setVariableByQName("isNaN","",Class<IFunction>::getFunction(isNaN),DECLARED_TRAIT);
 	builtin->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite),DECLARED_TRAIT);
@@ -1333,8 +1336,12 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case INIT_FRAME:
 			{
+				InitFrameEvent* ev=static_cast<InitFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"INIT_FRAME");
-				sys->getStage()->initFrame();
+				if(!ev->clip.isNull())
+					ev->clip->initFrame();
+				else
+					sys->getStage()->initFrame();
 				break;
 			}
 			case ADVANCE_FRAME:

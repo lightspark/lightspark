@@ -1600,11 +1600,16 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->loaderInfo.isNull())
-		return new Undefined;
 
-	th->loaderInfo->incRef();
-	return th->loaderInfo.getPtr();
+	/* According to tests returning root.loaderInfo is the correct
+	 * behaviour, even though the documentation states that only
+	 * the main class should have non-null loaderInfo. */
+	_NR<RootMovieClip> r=th->getRoot();
+	if(r.isNull() || r->loaderInfo.isNull())
+		return new Undefined;
+	
+	r->loaderInfo->incRef();
+	return r->loaderInfo.getPtr();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getStage)
@@ -3589,6 +3594,10 @@ void DisplayObject::initFrame()
 	if(!isConstructed() && getPrototype())
 	{
 		getPrototype()->handleConstruction(this,NULL,0,true);
+
+		if(!onStage)
+			return;
+
 		/* addChild has already been called for this object,
 		 * but addedToStage is delayed until after construction.
 		 * This is from "Order of Operations".

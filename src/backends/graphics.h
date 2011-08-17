@@ -20,11 +20,7 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
-#ifdef ENABLE_GLES2
-#define CHUNKSIZE 1024
-#else
 #define CHUNKSIZE 128
-#endif
 
 #include "compat.h"
 #include "lsopengl.h"

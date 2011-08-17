@@ -317,7 +317,6 @@ void* RenderThread::worker(RenderThread* th)
 	{
 		EGLint id;
 		eglGetConfigAttrib(ed, conf[i], EGL_NATIVE_VISUAL_ID, &id);
-		LOG(LOG_ERROR, id <<" -> "<<e->visual);
 		if(id==(int)e->visual)
 			break;
 	}
@@ -1249,9 +1248,6 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
 {
-	//FIXME. This works now for GLES, where glPixelStorei(GL_UNPACK_ROW_LENGTH,..) is unavailable
-	//by using a large 1024x1024 chunk instead of many 128x128 ones.
-
 	//Fast bailout if the TextureChunk is not valid
 	if(chunk.chunks==NULL)
 		return;
@@ -1276,7 +1272,18 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*CHUNKSIZE);
 		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*CHUNKSIZE);
 		while(glGetError()!=GL_NO_ERROR);
+#ifndef ENABLE_GLES2
 		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, data);
+#else
+		//We need to copy the texture area to a contiguous memory region first,
+		//as GLES2 does not support UNPACK state (skip pixels, skip rows, row_lenght).
+		uint8_t *gdata = new uint8_t[4*sizeX*sizeY];
+		for(int j=0;j<sizeY;j++) {
+			memcpy(gdata+4*j*sizeX, data+4*w*(j+curY)+4*curX, sizeX*4);
+		}
+		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, gdata);
+		delete[] gdata;
+#endif
 		assert(glGetError()!=GL_INVALID_OPERATION);
 	}
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);

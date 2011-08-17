@@ -718,7 +718,8 @@ void SystemState::start()
 	//The engines must be created in the context of the main thread
 	engineData->mainThreadCallback((ls_callback_t)delayedStart, this);
 
-	renderThread->waitForInitialization();
+	if(engineData->isVisual())
+		renderThread->waitForInitialization();
 
 	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
 	if(vmVersion != AVM2)

@@ -317,7 +317,6 @@ void* RenderThread::worker(RenderThread* th)
 	{
 		EGLint id;
 		eglGetConfigAttrib(ed, conf[i], EGL_NATIVE_VISUAL_ID, &id);
-		LOG(LOG_ERROR, id <<" -> "<<e->visual);
 		if(id==(int)e->visual)
 			break;
 	}

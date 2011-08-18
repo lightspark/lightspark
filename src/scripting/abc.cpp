@@ -1072,7 +1072,7 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
 	uint_manager=new Manager(15);
 	number_manager=new Manager(15);
 	Global=new GlobalObject;
-	LOG(LOG_NO_INFO,_("Global is ") << Global);
+	LOG(LOG_INFO,_("Global is ") << Global);
 	//Push a dummy default context
 	pushObjAndLevel(Class<ASObject>::getInstanceS(),0);
 }
@@ -1696,10 +1696,10 @@ void ABCVm::Run(ABCVm* th)
 				if(th->events_queue.empty())
 					break;
 				//else
-				//	LOG(LOG_NO_INFO,th->events_queue.size() << _(" events missing before exit"));
+				//	LOG(LOG_INFO,th->events_queue.size() << _(" events missing before exit"));
 				else if(firstMissingEvents)
 				{
-					LOG(LOG_NO_INFO,th->events_queue.size() << _(" events missing before exit"));
+					LOG(LOG_INFO,th->events_queue.size() << _(" events missing before exit"));
 					firstMissingEvents = false;
 				}
 			}

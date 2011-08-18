@@ -756,7 +756,7 @@ void variables_map::dumpVariables()
 			case NO_CREATE_TRAIT:
 				assert(false);
 		}
-		LOG(LOG_NO_INFO, kind <<  '[' << it->second.ns.name << "] "<< it->first << ' ' <<
+		LOG(LOG_INFO, kind <<  '[' << it->second.ns.name << "] "<< it->first << ' ' <<
 			it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter);
 	}
 }

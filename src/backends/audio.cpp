@@ -152,13 +152,13 @@ void AudioManager::release_audioplugin()
 
 void AudioManager::load_audioplugin ( string selected_backend )
 {
-	LOG ( LOG_NO_INFO, _ ( ( ( string ) ( "the selected backend is: " + selected_backend ) ).c_str() ) );
+	LOG ( LOG_INFO, _ ( ( ( string ) ( "the selected backend is: " + selected_backend ) ).c_str() ) );
 	release_audioplugin();
 	oAudioPlugin = static_cast<IAudioPlugin *> ( pluginManager->get_plugin ( selected_backend ) );
 
 	if ( !pluginLoaded() )
 	{
-		LOG ( LOG_NO_INFO, _ ( "Could not load the audiobackend" ) );
+		LOG ( LOG_INFO, _ ( "Could not load the audiobackend" ) );
 	}
 }
 

@@ -86,14 +86,14 @@ void Config::load()
 	path cacheDirectoryP(cacheDirectory);
 	if(!is_directory(cacheDirectoryP))
 	{
-		LOG(LOG_NO_INFO, "Cache directory does not exist, trying to create");
+		LOG(LOG_INFO, "Cache directory does not exist, trying to create");
 		try
 		{
 			create_directories(cacheDirectoryP);
 		}
 		catch(const basic_filesystem_error<path>& e)
 		{
-			LOG(LOG_NO_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
+			LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
 					defaultCacheDirectory);
 			cacheDirectory = defaultCacheDirectory;
 		}

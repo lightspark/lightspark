@@ -404,6 +404,7 @@ class MorphShape: public DisplayObject
 {
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

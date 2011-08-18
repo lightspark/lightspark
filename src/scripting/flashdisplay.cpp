@@ -2566,6 +2566,11 @@ bool MorphShape::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 	return false;
 }
 
+_NR<InteractiveObject> MorphShape::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
+{
+	return NullRef;
+}
+
 void Stage::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

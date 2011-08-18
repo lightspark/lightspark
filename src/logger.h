@@ -24,7 +24,7 @@
 #include <semaphore.h>
 #include <iostream>
 
-enum LOG_LEVEL { LOG_NO_INFO=0, LOG_ERROR=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_TRACE=4};
+enum LOG_LEVEL { LOG_ERROR=0, LOG_NO_INFO=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_TRACE=4};
 
 #define LOG(level,esp)					\
 do {							\

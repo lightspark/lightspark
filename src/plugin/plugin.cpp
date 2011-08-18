@@ -189,7 +189,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(LOG_ERROR);
+	Log::initLogging(LOG_INFO);
 	lightspark::SystemState::staticInit();
 	return NPERR_NO_ERROR;
 }

@@ -21,7 +21,7 @@
 
 sem_t Log::mutex;
 bool Log::loggingInited = false;
-LOG_LEVEL Log::log_level=LOG_NO_INFO;
+LOG_LEVEL Log::log_level=LOG_INFO;
 const char* Log::level_names[]={"ERROR", "INFO","NOT_IMPLEMENTED","CALLS","TRACE"};
 
 Log::Log(LOG_LEVEL l)

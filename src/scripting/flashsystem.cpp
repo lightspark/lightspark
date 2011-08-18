@@ -237,7 +237,7 @@ ASFUNCTIONBODY(Security, allowInsecureDomain)
 
 ASFUNCTIONBODY(Security, loadPolicyFile)
 {
-	LOG(LOG_NO_INFO, "Loading policy file: " << sys->getOrigin().goToURL(args[0]->toString()));
+	LOG(LOG_INFO, "Loading policy file: " << sys->getOrigin().goToURL(args[0]->toString()));
 	sys->securityManager->addPolicyFile(sys->getOrigin().goToURL(args[0]->toString()));
 	assert_and_throw(argslen == 1);
 	return NULL;

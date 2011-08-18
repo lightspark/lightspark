@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
 	bool useJit=false;
-	LOG_LEVEL log_level=LOG_NO_INFO;
+	LOG_LEVEL log_level=LOG_INFO;
 
 	setlocale(LC_ALL, "");
 	bindtextdomain("lightspark", "/usr/share/locale");
@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
 	else
 	{
 		sys->setOrigin(string("file://") + fileName);
-		LOG(LOG_NO_INFO, _("Warning: running with no origin URL set."));
+		LOG(LOG_INFO, _("Warning: running with no origin URL set."));
 	}
 
 	//One of useInterpreter or useJit must be enabled
@@ -282,13 +282,13 @@ int main(int argc, char* argv[])
 
 	sys->securityManager->setSandboxType(sandboxType);
 	if(sandboxType == SecurityManager::REMOTE)
-		LOG(LOG_NO_INFO, _("Running in remote sandbox"));
+		LOG(LOG_INFO, _("Running in remote sandbox"));
 	else if(sandboxType == SecurityManager::LOCAL_WITH_NETWORK)
-		LOG(LOG_NO_INFO, _("Running in local-with-networking sandbox"));
+		LOG(LOG_INFO, _("Running in local-with-networking sandbox"));
 	else if(sandboxType == SecurityManager::LOCAL_WITH_FILE)
-		LOG(LOG_NO_INFO, _("Running in local-with-filesystem sandbox"));
+		LOG(LOG_INFO, _("Running in local-with-filesystem sandbox"));
 	else if(sandboxType == SecurityManager::LOCAL_TRUSTED)
-		LOG(LOG_NO_INFO, _("Running in local-trusted sandbox"));
+		LOG(LOG_INFO, _("Running in local-trusted sandbox"));
 
 	sys->downloadManager=new StandaloneDownloadManager();
 

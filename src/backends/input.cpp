@@ -37,7 +37,7 @@ InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(fal
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),currentMouseOver(NULL),lastMouseDownTarget(NULL),
 	dragLimit(NULL)
 {
-	LOG(LOG_NO_INFO,_("Creating input thread"));
+	LOG(LOG_INFO,_("Creating input thread"));
 }
 
 void InputThread::start(const EngineData* e)
@@ -91,9 +91,9 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 						break;
 					th->m_sys->audioManager->toggleMuteAll();
 					if(th->m_sys->audioManager->allMuted())
-						LOG(LOG_NO_INFO, "All sounds muted");
+						LOG(LOG_INFO, "All sounds muted");
 					else
-						LOG(LOG_NO_INFO, "All sounds unmuted");
+						LOG(LOG_INFO, "All sounds unmuted");
 					break;
 				case GDK_c:
 					if(th->m_sys->hasError())
@@ -105,10 +105,10 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 						clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 						gtk_clipboard_set_text(clipboard, th->m_sys->getErrorCause().c_str(),
 								th->m_sys->getErrorCause().size());
-						LOG(LOG_NO_INFO, "Copied error to clipboard");
+						LOG(LOG_INFO, "Copied error to clipboard");
 					}
 					else
-						LOG(LOG_NO_INFO, "No error to be coppied to clipboard");
+						LOG(LOG_INFO, "No error to be coppied to clipboard");
 					break;
 				default:
 					break;

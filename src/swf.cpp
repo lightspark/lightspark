@@ -586,7 +586,7 @@ void SystemState::createEngines()
 				return;
 			l.lock();
 		}
-		LOG(LOG_NO_INFO,_("Trying to invoke gnash!"));
+		LOG(LOG_INFO,_("Trying to invoke gnash!"));
 		//Dump the cookies to a temporary file
 		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
 		int file=mkstemp(cookiesFileName);
@@ -741,7 +741,7 @@ void SystemState::createEngines()
 	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
 	if(vmVersion != AVM2)
 	{
-		LOG(LOG_NO_INFO, "Unsupported flash file (AVM1), shutting down...");
+		LOG(LOG_INFO, "Unsupported flash file (AVM1), shutting down...");
 		setShutdownFlag();
 	}
 
@@ -761,7 +761,7 @@ void SystemState::needsAVM2(bool n)
 	if(n)
 	{
 		vmVersion=AVM2;
-		LOG(LOG_NO_INFO,_("Creating VM"));
+		LOG(LOG_INFO,_("Creating VM"));
 		currentVm=new ABCVm(this);
 	}
 	else
@@ -1033,10 +1033,10 @@ void ParseThread::parseSWFHeader()
 	f >> FileLength;
 	//Enable decompression if needed
 	if(fileType==SWF)
-		LOG(LOG_NO_INFO, _("Uncompressed SWF file: Version ") << (int)version);
+		LOG(LOG_INFO, _("Uncompressed SWF file: Version ") << (int)version);
 	else if(fileType==COMPRESSED_SWF)
 	{
-		LOG(LOG_NO_INFO, _("Compressed SWF file: Version ") << (int)version);
+		LOG(LOG_INFO, _("Compressed SWF file: Version ") << (int)version);
 		//The file is compressed, create a filtering streambuf
 		backend=f.rdbuf();
 		f.rdbuf(new zlib_filter(backend));
@@ -1047,7 +1047,7 @@ void ParseThread::parseSWFHeader()
 	root->fileLength=FileLength;
 	float frameRate=FrameRate;
 	frameRate/=256;
-	LOG(LOG_NO_INFO,_("FrameRate ") << frameRate);
+	LOG(LOG_INFO,_("FrameRate ") << frameRate);
 	root->setFrameRate(frameRate);
 	//TODO: setting render rate should be done when the clip is added to the displaylist
 	sys->setRenderRate(frameRate);
@@ -1085,7 +1085,7 @@ void ParseThread::execute()
 			{
 				case END_TAG:
 				{
-					LOG(LOG_NO_INFO,_("End of parsing @ ") << f.tellg());
+					LOG(LOG_INFO,_("End of parsing @ ") << f.tellg());
 					if(!empty)
 						root->commitFrame(false);
 					else

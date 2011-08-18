@@ -53,7 +53,7 @@ RenderThread::RenderThread(SystemState* s):
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexUploadJobs("Upload jobs"),initialized(0),
 	tempTex(false),hasNPOTTextures(false),cairoTextureContext(NULL)
 {
-	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
+	LOG(LOG_INFO,_("RenderThread this=") << this);
 	
 	m_sys=s;
 	sem_init(&event,0,0);
@@ -82,7 +82,7 @@ RenderThread::~RenderThread()
 {
 	wait();
 	sem_destroy(&event);
-	LOG(LOG_NO_INFO,_("~RenderThread this=") << this);
+	LOG(LOG_INFO,_("~RenderThread this=") << this);
 }
 
 /*void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
@@ -284,7 +284,7 @@ void* RenderThread::worker(RenderThread* th)
 		return NULL;
 	}
 
-	LOG(LOG_NO_INFO, _("EGL version: ") << eglQueryString(ed, EGL_VERSION));
+	LOG(LOG_INFO, _("EGL version: ") << eglQueryString(ed, EGL_VERSION));
 
 	EGLint config_attribs[] = {
 				EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -303,7 +303,7 @@ void* RenderThread::worker(RenderThread* th)
 	if (!eglChooseConfig(ed, config_attribs, 0, 0, &a)) {
 		LOG(LOG_ERROR,_("Could not get number of EGL configurations"));
 	} else {
-	    LOG(LOG_NO_INFO, "Number of EGL configurations: " << a);
+	    LOG(LOG_INFO, "Number of EGL configurations: " << a);
 	}
 	EGLConfig *conf = new EGLConfig[a];
 	if (!eglChooseConfig(ed, config_attribs, conf, a, &a))
@@ -367,7 +367,7 @@ void* RenderThread::worker(RenderThread* th)
 				th->newWidth=0;
 				th->newHeight=0;
 				th->resizeNeeded=false;
-				LOG(LOG_NO_INFO,_("Window resized to ") << th->windowWidth << 'x' << th->windowHeight);
+				LOG(LOG_INFO,_("Window resized to ") << th->windowWidth << 'x' << th->windowHeight);
 				th->commonGLResize();
 				th->m_sys->resizeCompleted();
 				profile->accountTime(chronometer.checkpoint());
@@ -454,7 +454,7 @@ bool RenderThread::loadShaderPrograms()
 	glCompileShader(f);
 	assert(glGetShaderInfoLog);
 	glGetShaderInfoLog(f,1024,&a,str);
-	LOG(LOG_NO_INFO,_("Fragment shader compilation ") << str);
+	LOG(LOG_INFO,_("Fragment shader compilation ") << str);
 
 	fs = dataFileRead("lightspark.vert");
 	if(fs==NULL)
@@ -467,7 +467,7 @@ bool RenderThread::loadShaderPrograms()
 
 	glCompileShader(g);
 	glGetShaderInfoLog(g,1024,&a,str);
-	LOG(LOG_NO_INFO,_("Vertex shader compilation ") << str);
+	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
 
 	assert(glCreateProgram);
 	gpu_program = glCreateProgram();
@@ -502,7 +502,7 @@ bool RenderThread::loadShaderPrograms()
 
 	glCompileShader(v);
 	glGetShaderInfoLog(v,1024,&a,str);
-	LOG(LOG_NO_INFO,_("Vertex shader compilation ") << str);
+	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
 
 	blitter_program = glCreateProgram();
 	glAttachShader(blitter_program,v);
@@ -967,7 +967,7 @@ void RenderThread::draw(bool force)
 	if(diff>1000)
 	{
 		time_s=time_d;
-		LOG(LOG_NO_INFO,_("FPS: ") << dec << frameCount);
+		LOG(LOG_INFO,_("FPS: ") << dec << frameCount);
 		frameCount=0;
 		secsCount++;
 	}

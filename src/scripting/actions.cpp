@@ -32,7 +32,7 @@ void lightspark::ignore(istream& i, int count);
 
 ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_NO_INFO,_("ExportAssetsTag Tag"));
+	LOG(LOG_INFO,_("ExportAssetsTag Tag"));
 	in >> Count;
 	Tags.resize(Count);
 	Names.resize(Count);

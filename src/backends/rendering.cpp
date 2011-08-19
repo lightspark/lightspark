@@ -1179,10 +1179,16 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	{
 		startY=h*i/chunk.height;
 		endY=min(h*(i+CHUNKSIZE)/chunk.height,h);
+		//Take yOffset into account
+		startY = (y<0)?startY:y+startY;
+		endY = (y<0)?endY:y+endY;
 		for(uint32_t j=0;j<chunk.width;j+=CHUNKSIZE)
 		{
 			startX=w*j/chunk.width;
 			endX=min(w*(j+CHUNKSIZE)/chunk.width,w);
+			//Take xOffset into account
+			startX = (x<0)?startX:x+startX;
+			endX = (x<0)?endX:x+endX;
 			const uint32_t curChunkId=chunk.chunks[curChunk];
 			const uint32_t blockX=((curChunkId%blocksPerSide)*CHUNKSIZE);
 			const uint32_t blockY=((curChunkId/blocksPerSide)*CHUNKSIZE);
@@ -1200,35 +1206,35 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 			//Upper-right triangle of the quad
 			texture_coords[k] = startU;
 			texture_coords[k+1] = startV;
-			vertex_coords[k] = x+startX;
-			vertex_coords[k+1] = y+startY;
+			vertex_coords[k] = startX;
+			vertex_coords[k+1] = startY;
 			k+=2;
 			texture_coords[k] = endU;
 			texture_coords[k+1] = startV;
-			vertex_coords[k] = x+endX;
-			vertex_coords[k+1] = y+startY;
+			vertex_coords[k] = endX;
+			vertex_coords[k+1] = startY;
 			k+=2;
 			texture_coords[k] = endU;
 			texture_coords[k+1] = endV;
-			vertex_coords[k] = x+endX;
-			vertex_coords[k+1] = y+endY;
+			vertex_coords[k] = endX;
+			vertex_coords[k+1] = endY;
 			k+=2;
 
 			//Lower-left triangle of the quad
 			texture_coords[k] = startU;
 			texture_coords[k+1] = startV;
-			vertex_coords[k] = x+startX;
-			vertex_coords[k+1] = y+startY;
+			vertex_coords[k] = startX;
+			vertex_coords[k+1] = startY;
 			k+=2;
 			texture_coords[k] = endU;
 			texture_coords[k+1] = endV;
-			vertex_coords[k] = x+endX;
-			vertex_coords[k+1] = y+endY;
+			vertex_coords[k] = endX;
+			vertex_coords[k+1] = endY;
 			k+=2;
 			texture_coords[k] = startU;
 			texture_coords[k+1] = endV;
-			vertex_coords[k] = x+startX;
-			vertex_coords[k+1] = y+endY;
+			vertex_coords[k] = startX;
+			vertex_coords[k+1] = endY;
 			k+=2;
 
 			curChunk++;

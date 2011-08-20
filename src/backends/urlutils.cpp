@@ -230,6 +230,14 @@ const URLInfo URLInfo::goToURL(const tiny_string& u) const
 {
 	std::string str = u.raw_buf();
 
+	// absolute URL without protocol, add current protocol
+	if(str.find("//") == 0)
+	{
+		tiny_string s;
+		s = getProtocol()+":"+str;
+		return URLInfo(s);
+	}
+
 	//No protocol, treat this as an unqualified URL
 	if(str.find("://") == std::string::npos)
 	{

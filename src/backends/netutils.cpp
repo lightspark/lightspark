@@ -938,7 +938,7 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 	sem_wait(&mutex);
 	//-- Lock acquired
 
-	if(header.substr(0, 9) == "HTTP/1.1 " || header.substr(0, 9) == "HTTP/1.0") 
+	if(header.substr(0, 9) == "HTTP/1.1 " || header.substr(0, 9) == "HTTP/1.0 ") 
 	{
 		std::string status = header.substr(9, 3);
 		requestStatus = atoi(status.c_str());

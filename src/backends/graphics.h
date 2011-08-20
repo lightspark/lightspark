@@ -309,7 +309,7 @@ public:
 	/* the default values are from the spec for flash.text.TextField */
 	TextData() : width(100), height(100), textWidth(0), textHeight(0), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
-		wordWrap(false) {}
+		wordWrap(false), autoSize(NONE) {}
 	uint32_t width;
 	uint32_t height;
 	//TODO: This is NOT the right textWidth/Height in case there is scaling involved
@@ -324,6 +324,8 @@ public:
 	RGB textColor;
 	bool wordWrap;
 	TextFormat_data format;
+	enum AUTO_SIZE {NONE = 0, LEFT, RIGHT, CENTER };
+	AUTO_SIZE autoSize;
 };
 
 class CairoPangoRenderer : public CairoRenderer

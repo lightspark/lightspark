@@ -816,6 +816,36 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	layout = pango_cairo_create_layout(cr);
 	pango_layout_set_text(layout, textData.text.raw_buf(), -1);
 
+	PangoAlignment alignment;
+
+	switch(textData.autoSize)
+	{
+		case TextData::AUTO_SIZE::NONE://TODO:check
+		case TextData::AUTO_SIZE::LEFT:
+		{
+			alignment = PANGO_ALIGN_LEFT;
+			break;
+		}
+		case TextData::AUTO_SIZE::RIGHT:
+		{
+			alignment = PANGO_ALIGN_RIGHT;
+			break;
+		}
+		case TextData::AUTO_SIZE::CENTER:
+		{
+			alignment = PANGO_ALIGN_CENTER;
+			break;
+		}
+	}
+
+	pango_layout_set_alignment(layout,alignment);
+
+	if(textData.wordWrap == true)
+	{
+		pango_layout_set_width(layout,PANGO_SCALE*textData.width);
+		pango_layout_set_wrap(layout,PANGO_WRAP_WORD);//I think this is what Adobe does
+	}
+
 	/* setup font description */
 	desc = pango_font_description_new();
 	pango_font_description_set_family(desc, textData.format.font.raw_buf());
@@ -848,6 +878,42 @@ bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint3
 	PangoFontDescription* desc;
 
 	layout = pango_cairo_create_layout(cr);
+	PangoAlignment alignment;
+
+	switch(_textData.autoSize)
+	{
+		case TextData::AUTO_SIZE::NONE://TODO:check
+		case TextData::AUTO_SIZE::LEFT:
+		{
+			alignment = PANGO_ALIGN_LEFT;
+			break;
+		}
+		case TextData::AUTO_SIZE::RIGHT:
+		{
+			alignment = PANGO_ALIGN_RIGHT;
+			break;
+		}
+		case TextData::AUTO_SIZE::CENTER:
+		{
+			alignment = PANGO_ALIGN_CENTER;
+			break;
+		}
+	}
+
+	pango_layout_set_alignment(layout,alignment);
+
+	//In case wordWrap is true, we already have the right width
+	if(_textData.wordWrap == true)
+	{
+		pango_layout_set_width(layout,PANGO_SCALE*w);
+		pango_layout_set_wrap(layout,PANGO_WRAP_WORD);//I think this is what Adobe does
+	}
+	//In case autoSize is NONE, we also have the height
+	if(_textData.autoSize == TextData::AUTO_SIZE::NONE)
+	{
+		pango_layout_set_width(layout,PANGO_SCALE*w);
+		pango_layout_set_height(layout,PANGO_SCALE*h);//TODO:Not sure what Pango does if the text is too long to fit
+	}
 	pango_layout_set_text(layout, _textData.text.raw_buf(), -1);
 
 	/* setup font description */
@@ -867,6 +933,12 @@ bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint3
 	//This should be safe check precision
 	tw = ink_rect.width;
 	th = ink_rect.height;
+	if(_textData.autoSize != TextData::AUTO_SIZE::NONE)
+	{
+		h = logical_rect.height;
+		if(!_textData.wordWrap)
+			w = logical_rect.width;
+	}
 
 	return (h!=0) && (w!=0);
 }

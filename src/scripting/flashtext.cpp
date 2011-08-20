@@ -63,6 +63,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getTextWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_setWordWrap),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_setAutoSize),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
 }
 
@@ -90,6 +92,36 @@ _NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, numbe
 		return NullRef;
 }
 
+ASFUNCTIONBODY(TextField,_setWordWrap)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	assert_and_throw(argslen==1);
+	th->wordWrap=Boolean_concrete(args[0]);
+	if(th->onStage)
+		th->requestInvalidation();
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_setAutoSize)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	assert_and_throw(argslen==1);
+	tiny_string temp = args[0]->toString();
+	if(temp == "none")
+		th->autoSize = NONE;//TODO: take care of corner cases : what to do with sizes when changing the autoSize
+	else if (temp == "left")
+		th->autoSize = LEFT;
+	else if (temp == "right")
+		th->autoSize = RIGHT;
+	else if (temp == "center")
+		th->autoSize = CENTER;
+	else
+		throw Class<ArgumentError>::getInstanceS("Wrong argument in TextField.autoSize");
+	if(th->onStage)
+		th->requestInvalidation();//TODO:check if there was any change
+	return NULL;
+}
+
 ASFUNCTIONBODY(TextField,_getWidth)
 {
 	TextField* th=Class<TextField>::cast(obj);
@@ -100,11 +132,15 @@ ASFUNCTIONBODY(TextField,_setWidth)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
-	th->width=args[0]->toInt();
-	if(th->onStage)
-		th->requestInvalidation();
-	else
-		th->updateSizes();
+	//The width needs to be updated only if autoSize is off or wordWrap is on TODO:check this, adobe's behavior is not clear
+	if((th->autoSize == NONE)||(th->wordWrap == true))
+	{
+		th->width=args[0]->toInt();
+		if(th->onStage)
+			th->requestInvalidation();
+		else
+			th->updateSizes();
+	}
 	return NULL;
 }
 
@@ -118,11 +154,15 @@ ASFUNCTIONBODY(TextField,_setHeight)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
-	th->height=args[0]->toInt();
-	if(th->onStage)
-		th->requestInvalidation();
-	else
-		th->updateSizes();
+	if(th->autoSize == NONE)
+	{
+		th->height=args[0]->toInt();
+		if(th->onStage)
+			th->requestInvalidation();
+		else
+			th->updateSizes();
+	}
+	//else do nothing as the height is determined by autoSize
 	return NULL;
 }
 

@@ -230,6 +230,14 @@ const URLInfo URLInfo::goToURL(const tiny_string& u) const
 {
 	std::string str = u.raw_buf();
 
+	// treat URLs starting with "//" as http-URLs (needed for malformed URL in vimeo video player)
+	if(str.find("//") == 0)
+	{
+		tiny_string s;
+		s = "http:"+str;
+		return URLInfo(s);
+	}
+
 	//No protocol, treat this as an unqualified URL
 	if(str.find("://") == std::string::npos)
 	{

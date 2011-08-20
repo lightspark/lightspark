@@ -455,8 +455,8 @@ class Loader: public IThreadJob, public DisplayObjectContainer
 {
 private:
 	enum SOURCE { URL, BYTES };
-	mutable Spinlock localRootSpinlock;
-	_NR<RootMovieClip> localRoot;
+	mutable Spinlock contentSpinlock;
+	_NR<DisplayObject> content;
 	bool loading;
 	bool loaded;
 	SOURCE source;
@@ -470,7 +470,7 @@ private:
 	void threadAbort();
 	void jobFence();
 public:
-	Loader():localRoot(NullRef),loading(false),loaded(false),bytes(NullRef),contentLoaderInfo(NullRef),downloader(NULL)
+	Loader():content(NullRef),loading(false),loaded(false),bytes(NullRef),contentLoaderInfo(NullRef),downloader(NULL)
 	{
 	}
 	~Loader();
@@ -486,6 +486,8 @@ public:
 	{
 		return 0;
 	}
+	void setContent(_R<DisplayObject> o);
+	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
 };
 
 class Sprite: public DisplayObjectContainer, public TokenContainer
@@ -726,12 +728,15 @@ class Bitmap: public DisplayObject
 {
 friend class CairoTokenRenderer;
 protected:
+	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height);
 	bool fromJPEG( uint8_t* data, int len);
+	bool fromJPEG(std::istream& s);
 	IntSize size;
 	/* the bitmaps data in cairo's internal representation */
 	uint8_t* data;
 public:
 	Bitmap() : size(0,0), data(NULL) {}
+	Bitmap(std::istream *s, FILE_TYPE type=FT_UNKNOWN);
 	static void sinit(Class_base* c);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);

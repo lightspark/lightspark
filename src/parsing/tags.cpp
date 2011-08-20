@@ -227,7 +227,7 @@ _NR<Tag> TagFactory::readTag()
 	}
 
 	//Check if this clip is the main clip and if AVM2 has been enabled by a FileAttributes tag
-	if(topLevel && firstTag && pt->root==sys)
+	if(topLevel && firstTag && pt->getRootMovie()==sys)
 	{
 		sys->needsAVM2(pt->useAVM2);
 		if(pt->useNetwork

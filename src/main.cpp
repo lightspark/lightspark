@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	cout.exceptions( ios::failbit | ios::badbit);
 	cerr.exceptions( ios::failbit | ios::badbit);
-	ParseThread* pt = new ParseThread(NULL,f);
+	ParseThread* pt = new ParseThread(f);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration
 	sys=new SystemState(pt, fileSize);

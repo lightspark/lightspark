@@ -307,11 +307,14 @@ class TextData
 {
 public:
 	/* the default values are from the spec for flash.text.TextField */
-	TextData() : width(100), height(100), background(false), backgroundColor(0xFFFFFF),
+	TextData() : width(100), height(100), textWidth(0), textHeight(0), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
 		wordWrap(false) {}
 	uint32_t width;
 	uint32_t height;
+	//TODO: This is NOT the right textWidth/Height in case there is scaling involved
+	uint32_t textWidth;
+	uint32_t textHeight;
 	tiny_string text;
 	bool background;
 	RGB backgroundColor;
@@ -335,6 +338,12 @@ public:
 	CairoPangoRenderer(ASObject* _o, CachedSurface& _t, const TextData& _textData, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
 		: CairoRenderer(_o,_t,_m,_x,_y,_w,_h,_s,_a), textData(_textData) {}
+	/**
+		Helper. Uses Pango to find the size of the textdata
+		@param _texttData The textData being tested
+		@param w,h,tw,th are the (text)width and (text)height of the textData.
+	*/
+	static bool getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th);
 };
 
 };

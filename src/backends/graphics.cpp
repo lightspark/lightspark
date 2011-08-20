@@ -830,16 +830,43 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	}
 	cairo_set_source_rgb (cr, textData.textColor.Red, textData.textColor.Green, textData.textColor.Blue);
 
-	TextField* tf=dynamic_cast<TextField*>(owner);
-	if(tf)
-	{
-		int width, height;
-		pango_layout_get_pixel_size(layout, &width, &height);
-		tf->setTextSize(width, height);
-	}
-
 	/* draw the text */
 	pango_cairo_show_layout(cr, layout);
 
 	g_object_unref(layout);
+}
+
+bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint32_t& h,
+					uint32_t& tw, uint32_t& th)
+{
+	//TODO:check locking
+	Locker l(pangoMutex);
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+	cairo_t *cr=cairo_create(cairoSurface);
+
+	PangoLayout* layout;
+	PangoFontDescription* desc;
+
+	layout = pango_cairo_create_layout(cr);
+	pango_layout_set_text(layout, _textData.text.raw_buf(), -1);
+
+	/* setup font description */
+	desc = pango_font_description_new();
+	pango_font_description_set_family(desc, _textData.format.font.raw_buf());
+	pango_font_description_set_size(desc, PANGO_SCALE*_textData.format.size);//TODO:Take scaling into account
+	pango_layout_set_font_description(layout, desc);
+	pango_font_description_free(desc);
+
+	PangoRectangle ink_rect, logical_rect;
+	pango_layout_get_pixel_extents(layout,&ink_rect,&logical_rect);//TODO: check the rounding during pango conversion
+
+	g_object_unref(layout);
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+
+	//This should be safe check precision
+	tw = ink_rect.width;
+	th = ink_rect.height;
+
+	return (h!=0) && (w!=0);
 }

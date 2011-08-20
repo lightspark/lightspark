@@ -73,7 +73,7 @@ void TextField::buildTraits(ASObject* o)
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	xmin=0;
-	xmax=width;
+	xmax=width;//TODO: take the scaling into account as Textfields are not scaled in only one direction
 	ymin=0;
 	ymax=height;
 	return true;
@@ -101,6 +101,10 @@ ASFUNCTIONBODY(TextField,_setWidth)
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
 	th->width=args[0]->toInt();
+	if(th->onStage)
+		th->requestInvalidation();
+	else
+		th->updateSizes();
 	return NULL;
 }
 
@@ -115,6 +119,10 @@ ASFUNCTIONBODY(TextField,_setHeight)
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
 	th->height=args[0]->toInt();
+	if(th->onStage)
+		th->requestInvalidation();
+	else
+		th->updateSizes();
 	return NULL;
 }
 
@@ -152,27 +160,34 @@ ASFUNCTIONBODY(TextField, appendText)
 	return NULL;
 }
 
-void TextField::setTextSize(int twidth, int theight)
+void TextField::updateSizes()
 {
-	// TOOD: textWidth and textHeight should be updated in one
-	// atomic step
-	textWidth=twidth;
-	textHeight=theight;
+	// TODO: Take the scaling into account
+	uint32_t w,h,tw,th;
+	w = width;
+	h = height;
+	//Compute (text)width, (text)height
+	CairoPangoRenderer::getBounds(*this, w, h, tw, th);
+	width = w; //TODO: check the case when w,h == 0
+	textWidth=tw;
+	height = h;
+	textHeight=th;
 }
 
 void TextField::updateText(const tiny_string& new_text)
 {
 	text = new_text;
-	requestInvalidation();
+	if(onStage)
+		requestInvalidation();
+	else
+		updateSizes();
 }
 
 void TextField::requestInvalidation()
 {
 	incRef();
+	updateSizes();
 	sys->addToInvalidateQueue(_MR(this));
-
-	// Note: textWidth and textHeight should be updated now.
-	// Currently updating is delayed until rendering step.
 }
 
 void TextField::invalidate()
@@ -189,6 +204,11 @@ void TextField::invalidate()
 	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
 		return;
+
+	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
+		on the font size. In some cases, it can change the width (if autosize is on and wordwrap off).
+		Width changes do not change the font size, and do nothing when autosize is on and wordwrap off.
+	*/
 	CairoPangoRenderer* r=new CairoPangoRenderer(this, cachedSurface, *this,
 				getConcatenatedMatrix(), x, y, width, height, 1.0f,
 				getConcatenatedAlpha());

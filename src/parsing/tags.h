@@ -348,8 +348,6 @@ public:
 	SoundStreamHead2Tag(RECORDHEADER h, std::istream& in);
 };
 
-class BUTTONCONDACTION;
-
 class DefineButton2Tag: public DictionaryTag
 {
 private:
@@ -358,7 +356,6 @@ private:
 	UB TrackAsMenu;
 	UI16_SWF ActionOffset;
 	std::vector<BUTTONRECORD> Characters;
-	std::vector<BUTTONCONDACTION> Actions;
 public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }

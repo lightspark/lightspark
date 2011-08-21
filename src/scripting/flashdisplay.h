@@ -724,7 +724,7 @@ public:
 	IntSize(uint32_t w, uint32_t h):width(h),height(h){}
 };
 
-class Bitmap: public DisplayObject
+class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;
 protected:
@@ -734,13 +734,17 @@ protected:
 	IntSize size;
 	/* the bitmaps data in cairo's internal representation */
 	uint8_t* data;
+	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
 public:
-	Bitmap() : size(0,0), data(NULL) {}
+	Bitmap() : TokenContainer(this), size(0,0), data(NULL) {}
 	Bitmap(std::istream *s, FILE_TYPE type=FT_UNKNOWN);
 	static void sinit(Class_base* c);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
+	void requestInvalidation() { TokenContainer::requestInvalidation(); }
+	void invalidate() { TokenContainer::invalidate(); }
 };
 
 class AVM1Movie: public DisplayObject

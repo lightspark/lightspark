@@ -3280,7 +3280,7 @@ void StageDisplayState::sinit(Class_base* c)
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
 }
 
-Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : size(0,0), data(NULL)
+Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this), size(0,0), data(NULL)
 {
 	if(type==FT_UNKNOWN)
 	{
@@ -3318,7 +3318,10 @@ void Bitmap::sinit(Class_base* c)
 
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	return false;
+	if(!data)
+		return false;
+
+	return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 }
 
 _NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
@@ -3340,6 +3343,19 @@ bool Bitmap::fromRGB(uint8_t* rgb, uint32_t width, uint32_t height)
 		LOG(LOG_ERROR, "Error decoding image");
 		return false;
 	}
+
+	FILLSTYLE style(-1);
+	style.FillStyleType=CLIPPED_BITMAP;
+	style.bitmap=this;
+	tokens.clear();
+	tokens.emplace_back(SET_FILL, style);
+	tokens.emplace_back(MOVE, Vector2(0, 0));
+	tokens.emplace_back(STRAIGHT, Vector2(0, size.height));
+	tokens.emplace_back(STRAIGHT, Vector2(size.width, size.height));
+	tokens.emplace_back(STRAIGHT, Vector2(size.width, 0));
+	tokens.emplace_back(STRAIGHT, Vector2(0, 0));
+	requestInvalidation();
+
 	return true;
 }
 

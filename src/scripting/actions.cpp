@@ -39,11 +39,11 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h)
 	for(int i=0;i<Count;i++)
 	{
 		in >> Tags[i] >> Names[i];
-		_R<DictionaryTag> d=pt->root->dictionaryLookup(Tags[i]);
+		_R<DictionaryTag> d=pt->getRootMovie()->dictionaryLookup(Tags[i]);
 		if(d==NULL)
 			throw ParseException("ExportAssetsTag: id not defined in Dictionary");
 		//TODO:new interface based model
-		//pt->root->setVariableByString(Names[i],d->instance());
+		//pt->getRootMovie()->setVariableByString(Names[i],d->instance());
 	}
 }
 

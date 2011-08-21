@@ -522,7 +522,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 		dl->setLength(stream->end);
 		mainDownloader=dl;
 		mainDownloaderStream.rdbuf(mainDownloader);
-		m_pt=new lightspark::ParseThread(m_sys,mainDownloaderStream);
+		m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys);
 		m_sys->addJob(m_pt);
 	}
 	//The downloader is set as the private data for this stream

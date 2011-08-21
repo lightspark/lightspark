@@ -146,6 +146,9 @@ public:
 	Vector2f getXY();
 	void setX(number_t x);
 	void setY(number_t y);
+	// Nominal width and heigt are the size before scaling and rotation
+	number_t getNominalWidth();
+	number_t getNominalHeight();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -442,6 +445,8 @@ public:
 	ASFUNCTION(_getLoader);
 	ASFUNCTION(_getContent);
 	ASFUNCTION(_getSharedEvents);
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_getHeight);
 	void sendInit();
 	//ILoadable interface
 	void setBytesTotal(uint32_t b)
@@ -455,8 +460,8 @@ class Loader: public IThreadJob, public DisplayObjectContainer
 {
 private:
 	enum SOURCE { URL, BYTES };
-	mutable Spinlock localRootSpinlock;
-	_NR<RootMovieClip> localRoot;
+	mutable Spinlock contentSpinlock;
+	_NR<DisplayObject> content;
 	bool loading;
 	bool loaded;
 	SOURCE source;
@@ -470,7 +475,7 @@ private:
 	void threadAbort();
 	void jobFence();
 public:
-	Loader():localRoot(NullRef),loading(false),loaded(false),bytes(NullRef),contentLoaderInfo(NullRef),downloader(NULL)
+	Loader():content(NullRef),loading(false),loaded(false),bytes(NullRef),contentLoaderInfo(NullRef),downloader(NULL)
 	{
 	}
 	~Loader();
@@ -486,6 +491,9 @@ public:
 	{
 		return 0;
 	}
+	void setContent(_R<DisplayObject> o);
+	_NR<DisplayObject> getContent() { return content; }
+	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
 };
 
 class Sprite: public DisplayObjectContainer, public TokenContainer
@@ -722,20 +730,27 @@ public:
 	IntSize(uint32_t w, uint32_t h):width(h),height(h){}
 };
 
-class Bitmap: public DisplayObject
+class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;
 protected:
+	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height);
 	bool fromJPEG( uint8_t* data, int len);
+	bool fromJPEG(std::istream& s);
 	IntSize size;
 	/* the bitmaps data in cairo's internal representation */
 	uint8_t* data;
+	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
 public:
-	Bitmap() : size(0,0), data(NULL) {}
+	Bitmap() : TokenContainer(this), size(0,0), data(NULL) {}
+	Bitmap(std::istream *s, FILE_TYPE type=FT_UNKNOWN);
 	static void sinit(Class_base* c);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
+	void requestInvalidation() { TokenContainer::requestInvalidation(); }
+	void invalidate() { TokenContainer::invalidate(); }
 };
 
 class AVM1Movie: public DisplayObject

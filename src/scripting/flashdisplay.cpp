@@ -93,6 +93,8 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
 }
 
 void LoaderInfo::buildTraits(ASObject* o)
@@ -209,6 +211,26 @@ ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 	return Class<ApplicationDomain>::getInstanceS();
 }
 
+ASFUNCTIONBODY(LoaderInfo,_getWidth)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	_NR<DisplayObject> o=th->loader->getContent();
+	if (o.isNull())
+		return abstract_d(0);
+
+	return abstract_d(o->getNominalWidth());
+}
+
+ASFUNCTIONBODY(LoaderInfo,_getHeight)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	_NR<DisplayObject> o=th->loader->getContent();
+	if (o.isNull())
+		return abstract_d(0);
+
+	return abstract_d(o->getNominalHeight());
+}
+
 ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj);
@@ -228,8 +250,8 @@ ASFUNCTIONBODY(Loader,_constructor)
 ASFUNCTIONBODY(Loader,_getContent)
 {
 	Loader* th=static_cast<Loader*>(obj);
-	SpinlockLocker l(th->localRootSpinlock);
-	_NR<ASObject> ret=th->localRoot;
+	SpinlockLocker l(th->contentSpinlock);
+	_NR<ASObject> ret=th->content;
 	if(ret.isNull())
 		ret=_MR(new Undefined);
 
@@ -288,7 +310,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 void Loader::finalize()
 {
 	DisplayObjectContainer::finalize();
-	localRoot.reset();
+	content.reset();
 	contentLoaderInfo.reset();
 	bytes.reset();
 }
@@ -320,16 +342,9 @@ void Loader::buildTraits(ASObject* o)
 void Loader::execute()
 {
 	assert(source==URL || source==BYTES);
-	//The loaderInfo of the content is our contentLoaderInfo
-	contentLoaderInfo->incRef();
-	//Use a local variable to store the new root, as the localRoot member may change
-	_R<RootMovieClip> newRoot=_MR(RootMovieClip::getInstance(contentLoaderInfo.getPtr()));
-
-	_addChildAt(newRoot,0);
 
 	if(source==URL)
 	{
-		newRoot->setOrigin(url.getParsedURL(), "");
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
 		assert_and_throw(postData.empty());
@@ -344,7 +359,7 @@ void Loader::execute()
 		}
 		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
-		ParseThread* local_pt=new ParseThread(newRoot.getPtr(),s);
+		ParseThread* local_pt=new ParseThread(s,this,url.getParsedURL());
 		local_pt->run();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
@@ -352,12 +367,24 @@ void Loader::execute()
 			sys->downloadManager->destroy(downloader);
 			downloader=NULL;
 		}
-		if(local_pt->getFileType()==ParseThread::SWF || local_pt->getFileType()==ParseThread::COMPRESSED_SWF)
+
+		_NR<DisplayObject> obj=local_pt->getParsedObject();
+		if(obj.isNull())
 		{
-			SpinlockLocker l(localRootSpinlock);
-			localRoot=newRoot;
+			// The stream did not contain RootMovieClip or Bitmap
+			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("ioError")));
+			return;
 		}
-		//complete event is dispatched when the LoaderInfo has sent init and bytesTotal==bytesLoaded
+
+		// If the parsed object is an SWF, the ParseThread has
+		// already called setContent() and sent init and
+		// complete events.
+		if(!(local_pt->getFileType()==FT_SWF || 
+		     local_pt->getFileType()==FT_COMPRESSED_SWF))
+		{
+			setContent(obj);
+			contentLoaderInfo->sendInit();
+		}
 	}
 	else if(source==BYTES)
 	{
@@ -370,13 +397,8 @@ void Loader::execute()
 		bytes_buf bb(bytes->bytes,bytes->len);
 		istream s(&bb);
 
-		ParseThread* local_pt = new ParseThread(newRoot.getPtr(),s);
+		ParseThread* local_pt = new ParseThread(s,this);
 		local_pt->run();
-		if(local_pt->getFileType()==ParseThread::SWF)
-		{
-			SpinlockLocker l(localRootSpinlock);
-			localRoot=newRoot;
-		}
 		bytes->decRef();
 		//Add a complete event for this object
 		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));
@@ -393,6 +415,22 @@ void Loader::threadAbort()
 		if(downloader != NULL)
 			downloader->stop();
 	}
+}
+
+void Loader::setContent(_R<DisplayObject> o)
+{
+	{
+		Locker l(mutexDisplayList);
+		dynamicDisplayList.clear();
+	}
+
+	{
+		SpinlockLocker l(contentSpinlock);
+		content=o;
+	}
+
+	// _addChild may cause AS code to run, release locks beforehand.
+	_addChildAt(o, 0);
 }
 
 Sprite::Sprite():TokenContainer(this),graphics(NULL)
@@ -543,6 +581,28 @@ bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
 	}
 	return ret;
+}
+
+number_t DisplayObject::getNominalWidth()
+{
+	number_t xmin, xmax, ymin, ymax;
+
+	if(!isConstructed())
+		return 0;
+
+	bool ret=boundsRect(xmin,xmax,ymin,ymax);
+	return ret?(xmax-xmin):0;
+}
+
+number_t DisplayObject::getNominalHeight()
+{
+	number_t xmin, xmax, ymin, ymax;
+
+	if(!isConstructed())
+		return 0;
+
+	bool ret=boundsRect(xmin,xmax,ymin,ymax);
+	return ret?(ymax-ymin):0;
 }
 
 void Sprite::requestInvalidation()
@@ -3264,6 +3324,34 @@ void StageDisplayState::sinit(Class_base* c)
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
 }
 
+Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this), size(0,0), data(NULL)
+{
+	if(type==FT_UNKNOWN)
+	{
+		// Try to detect the format from the stream
+		UI8 Signature[4];
+		(*s) >> Signature[0] >> Signature[1] >> Signature[2] >> Signature[3];
+		type=ParseThread::recognizeFile(Signature[0], Signature[1],
+						Signature[2], Signature[3]);
+		s->putback(Signature[3]).putback(Signature[2]).
+		   putback(Signature[1]).putback(Signature[0]);
+	}
+
+	switch(type)
+	{
+		case FT_JPEG:
+			fromJPEG(*s);
+			break;
+		case FT_PNG:
+		case FT_GIF:
+			LOG(LOG_NOT_IMPLEMENTED, _("PNGs and GIFs are not yet supported"));
+			break;
+		default:
+			LOG(LOG_ERROR,_("Unsupported image type"));
+			break;
+	}
+}
+
 void Bitmap::sinit(Class_base* c)
 {
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
@@ -3274,7 +3362,10 @@ void Bitmap::sinit(Class_base* c)
 
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	return false;
+	if(!data)
+		return false;
+
+	return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 }
 
 _NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
@@ -3287,18 +3378,43 @@ IntSize Bitmap::getBitmapSize() const
 	return size;
 }
 
+bool Bitmap::fromRGB(uint8_t* rgb, uint32_t width, uint32_t height)
+{
+	data = CairoRenderer::convertBitmapToCairo(rgb, width, height);
+	delete[] rgb;
+	if(!data)
+	{
+		LOG(LOG_ERROR, "Error decoding image");
+		return false;
+	}
+
+	FILLSTYLE style(-1);
+	style.FillStyleType=CLIPPED_BITMAP;
+	style.bitmap=this;
+	tokens.clear();
+	tokens.emplace_back(SET_FILL, style);
+	tokens.emplace_back(MOVE, Vector2(0, 0));
+	tokens.emplace_back(STRAIGHT, Vector2(0, size.height));
+	tokens.emplace_back(STRAIGHT, Vector2(size.width, size.height));
+	tokens.emplace_back(STRAIGHT, Vector2(size.width, 0));
+	tokens.emplace_back(STRAIGHT, Vector2(0, 0));
+	requestInvalidation();
+
+	return true;
+}
+
 bool Bitmap::fromJPEG(uint8_t *inData, int len)
 {
 	assert(!data);
-	uint8_t* rgbData = ImageDecoder::decodeJPEG(inData, len, &size.width, &size.height);
-	data = CairoRenderer::convertBitmapToCairo(rgbData, size.width, size.height);
-	delete[] rgbData;
-	if(!data)
-	{
-		LOG(LOG_ERROR, "Error decoding jpeg");
-		return false;
-	}
-	return true;
+	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &size.width, &size.height);
+	return fromRGB(rgb, size.width, size.height);
+}
+
+bool Bitmap::fromJPEG(std::istream &s)
+{
+	assert(!data);
+	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &size.width, &size.height);
+	return fromRGB(rgb, size.width, size.height);
 }
 
 void SimpleButton::sinit(Class_base* c)

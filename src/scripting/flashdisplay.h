@@ -146,6 +146,9 @@ public:
 	Vector2f getXY();
 	void setX(number_t x);
 	void setY(number_t y);
+	// Nominal width and heigt are the size before scaling and rotation
+	number_t getNominalWidth();
+	number_t getNominalHeight();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -442,6 +445,8 @@ public:
 	ASFUNCTION(_getLoader);
 	ASFUNCTION(_getContent);
 	ASFUNCTION(_getSharedEvents);
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_getHeight);
 	void sendInit();
 	//ILoadable interface
 	void setBytesTotal(uint32_t b)
@@ -487,6 +492,7 @@ public:
 		return 0;
 	}
 	void setContent(_R<DisplayObject> o);
+	_NR<DisplayObject> getContent() { return content; }
 	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
 };
 

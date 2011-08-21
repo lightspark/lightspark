@@ -93,6 +93,8 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
 }
 
 void LoaderInfo::buildTraits(ASObject* o)
@@ -207,6 +209,26 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 {
 	return Class<ApplicationDomain>::getInstanceS();
+}
+
+ASFUNCTIONBODY(LoaderInfo,_getWidth)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	_NR<DisplayObject> o=th->loader->getContent();
+	if (o.isNull())
+		return abstract_d(0);
+
+	return abstract_d(o->getNominalWidth());
+}
+
+ASFUNCTIONBODY(LoaderInfo,_getHeight)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	_NR<DisplayObject> o=th->loader->getContent();
+	if (o.isNull())
+		return abstract_d(0);
+
+	return abstract_d(o->getNominalHeight());
 }
 
 ASFUNCTIONBODY(Loader,_constructor)
@@ -559,6 +581,28 @@ bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
 	}
 	return ret;
+}
+
+number_t DisplayObject::getNominalWidth()
+{
+	number_t xmin, xmax, ymin, ymax;
+
+	if(!isConstructed())
+		return 0;
+
+	bool ret=boundsRect(xmin,xmax,ymin,ymax);
+	return ret?(xmax-xmin):0;
+}
+
+number_t DisplayObject::getNominalHeight()
+{
+	number_t xmin, xmax, ymin, ymax;
+
+	if(!isConstructed())
+		return 0;
+
+	bool ret=boundsRect(xmin,xmax,ymin,ymax);
+	return ret?(ymax-ymin):0;
 }
 
 void Sprite::requestInvalidation()

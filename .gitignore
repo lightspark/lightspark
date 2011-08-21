@@ -1,3 +1,10 @@
+# Temp files
+*~
+\#*\#
+.#*
+*.dump
+*.log
+
 #
 # Linux make
 #
@@ -11,6 +18,7 @@ CMakeFiles
 Makefile
 cmake_install.cmake
 CMakeCache.txt
+obj/
 
 # SWF files
 
@@ -18,3 +26,4 @@ CMakeCache.txt
 
 # Cscope
 cscope*
+

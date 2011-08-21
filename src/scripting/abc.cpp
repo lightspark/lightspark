@@ -2234,7 +2234,7 @@ istream& lightspark::operator>>(istream& in, s32& v)
 	int i=0;
 	v.val=0;
 	uint8_t t;
-	bool signExtend=true;
+	//bool signExtend=true;
 	do
 	{
 		in.read((char*)&t,1);
@@ -2247,7 +2247,7 @@ istream& lightspark::operator>>(istream& in, s32& v)
 			uint8_t t2=(t&0xf);
 			v.val|=(t2<<i);
 			//The number is filled, no sign extension
-			signExtend=false;
+			//signExtend=false;
 			break;
 		}
 		else

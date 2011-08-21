@@ -303,7 +303,7 @@ ASFUNCTIONBODY(Sound,play)
 {
 	Sound* th=Class<Sound>::cast(obj);
 	assert_and_throw(argslen==1);
-	number_t startTime=args[0]->toNumber();
+	//number_t startTime=args[0]->toNumber();
 	//TODO: use startTime
 
 	if(th->downloader && !th->downloader->hasFailed())

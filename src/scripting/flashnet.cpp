@@ -228,7 +228,7 @@ ASFUNCTIONBODY(URLLoader,_constructor)
 	EventDispatcher::_constructor(obj,NULL,0);
 	if(argslen==1 && args[0]->getPrototype() == Class<URLRequest>::getClass())
 	{
-		URLRequest* urlRequest=Class<URLRequest>::dyncast(args[0]);
+		//URLRequest* urlRequest=Class<URLRequest>::dyncast(args[0]);
 		load(obj, args, argslen);
 	}
 	return NULL;

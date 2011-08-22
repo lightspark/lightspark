@@ -69,6 +69,7 @@ SET(LIBSPARK_SOURCES
   scripting/flashtext.cpp
   scripting/flashutils.cpp
   scripting/flashxml.cpp
+  scripting/params.cpp
   scripting/toplevel.cpp)
 IF(${i386})
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)

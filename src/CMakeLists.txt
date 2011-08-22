@@ -56,7 +56,6 @@ SET(LIBSPARK_SOURCES
   scripting/abc_codesynt.cpp
   scripting/abc_interpreter.cpp
   scripting/abc_opcodes.cpp
-  scripting/actions.cpp
   scripting/class.cpp
   scripting/flashaccessibility.cpp
   scripting/flashdisplay.cpp
@@ -70,8 +69,8 @@ SET(LIBSPARK_SOURCES
   scripting/flashtext.cpp
   scripting/flashutils.cpp
   scripting/flashxml.cpp
-  scripting/toplevel.cpp
-  scripting/vm.cpp)
+  scripting/params.cpp
+  scripting/toplevel.cpp)
 IF(${i386})
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)
   IF(CMAKE_COMPILER_IS_GNUCC)

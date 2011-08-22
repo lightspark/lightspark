@@ -17,49 +17,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef VM_H
-#define VM_H
+#ifndef _PARAMS_H
+#define _PARAMS_H
 
-#include "compat.h"
-#include <semaphore.h>
-#include <vector>
-#include "swftypes.h"
+#include <stdarg.h>
+
+#include "asobject.h"
 
 namespace lightspark
 {
-
-//#include "asobjects.h"
-
-/*class Stack
-{
-private:
-	std::vector<ASObject*> data;
-public:
-	ASObject* operator()(int i){return *(data.rbegin()+i);}
-	void push(ASObject* o){ data.push_back(o);}
-	ASObject* pop()
-	{
-		if(data.size()==0)
-			LOG(ERROR,_("Empty stack"));
-		ASObject* ret=data.back();
-		data.pop_back(); 
-		return ret;
-	}
-};*/
-
-class VirtualMachine
-{
-private:
-	sem_t mutex;
-	std::vector<STRING> ConstantPool;
-public:
-//	Stack stack;
-	VirtualMachine();
-	~VirtualMachine();
-	void setConstantPool(std::vector<STRING>& p);
-	STRING getConstantByIndex(int index);
-//	ASObject Global;
+    void unpackFlashParam (const char type, ASObject* obj, void* pointer);
+    void unpackFlashParams (const char *format, ASObject * const *args, const unsigned int argslen, ...);
+    void unpackFlashParams (const char *format, ASObject * const *args, const unsigned int argslen, va_list *out);
 };
 
-};
 #endif

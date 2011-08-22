@@ -35,6 +35,7 @@
 #include "backends/glmatrices.h"
 #include "compat.h"
 #include "flashaccessibility.h"
+#include "params.h"
 
 #include <fstream>
 #include <limits>
@@ -2913,8 +2914,12 @@ ASFUNCTIONBODY(Graphics,moveTo)
 	th->checkAndSetScaling();
 	assert_and_throw(argslen==2);
 
-	th->curX=args[0]->toInt();
-	th->curY=args[1]->toInt();
+	int x, y;
+	unpackFlashParams("ii", args, argslen,
+	                  &x, &y);
+
+	th->curX=x;
+	th->curY=y;
 
 	th->owner->tokens.emplace_back(MOVE, Vector2(th->curX, th->curY));
 	return NULL;
@@ -2926,8 +2931,9 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	assert_and_throw(argslen==2);
 	th->checkAndSetScaling();
 
-	int x=args[0]->toInt();
-	int y=args[1]->toInt();
+	int x, y;
+	unpackFlashParams("ii", args, argslen,
+	                  &x, &y);
 
 	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x, y));
 	th->owner->owner->requestInvalidation();
@@ -2943,11 +2949,11 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
 
-	int controlX=args[0]->toInt();
-	int controlY=args[1]->toInt();
+	int controlX, controlY, anchorX, anchorY;
 
-	int anchorX=args[2]->toInt();
-	int anchorY=args[3]->toInt();
+	unpackFlashParams("iiii", args, argslen,
+	                  &controlX, &contronY,
+	                  &anchorX, &anchorY);
 
 	th->owner->tokens.emplace_back(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
@@ -2965,14 +2971,11 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 	assert_and_throw(argslen==6);
 	th->checkAndSetScaling();
 
-	int control1X=args[0]->toInt();
-	int control1Y=args[1]->toInt();
-
-	int control2X=args[2]->toInt();
-	int control2Y=args[3]->toInt();
-
-	int anchorX=args[4]->toInt();
-	int anchorY=args[5]->toInt();
+	int control1X, control1Y, control2X, control2Y, anchorX, anchorY;
+	unpackFlashParams("iiiiii", args, argslen,
+	                  &control1X, &control1Y,
+	                  &control2X, &control2Y,
+	                  &anchorX, &anchorY);
 
 	th->owner->tokens.emplace_back(CURVE_CUBIC,
 	                        Vector2(control1X, control1Y),
@@ -2997,19 +3000,15 @@ const double KAPPA = 0.55228474983079356;
 ASFUNCTIONBODY(Graphics,drawRoundRect)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	assert_and_throw(argslen==5 || argslen==6);
 	th->checkAndSetScaling();
 
-	double x=args[0]->toNumber();
-	double y=args[1]->toNumber();
-	double width=args[2]->toNumber();
-	double height=args[3]->toNumber();
-	double ellipseWidth=args[4]->toNumber();
-	double ellipseHeight;
-	if (argslen == 6)
-		ellipseHeight=args[5]->toNumber();
+	double x, y, width, height, ellipseWidth, ellipseHeight;
 
-	if (argslen == 5 || std::isnan(ellipseHeight))
+	unpackFlashParams("dddddd", args, argslen,
+	                  &x, &y, &width, &height,
+	                  &ellipseWidth, &ellipseHeight);
+
+	if (std::isnan(ellipseHeight))
 		ellipseHeight=ellipseWidth;
 
 	ellipseHeight /= 2;
@@ -3080,9 +3079,10 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	assert_and_throw(argslen==3);
 	th->checkAndSetScaling();
 
-	double x=args[0]->toNumber();
-	double y=args[1]->toNumber();
-	double radius=args[2]->toNumber();
+	double x, y, radius;
+
+	unpackFlashParams("ddd", args, argslen,
+	                  &x, &y, &radius);
 
 	double kappa = KAPPA*radius;
 
@@ -3124,10 +3124,9 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
 
-	int x=args[0]->toInt();
-	int y=args[1]->toInt();
-	int width=args[2]->toInt();
-	int height=args[3]->toInt();
+	int x, y, width, height;
+	unpackFlashParams("iiii", args, argslen,
+	                  &x, &y, &width, &height);
 
 	const Vector2 a(x,y);
 	const Vector2 b(x+width,y);

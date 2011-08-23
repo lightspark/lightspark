@@ -453,14 +453,14 @@ bool RenderThread::loadShaderPrograms()
 	GLint stat;
 	assert(glCompileShader);
 	glCompileShader(f);
+	assert(glGetShaderInfoLog);
+	glGetShaderInfoLog(f,1024,&a,str);
+	LOG(LOG_INFO,_("Fragment shader compilation ") << str);
 	glGetShaderiv(f, GL_COMPILE_STATUS, &stat);
 	if (!stat)
 	{
 		throw RunTimeException("Could not compile fragment shader");
 	}
-	assert(glGetShaderInfoLog);
-	glGetShaderInfoLog(f,1024,&a,str);
-	LOG(LOG_INFO,_("Fragment shader compilation ") << str);
 
 	fs = dataFileRead("lightspark.vert");
 	if(fs==NULL)
@@ -471,15 +471,15 @@ bool RenderThread::loadShaderPrograms()
 	glShaderSource(g, 1, &fs,NULL);
 	free((void*)fs);
 
+	glGetShaderInfoLog(g,1024,&a,str);
+	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
+
 	glCompileShader(g);
 	glGetShaderiv(g, GL_COMPILE_STATUS, &stat);
 	if (!stat)
 	{
 		throw RunTimeException("Could not compile vertex shader");
 	}
-
-	glGetShaderInfoLog(g,1024,&a,str);
-	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
 
 	assert(glCreateProgram);
 	gpu_program = glCreateProgram();
@@ -513,15 +513,15 @@ bool RenderThread::loadShaderPrograms()
 	glShaderSource(v, 1, &fs,NULL);
 	free((void*)fs);
 
+	glGetShaderInfoLog(v,1024,&a,str);
+	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
+
 	glCompileShader(v);
 	glGetShaderiv(v, GL_COMPILE_STATUS, &stat);
 	if (!stat)
 	{
 		throw RunTimeException("Could not compile vertex blitter shader");
 	}
-
-	glGetShaderInfoLog(v,1024,&a,str);
-	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
 
 	blitter_program = glCreateProgram();
 	glAttachShader(blitter_program,v);

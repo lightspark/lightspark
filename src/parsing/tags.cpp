@@ -26,7 +26,6 @@
 #include <sstream>
 #include "scripting/abc.h"
 #include "tags.h"
-#include "scripting/actions.h"
 #include "backends/geometry.h"
 #include "backends/rendering.h"
 #include "backends/security.h"
@@ -76,9 +75,6 @@ _NR<Tag> TagFactory::readTag()
 			break;
 		case 11:
 			ret=new DefineTextTag(h,f);
-			break;
-		case 12:
-			ret=new DoActionTag(h,f);
 			break;
 		case 13:
 			ret=new DefineFontInfoTag(h,f);
@@ -149,14 +145,8 @@ _NR<Tag> TagFactory::readTag()
 		case 48:
 			ret=new DefineFont2Tag(h,f);
 			break;
-		case 56:
-			ret=new ExportAssetsTag(h,f);
-			break;
 		case 58:
 			ret=new EnableDebuggerTag(h,f);
-			break;
-		case 59:
-			ret=new DoInitActionTag(h,f);
 			break;
 		case 60:
 			ret=new DefineVideoStreamTag(h,f);
@@ -1179,16 +1169,7 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	while(true);
 
 	if(ActionOffset)
-	{
 		LOG(LOG_NOT_IMPLEMENTED,"DefineButton2Tag: Actions are not supported");
-		BUTTONCONDACTION bca;
-		do
-		{
-			in >> bca;
-			Actions.push_back(bca);
-		}
-		while(!bca.isLast());
-	}
 }
 
 ASObject* DefineButton2Tag::instance() const

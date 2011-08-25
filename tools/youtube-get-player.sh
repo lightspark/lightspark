@@ -23,4 +23,4 @@ if test $# -eq 0; then
 else
 	URL=$1
 fi
-wget `wget $URL -q -O - | grep -E -o "<embed(.*?)>" | sed "s/ /\n/g" | grep src | cut -c5- | tr -d '"'`
+wget $URL -q -O - | grep -E -o "<embed(.*?)>" | sed "s/ /\n/g" | grep src | cut -c5- | tr -d '"'

@@ -18,4 +18,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-wget $1 -q -O - | grep -E -o "<embed(.*?)>" | sed "s/ /\n/g" | grep src | cut -c5- | tr -d '"'
+if test $# -eq 0; then
+	URL="http://www.youtube.com/watch?v=XSGBVzeBUbk"
+else
+	URL=$1
+fi
+wget $URL -q -O - | grep -E -o "<embed(.*?)>" | sed "s/ /\n/g" | grep src | cut -c5- | tr -d '"'

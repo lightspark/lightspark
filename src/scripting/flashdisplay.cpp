@@ -214,7 +214,10 @@ ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 ASFUNCTIONBODY(LoaderInfo,_getWidth)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	_NR<DisplayObject> o=th->loader->getContent();
+	_NR<Loader> l = th->loader;
+	if(l.isNull())
+		return abstract_d(0);
+	_NR<DisplayObject> o=l->getContent();
 	if (o.isNull())
 		return abstract_d(0);
 
@@ -224,7 +227,10 @@ ASFUNCTIONBODY(LoaderInfo,_getWidth)
 ASFUNCTIONBODY(LoaderInfo,_getHeight)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	_NR<DisplayObject> o=th->loader->getContent();
+	_NR<Loader> l = th->loader;
+	if(l.isNull())
+		return abstract_d(0);
+	_NR<DisplayObject> o=l->getContent();
 	if (o.isNull())
 		return abstract_d(0);
 

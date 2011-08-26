@@ -62,12 +62,14 @@ public:
 	ASFUNCTION(readDouble);
 	ASFUNCTION(readFloat);
 	ASFUNCTION(readInt);
+	ASFUNCTION(readUnsignedInt);
 	ASFUNCTION(readObject);
 	ASFUNCTION(writeByte);
 	ASFUNCTION(writeBytes);
 	ASFUNCTION(writeDouble);
 	ASFUNCTION(writeFloat);
 	ASFUNCTION(writeInt);
+	ASFUNCTION(writeUnsignedInt);
 	ASFUNCTION(writeObject);
 	ASFUNCTION(writeUTFBytes);
 	ASFUNCTION(_toString);

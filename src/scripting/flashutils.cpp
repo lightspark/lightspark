@@ -66,6 +66,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(readDouble),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readFloat","",Class<IFunction>::getFunction(readFloat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),NORMAL_METHOD,true);
@@ -73,6 +74,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("writeDouble","",Class<IFunction>::getFunction(writeDouble),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeFloat","",Class<IFunction>::getFunction(writeFloat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeInt","",Class<IFunction>::getFunction(writeInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeUnsignedInt","",Class<IFunction>::getFunction(writeUnsignedInt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(ByteArray::_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),NORMAL_METHOD,true);
@@ -326,6 +328,20 @@ ASFUNCTIONBODY(ByteArray,writeInt)
 	return NULL;
 }
 
+ASFUNCTIONBODY(ByteArray,writeUnsignedInt)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==1);
+
+	uint32_t value=args[0]->toUInt();
+
+	th->getBuffer(th->position+4,true);
+	memcpy(th->bytes+th->position,&value,4);
+	th->position+=4;
+
+	return NULL;
+}
+
 bool ByteArray::readByte(uint8_t& b)
 {
 	if (len <= position)
@@ -431,6 +447,25 @@ ASFUNCTIONBODY(ByteArray,readInt)
 	th->position+=4;
 
 	return abstract_i(ret);
+}
+
+ASFUNCTIONBODY(ByteArray,readUnsignedInt)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	assert_and_throw(argslen==0);
+
+	if(th->len < th->position+4)
+	{
+		LOG(LOG_ERROR,"ByteArray::readUnsignedInt not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+
+	uint32_t ret;
+	memcpy(&ret,th->bytes+th->position,4);
+	th->position+=4;
+
+	return abstract_ui(ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readObject)

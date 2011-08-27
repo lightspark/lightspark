@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_events_EventDispatcher_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import flash.display.Sprite;
+	import flash.events.Event;
+	import Tests;
+
+	private var events:Array;
+
+	private function appComplete():void
+	{
+		events = [];
+		var sprite:Sprite = new Sprite();
+
+		sprite.addEventListener(Event.ADDED_TO_STAGE, handler1);
+		sprite.addEventListener(Event.ADDED_TO_STAGE, handler1);
+
+		sprite.addEventListener(Event.ADDED_TO_STAGE, handler2, false, -100);
+
+		sprite.addEventListener(Event.ADDED_TO_STAGE, handler3, false);
+		sprite.addEventListener(Event.ADDED_TO_STAGE, handler3, true);
+
+		sprite.addEventListener(Event.ADDED_TO_STAGE, handler4, false, 100);
+
+		sprite.addEventListener(Event.ADDED_TO_STAGE, handler5, false, 10);
+		sprite.addEventListener(Event.ADDED_TO_STAGE, handler5, false, -10);
+
+		rawChildren.addChild(sprite);
+
+		// Execution order
+
+		var expectedOrder:Array = ["handler4", "handler5", "handler1", "handler3", "handler2"];
+
+		var orderInd:Array = expectedOrder.map(
+		  function(x:*, i:int, a:Array):int {
+			return events.indexOf(x);
+		  });
+
+		Tests.assertTrue(orderInd.every(
+		  function(x:*, i:int, a:Array):Boolean {
+			return x != -1;
+		  }), "every listener executed");
+
+		// orderInd should be in increasing order
+		Tests.assertTrue(orderInd.every(
+		  function(x:*, i:int, a:Array):Boolean {
+			return i == 0 || x > a[i-1];
+		  }), "listener ordering obey priorities");
+
+		// Does re-registration create duplicates?
+
+		var eventCount1:int = events.filter(
+		  function(x:*, i:int, a:Array):Boolean {
+			return x == "handler1";
+		  }).length;
+		var eventCount3:int = events.filter(
+		  function(x:*, i:int, a:Array):Boolean {
+			return x == "handler3";
+		  }).length;
+		var eventCount5:int = events.filter(
+		  function(x:*, i:int, a:Array):Boolean {
+			return x == "handler5";
+		  }).length;
+
+		Tests.assertEquals(1, eventCount1, "re-registering a listener");
+		// Not sure how many times handler3 should be expected to be called
+		//Tests.assertEquals(2, eventCount3, "registering capturing and bubbling listeners");
+		Tests.assertEquals(1, eventCount5, "re-registering with different priority");
+
+		Tests.report(visual, this.name);
+	}
+
+	private function handler1(ev:Event):void {
+		events.push("handler1");
+	}
+
+	private function handler2(ev:Event):void {
+		events.push("handler2");
+	}
+
+	private function handler3(ev:Event):void {
+		events.push("handler3");
+	}
+
+	private function handler4(ev:Event):void {
+		events.push("handler4");
+	}
+
+	private function handler5(ev:Event):void {
+		events.push("handler5");
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

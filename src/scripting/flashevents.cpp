@@ -426,17 +426,15 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		Locker l(th->handlersMutex);
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
-		f->incRef();
-		const listener newListener(_MR(f), priority, useCapture);
-		//Ordered insertion
-		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
-		//Error check
-		if(insertionPoint!=listeners.end() && insertionPoint->f==f
-				&& insertionPoint->use_capture == useCapture )
+		if(find(listeners.begin(),listeners.end(),make_pair(f,useCapture))!=listeners.end())
 		{
 			LOG(LOG_CALLS,_("Weird event reregistration"));
 			return NULL;
 		}
+		f->incRef();
+		const listener newListener(_MR(f), priority, useCapture);
+		//Ordered insertion
+		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		listeners.insert(insertionPoint,newListener);
 	}
 

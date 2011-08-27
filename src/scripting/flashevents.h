@@ -241,13 +241,13 @@ class listener
 friend class EventDispatcher;
 private:
 	_R<IFunction> f;
-	uint32_t priority;
+	int32_t priority;
 	/* true: get events in the capture phase
 	 * false: get events in the bubble phase
 	 */
 	bool use_capture;
 public:
-	explicit listener(_R<IFunction> _f, uint32_t _p, bool _c)
+	explicit listener(_R<IFunction> _f, int32_t _p, bool _c)
 		:f(_f),priority(_p),use_capture(_c){};
 	bool operator==(std::pair<IFunction*,bool> r)
 	{

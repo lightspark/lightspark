@@ -406,7 +406,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 
 	bool useCapture=false;
-	uint32_t priority=0;
+	int32_t priority=0;
 
 	if(argslen>=3)
 		useCapture=Boolean_concrete(args[2]);

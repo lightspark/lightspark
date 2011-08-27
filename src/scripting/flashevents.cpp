@@ -434,7 +434,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		f->incRef();
 		const listener newListener(_MR(f), priority, useCapture);
 		//Ordered insertion
-		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
+		list<listener>::iterator insertionPoint=upper_bound(listeners.begin(),listeners.end(),newListener);
 		listeners.insert(insertionPoint,newListener);
 	}
 

@@ -20,6 +20,8 @@
 #ifndef GLMATRICES_H
 #define GLMATRICES_H
 
+#include "lsopengl.h"
+
 #define LSGL_MATRIX_SIZE (16*sizeof(GLfloat))
 
 extern GLfloat lsIdentityMatrix[16];

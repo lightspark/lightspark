@@ -17,35 +17,32 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "vm.h"
-#include "swf.h"
-#include "actions.h"
-#include "flashdisplay.h"
-#include "compat.h"
+#ifndef LSOPENGL_H
+#define LSOPENGL_H
 
-using namespace std;
-using namespace lightspark;
+#ifdef ENABLE_GLES2
+	#define SUPPORT_X11 1 //Needed for SGX/OMAP GL stack
+	#include <EGL/egl.h>
+	#include <GLES2/gl2.h>
+	#include <GLES2/gl2ext.h>
+	//Texture formats
+	#ifdef GL_EXT_texture_format_BGRA8888
+		#define GL_RGBA8 GL_RGBA
+		#define GL_BGRA GL_RGBA
+	#else
+		#error GL_EXT_texture_format_BGRA8888 extension needed
+	#endif
 
-VirtualMachine::VirtualMachine()
-{
-	sem_init(&mutex,0,1);
-	//Global.setVariableByQName("MovieClip","",new MovieClip);
-}
+	//there are no multiple buffers in GLES 2.0
+	#define glDrawBuffer(x)
+	#define glBindBuffer(...)
+	#define glBufferData(...)
+	#define glPixelStorei(...)
+#else
+	#include <GL/glew.h>
+	#ifndef WIN32
+		#include <GL/glx.h>
+	#endif
+#endif
 
-VirtualMachine::~VirtualMachine()
-{
-	sem_destroy(&mutex);
-}
-
-void VirtualMachine::setConstantPool(vector<STRING>& p)
-{
-	//sem_wait(&mutex);
-	ConstantPool=p;
-	//sem_post(&mutex);
-}
-
-STRING VirtualMachine::getConstantByIndex(int i)
-{
-	return ConstantPool[i];
-}
-
+#endif

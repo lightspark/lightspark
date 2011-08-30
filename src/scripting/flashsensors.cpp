@@ -17,49 +17,37 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef VM_H
-#define VM_H
-
+#include <map>
+#include "abc.h"
+#include "flashsensors.h"
+#include "class.h"
+#include "scripting/flashsystem.h"
 #include "compat.h"
-#include <semaphore.h>
-#include <vector>
-#include "swftypes.h"
+#include "backends/audio.h"
+#include "backends/builtindecoder.h"
+#include "backends/rendering.h"
+#include "backends/security.h"
 
-namespace lightspark
+using namespace std;
+using namespace lightspark;
+
+SET_NAMESPACE("flash.sensors");
+
+REGISTER_CLASS_NAME(Accelerometer);
+
+Accelerometer::Accelerometer() {}
+
+void Accelerometer::sinit(Class_base* c)
 {
+	// properties
+	c->setDeclaredMethodByQName("isSupported", "", Class<IFunction>::getFunction(_isSupported),GETTER_METHOD,false);
+}
 
-//#include "asobjects.h"
-
-/*class Stack
+void Accelerometer::buildTraits(ASObject *o)
 {
-private:
-	std::vector<ASObject*> data;
-public:
-	ASObject* operator()(int i){return *(data.rbegin()+i);}
-	void push(ASObject* o){ data.push_back(o);}
-	ASObject* pop()
-	{
-		if(data.size()==0)
-			LOG(ERROR,_("Empty stack"));
-		ASObject* ret=data.back();
-		data.pop_back(); 
-		return ret;
-	}
-};*/
+}
 
-class VirtualMachine
+ASFUNCTIONBODY(Accelerometer,_isSupported)
 {
-private:
-	sem_t mutex;
-	std::vector<STRING> ConstantPool;
-public:
-//	Stack stack;
-	VirtualMachine();
-	~VirtualMachine();
-	void setConstantPool(std::vector<STRING>& p);
-	STRING getConstantByIndex(int index);
-//	ASObject Global;
-};
-
-};
-#endif
+	return abstract_b(false);
+}

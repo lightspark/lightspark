@@ -450,7 +450,6 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
 {
 	obj_var* obj=Variables.findObjVar(name,ns,NO_CREATE_TRAIT,traitKind);
-	assert(obj==NULL);
 	assert_and_throw(obj==NULL);
 	obj=Variables.findObjVar(name,ns,traitKind,traitKind);
 	obj->setVar(o);
@@ -757,7 +756,7 @@ void variables_map::dumpVariables()
 			case NO_CREATE_TRAIT:
 				assert(false);
 		}
-		LOG(LOG_NO_INFO, kind <<  '[' << it->second.ns.name << "] "<< it->first << ' ' <<
+		LOG(LOG_INFO, kind <<  '[' << it->second.ns.name << "] "<< it->first << ' ' <<
 			it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter);
 	}
 }

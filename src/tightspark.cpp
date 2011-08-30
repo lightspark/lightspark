@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	std::vector<char*> fileNames;
 	bool useInterpreter=true;
 	bool useJit=false;
-	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
+	LOG_LEVEL log_level=LOG_INFO;
 	bool error=false;
 
 	for(int i=1;i<argc;i++)

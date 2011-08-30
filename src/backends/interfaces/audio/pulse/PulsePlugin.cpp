@@ -169,17 +169,17 @@ void PulsePlugin::freeStream ( AudioStream *audioStream )
 
 void PulsePlugin::streamOverflowCB( pa_stream *p, void *userdata )
 {
-	LOG(LOG_NO_INFO, "AUDIO BACKEND: Stream overflow");
+	LOG(LOG_INFO, "AUDIO BACKEND: Stream overflow");
 }
 
 void PulsePlugin::streamUnderflowCB( pa_stream *p, void *userdata )
 {
-	LOG(LOG_NO_INFO, "AUDIO BACKEND: Stream underflow");
+	LOG(LOG_INFO, "AUDIO BACKEND: Stream underflow");
 }
 
 void PulsePlugin::streamStartedCB( pa_stream *p, void *userdata )
 {
-	LOG(LOG_NO_INFO, "AUDIO BACKEND: Stream started");
+	LOG(LOG_INFO, "AUDIO BACKEND: Stream started");
 }
 
 AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )

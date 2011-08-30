@@ -18,6 +18,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-echo "Dumping from " $1 >&2
+if test $# -eq 0; then
+	URL="http://www.youtube.com/watch?v=XSGBVzeBUbk"
+else
+	URL=$1
+fi
 
-wget $1 -q -O - | grep -E -o "<embed(.*?)>" | grep -E -o 'flashvars=\"[^"]+\"' | cut -c11- | tr -d '"' | sed -e 's/&amp;/\n/g' -e 's/=/\n/g' | `dirname $0`/urldecode.sh
+echo "Dumping from " $URL >&2
+
+wget $URL -q -O - | grep -E -o "<embed(.*?)>" | grep -E -o 'flashvars=\"[^"]+\"' | cut -c11- | tr -d '"' | sed -e 's/&amp;/\n/g' -e 's/=/\n/g' | `dirname $0`/urldecode.sh

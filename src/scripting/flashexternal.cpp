@@ -116,7 +116,7 @@ ASFUNCTIONBODY(ExternalInterface,call)
 	if(!callSuccess)
 	{
 		assert(asobjResult==NULL);
-		LOG(LOG_NO_INFO, "External function failed, returning null: " << args[0]->toString().raw_buf());
+		LOG(LOG_INFO, "External function failed, returning null: " << args[0]->toString().raw_buf());
 		// If the call fails, return null
 		asobjResult = new Null;
 	}

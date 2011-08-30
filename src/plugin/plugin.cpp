@@ -72,7 +72,7 @@ NPDownloadManager::~NPDownloadManager()
  */
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner)
 {
-	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
+	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance, owner);
@@ -91,7 +91,7 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
 		lightspark::ILoadable* owner)
 {
-	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
+	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), data, instance, owner);
 	addDownloader(downloader);
@@ -169,7 +169,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vecto
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
-	LOG(LOG_NO_INFO,_("Start download for ") << th->url);
+	LOG(LOG_INFO,_("Start download for ") << th->url);
 	NPError e=NPERR_NO_ERROR;
 	if(th->data.empty())
 		e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
@@ -189,14 +189,18 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(LOG_ERROR);
+	LOG_LEVEL log_level = LOG_INFO;
+	char *envvar = getenv("LIGHTSPARK_PLUGIN_LOGLEVEL");
+	if (envvar)
+		log_level=(LOG_LEVEL) min(4, max(0, atoi(envvar)));
+	Log::initLogging(log_level);
 	lightspark::SystemState::staticInit();
 	return NPERR_NO_ERROR;
 }
 
 void NS_PluginShutdown()
 {
-	LOG(LOG_NO_INFO,"Lightspark plugin shutdown");
+	LOG(LOG_INFO,"Lightspark plugin shutdown");
 	lightspark::SystemState::staticDeinit();
 }
 
@@ -355,11 +359,11 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 				void **v = (void **)aValue;
 				NPN_RetainObject(scriptObject);
 				*v = scriptObject;
-				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObjectGW returned to browser");
+				LOG(LOG_INFO, "PLUGIN: NPScriptObjectGW returned to browser");
 				break;
 			}
 			else
-				LOG(LOG_NO_INFO, "PLUGIN: NPScriptObjectGW requested but was NULL");
+				LOG(LOG_INFO, "PLUGIN: NPScriptObjectGW requested but was NULL");
 		default:
 			err = NPERR_INVALID_PARAM;
 			break;
@@ -401,7 +405,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 		VisualID visual=XVisualIDFromVisual(mVisual);
 		PluginEngineData* e= new PluginEngineData(this, mDisplay, visual, mWindow, mWidth, mHeight);
-		LOG(LOG_NO_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
+		LOG(LOG_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
 		m_sys->setParamsAndEngine(e, false);
 	}
 	//draw();
@@ -459,14 +463,14 @@ string nsPluginInstance::getPageURL() const
 
 void nsPluginInstance::asyncDownloaderDestruction(NPStream* stream, NPDownloader* dl) const
 {
-	LOG(LOG_NO_INFO,_("Async destructin for ") << stream->url);
+	LOG(LOG_INFO,_("Async destructin for ") << stream->url);
 	m_sys->downloadManager->destroy(dl);
 }
 
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
-	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
+	LOG(LOG_INFO,_("Newstream for ") << stream->url);
 	sys=m_sys;
 	if(dl)
 	{
@@ -484,7 +488,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 
 		if(strcmp(stream->url, dl->getURL().raw_buf()) != 0)
 		{
-			LOG(LOG_NO_INFO, _("NET: PLUGIN: redirect detected"));
+			LOG(LOG_INFO, _("NET: PLUGIN: redirect detected"));
 			dl->setRedirected(lightspark::tiny_string(stream->url));
 		}
 		if(NP_VERSION_MINOR >= NPVERS_HAS_RESPONSE_HEADERS)
@@ -518,7 +522,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 		dl->setLength(stream->end);
 		mainDownloader=dl;
 		mainDownloaderStream.rdbuf(mainDownloader);
-		m_pt=new lightspark::ParseThread(m_sys,mainDownloaderStream);
+		m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys);
 		m_sys->addJob(m_pt);
 	}
 	//The downloader is set as the private data for this stream
@@ -599,7 +603,7 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 	switch(reason)
 	{
 		case NPRES_DONE:
-			LOG(LOG_NO_INFO,_("Download complete ") << url);
+			LOG(LOG_INFO,_("Download complete ") << url);
 			dl->setFinished();
 			break;
 		case NPRES_USER_BREAK:

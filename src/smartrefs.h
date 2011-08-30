@@ -20,6 +20,8 @@
 #ifndef _SMARTREFS_H
 #define _SMARTREFS_H
 
+#include <stdexcept>
+
 namespace lightspark
 {
 
@@ -206,7 +208,13 @@ public:
 		if(m)
 			m->decRef();
 	}
-	T* operator->() const {return m;}
+	T* operator->() const
+	{
+		if(m != NULL)
+			return m;
+		else
+			throw std::runtime_error("LS smart pointer: NULL pointer access");
+	}
 	T* getPtr() const { return m; }
 	bool isNull() const { return m==NULL; }
 	void reset()

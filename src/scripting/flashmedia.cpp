@@ -216,7 +216,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	return NULL;
 }
 
-_NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	assert_and_throw(!sys->getInputThread()->isMaskPresent());
 	assert_and_throw(mask.isNull());
@@ -303,7 +303,7 @@ ASFUNCTIONBODY(Sound,play)
 {
 	Sound* th=Class<Sound>::cast(obj);
 	assert_and_throw(argslen==1);
-	number_t startTime=args[0]->toNumber();
+	//number_t startTime=args[0]->toNumber();
 	//TODO: use startTime
 
 	if(th->downloader && !th->downloader->hasFailed())

@@ -265,8 +265,8 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 		chunks=NULL;
 		return;
 	}
-	const uint32_t blocksW=(w+127)/128;
-	const uint32_t blocksH=(h+127)/128;
+	const uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
+	const uint32_t blocksH=(h+CHUNKSIZE-1)/CHUNKSIZE;
 	chunks=new uint32_t[blocksW*blocksH];
 }
 
@@ -288,8 +288,8 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 	}
 	width=r.width;
 	height=r.height;
-	uint32_t blocksW=(width+127)/128;
-	uint32_t blocksH=(height+127)/128;
+	uint32_t blocksW=(width+CHUNKSIZE-1)/CHUNKSIZE;
+	uint32_t blocksH=(height+CHUNKSIZE-1)/CHUNKSIZE;
 	texId=r.texId;
 	if(r.chunks)
 	{
@@ -327,9 +327,9 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 		height=h;
 		return true;
 	}
-	const uint32_t blocksW=(width+127)/128;
-	const uint32_t blocksH=(height+127)/128;
-	if(w<=blocksW*128 && h<=blocksH*128)
+	const uint32_t blocksW=(width+CHUNKSIZE-1)/CHUNKSIZE;
+	const uint32_t blocksH=(height+CHUNKSIZE-1)/CHUNKSIZE;
+	if(w<=blocksW*CHUNKSIZE && h<=blocksH*CHUNKSIZE)
 	{
 		width=w;
 		height=h;
@@ -708,16 +708,23 @@ void CairoRenderer::execute()
 	int32_t windowWidth=sys->getRenderThread()->windowWidth;
 	int32_t windowHeight=sys->getRenderThread()->windowHeight;
 	//Discard stuff that it's outside the visible part
-	if(xOffset >= windowWidth || yOffset >= windowHeight)
+	if(xOffset >= windowWidth || yOffset >= windowHeight
+		|| xOffset + width <= 0 || yOffset + height <= 0)
 	{
 		uploadNeeded = false;
 		return;
 	}
 
+	//TODO:clip on the right and bottom also
+	if(xOffset<0)
+		width+=xOffset;
+	if(yOffset<0)
+		height+=yOffset;
+
 	//Clip the size to the screen borders
-	if((width+xOffset) > windowWidth)
+	if((xOffset>=0) && (width+xOffset) > windowWidth)
 		width=windowWidth-xOffset;
-	if((height+yOffset) > windowHeight)
+	if((yOffset>0) && (height+yOffset) > windowHeight)
 		height=windowHeight-yOffset;
 	cairo_surface_t* cairoSurface=allocateSurface();
 
@@ -727,8 +734,11 @@ void CairoRenderer::execute()
 
 	//Make sure the rendering starts at 0,0 in surface coordinates
 	//This also guarantees that all the shape fills in width/height pixels
-	matrix.TranslateX-=xOffset;
-	matrix.TranslateY-=yOffset;
+	//We don't translate for negative offsets as we don't want to see what's in negative coords
+	if(xOffset >= 0)
+		matrix.TranslateX-=xOffset;
+	if(yOffset >= 0)
+		matrix.TranslateY-=yOffset;
 	const cairo_matrix_t& mat=MATRIXToCairo(matrix);
 	cairo_transform(cr, &mat);
 

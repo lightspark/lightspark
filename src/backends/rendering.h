@@ -20,6 +20,7 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
+#include "lsopengl.h"
 #include "timer.h"
 
 namespace lightspark
@@ -85,8 +86,13 @@ private:
 
 #ifndef WIN32
 	Display* mDisplay;
+#ifndef ENABLE_GLES2
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
+#else
+	EGLContext mEGLContext;
+	EGLConfig mEGLConfig;
+#endif
 	Window mWindow;
 #endif
 	uint64_t time_s, time_d;

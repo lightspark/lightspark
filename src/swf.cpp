@@ -34,8 +34,8 @@
 #include "backends/pluginmanager.h"
 #include "backends/rendering.h"
 #include "backends/security.h"
+#include "backends/image.h"
 
-#include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif
@@ -168,7 +168,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 
 	//Get starting time
 	if(parseThread) //ParseThread may be null in tightspark
-		parseThread->root=this;
+		parseThread->setRootMovie(this);
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 	config=new Config;
@@ -587,7 +587,7 @@ void SystemState::createEngines()
 				return;
 			l.lock();
 		}
-		LOG(LOG_NO_INFO,_("Trying to invoke gnash!"));
+		LOG(LOG_INFO,_("Trying to invoke gnash!"));
 		//Dump the cookies to a temporary file
 		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
 		int file=mkstemp(cookiesFileName);
@@ -738,6 +738,14 @@ void SystemState::createEngines()
 	engineData->setupMainThreadCallback((ls_callback_t)delayedCreation, this);
 
 	renderThread->waitForInitialization();
+
+	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
+	if(vmVersion != AVM2)
+	{
+		LOG(LOG_INFO, "Unsupported flash file (AVM1), shutting down...");
+		setShutdownFlag();
+	}
+
 	l.lock();
 	//As we lost the lock the shutdown procesure might have started
 	if(shutdown)
@@ -754,7 +762,7 @@ void SystemState::needsAVM2(bool n)
 	if(n)
 	{
 		vmVersion=AVM2;
-		LOG(LOG_NO_INFO,_("Creating VM"));
+		LOG(LOG_INFO,_("Creating VM"));
 		currentVm=new ABCVm(this);
 	}
 	else
@@ -975,11 +983,22 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	}
 }
 
-ParseThread::ParseThread(RootMovieClip* r,istream& in):root(NULL),version(0),useAVM2(false),
-	useNetwork(false),f(in),zlibFilter(NULL),backend(NULL),isEnded(false),fileType(NONE)
+ParseThread::ParseThread(istream& in, Loader *_loader, tiny_string srcurl)
+  : version(0),useAVM2(false),useNetwork(false),
+    f(in),zlibFilter(NULL),backend(NULL),isEnded(false),loader(_loader),
+    parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
-	root=r;
+	sem_init(&ended,0,0);
+}
+
+ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
+  : version(0),useAVM2(false),useNetwork(false),
+    f(in),zlibFilter(NULL),backend(NULL),isEnded(false),loader(NULL),
+    parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
+{
+	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	setRootMovie(root);
 	sem_init(&ended,0,0);
 }
 
@@ -991,45 +1010,42 @@ ParseThread::~ParseThread()
 		f.rdbuf(backend);
 		delete zlibFilter;
 	}
+	parsedObject.reset();
 	sem_destroy(&ended);
 }
 
-void ParseThread::checkType(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4)
+FILE_TYPE ParseThread::recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4)
 {
 	if(c1=='F' && c2=='W' && c3=='S')
-	{
-		fileType=SWF;
-		version=c4;
-		root->version=version;
-	}
+		return FT_SWF;
 	else if(c1=='C' && c2=='W' && c3=='S')
-	{
-		fileType=COMPRESSED_SWF;
-		version=c4;
-		root->version=version;
-	}
+		return FT_COMPRESSED_SWF;
 	else if((c1&0x80) && c2=='P' && c3=='N' && c4=='G')
-		fileType=PNG;
+		return FT_PNG;
 	else if(c1==0xff && c2==0xd8 && c3==0xff && c4==0xe0)
-		fileType=JPEG;
+		return FT_JPEG;
 	else if(c1=='G' && c2=='I' && c3=='F' && c4=='8')
-		fileType=GIF;
+		return FT_GIF;
+	else
+		return FT_UNKNOWN;
 }
 
-void ParseThread::parseSWFHeader()
+void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 {
 	UI32_SWF FileLength;
 	RECT FrameSize;
 	UI16_SWF FrameRate;
 	UI16_SWF FrameCount;
 
+	version=ver;
+	root->version=version;
 	f >> FileLength;
 	//Enable decompression if needed
-	if(fileType==SWF)
-		LOG(LOG_NO_INFO, _("Uncompressed SWF file: Version ") << (int)version);
-	else if(fileType==COMPRESSED_SWF)
+	if(fileType==FT_SWF)
+		LOG(LOG_INFO, _("Uncompressed SWF file: Version ") << (int)version);
+	else if(fileType==FT_COMPRESSED_SWF)
 	{
-		LOG(LOG_NO_INFO, _("Compressed SWF file: Version ") << (int)version);
+		LOG(LOG_INFO, _("Compressed SWF file: Version ") << (int)version);
 		//The file is compressed, create a filtering streambuf
 		backend=f.rdbuf();
 		f.rdbuf(new zlib_filter(backend));
@@ -1040,7 +1056,7 @@ void ParseThread::parseSWFHeader()
 	root->fileLength=FileLength;
 	float frameRate=FrameRate;
 	frameRate/=256;
-	LOG(LOG_NO_INFO,_("FrameRate ") << frameRate);
+	LOG(LOG_INFO,_("FrameRate ") << frameRate);
 	root->setFrameRate(frameRate);
 	//TODO: setting render rate should be done when the clip is added to the displaylist
 	sys->setRenderRate(frameRate);
@@ -1055,17 +1071,42 @@ void ParseThread::execute()
 	{
 		UI8 Signature[4];
 		f >> Signature[0] >> Signature[1] >> Signature[2] >> Signature[3];
-		checkType(Signature[0],Signature[1],Signature[2],Signature[3]);
-		if(fileType==NONE)
+		fileType=recognizeFile(Signature[0],Signature[1],Signature[2],Signature[3]);
+		if(fileType==FT_UNKNOWN)
 			throw ParseException("Not a supported file");
-		if(fileType==PNG || fileType==JPEG || fileType==GIF)
+		else if(fileType==FT_PNG || fileType==FT_JPEG || fileType==FT_GIF)
 		{
-			//Not really supported
-			pt=NULL;
-			sem_post(&ended);
-			return;
+			f.putback(Signature[3]).putback(Signature[2]).
+			  putback(Signature[1]).putback(Signature[0]);
+			parseBitmap();
 		}
-		parseSWFHeader();
+		else
+		{
+			parseSWF(Signature[3]);
+		}
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
+		sys->setError(e.cause);
+	}
+	catch(std::exception& e)
+	{
+		LOG(LOG_ERROR,_("Stream exception in ParseThread ") << e.what());
+	}
+	pt=NULL;
+
+	sem_post(&ended);
+}
+
+void ParseThread::parseSWF(UI8 ver)
+{
+	RootMovieClip* root=getRootMovie();
+	assert_and_throw(root);
+
+	try
+	{
+		parseSWFHeader(root, ver);
 
 		//Create a top level TagFactory
 		TagFactory factory(f, true);
@@ -1078,7 +1119,7 @@ void ParseThread::execute()
 			{
 				case END_TAG:
 				{
-					LOG(LOG_NO_INFO,_("End of parsing @ ") << f.tellg());
+					LOG(LOG_INFO,_("End of parsing @ ") << f.tellg());
 					if(!empty)
 						root->commitFrame(false);
 					else
@@ -1134,26 +1175,74 @@ void ParseThread::execute()
 				break;
 		}
 	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
-		root->parsingFailed();
-		sys->setError(e.cause);
-	}
 	catch(std::exception& e)
 	{
-		LOG(LOG_ERROR,_("Stream exception in ParseThread ") << e.what());
 		root->parsingFailed();
+		throw;
 	}
-	pt=NULL;
+}
 
-	sem_post(&ended);
+void ParseThread::parseBitmap()
+{
+	_NR<Bitmap> tmp=_MNR(Class<Bitmap>::getInstanceS(&f, fileType));
+
+	{
+		SpinlockLocker l(objectSpinlock);
+		parsedObject=tmp;
+	}
+}
+
+_NR<DisplayObject> ParseThread::getParsedObject()
+{
+	SpinlockLocker l(objectSpinlock);
+	return parsedObject;
+}
+
+void ParseThread::setRootMovie(RootMovieClip *root)
+{
+	SpinlockLocker l(objectSpinlock);
+	assert(root);
+	root->incRef();
+	parsedObject=_MNR(root);
+}
+
+RootMovieClip *ParseThread::getRootMovie()
+{
+	objectSpinlock.lock();
+	RootMovieClip *root=Class<RootMovieClip>::dyncast(parsedObject.getPtr());
+	objectSpinlock.unlock();
+	if(root)
+		return root;
+	else if(fileType==FT_SWF || fileType==FT_COMPRESSED_SWF)
+	{
+		LoaderInfo *li=loader?loader->getContentLoaderInfo().getPtr():NULL;
+		root=RootMovieClip::getInstance(li);
+		objectSpinlock.lock();
+		parsedObject=_MNR(root);
+		objectSpinlock.unlock();
+		if(url.len()>0)
+			root->setOrigin(url, "");
+
+		// The parser will call contentLoader's sendInit()
+		// during the parsing. We have to set loader's content
+		// here, before the event is sent.
+		if(loader)
+		{
+			root->incRef();
+			loader->setContent(_MNR(root));
+		}
+		return root;
+	}
+	else
+		return NULL;
 }
 
 void ParseThread::threadAbort()
 {
 	//Tell the our RootMovieClip that the parsing is ending
-	root->parsingFailed();
+	RootMovieClip *root=getRootMovie();
+	if(root)
+		root->parsingFailed();
 }
 
 bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -1194,10 +1283,18 @@ void RootMovieClip::commitFrame(bool another)
 	if(another)
 		frames.emplace_back();
 
-	if(getFramesLoaded()==1 && this == sys && frameRate!=0)
+	if(getFramesLoaded()==1 && frameRate!=0)
 	{
-		/* now the frameRate is available and all SymbolClass tags have created their classes */
-		sys->addTick(1000/frameRate,sys);
+		if(this==sys)
+		{
+			/* now the frameRate is available and all SymbolClass tags have created their classes */
+			sys->addTick(1000/frameRate,sys);
+		}
+		else
+		{
+			this->incRef();
+			sys->currentVm->addEvent(NullRef, _MR(new InitFrameEvent(_MNR(this))));
+		}
 	}
 	sem_post(&new_frame);
 }

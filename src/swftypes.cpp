@@ -645,7 +645,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		{
 			try
 			{
-				_R<DictionaryTag> dict=pt->root->dictionaryLookup(bitmapId);
+				_R<DictionaryTag> dict=pt->getRootMovie()->dictionaryLookup(bitmapId);
 				v.bitmap=dynamic_cast<Bitmap*>(dict.getPtr());
 				if(v.bitmap==NULL)
 				{

@@ -193,11 +193,12 @@ ASFUNCTIONBODY(FocusEvent,_constructor)
 	return NULL;
 }
 
-MouseEvent::MouseEvent():Event("mouseEvent")
+MouseEvent::MouseEvent():Event("mouseEvent"), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
 {
 }
 
-MouseEvent::MouseEvent(const tiny_string& t, bool b):Event(t,b)
+MouseEvent::MouseEvent(const tiny_string& t, number_t lx, number_t ly, bool b, _NR<InteractiveObject> relObj):Event(t,b),
+	 localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
 {
 }
 
@@ -273,13 +274,80 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS("mouseMove"),DECLARED_TRAIT);
 	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver"),DECLARED_TRAIT);
 	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"),DECLARED_TRAIT);
+
+
+	REGISTER_GETTER(c,relatedObject);
+	REGISTER_GETTER(c,stageX);
+	REGISTER_GETTER(c,stageY);
+	REGISTER_GETTER_SETTER(c,localX);
+	REGISTER_GETTER_SETTER(c,localY);
+}
+
+ASFUNCTIONBODY_GETTER(MouseEvent,relatedObject);
+ASFUNCTIONBODY_GETTER(MouseEvent,localX);
+ASFUNCTIONBODY_GETTER(MouseEvent,localY);
+ASFUNCTIONBODY_GETTER(MouseEvent,stageX);
+ASFUNCTIONBODY_GETTER(MouseEvent,stageY);
+
+ASFUNCTIONBODY(MouseEvent,_setter_localX)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	if(argslen != 1) 
+		throw ArgumentError("Wrong number of arguments in setter"); 
+	number_t val=args[0]->toNumber();
+	th->localX = val;
+	//Change StageXY if target!=NULL else don't do anything
+	//At this point, the target should be an InteractiveObject but check anyway
+	if((th->target != NULL)&&(th->target->getPrototype()->isSubClass(Class<InteractiveObject>::getClass())))
+	{		
+		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
+		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
+	}
+	return NULL; 
+}
+
+ASFUNCTIONBODY(MouseEvent,_setter_localY)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	if(argslen != 1) 
+		throw ArgumentError("Wrong number of arguments in setter"); 
+	number_t val=args[0]->toNumber();
+	th->localY = val;
+	//Change StageXY if target!=NULL else don't do anything	
+	//At this point, the target should be an InteractiveObject but check anyway
+	if((th->target != NULL)&&(th->target->getPrototype()->isSubClass(Class<InteractiveObject>::getClass())))	
+	{		
+		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
+		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
+	}
+	return NULL; 
 }
 
 void MouseEvent::buildTraits(ASObject* o)
 {
 	//TODO: really handle local[XY]
-	o->setVariableByQName("localX","",abstract_d(0),DECLARED_TRAIT);
-	o->setVariableByQName("localY","",abstract_d(0),DECLARED_TRAIT);
+	//o->setVariableByQName("localX","",abstract_d(0),DECLARED_TRAIT);
+	//o->setVariableByQName("localY","",abstract_d(0),DECLARED_TRAIT);
+}
+
+void MouseEvent::setTarget(_NR<ASObject> t)
+{
+	target = t;
+	//If t is NULL, it means MouseEvent is being reset
+	if(t == NULL)
+	{
+		localX = 0;
+		localY = 0;
+		stageX = 0;
+		stageY = 0;
+		relatedObject = NullRef;
+	}
+	//If t is non null, it should be an InteractiveObject
+	else if(t->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()))	
+	{		
+		InteractiveObject* tar = static_cast<InteractiveObject*>(t.getPtr());
+		tar->localToGlobal(localX, localY, stageX, stageY);
+	}
 }
 
 IOErrorEvent::IOErrorEvent()
@@ -338,7 +406,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 
 	bool useCapture=false;
-	uint32_t priority=0;
+	int32_t priority=0;
 
 	if(argslen>=3)
 		useCapture=Boolean_concrete(args[2]);
@@ -358,17 +426,15 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		Locker l(th->handlersMutex);
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
-		f->incRef();
-		const listener newListener(_MR(f), priority, useCapture);
-		//Ordered insertion
-		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
-		//Error check
-		if(insertionPoint!=listeners.end() && insertionPoint->f==f
-				&& insertionPoint->use_capture == useCapture )
+		if(find(listeners.begin(),listeners.end(),make_pair(f,useCapture))!=listeners.end())
 		{
 			LOG(LOG_CALLS,_("Weird event reregistration"));
 			return NULL;
 		}
+		f->incRef();
+		const listener newListener(_MR(f), priority, useCapture);
+		//Ordered insertion
+		list<listener>::iterator insertionPoint=upper_bound(listeners.begin(),listeners.end(),newListener);
 		listeners.insert(insertionPoint,newListener);
 	}
 

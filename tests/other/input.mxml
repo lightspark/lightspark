@@ -13,18 +13,103 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 
 <mx:Script>
 	<![CDATA[
-	private function mouseH(e:Event):void
+	private function colorRect(color:uint):void
+	{
+		s1.graphics.beginFill(color);
+		s1.graphics.drawRect(0,0,100,100);
+		s1.graphics.endFill();
+	}
+	private function colorRect2(color:uint):void
+	{
+		s2.graphics.beginFill(color);
+		s2.graphics.drawRect(120,120,100,100);
+		s2.graphics.endFill();
+	}
+	private function colorRect3(color:uint):void
+	{
+		s3.graphics.beginFill(color);
+		s3.graphics.drawRect(240,240,100,100);
+		s3.graphics.endFill();
+	}
+	private function colorRect4(color:uint):void
+	{
+		s4.graphics.beginFill(color);
+		s4.graphics.drawRect(360,360,100,100);
+		s4.graphics.endFill();
+	}
+	private function mouseDownHandler(e:Event):void
 	{
 		trace("Mouse down received");
-		e.target.alpha=0.5;
+		colorRect(0x00ff00);
+		setTimeout(function() { colorRect(0xff0000); }, 1000);
+	}
+	private function mouseUpHandler(e:Event):void
+	{
+		trace("Mouse up received");
+		colorRect(0x00ffff);
+		setTimeout(function() { colorRect(0xff0000); }, 1000);
+	}
+	private function mouseClickHandler(e:Event):void
+	{
+		trace("Mouse click received");
+		colorRect3(0x00ff00);
+		setTimeout(function() { colorRect3(0xff0000); }, 1000);
+	}
+	private function mouseDblClickHandler(e:Event):void
+	{
+		trace("Mouse double click received");
+		colorRect3(0x0000ff);
+		setTimeout(function() { colorRect3(0xff0000); }, 1000);
+	}
+	private function mouseClickHandler2(e:Event):void
+	{
+		trace("Mouse click received");
+		colorRect4(0x00ff00);
+		setTimeout(function() { colorRect4(0xff0000); }, 1000);
+	}
+	private function mouseDblClickHandler2(e:Event):void
+	{
+		trace("Mouse double click received");
+		colorRect4(0x0000ff);
+		setTimeout(function() { colorRect4(0xff0000); }, 1000);
+	}
+	private function mouseMoveHandler(e:Event):void
+	{
+		trace("Mouse mouse received");
+		colorRect(0x0000ff);
+		setTimeout(function() { colorRect(0xff0000); }, 1000);
+	}
+	private function mouseOverHandler(e:Event):void
+	{
+		trace("Mouse over received");
+		colorRect2(0x0000ff);
+		setTimeout(function() { colorRect2(0xff0000); }, 1000);
+	}
+	private function mouseOutHandler(e:Event):void
+	{
+		trace("Mouse out received");
+		colorRect2(0x00ff00);
+		setTimeout(function() { colorRect2(0xff0000); }, 1000);
 	}
 	private function appComplete():void
 	{
-		s1.graphics.beginFill(0x00ffff);
-		s1.graphics.drawRect(0,0,100,100);
-		s1.graphics.endFill();
-		s1.alpha=0;
-		s1.addEventListener(MouseEvent.MOUSE_DOWN,mouseH);
+		colorRect(0xff0000);
+		colorRect2(0xff0000);
+		colorRect3(0xff0000);
+		colorRect4(0xff0000);
+		s1.addEventListener(MouseEvent.MOUSE_DOWN,mouseDownHandler);
+		s1.addEventListener(MouseEvent.MOUSE_UP,mouseUpHandler);
+		s3.doubleClickEnabled = true;
+		s3.addEventListener(MouseEvent.CLICK,mouseClickHandler);
+		s3.addEventListener(MouseEvent.DOUBLE_CLICK,mouseDblClickHandler);
+		s1.addEventListener(MouseEvent.MOUSE_MOVE,mouseMoveHandler);
+		s2.addEventListener(MouseEvent.MOUSE_OVER,mouseOverHandler);
+		s2.addEventListener(MouseEvent.MOUSE_OUT,mouseOutHandler);
+		
+		s4.mouseEnabled = false;
+		s4.doubleClickEnabled = true;
+		s4.addEventListener(MouseEvent.CLICK,mouseClickHandler2);
+		s4.addEventListener(MouseEvent.DOUBLE_CLICK,mouseDblClickHandler2);
 /*		s2.graphics.beginFill(0x0000ff);
 		s2.graphics.drawRect(0,0,100,100);
 		s2.graphics.endFill();
@@ -40,5 +125,8 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 </mx:Script>
 
 <mx:UIComponent id="s1" />
+<mx:UIComponent id="s2" />
+<mx:UIComponent id="s3" />
+<mx:UIComponent id="s4" />
 
 </mx:Application>

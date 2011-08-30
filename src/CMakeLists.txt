@@ -56,7 +56,6 @@ SET(LIBSPARK_SOURCES
   scripting/abc_codesynt.cpp
   scripting/abc_interpreter.cpp
   scripting/abc_opcodes.cpp
-  scripting/actions.cpp
   scripting/class.cpp
   scripting/flashaccessibility.cpp
   scripting/flashdisplay.cpp
@@ -65,12 +64,12 @@ SET(LIBSPARK_SOURCES
   scripting/flashgeom.cpp
   scripting/flashmedia.cpp
   scripting/flashnet.cpp
+	scripting/flashsensors.cpp
   scripting/flashsystem.cpp
   scripting/flashtext.cpp
   scripting/flashutils.cpp
   scripting/flashxml.cpp
-  scripting/toplevel.cpp
-  scripting/vm.cpp)
+  scripting/toplevel.cpp)
 IF(${i386})
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)
   IF(CMAKE_COMPILER_IS_GNUCC)
@@ -101,10 +100,16 @@ ENDIF (CMAKE_COMPILER_IS_GNUCC)
 TARGET_LINK_LIBRARIES(spark ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES}
 	${Boost_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT}
 	${OPTIONAL_LIBRARIES} ${GTK_LIBRARIES} ${FREETYPE_LIBRARIES} ${JPEG_LIBRARIES}
-	${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${PCRE_LIBRARIES}
+	${PCRE_LIBRARIES}
 	${Threads_LIBRARIES} ${XMLPP_LIBRARIES} ${CMAKE_DL_LIBS})
 SET_TARGET_PROPERTIES(spark PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 SET_TARGET_PROPERTIES(spark PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
+
+IF(ENABLE_GLES2)
+	TARGET_LINK_LIBRARIES(spark ${GLES2_LIBRARIES})
+ELSE()
+	TARGET_LINK_LIBRARIES(spark ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES})
+ENDIF(ENABLE_GLES2)
 
 IF(UNIX)
   INSTALL(TARGETS spark LIBRARY DESTINATION ${PRIVATELIBDIR})

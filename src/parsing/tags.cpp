@@ -26,7 +26,6 @@
 #include <sstream>
 #include "scripting/abc.h"
 #include "tags.h"
-#include "scripting/actions.h"
 #include "backends/geometry.h"
 #include "backends/rendering.h"
 #include "backends/security.h"
@@ -76,9 +75,6 @@ _NR<Tag> TagFactory::readTag()
 			break;
 		case 11:
 			ret=new DefineTextTag(h,f);
-			break;
-		case 12:
-			ret=new DoActionTag(h,f);
 			break;
 		case 13:
 			ret=new DefineFontInfoTag(h,f);
@@ -149,14 +145,8 @@ _NR<Tag> TagFactory::readTag()
 		case 48:
 			ret=new DefineFont2Tag(h,f);
 			break;
-		case 56:
-			ret=new ExportAssetsTag(h,f);
-			break;
 		case 58:
 			ret=new EnableDebuggerTag(h,f);
-			break;
-		case 59:
-			ret=new DoInitActionTag(h,f);
 			break;
 		case 60:
 			ret=new DefineVideoStreamTag(h,f);
@@ -227,14 +217,14 @@ _NR<Tag> TagFactory::readTag()
 	}
 
 	//Check if this clip is the main clip and if AVM2 has been enabled by a FileAttributes tag
-	if(topLevel && firstTag && pt->root==sys)
+	if(topLevel && firstTag && pt->getRootMovie()==sys)
 	{
 		sys->needsAVM2(pt->useAVM2);
 		if(pt->useNetwork
 		&& sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
 		{
 			sys->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
-			LOG(LOG_NO_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
+			LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
 		}
 	}
 	firstTag=false;
@@ -959,7 +949,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	if(PlaceFlagHasName)
 	{
 		//Set a variable on the parent to link this object
-		LOG(LOG_NO_INFO,_("Registering ID ") << CharacterId << _(" with name ") << Name);
+		LOG(LOG_INFO,_("Registering ID ") << CharacterId << _(" with name ") << Name);
 		if(!PlaceFlagMove)
 		{
 			obj->name = (const char*)Name;
@@ -1141,7 +1131,7 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 	longlongTime<<=32;
 	longlongTime|=CompileTimeLo;
 
-	LOG(LOG_NO_INFO,_("SWF Info:") << 
+	LOG(LOG_INFO,_("SWF Info:") << 
 	endl << "\tProductId:\t\t" << ProductId <<
 	endl << "\tEdition:\t\t" << Edition <<
 	endl << "\tVersion:\t\t" << int(MajorVersion) << "." << int(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
@@ -1179,16 +1169,7 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	while(true);
 
 	if(ActionOffset)
-	{
 		LOG(LOG_NOT_IMPLEMENTED,"DefineButton2Tag: Actions are not supported");
-		BUTTONCONDACTION bca;
-		do
-		{
-			in >> bca;
-			Actions.push_back(bca);
-		}
-		while(!bca.isLast());
-	}
 }
 
 ASObject* DefineButton2Tag::instance() const
@@ -1252,7 +1233,7 @@ ASObject* DefineButton2Tag::instance() const
 
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
-	LOG(LOG_NO_INFO,_("DefineVideoStreamTag"));
+	LOG(LOG_INFO,_("DefineVideoStreamTag"));
 	in >> CharacterID >> NumFrames >> Width >> Height;
 	BitStream bs(in);
 	UB(4,bs);
@@ -1328,7 +1309,7 @@ ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,_("ScriptLimitsTag Tag"));
 	in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
-	LOG(LOG_NO_INFO,_("MaxRecursionDepth: ") << MaxRecursionDepth << _(", ScriptTimeoutSeconds: ") << ScriptTimeoutSeconds);
+	LOG(LOG_INFO,_("MaxRecursionDepth: ") << MaxRecursionDepth << _(", ScriptTimeoutSeconds: ") << ScriptTimeoutSeconds);
 }
 
 DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
@@ -1338,7 +1319,7 @@ DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
 		in >> DebugId[i];
 
 	//Note the switch to hex formatting on the ostream, and switch back to dec
-	LOG(LOG_NO_INFO,_("DebugId ") << hex <<
+	LOG(LOG_INFO,_("DebugId ") << hex <<
 		int(DebugId[0]) << int(DebugId[1]) << int(DebugId[2]) << int(DebugId[3]) << "-" <<
 		int(DebugId[4]) << int(DebugId[5]) << "-" <<
 		int(DebugId[6]) << int(DebugId[7]) << "-" <<
@@ -1353,7 +1334,7 @@ EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)
 	DebugPassword = "";
 	if(h.getLength() > 0)
 		in >> DebugPassword;
-	LOG(LOG_NO_INFO,_("Debugger enabled, password: ") << DebugPassword);
+	LOG(LOG_INFO,_("Debugger enabled, password: ") << DebugPassword);
 }
 
 EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
@@ -1364,7 +1345,7 @@ EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 	DebugPassword = "";
 	if(h.getLength() > sizeof(ReservedWord))
 		in >> DebugPassword;
-	LOG(LOG_NO_INFO,_("Debugger enabled, reserved: ") << ReservedWord << _(", password: ") << DebugPassword);
+	LOG(LOG_INFO,_("Debugger enabled, reserved: ") << ReservedWord << _(", password: ") << DebugPassword);
 }
 
 MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
@@ -1381,7 +1362,7 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 		if(xml.get_depth() == 2 && xml.get_node_type() == xmlpp::TextReader::Element)
 			output << endl << "\t" << xml.get_local_name() << ":\t\t" << xml.read_string();
 	}
-	LOG(LOG_NO_INFO, "SWF Metadata:" << output.str());
+	LOG(LOG_INFO, "SWF Metadata:" << output.str());
 }
 
 DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)

@@ -17,29 +17,26 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_ACCESSIBILITY_H
-#define _FLASH_ACCESSIBILITY_H
+#ifndef _FLASH_SENSORS_H
+#define _FLASH_SENSORS_H
 
+#include "compat.h"
 #include "asobject.h"
+#include "flashevents.h"
+#include "thread_pool.h"
+#include "backends/netutils.h"
+#include "timer.h"
+#include "backends/decoder.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
 
 namespace lightspark
 {
-
-class AccessibilityProperties : public ASObject
-{
-private:
-	ASPROPERTY_GETTER_SETTER(tiny_string,name);
-public:
-	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+class Accelerometer: public ASObject {
+	public:
+		Accelerometer();
+		static void sinit(Class_base* c);
+		static void buildTraits(ASObject* o);
+		ASFUNCTION(_isSupported);
 };
-
-class AccessibilityImplementation : public ASObject
-{
-public:
-	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
-};
-
 }
 #endif

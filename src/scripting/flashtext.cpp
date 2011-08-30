@@ -79,12 +79,12 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	return true;
 }
 
-_NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y)
+_NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);
-	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax )
+	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && isHittable(type))
 		return last;
 	else
 		return NullRef;

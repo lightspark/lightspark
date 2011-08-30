@@ -4,6 +4,7 @@ User visible changes:
 - Flowplayer support
 - initial GLES2/EGL rendering backend, used to get hardware acceleration on ARM based devices
 - Support for loading external JPEGs
+- Drop half-finished support for AVM1 files, those should be handled by Gnash only.
 
 Developer visible changes:
 - Logging:

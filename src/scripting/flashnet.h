@@ -83,7 +83,7 @@ public:
 	static void sinit(Class_base*);
 };
 
-class SharedObject: public ASObject
+class SharedObject: public EventDispatcher
 {
 public:
 	static void sinit(Class_base*);

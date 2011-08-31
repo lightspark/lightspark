@@ -2276,13 +2276,25 @@ void ABCVm::getDescendants(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,"getDescendants " << *name);
 	ASObject* obj=th->runtime_stack_pop();
-	assert_and_throw(obj->getPrototype()==Class<XML>::getClass());
-	XML* xmlObj=Class<XML>::cast(obj);
 	//The name must be a QName
 	assert_and_throw(name->name_type==multiname::NAME_STRING);
 	vector<_R<XML> > ret;
 	//TODO: support multiname and namespaces
-	xmlObj->getDescendantsByQName(name->name_s, "", ret);
+	if(obj->getPrototype()==Class<XML>::getClass())
+	{
+		XML* xmlObj=Class<XML>::cast(obj);
+		xmlObj->getDescendantsByQName(name->name_s, "", ret);
+	}
+	else if(obj->getPrototype()==Class<XMLList>::getClass())
+	{
+		XMLList* xmlObj=Class<XMLList>::cast(obj);
+		xmlObj->getDescendantsByQName(name->name_s, "", ret);
+	}
+	else
+	{
+		obj->decRef();
+		throw Class<TypeError>::getInstanceS("Only XML and XMLList objects have descendants");
+	}
 	obj->decRef();
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	th->runtime_stack_push(retObj);

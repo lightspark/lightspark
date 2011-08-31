@@ -1409,6 +1409,7 @@ void XMLList::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
@@ -1512,6 +1513,16 @@ ASFUNCTIONBODY(XMLList,generator)
 		throw RunTimeException("Type not supported in XMLList()");
 }
 
+ASFUNCTIONBODY(XMLList,descendants)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+	assert_and_throw(argslen==1);
+	assert_and_throw(args[0]->getObjectType()!=T_QNAME);
+	vector<_R<XML>> ret;
+	th->getDescendantsByQName(args[0]->toString(),"",ret);
+	return Class<XMLList>::getInstanceS(ret);
+}
+
 ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl)
 {
 	if(skip_impl || !implEnable)
@@ -1595,6 +1606,15 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o)
 
 	//Nodes are always added at the end. The requested index are ignored. This is a tested behaviour.
 	nodes.push_back(_MR(newNode));
+}
+
+void XMLList::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret)
+{
+	std::vector<_R<XML> >::iterator it=nodes.begin();
+	for(; it!=nodes.end(); ++it)
+	{
+		(*it)->getDescendantsByQName(name, ns, ret);
+	}
 }
 
 _NR<XML> XMLList::convertToXML() const

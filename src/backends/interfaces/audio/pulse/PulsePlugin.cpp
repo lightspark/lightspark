@@ -373,32 +373,48 @@ void PulseAudioStream::fill ()
 	}
 }
 
-void PulseAudioStream::fillStream(size_t frameSize)
+void PulseAudioStream::fillStream(size_t toSend)
 {
-	int16_t *dest;
-	if ( frameSize == 0 ) //The server can't accept any data now
-		return;
-	//Write data until we have space on the server and we have data available
-	uint32_t totalWritten = 0;
-	pa_stream_begin_write ( stream, ( void** ) &dest, &frameSize );
-	do
+	/* Write data until we have space on the server and we have data available.
+	 * pa_stream_begin_write will return maximum 65472 bytes, but toSend is usually much bigger
+	 * so we loop until it is filled or we have no more decoded data
+	 */
+	while(toSend)
 	{
-		uint32_t retSize = decoder->copyFrame ( dest + ( totalWritten / 2 ), frameSize );
-		if ( retSize == 0 ) //There is no more data
+		int16_t *dest;
+		uint32_t totalWritten = 0;
+		size_t frameSize = toSend;
+		int ret = pa_stream_begin_write ( stream, ( void** ) &dest, &frameSize );
+		assert(!ret);
+		toSend -= frameSize;
+		if (frameSize == 0)
 			break;
-		totalWritten += retSize;
-		frameSize -= retSize;
-	}
-	while ( frameSize );
 
-	if ( totalWritten )
-	{
-		pa_stream_write ( stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE );
-		if(!pause)
-			pa_stream_cork ( stream, 0, NULL, NULL ); //Start the stream, just in case it's still stopped
+		/* copy frames from the decoder until the buffer is full */
+		do
+		{
+			uint32_t retSize = decoder->copyFrame ( dest + ( totalWritten / 2 ), frameSize );
+			if ( retSize == 0 ) //There is no more data
+				break;
+			totalWritten += retSize;
+			frameSize -= retSize;
+		}
+		while ( frameSize );
+
+		if ( totalWritten )
+		{
+			pa_stream_write ( stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE );
+		}
+		else
+		{
+			//there was not any decoded data available
+			pa_stream_cancel_write ( stream );
+			break;
+		}
 	}
-	else
-		pa_stream_cancel_write ( stream );
+
+	if(!pause)
+		pa_stream_cork ( stream, 0, NULL, NULL ); //Start the stream, just in case it's still stopped
 }
 
 bool PulseAudioStream::paused()

@@ -1937,7 +1937,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("getChildIndex","",Class<IFunction>::getFunction(getChildIndex),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getChildIndex","",Class<IFunction>::getFunction(_getChildIndex),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getChildAt","",Class<IFunction>::getFunction(getChildAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getChildByName","",Class<IFunction>::getFunction(getChildByName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addChild","",Class<IFunction>::getFunction(addChild),NORMAL_METHOD,true);
@@ -2436,8 +2436,25 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 	return (*it).getPtr();
 }
 
+int DisplayObjectContainer::getChildIndex(_R<DisplayObject> child)
+{
+	list<_R<DisplayObject>>::const_iterator it = dynamicDisplayList.begin();
+	int ret = 0;
+	do
+	{
+		if(*it == child)
+			break;
+		ret++;
+		++it;
+		if(it == dynamicDisplayList.end())
+			throw Class<ArgumentError>::getInstanceS("getChildIndex: child not in list");
+	}
+	while(1);
+	return ret;
+}
+
 //Only from VM context
-ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
+ASFUNCTIONBODY(DisplayObjectContainer,_getChildIndex)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
@@ -2445,22 +2462,10 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
-	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
+	_R<DisplayObject> d= _MR(static_cast<DisplayObject*>(args[0]));
+	d->incRef();
 
-	list<_R<DisplayObject>>::const_iterator it=th->dynamicDisplayList.begin();
-	int ret=0;
-	do
-	{
-		if(*it==d)
-			break;
-		
-		ret++;
-		++it;
-		if(it==th->dynamicDisplayList.end())   
-			throw Class<ArgumentError>::getInstanceS("getChildIndex: child not in list");
-	}
-	while(1);
-	return abstract_i(ret);
+	return abstract_i(th->getChildIndex(d));
 }
 
 void Shape::finalize()

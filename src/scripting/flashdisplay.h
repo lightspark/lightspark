@@ -231,6 +231,7 @@ public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList();
 	bool _removeChild(_R<DisplayObject> child);
+	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer();
 	void finalize();
 	bool hasLegacyChildAt(uint32_t depth);
@@ -249,7 +250,7 @@ public:
 	ASFUNCTION(removeChild);
 	ASFUNCTION(removeChildAt);
 	ASFUNCTION(addChildAt);
-	ASFUNCTION(getChildIndex);
+	ASFUNCTION(_getChildIndex);
 	ASFUNCTION(getChildAt);
 	ASFUNCTION(getChildByName);
 	ASFUNCTION(contains);

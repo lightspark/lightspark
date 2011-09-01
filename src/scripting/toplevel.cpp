@@ -2487,6 +2487,11 @@ tiny_string ASString::toString(bool debugMsg)
 double ASString::toNumber()
 {
 	assert_and_throw(implEnable);
+
+	//Number("0xF3") is also supported
+	if( data.size() > 2 && data[0] == '0' && data[1] == 'x' )
+		return strtol(data.c_str(),NULL,16); //maybe do more error checking?
+
 	for(unsigned int i=0;i<data.size();i++)
 	{
 		if(!((data[i]>='0' && data[i]<='9') || data[i]=='.')) //not a number

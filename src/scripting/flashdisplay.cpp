@@ -1938,6 +1938,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getChildIndex","",Class<IFunction>::getFunction(_getChildIndex),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setChildIndex","",Class<IFunction>::getFunction(_setChildIndex),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getChildAt","",Class<IFunction>::getFunction(getChildAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getChildByName","",Class<IFunction>::getFunction(getChildByName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addChild","",Class<IFunction>::getFunction(addChild),NORMAL_METHOD,true);
@@ -2362,6 +2363,39 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 
 	//As we return the child we don't decRef it
 	return child;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,_setChildIndex)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	assert_and_throw(argslen==2);
+
+	//Validate object type
+	assert_and_throw(args[0] && args[0]->getPrototype() &&
+		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	args[0]->incRef();
+	_R<DisplayObject> child = _MR(Class<DisplayObject>::cast(args[0]));
+
+	int index=args[1]->toInt();
+	int curIndex = th->getChildIndex(child);
+
+	if(curIndex == index)
+		return NULL;
+
+	Locker l(th->mutexDisplayList);
+	th->dynamicDisplayList.remove(child); //remove from old position
+
+	list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+	int i = 0;
+	for(;it != th->dynamicDisplayList.end(); ++it)
+		if(i++ == index)
+		{
+			th->dynamicDisplayList.insert(it, child);
+			return NULL;
+		}
+
+	th->dynamicDisplayList.push_back(child);
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)

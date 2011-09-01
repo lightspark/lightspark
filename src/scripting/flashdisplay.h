@@ -251,6 +251,7 @@ public:
 	ASFUNCTION(removeChildAt);
 	ASFUNCTION(addChildAt);
 	ASFUNCTION(_getChildIndex);
+	ASFUNCTION(_setChildIndex);
 	ASFUNCTION(getChildAt);
 	ASFUNCTION(getChildByName);
 	ASFUNCTION(contains);

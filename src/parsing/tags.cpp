@@ -33,6 +33,7 @@
 #include "swf.h"
 #include "logger.h"
 #include "compat.h"
+#include "streams.h"
 
 #undef RGB
 
@@ -92,7 +93,7 @@ _NR<Tag> TagFactory::readTag()
 			ret=new SoundStreamBlockTag(h,f);
 			break;
 		case 20:
-			ret=new DefineBitsLosslessTag(h,f);
+			ret=new DefineBitsLosslessTag(h,f,1);
 			break;
 		case 21:
 			ret=new DefineBitsJPEG2Tag(h,f);
@@ -122,7 +123,7 @@ _NR<Tag> TagFactory::readTag()
 			ret=new DefineBitsJPEG3Tag(h,f);
 			break;
 		case 36:
-			ret=new DefineBitsLossless2Tag(h,f);
+			ret=new DefineBitsLosslessTag(h,f,2);
 			break;
 		case 37:
 			ret=new DefineEditTextTag(h,f);
@@ -621,7 +622,7 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 	ignore(in,dest-in.tellg());
 }
 
-DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):DictionaryTag(h)
+DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version):DictionaryTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -630,32 +631,43 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):Dictio
 	if(BitmapFormat==3)
 		in >> BitmapColorTableSize;
 
-	//TODO: read bitmap data
-	ignore(in,dest-in.tellg());
-}
-
-DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h)
-{
-	int dest=in.tellg();
-	dest+=h.getLength();
-	in >> CharacterId >> BitmapFormat >> BitmapWidth >> BitmapHeight;
-
-	if(BitmapFormat==3)
-		in >> BitmapColorTableSize;
-
-	//TODO: read bitmap data
-	ignore(in,dest-in.tellg());
-}
-
-ASObject* DefineBitsLossless2Tag::instance() const
-{
-	DefineBitsLossless2Tag* ret=new DefineBitsLossless2Tag(*this);
-	//TODO: check
-	if(bindedTo)
+	if(BitmapFormat != 5)
 	{
-		//A class is binded to this tag
-		ret->setPrototype(bindedTo);
+		LOG(LOG_NOT_IMPLEMENTED,"DefineBitsLossless(2)Tag with unsupported BitmapFormat");
+		ignore(in,dest-in.tellg());
+		return;
 	}
+
+	string cData;
+	size_t cSize = dest-in.tellg(); //rest of this tag
+	cData.resize(cSize);
+	in.read(&cData[0], cSize);
+	istringstream cDataStream(cData);
+	zlib_filter zf(cDataStream.rdbuf());
+	istream zfstream(&zf);
+
+	size_t size = BitmapWidth * BitmapHeight * 4;
+	uint8_t* inData=new(nothrow) uint8_t[size];
+	zfstream.read((char*)inData,size);
+	assert(!zfstream.fail() && !zfstream.eof());
+
+	if(version == 1)
+	{	/* for version 1, the alpha field is always zero
+		 * but should not be interpreted. Setting it to
+		 * 0xff (opaque) allows us to handle it as ARGB
+		 */
+		for(size_t i=0;i<size;i+=4)
+			inData[i] = 0xFF;
+	}
+
+	Bitmap::fromRGB(inData, BitmapWidth, BitmapHeight, true);
+}
+
+ASObject* DefineBitsLosslessTag::instance() const
+{
+	DefineBitsLosslessTag* ret=new DefineBitsLosslessTag(*this);
+	if(bindedTo)
+		ret->setPrototype(bindedTo);
 	else
 		ret->setPrototype(Class<Bitmap>::getClass());
 	return ret;

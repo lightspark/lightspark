@@ -13,6 +13,7 @@
 		var num:Number = 12.34;
 		Tests.assertEquals("12.34",num.toString(10),"Number::toString(10)");
 		Tests.assertEquals("c",num.toString(16),"Number::toString(16)");
+		Tests.assertEquals(2952663604,Number("0xAFFE1234"),"Number(\"0xAFFE1234\")");
 		Tests.report(visual, this.name);
 	}
 	]]>

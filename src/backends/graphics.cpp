@@ -496,10 +496,10 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 				throw RunTimeException("Invalid bitmap");
 
 			IntSize size = style.bitmap->getBitmapSize();
-			//TODO: ARGB32 always give a white surface
+
 			cairo_surface_t* surface = cairo_image_surface_create_for_data (style.bitmap->data,
-										CAIRO_FORMAT_RGB24, size.width, size.height,
-										cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, size.width));
+										CAIRO_FORMAT_ARGB32, size.width, size.height,
+										cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, size.width));
 
 			pattern = cairo_pattern_create_for_surface(surface);
 			cairo_surface_destroy(surface);
@@ -793,7 +793,7 @@ bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float sc
 
 uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, uint32_t height)
 {
-	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, width);
+	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	uint8_t* outData = new uint8_t[stride * height];
 	for(uint32_t i = 0; i < height; i++)
 	{

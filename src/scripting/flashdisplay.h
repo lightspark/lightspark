@@ -736,7 +736,7 @@ class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;
 protected:
-	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height);
+	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
 	bool fromJPEG( uint8_t* data, int len);
 	bool fromJPEG(std::istream& s);
 	IntSize size;

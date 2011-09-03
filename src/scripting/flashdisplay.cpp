@@ -3423,9 +3423,14 @@ IntSize Bitmap::getBitmapSize() const
 	return size;
 }
 
-bool Bitmap::fromRGB(uint8_t* rgb, uint32_t width, uint32_t height)
+bool Bitmap::fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha)
 {
-	data = CairoRenderer::convertBitmapToCairo(rgb, width, height);
+	size.width = width;
+	size.height = height;
+	if(hasAlpha)
+		data = CairoRenderer::convertBitmapWithAlphaToCairo(rgb, width, height);
+	else
+		data = CairoRenderer::convertBitmapToCairo(rgb, width, height);
 	delete[] rgb;
 	if(!data)
 	{
@@ -3452,14 +3457,14 @@ bool Bitmap::fromJPEG(uint8_t *inData, int len)
 {
 	assert(!data);
 	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &size.width, &size.height);
-	return fromRGB(rgb, size.width, size.height);
+	return fromRGB(rgb, size.width, size.height, false);
 }
 
 bool Bitmap::fromJPEG(std::istream &s)
 {
 	assert(!data);
 	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &size.width, &size.height);
-	return fromRGB(rgb, size.width, size.height);
+	return fromRGB(rgb, size.width, size.height, false);
 }
 
 void SimpleButton::sinit(Class_base* c)

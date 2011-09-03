@@ -800,7 +800,7 @@ uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, ui
 		for(uint32_t j = 0; j < width; j++)
 		{
 			uint32_t* outDataPos = (uint32_t*)(outData+i*stride) + j;
-			uint32_t pdata = 0;
+			uint32_t pdata = 0xFF;
 			/* the alpha channel is set to zero above */
 			uint8_t* rgbData = ((uint8_t*)&pdata)+1;
 			/* copy the RGB bytes to rgbData */

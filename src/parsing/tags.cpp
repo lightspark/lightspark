@@ -1405,6 +1405,16 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Diction
 	delete[] inData;
 }
 
+ASObject* DefineBitsJPEG2Tag::instance() const
+{
+	DefineBitsJPEG2Tag* ret=new DefineBitsJPEG2Tag(*this);
+	if(bindedTo)
+		ret->setPrototype(bindedTo);
+	else
+		ret->setPrototype(Class<Bitmap>::getClass());
+	return ret;
+}
+
 DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),alphaData(NULL)
 {
 	LOG(LOG_TRACE,_("DefineBitsJPEG3Tag Tag"));
@@ -1426,6 +1436,16 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 		alphaData=new(nothrow) uint8_t[alphaSize];
 		in.read((char*)alphaData,alphaSize);
 	}
+}
+
+ASObject* DefineBitsJPEG3Tag::instance() const
+{
+	DefineBitsJPEG3Tag* ret=new DefineBitsJPEG3Tag(*this);
+	if(bindedTo)
+		ret->setPrototype(bindedTo);
+	else
+		ret->setPrototype(Class<Bitmap>::getClass());
+	return ret;
 }
 
 DefineBitsJPEG3Tag::~DefineBitsJPEG3Tag()

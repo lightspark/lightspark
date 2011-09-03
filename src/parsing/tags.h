@@ -572,6 +572,7 @@ private:
 public:
 	DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }
+	ASObject* instance() const;
 };
 
 class DefineBitsJPEG3Tag: public DictionaryTag, public Bitmap
@@ -583,6 +584,7 @@ public:
 	DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in);
 	~DefineBitsJPEG3Tag();
 	int getId(){ return CharacterId; }
+	ASObject* instance() const;
 };
 
 class DefineScalingGridTag: public Tag

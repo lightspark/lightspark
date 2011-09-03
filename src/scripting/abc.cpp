@@ -2192,6 +2192,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 							ret=abstract_i(0);
 						else if(type->name_s=="Number")
 							ret=abstract_d(numeric_limits<double>::quiet_NaN());
+						else if(type->name_s=="Boolean")
+							ret=abstract_b(false);
 						else
 							ret=new Undefined;
 					}

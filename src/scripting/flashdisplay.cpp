@@ -72,6 +72,8 @@ REGISTER_CLASS_NAME(Scene);
 REGISTER_CLASS_NAME(AVM1Movie);
 REGISTER_CLASS_NAME(Shader);
 
+ATOMIC_INT32(DisplayObject::instanceCount);
+
 std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 {
 	s << "[" << r.getPrototype()->class_name << "]";
@@ -1176,10 +1178,11 @@ void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),
 	loaderInfo(NULL),alpha(1.0),visible(true),invalidateQueueNext(NULL)
 {
+	name = tiny_string("instance") + tiny_string(ATOMIC_INCREMENT(instanceCount));
 }
 
 DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(NULL),
-	parent(NULL),mask(NULL),onStage(false),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),invalidateQueueNext(NULL)
+	parent(NULL),mask(NULL),onStage(false),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),name(d.name),invalidateQueueNext(NULL)
 {
 	assert(!d.isConstructed());
 }

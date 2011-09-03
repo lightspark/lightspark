@@ -50,6 +50,7 @@ public:
 	enum HIT_TYPE { GENERIC_HIT, DOUBLE_CLICK };
 private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
+	static ATOMIC_INT32(instanceCount);
 	MATRIX Matrix;
 	ACQUIRE_RELEASE_FLAG(useMatrix);
 	number_t tx,ty;

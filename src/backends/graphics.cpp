@@ -791,6 +791,23 @@ bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float sc
 	return pixelBytes[0]!=0x00;
 }
 
+uint8_t* CairoRenderer::convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t width, uint32_t height)
+{
+	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	uint8_t* outData = new uint8_t[stride * height];
+	uint32_t* inData32 = (uint32_t*)inData;
+
+	for(uint32_t i = 0; i < height; i++)
+	{
+		for(uint32_t j = 0; j < width; j++)
+		{
+			uint32_t* outDataPos = (uint32_t*)(outData+i*stride) + j;
+			*outDataPos = BigEndianToHost32( *(inData32+(i*width+j)) );
+		}
+	}
+	return outData;
+}
+
 uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, uint32_t height)
 {
 	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);

@@ -1,0 +1,22 @@
+#!/bin/bash
+if [[ ! -f "hxswfml.n" ]]; then
+  echo "Please download hxswfml.n from"
+  echo "http://code.google.com/p/hxswfml/downloads/list"
+  echo "Also make sure you have neko installed (e.g. apt-get install neko)"
+  exit 1
+fi
+
+for i in `ls *.as`
+do
+  IN="$i"
+  OUT="`basename $i .as`.abc.swf"
+  test "$IN" -nt "$OUT" && \
+	  (echo Compiling $IN && mxmlc -compiler.omit-trace-statements=false -static-link-runtime-shared-libraries=true "$IN" -output "$OUT")
+done
+
+for i in `ls *.xml`
+do
+  IN="$i"
+  OUT="`basename $i .xml`.swf"
+  echo Compiling $IN && neko hxswfml.n xml2swf "$IN" "$OUT"
+done

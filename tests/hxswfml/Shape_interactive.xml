@@ -1,0 +1,12 @@
+<swf frameCount="1" fps="30" width="900" height="300" >
+	<FileAttributes actionscript3="true" useNetwork="false" useDirectBlit="false" useGPU="false" hasMetaData="false" />
+	<SetBackgroundColor color="0xFFFFFF" />
+
+	<DefineShape id="1">
+		<LineStyle width="4" color="0x0000FF" alpha="1.0" />
+		<BeginFill color="0xFF0000" alpha="0.6" />
+		<DrawRoundRectComplex x="0" y="0" width="100" height="100" rtl="25" rtr="0" rbl="0" rbr="25" />
+	</DefineShape>
+	<PlaceObject id="1" depth="1" x="400" y="100" />
+	<ShowFrame />
+</swf>

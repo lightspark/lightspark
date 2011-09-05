@@ -47,7 +47,7 @@ package
 	import flash.system.fscommand;
 	public class Tests
 	{
-		private static var testCount:uint = 0;
+		public static var testCount:uint = 0;
 		private static var failures:Array = new Array();
 		public static function assertArrayEquals(arr1:Array, arr2:Array, msg:String=null, strict:Boolean=false):void
 		{

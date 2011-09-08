@@ -35,6 +35,7 @@ const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
 
 class Event;
 class ABCContext;
+class Template_base;
 class method_info;
 struct call_context;
 struct traits_info;
@@ -90,11 +91,20 @@ public:
 	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 	ASObject *describeType() const;
 	void describeInstance(xmlpp::Element* root) const;
-	
+	virtual const Template_base* getTemplate() const { return NULL; }
 	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob);
 	void acquireObject(ASObject* ob);
 	void cleanUp();
+};
+
+class Template_base : public ASObject
+{
+private:
+	QName template_name;
+public:
+	Template_base(QName name);
+	virtual Class_base* applyType(ASObject* const* args, const unsigned int argslen)=0;
 };
 
 class Class_object: public Class_base

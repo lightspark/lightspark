@@ -83,7 +83,7 @@ public:
 template< class T>
 class Class: public Class_base
 {
-private:
+protected:
 	Class(const QName& name):Class_base(name){}
 	//This function is instantiated always because of inheritance
 	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
@@ -232,6 +232,124 @@ public:
 		ASObject::buildTraits(o);
 	}
 	ASObject* lazyDefine(const multiname& name);
+};
+
+/* This is a class which was instantiated from a Template<T> */
+template<class T>
+class TemplatedClass : public Class<T>
+{
+private:
+	/* the Template<T>* this class was generated from */
+	const Template_base* templ;
+	std::vector<Class_base*> types;
+public:
+	TemplatedClass(const QName& name, ASObject* const* _types, const unsigned int numtypes, Template_base* _templ)
+		: Class<T>(name), templ(_templ)
+	{
+		assert(types.empty());
+		types.reserve(numtypes);
+		for(size_t i=0;i<numtypes;++i)
+		{
+			assert_and_throw(_types[i]->getObjectType() == T_CLASS);
+			Class_base* o_class = static_cast<Class_base*>(_types[i]);
+			types.push_back(o_class);
+		}
+	}
+
+	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	{
+		T* ret=new T;
+		ret->setPrototype(this);
+		ret->setTypes(types);
+		if(construct)
+			handleConstruction(ret,args,argslen,true);
+		return ret;
+	}
+
+	/* This function is called for as3 code like v = Vector.<String>(["Hello", "World"])
+	 * this->types will be Class<ASString> on entry of this function.
+	 */
+	ASObject* generator(ASObject* const* args, const unsigned int argslen)
+	{
+		ASObject* ret = T::generator(this,args,argslen);
+		for(size_t i=0;i<argslen;++i)
+			args[i]->decRef();
+		return ret;
+	}
+
+	const Template_base* getTemplate() const
+	{
+		return templ;
+	}
+
+	const std::vector<Class_base*> getTypes() const
+	{
+		return types;
+	}
+};
+
+/* this is modeled closely after the Class/Class_base pattern */
+template<class T>
+class Template : public Template_base
+{
+public:
+	Template(QName name) : Template_base(name) {};
+
+	QName getQName(ASObject* const* types, const unsigned int numtypes)
+	{
+		//This is modeled after the internal naming of the proprietary player
+		assert_and_throw(numtypes);
+		QName ret(ClassName<T>::name, ClassName<T>::ns);
+		for(size_t i=0;i<numtypes;++i)
+		{
+			assert_and_throw(types[i]->getObjectType() == T_CLASS);
+			Class_base* o_class = static_cast<Class_base*>(types[i]);
+			ret.name += "$";
+			ret.name += o_class->class_name.getQualifiedName();
+		}
+		return ret;
+	}
+
+	/* this function will take ownership of the types objects */
+	Class_base* applyType(ASObject* const* types, const unsigned int numtypes)
+	{
+		QName instantiatedQName = getQName(types,numtypes);
+
+		std::map<QName, Class_base*>::iterator it=sys->classes.find(instantiatedQName);
+		Class<T>* ret=NULL;
+		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		{
+			ret=new TemplatedClass<T>(instantiatedQName,types,numtypes,this);
+			T::sinit(ret);
+			sys->classes.insert(std::make_pair(instantiatedQName,ret));
+		}
+		else
+			ret=static_cast<TemplatedClass<T>*>(it->second);
+
+		ret->incRef();
+		return ret;
+	}
+
+	static Template<T>* getTemplate(const QName& name)
+	{
+		std::map<QName, Template_base*>::iterator it=sys->templates.find(name);
+		Template<T>* ret=NULL;
+		if(it==sys->templates.end()) //This class is not yet in the map, create it
+		{
+			ret=new Template<T>(name);
+			sys->templates.insert(std::make_pair(name,ret));
+		}
+		else
+			ret=static_cast<Template<T>*>(it->second);
+
+		ret->incRef();
+		return ret;
+	}
+
+	static Template<T>* getTemplate()
+	{
+		return getTemplate(QName(ClassName<T>::name,ClassName<T>::ns));
+	}
 };
 
 };

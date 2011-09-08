@@ -4569,6 +4569,11 @@ void Class_base::cleanUp()
 	}
 }
 
+Template_base::Template_base(QName name) : template_name(name)
+{
+	type = T_TEMPLATE;
+}
+
 Class_object* Class_object::getClass()
 {
 	//We check if we are registered in the class map

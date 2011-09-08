@@ -263,6 +263,7 @@ public:
 
 	//Class map
 	std::map<QName, Class_base*> classes;
+	std::map<QName, Template_base*> templates;
 
 	//Flags for command line options
 	bool useInterpreter;

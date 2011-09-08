@@ -801,7 +801,6 @@ void ABCVm::construct(call_context* th, int m)
 
 void ABCVm::constructGenericType(call_context* th, int m)
 {
-//	throw UnsupportedException("constructGenericType not implement");
 	LOG(LOG_CALLS, _("constructGenericType ") << m);
 	assert_and_throw(m==1);
 	ASObject** args=new ASObject*[m];
@@ -810,29 +809,24 @@ void ABCVm::constructGenericType(call_context* th, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-/*	if(obj->getObjectType()==T_DEFINABLE)
+	if(obj->getObjectType() != T_TEMPLATE)
 	{
-		LOG(LOG_ERROR,_("Check"));
-		abort();
-		LOG(LOG_CALLS,_("Deferred definition of property ") << name);
-		Definable* d=static_cast<Definable*>(o);
-		d->define(obj);
-		o=obj->getVariableByMultiname(name,owner);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);
+		LOG(LOG_NOT_IMPLEMENTED, "constructGenericType of " << obj->getObjectType());
+		obj->decRef();
+		obj = new Undefined();
+		th->runtime_stack_push(obj);
+		for(int i=0;i<m;i++)
+			args[i]->decRef();
+		delete[] args;
+		return;
 	}
 
-	LOG(LOG_CALLS,_("Constructing"));
-	Class_base* o_class=static_cast<Class_base*>(obj);
-	assert_and_throw(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance(true,args,m);*/
-	ASObject* ret=new Undefined;
+	Template_base* o_template=static_cast<Template_base*>(obj);
 
-	obj->decRef();
-	LOG(LOG_CALLS,_("End of constructing"));
-	th->runtime_stack_push(ret);
-	//TODO: remove when implemented
-	for(int i=0;i<m;i++)
-		args[i]->decRef();
+	/* Instantiate the template to obtain a class */
+	Class_base* o_class = o_template->applyType(args,m);
+
+	th->runtime_stack_push(o_class);
 	delete[] args;
 }
 

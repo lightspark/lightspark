@@ -3881,23 +3881,34 @@ void MovieClip::advanceFrame()
 	//TODO check order: child or parent first?
 	DisplayObjectContainer::advanceFrame();
 
-	/* DefineSpriteTag may be exported as Sprite, so we should not
-	 * advance the frame.
+	/* A MovieClip can only have frames if
+	 * 1a. It is a RootMovieClip
+	 * 1b. or it is a DefineSpriteTag
+	 * 2. and is exported as a subclass of MovieClip (see bindedTo)
 	 */
-	if(!getPrototype()->isSubClass(Class<MovieClip>::getClass()))
+	if((!dynamic_cast<RootMovieClip*>(this) && !dynamic_cast<DefineSpriteTag*>(this))
+		|| !getPrototype()->isSubClass(Class<MovieClip>::getClass()))
 		return;
 
 	//If we have not yet loaded enough frames delay advancement
 	if(state.next_FP>=(uint32_t)getFramesLoaded())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Not enough frames loaded"));
+		if(hasFinishedLoading())
+		{
+			LOG(LOG_ERROR,_("state.next_FP >= getFramesLoaded"));
+			state.next_FP = state.FP;
+		}
 		return;
 	}
 
 	state.FP=state.next_FP;
 	state.explicit_FP=false;
 	if(!state.stop_FP && getFramesLoaded()>0)
+	{
 		state.next_FP=imin(state.FP+1,getFramesLoaded()-1);
+		if(hasFinishedLoading() && state.FP == getFramesLoaded()-1)
+			state.next_FP = 0;
+	}
 }
 
 void MovieClip::constructionComplete()

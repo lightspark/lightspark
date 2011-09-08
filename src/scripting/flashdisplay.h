@@ -615,6 +615,12 @@ public:
 	ASObject* gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	/*
+	 * returns true if all frames of this MovieClip are loaded
+	 * this is overwritten in RootMovieClip, because that one is
+	 * executed while loading
+	 */
+	virtual bool hasFinishedLoading() { return true; }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(swapDepths);
 	ASFUNCTION(createEmptyMovieClip);

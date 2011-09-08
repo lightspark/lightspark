@@ -76,9 +76,11 @@ private:
 	void initFrame();
 	void advanceFrame();
 	void setOnStage(bool staged);
+	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
 	~RootMovieClip();
+	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;
 	uint32_t fileLength;
 	RGB getBackground();

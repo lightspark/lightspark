@@ -56,7 +56,7 @@ using namespace lightspark;
 extern TLSDATA ParseThread* pt;
 
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),parsingIsFailed(false),frameRate(0),
-	toBind(false)
+	toBind(false), finishedLoading(false)
 {
 	this->incRef();
 	sem_init(&new_frame,0,0);
@@ -1124,6 +1124,7 @@ void ParseThread::parseSWF(UI8 ver)
 						root->commitFrame(false);
 					else
 						root->revertFrame();
+					RELEASE_WRITE(root->finishedLoading,true);
 					done=true;
 					root->check();
 					break;

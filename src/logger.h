@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <semaphore.h>
 #include <iostream>
+#include <sstream>
 
 enum LOG_LEVEL { LOG_ERROR=0, LOG_INFO=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_TRACE=4};
 
@@ -44,7 +45,7 @@ private:
 	bool valid;
 	static const char* level_names[];
 	static LOG_LEVEL log_level DLL_PUBLIC;
-
+	std::stringstream message;
 public:
 	Log(LOG_LEVEL l) DLL_PUBLIC;
 	~Log() DLL_PUBLIC;

@@ -30,7 +30,6 @@ Log::Log(LOG_LEVEL l)
 	{
 		cur_level=l;
 		valid=true;
-		sem_wait(&mutex);
 	}
 	else
 		valid=false;
@@ -39,13 +38,16 @@ Log::Log(LOG_LEVEL l)
 Log::~Log()
 {
 	if(valid)
+	{
+		sem_wait(&mutex);
+		std::cout << level_names[cur_level] << ": " << message.str();
 		sem_post(&mutex);
+	}
 }
 
 std::ostream& Log::operator()()
 {
-	std::cout << level_names[cur_level] << ": ";
-	return std::cout;
+	return message;
 }
 
 void Log::initLogging(LOG_LEVEL l)

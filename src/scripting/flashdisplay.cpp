@@ -1967,8 +1967,8 @@ DisplayObjectContainer::DisplayObjectContainer():mouseChildren(true),mutexDispla
 
 bool DisplayObjectContainer::hasLegacyChildAt(uint32_t depth)
 {
-	std::map<uint32_t,DisplayObject*>::iterator i = depthToLegacyChild.find(depth);
-	return i != depthToLegacyChild.end();
+	auto i = depthToLegacyChild.left.find(depth);
+	return i != depthToLegacyChild.left.end();
 }
 
 void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
@@ -1978,7 +1978,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		LOG(LOG_ERROR,"deleteLegacyChildAt: no child at that depth");
 		return;
 	}
-	DisplayObject* obj = depthToLegacyChild[depth];
+	DisplayObject* obj = depthToLegacyChild.left.at(depth);
 	if(obj->name.len() > 0)
 	{
 		multiname objName;
@@ -1989,10 +1989,9 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 	}
 
 	obj->incRef();
+	//this also removes it from depthToLegacyChild
 	bool ret = _removeChild(_MR(obj));
 	assert_and_throw(ret);
-
-	depthToLegacyChild.erase(depth);
 }
 
 void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* obj)
@@ -2013,7 +2012,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		setVariableByMultiname(objName,obj);
 	}
 
-	depthToLegacyChild[depth] = obj;
+	depthToLegacyChild.insert(boost::bimap<uint32_t,DisplayObject*>::value_type(depth,obj));
 }
 
 void DisplayObjectContainer::transformLegacyChildAt(uint32_t depth, const MATRIX& mat)
@@ -2023,15 +2022,15 @@ void DisplayObjectContainer::transformLegacyChildAt(uint32_t depth, const MATRIX
 		LOG(LOG_ERROR,"transformLegacyChildAt: no child at that depth");
 		return;
 	}
-	depthToLegacyChild[depth]->setMatrix(mat);
+	depthToLegacyChild.left.at(depth)->setMatrix(mat);
 }
 
 void DisplayObjectContainer::purgeLegacyChildren()
 {
-	std::map<uint32_t,DisplayObject*>::iterator i = depthToLegacyChild.begin();
+	auto i = depthToLegacyChild.begin();
 	while( i != depthToLegacyChild.end() )
 	{
-		deleteLegacyChildAt(i->first);
+		deleteLegacyChildAt(i->left);
 		i = depthToLegacyChild.begin();
 	}
 }
@@ -2223,6 +2222,9 @@ bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 		if(it==dynamicDisplayList.end())
 			return false;
 		dynamicDisplayList.erase(it);
+
+		//Erase this from the legacy child map (if it is in there)
+		depthToLegacyChild.right.erase(child.getPtr());
 	}
 	child->setOnStage(false);
 	child->setParent(NullRef);

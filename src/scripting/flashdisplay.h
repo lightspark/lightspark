@@ -20,6 +20,7 @@
 #ifndef _FLASH_DISPLAY_H
 #define _FLASH_DISPLAY_H
 
+#include <boost/bimap.hpp>
 #include "compat.h"
 
 #include "swftypes.h"
@@ -214,7 +215,7 @@ public:
 class DisplayObjectContainer: public InteractiveObject
 {
 private:
-	std::map<uint32_t,DisplayObject*> depthToLegacyChild;
+	boost::bimap<uint32_t,DisplayObject*> depthToLegacyChild;
 	bool _contains(_R<DisplayObject> child);
 	bool mouseChildren;
 protected:

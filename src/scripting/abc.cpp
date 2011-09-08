@@ -169,6 +169,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("RegExp","",Class<RegExp>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("QName","",Class<ASQName>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("uint","",Class<UInteger>::getClass(),DECLARED_TRAIT);
+	builtin->setVariableByQName("Vector","__AS3__.vec",Template<Vector>::getTemplate(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Error","",Class<ASError>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("SecurityError","",Class<SecurityError>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("ArgumentError","",Class<ArgumentError>::getClass(),DECLARED_TRAIT);

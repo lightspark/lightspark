@@ -10,3 +10,4 @@ Official TODO Queue:
 -) Fix memory based downloader
 -) Add a spinlock in DisplayObject for all data shared in rendering and VM context
 -) Check volume at stream creation, as it's too high
+-) Producing an exception in frameScript or ENTER_FRAME handler etc. should not halt the whole vm

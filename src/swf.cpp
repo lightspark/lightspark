@@ -1465,8 +1465,8 @@ void SystemState::tick()
 
 	/* Step 0: Set current frame number to the next frame */
 	_R<AdvanceFrameEvent> advFrame = _MR(new AdvanceFrameEvent());
-	sys->currentVm->addEvent(NullRef, advFrame);
-	advFrame->done.wait();
+	if(sys->currentVm->addEvent(NullRef, advFrame))
+		advFrame->done.wait();
 }
 
 void SystemState::resizeCompleted() const

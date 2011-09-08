@@ -20,6 +20,7 @@ FAILURES=0;
 COMPILE=0;
 QUIT=0;
 DEBUG=0;
+PROPRIETARY=0;
 
 while [ $# -ne 0 ]; do
 	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then
@@ -35,6 +36,7 @@ while [ $# -ne 0 ]; do
 		echo -e "\t-d|--debug\t\tDon't redirect stdout from lightspark to /dev/null (output gets cached in a variable so this isn't so useful)";
 		echo -e "\t-l|--log-level\t\tLightspark log-level";
 		echo -e "\t-t|--tests\t\tfiles to compile/test, must be last parameter (otherwise compile/test all files in this directory)";
+		echo -e "\t-p|--proprietary\t\tUse proprietary player to run tests";
 		echo "Examples:";
 		echo -e "\t./tests -q -f\t\tTests all files, only reporting failures"
 		echo -e "\t./tests -q -c -t FILE\tRecompiles the file and runs it, only showing reports"
@@ -66,6 +68,23 @@ while [ $# -ne 0 ]; do
 	elif [ $1 == "-u" ] || [ $1 == "--url" ]; then
 		ROOTURL="$2"
 		shift
+	elif [ $1 == "-p" ] || [ $1 == "--proprietary" ]; then
+		PROPRIETARY=1
+		if ! which flashplayerdebugger > /dev/null; then
+			echo "You need the flashplayerdebugger binary."
+			echo "Please download it from Adobe's website."
+			exit 1
+		fi
+
+		if (test -f $HOME/mm.cfg) \
+		&& (grep "TraceOutputFileEnable=1" $HOME/mm.cfg > /dev/null) \
+		&& (grep "TraceOutputFileName=" $HOME/mm.cfg > /dev/null); then
+			PROPRIETARY_LOGFILE=`grep TraceOutputFileName $HOME/mm.cfg | cut -d'=' -f2`
+			echo "Found logfile at $PROPRIETARY_LOGFILE"
+		else
+			echo -e "$HOME/mm.cfg not found or invalid.\nYou need to create $HOME/mm.cfg with the lines\nTraceOutputFileEnable=1\nTraceOutputFileName=/tmp/flashdebugger.log"
+			exit 1
+		fi
 	else
 		if [ $1 == "-t" ] || [ $1 == "--tests" ]; then
 			shift;
@@ -152,10 +171,20 @@ for test in $TESTS; do
 	fi
 	sleep 0.25;
 
-	if [ $DEBUG -eq 1 ]; then
-		lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1`;
+	if [ $PROPRIETARY -eq 0 ]; then
+		if [ $DEBUG -eq 1 ]; then
+			lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1`;
+		else
+			lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1 >/dev/null`;
+		fi
 	else
-		lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1 >/dev/null`;
+		echo > $PROPRIETARY_LOGFILE
+		if [ $DEBUG -eq 1 ]; then
+			flashplayerdebugger $test 2>&1
+		else
+			flashplayerdebugger $test 2>/dev/null
+		fi
+		lines=`cat $PROPRIETARY_LOGFILE`
 	fi
 
 	TESTCOUNT=`expr $TESTCOUNT + 1`;

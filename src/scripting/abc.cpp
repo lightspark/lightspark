@@ -2195,10 +2195,10 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 						else if(type->name_s=="Boolean")
 							ret=abstract_b(false);
 						else
-							ret=new Undefined;
+							ret=new Null;
 					}
 					else
-						ret=new Undefined;
+						ret=new Null;
 				}
 				obj->initializeVariableByMultiname(mname, ret, typeClass);
 

@@ -501,6 +501,24 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 	sem_wait(&mutex);
 	//-- Lock acquired
 	syncBuffers();
+
+	// read from stream until we have enough data
+	uint32_t tmplen = receivedLength;
+	while (pos <= length && pos > receivedLength) 
+	{
+		//++ Release lock
+		sem_post(&mutex);
+		if (cached)
+			waitForCache();
+		else
+			waitForData();
+		sem_wait(&mutex);
+		//-- Lock acquired
+		syncBuffers();
+		if (tmplen == receivedLength)
+			break; // no new data read
+		tmplen = receivedLength;
+	}
 	
 	if(cached)
 	{
@@ -544,20 +562,6 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 	}
 	else
 	{
-		// read from stream until we have enough data
-		uint32_t tmplen = receivedLength;
-		while (pos <= length && pos > receivedLength) 
-		{
-			//++ Release lock
-			sem_post(&mutex);
-			waitForData();
-			sem_wait(&mutex);
-			//-- Lock acquired
-			syncBuffers();
-			if (tmplen == receivedLength)
-				break; // no new data read
-			tmplen = receivedLength;
-		}
 		//The requested position is valid
 		if(pos <= receivedLength)
 			setg((char*)stableBuffer,(char*)stableBuffer+pos,(char*)stableBuffer+receivedLength);
@@ -604,7 +608,9 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 				break;
 			}
 			case std::ios_base::end:
-				seekpos(length+off,mode);
+				waitForTermination();
+				if (finished)
+					seekpos(length+off,mode);
 				break;
 			default:
 				break;

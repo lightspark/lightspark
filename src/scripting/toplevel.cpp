@@ -5099,6 +5099,12 @@ ASObject* GlobalObject::getVariableAndTargetByMultiname(const multiname& name, A
 	return o;
 }
 
+GlobalObject::~GlobalObject()
+{
+	for(auto i : globalScopes)
+		i->decRef();
+}
+
 /*ASObject* GlobalObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride, base);

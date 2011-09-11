@@ -1025,6 +1025,7 @@ public:
 	std::vector<ASObject*> globalScopes;
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
 	ASObject* getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
+	~GlobalObject();
 };
 
 bool Boolean_concrete(ASObject* obj);

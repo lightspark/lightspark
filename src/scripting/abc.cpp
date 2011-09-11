@@ -1620,7 +1620,11 @@ void ABCContext::exec()
 		SyntheticFunction* mf=Class<IFunction>::getSyntheticFunction(m);
 
 		for(unsigned int j=0;j<scripts[i].trait_count;j++)
+		{
+			mf->incRef();
 			buildTrait(global,&scripts[i].traits[j],false,mf);
+		}
+		mf->decRef(); //free local ref
 
 #ifndef NDEBUG
 		global->initialized=true;
@@ -1640,7 +1644,10 @@ void ABCContext::exec()
 
 	LOG(LOG_CALLS, _("Building entry script traits: ") << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
+	{
+		entry->incRef();
 		buildTrait(global,&scripts[i].traits[j],false,entry);
+	}
 
 #ifndef NDEBUG
 		global->initialized=true;
@@ -1651,6 +1658,7 @@ void ABCContext::exec()
 	ASObject* ret=entry->call(global,NULL,0);
 	if(ret)
 		ret->decRef();
+	entry->decRef(); //free local ref
 	LOG(LOG_CALLS, _("End of Entry Point"));
 }
 

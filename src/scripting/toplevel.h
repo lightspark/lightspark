@@ -815,9 +815,9 @@ public:
 class ScriptDefinable: public Definable
 {
 private:
-	IFunction* f;
+	_R<IFunction> f;
 public:
-	ScriptDefinable(IFunction* _f):f(_f){}
+	ScriptDefinable(IFunction* _f):f(_MR(_f)){}
 	//The global object will be passed from the calling context
 	void define(ASObject* g){ g->incRef(); f->call(g,NULL,0); }
 };

@@ -93,8 +93,8 @@ public:
 	void describeInstance(xmlpp::Element* root) const;
 	virtual const Template_base* getTemplate() const { return NULL; }
 	//DEPRECATED: naive garbage collector
-	void abandonObject(ASObject* ob);
-	void acquireObject(ASObject* ob);
+	void abandonObject(ASObject* ob) DLL_PUBLIC;
+	void acquireObject(ASObject* ob) DLL_PUBLIC;
 };
 
 class Template_base : public ASObject
@@ -1119,6 +1119,43 @@ ASObject* escape(ASObject* obj,ASObject* const* args, const unsigned int argslen
 ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* print(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+
+
+inline void Manager::put(ASObject* o)
+{
+	if(available.size()>maxCache)
+		delete o;
+	else
+	{
+		//The Manager now owns this object
+		if(o->prototype)
+			o->prototype->abandonObject(o);
+		available.push_back(o);
+	}
+}
+
+template<class T>
+T* Manager::get()
+{
+	if(available.size())
+	{
+		T* ret=static_cast<T*>(available.back());
+		available.pop_back();
+		ret->incRef();
+		//Transfer ownership back to the prototype
+		if(ret->prototype)
+			ret->prototype->acquireObject(ret);
+		//std::cout << "getting[" << name << "] " << ret << std::endl;
+		return ret;
+	}
+	else
+	{
+		T* ret=Class<T>::getInstanceS(this);
+		//std::cout << "newing" << ret << std::endl;
+		return ret;
+	}
+}
+
 };
 
 #endif

@@ -389,32 +389,5 @@ public:
 	virtual ASObject *describeType() const;
 };
 
-inline void Manager::put(ASObject* o)
-{
-	if(available.size()>maxCache)
-		delete o;
-	else
-		available.push_back(o);
-}
-
-template<class T>
-T* Manager::get()
-{
-	if(available.size())
-	{
-		T* ret=static_cast<T*>(available.back());
-		available.pop_back();
-		ret->incRef();
-		//std::cout << "getting[" << name << "] " << ret << std::endl;
-		return ret;
-	}
-	else
-	{
-		T* ret=Class<T>::getInstanceS(this);
-		//std::cout << "newing" << ret << std::endl;
-		return ret;
-	}
-}
-
 };
 #endif

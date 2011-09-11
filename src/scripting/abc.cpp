@@ -1113,6 +1113,15 @@ ABCVm::~ABCVm()
 	for(size_t i=0;i<contexts.size();++i)
 		delete contexts[i];
 
+	//free the dummy object
+	if(method_this_stack.size() != 1)
+		LOG(LOG_ERROR,"ABCVm::method_this_stack has not size 1 in destructor!");
+	else
+	{
+		//free the dummy object that we allocated in the constructor
+		popObjAndLevel().cur_this->decRef();
+	}
+
 	sem_destroy(&sem_event_count);
 	sem_destroy(&event_queue_mutex);
 	delete int_manager;

@@ -383,6 +383,10 @@ SystemState::~SystemState()
 	//We are already being destroyed, make our prototype abandon us
 	setPrototype(NULL);
 	
+	//Free the stage. This should free all objects on the displaylist
+	stage->decRef();
+	stage = NULL;
+
 	/*
 	   Now we have to kill all objects that are still alive. This is done is two passes
 	   1) call finalize on all objects, this will decRef all referenced objects

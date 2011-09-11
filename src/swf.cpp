@@ -1048,7 +1048,8 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 		LOG(LOG_INFO, _("Compressed SWF file: Version ") << (int)version);
 		//The file is compressed, create a filtering streambuf
 		backend=f.rdbuf();
-		f.rdbuf(new zlib_filter(backend));
+		zlibFilter = new zlib_filter(backend);
+		f.rdbuf(zlibFilter);
 	}
 
 	f >> FrameSize >> FrameRate >> FrameCount;

@@ -833,8 +833,8 @@ ASObject::~ASObject()
 	finalize();
 	if(prototype)
 	{
-		prototype->decRef();
 		prototype->abandonObject(this);
+		prototype->decRef();
 	}
 }
 

@@ -1156,6 +1156,17 @@ T* Manager::get()
 	}
 }
 
+inline Manager::~Manager()
+{
+	for(auto i : available)
+	{
+		// ~ASObject will call abandonObject() again
+		if(i->prototype)
+			i->prototype->acquireObject(i);
+		delete i;
+	}
+}
+
 };
 
 #endif

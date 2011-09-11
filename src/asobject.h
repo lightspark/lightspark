@@ -196,6 +196,13 @@ public:
 	void destroyContents();
 };
 
+/*
+ * This class manages a list of unreferenced
+ * objects (ref_count == 0), which can be reused
+ * to save new/delete. ASObjects that have their
+ * 'manager' property set wont delete themselves
+ * on decRef to zero, but call Manager::put.
+ */
 class Manager
 {
 friend class ASObject;
@@ -207,6 +214,7 @@ public:
 template<class T>
 	T* get();
 	void put(ASObject* o);
+	~Manager();
 };
 
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };

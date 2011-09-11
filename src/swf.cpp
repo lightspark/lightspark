@@ -376,6 +376,7 @@ SystemState::~SystemState()
 		threadPool->forceStop();
 	stopEngines();
 
+	delete intervalManager;
 	//Finalize ourselves
 	finalize();
 

@@ -58,8 +58,6 @@ protected:
 	Mutex mutex;
 	URLInfo origin;
 private:
-	//Semaphore to wait for new frames to be available
-	sem_t new_frame;
 	bool parsingIsFailed;
 	RGB Background;
 	Spinlock dictSpinlock;
@@ -79,7 +77,6 @@ private:
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
-	~RootMovieClip();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;
 	uint32_t fileLength;

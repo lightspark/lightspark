@@ -59,7 +59,6 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),pars
 	toBind(false), finishedLoading(false)
 {
 	this->incRef();
-	sem_init(&new_frame,0,0);
 	if(li)
 		li->incRef();
 	loaderInfo=_MNR(li);
@@ -69,16 +68,11 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),pars
 		setPrototype(Class<MovieClip>::getClass());
 }
 
-RootMovieClip::~RootMovieClip()
-{
-	sem_destroy(&new_frame);
-}
 
 void RootMovieClip::parsingFailed()
 {
 	//The parsing is failed, we have no change to be ever valid
 	parsingIsFailed=true;
-	sem_post(&new_frame);
 }
 
 void RootMovieClip::bindToName(const tiny_string& n)
@@ -1296,7 +1290,6 @@ void RootMovieClip::commitFrame(bool another)
 			sys->currentVm->addEvent(NullRef, _MR(new InitFrameEvent(_MNR(this))));
 		}
 	}
-	sem_post(&new_frame);
 }
 
 void RootMovieClip::revertFrame()

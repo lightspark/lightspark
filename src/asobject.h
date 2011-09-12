@@ -312,8 +312,11 @@ public:
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, Class_base* type);
 	virtual void deleteVariableByMultiname(const multiname& name);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind);
-	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
+	/* The variants with 'obj' as the third parameter take ownership of one reference of obj */
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* obj, TRAIT_KIND traitKind);
+	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* obj, TRAIT_KIND traitKind);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, _R<ASObject> objref, TRAIT_KIND traitKind);
+	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, _R<ASObject> objref, TRAIT_KIND traitKind);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);

@@ -441,6 +441,18 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 }
 
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, _R<ASObject> objref, TRAIT_KIND traitKind)
+{
+	objref->incRef();
+	setVariableByQName(name,ns,objref.getPtr(),traitKind);
+}
+
+void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, _R<ASObject> objref, TRAIT_KIND traitKind)
+{
+	objref->incRef();
+	setVariableByQName(name,ns,objref.getPtr(),traitKind);
+}
+
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind)
 {
 	const nsNameAndKind tmpns(ns, NAMESPACE);

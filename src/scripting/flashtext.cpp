@@ -233,7 +233,10 @@ void TextFormat::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	REGISTER_GETTER_SETTER(c,color);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,color);
 
 void TextFormat::buildTraits(ASObject* o)
 {

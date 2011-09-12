@@ -68,6 +68,7 @@ class TextFormat: public ASObject
 public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,color);
 };
 
 class TextFieldType: public ASObject

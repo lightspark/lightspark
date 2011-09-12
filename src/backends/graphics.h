@@ -299,22 +299,13 @@ public:
 	static bool isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
 };
 
-class TextFormat_data
-{
-public:
-	/* the defaults are from the spec for flash.text.TextFormat */
-	TextFormat_data() : size(12), font("Times New Roman") {}
-	uint32_t size;
-	tiny_string font;
-};
-
 class TextData
 {
 public:
-	/* the default values are from the spec for flash.text.TextField */
+	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
 	TextData() : width(100), height(100), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
-		wordWrap(false) {}
+		wordWrap(false), fontSize(12), font("Times New Roman") {}
 	uint32_t width;
 	uint32_t height;
 	tiny_string text;
@@ -325,7 +316,8 @@ public:
 	bool multiline;
 	RGB textColor;
 	bool wordWrap;
-	TextFormat_data format;
+	uint32_t fontSize;
+	tiny_string font;
 };
 
 class CairoPangoRenderer : public CairoRenderer

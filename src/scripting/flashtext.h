@@ -63,7 +63,7 @@ public:
 	ASFUNCTION(_getTextHeight);
 };
 
-class TextFormat: public ASObject, public TextFormat_data
+class TextFormat: public ASObject
 {
 public:
 	static void sinit(Class_base* c);

@@ -292,7 +292,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 		if(HasFontClass)
 			in >> FontClass;
 		in >> FontHeight;
-		textData.format.size = FontHeight;
+		textData.fontSize = FontHeight;
 	}
 	if(HasTextColor)
 		in >> TextColor;

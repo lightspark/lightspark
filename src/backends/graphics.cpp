@@ -847,8 +847,8 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 
 	/* setup font description */
 	desc = pango_font_description_new();
-	pango_font_description_set_family(desc, textData.format.font.raw_buf());
-	pango_font_description_set_size(desc, PANGO_SCALE*textData.format.size);
+	pango_font_description_set_family(desc, textData.font.raw_buf());
+	pango_font_description_set_size(desc, PANGO_SCALE*textData.fontSize);
 	pango_layout_set_font_description(layout, desc);
 	pango_font_description_free(desc);
 

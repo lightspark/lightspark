@@ -3366,6 +3366,9 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 
 	ASObject* ret;
 
+	//obtain a local reference to this function, as it may delete itself
+	this->incRef();
+
 	while (true)
 	{
 		try
@@ -3427,6 +3430,8 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 
 	delete cc;
 	hit_count++;
+
+	this->decRef(); //free local ref
 	return ret;
 }
 

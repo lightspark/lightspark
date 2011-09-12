@@ -200,9 +200,9 @@ protected:
 			return doubleClickEnabled && mouseEnabled;
 		return mouseEnabled;
 	}
+	~InteractiveObject();
 public:
 	InteractiveObject();
-	~InteractiveObject();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_setMouseEnabled);
 	ASFUNCTION(_getMouseEnabled);

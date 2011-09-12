@@ -62,6 +62,7 @@ public:
 	ASFUNCTION(_getTextWidth);
 	ASFUNCTION(_getTextHeight);
 	ASFUNCTION(_setTextFormat);
+	ASFUNCTION_GETTER_SETTER(textColor);
 };
 
 class TextFormat: public ASObject

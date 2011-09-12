@@ -65,7 +65,11 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(_setTextFormat),NORMAL_METHOD,true);
+
+	REGISTER_GETTER_SETTER(c,textColor);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(TextField,textColor);
 
 void TextField::buildTraits(ASObject* o)
 {

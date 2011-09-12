@@ -28,6 +28,7 @@
 #define ASFUNCTION(name) \
 	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
 
+/* declare setter/getter and associated member variable */
 #define ASPROPERTY_GETTER(type,name) \
 	type name; \
 	ASFUNCTION( _getter_##name)
@@ -41,9 +42,22 @@
 	ASFUNCTION( _getter_##name); \
 	ASFUNCTION( _setter_##name)
 
+/* declare setter/getter for already existing member variable */
+#define ASFUNCTION_GETTER(name) \
+	ASFUNCTION( _getter_##name)
+
+#define ASFUNCTION_SETTER(name) \
+	ASFUNCTION( _setter_##name)
+
+#define ASFUNCTION_GETTER_SETTER(name) \
+	ASFUNCTION( _getter_##name); \
+	ASFUNCTION( _setter_##name)
+
+/* general purpose body for an AS function */
 #define ASFUNCTIONBODY(c,name) \
 	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 
+/* full body for a getter declared by ASPROPERTY_GETTER or ASFUNCTION_GETTER */
 #define ASFUNCTIONBODY_GETTER(c,name) \
 	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
@@ -53,6 +67,7 @@
 		return ArgumentConversion<decltype(th->name)>::toAbstract(th->name); \
 	}
 
+/* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
 #define ASFUNCTIONBODY_SETTER(c,name) \
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
@@ -63,6 +78,9 @@
 		return NULL; \
 	}
 
+/* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER.
+ * After the property has been updated, the callback member function is called with the old value
+ * as parameter */
 #define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
@@ -75,6 +93,7 @@
 		return NULL; \
 	}
 
+/* full body for a getter declared by ASPROPERTY_GETTER_SETTER or ASFUNCTION_GETTER_SETTER */
 #define ASFUNCTIONBODY_GETTER_SETTER(c,name) \
 		ASFUNCTIONBODY_GETTER(c,name) \
 		ASFUNCTIONBODY_SETTER(c,name)
@@ -83,8 +102,10 @@
 		ASFUNCTIONBODY_GETTER(c,name) \
 		ASFUNCTIONBODY_SETTER(c,name,callback)
 
+/* registers getter/setter with Class_base. To be used in ::sinit()-functions */
 #define REGISTER_GETTER(c,name) \
 	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(_getter_##name),GETTER_METHOD,true)
+
 #define REGISTER_SETTER(c,name) \
 	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(_setter_##name),SETTER_METHOD,true)
 

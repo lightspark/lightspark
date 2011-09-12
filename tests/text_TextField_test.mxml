@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_text_TextField_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import flash.text.*;
+	private function appComplete():void
+	{
+		var format:TextFormat = new TextFormat();
+		Tests.assertEquals(null, format.color, "TextFormat init null");
+		format.color = 0xFF00FF;
+		Tests.assertEquals(0xFF00FF, format.color, "TextFormat.color s/getter");
+		
+		var field:TextField = new TextField();
+		Tests.assertEquals(0,field.textColor, "TextField init color");
+		field.setTextFormat(format);
+		Tests.assertEquals(0xFF00FF,field.textColor, "TextField.setTextFormat");
+		format.color = null;
+		field.setTextFormat(format);
+		Tests.assertEquals(0xFF00FF,field.textColor, "TextField.setTextFormat with null does not change");
+		
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

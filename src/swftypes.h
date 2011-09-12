@@ -528,6 +528,7 @@ public:
 	UI8 Red;
 	UI8 Green;
 	UI8 Blue;
+	uint32_t toUInt() const { return Blue + (Green<<8) + (Red<<16); }
 };
 
 class RGBA

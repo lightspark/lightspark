@@ -64,6 +64,7 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(_setTextFormat),NORMAL_METHOD,true);
 }
 
 void TextField::buildTraits(ASObject* o)
@@ -149,6 +150,22 @@ ASFUNCTIONBODY(TextField, appendText)
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
 	th->updateText(th->text + args[0]->toString());
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_setTextFormat)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	if(argslen == 0)
+		throw RunTimeException("TextField.setTextFormat: Not enough parameters");
+	if(argslen > 1)
+		LOG(LOG_NOT_IMPLEMENTED,"setTextFormat with more than one parameter");
+
+	TextFormat* tf = Class<TextFormat>::cast(args[0]);
+	if(tf->color != NULL)
+		th->textColor = tf->color->toUInt();
+
+	LOG(LOG_NOT_IMPLEMENTED,"setTextFormat does not read all fields of TextFormat");
 	return NULL;
 }
 

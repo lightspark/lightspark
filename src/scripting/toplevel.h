@@ -1088,6 +1088,8 @@ template<>
 int32_t ArgumentConversion<int32_t>::toConcrete(ASObject* obj);
 template<>
 tiny_string ArgumentConversion<tiny_string>::toConcrete(ASObject* obj);
+template<>
+RGB ArgumentConversion<RGB>::toConcrete(ASObject* obj);
 
 template<>
 ASObject* ArgumentConversion<int32_t>::toAbstract(const int32_t& val);
@@ -1099,6 +1101,8 @@ template<>
 ASObject* ArgumentConversion<bool>::toAbstract(const bool& val);
 template<>
 ASObject* ArgumentConversion<tiny_string>::toAbstract(const tiny_string& val);
+template<>
+ASObject* ArgumentConversion<RGB>::toAbstract(const RGB& val);
 
 ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);

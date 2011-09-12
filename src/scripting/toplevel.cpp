@@ -5579,6 +5579,13 @@ tiny_string lightspark::ArgumentConversion<tiny_string>::toConcrete(ASObject* ob
 }
 
 template<>
+RGB lightspark::ArgumentConversion<RGB>::toConcrete(ASObject* obj)
+{
+	/* TODO: throw ArgumentError if object is not convertible to number */
+	return RGB(obj->toUInt());
+}
+
+template<>
 ASObject* lightspark::ArgumentConversion<int32_t>::toAbstract(const int32_t& val)
 {
 	return abstract_i(val);
@@ -5606,4 +5613,10 @@ template<>
 ASObject* lightspark::ArgumentConversion<tiny_string>::toAbstract(const tiny_string& val)
 {
 	return Class<ASString>::getInstanceS(val);
+}
+
+template<>
+ASObject* lightspark::ArgumentConversion<RGB>::toAbstract(const RGB& val)
+{
+	return abstract_ui(val.toUInt());
 }

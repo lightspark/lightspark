@@ -388,10 +388,10 @@ SystemState::~SystemState()
 	stage = NULL;
 
 	/*
-	   Now we have to kill all objects that are still alive. This is done is two passes
-	   1) call finalize on all objects, this will decRef all referenced objects
-	   2) delete all the objects. Now destroying an object should not cause accesses to
-	   	any other object */
+	 * Now we have to kill all objects that are still alive. This is done is two passes
+	 * 1) call finalize on all objects, this will decRef all referenced objects
+	 * 2) delete all the objects. Now destroying an object should not cause accesses to
+	 * any other object */
 
 	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
@@ -401,24 +401,21 @@ SystemState::~SystemState()
 	if(currentVm)
 		currentVm->finalize();
 
-	//Destroy the contents of all the classes
-	it=classes.begin();
-	for(;it!=classes.end();++it)
-	{
-		//Make sure classes survives their cleanUp
-		it->second->incRef();
-		it->second->cleanUp();
-	}
+	//Destroy all objects of all classes
+	for(auto i : classes)
+		i.second->cleanUp();
 
-	//Destroy all registered classes
-	it=classes.begin();
-	for(;it!=classes.end();++it)
-	{
-		//DEPRECATED: to force garbage collection we delete all the classes
-		delete it->second;
-		//it->second->decRef()
-	}
+	//Free classes by decRef'ing them
+	for(auto i : classes)
+		i.second->decRef();
+
+	//Free templates by decRef'ing them
+	for(auto i : templates)
+		i.second->decRef();
+
 	//The Vm must be destroyed this late to clean all managed integers and numbers
+	//This deletes the {int,uint,number}_managers; therefore no Number/.. object may be
+	//decRef'ed after this line as it would cause a manager->put()
 	delete currentVm;
 
 	//Some objects needs to remove the jobs when destroyed so keep the timerThread until now

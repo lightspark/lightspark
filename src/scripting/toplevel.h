@@ -1063,6 +1063,9 @@ class ArgumentConversion<NullableRef<T>>
 public:
 	static NullableRef<T> toConcrete(ASObject* obj)
 	{
+		if(obj->getObjectType() == T_NULL)
+			return NullRef;
+
 		T* o = dynamic_cast<T*>(obj);
 		if(!o)
 			throw ArgumentError("Wrong type");

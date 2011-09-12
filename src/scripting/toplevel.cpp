@@ -4558,23 +4558,6 @@ void Class_base::finalize()
 	}
 }
 
-void Class_base::cleanUp()
-{
-	//finalize must have been called before using cleanUp
-
-	//cleanUp may be called multiple times, be sure all the code is executable multiple times
-	//without double freeing anything
-	//Destroy all the object reference by us
-	if(!referencedObjects.empty())
-		LOG(LOG_CALLS, "Class " << class_name << " references " << referencedObjects.size());
-
-	while(!referencedObjects.empty())
-	{
-		set<ASObject*>::iterator it=referencedObjects.begin();
-		delete *it;
-	}
-}
-
 Template_base::Template_base(QName name) : template_name(name)
 {
 	type = T_TEMPLATE;

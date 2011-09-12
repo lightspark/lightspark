@@ -401,10 +401,6 @@ SystemState::~SystemState()
 	if(currentVm)
 		currentVm->finalize();
 
-	//Destroy all objects of all classes
-	for(auto i : classes)
-		i.second->cleanUp();
-
 	//Free classes by decRef'ing them
 	for(auto i : classes)
 		i.second->decRef();

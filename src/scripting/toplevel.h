@@ -95,7 +95,6 @@ public:
 	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob);
 	void acquireObject(ASObject* ob);
-	void cleanUp();
 };
 
 class Template_base : public ASObject

@@ -311,7 +311,7 @@ nsPluginInstance::~nsPluginInstance()
 	// Delete our external script object
 	delete m_sys->extScriptObject;
 
-	delete m_sys;
+	m_sys->destroy();
 	delete m_pt;
 	sys=NULL;
 }

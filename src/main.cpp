@@ -300,7 +300,7 @@ int main(int argc, char* argv[])
 	gdk_threads_leave();
 
 	sys->wait();
-	delete sys;
+	sys->destroy();
 	delete pt;
 
 	SystemState::staticDeinit();

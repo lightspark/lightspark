@@ -128,6 +128,6 @@ int main(int argc, char* argv[])
 	vm->start();
 	sys->setShutdownFlag();
 	sys->wait();
-	delete sys;
+	sys->destroy();
 	SystemState::staticDeinit();
 }

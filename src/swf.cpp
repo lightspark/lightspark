@@ -58,7 +58,7 @@ extern TLSDATA ParseThread* pt;
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),parsingIsFailed(false),frameRate(0),
 	toBind(false), finishedLoading(false)
 {
-	this->incRef();
+	this->incRef(); //keep a reference until destroy() is called
 	if(li)
 		li->incRef();
 	loaderInfo=_MNR(li);
@@ -339,9 +339,14 @@ void SystemState::finalize()
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
 	parameters.reset();
+	frameListeners.clear();
 }
 
 SystemState::~SystemState()
+{
+}
+
+void SystemState::destroy()
 {
 #ifdef PROFILING_SUPPORT
 	saveProfilingInformation();
@@ -418,6 +423,7 @@ SystemState::~SystemState()
 	inputThread=NULL;
 	delete engineData;
 	sem_destroy(&terminated);
+	this->decRef(); //free reference we obtained in constructor
 }
 
 bool SystemState::isOnError() const

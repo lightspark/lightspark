@@ -212,6 +212,8 @@ private:
 	*/
 	tiny_string profOut;
 #endif
+protected:
+	~SystemState();
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 
@@ -242,7 +244,7 @@ public:
 	//before any other thread gets started
 	SystemState(ParseThread* p, uint32_t fileSize) DLL_PUBLIC;
 	void finalize();
-	~SystemState();
+	void destroy() DLL_PUBLIC;
 	
 	//Performance profiling
 	ThreadProfile* allocateProfiler(const RGB& color);

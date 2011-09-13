@@ -5552,45 +5552,56 @@ tiny_string Vector::toString(bool debugMsg)
 template<>
 number_t lightspark::ArgumentConversion<number_t>::toConcrete(ASObject* obj)
 {
-	/* TODO: throw ArgumentError if object is not convertible to number */
+	if(obj->getObjectType() != T_NUMBER)
+		throw ArgumentError("Not a Number");
 	return obj->toNumber();
 }
 
 template<>
 bool lightspark::ArgumentConversion<bool>::toConcrete(ASObject* obj)
 {
-	/* TODO: throw ArgumentError if object is not convertible to number */
+	if(obj->getObjectType() != T_BOOLEAN)
+		throw ArgumentError("Not a Boolean");
 	return Boolean_concrete(obj);
 }
 
 template<>
 uint32_t lightspark::ArgumentConversion<uint32_t>::toConcrete(ASObject* obj)
 {
-	/* TODO: throw ArgumentError if object is not convertible to number */
+	if(obj->getObjectType() != T_UINTEGER)
+		throw ArgumentError("Not an UInteger");
 	return obj->toUInt();
 }
 
 template<>
 int32_t lightspark::ArgumentConversion<int32_t>::toConcrete(ASObject* obj)
 {
-	/* TODO: throw ArgumentError if object is not convertible to number */
+	if(obj->getObjectType() != T_INTEGER)
+		throw ArgumentError("Not an Integer");
 	return obj->toInt();
 }
 
 template<>
 tiny_string lightspark::ArgumentConversion<tiny_string>::toConcrete(ASObject* obj)
 {
-	ASString* str = Class<ASString>::cast(obj);
-	if(!str)
+	if(obj->getObjectType() != T_STRING)
 		throw ArgumentError("Not an ASString");
+	return obj->toString();
+}
 
-	return str->toString();
+template<>
+std::string lightspark::ArgumentConversion<std::string>::toConcrete(ASObject* obj)
+{
+	if(obj->getObjectType() != T_STRING)
+		throw ArgumentError("Not an ASString");
+	return Class<ASString>::cast(obj)->data;
 }
 
 template<>
 RGB lightspark::ArgumentConversion<RGB>::toConcrete(ASObject* obj)
 {
-	/* TODO: throw ArgumentError if object is not convertible to number */
+	if(obj->getObjectType() != T_BOOLEAN)
+		throw ArgumentError("Not an UInteger");
 	return RGB(obj->toUInt());
 }
 
@@ -5620,6 +5631,12 @@ ASObject* lightspark::ArgumentConversion<bool>::toAbstract(const bool& val)
 
 template<>
 ASObject* lightspark::ArgumentConversion<tiny_string>::toAbstract(const tiny_string& val)
+{
+	return Class<ASString>::getInstanceS(val);
+}
+
+template<>
+ASObject* lightspark::ArgumentConversion<std::string>::toAbstract(const std::string& val)
 {
 	return Class<ASString>::getInstanceS(val);
 }

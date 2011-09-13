@@ -1092,6 +1092,8 @@ int32_t ArgumentConversion<int32_t>::toConcrete(ASObject* obj);
 template<>
 tiny_string ArgumentConversion<tiny_string>::toConcrete(ASObject* obj);
 template<>
+std::string ArgumentConversion<std::string>::toConcrete(ASObject* obj);
+template<>
 RGB ArgumentConversion<RGB>::toConcrete(ASObject* obj);
 
 template<>
@@ -1104,6 +1106,8 @@ template<>
 ASObject* ArgumentConversion<bool>::toAbstract(const bool& val);
 template<>
 ASObject* ArgumentConversion<tiny_string>::toAbstract(const tiny_string& val);
+template<>
+ASObject* ArgumentConversion<std::string>::toAbstract(const std::string& val);
 template<>
 ASObject* ArgumentConversion<RGB>::toAbstract(const RGB& val);
 

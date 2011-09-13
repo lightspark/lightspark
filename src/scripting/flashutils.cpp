@@ -181,17 +181,11 @@ ASFUNCTIONBODY(ByteArray,_getBytesAvailable)
 ASFUNCTIONBODY(ByteArray,readBytes)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	//Validate parameters
-	assert_and_throw(argslen>=1 && argslen<=3);
-	assert_and_throw(args[0]->getPrototype()==Class<ByteArray>::getClass());
-
-	ByteArray* out=Class<ByteArray>::cast(args[0]);
+	_NR<ByteArray> out;
 	uint32_t offset=0;
 	uint32_t length=0;
-	if(argslen>=2)
-		offset=args[1]->toInt();
-	if(argslen==3)
-		length=args[2]->toInt();
+	ArgUnpack(args,argslen,1) >> out >> offset >> length;
+
 	//TODO: Support offset (offset is in the destination!)
 	if(offset!=0 || length==0)
 		throw UnsupportedException("offset in ByteArray::readBytes");
@@ -213,12 +207,11 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 ASFUNCTIONBODY(ByteArray,writeUTFBytes)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	//Validate parameters
-	assert_and_throw(argslen==1);
-	assert_and_throw(args[0]->getObjectType()==T_STRING);
-	ASString* str=Class<ASString>::cast(args[0]);
-	th->getBuffer(th->position+str->data.size()+1,true);
-	memcpy(th->bytes+th->position,str->data.c_str(),str->data.size()+1);
+	std::string str;
+	ArgUnpack(args,argslen,1) >> str;
+
+	th->getBuffer(th->position+str.size()+1,true);
+	memcpy(th->bytes+th->position,str.c_str(),str.size()+1);
 
 	return NULL;
 }
@@ -1278,15 +1271,17 @@ ASFUNCTIONBODY(lightspark,setTimeout)
 
 ASFUNCTIONBODY(lightspark,clearInterval)
 {
-	assert_and_throw(argslen == 1);
-	sys->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::INTERVAL, true);
+	uint32_t id;
+	ArgUnpack(args,argslen,1) >> id;
+	sys->intervalManager->clearInterval(id, IntervalRunner::INTERVAL, true);
 	return NULL;
 }
 
 ASFUNCTIONBODY(lightspark,clearTimeout)
 {
-	assert_and_throw(argslen == 1);
-	sys->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::TIMEOUT, true);
+	uint32_t id;
+	ArgUnpack(args,argslen,1) >> id;
+	sys->intervalManager->clearInterval(id, IntervalRunner::TIMEOUT, true);
 	return NULL;
 }
 

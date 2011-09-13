@@ -1655,6 +1655,7 @@ void ABCContext::exec()
 	//Register it as one of the global scopes
 	getGlobal()->registerGlobalScope(global);
 
+	global->incRef();
 	ASObject* ret=entry->call(global,NULL,0);
 	if(ret)
 		ret->decRef();

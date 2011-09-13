@@ -3164,6 +3164,10 @@ void IFunction::finalize()
 	closure_this.reset();
 }
 
+/**
+ * This provides a unified interface for calling a C++/ABC code function.
+ * It consumes one reference of obj and one of each arg
+ */
 ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_args)
 {
 	return callImpl(obj, args, num_args, false);
@@ -3271,6 +3275,11 @@ void SyntheticFunction::finalize()
 	func_scope.clear();
 }
 
+/**
+ * This prepares a new call_context and then executes the ABC bytecode function
+ * by ABCVm::executeFunction() or through JIT.
+ * It consumes one reference of obj and one of each arg
+ */
 ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
 {
 	const int hit_threshold=10;
@@ -3307,11 +3316,12 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 		if(obj)
 			obj->decRef();
 		obj=closure_this.getPtr();
+		obj->incRef();
 	}
 
-	cc->locals[0]=obj;
 	assert_and_throw(obj);
-	obj->incRef();
+	obj->incRef(); //this is free'd in ~call_context
+	cc->locals[0]=obj;
 
 	//Fixup missing parameters
 	unsigned int missing_params=args_len-i;
@@ -3432,9 +3442,14 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	hit_count++;
 
 	this->decRef(); //free local ref
+	obj->decRef();
 	return ret;
 }
 
+/**
+ * This executes a C++ function.
+ * It consumes one reference of obj and one of each arg
+ */
 ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
 {
 	ASObject* ret;

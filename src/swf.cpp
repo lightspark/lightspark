@@ -422,7 +422,7 @@ void SystemState::destroy()
 	inputThread=NULL;
 	delete engineData;
 	sem_destroy(&terminated);
-	this->decRef(); //free reference we obtained in constructor
+	this->decRef(); //free a reference we obtained by 'new SystemState'
 }
 
 bool SystemState::isOnError() const

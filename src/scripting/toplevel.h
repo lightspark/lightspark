@@ -1111,6 +1111,41 @@ ASObject* ArgumentConversion<std::string>::toAbstract(const std::string& val);
 template<>
 ASObject* ArgumentConversion<RGB>::toAbstract(const RGB& val);
 
+class ArgUnpack
+{
+private:
+	ASObject* const * args;
+	int argslen;
+public:
+	ArgUnpack(ASObject* const * _args, int _argslen) : args(_args), argslen(_argslen) {}
+	ArgUnpack(ASObject* const * _args, int _argslen, int minargslen) : args(_args), argslen(_argslen)
+	{
+		if(argslen < minargslen)
+			throw ArgumentError("Not enough arguments");
+	}
+	/*
+	 * This converts the current argument to a concrete type
+	 * and sets v accordingly.
+	 * If there are no more arguments or if the argument is undefined,
+	 * v is not changed.
+	 */
+	template<class T> ArgUnpack& operator>>(T& v)
+	{
+		if(argslen > 0 && args[0]->getObjectType() != T_UNDEFINED)
+		{
+			v = ArgumentConversion<T>::toConcrete(args[0]);
+			args++;
+			argslen--;
+		}
+		return *this;
+	}
+	~ArgUnpack()
+	{
+		if(argslen > 0)
+			LOG(LOG_NOT_IMPLEMENTED,"Not all arguments were unpacked");
+	}
+};
+
 ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);

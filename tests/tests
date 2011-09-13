@@ -125,7 +125,7 @@ if [ $COMPILE -eq 1 ]; then
 			continue;
 		fi
 
-		$MXMLC -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false -compiler.debug=true $test;
+		$MXMLC --strict=false -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false -compiler.debug=true $test;
 	done
 	if [ $QUIT -eq 1 ]; then
 		exit;

@@ -193,6 +193,7 @@ public:
 	}
 	tiny_string getNameAt(unsigned int i) const;
 	variable* getValueAt(unsigned int i);
+	int getNextEnumerable(unsigned int i) const;
 	~variables_map();
 	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

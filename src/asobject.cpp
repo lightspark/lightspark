@@ -92,12 +92,37 @@ TRISTATE ASObject::isLess(ASObject* r)
 	return toPrimitive()->isLess(r);
 }
 
+int variables_map::getNextEnumerable(unsigned int start) const
+{
+	if(start>=Variables.size())
+		return -1;
+
+	const_var_iterator it=Variables.begin();
+
+	unsigned int i=0;
+	while(i<start)
+	{
+		++i;
+		++it;
+	}
+
+	while(it->second.kind!=DYNAMIC_TRAIT)
+	{
+		++i;
+		++it;
+		if(it==Variables.end())
+			return -1;
+	}
+
+	return i;
+}
+
 uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 {
-	if(cur_index < numVariables())
-		return cur_index+1;
-	else
-		return 0;
+	// First -1 converts one-base cur_index to zero-based, +1
+	// moves to the next position (first position to be
+	// considered). Final +1 converts back to one-based.
+	return Variables.getNextEnumerable(cur_index-1+1)+1;
 }
 
 _R<ASObject> ASObject::nextName(uint32_t index)

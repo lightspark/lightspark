@@ -145,6 +145,7 @@ public:
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
+	/* Returns the singleton class object of type Class<T> */
 	static Class<T>* getClass(const QName& name)
 	{
 		std::map<QName, Class_base*>::iterator it=sys->classes.find(name);
@@ -158,7 +159,6 @@ public:
 		else
 			ret=static_cast<Class<T>*>(it->second);
 
-		ret->incRef();
 		return ret;
 	}
 	static Class<T>* getClass()
@@ -229,7 +229,6 @@ public:
 		else
 			ret=static_cast<Class<ASObject>*>(it->second);
 
-		ret->incRef();
 		return ret;
 	}
 	static Class<ASObject>* getClass()
@@ -368,7 +367,6 @@ public:
 		else
 			ret=static_cast<Template<T>*>(it->second);
 
-		ret->incRef();
 		return ret;
 	}
 

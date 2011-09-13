@@ -4572,7 +4572,6 @@ Class_object* Class_object::getClass()
 	else
 		ret=static_cast<Class_object*>(it->second);
 
-	ret->incRef();
 	return ret;
 }
 
@@ -5040,7 +5039,6 @@ Class<IFunction>* Class<IFunction>::getClass()
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);
 
-	ret->incRef();
 	return ret;
 }
 

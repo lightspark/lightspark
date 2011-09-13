@@ -283,7 +283,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL);
 			if(ret)
 				break;
-			cur=cur->super;
+			cur=cur->super.getPtr();
 		}
 	}
 
@@ -405,7 +405,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 			obj=cur->findSettable(name,true,&has_getter);
 			if(obj)
 				break;
-			cur=cur->super;
+			cur=cur->super.getPtr();
 		}
 	}
 	if(obj==NULL)
@@ -665,7 +665,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 			obj=cur->findGettable(name,true);
 			if(obj)
 				break;
-			cur=cur->super;
+			cur=cur->super.getPtr();
 		}
 	}
 
@@ -870,7 +870,7 @@ Class_base* ASObject::getActualPrototype() const
 	}
 
 	for(int i=prototype->max_level;i>cur_level;i--)
-		ret=ret->super;
+		ret=ret->super.getPtr();
 
 	assert(ret);
 	assert(ret->max_level==cur_level);
@@ -1018,7 +1018,7 @@ ASObject *ASObject::describeType() const
 	if(prot)
 	{
 		root->set_attribute("name", prot->getQualifiedClassName().raw_buf());
-		if(prot->super)
+		if(prot->super != NULL)
 			root->set_attribute("base", prot->super->getQualifiedClassName().raw_buf());
 	}
 	bool isDynamic=type==T_ARRAY; // FIXME

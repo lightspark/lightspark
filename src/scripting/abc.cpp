@@ -1804,7 +1804,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 				if(var)
 					break;
-				cur=cur->super;
+				cur=cur->super.getPtr();
 			}
 			if(var)
 			{
@@ -1836,7 +1836,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 				if(var && var->getter)
 					break;
-				cur=cur->super;
+				cur=cur->super.getPtr();
 			}
 			if(var)
 			{
@@ -1867,7 +1867,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 				if(var && var->setter)
 					break;
-				cur=cur->super;
+				cur=cur->super.getPtr();
 			}
 			if(var)
 			{
@@ -1972,7 +1972,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
-				Class_base* cur=prot->super;
+				Class_base* cur=prot->super.getPtr();
 				while(cur)
 				{
 					if(cur->use_protected)
@@ -1987,7 +1987,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 							obj->setDeclaredMethodByQName(mname.name_s,cur->protected_ns,f,GETTER_METHOD,isBorrowed);
 						}
 					}
-					cur=cur->super;
+					cur=cur->super.getPtr();
 				}
 			}
 
@@ -2022,7 +2022,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
-				Class_base* cur=prot->super;
+				Class_base* cur=prot->super.getPtr();
 				while(cur)
 				{
 					if(cur->use_protected)
@@ -2037,7 +2037,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 							obj->setDeclaredMethodByQName(mname.name_s,cur->protected_ns,f,SETTER_METHOD,isBorrowed);
 						}
 					}
-					cur=cur->super;
+					cur=cur->super.getPtr();
 				}
 			}
 
@@ -2074,7 +2074,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 				{
 					//Walk the super chain and find variables to override
-					Class_base* cur=prot->super;
+					Class_base* cur=prot->super.getPtr();
 					while(cur)
 					{
 						if(cur->use_protected)
@@ -2090,7 +2090,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 										NORMAL_METHOD,isBorrowed);
 							}
 						}
-						cur=cur->super;
+						cur=cur->super.getPtr();
 					}
 				}
 				//Methods save a copy of the scope stack of the class

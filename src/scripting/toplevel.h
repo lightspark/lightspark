@@ -68,7 +68,7 @@ private:
 	void finalizeObjects() const;
 
 public:
-	Class_base* super;
+	_NR<Class_base> super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
 	QName class_name;

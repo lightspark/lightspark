@@ -62,7 +62,7 @@ ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, cons
 	}
 	else
 	{
-		assert_and_throw(super);
+		assert_and_throw(super != NULL);
 		//Our super should not construct, we are going to do it ourselves
 		ret=super->getInstance(false,NULL,0);
 	}

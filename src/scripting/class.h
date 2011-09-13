@@ -56,6 +56,7 @@ private:
 public:
 	Class_inherit(const QName& name):Class_base(name),tag(NULL),bindedToRoot(false)
 	{
+		this->incRef(); //create on reference for the classes map
 #ifndef NDEBUG
 		bool ret=
 #endif

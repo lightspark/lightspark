@@ -58,7 +58,6 @@ extern TLSDATA ParseThread* pt;
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),parsingIsFailed(false),frameRate(0),
 	toBind(false), finishedLoading(false)
 {
-	this->incRef(); //keep a reference until destroy() is called
 	if(li)
 		li->incRef();
 	loaderInfo=_MNR(li);

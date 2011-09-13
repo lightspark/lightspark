@@ -121,6 +121,12 @@ private:
 	}
 public:
 	static Class_object* getClass();
+	static _R<Class_object> getRef()
+	{
+		Class_object* ret = getClass();
+		ret->incRef();
+		return _MR(ret);
+	}
 };
 
 //Adaptor from fuction to class, it does not seems to be a good idea to
@@ -291,6 +297,12 @@ private:
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
 public:
 	static Class<IFunction>* getClass();
+	static _R<Class<IFunction>> getRef()
+	{
+		Class<IFunction>* ret = getClass();
+		ret->incRef();
+		return _MR(ret);
+	}
 	static Function* getFunction(Function::as_function v)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();

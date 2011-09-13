@@ -386,10 +386,12 @@ void SystemState::destroy()
 	stage = NULL;
 
 	/*
-	 * Now we have to kill all objects that are still alive. This is done is two passes
-	 * 1) call finalize on all objects, this will decRef all referenced objects
-	 * 2) delete all the objects. Now destroying an object should not cause accesses to
-	 * any other object */
+	 * 1) call finalize on all objects, this will free all referenced objects and thereby
+	 * cut circular references. After that, all ASObjects but classes and templates should
+	 * have been deleted through decRef. Else it is an error.
+	 * 2) decRef all the classes and templates to which we hold a reference through the
+	 * 'classes' and 'templates' maps.
+	 */
 
 	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)

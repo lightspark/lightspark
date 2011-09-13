@@ -244,6 +244,10 @@ public:
 	//before any other thread gets started
 	SystemState(ParseThread* p, uint32_t fileSize) DLL_PUBLIC;
 	void finalize();
+	/* Stop engines, threads and free classes and objects.
+	 * This call will decRef this object in the end,
+	 * thus destroy() may cause a 'delete this'.
+	 */
 	void destroy() DLL_PUBLIC;
 	
 	//Performance profiling
@@ -260,7 +264,7 @@ public:
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
-	//Class map
+	//Class/Template map. They own one reference to each class/template
 	std::map<QName, Class_base*> classes;
 	std::map<QName, Template_base*> templates;
 

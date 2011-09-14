@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Boolean_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var mc_null:MovieClip = null;
+		var mc:MovieClip = new MovieClip();
+		var inull:int = 0;
+		var uinull:uint = 0;
+		var nnull:Number = 0;
+
+		Tests.assertEquals(Boolean(inull), false, "Boolean(0)", true);
+		Tests.assertEquals(Boolean(uinull), false, "Boolean(0)", true);
+		Tests.assertEquals(Boolean(nnull), false, "Boolean(0)", true);
+		Tests.assertEquals(Boolean(NaN), false, "Boolean(NaN)", true);
+		Tests.assertEquals(Boolean(3.2), true, "Boolean(3.2)", true);
+		Tests.assertEquals(Boolean(3.8), true, "Boolean(3.8)", true);
+		Tests.assertEquals(Boolean("3.2"), true, "Boolean(\"3.2\")", true);
+		Tests.assertEquals(Boolean("3.8 "), true, "Boolean(\"3.8 \")", true);
+		Tests.assertEquals(Boolean(" -3.2"), true, "Boolean(\" -3.2\")", true);
+		Tests.assertEquals(Boolean("-3.8"), true, "Boolean(\"-3.8\")", true);
+		Tests.assertEquals(Boolean(true), true, "Boolean(true)", true);
+		Tests.assertEquals(Boolean(false), false, "Boolean(false)", true);
+		Tests.assertEquals(Boolean(-4), true, "Boolean(-4)", true);
+		Tests.assertEquals(Boolean("NonEmptyString"),true,"Boolean(\"NonEmptyString\")",true);
+		Tests.assertEquals(Boolean(""),false,"Boolean(\"\")",true);
+		Tests.assertEquals(Boolean(null),false,"Boolean(null)",true);
+		Tests.assertEquals(Boolean(undefined),false,"Boolean(undefined)",true);
+		Tests.assertEquals(Boolean(mc_null),false,"Boolean(null)",true);
+		Tests.assertEquals(Boolean(mc),true,"Boolean(MovieClip)",true);
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

@@ -9,9 +9,11 @@
 	<![CDATA[
 	import Tests;
 	import ValueOfTestCase;
+	import ValueOfTestCase2;
 	private function appComplete():void
 	{
 		var test:ValueOfTestCase = new ValueOfTestCase();
+		var test2:ValueOfTestCase2 = new ValueOfTestCase2();
 		Tests.assertEquals(String(test),"[object ValueOfTestCase]","String(test)",true);
 		Tests.assertEquals(Number(test),4.2,"Number(test)",true);
 		Tests.assertEquals(uint(test),4,"uint(test)",true);
@@ -19,9 +21,15 @@
 		Tests.assertEquals(Boolean(test),true,"Boolean(test)",true);
 		Tests.assertTrue(test > 4.1,"test > 4.1");
 		Tests.assertTrue(test < 4.3,"test < 4.3");
-		Tests.assertTrue(test == 4.2,"test == 4.2");
 		Tests.assertTrue(test !== 4.2,"test !== 4.2");
 		Tests.assertTrue((test + 1) == 5.2,"test + 1 == 5.2");
+
+		Tests.assertTrue(test == 4.2,"test == 4.2");
+		Tests.assertTrue(test2 == "4.2","test2 == \"4.2\"");
+		Tests.assertTrue(4.2 == "4.2","4.2 == \"4.2\"");
+		//Even though test.valueOf() == test2.valueOf(), this does not give
+		//equality of test == test2.
+		Tests.assertTrue(test != test2,"test != test2");
 		Tests.report(visual, this.name);
 	}
 	]]>

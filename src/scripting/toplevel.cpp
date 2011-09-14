@@ -2894,6 +2894,9 @@ ASFUNCTIONBODY(Number,generator)
 
 tiny_string Number::toString(bool debugMsg)
 {
+	if(std::isnan(val))
+		return "NaN";
+
 	char buf[20];
 	int bufLen=snprintf(buf,20,"%#f",val);
 	purgeTrailingZeroes(buf,bufLen);

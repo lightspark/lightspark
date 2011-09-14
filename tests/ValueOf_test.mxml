@@ -26,6 +26,8 @@
 
 		Tests.assertTrue(test == 4.2,"test == 4.2");
 		Tests.assertTrue(test2 == "4.2","test2 == \"4.2\"");
+		Tests.assertTrue(test == "4.2","test == \"4.2\"");
+		Tests.assertTrue(test2 == 4.2,"test2 == 4.2");
 		Tests.assertTrue(4.2 == "4.2","4.2 == \"4.2\"");
 		//Even though test.valueOf() == test2.valueOf(), this does not give
 		//equality of test == test2.

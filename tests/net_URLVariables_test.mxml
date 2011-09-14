@@ -15,10 +15,16 @@
 		Tests.assertEquals("b@r",variables.prop2,"Second parsed property of URLVariables");
 		variables.decode("prop1=newfoo&prop3=newprop");
 		Tests.assertEquals(true,variables.prop1 is Array,"First parsed property of URLVariables after decode is array");
-		Tests.assertArrayEquals(["foo","newfoo"],variables.prop1,"First parsed property of URLVariables after decode");
+		Tests.assertArrayEquals(["foo","newfoo"],variables.prop1,"Parsed property of URLVariables after decode");
 		Tests.assertEquals("b@r",variables.prop2,"Second parsed property of URLVariables after decode");
 		Tests.assertEquals("newprop",variables.prop3,"Third parsed property of URLVariables after decode");
-		Tests.assertEquals("prop3=newprop&prop2=b%40r&prop1=foo&prop1=newfoo",variables.toString(),"URLVariables::toString()");
+
+		//The output is not deterministic, so we just check if all parts are in there
+		Tests.assertEquals(48,variables.toString().length,"URLVariables::toString()");
+		Tests.assertTrue(variables.toString().indexOf("prop3=newprop") != -1,"URLVariables::toString()");
+		Tests.assertTrue(variables.toString().indexOf("prop1=foo") != -1,"URLVariables::toString()");
+		Tests.assertTrue(variables.toString().indexOf("prop1=newfoo") != -1,"URLVariables::toString()");
+		Tests.assertTrue(variables.toString().indexOf("prop2=b%40r") != -1,"URLVariables::toString()");
 		Tests.report(visual, this.name);
 	}
 	]]>

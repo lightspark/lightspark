@@ -68,8 +68,47 @@
 		Tests.assertFalse(0.0 == b, "0.0 == null", true);
 
 		// null and undefined equality
+		var c:MovieClip = null;
+		var d:String = null;
+
 		Tests.assertTrue(undefined == b, "undefined == null", true);
 		Tests.assertTrue(b == undefined, "null == undefined", true);
+		Tests.assertTrue(c == d,"null == null for different types", true);
+
+		//Type conversion for basic types (Number,Int,UInt,Boolean,String)
+		Tests.assertTrue(3.0 == 3,"3.0 == 3");
+		Tests.assertTrue(-3.0 == -3,"-3.0 == -3");
+		Tests.assertTrue(3.0 == "3","3.0 == \"3\"");
+		//String is not converted to Boolean
+		Tests.assertTrue(true != "true","true != \"true\"");
+		//The boolean value is converted first (true -> 1, false -> 0)
+		Tests.assertTrue(true != 3,"true != 3");
+		Tests.assertTrue(true != -3,"true != -3");
+		Tests.assertTrue(true != 3.1,"true != 3.1");
+		Tests.assertTrue(3 != true,"3 != true");
+		Tests.assertTrue(true == 1,"true == 1");
+		Tests.assertTrue(true == 1.0,"true == 1.0");
+		Tests.assertTrue(false == 0,"false == 0");
+		Tests.assertTrue(false == 0.0,"false == 0.0");
+		//Strict inequality only does implicit conversion between Number/Int/UInt
+		Tests.assertTrue(3.0 === 3,"3.0 === 3");
+		Tests.assertTrue(-3.0 === -3,"-3.0 === -3");
+		Tests.assertTrue(3.0 !== "3","3.0 !== \"3\"");
+		Tests.assertTrue(true !== "true","true !== \"true\"");
+		Tests.assertTrue(true !== 3,"true !== 3");
+		Tests.assertTrue(true !== -3,"true !== -3");
+		Tests.assertTrue(true !== 3.1,"true !== 3.1");
+		Tests.assertTrue(3 !== true,"3 !== true");
+		Tests.assertTrue(true !== 1,"true === 1");
+		Tests.assertTrue(true !== 1.0,"true === 1.0");
+		Tests.assertTrue(false !== 0,"false === 0");
+		Tests.assertTrue(false !== 0.0,"false === 0.0");
+		Tests.assertTrue(undefined !== b, "undefined !== null", true);
+		Tests.assertTrue(b !== undefined, "null !== undefined", true);
+		Tests.assertTrue(c === d,"null === null for different types", true);
+		Tests.assertTrue(d === null, "null === null", true);
+		Tests.assertTrue(b === null, "null === null", true);
+		Tests.assertTrue(d === d, "null === null (MovieClip and Any)", true);
 
 		Tests.report(visual, this.name);
 	}

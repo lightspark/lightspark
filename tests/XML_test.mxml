@@ -15,7 +15,7 @@
 		var xml3:XML=new XML("<test3></test3>");
 		xml1.appendChild(xml2);
 		xml2.appendChild(xml3);
-		Tests.assertEquals(xml1.toXMLString(),"<test1><test2><test3/></test2></test1>","Appending XML nodes");
+		Tests.assertEquals(xml1.toXMLString(),"<test1>\n  <test2>\n    <test3/>\n  </test2>\n</test1>","Appending XML nodes");
 		var xml4:XML=new XML("");
 		Tests.assertEquals(xml4.localName(),null,"localName for empty string");
 		Tests.assertEquals(xml4.nodeKind(),"text","nodeKind for empty string");

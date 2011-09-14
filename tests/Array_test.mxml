@@ -109,8 +109,9 @@
 		Tests.assertEquals(i4.some(isNumeric), true, "some on mixed type array with callback checking if value is numeric");
 
 		Tests.assertEquals(i3.toString(), "x,y,z", "toString()");
-		Tests.assertEquals(i3.toLocaleString(), "x,y,z", "toLocaleString()");
-
+		Tests.assertEquals(i3.toLocaleString(), "[object String],[object String],[object String]", "toLocaleString()");
+		Tests.assertEquals(false,(["a","b",3] == ["a","b",3]),"Arrays not equals -> different objects");
+		Tests.assertEquals(false,(["a","b",3] === ["a","b",3]),"Arrays not equals -> different objects");
 		Tests.report(visual, this.name);
 	}
 	]]>

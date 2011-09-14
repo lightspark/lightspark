@@ -20,11 +20,11 @@ private function appComplete():void
 	square.x = 100;
 	square.y = 200;
 
-	addChild(square);
-
+	stage.addChild(square);
 	var clickPoint:Point = new Point(square.x, square.y);
 
-	Tests.assertEquals(square.localToGlobal(clickPoint), new Point(200, 400), "localToGlobal()");
+	Tests.assertEquals(square.localToGlobal(clickPoint).x, 200, "localToGlobal()");
+	Tests.assertEquals(square.localToGlobal(clickPoint).y, 400, "localToGlobal()");
 	Tests.report(visual, name);
 }
 ]]>

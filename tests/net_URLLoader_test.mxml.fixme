@@ -12,8 +12,8 @@
 	private var remoteLoader2:URLLoader;
 	private var localLoader:URLLoader;
 	private var localLoader2:URLLoader;
-	
-	//This is the path for a local file. 
+
+	//This is the path for a local file.
 	private var localFilePath:String = "test.data";
 	//Should contain "Local data\n"
 
@@ -26,6 +26,7 @@
 	{
 		try
 		{
+			trace(Security.sandboxType);
 			if(Security.sandboxType == Security.REMOTE || 
 				Security.sandboxType == Security.LOCAL_WITH_NETWORK ||
 				Security.sandboxType == Security.LOCAL_TRUSTED) 
@@ -34,6 +35,7 @@
 				remoteLoader = new URLLoader();
 				remoteLoader.addEventListener(IOErrorEvent.IO_ERROR, remoteErrorHandler);
 				remoteLoader.addEventListener(Event.COMPLETE, remoteLoaderCompleteHandler);
+				remoteLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR,remoteSecurityError);
 				remoteLoader.load(new URLRequest(remoteFilePath));
 				remoteLoader2 = new URLLoader(new URLRequest(remoteFilePath));
 				remoteLoader2.addEventListener(IOErrorEvent.IO_ERROR, remoteErrorHandler);
@@ -99,6 +101,10 @@
 		received++
 		finishUp();
 	}
+	private function remoteSecurityError(e:Event):void
+	{
+		finishUp();
+	}
 	private function finishUp():void
 	{
 		if((Security.sandboxType == Security.LOCAL_TRUSTED && received == 4) || (Security.sandboxType != Security.LOCAL_TRUSTED && received == 2))
@@ -114,7 +120,7 @@
 			Tests.report(visual, this.name);
 		}
 	}
-	private function killScript():void
+	private function killScript(event:TimerEvent):void
 	{
 		Tests.assertDontReach("Test timed out. Probably some request was never made.");
 		Tests.report(visual, this.name);

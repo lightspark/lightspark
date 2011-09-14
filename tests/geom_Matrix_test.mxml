@@ -35,7 +35,10 @@
 		
 		var mat2:Matrix = new Matrix();
 		mat2.rotate(Math.PI / 2);
-		Tests.assertTrue(mat2.a == 0 && mat2.b == 1 && mat2.c == -1 && mat2.d == 0, "Matrix.rotate");
+		Tests.assertEqualsDelta(0,mat2.a,0.00001,"Matrix.rotate");
+		Tests.assertEqualsDelta(1,mat2.b,0.00001,"Matrix.rotate");
+		Tests.assertEqualsDelta(-1,mat2.c,0.00001,"Matrix.rotate");
+		Tests.assertEqualsDelta(0,mat2.d,0.00001,"Matrix.rotate");
 		
 		var mat3:Matrix = new Matrix();
 		mat3.scale(4, 2);

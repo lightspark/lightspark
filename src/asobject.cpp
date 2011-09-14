@@ -152,28 +152,6 @@ bool ASObject::isEqual(ASObject* r)
 	if(r->getObjectType()==T_NULL || r->getObjectType()==T_UNDEFINED)
 		return false;
 
-	multiname equalsName;
-	equalsName.name_type=multiname::NAME_STRING;
-	equalsName.name_s="equals";
-	equalsName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	if(hasPropertyByMultiname(equalsName, true))
-	{
-		ASObject* func_equals=getVariableByMultiname(equalsName);
-
-		assert_and_throw(func_equals!=NULL);
-
-		assert_and_throw(func_equals->getObjectType()==T_FUNCTION);
-		IFunction* func=static_cast<IFunction*>(func_equals);
-
-		incRef();
-		r->incRef();
-		ASObject* ret=func->call(this,&r,1);
-		assert_and_throw(ret->getObjectType()==T_BOOLEAN);
-
-		LOG(LOG_CALLS,_("Overloaded isEqual"));
-		return Boolean_concrete(ret);
-	}
-
 	//We can try to call valueOf and compare that
 	multiname valueOfName;
 	valueOfName.name_type=multiname::NAME_STRING;

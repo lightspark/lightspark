@@ -2504,9 +2504,13 @@ double ASString::toNumber()
 int32_t ASString::toInt()
 {
 	assert_and_throw(implEnable);
-	if(data.empty() || !isdigit(data[0]))
-		return 0;
-	return atoi(data.c_str());
+	return atol(data.c_str());
+}
+
+uint32_t ASString::toUInt()
+{
+	assert_and_throw(implEnable);
+	return atol(data.c_str());
 }
 
 bool ASString::isEqual(ASObject* r)

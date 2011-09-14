@@ -393,6 +393,7 @@ public:
 	tiny_string toString(bool debugMsg=false);
 	double toNumber();
 	int32_t toInt();
+	uint32_t toUInt();
 	ASFUNCTION(generator);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -160,8 +160,18 @@
 		Tests.assertEquals(0x80,e.charCodeAt(0),"charCodeAt");
 
 		//Type conversions
-		e="10.0";
-		Tests.assertEquals(Number(e),10.0,"String to Number");
+		var mc:MovieClip = new MovieClip();
+		Tests.assertEquals(String(NaN), "NaN", "String(NaN)", true);
+		Tests.assertEquals(String(3.2), "3.2", "String(3.2)", true);
+		Tests.assertEquals(String(3.8), "3.8", "String(3.8)", true);
+		Tests.assertEquals(String(true), "true", "String(true)", true);
+		Tests.assertEquals(String(false), "false", "String(false)", true);
+		Tests.assertEquals(String(-4), "-4", "String(-4)", true);
+		Tests.assertEquals(String(null),"null","String(null)",true);
+		Tests.assertEquals(String(undefined),"undefined","String(undefined)",true);
+		Tests.assertEquals(String(mc),"[object MovieClip]","String(MovieClip)",true);
+		var array:Array = ["primary", "secondary", "tertiary"]; 
+		Tests.assertEquals(String(array),"primary,secondary,tertiary","String(Array)",true);
 
 		Tests.report(visual, this.name);
 	}

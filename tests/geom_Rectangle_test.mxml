@@ -64,6 +64,7 @@
 		Tests.assertEquals(rect7.union(rect8).toString(), (new Rectangle(0, 0, 20, 20)).toString(), "rectangle.union");
 
 		Tests.assertTrue(new Rectangle(0, 0, 20, 20) != new Rectangle(0, 0, 20, 20),"Rectangles are compared by reference");
+		Tests.assertTrue(new Rectangle(0, 0, 20, 20).equals(new Rectangle(0, 0, 20, 20)),"Rectangle.equals");
 		Tests.report(visual, name);
 	}
 ]]>

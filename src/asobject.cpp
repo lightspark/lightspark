@@ -203,19 +203,12 @@ unsigned int ASObject::toUInt()
 
 int ASObject::toInt()
 {
-	LOG(LOG_ERROR,_("Cannot convert object of type ") << getObjectType() << _(" to int"));
-	throw RunTimeException("Cannot convert object to int");
 	return 0;
 }
 
 double ASObject::toNumber()
 {
-	//If we're here it means that the object does not have a special implementation
-	tiny_string ret=toString(false);
-	char* end;
-	const char* str=ret.raw_buf();
-	double doubleRet=strtod(str,&end);
-	return (*end=='\0')?doubleRet:numeric_limits<double>::quiet_NaN();
+	return numeric_limits<double>::quiet_NaN();
 }
 
 obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)

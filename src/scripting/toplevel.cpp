@@ -2750,18 +2750,8 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 tiny_string UInteger::toString(bool debugMsg)
 {
 	char buf[20];
-	buf[19]=0;
-	char* cur=buf+19;
-
-	int v=val;
-	do
-	{
-		cur--;
-		*cur='0'+(v%10);
-		v/=10;
-	}
-	while(v!=0);
-	return tiny_string(cur,true); //Create a copy
+	snprintf(buf,sizeof(buf),"%u",val);
+	return tiny_string(buf,true);
 }
 
 TRISTATE UInteger::isLess(ASObject* o)

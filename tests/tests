@@ -189,9 +189,15 @@ for test in $TESTS; do
 
 	TESTCOUNT=`expr $TESTCOUNT + 1`;
 	if [ "`echo $lines | grep 'FAILURE'`" != "" ]; then
-		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
+		THISFAILEDCOUNT=`echo "$lines" | sed -n -e 's/.*=Failures (\(.*\)\/.*)=.*/\1/p'`
+		THISNUMTESTS=`echo "$lines" | sed -n -e 's/.*=Failures (.*\/\(.*\))=.*/\1/p'`
+		THISSUCCESSCOUNT=`expr $THISNUMTESTS - $THISFAILEDCOUNT`
+		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
+		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
+		echo $line
 	elif [ "`echo $lines | grep 'SUCCESS'`" != "" ]; then
-		SUCCESSCOUNT=`expr $SUCCESSCOUNT + 1`;
+		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
+		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 	fi
 
 	if [ $QUIET -eq 1 ]; then

@@ -71,7 +71,6 @@ public:
 	ASFUNCTION(offsetPoint);
 	ASFUNCTION(setEmpty);
 	ASFUNCTION(_toString);
-	tiny_string toString(bool debugMsg=false);
 	ASFUNCTION(_union);
 };
 
@@ -83,7 +82,6 @@ public:
 	Point(number_t _x = 0, number_t _y = 0):x(_x),y(_y){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	tiny_string toString(bool debugMsg=false);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getX);
 	ASFUNCTION(_getY);
@@ -99,6 +97,7 @@ public:
 	ASFUNCTION(normalize);
 	ASFUNCTION(offset);
 	ASFUNCTION(polar);
+	ASFUNCTION(_toString);
 	
 	number_t len() const;
 	number_t getX() { return x; };
@@ -136,8 +135,7 @@ public:
 	ASFUNCTION(setAlphaOffset);
 
 	ASFUNCTION(concat);
-
-	tiny_string toString(bool debugMsg=false);
+	ASFUNCTION(_toString);
 };
 
 class Transform: public ASObject
@@ -156,9 +154,6 @@ public:
 	void _createBox(number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y);
 	MATRIX getMATRIX() const;
 
-	//Overloads
-	tiny_string toString(bool debugMsg=false);
-	
 	ASFUNCTION(_constructor);
 	
 	//Methods
@@ -173,6 +168,7 @@ public:
 	ASFUNCTION(scale);
 	ASFUNCTION(transformPoint);
 	ASFUNCTION(translate);
+	ASFUNCTION(_toString);
 	
 	//Properties
 	ASFUNCTION(_get_a);
@@ -195,9 +191,6 @@ public:
 	number_t w, x, y, z;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	
-	//Overloads
-	tiny_string toString(bool debugMsg=false);
 	
 	ASFUNCTION(_constructor);
 	
@@ -230,6 +223,7 @@ public:
 	ASFUNCTION(_set_x);
 	ASFUNCTION(_set_y);
 	ASFUNCTION(_set_z);
+	ASFUNCTION(_toString);
 };
 
 };

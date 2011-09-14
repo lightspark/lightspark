@@ -93,16 +93,6 @@ void Rectangle::buildTraits(ASObject* o)
 {
 }
 
-tiny_string Rectangle::toString(bool debugMsg)
-{
-	assert_and_throw(implEnable);
-	
-	char buf[512];
-	snprintf(buf,512,"(x=%.2f, y=%.2f, w=%.2f, h=%.2f)",x,y,width,height);
-	
-	return tiny_string(buf, true);
-}
-
 const lightspark::RECT Rectangle::getRect() const
 {
 	return lightspark::RECT(x,x+width,y,y+height);
@@ -495,7 +485,9 @@ ASFUNCTIONBODY(Rectangle,_union)
 ASFUNCTIONBODY(Rectangle,_toString)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	return Class<ASString>::getInstanceS(th->toString(false));
+	char buf[512];
+	snprintf(buf,512,"(x=%.2f, y=%.2f, w=%.2f, h=%.2f)",th->x,th->y,th->width,th->height);
+	return Class<ASString>::getInstanceS(buf);
 }
 
 void ColorTransform::sinit(Class_base* c)
@@ -526,6 +518,7 @@ void ColorTransform::sinit(Class_base* c)
 
 	// methods
 	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(concat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 }
 
 void ColorTransform::buildTraits(ASObject* o)
@@ -735,14 +728,14 @@ ASFUNCTIONBODY(ColorTransform,concat)
 	return NULL;
 }
 
-tiny_string ColorTransform::toString(bool debugMsg)
+ASFUNCTIONBODY(ColorTransform,_toString)
 {
-	assert_and_throw(implEnable);
-	
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
 	char buf[1024];
-	snprintf(buf,1024,"(redOffset=%f, redMultiplier=%f, greenOffset=%f, greenMultiplier=%f blueOffset=%f blueMultiplier=%f alphaOffset=%f, alphaMultiplier=%f)", redOffset, redMultiplier, greenOffset, greenMultiplier, blueOffset, blueMultiplier, alphaOffset, alphaMultiplier);
+	snprintf(buf,1024,"(redOffset=%f, redMultiplier=%f, greenOffset=%f, greenMultiplier=%f blueOffset=%f blueMultiplier=%f alphaOffset=%f, alphaMultiplier=%f)",
+			th->redOffset, th->redMultiplier, th->greenOffset, th->greenMultiplier, th->blueOffset, th->blueMultiplier, th->alphaOffset, th->alphaMultiplier);
 	
-	return tiny_string(buf, true);
+	return Class<ASString>::getInstanceS(buf);
 }
 
 void Point::sinit(Class_base* c)
@@ -762,20 +755,19 @@ void Point::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(offset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("polar","",Class<IFunction>::getFunction(polar),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 }
 
 void Point::buildTraits(ASObject* o)
 {
 }
 
-tiny_string Point::toString(bool debugMsg)
+ASFUNCTIONBODY(Point,_toString)
 {
-	assert_and_throw(implEnable);
-	
+	Point* th=static_cast<Point*>(obj);
 	char buf[512];
-	snprintf(buf,512,"(a=%f, b=%f)",x,y);
-	
-	return tiny_string(buf, true);
+	snprintf(buf,512,"(a=%f, b=%f)",th->x,th->y);
+	return Class<ASString>::getInstanceS(buf);
 }
 
 number_t Point::len() const
@@ -965,6 +957,7 @@ void Matrix::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scale","",Class<IFunction>::getFunction(scale),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transformPoint","",Class<IFunction>::getFunction(transformPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("translate","",Class<IFunction>::getFunction(translate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(Matrix,_constructor)
@@ -998,15 +991,13 @@ void Matrix::buildTraits(ASObject* o)
 {
 }
 
-tiny_string Matrix::toString(bool debugMsg)
+ASFUNCTIONBODY(Matrix,_toString)
 {
-	assert_and_throw(implEnable);
-	
+	Matrix* th=static_cast<Matrix*>(obj);
 	char buf[512];
 	snprintf(buf,512,"(a=%f, b=%f, c=%f, d=%f, tx=%f, ty=%f)",
-		a, b, c, d, tx, ty);
-	
-	return tiny_string(buf, true);
+			th->a, th->b, th->c, th->d, th->tx, th->ty);
+	return Class<ASString>::getInstanceS(buf);
 }
 
 MATRIX Matrix::getMATRIX() const
@@ -1364,6 +1355,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("project","",Class<IFunction>::getFunction(project),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("scaleBy","",Class<IFunction>::getFunction(scaleBy),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1394,14 +1386,12 @@ void Vector3D::buildTraits(ASObject* o)
 {
 }
 
-tiny_string Vector3D::toString(bool debugMsg)
+ASFUNCTIONBODY(Vector3D,_toString)
 {
-	assert_and_throw(implEnable);
-	
+	Vector3D* th=static_cast<Vector3D*>(obj);
 	char buf[512];
-	snprintf(buf,512,"(x=%f, y=%f, z=%f)", x, y, z);
-	
-	return tiny_string(buf, true);
+	snprintf(buf,512,"(x=%f, y=%f, z=%f)", th->x, th->y, th->z);
+	return Class<ASString>::getInstanceS(buf);
 }
 
 ASFUNCTIONBODY(Vector3D,_get_w)

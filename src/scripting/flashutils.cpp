@@ -582,16 +582,6 @@ void ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	throw UnsupportedException("ByteArray::setVariableByMultiname_i not completely implemented");
 }
 
-bool ByteArray::isEqual(ASObject* r)
-{
-	assert_and_throw(implEnable);
-	/*if(r->getObjectType()!=T_OBJECT)
-		return false;*/
-
-	throw UnsupportedException("ByteArray::isEqual");
-	return false;
-}
-
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 {
 	if(bytes)

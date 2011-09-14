@@ -91,7 +91,6 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
-	bool isEqual(ASObject* r);
 };
 
 class Timer: public EventDispatcher, public ITickJob

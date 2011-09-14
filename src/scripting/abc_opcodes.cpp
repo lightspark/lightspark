@@ -1350,10 +1350,6 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 
 bool ABCVm::strictEqualImpl(ASObject* obj1, ASObject* obj2)
 {
-	//If we are dealing with objects, check the prototype
-	if(obj1->getObjectType()==T_OBJECT && obj2->getObjectType()==T_OBJECT && obj1->prototype!=obj2->prototype)
-			return false;
-
 	SWFOBJECT_TYPE type1=obj1->getObjectType();
 	SWFOBJECT_TYPE type2=obj2->getObjectType();
 	if(type1!=type2)

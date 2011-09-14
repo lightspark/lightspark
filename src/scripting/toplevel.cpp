@@ -1784,29 +1784,6 @@ _R<ASObject> XMLList::nextValue(uint32_t index)
 		throw RunTimeException("XMLList::nextValue out of bounds");
 }
 
-bool Array::isEqual(ASObject* r)
-{
-	assert_and_throw(implEnable);
-	if(r->getObjectType()!=T_ARRAY)
-		return false;
-	else
-	{
-		const Array* ra=static_cast<const Array*>(r);
-		int size=data.size();
-		if(size!=ra->size())
-			return false;
-
-		for(int i=0;i<size;i++)
-		{
-			if(data[i].type!=DATA_OBJECT)
-				throw UnsupportedException("Array::isEqual not completely implemented");
-			if(!data[i].data->isEqual(ra->at(i)))
-				return false;
-		}
-		return true;
-	}
-}
-
 intptr_t Array::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);

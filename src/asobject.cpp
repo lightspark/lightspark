@@ -254,7 +254,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL);
 			if(ret)
 				break;
-			cur=cur->super;
+			cur=cur->super.getPtr();
 		}
 	}
 
@@ -376,7 +376,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 			obj=cur->findSettable(name,true,&has_getter);
 			if(obj)
 				break;
-			cur=cur->super;
+			cur=cur->super.getPtr();
 		}
 	}
 	if(obj==NULL)
@@ -410,6 +410,18 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 		assert_and_throw(!obj->getter);
 		obj->setVar(o);
 	}
+}
+
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, _R<ASObject> objref, TRAIT_KIND traitKind)
+{
+	objref->incRef();
+	setVariableByQName(name,ns,objref.getPtr(),traitKind);
+}
+
+void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, _R<ASObject> objref, TRAIT_KIND traitKind)
+{
+	objref->incRef();
+	setVariableByQName(name,ns,objref.getPtr(),traitKind);
 }
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind)
@@ -624,7 +636,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 			obj=cur->findGettable(name,true);
 			if(obj)
 				break;
-			cur=cur->super;
+			cur=cur->super.getPtr();
 		}
 	}
 
@@ -829,7 +841,7 @@ Class_base* ASObject::getActualPrototype() const
 	}
 
 	for(int i=prototype->max_level;i>cur_level;i--)
-		ret=ret->super;
+		ret=ret->super.getPtr();
 
 	assert(ret);
 	assert(ret->max_level==cur_level);
@@ -977,7 +989,7 @@ ASObject *ASObject::describeType() const
 	if(prot)
 	{
 		root->set_attribute("name", prot->getQualifiedClassName().raw_buf());
-		if(prot->super)
+		if(prot->super != NULL)
 			root->set_attribute("base", prot->super->getQualifiedClassName().raw_buf());
 	}
 	bool isDynamic=type==T_ARRAY; // FIXME

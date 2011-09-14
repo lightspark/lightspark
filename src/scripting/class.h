@@ -146,6 +146,7 @@ public:
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
+	/* Returns the singleton class object of type Class<T> */
 	static Class<T>* getClass(const QName& name)
 	{
 		std::map<QName, Class_base*>::iterator it=sys->classes.find(name);
@@ -159,12 +160,24 @@ public:
 		else
 			ret=static_cast<Class<T>*>(it->second);
 
-		ret->incRef();
 		return ret;
 	}
 	static Class<T>* getClass()
 	{
 		return getClass(QName(ClassName<T>::name,ClassName<T>::ns));
+	}
+	/* Like getClass() but returns a reference */
+	static _R<Class<T> > getRef(const QName& name)
+	{
+		Class<T>* ret = getClass(name);
+		ret->incRef();
+		return _MR(ret);
+	}
+	static _R<Class<T> > getRef()
+	{
+		Class<T>* ret = getClass();
+		ret->incRef();
+		return _MR(ret);
 	}
 	static T* cast(ASObject* o)
 	{
@@ -217,12 +230,24 @@ public:
 		else
 			ret=static_cast<Class<ASObject>*>(it->second);
 
-		ret->incRef();
 		return ret;
 	}
 	static Class<ASObject>* getClass()
 	{
 		return getClass(QName(ClassName<ASObject>::name,ClassName<ASObject>::ns));
+	}
+	/* Like getClass() but returns a reference */
+	static _R<Class<ASObject> > getRef(const QName& name)
+	{
+		Class<ASObject>* ret = getClass(name);
+		ret->incRef();
+		return _MR(ret);
+	}
+	static _R<Class<ASObject> > getRef()
+	{
+		Class<ASObject>* ret = getClass();
+		ret->incRef();
+		return _MR(ret);
 	}
 	static ASObject* cast(ASObject* o)
 	{
@@ -343,7 +368,6 @@ public:
 		else
 			ret=static_cast<Template<T>*>(it->second);
 
-		ret->incRef();
 		return ret;
 	}
 
@@ -351,6 +375,14 @@ public:
 	{
 		return getTemplate(QName(ClassName<T>::name,ClassName<T>::ns));
 	}
+
+	static _R<Template<T>> getRef()
+	{
+		Template<T>* ret = getTemplate();
+		ret->incRef();
+		return _MR(ret);
+	}
+
 };
 
 };

@@ -64,7 +64,7 @@ void Event::finalize()
 void Event::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS("enterFrame"),DECLARED_TRAIT);
@@ -165,7 +165,7 @@ ASFUNCTIONBODY(Event,formatToString)
 void EventPhase::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("CAPTURING_PHASE","",abstract_i(CAPTURING_PHASE),DECLARED_TRAIT);
 	c->setVariableByQName("BUBBLING_PHASE","",abstract_i(BUBBLING_PHASE),DECLARED_TRAIT);
@@ -179,7 +179,7 @@ FocusEvent::FocusEvent():Event("focusEvent")
 void FocusEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS("focusIn"),DECLARED_TRAIT);
@@ -213,7 +213,7 @@ ProgressEvent::ProgressEvent(uint32_t loaded, uint32_t total):Event("progress",f
 void ProgressEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"),DECLARED_TRAIT);
@@ -251,7 +251,7 @@ ASFUNCTIONBODY(ProgressEvent,_getBytesTotal)
 void TimerEvent::sinit(Class_base* c)
 {
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS("timer"),DECLARED_TRAIT);
@@ -261,7 +261,7 @@ void TimerEvent::sinit(Class_base* c)
 void MouseEvent::sinit(Class_base* c)
 {
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click"),DECLARED_TRAIT);
@@ -357,7 +357,7 @@ IOErrorEvent::IOErrorEvent()
 void IOErrorEvent::sinit(Class_base* c)
 {
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),DECLARED_TRAIT);
@@ -377,7 +377,7 @@ void EventDispatcher::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->addImplementedInterface(Class<IEventDispatcher>::getClass());
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener),NORMAL_METHOD,true);
@@ -610,7 +610,7 @@ NetStatusEvent::NetStatusEvent(const tiny_string& l, const tiny_string& c):Event
 void NetStatusEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS("netStatus"),DECLARED_TRAIT);
@@ -651,7 +651,7 @@ FullScreenEvent::FullScreenEvent():Event("fullScreenEvent")
 void FullScreenEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"),DECLARED_TRAIT);
@@ -669,7 +669,7 @@ KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 void KeyboardEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS("keyDown"),DECLARED_TRAIT);
@@ -688,7 +688,7 @@ TextEvent::TextEvent():Event("textEvent")
 void TextEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS("textInput"),DECLARED_TRAIT);
@@ -707,7 +707,7 @@ ErrorEvent::ErrorEvent(const std::string& e):errorMsg(e)
 void ErrorEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<TextEvent>::getClass();
+	c->super=Class<TextEvent>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS("error"),DECLARED_TRAIT);
@@ -726,7 +726,7 @@ SecurityErrorEvent::SecurityErrorEvent(const std::string& e):ErrorEvent(e)
 void SecurityErrorEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ErrorEvent>::getClass();
+	c->super=Class<ErrorEvent>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS("securityError"),DECLARED_TRAIT);
@@ -745,7 +745,7 @@ AsyncErrorEvent::AsyncErrorEvent()
 void AsyncErrorEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ErrorEvent>::getClass();
+	c->super=Class<ErrorEvent>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("ASYNC_ERROR","",Class<ASString>::getInstanceS("asyncError"),DECLARED_TRAIT);
@@ -768,7 +768,7 @@ ShutdownEvent::ShutdownEvent():Event("shutdownEvent")
 void HTTPStatusEvent::sinit(Class_base* c)
 {
 //	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<Event>::getClass();
+	c->super=Class<Event>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"),DECLARED_TRAIT);

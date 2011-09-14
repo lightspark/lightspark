@@ -50,7 +50,7 @@ URLRequest::URLRequest():method(GET)
 void URLRequest::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_setURL),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_getURL),GETTER_METHOD,true);
@@ -196,7 +196,7 @@ ASFUNCTIONBODY(URLRequest,_setData)
 
 void URLRequestMethod::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("GET","",Class<ASString>::getInstanceS("GET"),DECLARED_TRAIT);
 	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"),DECLARED_TRAIT);
@@ -215,7 +215,7 @@ void URLLoader::finalize()
 void URLLoader::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
@@ -411,7 +411,7 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 
 void URLLoaderDataFormat::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables"),DECLARED_TRAIT);
 	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text"),DECLARED_TRAIT);
@@ -420,13 +420,13 @@ void URLLoaderDataFormat::sinit(Class_base* c)
 
 void SharedObject::sinit(Class_base* c)
 {
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->max_level=c->super->max_level+1;
 };
 
 void ObjectEncoding::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("AMF0","",abstract_i(AMF0),DECLARED_TRAIT);
 	c->setVariableByQName("AMF3","",abstract_i(AMF3),DECLARED_TRAIT);
@@ -441,7 +441,7 @@ void NetConnection::sinit(Class_base* c)
 {
 	//assert(c->constructor==NULL);
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(_getConnected),GETTER_METHOD,true);
@@ -600,7 +600,7 @@ NetStream::~NetStream()
 void NetStream::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"),DECLARED_TRAIT);
 	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"),DECLARED_TRAIT);
@@ -1258,7 +1258,7 @@ void URLVariables::decode(const tiny_string& s)
 void URLVariables::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("decode","",Class<IFunction>::getFunction(decode),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);

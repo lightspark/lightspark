@@ -19,3 +19,7 @@ Developer visible changes:
 - Templates:
 	See the classes Template, Template_base, TemplatedClass for the handling of AS templates and
 	Vector for an implementation of an AS template.
+- Class_base::getClass() semantics changed: getClass() returns the Class_base* object without
+	incRef'ing it. If you need a reference you can keep, use getRef().
+	Especially getRef is used in sinit() for setting 'super'
+	and for builtin->setVariableByQName().

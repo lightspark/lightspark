@@ -655,7 +655,7 @@ void Timer::tick()
 void Timer::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(_getCurrentCount),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_getRepeatCount),GETTER_METHOD,true);
@@ -805,10 +805,10 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 	if(target->getObjectType()!=T_CLASS)
 	{
 		assert_and_throw(target->getPrototype());
-		c=target->getPrototype()->super;
+		c=target->getPrototype()->super.getPtr();
 	}
 	else
-		c=static_cast<Class_base*>(target)->super;
+		c=static_cast<Class_base*>(target)->super.getPtr();
 
 	assert_and_throw(c);
 
@@ -873,7 +873,7 @@ void Dictionary::finalize()
 void Dictionary::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 

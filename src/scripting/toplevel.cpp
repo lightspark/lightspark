@@ -84,7 +84,7 @@ void Array::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	// public constants
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 
 	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE),DECLARED_TRAIT);
@@ -728,7 +728,7 @@ void XML::finalize()
 
 void XML::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(XML::_toString),NORMAL_METHOD,true);
@@ -1405,7 +1405,7 @@ void XMLList::finalize()
 
 void XMLList::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
@@ -2026,7 +2026,7 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(split),NORMAL_METHOD,true);
@@ -2735,7 +2735,7 @@ void Integer::sinit(Class_base* c)
 {
 	c->setVariableByQName("MAX_VALUE","",new Integer(2147483647),DECLARED_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648),DECLARED_TRAIT);
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),NORMAL_METHOD,true);
 }
@@ -2899,7 +2899,7 @@ tiny_string Number::toString(bool debugMsg)
 
 void Number::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	//Must create and link the number the hard way
 	Number* ninf=new Number(-numeric_limits<double>::infinity());
@@ -2936,7 +2936,7 @@ Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisec
 
 void Date::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(getTimezoneOffset),NORMAL_METHOD,true);
@@ -3687,7 +3687,7 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false
 
 void RegExp::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
@@ -4160,7 +4160,7 @@ ASFUNCTIONBODY(ASError,_constructor)
 
 void ASError::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace),NORMAL_METHOD,true);
@@ -4190,7 +4190,7 @@ ASFUNCTIONBODY(SecurityError,_constructor)
 void SecurityError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4212,7 +4212,7 @@ ASFUNCTIONBODY(ArgumentError,_constructor)
 void ArgumentError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4234,7 +4234,7 @@ ASFUNCTIONBODY(DefinitionError,_constructor)
 void DefinitionError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4256,7 +4256,7 @@ ASFUNCTIONBODY(EvalError,_constructor)
 void EvalError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4278,7 +4278,7 @@ ASFUNCTIONBODY(RangeError,_constructor)
 void RangeError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4300,7 +4300,7 @@ ASFUNCTIONBODY(ReferenceError,_constructor)
 void ReferenceError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4322,7 +4322,7 @@ ASFUNCTIONBODY(SyntaxError,_constructor)
 void SyntaxError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4344,7 +4344,7 @@ ASFUNCTIONBODY(TypeError,_constructor)
 void TypeError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4366,7 +4366,7 @@ ASFUNCTIONBODY(URIError,_constructor)
 void URIError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4388,7 +4388,7 @@ ASFUNCTIONBODY(VerifyError,_constructor)
 void VerifyError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASError>::getClass();
+	c->super=Class<ASError>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -4433,7 +4433,7 @@ tiny_string Class_base::toString(bool debugMsg)
 
 void Class_base::recursiveBuild(ASObject* target)
 {
-	if(super)
+	if(super != NULL)
 		super->recursiveBuild(target);
 
 	LOG(LOG_TRACE,_("Building traits for ") << class_name);
@@ -4543,12 +4543,7 @@ void Class_base::finalize()
 		constructor->decRef();
 		constructor=NULL;
 	}
-
-	if(super)
-	{
-		super->decRef();
-		super=NULL;
-	}
+	super.reset();
 }
 
 Template_base::Template_base(QName name) : template_name(name)
@@ -4570,13 +4565,12 @@ Class_object* Class_object::getClass()
 	else
 		ret=static_cast<Class_object*>(it->second);
 
-	ret->incRef();
 	return ret;
 }
 
 void IFunction::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
@@ -4659,7 +4653,7 @@ bool Class_base::isSubClass(const Class_base* cls) const
 	}
 
 	//Now ask the super
-	if(super && super->isSubClass(cls))
+	if(super != NULL && super->isSubClass(cls))
 		return true;
 	return false;
 }
@@ -4711,12 +4705,12 @@ ASObject *Class_base::describeType() const
 void Class_base::describeInstance(xmlpp::Element* root) const
 {
 	// extendsClass
-	const Class_base* c=super;
+	const Class_base* c=super.getPtr();
 	while(c)
 	{
 		xmlpp::Element* extends_class=root->add_child("extendsClass");
 		extends_class->set_attribute("type", c->getQualifiedClassName().raw_buf());
-		c=c->super;
+		c=c->super.getPtr();
 	}
 
 	// implementsInterface
@@ -4730,7 +4724,7 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 			xmlpp::Element* node=root->add_child("implementsInterface");
 			node->set_attribute("type", (*it)->getQualifiedClassName().raw_buf());
 		}
-		c=c->super;
+		c=c->super.getPtr();
 	}
 
 	// variables, methods, accessors
@@ -4738,7 +4732,7 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 	while(c && c->class_index>=0)
 	{
 		c->describeTraits(root, c->context->instances[c->class_index].traits);
-		c=c->super;
+		c=c->super.getPtr();
 	}
 }
 
@@ -4844,7 +4838,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 
 void ASQName::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
@@ -4895,7 +4889,7 @@ ASFUNCTIONBODY(ASQName,_getLocalName)
 
 void Namespace::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
@@ -4986,7 +4980,7 @@ void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const
 		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 		if(var)
 			break;
-		cur=cur->super;
+		cur=cur->super.getPtr();
 	}
 	assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(var->var);
@@ -4999,7 +4993,7 @@ void UInteger::sinit(Class_base* c)
 	//TODO: add in the JIT support for unsigned number
 	//Right now we pretend to be signed, to make comparisons work
 	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff),DECLARED_TRAIT);
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -5038,7 +5032,6 @@ Class<IFunction>* Class<IFunction>::getClass()
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);
 
-	ret->incRef();
 	return ret;
 }
 
@@ -5397,7 +5390,7 @@ ASFUNCTIONBODY(lightspark,trace)
 void Vector::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
 }

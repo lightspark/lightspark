@@ -2328,8 +2328,8 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 
 void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 {
-	if(c->super)
-		newClassRecursiveLink(target, c->super);
+	if(c->super != NULL)
+		newClassRecursiveLink(target, c->super.getPtr());
 
 	const vector<Class_base*>& interfaces=c->getInterfaces();
 	for(unsigned int i=0;i<interfaces.size();i++)
@@ -2377,7 +2377,9 @@ void ABCVm::newClass(call_context* th, int n)
 	if(baseClass->getObjectType()!=T_NULL)
 	{
 		assert_and_throw(baseClass->getObjectType()==T_CLASS);
-		ret->super=static_cast<Class_base*>(baseClass);
+		Class_base* base = static_cast<Class_base*>(baseClass);
+		base->incRef();
+		ret->super= _MNR(base);
 		ret->max_level=ret->super->max_level+1;
 		ret->setLevel(ret->max_level);
 	}

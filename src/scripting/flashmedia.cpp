@@ -40,7 +40,7 @@ REGISTER_CLASS_NAME(SoundLoaderContext);
 void SoundTransform::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	REGISTER_GETTER_SETTER(c,volume);
 	REGISTER_GETTER_SETTER(c,pan);
@@ -65,7 +65,7 @@ ASFUNCTIONBODY(SoundTransform,_constructor)
 void Video::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<DisplayObject>::getClass();
+	c->super=Class<DisplayObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight),GETTER_METHOD,true);
@@ -240,7 +240,7 @@ Sound::~Sound()
 void Sound::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
@@ -435,7 +435,7 @@ ASFUNCTIONBODY_GETTER(Sound,length);
 void SoundLoaderContext::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->max_level=c->super->max_level+1;
 	REGISTER_GETTER_SETTER(c,bufferTime);
 	REGISTER_GETTER_SETTER(c,checkPolicyFile);

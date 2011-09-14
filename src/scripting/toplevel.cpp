@@ -2627,8 +2627,7 @@ ASFUNCTIONBODY(Integer,_toString)
 
 ASFUNCTIONBODY(Integer,generator)
 {
-	//Int is specified as 32bit
-	return abstract_i(args[0]->toInt()&0xffffffff);
+	return abstract_i(args[0]->toInt());
 }
 
 TRISTATE Integer::isLess(ASObject* o)
@@ -2789,6 +2788,11 @@ TRISTATE UInteger::isLess(ASObject* o)
 	}
 	else
 		throw UnsupportedException("UInteger::isLess is not completely implemented");
+}
+
+ASFUNCTIONBODY(UInteger,generator)
+{
+	return abstract_ui(args[0]->toUInt());
 }
 
 bool Number::isEqual(ASObject* o)

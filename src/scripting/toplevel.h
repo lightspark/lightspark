@@ -622,6 +622,7 @@ public:
 	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
+	ASFUNCTION(generator);
 	//CHECK: should this have a special serialization?
 };
 

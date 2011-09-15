@@ -10,6 +10,8 @@ ROOTURL="http://lightspark.sourceforge.net"
 MXMLC="mxmlc"
 #If you prefer no colors, you can permanently set the default here
 COLORS=1;
+#Seconds after which a process is killed
+TIMEOUTCMD="timeout 20"
 
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
 COMPILE_TESTS_SRC="";
@@ -25,6 +27,11 @@ COMPILE=0;
 QUIT=0;
 DEBUG=0;
 PROPRIETARY=0;
+
+if ! `which timeout > /dev/null`; then
+	echo "Warning: 'timeout' command not found"
+	TIMEOUTCMD=""
+fi
 
 if [ ! -d tamarin-SWF ]; then
 	echo "Warning: Directory 'tamarin-SWF' not found!"
@@ -172,6 +179,13 @@ if ! `echo $XAUTHORITY | grep xvfb-run > /dev/null`; then
   echo ""
 fi
 
+if [ $PROPRIETARY -eq 0 ]; then
+	LOGFILE=`tempfile`
+else
+	LOGFILE="$PROPRIETARY_LOGFILE"
+fi
+
+
 for test in $TESTS; do
 	if [ ! -e $test ]; then
 		continue;
@@ -180,33 +194,27 @@ for test in $TESTS; do
 	TESTCOUNT=`expr $TESTCOUNT + 1`;
 	echo "Running $test ($TESTCOUNT/$TOTALTESTCOUNT)"
 
+	echo > $LOGFILE
 	if [ $PROPRIETARY -eq 0 ]; then
 		if [ $DEBUG -eq 1 ]; then
-			lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 2>&1`;
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test >$LOGFILE 2>&1
 		else
-			lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 2>&1 >/dev/null`;
-		fi
-		if [[ "$?" != "0" ]]; then
-			echo -e "\\e[0;31mlightspark returned with exit value != 0\\e[0m"
-			FAILURECOUNT=`expr $FAILURECOUNT + 1`;
-			FAILED_TESTS="$FAILED_TESTS $test"
-			continue
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 2>$LOGFILE 1>/dev/null
 		fi
 	else
-		echo > $PROPRIETARY_LOGFILE
 		if [ $DEBUG -eq 1 ]; then
-			flashplayerdebugger $test 2>&1
+			$TIMEOUTCMD flashplayerdebugger $test 2>&1
 		else
-			flashplayerdebugger $test 2>/dev/null
+			$TIMEOUTCMD flashplayerdebugger $test 2>/dev/null
 		fi
-		if [[ "$?" != "0" ]]; then
-			echo -e "\\e[0;31mflashplayerdebugger returned with exit value != 0\\e[0m"
-			FAILURECOUNT=`expr $FAILURECOUNT + 1`;
-			FAILED_TESTS="$FAILED_TESTS $test"
-			continue
-		fi
-		lines=`cat $PROPRIETARY_LOGFILE`
 	fi
+	if [[ "$?" != "0" ]]; then
+		echo -e "\\e[0;31mexit value != 0\\e[0m"
+		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
+		FAILED_TESTS="$FAILED_TESTS $test"
+		continue
+	fi
+	lines=`cat $LOGFILE`
 
 	if [ "`echo $lines | grep 'Failures'`" != "" ]; then
 		THISFAILEDCOUNT=`echo "$lines" | sed -n -e 's/.*=Failures (\(.*\)\/.*)=.*/\1/p'`
@@ -270,6 +278,10 @@ for test in $TESTS; do
 
 	echo -e "$lines\n";
 done
+
+if [ $PROPRIETARY -eq 0 ]; then
+	rm $LOGFILE
+fi
 
 if [ $COLORS -eq 1 ]; then
 	echo -e "Tests run: $TESTCOUNT, \e[1;32m$SUCCESSCOUNT successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m" 1>&2

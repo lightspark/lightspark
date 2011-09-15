@@ -5150,8 +5150,10 @@ GlobalObject::~GlobalObject()
 
 ASFUNCTIONBODY(Boolean,generator)
 {
-	assert_and_throw(argslen==1);
-	return abstract_b(Boolean_concrete(args[0]));
+	if(argslen==1)
+		return abstract_b(Boolean_concrete(args[0]));
+	else
+		return abstract_b(false);
 }
 
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object

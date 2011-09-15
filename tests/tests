@@ -76,13 +76,11 @@ while [ $# -ne 0 ]; do
 			exit 1
 		fi
 
-		if (test -f $HOME/mm.cfg) \
-		&& (grep "TraceOutputFileEnable=1" $HOME/mm.cfg > /dev/null) \
-		&& (grep "TraceOutputFileName=" $HOME/mm.cfg > /dev/null); then
-			PROPRIETARY_LOGFILE=`grep TraceOutputFileName $HOME/mm.cfg | cut -d'=' -f2`
-			echo "Found logfile at $PROPRIETARY_LOGFILE"
+		if (test -f $HOME/mm.cfg) && (grep "TraceOutputFileEnable=1" $HOME/mm.cfg > /dev/null)
+		then
+			PROPRIETARY_LOGFILE=~/.macromedia/Flash_Player/Logs/flashlog.txt
 		else
-			echo -e "$HOME/mm.cfg not found or invalid.\nYou need to create $HOME/mm.cfg with the lines\nTraceOutputFileEnable=1\nTraceOutputFileName=/tmp/flashdebugger.log"
+			echo -e "$HOME/mm.cfg not found or does not have TraceOutputFileEnable=1 in it"
 			exit 1
 		fi
 	else

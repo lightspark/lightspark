@@ -13,7 +13,11 @@ COLORS=1;
 
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
 COMPILE_TESTS_SRC="";
-TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
+TESTS_FROM_SOURCE=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
+TESTS_TAMARIN=`find tamarin-SWF -name '*.swf' 2>/dev/null`;
+TESTS="$TESTS_FROM_SOURCE
+$TESTS_TAMARIN"
+TESTS=`echo $TESTS | sort | uniq`
 
 QUIET=0;
 FAILURES=0;
@@ -21,6 +25,11 @@ COMPILE=0;
 QUIT=0;
 DEBUG=0;
 PROPRIETARY=0;
+
+if [ ! -d tamarin-SWF ]; then
+	echo "Warning: Directory 'tamarin-SWF' not found!"
+	echo "Did you built the tamarin testsuit with the 'make-tamarin' script?"
+fi
 
 while [ $# -ne 0 ]; do
 	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then
@@ -87,28 +96,26 @@ while [ $# -ne 0 ]; do
 		if [ $1 == "-t" ] || [ $1 == "--tests" ]; then
 			shift;
 		fi
-		TESTS_SRC=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.mxml /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.mxml/g'`;
-		TESTS_SRC=`ls -1 $TESTS_SRC 2> /dev/null`;
-		TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
-		if [ $COMPILE -eq 1 ]; then
-			COMPILE_TESTS_SRC=$TESTS_SRC;
-		fi
+		TESTS=`echo $@ | sed 's/\(\.\|\.mxml\|\.swf\)  */.swf /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.swf/g'`;
 		break;
 	fi;
 	shift;
 done
 
-if [ ! $COMPILE -eq 1 ]; then
-	for test in $TESTS_SRC; do
-		if [ "$test" == "template.mxml" ]; then
-			continue;
-		fi
+#Blacklist of tests that (partially) fail the proprietary player is in 'blacklist' file
+#transform spaces to newlines, sort, compare
+TESTS=`echo $TESTS | tr ' ' '\n' | sort | comm -2 -3 - blacklist`
 
-		testswf=`echo $test | sed 's/\.mxml\b/.swf/g'`;
-		if [ ! -e "$testswf" ] || [ "$test" -nt "$testswf" ]; then
+if [ ! $COMPILE -eq 1 ]; then
+	for test in $TESTS; do
+		testmxml=`echo $test | sed 's/\.swf\b/.mxml/g'`;
+		if [ ! -e "$testmxml" ]; then
+			continue
+		fi
+		if [ ! -e "$test" ] || [ "$testmxml" -nt "$test" ]; then
 			echo "Test $test is outdated, recompiling"
 			COMPILE_TESTS_SRC="${COMPILE_TESTS_SRC}
-			${test}"
+			${testmxml}"
 			COMPILE=1
 		fi
 	done
@@ -119,10 +126,6 @@ if [ $COMPILE -eq 1 ]; then
 	echo $COMPILE_TESTS_SRC 1>&2;
 	echo "Compiler: $MXMLC" 1>&2;
 	for test in $COMPILE_TESTS_SRC; do
-		if [ "$test" == "template.mxml" ]; then
-			continue;
-		fi
-
 		$MXMLC --strict=false -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false -compiler.debug=true $test;
 	done
 	if [ $QUIT -eq 1 ]; then
@@ -159,21 +162,35 @@ SUCCESSTITLE='SUCCESS';
 INFOPREFIX='\[INFO\]';
 CURLPREFIX='CURL header';
 INDENTPREFIX='\t';
-for test in $TESTS; do
-	if [ "$test" == "template.swf" ]; then
-		continue;
-	fi
 
+FAILED_TESTS=""
+TOTALTESTCOUNT=`echo $TESTS | wc -w`
+
+if ! `echo $XAUTHORITY | grep xvfb-run > /dev/null`; then
+  echo "Tip: If you use 'xvfb-run -s '-extension GLX' -a ./tests', you won't be disturbed by the windows popping up."
+  echo "Its part of the XvFB package (e.g. apt-get install xvfb)."
+  echo ""
+fi
+
+for test in $TESTS; do
 	if [ ! -e $test ]; then
 		continue;
 	fi
-	sleep 0.25;
+
+	TESTCOUNT=`expr $TESTCOUNT + 1`;
+	echo "Running $test ($TESTCOUNT/$TOTALTESTCOUNT)"
 
 	if [ $PROPRIETARY -eq 0 ]; then
 		if [ $DEBUG -eq 1 ]; then
-			lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1`;
+			lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 2>&1`;
 		else
-			lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1 >/dev/null`;
+			lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 2>&1 >/dev/null`;
+		fi
+		if [[ "$?" != "0" ]]; then
+			echo -e "\\e[0;31mlightspark returned with exit value != 0\\e[0m"
+			FAILURECOUNT=`expr $FAILURECOUNT + 1`;
+			FAILED_TESTS="$FAILED_TESTS $test"
+			continue
 		fi
 	else
 		echo > $PROPRIETARY_LOGFILE
@@ -182,18 +199,23 @@ for test in $TESTS; do
 		else
 			flashplayerdebugger $test 2>/dev/null
 		fi
+		if [[ "$?" != "0" ]]; then
+			echo -e "\\e[0;31mflashplayerdebugger returned with exit value != 0\\e[0m"
+			FAILURECOUNT=`expr $FAILURECOUNT + 1`;
+			FAILED_TESTS="$FAILED_TESTS $test"
+			continue
+		fi
 		lines=`cat $PROPRIETARY_LOGFILE`
 	fi
 
-	TESTCOUNT=`expr $TESTCOUNT + 1`;
-	if [ "`echo $lines | grep 'FAILURE'`" != "" ]; then
+	if [ "`echo $lines | grep 'Failures'`" != "" ]; then
 		THISFAILEDCOUNT=`echo "$lines" | sed -n -e 's/.*=Failures (\(.*\)\/.*)=.*/\1/p'`
 		THISNUMTESTS=`echo "$lines" | sed -n -e 's/.*=Failures (.*\/\(.*\))=.*/\1/p'`
 		THISSUCCESSCOUNT=`expr $THISNUMTESTS - $THISFAILEDCOUNT`
 		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
-		echo $line
-	elif [ "`echo $lines | grep 'SUCCESS'`" != "" ]; then
+		FAILED_TESTS="$FAILED_TESTS $test"
+	elif [ "`echo $lines | grep 'No failures'`" != "" ]; then
 		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 	fi
@@ -254,3 +276,8 @@ if [ $COLORS -eq 1 ]; then
 else
 	echo -e "Tests run: $TESTCOUNT, $SUCCESSCOUNT successful and $FAILURECOUNT failed" 1>&2
 fi
+echo "Failed tests:"
+for t in $FAILED_TESTS
+do
+  echo "$t"
+done

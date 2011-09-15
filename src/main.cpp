@@ -81,6 +81,7 @@ int main(int argc, char* argv[])
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
 	bool useJit=false;
+	bool exitOnError=false;
 	LOG_LEVEL log_level=LOG_INFO;
 
 	setlocale(LC_ALL, "");
@@ -171,6 +172,10 @@ int main(int argc, char* argv[])
 		{
 			exit(0);
 		}
+		else if(strcmp(argv[i],"--exit-on-error")==0)
+		{
+			exitOnError = true;
+		}
 		else
 		{
 			//No options flag, so set the swf file name
@@ -188,6 +193,7 @@ int main(int argc, char* argv[])
 		cout << endl << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 
 			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" << 
 			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
+			" [--exit-on-error]" <<
 #ifdef PROFILING_SUPPORT
 			" [--profiling-output|-o profiling-file]" << 
 #endif
@@ -254,6 +260,7 @@ int main(int argc, char* argv[])
 	}
 	sys->useInterpreter=useInterpreter;
 	sys->useJit=useJit;
+	sys->exitOnError=exitOnError;
 	if(paramsFileName)
 		sys->parseParametersFromFile(paramsFileName);
 #ifdef PROFILING_SUPPORT

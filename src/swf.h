@@ -271,6 +271,7 @@ public:
 	//Flags for command line options
 	bool useInterpreter;
 	bool useJit;
+	bool exitOnError;
 
 	//Parameters/FlashVars
 	void parseParametersFromFile(const char* f) DLL_PUBLIC;

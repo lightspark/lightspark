@@ -151,7 +151,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	parameters(NullRef),mutexFrameListeners("mutexFrameListeners"),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
-	currentVm(NULL),useInterpreter(true),useJit(false),downloadManager(NULL),
+	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(false),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
@@ -444,6 +444,8 @@ bool SystemState::shouldTerminate() const
 
 void SystemState::setError(const string& c)
 {
+	if(exitOnError)
+		exit(1);
 	//We record only the first error for easier fix and reporting
 	if(!error)
 	{

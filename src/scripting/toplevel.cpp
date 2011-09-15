@@ -2543,10 +2543,35 @@ bool Boolean::isEqual(ASObject* r)
 		const Boolean* b=static_cast<const Boolean*>(r);
 		return b->val==val;
 	}
+	else if(r->getObjectType()==T_INTEGER ||
+		r->getObjectType()==T_UINTEGER || 
+		r->getObjectType()==T_NUMBER)
+	{
+		return val==r->toNumber();
+	}
 	else
 	{
 		return ASObject::isEqual(r);
 	}
+}
+
+TRISTATE Boolean::isLess(ASObject* r)
+{
+	if(r->getObjectType()==T_BOOLEAN)
+	{
+		const Boolean* b=static_cast<const Boolean*>(r);
+		return (val<b->val)?TTRUE:TFALSE;
+	}
+	else if(r->getObjectType()==T_INTEGER ||
+		r->getObjectType()==T_UINTEGER ||
+		r->getObjectType()==T_NUMBER)
+	{
+		double d=r->toNumber();
+		if(std::isnan(d)) return TUNDEFINED;
+		return (val<d)?TTRUE:TFALSE;
+	}
+	else
+		return ASObject::isLess(r);
 }
 
 Undefined::Undefined()
@@ -2709,6 +2734,8 @@ bool Integer::isEqual(ASObject* o)
 	}
 	else if(o->getObjectType()==T_NUMBER)
 		return val==o->toNumber();
+	else if(o->getObjectType()==T_BOOLEAN)
+		return val==o->toInt();
 	else
 	{
 		return ASObject::isEqual(o);
@@ -2763,7 +2790,9 @@ tiny_string UInteger::toString(bool debugMsg)
 
 TRISTATE UInteger::isLess(ASObject* o)
 {
-	if(o->getObjectType()==T_INTEGER)
+	if(o->getObjectType()==T_INTEGER ||
+	   o->getObjectType()==T_UINTEGER || 
+	   o->getObjectType()==T_BOOLEAN)
 	{
 		uint32_t val1=val;
 		int32_t val2=o->toInt();
@@ -2798,6 +2827,8 @@ bool Number::isEqual(ASObject* o)
 		return val==o->toNumber();
 	else if(o->getObjectType()==T_NUMBER)
 		return val==o->toNumber();
+	else if(o->getObjectType()==T_BOOLEAN)
+		return val==o->toNumber();
 	else
 	{
 		return ASObject::isEqual(o);
@@ -2818,6 +2849,10 @@ TRISTATE Number::isLess(ASObject* o)
 		const Number* i=static_cast<const Number*>(o);
 		if(std::isnan(i->val)) return TUNDEFINED;
 		return (val<i->val)?TTRUE:TFALSE;
+	}
+	else if(o->getObjectType()==T_BOOLEAN)
+	{
+		return (val<o->toNumber())?TTRUE:TFALSE;
 	}
 	else if(o->getObjectType()==T_UNDEFINED)
 	{
@@ -5020,6 +5055,8 @@ bool UInteger::isEqual(ASObject* o)
 	else if(o->getObjectType()==T_UINTEGER)
 		return val==o->toUInt();
 	else if(o->getObjectType()==T_NUMBER)
+		return val==o->toUInt();
+	else if(o->getObjectType()==T_BOOLEAN)
 		return val==o->toUInt();
 	else
 	{

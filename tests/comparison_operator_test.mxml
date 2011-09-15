@@ -73,6 +73,17 @@
 		Tests.assertFalse(int(5) == uint(4), "uint == int", true);
 		Tests.assertFalse(uint(4) == int(5), "int == uint", true);
 
+		// Boolean
+		Tests.assertTrue(true < 3,"true < 3");
+		Tests.assertFalse(3 < true,"3 < true");
+		Tests.assertTrue(true < uint(3),"true < uint(3)");
+		Tests.assertFalse(uint(3) < true,"uint(3) < true");
+		Tests.assertFalse(true < 0.5,"true < 0.5");
+		Tests.assertTrue(false < 0.5,"false < 0.5");
+		Tests.assertTrue(0.5 < true,"0.5 < true");
+		Tests.assertFalse(0.5 < false,"0.5 < false");
+		Tests.assertTrue(false < true,"false < true");
+
 		// null and undefined equality
 		var c:MovieClip = null;
 		var d:String = null;

@@ -326,6 +326,7 @@ public:
 		return val ? 1 : 0;
 	}
 	bool isEqual(ASObject* r);
+	TRISTATE isLess(ASObject* r);
 	tiny_string toString(bool debugMsg);
 	double toNumber()
 	{

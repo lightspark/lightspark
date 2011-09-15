@@ -51,7 +51,7 @@ class Prototype: public ASObject
 public:
 	Prototype(const _R<Class_base>& _classdef) : classdef(_classdef) {}
 	_NR<Prototype> prototype;
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
+	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	/* this is the class such that classdef->prototype == this */
 	_R<Class_base> classdef;
 };
@@ -152,11 +152,11 @@ private:
 	}
 public:
 	Class_function(IFunction* _f, ASObject* _p);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false)
+	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
-		ASObject* ret=Class_base::getVariableByMultiname(name,skip_impl);
+		ASObject* ret=Class_base::getVariableByMultiname(name,opt);
 		if(ret==NULL && asprototype)
-			ret=asprototype->getVariableByMultiname(name,skip_impl);
+			ret=asprototype->getVariableByMultiname(name,opt);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -560,7 +560,7 @@ public:
 	{
 		data.resize(n);
 	}
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
+	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
@@ -717,7 +717,7 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
+	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	void toXMLString_priv(xmlBufferPtr buf);
@@ -761,7 +761,7 @@ public:
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(generator);
 	ASFUNCTION(descendants);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
+	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
@@ -897,7 +897,7 @@ public:
 
 	//Overloads
 	tiny_string toString(bool debugMsg=false);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
+	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 
 	//TODO: do we need to implement generator?
 	ASFUNCTION(_constructor);

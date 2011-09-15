@@ -247,7 +247,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 		//Check prototype inheritance chain
 		if(getClass() == NULL || getClass()->prototype == NULL)
 			return NULL;
-		ret = (getClass()->prototype->getVariableByMultiname(name, true) != NULL);
+		ret = (getClass()->prototype->getVariableByMultiname(name, SKIP_IMPL) != NULL);
 	}
 
 	if(!ret && classdef)
@@ -590,7 +590,7 @@ obj_var* ASObject::findGettable(const multiname& name, bool borrowedMode)
 	return ret;
 }
 
-ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl)
+ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	check();
 
@@ -622,7 +622,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 		//Check prototype inheritance chain
 		if(getClass()->prototype == NULL)
 			return NULL;
-		ret = getClass()->prototype->getVariableByMultiname(name, true);
+		ret = getClass()->prototype->getVariableByMultiname(name, SKIP_IMPL);
 		if(ret)
 			return ret;
 		return NULL;

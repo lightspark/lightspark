@@ -310,7 +310,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 		obj->resetLevel();
 
 	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
 
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
@@ -366,7 +366,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s="callProperty";
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
+			ASObject* o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 
 			if(o)
 			{
@@ -778,7 +778,7 @@ void ABCVm::construct(call_context* th, int m)
 				prototypeName.name_type=multiname::NAME_STRING;
 				prototypeName.name_s="prototype";
 				prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-				ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
+				ASObject* asp=sf->getVariableByMultiname(prototypeName,ASObject::SKIP_IMPL);
 				if(asp)
 					asp->incRef();
 
@@ -887,7 +887,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 		obj->resetLevel();
 
 	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name,true);
+	ASObject* o=obj->getVariableByMultiname(*name,ASObject::SKIP_IMPL);
 
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
@@ -926,7 +926,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s="callProperty";
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
+			ASObject* o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 			if(o)
 			{
 				assert_and_throw(o->getObjectType()==T_FUNCTION);
@@ -1520,7 +1520,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	obj->decLevel();
 
 	//Should we skip implementation? I think it's reasonable
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
 	//TODO: should bind if the return type is Function
 
 	tl=getVm()->getCurObjAndLevel();
@@ -1565,12 +1565,19 @@ void ABCVm::getLex(call_context* th, int n)
 		if(it->object==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		//Skip implementation
-		ASObject* tmpo=it->object->getVariableByMultiname(*name, !it->considerDynamic);
+		// XML_STRICT flag tells getVariableByMultiname to
+		// ignore non-existing properties in XML obejcts
+		// (normally it would return an empty XMLList if the
+		// property does not exist).
+		ASObject::GET_VARIABLE_OPTION opt=ASObject::XML_STRICT;
+		if(!it->considerDynamic)
+			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
+
+		o=it->object->getVariableByMultiname(*name, opt);
+
 		if(it->object==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
-		o=tmpo;
 		if(o)
 		{
 			target=it->object.getPtr();
@@ -1793,7 +1800,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info*& called_mi)
 	obj->decLevel();
 
 	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -1880,7 +1887,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m, method_info*& called_m
 	obj->decLevel();
 
 	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -2202,7 +2209,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 			prototypeName.name_type=multiname::NAME_STRING;
 			prototypeName.name_s="prototype";
 			prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-			ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
+			ASObject* asp=sf->getVariableByMultiname(prototypeName,ASObject::SKIP_IMPL);
 			if(asp)
 				asp->incRef();
 

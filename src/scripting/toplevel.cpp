@@ -1101,10 +1101,10 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 	recursiveGetDescendantsByQName(rootXML, node, name, ns, ret);
 }
 
-ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
+ASObject* XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	if(skip_impl)
-		return ASObject::getVariableByMultiname(name, skip_impl);
+	if((opt & SKIP_IMPL)!=0)
+		return ASObject::getVariableByMultiname(name,opt);
 
 	if(node==NULL)
 	{
@@ -1174,6 +1174,10 @@ ASObject* XML::getVariableByMultiname(const multiname& name, bool skip_impl)
 
 		for(;it!=children.end();it++)
 			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+
+		if(ret.size()==0 && (opt & XML_STRICT)!=0)
+			return NULL;
+
 		XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 		//The new object will be incReffed by the calling code
 		retObj->fake_decRef();
@@ -1524,14 +1528,14 @@ ASFUNCTIONBODY(XMLList,descendants)
 	return Class<XMLList>::getInstanceS(ret);
 }
 
-ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl)
+ASObject* XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl);
+	if((opt & SKIP_IMPL)!=0 || !implEnable)
+		return ASObject::getVariableByMultiname(name,opt);
 
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl);
+		return ASObject::getVariableByMultiname(name,opt);
 
 	unsigned int index=0;
 	if(Array::isValidMultiname(name,index))
@@ -1547,7 +1551,7 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl)
 		std::vector<_R<XML> >::iterator it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
-			ASObject *o=(*it)->getVariableByMultiname(name,skip_impl);
+			ASObject *o=(*it)->getVariableByMultiname(name,opt);
 			XMLList *x=dynamic_cast<XMLList *>(o);
 			if(!x)
 				continue;
@@ -1561,6 +1565,9 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, bool skip_impl)
 			o->incRef();
 			o->decRef();
 		}
+
+		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
+			return NULL;
 
 		XMLList *ret=Class<XMLList>::getInstanceS(retnodes);
 		ret->fake_decRef();
@@ -1819,18 +1826,18 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl)
+ASObject* Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl);
+	if((opt & SKIP_IMPL)!=0 || !implEnable)
+		return ASObject::getVariableByMultiname(name,opt);
 		
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl);
+		return ASObject::getVariableByMultiname(name,opt);
 
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl);
+		return ASObject::getVariableByMultiname(name,opt);
 
 	if(index<data.size())
 	{
@@ -4440,7 +4447,7 @@ void VerifyError::buildTraits(ASObject* o)
 {
 }
 
-ASObject* Prototype::getVariableByMultiname(const multiname& name, bool skip_impl)
+ASObject* Prototype::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if(name.normalizedName() == "prototype")
 		return prototype.getPtr();
@@ -4449,7 +4456,7 @@ ASObject* Prototype::getVariableByMultiname(const multiname& name, bool skip_imp
 	if(obj==NULL)
 	{
 		if(prototype != NULL)
-			return prototype->getVariableByMultiname(name,skip_impl);
+			return prototype->getVariableByMultiname(name,opt);
 		else
 			return NULL;
 	}
@@ -5566,18 +5573,18 @@ ASFUNCTIONBODY(Vector,push)
 }
 
 /* this handles the [] operator, because vec[12] becomes vec.12 in bytecode */
-ASObject* Vector::getVariableByMultiname(const multiname& name, bool skip_impl)
+ASObject* Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl);
+	if((opt & SKIP_IMPL)!=0 || !implEnable)
+		return ASObject::getVariableByMultiname(name,opt);
 
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl);
+		return ASObject::getVariableByMultiname(name,opt);
 
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl);
+		return ASObject::getVariableByMultiname(name,opt);
 
 	if(index < vec.size())
 	{

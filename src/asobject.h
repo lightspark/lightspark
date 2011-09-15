@@ -310,7 +310,8 @@ public:
 	   The finalize method must be callable multiple time with the same effects (no double frees)*/
 	virtual void finalize();
 
-	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false);
+	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};
+	virtual ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o);

@@ -2640,6 +2640,13 @@ TRISTATE Integer::isLess(ASObject* o)
 				return (val < i->toInt())?TTRUE:TFALSE;
 			}
 			break;
+
+		case T_UINTEGER:
+			{
+				UInteger* i=static_cast<UInteger*>(o);
+				return (val < i->toInt())?TTRUE:TFALSE;
+			}
+			break;
 		
 		case T_NUMBER:
 			{

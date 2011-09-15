@@ -67,6 +67,12 @@
 		Tests.assertFalse(b == 0.0, "null == 0.0", true);
 		Tests.assertFalse(0.0 == b, "0.0 == null", true);
 
+		// int and uint
+		Tests.assertFalse(int(5) < uint(4), "int < uint", true);
+		Tests.assertTrue(uint(4) < int(5), "uint < int", true);
+		Tests.assertFalse(int(5) == uint(4), "uint == int", true);
+		Tests.assertFalse(uint(4) == int(5), "int == uint", true);
+
 		// null and undefined equality
 		var c:MovieClip = null;
 		var d:String = null;

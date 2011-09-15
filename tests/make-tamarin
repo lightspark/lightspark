@@ -1,0 +1,20 @@
+#!/bin/bash
+if [[ ! -d $TAMARIN/test/acceptance ]]; then
+  echo "Envvar TAMARIN not set to tamarin folder."
+  echo "Try" 
+  echo "hg clone http://hg.mozilla.org/tamarin-central/ tamarin"
+  echo "to download the source."
+  exit 1
+fi
+if [[ ! -f $ASC ]]; then
+  echo "Envvar ASC does not reflect path to asc.jar."
+  echo "It's under flex/lib/asc.jar"
+  exit 1
+fi
+
+CUR=`pwd`
+
+cd $TAMARIN/test/acceptance && \
+rm -f ats_temp.abc ats_temp.as shell.as && \
+echo "override| -optimize -in $CUR/tamarin-lightspark.as -AS3 -swf 200,200 -in ./ats_temp.as" > dir.asc_args && \
+./runtests.py --asc $ASC --builtinabc ../../core/builtin.abc --shellabc ../../shell/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF || exit 1

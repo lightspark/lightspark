@@ -2948,14 +2948,17 @@ void Number::sinit(Class_base* c)
 	Number* pinf=new Number(numeric_limits<double>::infinity());
 	Number* pmax=new Number(numeric_limits<double>::max());
 	Number* pmin=new Number(numeric_limits<double>::min());
+	Number* pnan=new Number(numeric_limits<double>::quiet_NaN());
 	ninf->setPrototype(c);
 	pinf->setPrototype(c);
 	pmax->setPrototype(c);
 	pmin->setPrototype(c);
+	pnan->setPrototype(c);
 	c->setVariableByQName("NEGATIVE_INFINITY","",ninf,DECLARED_TRAIT);
 	c->setVariableByQName("POSITIVE_INFINITY","",pinf,DECLARED_TRAIT);
 	c->setVariableByQName("MAX_VALUE","",pmax,DECLARED_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",pmin,DECLARED_TRAIT);
+	c->setVariableByQName("NaN","",pnan,DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),NORMAL_METHOD,true);
 }
 

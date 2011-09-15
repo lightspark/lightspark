@@ -117,8 +117,8 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 {
-	assert(args && argslen==1);
-	const tiny_string& tmp=args[0]->toString();
+	tiny_string tmp;
+	ArgUnpack(args,argslen) >> tmp;
 
 	multiname name;
 	name.name_type=multiname::NAME_STRING;
@@ -200,12 +200,13 @@ ASFUNCTIONBODY(Security,_getExactSettings)
 
 ASFUNCTIONBODY(Security,_setExactSettings)
 {
-	assert(args && argslen==1);
+	bool exactSettings;
+	ArgUnpack(args,argslen,1) >> exactSettings;
 	if(sys->securityManager->getExactSettingsLocked())
 	{
 		throw Class<SecurityError>::getInstanceS("SecurityError: Security.exactSettings already set");
 	}
-	sys->securityManager->setExactSettings(Boolean_concrete(args[0]));
+	sys->securityManager->setExactSettings(exactSettings);
 	return NULL;
 }
 
@@ -251,9 +252,8 @@ ASFUNCTIONBODY(Security, showSettings)
 
 ASFUNCTIONBODY(lightspark, fscommand)
 {
-	assert_and_throw(argslen >= 1 && argslen <= 2);
-	assert_and_throw(args[0]->getObjectType() == T_STRING);
-	tiny_string command = Class<ASString>::cast(args[0])->toString();
+	tiny_string command;
+	ArgUnpack(args,argslen) >> command;
 	if(command == "quit")
 	{
 		sys->setShutdownFlag();

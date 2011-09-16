@@ -192,7 +192,6 @@ for test in $TESTS; do
 	fi
 
 	TESTCOUNT=`expr $TESTCOUNT + 1`;
-	echo "Running $test ($TESTCOUNT/$TOTALTESTCOUNT)"
 
 	echo > $LOGFILE
 	if [ $PROPRIETARY -eq 0 ]; then
@@ -209,7 +208,7 @@ for test in $TESTS; do
 		fi
 	fi
 	if [[ "$?" != "0" ]]; then
-		echo -e "\\e[0;31mexit value != 0\\e[0m"
+		echo -e "\\e[0;31m$test failed with exit value != 0\\e[0m"
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
 		continue
@@ -247,7 +246,7 @@ for test in $TESTS; do
 	fi
 
 	if [ $COLORS -eq 1 ]; then
-		lines=`echo "$lines" | sed \
+		lines=`echo -e "Running $test ($TESTCOUNT/$TOTALTESTCOUNT)\n$lines" | sed \
 			-e "s/^\(${INFOPREFIX}\)\(.*\)$/${BLUE}\1${PURPLEB}\2${CLEAR}/" \
 			-e "s/^\(${CURLPREFIX}\)\(.*\)$/${PINK}\1${PINK}\2${CLEAR}/" \
 \

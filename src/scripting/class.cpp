@@ -28,14 +28,7 @@ ASObject* Class<ASObject>::lazyDefine(const multiname& name)
 	if(name.ns.empty())
 		return NULL;
 
-	//Check if we should do lazy definition
-	if(binary_search(name.ns.begin(),name.ns.end(),nsNameAndKind("",NAMESPACE)) && name.name_s=="toString")
-	{
-		ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
-		setVariableByQName("toString","",ret,BORROWED_TRAIT);
-		return ret;
-	}
-	else if(binary_search(name.ns.begin(),name.ns.end(),nsNameAndKind(AS3,NAMESPACE)) && name.name_s=="hasOwnProperty")
+	if(binary_search(name.ns.begin(),name.ns.end(),nsNameAndKind(AS3,NAMESPACE)) && name.name_s=="hasOwnProperty")
 	{
 		ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
 		setVariableByQName("hasOwnProperty",AS3,ret,BORROWED_TRAIT);

@@ -3547,9 +3547,9 @@ ASFUNCTIONBODY(Math,atan2)
 
 ASFUNCTIONBODY(Math,_max)
 {
-	double largest = args[0]->toNumber();
+	double largest = -numeric_limits<double>::infinity();
 
-	for(unsigned int i = 1; i < argslen; i++)
+	for(unsigned int i = 0; i < argslen; i++)
 	{
 		largest = dmax(largest, args[i]->toNumber());
 	}
@@ -3559,9 +3559,9 @@ ASFUNCTIONBODY(Math,_max)
 
 ASFUNCTIONBODY(Math,_min)
 {
-	double smallest = args[0]->toNumber();
+	double smallest = numeric_limits<double>::infinity();
 
-	for(unsigned int i = 1; i < argslen; i++)
+	for(unsigned int i = 0; i < argslen; i++)
 	{
 		smallest = dmin(smallest, args[i]->toNumber());
 	}

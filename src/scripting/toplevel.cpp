@@ -4441,10 +4441,33 @@ void VerifyError::buildTraits(ASObject* o)
 {
 }
 
+ASObject* Prototype::getVariableByMultiname(const multiname& name, bool skip_impl)
+{
+	if(name.normalizedName() == "prototype")
+		return prototype.getPtr();
+
+	obj_var* obj=findGettable(name, false);
+	if(obj==NULL)
+	{
+		if(prototype != NULL)
+			return prototype->getVariableByMultiname(name,skip_impl);
+		else
+			return NULL;
+	}
+	assert(!obj->getter);
+	assert(obj->var);
+	return obj->var;
+}
+
 Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),referencedObjectsMutex("referencedObjects"),
 	super(NULL),context(NULL),class_name(name),class_index(-1),max_level(0)
 {
 	type=T_CLASS;
+}
+
+void Class_base::addPrototypeGetter()
+{
+	setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(_getter_prototype),GETTER_METHOD,false);
 }
 
 Class_base::~Class_base()
@@ -4452,6 +4475,8 @@ Class_base::~Class_base()
 	if(!referencedObjects.empty())
 		LOG(LOG_ERROR,_("Class destroyed without cleanUp called"));
 }
+
+ASFUNCTIONBODY_GETTER(Class_base, prototype);
 
 ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
 {
@@ -4617,14 +4642,6 @@ Class_object* Class_object::getClass()
 
 	ret->incRef();
 	return ret;
-}
-
-void IFunction::sinit(Class_base* c)
-{
-	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
-	c->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
 }
 
 Class_function::Class_function(IFunction* _f, ASObject* _p):Class_base(QName("Function","")),f(_f),asprototype(_p)
@@ -5079,8 +5096,20 @@ Class<IFunction>* Class<IFunction>::getClass()
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
+		ret->incRef();
+		ret->prototype = _MNR(new Prototype(_MR(ret)));
+		ret->super=Class<ASObject>::getClass();
+		ret->max_level=ret->super->max_level+1;
+		ret->prototype->prototype = ret->super->prototype;
+
 		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
-		IFunction::sinit(ret);
+
+		//we cannot use sinit, as we need to set max_level before calling 'classes.insert' before calling
+		//addPrototypeGetter and setDeclaredMethodByQName.
+		//Thus we make sure that everything is in order when getFunction() below is called
+		ret->addPrototypeGetter();
+		ret->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
+		ret->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);

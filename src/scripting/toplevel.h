@@ -46,6 +46,16 @@ protected:
 	static void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 };
 
+class Prototype: public ASObject
+{
+public:
+	Prototype(const _R<Class_base>& _classdef) : classdef(_classdef) {}
+	_NR<Prototype> prototype;
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl);
+	/* this is the class such that classdef->prototype == this */
+	_R<Class_base> classdef;
+};
+
 class Class_base: public ASObject
 {
 friend class ABCVm;
@@ -66,8 +76,9 @@ private:
 	Mutex referencedObjectsMutex;
 	std::set<ASObject*> referencedObjects;
 	void finalizeObjects() const;
-
 public:
+	void addPrototypeGetter();
+	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	Class_base* super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
@@ -213,7 +224,6 @@ public:
 		closure_level=l;
 	}
 	virtual method_info* getMethodInfo() const=0;
-	static void sinit(Class_base* c);
 	virtual ASObject *describeType() const;
 };
 

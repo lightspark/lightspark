@@ -449,7 +449,10 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	else
 	{
 		//If we are getting a function object attach the the current scope
-		if(ret->getObjectType()==T_FUNCTION)
+		//but only if we did not get that function from a Property object
+		//The Property object only collects functions, but it has no meaning
+		//to call them on it.
+		if(ret->getObjectType()==T_FUNCTION && !dynamic_cast<Prototype*>(obj))
 		{
 			//TODO: maybe also the level should be binded
 			LOG(LOG_CALLS,_("Attaching this to function ") << name);
@@ -2415,9 +2418,16 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->constructor=constructorFunc;
 	ret->class_index=n;
 
-	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
+	//Set the constructor variable to the class itself (this is accessed by object using the classdef)
 	ret->incRef();
 	ret->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
+
+	//Add prototype variable
+	ret->incRef();
+	ret->prototype = _MNR(new Prototype(_MR(ret)));
+	if(ret->super != NULL)
+		ret->prototype->prototype = ret->super->prototype;
+	ret->addPrototypeGetter();
 
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->context->instances[n].interface_count;i++)

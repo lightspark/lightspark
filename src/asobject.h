@@ -237,6 +237,8 @@ protected:
 	SWFOBJECT_TYPE type;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const;
+	obj_var* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
+	obj_var* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
 private:
 	ATOMIC_INT32(ref_count);
 	Manager* manager;
@@ -244,8 +246,6 @@ private:
 	virtual int _maxlevel();
 	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
-	obj_var* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
-	obj_var* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
 	tiny_string toStringImpl() const;
 public:
 #ifndef NDEBUG

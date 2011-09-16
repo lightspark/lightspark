@@ -153,8 +153,13 @@ public:
 		if(it==sys->classes.end()) //This class is not yet in the map, create it
 		{
 			ret=new Class<T>(name);
-			T::sinit(ret);
 			sys->classes.insert(std::make_pair(name,ret));
+			ret->incRef();
+			ret->prototype = _MNR(new Prototype(_MR(ret)));
+			T::sinit(ret);
+			if(ret->super != NULL)
+				ret->prototype->prototype = ret->super->prototype;
+			ret->addPrototypeGetter();
 		}
 		else
 			ret=static_cast<Class<T>*>(it->second);
@@ -211,8 +216,11 @@ public:
 		if(it==sys->classes.end()) //This class is not yet in the map, create it
 		{
 			ret=new Class<ASObject>(name);
-			ASObject::sinit(ret);
 			sys->classes.insert(std::make_pair(name,ret));
+			ret->incRef();
+			ret->prototype = _MNR(new Prototype(_MR(ret)));
+			ASObject::sinit(ret);
+			ret->addPrototypeGetter();
 		}
 		else
 			ret=static_cast<Class<ASObject>*>(it->second);
@@ -321,8 +329,13 @@ public:
 		if(it==sys->classes.end()) //This class is not yet in the map, create it
 		{
 			ret=new TemplatedClass<T>(instantiatedQName,types,numtypes,this);
-			T::sinit(ret);
 			sys->classes.insert(std::make_pair(instantiatedQName,ret));
+			ret->incRef();
+			ret->prototype = _MNR(new Prototype(_MR(ret)));
+			T::sinit(ret);
+			if(ret->super != NULL)
+				ret->prototype->prototype = ret->super->prototype;
+			ret->addPrototypeGetter();
 		}
 		else
 			ret=static_cast<TemplatedClass<T>*>(it->second);

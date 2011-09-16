@@ -30,22 +30,6 @@ using namespace std;
 
 REGISTER_CLASS_NAME2(ASObject,"Object","");
 
-tiny_string ASObject::toStringImpl() const
-{
-	tiny_string ret;
-	if(getClass())
-	{
-		ret+="[object ";
-		ret+=getClass()->class_name.name;
-		ret+="]";
-		return ret;
-	}
-	else
-		ret="[object Object]";
-
-	return ret;
-}
-
 tiny_string ASObject::toString(bool debugMsg)
 {
 	check();
@@ -53,7 +37,7 @@ tiny_string ASObject::toString(bool debugMsg)
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s="toString";
 	toStringName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
-	if(debugMsg==false && hasPropertyByMultiname(toStringName, true))
+	if(hasPropertyByMultiname(toStringName, true))
 	{
 		ASObject* obj_toString=getVariableByMultiname(toStringName);
 		if(obj_toString->getObjectType()==T_FUNCTION)
@@ -67,8 +51,8 @@ tiny_string ASObject::toString(bool debugMsg)
 			return retS;
 		}
 	}
-
-	return toStringImpl();
+	LOG(LOG_INFO,"Called toString, but no AS property found!");
+	return "";
 }
 
 TRISTATE ASObject::isLess(ASObject* r)
@@ -545,7 +529,17 @@ ASFUNCTIONBODY(ASObject,generator)
 
 ASFUNCTIONBODY(ASObject,_toString)
 {
-	return Class<ASString>::getInstanceS(obj->toStringImpl());
+	tiny_string ret;
+	if(obj->getClass())
+	{
+		ret="[object ";
+		ret+=obj->getClass()->class_name.name;
+		ret+="]";
+	}
+	else
+		ret="[object Object]";
+
+	return Class<ASString>::getInstanceS(ret);
 }
 
 ASFUNCTIONBODY(ASObject,hasOwnProperty)

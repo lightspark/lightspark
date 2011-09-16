@@ -246,7 +246,6 @@ private:
 	virtual int _maxlevel();
 	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
-	tiny_string toStringImpl() const;
 public:
 #ifndef NDEBUG
 	//Stuff only used in debugging

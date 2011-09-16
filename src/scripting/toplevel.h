@@ -306,7 +306,7 @@ public:
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		Function* ret=new Function(v);
 		ret->setClass(c);
-		//c->handleConstruction(ret,NULL,0,true);
+		ret->resetLevel();
 		return ret;
 	}
 	static SyntheticFunction* getSyntheticFunction(method_info* m)

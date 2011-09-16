@@ -448,18 +448,19 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	}
 	else
 	{
-		//If we are getting a function object attach the the current scope
-		//but only if we did not get that function from a Property object
-		//The Property object only collects functions, but it has no meaning
-		//to call them on it.
-		if(ret->getObjectType()==T_FUNCTION && !dynamic_cast<Prototype*>(obj))
+		if(ret->getObjectType()==T_FUNCTION)
 		{
-			//TODO: maybe also the level should be binded
-			LOG(LOG_CALLS,_("Attaching this to function ") << name);
-			//the obj reference is acquired by the smart reference
-			IFunction* f=static_cast<IFunction*>(ret)->bind(_MR(obj),-1);
-			//No incref is needed, as the function is a new instance
-			return f;
+			//The Property object only collects functions, but it has no meaning
+			//to call them on it.
+			if(!dynamic_cast<Prototype*>(obj))
+			{
+				//TODO: maybe also the level should be binded
+				LOG(LOG_CALLS,_("Attaching this to function ") << name);
+				//the obj reference is acquired by the smart reference
+				IFunction* f=static_cast<IFunction*>(ret)->bind(_MR(obj),-1);
+				//No incref is needed, as the function is a new instance
+				return f;
+			}
 		}
 		else if(ret->getObjectType()==T_DEFINABLE)
 		{
@@ -1591,10 +1592,15 @@ void ABCVm::getLex(call_context* th, int n)
 	//If we are getting a function object attach the the current scope
 	if(o->getObjectType()==T_FUNCTION)
 	{
-		LOG(LOG_CALLS,_("Attaching this to function ") << name);
-		target->incRef();
-		IFunction* f=static_cast<IFunction*>(o)->bind(_MR(target),-1);
-		o=f;
+		//The Property object only collects functions, but it has no meaning
+		//to call them on it.
+		if(!dynamic_cast<Prototype*>(o))
+		{
+			LOG(LOG_CALLS,_("Attaching this to function ") << name);
+			target->incRef();
+			IFunction* f=static_cast<IFunction*>(o)->bind(_MR(target),-1);
+			o=f;
+		}
 	}
 	else if(o->getObjectType()==T_DEFINABLE)
 	{

@@ -258,6 +258,13 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 			cur=cur->super;
 		}
 	}
+	if(!ret)
+	{
+		//Check prototype inheritance chain
+		if(getClass() == NULL || getClass()->prototype == NULL)
+			return NULL;
+		ret = (getClass()->prototype->getVariableByMultiname(name, true) != NULL);
+	}
 
 	if(!ret && classdef)
 		ret=(Class<ASObject>::getClass()->lazyDefine(name)!=NULL);

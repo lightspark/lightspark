@@ -3199,13 +3199,12 @@ ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_arg
 ASFUNCTIONBODY(IFunction,apply)
 {
 	IFunction* th=static_cast<IFunction*>(obj);
-	assert_and_throw(argslen==2);
+	assert_and_throw(argslen<=2);
 
 	ASObject** newArgs=NULL;
 	int newArgsLen=0;
-
 	//Validate parameters
-	if(args[1]->getObjectType()==T_ARRAY)
+	if(argslen == 2 && args[1]->getObjectType()==T_ARRAY)
 	{
 		Array* array=Class<Array>::cast(args[1]);
 

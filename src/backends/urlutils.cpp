@@ -361,7 +361,7 @@ std::string URLInfo::encode(const std::string& u, ENCODING type)
 
 			else
 			{
-				sprintf(buf,"%%%X",(unsigned char)u[i]);
+				sprintf(buf,"%%%02X",(unsigned char)u[i]);
 				str += buf;
 			}
 		}

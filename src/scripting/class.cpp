@@ -66,8 +66,8 @@ ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, cons
 		//Our super should not construct, we are going to do it ourselves
 		ret=super->getInstance(false,NULL,0);
 	}
-	//We override the prototype
-	ret->setPrototype(this);
+	//We override the classdef
+	ret->setClass(this);
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
 	return ret;

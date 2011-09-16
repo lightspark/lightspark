@@ -183,7 +183,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert_and_throw(argslen>=1 && argslen<=3);
-	assert_and_throw(args[0]->getPrototype()==Class<ByteArray>::getClass());
+	assert_and_throw(args[0]->getClass()==Class<ByteArray>::getClass());
 
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
 	uint32_t offset=0;
@@ -242,7 +242,7 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert_and_throw(argslen>=1 && argslen<=3);
-	assert_and_throw(args[0]->getPrototype()==Class<ByteArray>::getClass());
+	assert_and_throw(args[0]->getClass()==Class<ByteArray>::getClass());
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
 	uint32_t offset=0;
 	uint32_t length=0;
@@ -788,8 +788,8 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
-		assert_and_throw(target->getPrototype());
-		c=target->getPrototype();
+		assert_and_throw(target->getClass());
+		c=target->getClass();
 	}
 	else
 		c=static_cast<Class_base*>(target);
@@ -804,8 +804,8 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
-		assert_and_throw(target->getPrototype());
-		c=target->getPrototype()->super;
+		assert_and_throw(target->getClass());
+		c=target->getClass()->super;
 	}
 	else
 		c=static_cast<Class_base*>(target)->super;

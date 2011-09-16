@@ -317,7 +317,7 @@ ASObject* DefineEditTextTag::instance() const
 	TextField* ret=new TextField(textData);
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
-	ret->setPrototype(Class<TextField>::getClass());
+	ret->setClass(Class<TextField>::getClass());
 	return ret;
 }
 
@@ -388,10 +388,10 @@ ASObject* DefineSpriteTag::instance() const
 	if(bindedTo)
 	{
 		//A class is binded to this tag
-		ret->setPrototype(bindedTo);
+		ret->setClass(bindedTo);
 	}
 	else
-		ret->setPrototype(Class<MovieClip>::getClass());
+		ret->setClass(Class<MovieClip>::getClass());
 
 	return ret;
 }
@@ -667,9 +667,9 @@ ASObject* DefineBitsLosslessTag::instance() const
 {
 	DefineBitsLosslessTag* ret=new DefineBitsLosslessTag(*this);
 	if(bindedTo)
-		ret->setPrototype(bindedTo);
+		ret->setClass(bindedTo);
 	else
-		ret->setPrototype(Class<Bitmap>::getClass());
+		ret->setClass(Class<Bitmap>::getClass());
 	return ret;
 }
 
@@ -701,7 +701,7 @@ ASObject* DefineTextTag::instance() const
 		computeCached();
 
 	StaticText* ret=new StaticText(tokens);
-	ret->setPrototype(Class<StaticText>::getClass());
+	ret->setClass(Class<StaticText>::getClass());
 	return ret;
 }
 
@@ -806,7 +806,7 @@ ASObject* DefineMorphShapeTag::instance() const
 {
 	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
 	assert_and_throw(bindedTo==NULL);
-	ret->setPrototype(Class<MorphShape>::getClass());
+	ret->setClass(Class<MorphShape>::getClass());
 	return ret;
 }
 
@@ -1239,7 +1239,7 @@ ASObject* DefineButton2Tag::instance() const
 	}
 
 	SimpleButton* ret=new SimpleButton(states[0], states[1], states[2], states[3]);
-	ret->setPrototype(Class<SimpleButton>::getClass());
+	ret->setClass(Class<SimpleButton>::getClass());
 	return ret;
 }
 
@@ -1260,10 +1260,10 @@ ASObject* DefineVideoStreamTag::instance() const
 	if(bindedTo)
 	{
 		//A class is binded to this tag
-		ret->setPrototype(bindedTo);
+		ret->setClass(bindedTo);
 	}
 	else
-		ret->setPrototype(Class<Video>::getClass());
+		ret->setClass(Class<Video>::getClass());
 	return ret;
 }
 
@@ -1409,9 +1409,9 @@ ASObject* DefineBitsJPEG2Tag::instance() const
 {
 	DefineBitsJPEG2Tag* ret=new DefineBitsJPEG2Tag(*this);
 	if(bindedTo)
-		ret->setPrototype(bindedTo);
+		ret->setClass(bindedTo);
 	else
-		ret->setPrototype(Class<Bitmap>::getClass());
+		ret->setClass(Class<Bitmap>::getClass());
 	return ret;
 }
 
@@ -1442,9 +1442,9 @@ ASObject* DefineBitsJPEG3Tag::instance() const
 {
 	DefineBitsJPEG3Tag* ret=new DefineBitsJPEG3Tag(*this);
 	if(bindedTo)
-		ret->setPrototype(bindedTo);
+		ret->setClass(bindedTo);
 	else
-		ret->setPrototype(Class<Bitmap>::getClass());
+		ret->setClass(Class<Bitmap>::getClass());
 	return ret;
 }
 

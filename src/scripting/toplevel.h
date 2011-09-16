@@ -194,8 +194,8 @@ public:
 			{
 				//Generate a copy
 				ret=clone();
-				ret->prototype=NULL; //Drop the prototype and set it ex novo
-				ret->setPrototype(getPrototype());
+				ret->classdef=NULL; //Drop the classdef and set it ex novo
+				ret->setClass(getClass());
 			}
 			ret->bound=true;
 			ret->closure_this=c;
@@ -295,7 +295,7 @@ public:
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		Function* ret=new Function(v);
-		ret->setPrototype(c);
+		ret->setClass(c);
 		//c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -303,7 +303,7 @@ public:
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		SyntheticFunction* ret=new SyntheticFunction(m);
-		ret->setPrototype(c);
+		ret->setClass(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -1130,8 +1130,8 @@ inline void Manager::put(ASObject* o)
 	else
 	{
 		//The Manager now owns this object
-		if(o->prototype)
-			o->prototype->abandonObject(o);
+		if(o->classdef)
+			o->classdef->abandonObject(o);
 		available.push_back(o);
 	}
 }
@@ -1144,9 +1144,9 @@ T* Manager::get()
 		T* ret=static_cast<T*>(available.back());
 		available.pop_back();
 		ret->incRef();
-		//Transfer ownership back to the prototype
-		if(ret->prototype)
-			ret->prototype->acquireObject(ret);
+		//Transfer ownership back to the classdef
+		if(ret->getClass())
+			ret->getClass()->acquireObject(ret);
 		//std::cout << "getting[" << name << "] " << ret << std::endl;
 		return ret;
 	}
@@ -1163,8 +1163,8 @@ inline Manager::~Manager()
 	for(auto i : available)
 	{
 		// ~ASObject will call abandonObject() again
-		if(i->prototype)
-			i->prototype->acquireObject(i);
+		if(i->classdef)
+			i->classdef->acquireObject(i);
 		delete i;
 	}
 }

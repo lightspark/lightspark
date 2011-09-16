@@ -90,7 +90,7 @@ protected:
 	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		T* ret=new T;
-		ret->setPrototype(this);
+		ret->setClass(this);
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 		return ret;
@@ -106,7 +106,7 @@ public:
 	{
 		Class<T>* c=Class<T>::getClass();
 		T* ret=new T(a1);
-		ret->setPrototype(c);
+		ret->setClass(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -115,7 +115,7 @@ public:
 	{
 		Class<T>* c=Class<T>::getClass();
 		T* ret=new T(a1,a2);
-		ret->setPrototype(c);
+		ret->setClass(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -124,7 +124,7 @@ public:
 	{
 		Class<T>* c=Class<T>::getClass();
 		T* ret=new T(a1,a2,a3);
-		ret->setPrototype(c);
+		ret->setClass(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -133,7 +133,7 @@ public:
 	{
 		Class<T>* c=Class<T>::getClass();
 		T* ret=new T(a1,a2,a3,a4);
-		ret->setPrototype(c);
+		ret->setClass(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -142,7 +142,7 @@ public:
 	{
 		Class<T>* c=Class<T>::getClass();
 		T* ret=new T(a1,a2,a3,a4,a5);
-		ret->setPrototype(c);
+		ret->setClass(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -193,7 +193,7 @@ private:
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		ASObject* ret=new ASObject;
-		ret->setPrototype(this);
+		ret->setClass(this);
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 		return ret;
@@ -260,7 +260,7 @@ public:
 	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		T* ret=new T;
-		ret->setPrototype(this);
+		ret->setClass(this);
 		ret->setTypes(types);
 		if(construct)
 			handleConstruction(ret,args,argslen,true);

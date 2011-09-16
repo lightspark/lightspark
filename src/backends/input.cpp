@@ -175,7 +175,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 	}
 	assert(maskStack.empty());
 	assert(selected!=NULL); /* atleast we hit the stage */
-	assert_and_throw(selected->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()));
+	assert_and_throw(selected->getClass()->isSubClass(Class<InteractiveObject>::getClass()));
 	return selected;
 }
 

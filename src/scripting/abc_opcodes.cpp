@@ -150,7 +150,7 @@ ASObject* ABCVm::checkfilter(ASObject* o)
 	Class_base* xmlClass=Class<XML>::getClass();
 	Class_base* xmlListClass=Class<XMLList>::getClass();
 
-	if (o->getPrototype()!=xmlClass && o->getPrototype()!=xmlListClass)
+	if (o->getClass()!=xmlClass && o->getClass()!=xmlListClass)
 		throw Class<TypeError>::getInstanceS();
 
 	return o;
@@ -301,8 +301,8 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 	LOG(LOG_CALLS,_("callProperty ") << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
-	if(obj->prototype)
-		LOG(LOG_CALLS,obj->prototype->class_name);
+	if(obj->classdef)
+		LOG(LOG_CALLS,obj->classdef->class_name);
 
 	//We have to reset the level, as we may be getting a function defined at a lower level
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -344,7 +344,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function on obj ") << ((obj->prototype)?obj->prototype->class_name.name:_("Object")));
+			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function on obj ") << ((obj->classdef)?obj->classdef->class_name.name:_("Object")));
 			th->runtime_stack_push(new Undefined);
 		}
 		else if(o->getObjectType()==T_CLASS)
@@ -359,7 +359,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 	else
 	{
 		//If the object is a Proxy subclass, try to invoke callProperty
-		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
+		if(obj->classdef && obj->classdef->isSubClass(Class<Proxy>::getClass()))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
 			multiname callPropertyName;
@@ -400,7 +400,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 		}
 
 		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << *name << _(" on obj ") << 
-				((obj->prototype)?obj->prototype->class_name.name:"Object"));
+				((obj->classdef)?obj->classdef->class_name.name:"Object"));
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(LOG_CALLS,_("End of calling ") << *name);
@@ -436,9 +436,9 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	
 	if(ret==NULL)
 	{
-		if(obj->prototype)
+		if(obj->classdef)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Property not found ") << *name << _(" on type ") << obj->prototype->class_name);
+			LOG(LOG_NOT_IMPLEMENTED,_("Property not found ") << *name << _(" on type ") << obj->classdef->class_name);
 		}
 		else
 		{
@@ -730,7 +730,7 @@ void ABCVm::construct(call_context* th, int m)
 
 		case T_OBJECT:
 		{
-			Class_base* o_class=static_cast<Class_base*>(obj->getPrototype());
+			Class_base* o_class=static_cast<Class_base*>(obj->getClass());
 			assert(o_class);
 			ret=o_class->getInstance(true,args,m);
 			break;
@@ -769,7 +769,7 @@ void ABCVm::construct(call_context* th, int m)
 				if(ret2)
 					ret2->decRef();
 
-				//Let's see if an AS prototype has been defined on the function
+				//Let's see if an AS classdef has been defined on the function
 				multiname prototypeName;
 				prototypeName.name_type=multiname::NAME_STRING;
 				prototypeName.name_s="prototype";
@@ -778,9 +778,9 @@ void ABCVm::construct(call_context* th, int m)
 				if(asp)
 					asp->incRef();
 
-				//Now add our prototype
+				//Now add our classdef
 				sf->incRef();
-				ret->setPrototype(new Class_function(sf,asp));
+				ret->setClass(new Class_function(sf,asp));
 			}
 			break;
 		}
@@ -874,8 +874,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 		args[m-i-1]=th->runtime_stack_pop();
 	ASObject* obj=th->runtime_stack_pop();
 
-	if(obj->prototype)
-		LOG(LOG_CALLS, obj->prototype->class_name);
+	if(obj->classdef)
+		LOG(LOG_CALLS, obj->classdef->class_name);
 
 	//We have to reset the level, as we may be getting a function defined at a lower level
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -907,7 +907,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << *name << _(" on obj ") << 
-					((obj->prototype)?obj->prototype->class_name.name:"Object"));
+					((obj->classdef)?obj->classdef->class_name.name:"Object"));
 		}
 		else
 			throw UnsupportedException("Not callable object in callPropVoid");
@@ -915,7 +915,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 	else
 	{
 		//If the object is a Proxy subclass, try to use callProperty
-		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
+		if(obj->classdef && obj->classdef->isSubClass(Class<Proxy>::getClass()))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
 			multiname callPropertyName;
@@ -954,9 +954,9 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 			}
 		}
 
-		if(obj->prototype)
+		if(obj->classdef)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function ") << name->name_s << _(" on obj type ") << obj->prototype->class_name);
+			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function ") << name->name_s << _(" on obj type ") << obj->classdef->class_name);
 		}
 		else
 		{
@@ -1146,18 +1146,18 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		Class_base* xmlClass=Class<XML>::getClass();
 		Class_base* xmlListClass=Class<XMLList>::getClass();
 
-		if((val1->getPrototype()==xmlClass || val1->getPrototype()==xmlListClass) &&
-			(val2->getPrototype()==xmlClass || val2->getPrototype()==xmlListClass))
+		if((val1->getClass()==xmlClass || val1->getClass()==xmlListClass) &&
+			(val2->getClass()==xmlClass || val2->getClass()==xmlListClass))
 		{
 			XMLList* newList=Class<XMLList>::getInstanceS(true);
-			if(val1->getPrototype()==xmlClass)
+			if(val1->getClass()==xmlClass)
 				newList->append(_MR(static_cast<XML*>(val1)));
-			else //if(val1->getPrototype()==xmlListClass)
+			else //if(val1->getClass()==xmlListClass)
 				newList->append(_MR(static_cast<XMLList*>(val1)));
 
-			if(val2->getPrototype()==xmlClass)
+			if(val2->getClass()==xmlClass)
 				newList->append(_MR(static_cast<XML*>(val2)));
-			else //if(val2->getPrototype()==xmlListClass)
+			else //if(val2->getClass()==xmlListClass)
 				newList->append(_MR(static_cast<XMLList*>(val2)));
 
 			//The references of val1 and val2 have been passed to the smart references
@@ -1621,12 +1621,12 @@ void ABCVm::constructSuper(call_context* th, int m)
 	assert_and_throw(tl.cur_this==obj);
 	assert_and_throw(tl.cur_level==obj->getLevel());
 
-	LOG(LOG_CALLS,_("Cur prototype name ") << obj->getActualPrototype()->class_name);
+	LOG(LOG_CALLS,_("Cur prototype name ") << obj->getActualClass()->class_name);
 	//Change current level
 	obj->decLevel();
-	LOG(LOG_CALLS,_("Super prototype name ") << obj->getActualPrototype()->class_name);
+	LOG(LOG_CALLS,_("Super prototype name ") << obj->getActualClass()->class_name);
 
-	Class_base* curProt=obj->getActualPrototype();
+	Class_base* curProt=obj->getActualClass();
 	curProt->handleConstruction(obj,args, m, false);
 	LOG(LOG_CALLS,_("End super construct "));
 	obj->setLevel(tl.cur_level);
@@ -1960,11 +1960,11 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		return real_ret;
 	}
 
-	if(obj->prototype)
+	if(obj->classdef)
 	{
 		assert_and_throw(type->getObjectType()==T_CLASS);
 
-		objc=obj->prototype;
+		objc=obj->classdef;
 	}
 	else if(obj->getObjectType()==T_CLASS)
 	{
@@ -2037,8 +2037,8 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	}
 
 	Class_base* objc;
-	if(obj->prototype)
-		objc=obj->prototype;
+	if(obj->classdef)
+		objc=obj->classdef;
 	else if(obj->getObjectType()==T_CLASS)
 	{
 		//Special case for Class
@@ -2188,7 +2188,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 			if(ret2)
 				ret2->decRef();
 
-			//Let's see if an AS prototype has been defined on the function
+			//Let's see if an AS classdef has been defined on the function
 			multiname prototypeName;
 			prototypeName.name_type=multiname::NAME_STRING;
 			prototypeName.name_s="prototype";
@@ -2197,9 +2197,9 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 			if(asp)
 				asp->incRef();
 
-			//Now add our prototype
+			//Now add our classdef
 			sf->incRef();
-			ret->setPrototype(new Class_function(sf,asp));
+			ret->setClass(new Class_function(sf,asp));
 		}
 	}
 	else
@@ -2262,12 +2262,12 @@ void ABCVm::getDescendants(call_context* th, int n)
 	assert_and_throw(name->name_type==multiname::NAME_STRING);
 	vector<_R<XML> > ret;
 	//TODO: support multiname and namespaces
-	if(obj->getPrototype()==Class<XML>::getClass())
+	if(obj->getClass()==Class<XML>::getClass())
 	{
 		XML* xmlObj=Class<XML>::cast(obj);
 		xmlObj->getDescendantsByQName(name->name_s, "", ret);
 	}
-	else if(obj->getPrototype()==Class<XMLList>::getClass())
+	else if(obj->getClass()==Class<XMLList>::getClass())
 	{
 		XMLList* xmlObj=Class<XMLList>::cast(obj);
 		xmlObj->getDescendantsByQName(name->name_s, "", ret);

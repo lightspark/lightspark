@@ -133,7 +133,7 @@ public:
 	ASObject* instance() const
 	{
 		Shape* ret=new Shape(tokens, 1.0f/20.0f);
-		ret->setPrototype(Class<Shape>::getClass());
+		ret->setClass(Class<Shape>::getClass());
 		return ret;
 	}
 };
@@ -383,7 +383,7 @@ public:
 		uint8_t* b = new uint8_t[len];
 		memcpy(b,bytes,len);
 		ByteArray* ret=new ByteArray(b, len);
-		ret->setPrototype(Class<ByteArray>::getClass());
+		ret->setClass(Class<ByteArray>::getClass());
 		return ret;
 	}
 };

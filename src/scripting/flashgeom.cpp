@@ -1313,17 +1313,17 @@ void Vector3D::sinit(Class_base* c)
 	// constants
 	Vector3D* tx = new Vector3D();
 	tx->x = 1;
-	tx->setPrototype(c);
+	tx->setClass(c);
 	c->setVariableByQName("X_AXIS","", tx, DECLARED_TRAIT);
 
 	Vector3D* ty = new Vector3D();
 	ty->y = 1;
-	ty->setPrototype(c);
+	ty->setClass(c);
 	c->setVariableByQName("Y_AXIS","", ty, DECLARED_TRAIT);
 
 	Vector3D* tz = new Vector3D();
 	tz->z = 1;
-	tz->setPrototype(c);
+	tz->setClass(c);
 	c->setVariableByQName("Z_AXIS","", tz, DECLARED_TRAIT);
 
 	// properties

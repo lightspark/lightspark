@@ -787,7 +787,7 @@ ASFUNCTIONBODY(XML,generator)
 	{
 		return Class<XML>::getInstanceS("");
 	}
-	else if(args[0]->getPrototype()==Class<XML>::getClass())
+	else if(args[0]->getClass()==Class<XML>::getClass())
 	{
 		args[0]->incRef();
 		return args[0];
@@ -880,9 +880,9 @@ ASFUNCTIONBODY(XML,appendChild)
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==1);
 	XML* arg=NULL;
-	if(args[0]->getPrototype()==Class<XML>::getClass())
+	if(args[0]->getClass()==Class<XML>::getClass())
 		arg=Class<XML>::cast(args[0]);
-	else if(args[0]->getPrototype()==Class<XMLList>::getClass())
+	else if(args[0]->getClass()==Class<XMLList>::getClass())
 		arg=Class<XMLList>::cast(args[0])->convertToXML().getPtr();
 
 	if(arg==NULL)
@@ -1494,12 +1494,12 @@ ASFUNCTIONBODY(XMLList,generator)
 		ASString* str=Class<ASString>::cast(args[0]);
 		return Class<XMLList>::getInstanceS(str->data);
 	}
-	else if(args[0]->getPrototype()==Class<XMLList>::getClass())
+	else if(args[0]->getClass()==Class<XMLList>::getClass())
 	{
 		args[0]->incRef();
 		return args[0];
 	}
-	else if(args[0]->getPrototype()==Class<XML>::getClass())
+	else if(args[0]->getClass()==Class<XML>::getClass())
 	{
 		std::vector< _R<XML> > nodes;
 		nodes.push_back(_MR(Class<XML>::cast(args[0])));
@@ -2069,7 +2069,7 @@ ASFUNCTIONBODY(ASString,search)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	int ret=-1;
-	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
+	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
@@ -2122,7 +2122,7 @@ ASFUNCTIONBODY(ASString,match)
 	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 		return new Null;
 	Array* ret=NULL;
-	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
+	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
@@ -2192,7 +2192,7 @@ ASFUNCTIONBODY(ASString,split)
 		return ret;
 	}
 
-	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
+	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
@@ -2949,11 +2949,11 @@ void Number::sinit(Class_base* c)
 	Number* pmax=new Number(numeric_limits<double>::max());
 	Number* pmin=new Number(numeric_limits<double>::min());
 	Number* pnan=new Number(numeric_limits<double>::quiet_NaN());
-	ninf->setPrototype(c);
-	pinf->setPrototype(c);
-	pmax->setPrototype(c);
-	pmin->setPrototype(c);
-	pnan->setPrototype(c);
+	ninf->setClass(c);
+	pinf->setClass(c);
+	pmax->setClass(c);
+	pmin->setClass(c);
+	pnan->setClass(c);
 	c->setVariableByQName("NEGATIVE_INFINITY","",ninf,DECLARED_TRAIT);
 	c->setVariableByQName("POSITIVE_INFINITY","",pinf,DECLARED_TRAIT);
 	c->setVariableByQName("MAX_VALUE","",pmax,DECLARED_TRAIT);
@@ -3221,8 +3221,8 @@ ASFUNCTIONBODY(IFunction,apply)
 	args[0]->incRef();
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this.getPtr() && th->closure_this->prototype && args[0]->prototype && 
-				args[0]->prototype->isSubClass(th->closure_this->prototype)) ||	args[0]->prototype==NULL)
+	if(!(th->closure_this.getPtr() && th->closure_this->classdef && args[0]->classdef && 
+				args[0]->classdef->isSubClass(th->closure_this->classdef)) ||	args[0]->classdef==NULL)
 	{
 		overrideThis=false;
 	}
@@ -3255,8 +3255,8 @@ ASFUNCTIONBODY(IFunction,_call)
 	}
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this.getPtr() && th->closure_this->prototype && args[0]->prototype && 
-			args[0]->prototype->isSubClass(th->closure_this->prototype)) ||	args[0]->prototype==NULL)
+	if(!(th->closure_this.getPtr() && th->closure_this->classdef && args[0]->classdef && 
+			args[0]->classdef->isSubClass(th->closure_this->classdef)) ||	args[0]->classdef==NULL)
 	{
 		overrideThis=false;
 	}
@@ -4048,7 +4048,7 @@ ASFUNCTIONBODY(ASString,replace)
 		assert_and_throw(replaceWith.find('$')==replaceWith.npos);
 	}
 
-	if(args[0]->getPrototype()==Class<RegExp>::getClass())
+	if(args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
@@ -4494,7 +4494,7 @@ void Class_base::setConstructor(IFunction* c)
 
 void Class_base::handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink)
 {
-/*	if(getActualPrototype()->class_index==-2)
+/*	if(getActualClass()->class_index==-2)
 	{
 		abort();
 		//We have to build the method traits
@@ -4629,7 +4629,7 @@ void IFunction::sinit(Class_base* c)
 
 Class_function::Class_function(IFunction* _f, ASObject* _p):Class_base(QName("Function","")),f(_f),asprototype(_p)
 {
-	setPrototype(Class<IFunction>::getClass());
+	setClass(Class<IFunction>::getClass());
 }
 
 bool Class_function::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
@@ -5461,12 +5461,12 @@ void Vector::setTypes(const std::vector<Class_base*>& types)
 ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen)
 {
 	assert_and_throw(argslen == 1);
-	assert_and_throw(args[0]->getPrototype());
+	assert_and_throw(args[0]->getClass());
 	assert_and_throw(o_class->getTypes().size() == 1);
 
 	Class_base* type = o_class->getTypes()[0];
 
-	if(args[0]->getPrototype() == Class<Array>::getClass())
+	if(args[0]->getClass() == Class<Array>::getClass())
 	{
 		//create object without calling _constructor
 		Vector* ret = o_class->getInstance(false,NULL,0);
@@ -5482,10 +5482,10 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 		}
 		return ret;
 	}
-	else if(args[0]->getPrototype()->getTemplate() == Template<Vector>::getTemplate())
+	else if(args[0]->getClass()->getTemplate() == Template<Vector>::getTemplate())
 	{
 		Vector* arg = static_cast<Vector*>(args[0]);
-		TemplatedClass<Vector>* arg_class = static_cast<TemplatedClass<Vector>*>(arg->getPrototype());
+		TemplatedClass<Vector>* arg_class = static_cast<TemplatedClass<Vector>*>(arg->getClass());
 		Class_base* arg_type = arg_class->getTypes()[0];
 
 		if(!arg_type->isSubClass(type))
@@ -5526,7 +5526,7 @@ ASFUNCTIONBODY(Vector,push)
 	{
 		//The proprietary player violates the specification and allows elements of any type to be pushed;
 		//they are converted to the vec_type
-		if(args[i]->getPrototype()->isSubClass(th->vec_type))
+		if(args[i]->getClass()->isSubClass(th->vec_type))
 			th->vec.push_back( th->vec_type->generator(&args[i],1) );
 		else
 		{

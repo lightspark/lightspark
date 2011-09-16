@@ -64,7 +64,7 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),pars
 
 	//We set the protoype to a generic MovieClip
 	if(!isSys)
-		setPrototype(Class<MovieClip>::getClass());
+		setClass(Class<MovieClip>::getClass());
 }
 
 
@@ -119,7 +119,7 @@ void RootMovieClip::setOnStage(bool staged)
 RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li)
 {
 	RootMovieClip* ret=new RootMovieClip(li);
-	ret->setPrototype(Class<MovieClip>::getClass());
+	ret->setClass(Class<MovieClip>::getClass());
 	return ret;
 }
 
@@ -179,7 +179,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	stage->_addChildAt(_MR(this),0);
 	startTime=compat_msectiming();
 	
-	setPrototype(Class<MovieClip>::getClass());
+	setClass(Class<MovieClip>::getClass());
 
 	//Override getStage as for SystemState that can't be null
 	setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(_getStage),GETTER_METHOD,false);
@@ -378,8 +378,8 @@ void SystemState::destroy()
 	//Finalize ourselves
 	finalize();
 
-	//We are already being destroyed, make our prototype abandon us
-	setPrototype(NULL);
+	//We are already being destroyed, make our classdef abandon us
+	setClass(NULL);
 	
 	//Free the stage. This should free all objects on the displaylist
 	stage->decRef();
@@ -1484,7 +1484,7 @@ void RootMovieClip::initFrame()
 {
 	LOG(LOG_CALLS,"Root:initFrame " << getFramesLoaded() << " " << state.FP);
 	/* We have to wait for at least one frame
-	 * so our class get the right prototype. Else we will
+	 * so our class get the right classdef. Else we will
 	 * call the wrong constructor. */
 	if(getFramesLoaded() == 0)
 		return;

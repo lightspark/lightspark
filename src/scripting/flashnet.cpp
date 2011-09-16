@@ -73,7 +73,7 @@ URLInfo URLRequest::getRequestURL() const
 	if(data.isNull())
 		return ret;
 
-	if(data->getPrototype()==Class<ByteArray>::getClass())
+	if(data->getClass()==Class<ByteArray>::getClass())
 		throw RunTimeException("ByteArray data not supported in URLRequest");
 	else
 	{
@@ -96,9 +96,9 @@ void URLRequest::getPostData(vector<uint8_t>& outData) const
 	if(data.isNull())
 		return;
 
-	if(data->getPrototype()==Class<ByteArray>::getClass())
+	if(data->getClass()==Class<ByteArray>::getClass())
 		throw RunTimeException("ByteArray not support in URLRequest");
-	else if(data->getPrototype()==Class<URLVariables>::getClass())
+	else if(data->getClass()==Class<URLVariables>::getClass())
 	{
 		//Prepend the Content-Type header
 		tiny_string strData="Content-type: application/x-www-form-urlencoded\r\nContent-length: ";
@@ -230,7 +230,7 @@ void URLLoader::buildTraits(ASObject* o)
 ASFUNCTIONBODY(URLLoader,_constructor)
 {
 	EventDispatcher::_constructor(obj,NULL,0);
-	if(argslen==1 && args[0]->getPrototype() == Class<URLRequest>::getClass())
+	if(argslen==1 && args[0]->getClass() == Class<URLRequest>::getClass())
 	{
 		//URLRequest* urlRequest=Class<URLRequest>::dyncast(args[0]);
 		load(obj, args, argslen);
@@ -674,7 +674,7 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 	LOG(LOG_CALLS,_("NetStream constructor"));
 	assert_and_throw(argslen>=1 && argslen <=2);
-	assert_and_throw(args[0]->getPrototype()==Class<NetConnection>::getClass());
+	assert_and_throw(args[0]->getClass()==Class<NetConnection>::getClass());
 
 	args[0]->incRef();
 	_R<NetConnection> netConnection = _MR(Class<NetConnection>::cast(args[0]));

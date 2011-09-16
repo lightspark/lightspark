@@ -19,3 +19,5 @@ Developer visible changes:
 - Templates:
 	See the classes Template, Template_base, TemplatedClass for the handling of AS templates and
 	Vector for an implementation of an AS template.
+- ASObject::setPrototype/getPrototype/prototype:
+	Those have been renamed to setClass/getClass/classdef to better reflect their meaning.

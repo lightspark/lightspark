@@ -298,7 +298,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_localX)
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
 	//At this point, the target should be an InteractiveObject but check anyway
-	if((th->target != NULL)&&(th->target->getPrototype()->isSubClass(Class<InteractiveObject>::getClass())))
+	if((th->target != NULL)&&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass())))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -315,7 +315,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_localY)
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
 	//At this point, the target should be an InteractiveObject but check anyway
-	if((th->target != NULL)&&(th->target->getPrototype()->isSubClass(Class<InteractiveObject>::getClass())))	
+	if((th->target != NULL)&&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass())))	
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -343,7 +343,7 @@ void MouseEvent::setTarget(_NR<ASObject> t)
 		relatedObject = NullRef;
 	}
 	//If t is non null, it should be an InteractiveObject
-	else if(t->getPrototype()->isSubClass(Class<InteractiveObject>::getClass()))	
+	else if(t->getClass()->isSubClass(Class<InteractiveObject>::getClass()))	
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>(t.getPtr());
 		tar->localToGlobal(localX, localY, stageX, stageY);
@@ -502,7 +502,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
 	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
-	if(args[0]->getPrototype()==NULL || !(args[0]->getPrototype()->isSubClass(Class<Event>::getClass())))
+	if(args[0]->getClass()==NULL || !(args[0]->getClass()->isSubClass(Class<Event>::getClass())))
 		return abstract_b(false);
 
 	args[0]->incRef();

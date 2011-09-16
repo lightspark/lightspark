@@ -229,7 +229,6 @@ friend class InterfaceClass;
 friend class IFunction; //Needed for clone
 CLASSBUILDABLE(ASObject);
 protected:
-	//ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed
 	//maps variable name to namespace and var
 	variables_map Variables;
 	ASObject(Manager* m=NULL);
@@ -243,7 +242,7 @@ private:
 	Manager* manager;
 	int cur_level;
 	virtual int _maxlevel();
-	Class_base* prototype;
+	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
 	obj_var* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
 	obj_var* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
@@ -255,12 +254,10 @@ public:
 	int getRefCount(){ return ref_count; }
 #endif
 	bool implEnable;
-	void setPrototype(Class_base* c);
-	Class_base* getPrototype() const { return prototype; }
+	void setClass(Class_base* c);
+	Class_base* getClass() const { return classdef; }
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 	ASFUNCTION(_constructor);
-	ASFUNCTION(_getPrototype);
-	ASFUNCTION(_setPrototype);
 	ASFUNCTION(_toString);
 	ASFUNCTION(hasOwnProperty);
 	void check() const;
@@ -371,8 +368,8 @@ public:
 	}
 	void resetLevel();
 
-	//Prototype handling
-	Class_base* getActualPrototype() const;
+	//Class handling
+	Class_base* getActualClass() const;
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

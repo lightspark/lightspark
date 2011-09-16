@@ -538,7 +538,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			}
 			case 0x0f: //RTQName
 			{
-				assert_and_throw(rt1->prototype==Class<Namespace>::getClass());
+				assert_and_throw(rt1->classdef==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
@@ -637,7 +637,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				//Reset the namespaces
 				ret->ns.clear();
 
-				assert_and_throw(rt1->prototype==Class<Namespace>::getClass());
+				assert_and_throw(rt1->classdef==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
@@ -823,7 +823,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			case 0x0f: //RTQName
 			{
 				ASObject* n=th->runtime_stack_pop();
-				assert_and_throw(n->prototype==Class<Namespace>::getClass());
+				assert_and_throw(n->classdef==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(n);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
@@ -928,7 +928,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				//Reset the namespaces
 				ret->ns.clear();
 
-				assert_and_throw(n->prototype==Class<Namespace>::getClass());
+				assert_and_throw(n->classdef==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(n);
 				//TODO: What is the right kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
@@ -1156,7 +1156,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 	bool doTarget = true;
 
 	//capture phase
-	if(dispatcher->prototype->isSubClass(Class<DisplayObject>::getClass()))
+	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass()))
 	{
 		event->eventPhase = EventPhase::CAPTURING_PHASE;
 		dispatcher->incRef();
@@ -1439,7 +1439,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 		return;
 
 	//Let's override the class
-	base->setPrototype(derived_class_tmp);
+	base->setClass(derived_class_tmp);
 	derived_class_tmp->bindToRoot();
 }
 
@@ -1573,11 +1573,11 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 		return real_ret;
 	}
 
-	if(obj->prototype)
+	if(obj->classdef)
 	{
 		assert_and_throw(type->getObjectType()==T_CLASS);
 
-		objc=obj->prototype;
+		objc=obj->classdef;
 	}
 	else if(obj->getObjectType()==T_CLASS)
 	{
@@ -1742,8 +1742,8 @@ void ABCVm::Run(ABCVm* th)
 		}
 		catch(ASObject*& e)
 		{
-			if(e->getPrototype())
-				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->getPrototype()->class_name);
+			if(e->getClass())
+				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->getClass()->class_name);
 			else
 				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
 			th->m_sys->setError(_("Unhandled ActionScript exception"));

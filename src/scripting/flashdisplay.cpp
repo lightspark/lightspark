@@ -76,7 +76,7 @@ ATOMIC_INT32(DisplayObject::instanceCount);
 
 std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 {
-	s << "[" << r.getPrototype()->class_name << "]";
+	s << "[" << r.getClass()->class_name << "]";
 	if(r.name.len() > 0)
 		s << " name: " << r.name;
 	return s;
@@ -300,8 +300,8 @@ ASFUNCTIONBODY(Loader,loadBytes)
 		return NULL;
 	//Find the actual ByteArray object
 	assert_and_throw(argslen>=1);
-	assert_and_throw(args[0]->getPrototype() && 
-			args[0]->getPrototype()->isSubClass(Class<ByteArray>::getClass()));
+	assert_and_throw(args[0]->getClass() && 
+			args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
 	args[0]->incRef();
 	th->bytes=_MR(static_cast<ByteArray*>(args[0]));
 	if(th->bytes->bytes)
@@ -1511,7 +1511,7 @@ ASFUNCTIONBODY(DisplayObject,_setMask)
 {
 	DisplayObject* th=Class<DisplayObject>::cast(obj);
 	assert_and_throw(argslen==1);
-	if(args[0] && args[0]->getPrototype() && args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()))
+	if(args[0] && args[0]->getClass() && args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()))
 	{
 		//We received a valid mask object
 		DisplayObject* newMask=Class<DisplayObject>::cast(args[0]);
@@ -2129,7 +2129,7 @@ void DisplayObjectContainer::dumpDisplayList()
 	cout << "Size: " << dynamicDisplayList.size() << endl;
 	list<_R<DisplayObject> >::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
-		cout << (*it)->getPrototype()->class_name << endl;
+		cout << (*it)->getClass()->class_name << endl;
 }
 
 void DisplayObjectContainer::setOnStage(bool staged)
@@ -2257,8 +2257,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 		return abstract_b(false);
 	}
 	//Validate object type
-	assert_and_throw(args[0] && args[0]->getPrototype() && 
-		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getClass() && 
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
@@ -2277,8 +2277,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 		return new Null;
 	}
 	//Validate object type
-	assert_and_throw(args[0]->getPrototype() &&
-		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0]->getClass() &&
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
 
 	int index=args[1]->toInt();
 
@@ -2305,8 +2305,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 		return new Null;
 	}
 	//Validate object type
-	assert_and_throw(args[0] && args[0]->getPrototype() && 
-		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getClass() && 
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	args[0]->incRef();
@@ -2332,8 +2332,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 		return new Null;
 	}
 	//Validate object type
-	assert_and_throw(args[0] && args[0]->getPrototype() && 
-		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getClass() && 
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 	d->incRef();
@@ -2379,8 +2379,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,_setChildIndex)
 	assert_and_throw(argslen==2);
 
 	//Validate object type
-	assert_and_throw(args[0] && args[0]->getPrototype() &&
-		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getClass() &&
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
 	args[0]->incRef();
 	_R<DisplayObject> child = _MR(Class<DisplayObject>::cast(args[0]));
 
@@ -2412,10 +2412,10 @@ ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
 	assert_and_throw(argslen==2);
 	
 	//Validate object type
-	assert_and_throw(args[0] && args[0]->getPrototype() && 
-		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
-	assert_and_throw(args[1] && args[1]->getPrototype() && 
-		args[1]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getClass() && 
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[1] && args[1]->getClass() && 
+		args[1]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	args[0]->incRef();
@@ -2501,7 +2501,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getChildIndex)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
 	//Validate object type
-	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	_R<DisplayObject> d= _MR(static_cast<DisplayObject*>(args[0]));
@@ -3271,7 +3271,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		grad.GradientRecords.push_back(record);
 	}
 
-	if(argslen > 4 && args[4]->getPrototype()==Class<Matrix>::getClass())
+	if(argslen > 4 && args[4]->getClass()==Class<Matrix>::getClass())
 	{
 		style.Matrix = static_cast<Matrix*>(args[4])->getMATRIX();
 		//Conversion from twips to pixels
@@ -3770,9 +3770,9 @@ void InterpolationMethod::sinit(Class_base* c)
  * This is called in vm's thread context */
 void DisplayObject::initFrame()
 {
-	if(!isConstructed() && getPrototype())
+	if(!isConstructed() && getClass())
 	{
-		getPrototype()->handleConstruction(this,NULL,0,true);
+		getClass()->handleConstruction(this,NULL,0,true);
 
 		if(!onStage)
 			return;
@@ -3887,7 +3887,7 @@ void MovieClip::advanceFrame()
 	 * 2. and is exported as a subclass of MovieClip (see bindedTo)
 	 */
 	if((!dynamic_cast<RootMovieClip*>(this) && !dynamic_cast<DefineSpriteTag*>(this))
-		|| !getPrototype()->isSubClass(Class<MovieClip>::getClass()))
+		|| !getClass()->isSubClass(Class<MovieClip>::getClass()))
 		return;
 
 	//If we have not yet loaded enough frames delay advancement

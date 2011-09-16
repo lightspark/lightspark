@@ -33,10 +33,10 @@ REGISTER_CLASS_NAME2(ASObject,"Object","");
 tiny_string ASObject::toStringImpl() const
 {
 	tiny_string ret;
-	if(getPrototype())
+	if(getClass())
 	{
 		ret+="[object ";
-		ret+=getPrototype()->class_name.name;
+		ret+=getClass()->class_name.name;
 		ret+="]";
 		return ret;
 	}
@@ -102,8 +102,8 @@ TRISTATE ASObject::isLess(ASObject* r)
 	}
 
 	LOG(LOG_NOT_IMPLEMENTED,_("Less than comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
-	if(prototype)
-		LOG(LOG_NOT_IMPLEMENTED,_("Type ") << prototype->class_name);
+	if(classdef)
+		LOG(LOG_NOT_IMPLEMENTED,_("Type ") << classdef->class_name);
 	throw RunTimeException("Not handled less comparison for objects");
 	return TFALSE;
 }
@@ -138,8 +138,8 @@ void ASObject::sinit(Class_base* c)
 
 void ASObject::buildTraits(ASObject* o)
 {
-	if(o->getActualPrototype()->class_name.name!="Object")
-		LOG(LOG_NOT_IMPLEMENTED,_("Add buildTraits for class ") << o->getActualPrototype()->class_name);
+	if(o->getActualClass()->class_name.name!="Object")
+		LOG(LOG_NOT_IMPLEMENTED,_("Add buildTraits for class ") << o->getActualClass()->class_name);
 }
 
 bool ASObject::isEqual(ASObject* r)
@@ -191,8 +191,8 @@ bool ASObject::isEqual(ASObject* r)
 	}
 
 	LOG(LOG_CALLS,_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
-	if(prototype)
-		LOG(LOG_CALLS,_("Type ") << prototype->class_name);
+	if(classdef)
+		LOG(LOG_CALLS,_("Type ") << classdef->class_name);
 	return false;
 }
 
@@ -246,9 +246,9 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 
 	ret=(Variables.findObjVar(name, NO_CREATE_TRAIT, validTraits)!=NULL);
 
-	if(!ret) //Ask the prototype chain for borrowed traits
+	if(!ret) //Ask the classdef chain for borrowed traits
 	{
-		Class_base* cur=prototype;
+		Class_base* cur=classdef;
 		while(cur)
 		{
 			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL);
@@ -258,7 +258,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 		}
 	}
 
-	if(!ret && prototype)
+	if(!ret && classdef)
 		ret=(Class<ASObject>::getClass()->lazyDefine(name)!=NULL);
 
 	//Must not ask for non borrowed traits as static class member are not valid
@@ -360,17 +360,17 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	check();
 
-	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualPrototype)
+	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualClass)
 	bool has_getter=false;
 	obj_var* obj=findSettable(name, false, &has_getter);
 
-	if(obj==NULL && prototype)
+	if(obj==NULL && classdef)
 	{
 		//Look for borrowed traits before
 		//It's valid to override only a getter, so keep
 		//looking for a settable even if a super class sets
 		//has_getter to true.
-		Class_base* cur=getActualPrototype();
+		Class_base* cur=getActualClass();
 		while(cur)
 		{
 			obj=cur->findSettable(name,true,&has_getter);
@@ -384,8 +384,8 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 		if(has_getter)
 		{
 			tiny_string err=tiny_string("Illegal write to read-only property ")+name.normalizedName();
-			if(prototype)
-				err+=tiny_string(" on type ")+prototype->getQualifiedClassName();
+			if(classdef)
+				err+=tiny_string(" on type ")+classdef->getQualifiedClassName();
 			throw Class<ReferenceError>::getInstanceS(err);
 		}
 
@@ -447,7 +447,7 @@ void obj_var::setVar(ASObject* v)
 {
 	//Do the conversion early, so that errors does not leave the object in an half baked state
 	ASObject* newV=v;
-	if(type && v->getObjectType()!=T_NULL && (v->getPrototype()==NULL || !v->getPrototype()->isSubClass(type)))
+	if(type && v->getObjectType()!=T_NULL && (v->getClass()==NULL || !v->getClass()->isSubClass(type)))
 	{
 		newV=type->generator(&v,1);
 		v->decRef();
@@ -557,29 +557,9 @@ ASFUNCTIONBODY(ASObject,_constructor)
 	return NULL;
 }
 
-/*ASFUNCTIONBODY(ASObject,_getPrototype)
-{
-	if(prototype==NULL)
-		return new Undefined;
-
-	prototype->incRef();
-	return prototype;
-}
-
-ASFUNCTIONBODY(ASObject,_setPrototype)
-{
-	if(prototype)
-		prototype->decRef();
-
-	prototype=args->at(0);
-	prototype->incRef();
-	return NULL;
-}*/
-
-
 void ASObject::initSlot(unsigned int n, const multiname& name)
 {
-	//Should be correct to use the level on the prototype chain
+	//Should be correct to use the level on the classdef chain
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
@@ -615,10 +595,10 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	//Get from the current object without considering borrowed properties
 	obj_var* obj=findGettable(name, false);
 
-	if(obj==NULL && prototype)
+	if(obj==NULL && classdef)
 	{
 		//Look for borrowed traits before
-		Class_base* cur=getActualPrototype();
+		Class_base* cur=getActualClass();
 		while(cur)
 		{
 			obj=cur->findGettable(name,true);
@@ -631,7 +611,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	//If it has not been found
 	if(obj==NULL)
 	{
-		if(prototype==NULL)
+		if(classdef==NULL)
 			return NULL;
 
 		//Check if we can lazily define the requested property
@@ -642,9 +622,9 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	{
 		//Call the getter
 		ASObject* target=this;
-		if(target->prototype)
+		if(target->classdef)
 		{
-			LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);
+			LOG(LOG_CALLS,_("Calling the getter on type ") << target->classdef->class_name);
 		}
 		else
 		{
@@ -752,7 +732,7 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),prototype(NULL),constructed(false),
+ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),classdef(NULL),constructed(false),
 		implEnable(true)
 {
 #ifndef NDEBUG
@@ -761,13 +741,13 @@ ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),prototype(o.prototype),
+ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),classdef(o.classdef),
 		constructed(false),implEnable(true)
 {
-	if(prototype)
+	if(classdef)
 	{
-		prototype->incRef();
-		cur_level=prototype->max_level;
+		classdef->incRef();
+		cur_level=classdef->max_level;
 	}
 
 #ifndef NDEBUG
@@ -778,19 +758,19 @@ ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cu
 	assert_and_throw(o.Variables.size()==0);
 }
 
-void ASObject::setPrototype(Class_base* c)
+void ASObject::setClass(Class_base* c)
 {
-	if(prototype)
+	if(classdef)
 	{
-		prototype->abandonObject(this);
-		prototype->decRef();
+		classdef->abandonObject(this);
+		classdef->decRef();
 	}
-	prototype=c;
-	if(prototype)
+	classdef=c;
+	if(classdef)
 	{
-		prototype->acquireObject(this);
-		prototype->incRef();
-		setLevel(prototype->max_level);
+		classdef->acquireObject(this);
+		classdef->incRef();
+		setLevel(classdef->max_level);
 	}
 }
 
@@ -802,16 +782,16 @@ void ASObject::finalize()
 ASObject::~ASObject()
 {
 	finalize();
-	if(prototype)
+	if(classdef)
 	{
-		prototype->abandonObject(this);
-		prototype->decRef();
+		classdef->abandonObject(this);
+		classdef->decRef();
 	}
 }
 
 int ASObject::_maxlevel()
 {
-	return (prototype)?(prototype->max_level):0;
+	return (classdef)?(classdef->max_level):0;
 }
 
 void ASObject::resetLevel()
@@ -819,16 +799,16 @@ void ASObject::resetLevel()
 	cur_level=_maxlevel();
 }
 
-Class_base* ASObject::getActualPrototype() const
+Class_base* ASObject::getActualClass() const
 {
-	Class_base* ret=prototype;
+	Class_base* ret=classdef;
 	if(ret==NULL)
 	{
 		assert(type==T_CLASS);
 		return NULL;
 	}
 
-	for(int i=prototype->max_level;i>cur_level;i--)
+	for(int i=classdef->max_level;i>cur_level;i--)
 		ret=ret->super;
 
 	assert(ret);
@@ -954,7 +934,7 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
-	Class_base* type=getPrototype();
+	Class_base* type=getClass();
 	if(type!=Class<ASObject>::getClass())
 		throw UnsupportedException("ASObject::serialize not completely implemented");
 
@@ -973,7 +953,7 @@ ASObject *ASObject::describeType() const
 	xmlpp::Element* root=p.get_document()->create_root_node("type");
 
 	// type attributes
-	Class_base* prot=getPrototype();
+	Class_base* prot=getClass();
 	if(prot)
 	{
 		root->set_attribute("name", prot->getQualifiedClassName().raw_buf());

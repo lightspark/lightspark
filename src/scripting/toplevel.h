@@ -28,6 +28,7 @@
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include "abcutils.h"
+#include <glibmm/ustring.h>
 
 namespace lightspark
 {
@@ -375,6 +376,7 @@ private:
 	tiny_string toString_priv() const;
 	ASString();
 	ASString(const std::string& s);
+	ASString(const Glib::ustring& s);
 	ASString(const tiny_string& s);
 	ASString(const char* s);
 	ASString(const char* s, uint32_t len);

@@ -45,6 +45,7 @@
 #ifdef BIG_ENDIAN
 #include <algorithm>
 #endif
+#include <glibmm/ustring.h>
 
 namespace lightspark
 {
@@ -147,6 +148,12 @@ public:
 			createBuffer(stringSize);
 		strcpy(buf,r.c_str());
 	}
+	tiny_string(const Glib::ustring& r):buf(_buf_static),stringSize(r.bytes()+1),type(STATIC)
+	{
+		if(stringSize > STATIC_SIZE)
+			createBuffer(stringSize);
+		strcpy(buf,r.c_str());
+	}
 	~tiny_string()
 	{
 		resetToStatic();
@@ -186,6 +193,15 @@ public:
 		strcpy(buf,s.c_str());
 		return *this;
 	}
+	tiny_string& operator=(const Glib::ustring& s)
+	{
+		resetToStatic();
+		stringSize=s.bytes()+1;
+		if(stringSize > STATIC_SIZE)
+			createBuffer(stringSize);
+		strcpy(buf,s.c_str());
+		return *this;
+	}
 	tiny_string& operator=(const char* s)
 	{
 		makePrivateCopy(s);
@@ -205,6 +221,22 @@ public:
 			return false;
 
 		return strcmp(buf,r.buf)==0;
+	}
+	bool operator==(const Glib::ustring& r) const
+	{
+		//The length is checked as an optimization before checking the contents
+		if(stringSize != r.bytes()+1)
+			return false;
+
+		return strcmp(buf,r.c_str())==0;
+	}
+	bool operator==(const std::string& r) const
+	{
+		//The length is checked as an optimization before checking the contents
+		if(stringSize != r.size()+1)
+			return false;
+
+		return strcmp(buf,r.c_str())==0;
 	}
 	bool operator!=(const tiny_string& r) const
 	{

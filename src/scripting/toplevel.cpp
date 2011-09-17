@@ -45,6 +45,7 @@
 #include <libxml++/nodes/textnode.h>
 
 using namespace std;
+using namespace Glib;
 using namespace lightspark;
 
 SET_NAMESPACE("");
@@ -1999,6 +2000,11 @@ ASString::ASString()
 }
 
 ASString::ASString(const string& s):data(s)
+{
+	type=T_STRING;
+}
+
+ASString::ASString(const ustring& s):data(s)
 {
 	type=T_STRING;
 }

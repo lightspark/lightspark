@@ -11,7 +11,7 @@ MXMLC="mxmlc"
 #If you prefer no colors, you can permanently set the default here
 COLORS=1;
 #Seconds after which a process is killed
-TIMEOUTCMD="timeout 20"
+TIMEOUTCMD="timeout 10"
 
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
 COMPILE_TESTS_SRC="";
@@ -103,7 +103,11 @@ while [ $# -ne 0 ]; do
 		if [ $1 == "-t" ] || [ $1 == "--tests" ]; then
 			shift;
 		fi
-		TESTS=`echo $@ | sed 's/\(\.\|\.mxml\|\.swf\)  */.swf /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.swf/g'`;
+		if [ -d "$@" ]; then
+			TESTS=`find $@ -name '*.swf'`
+		else
+			TESTS=`echo $@ | sed 's/\(\.\|\.mxml\|\.swf\)  */.swf /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.swf/g'`;
+		fi
 		break;
 	fi;
 	shift;

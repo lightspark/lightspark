@@ -1,14 +1,15 @@
 #!/bin/bash
-if [[ ! -d $TAMARIN/test/acceptance ]]; then
-  echo "Envvar TAMARIN not set to tamarin folder."
-  echo "Try" 
+TAMARIN=${TAMARIN:-tamarin}
+ASC=${ASC:-`pwd`/asc.jar}
+if [[ ! -d $TAMARIN ]]; then
+  echo "Directory tamarin not found, please run"
   echo "hg clone http://hg.mozilla.org/tamarin-central/ tamarin"
   echo "to download the source."
   exit 1
 fi
 if [[ ! -f $ASC ]]; then
-  echo "Envvar ASC does not reflect path to asc.jar."
-  echo "It's under flex/lib/asc.jar"
+  echo "File asc.jar not found, please run"
+  echo "wget ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar"
   exit 1
 fi
 

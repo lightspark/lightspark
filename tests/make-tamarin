@@ -3,7 +3,7 @@ TAMARIN=${TAMARIN:-tamarin}
 ASC=${ASC:-`pwd`/asc.jar}
 if [[ ! -d $TAMARIN ]]; then
   echo "Directory tamarin not found, please run"
-  echo "hg clone http://hg.mozilla.org/tamarin-central/ tamarin"
+  echo "hg clone http://hg.mozilla.org/tamarin-redux tamarin"
   echo "to download the source."
   exit 1
 fi
@@ -13,9 +13,20 @@ if [[ ! -f $ASC ]]; then
   exit 1
 fi
 
+if [[ `java -jar $ASC | sed -n -e 's/version [^ ]* build \(.*\)/\1/p'` -lt 18513 ]]; then
+  echo "File asc.jar is too old, please run"
+  echo "wget ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar"
+  exit 1
+fi
+
 CUR=`pwd`
 
-cd $TAMARIN/test/acceptance && \
+#cd $TAMARIN/test/acceptance && \
+#rm -f ats_temp.abc ats_temp.as shell.as && \
+#echo "override| -optimize -in $CUR/tamarin-lightspark.as -AS3 -swf 200,200 -in ./ats_temp.as" > dir.asc_args && \
+#./runtests.py --asc $ASC --builtinabc ../../core/builtin.abc --shellabc ../../shell/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF || exit 1
+(cd $TAMARIN/test/acceptance && \
 rm -f ats_temp.abc ats_temp.as shell.as && \
 echo "override| -optimize -in $CUR/tamarin-lightspark.as -AS3 -swf 200,200 -in ./ats_temp.as" > dir.asc_args && \
-./runtests.py --asc $ASC --builtinabc ../../core/builtin.abc --shellabc ../../shell/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF || exit 1
+./runtests.py --asc $ASC --builtinabc ../../generated/builtin.abc --shellabc ../../generated/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF) \
+|| echo "Compiling tests failed. Make sure you have the latest tamarin-redux and asc.jar from http://hg.mozilla.org/tamarin-redux and ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar, respectively."

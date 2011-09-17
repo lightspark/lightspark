@@ -41,23 +41,26 @@
  */
 
 // import flash.system in order to determine what we are being run in
-import flash.system.Capabilities;
-import flash.system.fscommand;
+import flash.system.*;
 
-
-var	completed =	false;
-var	testcases; 
+var completed = false;
+var testcases;
 var tc = 0;
-//var version; // ISSUE:: need to know why we need to comment this out
 
-SECTION	= "";
-VERSION	= "";
-var BUGNUMBER =	"";
+// SECTION and VERSION cannot be 'var' because this file is included into
+// test cases where SECTION and VERSION are redefined with 'var'; ASC
+// barfs on that.  On the other hand, that means every test /must/
+// define SECTION and VERSION, or the eval tests will not work because
+// this file is not included into the test case when testing with eval.
+
+SECTION = "";
+VERSION = "";
+var BUGNUMBER = "";
 var STATUS = "STATUS: ";
 
 //  constant strings
 
-var	GLOBAL = "[object global]";
+var GLOBAL = "[object global]";
 var PASSED = " PASSED!"
 var FAILED = " FAILED! expected: ";
 var PACKAGELIST = "{public,$1$private}::";
@@ -69,28 +72,31 @@ var EVALERROR = "EvalError: Error #";
 var VERIFYERROR = "VerifyError: Error #";
 var VERBOSE = true;
 
-var    DEBUG =	false;
+var    DEBUG =  false;
+
+// Was this compiled with -AS3?  Boolean Value.
+var as3Enabled = ((new Namespace).valueOf != Namespace.prototype.valueOf);
 
 function typeError( str ){
-	return str.slice(0,TYPEERROR.length+4);
+    return str.slice(0,TYPEERROR.length+4);
 }
 
 function referenceError( str ){
-	return str.slice(0,REFERENCEERROR.length+4);
+    return str.slice(0,REFERENCEERROR.length+4);
 }
 function rangeError( str ){
-	return str.slice(0,RANGEERROR.length+4);
+    return str.slice(0,RANGEERROR.length+4);
 }
 function uriError( str ){
-	return str.slice(0,URIERROR.length+4);
+    return str.slice(0,URIERROR.length+4);
 }
 
 function evalError( str ){
-	return str.slice(0,EVALERROR.length+4);
+    return str.slice(0,EVALERROR.length+4);
 }
 
 function verifyError( str ){
-	return str.slice(0,VERIFYERROR.length+4);
+    return str.slice(0,VERIFYERROR.length+4);
 }
 
 // wrapper for test cas constructor that doesn't require the SECTION
@@ -105,19 +111,19 @@ function AddTestCase( description, expect, actual ) {
 //  TestCase constructor
 
 
-function TestCase( n, d, e,	a )	{
-	this.name		 = n;
-	this.description = d;
-	this.expect		 = e;
-	this.actual		 = a;
-	this.passed		 = "";
-	this.reason		 = "";
-	//this.bugnumber	  =	BUGNUMBER;
+function TestCase( n, d, e, a ) {
+    this.name        = n;
+    this.description = d;
+    this.expect      = e;
+    this.actual      = a;
+    this.passed      = "";
+    this.reason      = "";
+    //this.bugnumber      = BUGNUMBER;
 
-	this.passed	= getTestCaseResult( this.expect, this.actual );
-	if ( DEBUG ) {
-		writeLineToLog(	"added " + this.description	);
-	}
+    this.passed = getTestCaseResult( this.expect, this.actual );
+    if ( DEBUG ) {
+        writeLineToLog( "added " + this.description );
+    }
 }
 
 
@@ -137,11 +143,11 @@ function startTest() {
 function checkReason(passed) {
     var reason;
     if (passed == 'true') {
-	reason = "";
+    reason = "";
     } else if (passed == 'false') {
-	reason = "wrong value";
+    reason = "wrong value";
     } else if (passed == 'type error') {
-	reason = "type error";
+    reason = "type error";
     }
     return reason;
 }
@@ -149,37 +155,29 @@ function checkReason(passed) {
 
 function test(... rest:Array) {
 
-	var failed:int = 0;
-	if( rest.length == 0 ){
-		// no args sent, use default test
-    	for ( tc=0; tc < testcases.length; tc++ ) {
-        	testcases[tc].passed = writeTestCaseResult(
+    if( rest.length == 0 ){
+        // no args sent, use default test
+        for ( tc=0; tc < testcases.length; tc++ ) {
+            testcases[tc].passed = writeTestCaseResult(
                     testcases[tc].expect,
                     testcases[tc].actual,
                     testcases[tc].description +" = "+ testcases[tc].actual );
-		    testcases[tc].reason += checkReason(testcases[tc].passed);
-		if(testcases[tc].passed != "true")
-			failed += 1;
-    	}
-	} else {
-		// we need to use a specialized call to writeTestCaseResult
-		if( rest[0] == "no actual" ){
-    		for ( tc=0; tc < testcases.length; tc++ ) {
-        		testcases[tc].passed = writeTestCaseResult(
-                            		testcases[tc].expect,
-                            		testcases[tc].actual,
-                            		testcases[tc].description );
-        		testcases[tc].reason += checkReason(testcases[tc].passed);
-    	}
-		}
-	}
-    if(failed)
-        trace("=====================Failures ("+failed+"/"+testcases.length+")=====================");
-    else
-        trace("=====================No failures (" + testcases.length + ")=====================");
-
+            testcases[tc].reason += checkReason(testcases[tc].passed);
+        }
+    } else {
+        // we need to use a specialized call to writeTestCaseResult
+        if( rest[0] == "no actual" ){
+            for ( tc=0; tc < testcases.length; tc++ ) {
+                testcases[tc].passed = writeTestCaseResult(
+                                    testcases[tc].expect,
+                                    testcases[tc].actual,
+                                    testcases[tc].description );
+                testcases[tc].reason += checkReason(testcases[tc].passed);
+        }
+        }
+    }
     stopTest();
-    return;
+    return ( testcases );
 }
 
 
@@ -187,40 +185,40 @@ function test(... rest:Array) {
 //  the test case passed.
 
 function getTestCaseResult(expect,actual) {
-	//	because	( NaN == NaN ) always returns false, need to do
-	//	a special compare to see if	we got the right result.
-	if ( actual	!= actual )	{
-		if ( typeof	actual == "object" ) {
-			actual = "NaN object";
-		} else {
-			actual = "NaN number";
-		}
-	}
-	if ( expect	!= expect )	{
-		if ( typeof	expect == "object" ) {
-			expect = "NaN object";
-		} else {
-			expect = "NaN number";
-		}
-	}
-	var passed="";
-	if (expect == actual) {
-	    if ( typeof(expect) != typeof(actual) ){
-		passed = "type error";
-	    } else {
-		passed = "true";
-	    }
-	} else { //expect != actual
-	    passed = "false";
-	    // if both objects are numbers
-	    // need	to replace w/ IEEE standard	for	rounding
-	    if (typeof(actual) == "number" && typeof(expect) == "number") {
-		if ( Math.abs(actual-expect) < 0.0000001 ) {
-		    passed = "true";
-		}
-	    }
-	}
-	return passed;
+    //  because ( NaN == NaN ) always returns false, need to do
+    //  a special compare to see if we got the right result.
+    if ( actual != actual ) {
+        if ( typeof actual == "object" ) {
+            actual = "NaN object";
+        } else {
+            actual = "NaN number";
+        }
+    }
+    if ( expect != expect ) {
+        if ( typeof expect == "object" ) {
+            expect = "NaN object";
+        } else {
+            expect = "NaN number";
+        }
+    }
+    var passed="";
+    if (expect == actual) {
+        if ( typeof(expect) != typeof(actual) ){
+        passed = "type error";
+        } else {
+        passed = "true";
+        }
+    } else { //expect != actual
+        passed = "false";
+        // if both objects are numbers
+        // need to replace w/ IEEE standard for rounding
+        if (typeof(actual) == "number" && typeof(expect) == "number") {
+        if ( Math.abs(actual-expect) < 0.0000001 ) {
+            passed = "true";
+        }
+        }
+    }
+    return passed;
 }
 
 //  Begin printing functions.  These functions use the shell's
@@ -246,6 +244,18 @@ function writeTestCaseResult( expect, actual, string ) {
 }
 
 
+function addToATS(expected, actual, description) {
+    // Testcase Description
+    this[fileName+"Str"].push(description);
+
+    // Testcase Actual Values returned
+    this[fileName].push(actual);
+
+    // Testcase Expected Values Return
+    this[fileName+"Ans"].push(expected);
+}
+
+
 //redundant, but leaving in in case its used elsewhere
 /*
 function writeFormattedResult( expect, actual, string, passed ) {
@@ -256,25 +266,33 @@ function writeFormattedResult( expect, actual, string, passed ) {
 }
 */
 
-function writeLineToLog( string	) {
-	_print( string );
+function writeLineToLog( string ) {
+    _print( string );
 }
-function writeHeaderToLog( string )	{
-	_print( string );
+function writeHeaderToLog( string ) {
+    _print( string );
 }
 // end of print functions
-
-
 
 //  When running in the shell, run the garbage collector after the
 //  test has completed.
 
 function stopTest(){
-	fscommand("quit");
+    var failed:int = 0;
+    for ( tc=0; tc < testcases.length; tc++ ) {
+        if(testcases[tc].passed != "true")
+    		failed += 1;    
+    }
+    if(failed)
+        trace("=====================Failures ("+failed+"/"+testcases.length+")=====================");
+    else
+        trace("=====================No failures (" + testcases.length + ")=====================");
+
+    fscommand("quit");
 }
 
 
-//  	Date functions used	by tests in	Date suite
+//      Date functions used by tests in Date suite
 
 //  Originally, the test suite used a hard-coded value TZ_DIFF = -8.
 //  But that was only valid for testers in the Pacific Standard Time Zone!
@@ -286,19 +304,21 @@ function getTimeZoneDiff()
   return -((new Date(2000, 1, 1)).getTimezoneOffset())/60;
 }
 
-var	msPerDay =			86400000;
-var	HoursPerDay	=		24;
-var	MinutesPerHour =	60;
-var	SecondsPerMinute =	60;
-var	msPerSecond	=		1000;
-var	msPerMinute	=		60000;		//	msPerSecond	* SecondsPerMinute
-var	msPerHour =			3600000;	//	msPerMinute	* MinutesPerHour
-var TZ_DIFF	= getTimeZoneDiff();  // offset of tester's timezone from UTC
+var msPerDay =          86400000;
+var HoursPerDay =       24;
+var MinutesPerHour =    60;
+var SecondsPerMinute =  60;
+var msPerSecond =       1000;
+var msPerMinute =       60000;      //  msPerSecond * SecondsPerMinute
+var msPerHour =         3600000;    //  msPerMinute * MinutesPerHour
+var TZ_DIFF = getTimeZoneDiff();  // offset of tester's timezone from UTC
 var             TZ_PST = -8;  // offset of Pacific Standard Time from UTC
+var             TZ_IST = +5.5; // offset of Indian Standard Time from UTC
+var             IST_DIFF = TZ_DIFF - TZ_IST;  // offset of tester's timezone from IST
 var             PST_DIFF = TZ_DIFF - TZ_PST;  // offset of tester's timezone from PST
-var	TIME_1970	 = 0;
-var	TIME_2000	 = 946684800000;
-var	TIME_1900	 = -2208988800000;
+var TIME_1970    = 0;
+var TIME_2000    = 946684800000;
+var TIME_1900    = -2208988800000;
 var now = new Date();
 var TZ_DIFF = getTimeZoneDiff();
 var TZ_ADJUST = TZ_DIFF * msPerHour;
@@ -340,6 +360,7 @@ function adjustResultArray(ResultArray, msMode)
     t = ResultArray[TIME]  +  TZ_DIFF*msPerHour;
 
     // Use our date arithmetic functions to determine the local hour, day, etc.
+    ResultArray[MINUTES] = MinFromTime(t);
     ResultArray[HOURS] = HourFromTime(t);
     ResultArray[DAY] = WeekDay(t);
     ResultArray[DATE] = DateFromTime(t);
@@ -354,6 +375,7 @@ function adjustResultArray(ResultArray, msMode)
 
     // Use our date arithmetic functions to determine the UTC hour, day, etc.
     ResultArray[TIME] = t;
+    ResultArray[UTC_MINUTES] = MinFromTime(t);
     ResultArray[UTC_HOURS] = HourFromTime(t);
     ResultArray[UTC_DAY] = WeekDay(t);
     ResultArray[UTC_DATE] = DateFromTime(t);
@@ -363,408 +385,418 @@ function adjustResultArray(ResultArray, msMode)
 }
 
 
-function Day( t	) {
-	return ( Math.floor(t/msPerDay ) );
+function Day( t ) {
+    return ( Math.floor(t/msPerDay ) );
 }
 function DaysInYear( y ) {
-	if ( y % 4 != 0	) {
-		return 365;
-	}
-	if ( (y	% 4	== 0) && (y	% 100 != 0)	) {
-		return 366;
-	}
-	if ( (y	% 100 == 0)	&&	(y % 400 !=	0) ) {
-		return 365;
-	}
-	if ( (y	% 400 == 0)	){
-		return 366;
-	} else {
-		_print("ERROR: DaysInYear("	+ y	+ ") case not covered");
-		return Math.NaN; //"ERROR: DaysInYear("	+ y	+ ") case not covered";
-	}
+    if ( y % 4 != 0 ) {
+        return 365;
+    }
+    if ( (y % 4 == 0) && (y % 100 != 0) ) {
+        return 366;
+    }
+    if ( (y % 100 == 0) &&  (y % 400 != 0) ) {
+        return 365;
+    }
+    if ( (y % 400 == 0) ){
+        return 366;
+    } else {
+        _print("ERROR: DaysInYear(" + y + ") case not covered");
+        return Math.NaN; //"ERROR: DaysInYear(" + y + ") case not covered";
+    }
 }
 function TimeInYear( y ) {
-	return ( DaysInYear(y) * msPerDay );
+    return ( DaysInYear(y) * msPerDay );
 }
-function DayNumber(	t )	{
-	return ( Math.floor( t / msPerDay )	);
+function DayNumber( t ) {
+    return ( Math.floor( t / msPerDay ) );
 }
-function TimeWithinDay(	t )	{
-	if ( t < 0 ) {
-		return ( (t	% msPerDay)	+ msPerDay );
-	} else {
-		return ( t % msPerDay );
-	}
+function TimeWithinDay( t ) {
+    if ( t < 0 ) {
+        return ( (t % msPerDay) + msPerDay );
+    } else {
+        return ( t % msPerDay );
+    }
 }
 function YearNumber( t ) {
 }
 function TimeFromYear( y ) {
-	return ( msPerDay *	DayFromYear(y) );
+    return ( msPerDay * DayFromYear(y) );
 }
-function DayFromYear( y	) {
-	return (	365*(y-1970) +
-				Math.floor((y-1969)/4) -
-				Math.floor((y-1901)/100) +
-				Math.floor((y-1601)/400) );
+function DayFromYear( y ) {
+    return (    365*(y-1970) +
+                Math.floor((y-1969)/4) -
+                Math.floor((y-1901)/100) +
+                Math.floor((y-1601)/400) );
 }
 function InLeapYear( t ) {
-	if ( DaysInYear(YearFromTime(t)) ==	365	) {
-		return 0;
-	}
-	if ( DaysInYear(YearFromTime(t)) ==	366	) {
-		return 1;
-	} else {
-		return "ERROR:  InLeapYear("+ t + ") case not covered";
-	}
+    if ( DaysInYear(YearFromTime(t)) == 365 ) {
+        return 0;
+    }
+    if ( DaysInYear(YearFromTime(t)) == 366 ) {
+        return 1;
+    } else {
+        return "ERROR:  InLeapYear("+ t + ") case not covered";
+    }
 }
 function YearFromTime( t ) {
-	t =	Number(	t );
-	var	sign = ( t < 0 ) ? -1 :	1;
-	var	year = ( sign <	0 )	? 1969 : 1970;
+    t = Number( t );
+    var sign = ( t < 0 ) ? -1 : 1;
+    var year = ( sign < 0 ) ? 1969 : 1970;
 
-	for	(	var	timeToTimeZero = t;	;  ) {
-	//	subtract the current year's	time from the time that's left.
-		timeToTimeZero -= sign * TimeInYear(year)
-		if (isNaN(timeToTimeZero))
-			return NaN;
+    for (   var timeToTimeZero = t; ;  ) {
+    //  subtract the current year's time from the time that's left.
+        timeToTimeZero -= sign * TimeInYear(year)
+        if (isNaN(timeToTimeZero))
+            return NaN;
 
-	//	if there's less	than the current year's	worth of time left,	then break.
-		if ( sign <	0 )	{
-			if ( sign *	timeToTimeZero <= 0	) {
-				break;
-			} else {
-				year +=	sign;
-			}
-		} else {
-			if ( sign *	timeToTimeZero < 0 ) {
-				break;
-			} else {
-				year +=	sign;
-			}
-		}
-	}
-	return ( year );
+    //  if there's less than the current year's worth of time left, then break.
+        if ( sign < 0 ) {
+            if ( sign * timeToTimeZero <= 0 ) {
+                break;
+            } else {
+                year += sign;
+            }
+        } else {
+            if ( sign * timeToTimeZero < 0 ) {
+                break;
+            } else {
+                year += sign;
+            }
+        }
+    }
+    return ( year );
 }
-function MonthFromTime(	t )	{
-	//	i know i could use switch but i'd rather not until it's	part of	ECMA
-	var	day	= DayWithinYear( t );
-	var	leap = InLeapYear(t);
+function MonthFromTime( t ) {
+    //  i know i could use switch but i'd rather not until it's part of ECMA
+    var day = DayWithinYear( t );
+    var leap = InLeapYear(t);
 
-	if ( (0	<= day)	&& (day	< 31) )	{
-		return 0;
-	}
-	if ( (31 <=	day) &&	(day < (59+leap)) )	{
-		return 1;
-	}
-	if ( ((59+leap)	<= day)	&& (day	< (90+leap)) ) {
-		return 2;
-	}
-	if ( ((90+leap)	<= day)	&& (day	< (120+leap)) )	{
-		return 3;
-	}
-	if ( ((120+leap) <=	day) &&	(day < (151+leap)) ) {
-		return 4;
-	}
-	if ( ((151+leap) <=	day) &&	(day < (181+leap)) ) {
-		return 5;
-	}
-	if ( ((181+leap) <=	day) &&	(day < (212+leap)) ) {
-		return 6;
-	}
-	if ( ((212+leap) <=	day) &&	(day < (243+leap)) ) {
-		return 7;
-	}
-	if ( ((243+leap) <=	day) &&	(day < (273+leap)) ) {
-		return 8;
-	}
-	if ( ((273+leap) <=	day) &&	(day < (304+leap)) ) {
-		return 9;
-	}
-	if ( ((304+leap) <=	day) &&	(day < (334+leap)) ) {
-		return 10;
-	}
-	if ( ((334+leap) <=	day) &&	(day < (365+leap)) ) {
-		return 11;
-	} else {
-		return "ERROR:	MonthFromTime("+t+") not known";
-	}
+    if ( (0 <= day) && (day < 31) ) {
+        return 0;
+    }
+    if ( (31 <= day) && (day < (59+leap)) ) {
+        return 1;
+    }
+    if ( ((59+leap) <= day) && (day < (90+leap)) ) {
+        return 2;
+    }
+    if ( ((90+leap) <= day) && (day < (120+leap)) ) {
+        return 3;
+    }
+    if ( ((120+leap) <= day) && (day < (151+leap)) ) {
+        return 4;
+    }
+    if ( ((151+leap) <= day) && (day < (181+leap)) ) {
+        return 5;
+    }
+    if ( ((181+leap) <= day) && (day < (212+leap)) ) {
+        return 6;
+    }
+    if ( ((212+leap) <= day) && (day < (243+leap)) ) {
+        return 7;
+    }
+    if ( ((243+leap) <= day) && (day < (273+leap)) ) {
+        return 8;
+    }
+    if ( ((273+leap) <= day) && (day < (304+leap)) ) {
+        return 9;
+    }
+    if ( ((304+leap) <= day) && (day < (334+leap)) ) {
+        return 10;
+    }
+    if ( ((334+leap) <= day) && (day < (365+leap)) ) {
+        return 11;
+    } else {
+        return "ERROR:  MonthFromTime("+t+") not known";
+    }
 }
-function DayWithinYear(	t )	{
-		return(	Day(t) - DayFromYear(YearFromTime(t)));
+function DayWithinYear( t ) {
+        return( Day(t) - DayFromYear(YearFromTime(t)));
 }
 function DateFromTime( t ) {
-	var	day	= DayWithinYear(t);
-	var	month =	MonthFromTime(t);
-	if ( month == 0	) {
-		return ( day + 1 );
-	}
-	if ( month == 1	) {
-		return ( day - 30 );
-	}
-	if ( month == 2	) {
-		return ( day - 58 -	InLeapYear(t) );
-	}
-	if ( month == 3	) {
-		return ( day - 89 -	InLeapYear(t));
-	}
-	if ( month == 4	) {
-		return ( day - 119 - InLeapYear(t));
-	}
-	if ( month == 5	) {
-		return ( day - 150-	InLeapYear(t));
-	}
-	if ( month == 6	) {
-		return ( day - 180-	InLeapYear(t));
-	}
-	if ( month == 7	) {
-		return ( day - 211-	InLeapYear(t));
-	}
-	if ( month == 8	) {
-		return ( day - 242-	InLeapYear(t));
-	}
-	if ( month == 9	) {
-		return ( day - 272-	InLeapYear(t));
-	}
-	if ( month == 10 ) {
-		return ( day - 303-	InLeapYear(t));
-	}
-	if ( month == 11 ) {
-		return ( day - 333-	InLeapYear(t));
-	}
+    var day = DayWithinYear(t);
+    var month = MonthFromTime(t);
+    if ( month == 0 ) {
+        return ( day + 1 );
+    }
+    if ( month == 1 ) {
+        return ( day - 30 );
+    }
+    if ( month == 2 ) {
+        return ( day - 58 - InLeapYear(t) );
+    }
+    if ( month == 3 ) {
+        return ( day - 89 - InLeapYear(t));
+    }
+    if ( month == 4 ) {
+        return ( day - 119 - InLeapYear(t));
+    }
+    if ( month == 5 ) {
+        return ( day - 150- InLeapYear(t));
+    }
+    if ( month == 6 ) {
+        return ( day - 180- InLeapYear(t));
+    }
+    if ( month == 7 ) {
+        return ( day - 211- InLeapYear(t));
+    }
+    if ( month == 8 ) {
+        return ( day - 242- InLeapYear(t));
+    }
+    if ( month == 9 ) {
+        return ( day - 272- InLeapYear(t));
+    }
+    if ( month == 10 ) {
+        return ( day - 303- InLeapYear(t));
+    }
+    if ( month == 11 ) {
+        return ( day - 333- InLeapYear(t));
+    }
 
-	return ("ERROR:	 DateFromTime("+t+") not known"	);
+    return ("ERROR:  DateFromTime("+t+") not known" );
 }
-function WeekDay( t	) {
-	var	weekday	= (Day(t)+4) % 7;
-	return(	weekday	< 0	? 7	+ weekday :	weekday	);
+function WeekDay( t ) {
+    var weekday = (Day(t)+4) % 7;
+    return( weekday < 0 ? 7 + weekday : weekday );
 }
 
-// missing daylight	savins time	adjustment
+// missing daylight savins time adjustment
 
 function HourFromTime( t ) {
-	var	h =	Math.floor(	t /	msPerHour )	% HoursPerDay;
-	return ( (h<0) ? HoursPerDay + h : h  );
+    var h = Math.floor( t / msPerHour ) % HoursPerDay;
+    return ( (h<0) ? HoursPerDay + h : h  );
 }
-function MinFromTime( t	) {
-	var	min	= Math.floor( t	/ msPerMinute )	% MinutesPerHour;
-	return(	( min <	0 )	? MinutesPerHour + min : min  );
+function MinFromTime( t ) {
+    var min = Math.floor( t / msPerMinute ) % MinutesPerHour;
+    return( ( min < 0 ) ? MinutesPerHour + min : min  );
 }
-function SecFromTime( t	) {
-	var	sec	= Math.floor( t	/ msPerSecond )	% SecondsPerMinute;
-	return ( (sec <	0 )	? SecondsPerMinute + sec : sec );
+function SecFromTime( t ) {
+    var sec = Math.floor( t / msPerSecond ) % SecondsPerMinute;
+    return ( (sec < 0 ) ? SecondsPerMinute + sec : sec );
 }
 function msFromTime( t ) {
-	var	ms = t % msPerSecond;
-	return ( (ms < 0 ) ? msPerSecond + ms :	ms );
+    var ms = t % msPerSecond;
+    return ( (ms < 0 ) ? msPerSecond + ms : ms );
 }
-function LocalTZA()	{
-	return ( TZ_DIFF * msPerHour );
+function LocalTZA() {
+    return ( TZ_DIFF * msPerHour );
 }
-function UTC( t	) {
-	return ( t - LocalTZA()	- DaylightSavingTA(t - LocalTZA()) );
+function UTC( t ) {
+    return ( t - LocalTZA() - DaylightSavingTA(t - LocalTZA()) );
 }
 
 function DaylightSavingTA( t ) {
-	var dst_start;
-	var dst_end;
+    // There is no Daylight saving time in India
+    if (IST_DIFF == 0)
+        return 0;
+
+    var dst_start;
+    var dst_end;
     // Windows fix for 2007 DST change made all previous years follow new DST rules
-    // check to see if 3/13/2006 12pm getHours is 12 or 13
-    var dstPrev:Boolean=(new Date(1142269200000).getHours()==13);
-	if (TZ_DIFF<=-4 && TZ_DIFF>=-8) {
-        if (dstPrev || YearFromTime(t)>=2007) {
-   	        dst_start = GetSecondSundayInMarch(t) + 2*msPerHour;
+    // create a date pre-2007 when DST is enabled according to 2007 rules
+    var pre_2007:Date = new Date("Mar 20 2006");
+    // create a date post-2007
+    var post_2007:Date = new Date("Mar 20 2008");
+    // if the two dates timezoneoffset match, then this must be a windows box applying
+    // post-2007 DST rules to earlier dates.
+    var win_machine:Boolean = pre_2007.timezoneOffset == post_2007.timezoneOffset
+
+    if (TZ_DIFF<=-4 && TZ_DIFF>=-8) {
+        if (win_machine || YearFromTime(t)>=2007) {
+            dst_start = GetSecondSundayInMarch(t) + 2*msPerHour;
             dst_end = GetFirstSundayInNovember(t) + 2*msPerHour;
         } else {
             dst_start = GetFirstSundayInApril(t) + 2*msPerHour;
             dst_end = GetLastSundayInOctober(t) + 2*msPerHour;
-        }        
-	} else {
-	    dst_start = GetLastSundayInMarch(t) + 2*msPerHour;
-	    dst_end = GetLastSundayInOctober(t) + 2*msPerHour;
+        }
+    } else {
+        dst_start = GetLastSundayInMarch(t) + 2*msPerHour;
+        dst_end = GetLastSundayInOctober(t) + 2*msPerHour;
     }
-	if ( t >= dst_start	&& t < dst_end ) {
-		return msPerHour;
-	} else {
-		return 0;
+    if ( t >= dst_start && t < dst_end ) {
+        return msPerHour;
+    } else {
+        return 0;
                 
-	}
+    }
 
-	// Daylight	Savings	Time starts	on the second Sunday	in March at	2:00AM in
-	// PST.	 Other time	zones will need	to override	this function.
-	_print( new Date( UTC(dst_start + LocalTZA())) );
+    // Daylight Savings Time starts on the second Sunday    in March at 2:00AM in
+    // PST.  Other time zones will need to override this function.
+    _print( new Date( UTC(dst_start + LocalTZA())) );
 
-	return UTC(dst_start  +	LocalTZA());
+    return UTC(dst_start  + LocalTZA());
 }
 function GetLastSundayInMarch(t) {
-	var	year = YearFromTime(t);
-	var	leap = InLeapYear(t);
-	var	march =	TimeFromYear(year) + TimeInMonth(0,leap) +	TimeInMonth(1,leap)-LocalTZA()+2*msPerHour;
+    var year = YearFromTime(t);
+    var leap = InLeapYear(t);
+    var march = TimeFromYear(year) + TimeInMonth(0,leap) +  TimeInMonth(1,leap)-LocalTZA()+2*msPerHour;
     var sunday;
-	for( sunday=march;WeekDay(sunday)>0;sunday +=msPerDay ){;}
-	var last_sunday;
-	while (true) {
-	   sunday=sunday+7*msPerDay;
-	   if (MonthFromTime(sunday)>2)
-	       break;
-	   last_sunday=sunday;
-	}
-	return last_sunday;
+    for( sunday=march;WeekDay(sunday)>0;sunday +=msPerDay ){;}
+    var last_sunday;
+    while (true) {
+       sunday=sunday+7*msPerDay;
+       if (MonthFromTime(sunday)>2)
+           break;
+       last_sunday=sunday;
+    }
+    return last_sunday;
 }
-function GetSecondSundayInMarch(t )	{
-	var	year = YearFromTime(t);
-	var	leap = InLeapYear(t);
-	var	march =	TimeFromYear(year) + TimeInMonth(0,leap) +	TimeInMonth(1,leap)-LocalTZA()+2*msPerHour;
+function GetSecondSundayInMarch(t ) {
+    var year = YearFromTime(t);
+    var leap = InLeapYear(t);
+    var march = TimeFromYear(year) + TimeInMonth(0,leap) +  TimeInMonth(1,leap)-LocalTZA()+2*msPerHour;
         
-	for	( var first_sunday = march;	WeekDay(first_sunday) >0;
-		first_sunday +=msPerDay )
-	{
-		;
-	}
+    for ( var first_sunday = march; WeekDay(first_sunday) >0;
+        first_sunday +=msPerDay )
+    {
+        ;
+    }
     second_sunday=first_sunday+7*msPerDay;
-	return second_sunday;
+    return second_sunday;
 }
 
 
 
 function GetFirstSundayInNovember( t ) {
-	var	year = YearFromTime(t);
-	var	leap = InLeapYear(t);
+    var year = YearFromTime(t);
+    var leap = InLeapYear(t);
         var     nov,m;
-	for	( nov =	TimeFromYear(year),	m =	0; m < 10; m++ )	{
-		nov	+= TimeInMonth(m, leap);
-	}
-	nov=nov-LocalTZA()+2*msPerHour;
-	for	( var first_sunday =	nov; WeekDay(first_sunday)	> 0;
-		first_sunday	+= msPerDay	)
-	{
-		;
-	}
-	return first_sunday;
+    for ( nov = TimeFromYear(year), m = 0; m < 10; m++ )    {
+        nov += TimeInMonth(m, leap);
+    }
+    nov=nov-LocalTZA()+2*msPerHour;
+    for ( var first_sunday =    nov; WeekDay(first_sunday)  > 0;
+        first_sunday    += msPerDay )
+    {
+        ;
+    }
+    return first_sunday;
 }
 function GetFirstSundayInApril( t ) {
-	var	year = YearFromTime(t);
-	var	leap = InLeapYear(t);
+    var year = YearFromTime(t);
+    var leap = InLeapYear(t);
     var     apr,m;
-	for	( apr =	TimeFromYear(year),	m =	0; m < 3; m++ )	{
-		apr	+= TimeInMonth(m, leap);
-	}
-	apr=apr-LocalTZA()+2*msPerHour;
+    for ( apr = TimeFromYear(year), m = 0; m < 3; m++ ) {
+        apr += TimeInMonth(m, leap);
+    }
+    apr=apr-LocalTZA()+2*msPerHour;
 
-	for	( var first_sunday =	apr; WeekDay(first_sunday)	> 0;
-		first_sunday	+= msPerDay	)
-	{
-		;
-	}
-	return first_sunday;
+    for ( var first_sunday =    apr; WeekDay(first_sunday)  > 0;
+        first_sunday    += msPerDay )
+    {
+        ;
+    }
+    return first_sunday;
 }
 function GetLastSundayInOctober(t) {
-	var	year = YearFromTime(t);
-	var	leap = InLeapYear(t);
-	var oct,m;
-	for	(oct =	TimeFromYear(year),	m =	0; m < 9; m++ )	{
-		oct	+= TimeInMonth(m, leap);
-	}
-	oct=oct-LocalTZA()+2*msPerHour;
+    var year = YearFromTime(t);
+    var leap = InLeapYear(t);
+    var oct,m;
+    for (oct =  TimeFromYear(year), m = 0; m < 9; m++ ) {
+        oct += TimeInMonth(m, leap);
+    }
+    oct=oct-LocalTZA()+2*msPerHour;
     var sunday;
-	for( sunday=oct;WeekDay(sunday)>0;sunday +=msPerDay ){;}
-	var last_sunday;
-	while (true) {
-	   last_sunday=sunday;
-	   sunday=sunday+7*msPerDay;
-	   if (MonthFromTime(sunday)>9)
-	       break;
-	}
-	return last_sunday;
+    for( sunday=oct;WeekDay(sunday)>0;sunday +=msPerDay ){;}
+    var last_sunday;
+    while (true) {
+       last_sunday=sunday;
+       sunday=sunday+7*msPerDay;
+       if (MonthFromTime(sunday)>9)
+           break;
+    }
+    return last_sunday;
 }
-function LocalTime(	t )	{
-	return ( t + LocalTZA()	+ DaylightSavingTA(t) );
+function LocalTime( t ) {
+    return ( t + LocalTZA() + DaylightSavingTA(t) );
 }
-function MakeTime( hour, min, sec, ms )	{
-	if ( isNaN(	hour ) || isNaN( min ) || isNaN( sec ) || isNaN( ms	) )	{
-		return Number.NaN;
-	}
+function MakeTime( hour, min, sec, ms ) {
+    if ( isNaN( hour ) || isNaN( min ) || isNaN( sec ) || isNaN( ms ) ) {
+        return Number.NaN;
+    }
 
-	hour = ToInteger(hour);
-	min	 = ToInteger( min);
-	sec	 = ToInteger( sec);
-	ms	 = ToInteger( ms );
+    hour = ToInteger(hour);
+    min  = ToInteger( min);
+    sec  = ToInteger( sec);
+    ms   = ToInteger( ms );
 
-	return(	(hour*msPerHour) + (min*msPerMinute) +
-			(sec*msPerSecond) +	ms );
+    return( (hour*msPerHour) + (min*msPerMinute) +
+            (sec*msPerSecond) + ms );
 }
-function MakeDay( year,	month, date	) {
-	if ( isNaN(year) ||	isNaN(month) ||	isNaN(date)	) {
-		return Number.NaN;
-	}
-	year = ToInteger(year);
-	month =	ToInteger(month);
-	date = ToInteger(date );
+function MakeDay( year, month, date ) {
+    if ( isNaN(year) || isNaN(month) || isNaN(date) ) {
+        return Number.NaN;
+    }
+    year = ToInteger(year);
+    month = ToInteger(month);
+    date = ToInteger(date );
 
-	var	sign = ( year <	1970 ) ? -1	: 1;
-	var	t =	   ( year <	1970 ) ? 1 :  0;
-	var	y =	   ( year <	1970 ) ? 1969 :	1970;
+    var sign = ( year < 1970 ) ? -1 : 1;
+    var t =    ( year < 1970 ) ? 1 :  0;
+    var y =    ( year < 1970 ) ? 1969 : 1970;
 
-	var	result5	= year + Math.floor( month/12 );
-	var	result6	= month	% 12;
+    var result5 = year + Math.floor( month/12 );
+    var result6 = month % 12;
 
-	if ( year <	1970 ) {
-	   for ( y = 1969; y >=	year; y	+= sign	) {
-		 t += sign * TimeInYear(y);
-	   }
-	} else {
-		for	( y	= 1970 ; y < year; y +=	sign ) {
-			t += sign *	TimeInYear(y);
-		}
-	}
+    if ( year < 1970 ) {
+       for ( y = 1969; y >= year; y += sign ) {
+         t += sign * TimeInYear(y);
+       }
+    } else {
+        for ( y = 1970 ; y < year; y += sign ) {
+            t += sign * TimeInYear(y);
+        }
+    }
 
-	var	leap = InLeapYear( t );
+    var leap = InLeapYear( t );
 
-	for	( var m	= 0; m < month;	m++	) {
-		t += TimeInMonth( m, leap );
-	}
+    for ( var m = 0; m < month; m++ ) {
+        t += TimeInMonth( m, leap );
+    }
 
-	if ( YearFromTime(t) !=	result5	) {
-		return Number.NaN;
-	}
-	if ( MonthFromTime(t) != result6 ) {
-		return Number.NaN;
-	}
-	if ( DateFromTime(t) !=	1 )	{
-		return Number.NaN;
-	}
+    if ( YearFromTime(t) != result5 ) {
+        return Number.NaN;
+    }
+    if ( MonthFromTime(t) != result6 ) {
+        return Number.NaN;
+    }
+    if ( DateFromTime(t) != 1 ) {
+        return Number.NaN;
+    }
 
-	return ( (Day(t)) +	date - 1 );
+    return ( (Day(t)) + date - 1 );
 }
-function TimeInMonth( month, leap )	{
-	// september april june	november
-	// jan 0  feb 1	 mar 2	apr	3	may	4  june	5  jul 6
-	// aug 7  sep 8	 oct 9	nov	10	dec	11
+function TimeInMonth( month, leap ) {
+    // september april june november
+    // jan 0  feb 1  mar 2  apr 3   may 4  june 5  jul 6
+    // aug 7  sep 8  oct 9  nov 10  dec 11
 
-	if ( month == 3	|| month ==	5 || month == 8	|| month ==	10 ) {
-		return ( 30*msPerDay );
-	}
+    if ( month == 3 || month == 5 || month == 8 || month == 10 ) {
+        return ( 30*msPerDay );
+    }
 
-	// all the rest
-	if ( month == 0	|| month ==	2 || month == 4	|| month ==	6 ||
-		 month == 7	|| month ==	9 || month == 11 ) {
-		return ( 31*msPerDay );
-	 }
+    // all the rest
+    if ( month == 0 || month == 2 || month == 4 || month == 6 ||
+         month == 7 || month == 9 || month == 11 ) {
+        return ( 31*msPerDay );
+     }
 
-	// save	february
-	return ( (leap == 0) ? 28*msPerDay : 29*msPerDay );
+    // save february
+    return ( (leap == 0) ? 28*msPerDay : 29*msPerDay );
 }
-function MakeDate( day,	time ) {
-	if (	day	== Number.POSITIVE_INFINITY	||
-			day	== Number.NEGATIVE_INFINITY	||
-			day	== Number.NaN )	{
-		return Number.NaN;
-	}
-	if (	time ==	Number.POSITIVE_INFINITY ||
-			time ==	Number.POSITIVE_INFINITY ||
-			day	== Number.NaN) {
-		return Number.NaN;
-	}
-	return ( day * msPerDay	) +	time;
+function MakeDate( day, time ) {
+    if (    day == Number.POSITIVE_INFINITY ||
+            day == Number.NEGATIVE_INFINITY ||
+            day == Number.NaN ) {
+        return Number.NaN;
+    }
+    if (    time == Number.POSITIVE_INFINITY ||
+            time == Number.POSITIVE_INFINITY ||
+            day == Number.NaN) {
+        return Number.NaN;
+    }
+    return ( day * msPerDay ) + time;
 }
 
 
@@ -781,35 +813,35 @@ function compareDate(d1, d2) {
 }
 
 function TimeClip( t ) {
-	if ( isNaN(	t )	) {
-		return ( Number.NaN	);
-	}
-	if ( Math.abs( t ) > 8.64e15 ) {
-		return ( Number.NaN	);
-	}
+    if ( isNaN( t ) ) {
+        return ( Number.NaN );
+    }
+    if ( Math.abs( t ) > 8.64e15 ) {
+        return ( Number.NaN );
+    }
 
-	return ( ToInteger(	t )	);
+    return ( ToInteger( t ) );
 }
-function ToInteger(	t )	{
-	t =	Number(	t );
+function ToInteger( t ) {
+    t = Number( t );
 
-	if ( isNaN(	t )	){
-		return ( Number.NaN	);
-	}
-	if ( t == 0	|| t ==	-0 ||
-		 t == Number.POSITIVE_INFINITY || t	== Number.NEGATIVE_INFINITY	) {
-		 return	0;
-	}
+    if ( isNaN( t ) ){
+        return ( Number.NaN );
+    }
+    if ( t == 0 || t == -0 ||
+         t == Number.POSITIVE_INFINITY || t == Number.NEGATIVE_INFINITY ) {
+         return 0;
+    }
 
-	var	sign = ( t < 0 ) ? -1 :	1;
+    var sign = ( t < 0 ) ? -1 : 1;
 
-	return ( sign *	Math.floor(	Math.abs( t	) )	);
+    return ( sign * Math.floor( Math.abs( t ) ) );
 }
 function Enumerate ( o ) {
-	var	p;
-	for	( p	in o ) {
-		_print( p +": " + o[p] );
-	}
+    var p;
+    for ( p in o ) {
+        _print( p +": " + o[p] );
+    }
 }
 
 
@@ -895,7 +927,7 @@ function SHOULD_THROW(section)
 
 function END()
 {
-	test();
+    test();
 }
 
 function NL()
@@ -919,22 +951,34 @@ function toPrinted(value)
 }
 
 function grabError(err, str) {
-	var typeIndex = str.indexOf("Error:");
-	var type = str.substr(0, typeIndex + 5);
-	if (type == "TypeError") {
-		AddTestCase("Asserting for TypeError", true, (err is TypeError));
-	} else if (type == "ArgumentError") {
-		AddTestCase("Asserting for ArgumentError", true, (err is ArgumentError));
-	}
-	var numIndex = str.indexOf("Error #");
-	var num;
-	if (numIndex >= 0) {
-		num = str.substr(numIndex, 11);
-	} else {
-		num = str;
-	}
-	return num;
+    var typeIndex = str.indexOf("Error:");
+    var type = str.substr(0, typeIndex + 5);
+    if (type == "TypeError") {
+        AddTestCase("Asserting for TypeError", true, (err is TypeError));
+    } else if (type == "ArgumentError") {
+        AddTestCase("Asserting for ArgumentError", true, (err is ArgumentError));
+    }
+    var numIndex = str.indexOf("Error #");
+    var num;
+    if (numIndex >= 0) {
+        num = str.substr(numIndex, 11);
+    } else {
+        num = str;
+    }
+    return num;
 }
+
+function AddErrorTest(desc:String, expectedErr:String, testFunc:Function) {
+    actualErr = null;
+    try {
+        testFunc();
+    } catch (e) {
+        actualErr = e;
+    }
+    grabError(actualErr, expectedErr);
+    AddTestCase(desc, expectedErr, actualErr.toString().substr(0, expectedErr.length));
+}
+
 var cnNoObject = 'Unexpected Error!!! Parameter to this function must be an object';
 var cnNoClass = 'Unexpected Error!!! Cannot find Class property';
 var cnObjectToString = Object.prototype.toString;
@@ -988,10 +1032,12 @@ function printStatus (msg)
 }
 function reportCompare (expected, actual, description)
 {
+    AddTestCase(description, expected, actual);
+    /*
     var expected_t = typeof expected;
     var actual_t = typeof actual;
     var output = "";
-   	if ((VERBOSE) && (typeof description != "undefined"))
+    if ((VERBOSE) && (typeof description != "undefined"))
             printStatus ("Comparing '" + description + "'");
 
     if (expected_t != actual_t)
@@ -1012,15 +1058,17 @@ function reportCompare (expected, actual, description)
         {
             if (typeof description != "undefined")
                 reportFailure (description);
-            	reportFailure (output);
+                reportFailure (output);
         }
     stopTest();
+    */
 }
 // encapsulate output in shell
 function _print(s) {
   trace(s);
 //  trace(s);
 }
+
 // workaround for Debugger vm where error contains more details
 function parseError(error,len) {
   if (error.length>len) {
@@ -1041,3 +1089,260 @@ function versionTest(testFunc, desc, expected) {
    AddTestCase(desc, expected, result);
 }
 
+// Helper functions for tests from spidermonkey (JS1_5 and greater)
+/*
+  Calculate the "order" of a set of data points {X: [], Y: []}
+  by computing successive "derivatives" of the data until
+  the data is exhausted or the derivative is linear.
+*/
+function BigO(data) {
+    var order = 0;
+    var origLength = data.X.length;
+
+    while (data.X.length > 2) {
+        var lr = new LinearRegression(data);
+        if (lr.b > 1e-6) {
+            // only increase the order if the slope
+            // is "great" enough
+            order++;
+        }
+
+        if (lr.r > 0.98 || lr.Syx < 1 || lr.b < 1e-6) {
+            // terminate if close to a line lr.r
+            // small error lr.Syx
+            // small slope lr.b
+            break;
+        }
+        data = dataDeriv(data);
+    }
+
+    if (2 == origLength - order) {
+        order = Number.POSITIVE_INFINITY;
+    }
+    return order;
+
+    function LinearRegression(data) {
+        /*
+      y = a + bx
+      for data points (Xi, Yi); 0 <= i < n
+
+      b = (n*SUM(XiYi) - SUM(Xi)*SUM(Yi))/(n*SUM(Xi*Xi) - SUM(Xi)*SUM(Xi))
+      a = (SUM(Yi) - b*SUM(Xi))/n
+    */
+        var i;
+
+        if (data.X.length != data.Y.length) {
+            throw 'LinearRegression: data point length mismatch';
+        }
+        if (data.X.length < 3) {
+            throw 'LinearRegression: data point length < 2';
+        }
+        var n = data.X.length;
+        var X = data.X;
+        var Y = data.Y;
+
+        this.Xavg = 0;
+        this.Yavg = 0;
+
+        var SUM_X = 0;
+        var SUM_XY = 0;
+        var SUM_XX = 0;
+        var SUM_Y = 0;
+        var SUM_YY = 0;
+
+        for (i = 0; i < n; i++) {
+            SUM_X += X[i];
+            SUM_XY += X[i] * Y[i];
+            SUM_XX += X[i] * X[i];
+            SUM_Y += Y[i];
+            SUM_YY += Y[i] * Y[i];
+        }
+
+        this.b = (n * SUM_XY - SUM_X * SUM_Y) / (n * SUM_XX - SUM_X * SUM_X);
+        this.a = (SUM_Y - this.b * SUM_X) / n;
+
+        this.Xavg = SUM_X / n;
+        this.Yavg = SUM_Y / n;
+
+        var SUM_Ydiff2 = 0;
+        var SUM_Xdiff2 = 0;
+        var SUM_XdiffYdiff = 0;
+
+        for (i = 0; i < n; i++) {
+            var Ydiff = Y[i] - this.Yavg;
+            var Xdiff = X[i] - this.Xavg;
+
+            SUM_Ydiff2 += Ydiff * Ydiff;
+            SUM_Xdiff2 += Xdiff * Xdiff;
+            SUM_XdiffYdiff += Xdiff * Ydiff;
+        }
+
+        var Syx2 = (SUM_Ydiff2 - Math.pow(SUM_XdiffYdiff / SUM_Xdiff2, 2)) / (n - 2);
+        var r2 = Math.pow((n * SUM_XY - SUM_X * SUM_Y), 2) / ((n * SUM_XX - SUM_X * SUM_X) * (n * SUM_YY - SUM_Y * SUM_Y));
+
+        this.Syx = Math.sqrt(Syx2);
+        this.r = Math.sqrt(r2);
+
+    }
+
+    function dataDeriv(data) {
+        if (data.X.length != data.Y.length) {
+            throw 'length mismatch';
+        }
+        var length = data.X.length;
+
+        if (length < 2) {
+            throw 'length ' + length + ' must be >= 2';
+        }
+        var X = data.X;
+        var Y = data.Y;
+
+        var deriv = {
+            X: [],
+            Y: []
+        };
+
+        for (var i = 0; i < length - 1; i++) {
+            deriv.X[i] = (X[i] + X[i + 1]) / 2;
+            deriv.Y[i] = (Y[i + 1] - Y[i]) / (X[i + 1] - X[i]);
+        }
+        return deriv;
+    }
+
+    return 0;
+}
+
+/*
+ * Date: 07 February 2001
+ *
+ * Functionality common to Array testing -
+ */
+//-----------------------------------------------------------------------------
+
+var gTestsubsuite = 'Expressions';
+
+var CHAR_LBRACKET = '[';
+var CHAR_RBRACKET = ']';
+var CHAR_QT_DBL = '"';
+var CHAR_QT = "'";
+var CHAR_NL = '\n';
+var CHAR_COMMA = ',';
+var CHAR_SPACE = ' ';
+var TYPE_STRING = typeof 'abc';
+
+
+/*
+ * If available, arr.toSource() gives more detail than arr.toString()
+ *
+ * var arr = Array(1,2,'3');
+ *
+ * arr.toSource()
+ * [1, 2, "3"]
+ *
+ * arr.toString()
+ * 1,2,3
+ *
+ * But toSource() doesn't exist in Rhino, so use our own imitation, below -
+ *
+ */
+function formatArray(arr)
+{
+  try
+  {
+    return arr.toSource();
+  }
+  catch(e)
+  {
+    return toSource(arr);
+  }
+}
+
+
+
+/*
+ * Imitate SpiderMonkey's arr.toSource() method:
+ *
+ * a) Double-quote each array element that is of string type
+ * b) Represent |undefined| and |null| by empty strings
+ * c) Delimit elements by a comma + single space
+ * d) Do not add delimiter at the end UNLESS the last element is |undefined|
+ * e) Add square brackets to the beginning and end of the string
+ */
+function toSource(arr)
+{
+  var delim = CHAR_COMMA + CHAR_SPACE;
+  var elt = '';
+  var ret = '';
+  var len = arr.length;
+
+  for (i=0; i<len; i++)
+  {
+    elt = arr[i];
+
+    switch(true)
+    {
+    case (typeof elt === TYPE_STRING) :
+      ret += doubleQuote(elt);
+      break;
+
+    case (elt === undefined || elt === null) :
+      break; // add nothing but the delimiter, below -
+
+    default:
+      ret += elt.toString();
+    }
+
+    if ((i < len-1) || (elt === undefined))
+      ret += delim;
+  }
+
+  return  CHAR_LBRACKET + ret + CHAR_RBRACKET;
+}
+
+
+function doubleQuote(text)
+{
+  return CHAR_QT_DBL + text + CHAR_QT_DBL;
+}
+
+
+function singleQuote(text)
+{
+  return CHAR_QT + text + CHAR_QT;
+}
+
+function removeExceptionDetail(s:String) {
+    var fnd=s.indexOf(" ");
+    if (fnd>-1) {
+        if (s.indexOf(':',fnd)>-1) {
+                s=s.substring(0,s.indexOf(':',fnd));
+        }
+    }
+    return s;
+}
+
+function sortObject(o:Object) {
+    var keys=[];
+    for ( key in o ) {
+        if (o==undefined) {
+           continue;
+        }
+        keys[keys.length]=key;
+    }
+    keys.sort();
+    var ret="{";
+    for (i in keys) {
+        key=keys[i];
+        value=o[key];
+        if (value is String) {
+            value='"'+value+'"';
+        } else if (value is Array) {
+            value='['+value+']';
+        } else if (value is Object) {
+        }
+        ret += '"'+key+'":'+value+",";
+    }
+    ret=ret.substring(0,ret.length-1);
+    ret+="}";
+    return ret;
+}

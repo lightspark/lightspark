@@ -219,16 +219,20 @@ for test in $TESTS; do
 	fi
 	lines=`cat $LOGFILE`
 
-	if [ "`echo $lines | grep 'Failures'`" != "" ]; then
+	if [ "`echo $lines | grep '==Failures'`" != "" ]; then
 		THISFAILEDCOUNT=`echo "$lines" | sed -n -e 's/.*=Failures (\(.*\)\/.*)=.*/\1/p'`
 		THISNUMTESTS=`echo "$lines" | sed -n -e 's/.*=Failures (.*\/\(.*\))=.*/\1/p'`
 		THISSUCCESSCOUNT=`expr $THISNUMTESTS - $THISFAILEDCOUNT`
 		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 		FAILED_TESTS="$FAILED_TESTS $test"
-	elif [ "`echo $lines | grep 'No failures'`" != "" ]; then
+	elif [ "`echo $lines | grep '==No failures'`" != "" ]; then
 		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
+	else
+		echo -e "\\e[0;31m$test printed no test summary!\\e[0m"
+		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
+		FAILED_TESTS="$FAILED_TESTS $test"
 	fi
 
 	if [ $QUIET -eq 1 ]; then

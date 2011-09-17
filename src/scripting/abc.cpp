@@ -1938,9 +1938,53 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			ASObject* tmpo=obj->getVariableByMultiname(mname,ASObject::SKIP_IMPL);
 			if(tmpo)
 				return;
-
 			ASObject* ret;
-			if(deferred_initialization)
+
+			//check if this class has the 'interface' flag, i.e. it is an interface
+			if((instances[t->classi].flags)&0x04)
+			{
+				const multiname& mname=*getMultiname(t->name,NULL);
+				QName className(mname.name_s,mname.ns[0].name);
+
+				Class_inherit* ci=new Class_inherit(className);
+
+				LOG(LOG_CALLS,_("Building class traits"));
+				for(unsigned int i=0;i<classes[t->classi].trait_count;i++)
+					buildTrait(ci,&classes[t->classi].traits[i],false);
+				//Add protected namespace if needed
+				if((instances[t->classi].flags)&0x08)
+				{
+					ci->use_protected=true;
+					int ns=instances[t->classi].protectedNs;
+					const namespace_info& ns_info=constant_pool.namespaces[ns];
+					ci->protected_ns=nsNameAndKind(getString(ns_info.name),(NS_KIND)(int)ns_info.kind);
+				}
+				LOG(LOG_CALLS,_("Adding immutable object traits to class"));
+				//Class objects also contains all the methods/getters/setters declared for instances
+				for(unsigned int i=0;i<instances[t->classi].trait_count;i++)
+				{
+					int kind=instances[t->classi].traits[i].kind&0xf;
+					if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
+						buildTrait(ci,&instances[t->classi].traits[i],true);
+				}
+				ci->class_index=t->classi;
+				ci->context = this;
+
+				//TODO: can an interface implement other interfaces?
+				assert(instances[t->classi].interface_count == 0);
+
+				//can an interface derive from an other interface?
+				//can an interface derive from an non interface class?
+				assert(instances[t->classi].supername == 0);
+				//do interfaces have cinit methods?
+				//TODO: call them, set constructor property, do something
+				if(classes[t->classi].cinit != 0)
+					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (static)");
+				if(instances[t->classi].init != 0)
+					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (constructor)");
+				ret = ci;
+			}
+			else if(deferred_initialization)
 				ret=new ScriptDefinable(deferred_initialization);
 			else
 				ret=new Undefined;

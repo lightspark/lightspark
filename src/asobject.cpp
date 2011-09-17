@@ -33,6 +33,20 @@ REGISTER_CLASS_NAME2(ASObject,"Object","");
 tiny_string ASObject::toString(bool debugMsg)
 {
 	check();
+	if(debugMsg) {
+		tiny_string ret;
+		if(getClass())
+		{
+			ret="[object ";
+			ret+=getClass()->class_name.name;
+			ret+="]";
+			return ret;
+		}
+		else
+			ret="[object Object]";
+
+		return ret;
+	}
 	multiname toStringName;
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s="toString";

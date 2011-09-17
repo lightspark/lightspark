@@ -282,6 +282,9 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
+	//borrowed properties only make sense on class objects
+	assert(!isBorrowed || dynamic_cast<Class_base*>(this));
+
 	obj_var* obj=Variables.findObjVar(name,ns, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 	switch(type)
 	{

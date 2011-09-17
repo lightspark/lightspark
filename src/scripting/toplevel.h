@@ -344,6 +344,7 @@ public:
 	}
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(generator);
 	//Serialization interface
@@ -650,6 +651,7 @@ private:
 	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
 	static void purgeTrailingZeroes(char* buf, int bufLen);
 public:
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg);
 	unsigned int toUInt()

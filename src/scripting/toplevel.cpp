@@ -2948,6 +2948,7 @@ void Number::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Must create and link the number the hard way
 	Number* ninf=new Number(-numeric_limits<double>::infinity());
 	Number* pinf=new Number(numeric_limits<double>::infinity());
@@ -2965,6 +2966,14 @@ void Number::sinit(Class_base* c)
 	c->setVariableByQName("MIN_VALUE","",pmin,DECLARED_TRAIT);
 	c->setVariableByQName("NaN","",pnan,DECLARED_TRAIT);
 	c->prototype->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),NORMAL_METHOD,false);
+}
+
+ASFUNCTIONBODY(Number,_constructor)
+{
+	Number* th=static_cast<Number*>(obj);
+	if(args && argslen==1)
+		th->val=args[0]->toNumber();
+	return NULL;
 }
 
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -5277,7 +5286,20 @@ ASFUNCTIONBODY(Boolean,_toString)
 
 void Boolean::sinit(Class_base* c)
 {
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->prototype->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Boolean::_toString),NORMAL_METHOD,false);
+}
+
+ASFUNCTIONBODY(Boolean,_constructor)
+{
+	Boolean* th=static_cast<Boolean*>(obj);
+	if(argslen == 1)
+	{
+		th->val=Boolean_concrete(args[0]);
+	}
+	return NULL;
 }
 
 void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

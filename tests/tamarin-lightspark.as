@@ -173,12 +173,13 @@ function test(... rest:Array) {
     	}
 		}
 	}
-    stopTest();
     if(failed)
         trace("=====================Failures ("+failed+"/"+testcases.length+")=====================");
     else
         trace("=====================No failures (" + testcases.length + ")=====================");
-    return ( testcases );
+
+    stopTest();
+    return;
 }
 
 

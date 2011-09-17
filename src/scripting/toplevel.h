@@ -381,7 +381,7 @@ private:
 	ASString(const char* s);
 	ASString(const char* s, uint32_t len);
 public:
-	std::string data;
+	Glib::ustring data;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -869,7 +869,7 @@ class RegExp: public ASObject
 CLASSBUILDABLE(RegExp);
 friend class ASString;
 private:
-	std::string re;
+	Glib::ustring re;
 	bool global;
 	bool ignoreCase;
 	bool extended;

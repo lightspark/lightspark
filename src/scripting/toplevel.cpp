@@ -2019,8 +2019,12 @@ ASString::ASString(const char* s):data(s)
 	type=T_STRING;
 }
 
-ASString::ASString(const char* s, uint32_t len):data(s, len)
+ASString::ASString(const char* s, uint32_t len)
 {
+	//we cannot use the ustring(const char*,size_t) constructor,
+	//because it expects the number of utf8-characters as second
+	//parameter
+	data = std::string(s,len);
 	type=T_STRING;
 }
 
@@ -2083,13 +2087,16 @@ ASFUNCTIONBODY(ASString,search)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	int ret=-1;
+	if(argslen == 0 || args[0]->getObjectType() == T_UNDEFINED)
+		return abstract_i(-1);
+
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
 		const char* error;
 		int errorOffset;
-		int options=0;
+		int options=PCRE_UTF8;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
@@ -2111,7 +2118,7 @@ ASFUNCTIONBODY(ASString,search)
 		int ovector[30];
 		int offset=0;
 		//Global is not used in search
-		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
 		if(rc<0)
 		{
 			//No matches or error
@@ -2122,8 +2129,8 @@ ASFUNCTIONBODY(ASString,search)
 	}
 	else
 	{
-		const string& arg0=args[0]->toString().raw_buf();
-		size_t index=th->data.find(arg0);
+		tiny_string arg0=args[0]->toString();
+		size_t index=th->data.find(arg0.raw_buf());
 		if(index!=th->data.npos)
 			ret=index;
 	}
@@ -2133,7 +2140,7 @@ ASFUNCTIONBODY(ASString,search)
 ASFUNCTIONBODY(ASString,match)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
+	if(argslen == 0 || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 		return new Null;
 	Array* ret=NULL;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
@@ -2142,7 +2149,7 @@ ASFUNCTIONBODY(ASString,match)
 
 		const char* error;
 		int errorOffset;
-		int options=0;
+		int options=PCRE_UTF8;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
@@ -2166,7 +2173,7 @@ ASFUNCTIONBODY(ASString,match)
 		ret=Class<Array>::getInstanceS();
 		do
 		{
-			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
 			if(rc<0)
 			{
 				//No matches or error
@@ -2181,7 +2188,7 @@ ASFUNCTIONBODY(ASString,match)
 	else
 	{
 		ret=Class<Array>::getInstanceS();
-		const tiny_string& arg0=args[0]->toString();
+		tiny_string arg0=args[0]->toString();
 		if(th->data.find(arg0.raw_buf())!=th->data.npos) //Match found
 			ret->push(Class<ASString>::getInstanceS(arg0));
 	}
@@ -2199,6 +2206,7 @@ ASFUNCTIONBODY(ASString,split)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
+	assert(argslen >= 1);
 	ASObject* delimiter=args[0];
 	if(argslen == 0 || delimiter->getObjectType()==T_UNDEFINED)
 	{
@@ -2210,9 +2218,17 @@ ASFUNCTIONBODY(ASString,split)
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
+		if(re->re.length() == 0)
+		{
+			//the RegExp is empty, so split every character
+			for(size_t i=0;i<th->data.size();++i)
+				ret->push( Class<ASString>::getInstanceS(th->data.substr(i,1)) );
+			return ret;
+		}
+
 		const char* error;
 		int offset;
-		int options=0;
+		int options=PCRE_UTF8;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
@@ -2236,7 +2252,8 @@ ASFUNCTIONBODY(ASString,split)
 		unsigned int end;
 		do
 		{
-			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+			//offset is a byte offset that must point to the beginning of an utf8 character
+			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
 			end=ovector[0];
 			if(rc<0)
 				end=th->data.size();
@@ -3839,7 +3856,8 @@ void RegExp::buildTraits(ASObject* o)
 ASFUNCTIONBODY(RegExp,_constructor)
 {
 	RegExp* th=static_cast<RegExp*>(obj);
-	th->re=args[0]->toString().raw_buf();
+	if(argslen > 0)
+		th->re=args[0]->toString().raw_buf();
 	if(argslen>1)
 	{
 		const tiny_string& flags=args[1]->toString();
@@ -3881,7 +3899,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	const tiny_string& arg0=args[0]->toString();
 	const char* error;
 	int errorOffset;
-	int options=0;
+	int options=PCRE_UTF8;
 	if(th->ignoreCase)
 		options|=PCRE_CASELESS;
 	if(th->extended)
@@ -3966,7 +3984,7 @@ ASFUNCTIONBODY(RegExp,test)
 
 	const tiny_string& arg0 = args[0]->toString();
 
-	int options = 0;
+	int options = PCRE_UTF8;
 	if(th->ignoreCase)
 		options |= PCRE_CASELESS;
 	if(th->extended)
@@ -4033,62 +4051,38 @@ ASFUNCTIONBODY(ASString,charAt)
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
-	//TODO: should return utf16
-	LOG(LOG_CALLS,_("ASString::charCodeAt not really implemented"));
 	ASString* th=static_cast<ASString*>(obj);
 	unsigned int index=args[0]->toInt();
 	assert_and_throw(index>=0 && index<th->data.size());
 	//Character codes are expected to be positive
-	return abstract_i((uint8_t)th->data[index]);
+	return abstract_i(th->data[index]);
 }
 
 ASFUNCTIONBODY(ASString,indexOf)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	const tiny_string& arg0=args[0]->toString();
+	tiny_string arg0=args[0]->toString();
 	int startIndex=0;
 	if(argslen>1)
 		startIndex=args[1]->toInt();
-	
-	bool found=false;
-	unsigned int i;
-	for(i=startIndex;i<th->data.size();i++)
-	{
-		if(th->data[i]==arg0[0])
-		{
-			found=true;
-			for(int j=1;j<arg0.len();j++)
-			{
-				if(th->data[i+j]!=arg0[j])
-				{
-					found=false;
-					break;
-				}
-			}
-		}
-		if(found)
-			break;
-	}
 
-	if(!found)
+	size_t pos = th->data.find_first_of(arg0.raw_buf(), startIndex);
+	if(pos == th->data.npos)
 		return abstract_i(-1);
 	else
-		return abstract_i(i);
+		return abstract_i(pos);
 }
 
 ASFUNCTIONBODY(ASString,lastIndexOf)
 {
 	assert_and_throw(argslen==1 || argslen==2);
 	ASString* th=static_cast<ASString*>(obj);
-	const tiny_string& val=args[0]->toString();
-	int startIndex=0x7fffffff;
-	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
+	tiny_string val=args[0]->toString();
+	size_t startIndex=th->data.npos;
+	if(argslen > 1 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 		startIndex=args[1]->toInt();
-		
-	if(startIndex < 0) //If negative offset is passed, clamp to 0 for start-of-string matches
-		return (th->data.substr(0, val.len()) == val.raw_buf() ? abstract_i(0) : abstract_i(-1));
 
-	size_t pos=th->data.rfind(val.raw_buf(), startIndex);
+	size_t pos=th->data.find_last_of(val.raw_buf(), startIndex);
 	if(pos==th->data.npos)
 		return abstract_i(-1);
 	else
@@ -4098,17 +4092,13 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	ASString* ret=Class<ASString>::getInstanceS(th->data);
-	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::tolower);
-	return ret;
+	return Class<ASString>::getInstanceS(th->data.lowercase());
 }
 
 ASFUNCTIONBODY(ASString,toUpperCase)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	ASString* ret=Class<ASString>::getInstanceS(th->data);
-	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::toupper);
-	return ret;
+	return Class<ASString>::getInstanceS(th->data.uppercase());
 }
 
 ASFUNCTIONBODY(ASString,fromCharCode)
@@ -4116,10 +4106,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	ASString* ret=Class<ASString>::getInstanceS();
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		int newChar=args[i]->toInt();
-		if(newChar>127)
-			LOG(LOG_NOT_IMPLEMENTED,_("Unicode not supported in String::fromCharCode"));
-		ret->data+=char(newChar);
+		ret->data+=gunichar(args[i]->toInt());
 	}
 	return ret;
 }
@@ -4128,17 +4115,25 @@ ASFUNCTIONBODY(ASString,replace)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	enum REPLACE_TYPE { STRING=0, FUNC };
-	REPLACE_TYPE type=(args[1]->getObjectType()==T_FUNCTION)?FUNC:STRING;
+	REPLACE_TYPE type;
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
-	assert_and_throw(argslen==2);
+	assert_and_throw(argslen >= 0);
 
 	string replaceWith;
-	if(type==STRING)
+	if(argslen < 2)
 	{
+		type = STRING;
+		replaceWith="";
+	}
+	else if(args[1]->getObjectType()!=T_FUNCTION)
+	{
+		type = STRING;
 		replaceWith=args[1]->toString().raw_buf();
 		//Look if special substitution are needed
 		assert_and_throw(replaceWith.find('$')==replaceWith.npos);
 	}
+	else
+		type = FUNC;
 
 	if(args[0]->getClass()==Class<RegExp>::getClass())
 	{
@@ -4146,7 +4141,7 @@ ASFUNCTIONBODY(ASString,replace)
 
 		const char* error;
 		int errorOffset;
-		int options=0;
+		int options=PCRE_UTF8;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
@@ -4170,7 +4165,7 @@ ASFUNCTIONBODY(ASString,replace)
 		int retDiff=0;
 		do
 		{
-			int rc=pcre_exec(pcreRE, NULL, ret->data.c_str(), ret->data.size(), offset, 0, ovector, 30);
+			int rc=pcre_exec(pcreRE, NULL, ret->data.c_str(), ret->data.bytes(), offset, 0, ovector, 30);
 			if(rc<0)
 			{
 				//No matches or error

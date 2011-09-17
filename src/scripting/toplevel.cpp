@@ -3402,7 +3402,6 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 
 	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
 	cc->code=new istringstream(mi->body->code);
-	uint32_t i=passedToLocals;
 	cc->scope_stack=func_scope;
 	cc->initialScopeStack=func_scope.size();
 
@@ -3419,19 +3418,22 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	obj->incRef(); //this is free'd in ~call_context
 	cc->locals[0]=obj;
 
-	//Fixup missing parameters
-	unsigned int missing_params=args_len-i;
-	assert_and_throw(missing_params<=mi->option_count);
-	int starting_options=mi->option_count-missing_params;
 
-	for(unsigned int j=starting_options;j<mi->option_count;j++)
+	//Fixup missing parameters
+	uint32_t i=passedToLocals;
+	//Fill missing parameters until optional parameters begin
+	//like fun(a,b,c,d=3,e=5) called as fun(1,2) becomes
+	//locals = {this, 1, 2, Undefined, 3, 5}
+	for(;i<args_len;++i)
 	{
-		cc->locals[i+1]=mi->getOptional(j);
-		i++;
+		int iOptional = mi->option_count-args_len+i;
+		if(iOptional >= 0)
+			cc->locals[i+1]=mi->getOptional(iOptional);
+		else
+			cc->locals[i+1]=new Undefined();
 	}
 
-	assert_and_throw(i==args_len);
-
+	assert(i==args_len);
 	assert_and_throw(mi->needsArgs()==false || mi->needsRest()==false);
 	if(mi->needsRest()) //TODO
 	{

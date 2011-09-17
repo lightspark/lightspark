@@ -1967,11 +1967,16 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 					if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
 						buildTrait(ci,&instances[t->classi].traits[i],true);
 				}
+
+				//add implemented interfaces
+				for(unsigned int i=0;i<instances[t->classi].interface_count;i++)
+				{
+					multiname* name=getMultiname(instances[t->classi].interfaces[i],NULL);
+					ci->addImplementedInterface(*name);
+				}
+
 				ci->class_index=t->classi;
 				ci->context = this;
-
-				//TODO: can an interface implement other interfaces?
-				assert(instances[t->classi].interface_count == 0);
 
 				//can an interface derive from an other interface?
 				//can an interface derive from an non interface class?

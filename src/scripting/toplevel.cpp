@@ -2086,54 +2086,53 @@ void Array::finalize()
 ASFUNCTIONBODY(ASString,search)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	int ret=-1;
+	int ret = -1;
 	if(argslen == 0 || args[0]->getObjectType() == T_UNDEFINED)
 		return abstract_i(-1);
 
+	int options=PCRE_UTF8;
+	ustring restr;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
-
-		const char* error;
-		int errorOffset;
-		int options=PCRE_UTF8;
+		restr = re->re;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
-		if(error)
-			return abstract_i(ret);
-		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
-		int capturingGroups;
-		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
-		if(infoOk!=0)
-		{
-			pcre_free(pcreRE);
-			return abstract_i(ret);
-		}
-		assert_and_throw(capturingGroups<10);
-		int ovector[30];
-		int offset=0;
-		//Global is not used in search
-		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
-		if(rc<0)
-		{
-			//No matches or error
-			pcre_free(pcreRE);
-			return abstract_i(ret);
-		}
-		ret=ovector[0];
 	}
 	else
 	{
-		tiny_string arg0=args[0]->toString();
-		size_t index=th->data.find(arg0.raw_buf());
-		if(index!=th->data.npos)
-			ret=index;
+		restr = args[0]->toString().raw_buf();
 	}
+
+	const char* error;
+	int errorOffset;
+	pcre* pcreRE=pcre_compile(restr.c_str(), options, &error, &errorOffset,NULL);
+	if(error)
+		return abstract_i(ret);
+	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+	int capturingGroups;
+	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+	if(infoOk!=0)
+	{
+		pcre_free(pcreRE);
+		return abstract_i(ret);
+	}
+	assert_and_throw(capturingGroups<10);
+	int ovector[30];
+	int offset=0;
+	//Global is not used in search
+	int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
+	if(rc<0)
+	{
+		//No matches or error
+		pcre_free(pcreRE);
+		return abstract_i(ret);
+	}
+	ret=ovector[0];
 	return abstract_i(ret);
 }
 
@@ -2143,55 +2142,57 @@ ASFUNCTIONBODY(ASString,match)
 	if(argslen == 0 || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 		return new Null;
 	Array* ret=NULL;
+
+	int options=PCRE_UTF8;
+	ustring restr;
+	bool isGlobal = false;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
-
-		const char* error;
-		int errorOffset;
-		int options=PCRE_UTF8;
+		restr = re->re;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
-		if(error)
-			return new Null;
-		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
-		int capturingGroups;
-		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
-		if(infoOk!=0)
-		{
-			pcre_free(pcreRE);
-			return new Null;
-		}
-		assert_and_throw(capturingGroups<10);
-		int ovector[30];
-		int offset=0;
-		ret=Class<Array>::getInstanceS();
-		do
-		{
-			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
-			if(rc<0)
-			{
-				//No matches or error
-				pcre_free(pcreRE);
-				return ret;
-			}
-			ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
-			offset=ovector[1];
-		}
-		while(re->global);
+		isGlobal = re->global;
 	}
 	else
+		restr = args[0]->toString().raw_buf();
+
+	const char* error;
+	int errorOffset;
+	pcre* pcreRE=pcre_compile(restr.c_str(), options, &error, &errorOffset,NULL);
+	if(error)
+		return new Null;
+	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+	int capturingGroups;
+	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+	if(infoOk!=0)
 	{
-		ret=Class<Array>::getInstanceS();
-		tiny_string arg0=args[0]->toString();
-		if(th->data.find(arg0.raw_buf())!=th->data.npos) //Match found
-			ret->push(Class<ASString>::getInstanceS(arg0));
+		pcre_free(pcreRE);
+		return new Null;
 	}
+	assert_and_throw(capturingGroups<10);
+	int ovector[30];
+	int offset=0;
+	ret=Class<Array>::getInstanceS();
+	do
+	{
+		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
+		if(rc<0)
+		{
+			//No matches or error
+			pcre_free(pcreRE);
+			return ret;
+		}
+		//we cannot use ustrings substr here, because pcre returns those indices in bytes
+		//and ustring expects number of UTF8 characters. The same holds for ustring constructor
+		ret->push(Class<ASString>::getInstanceS(th->data.raw().substr(ovector[0],ovector[1]-ovector[0])));
+		offset=ovector[1];
+	}
+	while(isGlobal);
 	return ret;
 }
 
@@ -2263,7 +2264,8 @@ ASFUNCTIONBODY(ASString,split)
 			//Insert capturing groups
 			for(int i=1;i<rc;i++)
 			{
-				ASString* s=Class<ASString>::getInstanceS(th->data.substr(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
+				ASString* s=Class<ASString>::getInstanceS(th->data.raw().substr(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
 				ret->push(s);
 			}
 		}
@@ -4080,9 +4082,14 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 	tiny_string val=args[0]->toString();
 	size_t startIndex=th->data.npos;
 	if(argslen > 1 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
-		startIndex=args[1]->toInt();
+	{
+		int32_t i = args[1]->toInt();
+		if(i<0)
+			return abstract_i(-1);
+		startIndex = i;
+	}
 
-	size_t pos=th->data.find_last_of(val.raw_buf(), startIndex);
+	size_t pos=th->data.rfind(val.raw_buf(), startIndex);
 	if(pos==th->data.npos)
 		return abstract_i(-1);
 	else
@@ -4177,9 +4184,10 @@ ASFUNCTIONBODY(ASString,replace)
 				//Get the replace for this match
 				IFunction* f=static_cast<IFunction*>(args[1]);
 				ASObject* subargs[3+capturingGroups];
-				subargs[0]=Class<ASString>::getInstanceS(ret->data.substr(ovector[0],ovector[1]-ovector[0]));
+				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
+				subargs[0]=Class<ASString>::getInstanceS(ret->data.raw().substr(ovector[0],ovector[1]-ovector[0]));
 				for(int i=0;i<capturingGroups;i++)
-					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.substr(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
+					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.raw().substr(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
 				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
 				th->incRef();
 				subargs[capturingGroups+2]=th;

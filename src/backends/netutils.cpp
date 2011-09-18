@@ -504,14 +504,11 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 
 	// read from stream until we have enough data
 	uint32_t tmplen = receivedLength;
-	while (pos <= length && pos > receivedLength) 
+	while (!hasTerminated && pos > receivedLength) 
 	{
 		//++ Release lock
 		sem_post(&mutex);
-		if (cached)
-			waitForCache();
-		else
-			waitForData();
+		waitForData();
 		sem_wait(&mutex);
 		//-- Lock acquired
 		syncBuffers();
@@ -620,7 +617,6 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 	sem_wait(&mutex);
 	//-- Lock acquired
 
-	//Nothing special to do here, we only support offset==0 seeks
 	pos_type ret=getOffset();
 
 	//++ Release lock

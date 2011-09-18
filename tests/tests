@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #Set you lightspark executable path here
 LIGHTSPARK="lightspark"
 #Set the default loglevel here
@@ -13,6 +12,9 @@ COLORS=1;
 #Seconds after which a process is killed
 TIMEOUTCMD="timeout 10"
 
+#Setting C locale to make sort and comm behave the same on every machine
+#Especially as the file 'blacklist' must be sorted with C locale
+export LC_ALL="C"
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
 COMPILE_TESTS_SRC="";
 TESTS_FROM_SOURCE=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;

@@ -136,7 +136,7 @@ public:
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	void deleteVariableByMultiname(const multiname& name);
+	bool deleteVariableByMultiname(const multiname& name);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	uint32_t nextNameIndex(uint32_t cur_index);
@@ -163,7 +163,7 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("setVariableByMultiName_i not supported for Proxy");
 	}
-	void deleteVariableByMultiname(const multiname& name)
+	bool deleteVariableByMultiname(const multiname& name)
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("deleteVariableByMultiName not supported for Proxy");

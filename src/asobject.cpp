@@ -324,14 +324,14 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 	}
 }
 
-void ASObject::deleteVariableByMultiname(const multiname& name)
+bool ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(ref_count>0);
 
 	//Only dynamic traits are deletable
 	obj_var* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 	if(obj==NULL)
-		return;
+		return false;
 
 	assert(obj->getter==NULL && obj->setter==NULL && obj->var!=NULL);
 	//Now dereference the value
@@ -339,6 +339,7 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 
 	//Now kill the variable
 	Variables.killObjVar(name);
+	return true;
 }
 
 //In all setter we first pass the value to the interface to see if special handling is possible

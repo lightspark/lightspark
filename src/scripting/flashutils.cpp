@@ -918,10 +918,10 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 }
 
-void Dictionary::deleteVariableByMultiname(const multiname& name)
+bool Dictionary::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(implEnable);
-	
+
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
 		_R<ASObject> name_o(name.name_o);
@@ -931,7 +931,11 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 
 		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
 		if(it != data.end())
+		{
 			data.erase(it);
+			return true;
+		}
+		return false;
 	}
 	else
 	{

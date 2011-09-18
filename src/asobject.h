@@ -180,6 +180,7 @@ private:
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
+		assert(n<=slots_vars.size());
 		return slots_vars[n-1]->second.var.var;
 	}
 	void setSlot(unsigned int n,ASObject* o);

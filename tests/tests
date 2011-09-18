@@ -223,7 +223,11 @@ for test in $TESTS; do
 		fi
 	fi
 	if [[ "$?" != "0" ]]; then
-		echo -e "\\e[0;31m$test failed with exit value != 0\\e[0m"
+		if [ $COLORS -eq 1 ]; then
+			echo -e "\\e[0;31m$test failed with exit value != 0\\e[0m"
+		else
+			echo -e "$test failed with exit value != 0"
+		fi
 		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"exitvalue\">Exit Value != 0</failure></testcase>" >> tests.junit
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
@@ -240,7 +244,6 @@ for test in $TESTS; do
 		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 		FAILED_TESTS="$FAILED_TESTS $test"
-		#echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"testfailture\">$THISFAILEDCOUNT out of $THISNUMTESTS failed</failure></testcase>" >> tests.junit
 		#Escape lines for xml output
 		xml_lines=`echo -e "$lines" | sed -e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'`
 		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"testfailture\">$xml_lines</failure></testcase>" >> tests.junit
@@ -249,7 +252,11 @@ for test in $TESTS; do
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 		echo "<testcase classname=\"$testclass\" name=\"$testname\"/>" >> tests.junit
 	else
-		echo -e "\\e[0;31m$test printed no test summary!\\e[0m"
+		if [ $COLORS -eq 1 ]; then
+			echo -e "\\e[0;31m$test printed no test summary!\\e[0m"
+		else
+			echo -e "$test printed no test summary!"
+		fi
 		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"missingsummary\">Missing summary</failure></te
 		stcase>" >> tests.junit
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;

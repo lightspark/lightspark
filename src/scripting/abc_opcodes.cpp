@@ -2398,13 +2398,13 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->setLevel(ret->max_level);
 	}
 
-	LOG(LOG_CALLS,_("Building class traits"));
-	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
-		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
-
 	ret->class_scope=th->scope_stack;
 	ret->incRef();
 	ret->class_scope.emplace_back(_MR(ret),false);
+
+	LOG(LOG_CALLS,_("Building class traits"));
+	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
+		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
 	//Add protected namespace if needed
 	if((th->context->instances[n].flags)&0x08)

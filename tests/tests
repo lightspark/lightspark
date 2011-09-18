@@ -190,12 +190,20 @@ else
 fi
 
 
+echo "<testsuite>" > tests.junit
 for test in $TESTS; do
 	if [ ! -e $test ]; then
 		continue;
 	fi
 
 	TESTCOUNT=`expr $TESTCOUNT + 1`;
+
+	#for junit xml
+	testclass=`dirname $test | tr '/' '.'`
+	if [ "$testclass" == "." ]; then
+		testclass="base"
+	fi
+	testname=`basename $test _.swf`
 
 	echo > $LOGFILE
 	if [ $PROPRIETARY -eq 0 ]; then
@@ -213,11 +221,14 @@ for test in $TESTS; do
 	fi
 	if [[ "$?" != "0" ]]; then
 		echo -e "\\e[0;31m$test failed with exit value != 0\\e[0m"
+		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"exitvalue\">Exit Value != 0</failure></testcase>" >> tests.junit
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
 		continue
 	fi
 	lines=`cat $LOGFILE`
+	#Remove the RANDR error when running under xvfb
+	lines=`echo -e "$lines" | sed -e '/Xlib:  extension "RANDR" missing on display.*/d'`
 
 	if [ "`echo $lines | grep '==Failures'`" != "" ]; then
 		THISFAILEDCOUNT=`echo "$lines" | sed -n -e 's/.*=Failures (\(.*\)\/.*)=.*/\1/p'`
@@ -226,11 +237,18 @@ for test in $TESTS; do
 		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 		FAILED_TESTS="$FAILED_TESTS $test"
+		#echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"testfailture\">$THISFAILEDCOUNT out of $THISNUMTESTS failed</failure></testcase>" >> tests.junit
+		#Escape lines for xml output
+		xml_lines=`echo -e "$lines" | sed -e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'`
+		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"testfailture\">$xml_lines</failure></testcase>" >> tests.junit
 	elif [ "`echo $lines | grep '==No failures'`" != "" ]; then
 		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
+		echo "<testcase classname=\"$testclass\" name=\"$testname\"/>" >> tests.junit
 	else
 		echo -e "\\e[0;31m$test printed no test summary!\\e[0m"
+		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"missingsummary\">Missing summary</failure></te
+		stcase>" >> tests.junit
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
 	fi
@@ -285,7 +303,7 @@ for test in $TESTS; do
 
 	echo -e "$lines\n";
 done
-
+echo "</testsuite>" >> tests.junit
 if [ $PROPRIETARY -eq 0 ]; then
 	rm $LOGFILE
 fi

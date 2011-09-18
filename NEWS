@@ -1,4 +1,4 @@
-0.5.1 - August 2011
+0.5.1 - September 2011
 
 User visible changes:
 - Flowplayer support
@@ -21,3 +21,4 @@ Developer visible changes:
 	Vector for an implementation of an AS template.
 - ASObject::setPrototype/getPrototype/prototype:
 	Those have been renamed to setClass/getClass/classdef to better reflect their meaning.
+- No longer depend on external packages to provide the NPAPI used to build the browser plugin.

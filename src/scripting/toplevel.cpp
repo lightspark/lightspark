@@ -29,6 +29,9 @@
 #include <cmath>
 #include <limits>
 #include <cstdio>
+#include <cstdlib>
+#include <ctype.h>
+#include <errno.h>
 
 #include "abc.h"
 #include "toplevel.h"
@@ -2471,16 +2474,31 @@ double ASString::toNumber()
 {
 	assert_and_throw(implEnable);
 
-	//Number("0xF3") is also supported
-	if( data.size() > 2 && data[0] == '0' && data[1] == 'x' )
-		return strtol(data.c_str(),NULL,16); //maybe do more error checking?
+	const char *s=data.c_str();
+	char *end=NULL;
+	double val=strtod(s, &end);
 
-	for(unsigned int i=0;i<data.size();i++)
-	{
-		if(!((data[i]>='0' && data[i]<='9') || data[i]=='.')) //not a number
+	// strtod converts case-insensitive "inf" and "infinity" to
+	// inf, flash only accepts case-sensitive "Infinity".
+	if(std::isinf(val)) {
+		const char *tmp=s;
+		while(isspace(*tmp))
+			tmp++;
+		if(*tmp=='+' || *tmp=='-')
+			tmp++;
+		if(strncasecmp(tmp, "inf", 3)==0 && strcmp(tmp, "Infinity")!=0)
 			return numeric_limits<double>::quiet_NaN();
 	}
-	return atof(data.c_str());
+
+	// Fail if there is any rubbish after the converted number
+	while(*end)
+	{
+		if(!isspace(*end))
+			return numeric_limits<double>::quiet_NaN();
+		end++;
+	}
+
+	return val;
 }
 
 int32_t ASString::toInt()
@@ -2930,13 +2948,23 @@ ASFUNCTIONBODY(Number,_toString)
 
 ASFUNCTIONBODY(Number,generator)
 {
-	return abstract_d(args[0]->toNumber());
+	if(argslen==0)
+		return abstract_d(0.);
+	else
+		return abstract_d(args[0]->toNumber());
 }
 
 tiny_string Number::toString(bool debugMsg)
 {
 	if(std::isnan(val))
 		return "NaN";
+	if(std::isinf(val))
+	{
+		if(val > 0)
+			return "Infinity";
+		else
+			return "-Infinity";
+	}
 
 	char buf[20];
 	int bufLen=snprintf(buf,20,"%#f",val);
@@ -5318,33 +5346,32 @@ ASFUNCTIONBODY(lightspark,parseInt)
 	}
 	else
 	{
-		int radix=10;
+		int radix=0;
 		if(argslen==2)
 		{
 			radix=args[1]->toInt();
-			assert_and_throw(radix==10 || radix==16);
+			if(radix < 2 || radix > 36)
+				return abstract_d(numeric_limits<double>::quiet_NaN());
 		}
-		const tiny_string& val=args[0]->toString();
-		const char* cur=val.raw_buf();
-		//Also 0x could be used to flag the number is hexadecimal
-		if(val.len()>=2 && strncmp(cur,"0x",2)==0)
+		const tiny_string& str=args[0]->toString();
+		const char* cur=str.raw_buf();
+
+		errno=0;
+		char *end;
+		long val=strtol(cur, &end, radix);
+
+		if(errno==ERANGE)
 		{
-			radix=16;
-			cur+=2;
+			if(val==LONG_MAX)
+				return abstract_d(numeric_limits<double>::infinity());
+			if(val==LONG_MIN)
+				return abstract_d(-numeric_limits<double>::infinity());
 		}
-		int ret=0;
-		if(radix==16) // Should be an exadecimal number
-		{
-			while(*cur)
-			{
-				ret<<=4; //*16
-				ret+=Math::hexToInt(*cur);
-				cur++;
-			}
-		}
-		else if(radix==10)
-			ret=atoi(cur);
-		return abstract_i(ret);
+
+		if(end==cur)
+			return abstract_d(numeric_limits<double>::quiet_NaN());
+
+		return abstract_d(val);
 	}
 }
 

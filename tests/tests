@@ -18,7 +18,8 @@ export LC_ALL="C"
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
 COMPILE_TESTS_SRC="";
 TESTS_FROM_SOURCE=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
-TESTS_TAMARIN=`find tamarin-SWF -name '*.swf' 2>/dev/null`;
+#Follow symbolic links as tamarin-SWF may be a symbolic link
+TESTS_TAMARIN=`find -L tamarin-SWF -name '*.swf' 2>/dev/null`;
 TESTS="$TESTS_FROM_SOURCE
 $TESTS_TAMARIN"
 TESTS=`echo $TESTS | sort | uniq`

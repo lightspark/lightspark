@@ -501,6 +501,21 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 	sem_wait(&mutex);
 	//-- Lock acquired
 	syncBuffers();
+
+	// read from stream until we have enough data
+	uint32_t tmplen = receivedLength;
+	while (!hasTerminated && pos > receivedLength) 
+	{
+		//++ Release lock
+		sem_post(&mutex);
+		waitForData();
+		sem_wait(&mutex);
+		//-- Lock acquired
+		syncBuffers();
+		if (tmplen == receivedLength)
+			break; // no new data read
+		tmplen = receivedLength;
+	}
 	
 	if(cached)
 	{
@@ -565,19 +580,43 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
  * \brief Called by the streambuf API
  *
  * Called by the streambuf API to seek to a relative position
- * The only supported case is offset==0.
  * Waits for the mutex at start and releases the mutex when finished.
  */
 Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode mode)
 {
 	assert_and_throw(mode==std::ios_base::in);
-	assert_and_throw(off==0);
 	assert_and_throw(buffer != NULL);
+
+	if (off != 0)
+	{
+		switch (dir)
+		{
+			case std::ios_base::beg:
+				seekpos(off,mode);
+				break;
+			case std::ios_base::cur:
+			{
+				sem_wait(&mutex);
+				//-- Lock acquired
+				pos_type tmp = getOffset();
+				//++ Release lock
+				sem_post(&mutex);
+				seekpos(tmp+off,mode);
+				break;
+			}
+			case std::ios_base::end:
+				waitForTermination();
+				if (finished)
+					seekpos(length+off,mode);
+				break;
+			default:
+				break;
+		}
+	}
 
 	sem_wait(&mutex);
 	//-- Lock acquired
 
-	//Nothing special to do here, we only support offset==0 seeks
 	pos_type ret=getOffset();
 
 	//++ Release lock

@@ -21,9 +21,9 @@
 # Dependencies
 INCLUDE_DIRECTORIES("include")
 INCLUDE_DIRECTORIES("..")
+INCLUDE_DIRECTORIES("include/npapi")
 
-pkg_check_modules(MOZ_PLUGIN REQUIRED nspr mozilla-plugin>=1.9.2 x11)
-INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS} ${MOZ_PLUGIN_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
 ADD_DEFINITIONS(-DMOZ_X11)
 IF(UNIX)
 	ADD_DEFINITIONS(-DXP_UNIX)
@@ -32,7 +32,7 @@ ENDIF(UNIX)
 # Firefox plugin target
 ADD_LIBRARY(lightsparkplugin SHARED np_entry.cpp npn_gate.cpp npp_gate.cpp
 	plugin.cpp npscriptobject.cpp)
-TARGET_LINK_LIBRARIES(lightsparkplugin spark ${MOZ_PLUGIN_LIBRARIES} ${GTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(lightsparkplugin spark ${GTK_LIBRARIES})
 
 IF(UNIX)
 	INSTALL(TARGETS lightsparkplugin LIBRARY DESTINATION ${PLUGIN_DIRECTORY})

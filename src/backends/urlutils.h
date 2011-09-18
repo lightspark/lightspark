@@ -101,14 +101,14 @@ public:
 	enum ENCODING { ENCODE_SPACES, ENCODE_FORM, ENCODE_URI, ENCODE_URICOMPONENT, ENCODE_ESCAPE };
 	static tiny_string encode(const tiny_string& u, ENCODING type=ENCODE_URICOMPONENT)
 	{
-		return tiny_string(encode(std::string(u.raw_buf()), type));
+		return tiny_string(encode(u.raw_buf(), type));
 	};
-	static std::string encode(const std::string& u, ENCODING type=ENCODE_URICOMPONENT);
+	static std::string encode(const char* u, ENCODING type=ENCODE_URICOMPONENT);
 	static tiny_string decode(const tiny_string& u, ENCODING type=ENCODE_URICOMPONENT)
 	{
-		return tiny_string(decode(std::string(u.raw_buf()), type));
+		return tiny_string(decode(u.raw_buf(), type));
 	};
-	static std::string decode(const std::string& u, ENCODING type=ENCODE_URICOMPONENT);
+	static std::string decode(const char* u, ENCODING type=ENCODE_URICOMPONENT);
 };
 
 };

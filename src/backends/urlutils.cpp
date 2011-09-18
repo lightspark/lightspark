@@ -310,15 +310,16 @@ bool URLInfo::matchesDomain(const tiny_string& expression, const tiny_string& su
 	return false;
 }
 
-std::string URLInfo::encode(const std::string& u, ENCODING type)
+std::string URLInfo::encode(const char* u, ENCODING type)
 {
 	std::string str;
 	//Worst case, we need to encode EVERY character: X --> %YZ
 	//Expect moderate density, assume we need to encode about half of all characters
-	str.reserve(u.length()*2);
+	size_t len = strlen(u);
+	str.reserve(len*2);
 	char buf[4];
 	
-	for(size_t i=0;i<u.length();i++)
+	for(size_t i=0;i<len;i++)
 	{
 		if(type == ENCODE_SPACES)
 		{
@@ -370,18 +371,19 @@ std::string URLInfo::encode(const std::string& u, ENCODING type)
 	return str;
 }
 
-std::string URLInfo::decode(const std::string& u, ENCODING type)
+std::string URLInfo::decode(const char* u, ENCODING type)
 {
 	std::string str;
 	//The string can only shrink
-	str.reserve(u.length());
+	size_t len = strlen(u);
+	str.reserve(len);
 
 	std::string stringBuf;
 	stringBuf.reserve(3);
 
-	for(size_t i=0;i<u.length();i++)
+	for(size_t i=0;i<len;i++)
 	{
-		if(i > u.length()-3 || u[i] != '%')
+		if(i > len-3 || u[i] != '%')
 			str += u[i];
 		else
 		{
@@ -422,8 +424,9 @@ std::string URLInfo::decode(const std::string& u, ENCODING type)
 			//All encoded characters that weren't excluded above are now decoded
 			else
 			{	
+				char twochar[3] = {u[i], u[i+1], 0};
 				i++;
-				str += (unsigned char) strtoul(u.substr(i, 2).c_str(), NULL, 16);
+				str += (unsigned char) strtoul(twochar, NULL, 16);
 				i++;
 			}
 		}

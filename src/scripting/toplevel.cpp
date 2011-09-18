@@ -3555,9 +3555,12 @@ ASFUNCTIONBODY(Math,_max)
 
 	for(unsigned int i = 0; i < argslen; i++)
 	{
-		largest = dmax(largest, args[i]->toNumber());
+		double arg = args[i]->toNumber();
+		if(largest == arg && signbit(largest) > signbit(arg))
+			largest = 0.0; //Spec 15.8.2.11: 0.0 should be larger than -0.0
+		else
+			largest = (arg>largest) ? arg : largest;
 	}
-
 	return abstract_d(largest);
 }
 
@@ -3567,7 +3570,11 @@ ASFUNCTIONBODY(Math,_min)
 
 	for(unsigned int i = 0; i < argslen; i++)
 	{
-		smallest = dmin(smallest, args[i]->toNumber());
+		double arg = args[i]->toNumber();
+		if(smallest == arg && signbit(arg) > signbit(smallest))
+			smallest = -0.0; //Spec 15.8.2.11: 0.0 should be larger than -0.0
+		else
+			smallest = (arg<smallest)? arg : smallest;
 	}
 
 	return abstract_d(smallest);

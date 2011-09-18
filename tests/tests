@@ -245,7 +245,7 @@ for test in $TESTS; do
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 		FAILED_TESTS="$FAILED_TESTS $test"
 		#Escape lines for xml output
-		xml_lines=`echo -e "$lines" | sed -e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'`
+		xml_lines=`echo -e "$lines" | sed -e 's/[^[:print:]]//g' -e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'`
 		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"testfailture\">$xml_lines</failure></testcase>" >> tests.junit
 	elif [ "`echo $lines | grep '==No failures'`" != "" ]; then
 		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
@@ -257,8 +257,7 @@ for test in $TESTS; do
 		else
 			echo -e "$test printed no test summary!"
 		fi
-		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"missingsummary\">Missing summary</failure></te
-		stcase>" >> tests.junit
+		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"missingsummary\">Missing summary</failure></testcase>" >> tests.junit
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
 	fi

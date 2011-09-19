@@ -649,7 +649,7 @@ private:
 	Number(){}
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
-	static void purgeTrailingZeroes(char* buf, int bufLen);
+	static void purgeTrailingZeroes(char* buf);
 public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);

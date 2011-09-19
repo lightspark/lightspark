@@ -2896,9 +2896,23 @@ TRISTATE Number::isLess(ASObject* o)
 	}
 }
 
-void Number::purgeTrailingZeroes(char* buf, int bufLen)
+/*
+ * This purges trailing zeros from the right, i.e.
+ * "144124.45600" -> "144124.456"
+ * "144124.000" -> "144124"
+ * "144124.45600e+12" -> "144124.456e+12"
+ * "144124.45600e+07" -> 144124.456e+7"
+ * and it transforms the ',' into a '.' if found.
+ */
+void Number::purgeTrailingZeroes(char* buf)
 {
-	int i=bufLen-1;
+	int i=strlen(buf)-1;
+	int Epos = 0;
+	if(i>4 && buf[i-3] == 'e')
+	{
+		Epos = i-3;
+		i=i-4;
+	}
 	for(;i>0;i--)
 	{
 		if(buf[i]!='0')
@@ -2910,7 +2924,19 @@ void Number::purgeTrailingZeroes(char* buf, int bufLen)
 		i--;
 		commaFound=true;
 	}
-	buf[i+1]='\0';
+	if(Epos)
+	{
+		//copy e+12 to the current place
+		strncpy(buf+i+1,buf+Epos,5);
+		if(buf[i+3] == '0')
+		{
+			//this looks like e+07, so turn it into e+7
+			buf[i+3] = buf[i+4];
+			buf[i+4] = '\0';
+		}
+	}
+	else
+		buf[i+1]='\0';
 
 	if(commaFound)
 		return;
@@ -2937,8 +2963,8 @@ ASFUNCTIONBODY(Number,_toString)
 
 	if(radix==10)
 	{
-		int bufLen=snprintf(buf,20,"%#f",th->val);
-		purgeTrailingZeroes(buf,bufLen);
+		//see e 15.7.4.2
+		return Class<ASString>::getInstanceS(th->toString(false));
 	}
 	else if(radix==16)
 		snprintf(buf,20,"%"PRIx64,(int64_t)th->val);
@@ -2965,10 +2991,16 @@ tiny_string Number::toString(bool debugMsg)
 		else
 			return "-Infinity";
 	}
+	if(val == 0 && signbit(val))
+		return "0"; //-0 should be 0
 
-	char buf[20];
-	int bufLen=snprintf(buf,20,"%#f",val);
-	purgeTrailingZeroes(buf,bufLen);
+	//See ecma3 8.9.1
+	char buf[40];
+	if(fabs(val) >= 1e+21 || fabs(val) <= 1e-6)
+		snprintf(buf,40,"%.15e",val);
+	else
+		snprintf(buf,40,"%.15f",val);
+	purgeTrailingZeroes(buf);
 	return tiny_string(buf,true);
 }
 

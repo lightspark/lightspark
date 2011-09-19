@@ -202,11 +202,29 @@ for test in $TESTS; do
 	TESTCOUNT=`expr $TESTCOUNT + 1`;
 
 	#for junit xml
-	testclass=`dirname $test | tr '/' '.'`
-	if [ "$testclass" == "." ]; then
-		testclass="base"
+	#tamarin-SWF/ecma3/Boolean/e15_3_1_.swf -> class=ecma3.Boolean name=e15_3_1
+	#tamarin-SWF/as3/Expressions/isOperator/isOper_.swf -> class as3.Expressions name=isOperator/isOper
+	#Array_test.swf -> class=lsbase name=Array
+	#system_Security_test.swf -> class=flash.system name=Security
+	if [[ "$test" =~ tamarin-SWF/.* ]]; then
+		testclassdir=`dirname $test | cut -d'/' -f2-3`
+		testname=${test#tamarin-SWF/$testclassdir/}
+		testname=${testname%_.swf}
+		testclass=${testclassdir//\//.}
+	else
+		lstest=${test%_test.swf}
+		lstest=${lstest//_/.}
+		#Now system_Security_test.swf has become system.Security
+		#Match all components but the last
+		testclass=`echo $lstest | sed -n -e 's/^\(.*\)\..*/\1/p'`
+		if [ "$testclass" != "" ]; then
+			testclass="flash.$testclass"
+		else
+			testclass="lsbase"
+		fi
+		#Match the last component
+		testname=`echo $lstest | sed -n -e 's/\(.*\.\)*\([^.]*\)$/\2/p'`
 	fi
-	testname=`basename $test _.swf`
 
 	echo > $LOGFILE
 	if [ $PROPRIETARY -eq 0 ]; then
@@ -244,13 +262,9 @@ for test in $TESTS; do
 		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 		FAILED_TESTS="$FAILED_TESTS $test"
-		#Escape lines for xml output
-		xml_lines=`echo -e "$lines" | sed -e 's/[^[:print:]]//g' -e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'`
-		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"testfailture\">$xml_lines</failure></testcase>" >> tests.junit
 	elif [ "`echo $lines | grep '==No failures'`" != "" ]; then
 		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
-		echo "<testcase classname=\"$testclass\" name=\"$testname\"/>" >> tests.junit
 	else
 		if [ $COLORS -eq 1 ]; then
 			echo -e "\\e[0;31m$test printed no test summary!\\e[0m"
@@ -260,7 +274,25 @@ for test in $TESTS; do
 		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"missingsummary\">Missing summary</failure></testcase>" >> tests.junit
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
+		continue
 	fi
+
+	#For xml output
+	tcnum=1
+	#Find all lines that start with '. [' or 'F [' or 'A ..F.. ['
+	echo -e "$lines" | sed -n -e "/^\(A \)\?[F\.]\+ \[.*/p" \
+	| while read L
+	do
+		#Escape <>& and remove non-printable characters
+		xml_l=`echo -e "$L" | sed -e 's/[^[:print:]]//g' -e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'`
+		#Check if L starts with an 'F' or with 'A ...F'
+		if echo -e "$L" | grep -e "^\(A \.*\)\?F" > /dev/null ; then
+			echo "<testcase classname=\"$testclass\" name=\"${testname}_tc${tcnum}\"><failure type=\"testfailure\">$xml_l</failure></testcase>" >> tests.junit
+		else
+			echo "<testcase classname=\"$testclass\" name=\"${testname}_tc${tcnum}\"/>" >> tests.junit
+		fi
+		tcnum=`expr $tcnum + 1`
+	done
 
 	if [ $QUIET -eq 1 ]; then
 		lines=`echo "$lines" |

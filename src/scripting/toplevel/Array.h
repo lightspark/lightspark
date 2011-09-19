@@ -79,6 +79,7 @@ public:
 	static void buildTraits(ASObject* o);
 
 	ASFUNCTION(_constructor);
+	ASFUNCTION(generator);
 	ASFUNCTION(_push);
 	ASFUNCTION(_concat);
 	ASFUNCTION(_pop);

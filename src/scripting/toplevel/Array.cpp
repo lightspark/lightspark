@@ -102,6 +102,18 @@ ASFUNCTIONBODY(Array,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Array,generator)
+{
+	Array* arr=Class<Array>::getInstanceS();
+	arr->resize(argslen);
+	for(unsigned int i=0;i<argslen;i++)
+	{
+		args[i]->incRef();
+		arr->set(i,args[i]);
+	}
+	return arr;
+}
+
 ASFUNCTIONBODY(Array,_concat)
 {
 	Array* th=static_cast<Array*>(obj);

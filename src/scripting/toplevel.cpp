@@ -2194,7 +2194,7 @@ ASFUNCTIONBODY(ASString,split)
 	ASString* th=static_cast<ASString*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
 	ASObject* delimiter=args[0];
-	if(delimiter->getObjectType()==T_UNDEFINED)
+	if(argslen == 0 || delimiter->getObjectType()==T_UNDEFINED)
 	{
 		ret->push(Class<ASString>::getInstanceS(th->data));
 		return ret;

@@ -240,13 +240,16 @@ for test in $TESTS; do
 			$TIMEOUTCMD flashplayerdebugger $test 2>/dev/null
 		fi
 	fi
-	if [[ "$?" != "0" ]]; then
+
+	ev=$?
+
+	if [[ "$ev" != "0" ]]; then
 		if [ $COLORS -eq 1 ]; then
-			echo -e "\\e[0;31m$test failed with exit value != 0\\e[0m"
+			echo -e "\\e[0;31m$test failed with exit value $ev\\e[0m"
 		else
-			echo -e "$test failed with exit value != 0"
+			echo -e "$test failed with exit value $ev"
 		fi
-		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"exitvalue\">Exit Value != 0</failure></testcase>" >> tests.junit
+		echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"exitvalue\">Exit Value $ev</failure></testcase>" >> tests.junit
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
 		continue

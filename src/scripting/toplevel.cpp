@@ -2979,6 +2979,8 @@ void Number::purgeTrailingZeroes(char* buf)
 
 ASFUNCTIONBODY(Number,_toString)
 {
+	if(!obj->is<Number>())
+		throw Class<TypeError>::getInstanceS("Number.toString is not generic");
 	Number* th=static_cast<Number*>(obj);
 	int radix=10;
 	char buf[20];

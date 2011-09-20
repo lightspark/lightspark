@@ -29,6 +29,7 @@
 #include <libxml++/parsers/domparser.h>
 #include "abcutils.h"
 #include <glibmm/ustring.h>
+#include "Boolean.h"
 
 namespace lightspark
 {
@@ -323,36 +324,6 @@ public:
 	}
 };
 
-class Boolean: public ASObject
-{
-friend bool Boolean_concrete(ASObject* obj);
-CLASSBUILDABLE(Boolean);
-private:
-	bool val;
-	Boolean(){}
-	Boolean(bool v):val(v){type=T_BOOLEAN;}
-public:
-	int32_t toInt()
-	{
-		return val ? 1 : 0;
-	}
-	bool isEqual(ASObject* r);
-	TRISTATE isLess(ASObject* r);
-	tiny_string toString(bool debugMsg);
-	double toNumber()
-	{
-		return val ? 1.0 : 0.0;
-	}
-	static void buildTraits(ASObject* o){};
-	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_toString);
-	ASFUNCTION(generator);
-	//Serialization interface
-	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-			std::map<const ASObject*, uint32_t>& objMap) const;
-};
-
 class Undefined : public ASObject
 {
 public:
@@ -586,10 +557,10 @@ friend class ABCContext;
 friend ASObject* abstract_i(intptr_t i);
 CLASSBUILDABLE(Integer);
 private:
-	int32_t val;
 	Integer(int32_t v=0):val(v){type=T_INTEGER;}
 	Integer(Manager* m):ASObject(m),val(0){type=T_INTEGER;}
 public:
+	int32_t val;
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_toString);
@@ -615,9 +586,9 @@ class UInteger: public ASObject
 friend ASObject* abstract_ui(uint32_t i);
 CLASSBUILDABLE(UInteger);
 private:
-	uint32_t val;
 	UInteger(Manager* m):ASObject(m),val(0){type=T_UINTEGER;}
 public:
+	uint32_t val;
 	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
 
 	static void sinit(Class_base* c);
@@ -647,12 +618,12 @@ friend class ABCContext;
 friend class ABCVm;
 CLASSBUILDABLE(Number);
 private:
-	double val;
 	Number():val(0) {type=T_NUMBER;}
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
 	static void purgeTrailingZeroes(char* buf);
 public:
+	double val;
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg);
@@ -1042,9 +1013,6 @@ public:
 	ASObject* getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
 	~GlobalObject();
 };
-
-bool Boolean_concrete(ASObject* obj);
-
 
 template<class T>
 class ArgumentConversion

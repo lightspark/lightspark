@@ -1121,11 +1121,6 @@ ASObject* lightspark::abstract_d(number_t i)
 	return ret;
 }
 
-ASObject* lightspark::abstract_b(bool i)
-{
-	return Class<Boolean>::getInstanceS(i);
-}
-
 ASObject* lightspark::abstract_i(intptr_t i)
 {
 	Integer* ret=getVm()->int_manager->get<Integer>();

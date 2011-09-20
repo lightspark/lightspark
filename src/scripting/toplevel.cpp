@@ -54,7 +54,6 @@ REGISTER_CLASS_NAME(Array);
 REGISTER_CLASS_NAME2(ASQName,"QName","");
 REGISTER_CLASS_NAME2(IFunction,"Function","");
 REGISTER_CLASS_NAME2(UInteger,"uint","");
-REGISTER_CLASS_NAME(Boolean);
 REGISTER_CLASS_NAME(Integer);
 REGISTER_CLASS_NAME(Number);
 REGISTER_CLASS_NAME(Namespace);
@@ -2479,11 +2478,6 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 	}
 }
 
-tiny_string Boolean::toString(bool debugMsg)
-{
-	return (val)?"true":"false";
-}
-
 tiny_string ASString::toString_priv() const
 {
 	return data;
@@ -2582,44 +2576,6 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 {
 	out->writeByte(amf3::string_marker);
 	out->writeStringVR(stringMap, data);
-}
-
-bool Boolean::isEqual(ASObject* r)
-{
-	if(r->getObjectType()==T_BOOLEAN)
-	{
-		const Boolean* b=static_cast<const Boolean*>(r);
-		return b->val==val;
-	}
-	else if(r->getObjectType()==T_INTEGER ||
-		r->getObjectType()==T_UINTEGER || 
-		r->getObjectType()==T_NUMBER)
-	{
-		return val==r->toNumber();
-	}
-	else
-	{
-		return ASObject::isEqual(r);
-	}
-}
-
-TRISTATE Boolean::isLess(ASObject* r)
-{
-	if(r->getObjectType()==T_BOOLEAN)
-	{
-		const Boolean* b=static_cast<const Boolean*>(r);
-		return (val<b->val)?TTRUE:TFALSE;
-	}
-	else if(r->getObjectType()==T_INTEGER ||
-		r->getObjectType()==T_UINTEGER ||
-		r->getObjectType()==T_NUMBER)
-	{
-		double d=r->toNumber();
-		if(std::isnan(d)) return TUNDEFINED;
-		return (val<d)?TTRUE:TFALSE;
-	}
-	else
-		return ASObject::isLess(r);
 }
 
 Undefined::Undefined()
@@ -5275,117 +5231,6 @@ GlobalObject::~GlobalObject()
 	}
 	return ret;
 }*/
-
-ASFUNCTIONBODY(Boolean,generator)
-{
-	if(argslen==1)
-		return abstract_b(Boolean_concrete(args[0]));
-	else
-		return abstract_b(false);
-}
-
-//We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
-bool lightspark::Boolean_concrete(ASObject* obj)
-{
-	if(obj->getObjectType()==T_STRING)
-	{
-		LOG(LOG_CALLS,_("String to bool"));
-		const tiny_string& s=obj->toString();
-		if(s.len()==0)
-			return false;
-		else
-			return true;
-	}
-	else if(obj->getObjectType()==T_BOOLEAN)
-	{
-		Boolean* b=static_cast<Boolean*>(obj);
-		LOG(LOG_CALLS,_("Boolean to bool ") << b->val);
-		return b->val;
-	}
-	else if(obj->getObjectType()==T_OBJECT)
-	{
-		LOG(LOG_CALLS,_("Object to bool"));
-		return true;
-	}
-	else if(obj->getObjectType()==T_CLASS)
-	{
-		LOG(LOG_CALLS,_("Class to bool"));
-		return true;
-	}
-	else if(obj->getObjectType()==T_ARRAY)
-	{
-		LOG(LOG_CALLS,_("Array to bool"));
-		return true;
-	}
-	else if(obj->getObjectType()==T_FUNCTION)
-	{
-		LOG(LOG_CALLS,_("Function to bool"));
-		return true;
-	}
-	else if(obj->getObjectType()==T_UNDEFINED)
-	{
-		LOG(LOG_CALLS,_("Undefined to bool"));
-		return false;
-	}
-	else if(obj->getObjectType()==T_NULL)
-	{
-		LOG(LOG_CALLS,_("Null to bool"));
-		return false;
-	}
-	else if(obj->getObjectType()==T_NUMBER)
-	{
-		LOG(LOG_CALLS,_("Number to bool"));
-		double val=obj->toNumber();
-		if(val==0 || std::isnan(val))
-			return false;
-		else
-			return true;
-	}
-	else if(obj->getObjectType()==T_INTEGER)
-	{
-		LOG(LOG_CALLS,_("Integer to bool"));
-		int32_t val=obj->toInt();
-		if(val==0)
-			return false;
-		else
-			return true;
-	}
-	else
-	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Boolean conversion for type ") << obj->getObjectType() << endl);
-		return false;
-	}
-}
-
-ASFUNCTIONBODY(Boolean,_toString)
-{
-	Boolean* th=static_cast<Boolean*>(obj);
-	return Class<ASString>::getInstanceS(th->toString(false));
-}
-
-void Boolean::sinit(Class_base* c)
-{
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
-	c->prototype->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Boolean::_toString),NORMAL_METHOD,false);
-}
-
-ASFUNCTIONBODY(Boolean,_constructor)
-{
-	Boolean* th=static_cast<Boolean*>(obj);
-	if(argslen == 1)
-	{
-		th->val=Boolean_concrete(args[0]);
-	}
-	return NULL;
-}
-
-void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
-{
-	throw UnsupportedException("Boolean:serialize not implemented");
-}
 
 ASFUNCTIONBODY(lightspark,parseInt)
 {

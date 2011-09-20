@@ -393,7 +393,33 @@ public:
 				std::map<const ASObject*, uint32_t>& objMap) const;
 
 	virtual ASObject *describeType() const;
+
+	/* returns true if the current object is of type T */
+	template<class T> bool is() const { /*return __is<T>(this)*/return true; }
 };
 
-};
+class Number;
+class UInteger;
+class Integer;
+class Boolean;
+class Template_base;
+class ASString;
+class Function;
+class Array;
+class Definable;
+class Null;
+class Undefined;
+template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
+template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
+template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
+template<> inline bool ASObject::is<Boolean>() const { return type==T_BOOLEAN; }
+template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
+template<> inline bool ASObject::is<Function>() const { return type==T_FUNCTION; }
+template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
+template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
+template<> inline bool ASObject::is<Definable>() const { return type==T_DEFINABLE; }
+template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
+template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
+template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; };
+}
 #endif

@@ -3018,8 +3018,8 @@ tiny_string Number::toString(bool debugMsg)
 		else
 			return "-Infinity";
 	}
-	if(val == 0 && signbit(val))
-		return "0"; //-0 should be 0
+	if(val == 0) //this also handles the case '-0'
+		return "0";
 
 	//See ecma3 8.9.1
 	char buf[40];
@@ -3060,6 +3060,8 @@ ASFUNCTIONBODY(Number,_constructor)
 	Number* th=static_cast<Number*>(obj);
 	if(args && argslen==1)
 		th->val=args[0]->toNumber();
+	else
+		th->val=0;
 	return NULL;
 }
 

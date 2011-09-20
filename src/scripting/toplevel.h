@@ -648,7 +648,7 @@ friend class ABCVm;
 CLASSBUILDABLE(Number);
 private:
 	double val;
-	Number() {type=T_NUMBER;}
+	Number():val(0) {type=T_NUMBER;}
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
 	static void purgeTrailingZeroes(char* buf);

@@ -3651,6 +3651,8 @@ ASFUNCTIONBODY(Math,_min)
 
 ASFUNCTIONBODY(Math,exp)
 {
+	if(argslen == 0)
+		throw Class<ArgumentError>::getInstanceS("ArgumentError: Error #1063");
 	double n=args[0]->toNumber();
 	return abstract_d(::exp(n));
 }
@@ -3699,6 +3701,8 @@ ASFUNCTIONBODY(Math,tan)
 
 ASFUNCTIONBODY(Math,abs)
 {
+	if(argslen == 0)
+		throw Class<ArgumentError>::getInstanceS("ArgumentError: Error #1063");
 	double n=args[0]->toNumber();
 	return abstract_d(::fabs(n));
 }

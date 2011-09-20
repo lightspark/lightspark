@@ -96,52 +96,11 @@ protected:
 		return ret;
 	}
 public:
-	static T* getInstanceS()
+	template<typename... Args>
+	static T* getInstanceS(Args&&... args)
 	{
 		Class<T>* c=Class<T>::getClass();
-		return c->getInstance(true,NULL,0);
-	}
-	template <typename ARG1>
-	static T* getInstanceS(const ARG1& a1)
-	{
-		Class<T>* c=Class<T>::getClass();
-		T* ret=new T(a1);
-		ret->setClass(c);
-		c->handleConstruction(ret,NULL,0,true);
-		return ret;
-	}
-	template <typename ARG1, typename ARG2>
-	static T* getInstanceS(const ARG1& a1, const ARG2& a2)
-	{
-		Class<T>* c=Class<T>::getClass();
-		T* ret=new T(a1,a2);
-		ret->setClass(c);
-		c->handleConstruction(ret,NULL,0,true);
-		return ret;
-	}
-	template <typename ARG1, typename ARG2, typename ARG3>
-	static T* getInstanceS(const ARG1& a1, const ARG2& a2, const ARG3& a3)
-	{
-		Class<T>* c=Class<T>::getClass();
-		T* ret=new T(a1,a2,a3);
-		ret->setClass(c);
-		c->handleConstruction(ret,NULL,0,true);
-		return ret;
-	}
-	template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-	static T* getInstanceS(const ARG1& a1, const ARG2& a2, const ARG3& a3, const ARG4& a4)
-	{
-		Class<T>* c=Class<T>::getClass();
-		T* ret=new T(a1,a2,a3,a4);
-		ret->setClass(c);
-		c->handleConstruction(ret,NULL,0,true);
-		return ret;
-	}
-	template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-	static T* getInstanceS(const ARG1& a1, const ARG2& a2, const ARG3& a3, const ARG4& a4, const ARG5& a5)
-	{
-		Class<T>* c=Class<T>::getClass();
-		T* ret=new T(a1,a2,a3,a4,a5);
+		T* ret = new T(args...);
 		ret->setClass(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;

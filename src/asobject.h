@@ -396,6 +396,11 @@ public:
 
 	/* returns true if the current object is of type T */
 	template<class T> bool is() const { return dynamic_cast<T*>(this); }
+	/* returns this object casted to the given type.
+	 * You have to make sure that is actually is the type (see is<T>() above)
+	 */
+	template<class T> const T* as() const { return static_cast<const T*>(this); }
+	template<class T> T* as() { return static_cast<T*>(this); }
 };
 
 class Number;

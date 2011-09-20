@@ -395,7 +395,7 @@ public:
 	virtual ASObject *describeType() const;
 
 	/* returns true if the current object is of type T */
-	template<class T> bool is() const { /*return __is<T>(this)*/return true; }
+	template<class T> bool is() const { return dynamic_cast<T*>(this); }
 };
 
 class Number;

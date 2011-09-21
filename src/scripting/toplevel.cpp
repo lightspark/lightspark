@@ -4205,7 +4205,10 @@ ASFUNCTIONBODY(ASError,getStackTrace)
 
 tiny_string ASError::toString(bool debugMsg)
 {
-	return name + " :" + message;
+	if( message.len() )
+		return name + ": " + message;
+	else
+		return name;
 }
 
 ASFUNCTIONBODY(ASError,_getErrorID)

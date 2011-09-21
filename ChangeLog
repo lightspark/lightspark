@@ -1,5 +1,18 @@
 lightspark: An open source flash player implementation
 
+Version 0.5.1:
+	* Misc fixes to better support YouTube, Vimeo, Flowplayer
+	* VM correctness improvements
+	* Support for AS templates
+	* Dropped half-finished AVM1 support
+	* Support for EGL/GLES2 rendering
+	* Support for loading external JPEGs
+	* Better text handling(e.g. coloring)
+	* Improved test runner, support for the Tamarin testsuite
+	* Various API fixes for bugs uncovered by the testsuite
+	* Dropped mozilla dependency, use internal NPAPI headers
+	* Added LIGHTSPARK_PLUGIN_LOGLEVEL environment variable to control the log level of the browser
+
 Version 0.5.0:
 	* Improved XML support
 	* Improved FFMpeg based media playback

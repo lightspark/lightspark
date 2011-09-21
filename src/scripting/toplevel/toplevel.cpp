@@ -3583,48 +3583,129 @@ void ASQName::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("local_name","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
+	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(ASQName,_constructor)
 {
 	ASQName* th=static_cast<ASQName*>(obj);
-	if(argslen!=2)
-		throw UnsupportedException("ArgumentError");
+	assert_and_throw(argslen<3);
 
-	assert_and_throw(args[0]->getObjectType()==T_STRING || args[0]->getObjectType()==T_NAMESPACE);
-	assert_and_throw(args[1]->getObjectType()==T_STRING);
+	ASObject *nameval;
+	ASObject *namespaceval;
 
-	switch(args[0]->getObjectType())
+	if(argslen==0)
 	{
-		case T_STRING:
-		{
-			ASString* s=static_cast<ASString*>(args[0]);
-			th->uri=s->data;
-			break;
-		}
-		case T_NAMESPACE:
-		{
-			Namespace* n=static_cast<Namespace*>(args[0]);
-			th->uri=n->uri;
-			break;
-		}
-		default:
-			throw UnsupportedException("QName not completely implemented");
+		th->local_name="";
+		th->uri_is_null=false;
+		th->uri="";
+		// Should set th->uri to the default namespace
+		LOG(LOG_NOT_IMPLEMENTED, "QName constructor not completely implemented");
+		return NULL;
 	}
-	th->local_name=args[1]->toString();
+	if(argslen==1)
+	{
+		nameval=args[0];
+		namespaceval=NULL;
+	}
+	else if(argslen==2)
+	{
+		namespaceval=args[0];
+		nameval=args[1];
+	}
+
+	// Set local_name
+	if(nameval->getObjectType()==T_QNAME)
+	{
+		ASQName *q=static_cast<ASQName*>(nameval);
+		th->local_name=q->local_name;
+		if(!namespaceval)
+		{
+			th->uri_is_null=q->uri_is_null;
+			th->uri=q->uri;
+			return NULL;
+		}
+	}
+	else if(nameval->getObjectType()==T_UNDEFINED)
+		th->local_name="";
+	else
+		th->local_name=nameval->toString();
+
+	// Set uri
+	th->uri_is_null=false;
+	if(!namespaceval || namespaceval->getObjectType()==T_UNDEFINED)
+	{
+		if(th->local_name=="*")
+		{
+			th->uri_is_null=true;
+			th->uri="";
+		}
+		else
+		{
+			// Should set th->uri to the default namespace
+			LOG(LOG_NOT_IMPLEMENTED, "QName constructor not completely implemented");
+			th->uri="";
+		}
+	}
+	else if(namespaceval->getObjectType()==T_NULL)
+	{
+		th->uri_is_null=true;
+		th->uri="";
+	}
+	else
+	{
+		th->uri=namespaceval->toString();
+	}
+
 	return NULL;
 }
 
 ASFUNCTIONBODY(ASQName,_getURI)
 {
 	ASQName* th=static_cast<ASQName*>(obj);
-	return Class<ASString>::getInstanceS(th->uri);
+	if(th->uri_is_null)
+		return new Null;
+	else
+		return Class<ASString>::getInstanceS(th->uri);
 }
 
 ASFUNCTIONBODY(ASQName,_getLocalName)
 {
 	ASQName* th=static_cast<ASQName*>(obj);
 	return Class<ASString>::getInstanceS(th->local_name);
+}
+
+ASFUNCTIONBODY(ASQName,_toString)
+{
+	if(!obj->is<ASQName>())
+		throw Class<TypeError>::getInstanceS("QName.toString is not generic");
+	ASQName* th=static_cast<ASQName*>(obj);
+	return Class<ASString>::getInstanceS(th->toString(false));
+}
+
+bool ASQName::isEqual(ASObject* o)
+{
+	if(o->getObjectType()==T_QNAME)
+	{
+		ASQName *q=static_cast<ASQName *>(o);
+		return uri_is_null==q->uri_is_null && uri==q->uri && local_name==q->local_name;
+	}
+
+	return false;
+}
+
+tiny_string ASQName::toString(bool debugMsg)
+{
+	if(debugMsg)
+		return ASObject::toString(true);
+
+	tiny_string s;
+	if(uri_is_null)
+		s = "*::";
+	else if(uri!="")
+		s = uri + "::";
+
+	return s + local_name;
 }
 
 void Namespace::sinit(Class_base* c)
@@ -3636,6 +3717,7 @@ void Namespace::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_getPrefix),GETTER_METHOD,true);
+	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void Namespace::buildTraits(ASObject* o)
@@ -3644,43 +3726,88 @@ void Namespace::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Namespace,_constructor)
 {
+	ASObject *urival;
+	ASObject *prefixval;
 	Namespace* th=static_cast<Namespace*>(obj);
-	//The Namespace class has two constructors, this is the one with a single argument, uriValue:*
-	assert_and_throw(argslen<2);
+	assert_and_throw(argslen<3);
 
-	//Return before resetting the value to preserve those eventually set by the C++ constructor
 	if (argslen == 0)
-	    return NULL;
+	{
+		//Return before resetting the value to preserve those eventually set by the C++ constructor
+		return NULL;
+	}
+	else if (argslen == 1)
+	{
+		urival = args[0];
+		prefixval = NULL;
+	}
+	else
+	{
+		prefixval = args[0];
+		urival = args[1];
+	}
+	th->prefix_is_undefined=false;
 	th->prefix = "";
 	th->uri = "";
 
-	switch(args[0]->getObjectType())
+	if(!prefixval)
 	{
-		case T_NULL:
-		case T_UNDEFINED:
-			break;
-		case T_STRING:
+		if(urival->getObjectType()==T_NAMESPACE)
 		{
-			ASString* s=static_cast<ASString*>(args[0]);
-			th->uri=s->data;
-			break;
-		}
-		case T_QNAME:
-		{
-			ASQName* q=static_cast<ASQName*>(args[0]);
-			th->uri=q->uri;
-			break;
-		}
-		case T_NAMESPACE:
-		{
-			Namespace* n=static_cast<Namespace*>(args[0]);
+			Namespace* n=static_cast<Namespace*>(urival);
 			th->uri=n->uri;
 			th->prefix=n->prefix;
-			break;
 		}
-		default:
-			throw UnsupportedException("Namespace not completely implemented");
+		else if(urival->getObjectType()==T_QNAME && 
+		   !(static_cast<ASQName*>(urival)->uri_is_null))
+		{
+			ASQName* q=static_cast<ASQName*>(urival);
+			th->uri=q->uri;
+		}
+		else
+		{
+			th->uri=urival->toString();
+			if(th->uri!="")
+			{
+				th->prefix_is_undefined=true;
+				th->prefix="";
+			}
+		}
 	}
+	else // has both urival and prefixval
+	{
+		if(urival->getObjectType()==T_QNAME &&
+		   !(static_cast<ASQName*>(urival)->uri_is_null))
+		{
+			ASQName* q=static_cast<ASQName*>(urival);
+			th->uri=q->uri;
+		}
+		else
+		{
+			th->uri=urival->toString();
+		}
+
+		if(th->uri=="")
+		{
+			if(prefixval->getObjectType()==T_UNDEFINED ||
+			   prefixval->toString()=="")
+				th->prefix="";
+			else
+				throw Class<TypeError>::getInstanceS("Namespace prefix for empty uri not allowed");
+		}
+		else if(prefixval->getObjectType()==T_UNDEFINED)
+		{
+			th->prefix_is_undefined=true;
+			th->prefix="";
+		}
+		// else if(!isXMLName(prefixval))
+		// 	th->prefix_is_undefined=true;
+		else
+		{
+			th->prefix=prefixval->toString();
+		}
+	}
+
 	return NULL;
 }
 
@@ -3700,14 +3827,53 @@ ASFUNCTIONBODY(Namespace,_getURI)
 ASFUNCTIONBODY(Namespace,_setPrefix)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
-	th->prefix=args[0]->toString();
+	if(args[0]->getObjectType()==T_UNDEFINED)
+	{
+		th->prefix_is_undefined=true;
+		th->prefix="";
+	}
+	else
+	{
+		th->prefix_is_undefined=false;
+		th->prefix=args[0]->toString();
+	}
 	return NULL;
 }
 
 ASFUNCTIONBODY(Namespace,_getPrefix)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
-	return Class<ASString>::getInstanceS(th->prefix);
+	if(th->prefix_is_undefined)
+		return new Undefined;
+	else
+		return Class<ASString>::getInstanceS(th->prefix);
+}
+
+ASFUNCTIONBODY(Namespace,_toString)
+{
+	if(!obj->is<Namespace>())
+		throw Class<TypeError>::getInstanceS("Namespace.toString is not generic");
+	Namespace* th=static_cast<Namespace*>(obj);
+	return Class<ASString>::getInstanceS(th->toString(false));
+}
+
+bool Namespace::isEqual(ASObject* o)
+{
+	if(o->getObjectType()==T_NAMESPACE)
+	{
+		Namespace *n=static_cast<Namespace *>(o);
+		return uri==n->uri;
+	}
+
+	return false;
+}
+
+tiny_string Namespace::toString(bool debugMsg)
+{
+	if(debugMsg)
+		return ASObject::toString(true);
+
+	return uri;
 }
 
 void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)

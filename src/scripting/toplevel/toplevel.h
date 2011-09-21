@@ -405,14 +405,18 @@ friend class ABCContext;
 friend class Namespace;
 CLASSBUILDABLE(ASQName);
 private:
+	bool uri_is_null;
 	tiny_string uri;
 	tiny_string local_name;
-	ASQName(){type=T_QNAME;}
+	ASQName(){type=T_QNAME; uri_is_null=false;}
 public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getURI);
 	ASFUNCTION(_getLocalName);
+	ASFUNCTION(_toString);
+	bool isEqual(ASObject* o);
+	tiny_string toString(bool debugMsg);
 };
 
 class Namespace: public ASObject
@@ -421,10 +425,11 @@ friend class ASQName;
 friend class ABCContext;
 CLASSBUILDABLE(Namespace);
 private:
+	bool prefix_is_undefined;
 	tiny_string uri;
 	tiny_string prefix;
-	Namespace(){type=T_NAMESPACE;}
-	Namespace(const tiny_string& _uri):uri(_uri){type=T_NAMESPACE;}
+	Namespace(){type=T_NAMESPACE; prefix_is_undefined=false;}
+	Namespace(const tiny_string& _uri):uri(_uri){type=T_NAMESPACE; prefix_is_undefined=false;}
 public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -433,6 +438,9 @@ public:
 	ASFUNCTION(_setURI);
 	ASFUNCTION(_getPrefix);
 	ASFUNCTION(_setPrefix);
+	ASFUNCTION(_toString);
+	bool isEqual(ASObject* o);
+	tiny_string toString(bool debugMsg);
 };
 
 class Integer : public ASObject

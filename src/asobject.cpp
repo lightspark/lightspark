@@ -393,7 +393,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	{
 		if(has_getter)
 		{
-			tiny_string err=tiny_string("Illegal write to read-only property ")+name.normalizedName();
+			tiny_string err=tiny_string("Error #1074: Illegal write to read-only property ")+name.normalizedName();
 			if(classdef)
 				err+=tiny_string(" on type ")+classdef->getQualifiedClassName();
 			throw Class<ReferenceError>::getInstanceS(err);

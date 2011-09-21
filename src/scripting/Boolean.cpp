@@ -27,9 +27,11 @@ using namespace std;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(Boolean);
 
-Boolean* lightspark::abstract_b(bool i)
+Boolean* lightspark::abstract_b(bool v)
 {
-	return Class<Boolean>::getInstanceS(i);
+	Boolean* b = Class<Boolean>::getInstanceS();
+	b->val = v;
+	return b;
 }
 
 /* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
@@ -77,16 +79,12 @@ void Boolean::sinit(Class_base* c)
 ASFUNCTIONBODY(Boolean,_constructor)
 {
 	Boolean* th=static_cast<Boolean*>(obj);
-	//TODO: if argslen == 0, this should set
-	//th->val = false;
-	//But if one calls Class<Boolean>::getInstanceS(true), it does
-	//  Boolean* b = new Boolean(true);
-	//  b::_constructor(b,NULL,0);
-	//so we would here override the value set in the Boolean::Boolean()
 	if(argslen == 1)
 	{
 		th->val=Boolean_concrete(args[0]);
 	}
+	else
+		th->val = false; //= ToBoolean(undefined)
 	return NULL;
 }
 

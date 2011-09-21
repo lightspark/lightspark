@@ -1,3 +1,9 @@
+lightspark (0.5.1-0ubuntu1~ppa1) UNRELEASED; urgency=low
+
+  * New release
+
+ -- Jani Monoses <jani@ubuntu.com>  Wed, 21 Sep 2011 11:56:46 +0300
+
 lightspark (0.5.0-0ubuntu1~ppa) natty; urgency=low
 
   * New release

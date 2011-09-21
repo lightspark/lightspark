@@ -298,6 +298,10 @@ struct traits_info
 struct instance_info
 {
 	enum { ClassSealed=0x01,ClassFinal=0x02,ClassInterface=0x04,ClassProtectedNs=0x08};
+	bool isInterface() const { return flags&ClassInterface; }
+	bool isSealed() const { return flags&ClassSealed; }
+	bool isFinal() const { return flags&ClassFinal; }
+	bool isProtectedNs() const { return flags&ClassProtectedNs; }
 	u30 name;
 	u30 supername;
 	u8 flags;

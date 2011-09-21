@@ -2407,7 +2407,7 @@ void ABCVm::newClass(call_context* th, int n)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
 	//Add protected namespace if needed
-	if((th->context->instances[n].flags)&0x08)
+	if(th->context->instances[n].isProtectedNs())
 	{
 		ret->use_protected=true;
 		int ns=th->context->instances[n].protectedNs;
@@ -2467,7 +2467,7 @@ void ABCVm::newClass(call_context* th, int n)
 		}
 	}
 	//If the class is not an interface itself, link the traits
-	if(!((th->context->instances[n].flags)&0x04))
+	if(!th->context->instances[n].isInterface())
 	{
 		//Link all the interfaces for this class and all the bases
 		newClassRecursiveLink(ret, ret);

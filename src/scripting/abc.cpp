@@ -985,13 +985,13 @@ ABCContext::ABCContext(istream& in)
 		in >> instances[i];
 		LOG(LOG_CALLS,_("Class ") << *getMultiname(instances[i].name,NULL));
 		LOG(LOG_CALLS,_("Flags:"));
-		if((instances[i].flags)&0x01)
+		if(instances[i].isSealed())
 			LOG(LOG_CALLS,_("\tSealed"));
-		if((instances[i].flags)&0x02)
+		if(instances[i].isFinal())
 			LOG(LOG_CALLS,_("\tFinal"));
-		if((instances[i].flags)&0x04)
+		if(instances[i].isInterface())
 			LOG(LOG_CALLS,_("\tInterface"));
-		if((instances[i].flags)&0x08)
+		if(instances[i].isProtectedNs())
 			LOG(LOG_CALLS,_("\tProtectedNS ") << getString(constant_pool.namespaces[instances[i].protectedNs].name));
 		if(instances[i].supername)
 			LOG(LOG_CALLS,_("Super ") << *getMultiname(instances[i].supername,NULL));
@@ -2627,7 +2627,7 @@ istream& lightspark::operator >>(istream& in, exception_info& v)
 istream& lightspark::operator>>(istream& in, instance_info& v)
 {
 	in >> v.name >> v.supername >> v.flags;
-	if(v.flags&instance_info::ClassProtectedNs)
+	if(v.isProtectedNs())
 		in >> v.protectedNs;
 
 	in >> v.interface_count;

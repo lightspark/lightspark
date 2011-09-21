@@ -1798,7 +1798,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
 
-			obj_var* var=NULL;
+			variable* var=NULL;
 			Class_base* cur=c;
 			while(cur)
 			{
@@ -1830,7 +1830,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
 
-			obj_var* var=NULL;
+			variable* var=NULL;
 			Class_base* cur=c;
 			while(cur)
 			{
@@ -1861,7 +1861,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
 
-			obj_var* var=NULL;
+			variable* var=NULL;
 			Class_base* cur=c;
 			while(cur)
 			{
@@ -2027,7 +2027,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				{
 					if(cur->use_protected)
 					{
-						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
+						variable* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
 								NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 						if(var)
 						{
@@ -2077,7 +2077,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				{
 					if(cur->use_protected)
 					{
-						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
+						variable* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
 								NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 						if(var)
 						{
@@ -2129,7 +2129,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 					{
 						if(cur->use_protected)
 						{
-							obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
+							variable* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
 								NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 							if(var)
 							{

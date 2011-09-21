@@ -129,26 +129,22 @@ template<class T> class Class;
 class Class_base;
 class ByteArray;
 
-struct obj_var
-{
-	ASObject* var;
-	Class_base* type;
-	IFunction* setter;
-	IFunction* getter;
-	obj_var():var(NULL),type(NULL),setter(NULL),getter(NULL){}
-	obj_var(ASObject* _v, Class_base* _t):var(_v),type(_t),setter(NULL),getter(NULL){}
-	void setVar(ASObject* v);
-};
-
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, BORROWED_TRAIT=4 };
 
 struct variable
 {
 	nsNameAndKind ns;
-	obj_var var;
+	ASObject* var;
+	Class_base* type;
+	IFunction* setter;
+	IFunction* getter;
 	TRAIT_KIND kind;
-	variable(const nsNameAndKind& _ns, TRAIT_KIND _k):ns(_ns),kind(_k){}
-	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, Class_base* _c):ns(_ns),var(_v,_c),kind(_k){}
+	//obj_var(ASObject* _v, Class_base* _t):var(_v),type(_t),{}
+	variable(const nsNameAndKind& _ns, TRAIT_KIND _k)
+		:ns(_ns),var(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k){}
+	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, Class_base* _c)
+		:ns(_ns),var(_v),type(_c),setter(NULL),getter(NULL),kind(_k){}
+	void setVar(ASObject* v);
 };
 
 class variables_map
@@ -173,15 +169,15 @@ private:
 				a new one is created with the given kind
 	   @param traitKinds Bitwise OR of accepted trait kinds
 	*/
-	obj_var* findObjVar(const tiny_string& name, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
-	obj_var* findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
+	variable* findObjVar(const tiny_string& name, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
+	variable* findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(const multiname& mname, ASObject* obj, Class_base* type);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
 		assert(n<=slots_vars.size());
-		return slots_vars[n-1]->second.var.var;
+		return slots_vars[n-1]->second.var;
 	}
 	void setSlot(unsigned int n,ASObject* o);
 	void initSlot(unsigned int n,const tiny_string& name, const nsNameAndKind& ns);
@@ -190,7 +186,7 @@ private:
 		return Variables.size();
 	}
 	tiny_string getNameAt(unsigned int i) const;
-	obj_var* getValueAt(unsigned int i);
+	variable* getValueAt(unsigned int i);
 	~variables_map();
 public:
 	void dumpVariables();
@@ -238,8 +234,8 @@ protected:
 	SWFOBJECT_TYPE type;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const;
-	obj_var* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
-	obj_var* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
+	variable* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
+	variable* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
 private:
 	ATOMIC_INT32(ref_count);
 	Manager* manager;

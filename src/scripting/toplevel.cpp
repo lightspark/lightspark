@@ -4506,7 +4506,7 @@ ASObject* Prototype::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	if(name.normalizedName() == "prototype")
 		return prototype.getPtr();
 
-	obj_var* obj=findGettable(name, false);
+	variable* obj=findGettable(name, false);
 	if(obj==NULL)
 	{
 		if(prototype != NULL)
@@ -5100,7 +5100,7 @@ ASFUNCTIONBODY(Namespace,_getPrefix)
 
 void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
 {
-	obj_var* var=NULL;
+	variable* var=NULL;
 	Class_base* cur=c;
 	//Find the origin
 	while(cur)

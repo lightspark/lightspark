@@ -210,7 +210,7 @@ double ASObject::toNumber()
 	return numeric_limits<double>::quiet_NaN();
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
+variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
 	const var_iterator ret_begin=Variables.lower_bound(n);
 	//This actually look for the first different name, if we accept also previous levels
@@ -224,7 +224,7 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns
 			continue;
 
 		if(ret->second.ns==ns)
-			return &ret->second.var;
+			return &ret->second;
 	}
 
 	//Name not present, insert it if we have to create it
@@ -232,7 +232,7 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns
 		return NULL;
 
 	var_iterator inserted=Variables.insert(ret_begin,make_pair(n, variable(ns, createKind)) );
-	return &inserted->second.var;
+	return &inserted->second;
 }
 
 bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
@@ -285,7 +285,7 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 	//borrowed properties only make sense on class objects
 	assert(!isBorrowed || dynamic_cast<Class_base*>(this));
 
-	obj_var* obj=Variables.findObjVar(name,ns, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
+	variable* obj=Variables.findObjVar(name,ns, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 	switch(type)
 	{
 		case NORMAL_METHOD:
@@ -329,7 +329,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 	assert_and_throw(ref_count>0);
 
 	//Only dynamic traits are deletable
-	obj_var* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	variable* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 	if(obj==NULL)
 		return false;
 
@@ -349,9 +349,9 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
-obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode, bool* has_getter)
+variable* ASObject::findSettable(const multiname& name, bool borrowedMode, bool* has_getter)
 {
-	obj_var* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
@@ -372,7 +372,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualClass)
 	bool has_getter=false;
-	obj_var* obj=findSettable(name, false, &has_getter);
+	variable* obj=findSettable(name, false, &has_getter);
 
 	if(obj==NULL && classdef)
 	{
@@ -430,7 +430,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
 {
-	obj_var* obj=Variables.findObjVar(name,ns,NO_CREATE_TRAIT,traitKind);
+	variable* obj=Variables.findObjVar(name,ns,NO_CREATE_TRAIT,traitKind);
 	assert_and_throw(obj==NULL);
 	obj=Variables.findObjVar(name,ns,traitKind,traitKind);
 	obj->setVar(o);
@@ -440,7 +440,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 {
 	check();
 
-	obj_var* obj=findSettable(name, false);
+	variable* obj=findSettable(name, false);
 	if(obj)
 	{
 		//Initializing an already existing variable
@@ -453,7 +453,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 	Variables.initializeVar(name, o, c);
 }
 
-void obj_var::setVar(ASObject* v)
+void variable::setVar(ASObject* v)
 {
 	//Do the conversion early, so that errors does not leave the object in an half baked state
 	ASObject* newV=v;
@@ -492,7 +492,7 @@ void variables_map::killObjVar(const multiname& mname)
 	throw RunTimeException("Variable to kill not found");
 }
 
-obj_var* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
+variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
 	tiny_string name=mname.normalizedName();
 
@@ -510,7 +510,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind
 		//Check if one the namespace is already present
 		//We can use binary search, as the namespace are ordered
 		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.ns))
-			return &ret->second.var;
+			return &ret->second;
 	}
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
@@ -524,10 +524,10 @@ obj_var* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind
 		//Here the object MUST exist
 		var_iterator inserted=Variables.insert(ret,make_pair(name, 
 					variable(nsNameAndKind("",NAMESPACE), createKind)));
-		return &inserted->second.var;
+		return &inserted->second;
 	}
 	var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0], createKind)));
-	return &inserted->second.var;
+	return &inserted->second;
 }
 
 void variables_map::initializeVar(const multiname& mname, ASObject* obj, Class_base* type)
@@ -595,9 +595,9 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-obj_var* ASObject::findGettable(const multiname& name, bool borrowedMode)
+variable* ASObject::findGettable(const multiname& name, bool borrowedMode)
 {
-	obj_var* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -613,7 +613,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 	check();
 
 	//Get from the current object without considering borrowed properties
-	obj_var* obj=findGettable(name, false);
+	variable* obj=findGettable(name, false);
 
 	if(obj==NULL && classdef)
 	{
@@ -693,18 +693,18 @@ void ASObject::check() const
 		//No double definition of a single variable should exist
 		if(it->first==next->first && it->second.ns==next->second.ns)
 		{
-			if(it->second.var.var==NULL && next->second.var.var==NULL)
+			if(it->second.var==NULL && next->second.var==NULL)
 				continue;
 
-			if(it->second.var.var==NULL || next->second.var.var==NULL)
+			if(it->second.var==NULL || next->second.var==NULL)
 			{
 				cout << it->first << endl;
-				cout << it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter << endl;
-				cout << next->second.var.var << ' ' << next->second.var.setter << ' ' << next->second.var.getter << endl;
+				cout << it->second.var << ' ' << it->second.setter << ' ' << it->second.getter << endl;
+				cout << next->second.var << ' ' << next->second.setter << ' ' << next->second.getter << endl;
 				abort();
 			}
 
-			if(it->second.var.var->getObjectType()!=T_FUNCTION || next->second.var.var->getObjectType()!=T_FUNCTION)
+			if(it->second.var->getObjectType()!=T_FUNCTION || next->second.var->getObjectType()!=T_FUNCTION)
 			{
 				cout << it->first << endl;
 				abort();
@@ -736,7 +736,7 @@ void variables_map::dumpVariables()
 				assert(false);
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns.name << "] "<< it->first << ' ' <<
-			it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter);
+			it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
 	}
 }
 
@@ -750,12 +750,12 @@ void variables_map::destroyContents()
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();++it)
 	{
-		if(it->second.var.var)
-			it->second.var.var->decRef();
-		if(it->second.var.setter)
-			it->second.var.setter->decRef();
-		if(it->second.var.getter)
-			it->second.var.getter->decRef();
+		if(it->second.var)
+			it->second.var->decRef();
+		if(it->second.setter)
+			it->second.setter->decRef();
+		if(it->second.getter)
+			it->second.getter->decRef();
 	}
 	Variables.clear();
 }
@@ -873,15 +873,15 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 	if(n-1<slots_vars.size())
 	{
 		assert_and_throw(slots_vars[n-1]!=Variables.end());
-		if(slots_vars[n-1]->second.var.setter)
+		if(slots_vars[n-1]->second.setter)
 			throw UnsupportedException("setSlot has setters");
-		slots_vars[n-1]->second.var.setVar(o);
+		slots_vars[n-1]->second.setVar(o);
 	}
 	else
 		throw RunTimeException("setSlot out of bounds");
 }
 
-obj_var* variables_map::getValueAt(unsigned int index)
+variable* variables_map::getValueAt(unsigned int index)
 {
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
@@ -891,7 +891,7 @@ obj_var* variables_map::getValueAt(unsigned int index)
 		for(unsigned int i=0;i<index;i++)
 			++it;
 
-		return &it->second.var;
+		return &it->second;
 	}
 	else
 		throw RunTimeException("getValueAt out of bounds");
@@ -899,7 +899,7 @@ obj_var* variables_map::getValueAt(unsigned int index)
 
 ASObject* ASObject::getValueAt(int index)
 {
-	obj_var* obj=Variables.getValueAt(index);
+	variable* obj=Variables.getValueAt(index);
 	assert_and_throw(obj);
 	ASObject* ret;
 	if(obj->getter)
@@ -953,7 +953,7 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 	{
 		assert_and_throw(it->second.ns.name=="");
 		out->writeStringVR(stringMap,it->first);
-		it->second.var.var->serialize(out, stringMap, objMap);
+		it->second.var->serialize(out, stringMap, objMap);
 	}
 	//The empty string closes the object
 	out->writeStringVR(stringMap, "");

@@ -89,6 +89,14 @@ IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 	IF(CMAKE_COMPILER_IS_GNUCC)
 	   ENABLE_LANGUAGE(ASM-NASM)        
 	ENDIF(CMAKE_COMPILER_IS_GNUCC)
+ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "unknown" AND ${CMAKE_SYSTEM} MATCHES "GNU-0.3")
+	# GNU Hurd is i386
+	SET(i386 1)
+	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 32")
+	# nasm for assembly optimizations
+	IF(CMAKE_COMPILER_IS_GNUCC)
+	   ENABLE_LANGUAGE(ASM-NASM)
+	ENDIF ()
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x86_64$|^amd64$")
 	SET(x86_64 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 64")
@@ -100,11 +108,9 @@ ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc")
 	SET(ppc 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None ppc")
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maltivec -D__STDC_CONSTANT_MACROS -fPIC")
-ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-	SET(arm 1)
-	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None arm")
 ELSE(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
-	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
+	# All non-x86 non-ppc architectures.
+	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None")
 ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 
 # Using relative folders, cmake happens by itself CMAKE_INSTALL_PREFIX

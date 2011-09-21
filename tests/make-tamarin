@@ -1,4 +1,8 @@
 #!/bin/bash
+echo "Tip: you can rebuild individual tests by calling this script like"
+echo "./make-tamarin ecma3/Boolean/e15_6_4_3_2.as"
+echo "or ./make-tamarin ecma3/Boolean"
+
 TAMARIN=${TAMARIN:-tamarin}
 ASC=${ASC:-`pwd`/asc.jar}
 if [[ ! -d $TAMARIN ]]; then
@@ -27,7 +31,7 @@ CUR=`pwd`
 #./runtests.py --asc $ASC --builtinabc ../../core/builtin.abc --shellabc ../../shell/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF || exit 1
 (cd $TAMARIN/test/acceptance && \
 rm -f ats_temp.abc ats_temp.as shell.as && \
-grep USES_SWFVERSION . -R --files-with-matches | xargs rm && \
+grep USES_SWFVERSION . -R --files-with-matches | xargs --no-run-if-empty rm && \
 echo "override| -optimize -in $CUR/tamarin-lightspark.as -AS3 -swf 200,200 -in ./ats_temp.as" > dir.asc_args && \
-./runtests.py --asc $ASC --builtinabc ../../generated/builtin.abc --shellabc ../../generated/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF) \
+./runtests.py --asc $ASC --builtinabc ../../generated/builtin.abc --shellabc ../../generated/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF $1) \
 || echo "Compiling tests failed. Make sure you have the latest tamarin-redux and asc.jar from http://hg.mozilla.org/tamarin-redux and ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar, respectively."

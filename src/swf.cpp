@@ -402,12 +402,12 @@ void SystemState::destroy()
 		currentVm->finalize();
 
 	//Free classes by decRef'ing them
-	for(auto i : classes)
-		i.second->decRef();
+	for(auto i = classes.begin(); i != classes.end(); ++i)
+		i->second->decRef();
 
 	//Free templates by decRef'ing them
-	for(auto i : templates)
-		i.second->decRef();
+	for(auto i = templates.begin(); i != templates.end(); ++i)
+		i->second->decRef();
 
 	//The Vm must be destroyed this late to clean all managed integers and numbers
 	//This deletes the {int,uint,number}_managers; therefore no Number/.. object may be

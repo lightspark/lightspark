@@ -5257,8 +5257,8 @@ ASObject* GlobalObject::getVariableAndTargetByMultiname(const multiname& name, A
 
 GlobalObject::~GlobalObject()
 {
-	for(auto i : globalScopes)
-		i->decRef();
+	for(auto i = globalScopes.begin(); i != globalScopes.end(); ++i)
+		(*i)->decRef();
 }
 
 /*ASObject* GlobalObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
@@ -5633,10 +5633,10 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 
 		//create object without calling _constructor
 		Vector* ret = o_class->getInstance(false,NULL,0);
-		for(auto i : arg->vec)
+		for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 		{
-			i->incRef();
-			ret->vec.push_back( i );
+			(*i)->incRef();
+			ret->vec.push_back( *i );
 		}
 		return ret;
 	}

@@ -1174,12 +1174,12 @@ T* Manager::get()
 
 inline Manager::~Manager()
 {
-	for(auto i : available)
+	for(auto i = available.begin(); i != available.end(); ++i)
 	{
 		// ~ASObject will call abandonObject() again
-		if(i->classdef)
-			i->classdef->acquireObject(i);
-		delete i;
+		if((*i)->classdef)
+			(*i)->classdef->acquireObject(*i);
+		delete *i;
 	}
 }
 

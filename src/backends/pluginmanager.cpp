@@ -277,8 +277,8 @@ void PluginManager::unloadPlugin ( uint32_t desiredIndex )
 
 PluginManager::~PluginManager()
 {
-	for(auto i : pluginsList)
-		delete i;
+	for(auto i = pluginsList.begin(); i != pluginsList.end(); ++i)
+		delete *i;
 }
 
 

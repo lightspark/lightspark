@@ -4211,44 +4211,10 @@ tiny_string ASError::toString(bool debugMsg)
 		return name;
 }
 
-ASFUNCTIONBODY(ASError,_getErrorID)
-{
-	ASError* th=static_cast<ASError*>(obj);
-	return abstract_i(th->errorID);
-}
-
 ASFUNCTIONBODY(ASError,_toString)
 {
 	ASError* th=static_cast<ASError*>(obj);
 	return Class<ASString>::getInstanceS(th->ASError::toString(false));
-}
-
-ASFUNCTIONBODY(ASError,_setName)
-{
-	ASError* th=static_cast<ASError*>(obj);
-	assert_and_throw(argslen==1);
-	th->name = args[0]->toString();
-	return NULL;
-}
-
-ASFUNCTIONBODY(ASError,_getName)
-{
-	ASError* th=static_cast<ASError*>(obj);
-	return Class<ASString>::getInstanceS(th->name);
-}
-
-ASFUNCTIONBODY(ASError,_setMessage)
-{
-	ASError* th=static_cast<ASError*>(obj);
-	assert_and_throw(argslen==1);
-	th->message = args[0]->toString();
-	return NULL;
-}
-
-ASFUNCTIONBODY(ASError,_getMessage)
-{
-	ASError* th=static_cast<ASError*>(obj);
-	return Class<ASString>::getInstanceS(th->toString(false));
 }
 
 ASFUNCTIONBODY(ASError,_constructor)
@@ -4272,13 +4238,15 @@ void ASError::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace),NORMAL_METHOD,true);
-	c->prototype->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("errorID","",Class<IFunction>::getFunction(_getErrorID),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("message","",Class<IFunction>::getFunction(_getMessage),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("message","",Class<IFunction>::getFunction(_setMessage),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_setName),SETTER_METHOD,true);
+	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	REGISTER_GETTER(c, errorID);
+	REGISTER_GETTER_SETTER(c, message);
+	REGISTER_GETTER_SETTER(c, name);
 }
+
+ASFUNCTIONBODY_GETTER(ASError, errorID)
+ASFUNCTIONBODY_GETTER_SETTER(ASError, message)
+ASFUNCTIONBODY_GETTER_SETTER(ASError, name)
 
 void ASError::buildTraits(ASObject* o)
 {

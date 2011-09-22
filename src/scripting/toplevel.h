@@ -885,19 +885,14 @@ class ASError: public ASObject
 {
 CLASSBUILDABLE(ASError);
 protected:
-	tiny_string message;
+	ASPROPERTY_GETTER_SETTER(tiny_string, message);
 private:
-	int errorID;
-	tiny_string name;
+	ASPROPERTY_GETTER(int32_t, errorID);
+	ASPROPERTY_GETTER_SETTER(tiny_string, name);
 public:
 	ASError(const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error") : message(error_message), errorID(id), name(error_name){};
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getStackTrace);
-	ASFUNCTION(_setName);
-	ASFUNCTION(_getName);
-	ASFUNCTION(_setMessage);
-	ASFUNCTION(_getMessage);
-	ASFUNCTION(_getErrorID);
 	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg=false);
 	static void sinit(Class_base* c);

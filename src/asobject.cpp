@@ -284,6 +284,8 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 #endif
 	//borrowed properties only make sense on class objects
 	assert(!isBorrowed || dynamic_cast<Class_base*>(this));
+	//use setVariableByQName(name,ns,o,DYNAMIC_TRAIT) on prototypes
+	assert(!this->is<Prototype>());
 
 	variable* obj=Variables.findObjVar(name,ns, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 	switch(type)
@@ -432,6 +434,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& 
 {
 	variable* obj=Variables.findObjVar(name,ns,NO_CREATE_TRAIT,traitKind);
 	assert_and_throw(obj==NULL);
+	assert(!this->is<Prototype>() || traitKind == DYNAMIC_TRAIT);
 	obj=Variables.findObjVar(name,ns,traitKind,traitKind);
 	obj->setVar(o);
 }

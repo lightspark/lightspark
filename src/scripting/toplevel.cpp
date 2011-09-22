@@ -3612,6 +3612,11 @@ ASFUNCTIONBODY(Math,_max)
 	for(unsigned int i = 0; i < argslen; i++)
 	{
 		double arg = args[i]->toNumber();
+		if (std::isnan(arg))
+		{
+			largest = numeric_limits<double>::quiet_NaN();
+			break;
+		}
 		if(largest == arg && signbit(largest) > signbit(arg))
 			largest = 0.0; //Spec 15.8.2.11: 0.0 should be larger than -0.0
 		else

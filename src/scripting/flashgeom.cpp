@@ -86,7 +86,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("offsetPoint","",Class<IFunction>::getFunction(offsetPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setEmpty","",Class<IFunction>::getFunction(setEmpty),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("union","",Class<IFunction>::getFunction(_union),NORMAL_METHOD,true);
-	c->prototype->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,false);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -518,7 +518,7 @@ void ColorTransform::sinit(Class_base* c)
 
 	// methods
 	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(concat),NORMAL_METHOD,true);
-	c->prototype->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,false);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void ColorTransform::buildTraits(ASObject* o)
@@ -755,7 +755,7 @@ void Point::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(offset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("polar","",Class<IFunction>::getFunction(polar),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,false);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void Point::buildTraits(ASObject* o)
@@ -957,7 +957,7 @@ void Matrix::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scale","",Class<IFunction>::getFunction(scale),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transformPoint","",Class<IFunction>::getFunction(transformPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("translate","",Class<IFunction>::getFunction(translate),NORMAL_METHOD,true);
-	c->prototype->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,false);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(Matrix,_constructor)
@@ -1355,7 +1355,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("project","",Class<IFunction>::getFunction(project),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("scaleBy","",Class<IFunction>::getFunction(scaleBy),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),NORMAL_METHOD,true);
-	c->prototype->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,false);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)

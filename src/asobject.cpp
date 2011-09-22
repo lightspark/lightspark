@@ -132,7 +132,7 @@ _R<ASObject> ASObject::nextValue(uint32_t index)
 
 void ASObject::sinit(Class_base* c)
 {
-	c->prototype->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,false);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void ASObject::buildTraits(ASObject* o)

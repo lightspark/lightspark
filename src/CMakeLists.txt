@@ -57,6 +57,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_interpreter.cpp
   scripting/abc_opcodes.cpp
   scripting/toplevel/Boolean.cpp
+  scripting/toplevel/Date.cpp
   scripting/class.cpp
   scripting/flashaccessibility.cpp
   scripting/flashdisplay.cpp

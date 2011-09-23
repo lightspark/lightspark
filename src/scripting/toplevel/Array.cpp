@@ -380,8 +380,10 @@ ASFUNCTIONBODY(Array,slice)
 	endIndex=th->capIndex(endIndex);
 
 	Array* ret=Class<Array>::getInstanceS();
-	for(int i=startIndex; i<endIndex; i++)
+	for(int i=startIndex; i<endIndex; i++) {
+		th->data[i].data->incRef();
 		ret->data.push_back(th->data[i]);
+	}
 	return ret;
 }
 

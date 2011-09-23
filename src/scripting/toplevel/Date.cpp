@@ -21,7 +21,6 @@
 #include "class.h"
 
 using namespace std;
-using namespace Glib;
 using namespace lightspark;
 
 SET_NAMESPACE("");

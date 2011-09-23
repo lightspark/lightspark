@@ -93,6 +93,11 @@ ASFUNCTIONBODY(Math,_min)
 	for(unsigned int i = 0; i < argslen; i++)
 	{
 		double arg = args[i]->toNumber();
+		if (std::isnan(arg))
+		{
+			smallest = numeric_limits<double>::quiet_NaN();
+			break;
+		}
 		if(smallest == arg && signbit(arg) > signbit(smallest))
 			smallest = -0.0; //Spec 15.8.2.11: 0.0 should be larger than -0.0
 		else

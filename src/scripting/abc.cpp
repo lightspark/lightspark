@@ -33,6 +33,7 @@
 #include <cmath>
 #include "swf.h"
 #include "toplevel/Date.h"
+#include "toplevel/Math.h"
 #include "flashaccessibility.h"
 #include "flashevents.h"
 #include "flashdisplay.h"

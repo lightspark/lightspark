@@ -770,33 +770,6 @@ public:
 	void define(ASObject* g){ g->incRef(); f->call(g,NULL,0); }
 };
 
-class Math: public ASObject
-{
-public:
-	static void sinit(Class_base* c);
-
-	ASFUNCTION(abs);
-	ASFUNCTION(acos);
-	ASFUNCTION(asin);
-	ASFUNCTION(atan);
-	ASFUNCTION(atan2);
-	ASFUNCTION(ceil);
-	ASFUNCTION(cos);
-	ASFUNCTION(exp);
-	ASFUNCTION(floor);
-	ASFUNCTION(log);
-	ASFUNCTION(_max);
-	ASFUNCTION(_min);
-	ASFUNCTION(pow);
-	ASFUNCTION(random);
-	ASFUNCTION(round);
-	ASFUNCTION(sin);
-	ASFUNCTION(sqrt);
-	ASFUNCTION(tan);
-
-	static int hexToInt(char c);
-};
-
 class RegExp: public ASObject
 {
 CLASSBUILDABLE(RegExp);

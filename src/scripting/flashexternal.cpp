@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "scripting/toplevel.h"
 #include "flashexternal.h"
 #include "class.h"
 #include "backends/extscriptobject.h"

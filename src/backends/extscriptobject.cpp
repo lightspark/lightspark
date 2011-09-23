@@ -25,7 +25,6 @@
 #include "compat.h"
 #include "scripting/abc.h"
 #include "scripting/class.h"
-#include "scripting/toplevel.h"
 
 #include "extscriptobject.h"
 

@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "toplevel.h"
+#include "toplevel/toplevel.h"
 #include <string>
 #include <semaphore.h>
 

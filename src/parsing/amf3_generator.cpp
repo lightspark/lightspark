@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #include "amf3_generator.h"
-#include "scripting/toplevel.h"
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/class.h"
 #include <iostream>
 #include <fstream>

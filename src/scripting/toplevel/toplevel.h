@@ -27,7 +27,7 @@
 #include "threading.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
-#include "abcutils.h"
+#include "scripting/abcutils.h"
 #include <glibmm/ustring.h>
 #include "Boolean.h"
 

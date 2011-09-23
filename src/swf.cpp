@@ -201,6 +201,18 @@ void SystemState::setCookies(const char* c)
 	rawCookies=c;
 }
 
+static int hexToInt(char c)
+{
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
+}
+
 void SystemState::parseParametersFromFlashvars(const char* v)
 {
 	if(useGnashFallback) //Save a copy of the string
@@ -237,8 +249,8 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 					break;
 				}
 
-				int t1=Math::hexToInt(vars[j+1]);
-				int t2=Math::hexToInt(vars[j+2]);
+				int t1=hexToInt(vars[j+1]);
+				int t2=hexToInt(vars[j+2]);
 				if(t1==-1 || t2==-1)
 				{
 					ok=false;

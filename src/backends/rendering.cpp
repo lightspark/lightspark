@@ -657,6 +657,7 @@ void RenderThread::commonGLInit(int width, int height)
 	if(status != GL_FRAMEBUFFER_COMPLETE)
 	{
 		LOG(LOG_ERROR,_("Incomplete FBO status ") << status << _("... Aborting"));
+		err=glGetError();
 		while(err!=GL_NO_ERROR)
 		{
 			LOG(LOG_ERROR,_("GL errors during initialization: ") << err);

@@ -20,6 +20,7 @@
 #include "Array.h"
 #include "abc.h"
 #include "class.h"
+#include "parsing/amf3_generator.h"
 
 using namespace std;
 using namespace lightspark;
@@ -851,6 +852,154 @@ bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigne
 		index+=(name[i]-'0');
 	}
 	return true;
+}
+
+tiny_string Array::toString(bool debugMsg)
+{
+	assert_and_throw(implEnable);
+	if(debugMsg)
+		return ASObject::toString(debugMsg);
+	return toString_priv();
+}
+
+tiny_string Array::toString_priv() const
+{
+	string ret;
+	for(unsigned int i=0;i<data.size();i++)
+	{
+		if(data[i].type==DATA_OBJECT)
+		{
+			if(data[i].data)
+				ret+=data[i].data->toString().raw_buf();
+		}
+		else if(data[i].type==DATA_INT)
+		{
+			char buf[20];
+			snprintf(buf,20,"%i",data[i].data_i);
+			ret+=buf;
+		}
+		else
+			throw UnsupportedException("Array::toString not completely implemented");
+
+		if(i!=data.size()-1)
+			ret+=',';
+	}
+	return ret;
+}
+
+_R<ASObject> Array::nextValue(uint32_t index)
+{
+	assert_and_throw(implEnable);
+	if(index<=data.size())
+	{
+		index--;
+		if(data[index].type==DATA_OBJECT)
+		{
+			if(data[index].data==NULL)
+				return _MR(new Undefined);
+			else
+			{
+				data[index].data->incRef();
+				return _MR(data[index].data);
+			}
+		}
+		else if(data[index].type==DATA_INT)
+			return _MR(abstract_i(data[index].data_i));
+		else
+			throw UnsupportedException("Unexpected data type");
+	}
+	else
+	{
+		//Fall back on object properties
+		return ASObject::nextValue(index-data.size());
+	}
+}
+
+uint32_t Array::nextNameIndex(uint32_t cur_index)
+{
+	assert_and_throw(implEnable);
+	if(cur_index<data.size())
+		return cur_index+1;
+	else
+	{
+		//Fall back on object properties
+		uint32_t ret=ASObject::nextNameIndex(cur_index-data.size());
+		if(ret==0)
+			return 0;
+		else
+			return ret+data.size();
+
+	}
+}
+
+_R<ASObject> Array::nextName(uint32_t index)
+{
+	assert_and_throw(implEnable);
+	if(index<=data.size())
+		return _MR(abstract_i(index-1));
+	else
+	{
+		//Fall back on object properties
+		return ASObject::nextName(index-data.size());
+	}
+}
+
+ASObject* Array::at(unsigned int index) const
+{
+	if(data.size()<=index)
+		outofbounds();
+
+	switch(data[index].type)
+	{
+		case DATA_OBJECT:
+		{
+			if(data[index].data)
+				return data[index].data;
+		}
+		case DATA_INT:
+			return abstract_i(data[index].data_i);
+	}
+
+	//We should be here only if data is an object and is NULL
+	return new Undefined;
+}
+
+void Array::outofbounds() const
+{
+	throw ParseException("Array access out of bounds");
+}
+
+void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
+	assert_and_throw(objMap.find(this)==objMap.end());
+	out->writeByte(amf3::array_marker);
+	uint32_t denseCount = data.size();
+	assert_and_throw(denseCount<0x20000000);
+	uint32_t value = (denseCount << 1) | 1;
+	out->writeU29(value);
+	serializeDynamicProperties(out, stringMap, objMap);
+	for(uint32_t i=0;i<denseCount;i++)
+	{
+		switch(data[i].type)
+		{
+			case DATA_INT:
+				throw UnsupportedException("int not supported in Array::serialize");
+			case DATA_OBJECT:
+				data[i].data->serialize(out, stringMap, objMap);
+		}
+	}
+}
+
+void Array::finalize()
+{
+	ASObject::finalize();
+	for(unsigned int i=0;i<data.size();i++)
+	{
+		if(data[i].type==DATA_OBJECT && data[i].data)
+			data[i].data->decRef();
+	}
+	data.clear();
 }
 
 

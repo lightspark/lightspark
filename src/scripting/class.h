@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/abcutils.h"
+#include "scripting/toplevel/Array.h"
 #include "compat.h"
 #include "asobject.h"
 #include "swf.h"

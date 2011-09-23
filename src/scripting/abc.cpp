@@ -32,6 +32,7 @@
 #include <limits>
 #include <cmath>
 #include "swf.h"
+#include "toplevel/Date.h"
 #include "flashaccessibility.h"
 #include "flashevents.h"
 #include "flashdisplay.h"

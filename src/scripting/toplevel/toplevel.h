@@ -752,44 +752,6 @@ public:
 	_R<ASObject> nextValue(uint32_t index);
 };
 
-class Date: public ASObject
-{
-CLASSBUILDABLE(Date);
-private:
-	int year;
-	int month;
-	int date;
-	int hour;
-	int minute;
-	int second;
-	int millisecond;
-	int32_t toInt();
-	Date();
-	bool getIsLeapYear(int year);
-	int getDaysInMonth(int month, bool isLeapYear);
-public:
-	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(getTimezoneOffset);
-	ASFUNCTION(getTime);
-	ASFUNCTION(getFullYear);
-	ASFUNCTION(getHours);
-	ASFUNCTION(getMinutes);
-	ASFUNCTION(getMilliseconds);
-	ASFUNCTION(getUTCFullYear);
-	ASFUNCTION(getUTCMonth);
-	ASFUNCTION(getUTCDate);
-	ASFUNCTION(getUTCHours);
-	ASFUNCTION(getUTCMinutes);
-	ASFUNCTION(valueOf);
-	tiny_string toString(bool debugMsg=false);
-	tiny_string toString_priv() const;
-	//Serialization interface
-	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-			std::map<const ASObject*, uint32_t>& objMap) const;
-};
-
 //Internal objects used to store traits declared in scripts but not yet valid
 class Definable : public ASObject
 {

@@ -35,6 +35,7 @@
 
 #include "abc.h"
 #include "toplevel.h"
+#include "Date.h"
 #include "flashevents.h"
 #include "swf.h"
 #include "compat.h"

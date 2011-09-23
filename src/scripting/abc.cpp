@@ -34,6 +34,7 @@
 #include "swf.h"
 #include "toplevel/Date.h"
 #include "toplevel/Math.h"
+#include "toplevel/Vector.h"
 #include "flashaccessibility.h"
 #include "flashevents.h"
 #include "flashdisplay.h"

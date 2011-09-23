@@ -60,6 +60,7 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Boolean.cpp
   scripting/toplevel/Date.cpp
   scripting/toplevel/Math.cpp
+  scripting/toplevel/Vector.cpp
   scripting/class.cpp
   scripting/flashaccessibility.cpp
   scripting/flashdisplay.cpp

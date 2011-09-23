@@ -678,31 +678,6 @@ public:
 	ASFUNCTION(_getGlobal);
 };
 
-template<class T> class TemplatedClass;
-class Vector: public ASObject
-{
-	Class_base* vec_type;
-	bool fixed;
-	std::vector<ASObject*> vec;
-public:
-	Vector() : vec_type(NULL) {}
-	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o) {};
-	static ASObject* generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen);
-
-	void setTypes(const std::vector<Class_base*>& types);
-
-	//Overloads
-	tiny_string toString(bool debugMsg=false);
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
-
-	//TODO: do we need to implement generator?
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_applytype);
-
-	ASFUNCTION(push);
-};
-
 class ASError: public ASObject
 {
 CLASSBUILDABLE(ASError);

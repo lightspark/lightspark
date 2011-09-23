@@ -415,6 +415,8 @@ public:
 	ASFUNCTION(_getURI);
 	ASFUNCTION(_getLocalName);
 	ASFUNCTION(_toString);
+	tiny_string getURI() const { return uri; }
+	tiny_string getLocalName() const { return local_name; }
 	bool isEqual(ASObject* o);
 	tiny_string toString(bool debugMsg);
 };
@@ -903,6 +905,8 @@ ASObject* escape(ASObject* obj,ASObject* const* args, const unsigned int argslen
 ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* print(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+bool isXMLName(ASObject* obj);
+ASObject* _isXMLName(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 
 inline void Manager::put(ASObject* o)

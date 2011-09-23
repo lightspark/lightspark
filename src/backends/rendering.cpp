@@ -196,7 +196,10 @@ void RenderThread::handleUpload()
 	//TODO See if a more elegant way of handling the non-PBO case can be found.
 	//for now, each frame is uploaded one at a time synchronously to the server
 	if(!pixelBuf)
-		posix_memalign((void **)&pixelBuf, 16, w*h*4);
+		if(posix_memalign((void **)&pixelBuf, 16, w*h*4)) {
+			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
+			return;
+		}
 	u->upload(pixelBuf, w, h);
 #endif
 	//Get the texture to be sure it's allocated when the upload comes
@@ -1306,7 +1309,7 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		//We need to copy the texture area to a contiguous memory region first,
 		//as GLES2 does not support UNPACK state (skip pixels, skip rows, row_lenght).
 		uint8_t *gdata = new uint8_t[4*sizeX*sizeY];
-		for(int j=0;j<sizeY;j++) {
+		for(unsigned int j=0;j<sizeY;j++) {
 			memcpy(gdata+4*j*sizeX, data+4*w*(j+curY)+4*curX, sizeX*4);
 		}
 		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, gdata);

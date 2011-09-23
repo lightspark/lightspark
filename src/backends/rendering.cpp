@@ -159,8 +159,12 @@ void RenderThread::finalizeUpload()
 	u->sizeNeeded(w,h);
 	const TextureChunk& tex=u->getTexture();
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[currentPixelBuffer]);
+#ifndef ENABLE_GLES2
 	//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
 	loadChunkBGRA(tex, w, h, (uint8_t*)currentPixelBufferOffset);
+#else
+	loadChunkBGRA(tex, w, h, pixelBuf);
+#endif
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 	u->uploadFence();
 	prevUploadJob=NULL;
@@ -194,8 +198,6 @@ void RenderThread::handleUpload()
 	if(!pixelBuf)
 		posix_memalign((void **)&pixelBuf, 16, w*h*4);
 	u->upload(pixelBuf, w, h);
-	//When not using Pixel Buffer Objects, this offset is actually the pointer to the texture buffer
-	currentPixelBufferOffset = (int32_t)pixelBuf;
 #endif
 	//Get the texture to be sure it's allocated when the upload comes
 	u->getTexture();

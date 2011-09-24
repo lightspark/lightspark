@@ -2241,7 +2241,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			if(t->vindex)
 			{
-				assert(typeClass); //this is not implemented for T_TEMPLATE yet
+				// typeClass is NULL for any type (type_name = 0)
+				assert(typeClass || t->type_name==0); //this is not implemented for T_TEMPLATE yet
 				ASObject* ret=getConstant(t->vkind,t->vindex);
 				obj->initializeVariableByMultiname(mname, ret, typeClass);
 				if(t->slot_id)

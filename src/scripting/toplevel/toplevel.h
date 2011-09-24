@@ -603,6 +603,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;
+	_R<ASObject> toPrimitive();
 };
 
 class XMLList: public ASObject
@@ -647,6 +648,7 @@ public:
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);
+	_R<ASObject> toPrimitive();
 };
 
 //Internal objects used to store traits declared in scripts but not yet valid

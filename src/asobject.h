@@ -343,6 +343,8 @@ public:
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
 	virtual double toNumber();
+	virtual _R<ASObject> toPrimitive();
+	bool isPrimitive() const;
 	ASFUNCTION(generator);
 
 	//Comparison operators

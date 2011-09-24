@@ -642,6 +642,11 @@ tiny_string XML::toString(bool debugMsg)
 	return toString_priv();
 }
 
+_R<ASObject> XML::toPrimitive()
+{
+	return _MR(Class<ASString>::getInstanceS(toString()));
+}
+
 bool XML::nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const
 {
 	assert(a && b);
@@ -1082,6 +1087,11 @@ tiny_string XMLList::toString(bool debugMsg)
 		return ASObject::toString(true);
 
 	return toString_priv();
+}
+
+_R<ASObject> XMLList::toPrimitive()
+{
+	return _MR(Class<ASString>::getInstanceS(toString()));
 }
 
 ASFUNCTIONBODY(XMLList,_toString)
@@ -1557,23 +1567,24 @@ uint32_t ASString::toUInt()
 bool ASString::isEqual(ASObject* r)
 {
 	assert_and_throw(implEnable);
-	//TODO: check conversion
-	if(r->getObjectType()==T_STRING)
+	switch(r->getObjectType())
 	{
-		const ASString* s=static_cast<const ASString*>(r);
-		return s->data==data;
+		case T_STRING:
+		{
+			const ASString* s=static_cast<const ASString*>(r);
+			return s->data==data;
+		}
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_BOOLEAN:
+			return toNumber()==r->toNumber();
+		case T_NULL:
+		case T_UNDEFINED:
+			return false;
+		default:
+			return r->isEqual(this);
 	}
-	else if(r->getObjectType()==T_OBJECT)
-	{
-		XMLList *xl=dynamic_cast<XMLList *>(r);
-		if(xl)
-			return xl->isEqual(this);
-		XML *x=dynamic_cast<XML *>(r);
-		if(x && x->hasSimpleContent())
-			return x->toString()==data;
-	}
-	
-	return false;
 }
 
 TRISTATE ASString::isLess(ASObject* r)
@@ -1625,18 +1636,20 @@ TRISTATE Undefined::isLess(ASObject* r)
 
 bool Undefined::isEqual(ASObject* r)
 {
-	if(r->getObjectType()==T_UNDEFINED)
-		return true;
-	if(r->getObjectType()==T_NULL)
-		return true;
-	if(r->getObjectType()==T_OBJECT)
+	switch(r->getObjectType())
 	{
-		XMLList *xl=dynamic_cast<XMLList *>(r);
-		if(xl)
-			return xl->isEqual(this);
+		case T_UNDEFINED:
+		case T_NULL:
+			return true;
+		case T_NUMBER:
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_STRING:
+		case T_BOOLEAN:
+			return false;
+		default:
+			return r->isEqual(this);
 	}
-
-	return false;
 }
 
 int Undefined::toInt()
@@ -1751,20 +1764,24 @@ TRISTATE Integer::isLess(ASObject* o)
 
 bool Integer::isEqual(ASObject* o)
 {
-	if(o->getObjectType()==T_INTEGER)
-		return val==o->toInt();
-	else if(o->getObjectType()==T_UINTEGER)
+	switch(o->getObjectType())
 	{
-		//CHECK: somehow wrong
-		return val==o->toInt();
-	}
-	else if(o->getObjectType()==T_NUMBER)
-		return val==o->toNumber();
-	else if(o->getObjectType()==T_BOOLEAN)
-		return val==o->toInt();
-	else
-	{
-		return ASObject::isEqual(o);
+		case T_INTEGER:
+			return val==o->toInt();
+		case T_UINTEGER:
+			//CHECK: somehow wrong
+			return val==o->toInt();
+		case T_NUMBER:
+			return val==o->toNumber();
+		case T_BOOLEAN:
+			return val==o->toInt();
+		case T_STRING:
+			return val==o->toNumber();
+		case T_NULL:
+		case T_UNDEFINED:
+			return false;
+		default:
+			return o->isEqual(this);
 	}
 }
 
@@ -1849,15 +1866,19 @@ ASFUNCTIONBODY(UInteger,generator)
 
 bool Number::isEqual(ASObject* o)
 {
-	if(o->getObjectType()==T_INTEGER)
-		return val==o->toNumber();
-	else if(o->getObjectType()==T_NUMBER)
-		return val==o->toNumber();
-	else if(o->getObjectType()==T_BOOLEAN)
-		return val==o->toNumber();
-	else
+	switch(o->getObjectType())
 	{
-		return ASObject::isEqual(o);
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_STRING:
+		case T_BOOLEAN:
+			return val==o->toNumber();
+		case T_NULL:
+		case T_UNDEFINED:
+			return false;
+		default:
+			return o->isEqual(this);
 	}
 }
 
@@ -2391,12 +2412,20 @@ tiny_string Null::toString(bool debugMsg)
 
 bool Null::isEqual(ASObject* r)
 {
-	if(r->getObjectType()==T_NULL)
-		return true;
-	else if(r->getObjectType()==T_UNDEFINED)
-		return true;
-	else
-		return false;
+	switch(r->getObjectType())
+	{
+		case T_NULL:
+		case T_UNDEFINED:
+			return true;
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_STRING:
+		case T_BOOLEAN:
+			return false;
+		default:
+			return r->isEqual(this);
+	}
 }
 
 TRISTATE Null::isLess(ASObject* r)
@@ -3795,13 +3824,12 @@ ASFUNCTIONBODY(Namespace,_constructor)
 			else
 				throw Class<TypeError>::getInstanceS("Namespace prefix for empty uri not allowed");
 		}
-		else if(prefixval->getObjectType()==T_UNDEFINED)
+		else if(prefixval->getObjectType()==T_UNDEFINED ||
+			!isXMLName(prefixval))
 		{
 			th->prefix_is_undefined=true;
 			th->prefix="";
 		}
-		// else if(!isXMLName(prefixval))
-		// 	th->prefix_is_undefined=true;
 		else
 		{
 			th->prefix=prefixval->toString();
@@ -3905,20 +3933,19 @@ void UInteger::sinit(Class_base* c)
 
 bool UInteger::isEqual(ASObject* o)
 {
-	if(o->getObjectType()==T_INTEGER)
+	switch(o->getObjectType())
 	{
-		//CHECK: somehow wrong
-		return val==o->toUInt();
-	}
-	else if(o->getObjectType()==T_UINTEGER)
-		return val==o->toUInt();
-	else if(o->getObjectType()==T_NUMBER)
-		return val==o->toUInt();
-	else if(o->getObjectType()==T_BOOLEAN)
-		return val==o->toUInt();
-	else
-	{
-		return ASObject::isEqual(o);
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_STRING:
+		case T_BOOLEAN:
+			return val==o->toUInt();
+		case T_NULL:
+		case T_UNDEFINED:
+			return false;
+		default:
+			return o->isEqual(this);
 	}
 }
 

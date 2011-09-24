@@ -120,20 +120,23 @@ tiny_string Boolean::toString(bool debugMsg)
 
 bool Boolean::isEqual(ASObject* r)
 {
-	if(r->getObjectType()==T_BOOLEAN)
+	switch(r->getObjectType())
 	{
-		const Boolean* b=static_cast<const Boolean*>(r);
-		return b->val==val;
-	}
-	else if(r->getObjectType()==T_INTEGER ||
-		r->getObjectType()==T_UINTEGER ||
-		r->getObjectType()==T_NUMBER)
-	{
-		return val==r->toNumber();
-	}
-	else
-	{
-		return ASObject::isEqual(r);
+		case T_BOOLEAN:
+		{
+			const Boolean* b=static_cast<const Boolean*>(r);
+			return b->val==val;
+		}
+		case T_STRING:
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+			return val==r->toNumber();
+		case T_NULL:
+		case T_UNDEFINED:
+			return false;
+		default:
+			return r->isEqual(this);
 	}
 }
 

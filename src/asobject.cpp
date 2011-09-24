@@ -147,45 +147,33 @@ bool ASObject::isEqual(ASObject* r)
 	if(this==r)
 		return true;
 
-	if(r->getObjectType()==T_NULL || r->getObjectType()==T_UNDEFINED)
-		return false;
-
-	//We can try to call valueOf and compare that
-	multiname valueOfName;
-	valueOfName.name_type=multiname::NAME_STRING;
-	valueOfName.name_s="valueOf";
-	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	if(hasPropertyByMultiname(valueOfName, true))
+	switch(r->getObjectType())
 	{
-		if(r->hasPropertyByMultiname(valueOfName, true)==false)
-			throw RunTimeException("Not handled less comparison for objects");
-
-		ASObject* obj1=getVariableByMultiname(valueOfName);
-		ASObject* obj2=r->getVariableByMultiname(valueOfName);
-
-		assert_and_throw(obj1!=NULL && obj2!=NULL);
-
-		assert_and_throw(obj1->getObjectType()==T_FUNCTION && obj2->getObjectType()==T_FUNCTION);
-		IFunction* f1=static_cast<IFunction*>(obj1);
-		IFunction* f2=static_cast<IFunction*>(obj2);
-
-		incRef();
-		ASObject* ret1=f1->call(this,NULL,0);
-		r->incRef();
-		ASObject* ret2=f2->call(r,NULL,0);
-
-		LOG(LOG_CALLS,_("Overloaded isEqual"));
-		return ret1->isEqual(ret2);
-	}
-
-	if(r->getObjectType()==T_OBJECT)
-	{
-		XMLList *xl=dynamic_cast<XMLList *>(r);
-		if(xl)
-			return xl->isEqual(this);
-		XML *x=dynamic_cast<XML *>(r);
-		if(x && x->hasSimpleContent())
-			return x->toString()==toString();
+		case T_NULL:
+		case T_UNDEFINED:
+			return false;
+		case T_NUMBER:
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_STRING:
+		{
+			_R<ASObject> primitive(toPrimitive());
+			return primitive->isEqual(r);
+		}
+		case T_BOOLEAN:
+		{
+			_R<ASObject> primitive(toPrimitive());
+			return primitive->toNumber()==r->toNumber();
+		}
+		default:
+		{
+			XMLList *xl=dynamic_cast<XMLList *>(r);
+			if(xl)
+				return xl->isEqual(this);
+			XML *x=dynamic_cast<XML *>(r);
+			if(x && x->hasSimpleContent())
+				return x->toString()==toString();
+		}
 	}
 
 	LOG(LOG_CALLS,_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
@@ -207,6 +195,41 @@ int ASObject::toInt()
 double ASObject::toNumber()
 {
 	return numeric_limits<double>::quiet_NaN();
+}
+
+_R<ASObject> ASObject::toPrimitive()
+{
+	multiname valueOfName;
+	valueOfName.name_type=multiname::NAME_STRING;
+	valueOfName.name_s="valueOf";
+	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	if(hasPropertyByMultiname(valueOfName, true))
+	{
+		ASObject* valueOfObj=getVariableByMultiname(valueOfName);
+		if(valueOfObj->getObjectType()==T_FUNCTION)
+		{
+			IFunction* f=static_cast<IFunction*>(valueOfObj);
+			incRef();
+			ASObject *ret=f->call(this,NULL,0);
+			if(ret && ret->isPrimitive())
+				return _MR(ret);
+			else if(ret)
+				ret->decRef();
+		}
+	}
+
+	return _MR(Class<ASString>::getInstanceS(toString()));
+
+	// TODO: should throw an error if toString AS function does not exist
+}
+
+bool ASObject::isPrimitive() const
+{
+	// ECMA 3, section 4.3.2, T_INTEGER and T_UINTEGER are added
+	// because they are special cases of Number
+	return type==T_NUMBER || type ==T_UNDEFINED || type == T_NULL ||
+		type==T_STRING || type==T_BOOLEAN || type==T_INTEGER ||
+		type==T_UINTEGER;
 }
 
 variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)

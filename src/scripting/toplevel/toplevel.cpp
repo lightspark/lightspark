@@ -2703,7 +2703,7 @@ ASFUNCTIONBODY(ASString,indexOf)
 	if(argslen>1)
 		startIndex=args[1]->toInt();
 
-	size_t pos = th->data.find_first_of(arg0.raw_buf(), startIndex);
+	size_t pos = th->data.find(arg0.raw_buf(), startIndex);
 	if(pos == th->data.npos)
 		return abstract_i(-1);
 	else

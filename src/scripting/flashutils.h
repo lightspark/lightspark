@@ -176,11 +176,6 @@ public:
 		else
 			throw UnsupportedException("Proxy is missing some stuff");
 	}
-	bool isEqual(ASObject* r)
-	{
-		assert_and_throw(implEnable);
-		throw UnsupportedException("Proxy is missing some stuff");
-	}
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);

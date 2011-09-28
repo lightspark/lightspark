@@ -194,7 +194,7 @@ int ASObject::toInt()
 
 double ASObject::toNumber()
 {
-	return numeric_limits<double>::quiet_NaN();
+	return toPrimitive()->toNumber();
 }
 
 _R<ASObject> ASObject::toPrimitive()

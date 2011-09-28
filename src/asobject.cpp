@@ -199,6 +199,18 @@ double ASObject::toNumber()
 
 _R<ASObject> ASObject::toPrimitive()
 {
+	if(getObjectType()==T_NUMBER ||
+	   getObjectType()==T_INTEGER ||
+	   getObjectType()==T_UINTEGER ||
+	   getObjectType()==T_BOOLEAN ||
+	   getObjectType()==T_STRING ||
+	   getObjectType()==T_UNDEFINED ||
+	   getObjectType()==T_NULL)
+	{
+		incRef();
+		return _MR(this);
+	}
+
 	multiname valueOfName;
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s="valueOf";

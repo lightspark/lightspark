@@ -71,38 +71,7 @@ tiny_string ASObject::toString(bool debugMsg)
 TRISTATE ASObject::isLess(ASObject* r)
 {
 	check();
-	multiname valueOfName;
-	valueOfName.name_type=multiname::NAME_STRING;
-	valueOfName.name_s="valueOf";
-	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	if(hasPropertyByMultiname(valueOfName, true))
-	{
-		if(r->hasPropertyByMultiname(valueOfName, true)==false)
-			throw RunTimeException("Missing valueof for second operand");
-
-		ASObject* obj1=getVariableByMultiname(valueOfName);
-		ASObject* obj2=r->getVariableByMultiname(valueOfName);
-
-		assert_and_throw(obj1!=NULL && obj2!=NULL);
-
-		assert_and_throw(obj1->getObjectType()==T_FUNCTION && obj2->getObjectType()==T_FUNCTION);
-		IFunction* f1=static_cast<IFunction*>(obj1);
-		IFunction* f2=static_cast<IFunction*>(obj2);
-
-		incRef();
-		ASObject* ret1=f1->call(this,NULL,0);
-		r->incRef();
-		ASObject* ret2=f2->call(r,NULL,0);
-
-		LOG(LOG_CALLS,_("Overloaded isLess"));
-		return ret1->isLess(ret2);
-	}
-
-	LOG(LOG_NOT_IMPLEMENTED,_("Less than comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
-	if(classdef)
-		LOG(LOG_NOT_IMPLEMENTED,_("Type ") << classdef->class_name);
-	throw RunTimeException("Not handled less comparison for objects");
-	return TFALSE;
+	return toPrimitive()->isLess(r);
 }
 
 uint32_t ASObject::nextNameIndex(uint32_t cur_index)

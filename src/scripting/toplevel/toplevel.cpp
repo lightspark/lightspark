@@ -1591,16 +1591,16 @@ TRISTATE ASString::isLess(ASObject* r)
 {
 	//ECMA-262 11.8.5 algorithm
 	assert_and_throw(implEnable);
-	if(getObjectType()==T_STRING && r->getObjectType()==T_STRING)
+	_R<ASObject> rprim=r->toPrimitive();
+	if(getObjectType()==T_STRING && rprim->getObjectType()==T_STRING)
 	{
-		ASString* rstr=Class<ASString>::cast(r);
+		ASString* rstr=static_cast<ASString*>(rprim.getPtr());
 		return (data<rstr->data)?TTRUE:TFALSE;
 	}
 	number_t a=toNumber();
-	number_t b=r->toNumber();
+	number_t b=rprim->toNumber();
 	if(std::isnan(a) || std::isnan(b))
 		return TUNDEFINED;
-	//TODO: Should we special handle infinite values?
 	return (a<b)?TTRUE:TFALSE;
 }
 
@@ -1722,16 +1722,9 @@ TRISTATE Integer::isLess(ASObject* o)
 		
 		case T_STRING:
 			{
-				const ASString* s=static_cast<const ASString*>(o);
-				//Check if the string may be converted to integer
-				//TODO: check whole string?
-				if(isdigit(s->data[0]))
-				{
-					int val2=atoi(s->data.c_str());
-					return (val < val2)?TTRUE:TFALSE;
-				}
-				else
-					return TFALSE;
+				double val2=o->toNumber();
+				if(std::isnan(val2)) return TUNDEFINED;
+				return (val<val2)?TTRUE:TFALSE;
 			}
 			break;
 		
@@ -1744,7 +1737,7 @@ TRISTATE Integer::isLess(ASObject* o)
 		
 		case T_UNDEFINED:
 			{
-				return TFALSE;
+				return TUNDEFINED;
 			}
 			break;
 			
@@ -1758,8 +1751,9 @@ TRISTATE Integer::isLess(ASObject* o)
 			break;
 	}
 	
-	//If unhandled by switch, kick up to parent
-	return ASObject::isLess(o);
+	double val2=o->toPrimitive()->toNumber();
+	if(std::isnan(val2)) return TUNDEFINED;
+	return (val<val2)?TTRUE:TFALSE;
 }
 
 bool Integer::isEqual(ASObject* o)
@@ -1855,8 +1849,22 @@ TRISTATE UInteger::isLess(ASObject* o)
 		// UInteger is never less than int(null) == 0
 		return TFALSE;
 	}
+	else if(o->getObjectType()==T_UNDEFINED)
+	{
+		return TUNDEFINED;
+	}
+	else if(o->getObjectType()==T_STRING)
+	{
+		double val2=o->toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (val<val2)?TTRUE:TFALSE;
+	}
 	else
-		throw UnsupportedException("UInteger::isLess is not completely implemented");
+	{
+		double val2=o->toPrimitive()->toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (val<val2)?TTRUE:TFALSE;
+	}
 }
 
 ASFUNCTIONBODY(UInteger,generator)
@@ -1891,6 +1899,11 @@ TRISTATE Number::isLess(ASObject* o)
 		const Integer* i=static_cast<const Integer*>(o);
 		return (val<i->val)?TTRUE:TFALSE;
 	}
+	if(o->getObjectType()==T_UINTEGER)
+	{
+		const UInteger* i=static_cast<const UInteger*>(o);
+		return (val<i->val)?TTRUE:TFALSE;
+	}
 	else if(o->getObjectType()==T_NUMBER)
 	{
 		const Number* i=static_cast<const Number*>(o);
@@ -1908,7 +1921,9 @@ TRISTATE Number::isLess(ASObject* o)
 	}
 	else if(o->getObjectType()==T_STRING)
 	{
-		return (val<o->toNumber())?TTRUE:TFALSE;
+		double val2=o->toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (val<val2)?TTRUE:TFALSE;
 	}
 	else if(o->getObjectType()==T_NULL)
 	{
@@ -1916,7 +1931,9 @@ TRISTATE Number::isLess(ASObject* o)
 	}
 	else
 	{
-		return ASObject::isLess(o);
+		double val2=o->toPrimitive()->toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (val<val2)?TTRUE:TFALSE;
 	}
 }
 
@@ -2446,13 +2463,30 @@ TRISTATE Null::isLess(ASObject* r)
 		if(std::isnan(i->toNumber())) return TUNDEFINED;
 		return (0<i->toNumber())?TTRUE:TFALSE;
 	}
+	else if(r->getObjectType()==T_BOOLEAN)
+	{
+		Boolean* i=static_cast<Boolean*>(r);
+		return (0<i->val)?TTRUE:TFALSE;
+	}
 	else if(r->getObjectType()==T_NULL)
 	{
 		return TFALSE;
 	}
+	else if(r->getObjectType()==T_UNDEFINED)
+	{
+		return TUNDEFINED;
+	}
+	else if(r->getObjectType()==T_STRING)
+	{
+		double val2=r->toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (0<val2)?TTRUE:TFALSE;
+	}
 	else
 	{
-		return ASObject::isLess(r);
+		double val2=r->toPrimitive()->toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (0<val2)?TTRUE:TFALSE;
 	}
 }
 

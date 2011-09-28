@@ -149,12 +149,25 @@ TRISTATE Boolean::isLess(ASObject* r)
 	}
 	else if(r->getObjectType()==T_INTEGER ||
 		r->getObjectType()==T_UINTEGER ||
-		r->getObjectType()==T_NUMBER)
+		r->getObjectType()==T_NUMBER ||
+		r->getObjectType()==T_STRING)
 	{
 		double d=r->toNumber();
 		if(std::isnan(d)) return TUNDEFINED;
 		return (val<d)?TTRUE:TFALSE;
 	}
+	else if(r->getObjectType()==T_NULL)
+	{
+		return (val<0)?TTRUE:TFALSE;
+	}
+	else if(r->getObjectType()==T_UNDEFINED)
+	{
+		return TUNDEFINED;
+	}
 	else
-		return ASObject::isLess(r);
+	{
+		double val2=r->toPrimitive()->toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (val<val2)?TTRUE:TFALSE;
+	}
 }

@@ -34,7 +34,7 @@
 #include "backends/image.h"
 #include "backends/glmatrices.h"
 #include "compat.h"
-#include "flashaccessibility.h"
+#include "flash/accessibility/flashaccessibility.h"
 
 #include <fstream>
 #include <limits>

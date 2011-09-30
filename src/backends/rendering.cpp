@@ -953,6 +953,7 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 				0,th->windowHeight/2-40);
 	}
 
+	glUniform1f(rt->alphaUniform, 1);
 	mapCairoTexture(windowWidth, windowHeight);
 	glFlush();
 }

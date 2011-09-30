@@ -22,7 +22,6 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "flashdisplay.h"
 #include "timer.h"
 #include "backends/graphics.h"
 #include "backends/netutils.h"

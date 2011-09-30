@@ -21,7 +21,6 @@
 #include <pthread.h>
 #include <algorithm>
 #include "scripting/abc.h"
-#include "scripting/flashdisplay.h"
 #include "scripting/flashevents.h"
 #include "scripting/flashutils.h"
 #include "swf.h"

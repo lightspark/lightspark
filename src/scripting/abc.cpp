@@ -37,7 +37,7 @@
 #include "toplevel/Vector.h"
 #include "flashaccessibility.h"
 #include "flashevents.h"
-#include "flashdisplay.h"
+#include "flash/display/flashdisplay.h"
 #include "flashnet.h"
 #include "flashsystem.h"
 #include "flashsensors.h"

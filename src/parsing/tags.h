@@ -27,7 +27,6 @@
 #include "swftypes.h"
 #include "backends/input.h"
 #include "backends/geometry.h"
-#include "scripting/flashdisplay.h"
 #include "scripting/flashtext.h"
 #include "scripting/flashutils.h"
 #include "scripting/flashmedia.h"

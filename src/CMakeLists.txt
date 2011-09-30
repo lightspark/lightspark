@@ -56,6 +56,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_codesynt.cpp
   scripting/abc_interpreter.cpp
   scripting/abc_opcodes.cpp
+  scripting/flash/display/flashdisplay.cpp
   scripting/toplevel/Array.cpp
   scripting/toplevel/Boolean.cpp
   scripting/toplevel/Date.cpp
@@ -63,7 +64,6 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Vector.cpp
   scripting/class.cpp
   scripting/flashaccessibility.cpp
-  scripting/flashdisplay.cpp
   scripting/flashevents.cpp
   scripting/flashexternal.cpp
   scripting/flashgeom.cpp

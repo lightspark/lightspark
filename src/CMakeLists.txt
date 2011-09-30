@@ -58,6 +58,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_opcodes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp
   scripting/flash/display/flashdisplay.cpp
+  scripting/flash/xml/flashxml.cpp
   scripting/toplevel/Array.cpp
   scripting/toplevel/Boolean.cpp
   scripting/toplevel/Date.cpp
@@ -73,7 +74,6 @@ SET(LIBSPARK_SOURCES
   scripting/flashsystem.cpp
   scripting/flashtext.cpp
   scripting/flashutils.cpp
-  scripting/flashxml.cpp
   scripting/toplevel/toplevel.cpp)
 IF(${i386})
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)

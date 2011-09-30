@@ -45,7 +45,7 @@
 #include "flashgeom.h"
 #include "flashexternal.h"
 #include "flashmedia.h"
-#include "flashxml.h"
+#include "flash/xml/flashxml.h"
 #include "class.h"
 #include "exceptions.h"
 #include "compat.h"

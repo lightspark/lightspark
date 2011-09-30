@@ -28,8 +28,8 @@
 #include "backends/input.h"
 #include "backends/geometry.h"
 #include "scripting/flashtext.h"
-#include "scripting/flashutils.h"
-#include "scripting/flashmedia.h"
+#include "scripting/flash/utils/flashutils.h"
+#include "scripting/flash/media/flashmedia.h"
 #include "scripting/class.h"
 
 namespace lightspark

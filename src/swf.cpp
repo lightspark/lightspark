@@ -22,7 +22,7 @@
 #include <algorithm>
 #include "scripting/abc.h"
 #include "scripting/flashevents.h"
-#include "scripting/flashutils.h"
+#include "scripting/flash/utils/flashutils.h"
 #include "swf.h"
 #include "logger.h"
 #include "parsing/streams.h"

@@ -25,8 +25,8 @@
 
 #include "swftypes.h"
 #include "flashevents.h"
-#include "flashutils.h"
 #include "thread_pool.h"
+#include "flash/utils/flashutils.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
 #include "backends/netutils.h"

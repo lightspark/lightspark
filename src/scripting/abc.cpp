@@ -40,7 +40,7 @@
 #include "flash/display/flashdisplay.h"
 #include "flashnet.h"
 #include "flashsystem.h"
-#include "flashsensors.h"
+#include "flash/sensors/flashsensors.h"
 #include "flashutils.h"
 #include "flashgeom.h"
 #include "flashexternal.h"

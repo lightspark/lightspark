@@ -1982,6 +1982,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				const multiname& mname=*getMultiname(t->name,NULL);
 				QName className(mname.name_s,mname.ns[0].name);
 
+				// Should the new definition overwrite the old one?
+				if(sys->classes.find(className)!=sys->classes.end())
+				{
+					LOG(LOG_TRACE, "Trying to re-define interface " << className.getQualifiedName());
+					break;
+				}
+
 				Class_inherit* ci=new Class_inherit(className);
 
 				LOG(LOG_CALLS,_("Building class traits"));

@@ -54,6 +54,7 @@ public:
 	ASFUNCTION(_preventDefault);
 	ASFUNCTION(_isDefaultPrevented);
 	ASFUNCTION(formatToString);
+	ASFUNCTION(clone);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
 	//and the handling is serialized

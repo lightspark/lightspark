@@ -93,6 +93,7 @@ void Event::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("preventDefault","",Class<IFunction>::getFunction(_preventDefault),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,currentTarget);
 	REGISTER_GETTER(c,target);
 	REGISTER_GETTER(c,type);
@@ -161,6 +162,12 @@ ASFUNCTIONBODY(Event,formatToString)
 	msg += "]";
 
 	return Class<ASString>::getInstanceS(msg);
+}
+
+ASFUNCTIONBODY(Event,clone)
+{
+	Event* th=static_cast<Event*>(obj);
+	return Class<Event>::getInstanceS(th->type, th->bubbles, th->cancelable);
 }
 
 void EventPhase::sinit(Class_base* c)
@@ -537,7 +544,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		{
 			//TODO: support cloning of actual type
 			LOG(LOG_NOT_IMPLEMENTED,"Event cloning not supported!");
-			e=_MR(Class<Event>::getInstanceS(e->type,e->bubbles));
+			e=_MR(Class<Event>::getInstanceS(e->type,e->bubbles, e->cancelable));
 		}
 	}
 	th->incRef();

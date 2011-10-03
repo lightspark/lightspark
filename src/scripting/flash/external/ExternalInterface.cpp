@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "flashexternal.h"
+#include "ExternalInterface.h"
 #include "class.h"
 #include "backends/extscriptobject.h"
 

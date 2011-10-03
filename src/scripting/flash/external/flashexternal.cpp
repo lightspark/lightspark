@@ -94,7 +94,7 @@ ASFUNCTIONBODY(ExternalInterface,call)
 {
 	if(sys->extScriptObject == NULL)
 		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
-	
+
 	assert_and_throw(argslen >= 1 && args[0]->getObjectType() == T_STRING);
 
 	// TODO: Check security constraints & throw SecurityException
@@ -111,7 +111,7 @@ ASFUNCTIONBODY(ExternalInterface,call)
 	// Delete converted arguments
 	for(uint32_t i = 0; i < argslen-1; i++)
 		delete callArgs[i];
-	
+
 	if(!callSuccess)
 	{
 		assert(asobjResult==NULL);

@@ -58,6 +58,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_opcodes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp
   scripting/flash/display/flashdisplay.cpp
+  scripting/flash/external/flashexternal.cpp
   scripting/flash/media/flashmedia.cpp
   scripting/flash/sensors/flashsensors.cpp
   scripting/flash/utils/flashutils.cpp
@@ -69,7 +70,6 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Vector.cpp
   scripting/class.cpp
   scripting/flashevents.cpp
-  scripting/flashexternal.cpp
   scripting/flashgeom.cpp
   scripting/flashnet.cpp
   scripting/flashsystem.cpp

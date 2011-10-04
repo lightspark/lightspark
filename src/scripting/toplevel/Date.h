@@ -56,6 +56,7 @@ public:
 	ASFUNCTION(getUTCHours);
 	ASFUNCTION(getUTCMinutes);
 	ASFUNCTION(valueOf);
+	ASFUNCTION(timezoneOffset);
 	tiny_string toString(bool debugMsg=false);
 	tiny_string toString_priv() const;
 	//Serialization interface

@@ -49,6 +49,7 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("getUTCHours",AS3,Class<IFunction>::getFunction(getUTCHours),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getUTCMinutes",AS3,Class<IFunction>::getFunction(getUTCMinutes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
 	//o->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(ASObject::_toString));
 }
 
@@ -73,6 +74,11 @@ ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("getTimezoneOffset"));
 	return abstract_d(120);
+}
+
+ASFUNCTIONBODY(Date,timezoneOffset)
+{
+	return getTimezoneOffset(obj,args,argslen);
 }
 
 ASFUNCTIONBODY(Date,getUTCFullYear)

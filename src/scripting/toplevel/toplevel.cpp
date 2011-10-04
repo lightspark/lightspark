@@ -2805,8 +2805,6 @@ ASFUNCTIONBODY(ASString,replace)
 	{
 		type = STRING;
 		replaceWith=args[1]->toString().raw_buf();
-		//Look if special substitution are needed
-		assert_and_throw(replaceWith.find('$')==replaceWith.npos);
 	}
 	else
 		type = FUNC;
@@ -2835,13 +2833,13 @@ ASFUNCTIONBODY(ASString,replace)
 			pcre_free(pcreRE);
 			return ret;
 		}
-		assert_and_throw(capturingGroups<10);
-		int ovector[30];
+		assert_and_throw(capturingGroups<20);
+		int ovector[60];
 		int offset=0;
 		int retDiff=0;
 		do
 		{
-			int rc=pcre_exec(pcreRE, NULL, ret->data.c_str(), ret->data.bytes(), offset, 0, ovector, 30);
+			int rc=pcre_exec(pcreRE, NULL, ret->data.c_str(), ret->data.bytes(), offset, 0, ovector, 60);
 			if(rc<0)
 			{
 				//No matches or error
@@ -2863,6 +2861,24 @@ ASFUNCTIONBODY(ASString,replace)
 				ASObject* ret=f->call(new Null, subargs, 3+capturingGroups);
 				replaceWith=ret->toString().raw_buf();
 				ret->decRef();
+			} else {
+					size_t pos, ipos = 0;
+					string group;
+					int i, j;
+					while((pos = replaceWith.find("$", ipos)) != string::npos) {
+						i = 0;
+						ipos = pos;
+						while (++ipos < replaceWith.size()) {
+						j = replaceWith.at(ipos)-'0';
+							if (j <0 || j> 9)
+								break;
+							i = 10*i + j;
+						}
+						if (i == 0)
+							continue;
+						group = ret->data.raw().substr(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
+						replaceWith.replace(pos, ipos-pos, group);
+					}
 			}
 			ret->data.replace(ovector[0],ovector[1]-ovector[0],replaceWith);
 			offset=ovector[0]+replaceWith.size();

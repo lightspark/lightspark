@@ -2300,15 +2300,15 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	}
 	else if(mi->needsArgs())
 	{
+		//The arguments does not contain default values of optional parameters,
+		//i.e. f(a,b=3) called as f(7) gives arguments = { 7 }
 		Array* argumentsArray=Class<Array>::getInstanceS();
-		argumentsArray->resize(args_len+passedToRest);
-		for(uint32_t j=0;j<args_len;j++)
+		argumentsArray->resize(numArgs);
+		for(uint32_t j=0;j<numArgs;j++)
 		{
-			cc->locals[j+1]->incRef();
-			argumentsArray->set(j,cc->locals[j+1]);
+			args[j]->incRef();
+			argumentsArray->set(j,args[j]);
 		}
-		for(uint32_t j=0;j<passedToRest;j++)
-			argumentsArray->set(j+args_len,args[passedToLocals+j]);
 		//Add ourself as the callee property
 		incRef();
 		argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT);

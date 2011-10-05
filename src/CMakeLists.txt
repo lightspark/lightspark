@@ -66,6 +66,7 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Array.cpp
   scripting/toplevel/Boolean.cpp
   scripting/toplevel/Date.cpp
+  scripting/toplevel/Error.cpp
   scripting/toplevel/Math.cpp
   scripting/toplevel/Vector.cpp
   scripting/class.cpp

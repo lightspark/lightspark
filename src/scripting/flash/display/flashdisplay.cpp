@@ -1481,8 +1481,8 @@ void DisplayObject::setOnStage(bool staged)
 ASFUNCTIONBODY(DisplayObject,_setAlpha)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	assert_and_throw(argslen==1);
-	number_t val=args[0]->toNumber();
+	number_t val;
+	ARG_UNPACK (val);
 	//Clip val
 	val=dmax(0,val);
 	val=dmin(val,1);

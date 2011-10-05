@@ -62,8 +62,8 @@ void Math::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Math,atan2)
 {
-	double n1=args[0]->toNumber();
-	double n2=args[1]->toNumber();
+	number_t n1, n2;
+	ARG_UNPACK (n1) (n2);
 	return abstract_d(::atan2(n1,n2));
 }
 
@@ -110,102 +110,111 @@ ASFUNCTIONBODY(Math,_min)
 
 ASFUNCTIONBODY(Math,exp)
 {
-	if(argslen == 0)
-		throw Class<ArgumentError>::getInstanceS("Error #1063");
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::exp(n));
 }
 
 ASFUNCTIONBODY(Math,acos)
 {
 	//Angle is in radians
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::acos(n));
 }
 
 ASFUNCTIONBODY(Math,asin)
 {
 	//Angle is in radians
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::asin(n));
 }
 
 ASFUNCTIONBODY(Math,atan)
 {
 	//Angle is in radians
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::atan(n));
 }
 
 ASFUNCTIONBODY(Math,cos)
 {
 	//Angle is in radians
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::cos(n));
 }
 
 ASFUNCTIONBODY(Math,sin)
 {
 	//Angle is in radians
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::sin(n));
 }
 
 ASFUNCTIONBODY(Math,tan)
 {
 	//Angle is in radians
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::tan(n));
 }
 
 ASFUNCTIONBODY(Math,abs)
 {
-	if(argslen == 0)
-		throw Class<ArgumentError>::getInstanceS("Error #1063");
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::fabs(n));
 }
 
 ASFUNCTIONBODY(Math,ceil)
 {
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::ceil(n));
 }
 
 ASFUNCTIONBODY(Math,log)
 {
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::log(n));
 }
 
 ASFUNCTIONBODY(Math,floor)
 {
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::floor(n));
 }
 
 ASFUNCTIONBODY(Math,round)
 {
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::round(n));
 }
 
 ASFUNCTIONBODY(Math,sqrt)
 {
-	double n=args[0]->toNumber();
+	number_t n;
+	ARG_UNPACK (n);
 	return abstract_d(::sqrt(n));
 }
 
 ASFUNCTIONBODY(Math,pow)
 {
-	double x=args[0]->toNumber();
-	double y=args[1]->toNumber();
+	number_t x, y;
+	ARG_UNPACK (x) (y);
 	return abstract_d(::pow(x,y));
 }
 
 ASFUNCTIONBODY(Math,random)
 {
-	double ret=rand();
+	number_t ret=rand();
 	ret/=RAND_MAX;
 	return abstract_d(ret);
 }

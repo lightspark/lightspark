@@ -35,6 +35,7 @@
 #include "backends/glmatrices.h"
 #include "compat.h"
 #include "flash/accessibility/flashaccessibility.h"
+#include "argconv.h"
 
 #include <fstream>
 #include <limits>

@@ -27,6 +27,7 @@
 #include "backends/builtindecoder.h"
 #include "backends/rendering.h"
 #include "backends/security.h"
+#include "argconv.h"
 
 using namespace std;
 using namespace lightspark;

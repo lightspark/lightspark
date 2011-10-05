@@ -19,6 +19,7 @@
 
 #include "flashaccessibility.h"
 #include "class.h"
+#include "argconv.h"
 
 using namespace lightspark;
 SET_NAMESPACE("flash.accessibility");

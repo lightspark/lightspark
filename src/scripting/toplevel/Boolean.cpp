@@ -20,6 +20,7 @@
 #include "Boolean.h"
 #include "toplevel.h"
 #include "class.h"
+#include "argconv.h"
 
 using namespace lightspark;
 using namespace std;

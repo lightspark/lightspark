@@ -26,6 +26,7 @@
 #include "backends/audio.h"
 #include "backends/input.h"
 #include "backends/rendering.h"
+#include "argconv.h"
 
 using namespace lightspark;
 using namespace std;

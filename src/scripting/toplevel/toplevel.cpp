@@ -43,6 +43,7 @@
 #include "backends/urlutils.h"
 #include "parsing/amf3_generator.h"
 #include <libxml++/nodes/textnode.h>
+#include "argconv.h"
 
 using namespace std;
 using namespace Glib;
@@ -4200,85 +4201,4 @@ ASFUNCTIONBODY(lightspark,_isXMLName)
 		return abstract_b(false);
 
 	return abstract_b(isXMLName(args[0]));
-}
-
-template<>
-number_t lightspark::ArgumentConversion<number_t>::toConcrete(ASObject* obj)
-{
-	/* TODO: throw ArgumentError if object is not convertible to number */
-	return obj->toNumber();
-}
-
-template<>
-bool lightspark::ArgumentConversion<bool>::toConcrete(ASObject* obj)
-{
-	/* TODO: throw ArgumentError if object is not convertible to number */
-	return Boolean_concrete(obj);
-}
-
-template<>
-uint32_t lightspark::ArgumentConversion<uint32_t>::toConcrete(ASObject* obj)
-{
-	/* TODO: throw ArgumentError if object is not convertible to number */
-	return obj->toUInt();
-}
-
-template<>
-int32_t lightspark::ArgumentConversion<int32_t>::toConcrete(ASObject* obj)
-{
-	/* TODO: throw ArgumentError if object is not convertible to number */
-	return obj->toInt();
-}
-
-template<>
-tiny_string lightspark::ArgumentConversion<tiny_string>::toConcrete(ASObject* obj)
-{
-	ASString* str = Class<ASString>::cast(obj);
-	if(!str)
-		throw ArgumentError("Not an ASString");
-
-	return str->toString();
-}
-
-template<>
-RGB lightspark::ArgumentConversion<RGB>::toConcrete(ASObject* obj)
-{
-	/* TODO: throw ArgumentError if object is not convertible to number */
-	return RGB(obj->toUInt());
-}
-
-template<>
-ASObject* lightspark::ArgumentConversion<int32_t>::toAbstract(const int32_t& val)
-{
-	return abstract_i(val);
-}
-
-template<>
-ASObject* lightspark::ArgumentConversion<uint32_t>::toAbstract(const uint32_t& val)
-{
-	return abstract_ui(val);
-}
-
-template<>
-ASObject* lightspark::ArgumentConversion<number_t>::toAbstract(const number_t& val)
-{
-	return abstract_d(val);
-}
-
-template<>
-ASObject* lightspark::ArgumentConversion<bool>::toAbstract(const bool& val)
-{
-	return abstract_b(val);
-}
-
-template<>
-ASObject* lightspark::ArgumentConversion<tiny_string>::toAbstract(const tiny_string& val)
-{
-	return Class<ASString>::getInstanceS(val);
-}
-
-template<>
-ASObject* lightspark::ArgumentConversion<RGB>::toAbstract(const RGB& val)
-{
-	return abstract_ui(val.toUInt());
 }

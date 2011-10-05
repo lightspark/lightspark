@@ -21,6 +21,7 @@
 #include "asobject.h"
 #include "toplevel.h"
 #include "class.h"
+#include "argconv.h"
 
 using namespace std;
 using namespace Glib;

@@ -23,6 +23,7 @@
 #include "backends/rendering.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
+#include "argconv.h"
 
 using namespace std;
 using namespace lightspark;

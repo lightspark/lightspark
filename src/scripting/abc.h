@@ -618,6 +618,7 @@ private:
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
 public:
+	Global* curGlobalObj;
 	GlobalObject* global;
 	Manager* int_manager;
 	Manager* uint_manager;

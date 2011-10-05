@@ -2162,12 +2162,18 @@ ASFUNCTIONBODY(IFunction,_call)
 	ASObject* newObj=NULL;
 	ASObject** newArgs=NULL;
 	uint32_t newArgsLen=0;
-	if(argslen==0)
-		newObj=abstract_d(numeric_limits<double>::quiet_NaN());
+	if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
+	{
+		newObj=getVm()->curGlobalObj;
+		newObj->incRef();
+	}
 	else
 	{
 		newObj=args[0];
 		newObj->incRef();
+	}
+	if(argslen > 1)
+	{
 		newArgsLen=argslen-1;
 		newArgs=new ASObject*[newArgsLen];
 		for(unsigned int i=0;i<newArgsLen;i++)
@@ -2178,8 +2184,8 @@ ASFUNCTIONBODY(IFunction,_call)
 	}
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this.getPtr() && th->closure_this->classdef && args[0]->classdef && 
-			args[0]->classdef->isSubClass(th->closure_this->classdef)) ||	args[0]->classdef==NULL)
+	if(!(th->closure_this.getPtr() && th->closure_this->classdef && newObj->classdef &&
+			newObj->classdef->isSubClass(th->closure_this->classdef)) || newObj->classdef==NULL)
 	{
 		overrideThis=false;
 	}
@@ -2254,6 +2260,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	cc->code=new istringstream(mi->body->code);
 	cc->scope_stack=func_scope;
 	cc->initialScopeStack=func_scope.size();
+	getVm()->curGlobalObj = ABCVm::getGlobalScope(cc);
 
 	if(bound && !closure_this.isNull() && !thisOverride)
 	{

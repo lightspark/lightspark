@@ -1069,7 +1069,7 @@ void ABCContext::dumpProfilingData(ostream& f) const
 }
 #endif
 
-ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
+ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curGlobalObj(NULL)
 {
 	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
@@ -1673,6 +1673,8 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 	method_info* m=get_method(scripts[i].init);
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(m);
 
+	g->incRef();
+	entry->addToScope(scope_entry(_MR(g),false)); //TODO: is consider_dynamic == false correct?
 	g->incRef();
 	ASObject* ret=entry->call(g,NULL,0);
 	if(ret)

@@ -689,11 +689,19 @@ public:
 	ASFUNCTION(_getGlobal);
 };
 
+class Global : public ASObject
+{
+CLASSBUILDABLE(Global);
+private:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o) {};
+};
+
 class GlobalObject
 {
 public:
-	void registerGlobalScope(ASObject* scope);
-	std::vector<ASObject*> globalScopes;
+	void registerGlobalScope(Global* scope);
+	std::vector<Global*> globalScopes;
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
 	ASObject* getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
 	~GlobalObject();

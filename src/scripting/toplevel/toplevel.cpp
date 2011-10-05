@@ -55,6 +55,7 @@ REGISTER_CLASS_NAME2(ASQName,"QName","");
 REGISTER_CLASS_NAME2(IFunction,"Function","");
 REGISTER_CLASS_NAME2(UInteger,"uint","");
 REGISTER_CLASS_NAME(Integer);
+REGISTER_CLASS_NAME2(Global,"global","");
 REGISTER_CLASS_NAME(Number);
 REGISTER_CLASS_NAME(Namespace);
 REGISTER_CLASS_NAME(RegExp);
@@ -3751,7 +3752,13 @@ Class<IFunction>* Class<IFunction>::getClass()
 	return ret;
 }
 
-void GlobalObject::registerGlobalScope(ASObject* scope)
+void Global::sinit(Class_base* c)
+{
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void GlobalObject::registerGlobalScope(Global* scope)
 {
 	globalScopes.push_back(scope);
 }

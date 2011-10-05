@@ -580,7 +580,6 @@ private:
 	static number_t increment(ASObject*);
 	static number_t decrement(ASObject*);
 	static uintptr_t decrement_i(ASObject*);
-	static ASObject* getGlobalScope(call_context* th);
 	static bool strictEquals(ASObject*,ASObject*);
 	//Utility
 	static void not_impl(int p);
@@ -619,7 +618,7 @@ private:
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
 public:
-	GlobalObject* Global;
+	GlobalObject* global;
 	Manager* int_manager;
 	Manager* uint_manager;
 	Manager* number_manager;
@@ -650,7 +649,7 @@ public:
 	{
 		return method_this_stack.back();
 	}
-
+	static Global* getGlobalScope(call_context* th);
 	static bool strictEqualImpl(ASObject*, ASObject*);
 	static void publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event);
 
@@ -696,7 +695,7 @@ ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned 
 
 inline GlobalObject* getGlobal()
 {
-	return sys->currentVm->Global;
+	return sys->currentVm->global;
 }
 
 inline ABCVm* getVm()

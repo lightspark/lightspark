@@ -488,12 +488,14 @@ void ABCVm::pushScope(call_context* th)
 	th->scope_stack.emplace_back(scope_entry(_MR(t), false));
 }
 
-ASObject* ABCVm::getGlobalScope(call_context* th)
+Global* ABCVm::getGlobalScope(call_context* th)
 {
+	assert_and_throw(th->scope_stack.size() > 0);
 	ASObject* ret=th->scope_stack[0].object.getPtr();
+	assert_and_throw(ret->is<Global>());
 	LOG(LOG_CALLS,_("getGlobalScope: ") << ret);
 	ret->incRef();
-	return ret;
+	return ret->as<Global>();
 }
 
 number_t ABCVm::decrement(ASObject* o)

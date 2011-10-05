@@ -154,7 +154,7 @@ thisAndLevel ABCVm::popObjAndLevel()
 
 void ABCVm::registerClasses()
 {
-	ASObject* builtin=Class<ASObject>::getInstanceS();
+	Global* builtin=Class<Global>::getInstanceS();
 	//Register predefined types, ASObject are enough for not implemented classes
 	builtin->setVariableByQName("Object","",Class<ASObject>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Class","",Class_object::getClass(),DECLARED_TRAIT);
@@ -351,7 +351,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite),DECLARED_TRAIT);
 	builtin->setVariableByQName("isXMLName","",Class<IFunction>::getFunction(_isXMLName),DECLARED_TRAIT);
 
-	Global->registerGlobalScope(builtin);
+	global->registerGlobalScope(builtin);
 }
 
 //This function is used at compile time
@@ -1077,8 +1077,8 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false)
 	int_manager=new Manager(15);
 	uint_manager=new Manager(15);
 	number_manager=new Manager(15);
-	Global=new GlobalObject;
-	LOG(LOG_INFO,_("Global is ") << Global);
+	global=new GlobalObject;
+	LOG(LOG_INFO,_("Global is ") << global);
 	//Push a dummy default context
 	pushObjAndLevel(Class<ASObject>::getInstanceS(),0);
 }
@@ -1132,7 +1132,7 @@ ABCVm::~ABCVm()
 	delete int_manager;
 	delete uint_manager;
 	delete number_manager;
-	delete Global;
+	delete global;
 }
 
 int ABCVm::getEventQueueSize()
@@ -1407,7 +1407,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s)
 {
 	LOG(LOG_CALLS,_("Setting class name to ") << s);
 	ASObject* target;
-	ASObject* derived_class=Global->getVariableByString(s,target);
+	ASObject* derived_class=global->getVariableByString(s,target);
 	if(derived_class==NULL)
 	{
 		LOG(LOG_ERROR,_("Class ") << s << _(" not found in global"));
@@ -1420,7 +1420,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s)
 		Definable* d=static_cast<Definable*>(derived_class);
 		d->define(target);
 		LOG(LOG_CALLS,_("End of deferred init of class ") << s);
-		derived_class=Global->getVariableByString(s,target);
+		derived_class=global->getVariableByString(s,target);
 		assert_and_throw(derived_class);
 	}
 
@@ -1622,7 +1622,7 @@ void ABCContext::exec()
 		LOG(LOG_CALLS, _("Script N: ") << i );
 
 		//Creating a new global for this script
-		ASObject* global=Class<ASObject>::getInstanceS();
+		Global* global=Class<Global>::getInstanceS();
 #ifndef NDEBUG
 		global->initialized=false;
 #endif
@@ -1643,7 +1643,7 @@ void ABCContext::exec()
 	//The last script entry has to be run
 	LOG(LOG_CALLS, _("Last script (Entry Point)"));
 	//Creating a new global for the last script
-	ASObject* global=Class<ASObject>::getInstanceS();
+	Global* global=Class<Global>::getInstanceS();
 #ifndef NDEBUG
 		global->initialized=false;
 #endif

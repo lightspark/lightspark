@@ -56,7 +56,7 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("getUTCSeconds",AS3,Class<IFunction>::getFunction(getUTCSeconds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getUTCMilliseconds",AS3,Class<IFunction>::getFunction(getUTCMilliseconds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(timezoneOffset),GETTER_METHOD,true);
 }
 
 void Date::buildTraits(ASObject* o)

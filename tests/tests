@@ -30,6 +30,7 @@ COMPILE=0;
 QUIT=0;
 DEBUG=0;
 PROPRIETARY=0;
+BLACKLIST=0;
 JUNITFILE=""
 
 if ! `which timeout > /dev/null`; then
@@ -58,6 +59,7 @@ while [ $# -ne 0 ]; do
 		echo -e "\t-t|--tests\t\tfiles to compile/test, must be last parameter (otherwise compile/test all files in this directory)";
 		echo -e "\t-p|--proprietary\t\tUse proprietary player to run tests";
 		echo -e "\t-j|--junit file\t\tWrite test results in junit's xml format to 'file'"
+		echo -e "\t-b|--blacklist file\t\tRun the testsuite on the blacklisted files only - those that do not fully pass with the proprietary player"
 		echo "Examples:";
 		echo -e "\t./tests -q -f\t\tTests all files, only reporting failures"
 		echo -e "\t./tests -q -c -t FILE\tRecompiles the file and runs it, only showing reports"
@@ -104,6 +106,8 @@ while [ $# -ne 0 ]; do
 			echo -e "$HOME/mm.cfg not found or does not have TraceOutputFileEnable=1 in it"
 			exit 1
 		fi
+	elif [ $1 == "-b" ] || [ $1 == "--blacklist" ]; then
+		BLACKLIST=1
 	elif [ $1 == "-j" ] || [ $1 == "--junit" ]; then
 		JUNITFILE="$2"
 		shift
@@ -121,9 +125,13 @@ while [ $# -ne 0 ]; do
 	shift;
 done
 
-#Blacklist of tests that (partially) fail the proprietary player is in 'blacklist' file
-#transform spaces to newlines, sort, compare
-TESTS=`echo $TESTS | tr ' ' '\n' | sort | comm -2 -3 - blacklist`
+#Blacklisted tests fail the proprietary player are listed in the 'blacklist' file and are not run by default
+#If --blacklist or -b is passed run them instead of the other tests
+if [ $BLACKLIST -eq 1 ]; then
+	TESTS=`cat blacklist`
+else
+	TESTS=`echo $TESTS | tr ' ' '\n' | sort | comm -2 -3 - blacklist`
+fi
 
 if [ ! $COMPILE -eq 1 ]; then
 	for test in $TESTS; do

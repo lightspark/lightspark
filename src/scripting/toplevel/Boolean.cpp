@@ -80,12 +80,9 @@ void Boolean::sinit(Class_base* c)
 ASFUNCTIONBODY(Boolean,_constructor)
 {
 	Boolean* th=static_cast<Boolean*>(obj);
-	if(argslen == 1)
-	{
-		th->val=Boolean_concrete(args[0]);
-	}
-	else
-		th->val = false; //= ToBoolean(undefined)
+	_NR<ASObject> o;
+	ARG_UNPACK (o,_MNR(new Undefined));
+	th->val=Boolean_concrete(o.getPtr());
 	return NULL;
 }
 

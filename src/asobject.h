@@ -228,7 +228,7 @@ CLASSBUILDABLE(ASObject);
 protected:
 	//maps variable name to namespace and var
 	variables_map Variables;
-	ASObject(Manager* m=NULL);
+	ASObject();
 	ASObject(const ASObject& o);
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;

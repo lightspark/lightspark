@@ -456,7 +456,6 @@ friend ASObject* abstract_i(intptr_t i);
 CLASSBUILDABLE(Integer);
 private:
 	Integer(int32_t v=0):val(v){type=T_INTEGER;}
-	Integer(Manager* m):ASObject(m),val(0){type=T_INTEGER;}
 public:
 	int32_t val;
 	static void buildTraits(ASObject* o){};
@@ -484,7 +483,6 @@ class UInteger: public ASObject
 friend ASObject* abstract_ui(uint32_t i);
 CLASSBUILDABLE(UInteger);
 private:
-	UInteger(Manager* m):ASObject(m),val(0){type=T_UINTEGER;}
 public:
 	uint32_t val;
 	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
@@ -518,7 +516,6 @@ CLASSBUILDABLE(Number);
 private:
 	Number():val(0) {type=T_NUMBER;}
 	Number(double v):val(v){type=T_NUMBER;}
-	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
 	static void purgeTrailingZeroes(char* buf);
 public:
 	double val;
@@ -746,7 +743,8 @@ T* Manager::get()
 	}
 	else
 	{
-		T* ret=Class<T>::getInstanceS(this);
+		T* ret=Class<T>::getInstanceS();
+		ret->manager = this;
 		//std::cout << "newing" << ret << std::endl;
 		return ret;
 	}

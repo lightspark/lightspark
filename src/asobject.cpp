@@ -781,7 +781,7 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),classdef(NULL),constructed(false),
+ASObject::ASObject():type(T_OBJECT),ref_count(1),manager(NULL),cur_level(0),classdef(NULL),constructed(false),
 		implEnable(true)
 {
 #ifndef NDEBUG

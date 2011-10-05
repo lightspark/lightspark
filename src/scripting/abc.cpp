@@ -1031,6 +1031,7 @@ ABCContext::ABCContext(istream& in)
 			methods[method_body[i].method].body=&method_body[i];
 	}
 
+	hasRunScriptInit.resize(scripts.size(),false);
 #ifdef PROFILING_SUPPORT
 	sys->contextes.push_back(this);
 #endif
@@ -1606,14 +1607,19 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	return real_ret;
 }
 
+/*
+ * The ABC definitions (classes, scripts, etc) have been parsed in
+ * ABCContext constructor. Now create the internal structures for them
+ * and execute the main/init function.
+ */
 void ABCContext::exec()
 {
 	//Take script entries and declare their traits
 	unsigned int i=0;
+
 	for(;i<scripts.size()-1;i++)
 	{
 		LOG(LOG_CALLS, _("Script N: ") << i );
-		method_info* m=get_method(scripts[i].init);
 
 		//Creating a new global for this script
 		ASObject* global=Class<ASObject>::getInstanceS();
@@ -1621,14 +1627,12 @@ void ABCContext::exec()
 		global->initialized=false;
 #endif
 		LOG(LOG_CALLS, _("Building script traits: ") << scripts[i].trait_count );
-		SyntheticFunction* mf=Class<IFunction>::getSyntheticFunction(m);
+
 
 		for(unsigned int j=0;j<scripts[i].trait_count;j++)
 		{
-			mf->incRef();
-			buildTrait(global,&scripts[i].traits[j],false,mf);
+			buildTrait(global,&scripts[i].traits[j],false,i);
 		}
-		mf->decRef(); //free local ref
 
 #ifndef NDEBUG
 		global->initialized=true;
@@ -1638,8 +1642,6 @@ void ABCContext::exec()
 	}
 	//The last script entry has to be run
 	LOG(LOG_CALLS, _("Last script (Entry Point)"));
-	method_info* m=get_method(scripts[i].init);
-	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(m);
 	//Creating a new global for the last script
 	ASObject* global=Class<ASObject>::getInstanceS();
 #ifndef NDEBUG
@@ -1649,8 +1651,7 @@ void ABCContext::exec()
 	LOG(LOG_CALLS, _("Building entry script traits: ") << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
 	{
-		entry->incRef();
-		buildTrait(global,&scripts[i].traits[j],false,entry);
+		buildTrait(global,&scripts[i].traits[j],false,i);
 	}
 
 #ifndef NDEBUG
@@ -1658,13 +1659,28 @@ void ABCContext::exec()
 #endif
 	//Register it as one of the global scopes
 	getGlobal()->registerGlobalScope(global);
+	//the script init of the last script is the main entry point
+	runScriptInit(i, global);
+	LOG(LOG_CALLS, _("End of Entry Point"));
+}
 
-	global->incRef();
-	ASObject* ret=entry->call(global,NULL,0);
+void ABCContext::runScriptInit(unsigned int i, ASObject* g)
+{
+	LOG(LOG_CALLS, "Running script init for script " << i );
+	if(hasRunScriptInit[i])
+		throw Class<VerifyError>::getInstanceS("Script init did not define all DEFINABLEs");
+
+	method_info* m=get_method(scripts[i].init);
+	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(m);
+
+	g->incRef();
+	ASObject* ret=entry->call(g,NULL,0);
 	if(ret)
 		ret->decRef();
-	entry->decRef(); //free local ref
-	LOG(LOG_CALLS, _("End of Entry Point"));
+
+	entry->decRef();
+	hasRunScriptInit[i] = true;
+	LOG(LOG_CALLS, "Finished script init for script " << i );
 }
 
 void ABCVm::Run(ABCVm* th)
@@ -1927,7 +1943,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	}
 }
 
-void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, IFunction* deferred_initialization)
+void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid)
 {
 	const multiname& mname=*getMultiname(t->name,NULL);
 	//Should be a Qname
@@ -1993,8 +2009,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (constructor)");
 				ret = ci;
 			}
-			else if(deferred_initialization)
-				ret=new ScriptDefinable(deferred_initialization);
+			else if(scriptid != -1)
+				ret=new ScriptDefinable(this,scriptid);
 			else
 				ret=new Undefined;
 
@@ -2150,7 +2166,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				//Methods save a copy of the scope stack of the class
 				f->acquireScope(prot->class_scope);
 			}
-			else if(deferred_initialization)
+			else if(scriptid != -1)
 			{
 				//Script method
 				obj->incRef();
@@ -2164,7 +2180,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 #endif
 			}
 			else //TODO: transform in a simple assert
-				assert_and_throw(obj->getObjectType()==T_CLASS || deferred_initialization);
+				assert_and_throw(obj->getObjectType()==T_CLASS || scriptid != -1);
 			
 			f->bindLevel(obj->getLevel());
 			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,NORMAL_METHOD,isBorrowed);
@@ -2193,8 +2209,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret=obj->getVariableByMultiname(mname);
 				assert_and_throw(ret==NULL);
 				
-				if(deferred_initialization)
-					ret=new ScriptDefinable(deferred_initialization);
+				if(scriptid != -1)
+					ret=new ScriptDefinable(this,scriptid);
 				else
 					ret=new Undefined;
 
@@ -2259,8 +2275,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				assert_and_throw(!previous_definition);
 
 				ASObject* ret;
-				if(deferred_initialization)
-					ret=new ScriptDefinable(deferred_initialization);
+				if(scriptid != -1)
+					ret=new ScriptDefinable(this, scriptid);
 				else
 				{
 					//TODO: find nice way to handle default construction

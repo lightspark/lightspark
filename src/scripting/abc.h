@@ -396,6 +396,8 @@ public:
 	std::vector<script_info> scripts;
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
+
+	std::vector<bool> hasRunScriptInit;
 	/**
 		Construct and insert in the a object a given trait
 		@param obj the tarhget object
@@ -403,7 +405,9 @@ public:
 		@param isBorrowed True if we're building a trait on behalf of an object, False otherwise
 		@param deferred_initialization A pointer to a function that can be used to build the given trait later
 	*/
-	void buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, IFunction* deferred_initialization=NULL);
+	void buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid=-1);
+	void runScriptInit(unsigned int scriptid, ASObject* g);
+
 	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
 	multiname* getMultiname(unsigned int m, call_context* th);

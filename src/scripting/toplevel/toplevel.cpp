@@ -62,6 +62,11 @@ REGISTER_CLASS_NAME2(ASString, "String", "");
 REGISTER_CLASS_NAME(XML);
 REGISTER_CLASS_NAME(XMLList);
 
+void ScriptDefinable::define(ASObject* g)
+{
+	context->runScriptInit(scriptid, g);
+}
+
 XML::XML():root(NULL),node(NULL),constructed(false)
 {
 }

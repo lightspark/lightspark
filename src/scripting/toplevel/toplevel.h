@@ -660,11 +660,12 @@ public:
 class ScriptDefinable: public Definable
 {
 private:
-	_R<IFunction> f;
+	ABCContext* context;
+	unsigned int scriptid;
 public:
-	ScriptDefinable(IFunction* _f):f(_MR(_f)){}
+	ScriptDefinable(ABCContext* c, unsigned int s) : context(c), scriptid(s) {}
 	//The global object will be passed from the calling context
-	void define(ASObject* g){ g->incRef(); f->call(g,NULL,0); }
+	void define(ASObject* g);
 };
 
 class RegExp: public ASObject

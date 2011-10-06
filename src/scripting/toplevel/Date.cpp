@@ -19,6 +19,7 @@
 
 #include "Date.h"
 #include "class.h"
+#include "argconv.h"
 
 using namespace std;
 using namespace lightspark;
@@ -26,7 +27,7 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(Date);
 
-Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
+Date::Date():extrayears(0), millisecond(0),datetime(NULL)
 {
 }
 
@@ -39,18 +40,23 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getTime",AS3,Class<IFunction>::getFunction(getTime),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getFullYear",AS3,Class<IFunction>::getFunction(getFullYear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getMonth",AS3,Class<IFunction>::getFunction(getMonth),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDate",AS3,Class<IFunction>::getFunction(getDate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDay",AS3,Class<IFunction>::getFunction(getDay),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getHours",AS3,Class<IFunction>::getFunction(getHours),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getMinutes",AS3,Class<IFunction>::getFunction(getMinutes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getSeconds",AS3,Class<IFunction>::getFunction(getSeconds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getMilliseconds",AS3,Class<IFunction>::getFunction(getMilliseconds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getSeconds",AS3,Class<IFunction>::getFunction(getMinutes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getUTCFullYear",AS3,Class<IFunction>::getFunction(getUTCFullYear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getUTCMonth",AS3,Class<IFunction>::getFunction(getUTCMonth),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getUTCDate",AS3,Class<IFunction>::getFunction(getUTCDate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCDay",AS3,Class<IFunction>::getFunction(getUTCDay),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getUTCHours",AS3,Class<IFunction>::getFunction(getUTCHours),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getUTCMinutes",AS3,Class<IFunction>::getFunction(getUTCMinutes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCSeconds",AS3,Class<IFunction>::getFunction(getUTCSeconds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCMilliseconds",AS3,Class<IFunction>::getFunction(getUTCMilliseconds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
-	//o->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(ASObject::_toString));
 }
 
 void Date::buildTraits(ASObject* o)
@@ -60,20 +66,34 @@ void Date::buildTraits(ASObject* o)
 ASFUNCTIONBODY(Date,_constructor)
 {
 	Date* th=static_cast<Date*>(obj);
-	th->year=1969;
-	th->month=1;
-	th->date=1;
-	th->hour=0;
-	th->minute=0;
-	th->second=0;
-	th->millisecond=0;
+	if (argslen == 1)
+	{
+	//GLib's GDateTime sensibly does not support and store very large year numbers
+	//so keep the extra years in units of 400 years separately. A 400 years period has
+	//a fixed number of milliseconds, unaffected by leap year calculations.
+		const gint64 MS_IN_400_YEARS = 1.26227808e+13;
+		gint64 ms = gint64(args[0]->toNumber());
+		th->extrayears = 400*(ms/MS_IN_400_YEARS);
+		ms %= MS_IN_400_YEARS;
+		th->millisecond = ms%1000;
+		gint64 seconds = ms/1000;
+		th->datetime = g_date_time_new_from_unix_utc(seconds);
+	} else
+	{
+		number_t year, month, day, hour, minute, second, millisecond;
+		ARG_UNPACK (year, 1970) (month, 0) (day, 1) (hour, 0) (minute, 0) (second, 0) (millisecond, 0);
+		th->datetime = g_date_time_new_utc(year, month+1, day, hour, minute, second);
+		th->millisecond = millisecond;
+	}
+
 	return NULL;
 }
 
 ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
-	LOG(LOG_NOT_IMPLEMENTED,_("getTimezoneOffset"));
-	return abstract_d(120);
+	Date* th=static_cast<Date*>(obj);
+	GTimeSpan diff = g_date_time_get_utc_offset(th->datetime);
+	return abstract_d(diff/1000000);
 }
 
 ASFUNCTIONBODY(Date,timezoneOffset)
@@ -84,49 +104,90 @@ ASFUNCTIONBODY(Date,timezoneOffset)
 ASFUNCTIONBODY(Date,getUTCFullYear)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->year);
+	return abstract_d(th->extrayears + g_date_time_get_year(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getUTCMonth)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->month);
+	return abstract_d(g_date_time_get_month(th->datetime)-1);
 }
 
 ASFUNCTIONBODY(Date,getUTCDate)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->date);
+	return abstract_d(g_date_time_get_day_of_month(th->datetime));
+}
+
+ASFUNCTIONBODY(Date,getUTCDay)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(g_date_time_get_day_of_week(th->datetime)%7);
 }
 
 ASFUNCTIONBODY(Date,getUTCHours)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->hour);
+	return abstract_d(g_date_time_get_hour(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getUTCMinutes)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->minute);
+	return abstract_d(g_date_time_get_minute(th->datetime));
 }
 
+ASFUNCTIONBODY(Date,getUTCSeconds)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(g_date_time_get_second(th->datetime));
+}
+
+ASFUNCTIONBODY(Date,getUTCMilliseconds)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(th->millisecond);
+}
 ASFUNCTIONBODY(Date,getFullYear)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->year);
+	return abstract_d(th->extrayears + g_date_time_get_year(th->datetime));
+}
+
+ASFUNCTIONBODY(Date,getMonth)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(g_date_time_get_month(th->datetime)-1);
+}
+
+ASFUNCTIONBODY(Date,getDate)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(g_date_time_get_day_of_month(th->datetime));
+}
+
+ASFUNCTIONBODY(Date,getDay)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(g_date_time_get_day_of_week(th->datetime)%7);
 }
 
 ASFUNCTIONBODY(Date,getHours)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->hour);
+	return abstract_d(g_date_time_get_hour(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMinutes)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->minute);
+	return abstract_d(g_date_time_get_minute(th->datetime));
+}
+
+ASFUNCTIONBODY(Date,getSeconds)
+{
+	Date* th=static_cast<Date*>(obj);
+	return abstract_d(g_date_time_get_second(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMilliseconds)
@@ -138,72 +199,18 @@ ASFUNCTIONBODY(Date,getMilliseconds)
 ASFUNCTIONBODY(Date,getTime)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->toInt());
+	return abstract_d(th->toNumber());
 }
 
 ASFUNCTIONBODY(Date,valueOf)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->toInt());
+	return abstract_d(th->toNumber());
 }
 
-bool Date::getIsLeapYear(int year)
+double Date::toNumber()
 {
-	return ( ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0) );
-}
-
-int Date::getDaysInMonth(int month, bool isLeapYear)
-{
-	enum { JANUARY = 1, FEBRUARY, MARCH, APRIL, MAY, JUNE, JULY, AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER };
-
-	int days;
-
-	switch(month)
-	{
-	case FEBRUARY:
-		days = isLeapYear ? 29 : 28;
-		break;
-	case JANUARY:
-	case MARCH:
-	case MAY:
-	case JULY:
-	case AUGUST:
-	case OCTOBER:
-	case DECEMBER:
-		days = 31;
-		break;
-	case APRIL:
-	case JUNE:
-	case SEPTEMBER:
-	case NOVEMBER:
-		days = 30;
-		break;
-	default:
-		days = -1;
-	}
-
-	return days;
-}
-
-int Date::toInt()
-{
-	int ret=0;
-
-	ret+=((year-1990)*365 + ((year-1989)/4 - (year-1901)/100) + (year-1601)/400)*24*3600*1000;
-
-	bool isLeapYear;
-	for(int j = 1; j < month; j++)
-	{
-		isLeapYear = getIsLeapYear(year);
-		ret+=getDaysInMonth(j, isLeapYear)*24*3600*1000;
-	}
-
-	ret+=(date-1)*24*3600*1000;
-	ret+=hour*3600*1000;
-	ret+=minute*60*1000;
-	ret+=second*1000;
-	ret+=millisecond;
-	return ret;
+	return double(1000*g_date_time_to_unix(datetime) + millisecond);
 }
 
 tiny_string Date::toString(bool debugMsg)
@@ -214,7 +221,7 @@ tiny_string Date::toString(bool debugMsg)
 
 tiny_string Date::toString_priv() const
 {
-	return "Wed Dec 31 16:00:00 GMT-0800 1969";
+	return g_date_time_format(datetime, "%a %b %e %H:%M:%S %Z%z %Y");
 }
 
 void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

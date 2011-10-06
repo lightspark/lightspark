@@ -29,17 +29,11 @@ class Date: public ASObject
 {
 CLASSBUILDABLE(Date);
 private:
-	int year;
-	int month;
-	int date;
-	int hour;
-	int minute;
-	int second;
+	int extrayears;
 	int millisecond;
-	int32_t toInt();
+	double toNumber();
 	Date();
-	bool getIsLeapYear(int year);
-	int getDaysInMonth(int month, bool isLeapYear);
+	GDateTime *datetime;
 public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -47,14 +41,21 @@ public:
 	ASFUNCTION(getTimezoneOffset);
 	ASFUNCTION(getTime);
 	ASFUNCTION(getFullYear);
+	ASFUNCTION(getMonth);
+	ASFUNCTION(getDate);
+	ASFUNCTION(getDay);
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
+	ASFUNCTION(getSeconds);
 	ASFUNCTION(getMilliseconds);
 	ASFUNCTION(getUTCFullYear);
 	ASFUNCTION(getUTCMonth);
 	ASFUNCTION(getUTCDate);
+	ASFUNCTION(getUTCDay);
 	ASFUNCTION(getUTCHours);
 	ASFUNCTION(getUTCMinutes);
+	ASFUNCTION(getUTCSeconds);
+	ASFUNCTION(getUTCMilliseconds);
 	ASFUNCTION(valueOf);
 	ASFUNCTION(timezoneOffset);
 	tiny_string toString(bool debugMsg=false);

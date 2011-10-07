@@ -78,12 +78,19 @@ ASFUNCTIONBODY(Date,_constructor)
 		th->millisecond = ms%1000;
 		gint64 seconds = ms/1000;
 		th->datetime = g_date_time_new_from_unix_utc(seconds);
+		//If negative date, adjust with the milliseconds value
+		if (th->millisecond < 0) {
+			th->datetime = g_date_time_add(th->datetime, th->millisecond*1000);
+			th->millisecond = 0;
+		}
 	} else
 	{
 		number_t year, month, day, hour, minute, second, millisecond;
 		ARG_UNPACK (year, 1970) (month, 0) (day, 1) (hour, 0) (minute, 0) (second, 0) (millisecond, 0);
 		th->datetime = g_date_time_new_utc(year, month+1, day, hour, minute, second);
-		th->millisecond = millisecond;
+		if (millisecond > 999)
+			th->datetime = g_date_time_add(th->datetime, gint64(millisecond)/1000*G_TIME_SPAN_SECOND);
+		th->millisecond = uint64_t(millisecond) % 1000;
 	}
 
 	return NULL;

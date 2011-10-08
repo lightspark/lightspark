@@ -1236,15 +1236,6 @@ RootMovieClip *ParseThread::getRootMovie()
 		objectSpinlock.unlock();
 		if(url.len()>0)
 			root->setOrigin(url, "");
-
-		// The parser will call contentLoader's sendInit()
-		// during the parsing. We have to set loader's content
-		// here, before the event is sent.
-		if(loader)
-		{
-			root->incRef();
-			loader->setContent(_MNR(root));
-		}
 		return root;
 	}
 	else
@@ -1516,5 +1507,6 @@ void RootMovieClip::advanceFrame()
 void RootMovieClip::constructionComplete()
 {
 	MovieClip::constructionComplete();
-	loaderInfo->sendInit();
+	if(this==sys)
+		loaderInfo->sendInit();
 }

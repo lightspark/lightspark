@@ -384,15 +384,13 @@ void Loader::execute()
 			return;
 		}
 
-		// If the parsed object is an SWF, the ParseThread has
-		// already called setContent() and sent init and
-		// complete events.
-		if(!(local_pt->getFileType()==FT_SWF || 
-		     local_pt->getFileType()==FT_COMPRESSED_SWF))
-		{
-			setContent(obj);
-			contentLoaderInfo->sendInit();
-		}
+		// Wait until the object is constructed before adding
+		// to the Loader
+		while (!obj->isConstructed())
+			compat_msleep(100);
+
+		setContent(obj);
+		contentLoaderInfo->sendInit();
 	}
 	else if(source==BYTES)
 	{

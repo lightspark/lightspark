@@ -63,6 +63,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/media/flashmedia.cpp
   scripting/flash/net/flashnet.cpp
   scripting/flash/sensors/flashsensors.cpp
+  scripting/flash/text/flashtext.cpp
   scripting/flash/utils/flashutils.cpp
   scripting/flash/xml/flashxml.cpp
   scripting/toplevel/Array.cpp
@@ -74,7 +75,6 @@ SET(LIBSPARK_SOURCES
   scripting/class.cpp
   scripting/flashevents.cpp
   scripting/flashsystem.cpp
-  scripting/flashtext.cpp
   scripting/toplevel/toplevel.cpp)
 IF(${i386})
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)

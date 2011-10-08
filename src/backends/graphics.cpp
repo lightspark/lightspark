@@ -26,7 +26,7 @@
 #include "backends/rendering.h"
 #include "glmatrices.h"
 #include "compat.h"
-#include "scripting/flashtext.h"
+#include "scripting/flash/text/flashtext.h"
 
 #include <iostream>
 

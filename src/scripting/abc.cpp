@@ -38,7 +38,7 @@
 #include "flash/accessibility/flashaccessibility.h"
 #include "flashevents.h"
 #include "flash/display/flashdisplay.h"
-#include "flashnet.h"
+#include "flash/net/flashnet.h"
 #include "flashsystem.h"
 #include "flash/sensors/flashsensors.h"
 #include "flash/utils/flashutils.h"

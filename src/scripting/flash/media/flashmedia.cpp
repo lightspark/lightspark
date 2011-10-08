@@ -19,7 +19,6 @@
 
 #include "scripting/abc.h"
 #include "flashmedia.h"
-#include "flashnet.h"
 #include "class.h"
 #include "compat.h"
 #include <iostream>

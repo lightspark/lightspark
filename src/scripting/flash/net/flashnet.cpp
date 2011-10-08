@@ -21,7 +21,7 @@
 #include "abc.h"
 #include "flashnet.h"
 #include "class.h"
-#include "scripting/flashsystem.h"
+#include "flash/system/flashsystem.h"
 #include "compat.h"
 #include "backends/audio.h"
 #include "backends/builtindecoder.h"

@@ -39,7 +39,7 @@
 #include "flash/events/flashevents.h"
 #include "flash/display/flashdisplay.h"
 #include "flash/net/flashnet.h"
-#include "flashsystem.h"
+#include "flash/system/flashsystem.h"
 #include "flash/sensors/flashsensors.h"
 #include "flash/utils/flashutils.h"
 #include "flash/geom/flashgeom.h"

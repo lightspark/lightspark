@@ -24,7 +24,7 @@
 #include "flashdisplay.h"
 #include "swf.h"
 #include "flash/geom/flashgeom.h"
-#include "flashsystem.h"
+#include "flash/system/flashsystem.h"
 #include "parsing/streams.h"
 #include "compat.h"
 #include "class.h"

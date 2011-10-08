@@ -35,7 +35,7 @@
 
 #include "abc.h"
 #include "toplevel.h"
-#include "flashevents.h"
+#include "flash/events/flashevents.h"
 #include "swf.h"
 #include "compat.h"
 #include "class.h"

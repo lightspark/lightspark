@@ -58,6 +58,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_opcodes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp
   scripting/flash/display/flashdisplay.cpp
+  scripting/flash/events/flashevents.cpp
   scripting/flash/external/ExternalInterface.cpp
   scripting/flash/geom/flashgeom.cpp
   scripting/flash/media/flashmedia.cpp
@@ -73,7 +74,6 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Math.cpp
   scripting/toplevel/Vector.cpp
   scripting/class.cpp
-  scripting/flashevents.cpp
   scripting/flashsystem.cpp
   scripting/toplevel/toplevel.cpp)
 IF(${i386})

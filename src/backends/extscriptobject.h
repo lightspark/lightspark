@@ -26,7 +26,7 @@
 
 #include "asobject.h"
 #include "compat.h"
-#include "scripting/flashevents.h"
+#include "scripting/flash/events/flashevents.h"
 
 namespace lightspark
 {

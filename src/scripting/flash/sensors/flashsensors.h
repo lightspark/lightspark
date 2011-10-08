@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "flashevents.h"
+#include "flash/events/flashevents.h"
 #include "thread_pool.h"
 #include "backends/netutils.h"
 #include "timer.h"

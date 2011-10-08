@@ -24,7 +24,7 @@
 #include "compat.h"
 
 #include "swftypes.h"
-#include "flashevents.h"
+#include "flash/events/flashevents.h"
 #include "thread_pool.h"
 #include "flash/utils/flashutils.h"
 #include "backends/geometry.h"

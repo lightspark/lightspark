@@ -36,7 +36,7 @@
 #include "toplevel/Math.h"
 #include "toplevel/Vector.h"
 #include "flash/accessibility/flashaccessibility.h"
-#include "flashevents.h"
+#include "flash/events/flashevents.h"
 #include "flash/display/flashdisplay.h"
 #include "flash/net/flashnet.h"
 #include "flashsystem.h"

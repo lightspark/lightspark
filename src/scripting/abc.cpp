@@ -42,7 +42,7 @@
 #include "flashsystem.h"
 #include "flash/sensors/flashsensors.h"
 #include "flash/utils/flashutils.h"
-#include "flashgeom.h"
+#include "flash/geom/flashgeom.h"
 #include "flash/external/ExternalInterface.h"
 #include "flash/media/flashmedia.h"
 #include "flash/xml/flashxml.h"

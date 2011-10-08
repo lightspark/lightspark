@@ -23,7 +23,7 @@
 #include "abc.h"
 #include "flashdisplay.h"
 #include "swf.h"
-#include "flashgeom.h"
+#include "flash/geom/flashgeom.h"
 #include "flashsystem.h"
 #include "parsing/streams.h"
 #include "compat.h"

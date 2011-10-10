@@ -57,6 +57,7 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("getUTCMilliseconds",AS3,Class<IFunction>::getFunction(getUTCMilliseconds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(timezoneOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("UTC","",Class<IFunction>::getFunction(UTC),NORMAL_METHOD,false);
 }
 
 void Date::buildTraits(ASObject* o)
@@ -94,6 +95,17 @@ ASFUNCTIONBODY(Date,_constructor)
 	}
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(Date,UTC)
+{
+	number_t year, month, day, hour, minute, second, millisecond;
+	ARG_UNPACK (year) (month) (day, 1) (hour, 0) (minute, 0) (second, 0) (millisecond, 0);
+	GDateTime *tmp = g_date_time_new_utc(year, month+1, day, hour, minute, second);
+	if (millisecond > 999)
+		tmp = g_date_time_add(tmp, gint64(millisecond)/1000*G_TIME_SPAN_SECOND);
+	millisecond = uint64_t(millisecond) % 1000;
+	return abstract_d(1000*g_date_time_to_unix(tmp) + millisecond);
 }
 
 ASFUNCTIONBODY(Date,getTimezoneOffset)

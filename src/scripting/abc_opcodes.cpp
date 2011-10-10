@@ -72,14 +72,9 @@ void ABCVm::setProperty_i(intptr_t value,ASObject* obj,multiname* name)
 number_t ABCVm::convert_d(ASObject* o)
 {
 	LOG(LOG_CALLS, _("convert_d") );
-	if(o->getObjectType()!=T_UNDEFINED)
-	{
-		number_t ret=o->toNumber();
-		o->decRef();
-		return ret;
-	}
-	else
-		return numeric_limits<double>::quiet_NaN();
+	number_t ret=o->toNumber();
+	o->decRef();
+	return ret;
 }
 
 bool ABCVm::convert_b(ASObject* o)
@@ -627,8 +622,7 @@ void ABCVm::incLocal(call_context* th, int n)
 	LOG(LOG_CALLS, _("incLocal ") << n );
 	if(th->locals[n]->getObjectType()==T_NUMBER)
 	{
-		Number* i=static_cast<Number*>(th->locals[n]);
-		i->val++;
+		th->locals[n]->as<Number>()->val++;
 	}
 	else
 	{
@@ -661,8 +655,7 @@ void ABCVm::decLocal(call_context* th, int n)
 	LOG(LOG_CALLS, _("decLocal ") << n );
 	if(th->locals[n]->getObjectType()==T_NUMBER)
 	{
-		Number* i=static_cast<Number*>(th->locals[n]);
-		i->val--;
+		th->locals[n]->as<Number>()->val--;
 	}
 	else
 	{

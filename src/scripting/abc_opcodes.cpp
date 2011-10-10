@@ -1107,13 +1107,6 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		val2->decRef();
 		return abstract_i(num2);
 	}
-	else if(val1->getObjectType()==T_ARRAY)
-	{
-		//Array concatenation
-		Array* ar=static_cast<Array*>(val1);
-		ar->push(val2);
-		return val1;
-	}
 	else if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
 	{
 		string a(val1->toString().raw_buf());

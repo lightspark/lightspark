@@ -979,8 +979,9 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 			if(ret)
 				return ret;
 		}
-		return false;
 	}
+
+	return ASObject::hasPropertyByMultiname(name, considerDynamic);
 }
 
 void XMLList::setVariableByMultiname(const multiname& name, ASObject* o)

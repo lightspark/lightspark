@@ -79,6 +79,8 @@ private:
 	Mutex referencedObjectsMutex;
 	std::set<ASObject*> referencedObjects;
 	void finalizeObjects() const;
+protected:
+	ASFUNCTION(_toString);
 public:
 	void addPrototypeGetter();
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);

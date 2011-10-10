@@ -62,6 +62,7 @@ public:
 		bool ret=
 #endif
 		sys->classes.insert(std::make_pair(name,this)).second;
+		this->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 		assert(ret);
 	}
 	void finalize();
@@ -114,6 +115,7 @@ public:
 		{
 			ret=new Class<T>(name);
 			sys->classes.insert(std::make_pair(name,ret));
+			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
 			ret->prototype = _MNR(new Prototype(_MR(ret)));
 			T::sinit(ret);
@@ -177,6 +179,7 @@ public:
 		{
 			ret=new Class<ASObject>(name);
 			sys->classes.insert(std::make_pair(name,ret));
+			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
 			ret->prototype = _MNR(new Prototype(_MR(ret)));
 			ASObject::sinit(ret);

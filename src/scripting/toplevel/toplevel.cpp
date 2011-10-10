@@ -2981,6 +2981,16 @@ Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",N
 	type=T_CLASS;
 }
 
+ASFUNCTIONBODY(Class_base,_toString)
+{
+	Class_base* th = obj->as<Class_base>();
+	tiny_string ret;
+	ret = "[class ";
+	ret += th->class_name.name;
+	ret += "]";
+	return Class<ASString>::getInstanceS(ret);
+}
+
 void Class_base::addPrototypeGetter()
 {
 	setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(_getter_prototype),GETTER_METHOD,false);
@@ -3790,6 +3800,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->addPrototypeGetter();
 		ret->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
 		ret->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
+		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);

@@ -48,10 +48,6 @@ public:
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	tiny_string toString(bool debugMsg);
-	double toNumber()
-	{
-		return val ? 1.0 : 0.0;
-	}
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_valueOf);

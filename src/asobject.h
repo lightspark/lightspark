@@ -345,7 +345,8 @@ public:
 	virtual tiny_string toString(bool debugMsg=false);
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
-	virtual double toNumber();
+	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
+	number_t toNumber();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
 	_R<ASObject> toPrimitive(TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;

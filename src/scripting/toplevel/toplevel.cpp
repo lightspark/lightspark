@@ -1527,7 +1527,10 @@ tiny_string ASString::toString(bool debugMsg)
 	return toString_priv();
 }
 
-double ASString::toNumber()
+/* Note that toNumber() is not virtual.
+ * ASString::toNumber is directly called by ASObject::toNumber
+ */
+double ASString::toNumber() const
 {
 	assert_and_throw(implEnable);
 
@@ -1661,11 +1664,6 @@ bool Undefined::isEqual(ASObject* r)
 int Undefined::toInt()
 {
 	return 0;
-}
-
-double Undefined::toNumber()
-{
-	return numeric_limits<double>::quiet_NaN();
 }
 
 ASObject *Undefined::describeType() const
@@ -1879,6 +1877,30 @@ ASFUNCTIONBODY(UInteger,generator)
 }
 
 const number_t Number::NaN = numeric_limits<double>::quiet_NaN();
+
+number_t ASObject::toNumber()
+{
+	switch(this->getObjectType())
+	{
+	case T_UNDEFINED:
+		return Number::NaN;
+	case T_NULL:
+		return +0;
+	case T_BOOLEAN:
+		return as<Boolean>()->val ? 1 : 0;
+	case T_NUMBER:
+		return as<Number>()->val;
+	case T_INTEGER:
+		return as<Integer>()->val;
+	case T_UINTEGER:
+		return as<UInteger>()->val;
+	case T_STRING:
+		return as<ASString>()->toNumber();
+	default:
+		//everything else is an Object regarding to the spec
+		return toPrimitive(NUMBER_HINT)->toNumber();
+	}
+}
 
 bool Number::isEqual(ASObject* o)
 {
@@ -2518,11 +2540,6 @@ TRISTATE Null::isLess(ASObject* r)
 int Null::toInt()
 {
 	return 0;
-}
-
-double Null::toNumber()
-{
-	return 0.0;
 }
 
 void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

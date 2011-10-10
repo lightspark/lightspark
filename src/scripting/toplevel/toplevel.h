@@ -332,7 +332,6 @@ public:
 	Undefined();
 	tiny_string toString(bool debugMsg);
 	int32_t toInt();
-	double toNumber();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	ASObject *describeType() const;
@@ -381,7 +380,7 @@ public:
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	tiny_string toString(bool debugMsg=false);
-	double toNumber();
+	number_t toNumber() const;
 	int32_t toInt();
 	uint32_t toUInt();
 	ASFUNCTION(generator);
@@ -398,7 +397,6 @@ public:
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
-	double toNumber();
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;
@@ -470,10 +468,6 @@ public:
 	{
 		return val;
 	}
-	double toNumber()
-	{
-		return val;
-	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 	ASFUNCTION(generator);
@@ -498,10 +492,6 @@ public:
 		return val;
 	}
 	uint32_t toUInt()
-	{
-		return val;
-	}
-	double toNumber()
 	{
 		return val;
 	}
@@ -540,10 +530,6 @@ public:
 			uint32_t ret=val;
 			return ret;
 		}
-	}
-	double toNumber()
-	{
-		return val;
 	}
 	TRISTATE isLess(ASObject* o);
 	bool isEqual(ASObject* o);

@@ -224,12 +224,7 @@ ASFUNCTIONBODY(Date,getTime)
 ASFUNCTIONBODY(Date,valueOf)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_d(th->toNumber());
-}
-
-double Date::toNumber()
-{
-	return double(1000*g_date_time_to_unix(datetime) + millisecond);
+	return abstract_d(1000*g_date_time_to_unix(th->datetime) + th->millisecond);
 }
 
 tiny_string Date::toString(bool debugMsg)

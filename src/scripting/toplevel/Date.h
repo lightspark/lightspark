@@ -31,7 +31,6 @@ CLASSBUILDABLE(Date);
 private:
 	int extrayears;
 	int millisecond;
-	double toNumber();
 	Date();
 	GDateTime *datetime;
 public:

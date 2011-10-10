@@ -162,11 +162,6 @@ int ASObject::toInt()
 	return 0;
 }
 
-double ASObject::toNumber()
-{
-	return toPrimitive()->toNumber();
-}
-
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
 _R<ASObject> ASObject::toPrimitive(TP_HINT hint)
 {

@@ -2125,9 +2125,20 @@ ASFUNCTIONBODY(IFunction,apply)
 	IFunction* th=static_cast<IFunction*>(obj);
 	assert_and_throw(argslen<=2);
 
+	ASObject* newObj=NULL;
 	ASObject** newArgs=NULL;
 	int newArgsLen=0;
 	//Validate parameters
+	if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
+	{
+		newObj=getVm()->curGlobalObj;
+		newObj->incRef();
+	}
+	else
+	{
+		newObj=args[0];
+		newObj->incRef();
+	}
 	if(argslen == 2 && args[1]->getObjectType()==T_ARRAY)
 	{
 		Array* array=Class<Array>::cast(args[1]);
@@ -2141,15 +2152,14 @@ ASFUNCTIONBODY(IFunction,apply)
 		}
 	}
 
-	args[0]->incRef();
 	bool overrideThis=true;
 	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this.getPtr() && th->closure_this->classdef && args[0]->classdef && 
-				args[0]->classdef->isSubClass(th->closure_this->classdef)) ||	args[0]->classdef==NULL)
+	if(!(th->closure_this.getPtr() && th->closure_this->classdef && newObj->classdef &&
+				newObj->classdef->isSubClass(th->closure_this->classdef)) || newObj->classdef==NULL)
 	{
 		overrideThis=false;
 	}
-	ASObject* ret=th->callImpl(args[0],newArgs,newArgsLen,overrideThis);
+	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen,overrideThis);
 	if(ret==NULL)
 		ret=new Undefined;
 	delete[] newArgs;

@@ -215,6 +215,9 @@ template<class T>
 };
 
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
+//for toPrimitive
+enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
+
 
 class ASObject
 {
@@ -343,8 +346,18 @@ public:
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
 	virtual double toNumber();
-	virtual _R<ASObject> toPrimitive();
+	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
+	_R<ASObject> toPrimitive(TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;
+
+	/* helper functions for calling the "valueOf" and
+	 * "toString" AS-functions which may be members of this
+	 *  object */
+	bool has_valueOf();
+	_R<ASObject> call_valueOf();
+	bool has_toString();
+	_R<ASObject> call_toString();
+
 	ASFUNCTION(generator);
 
 	//Comparison operators

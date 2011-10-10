@@ -23,6 +23,7 @@
 #include <limits>
 #include "compat.h"
 #include "parsing/amf3_generator.h"
+#include "scripting/toplevel/Date.h"
 
 using namespace lightspark;
 using namespace std;
@@ -166,42 +167,113 @@ double ASObject::toNumber()
 	return toPrimitive()->toNumber();
 }
 
-_R<ASObject> ASObject::toPrimitive()
+/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
+_R<ASObject> ASObject::toPrimitive(TP_HINT hint)
 {
-	if(getObjectType()==T_NUMBER ||
-	   getObjectType()==T_INTEGER ||
-	   getObjectType()==T_UINTEGER ||
-	   getObjectType()==T_BOOLEAN ||
-	   getObjectType()==T_STRING ||
-	   getObjectType()==T_UNDEFINED ||
-	   getObjectType()==T_NULL)
+	//See ECMA 8.6.2.6 for default hint regarding Date
+	if(hint == NO_HINT)
 	{
-		incRef();
+		if(this->is<Date>())
+			hint = STRING_HINT;
+		else
+			hint = NUMBER_HINT;
+	}
+
+	if(isPrimitive())
+	{
+		this->incRef();
 		return _MR(this);
 	}
 
+	/* for HINT_STRING evaluate first toString, then valueOf
+	 * for HINT_NUMBER do it the other way around */
+	if(hint == STRING_HINT && has_toString())
+	{
+		_R<ASObject> ret = call_toString();
+		if(ret->isPrimitive());
+			return ret;
+	}
+	if(has_valueOf())
+	{
+		_R<ASObject> ret = call_valueOf();
+		if(ret->isPrimitive())
+			return ret;
+	}
+	if(hint != STRING_HINT && has_toString())
+	{
+		_R<ASObject> ret = call_toString();
+		if(ret->isPrimitive());
+			return ret;
+	}
+
+	throw Class<TypeError>::getInstanceS();
+	return _MR((ASObject*)NULL);
+}
+
+bool ASObject::has_valueOf()
+{
 	multiname valueOfName;
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s="valueOf";
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	if(hasPropertyByMultiname(valueOfName, true))
-	{
-		ASObject* valueOfObj=getVariableByMultiname(valueOfName);
-		if(valueOfObj->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(valueOfObj);
-			incRef();
-			ASObject *ret=f->call(this,NULL,0);
-			if(ret && ret->isPrimitive())
-				return _MR(ret);
-			else if(ret)
-				ret->decRef();
-		}
-	}
+	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	return hasPropertyByMultiname(valueOfName, true);
+}
 
-	return _MR(Class<ASString>::getInstanceS(toString()));
+/* calls the valueOf function on this object
+ * we cannot just call the c-function, because it can be overriden from AS3 code
+ */
+_R<ASObject> ASObject::call_valueOf()
+{
+	multiname valueOfName;
+	valueOfName.name_type=multiname::NAME_STRING;
+	valueOfName.name_s="valueOf";
+	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	assert_and_throw(hasPropertyByMultiname(valueOfName, true));
 
-	// TODO: should throw an error if toString AS function does not exist
+	ASObject* o=getVariableByMultiname(valueOfName,SKIP_IMPL);
+	assert_and_throw(o->is<IFunction>());
+	IFunction* f=o->as<IFunction>();
+
+	incRef();
+	ASObject *ret=f->call(this,NULL,0);
+
+	assert(ret);
+	return _MR(ret);
+}
+
+bool ASObject::has_toString()
+{
+	multiname toStringName;
+	toStringName.name_type=multiname::NAME_STRING;
+	toStringName.name_s="toString";
+	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	return hasPropertyByMultiname(toStringName, true);
+}
+
+/* calls the toString function on this object
+ * we cannot just call the c-function, because it can be overriden from AS3 code
+ */
+_R<ASObject> ASObject::call_toString()
+{
+	multiname toStringName;
+	toStringName.name_type=multiname::NAME_STRING;
+	toStringName.name_s="toString";
+	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	assert_and_throw(hasPropertyByMultiname(toStringName, true));
+
+	ASObject* o=getVariableByMultiname(toStringName,SKIP_IMPL);
+	assert_and_throw(o->is<IFunction>());
+	IFunction* f=o->as<IFunction>();
+
+	incRef();
+	ASObject *ret=f->call(this,NULL,0);
+
+	assert(ret);
+	return _MR(ret);
 }
 
 bool ASObject::isPrimitive() const

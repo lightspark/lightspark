@@ -652,11 +652,6 @@ tiny_string XML::toString(bool debugMsg)
 	return toString_priv();
 }
 
-_R<ASObject> XML::toPrimitive()
-{
-	return _MR(Class<ASString>::getInstanceS(toString()));
-}
-
 bool XML::nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const
 {
 	assert(a && b);
@@ -1097,11 +1092,6 @@ tiny_string XMLList::toString(bool debugMsg)
 		return ASObject::toString(true);
 
 	return toString_priv();
-}
-
-_R<ASObject> XMLList::toPrimitive()
-{
-	return _MR(Class<ASString>::getInstanceS(toString()));
 }
 
 ASFUNCTIONBODY(XMLList,_toString)

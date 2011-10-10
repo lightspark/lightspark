@@ -332,7 +332,6 @@ class Undefined : public ASObject
 public:
 	ASFUNCTION(call);
 	Undefined();
-	tiny_string toString(bool debugMsg);
 	int32_t toInt();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
@@ -381,7 +380,6 @@ public:
 	ASFUNCTION(_getLength);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
-	tiny_string toString(bool debugMsg=false);
 	number_t toNumber() const;
 	int32_t toInt();
 	uint32_t toUInt();
@@ -395,7 +393,6 @@ class Null: public ASObject
 {
 public:
 	Null(){type=T_NULL;}
-	tiny_string toString(bool debugMsg);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
@@ -465,7 +462,7 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_toString);
-	tiny_string toString(bool debugMsg);
+	tiny_string toString(bool debugMsg = false);
 	int32_t toInt()
 	{
 		return val;
@@ -488,7 +485,7 @@ public:
 	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
 
 	static void sinit(Class_base* c);
-	tiny_string toString(bool debugMsg);
+	tiny_string toString(bool debugMsg = false);
 	int32_t toInt()
 	{
 		return val;
@@ -518,7 +515,7 @@ public:
 	double val;
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
-	tiny_string toString(bool debugMsg);
+	tiny_string toString(bool debugMsg = false);
 	unsigned int toUInt()
 	{
 		return (unsigned int)(val);

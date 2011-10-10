@@ -33,6 +33,7 @@ REGISTER_CLASS_NAME2(ASObject,"Object","");
 tiny_string ASObject::toString(bool debugMsg)
 {
 	check();
+	//TODO: move this debugMsg thing to its own function (maybe toString_debug)
 	if(debugMsg) {
 		tiny_string ret;
 		if(getClass())
@@ -47,26 +48,27 @@ tiny_string ASObject::toString(bool debugMsg)
 
 		return ret;
 	}
-	multiname toStringName;
-	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s="toString";
-	toStringName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
-	if(hasPropertyByMultiname(toStringName, true))
+
+	switch(this->getObjectType())
 	{
-		ASObject* obj_toString=getVariableByMultiname(toStringName);
-		if(obj_toString->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
-			incRef();
-			ASObject* ret=f_toString->call(this,NULL,0);
-			assert_and_throw(ret->getObjectType()==T_STRING);
-			tiny_string retS=ret->toString();
-			ret->decRef();
-			return retS;
-		}
+	case T_UNDEFINED:
+		return "undefined";
+	case T_NULL:
+		return "null";
+	case T_BOOLEAN:
+		return as<Boolean>()->val ? "true" : "false";
+	case T_NUMBER:
+		return as<Number>()->toString();
+	case T_INTEGER:
+		return as<Integer>()->toString();
+	case T_UINTEGER:
+		return as<UInteger>()->toString();
+	case T_STRING:
+		return as<ASString>()->data;
+	default:
+		//everything else is an Object regarding to the spec
+		return toPrimitive(STRING_HINT)->toString();
 	}
-	LOG(LOG_INFO,"Called toString, but no AS property found!");
-	return "";
 }
 
 TRISTATE ASObject::isLess(ASObject* r)

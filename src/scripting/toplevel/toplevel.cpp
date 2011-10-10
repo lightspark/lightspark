@@ -1522,12 +1522,6 @@ tiny_string ASString::toString_priv() const
 	return data;
 }
 
-tiny_string ASString::toString(bool debugMsg)
-{
-	assert_and_throw(implEnable);
-	return toString_priv();
-}
-
 /* Note that toNumber() is not virtual.
  * ASString::toNumber is directly called by ASObject::toNumber
  */
@@ -1630,11 +1624,6 @@ ASFUNCTIONBODY(Undefined,call)
 {
 	LOG(LOG_CALLS,_("Undefined function"));
 	return NULL;
-}
-
-tiny_string Undefined::toString(bool debugMsg)
-{
-	return "undefined";
 }
 
 TRISTATE Undefined::isLess(ASObject* r)
@@ -2468,11 +2457,6 @@ ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_
 		args[i]->decRef();
 	obj->decRef();
 	return ret;
-}
-
-tiny_string Null::toString(bool debugMsg)
-{
-	return "null";
 }
 
 bool Null::isEqual(ASObject* r)

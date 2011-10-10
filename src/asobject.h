@@ -339,7 +339,8 @@ public:
 	{
 		return type;
 	}
-	virtual tiny_string toString(bool debugMsg=false);
+	/* Implements ECMA's 9.8 ToString operation, but returns the concrete value */
+	tiny_string toString(bool debugMsg=false);
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */

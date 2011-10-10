@@ -1089,33 +1089,17 @@ void ABCVm::kill(int n)
 
 ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 {
-	//Implement ECMA add algorithm, for XML and default
-	if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
+	//Implement ECMA add algorithm, for XML and default (see avm2overview)
+	if(val1->is<Number>() && val2->is<Number>())
 	{
-		intptr_t num2=val2->toInt();
-		intptr_t num1=val1->toInt();
-		LOG(LOG_CALLS,"add " << num1 << '+' << num2);
+		double num1=val1->as<Number>()->val;
+		double num2=val2->as<Number>()->val;
+		LOG(LOG_CALLS,"addN " << num1 << '+' << num2);
 		val1->decRef();
 		val2->decRef();
-		return abstract_i(num1+num2);
+		return abstract_d(num1+num2);
 	}
-	else if (val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_UNDEFINED)
-	{
-		intptr_t num1=val1->toInt();
-		LOG(LOG_CALLS,"add " << num1 << "+ undefined");
-		val1->decRef();
-		val2->decRef();
-		return abstract_i(num1);
-	}
-	else if (val1->getObjectType()==T_UNDEFINED && val2->getObjectType()==T_INTEGER)
-	{
-		intptr_t num2=val2->toInt();
-		LOG(LOG_CALLS,"add undefined + " << num2);
-		val1->decRef();
-		val2->decRef();
-		return abstract_i(num2);
-	}
-	else if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
+	else if(val1->is<ASString>() || val2->is<ASString>())
 	{
 		string a(val1->toString().raw_buf());
 		string b(val2->toString().raw_buf());
@@ -1124,43 +1108,43 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		val2->decRef();
 		return Class<ASString>::getInstanceS(a+b);
 	}
-	else if(val1->getObjectType()==T_NUMBER || val2->getObjectType()==T_NUMBER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		LOG(LOG_CALLS,"add " << num1 << '+' << num2);
-		val1->decRef();
-		val2->decRef();
-		return abstract_d(num1+num2);
-	}
-	else
+	else if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
 	{
 		//Check if the objects are both XML or XMLLists
 		Class_base* xmlClass=Class<XML>::getClass();
-		Class_base* xmlListClass=Class<XMLList>::getClass();
 
-		if((val1->getClass()==xmlClass || val1->getClass()==xmlListClass) &&
-			(val2->getClass()==xmlClass || val2->getClass()==xmlListClass))
-		{
-			XMLList* newList=Class<XMLList>::getInstanceS(true);
-			if(val1->getClass()==xmlClass)
-				newList->append(_MR(static_cast<XML*>(val1)));
-			else //if(val1->getClass()==xmlListClass)
-				newList->append(_MR(static_cast<XMLList*>(val1)));
+		XMLList* newList=Class<XMLList>::getInstanceS(true);
+		if(val1->getClass()==xmlClass)
+			newList->append(_MR(static_cast<XML*>(val1)));
+		else //if(val1->getClass()==xmlListClass)
+			newList->append(_MR(static_cast<XMLList*>(val1)));
 
-			if(val2->getClass()==xmlClass)
-				newList->append(_MR(static_cast<XML*>(val2)));
-			else //if(val2->getClass()==xmlListClass)
-				newList->append(_MR(static_cast<XMLList*>(val2)));
+		if(val2->getClass()==xmlClass)
+			newList->append(_MR(static_cast<XML*>(val2)));
+		else //if(val2->getClass()==xmlListClass)
+			newList->append(_MR(static_cast<XMLList*>(val2)));
 
-			//The references of val1 and val2 have been passed to the smart references
-			//no decRef is needed
-			return newList;
+		//The references of val1 and val2 have been passed to the smart references
+		//no decRef is needed
+		return newList;
+	}
+	else
+	{//If none of the above apply, convert both to primitives with no hint
+		_R<ASObject> val1p = val1->toPrimitive(NO_HINT);
+		_R<ASObject> val2p = val2->toPrimitive(NO_HINT);
+		val1->decRef();
+		val2->decRef();
+		if(val1p->is<ASString>() || val2p->is<ASString>())
+		{//If one is String, convert both to strings and concat
+			string a(val1p->toString().raw_buf());
+			string b(val2p->toString().raw_buf());
+			LOG(LOG_CALLS,"add " << a << '+' << b);
+			return Class<ASString>::getInstanceS(a+b);
 		}
 		else
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Add between types ") << val1->getObjectType() << ' ' << val2->getObjectType());
-			return new Undefined;
+		{//Convert both to numbers and add
+			number_t result = val2p->toNumber() + val1p->toNumber();
+			return abstract_d(result);
 		}
 	}
 

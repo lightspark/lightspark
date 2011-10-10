@@ -1888,6 +1888,8 @@ ASFUNCTIONBODY(UInteger,generator)
 	return abstract_ui(args[0]->toUInt());
 }
 
+const number_t Number::NaN = numeric_limits<double>::quiet_NaN();
+
 bool Number::isEqual(ASObject* o)
 {
 	switch(o->getObjectType())

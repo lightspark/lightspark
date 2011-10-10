@@ -522,6 +522,7 @@ private:
 	Number(double v):val(v){type=T_NUMBER;}
 	static void purgeTrailingZeroes(char* buf);
 public:
+	static const number_t NaN;
 	double val;
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);

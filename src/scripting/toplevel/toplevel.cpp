@@ -2015,6 +2015,8 @@ void Number::purgeTrailingZeroes(char* buf)
 
 ASFUNCTIONBODY(Number,_toString)
 {
+	if(obj->is<Prototype>() && Class<Number>::getClass()->prototype == obj->as<Prototype>())
+		return Class<ASString>::getInstanceS("0");
 	if(!obj->is<Number>())
 		throw Class<TypeError>::getInstanceS("Number.toString is not generic");
 	Number* th=static_cast<Number*>(obj);

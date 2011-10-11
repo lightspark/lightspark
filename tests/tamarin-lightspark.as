@@ -71,7 +71,8 @@ var URIERROR = "URIError: Error #";
 var EVALERROR = "EvalError: Error #";
 var VERIFYERROR = "VerifyError: Error #";
 var VERBOSE = true;
-
+var ___failed:int = 0;
+var ___numtest:int = 0;
 var    DEBUG =  false;
 
 // Was this compiled with -AS3?  Boolean Value.
@@ -229,14 +230,18 @@ function getTestCaseResult(expect,actual) {
 function writeTestCaseResult( expect, actual, string ) {
     var passed = getTestCaseResult(expect,actual);
     var s = string;
+    ___numtest++;
     if (passed == "true") {
         s = ". [" + s + "]";
     } else if (passed == "false") {
         s = "F [" + s + " expected: " + expect + "]";
+	___failed++
     } else if (passed == "type error") {
         s = "F [" + s + " expected: " + expect + " and Type Mismatch: Expected Type: "+ typeof(expect) + ", Result Type: "+ typeof(actual) + "]";
+	___failed++
     } else { //should never happen
         s = "F [" + s + " UNEXPECTED ERROR - see shell.as:writeTestCaseResult()]"
+	___failed++
     }
 
     writeLineToLog(s);
@@ -278,15 +283,11 @@ function writeHeaderToLog( string ) {
 //  test has completed.
 
 function stopTest(){
-    var failed:int = 0;
-    for ( tc=0; tc < testcases.length; tc++ ) {
-        if(testcases[tc].passed != "true")
-    		failed += 1;    
-    }
-    if(failed)
-        trace("=====================Failures ("+failed+"/"+testcases.length+")=====================");
+    // We cannot use testcases.length, because some tests use writeTestCaseResult directly
+    if(___failed)
+        trace("=====================Failures ("+___failed+"/"+___numtest+")=====================");
     else
-        trace("=====================No failures (" + testcases.length + ")=====================");
+        trace("=====================No failures (" + ___numtest + ")=====================");
 
     fscommand("quit");
 }

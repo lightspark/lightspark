@@ -195,6 +195,7 @@ public:
 	void finalize();
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
+	ASFUNCTION(_toString);
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* bind(_NR<ASObject> c, int level)
 	{

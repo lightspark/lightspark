@@ -2232,6 +2232,11 @@ ASFUNCTIONBODY(IFunction,_call)
 	return ret;
 }
 
+ASFUNCTIONBODY(IFunction,_toString)
+{
+	return Class<ASString>::getInstanceS("function Function() {}");
+}
+
 ASObject *IFunction::describeType() const
 {
 	xmlpp::DomParser p;
@@ -3787,6 +3792,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->addPrototypeGetter();
 		ret->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
 		ret->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
+		ret->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	}
 	else

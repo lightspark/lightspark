@@ -234,9 +234,9 @@ function writeTestCaseResult( expect, actual, string ) {
     } else if (passed == "false") {
         s = "F [" + s + " expected: " + expect + "]";
     } else if (passed == "type error") {
-        s += "F [" + s + " expected: " + expect + " Type Mismatch - Expected Type: "+ typeof(expect) + ", Result Type: "+ typeof(actual) + "]";
+        s = "F [" + s + " expected: " + expect + " and Type Mismatch: Expected Type: "+ typeof(expect) + ", Result Type: "+ typeof(actual) + "]";
     } else { //should never happen
-        s += "F [" + s + " UNEXPECTED ERROR - see shell.as:writeTestCaseResult()]"
+        s = "F [" + s + " UNEXPECTED ERROR - see shell.as:writeTestCaseResult()]"
     }
 
     writeLineToLog(s);

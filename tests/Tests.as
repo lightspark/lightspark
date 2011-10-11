@@ -55,7 +55,7 @@ package
 			var outp:String = "";
 			if(arr1.length == arr2.length)
 			{
-				outp += "A ";
+				outp += "A .";
 				var res:Boolean = true;
 				for(var i:uint = 0; i < arr1.length; i++)
 				{

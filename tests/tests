@@ -349,7 +349,7 @@ for test in $TESTS; do
 			-e "s/^\(${INFOPREFIX}\)\(.*\)$/${BLUE}\1${PURPLEB}\2${CLEAR}/" \
 			-e "s/^\(${CURLPREFIX}\)\(.*\)$/${PINK}\1${PINK}\2${CLEAR}/" \
 \
-			-e "/${ASSERTARRAYCHAR} /{
+			-e "/^${ASSERTARRAYCHAR} /{
 			s/${ASSERTFAILEDCHAR}/${REDB}\0${CLEAR}/g
 			}" \
 			-e "s/^\(${ASSERTFAILEDCHAR}\) \(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${REDB}\1 ${RED}\2${CLEAR}/g" \
@@ -363,7 +363,7 @@ for test in $TESTS; do
 			s/${INDENTPREFIX}\(.*\)/${INDENTPREFIX}${REDB}\1${CLEAR}/
 			}" \
 \
-			-e "/${ASSERTARRAYCHAR} /{
+			-e "/^${ASSERTARRAYCHAR} /{
 			s/\(${ASSERTSUCCESSCHAR}\)/${GREENB}\1${CLEAR}/g
 			}" \
 			-e "s/^\(${ASSERTSUCCESSCHAR}\) \(\[.*\)$/${GREENB}\1 ${GREEN}\2${CLEAR}/" \

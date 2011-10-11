@@ -689,6 +689,54 @@ void ABCVm::decLocal_i(call_context* th, int n)
 
 }
 
+ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen)
+{
+	//See ECMA 13.2.2
+	assert(f->is<SyntheticFunction>());
+	SyntheticFunction* sf=f->as<SyntheticFunction>();
+
+	ASObject* ret=Class<ASObject>::getInstanceS();
+	assert(sf->mi->body);
+#ifndef NDEBUG
+	ret->initialized=false;
+#endif
+	LOG(LOG_CALLS,_("Building method traits"));
+	for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
+		th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+#ifndef NDEBUG
+	ret->initialized=true;
+#endif
+	//Let's see if an AS classdef has been defined on the function
+	multiname prototypeName;
+	prototypeName.name_type=multiname::NAME_STRING;
+	prototypeName.name_s="prototype";
+	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	ASObject* asp=sf->getVariableByMultiname(prototypeName,ASObject::SKIP_IMPL);
+	if(asp)
+		asp->incRef();
+
+	//Now add our classdef
+	sf->incRef();
+	ret->setClass(new Class_function(sf,asp));
+
+	ret->incRef();
+	assert_and_throw(sf->closure_this==NULL);
+	sf->incRef();
+	ASObject* ret2=sf->call(ret,args,argslen);
+	sf->decRef();
+
+	//ECMA: "return ret2 if it is an object, else ret"
+	if(ret2 && !ret2->is<Undefined>())
+	{
+		ret->decRef();
+		ret = ret2;
+	}
+	else if(ret2)
+		ret2->decRef();
+
+	return ret;
+}
+
 void ABCVm::construct(call_context* th, int m)
 {
 	LOG(LOG_CALLS, _("construct ") << m);
@@ -739,41 +787,7 @@ void ABCVm::construct(call_context* th, int m)
 
 		case T_FUNCTION:
 		{
-			SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
-			assert_and_throw(sf);
-			ret=Class<ASObject>::getInstanceS();
-			if(sf->mi->body)
-			{
-#ifndef NDEBUG
-				ret->initialized=false;
-#endif
-				LOG(LOG_CALLS,_("Building method traits"));
-				for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-					th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
-#ifndef NDEBUG
-				ret->initialized=true;
-#endif
-				ret->incRef();
-				assert_and_throw(sf->closure_this==NULL);
-				sf->incRef();
-				ASObject* ret2=sf->call(ret,args,m);
-				sf->decRef();
-				if(ret2)
-					ret2->decRef();
-
-				//Let's see if an AS classdef has been defined on the function
-				multiname prototypeName;
-				prototypeName.name_type=multiname::NAME_STRING;
-				prototypeName.name_s="prototype";
-				prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-				ASObject* asp=sf->getVariableByMultiname(prototypeName,ASObject::SKIP_IMPL);
-				if(asp)
-					asp->incRef();
-
-				//Now add our classdef
-				sf->incRef();
-				ret->setClass(new Class_function(sf,asp));
-			}
+			ret = constructFunction(th, obj->as<IFunction>(), args, m);
 			break;
 		}
 
@@ -2150,41 +2164,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 	else if(o->getObjectType()==T_FUNCTION)
 	{
-		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(o);
-		assert_and_throw(sf);
-		ret=Class<ASObject>::getInstanceS();
-		if(sf->mi->body)
-		{
-#ifndef NDEBUG
-			ret->initialized=false;
-#endif
-			LOG(LOG_CALLS,_("Building method traits"));
-			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
-#ifndef NDEBUG
-			ret->initialized=true;
-#endif
-			ret->incRef();
-			assert_and_throw(sf->closure_this==NULL);
-			sf->incRef();
-			ASObject* ret2=sf->call(ret,args,m);
-			sf->decRef();
-			if(ret2)
-				ret2->decRef();
-
-			//Let's see if an AS classdef has been defined on the function
-			multiname prototypeName;
-			prototypeName.name_type=multiname::NAME_STRING;
-			prototypeName.name_s="prototype";
-			prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-			ASObject* asp=sf->getVariableByMultiname(prototypeName,ASObject::SKIP_IMPL);
-			if(asp)
-				asp->incRef();
-
-			//Now add our classdef
-			sf->incRef();
-			ret->setClass(new Class_function(sf,asp));
-		}
+		ret = constructFunction(th, o->as<IFunction>(), args, m);
 	}
 	else
 		throw RunTimeException("Cannot construct such an object in constructProp");

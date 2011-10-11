@@ -285,6 +285,7 @@ for test in $TESTS; do
 		FAILED_TESTS="$FAILED_TESTS $test"
 	elif [ "`echo $lines | grep '==No failures'`" != "" ]; then
 		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
+		THISNUMTESTS="$THISSUCCESSCOUNT"
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 	else
 		if [ $COLORS -eq 1 ]; then
@@ -302,11 +303,12 @@ for test in $TESTS; do
 
 	if [[ -n "$JUNITFILE" ]]; then
 		#For xml output
-		tcnum=1
+		tcnum=0
 		#Find all lines that start with '. [' or 'F [' or 'A ..F.. ['
-		echo -e "$lines" | sed -n -e "/^\(A \)\?[F\.]\+ \[.*/p" \
-		| while read L
+		tcnum=$(echo -e "$lines" | sed -n -e "/^\(A \)\?[F\.]\+ \[.*/p" \
+		| { while read L
 		do
+			tcnum=`expr $tcnum + 1`
 			#Escape <>& and remove non-printable characters
 			xml_l=`echo -e "$L" | sed -e 's/[^[:print:]]//g' -e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'`
 			#Check if L starts with an 'F' or with 'A ...F'
@@ -315,8 +317,13 @@ for test in $TESTS; do
 			else
 				echo "<testcase classname=\"$testclass\" name=\"${testname}_tc${tcnum}\"/>" >> "$JUNITFILE"
 			fi
-			tcnum=`expr $tcnum + 1`
 		done
+		echo $tcnum
+		})
+		if [[ "$tcnum" != "$THISNUMTESTS" ]]; then
+			echo -e "\nError parsing test output of $test: Not enough testcases seen"
+			exit 1
+		fi
 	fi
 
 	if [ $QUIET -eq 1 ]; then

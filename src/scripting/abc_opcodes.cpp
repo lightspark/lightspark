@@ -849,6 +849,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			break;
 		case T_NUMBER:
 		case T_INTEGER:
+		case T_UINTEGER:
 			ret="number";
 			break;
 		case T_STRING:
@@ -858,7 +859,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			ret="function";
 			break;
 		default:
-			return new Undefined;
+			assert_and_throw(false);
 	}
 	obj->decRef();
 	return Class<ASString>::getInstanceS(ret);

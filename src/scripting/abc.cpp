@@ -1414,13 +1414,11 @@ Class_inherit* ABCVm::findClassInherit(const string& s)
 		throw RunTimeException("Class not found in global");
 	}
 
-	if(derived_class->getObjectType()==T_DEFINABLE)
+	if(derived_class->is<Definable>())
 	{
 		LOG(LOG_CALLS,_("Class ") << s << _(" is not yet valid"));
-		Definable* d=static_cast<Definable*>(derived_class);
-		d->define(target);
+		derived_class=derived_class->as<Definable>()->define();
 		LOG(LOG_CALLS,_("End of deferred init of class ") << s);
-		derived_class=global->getVariableByString(s,target);
 		assert_and_throw(derived_class);
 	}
 

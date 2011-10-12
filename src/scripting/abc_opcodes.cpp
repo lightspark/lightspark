@@ -318,12 +318,10 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 	if(o)
 	{
 		//Run the deferred initialization if needed
-		if(o->getObjectType()==T_DEFINABLE)
+		if(o->is<Definable>())
 		{
 			LOG(LOG_CALLS,_("We got a function not yet valid"));
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			o=obj->getVariableByMultiname(*name);
+			o=o->as<Definable>()->define();
 		}
 
 		//If o is already a function call it
@@ -1526,12 +1524,10 @@ void ABCVm::getSuper(call_context* th, int n)
 
 	if(o)
 	{
-		if(o->getObjectType()==T_DEFINABLE)
+		if(o->is<Definable>())
 		{
 			LOG(LOG_CALLS,_("We got an object not yet valid"));
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			o=obj->getVariableByMultiname(*name);
+			o=o->as<Definable>()->define();
 		}
 		o->incRef();
 		th->runtime_stack_push(o);
@@ -1591,12 +1587,10 @@ void ABCVm::getLex(call_context* th, int n)
 		}
 	}
 
-	if(o->getObjectType()==T_DEFINABLE)
+	if(o->is<Definable>())
 	{
 		LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-		Definable* d=static_cast<Definable*>(o);
-		d->define(target);
-		o=target->getVariableByMultiname(*name);
+		o=o->as<Definable>()->define();
 		LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
 	}
 	th->runtime_stack_push(o);
@@ -2146,12 +2140,10 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	//The get protocol expects that we incRef the var
 	o->incRef();
 
-	if(o->getObjectType()==T_DEFINABLE)
+	if(o->is<Definable>())
 	{
 		LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-		Definable* d=static_cast<Definable*>(o);
-		d->define(obj);
-		o=obj->getVariableByMultiname(*name);
+		o=o->as<Definable>()->define();
 		LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
 	}
 
@@ -2404,13 +2396,11 @@ void ABCVm::newClass(call_context* th, int n)
 		if(obj==NULL)
 			continue;
 
-		if(obj->getObjectType()==T_DEFINABLE)
+		if(obj->is<Definable>())
 		{
 			LOG(LOG_CALLS,_("Class ") << *name << _(" is not yet valid (as interface)"));
-			Definable* d=static_cast<Definable*>(obj);
-			d->define(target);
+			obj=obj->as<Definable>()->define();
 			LOG(LOG_CALLS,_("End of deferred init of class ") << *name);
-			obj=target->getVariableByMultiname(*name);
 			assert_and_throw(obj);
 		}
 	}

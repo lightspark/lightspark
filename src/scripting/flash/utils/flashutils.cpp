@@ -836,12 +836,10 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	}
 
 	//Check if the object has to be defined
-	if(o->getObjectType()==T_DEFINABLE)
+	if(o->is<Definable>())
 	{
 		LOG(LOG_CALLS,_("We got an object not yet valid"));
-		Definable* d=static_cast<Definable*>(o);
-		d->define(target);
-		o=target->getVariableByMultiname(name);
+		o=o->as<Definable>()->define();
 	}
 
 	assert_and_throw(o->getObjectType()==T_CLASS);

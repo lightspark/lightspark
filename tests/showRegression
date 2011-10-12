@@ -1,0 +1,39 @@
+#!/bin/bash
+
+QUIET="0"
+OUTPUT=""
+OLDFILE=""
+JUNITFILE=""
+
+while [ $# -ne 0 ]; do
+	if [ $1 == "-q" ] || [ $1 == "--quiet" ]; then
+		QUIET="1";
+	elif [ $1 == "-o" ] || [ $1 == "--output" ]; then
+		OUTPUT="$2"
+		shift
+	else
+		OLDFILE=$1
+		JUNITFILE=$2
+		shift
+	fi
+	shift;
+done
+
+if [[ -z "$OLDFILE" || -z "$JUNITFILE" ]]; then
+	echo "Usage example:"
+	echo "$0 [--quiet|-q] [--output|-o tests-regression.junit] proprietary.junit tests.junit"
+	exit 1
+fi
+
+OLDFAILURES=`sed -n -e 's/\(.*\)<failure.*/\1/p' "$OLDFILE" | tr '\n' '|'`
+#Remove trailing '|'
+OLDFAILURES=${OLDFAILURES%|}
+REGRESSION=`grep -Ev "$OLDFAILURES" $JUNITFILE`
+
+if [[ "$QUIET" == "0" ]]; then
+	grep '<failure' <(echo -e "$REGRESSION")
+fi
+
+if [[ -n "$OUTPUT" ]]; then
+	echo -e "$REGRESSION" > $OUTPUT
+fi

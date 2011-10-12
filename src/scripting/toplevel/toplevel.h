@@ -649,17 +649,18 @@ public:
 	_R<ASObject> toPrimitive();
 };
 
-//Internal objects used to store traits declared in scripts but not yet valid
-class Definable : public Class_base
-{
-public:
-	Definable() : Class_base(QName("Definable","")) {type=T_DEFINABLE;}
-	//The caller must incRef the returned object to keep it
-	//calling define will also cause a decRef on this
-	virtual ASObject* define(ASObject* g = NULL)=0;
-};
-
-class ScriptDefinable: public Definable
+/*
+ * They are used as placeholders in
+ * Class slots, Slot slots (value & type), Const slots
+ *
+ * When one accesses a e.g. Slot slot from a different script
+ * and obtains a Definable, then one calls define() which executes
+ * the associated script init. This script init function should
+ * replace the Definable with the actual value (which is returned by define()).
+ *
+ * We derive from Class_base so we can use them in the 'type' of Slot slots.
+ */
+class Definable: public Class_base
 {
 private:
 	ABCContext* context; //context of scriptid
@@ -675,10 +676,11 @@ private:
 		throw RunTimeException("Called getInstance on T_DEFINABLE");
 	}
 public:
-	ScriptDefinable(ABCContext* c, unsigned int s, ASObject* g, multiname n) : context(c), scriptid(s), global(g), name(n) { assert(name.name_s.len());}
+	Definable(ABCContext* c, unsigned int s, ASObject* g, multiname n) : Class_base(QName("Definable","")),
+		context(c), scriptid(s), global(g), name(n) { type=T_DEFINABLE; }
 	//The caller must incRef the returned object to keep it
 	//calling define will also cause a decRef on this
-	ASObject* define(ASObject* g = NULL);
+	ASObject* define();
 };
 
 class RegExp: public ASObject

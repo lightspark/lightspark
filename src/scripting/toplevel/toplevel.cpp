@@ -63,24 +63,22 @@ REGISTER_CLASS_NAME2(ASString, "String", "");
 REGISTER_CLASS_NAME(XML);
 REGISTER_CLASS_NAME(XMLList);
 
-ASObject* ScriptDefinable::define(ASObject* g)
+ASObject* Definable::define()
 {
 	assert(getRefCount() > 0);
-	assert(g == global);
-	assert(g->is<Global>());
 
-	this->incRef(); //runScriptInit will replace (i.e. decRef) this ScriptDefinable
-	context->runScriptInit(scriptid, global);
+	//Check if the class has already been defined by some other
+	//DefinableClass object
 	ASObject* obj = global->getVariableByMultiname(name);
+	if(!obj->is<Definable>())
+		return obj;
 
-	assert_and_throw(obj->getObjectType() != T_DEFINABLE);
-
-	//TODO: remove '|| !sys->exitOnError'
-	//it is a bug when getRefCount() > 1, but currently
-	//YT relies on that bug. So first fix the bug
-	//causing getRefCount() > 1 and then remove this hack
-	assert(getRefCount() == 1 || !sys->exitOnError);
+	this->incRef(); //runScriptInit may replace (i.e. decRef) this DefinableClass
+	context->runScriptInit(scriptid, global);
+	obj = global->getVariableByMultiname(name);
+	assert_and_throw(!obj->is<Definable>());
 	this->decRef();
+
 	return obj;
 }
 

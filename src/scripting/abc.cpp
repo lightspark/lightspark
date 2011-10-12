@@ -2243,16 +2243,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ASObject* typeObject=getGlobal()->getVariableAndTargetByMultiname(*type,target);
 				if(typeObject)
 				{
-					//Check if the object has to be defined
-					if(typeObject->getObjectType()==T_DEFINABLE)
-					{
-						LOG(LOG_CALLS,_("We got an object not yet valid"));
-						Definable* d=static_cast<Definable*>(typeObject);
-						d->define(target);
-						typeObject=target->getVariableByMultiname(*type);
-					}
-
-					assert_and_throw(typeObject->getObjectType()==T_CLASS || typeObject->getObjectType()==T_TEMPLATE);
+					assert_and_throw(typeObject->getObjectType()==T_CLASS || typeObject->getObjectType()==T_TEMPLATE
+							 || typeObject->getObjectType()==T_DEFINABLE);
 					if(typeObject->getObjectType()==T_CLASS)
 						typeClass=static_cast<Class_base*>(typeObject);
 					else

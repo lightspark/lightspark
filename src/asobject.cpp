@@ -463,10 +463,26 @@ void variable::setVar(ASObject* v)
 {
 	//Do the conversion early, so that errors does not leave the object in an half baked state
 	ASObject* newV=v;
-	if(type && v->getObjectType()!=T_NULL && (v->getClass()==NULL || !v->getClass()->isSubClass(type)))
+	if(type && v->getObjectType()!=T_NULL)
 	{
-		newV=type->generator(&v,1);
-		v->decRef();
+		//Check if the object has to be defined
+		if(type->is<Definable>())
+		{
+			LOG(LOG_CALLS,_("We got an object not yet valid"));
+			Definable* d=type->as<Definable>();
+			ASObject* typeObject = d->define();
+			d->decRef();
+			assert_and_throw(typeObject->is<Class_base>());
+			type = typeObject->as<Class_base>();
+			type->incRef();
+		}
+		if(v->getClass()==NULL || !v->getClass()->isSubClass(type))
+		{
+			//TODO: generator is the wrong way for type implicit type conversion
+			//generator corresponds to explicity type conversion
+			newV=type->generator(&v,1);
+			v->decRef();
+		}
 	}
 	if(var)
 		var->decRef();

@@ -1316,7 +1316,7 @@ void IntervalRunner::tick()
 	}
 }
 
-IntervalManager::IntervalManager() : currentID(0)
+IntervalManager::IntervalManager() : currentID(1)
 {
 	sem_init(&mutex, 0, 1);
 }
@@ -1373,7 +1373,7 @@ uint32_t IntervalManager::getFreeID()
 {
 	//At the first run every currentID will be available. But eventually the currentID will wrap around.
 	//Thats why we need to check if the currentID isn't used yet
-	while(runners.count(currentID) != 0)
+	while(currentID == 0 || runners.count(currentID) != 0)
 		currentID++;
 	return currentID;
 }

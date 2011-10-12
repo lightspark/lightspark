@@ -654,18 +654,23 @@ class Definable : public ASObject
 {
 public:
 	Definable(){type=T_DEFINABLE;}
-	virtual void define(ASObject* g)=0;
+	//The caller must incRef the returned object to keep it
+	//calling define will also cause a decRef on this
+	virtual ASObject* define(ASObject* g = NULL)=0;
 };
 
 class ScriptDefinable: public Definable
 {
 private:
-	ABCContext* context;
-	unsigned int scriptid;
+	ABCContext* context; //context of scriptid
+	unsigned int scriptid; //which script does define this class
+	ASObject* global; //which global object belongs to that script
+	multiname name; //the name of the class
 public:
-	ScriptDefinable(ABCContext* c, unsigned int s) : context(c), scriptid(s) {}
-	//The global object will be passed from the calling context
-	void define(ASObject* g);
+	ScriptDefinable(ABCContext* c, unsigned int s, ASObject* g, multiname n) : context(c), scriptid(s), global(g), name(n) { assert(name.name_s.len());}
+	//The caller must incRef the returned object to keep it
+	//calling define will also cause a decRef on this
+	ASObject* define(ASObject* g = NULL);
 };
 
 class RegExp: public ASObject

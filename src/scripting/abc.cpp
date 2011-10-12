@@ -2015,7 +2015,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret = ci;
 			}
 			else if(scriptid != -1)
-				ret=new ScriptDefinable(this,scriptid);
+				ret=new ScriptDefinable(this,scriptid,obj,mname);
 			else
 				ret=new Undefined;
 
@@ -2215,7 +2215,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				assert_and_throw(ret==NULL);
 				
 				if(scriptid != -1)
-					ret=new ScriptDefinable(this,scriptid);
+					ret=new ScriptDefinable(this,scriptid,obj,mname);
 				else
 					ret=new Undefined;
 
@@ -2281,7 +2281,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 				ASObject* ret;
 				if(scriptid != -1)
-					ret=new ScriptDefinable(this, scriptid);
+					ret=new ScriptDefinable(this, scriptid, obj,mname);
 				else
 				{
 					//TODO: find nice way to handle default construction

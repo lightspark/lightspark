@@ -341,6 +341,10 @@ public:
 			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
+/*
+ * The AS String class.
+ * The 'data' is immutable -> it cannot be changed after creation of the object
+ */
 class ASString: public ASObject
 {
 CLASSBUILDABLE(ASString);

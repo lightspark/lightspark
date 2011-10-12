@@ -1376,9 +1376,15 @@ ASFUNCTIONBODY(ASString,match)
 
 ASFUNCTIONBODY(ASString,_toString)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	if(obj->is<Prototype>() && Class<ASString>::getClass()->prototype == obj->as<Prototype>());
+		return Class<ASString>::getInstanceS("");
+	if(!obj->is<ASString>())
+		throw Class<TypeError>::getInstanceS("String.toString is not generic");
 	assert_and_throw(argslen==0);
-	return Class<ASString>::getInstanceS(th->ASString::toString(false));
+
+	//As ASStrings are immutable, we can just return ourself
+	obj->incRef();
+	return obj;
 }
 
 ASFUNCTIONBODY(ASString,split)

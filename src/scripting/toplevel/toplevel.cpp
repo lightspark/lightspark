@@ -4041,7 +4041,7 @@ ASFUNCTIONBODY(lightspark,trace)
 		if(args[i]->getObjectType() == T_STRING)
 		{
 			ASString* str = static_cast<ASString*>(args[i]);
-			cerr << str->data;
+			cerr << str->data.raw();
 		}
 		else
 			cerr << args[i]->toString();

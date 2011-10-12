@@ -389,8 +389,3 @@ if [ $COLORS -eq 1 ]; then
 else
 	echo -e "Tests run: $TESTCOUNT, $SUCCESSCOUNT successful and $FAILURECOUNT failed" 1>&2
 fi
-echo "Failed tests:"
-for t in $FAILED_TESTS
-do
-  echo "$t"
-done

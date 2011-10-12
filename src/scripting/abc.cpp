@@ -1666,9 +1666,7 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 {
 	LOG(LOG_CALLS, "Running script init for script " << i );
 
-	//TODO: remove '&& sys->exitOnError' as soon as the real bug causing
-	//this is fixed. Until then we need this to not crash YT.
-	if(hasRunScriptInit[i] && sys->exitOnError)
+	if(hasRunScriptInit[i])
 		throw Class<VerifyError>::getInstanceS("Script init did not define all DEFINABLEs");
 	hasRunScriptInit[i] = true;
 
@@ -1676,9 +1674,11 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(m);
 
 	g->incRef();
-	entry->addToScope(scope_entry(_MR(g),false)); //TODO: is consider_dynamic == false correct?
+	entry->addToScope(scope_entry(_MR(g),false));
+
 	g->incRef();
 	ASObject* ret=entry->call(g,NULL,0);
+
 	if(ret)
 		ret->decRef();
 

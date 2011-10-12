@@ -13,7 +13,6 @@ COLORS=1;
 TIMEOUTCMD="timeout 10"
 
 #Setting C locale to make sort and comm behave the same on every machine
-#Especially as the file 'blacklist' must be sorted with C locale
 export LC_ALL="C"
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
 COMPILE_TESTS_SRC="";
@@ -130,7 +129,7 @@ done
 if [ $BLACKLIST -eq 1 ]; then
 	TESTS=`cat blacklist`
 else
-	TESTS=`echo $TESTS | tr ' ' '\n' | sort | comm -2 -3 - blacklist`
+	TESTS=`comm -2 -3 <(echo $TESTS | tr ' ' '\n' | sort) <(sort blacklist)`
 fi
 
 if [ ! $COMPILE -eq 1 ]; then

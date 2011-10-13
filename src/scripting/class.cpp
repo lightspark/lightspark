@@ -23,6 +23,11 @@
 
 using namespace lightspark;
 
+ASObject* lightspark::new_asobject()
+{
+	return Class<ASObject>::getInstanceS();
+}
+
 ASObject* Class<ASObject>::lazyDefine(const multiname& name)
 {
 	if(name.ns.empty())

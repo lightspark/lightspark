@@ -365,6 +365,11 @@ public:
 
 	ASFUNCTION(generator);
 
+	/* helpers for the dynamic property 'prototype' */
+	bool hasprop_prototype();
+	ASObject* getprop_prototype();
+	void setprop_prototype(_NR<ASObject>& prototype);
+
 	//Comparison operators
 	virtual bool isEqual(ASObject* r);
 	virtual TRISTATE isLess(ASObject* r);

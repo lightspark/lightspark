@@ -1367,7 +1367,7 @@ ASFUNCTIONBODY(ASString,match)
 
 ASFUNCTIONBODY(ASString,_toString)
 {
-	if(obj->is<Prototype>() && Class<ASString>::getClass()->prototype == obj->as<Prototype>())
+	if(Class<ASString>::getClass()->prototype == obj)
 		return Class<ASString>::getInstanceS("");
 	if(!obj->is<ASString>())
 		throw Class<TypeError>::getInstanceS("String.toString is not generic");
@@ -2015,7 +2015,7 @@ void Number::purgeTrailingZeroes(char* buf)
 
 ASFUNCTIONBODY(Number,_toString)
 {
-	if(obj->is<Prototype>() && Class<Number>::getClass()->prototype == obj->as<Prototype>())
+	if(Class<Number>::getClass()->prototype == obj)
 		return Class<ASString>::getInstanceS("0");
 	if(!obj->is<Number>())
 		throw Class<TypeError>::getInstanceS("Number.toString is not generic");
@@ -2128,9 +2128,9 @@ IFunction* Function::toFunction()
 
 IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false)
 {
-	prototype = _MR(new Prototype());
-	prototype->prototype = Class<ASObject>::getClass()->prototype;
 	type=T_FUNCTION;
+	prototype = _MR(new_asobject());
+	prototype->setprop_prototype(Class<ASObject>::getClass()->prototype);
 }
 
 void IFunction::finalize()
@@ -2148,7 +2148,7 @@ ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_arg
 	return callImpl(obj, args, num_args, false);
 }
 
-ASFUNCTIONBODY_GETTER(IFunction, prototype);
+ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
 
 ASFUNCTIONBODY(IFunction,apply)
 {
@@ -2952,24 +2952,6 @@ ASFUNCTIONBODY(ASString,generator)
 	return Class<ASString>::getInstanceS(args[0]->toString());
 }
 
-ASObject* Prototype::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
-{
-	if(name.normalizedName() == "prototype")
-		return prototype.getPtr();
-
-	variable* obj=findGettable(name, false);
-	if(obj==NULL)
-	{
-		if(prototype != NULL)
-			return prototype->getVariableByMultiname(name,opt);
-		else
-			return NULL;
-	}
-	assert(!obj->getter);
-	assert(obj->var);
-	return obj->var;
-}
-
 Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),referencedObjectsMutex("referencedObjects"),
 	super(NULL),context(NULL),class_name(name),class_index(-1),max_level(0)
 {
@@ -3760,10 +3742,10 @@ Class<IFunction>* Class<IFunction>::getClass()
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
-		ret->prototype = _MNR(new Prototype());
+		ret->prototype = _MNR(new_asobject());
 		ret->super=Class<ASObject>::getClass();
 		ret->max_level=ret->super->max_level+1;
-		ret->prototype->prototype = ret->super->prototype;
+		ret->prototype->setprop_prototype(ret->super->prototype);
 
 		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 
@@ -3774,6 +3756,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
 		ret->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
 		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_getter_prototype),GETTER_METHOD,true);
+		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_setter_prototype),SETTER_METHOD,true);
 		ret->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	}

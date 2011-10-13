@@ -324,16 +324,23 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 		{
 			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL);
 			if(ret)
-				break;
+				return true;
 			cur=cur->super;
 		}
 	}
 	if(!ret)
 	{
 		//Check prototype inheritance chain
-		if(getClass() == NULL || getClass()->prototype == NULL)
+		if(getClass() == NULL)
 			return NULL;
-		ret = (getClass()->prototype->getVariableByMultiname(name, SKIP_IMPL) != NULL);
+		ASObject* proto = getClass()->prototype.getPtr();
+		while(proto)
+		{
+			ret = (proto->findGettable(name, false) != NULL);
+			if(ret)
+				return true;
+			proto = proto->getprop_prototype();
+		}
 	}
 
 	if(!ret && classdef)
@@ -357,7 +364,6 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 	//borrowed properties only make sense on class objects
 	assert(!isBorrowed || dynamic_cast<Class_base*>(this));
 	//use setVariableByQName(name,ns,o,DYNAMIC_TRAIT) on prototypes
-	assert(!this->is<Prototype>());
 
 	variable* obj=Variables.findObjVar(name,ns, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 	switch(type)
@@ -506,7 +512,6 @@ void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& 
 {
 	variable* obj=Variables.findObjVar(name,ns,NO_CREATE_TRAIT,traitKind);
 	assert_and_throw(obj==NULL);
-	assert(!this->is<Prototype>() || traitKind == DYNAMIC_TRAIT);
 	obj=Variables.findObjVar(name,ns,traitKind,traitKind);
 	obj->setVar(o);
 }
@@ -728,12 +733,14 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 		ASObject* ret = Class<ASObject>::getClass()->lazyDefine(name);
 		if(ret)
 			return ret;
-		//Check prototype inheritance chain
-		if(getClass()->prototype == NULL)
-			return NULL;
-		ret = getClass()->prototype->getVariableByMultiname(name, SKIP_IMPL);
-		if(ret)
-			return ret;
+		ASObject* proto = getClass()->prototype.getPtr();
+		while(proto)
+		{
+			obj = proto->findGettable(name, false);
+			if(obj)
+				return obj->var;
+			proto = proto->getprop_prototype();
+		}
 		return NULL;
 	}
 
@@ -1106,4 +1113,43 @@ ASObject *ASObject::describeType() const
 	// TODO: undocumented constructor node
 
 	return Class<XML>::getInstanceS(root);
+}
+
+bool ASObject::hasprop_prototype()
+{
+	multiname prototypeName;
+	prototypeName.name_type=multiname::NAME_STRING;
+	prototypeName.name_s="prototype";
+	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	return findGettable(prototypeName, false) != NULL;
+}
+
+ASObject* ASObject::getprop_prototype()
+{
+	multiname prototypeName;
+	prototypeName.name_type=multiname::NAME_STRING;
+	prototypeName.name_s="prototype";
+	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	variable* var = findGettable(prototypeName, false);
+	return var ? var->var : NULL;
+}
+
+void ASObject::setprop_prototype(_NR<ASObject>& o)
+{
+	ASObject* obj = o.getPtr();
+	obj->incRef();
+
+	multiname prototypeName;
+	prototypeName.name_type=multiname::NAME_STRING;
+	prototypeName.name_s="prototype";
+	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	variable* ret=Variables.findObjVar(prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+	assert(ret);
+	if(ret->setter)
+	{
+		this->incRef();
+		ret->setter->call(this,&obj,1);
+	}
+	else
+		ret->setVar(obj);
 }

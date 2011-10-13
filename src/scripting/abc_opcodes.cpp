@@ -2350,9 +2350,9 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
 
 	//Add prototype variable
-	ret->prototype = _MNR(new Prototype());
+	ret->prototype = _MNR(new_asobject());
 	if(ret->super != NULL)
-		ret->prototype->prototype = ret->super->prototype;
+		ret->prototype->setprop_prototype(ret->super->prototype);
 	ret->addPrototypeGetter();
 
 	//add implemented interfaces

@@ -88,7 +88,7 @@ ASFUNCTIONBODY(Boolean,_constructor)
 
 ASFUNCTIONBODY(Boolean,_toString)
 {
-	if(obj->is<Prototype>() && Class<Boolean>::getClass()->prototype == obj->as<Prototype>()) //See ECMA 15.6.4
+	if(Class<Boolean>::getClass()->prototype == obj) //See ECMA 15.6.4
 		return Class<ASString>::getInstanceS("false");
 
 	if(!obj->is<Boolean>())

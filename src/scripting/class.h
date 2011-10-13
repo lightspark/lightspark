@@ -83,6 +83,9 @@ public:
 	std::vector<scope_entry> class_scope;
 };
 
+/* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */
+ASObject* new_asobject();
+
 template< class T>
 class Class: public Class_base
 {
@@ -116,10 +119,10 @@ public:
 			ret=new Class<T>(name);
 			sys->classes.insert(std::make_pair(name,ret));
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-			ret->prototype = _MNR(new Prototype());
+			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
 			if(ret->super != NULL)
-				ret->prototype->prototype = ret->super->prototype;
+				ret->prototype->setprop_prototype(ret->super->prototype);
 			ret->addPrototypeGetter();
 		}
 		else
@@ -178,8 +181,8 @@ public:
 		{
 			ret=new Class<ASObject>(name);
 			sys->classes.insert(std::make_pair(name,ret));
+			ret->prototype = _MNR(new_asobject());
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-			ret->prototype = _MNR(new Prototype());
 			ASObject::sinit(ret);
 			ret->addPrototypeGetter();
 		}
@@ -291,10 +294,10 @@ public:
 		{
 			ret=new TemplatedClass<T>(instantiatedQName,types,numtypes,this);
 			sys->classes.insert(std::make_pair(instantiatedQName,ret));
-			ret->prototype = _MNR(new Prototype());
+			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
 			if(ret->super != NULL)
-				ret->prototype->prototype = ret->super->prototype;
+				ret->prototype->setprop_prototype(ret->super->prototype);
 			ret->addPrototypeGetter();
 		}
 		else

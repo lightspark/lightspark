@@ -49,13 +49,6 @@ protected:
 	static void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 };
 
-class Prototype: public ASObject
-{
-public:
-	_NR<Prototype> prototype;
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
-};
-
 class Class_base: public ASObject
 {
 friend class ABCVm;
@@ -80,7 +73,7 @@ protected:
 	ASFUNCTION(_toString);
 public:
 	void addPrototypeGetter();
-	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
+	ASPROPERTY_GETTER(_NR<ASObject>,prototype);
 	Class_base* super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
@@ -198,7 +191,7 @@ public:
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
 	ASFUNCTION(_toString);
-	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,prototype);
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* bind(_NR<ASObject> c, int level)
 	{

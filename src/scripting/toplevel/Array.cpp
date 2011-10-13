@@ -312,25 +312,35 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	int ret=-1;
 	ASObject* arg0=args[0];
 
-	int unsigned i = th->data.size()-1;
-	int j;
+	if(th->data.empty())
+		return abstract_d(0);
+
+	size_t i = th->data.size()-1;
 
 	if(argslen == 2 && std::isnan(args[1]->toNumber()))
 		return abstract_i(0);
 
 	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 	{
-		j = args[1]->toInt(); //Preserve sign
+		int j = args[1]->toInt(); //Preserve sign
 		if(j < 0) //Negative offset, use it as offset from the end of the array
-			i = th->data.size()+j;
+		{
+			if((size_t)-j > th->data.size())
+				i = 0;
+			else
+				i = th->data.size()+j;
+		}
 		else //Positive offset, use it directly
-			i = j;
-		if(i > th->data.size()) //If the passed offset is bigger than the array, cap the offset
-			i = th->data.size()-1;
+		{
+			if((size_t)j > th->data.size()) //If the passed offset is bigger than the array, cap the offset
+				i = th->data.size()-1;
+			else
+				i = j;
+		}
 	}
 
 	DATA_TYPE dtype = th->data[i].type;
-	for(;i>=0;i--)
+	do
 	{
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
 		dtype = th->data[i].type;
@@ -341,6 +351,8 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 			break;
 		}
 	}
+	while(i--);
+
 	return abstract_i(ret);
 }
 

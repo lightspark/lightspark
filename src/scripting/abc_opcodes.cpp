@@ -232,6 +232,9 @@ ASObject* ABCVm::getSlot(ASObject* obj, int n)
 {
 	ASObject* ret=obj->getSlot(n);
 	LOG(LOG_CALLS,"getSlot " << n << " " << ret->toString(true));
+	//getSlot can only access properties defined in the current
+	//script, so they should already be defind by this script
+	assert(!ret->is<Definable>());
 	ret->incRef();
 	obj->decRef();
 	return ret;

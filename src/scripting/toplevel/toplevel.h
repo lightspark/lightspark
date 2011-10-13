@@ -655,14 +655,18 @@ public:
 
 /*
  * They are used as placeholders in
- * Class slots, Slot slots (value & type), Const slots
+ * Class traits, public Slots (value & type) and Consts
  *
- * When one accesses a e.g. Slot slot from a different script
+ * When one accesses a e.g. Slot from a different script
  * and obtains a Definable, then one calls define() which executes
  * the associated script init. This script init function should
  * replace the Definable with the actual value (which is returned by define()).
  *
- * We derive from Class_base so we can use them in the 'type' of Slot slots.
+ * The second use case is for the 'type' of a slot. It maybe a Definable if the
+ * class is not defined during buildTraits() of that slot.
+ * The 'type' is resolved when variable::setVar() is called.
+ *
+ * We derive from Class_base so we can use them in the 'type' of Slots.
  */
 class Definable: public Class_base
 {

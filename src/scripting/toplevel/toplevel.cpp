@@ -1367,7 +1367,7 @@ ASFUNCTIONBODY(ASString,match)
 
 ASFUNCTIONBODY(ASString,_toString)
 {
-	if(obj->is<Prototype>() && Class<ASString>::getClass()->prototype == obj->as<Prototype>());
+	if(obj->is<Prototype>() && Class<ASString>::getClass()->prototype == obj->as<Prototype>())
 		return Class<ASString>::getInstanceS("");
 	if(!obj->is<ASString>())
 		throw Class<TypeError>::getInstanceS("String.toString is not generic");

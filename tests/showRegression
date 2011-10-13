@@ -25,10 +25,19 @@ if [[ -z "$OLDFILE" || -z "$JUNITFILE" ]]; then
 	exit 1
 fi
 
-OLDFAILURES=`sed -n -e 's/\(.*\)<failure.*/\1/p' "$OLDFILE" | tr '\n' '|'`
-#Remove trailing '|'
-OLDFAILURES=${OLDFAILURES%|}
-REGRESSION=`grep -Ev "$OLDFAILURES" $JUNITFILE`
+OLDFAILURES=`sed -n -e 's/\(.*\)<failure.*/\1/p' "$OLDFILE"`
+#OLDFAILURES=`echo "$OLDFAILURES" | tr '\n' '|'`
+#OLDFAILURES=${OLDFAILURES%|}
+#REGRESSION=`grep -Ev "$OLDFAILURES" $JUNITFILE`
+REGRESSION=`cat $JUNITFILE`
+while [[ -n "$OLDFAILURES" ]]; do
+	F=`echo "$OLDFAILURES" | head -n 1000 | tr '\n' '|'`
+	F=${F%|}
+	OLDFAILURES=`echo "$OLDFAILURES" | tail -n +1001`
+	REGRESSION=`echo "$REGRESSION" | grep -Ev "$F"`
+	echo -n "."
+done
+echo ""
 
 if [[ "$QUIET" == "0" ]]; then
 	grep '<failure' <(echo -e "$REGRESSION")

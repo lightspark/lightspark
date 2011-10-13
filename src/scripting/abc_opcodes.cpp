@@ -683,6 +683,10 @@ void ABCVm::decLocal_i(call_context* th, int n)
 
 }
 
+/* This is called for expressions like
+ * function f() { ... }
+ * var v = new f();
+ */
 ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen)
 {
 	//See ECMA 13.2.2
@@ -704,6 +708,9 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	sf->incRef();
 	ret->setClass(new Class_function(sf));
 	ret->getClass()->prototype = sf->prototype;
+
+	sf->incRef();
+	ret->setVariableByQName("constructor","",sf,DYNAMIC_TRAIT);
 
 	ret->incRef();
 	assert_and_throw(sf->closure_this==NULL);

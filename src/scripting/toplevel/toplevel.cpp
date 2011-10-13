@@ -3698,7 +3698,7 @@ ASFUNCTIONBODY(Namespace,_toString)
 	if(!obj->is<Namespace>())
 		throw Class<TypeError>::getInstanceS("Namespace.toString is not generic");
 	Namespace* th=static_cast<Namespace*>(obj);
-	return Class<ASString>::getInstanceS(th->toString(false));
+	return Class<ASString>::getInstanceS(th->uri);
 }
 
 bool Namespace::isEqual(ASObject* o)
@@ -3710,14 +3710,6 @@ bool Namespace::isEqual(ASObject* o)
 	}
 
 	return false;
-}
-
-tiny_string Namespace::toString(bool debugMsg)
-{
-	if(debugMsg)
-		return ASObject::toString(true);
-
-	return uri;
 }
 
 void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)

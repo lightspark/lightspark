@@ -442,7 +442,6 @@ public:
 	ASFUNCTION(_setPrefix);
 	ASFUNCTION(_toString);
 	bool isEqual(ASObject* o);
-	tiny_string toString(bool debugMsg);
 };
 
 class Integer : public ASObject

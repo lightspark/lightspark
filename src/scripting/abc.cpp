@@ -1951,6 +1951,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 	const multiname& mname=*getMultiname(t->name,NULL);
 	//Should be a Qname
 	assert_and_throw(mname.ns.size()==1 && mname.name_type==multiname::NAME_STRING);
+	bool visibleOutsidePackage = (mname.ns[0].kind == PACKAGE_NAMESPACE || mname.ns[0].kind == NAMESPACE || mname.ns[0].kind == EXPLICIT_NAMESPACE);
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 	switch(t->kind&0xf)
@@ -2013,12 +2014,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret = ci;
 			}
 			else if(scriptid != -1)
+				//create Definable even for internal/private classes as they maybe used
+				//as 'type' in a slot.
 				ret=new Definable(this,scriptid,obj,mname);
 			else
 				ret=new Undefined;
 
 			obj->setVariableByQName(mname.name_s,mname.ns[0],ret,DECLARED_TRAIT);
-			
+
 			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << mname << _(" id ") << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, mname);
@@ -2212,7 +2215,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret=obj->getVariableByMultiname(mname);
 				assert_and_throw(ret==NULL);
 
-				if(scriptid != -1)
+				if(scriptid != -1 && visibleOutsidePackage)
+					//do not create Definable for internal/private consts
 					ret=new Definable(this,scriptid,obj,mname);
 				else
 					ret=new Undefined;
@@ -2270,7 +2274,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				assert_and_throw(!previous_definition);
 
 				ASObject* ret;
-				if(scriptid != -1)
+				if(scriptid != -1 && visibleOutsidePackage)
+					//do not create Definable for internal/private slots
 					ret=new Definable(this, scriptid, obj,mname);
 				else
 				{

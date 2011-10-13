@@ -793,14 +793,19 @@ void ASObject::check() const
 {
 	//Put here a bunch of safety check on the object
 	assert_and_throw(ref_count>0);
+	Variables.check();
+}
+
+void variables_map::check() const
+{
 	//Heavyweight stuff
 #ifdef EXPENSIVE_DEBUG
-	variables_map::const_var_iterator it=Variables.Variables.begin();
-	for(;it!=Variables.Variables.end();++it)
+	variables_map::const_var_iterator it=Variables.begin();
+	for(;it!=Variables.end();++it)
 	{
 		variables_map::const_var_iterator next=it;
 		next++;
-		if(next==Variables.Variables.end())
+		if(next==Variables.end())
 			break;
 
 		//No double definition of a single variable should exist
@@ -824,7 +829,6 @@ void ASObject::check() const
 			}
 		}
 	}
-
 #endif
 }
 
@@ -1060,9 +1064,15 @@ void ASObject::constructionComplete()
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
+	Variables.serialize(out, stringMap, objMap);
+}
+
+void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap) const
+{
 	//Pairs of name, value
-	auto it=Variables.Variables.begin();
-	for(;it!=Variables.Variables.end();it++)
+	auto it=Variables.begin();
+	for(;it!=Variables.end();it++)
 	{
 		assert_and_throw(it->second.ns.name=="");
 		out->writeStringVR(stringMap,it->first);

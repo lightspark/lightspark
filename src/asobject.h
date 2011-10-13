@@ -152,19 +152,12 @@ struct variable
 
 class variables_map
 {
-//ASObject knows how to use its variable_map
-friend class ASObject;
-//Class_base uses the internal data to handle borrowed variables
-friend class Class_base;
-//Useful when linking
-friend class InterfaceClass;
-//ABCContext uses findObjVar when building and linking traits
-friend class ABCContext;
 private:
 	std::multimap<tiny_string,variable> Variables;
 	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
 	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
+public:
 	/**
 	   Find a variable in the map
 
@@ -191,7 +184,9 @@ private:
 	tiny_string getNameAt(unsigned int i) const;
 	variable* getValueAt(unsigned int i);
 	~variables_map();
-public:
+	void check() const;
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+			std::map<const ASObject*, uint32_t>& objMap) const;
 	void dumpVariables();
 	void destroyContents();
 };
@@ -205,7 +200,6 @@ public:
  */
 class Manager
 {
-friend class ASObject;
 private:
 	std::vector<ASObject*> available;
 	uint32_t maxCache;
@@ -232,17 +226,18 @@ friend class InterfaceClass;
 friend class IFunction; //Needed for clone
 CLASSBUILDABLE(ASObject);
 protected:
-	//maps variable name to namespace and var
-	variables_map Variables;
 	ASObject();
 	ASObject(const ASObject& o);
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const;
+private:
+	//maps variable name to namespace and var
+	variables_map Variables;
 	variable* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
 	variable* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
-private:
+
 	ATOMIC_INT32(ref_count);
 	Manager* manager;
 	int cur_level;

@@ -187,7 +187,7 @@ _R<ASObject> ASObject::toPrimitive(TP_HINT hint)
 	if(hint == STRING_HINT && has_toString())
 	{
 		_R<ASObject> ret = call_toString();
-		if(ret->isPrimitive());
+		if(ret->isPrimitive())
 			return ret;
 	}
 	if(has_valueOf())
@@ -199,7 +199,7 @@ _R<ASObject> ASObject::toPrimitive(TP_HINT hint)
 	if(hint != STRING_HINT && has_toString())
 	{
 		_R<ASObject> ret = call_toString();
-		if(ret->isPrimitive());
+		if(ret->isPrimitive())
 			return ret;
 	}
 

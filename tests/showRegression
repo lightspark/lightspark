@@ -25,7 +25,19 @@ if [[ -z "$OLDFILE" || -z "$JUNITFILE" ]]; then
 	exit 1
 fi
 
-OLDFAILURES=`sed -n -e 's/\(.*\)<failure.*/\1/p' "$OLDFILE"`
+#Transform
+#<testcase classname="somecls" name="totalFail"><failure..
+#  -> ^<testcase classname="somecls" name="totalFail"><failure|^<testcase classname="somecls" name="totalFail_tc.*"><failure
+#<testcase classname="somecls" name="someTCfail_tc3"><failure..
+#  -> ^<testcase classname="somecls" name="someTCfail_tc3"><failure
+#
+#So if an test previously exited with some exit code != 0 and now runs through but produces some failures, e.g. totalFail_tc1 failed,
+#then this is not a regression
+
+OLDFAILURES=`sed -n -e 's/\(.*_tc.*><failure\).*/^\1/p
+#continue to next line if the previous regexp matched
+t
+s/\(.*\)"><failure.*/^\1"><failure|^\1_tc.*"><failure/p' "$OLDFILE"`
 #OLDFAILURES=`echo "$OLDFAILURES" | tr '\n' '|'`
 #OLDFAILURES=${OLDFAILURES%|}
 #REGRESSION=`grep -Ev "$OLDFAILURES" $JUNITFILE`

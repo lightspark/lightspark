@@ -2758,7 +2758,7 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	unsigned int index=args[0]->toInt();
-	assert_and_throw(index>=0 && index<th->data.size());
+	assert_and_throw(index<th->data.size());
 	//Character codes are expected to be positive
 	return abstract_i(th->data[index]);
 }
@@ -2827,7 +2827,6 @@ ASFUNCTIONBODY(ASString,replace)
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
-	assert_and_throw(argslen >= 0);
 
 	string replaceWith;
 	if(argslen < 2)

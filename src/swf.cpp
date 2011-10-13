@@ -606,7 +606,7 @@ void SystemState::createEngines()
 		if(file!=-1)
 		{
 			std::string data("Set-Cookie: " + rawCookies);
-			size_t res;
+			ssize_t res;
 			size_t written = 0;
 			// Keep writing until everything we wanted to write actually got written
 			do

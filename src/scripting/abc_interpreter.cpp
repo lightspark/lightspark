@@ -48,10 +48,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 		mi->profTime.resize(code_len,0);
 	uint64_t startTime=compat_get_thread_cputime_us();
 #define PROF_ACCOUNT_TIME(a, b)  do{a+=b;}while(0)
-#define PROF_IGNORE_TIME(a) a
+#define PROF_IGNORE_TIME(a) do{ a; } while(0)
 #else
-#define PROF_ACCOUNT_TIME(a, b)
-#define PROF_IGNORE_TIME(a)
+#define PROF_ACCOUNT_TIME(a, b) do{ ; }while(0)
+#define PROF_IGNORE_TIME(a) do{ ; } while(0)
 #endif
 
 	//Each case block builds the correct parameters for the interpreter function and call it
@@ -434,7 +434,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				index_obj->decRef();
 
 				int dest=defaultdest;
-				if(index>=0 && index<=count)
+				if(index<=count)
 					dest=here+offsets[index];
 
 				if(dest >= code_len)

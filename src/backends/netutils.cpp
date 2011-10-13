@@ -989,8 +989,8 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 		{
 			setFailed();
 		}
-		else if(getRequestStatus()/100 == 3); //HTTP redirect
-		else if(getRequestStatus()/100 == 2); //HTTP OK
+		else if(getRequestStatus()/100 == 3) {;} //HTTP redirect
+		else if(getRequestStatus()/100 == 2) {;} //HTTP OK
 	}
 	else
 	{

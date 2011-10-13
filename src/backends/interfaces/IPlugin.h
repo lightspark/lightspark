@@ -31,7 +31,7 @@ class IPlugin
 {
 public:
 	virtual const std::string get_pluginName();
-	virtual const PLUGIN_TYPES get_pluginType();
+	virtual PLUGIN_TYPES get_pluginType();
 	virtual const std::string get_backendName();
 	virtual ~IPlugin();
 protected:

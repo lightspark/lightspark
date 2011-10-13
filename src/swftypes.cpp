@@ -282,7 +282,7 @@ MATRIX MATRIX::multiplyMatrix(const MATRIX& r) const
 	return ret;
 }
 
-const bool MATRIX::operator!=(const MATRIX& r) const
+bool MATRIX::operator!=(const MATRIX& r) const
 {
 	return ScaleX!=r.ScaleX ||
 		RotateSkew1!=r.RotateSkew1 ||

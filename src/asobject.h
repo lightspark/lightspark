@@ -61,9 +61,11 @@
 #define ASFUNCTIONBODY_GETTER(c,name) \
 	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
-		c* th = Class<c>::cast(obj); \
+		if(!obj->is<c>()) \
+			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+		c* th = obj->as<c>(); \
 		if(argslen != 0) \
-			throw ArgumentError("Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS("Arguments provided in getter"); \
 		return ArgumentConversion<decltype(th->name)>::toAbstract(th->name); \
 	}
 
@@ -71,9 +73,11 @@
 #define ASFUNCTIONBODY_SETTER(c,name) \
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
-		c* th = Class<c>::cast(obj); \
+		if(!obj->is<c>()) \
+			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+		c* th = obj->as<c>(); \
 		if(argslen != 1) \
-			throw ArgumentError("Wrong number of arguments in setter"); \
+			throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); \
 		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
 		return NULL; \
 	}
@@ -84,9 +88,11 @@
 #define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
-		c* th = Class<c>::cast(obj); \
+		if(!obj->is<c>()) \
+			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+		c* th = obj->as<c>(); \
 		if(argslen != 1) \
-			throw ArgumentError("Wrong number of arguments in setter"); \
+			throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); \
 		decltype(th->name) oldValue = th->name; \
 		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
 		th->callback(oldValue); \

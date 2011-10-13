@@ -700,18 +700,10 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 #ifndef NDEBUG
 	ret->initialized=true;
 #endif
-	//Let's see if an AS classdef has been defined on the function
-	multiname prototypeName;
-	prototypeName.name_type=multiname::NAME_STRING;
-	prototypeName.name_s="prototype";
-	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	ASObject* asp=sf->getVariableByMultiname(prototypeName,ASObject::SKIP_IMPL);
-	if(asp)
-		asp->incRef();
-
 	//Now add our classdef
 	sf->incRef();
-	ret->setClass(new Class_function(sf,asp));
+	ret->setClass(new Class_function(sf));
+	ret->getClass()->prototype = sf->prototype;
 
 	ret->incRef();
 	assert_and_throw(sf->closure_this==NULL);

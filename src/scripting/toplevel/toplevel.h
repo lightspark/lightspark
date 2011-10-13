@@ -136,13 +136,17 @@ public:
 	static Class_object* getClass();
 };
 
-//Adaptor from fuction to class, it does not seems to be a good idea to
-//derive IFunction from Class_base, because it's too heavyweight
+/* Adaptor from fuction to class, it does not seems to be a good idea to
+ * derive IFunction from Class_base, because it's too heavyweight
+ * This is the class of an object created by (new f()) where f is a function.
+ * Its prototype points to f->prototype which is defined in IFunction.
+ *
+ * Class_function uses prototype based inheritance only.
+ */
 class Class_function: public Class_base
 {
 private:
 	IFunction* f;
-	ASObject* asprototype;
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		throw RunTimeException("Class_function::getInstance");
@@ -153,13 +157,11 @@ private:
 		throw RunTimeException("Class_function::buildInstanceTraits");
 	}
 public:
-	Class_function(IFunction* _f, ASObject* _p);
+	//Name is object because trace(new f()) gives "[object Object]"
+	Class_function(IFunction* _f) : Class_base(QName("Object","")), f(_f) {}
 	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
-		ASObject* ret=Class_base::getVariableByMultiname(name,opt);
-		if(ret==NULL && asprototype)
-			ret=asprototype->getVariableByMultiname(name,opt);
-		return ret;
+		return NULL;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
@@ -174,7 +176,10 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+	{
+		return false;
+	}
 };
 
 class IFunction: public ASObject
@@ -193,6 +198,7 @@ public:
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
 	ASFUNCTION(_toString);
+	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* bind(_NR<ASObject> c, int level)
 	{

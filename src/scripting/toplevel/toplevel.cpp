@@ -2128,6 +2128,8 @@ IFunction* Function::toFunction()
 
 IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false)
 {
+	prototype = _MR(new Prototype());
+	prototype->prototype = Class<ASObject>::getClass()->prototype;
 	type=T_FUNCTION;
 }
 
@@ -2145,6 +2147,8 @@ ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_arg
 {
 	return callImpl(obj, args, num_args, false);
 }
+
+ASFUNCTIONBODY_GETTER(IFunction, prototype);
 
 ASFUNCTIONBODY(IFunction,apply)
 {
@@ -3161,19 +3165,6 @@ Class_object* Class_object::getClass()
 	return ret;
 }
 
-Class_function::Class_function(IFunction* _f, ASObject* _p):Class_base(QName("Function","")),f(_f),asprototype(_p)
-{
-	setClass(Class<IFunction>::getClass());
-}
-
-bool Class_function::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
-{
-	bool ret=Class_base::hasPropertyByMultiname(name, considerDynamic);
-	if(ret==false && asprototype)
-		ret=asprototype->hasPropertyByMultiname(name, considerDynamic);
-	return ret;
-}
-
 const std::vector<Class_base*>& Class_base::getInterfaces() const
 {
 	if(!interfaces.empty())
@@ -3782,6 +3773,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->addPrototypeGetter();
 		ret->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
 		ret->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
+		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_getter_prototype),GETTER_METHOD,true);
 		ret->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	}

@@ -116,8 +116,7 @@ public:
 			ret=new Class<T>(name);
 			sys->classes.insert(std::make_pair(name,ret));
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-			ret->incRef();
-			ret->prototype = _MNR(new Prototype(_MR(ret)));
+			ret->prototype = _MNR(new Prototype());
 			T::sinit(ret);
 			if(ret->super != NULL)
 				ret->prototype->prototype = ret->super->prototype;
@@ -180,8 +179,7 @@ public:
 			ret=new Class<ASObject>(name);
 			sys->classes.insert(std::make_pair(name,ret));
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-			ret->incRef();
-			ret->prototype = _MNR(new Prototype(_MR(ret)));
+			ret->prototype = _MNR(new Prototype());
 			ASObject::sinit(ret);
 			ret->addPrototypeGetter();
 		}
@@ -293,8 +291,7 @@ public:
 		{
 			ret=new TemplatedClass<T>(instantiatedQName,types,numtypes,this);
 			sys->classes.insert(std::make_pair(instantiatedQName,ret));
-			ret->incRef();
-			ret->prototype = _MNR(new Prototype(_MR(ret)));
+			ret->prototype = _MNR(new Prototype());
 			T::sinit(ret);
 			if(ret->super != NULL)
 				ret->prototype->prototype = ret->super->prototype;

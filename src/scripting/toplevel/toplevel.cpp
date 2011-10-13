@@ -3777,8 +3777,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
-		ret->incRef();
-		ret->prototype = _MNR(new Prototype(_MR(ret)));
+		ret->prototype = _MNR(new Prototype());
 		ret->super=Class<ASObject>::getClass();
 		ret->max_level=ret->super->max_level+1;
 		ret->prototype->prototype = ret->super->prototype;

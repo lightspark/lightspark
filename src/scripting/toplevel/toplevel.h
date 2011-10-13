@@ -52,11 +52,8 @@ protected:
 class Prototype: public ASObject
 {
 public:
-	Prototype(const _R<Class_base>& _classdef) : classdef(_classdef) {}
 	_NR<Prototype> prototype;
 	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
-	/* this is the class such that classdef->prototype == this */
-	_R<Class_base> classdef;
 };
 
 class Class_base: public ASObject

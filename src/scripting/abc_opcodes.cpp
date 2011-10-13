@@ -842,6 +842,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 		case T_OBJECT:
 		case T_NULL:
 		case T_ARRAY:
+		case T_CLASS: //this is not clear from spec, but was tested
 			ret="object";
 			break;
 		case T_BOOLEAN:

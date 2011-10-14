@@ -1144,6 +1144,11 @@ ASObject* ASObject::getprop_prototype()
 	return var ? var->var : NULL;
 }
 
+/*
+ * (creates and) sets the property 'prototype' to o
+ * 'prototype' is usually DYNAMIC_TRAIT, but on Class_base
+ * it is a DECLARED_TRAIT, which is gettable only
+ */
 void ASObject::setprop_prototype(_NR<ASObject>& o)
 {
 	ASObject* obj = o.getPtr();
@@ -1153,8 +1158,12 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s="prototype";
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	variable* ret=Variables.findObjVar(prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
-	assert(ret);
+	bool has_getter = false;
+	variable* ret=findSettable(prototypeName,false, &has_getter);
+	if(!ret && has_getter)
+		throw Class<ReferenceError>::getInstanceS("Error #1074: Illegal write to read-only property prototype");
+	if(!ret)
+		ret = Variables.findObjVar(prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret->setter)
 	{
 		this->incRef();

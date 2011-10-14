@@ -1954,6 +1954,18 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 	bool visibleOutsidePackage = (mname.ns[0].kind == PACKAGE_NAMESPACE || mname.ns[0].kind == NAMESPACE || mname.ns[0].kind == EXPLICIT_NAMESPACE);
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
+
+	if(t->kind&traits_info::Metadata)
+        {
+		for(unsigned int i=0;i<t->metadata_count;i++)
+		{
+			metadata_info& minfo = metadata[t->metadata[i]];
+			LOG(LOG_CALLS,"Metadata: " << getString(minfo.name));
+			for(int j=0;j<minfo.item_count;++j)
+				LOG(LOG_CALLS,"        : " << getString(minfo.items[j].key) << " " << getString(minfo.items[j].value));
+		}
+	}
+
 	switch(t->kind&0xf)
 	{
 		case traits_info::Class:

@@ -2126,7 +2126,7 @@ IFunction* Function::toFunction()
 	return this;
 }
 
-IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false)
+IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false),length(0)
 {
 	type=T_FUNCTION;
 	prototype = _MR(new_asobject());
@@ -2149,6 +2149,7 @@ ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_arg
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
+ASFUNCTIONBODY_GETTER(IFunction,length);
 
 ASFUNCTIONBODY(IFunction,apply)
 {
@@ -2263,6 +2264,8 @@ ASObject *IFunction::describeType() const
 
 SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL)
 {
+	if(mi)
+		length = mi->numArgs();
 //	class_index=-2;
 }
 
@@ -3757,6 +3760,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
 		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_getter_prototype),GETTER_METHOD,true);
 		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_setter_prototype),SETTER_METHOD,true);
+		ret->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(IFunction::_getter_length),GETTER_METHOD,true);
 		ret->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	}

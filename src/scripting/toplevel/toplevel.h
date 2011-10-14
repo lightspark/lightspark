@@ -191,6 +191,7 @@ public:
 	ASFUNCTION(_call);
 	ASFUNCTION(_toString);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,prototype);
+	ASPROPERTY_GETTER_SETTER(uint32_t,length);
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* bind(_NR<ASObject> c, int level)
 	{

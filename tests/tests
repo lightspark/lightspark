@@ -10,7 +10,7 @@ MXMLC="mxmlc"
 #If you prefer no colors, you can permanently set the default here
 COLORS=1;
 #Seconds after which a process is killed
-TIMEOUTCMD="timeout 10"
+TIMEOUTCMD="timeout 20"
 
 #Setting C locale to make sort and comm behave the same on every machine
 export LC_ALL="C"

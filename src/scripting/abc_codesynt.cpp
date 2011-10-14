@@ -118,7 +118,7 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"newObject",(void*)&ABCVm::newObject,ARGS_CONTEXT_INT},
 	{"getDescendants",(void*)&ABCVm::getDescendants,ARGS_CONTEXT_INT},
 	{"deleteProperty",(void*)&ABCVm::deleteProperty,ARGS_CONTEXT_INT},
-	{"call",(void*)&ABCVm::call,ARGS_CONTEXT_INT},
+	{"call",(void*)&ABCVm::call,ARGS_CONTEXT_INT_INT},
 	{"coerce",(void*)&ABCVm::coerce,ARGS_CONTEXT_INT},
 	{"getLex",(void*)&ABCVm::getLex,ARGS_CONTEXT_INT},
 	{"incLocal_i",(void*)&ABCVm::incLocal_i,ARGS_CONTEXT_INT},
@@ -130,11 +130,11 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"initProperty",(void*)&ABCVm::initProperty,ARGS_CONTEXT_INT},
 	{"kill",(void*)&ABCVm::kill,ARGS_INT},
 	{"jump",(void*)&ABCVm::jump,ARGS_INT},
-	{"callProperty",(void*)&ABCVm::callProperty,ARGS_CONTEXT_INT_INT},
-	{"callPropVoid",(void*)&ABCVm::callPropVoid,ARGS_CONTEXT_INT_INT},
+	{"callProperty",(void*)&ABCVm::callProperty,ARGS_CONTEXT_INT_INT_INT},
+	{"callPropVoid",(void*)&ABCVm::callPropVoid,ARGS_CONTEXT_INT_INT_INT},
 	{"constructProp",(void*)&ABCVm::constructProp,ARGS_CONTEXT_INT_INT},
-	{"callSuper",(void*)&ABCVm::callSuper,ARGS_CONTEXT_INT_INT},
-	{"callSuperVoid",(void*)&ABCVm::callSuperVoid,ARGS_CONTEXT_INT_INT},
+	{"callSuper",(void*)&ABCVm::callSuper,ARGS_CONTEXT_INT_INT_INT},
+	{"callSuperVoid",(void*)&ABCVm::callSuperVoid,ARGS_CONTEXT_INT_INT_INT},
 	{"not_impl",(void*)&ABCVm::not_impl,ARGS_INT},
 	{"incRef",(void*)&ASObject::s_incRef,ARGS_OBJ},
 	{"decRef",(void*)&ASObject::s_decRef,ARGS_OBJ},
@@ -348,6 +348,12 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	sig_context_int_int.push_back(int_type);
 	sig_context_int_int.push_back(int_type);
 
+	vector<const llvm::Type*> sig_context_int_int_int;
+	sig_context_int_int_int.push_back(context_type);
+	sig_context_int_int_int.push_back(int_type);
+	sig_context_int_int_int.push_back(int_type);
+	sig_context_int_int_int.push_back(int_type);
+
 	llvm::FunctionType* FT=NULL;
 	for(int i=0;i<table_len;i++)
 	{
@@ -397,6 +403,9 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 				break;
 			case ARGS_CONTEXT_INT_INT:
 				FT=llvm::FunctionType::get(ret_type, sig_context_int_int, false);
+				break;
+			case ARGS_CONTEXT_INT_INT_INT:
+				FT=llvm::FunctionType::get(ret_type, sig_context_int_int_int, false);
 				break;
 		}
 
@@ -1498,6 +1507,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	//We define a couple of variables that will be used a lot
 	llvm::Constant* constant;
 	llvm::Constant* constant2;
+	llvm::Constant* constant3;
 	llvm::Value* value;
 	//let's give access to method data to llvm
 	constant = llvm::ConstantInt::get(int_type, (uintptr_t)this);
@@ -2541,7 +2551,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("call"), context, constant);
+				constant2 = llvm::ConstantInt::get(int_type, 0);
+				Builder.CreateCall3(ex->FindFunctionNamed("call"), context, constant, constant2);
 				break;
 			}
 			case 0x42:
@@ -2565,7 +2576,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				code >> t;
 				constant2 = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall3(ex->FindFunctionNamed("callSuper"), context, constant, constant2);
+				constant3 = llvm::ConstantInt::get(int_type, 0);
+				Builder.CreateCall4(ex->FindFunctionNamed("callSuper"), context, constant, constant2, constant3);
 				break;
 			}
 			case 0x46:
@@ -2579,13 +2591,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				code >> t;
 				constant2 = llvm::ConstantInt::get(int_type, t);
+				constant3 = llvm::ConstantInt::get(int_type, 0);
 
 	/*				//Pop the stack arguments
 				vector<llvm::Value*> args(t+1);
 				for(int i=0;i<t;i++)
 					args[t-i]=static_stack_pop(Builder,static_stack,m).first;*/
 				//Call the function resolver, static case could be resolved at this time (TODO)
-				Builder.CreateCall3(ex->FindFunctionNamed("callProperty"), context, constant, constant2);
+				Builder.CreateCall4(ex->FindFunctionNamed("callProperty"), context, constant, constant2, constant3);
 	/*				//Pop the function object, and then the object itself
 				llvm::Value* fun=static_stack_pop(Builder,static_stack,m).first;
 
@@ -2680,7 +2693,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				code >> t;
 				constant2 = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall3(ex->FindFunctionNamed("callSuperVoid"), context, constant, constant2);
+				constant3 = llvm::ConstantInt::get(int_type, 0);
+				Builder.CreateCall4(ex->FindFunctionNamed("callSuperVoid"), context, constant, constant2, constant3);
 				break;
 			}
 			case 0x4f:
@@ -2693,7 +2707,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				code >> t;
 				constant2 = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall3(ex->FindFunctionNamed("callPropVoid"), context, constant, constant2);
+				constant3 = llvm::ConstantInt::get(int_type, 0);
+				Builder.CreateCall4(ex->FindFunctionNamed("callPropVoid"), context, constant, constant2, constant3);
 				break;
 			}
 			case 0x53:

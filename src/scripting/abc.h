@@ -362,8 +362,9 @@ struct opcode_handler
 	void* addr;
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, 
-	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT};
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER,
+	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT,
+	ARGS_CONTEXT_INT_INT_INT};
 
 struct typed_opcode_handler
 {
@@ -450,11 +451,12 @@ private:
 
 	void registerFunctions();
 	//Interpreted AS instructions
+	//If you change a definition here, update the opcode_table_* entry in abc_codesynth
 	static bool hasNext2(call_context* th, int n, int m); 
-	static void callPropVoid(call_context* th, int n, int m, method_info*& called_mi);
-	static void callSuperVoid(call_context* th, int n, int m, method_info*& called_mi);
-	static void callSuper(call_context* th, int n, int m, method_info*& called_mi);
-	static void callProperty(call_context* th, int n, int m, method_info*& called_mi);
+	static void callPropVoid(call_context* th, int n, int m, method_info** called_mi);
+	static void callSuperVoid(call_context* th, int n, int m, method_info** called_mi);
+	static void callSuper(call_context* th, int n, int m, method_info** called_mi);
+	static void callProperty(call_context* th, int n, int m, method_info** called_mi);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 
 	static void setLocal_int(int n,int v); 
@@ -509,7 +511,7 @@ private:
 	static intptr_t getProperty_i(ASObject* obj, multiname* name);
 	static void setProperty(ASObject* value,ASObject* obj, multiname* name);
 	static void setProperty_i(intptr_t value,ASObject* obj, multiname* name);
-	static void call(call_context* th, int n, method_info*& called_mi);
+	static void call(call_context* th, int n, method_info** called_mi);
 	static void constructSuper(call_context* th, int n);
 	static void construct(call_context* th, int n);
 	static void constructGenericType(call_context* th, int n);

@@ -289,7 +289,7 @@ uintptr_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 	return i1|i2;
 }
 
-void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi)
+void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -332,7 +332,8 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 			f->incRef();
 			ASObject* ret=f->call(obj,args,m);
 			//call getMethodInfo only after the call, so it's updated
-			called_mi=f->getMethodInfo();
+			if(called_mi)
+				*called_mi=f->getMethodInfo();
 			f->decRef();
 			if(ret==NULL)
 				ret=new Undefined;
@@ -382,7 +383,8 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi
 				f->incRef();
 				ASObject* ret=f->call(obj,proxyArgs,m+1);
 				//call getMethodInfo only after the call, so it's updated
-				called_mi=f->getMethodInfo();
+				if(called_mi)
+					*called_mi=f->getMethodInfo();
 				f->decRef();
 				if(ret==NULL)
 					ret=new Undefined;
@@ -860,7 +862,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 	return Class<ASString>::getInstanceS(ret);
 }
 
-void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi)
+void ABCVm::callPropVoid(call_context* th, int n, int m, method_info** called_mi)
 {
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(LOG_CALLS,"callPropVoid " << *name << ' ' << m);
@@ -895,7 +897,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 			f->incRef();
 			ASObject* ret=f->call(obj,args,m);
 			//call getMethodInfo only after the call, so it's updated
-			called_mi=f->getMethodInfo();
+			if(called_mi)
+				*called_mi=f->getMethodInfo();
 			f->decRef();
 			if(ret)
 				ret->decRef();
@@ -938,7 +941,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi
 				f->incRef();
 				ASObject* ret=f->call(obj,proxyArgs,m+1);
 				//call getMethodInfo only after the call, so it's updated
-				called_mi=f->getMethodInfo();
+				if(called_mi)
+					*called_mi=f->getMethodInfo();
 				f->decRef();
 				if(ret)
 					ret->decRef();
@@ -1742,7 +1746,7 @@ void ABCVm::initProperty(call_context* th, int n)
 	obj->decRef();
 }
 
-void ABCVm::callSuper(call_context* th, int n, int m, method_info*& called_mi)
+void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -1775,7 +1779,8 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info*& called_mi)
 			f->incRef();
 			ASObject* ret=f->call(obj,args,m);
 			//call getMethodInfo only after the call, so it's updated
-			called_mi=f->getMethodInfo();
+			if(called_mi)
+				*called_mi=f->getMethodInfo();
 			f->decRef();
 			th->runtime_stack_push(ret);
 		}
@@ -1829,7 +1834,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info*& called_mi)
 	delete[] args;
 }
 
-void ABCVm::callSuperVoid(call_context* th, int n, int m, method_info*& called_mi)
+void ABCVm::callSuperVoid(call_context* th, int n, int m, method_info** called_mi)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -1862,7 +1867,8 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m, method_info*& called_m
 			f->incRef();
 			ASObject* ret=f->call(obj,args,m);
 			//call getMethodInfo only after the call, so it's updated
-			called_mi=f->getMethodInfo();
+			if(called_mi)
+				*called_mi=f->getMethodInfo();
 			f->decRef();
 			if(ret)
 				ret->decRef();
@@ -2445,7 +2451,7 @@ bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-void ABCVm::call(call_context* th, int m, method_info*& called_mi)
+void ABCVm::call(call_context* th, int m, method_info** called_mi)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -2462,7 +2468,8 @@ void ABCVm::call(call_context* th, int m, method_info*& called_mi)
 		func->incRef();
 		ASObject* ret=func->call(obj,args,m);
 		//call getMethodInfo only after the call, so it's updated
-		called_mi=func->getMethodInfo();
+		if(called_mi)
+			*called_mi=func->getMethodInfo();
 		func->decRef();
 		//Push the value only if not null
 		if(ret)

@@ -705,8 +705,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	ret->initialized=true;
 #endif
 	//Now add our classdef
-	sf->incRef();
-	ret->setClass(new Class_function(sf));
+	ret->setClass(new Class_function());
 	ret->getClass()->prototype = sf->prototype;
 
 	sf->incRef();

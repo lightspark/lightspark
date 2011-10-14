@@ -139,7 +139,6 @@ public:
 class Class_function: public Class_base
 {
 private:
-	IFunction* f;
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		throw RunTimeException("Class_function::getInstance");
@@ -150,8 +149,8 @@ private:
 		throw RunTimeException("Class_function::buildInstanceTraits");
 	}
 public:
-	//Name is object because trace(new f()) gives "[object Object]"
-	Class_function(IFunction* _f) : Class_base(QName("Object","")), f(_f) {}
+	//Name is 'Object' because trace(new f()) gives "[object Object]"
+	Class_function() : Class_base(QName("Object","")) {}
 	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
 		return NULL;

@@ -1634,8 +1634,13 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	}
 	if(!found)
 	{
-		LOG(LOG_CALLS, _("NOT found, pushing global") );
-		ret=th->scope_stack[0].object.getPtr();
+		//try to find a global object where this is defined
+		ASObject* target;
+		ASObject* o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+		if(o)
+			ret=target;
+		else //else push the current global object
+			ret=th->scope_stack[0].object.getPtr();
 	}
 
 	//TODO: make this a regular assert

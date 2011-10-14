@@ -54,6 +54,33 @@ enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEF
 	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14, T_TEMPLATE=15};
 
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_UINT,STACK_NUMBER,STACK_BOOLEAN};
+inline std::ostream& operator<<(std::ostream& s, const STACK_TYPE& st)
+{
+	switch(st)
+	{
+	case STACK_NONE:
+		s << "none";
+		break;
+	case STACK_OBJECT:
+		s << "object";
+		break;
+	case STACK_INT:
+		s << "int";
+		break;
+	case STACK_UINT:
+		s << "uint";
+		break;
+	case STACK_NUMBER:
+		s << "number";
+		break;
+	case STACK_BOOLEAN:
+		s << "boolean";
+		break;
+	default:
+		assert(false);
+	}
+	return s;
+}
 
 enum TRISTATE { TFALSE=0, TTRUE, TUNDEFINED };
 

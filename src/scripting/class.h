@@ -120,6 +120,9 @@ public:
 			sys->classes.insert(std::make_pair(name,ret));
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->prototype = _MNR(new_asobject());
+
+			ret->incRef();
+			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 			T::sinit(ret);
 			if(ret->super != NULL)
 				ret->prototype->setprop_prototype(ret->super->prototype);

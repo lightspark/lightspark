@@ -444,14 +444,10 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	}
 	else
 	{
-		if(ret->getObjectType()==T_DEFINABLE)
+		if(ret->is<Definable>())
 		{
-			//LOG(ERROR,_("Property ") << name << _(" is not yet valid"));
-			throw UnsupportedException("Definable not supported in getProperty");
-			/*Definable* d=static_cast<Definable*>(ret.obj);
-			d->define(obj);
-			ret=obj->getVariableByMultiname(*name,owner);
-			ret->incRef();*/
+			LOG(LOG_CALLS,_("Property ") << name << _(" is not yet valid"));
+			ret=ret->as<Definable>()->define();
 		}
 	}
 	ret->incRef();

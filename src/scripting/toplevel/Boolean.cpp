@@ -100,6 +100,9 @@ ASFUNCTIONBODY(Boolean,_toString)
 
 ASFUNCTIONBODY(Boolean,_valueOf)
 {
+	if(Class<Boolean>::getClass()->prototype == obj)
+		return abstract_b(false);
+
 	if(!obj->is<Boolean>())
 			throw Class<TypeError>::getInstanceS("");
 

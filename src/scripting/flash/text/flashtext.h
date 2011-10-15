@@ -38,20 +38,19 @@ public:
 class TextField: public InteractiveObject, public TextData
 {
 private:
-        int textWidth, textHeight;
-
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void invalidate();
 	void requestInvalidation();
 	void updateText(const tiny_string& new_text);
+	//Computes and changes (text)width and (text)height using Pango
+	void updateSizes();
 public:
-	TextField() : textWidth(0),textHeight(0) {};
-	TextField(const TextData& textData) : TextData(textData),textWidth(0),textHeight(0) {};
+	TextField() {};
+	TextField(const TextData& textData) : TextData(textData) {};
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	void setTextSize(int textwidth, int textheight);
 	ASFUNCTION(appendText);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);

@@ -3035,18 +3035,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-				{
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v1.first);
-				else if(v1.second==STACK_BOOLEAN && v2.second==STACK_OBJECT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),v1.first);
-				else
-					throw UnsupportedException("Unsupported type for setSlot");
-
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
 				Builder.CreateCall3(ex->FindFunctionNamed("setSlot"), v1.first, v2.first, constant);
 				break;
 			}

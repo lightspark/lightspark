@@ -20,6 +20,10 @@
 #ifndef _ABC_H
 #define _ABC_H
 
+#ifdef LLVM_28
+#define alignof alignOf
+#endif
+
 #include "compat.h"
 #include <cstddef>
 #include <llvm/Module.h>

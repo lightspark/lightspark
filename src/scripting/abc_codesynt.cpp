@@ -146,7 +146,8 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"not_impl",(void*)&ABCVm::not_impl,ARGS_INT},
 	{"incRef",(void*)&ASObject::s_incRef,ARGS_OBJ},
 	{"decRef",(void*)&ASObject::s_decRef,ARGS_OBJ},
-	{"decRef_safe",(void*)&ASObject::s_decRef_safe,ARGS_OBJ_OBJ}
+	{"decRef_safe",(void*)&ASObject::s_decRef_safe,ARGS_OBJ_OBJ},
+	{"wrong_exec_pos",(void*)&ABCVm::wrong_exec_pos,ARGS_NONE}
 };
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
@@ -653,6 +654,11 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 	bool stop;
 	stringstream code(body->code);
 	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
+	for (unsigned int i=0;i<body->exception_count;i++)
+	{
+		exception_info& exc=body->exceptions[i];
+		LOG(LOG_TRACE,"Exception handler: from " << exc.from << " to " << exc.to << " handled by " << exc.target);
+	}
 	//We try to analyze the blocks first to find if locals can survive the jumps
 	while(1)
 	{
@@ -673,15 +679,30 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			code >> opcode;
 			if(code.eof())
 				break;
+
+			/* check if the local_ip is the beginning of a catch block */
+			for (unsigned int i=0;i<body->exception_count;i++)
+			{
+				exception_info& exc=body->exceptions[i];
+				if(exc.target == local_ip)
+				{
+					addBlock(blocks,local_ip,"catch");
+					static_stack_types.clear();
+					cur_block=&blocks[local_ip];
+					LOG(LOG_TRACE,_("New block at ") << local_ip);
+					break;
+				}
+			}
+
 			//Check if we are expecting a new block start
 			map<unsigned int,block_info>::iterator it=blocks.find(local_ip);
 			if(it!=blocks.end())
 			{
-				if(cur_block)
-				{
-					it->second.preds.insert(cur_block);
-					cur_block->seqs.insert(&it->second);
-				}
+				//if(cur_block)
+				//{
+				//	it->second.preds.insert(cur_block);
+				//	cur_block->seqs.insert(&it->second);
+				//}
 				cur_block=&it->second;
 				LOG(LOG_TRACE,_("New block at ") << local_ip);
 				cur_block->locals=cur_block->locals_start;
@@ -1553,9 +1574,46 @@ SyntheticFunction::synt_function method_info::synt_method()
 	stringstream code(body->code);
 	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
 	block_info* cur_block=NULL;
-
 	static_stack.clear();
-	Builder.CreateBr(blocks[0].BB);
+
+	/* exception handling -> jump to exec_pos. exec_pos = 0 corresponds to normal execution */
+	if(body->exception_count)
+	{
+		llvm::Value* vexec_pos = Builder.CreateLoad(exec_pos);
+		llvm::BasicBlock* Default=llvm::BasicBlock::Create(llvm_context,"exec_pos_error", llvmf);
+		llvm::SwitchInst* sw=Builder.CreateSwitch(vexec_pos,Default);
+		/* it is an error if exec_pos is not 0 or one of the catch handlers */
+		Builder.SetInsertPoint(Default);
+#ifndef NDEBUG
+		Builder.CreateCall(ex->FindFunctionNamed("wrong_exec_pos"));
+#endif
+		Builder.CreateBr(blocks[0].BB);
+
+		/* start with ip zero if exec_pos is zero */
+		llvm::BasicBlock* Case=llvm::BasicBlock::Create(llvm_context,"exec_pos_handler_init", llvmf);
+		llvm::ConstantInt* constant = static_cast<llvm::ConstantInt*>(llvm::ConstantInt::get(int_type, 0));
+		sw->addCase(constant, Case);
+		Builder.SetInsertPoint(Case);
+		Builder.CreateBr(blocks[0].BB);
+
+		/* start at an catch handler if its ip is given in exec_pos*/
+		for (unsigned int i=0;i<body->exception_count;i++)
+		{
+			exception_info& exc=body->exceptions[i];
+			Case=llvm::BasicBlock::Create(llvm_context,"exec_pos_handler", llvmf);
+			constant = static_cast<llvm::ConstantInt*>(llvm::ConstantInt::get(int_type, exc.target));
+			sw->addCase(constant, Case);
+			Builder.SetInsertPoint(Case);
+			Builder.CreateBr(blocks[exc.target].BB);
+		}
+	}
+	else
+	{	//this function has no exception handling, so just start from the beginning
+		Builder.CreateBr(blocks[0].BB);
+	}
+
+
+
 	u8 opcode;
 	bool last_is_branch=true;
 
@@ -1573,6 +1631,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		{
 			if(!last_is_branch)
 			{
+				//this happens, for example, at the end of catch handlers
 				LOG(LOG_TRACE, _("Last instruction before a new block was not a branch."));
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,it->second);
@@ -1604,8 +1663,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 			continue;
 		}
 
-		constant = llvm::ConstantInt::get(int_type, local_ip);
-		Builder.CreateStore(constant,exec_pos);
+		if(body->exception_count)
+		{ //if this function has a try/catch block, record the local_ip, so we can figure out where we were
+		  //in case of an exception to find the right catch
+		  //TODO: would be enough to set this once on enter of try-block
+			constant = llvm::ConstantInt::get(int_type, local_ip);
+			Builder.CreateStore(constant,exec_pos);
+		}
 		switch(opcode)
 		{
 			case 0x03:
@@ -3920,4 +3984,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 	f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
 	//llvmf->dump();
 	return f;
+}
+
+void ABCVm::wrong_exec_pos()
+{
+	assert_and_throw(false && "wrong_exec_pos");
 }

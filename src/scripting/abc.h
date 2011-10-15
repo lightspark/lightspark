@@ -589,6 +589,7 @@ private:
 	static bool strictEquals(ASObject*,ASObject*);
 	//Utility
 	static void not_impl(int p);
+	static void wrong_exec_pos();
 
 	//Internal utilities
 	static void method_reset(method_info* th);

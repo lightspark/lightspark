@@ -2851,18 +2851,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(value.second==STACK_INT)
 					Builder.CreateCall3(ex->FindFunctionNamed("setProperty_i"),value.first, obj.first, name);
-				else if(value.second==STACK_NUMBER)
-				{
-					value.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),value.first);
-					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
-				}
-				else if(value.second==STACK_BOOLEAN)
-				{
-					value.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),value.first);
-					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
-				}
 				else
+				{
+					abstract_value(ex,Builder,value);
 					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
+				}
 				break;
 			}
 			case 0x62:

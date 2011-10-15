@@ -3870,7 +3870,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//getlocal_n
 				int i=opcode&3;
-				LOG(LOG_TRACE, _("synt getlocal_n ") << i );
+				LOG(LOG_TRACE, _("synt getlocal_n ") << i << " " << static_locals[i].second);
 				constant = llvm::ConstantInt::get(int_type, i);
 
 				if(static_locals[i].second==STACK_NONE)
@@ -3989,9 +3989,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
+	//llvmf->dump(); //dump before optimization
 	getVm()->FPM->run(*llvmf);
 	f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
-	//llvmf->dump();
+	//llvmf->dump(); //dump after optimization
 	return f;
 }
 

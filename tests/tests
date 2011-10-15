@@ -1,6 +1,6 @@
 #!/bin/bash
 #Set you lightspark executable path here
-LIGHTSPARK="lightspark"
+LIGHTSPARK=${LIGHTSPARK-"lightspark"}
 #Set the default loglevel here
 LOGLEVEL="0"
 #Set the default root URL here

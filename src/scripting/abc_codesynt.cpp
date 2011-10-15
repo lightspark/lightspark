@@ -2796,17 +2796,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//If we can do it, push Global
 				//HACK: should walk the scope stack
 				bool staticallyResolved=false;
-				if(rtdata==0)
+				/*if(rtdata==0)
 				{
-					assert(false && "rewrite support for early binding");
-/*					multiname* name=this->context->getMultiname(t,NULL);
-					if(getGlobal()->getVariableAndTargetByMultiname(*name)!=NULL)
+					ASObject* target;
+					multiname* name=this->context->getMultiname(t,NULL);
+					if(getGlobal()->getVariableAndTargetByMultiname(*name,target)!=NULL)
 					{
 						//Ok, let's push global at runtime
 						value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"));
 						staticallyResolved=true;
-					}*/
-				}
+					}
+				}*/
 
 				if(staticallyResolved==false)
 				{

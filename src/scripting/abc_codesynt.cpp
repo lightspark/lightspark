@@ -3616,11 +3616,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT && v2.second==STACK_INT)
 					value=Builder.CreateXor(v1.first,v2.first);
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-				{
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("bitXor"), v1.first, v2.first);
-				}
 				else
 				{
 					abstract_value(ex,Builder,v1);

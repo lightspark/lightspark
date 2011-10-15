@@ -3529,11 +3529,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt urshift") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					value=Builder.CreateCall2(ex->FindFunctionNamed("urShift"), v1.first, v2.first);
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-					exit(43);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 					value=Builder.CreateCall2(ex->FindFunctionNamed("urShift_io"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
 				{
@@ -3547,13 +3543,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateFPToSI(v2.first,int_type);
 					value=Builder.CreateLShr(v2.first,v1.first); //Check for trucation of v1.first
 				}
-				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
+				else
 				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v1.first);
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("urShift"), v1.first, v2.first);
 				}
-				else
-					throw UnsupportedException("Unsupported type for urShift");
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;

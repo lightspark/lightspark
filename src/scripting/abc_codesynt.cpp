@@ -32,6 +32,14 @@
 using namespace std;
 using namespace lightspark;
 
+static const llvm::Type* void_type = NULL;
+static const llvm::Type* int_type = NULL;
+static const llvm::Type* voidptr_type = NULL;
+static const llvm::Type* number_type = NULL;
+static const llvm::Type* bool_type = NULL;
+static const llvm::Type* ptr_type = NULL;
+static const llvm::Type* context_type = NULL;
+
 void debug_d(number_t f)
 {
 	LOG(LOG_CALLS, _("debug_d ")<< f);
@@ -207,19 +215,21 @@ void ABCVm::registerFunctions()
 	vector<const llvm::Type*> sig;
 	llvm::FunctionType* FT=NULL;
 
-	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType(llvm_context);
-	const llvm::Type* int_type=ptr_type;
-	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(ptr_type);
-	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
-	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
-	const llvm::Type* void_type=llvm::Type::getVoidTy(llvm_context);
+	//Create types
+	ptr_type=ex->getTargetData()->getIntPtrType(llvm_context);
+	voidptr_type=llvm::PointerType::getUnqual(ptr_type);
+	number_type=llvm::Type::getDoubleTy(llvm_context);
+	bool_type=llvm::IntegerType::get(llvm_context,1);
+	void_type=llvm::Type::getVoidTy(llvm_context);
+	int_type=llvm::IntegerType::get(getVm()->llvm_context,32);
+	assert(int_type != ptr_type); //needed in stackTypeFromLLVMType()
 
 	//All the opcodes needs a pointer to the context
 	std::vector<const llvm::Type*> struct_elems;
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
-	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
+	context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
 
 	//newActivation needs both method_info and the context
 	sig.push_back(context_type);
@@ -282,11 +292,6 @@ void ABCVm::registerFunctions()
 
 void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len)
 {
-	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
-	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
-	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
-	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
-
 	vector<const llvm::Type*> sig_obj_obj;
 	sig_obj_obj.push_back(voidptr_type);
 	sig_obj_obj.push_back(voidptr_type);
@@ -329,12 +334,6 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	vector<const llvm::Type*> sig_int_int;
 	sig_int_int.push_back(int_type);
 	sig_int_int.push_back(int_type);
-
-	std::vector<const llvm::Type*> struct_elems;
-	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(int_type)));
-	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(int_type)));
-	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
-	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
 
 	vector<const llvm::Type*> sig_context;
 	sig_context.push_back(context_type);
@@ -582,15 +581,6 @@ STACK_TYPE block_info::checkProactiveCasting(int local_ip,STACK_TYPE type)
 
 llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex)
 {
-	//whatever pointer is good
-	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType(getVm()->llvm_context);
-
-	std::vector<const llvm::Type*> struct_elems;
-	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(llvm::IntegerType::get(getVm()->llvm_context,32));
-	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(getVm()->llvm_context,struct_elems,true));
-
 	//Initialize LLVM representation of method
 	vector<const llvm::Type*> sig;
 	sig.push_back(context_type);
@@ -643,12 +633,6 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 	bool stop;
 	stringstream code(body->code);
 	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
-	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
-	llvm::ExecutionEngine* ex=getVm()->ex;
-	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
-	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
-	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
-	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
 	//We try to analyze the blocks first to find if locals can survive the jumps
 	while(1)
 	{
@@ -1493,13 +1477,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 	llvm::FunctionType* method_type=synt_method_prototype(ex);
 	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,method_name,getVm()->module);
 
-	//The pointer size compatible int type will be useful
-	//TODO: void*
-	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
-	const llvm::Type* int32_type=llvm::IntegerType::get(getVm()->llvm_context,32);
-	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
-	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
-
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
 	llvm::IRBuilder<> Builder(llvm_context);
 	Builder.SetInsertPoint(BB);
@@ -1510,10 +1487,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 	llvm::Constant* constant3;
 	llvm::Value* value;
 	//let's give access to method data to llvm
-	constant = llvm::ConstantInt::get(int_type, (uintptr_t)this);
-	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
+	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
+	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, voidptr_type);
 
 	llvm::Function::ArgumentListType::iterator it=llvmf->getArgumentList().begin();
+	//The first and only argument to this function is the call_context*
 	llvm::Value* context=it;
 
 	//let's give access to local data storage
@@ -1615,8 +1593,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				Builder.CreateCall(ex->FindFunctionNamed("throw"), context);
 				//Right now we set up like we do for retunrvoid
 				last_is_branch=true;
-				constant = llvm::ConstantInt::get(int_type, 0);
-				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
+				constant = llvm::ConstantInt::get(ptr_type, 0);
+				value = llvm::ConstantExpr::getIntToPtr(constant, voidptr_type);
 				for(unsigned int i=0;i<static_locals.size();i++)
 				{
 					if(static_locals[i].second==STACK_OBJECT)
@@ -2613,8 +2591,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//returnvoid
 				LOG(LOG_TRACE, _("synt returnvoid") );
 				last_is_branch=true;
-				constant = llvm::ConstantInt::get(int_type, 0);
-				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
+				constant = llvm::ConstantInt::get(ptr_type, 0);
+				value = llvm::ConstantExpr::getIntToPtr(constant, voidptr_type);
 				for(unsigned int i=0;i<static_locals.size();i++)
 				{
 					if(static_locals[i].second==STACK_OBJECT)
@@ -3579,8 +3557,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("urShift_io"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
 				{
-					v2.first=Builder.CreateIntCast(v2.first,int32_type,false);
-					v1.first=Builder.CreateIntCast(v1.first,int32_type,false);
+					v2.first=Builder.CreateIntCast(v2.first,int_type,false);
+					v1.first=Builder.CreateIntCast(v1.first,int_type,false);
 					value=Builder.CreateLShr(v2.first,v1.first); //Check for trucation of v1.first
 					value=Builder.CreateIntCast(value,int_type,false);
 				}

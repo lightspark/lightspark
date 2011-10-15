@@ -1914,23 +1914,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				last_is_branch=true;
 				s24 t;
 				code >> t;
-			
+
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* cond;
 				//Make comparision
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
-				}
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-				{
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
-				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
@@ -1942,7 +1932,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					abstract_value(ex,Builder,v2);
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
 				}
-			
+
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
 				int here=code.tellg();

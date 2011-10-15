@@ -1181,13 +1181,19 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				}
 				case 0x91: //increment
 				case 0x93: //decrement
+				{
+					popTypeFromStack(static_stack_types,local_ip).second;
+					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+					break;
+				}
 				case 0xc0: //increment_i
 				case 0xc1: //decrement_i
 				{
 					popTypeFromStack(static_stack_types,local_ip).second;
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
 				}
 				case 0x96: //not

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Misc_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		function f1():String { return 1; }
+		//should be coerced to String on return
+		Tests.assertEquals("13", f1() + 3,"Return value coercion");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

@@ -2268,6 +2268,25 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 							 || typeObject->getObjectType()==T_DEFINABLE);
 					if(typeObject->getObjectType()==T_CLASS)
 						typeClass=static_cast<Class_base*>(typeObject);
+					else if (typeObject->getObjectType()==T_DEFINABLE)
+					{
+						// Avoid deferred definition if the
+						// slot is of the same type as obj,
+						// because the class cinit may
+						// initialize the slot, which would
+						// lead to recursion
+						if(obj->is<Class_base>() &&
+						   obj->as<Class_base>()->class_name.getQualifiedName()==type->qualifiedString())
+						{
+							typeClass=obj->as<Class_base>();
+						}
+						else
+						{
+							// will be decRef'd when defined
+							typeObject->incRef();
+							typeClass=static_cast<Class_base*>(typeObject);
+						}
+					}
 					else
 						typeClass = NULL;
 				}
@@ -2278,6 +2297,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				// typeClass is NULL for any type (type_name = 0)
 				assert(typeClass || t->type_name==0); //this is not implemented for T_TEMPLATE yet
 				ASObject* ret=getConstant(t->vkind,t->vindex);
+				// Not sure if it is legal to have non-null initial value for T_DEFINABLE types
+				assert(!(typeClass->getObjectType()==T_DEFINABLE && ret->getObjectType()!=T_NULL));
 				obj->initializeVariableByMultiname(mname, ret, typeClass);
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, mname);

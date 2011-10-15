@@ -471,8 +471,27 @@ inline stack_entry method_info::static_stack_peek(llvm::IRBuilder<>& builder, ve
 	return stack_entry(llvm_stack_peek(builder,dynamic_stack,dynamic_stack_index),STACK_OBJECT);
 }
 
+inline STACK_TYPE stackTypeFromLLVMType(const llvm::Type* type)
+{
+	if(type == number_type)
+		return STACK_NUMBER;
+	else if(type == voidptr_type)
+		return STACK_OBJECT;
+	else if(type == int_type)
+		return STACK_INT;
+	else if(type == bool_type)
+		return STACK_BOOLEAN;
+	else
+	{
+		//STACK_UINT is not used in abc_codesynth
+		assert_and_throw(false);
+		return STACK_NONE;
+	}
+}
+
 inline void method_info::static_stack_push(vector<stack_entry>& static_stack, const stack_entry& e)
 {
+	assert(stackTypeFromLLVMType(e.first->getType()) == e.second);
 	static_stack.push_back(e);
 }
 

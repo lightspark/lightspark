@@ -30,9 +30,17 @@ class Date: public ASObject
 CLASSBUILDABLE(Date);
 private:
 	int extrayears;
+	int year;
+	int month;
+	int day;
+	int day_of_week;
+	int hour;
+	int minute;
+	int second;
 	int millisecond;
 	Date();
 	GDateTime *datetime;
+	ASObject *msSinceEpoch();
 public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -57,6 +65,20 @@ public:
 	ASFUNCTION(getUTCSeconds);
 	ASFUNCTION(getUTCMilliseconds);
 	ASFUNCTION(valueOf);
+	ASFUNCTION(setFullYear);
+	ASFUNCTION(setMonth);
+	ASFUNCTION(setDate);
+	ASFUNCTION(setHours);
+	ASFUNCTION(setMinutes);
+	ASFUNCTION(setSeconds);
+	ASFUNCTION(setMilliseconds);
+	ASFUNCTION(setUTCFullYear);
+	ASFUNCTION(setUTCMonth);
+	ASFUNCTION(setUTCDate);
+	ASFUNCTION(setUTCHours);
+	ASFUNCTION(setUTCMinutes);
+	ASFUNCTION(setUTCSeconds);
+	ASFUNCTION(setUTCMilliseconds);
 	ASFUNCTION(timezoneOffset);
 	tiny_string toString(bool debugMsg=false);
 	tiny_string toString_priv() const;

@@ -3649,6 +3649,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt strictequals") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("strictEquals"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;

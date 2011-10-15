@@ -2193,20 +2193,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* cond;
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
-				}
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-				{
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
-				}
-				else
-					throw UnsupportedException("Unsupported types for ifStrictNE");
+
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
+				cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
 
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 

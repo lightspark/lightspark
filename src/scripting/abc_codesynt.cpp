@@ -3174,24 +3174,28 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x91:
 			{
 				//increment
-				LOG(LOG_TRACE, _("synt increment") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				LOG(LOG_TRACE, "synt increment " << v1.second);
 				if(v1.second==STACK_OBJECT)
+				{
 					value=Builder.CreateCall(ex->FindFunctionNamed("increment"), v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
 				else if(v1.second==STACK_INT)
 				{
 					constant = llvm::ConstantInt::get(int_type, 1);
 					value=Builder.CreateAdd(v1.first,constant);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else if(v1.second==STACK_NUMBER)
 				{
 					constant = llvm::ConstantInt::get(int_type, 1);
-					v1.first=Builder.CreateFPToSI(v1.first,int_type);
-					value=Builder.CreateAdd(v1.first,constant);
+					//convert constant to float and add
+					value=Builder.CreateAdd(v1.first,Builder.CreateSIToFP(constant,number_type));
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else
 					throw UnsupportedException("Unsupported type for increment");
-				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
 			case 0x93:

@@ -3515,19 +3515,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt rshift") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("rShift"), v1.first, v2.first);
-				}
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					abstract_value(ex,Builder,v2);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("lShift"), v1.first, v2.first);
-				}
 
-				static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("rShift"), v1.first, v2.first);
+
+				static_stack_push(static_stack,make_pair(value,STACK_INT));
 				break;
 			}
 			case 0xa7:

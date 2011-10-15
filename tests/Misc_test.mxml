@@ -13,6 +13,25 @@
 		function f1():String { return 1; }
 		//should be coerced to String on return
 		Tests.assertEquals("13", f1() + 3,"Return value coercion");
+
+		function f2():int { return "3" }
+		//should be coerced to String on return
+		Tests.assertEquals(4, f2()+1,"Return value coercion");
+
+		function f3():Array { return 3 }
+		try
+		{
+			f3();
+			Tests.assertDontReach("function f3():Array { return 3 }: No TypeError in return type conversion");
+		}
+		catch (e:TypeError)
+		{
+			Tests.assertTrue(true, "function f3():Array { return 3 }: TypeError in return type conversion");
+		}
+
+		//In AS3, the valueOf function is additionally defined as method
+		//this check is used in our test runner to see if we are running AS3
+		Tests.assertTrue((new Namespace).valueOf != Namespace.prototype.valueOf,"(new Namespace).valueOf != Namespace.prototype.valueOf");
 		Tests.report(visual, this.name);
 	}
 	]]>

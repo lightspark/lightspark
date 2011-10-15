@@ -24,6 +24,7 @@
 #include <llvm/LLVMContext.h>
 #include <llvm/Target/TargetData.h>
 #include <llvm/Target/TargetSelect.h>
+#include <llvm/Target/TargetOptions.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Transforms/Scalar.h> 
 #include "logger.h"
@@ -1694,6 +1695,10 @@ void ABCVm::Run(ABCVm* th)
 	isVmThread=true;
 	if(th->m_sys->useJit)
 	{
+		llvm::JITExceptionHandling = true;
+#ifndef NDEBUG
+		llvm::JITEmitDebugInfo = true;
+#endif
 		llvm::InitializeNativeTarget();
 		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
 		llvm::EngineBuilder eb(th->module);

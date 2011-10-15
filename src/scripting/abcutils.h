@@ -46,6 +46,7 @@ struct call_context
 		ASObject** locals;
 		ASObject** stack;
 		uint32_t stack_index;
+		uint32_t exec_pos;
 	} PACKED;
 #include "packed_end.h"
 	ABCContext* context;

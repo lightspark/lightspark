@@ -1512,7 +1512,7 @@ ASObject* call_context::runtime_stack_peek()
 	return stack[stack_index-1];
 }
 
-call_context::call_context(method_info* th, int level, ASObject* const* args, const unsigned int num_args):code(NULL)
+call_context::call_context(method_info* th, int level, ASObject* const* args, const unsigned int num_args):exec_pos(0),code(NULL)
 {
 	mi=th;
 	locals=new ASObject*[th->body->local_count+1];

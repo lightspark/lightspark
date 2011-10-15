@@ -2396,7 +2396,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 		}
 		catch (ASObject* excobj) // Doesn't have to be an ASError at all.
 		{
-			unsigned int pos = cc->code->tellg();
+			unsigned int pos = cc->exec_pos;
 			bool no_handler = true;
 
 			LOG(LOG_TRACE, "got an " << excobj->toString());
@@ -2409,7 +2409,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 				if (pos > exc.from && pos <= exc.to && ABCContext::isinstance(excobj, name))
 				{
 					no_handler = false;
-					cc->code->seekg((uint32_t)exc.target);
+					cc->exec_pos = (uint32_t)exc.target;
 					cc->runtime_stack_clear();
 					cc->runtime_stack_push(excobj);
 					cc->scope_stack.clear();

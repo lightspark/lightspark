@@ -229,6 +229,7 @@ void ABCVm::registerFunctions()
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
+	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
 	context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
 
 	//newActivation needs both method_info and the context
@@ -1527,6 +1528,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 	//Get the index of the dynamic stack
 	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(context,2);
 
+	llvm::Value* exec_pos=Builder.CreateStructGEP(context,3);
+
 /*	//Allocate a fast dynamic stack based on LLVM alloca instruction
 	//This is used on branches
 	vactor<llvm::Value*> fast_dynamic_stack(body->max_stack);
@@ -1601,6 +1604,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			continue;
 		}
 
+		constant = llvm::ConstantInt::get(int_type, local_ip);
+		Builder.CreateStore(constant,exec_pos);
 		switch(opcode)
 		{
 			case 0x03:

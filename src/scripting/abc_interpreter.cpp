@@ -38,6 +38,9 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 {
 	method_info* mi=function->mi;
 
+	//This may be non-zero and point to the position of an exception handler
+	context->code->seekg(context->exec_pos);
+
 	istringstream& code=*(context->code);
 	int code_len=code.str().length();
 
@@ -64,6 +67,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 		if(code.eof())
 			throw ParseException("End of code in interpreter");
 
+		//Save ip for exception handling in SyntheticFunction::callImpl
+		context->exec_pos = code.tellg();
 		switch(opcode)
 		{
 			case 0x02:

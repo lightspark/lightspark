@@ -787,16 +787,19 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 
 					int here=code.tellg();
 					int dest=here+t;
-					//Create a block for the fallthrough code and insert in the mapping
-					addBlock(blocks,here,"fall");
-					blocks[here].preds.insert(cur_block);
-					cur_block->seqs.insert(&blocks[here]);
+					if(opcode != 0x10 /*jump*/)
+					{
+						//Create a block for the fallthrough code and insert in the mapping
+						addBlock(blocks,here,"fall");
+						blocks[here].preds.insert(cur_block);
+						cur_block->seqs.insert(&blocks[here]);
+					}
 
 					//And for the branch destination, if they are not in the blocks mapping
 					addBlock(blocks,dest,"then");
 					blocks[dest].preds.insert(cur_block);
 					cur_block->seqs.insert(&blocks[dest]);
-		
+
 					static_stack_types.clear();
 					break;
 				}

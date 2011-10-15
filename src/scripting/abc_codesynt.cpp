@@ -3207,13 +3207,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					constant = llvm::ConstantInt::get(int_type, 1);
 					value=Builder.CreateSub(v1.first,constant);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else
 				{
 					abstract_value(ex,Builder,v1);
 					value=Builder.CreateCall(ex->FindFunctionNamed("decrement"), v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
-				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
 			case 0x95:

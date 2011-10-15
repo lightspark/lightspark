@@ -64,6 +64,10 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getTextWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_setWordWrap),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_getWordWrap),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_setAutoSize),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_getAutoSize),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(_setTextFormat),NORMAL_METHOD,true);
 
@@ -96,6 +100,59 @@ _NR<InteractiveObject> TextField::hitTestImpl(_NR<InteractiveObject> last, numbe
 		return NullRef;
 }
 
+ASFUNCTIONBODY(TextField,_getWordWrap)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_b(th->wordWrap);
+}
+
+ASFUNCTIONBODY(TextField,_setWordWrap)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	assert_and_throw(argslen==1);
+	th->wordWrap=Boolean_concrete(args[0]);
+	if(th->onStage)
+		th->requestInvalidation();
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_getAutoSize)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	switch(th->autoSize)
+	{
+		case AS_NONE:
+			return Class<ASString>::getInstanceS("none");
+		case AS_LEFT:
+			return Class<ASString>::getInstanceS("left");
+		case AS_RIGHT:
+			return Class<ASString>::getInstanceS("right");
+		case AS_CENTER:
+			return Class<ASString>::getInstanceS("center");
+	}
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_setAutoSize)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	assert_and_throw(argslen==1);
+	tiny_string temp = args[0]->toString();
+	if(temp == "none")
+		th->autoSize = AS_NONE;//TODO: take care of corner cases : what to do with sizes when changing the autoSize
+	else if (temp == "left")
+		th->autoSize = AS_LEFT;
+	else if (temp == "right")
+		th->autoSize = AS_RIGHT;
+	else if (temp == "center")
+		th->autoSize = AS_CENTER;
+	else
+		throw Class<ArgumentError>::getInstanceS("Wrong argument in TextField.autoSize");
+	if(th->onStage)
+		th->requestInvalidation();//TODO:check if there was any change
+	return NULL;
+}
+
 ASFUNCTIONBODY(TextField,_getWidth)
 {
 	TextField* th=Class<TextField>::cast(obj);
@@ -106,11 +163,15 @@ ASFUNCTIONBODY(TextField,_setWidth)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
-	th->width=args[0]->toInt();
-	if(th->onStage)
-		th->requestInvalidation();
-	else
-		th->updateSizes();
+	//The width needs to be updated only if autoSize is off or wordWrap is on TODO:check this, adobe's behavior is not clear
+	if((th->autoSize == AS_NONE)||(th->wordWrap == true))
+	{
+		th->width=args[0]->toInt();
+		if(th->onStage)
+			th->requestInvalidation();
+		else
+			th->updateSizes();
+	}
 	return NULL;
 }
 
@@ -124,11 +185,15 @@ ASFUNCTIONBODY(TextField,_setHeight)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
-	th->height=args[0]->toInt();
-	if(th->onStage)
-		th->requestInvalidation();
-	else
-		th->updateSizes();
+	if(th->autoSize == AS_NONE)
+	{
+		th->height=args[0]->toInt();
+		if(th->onStage)
+			th->requestInvalidation();
+		else
+			th->updateSizes();
+	}
+	//else do nothing as the height is determined by autoSize
 	return NULL;
 }
 

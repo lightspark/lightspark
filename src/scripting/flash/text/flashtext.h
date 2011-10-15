@@ -58,6 +58,10 @@ public:
 	ASFUNCTION(_setHeight);
 	ASFUNCTION(_getText);
 	ASFUNCTION(_setText);
+	ASFUNCTION(_setAutoSize);
+	ASFUNCTION(_getAutoSize);
+	ASFUNCTION(_setWordWrap);
+	ASFUNCTION(_getWordWrap);
 	ASFUNCTION(_getTextWidth);
 	ASFUNCTION(_getTextHeight);
 	ASFUNCTION(_setTextFormat);

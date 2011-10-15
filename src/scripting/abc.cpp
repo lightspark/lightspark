@@ -1703,7 +1703,6 @@ void ABCVm::Run(ABCVm* th)
 		assert_and_throw(th->ex);
 
 		th->FPM=new llvm::FunctionPassManager(th->module);
-	      
 		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
 #ifdef EXPENSIVE_DEBUG
 		//This is pretty heavy, do not enable in release

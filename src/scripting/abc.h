@@ -630,9 +630,11 @@ public:
 	Manager* int_manager;
 	Manager* uint_manager;
 	Manager* number_manager;
+
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;
+
 	ABCVm(SystemState* s) DLL_PUBLIC;
 	/**
 		Destroys the VM

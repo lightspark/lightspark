@@ -237,7 +237,7 @@ void ABCVm::registerFunctions()
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
-	
+
 	//Lazy pushing, no context, (ASObject*, uintptr_t, int)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));

@@ -178,6 +178,7 @@ struct block_info
 	block_info(const method_info* mi, const char* blockName);
 	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
 };
+std::ostream& operator<<(std::ostream& o, const block_info& b);
 
 typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)

@@ -415,6 +415,17 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	}
 }
 
+std::ostream& lightspark::operator<<(std::ostream& o, const block_info& b)
+{
+	o << "this: " << &b
+		<< " locals_start: " << b.locals_start
+		<< " locals_reset: " << b.locals_reset
+		<< " locals_used: " << b.locals_used
+		<< " preds: " << b.preds
+		<< " seqs: " << b.seqs;
+	return o;
+}
+
 llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
 {
 	//decrement stack index

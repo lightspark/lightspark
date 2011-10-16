@@ -3190,6 +3190,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,v1);
 				else
 				{
+					abstract_value(ex,Builder,v1);
 					value=Builder.CreateCall(ex->FindFunctionNamed("convert_b"), v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				}

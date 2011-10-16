@@ -24,6 +24,8 @@
 #include <semaphore.h>
 #include <iostream>
 #include <sstream>
+#include <vector>
+#include <set>
 
 enum LOG_LEVEL { LOG_ERROR=0, LOG_INFO=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_TRACE=4};
 
@@ -55,5 +57,31 @@ public:
 	static LOG_LEVEL getLevel() DLL_PUBLIC {return log_level;}
 
 };
+
+template<typename T>
+std::ostream& printContainer(std::ostream& os, const T& v)
+{
+	os << "[";
+	for (typename T::const_iterator i = v.begin(); i != v.end(); ++i)
+	{
+		os << " " << *i;
+	}
+	os << "]";
+	return os;
+}
+
+/* convenience function to log std containers */
+namespace std {
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+{
+	return printContainer(os,v);
+}
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const std::set<T>& v)
+{
+	return printContainer(os,v);
+}
+}
 
 #endif

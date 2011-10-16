@@ -1658,9 +1658,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,it->second);
 				Builder.CreateBr(it->second.BB);
 			}
-			LOG(LOG_TRACE,_("Starting block at ")<<local_ip);
-			Builder.SetInsertPoint(it->second.BB);
 			cur_block=&it->second;
+			LOG(LOG_TRACE,_("Starting block at ")<<local_ip << " " << *cur_block);
+			Builder.SetInsertPoint(cur_block->BB);
 
 			if(!cur_block->locals_start.empty())
 			{

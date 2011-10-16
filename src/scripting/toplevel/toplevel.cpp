@@ -2290,7 +2290,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	}
 
 	//Temporarily disable JITting
-	if(sys->useJit && (hit_count==hit_threshold || sys->useInterpreter==false))
+	if(!mi->body->exception_count && sys->useJit && (hit_count==hit_threshold || sys->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();
@@ -2386,7 +2386,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	{
 		try
 		{
-			if(val==NULL && sys->useInterpreter)
+			if(mi->body->exception_count || (val==NULL && sys->useInterpreter))
 			{
 				//This is not a hot function, execute it using the interpreter
 				ret=ABCVm::executeFunction(this,cc);

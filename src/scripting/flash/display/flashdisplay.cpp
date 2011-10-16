@@ -386,8 +386,11 @@ void Loader::execute()
 
 		// Wait until the object is constructed before adding
 		// to the Loader
-		while (!obj->isConstructed())
+		while (!obj->isConstructed() && !aborting)
 			compat_msleep(100);
+
+		if(aborting)
+			return;
 
 		setContent(obj);
 		contentLoaderInfo->sendInit();

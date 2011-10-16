@@ -164,13 +164,13 @@ struct option_detail
 struct block_info
 {
 	llvm::BasicBlock* BB;
-	std::vector<STACK_TYPE> locals;
-	std::vector<STACK_TYPE> locals_start;
-	std::vector<llvm::Value*> locals_start_obj;
-	std::vector<bool> locals_reset;
-	std::vector<bool> locals_used;
-	std::set<block_info*> preds;
-	std::set<block_info*> seqs;
+	std::vector<STACK_TYPE> locals; /* current type of locals */
+	std::vector<STACK_TYPE> locals_start; /* types of locals at the start of the block */
+	std::vector<llvm::Value*> locals_start_obj; /*object of locals at the start of the block */
+	std::vector<bool> locals_reset; /* should reset local at start of block ? */
+	std::vector<bool> locals_used; /* getlocal/setlocal in this block used the given local */
+	std::set<block_info*> preds; /* preceding blocks */
+	std::set<block_info*> seqs; /* subsequent blocks */
 	std::map<int,STACK_TYPE> push_types;
 
 	//Needed for indexed access

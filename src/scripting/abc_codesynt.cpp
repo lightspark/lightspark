@@ -526,7 +526,7 @@ void method_info::abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& b
 		default:
 			throw RunTimeException("Unexpected object type to abstract");
 	}
-	
+	e.second = STACK_OBJECT;
 }
 
 inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, 

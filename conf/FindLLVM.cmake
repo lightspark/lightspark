@@ -45,6 +45,7 @@ else (LLVM_INCLUDE_DIR)
     /opt/llvm/2.7/bin
     /opt/llvm/bin
     /usr/lib/llvm-2.7/bin
+    /usr/lib/llvm-2.8/bin
     /usr/lib/llvm-2.9/bin
     )
 

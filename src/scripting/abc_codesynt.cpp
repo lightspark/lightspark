@@ -709,12 +709,16 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			map<unsigned int,block_info>::iterator it=blocks.find(local_ip);
 			if(it!=blocks.end())
 			{
-				//if(cur_block)
-				//{
-				//	it->second.preds.insert(cur_block);
-				//	cur_block->seqs.insert(&it->second);
-				//}
-				cur_block=&it->second;
+				block_info* next_block = &it->second;
+				if(cur_block && !last_is_branch)
+				{
+					//no instruction in cur_block setup seqs and preds
+					//this happens when we fall through into the next_block
+					//without jump/branch etc.
+					next_block->preds.insert(cur_block);
+					cur_block->seqs.insert(next_block);
+				}
+				cur_block=next_block;
 				LOG(LOG_TRACE,_("New block at ") << local_ip);
 				cur_block->locals=cur_block->locals_start;
 				last_is_branch=false;
@@ -765,13 +769,10 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					unsigned int here=local_ip;
 					addBlock(blocks,here,"label");
 
-					last_is_branch=false;
+					last_is_branch = true;
 					blocks[here].preds.insert(cur_block);
 					cur_block->seqs.insert(&blocks[here]);
 					static_stack_types.clear();
-					cur_block=&blocks[here];
-					LOG(LOG_TRACE,_("New block at ") << local_ip);
-					cur_block->locals=cur_block->locals_start;
 					break;
 				}
 				case 0x0c: //ifnlt

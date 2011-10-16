@@ -358,8 +358,6 @@ private:
 	std::istream& f;
 	std::streambuf* zlibFilter;
 	std::streambuf* backend;
-	sem_t ended;
-	bool isEnded;
 	Loader *loader;
 	_NR<DisplayObject> parsedObject;
 	Spinlock objectSpinlock;

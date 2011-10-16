@@ -997,21 +997,19 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 
 ParseThread::ParseThread(istream& in, Loader *_loader, tiny_string srcurl)
   : version(0),useAVM2(false),useNetwork(false),
-    f(in),zlibFilter(NULL),backend(NULL),isEnded(false),loader(_loader),
+    f(in),zlibFilter(NULL),backend(NULL),loader(_loader),
     parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
-	sem_init(&ended,0,0);
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
   : version(0),useAVM2(false),useNetwork(false),
-    f(in),zlibFilter(NULL),backend(NULL),isEnded(false),loader(NULL),
+    f(in),zlibFilter(NULL),backend(NULL),loader(NULL),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	setRootMovie(root);
-	sem_init(&ended,0,0);
 }
 
 ParseThread::~ParseThread()
@@ -1023,7 +1021,6 @@ ParseThread::~ParseThread()
 		delete zlibFilter;
 	}
 	parsedObject.reset();
-	sem_destroy(&ended);
 }
 
 FILE_TYPE ParseThread::recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4)
@@ -1108,8 +1105,6 @@ void ParseThread::execute()
 		LOG(LOG_ERROR,_("Stream exception in ParseThread ") << e.what());
 	}
 	pt=NULL;
-
-	sem_post(&ended);
 }
 
 void ParseThread::parseSWF(UI8 ver)

@@ -726,10 +726,26 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			}
 			else if(last_is_branch)
 			{
-				//TODO: Check this. It seems that there may be invalid code after
-				//block end
-				LOG(LOG_TRACE,_("Ignoring at ") << local_ip);
-				continue;
+				//the last instruction was a branch which cannot fallthrough,
+				//but there is now new block registered at local_ip.
+				//The only way that the next instructions are reachable
+				//is when we have a label here.
+				if(opcode != 0x09 /*label*/)
+				{
+					map<unsigned int,block_info>::iterator bit=blocks.lower_bound(local_ip);
+					if(bit==blocks.end())
+					{
+						LOG(LOG_TRACE,"Ignoring trailing opcodes at " << local_ip);
+						break; //there is no block after this local_ip
+					}
+					else
+					{
+						unsigned int next_ip = bit->first;
+						LOG(LOG_TRACE,"Ignoring from " << local_ip << " to " << next_ip);
+						code.seekg(next_ip,ios_base::beg);
+						continue;
+					}
+				}
 			}
 			switch(opcode)
 			{
@@ -767,12 +783,16 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				{
 					//Create a new block and insert it in the mapping
 					unsigned int here=local_ip;
-					addBlock(blocks,here,"label");
+					LOG(LOG_TRACE,"create label at " << here);
+					if(blocks.find(local_ip) == blocks.end())
+					{
+						addBlock(blocks,here,"label");
+						//rewind one opcode, so that cur_block is set to the newly created block
+						//this is different from the branch opcodes, because they create new branches
+						//after local_ip, where 'label' creates a new branch at local_ip
+						code.seekg(-1,ios_base::cur);
+					}
 
-					last_is_branch = true;
-					blocks[here].preds.insert(cur_block);
-					cur_block->seqs.insert(&blocks[here]);
-					static_stack_types.clear();
 					break;
 				}
 				case 0x0c: //ifnlt
@@ -1678,9 +1698,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 		else if(last_is_branch)
 		{
-			//TODO: Check this. It seems that there may be invalid code after
-			//block end
-			LOG(LOG_TRACE,_("Ignoring at ") << local_ip);
+			LOG(LOG_TRACE,"Ignoring at " << local_ip);
 			continue;
 		}
 

@@ -1010,7 +1010,6 @@ number_t ABCVm::subtract_oi(ASObject* val2, intptr_t val1)
 
 number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 {
-	assert_and_throw(val1->getObjectType()!=T_UNDEFINED);
 	number_t num2=val2;
 	number_t num1=val1->toNumber();
 

@@ -28,6 +28,7 @@
 #include "swftypes.h"
 #include "threading.h"
 #include <cairo.h>
+#include <pango/pango.h>
 #include "backends/geometry.h"
 
 namespace lightspark
@@ -303,11 +304,13 @@ class TextData
 {
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
-	TextData() : width(100), height(100), background(false), backgroundColor(0xFFFFFF),
+	TextData() : width(100), height(100), textWidth(0), textHeight(0), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
-		wordWrap(false), fontSize(12), font("Times New Roman") {}
+		wordWrap(false), autoSize(AS_NONE), fontSize(12), font("Times New Roman") {}
 	uint32_t width;
 	uint32_t height;
+	uint32_t textWidth;
+	uint32_t textHeight;
 	tiny_string text;
 	bool background;
 	RGB backgroundColor;
@@ -316,6 +319,8 @@ public:
 	bool multiline;
 	RGB textColor;
 	bool wordWrap;
+	enum AUTO_SIZE {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
+	AUTO_SIZE autoSize;
 	uint32_t fontSize;
 	tiny_string font;
 };
@@ -328,10 +333,17 @@ class CairoPangoRenderer : public CairoRenderer
 	 */
 	void executeDraw(cairo_t* cr);
 	TextData textData;
+	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData);
 public:
 	CairoPangoRenderer(ASObject* _o, CachedSurface& _t, const TextData& _textData, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
 		: CairoRenderer(_o,_t,_m,_x,_y,_w,_h,_s,_a), textData(_textData) {}
+	/**
+		Helper. Uses Pango to find the size of the textdata
+		@param _texttData The textData being tested
+		@param w,h,tw,th are the (text)width and (text)height of the textData.
+	*/
+	static bool getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th);
 };
 
 };

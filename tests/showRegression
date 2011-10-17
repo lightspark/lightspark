@@ -25,6 +25,11 @@ if [[ -z "$OLDFILE" || -z "$JUNITFILE" ]]; then
 	exit 1
 fi
 
+if [[ ! -f "$OLDFILE" || ! -f "$JUNITFILE" ]]; then
+	echo "Either $OLDFILE or $JUNITFILE do not exist!"
+	exit 1
+fi
+
 #Transform
 #<testcase classname="somecls" name="totalFail"><failure..
 #  -> ^<testcase classname="somecls" name="totalFail"><failure|^<testcase classname="somecls" name="totalFail_tc.*"><failure

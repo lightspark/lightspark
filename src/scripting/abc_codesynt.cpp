@@ -942,7 +942,9 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				}
 				case 0x25: //pushshort
 				{
-					u30 t;
+					// specs say pushshort is a u30, but it's really a u32
+					// see abc_interpreter on pushshort
+					u32 t;
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
@@ -2512,7 +2514,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//pushshort
 				LOG(LOG_TRACE, _("synt pushshort") );
-				u30 t;
+				//pushshort
+				// specs say pushshort is a u30, but it's really a u32
+				// see https://bugs.adobe.com/jira/browse/ASC-4181
+				u32 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));

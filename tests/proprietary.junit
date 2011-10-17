@@ -516,6 +516,8 @@
 <testcase classname="as3.Array" name="regress_636535_tc4"/>
 <testcase classname="as3.Array" name="regress_636535_tc5"/>
 <testcase classname="as3.Array" name="regress_636535_tc6"/>
+<testcase classname="as3.ByteArray" name="ByteArray"><failure type="exitvalue">Exit Value 124</failure></testcase>
+<testcase classname="as3.ByteArray" name="ByteArray_bug662851"><failure type="exitvalue">Exit Value 124</failure></testcase>
 <testcase classname="as3.Definitions" name="Classes/ClassDef/Bug118272Package_tc1"/>
 <testcase classname="as3.Definitions" name="Classes/ClassDef/Bug118272Package_tc2"/>
 <testcase classname="as3.Definitions" name="Classes/ClassDef/Bug118272Package_tc3"/>
@@ -52359,7 +52361,7 @@
 <testcase classname="regress" name="bug_564839_tc19"/>
 <testcase classname="regress" name="bug_564839_tc20"/>
 <testcase classname="regress" name="bug_564839_tc21"/>
-<testcase classname="regress" name="bug_588041_tc1"><failure type="testfailure">F [listCopy[0] += &lt;item&gt;2&lt;/item&gt; = &lt;item&gt;1&lt;/item&gt; expected: &lt;item&gt;1&lt;/item&gt;</failure></testcase>
+<testcase classname="regress" name="bug_588041_tc1"/>
 <testcase classname="regress" name="bug_593383_tc1"/>
 <testcase classname="regress" name="bug_593383_tc2"/>
 <testcase classname="regress" name="bug_593383_tc3"/>
@@ -52549,7 +52551,7 @@
 <testcase classname="regress" name="bug_606478_tc25"><failure type="testfailure">F [new Date(Sun Mar 9 2014 02:00:00 AM) = Sun Mar 9 2014 02:00:00 AM expected: Sun Mar 9 2014 03:00:00 AM]</failure></testcase>
 <testcase classname="regress" name="bug_606478_tc26"><failure type="testfailure">F [new Date(Sun Mar 8 2015 02:00:00 AM) = Sun Mar 8 2015 02:00:00 AM expected: Sun Mar 8 2015 03:00:00 AM]</failure></testcase>
 <testcase classname="regress" name="bug_609416_tc1"/>
-<testcase classname="regress" name="bug_615544_tc1"><failure type="testfailure">F [bug 615544: unset variable in 'with' block  causes 'null/undefined inconsistency' = null expected: undefined and Type Mismatch: Expected Type: undefined, Result Type: object]</failure></testcase>
+<testcase classname="regress" name="bug_615544_tc1"/>
 <testcase classname="regress" name="bug_615544_tc2"/>
 <testcase classname="regress" name="bug_638233_tc1"/>
 <testcase classname="regress" name="bug_638233_tc2"/>

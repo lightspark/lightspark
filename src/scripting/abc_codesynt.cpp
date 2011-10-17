@@ -553,7 +553,10 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 	for(unsigned int i=0;i<static_locals.size();i++)
 	{
 		if(static_locals[i].second==STACK_NONE)
+		{
+			assert(dest_block.locals_start[i] == STACK_NONE);
 			continue;
+		}
 
 		//Let's sync with the expected values...
 		if(static_locals[i].second!=expected[i])
@@ -567,9 +570,15 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 		}
 
 		if(static_locals[i].second==dest_block.locals_start[i])
+		{
+			//copy local over to dest_block's initial locals
 			builder.CreateStore(static_locals[i].first,dest_block.locals_start_obj[i]);
+		}
 		else
 		{
+			//dest_block does not expect us to transfer locals,
+			//so just write them to call_context->locals, overwriting (and decRef'ing) the old contents of call_context->locals
+			assert(dest_block.locals_start[i] == STACK_NONE);
 			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context,32), i);
 			llvm::Value* t=builder.CreateGEP(locals,constant);
 			llvm::Value* old=builder.CreateLoad(t);
@@ -674,7 +683,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 	while(1)
 	{
 		//This is initialized to true so that on first iteration the entry block is used
-		bool last_is_branch=true;
+		bool fallthrough=true;
 		code.clear();
 		code.seekg(0);
 		stop=true;
@@ -701,6 +710,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					static_stack_types.clear();
 					cur_block=&blocks[local_ip];
 					LOG(LOG_TRACE,_("New block at ") << local_ip);
+					assert(!fallthrough);//we never enter a catch block by falling through
 					break;
 				}
 			}
@@ -710,21 +720,19 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			if(it!=blocks.end())
 			{
 				block_info* next_block = &it->second;
-				if(cur_block && !last_is_branch)
+				if(cur_block && fallthrough)
 				{
-					//no instruction in cur_block setup seqs and preds
-					//this happens when we fall through into the next_block
-					//without jump/branch etc.
+					//we can get from cur_block to next_block
 					next_block->preds.insert(cur_block);
 					cur_block->seqs.insert(next_block);
 				}
 				cur_block=next_block;
 				LOG(LOG_TRACE,_("New block at ") << local_ip);
 				cur_block->locals=cur_block->locals_start;
-				last_is_branch=false;
+				fallthrough=true;
 				static_stack_types.clear();
 			}
-			else if(last_is_branch)
+			else if(!fallthrough)
 			{
 				//the last instruction was a branch which cannot fallthrough,
 				//but there is now new block registered at local_ip.
@@ -753,7 +761,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				{
 
 					//see also returnvoid
-					last_is_branch=true;
+					fallthrough=false;
 					static_stack_types.clear();
 					for(unsigned int i=0;i<body->local_count;i++)
 					{
@@ -811,22 +819,30 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				case 0x19: //ifstricteq
 				case 0x1a: //ifstrictne
 				{
-					LOG(LOG_TRACE, _("block analysis: branches") );
+					LOG(LOG_TRACE,"block analysis: branches " << opcode);
 					//TODO: implement common data comparison
-					last_is_branch=true;
+					fallthrough=true;
 					s24 t;
 					code >> t;
 
 					int here=code.tellg();
 					int dest=here+t;
-					if(opcode != 0x10 /*jump*/)
+					if(opcode == 0x10 /*jump*/)
 					{
+						fallthrough = false;
+					}
+					else
+					{
+						//Even though a 'jump' may not lead us to 'fall', we have to create
+						//this block to continue analysing. This code may be branched to by a later
+						//instruction
 						//Create a block for the fallthrough code and insert in the mapping
 						addBlock(blocks,here,"fall");
-						blocks[here].preds.insert(cur_block);
-						cur_block->seqs.insert(&blocks[here]);
 					}
 
+					//if the destination lies before this opcode, the destination block must
+					//already exist
+					assert(dest > here || blocks.find(dest) != blocks.end());
 					//And for the branch destination, if they are not in the blocks mapping
 					addBlock(blocks,dest,"then");
 					blocks[dest].preds.insert(cur_block);
@@ -838,7 +854,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				case 0x1b: //lookupswitch
 				{
 					LOG(LOG_TRACE, _("synt lookupswitch") );
-					last_is_branch=true;
+					fallthrough=false;
 
 					int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
 					s24 t;
@@ -855,6 +871,8 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 						LOG(LOG_TRACE,_("Case ") << i << _(" ") << offsets[i]);
 					}
 					static_stack_types.clear();
+
+					assert(defaultdest > here || blocks.find(defaultdest) != blocks.end());
 					addBlock(blocks,defaultdest,"switchdefault");
 					blocks[defaultdest].preds.insert(cur_block);
 					cur_block->seqs.insert(&blocks[defaultdest]);
@@ -862,6 +880,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					for(unsigned int i=0;i<offsets.size();i++)
 					{
 						int casedest=here+offsets[i];
+						assert(casedest > here || blocks.find(casedest) != blocks.end());
 						addBlock(blocks,casedest,"switchcase");
 						blocks[casedest].preds.insert(cur_block);
 						cur_block->seqs.insert(&blocks[casedest]);
@@ -1022,7 +1041,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				case 0x47: //returnvoid
 				case 0x48: //returnvalue
 				{
-					last_is_branch=true;
+					fallthrough=false;
 					static_stack_types.clear();
 					for(unsigned int i=0;i<body->local_count;i++)
 					{
@@ -3121,7 +3140,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
-				if(cur_block->push_types[local_ip]==STACK_OBJECT ||
+				abstract_value(ex,Builder,obj);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty"), obj.first, name);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				/*if(cur_block->push_types[local_ip]==STACK_OBJECT ||
 					cur_block->push_types[local_ip]==STACK_BOOLEAN)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty"), obj.first, name);
@@ -3134,6 +3156,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else
 					throw UnsupportedException("Unsupported type for getproperty");
+					*/
 				break;
 			}
 			case 0x68:

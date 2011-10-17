@@ -164,11 +164,22 @@ struct option_detail
 struct block_info
 {
 	llvm::BasicBlock* BB;
-	std::vector<STACK_TYPE> locals; /* current type of locals */
-	std::vector<STACK_TYPE> locals_start; /* types of locals at the start of the block */
-	std::vector<llvm::Value*> locals_start_obj; /*object of locals at the start of the block */
-	std::vector<bool> locals_reset; /* should reset local at start of block ? */
-	std::vector<bool> locals_used; /* getlocal/setlocal in this block used the given local */
+	/* current type of locals, changed through interpreting the opcodes in doAnalysis */
+	std::vector<STACK_TYPE> locals;
+	/* types of locals at the start of the block
+	 * This is computed in doAnalysis. It is != STACK_NONE when all preceding blocks end with
+	 * the local having the same type. */
+	std::vector<STACK_TYPE> locals_start;
+	/* if locals_start[i] != STACK_NONE, then locals_start_obj[i] is an Alloca of the given type.
+	 * SyncLocals at the end of one block Store's the current locals to locals_start_obj. (if both have the same type)
+	 * At the beginning of this block, static_locals[i] is initialized by a Load(locals_start_obj[i]). */
+	std::vector<llvm::Value*> locals_start_obj;
+	/* there is no need to transfer the given local to this block by a preceding block
+	 * because this and all successive blocks will not read the local before writing to it.
+	 */
+	std::vector<bool> locals_reset;
+	/* getlocal/setlocal in this block used the given local */
+	std::vector<bool> locals_used;
 	std::set<block_info*> preds; /* preceding blocks */
 	std::set<block_info*> seqs; /* subsequent blocks */
 	std::map<int,STACK_TYPE> push_types;

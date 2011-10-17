@@ -428,6 +428,7 @@ public:
 	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
 	multiname* getMultiname(unsigned int m, call_context* th);
+	multiname* getMultinameImpl(ASObject* rt, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in) DLL_PUBLIC;
 	void exec();

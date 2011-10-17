@@ -3006,7 +3006,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(rtdata==0)
 				{
 					//We pass a dummy second context param
-					name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, reint_context, constant);
+					constant2 = llvm::ConstantInt::get(int_type, 0);
+					constant2 = llvm::ConstantExpr::getIntToPtr(constant2, voidptr_type);
+					name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, constant2, constant);
 				}
 				else if(rtdata==1)
 				{
@@ -3131,7 +3133,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(rtdata==0)
 				{
 					//We pass a dummy second context param
-					name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, reint_context, constant);
+					constant2 = llvm::ConstantInt::get(int_type, 0);
+					constant2 = llvm::ConstantExpr::getIntToPtr(constant2, voidptr_type);
+					name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, constant2, constant);
 				}
 				else if(rtdata==1)
 				{

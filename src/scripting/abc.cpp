@@ -2107,7 +2107,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				assert(typeClass || t->type_name==0); //this is not implemented for T_TEMPLATE yet
 				ASObject* ret=getConstant(t->vkind,t->vindex);
 				// Not sure if it is legal to have non-null initial value for T_DEFINABLE types
-				assert(!(typeClass->getObjectType()==T_DEFINABLE && ret->getObjectType()!=T_NULL));
+				assert(!typeClass || typeClass->getObjectType()!=T_DEFINABLE || ret->getObjectType()==T_NULL);
 				obj->initializeVariableByMultiname(mname, ret, typeClass);
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, mname);

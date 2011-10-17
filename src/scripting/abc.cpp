@@ -2223,31 +2223,12 @@ istream& lightspark::operator>>(istream& in, s24& v)
 
 istream& lightspark::operator>>(istream& in, u30& v)
 {
-	int i=0;
-	v.val=0;
-	uint8_t t;
-	do
-	{
-		in.read((char*)&t,1);
-		//No more than 5 bytes should be read
-		if(i==28)
-		{
-			//Only the first 2 bits should be used to reach 30 bits
-			if((t&0xfc))
-				LOG(LOG_ERROR,"Error in u30");
-			uint8_t t2=(t&0x3);
-			v.val|=(t2<<i);
-			break;
-		}
-		else
-		{
-			uint8_t t2=(t&0x7f);
-			v.val|=(t2<<i);
-			i+=7;
-		}
-	}
-	while(t&0x80);
-	assert((v.val&0xc0000000)==0);
+	u32 vv;
+	in >> vv;
+	uint32_t val = vv;
+	if(val&0xc0000000)
+		assert_and_throw(false); //TODO: make this VerifierError
+	v.val = val;
 	return in;
 }
 

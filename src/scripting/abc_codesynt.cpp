@@ -175,7 +175,9 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"newFunction",(void*)&ABCVm::newFunction,ARGS_CONTEXT_INT},
 	{"newCatch",(void*)&ABCVm::newCatch,ARGS_CONTEXT_INT},
 	{"getScopeObject",(void*)&ABCVm::getScopeObject,ARGS_CONTEXT_INT},
-	{"getSlot",(void*)&ABCVm::getSlot,ARGS_OBJ_INT}
+	{"getSlot",(void*)&ABCVm::getSlot,ARGS_OBJ_INT},
+	{"convert_s",(void*)&ABCVm::convert_s,ARGS_OBJ},
+	{"coerce_s",(void*)&ABCVm::coerce_s,ARGS_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
@@ -1171,6 +1173,9 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				}
 				case 0x70: //convert_s
 				{
+					popTypeFromStack(static_stack_types,local_ip);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x73: //convert_i
@@ -1211,8 +1216,14 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0x82: //coerce_a
+				{
+					break;
+				}
 				case 0x85: //coerce_s
 				{
+					popTypeFromStack(static_stack_types,local_ip).second;
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x87: //astypelate
@@ -3230,6 +3241,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//convert_s
 				LOG(LOG_TRACE, _("synt convert_s") );
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				abstract_value(ex,Builder,v1);
+				value=Builder.CreateCall(ex->FindFunctionNamed("convert_s"), v1.first);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
 			case 0x73:
@@ -3331,10 +3346,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//coerce_s
 				LOG(LOG_TRACE, _("synt coerce_s") );
-				/*llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall(ex->FindFunctionNamed("coerce_s"), v1);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				abstract_value(ex,Builder,v1);
+				value=Builder.CreateCall(ex->FindFunctionNamed("coerce_s"), v1.first);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
 			case 0x87:

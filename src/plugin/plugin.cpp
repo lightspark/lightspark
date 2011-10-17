@@ -328,7 +328,7 @@ NPBool nsPluginInstance::init(NPWindow* aWindow)
   if(aWindow == NULL)
     return FALSE;
   
-  if (SetWindow(aWindow))
+  if (SetWindow(aWindow) == NPERR_NO_ERROR)
   mInitialized = TRUE;
 	
   return mInitialized;
@@ -375,7 +375,7 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
 	if(aWindow == NULL)
-		return FALSE;
+		return NPERR_GENERIC_ERROR;
 
 	mX = aWindow->x;
 	mY = aWindow->y;
@@ -384,7 +384,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	if(mHeight==0 || mHeight==0)
 	{
 		LOG(LOG_ERROR,_("No size in SetWindow"));
-		return FALSE;
+		return NPERR_GENERIC_ERROR;
 	}
 	if (mWindow == (Window) aWindow->window)
 	{
@@ -409,7 +409,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		m_sys->setParamsAndEngine(e, false);
 	}
 	//draw();
-	return TRUE;
+	return NPERR_NO_ERROR;
 }
 
 string nsPluginInstance::getPageURL() const

@@ -290,6 +290,7 @@ ASObject* ExtVariant::getASObject() const
 						}
 						else
 						{
+							conv.str("");
 							conv << ids[i]->getInt();
 							asobj->setVariableByQName(conv.str().c_str(), "",
 									property->getASObject(), DYNAMIC_TRAIT);

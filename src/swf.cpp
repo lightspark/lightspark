@@ -1031,7 +1031,7 @@ FILE_TYPE ParseThread::recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t
 		return FT_COMPRESSED_SWF;
 	else if((c1&0x80) && c2=='P' && c3=='N' && c4=='G')
 		return FT_PNG;
-	else if(c1==0xff && c2==0xd8 && c3==0xff && c4==0xe0)
+	else if(c1==0xff && c2==0xd8 && c3==0xff)
 		return FT_JPEG;
 	else if(c1=='G' && c2=='I' && c3=='F' && c4=='8')
 		return FT_GIF;

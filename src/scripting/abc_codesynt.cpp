@@ -1433,12 +1433,46 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			}
 		}
 
+		//remove unreachable blocks
+		map<unsigned int,block_info>::iterator bit=blocks.begin();
+		bool changed = true;
+		while(changed)
+		{
+			changed = false;
+	                for(;bit!=blocks.end();)
+			{
+				block_info& cur=bit->second;
+				if(bit->first == 0 || !cur.preds.empty())
+				{ //never remove the first block or blocks with nonempty preds
+					++bit;
+					continue;
+				}
+				LOG(LOG_TRACE,"Removing unreachable block at " << bit->first << ": " << cur);
+				//remove me from my seqs
+				set<block_info*>::iterator seq=cur.seqs.begin();
+				for(;seq!=cur.seqs.end();++seq)
+					(*seq)->preds.erase(&cur);
+
+				//remove block from method and free it
+				cur.BB->eraseFromParent();
+				//erase from blocks map
+				map<unsigned int,block_info>::iterator toerase = bit;
+				++bit;
+				blocks.erase(toerase);
+
+				changed = true;
+			}
+		}
+
 		//Let's propagate locals reset information
+		//cur.locals_reset[i] is true when
+		// 1) it is not used in the current block and is reset in all subsequent blocks
+		// 2) it is reset in the current block
+		// i.e. it is true when entering the block will reset the local in any case
 		while(1)
 		{
 			stop=true;
-			map<unsigned int,block_info>::iterator bit=blocks.begin();
-			for(;bit!=blocks.end();++bit)
+			for(bit=blocks.begin();bit!=blocks.end();++bit)
 			{
 				block_info& cur=bit->second;
 				std::vector<bool> new_reset(body->local_count,false);
@@ -1474,12 +1508,13 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 
 		//We can now search for locals that can be saved
 		//If every predecessor blocks agree with the type of a local we pass it over
-		map<unsigned int,block_info>::iterator bit=blocks.begin();
-		for(;bit!=blocks.end();++bit)
+		for(bit=blocks.begin();bit!=blocks.end();++bit)
 		{
 			block_info& cur=bit->second;
 			vector<STACK_TYPE> new_start;
 			new_start.resize(body->local_count,STACK_NONE);
+			//if all preceeding block end with the same type of local[i]
+			//then we take that as the new_start[i]
 			if(!cur.preds.empty())
 			{
 				set<block_info*>::iterator pred=cur.preds.begin();
@@ -1495,6 +1530,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				}
 			}
 			//It's not useful to sync variables that are going to be resetted
+			//(where 'reset' means 'written to before any read')
 			for(unsigned int i=0;i<body->local_count;i++)
 			{
 				if(cur.locals_reset[i])
@@ -1512,8 +1548,10 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			break;
 	}
 
-	map<unsigned int, block_info>::iterator bit=blocks.begin();
-	for(;bit!=blocks.end();++bit)
+	//For all locals that are transfered to a block, create a memory region where the preceeding block writes
+	//the local to
+	map<unsigned int,block_info>::iterator bit;
+	for(bit=blocks.begin();bit!=blocks.end();++bit)
 	{
 		block_info& cur=bit->second;
 		cur.locals_start_obj.resize(cur.locals_start.size(),NULL);
@@ -1656,7 +1694,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 
 	u8 opcode;
-	bool last_is_branch=true;
+	bool last_is_branch=true; //the 'begin' block branching to blocks[0].BB is handled above
 
 	int local_ip=0;
 	//Each case block builds the correct parameters for the interpreter function and call it

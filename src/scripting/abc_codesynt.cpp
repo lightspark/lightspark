@@ -738,8 +738,16 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				//but there is now new block registered at local_ip.
 				//The only way that the next instructions are reachable
 				//is when we have a label here.
-				if(opcode != 0x09 /*label*/)
+				//ignore debugfile/debugline on the way
+				switch(opcode)
 				{
+				case 0xef: /*debug*/
+				case 0xf0: /*debugline*/
+				case 0xf1: /*debugfile*/
+				case 0x09: /*label*/
+					break;
+				default:
+					//find the next block after local_ip
 					map<unsigned int,block_info>::iterator bit=blocks.lower_bound(local_ip);
 					if(bit==blocks.end())
 					{

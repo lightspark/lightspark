@@ -265,7 +265,7 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 		if(status==INIT && fillDataAndCheckValidity())
 			status=VALID;
 
-		assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
+		assert(frameIn->pts==(int64_t)AV_NOPTS_VALUE || frameIn->pts==0);
 
 		copyFrameToBuffers(frameIn, time);
 	}
@@ -290,7 +290,7 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 		if(status==INIT && fillDataAndCheckValidity())
 			status=VALID;
 
-		assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
+		assert(frameIn->pts==(int64_t)AV_NOPTS_VALUE || frameIn->pts==0);
 
 		copyFrameToBuffers(frameIn, time);
 	}
@@ -650,12 +650,12 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 		if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO && videoFound==false)
 		{
 			videoFound=true;
-			videoIndex=i;
+			videoIndex=(int32_t)i;
 		}
 		else if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO && audioFound==false)
 		{
 			audioFound=true;
-			audioIndex=i;
+			audioIndex=(int32_t)i;
 		}
 
 	}
@@ -699,7 +699,7 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 	//Should use dts
 	uint32_t mtime=pkt.dts*1000*time_base.num/time_base.den;
 
-	if(pkt.stream_index==audioIndex)
+	if(pkt.stream_index==(int)audioIndex)
 		customAudioDecoder->decodePacket(&pkt, mtime);
 	else
 		customVideoDecoder->decodePacket(&pkt, mtime);

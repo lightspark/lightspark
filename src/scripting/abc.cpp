@@ -1770,7 +1770,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		{
 			metadata_info& minfo = metadata[t->metadata[i]];
 			LOG(LOG_CALLS,"Metadata: " << getString(minfo.name));
-			for(int j=0;j<minfo.item_count;++j)
+			for(unsigned int j=0;j<minfo.item_count;++j)
 				LOG(LOG_CALLS,"        : " << getString(minfo.items[j].key) << " " << getString(minfo.items[j].value));
 		}
 	}

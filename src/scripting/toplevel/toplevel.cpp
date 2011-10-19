@@ -572,13 +572,7 @@ ASObject* XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION
 
 bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 {
-	if(node==NULL)
-	{
-		//This is possible if the XML object was created from an empty string
-		return NULL;
-	}
-
-	if(considerDynamic==false)
+	if(node==NULL || considerDynamic == false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
 	bool isAttr=name.isAttribute;
@@ -598,11 +592,12 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		assert(node);
 		//To have attributes we must be an Element
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
-		if(element==NULL)
-			return NULL;
-		xmlpp::Attribute* attr=element->get_attribute(buf);
-		if(attr!=NULL)
-			return true;
+		if(element)
+		{
+			xmlpp::Attribute* attr=element->get_attribute(buf);
+			if(attr!=NULL)
+				return true;
+		}
 	}
 	else
 	{

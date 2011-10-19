@@ -3841,6 +3841,23 @@ void UInteger::sinit(Class_base* c)
 	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff),DECLARED_TRAIT);
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+}
+
+ASFUNCTIONBODY(UInteger,_toString)
+{
+	UInteger* th=static_cast<UInteger*>(obj);
+	uint32_t radix;
+	ARG_UNPACK (radix,10);
+
+	char buf[20];
+	assert_and_throw(radix==10 || radix==16);
+	if(radix==10)
+		snprintf(buf,20,"%u",th->val);
+	else if(radix==16)
+		snprintf(buf,20,"%x",th->val);
+
+	return Class<ASString>::getInstanceS(buf);
 }
 
 bool UInteger::isEqual(ASObject* o)

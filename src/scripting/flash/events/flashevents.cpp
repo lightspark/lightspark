@@ -358,7 +358,7 @@ void MouseEvent::setTarget(_NR<ASObject> t)
 	}
 }
 
-IOErrorEvent::IOErrorEvent()
+IOErrorEvent::IOErrorEvent() : ErrorEvent("ioError")
 {
 }
 
@@ -689,7 +689,7 @@ ASFUNCTIONBODY(KeyboardEvent,_constructor)
 	return NULL;
 }
 
-TextEvent::TextEvent():Event("textEvent")
+TextEvent::TextEvent(const tiny_string& t):Event(t)
 {
 }
 
@@ -708,7 +708,7 @@ ASFUNCTIONBODY(TextEvent,_constructor)
 	return NULL;
 }
 
-ErrorEvent::ErrorEvent(const std::string& e):errorMsg(e)
+ErrorEvent::ErrorEvent(const tiny_string& t, const std::string& e): TextEvent(t), errorMsg(e)
 {
 }
 
@@ -727,7 +727,7 @@ ASFUNCTIONBODY(ErrorEvent,_constructor)
 	return NULL;
 }
 
-SecurityErrorEvent::SecurityErrorEvent(const std::string& e):ErrorEvent(e)
+SecurityErrorEvent::SecurityErrorEvent(const std::string& e):ErrorEvent("securityError",e)
 {
 }
 
@@ -746,7 +746,7 @@ ASFUNCTIONBODY(SecurityErrorEvent,_constructor)
 	return NULL;
 }
 
-AsyncErrorEvent::AsyncErrorEvent()
+AsyncErrorEvent::AsyncErrorEvent():ErrorEvent("asyncError")
 {
 }
 

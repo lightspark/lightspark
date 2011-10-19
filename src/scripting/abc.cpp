@@ -1766,10 +1766,9 @@ ASObject* ABCContext::getConstant(int kind, int index)
 
 void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid)
 {
-	const multiname& mname=*getMultiname(t->name,NULL);
+	multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
-	assert_and_throw(mname.ns.size()==1 && mname.name_type==multiname::NAME_STRING);
-	bool visibleOutsidePackage = (mname.ns[0].kind == PACKAGE_NAMESPACE || mname.ns[0].kind == NAMESPACE || mname.ns[0].kind == EXPLICIT_NAMESPACE);
+	assert_and_throw(mname->ns.size()==1 && mname->name_type==multiname::NAME_STRING);
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 
@@ -1789,7 +1788,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		case traits_info::Class:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByMultiname(mname,ASObject::SKIP_IMPL);
+			ASObject* tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
 			if(tmpo)
 				return;
 			ASObject* ret;
@@ -1797,8 +1796,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			//check if this class has the 'interface' flag, i.e. it is an interface
 			if((instances[t->classi].flags)&0x04)
 			{
-				const multiname& mname=*getMultiname(t->name,NULL);
-				QName className(mname.name_s,mname.ns[0].name);
+				QName className(mname->name_s,mname->ns[0].name);
 
 				// Should the new definition overwrite the old one?
 				if(sys->classes.find(className)!=sys->classes.end())
@@ -1857,16 +1855,16 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else
 				ret=new Undefined;
 
-			obj->setVariableByQName(mname.name_s,mname.ns[0],ret,DECLARED_TRAIT);
+			obj->setVariableByQName(mname->name_s,mname->ns[0],ret,DECLARED_TRAIT);
 
-			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << mname << _(" id ") << t->classi);
+			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << *mname << _(" id ") << t->classi);
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, mname);
+				obj->initSlot(t->slot_id, *mname);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(LOG_CALLS,_("Getter trait: ") << mname << _(" #") << t->method);
+			LOG(LOG_CALLS,_("Getter trait: ") << *mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
@@ -1878,11 +1876,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
 			{
-				m->profName=prot->class_name.name+"::"+mname.qualifiedString();
+				m->profName=prot->class_name.name+"::"+mname->qualifiedString();
 				m->validProfName=true;
 			}
 #endif
-			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
+			if(t->kind&0x20 && prot->use_protected && mname->ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
@@ -1890,14 +1888,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				{
 					if(cur->use_protected)
 					{
-						variable* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
+						variable* var=cur->Variables.findObjVar(mname->name_s,cur->protected_ns,
 								NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 						if(var)
 						{
 							assert(var->getter);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setDeclaredMethodByQName(mname.name_s,cur->protected_ns,f,GETTER_METHOD,isBorrowed);
+							obj->setDeclaredMethodByQName(mname->name_s,cur->protected_ns,f,GETTER_METHOD,isBorrowed);
 						}
 					}
 					cur=cur->super;
@@ -1905,17 +1903,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,GETTER_METHOD,isBorrowed);
-			
+			obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,GETTER_METHOD,isBorrowed);
+
 			//Methods save a copy of the scope stack of the class
 			f->acquireScope(prot->class_scope);
 
-			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
+			LOG(LOG_TRACE,_("End Getter trait: ") << *mname);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(LOG_CALLS,_("Setter trait: ") << mname << _(" #") << t->method);
+			LOG(LOG_CALLS,_("Setter trait: ") << *mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 
@@ -1928,11 +1926,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
 			{
-				m->profName=prot->class_name.name+"::"+mname.qualifiedString();
+				m->profName=prot->class_name.name+"::"+mname->qualifiedString();
 				m->validProfName=true;
 			}
 #endif
-			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
+			if(t->kind&0x20 && prot->use_protected && mname->ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
@@ -1940,14 +1938,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				{
 					if(cur->use_protected)
 					{
-						variable* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
+						variable* var=cur->Variables.findObjVar(mname->name_s,cur->protected_ns,
 								NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 						if(var)
 						{
 							assert(var->setter);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setDeclaredMethodByQName(mname.name_s,cur->protected_ns,f,SETTER_METHOD,isBorrowed);
+							obj->setDeclaredMethodByQName(mname->name_s,cur->protected_ns,f,SETTER_METHOD,isBorrowed);
 						}
 					}
 					cur=cur->super;
@@ -1955,17 +1953,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,SETTER_METHOD,isBorrowed);
+			obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,SETTER_METHOD,isBorrowed);
 			
 			//Methods save a copy of the scope stack of the class
 			f->acquireScope(prot->class_scope);
 
-			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
+			LOG(LOG_TRACE,_("End Setter trait: ") << *mname);
 			break;
 		}
 		case traits_info::Method:
 		{
-			LOG(LOG_CALLS,_("Method trait: ") << mname << _(" #") << t->method);
+			LOG(LOG_CALLS,_("Method trait: ") << *mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
@@ -1980,11 +1978,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 #ifdef PROFILING_SUPPORT
 				if(!m->validProfName)
 				{
-					m->profName=prot->class_name.name+"::"+mname.qualifiedString();
+					m->profName=prot->class_name.name+"::"+mname->qualifiedString();
 					m->validProfName=true;
 				}
 #endif
-				if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
+				if(t->kind&0x20 && prot->use_protected && mname->ns[0]==prot->protected_ns)
 				{
 					//Walk the super chain and find variables to override
 					Class_base* cur=prot->super;
@@ -1992,14 +1990,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 					{
 						if(cur->use_protected)
 						{
-							variable* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,
+							variable* var=cur->Variables.findObjVar(mname->name_s,cur->protected_ns,
 								NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 							if(var)
 							{
 								assert(var->var);
 								//A superclass defined a protected method that we have to override.
 								f->incRef();
-								obj->setDeclaredMethodByQName(mname.name_s,cur->protected_ns,f,
+								obj->setDeclaredMethodByQName(mname->name_s,cur->protected_ns,f,
 										NORMAL_METHOD,isBorrowed);
 							}
 						}
@@ -2017,152 +2015,71 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 #ifdef PROFILING_SUPPORT
 				if(!m->validProfName)
 				{
-					m->profName=mname.qualifiedString();
+					m->profName=mname->qualifiedString();
 					m->validProfName=true;
 				}
 #endif
 			}
 			else //TODO: transform in a simple assert
 				assert_and_throw(obj->getObjectType()==T_CLASS || scriptid != -1);
-			
-			f->bindLevel(obj->getLevel());
-			obj->setDeclaredMethodByQName(mname.name_s,mname.ns[0],f,NORMAL_METHOD,isBorrowed);
 
-			LOG(LOG_TRACE,_("End Method trait: ") << mname);
+			f->bindLevel(obj->getLevel());
+			obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,NORMAL_METHOD,isBorrowed);
+
+			LOG(LOG_TRACE,_("End Method trait: ") << *mname);
 			break;
 		}
 		case traits_info::Const:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByMultiname(mname,ASObject::SKIP_IMPL);
+			ASObject* tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
 			if(tmpo)
 				return;
 
 			ASObject* ret;
 			//If the index is valid we set the constant
 			if(t->vindex)
-			{
 				ret=getConstant(t->vkind,t->vindex);
-				obj->setVariableByQName(mname.name_s,mname.ns[0],ret,DECLARED_TRAIT);
-				if(t->slot_id)
-					obj->initSlot(t->slot_id, mname);
-			}
 			else
-			{
-				ret=obj->getVariableByMultiname(mname);
-				assert_and_throw(ret==NULL);
+				ret=new Undefined;
 
-				if(scriptid != -1 && visibleOutsidePackage)
-					//do not create Definable for internal/private consts
-					ret=new Definable(this,scriptid,obj,mname);
-				else
-					ret=new Undefined;
-
-				obj->setVariableByQName(mname.name_s,mname.ns[0],ret,DECLARED_TRAIT);
-			}
-			LOG(LOG_CALLS,_("Const ") << mname <<_(" type ")<< *getMultiname(t->type_name,NULL));
+			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *getMultiname(t->type_name,NULL));
+			obj->setVariableByQName(mname->name_s,mname->ns[0],ret,DECLARED_TRAIT);
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, mname);
+				obj->initSlot(t->slot_id, *mname);
 			break;
 		}
 		case traits_info::Slot:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByMultiname(mname,ASObject::SKIP_IMPL);
+			ASObject* tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
 			if(tmpo)
 				return;
 
-			multiname* type=getMultiname(t->type_name,NULL);
-
-			Class_base* typeClass=NULL;
-			if(t->type_name)
-			{
-				//Get the class object for the type
-				ASObject* target;
-				ASObject* typeObject=getGlobal()->getVariableAndTargetByMultiname(*type,target);
-				if(typeObject)
-				{
-					assert_and_throw(typeObject->getObjectType()==T_CLASS || typeObject->getObjectType()==T_TEMPLATE
-							 || typeObject->getObjectType()==T_DEFINABLE);
-					if(typeObject->getObjectType()==T_CLASS)
-						typeClass=static_cast<Class_base*>(typeObject);
-					else if (typeObject->getObjectType()==T_DEFINABLE)
-					{
-						// Avoid deferred definition if the
-						// slot is of the same type as obj,
-						// because the class cinit may
-						// initialize the slot, which would
-						// lead to recursion
-						if(obj->is<Class_base>() &&
-						   obj->as<Class_base>()->class_name.getQualifiedName()==type->qualifiedString())
-						{
-							typeClass=obj->as<Class_base>();
-						}
-						else
-						{
-							// will be decRef'd when defined
-							typeObject->incRef();
-							typeClass=static_cast<Class_base*>(typeObject);
-						}
-					}
-					else
-						typeClass = NULL;
-				}
-			}
-
+			multiname* tname=getMultiname(t->type_name,NULL);
+			ASObject* ret;
 			if(t->vindex)
 			{
-				// typeClass is NULL for any type (type_name = 0)
-				assert(typeClass || t->type_name==0); //this is not implemented for T_TEMPLATE yet
-				ASObject* ret=getConstant(t->vkind,t->vindex);
-				// Not sure if it is legal to have non-null initial value for T_DEFINABLE types
-				assert(!typeClass || typeClass->getObjectType()!=T_DEFINABLE || ret->getObjectType()==T_NULL);
-				obj->initializeVariableByMultiname(mname, ret, typeClass);
-				if(t->slot_id)
-					obj->initSlot(t->slot_id, mname);
-
-				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' << mname <<_(" type ")<<*type);
-				break;
+				ret=getConstant(t->vkind,t->vindex);
+				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname);
 			}
 			else
 			{
-				//else fallthrough
-				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << mname <<_(" type ")<<*type);
-				ASObject* previous_definition=obj->getVariableByMultiname(mname);
-				assert_and_throw(!previous_definition);
-
-				ASObject* ret;
-				if(scriptid != -1 && visibleOutsidePackage)
-					//do not create Definable for internal/private slots
-					ret=new Definable(this, scriptid, obj,mname);
-				else
-				{
-					//TODO: find nice way to handle default construction
-					if(type->name_type==multiname::NAME_STRING && 
-							type->ns.size()==1 && type->ns[0].name=="")
-					{
-						if(type->name_s=="int" || type->name_s=="uint" )
-							ret=abstract_i(0);
-						else if(type->name_s=="Number")
-							ret=abstract_d(numeric_limits<double>::quiet_NaN());
-						else if(type->name_s=="Boolean")
-							ret=abstract_b(false);
-						else
-							ret=new Null;
-					}
-					else
-						ret=new Null;
-				}
-				obj->initializeVariableByMultiname(mname, ret, typeClass);
-
-				if(t->slot_id)
-					obj->initSlot(t->slot_id, mname);
-				break;
+				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname);
+				//The Undefined is coerced to the right type by the initializeVar..
+				ret = new Undefined;
 			}
+
+			obj->initializeVariableByMultiname(*mname, ret, tname);
+
+			if(t->slot_id)
+				obj->initSlot(t->slot_id, *mname);
+
+			break;
 		}
 		default:
-			LOG(LOG_ERROR,_("Trait not supported ") << mname << _(" ") << t->kind);
-			obj->setVariableByMultiname(mname, new Undefined);
+			LOG(LOG_ERROR,_("Trait not supported ") << *mname << _(" ") << t->kind);
+			obj->setVariableByMultiname(*mname, new Undefined);
 	}
 }
 

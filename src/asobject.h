@@ -131,6 +131,7 @@ class Manager;
 template<class T> class Class;
 class Class_base;
 class ByteArray;
+class Type;
 
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, BORROWED_TRAIT=4 };
 
@@ -138,15 +139,16 @@ struct variable
 {
 	nsNameAndKind ns;
 	ASObject* var;
-	Class_base* type;
+	multiname* typemname;
+	const Type* type;
 	IFunction* setter;
 	IFunction* getter;
 	TRAIT_KIND kind;
 	//obj_var(ASObject* _v, Class_base* _t):var(_v),type(_t),{}
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k)
-		:ns(_ns),var(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k){}
-	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, Class_base* _c)
-		:ns(_ns),var(_v),type(_c),setter(NULL),getter(NULL),kind(_k){}
+		:ns(_ns),var(NULL),typemname(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k){}
+	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type)
+		:ns(_ns),var(_v),typemname(_t),type(type),setter(NULL),getter(NULL),kind(_k){}
 	void setVar(ASObject* v);
 };
 
@@ -168,7 +170,7 @@ public:
 	variable* findObjVar(const tiny_string& name, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
 	variable* findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, ASObject* obj, Class_base* type);
+	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
@@ -313,7 +315,7 @@ public:
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
-	void initializeVariableByMultiname(const multiname& name, ASObject* o, Class_base* type);
+	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname);
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind);
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
@@ -443,6 +445,6 @@ template<> inline bool ASObject::is<Definable>() const { return type==T_DEFINABL
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
 template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }
-template<> inline bool ASObject::is<Type>() const { return type==T_CLASS || type==T_DEFINABLE; }
+template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
 }
 #endif

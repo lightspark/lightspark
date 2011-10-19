@@ -66,7 +66,11 @@ public:
 	 * is returned as is.
 	 * The caller does not own the object returned.
 	 */
-	static const Type* getTypeFromMultiname(const multiname* mn, bool define = true);
+	static const Type* getTypeFromMultiname(const multiname* mn);
+	/*
+	 * Checks if the type can be found and is not T_DEFINABLE
+	 */
+	static bool isTypeResolvable(const multiname* mn);
 	/*
          * Converts the given object to an object of this type.
          * It consumes one reference of 'o'.
@@ -696,45 +700,31 @@ public:
 };
 
 /*
- * They are used as placeholders in
- * Class traits, public Slots (value & type) and Consts
+ * They are used as placeholders in Class traits.
  *
- * When one accesses a e.g. Slot from a different script
+ * When one accesses a e.g. Class trait from a different script
  * and obtains a Definable, then one calls define() which executes
  * the associated script init. This script init function should
  * replace the Definable with the actual value (which is returned by define()).
  *
- * The second use case is for the 'type' of a slot. It maybe a Definable if the
- * class is not defined during buildTraits() of that slot.
- * The 'type' is resolved when variable::setVar() is called.
- *
- * We derive from Class_base so we can use them in the 'type' of Slots.
  */
-class Definable: public Class_base
+class Definable: public ASObject
 {
 private:
 	ABCContext* context; //context of scriptid
 	unsigned int scriptid; //which script does define this class
 	ASObject* global; //which global object belongs to that script
-	multiname name; //the name of the class
-	ASObject* getInstance(bool, lightspark::ASObject* const*, unsigned int)
-	{
-		throw RunTimeException("Called getInstance on T_DEFINABLE");
-	}
-	void buildInstanceTraits(lightspark::ASObject*) const
-	{
-		throw RunTimeException("Called getInstance on T_DEFINABLE");
-	}
-	ASObject* coerce(ASObject* o) const
-	{
-		throw RunTimeException("Called coerce on T_DEFINABLE");
-	}
+	QName name; //the name of the class
 public:
-	Definable(ABCContext* c, unsigned int s, ASObject* g, multiname n) : Class_base(QName("Definable","")),
-		context(c), scriptid(s), global(g), name(n) { type=T_DEFINABLE; }
+	Definable(ABCContext* c, unsigned int s, ASObject* g, multiname* n)
+		: context(c), scriptid(s), global(g), name(n->normalizedName(), n->ns[0].name)
+	{
+		type=T_DEFINABLE;
+		assert(n->isQName());
+	}
 	//The caller must incRef the returned object to keep it
 	//calling define will also cause a decRef on this
-	ASObject* define();
+	Class_base* define();
 };
 
 class RegExp: public ASObject

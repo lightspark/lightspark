@@ -512,7 +512,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& 
 	obj->setVar(o);
 }
 
-void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, Class_base* c)
+void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname)
 {
 	check();
 
@@ -522,41 +522,25 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 		//Initializing an already existing variable
 		LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << " already initialized");
 		o->decRef();
-		assert_and_throw(obj->type==c);
+		assert_and_throw(obj->typemname->qualifiedString()==typemname->qualifiedString());
 		return;
 	}
 
-	Variables.initializeVar(name, o, c);
+	Variables.initializeVar(name, o, typemname);
 }
 
 void variable::setVar(ASObject* v)
 {
-	//Do the conversion early, so that errors does not leave the object in an half baked state
-	ASObject* newV=v;
-	if(type && v->getObjectType()!=T_NULL)
-	{
-		//Check if the object has to be defined
-		if(type->is<Definable>())
-		{
-			LOG(LOG_CALLS,_("We got an object not yet valid"));
-			Definable* d=type->as<Definable>();
-			ASObject* typeObject = d->define();
-			d->decRef();
-			assert_and_throw(typeObject->is<Class_base>());
-			type = typeObject->as<Class_base>();
-			type->incRef();
-		}
-		if(v->getClass()==NULL || !v->getClass()->isSubClass(type))
-		{
-			//TODO: generator is the wrong way for type implicit type conversion
-			//generator corresponds to explicity type conversion
-			newV=type->generator(&v,1);
-			v->decRef();
-		}
-	}
+	//Resolve the typename if we have one
+	if(!type && typemname)
+		type = Type::getTypeFromMultiname(typemname);
+
+	if(type)
+		v = type->coerce(v);
+
 	if(var)
 		var->decRef();
-	var=newV;
+	var=v;
 }
 
 void variables_map::killObjVar(const multiname& mname)
@@ -622,10 +606,33 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	return &inserted->second;
 }
 
-void variables_map::initializeVar(const multiname& mname, ASObject* obj, Class_base* type)
+void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname)
 {
 	tiny_string name=mname.normalizedName();
-	Variables.insert(make_pair(name, variable(mname.ns[0], DECLARED_TRAIT, obj, type)));
+
+	const Type* type = NULL;
+	/* The typename may be T_DEFINABLE at this point. Then we only allow obj to be Null
+	 * and proceed.
+	 * If typename is resolvable right now, we coerce obj
+	 */
+	if(!Type::isTypeResolvable(typemname))
+	{
+		assert_and_throw(obj->is<Null>() || obj->is<Undefined>());
+		if(obj->is<Undefined>())
+		{
+			//Casting undefined to an object (of unknown class)
+			//results in Null
+			obj->decRef();
+			obj = new Null;
+		}
+	}
+	else
+	{
+		type = Type::getTypeFromMultiname(typemname);
+		obj = type->coerce(obj);
+	}
+
+	Variables.insert(make_pair(name, variable(mname.ns[0], DECLARED_TRAIT, obj, typemname, type)));
 }
 
 ASFUNCTIONBODY(ASObject,generator)

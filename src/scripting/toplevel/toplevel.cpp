@@ -66,31 +66,23 @@ REGISTER_CLASS_NAME(XMLList);
 const Any* const Type::anyType = new Any();
 const Void* const Type::voidType = new Void();
 
-ASObject* Definable::define()
+Class_base* Definable::define()
 {
 	assert(getRefCount() > 0);
 
-	//Check if the class has already been defined by some other
-	//DefinableClass object
-	if(name.isQName())
-	{
-		QName qn(name.normalizedName(), name.ns[0].name);
-		auto i = sys->classes.find(qn);
-		if(i != sys->classes.end())
-			return i->second;
-	}
+	//Check if the class has already been defined
+	auto i = sys->classes.find(name);
+	if(i != sys->classes.end())
+		return i->second;
 
-	ASObject* obj = global->getVariableByMultiname(name);
-	if(!obj->is<Definable>())
-		return obj;
-
-	this->incRef(); //runScriptInit may replace (i.e. decRef) this DefinableClass
+	this->incRef(); //runScriptInit will decRef this
 	context->runScriptInit(scriptid, global);
-	obj = global->getVariableByMultiname(name);
-	assert_and_throw(!obj->is<Definable>());
+
+	i = sys->classes.find(name);
+	assert(i != sys->classes.end());
 	this->decRef();
 
-	return obj;
+	return i->second;
 }
 
 XML::XML():root(NULL),node(NULL),constructed(false)
@@ -3003,7 +2995,32 @@ ASObject* Void::coerce(ASObject* o) const
 	return o;
 }
 
-const Type* Type::getTypeFromMultiname(const multiname* mn, bool define)
+bool Type::isTypeResolvable(const multiname* mn)
+{
+	if(mn == 0)
+		return true;
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
+		&& mn->ns.size() == 1 && mn->ns[0].name == "")
+		return true;
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
+		&& mn->ns.size() == 1 && mn->ns[0].name == "")
+		return true;
+
+	ASObject* target;
+	ASObject* typeObject=getGlobal()->getVariableAndTargetByMultiname(*mn,target);
+	if(!typeObject)
+	{
+		//HACK: until we have implemented all flash classes, we need this hack
+		LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname: could not find " << *mn << ", using AnyType");
+		return true;
+	}
+	if(typeObject->is<Definable>())
+		return false;
+
+	return true;
+}
+
+const Type* Type::getTypeFromMultiname(const multiname* mn)
 {
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
@@ -3024,7 +3041,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, bool define)
 		LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname: could not find " << *mn << ", using AnyType");
 		return Type::anyType;
 	}
-	if(define && typeObject->is<Definable>())
+	if(typeObject->is<Definable>())
 		typeObject = typeObject->as<Definable>()->define();
 
 	assert_and_throw(typeObject->is<Type>());

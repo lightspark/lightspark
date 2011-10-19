@@ -305,45 +305,39 @@ variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& n
 
 bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 {
-	bool ret=false;
 	//We look in all the object's levels
 	uint32_t validTraits=DECLARED_TRAIT;
 	if(considerDynamic)
 		validTraits|=DYNAMIC_TRAIT;
 
-	ret=(Variables.findObjVar(name, NO_CREATE_TRAIT, validTraits)!=NULL);
+	if(Variables.findObjVar(name, NO_CREATE_TRAIT, validTraits)!=NULL)
+		return true;
 
-	if(!ret) //Ask the classdef chain for borrowed traits
+	Class_base* cur=classdef;
+	while(cur)
 	{
-		Class_base* cur=classdef;
-		while(cur)
-		{
-			ret=(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL);
-			if(ret)
-				return true;
-			cur=cur->super;
-		}
+		if(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL)
+			return true;
+		cur=cur->super;
 	}
-	if(!ret)
+
+	//Check prototype inheritance chain
+	if(getClass())
 	{
-		//Check prototype inheritance chain
-		if(getClass() == NULL)
-			return NULL;
 		ASObject* proto = getClass()->prototype.getPtr();
 		while(proto)
 		{
-			ret = (proto->findGettable(name, false) != NULL);
-			if(ret)
+			if(proto->findGettable(name, false) != NULL)
 				return true;
 			proto = proto->getprop_prototype();
 		}
 	}
 
-	if(!ret && classdef)
-		ret=(Class<ASObject>::getClass()->lazyDefine(name)!=NULL);
+	if(Class<ASObject>::getClass()->lazyDefine(name)!=NULL)
+		return true;
 
 	//Must not ask for non borrowed traits as static class member are not valid
-	return ret;
+	return false;
 }
 
 void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)

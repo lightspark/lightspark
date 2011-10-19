@@ -340,6 +340,8 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function on obj ") << ((obj->classdef)?obj->classdef->class_name.name:_("Object")));
+			for(size_t i=0;i<m;++i)
+				args[i]->decRef();
 			th->runtime_stack_push(new Undefined);
 		}
 		else if(o->getObjectType()==T_CLASS)
@@ -2481,8 +2483,16 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Function not good ") << f->getObjectType());
-		th->runtime_stack_push(new Undefined);
+		//HACK: Until we have implemented the whole flash api
+		//we silently ignore calling undefined functions
+		if(f->is<Undefined>())
+		{
+			for(size_t i=0;i<m;++i)
+				args[i]->decRef();
+			th->runtime_stack_push(new Undefined);
+		}
+		else
+			throw Class<TypeError>::getInstanceS("Error #1006: Tried to call something that is not a function");
 	}
 	LOG(LOG_CALLS,_("End of call ") << m << ' ' << f);
 	delete[] args;

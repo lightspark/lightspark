@@ -1124,8 +1124,8 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
 	implEnable=false;
 	LOG(LOG_CALLS,_("Proxy::setProperty"));
 	incRef();
-	ASObject* ret=f->call(this,args,2);
-	assert_and_throw(ret==NULL);
+	_R<ASObject> ret=_MR( f->call(this,args,2) );
+	assert_and_throw(ret->is<Undefined>());
 	implEnable=true;
 }
 

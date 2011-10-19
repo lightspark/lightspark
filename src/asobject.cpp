@@ -235,8 +235,6 @@ _R<ASObject> ASObject::call_valueOf()
 
 	incRef();
 	ASObject *ret=f->call(this,NULL,0);
-
-	assert(ret);
 	return _MR(ret);
 }
 
@@ -268,8 +266,6 @@ _R<ASObject> ASObject::call_toString()
 
 	incRef();
 	ASObject *ret=f->call(this,NULL,0);
-
-	assert(ret);
 	return _MR(ret);
 }
 
@@ -491,8 +487,8 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 		//One argument can be passed without creating an array
 		ASObject* target=this;
 		target->incRef();
-		ASObject* ret=setter->call(target,&o,1);
-		assert_and_throw(ret==NULL);
+		_R<ASObject> ret= _MR( setter->call(target,&o,1) );
+		assert_and_throw(ret->is<Undefined>());
 		LOG(LOG_CALLS,_("End of setter"));
 	}
 	else
@@ -760,8 +756,6 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 		target->incRef();
 		ASObject* ret=getter->call(target,NULL,0);
 		LOG(LOG_CALLS,_("End of getter"));
-		if(ret==NULL)
-			ret=new Undefined;
 		//The returned value is already owned by the caller
 		ret->fake_decRef();
 		return ret;
@@ -1168,7 +1162,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	if(ret->setter)
 	{
 		this->incRef();
-		ret->setter->call(this,&obj,1);
+		_MR( ret->setter->call(this,&obj,1) );
 	}
 	else
 		ret->setVar(obj);

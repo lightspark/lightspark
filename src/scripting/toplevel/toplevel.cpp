@@ -2191,8 +2191,6 @@ ASFUNCTIONBODY(IFunction,apply)
 		overrideThis=false;
 	}
 	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen,overrideThis);
-	if(ret==NULL)
-		ret=new Undefined;
 	delete[] newArgs;
 	return ret;
 }
@@ -2231,8 +2229,6 @@ ASFUNCTIONBODY(IFunction,_call)
 		overrideThis=false;
 	}
 	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen,overrideThis);
-	if(ret==NULL)
-		ret=new Undefined;
 	delete[] newArgs;
 	return ret;
 }
@@ -2446,6 +2442,11 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 
 	this->decRef(); //free local ref
 	obj->decRef();
+	delete[] newArgs;
+
+	if(ret==NULL)
+		ret=new Undefined;
+
 	return ret;
 }
 
@@ -2470,6 +2471,8 @@ ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_
 	for(uint32_t i=0;i<num_args;i++)
 		args[i]->decRef();
 	obj->decRef();
+	if(ret==NULL)
+		ret=new Undefined;
 	return ret;
 }
 
@@ -3067,7 +3070,8 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 		LOG(LOG_CALLS,_("Calling Instance init ") << class_name);
 		target->incRef();
 		ASObject* ret=constructor->call(target,args,argslen);
-		assert_and_throw(ret==NULL);
+		assert_and_throw(ret->is<Undefined>());
+		ret->decRef();
 	}
 	if(buildAndLink)
 	{

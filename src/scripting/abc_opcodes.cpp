@@ -335,8 +335,6 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			if(called_mi)
 				*called_mi=f->getMethodInfo();
 			f->decRef();
-			if(ret==NULL)
-				ret=new Undefined;
 			th->runtime_stack_push(ret);
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
@@ -386,8 +384,6 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 				if(called_mi)
 					*called_mi=f->getMethodInfo();
 				f->decRef();
-				if(ret==NULL)
-					ret=new Undefined;
 				th->runtime_stack_push(ret);
 
 				obj->decRef();
@@ -2404,7 +2400,8 @@ void ABCVm::newClass(call_context* th, int n)
 	//cinit must inherit the current scope
 	cinit->acquireScope(th->scope_stack);
 	ASObject* ret2=cinit->call(ret,NULL,0);
-	assert_and_throw(ret2==NULL);
+	assert_and_throw(ret2->is<Undefined>());
+	ret2->decRef();
 	LOG(LOG_CALLS,_("End of Class init ") << ret);
 	th->runtime_stack_push(ret);
 	cinit->decRef();
@@ -2470,11 +2467,7 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 		if(called_mi)
 			*called_mi=func->getMethodInfo();
 		func->decRef();
-		//Push the value only if not null
-		if(ret)
-			th->runtime_stack_push(ret);
-		else
-			th->runtime_stack_push(new Undefined);
+		th->runtime_stack_push(ret);
 		f->decRef();
 	}
 	else if(f->getObjectType()==T_CLASS)

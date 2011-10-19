@@ -192,6 +192,12 @@ public:
 	ASFUNCTION(_toString);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,prototype);
 	ASPROPERTY_GETTER_SETTER(uint32_t,length);
+	/*
+	 * Calls this function with the given object and args.
+	 * One reference of obj and each args[i] is consumed.
+	 * Return the ASObject the function returned.
+	 * This never returns NULL.
+	 */
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* bind(_NR<ASObject> c, int level)
 	{

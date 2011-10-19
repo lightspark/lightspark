@@ -319,8 +319,8 @@ private:
 	AVFormatContext* formatCtx;
 	bool audioFound;
 	bool videoFound;
-	uint32_t audioIndex;
-	uint32_t videoIndex;
+	int32_t audioIndex;
+	int32_t videoIndex;
 	//We use our own copy of these to have access of the ffmpeg specific methods
 	FFMpegAudioDecoder* customAudioDecoder;
 	FFMpegVideoDecoder* customVideoDecoder;

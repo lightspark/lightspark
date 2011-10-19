@@ -850,6 +850,7 @@ void variables_map::dumpVariables()
 				kind="Dynamic: ";
 				break;
 			case NO_CREATE_TRAIT:
+				kind="NoCreate: ";
 				assert(false);
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns.name << "] "<< it->first << ' ' <<

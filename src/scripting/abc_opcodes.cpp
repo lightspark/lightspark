@@ -153,24 +153,19 @@ ASObject* ABCVm::checkfilter(ASObject* o)
 
 ASObject* ABCVm::coerce_s(ASObject* o)
 {
-	LOG(LOG_CALLS, _("coerce_s") );
-	ASObject* ret=o;
-
-	if(o->getObjectType()!=T_STRING)
-	{
-		if(o->getObjectType()==T_UNDEFINED || o->getObjectType()==T_NULL)
-			ret=new Null;
-		else
-			ret=Class<ASString>::getInstanceS(o->toString(false));
-
-		o->decRef();
-	}
-	return ret;
+	return Class<ASString>::getClass()->coerce(o);
 }
 
 void ABCVm::coerce(call_context* th, int n)
 {
-	LOG(LOG_CALLS,_("coerce ") << *th->context->getMultiname(n,NULL));
+	multiname* mn = th->context->getMultiname(n,NULL);
+	LOG(LOG_CALLS,_("coerce ") << *mn);
+
+	const Type* type = Type::getTypeFromMultiname(mn);
+
+	ASObject* o=th->runtime_stack_pop();
+	o=type->coerce(o);
+	th->runtime_stack_push(o);
 }
 
 void ABCVm::pop()

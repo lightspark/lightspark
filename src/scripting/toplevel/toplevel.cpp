@@ -72,6 +72,14 @@ ASObject* Definable::define()
 
 	//Check if the class has already been defined by some other
 	//DefinableClass object
+	if(name.isQName())
+	{
+		QName qn(name.normalizedName(), name.ns[0].name);
+		auto i = sys->classes.find(qn);
+		if(i != sys->classes.end())
+			return i->second;
+	}
+
 	ASObject* obj = global->getVariableByMultiname(name);
 	if(!obj->is<Definable>())
 		return obj;

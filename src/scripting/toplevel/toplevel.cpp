@@ -33,6 +33,8 @@
 #include <ctype.h>
 #include <errno.h>
 
+#include <glib/glib.h>
+
 #include "abc.h"
 #include "toplevel.h"
 #include "flash/events/flashevents.h"
@@ -1531,13 +1533,13 @@ double ASString::toNumber() const
 
 	const char *s=data.c_str();
 	char *end=NULL;
-	double val=strtod(s, &end);
+	double val=g_ascii_strtod(s, &end);
 
 	// strtod converts case-insensitive "inf" and "infinity" to
 	// inf, flash only accepts case-sensitive "Infinity".
 	if(std::isinf(val)) {
 		const char *tmp=s;
-		while(isspace(*tmp))
+		while(g_ascii_isspace(*tmp))
 			tmp++;
 		if(*tmp=='+' || *tmp=='-')
 			tmp++;
@@ -1548,7 +1550,7 @@ double ASString::toNumber() const
 	// Fail if there is any rubbish after the converted number
 	while(*end)
 	{
-		if(!isspace(*end))
+		if(!g_ascii_isspace(*end))
 			return numeric_limits<double>::quiet_NaN();
 		end++;
 	}
@@ -1559,7 +1561,7 @@ double ASString::toNumber() const
 int32_t ASString::toInt()
 {
 	assert_and_throw(implEnable);
-	return atol(data.c_str());
+	return atoi(data.c_str());
 }
 
 uint32_t ASString::toUInt()
@@ -3867,7 +3869,7 @@ ASFUNCTIONBODY(lightspark,parseInt)
 
 		errno=0;
 		char *end;
-		long val=strtol(cur, &end, radix);
+		int64_t val=g_ascii_strtoll(cur, &end, radix);
 
 		if(errno==ERANGE)
 		{

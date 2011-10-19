@@ -32,6 +32,16 @@
 		//In AS3, the valueOf function is additionally defined as method
 		//this check is used in our test runner to see if we are running AS3
 		Tests.assertTrue((new Namespace).valueOf != Namespace.prototype.valueOf,"(new Namespace).valueOf != Namespace.prototype.valueOf");
+
+		//as/is does not take work if the left side is a Class
+		//this emits astypelate
+		Tests.assertEquals(null,MovieClip as DisplayObject,"MovieClip as DisplayObject = null");
+		//this emits istypelate
+		Tests.assertFalse(MovieClip is DisplayObject,"MovieClip is DisplayObject = false");
+		Tests.assertTrue(MovieClip is Class,"MovieClip is Class = true");
+
+		Tests.assertTrue(3 is Number,"3 is Number = true");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

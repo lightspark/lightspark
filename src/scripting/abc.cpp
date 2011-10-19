@@ -644,12 +644,19 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, unsigned int midx)
 			case 0x1d:
 			{
 				assert(!n);
-				assert_and_throw(m->param_types.size()==1);
 				multiname_info* td=&constant_pool.multinames[m->type_definition];
-				//multiname_info* p=&constant_pool.multinames[m->param_types[0]];
+				//builds a name by concating the templateName$TypeName1$TypeName2...
+				//this naming scheme is defined by the ABC compiler
+				tiny_string name = getString(td->name);
+				for(size_t i=0;i<m->param_types.size();++i)
+				{
+					multiname_info* p=&constant_pool.multinames[m->param_types[i]];
+					name += "$";
+					name += getString(p->name);
+				}
 				const namespace_info* n=&constant_pool.namespaces[td->ns];
 				ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
-				ret->name_s=getString(td->name);
+				ret->name_s=name;
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}

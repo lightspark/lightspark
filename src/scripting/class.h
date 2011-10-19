@@ -273,7 +273,8 @@ public:
 
 	QName getQName(ASObject* const* types, const unsigned int numtypes)
 	{
-		//This is modeled after the internal naming of the proprietary player
+		//This is the naming scheme that the ABC compiler uses,
+		//and we need to stay in sync here
 		assert_and_throw(numtypes);
 		QName ret(ClassName<T>::name, ClassName<T>::ns);
 		for(size_t i=0;i<numtypes;++i)

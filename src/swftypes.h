@@ -515,6 +515,7 @@ struct multiname
 	*/
 	tiny_string normalizedName() const;
 	tiny_string qualifiedString() const;
+	bool isQName() const { return ns.size() == 1; }
 };
 
 class FLOAT 

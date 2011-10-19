@@ -361,7 +361,7 @@ void Loader::execute()
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
-			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("ioError")));
+			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
 			sys->downloadManager->destroy(downloader);
 			return;
 		}
@@ -380,7 +380,7 @@ void Loader::execute()
 		if(obj.isNull())
 		{
 			// The stream did not contain RootMovieClip or Bitmap
-			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("ioError")));
+			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
 			return;
 		}
 

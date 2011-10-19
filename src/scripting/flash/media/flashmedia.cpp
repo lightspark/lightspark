@@ -273,7 +273,7 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//Notify an error during loading
 		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
+		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
 		return NULL;
 	}
 
@@ -294,7 +294,7 @@ ASFUNCTIONBODY(Sound,load)
 	if(th->downloader->hasFailed())
 	{
 		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
+		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
 	}
 	return NULL;
 }

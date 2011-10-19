@@ -253,7 +253,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	{
 		//Notify an error during loading
 		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
+		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
 		return NULL;
 	}
 
@@ -361,14 +361,14 @@ void URLLoader::execute()
 		{
 			//Notify an error during loading
 			this->incRef();
-			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
+			sys->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
 		}
 	}
 	else
 	{
 		//Notify an error during loading
 		this->incRef();
-		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
+		sys->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
 	}
 
 	{
@@ -758,7 +758,7 @@ ASFUNCTIONBODY(NetStream,play)
 	{
 		//Notify an error during loading
 		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<Event>::getInstanceS("ioError")));
+		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
 	}
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
@@ -910,7 +910,7 @@ void NetStream::execute()
 	if(downloader->hasFailed())
 	{
 		this->incRef();
-		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("ioError")));
+		sys->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
 		sys->downloadManager->destroy(downloader);
 		return;
 	}

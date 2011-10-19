@@ -3539,6 +3539,7 @@ void Namespace::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_getPrefix),GETTER_METHOD,true);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("valueOf","",Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
 }
 
 void Namespace::buildTraits(ASObject* o)
@@ -3673,6 +3674,14 @@ ASFUNCTIONBODY(Namespace,_toString)
 {
 	if(!obj->is<Namespace>())
 		throw Class<TypeError>::getInstanceS("Namespace.toString is not generic");
+	Namespace* th=static_cast<Namespace*>(obj);
+	return Class<ASString>::getInstanceS(th->uri);
+}
+
+ASFUNCTIONBODY(Namespace,_valueOf)
+{
+	if(!obj->is<Namespace>())
+		throw Class<TypeError>::getInstanceS("Namespace.valueOf is not generic");
 	Namespace* th=static_cast<Namespace*>(obj);
 	return Class<ASString>::getInstanceS(th->uri);
 }

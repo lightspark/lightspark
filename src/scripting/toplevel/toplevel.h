@@ -440,6 +440,7 @@ public:
 	ASFUNCTION(_getPrefix);
 	ASFUNCTION(_setPrefix);
 	ASFUNCTION(_toString);
+	ASFUNCTION(_valueOf);
 	bool isEqual(ASObject* o);
 };
 

@@ -2021,8 +2021,9 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 			type->decRef();
 			return obj;
 		}
-		
-		objc=static_cast<Class_base*>(obj);
+		obj->decRef();
+		type->decRef();
+		return new Null;
 	}
 	else
 	{

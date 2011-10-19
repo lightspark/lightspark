@@ -31,6 +31,7 @@ DEBUG=0;
 PROPRIETARY=0;
 BLACKLIST=0;
 JUNITFILE=""
+NOXVFB=0;
 
 if ! `which timeout > /dev/null`; then
 	echo "Warning: 'timeout' command not found"
@@ -42,6 +43,7 @@ if [ ! -d tamarin-SWF ]; then
 	echo "Did you built the tamarin testsuit with the 'make-tamarin' script?"
 fi
 
+ALLARGS=$*
 while [ $# -ne 0 ]; do
 	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then
 		echo "Usage: [-q|--quiet] [-nc|--no-colors] [-f|--failures] [-c|--compile] [-cq|--compile-quit] [-m|--mxmlc] [-e|--executable] [-d|--debug] [-l|--log-level level] [-u|--url url] [-t|--tests tests|tests]";
@@ -59,6 +61,7 @@ while [ $# -ne 0 ]; do
 		echo -e "\t-p|--proprietary\t\tUse proprietary player to run tests";
 		echo -e "\t-j|--junit file\t\tWrite test results in junit's xml format to 'file'"
 		echo -e "\t-b|--blacklist file\t\tRun the testsuite on the blacklisted files only - those that do not fully pass with the proprietary player"
+		echo -e "\t--no-xvfb\t\tDo not run the testsuite under xvfb (when it is found)"
 		echo "Examples:";
 		echo -e "\t./tests -q -f\t\tTests all files, only reporting failures"
 		echo -e "\t./tests -q -c -t FILE\tRecompiles the file and runs it, only showing reports"
@@ -110,6 +113,8 @@ while [ $# -ne 0 ]; do
 	elif [ $1 == "-j" ] || [ $1 == "--junit" ]; then
 		JUNITFILE="$2"
 		shift
+	elif [ $1 == "--no-xvfb" ]; then
+		NOXVFB=1
 	else
 		if [ $1 == "-t" ] || [ $1 == "--tests" ]; then
 			shift;
@@ -123,6 +128,18 @@ while [ $# -ne 0 ]; do
 	fi;
 	shift;
 done
+
+XVFB_NOT_RUNNING=`echo $XAUTHORITY | grep xvfb-run > /dev/null; echo $?`
+#Check for '--no-xfvb' or if we are already running under xvfb-run
+if [[ "$NOXVFB" == "0" && "$XVFB_NOT_RUNNING" == "1" ]]; then
+	if [ `which xvfb-run > /dev/null` ]; then
+		echo "Warning: 'xvfb-run' not found. Windows will pop up."
+		echo "xvfb-run is part of the XvFB package (e.g. apt-get install xvfb)."
+	else
+		xvfb-run -s '-extension GLX' -a $0 --no-xvfb $ALLARGS
+		exit $?
+	fi
+fi
 
 #Blacklisted tests fail the proprietary player are listed in the 'blacklist' file and are not run by default
 #If --blacklist or -b is passed run them instead of the other tests
@@ -191,12 +208,6 @@ INDENTPREFIX='\t';
 
 FAILED_TESTS=""
 TOTALTESTCOUNT=`echo $TESTS | wc -w`
-
-if ! `echo $XAUTHORITY | grep xvfb-run > /dev/null`; then
-  echo "Tip: If you use 'xvfb-run -s '-extension GLX' -a ./tests', you won't be disturbed by the windows popping up."
-  echo "Its part of the XvFB package (e.g. apt-get install xvfb)."
-  echo ""
-fi
 
 if [ $PROPRIETARY -eq 0 ]; then
 	LOGFILE=`tempfile`

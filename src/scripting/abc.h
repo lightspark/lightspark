@@ -381,7 +381,7 @@ struct opcode_handler
 
 enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER,
 	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT,
-	ARGS_CONTEXT_INT_INT_INT};
+	ARGS_CONTEXT_INT_INT_INT, ARGS_CONTEXT_INT_INT_INT_BOOL};
 
 struct typed_opcode_handler
 {
@@ -471,10 +471,9 @@ private:
 	//Interpreted AS instructions
 	//If you change a definition here, update the opcode_table_* entry in abc_codesynth
 	static bool hasNext2(call_context* th, int n, int m); 
-	static void callPropVoid(call_context* th, int n, int m, method_info** called_mi);
-	static void callSuperVoid(call_context* th, int n, int m, method_info** called_mi);
-	static void callSuper(call_context* th, int n, int m, method_info** called_mi);
-	static void callProperty(call_context* th, int n, int m, method_info** called_mi);
+	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
+	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
+	static void callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 
 	static void setLocal_int(int n,int v); 

@@ -650,7 +650,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t2;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callSuper(context,t,t2,&called_mi);
+				callSuper(context,t,t2,&called_mi,true);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
@@ -666,7 +666,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t2;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callProperty(context,t,t2,&called_mi);
+				callProperty(context,t,t2,&called_mi,true);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
@@ -713,7 +713,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t2;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callSuperVoid(context,t,t2,&called_mi);
+				callSuper(context,t,t2,&called_mi,false);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
@@ -728,7 +728,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t2;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callPropVoid(context,t,t2,&called_mi);
+				callProperty(context,t,t2,&called_mi,false);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else

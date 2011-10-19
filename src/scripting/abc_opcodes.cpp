@@ -284,14 +284,14 @@ uintptr_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 	return i1|i2;
 }
 
-void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi)
+void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	multiname* name=th->context->getMultiname(n,th);
-	LOG(LOG_CALLS,_("callProperty ") << *name << ' ' << m);
+	LOG(LOG_CALLS, (keepReturn ? "callProperty " : "callPropVoid") << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
 	if(obj->classdef)
@@ -316,37 +316,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			LOG(LOG_CALLS,_("We got a function not yet valid"));
 			o=o->as<Definable>()->define();
 		}
-
-		//If o is already a function call it
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(o);
-			//Methods has to be runned with their own class this
-			//The owner has to be increffed
-			obj->incRef();
-			f->incRef();
-			ASObject* ret=f->call(obj,args,m);
-			//call getMethodInfo only after the call, so it's updated
-			if(called_mi)
-				*called_mi=f->getMethodInfo();
-			f->decRef();
-			th->runtime_stack_push(ret);
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function on obj ") << ((obj->classdef)?obj->classdef->class_name.name:_("Object")));
-			for(int i=0;i<m;++i)
-				args[i]->decRef();
-			th->runtime_stack_push(new Undefined);
-		}
-		else if(o->getObjectType()==T_CLASS)
-		{
-			Class_base* c=static_cast<Class_base*>(o);
-			ASObject* ret=c->generator(args, m);
-			th->runtime_stack_push(ret);
-		}
-		else
-			throw UnsupportedException("Unexpected object to call");
+		callImpl(th, o, obj, args, m, called_mi, keepReturn);
 	}
 	else
 	{
@@ -381,7 +351,10 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 				if(called_mi)
 					*called_mi=f->getMethodInfo();
 				f->decRef();
-				th->runtime_stack_push(ret);
+				if(keepReturn)
+					th->runtime_stack_push(ret);
+				else
+					ret->decRef();
 
 				obj->decRef();
 				LOG(LOG_CALLS,_("End of calling ") << *name);
@@ -392,12 +365,13 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << *name << _(" on obj ") << 
 				((obj->classdef)?obj->classdef->class_name.name:"Object"));
-		th->runtime_stack_push(new Undefined);
+		if(keepReturn)
+			th->runtime_stack_push(new Undefined);
+
+		obj->decRef();
+		delete[] args;
 	}
 	LOG(LOG_CALLS,_("End of calling ") << *name);
-
-	obj->decRef();
-	delete[] args;
 }
 
 intptr_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
@@ -853,113 +827,6 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 	}
 	obj->decRef();
 	return Class<ASString>::getInstanceS(ret);
-}
-
-void ABCVm::callPropVoid(call_context* th, int n, int m, method_info** called_mi)
-{
-	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_CALLS,"callPropVoid " << *name << ' ' << m);
-
-	ASObject** args=new ASObject*[m];
-	for(int i=0;i<m;i++)
-		args[m-i-1]=th->runtime_stack_pop();
-	ASObject* obj=th->runtime_stack_pop();
-
-	if(obj->classdef)
-		LOG(LOG_CALLS, obj->classdef->class_name);
-
-	//We have to reset the level, as we may be getting a function defined at a lower level
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name,ASObject::SKIP_IMPL);
-
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
-
-	if(o)
-	{
-		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(o);
-			obj->incRef();
-
-			f->incRef();
-			ASObject* ret=f->call(obj,args,m);
-			//call getMethodInfo only after the call, so it's updated
-			if(called_mi)
-				*called_mi=f->getMethodInfo();
-			f->decRef();
-			if(ret)
-				ret->decRef();
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << *name << _(" on obj ") << 
-					((obj->classdef)?obj->classdef->class_name.name:"Object"));
-		}
-		else
-			throw UnsupportedException("Not callable object in callPropVoid");
-	}
-	else
-	{
-		//If the object is a Proxy subclass, try to use callProperty
-		if(obj->classdef && obj->classdef->isSubClass(Class<Proxy>::getClass()))
-		{
-			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-			multiname callPropertyName;
-			callPropertyName.name_type=multiname::NAME_STRING;
-			callPropertyName.name_s="callProperty";
-			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			ASObject* o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
-			if(o)
-			{
-				assert_and_throw(o->getObjectType()==T_FUNCTION);
-
-				IFunction* f=static_cast<IFunction*>(o);
-
-				//Create a new array
-				ASObject** proxyArgs=new ASObject*[m+1];
-				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
-				for(int i=0;i<m;i++)
-					proxyArgs[i+1]=args[i];
-				delete[] args;
-
-				//We now suppress special handling
-				LOG(LOG_CALLS,_("Proxy::callProperty"));
-				f->incRef();
-				ASObject* ret=f->call(obj,proxyArgs,m+1);
-				//call getMethodInfo only after the call, so it's updated
-				if(called_mi)
-					*called_mi=f->getMethodInfo();
-				f->decRef();
-				if(ret)
-					ret->decRef();
-
-				//No need to decRef obj, as it has been passed to the function
-				LOG(LOG_CALLS,_("End of calling ") << *name);
-				delete[] proxyArgs;
-				return;
-			}
-		}
-
-		if(obj->classdef)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function ") << name->name_s << _(" on obj type ") << obj->classdef->class_name);
-		}
-		else
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function ") << name->name_s);
-		}
-	}
-
-	obj->decRef();
-	delete[] args;
-	LOG(LOG_CALLS,_("End of calling ") << *name);
 }
 
 void ABCVm::jump(int offset)
@@ -1738,14 +1605,14 @@ void ABCVm::initProperty(call_context* th, int n)
 	obj->decRef();
 }
 
-void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi)
+void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
-	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_CALLS,_("callSuper ") << *name << ' ' << m);
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(LOG_CALLS,(keepReturn ? "callSuper " : "callSuperVoid ") << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
 
@@ -1762,147 +1629,14 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi)
 	tl.cur_this->setLevel(tl.cur_level);
 
 	if(o)
-	{
-		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(o);
-			obj->incRef();
-			f->incRef();
-			ASObject* ret=f->call(obj,args,m);
-			//call getMethodInfo only after the call, so it's updated
-			if(called_mi)
-				*called_mi=f->getMethodInfo();
-			f->decRef();
-			th->runtime_stack_push(ret);
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function"));
-			th->runtime_stack_push(new Undefined);
-		}
-/*		else if(o->getObjectType()==T_DEFINABLE)
-		{
-			LOG(LOG_CALLS,_("We got a function not yet valid"));
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			IFunction* f=obj->getVariableByMultiname(*name)->toFunction();
-			if(f)
-			{
-				ASObject* ret=f->call(owner,args,m);
-				th->runtime_stack_push(ret);
-			}
-			else
-			{
-				LOG(LOG_NOT_IMPLEMENTED,_("No such function"));
-				th->runtime_stack_push(new Undefined);
-			}
-		}
-		else
-		{
-			//IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
-			//if(f)
-			//{
-			//	ASObject* ret=f->call(o,args,m);
-			//	th->runtime_stack_push(ret);
-			//}
-			//else
-			//{
-			//	LOG(LOG_NOT_IMPLEMENTED,_("No such function, returning Undefined"));
-			//	th->runtime_stack_push(new Undefined);
-			//}
-		}*/
-		else
-			throw UnsupportedException("Not callable object in callSuper");
-	}
+		callImpl(th, o, obj, args, m, called_mi, keepReturn);
 	else
 	{
 		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << name->name_s);
-		th->runtime_stack_push(new Undefined);
+		if(keepReturn)
+			th->runtime_stack_push(new Undefined);
 	}
 	LOG(LOG_CALLS,_("End of callSuper ") << *name);
-
-	obj->decRef();
-	delete[] args;
-}
-
-void ABCVm::callSuperVoid(call_context* th, int n, int m, method_info** called_mi)
-{
-	ASObject** args=new ASObject*[m];
-	for(int i=0;i<m;i++)
-		args[m-i-1]=th->runtime_stack_pop();
-
-	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_CALLS,_("callSuperVoid ") << *name << ' ' << m);
-
-	ASObject* obj=th->runtime_stack_pop();
-
-	//We modify the cur_level of obj
-	obj->decLevel();
-
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
-
-	//And the reset it using the stack
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-	tl.cur_this->setLevel(tl.cur_level);
-
-	if(o)
-	{
-		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(o);
-			obj->incRef();
-			f->incRef();
-			ASObject* ret=f->call(obj,args,m);
-			//call getMethodInfo only after the call, so it's updated
-			if(called_mi)
-				*called_mi=f->getMethodInfo();
-			f->decRef();
-			if(ret)
-				ret->decRef();
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function"));
-		}
-/*		else if(o->getObjectType()==T_DEFINABLE)
-		{
-			LOG(LOG_CALLS,_("We got a function not yet valid"));
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
-			if(f)
-				f->call(owner,args,m);
-			else
-			{
-				LOG(LOG_NOT_IMPLEMENTED,_("No such function"));
-			}
-		}
-		else
-		{
-			//IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
-			//if(f)
-			//	f->call(o,args,m);
-			//else
-			//{
-			//	LOG(LOG_NOT_IMPLEMENTED,_("No such function, returning Undefined"));
-			//}
-		}*/
-		else
-			throw UnsupportedException("Not callable object in callSuperVoid");
-	}
-	else
-	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function"));
-	}
-	LOG(LOG_CALLS,_("End of callSuperVoid ") << *name);
-
-	obj->decRef();
-	delete[] args;
 }
 
 bool ABCVm::isType(ASObject* obj, multiname* name)
@@ -2454,44 +2188,53 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 	ASObject* obj=th->runtime_stack_pop();
 	ASObject* f=th->runtime_stack_pop();
 	LOG(LOG_CALLS,_("call ") << m << ' ' << f);
+	callImpl(th, f, obj, args, m, called_mi, true);
+}
 
-	if(f->getObjectType()==T_FUNCTION)
+void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn)
+{
+	if(f->is<Function>())
 	{
-		IFunction* func=static_cast<IFunction*>(f);
-		//TODO: check for correct level, member function are already binded
+		IFunction* func=f->as<Function>();
 		func->incRef();
 		ASObject* ret=func->call(obj,args,m);
 		//call getMethodInfo only after the call, so it's updated
 		if(called_mi)
 			*called_mi=func->getMethodInfo();
 		func->decRef();
-		th->runtime_stack_push(ret);
-		f->decRef();
+		if(keepReturn)
+			th->runtime_stack_push(ret);
+		else
+			ret->decRef();
 	}
-	else if(f->getObjectType()==T_CLASS)
+	else if(f->is<Class_base>())
 	{
-		assert_and_throw(m==1);
-		Class_base* c=static_cast<Class_base*>(f);
-		ASObject* ret=c->generator(args,1);
+		obj->decRef();
+		Class_base* c=f->as<Class_base>();
+		ASObject* ret=c->generator(args,m);
 		assert_and_throw(ret);
-		th->runtime_stack_push(ret);
+		if(keepReturn)
+			th->runtime_stack_push(ret);
+		else
+			ret->decRef();
 	}
 	else
 	{
+		obj->decRef();
+		for(int i=0;i<m;++i)
+			args[i]->decRef();
 		//HACK: Until we have implemented the whole flash api
 		//we silently ignore calling undefined functions
 		if(f->is<Undefined>())
 		{
-			for(int i=0;i<m;++i)
-				args[i]->decRef();
-			th->runtime_stack_push(new Undefined);
+			if(keepReturn)
+				th->runtime_stack_push(new Undefined);
 		}
 		else
 			throw Class<TypeError>::getInstanceS("Error #1006: Tried to call something that is not a function");
 	}
 	LOG(LOG_CALLS,_("End of call ") << m << ' ' << f);
 	delete[] args;
-
 }
 
 void ABCVm::deleteProperty(call_context* th, int n)

@@ -203,6 +203,7 @@ class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);
 friend struct block_info;
+friend class SyntheticFunction;
 private:
 	enum { NEED_ARGUMENTS=1,NEED_REST=4, HAS_OPTIONAL=8};
 	u30 param_count;
@@ -268,6 +269,10 @@ public:
 	int numArgs() { return param_count; }
 	const multiname* paramTypeName(unsigned int i) const;
 	const multiname* returnTypeName() const;
+
+	std::vector<const Type*> paramTypes;
+	const Type* returnType;
+
 	method_info():
 #ifdef PROFILING_SUPPORT
 		profTime(0),

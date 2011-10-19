@@ -2296,6 +2296,20 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 		return NULL;
 	}
 
+	/* resolve argument and return types */
+	if(mi->paramTypes.empty())
+	{
+		mi->paramTypes.reserve(mi->numArgs());
+		for(size_t i=0;i < mi->numArgs();++i)
+		{
+			const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i));
+			mi->paramTypes.push_back(t);
+		}
+
+		const Type* t = Type::getTypeFromMultiname(mi->returnTypeName());
+		mi->returnType = t;
+	}
+
 	//Temporarily disable JITting
 	if(!mi->body->exception_count && sys->useJit && (hit_count==hit_threshold || sys->useInterpreter==false))
 	{
@@ -2311,7 +2325,33 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	//We use the stored level or the object's level
 	int realLevel=(closure_level!=-1)?closure_level:obj->getLevel();
 
-	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
+	/* setup argumentsArray if needed */
+	Array* argumentsArray = NULL;
+	if(mi->needsArgs())
+	{
+		//The arguments does not contain default values of optional parameters,
+		//i.e. f(a,b=3) called as f(7) gives arguments = { 7 }
+		argumentsArray=Class<Array>::getInstanceS();
+		argumentsArray->resize(numArgs);
+		for(uint32_t j=0;j<numArgs;j++)
+		{
+			args[j]->incRef();
+			argumentsArray->set(j,args[j]);
+		}
+		//Add ourself as the callee property
+		incRef();
+		argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT);
+	}
+
+	/* coerce arguments to expected types */
+	ASObject** newArgs = new ASObject*[passedToLocals];
+	for(int i=0;i<passedToLocals;++i)
+	{
+		newArgs[i] = mi->paramTypes[i]->coerce(args[i]);
+	}
+
+	/* setup call_context */
+	call_context* cc=new call_context(mi,realLevel,newArgs,passedToLocals);
 	cc->code=new istringstream(mi->body->code);
 	cc->scope_stack=func_scope;
 	cc->initialScopeStack=func_scope.size();
@@ -2358,19 +2398,6 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	}
 	else if(mi->needsArgs())
 	{
-		//The arguments does not contain default values of optional parameters,
-		//i.e. f(a,b=3) called as f(7) gives arguments = { 7 }
-		Array* argumentsArray=Class<Array>::getInstanceS();
-		argumentsArray->resize(numArgs);
-		for(uint32_t j=0;j<numArgs;j++)
-		{
-			args[j]->incRef();
-			argumentsArray->set(j,args[j]);
-		}
-		//Add ourself as the callee property
-		incRef();
-		argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT);
-
 		cc->locals[i+1]=argumentsArray;
 	}
 	//Parameters are ready
@@ -2458,7 +2485,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	if(ret==NULL)
 		ret=new Undefined;
 
-	return ret;
+	return mi->returnType->coerce(ret);
 }
 
 /**

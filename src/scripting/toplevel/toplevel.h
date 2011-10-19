@@ -111,10 +111,6 @@ private:
 	mutable std::vector<Class_base*> interfaces_added;
 	bool use_protected;
 	nsNameAndKind protected_ns;
-	int _maxlevel()
-	{
-		return max_level;
-	}
 	void recursiveBuild(ASObject* target);
 	IFunction* constructor;
 	void describeTraits(xmlpp::Element* root, std::vector<traits_info>& traits) const;
@@ -160,6 +156,10 @@ public:
 	 * The returned object must be decRef'ed by caller.
 	 */
 	virtual ASObject* coerce(ASObject* o) const;
+
+	IFunction* getBorrowedMethod(const multiname& mn);
+	IFunction* getBorrowedSetter(const multiname& mn);
+	IFunction* getBorrowedGetter(const multiname& mn);
 };
 
 class Template_base : public ASObject
@@ -242,9 +242,14 @@ protected:
 	IFunction();
 	virtual IFunction* clone()=0;
 	_NR<ASObject> closure_this;
-	int closure_level;
-	bool bound;
 public:
+	/* If this is a method, inClass is the class this is defined in.
+	 * If this is a function, inClass == NULL
+	 */
+	Class_base* inClass;
+	/* returns wether this is this a method of a function */
+	bool isMethod() const { return inClass != NULL; }
+	bool isBound() const { return closure_this != NULL; }
 	void finalize();
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
@@ -260,7 +265,7 @@ public:
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* bind(_NR<ASObject> c, int level)
 	{
-		if(!bound)
+		if(!isBound())
 		{
 			IFunction* ret=NULL;
 			if(c==NULL)
@@ -275,7 +280,6 @@ public:
 				ret->classdef=NULL; //Drop the classdef and set it ex novo
 				ret->setClass(getClass());
 			}
-			ret->bound=true;
 			ret->closure_this=c;
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
@@ -285,10 +289,6 @@ public:
 			incRef();
 			return this;
 		}
-	}
-	void bindLevel(int l)
-	{
-		closure_level=l;
 	}
 	virtual method_info* getMethodInfo() const=0;
 	virtual ASObject *describeType() const;
@@ -373,7 +373,6 @@ public:
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		Function* ret=new Function(v);
 		ret->setClass(c);
-		ret->resetLevel();
 		return ret;
 	}
 	static SyntheticFunction* getSyntheticFunction(method_info* m)

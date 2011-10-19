@@ -28,6 +28,7 @@ namespace lightspark
 class method_info;
 class ABCContext;
 class ASObject;
+class Class_base;
 
 struct scope_entry
 {
@@ -59,7 +60,11 @@ struct call_context
 	ASObject* runtime_stack_peek();
 	method_info* mi;
 	std::istringstream* code;
-	call_context(method_info* th, int l, ASObject* const* args, const unsigned int numArgs);
+	/* This is the function's inClass that is currently executing. It is used
+	 * by {construct,call,get,set}Super
+	 * */
+	Class_base* inClass;
+	call_context(method_info* th, ASObject* const* args, const unsigned int numArgs, Class_base* inClass);
 	~call_context();
 };
 

@@ -2124,7 +2124,7 @@ IFunction* Function::toFunction()
 	return this;
 }
 
-IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false),length(0)
+IFunction::IFunction():closure_this(NULL),inClass(NULL),length(0)
 {
 	type=T_FUNCTION;
 	prototype = _MR(new_asobject());
@@ -2308,8 +2308,6 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	uint32_t args_len=mi->numArgs();
 	int passedToLocals=imin(numArgs,args_len);
 	uint32_t passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
-	//We use the stored level or the object's level
-	int realLevel=(closure_level!=-1)?closure_level:obj->getLevel();
 
 	/* setup argumentsArray if needed */
 	Array* argumentsArray = NULL;
@@ -2337,13 +2335,13 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	}
 
 	/* setup call_context */
-	call_context* cc=new call_context(mi,realLevel,newArgs,passedToLocals);
+	call_context* cc=new call_context(mi,newArgs,passedToLocals,inClass);
 	cc->code=new istringstream(mi->body->code);
 	cc->scope_stack=func_scope;
 	cc->initialScopeStack=func_scope.size();
 	getVm()->curGlobalObj = ABCVm::getGlobalScope(cc);
 
-	if(bound && !closure_this.isNull() && !thisOverride)
+	if(isBound() && !thisOverride)
 	{
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		if(obj)
@@ -2388,17 +2386,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	}
 	//Parameters are ready
 
-	//As we are changing execution context (e.g. 'this' and level), reset the level of the current
-	//object and add the new 'this' and level to the stack
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	tl.cur_this->resetLevel();
-
-	getVm()->pushObjAndLevel(obj,realLevel);
-	//Set the current level
-	obj->setLevel(realLevel);
-
 	ASObject* ret;
-
 	//obtain a local reference to this function, as it may delete itself
 	this->incRef();
 
@@ -2440,10 +2428,6 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 			}
 			if (no_handler)
 			{
-				getVm()->popObjAndLevel();
-				obj->resetLevel();
-				tl=getVm()->getCurObjAndLevel();
-				tl.cur_this->setLevel(tl.cur_level);
 				delete cc;
 				throw excobj;
 			}
@@ -2451,15 +2435,6 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 		}
 		break;
 	}
-
-	//Now pop this context and reset the level correctly
-	tl=getVm()->popObjAndLevel();
-	assert_and_throw(tl.cur_this==obj);
-	assert_and_throw(tl.cur_this->getLevel()==realLevel);
-	obj->resetLevel();
-
-	tl=getVm()->getCurObjAndLevel();
-	tl.cur_this->setLevel(tl.cur_level);
 
 	delete cc;
 	hit_count++;
@@ -2481,7 +2456,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
 {
 	ASObject* ret;
-	if(bound && !closure_this.isNull() && !thisOverride)
+	if(isBound() && !thisOverride)
 	{
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		if(obj)
@@ -3074,6 +3049,36 @@ ASObject* Class_base::coerce(ASObject* o) const
 	return o;
 }
 
+IFunction* Class_base::getBorrowedMethod(const multiname& name)
+{
+	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
+	if(ret && ret->var && ret->var->is<IFunction>())
+		return ret->var->as<IFunction>();
+	if(super)
+		return super->getBorrowedMethod(name);
+	return NULL;
+}
+
+IFunction* Class_base::getBorrowedSetter(const multiname& name)
+{
+	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
+	if(ret && ret->setter)
+		return ret->setter;
+	if(super)
+		return super->getBorrowedSetter(name);
+	return NULL;
+}
+
+IFunction* Class_base::getBorrowedGetter(const multiname& name)
+{
+	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
+	if(ret && ret->getter)
+		return ret->getter;
+	if(super)
+		return super->getBorrowedGetter(name);
+	return NULL;
+}
+
 ASFUNCTIONBODY(Class_base,_toString)
 {
 	Class_base* th = obj->as<Class_base>();
@@ -3126,7 +3131,6 @@ void Class_base::recursiveBuild(ASObject* target)
 		super->recursiveBuild(target);
 
 	LOG(LOG_TRACE,_("Building traits for ") << class_name);
-	target->setLevel(max_level);
 	buildInstanceTraits(target);
 }
 
@@ -3159,7 +3163,6 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 		recursiveBuild(target);
 		//And restore it
 		target->implEnable=bak;
-		assert_and_throw(target->getLevel()==max_level);
 	#ifndef NDEBUG
 		target->initialized=true;
 	#endif
@@ -3174,7 +3177,6 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	}
 
 	//As constructors are not binded, we should change here the level
-	assert_and_throw(max_level==target->getLevel());
 	if(constructor)
 	{
 		LOG(LOG_CALLS,_("Calling Instance init ") << class_name);

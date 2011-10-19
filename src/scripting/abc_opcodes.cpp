@@ -50,14 +50,7 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj);
 
 	//We have to reset the level before finding a variable
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
 	obj->setVariableByMultiname(*name,value);
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
-
 	obj->decRef();
 }
 
@@ -297,16 +290,8 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	if(obj->classdef)
 		LOG(LOG_CALLS,obj->classdef->class_name);
 
-	//We have to reset the level, as we may be getting a function defined at a lower level
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
 	//We should skip the special implementation of get
 	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
-
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
 
 	if(o)
 	{
@@ -389,16 +374,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("getProperty ") << *name << ' ' << obj);
 
-	//We have to reset the level before finding a variable
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
 	ASObject* ret=obj->getVariableByMultiname(*name);
 
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
-	
 	if(ret==NULL)
 	{
 		if(obj->classdef)
@@ -1318,66 +1295,69 @@ void ABCVm::_throw(call_context* th)
 void ABCVm::setSuper(call_context* th, int n)
 {
 	ASObject* value=th->runtime_stack_pop();
-	multiname* name=th->context->getMultiname(n,th); 
+	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,_("setSuper ") << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	//We modify the cur_level of obj
-	obj->decLevel();
-
-	obj->setVariableByMultiname(*name, value);
-
-	//And the reset it using the stack
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-	tl.cur_this->setLevel(tl.cur_level);
-
-	obj->decRef();
+	assert_and_throw(th->inClass)
+	assert_and_throw(th->inClass->super);
+	assert_and_throw(obj->getClass());
+	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
+	IFunction* o = th->inClass->super->getBorrowedSetter(*name);
+	if(o)
+		_MR( o->call(obj,&value,1) );
+	else
+	{
+		//Look for instance variables. We look at obj, because all
+		//the instance variables from super are also there
+		//We should look only for DECLARED_TRAITS, but it isn't wrong this way either
+		variable* v = obj->findSettable(*name,false);
+		if(!v)
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"setSuper: did not find setter " << *name);
+			obj->decRef();
+			value->decRef();
+			return;
+		}
+		assert(v->var); /* instance variables can only by var */
+		v->setVar(value);
+	}
 }
 
 void ABCVm::getSuper(call_context* th, int n)
 {
-	multiname* name=th->context->getMultiname(n,th); 
+	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,_("getSuper ") << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-
-	//We modify the cur_level of obj
-	obj->decLevel();
-
-	//Should we skip implementation? I think it's reasonable
-	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
-	//TODO: should bind if the return type is Function
-
-	tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-	//And we reset it using the stack
-	tl.cur_this->setLevel(tl.cur_level);
-
+	assert_and_throw(th->inClass);
+	assert_and_throw(th->inClass->super);
+	assert_and_throw(obj->getClass());
+	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
+	IFunction* o = th->inClass->super->getBorrowedGetter(*name);
+	ASObject* ret;
 	if(o)
-	{
-		if(o->is<Definable>())
-		{
-			LOG(LOG_CALLS,_("We got an object not yet valid"));
-			o=o->as<Definable>()->define();
-		}
-		o->incRef();
-		th->runtime_stack_push(o);
-	}
+		ret = o->call(obj,NULL,0);
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("NOT found ") << name->name_s<< _(", pushing Undefined"));
-		th->runtime_stack_push(new Undefined);
+		//Look for instance variables. We look at obj, because all
+		//the instance variables from super are also there
+		//We should look only for DECLARED_TRAITS, but it isn't wrong this way either
+		variable* v = obj->findGettable(*name,false);
+		if(!v)
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"getSuper: did not find getter " << *name);
+			obj->decRef();
+			th->runtime_stack_push(new Undefined);
+			return;
+		}
+		assert(v->var); /* instance variables can only by var */
+		ret = v->var;
+		ret->incRef();
 	}
-
-	obj->decRef();
+	th->runtime_stack_push(ret);
 }
 
 void ABCVm::getLex(call_context* th, int n)
@@ -1388,13 +1368,9 @@ void ABCVm::getLex(call_context* th, int n)
 	ASObject* o = NULL;
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	ASObject* target;
 	for(;it!=th->scope_stack.rend();++it)
 	{
-		if(it->object==tl.cur_this)
-			tl.cur_this->resetLevel();
-
 		// XML_STRICT flag tells getVariableByMultiname to
 		// ignore non-existing properties in XML obejcts
 		// (normally it would return an empty XMLList if the
@@ -1404,9 +1380,6 @@ void ABCVm::getLex(call_context* th, int n)
 			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 
 		o=it->object->getVariableByMultiname(*name, opt);
-
-		if(it->object==tl.cur_this)
-			tl.cur_this->setLevel(tl.cur_level);
 
 		if(o)
 		{
@@ -1445,24 +1418,16 @@ void ABCVm::constructSuper(call_context* th, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	assert_and_throw(obj->getLevel()!=0);
+	assert_and_throw(th->inClass);
+	assert_and_throw(th->inClass->super);
+	assert_and_throw(obj->getClass());
+	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
+	Class_base* super = th->inClass->super;
+	LOG(LOG_CALLS,_("Super prototype name ") << super->class_name);
 
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//Check that current 'this' is the object
-	assert_and_throw(tl.cur_this==obj);
-	assert_and_throw(tl.cur_level==obj->getLevel());
-
-	LOG(LOG_CALLS,_("Cur prototype name ") << obj->getActualClass()->class_name);
-	//Change current level
-	obj->decLevel();
-	LOG(LOG_CALLS,_("Super prototype name ") << obj->getActualClass()->class_name);
-
-	Class_base* curProt=obj->getActualClass();
-	curProt->handleConstruction(obj,args, m, false);
+	super->handleConstruction(obj,args, m, false);
 	LOG(LOG_CALLS,_("End super construct "));
-	obj->setLevel(tl.cur_level);
 
-	obj->decRef();
 	delete[] args;
 }
 
@@ -1474,15 +1439,9 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
 	bool found=false;
 	ASObject* ret=NULL;
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	for(;it!=th->scope_stack.rend();++it)
 	{
-		if(it->object==tl.cur_this)
-			tl.cur_this->resetLevel();
-
 		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic);
-		if(it->object==tl.cur_this)
-			tl.cur_this->setLevel(tl.cur_level);
 
 		if(found)
 		{
@@ -1516,16 +1475,10 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
 	bool found=false;
 	ASObject* ret=NULL;
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
 
 	for(;it!=th->scope_stack.rend();++it)
 	{
-		if(it->object==tl.cur_this)
-			tl.cur_this->resetLevel();
-
 		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic);
-		if(it->object==tl.cur_this)
-			tl.cur_this->setLevel(tl.cur_level);
 		if(found)
 		{
 			//We have to return the object, not the property
@@ -1593,14 +1546,7 @@ void ABCVm::initProperty(call_context* th, int n)
 
 	LOG(LOG_CALLS, _("initProperty ") << *name << ' ' << obj);
 
-	//We have to reset the level before finding a variable
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
 	obj->setVariableByMultiname(*name,value);
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
 
 	obj->decRef();
 }
@@ -1616,20 +1562,20 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	//We modify the cur_level of obj
-	obj->decLevel();
-
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
-
-	//And the reset it using the stack
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-	tl.cur_this->setLevel(tl.cur_level);
+	assert_and_throw(th->inClass);
+	assert_and_throw(th->inClass->super);
+	assert_and_throw(obj->getClass());
+	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
+	IFunction* o = th->inClass->super->getBorrowedMethod(*name);
 
 	if(o)
-		callImpl(th, o, obj, args, m, called_mi, keepReturn);
+	{
+		ASObject* ret = o->call(obj, args, m);
+		if(keepReturn)
+			th->runtime_stack_push(ret);
+		else
+			ret->decRef();
+	}
 	else
 	{
 		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << name->name_s);
@@ -1839,14 +1785,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
 	ASObject* o=obj->getVariableByMultiname(*name);
 
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
 
 	if(o==NULL)
 		throw RunTimeException("Could not resolve property in constructProp");
@@ -2049,7 +1989,6 @@ void ABCVm::newClass(call_context* th, int n)
 		assert_and_throw(baseClass->getObjectType()==T_CLASS);
 		ret->super=static_cast<Class_base*>(baseClass);
 		ret->max_level=ret->super->max_level+1;
-		ret->setLevel(ret->max_level);
 	}
 
 	ret->class_scope=th->scope_stack;
@@ -2081,6 +2020,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(constructor);
 	constructorFunc->acquireScope(ret->class_scope);
+	constructorFunc->inClass = ret;
 	//add Constructor the the class methods
 	ret->constructor=constructorFunc;
 	ret->class_index=n;

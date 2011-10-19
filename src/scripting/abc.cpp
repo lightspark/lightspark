@@ -141,18 +141,6 @@ void SymbolClassTag::execute(RootMovieClip* root)
 	}
 }
 
-void ABCVm::pushObjAndLevel(ASObject* o, int l)
-{
-	method_this_stack.push_back(thisAndLevel(o,l));
-}
-
-thisAndLevel ABCVm::popObjAndLevel()
-{
-	thisAndLevel ret=method_this_stack.back();
-	method_this_stack.pop_back();
-	return ret;
-}
-
 void ABCVm::registerClasses()
 {
 	Global* builtin=Class<Global>::getInstanceS();
@@ -892,8 +880,6 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curGlo
 	number_manager=new Manager(15);
 	global=new GlobalObject;
 	LOG(LOG_INFO,_("Global is ") << global);
-	//Push a dummy default context
-	pushObjAndLevel(Class<ASObject>::getInstanceS(),0);
 }
 
 void ABCVm::start()
@@ -930,15 +916,6 @@ ABCVm::~ABCVm()
 {
 	for(size_t i=0;i<contexts.size();++i)
 		delete contexts[i];
-
-	//free the dummy object
-	if(method_this_stack.size() != 1)
-		LOG(LOG_ERROR,"ABCVm::method_this_stack has not size 1 in destructor!");
-	else
-	{
-		//free the dummy object that we allocated in the constructor
-		popObjAndLevel().cur_this->decRef();
-	}
 
 	sem_destroy(&sem_event_count);
 	sem_destroy(&event_queue_mutex);
@@ -1326,7 +1303,8 @@ ASObject* call_context::runtime_stack_peek()
 	return stack[stack_index-1];
 }
 
-call_context::call_context(method_info* th, int level, ASObject* const* args, const unsigned int num_args):exec_pos(0),code(NULL)
+call_context::call_context(method_info* th, ASObject* const* args, const unsigned int num_args, Class_base* _inClass)
+	: exec_pos(0),code(NULL),inClass(_inClass)
 {
 	mi=th;
 	locals=new ASObject*[th->body->local_count+1];
@@ -1902,7 +1880,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				}
 			}
 
-			f->bindLevel(obj->getLevel());
+			f->inClass = prot;
 			obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,GETTER_METHOD,isBorrowed);
 
 			//Methods save a copy of the scope stack of the class
@@ -1952,9 +1930,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				}
 			}
 
-			f->bindLevel(obj->getLevel());
+			f->inClass = prot;
 			obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,SETTER_METHOD,isBorrowed);
-			
+
 			//Methods save a copy of the scope stack of the class
 			f->acquireScope(prot->class_scope);
 
@@ -2006,6 +1984,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				}
 				//Methods save a copy of the scope stack of the class
 				f->acquireScope(prot->class_scope);
+				f->inClass = prot;
 			}
 			else if(scriptid != -1)
 			{
@@ -2023,7 +2002,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else //TODO: transform in a simple assert
 				assert_and_throw(obj->getObjectType()==T_CLASS || scriptid != -1);
 
-			f->bindLevel(obj->getLevel());
 			obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,NORMAL_METHOD,isBorrowed);
 
 			LOG(LOG_TRACE,_("End Method trait: ") << *mname);

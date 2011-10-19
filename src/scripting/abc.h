@@ -445,13 +445,6 @@ public:
 #endif
 };
 
-struct thisAndLevel
-{
-	ASObject* cur_this;
-	int cur_level;
-	thisAndLevel(ASObject* t,int l):cur_this(t),cur_level(l){}
-};
-
 class ABCVm
 {
 friend class ABCContext;
@@ -636,10 +629,6 @@ private:
 	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
 	Class_inherit* findClassInherit(const std::string& s);
 
-	//These are used to keep track of the current 'this' for class methods, and relative level
-	//It's sane to have them per-Vm, as anyway the vm is single by specs, single threaded
-	std::vector<thisAndLevel> method_this_stack;
-
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
 public:
@@ -671,12 +660,6 @@ public:
 	int getEventQueueSize();
 	void shutdown();
 
-	void pushObjAndLevel(ASObject* o, int l);
-	thisAndLevel popObjAndLevel();
-	thisAndLevel getCurObjAndLevel()
-	{
-		return method_this_stack.back();
-	}
 	static Global* getGlobalScope(call_context* th);
 	static bool strictEqualImpl(ASObject*, ASObject*);
 	static void publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event);

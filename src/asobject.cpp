@@ -108,8 +108,6 @@ void ASObject::sinit(Class_base* c)
 
 void ASObject::buildTraits(ASObject* o)
 {
-	if(o->getActualClass()->class_name.name!="Object")
-		LOG(LOG_NOT_IMPLEMENTED,_("Add buildTraits for class ") << o->getActualClass()->class_name);
 }
 
 bool ASObject::isEqual(ASObject* r)
@@ -355,6 +353,16 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 	assert(!isBorrowed || dynamic_cast<Class_base*>(this));
 	//use setVariableByQName(name,ns,o,DYNAMIC_TRAIT) on prototypes
 
+	/*
+	 * Set the inClass property if not previously set.
+	 * This is used for builtin methods. Methods defined by AS3 code
+	 * get their inClass set in buildTrait.
+	 * It is necesarry to decide if o is a function or a method,
+	 * i.e. if a method closure should be created in getProperty.
+	 */
+	if(isBorrowed && o->inClass == NULL)
+		o->inClass = this->as<Class_base>();
+
 	variable* obj=Variables.findObjVar(name,ns, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 	switch(type)
 	{
@@ -450,7 +458,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 		//It's valid to override only a getter, so keep
 		//looking for a settable even if a super class sets
 		//has_getter to true.
-		Class_base* cur=getActualClass();
+		Class_base* cur=getClass();
 		while(cur)
 		{
 			obj=cur->findSettable(name,true,&has_getter);
@@ -711,7 +719,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 	if(obj==NULL && classdef)
 	{
 		//Look for borrowed traits before
-		Class_base* cur=getActualClass();
+		Class_base* cur=getClass();
 		while(cur)
 		{
 			obj=cur->findGettable(name,true);
@@ -873,7 +881,7 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject():type(T_OBJECT),ref_count(1),manager(NULL),cur_level(0),classdef(NULL),constructed(false),
+ASObject::ASObject():type(T_OBJECT),ref_count(1),manager(NULL),classdef(NULL),constructed(false),
 		implEnable(true)
 {
 #ifndef NDEBUG
@@ -882,13 +890,12 @@ ASObject::ASObject():type(T_OBJECT),ref_count(1),manager(NULL),cur_level(0),clas
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),classdef(o.classdef),
+ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),classdef(o.classdef),
 		constructed(false),implEnable(true)
 {
 	if(classdef)
 	{
 		classdef->incRef();
-		cur_level=classdef->max_level;
 	}
 
 #ifndef NDEBUG
@@ -911,7 +918,6 @@ void ASObject::setClass(Class_base* c)
 	{
 		classdef->acquireObject(this);
 		classdef->incRef();
-		setLevel(classdef->max_level);
 	}
 }
 
@@ -928,33 +934,6 @@ ASObject::~ASObject()
 		classdef->abandonObject(this);
 		classdef->decRef();
 	}
-}
-
-int ASObject::_maxlevel()
-{
-	return (classdef)?(classdef->max_level):0;
-}
-
-void ASObject::resetLevel()
-{
-	cur_level=_maxlevel();
-}
-
-Class_base* ASObject::getActualClass() const
-{
-	Class_base* ret=classdef;
-	if(ret==NULL)
-	{
-		assert(type==T_CLASS);
-		return NULL;
-	}
-
-	for(int i=classdef->max_level;i>cur_level;i--)
-		ret=ret->super;
-
-	assert(ret);
-	assert(ret->max_level==cur_level);
-	return ret;
 }
 
 void variables_map::initSlot(unsigned int n, const tiny_string& name, const nsNameAndKind& ns)

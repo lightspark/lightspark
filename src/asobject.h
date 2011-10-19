@@ -242,8 +242,6 @@ private:
 
 	ATOMIC_INT32(ref_count);
 	Manager* manager;
-	int cur_level;
-	virtual int _maxlevel();
 	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
 public:
@@ -371,28 +369,9 @@ public:
 	virtual bool isEqual(ASObject* r);
 	virtual TRISTATE isLess(ASObject* r);
 
-	//Level handling
-	int getLevel() const
-	{
-		return cur_level;
-	}
-	void decLevel()
-	{
-		assert_and_throw(cur_level>0);
-		cur_level--;
-	}
-	void setLevel(int l)
-	{
-		cur_level=l;
-	}
-	void resetLevel();
-
-	//Class handling
-	Class_base* getActualClass() const;
-	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	
+
 	//Enumeration handling
 	virtual uint32_t nextNameIndex(uint32_t cur_index);
 	virtual _R<ASObject> nextName(uint32_t index);

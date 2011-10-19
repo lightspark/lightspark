@@ -81,7 +81,7 @@ template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<c
 class Any: public Type
 {
 public:
-	ASObject* coerce(ASObject* o) const { return o; }
+	ASObject* coerce(ASObject* o) const { assert(!o->is<Definable>()); return o; }
 	virtual ~Any() {};
 };
 

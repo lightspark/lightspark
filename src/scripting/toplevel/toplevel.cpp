@@ -2997,8 +2997,9 @@ ASFUNCTIONBODY(ASString,generator)
 
 ASObject* Void::coerce(ASObject* o) const
 {
+	assert(!o->is<Definable>());
 	if(!o->is<Undefined>())
-	throw Class<TypeError>::getInstanceS("Trying to coerce o!=undefined to void");
+		throw Class<TypeError>::getInstanceS("Trying to coerce o!=undefined to void");
 	return o;
 }
 
@@ -3038,6 +3039,7 @@ Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",N
 
 ASObject* Class_base::coerce(ASObject* o) const
 {
+	assert(!o->is<Definable>());
 	if(o->is<Null>())
 		return o;
 	if(o->is<Undefined>())
@@ -3053,8 +3055,9 @@ ASObject* Class_base::coerce(ASObject* o) const
 	       else
 		       throw Class<TypeError>::getInstanceS("Wrong type");
 	}
-	assert(o->getClass());
-	if(!o->getClass()->isSubClass(this))
+	//o->getClass() == NULL for primitive types
+	//those are handled in overloads Class<Number>::coerce etc.
+	if(!o->getClass() || !o->getClass()->isSubClass(this))
 		throw Class<TypeError>::getInstanceS("Wrong type");
 	return o;
 }

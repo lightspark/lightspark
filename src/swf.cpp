@@ -632,7 +632,8 @@ void SystemState::createEngines()
 
 		// This will be used to pipe the SWF's data to Gnash's stdin
 		int gnashStdin[2];
-		pipe(gnashStdin);
+		if (pipe(gnashStdin) != 0)
+			LOG(LOG_ERROR,_("Pipe creation failed"));
 
 		childPid=fork();
 		if(childPid==-1)

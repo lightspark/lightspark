@@ -2957,7 +2957,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt findpropstrict") );
 				u30 t;
 				code >> t;
-				int rtdata=this->context->getMultinameRTData(t);
 				//If this is a non runtime multiname, try to resolve the name on global,
 				//If we can do it, push Global
 				//HACK: should walk the scope stack

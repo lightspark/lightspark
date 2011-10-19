@@ -773,8 +773,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 	{
 		assert_and_throw(!obj->setter);
 		assert_and_throw(obj->var);
-		if(obj->var->getObjectType()==T_FUNCTION
-		   && obj->kind != DYNAMIC_TRAIT)
+		if(obj->var->getObjectType()==T_FUNCTION && obj->var->as<IFunction>()->isMethod())
 		{
 			//TODO: this creates a memory leak!
 			//Functions defined on prototypes or on global objects
@@ -784,7 +783,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 			LOG(LOG_CALLS,"Attaching this " << this << " to function " << name);
 			//the obj reference is acquired by the smart reference
 			this->incRef();
-			IFunction* f=static_cast<IFunction*>(obj->var)->bind(_MR(this),-1);
+			IFunction* f=obj->var->as<IFunction>()->bind(_MR(this),-1);
 			//No incref is needed, as the function is a new instance
 			return f;
 		}

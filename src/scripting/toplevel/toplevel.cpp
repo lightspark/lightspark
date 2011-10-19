@@ -2273,7 +2273,6 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 {
 	if(mi)
 		length = mi->numArgs();
-//	class_index=-2;
 }
 
 void SyntheticFunction::finalize()

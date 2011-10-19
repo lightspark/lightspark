@@ -63,6 +63,9 @@ REGISTER_CLASS_NAME2(ASString, "String", "");
 REGISTER_CLASS_NAME(XML);
 REGISTER_CLASS_NAME(XMLList);
 
+const Any* const Type::anyType = new Any();
+const Void* const Type::voidType = new Void();
+
 ASObject* Definable::define()
 {
 	assert(getRefCount() > 0);
@@ -2958,10 +2961,68 @@ ASFUNCTIONBODY(ASString,generator)
 	return Class<ASString>::getInstanceS(args[0]->toString());
 }
 
+ASObject* Void::coerce(ASObject* o) const
+{
+	if(!o->is<Undefined>())
+	throw Class<TypeError>::getInstanceS("Trying to coerce o!=undefined to void");
+	return o;
+}
+
+const Type* Type::getTypeFromMultiname(const multiname* mn, bool define)
+{
+	if(mn == 0) //multiname idx zero indicates any type
+		return Type::anyType;
+
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
+		&& mn->ns.size() == 1 && mn->ns[0].name == "")
+		return Type::anyType;
+
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
+		&& mn->ns.size() == 1 && mn->ns[0].name == "")
+		return Type::voidType;
+
+	ASObject* target;
+	ASObject* typeObject=getGlobal()->getVariableAndTargetByMultiname(*mn,target);
+	if(!typeObject)
+	{
+		//HACK: until we have implemented all flash classes, we need this hack
+		LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname: could not find " << *mn << ", using AnyType");
+		return Type::anyType;
+	}
+	if(define && typeObject->is<Definable>())
+		typeObject = typeObject->as<Definable>()->define();
+
+	assert_and_throw(typeObject->is<Type>());
+	return typeObject->as<Type>();
+}
+
 Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),referencedObjectsMutex("referencedObjects"),
 	super(NULL),context(NULL),class_name(name),class_index(-1),max_level(0)
 {
 	type=T_CLASS;
+}
+
+ASObject* Class_base::coerce(ASObject* o) const
+{
+	if(o->is<Null>())
+		return o;
+	if(o->is<Undefined>())
+	{
+		o->decRef();
+		return new Null;
+	}
+	if(o->is<Class_base>())
+	{ /* classes can be cast to the type 'Object' or 'Class' */
+	       if(this == Class<ASObject>::getClass()
+		|| (class_name.name=="Class" && class_name.ns==""))
+		       return o; /* 'this' is the type of a class */
+	       else
+		       throw Class<TypeError>::getInstanceS("Wrong type");
+	}
+	assert(o->getClass());
+	if(!o->getClass()->isSubClass(this))
+		throw Class<TypeError>::getInstanceS("Wrong type");
+	return o;
 }
 
 ASFUNCTIONBODY(Class_base,_toString)

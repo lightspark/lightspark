@@ -154,7 +154,58 @@ public:
 	{
 		return T::generator(NULL, args, argslen);
 	}
+	ASObject* coerce(ASObject* o) const
+	{
+		return Class_base::coerce(o);
+	}
 };
+
+template<>
+inline ASObject* Class<Number>::coerce(ASObject* o) const
+{
+	number_t n = o->toNumber();
+	o->decRef();
+	return abstract_d(n);
+}
+
+template<>
+inline ASObject* Class<UInteger>::coerce(ASObject* o) const
+{
+	uint32_t n = o->toUInt();
+	o->decRef();
+	return abstract_ui(n);
+}
+
+template<>
+inline ASObject* Class<Integer>::coerce(ASObject* o) const
+{
+	int32_t n = o->toInt();
+	o->decRef();
+	return abstract_i(n);
+}
+
+template<>
+inline ASObject* Class<Boolean>::coerce(ASObject* o) const
+{
+	bool n = Boolean_concrete(o);
+	o->decRef();
+	return abstract_b(n);
+}
+
+template<>
+inline ASObject* Class<ASString>::coerce(ASObject* o) const
+{ //Special handling for Null and Undefined follows avm2overview's description of 'coerce_s' opcode
+	if(o->is<Null>())
+		return o;
+	if(o->is<Undefined>())
+	{
+		o->decRef();
+		return new Null;
+	}
+	tiny_string n = o->toString();
+	o->decRef();
+	return Class<ASString>::getInstanceS(n);
+}
 
 template<>
 class Class<ASObject>: public Class_base

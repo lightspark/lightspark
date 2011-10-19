@@ -42,6 +42,55 @@ class Template_base;
 class method_info;
 struct call_context;
 struct traits_info;
+class Any;
+class Void;
+/* This abstract class represents a type, i.e. something that a value can be coerced to.
+ * Currently Class_base and Template_base implement this interface.
+ * If you let another class implement this interface, change ASObject->is<Type>(), too!
+ */
+class Type
+{
+protected:
+	/* this is private because one never deletes a Type */
+	~Type() {}
+public:
+	static const Any* const anyType;
+	static const Void* const voidType;
+	/*
+	 * This returns the Type for the given multiname.
+	 * It searches for the and object of the type in global object.
+	 * If no object of that name is found or it is not a Type,
+	 * then an exception is thrown.
+	 * If the object is a Definable and 'resolve' is true,
+	 * then it is defined prior returning, else the Definable
+	 * is returned as is.
+	 * The caller does not own the object returned.
+	 */
+	static const Type* getTypeFromMultiname(const multiname* mn, bool define = true);
+	/*
+         * Converts the given object to an object of this type.
+         * It consumes one reference of 'o'.
+         * The returned object must be decRef'ed by caller.
+	 * If the argument cannot be converted, it throws a TypeError
+         */
+        virtual ASObject* coerce(ASObject* o) const=0;
+};
+template<> inline Type* ASObject::as<Type>() { return dynamic_cast<Type*>(this); }
+template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<const Type*>(this); }
+
+class Any: public Type
+{
+public:
+	ASObject* coerce(ASObject* o) const { return o; }
+	virtual ~Any() {};
+};
+
+class Void: public Type
+{
+public:
+	ASObject* coerce(ASObject* o) const;
+	virtual ~Void() {};
+};
 
 class InterfaceClass: public ASObject
 {
@@ -49,7 +98,7 @@ protected:
 	static void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 };
 
-class Class_base: public ASObject
+class Class_base: public ASObject, public Type
 {
 friend class ABCVm;
 friend class ABCContext;
@@ -101,6 +150,12 @@ public:
 	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob) DLL_PUBLIC;
 	void acquireObject(ASObject* ob) DLL_PUBLIC;
+	/*
+	 * Converts the given object to an object of this Class_base's type.
+	 * It consumes one reference of 'o'.
+	 * The returned object must be decRef'ed by caller.
+	 */
+	virtual ASObject* coerce(ASObject* o) const;
 };
 
 class Template_base : public ASObject
@@ -669,6 +724,10 @@ private:
 	void buildInstanceTraits(lightspark::ASObject*) const
 	{
 		throw RunTimeException("Called getInstance on T_DEFINABLE");
+	}
+	ASObject* coerce(ASObject* o) const
+	{
+		throw RunTimeException("Called coerce on T_DEFINABLE");
 	}
 public:
 	Definable(ABCContext* c, unsigned int s, ASObject* g, multiname n) : Class_base(QName("Definable","")),

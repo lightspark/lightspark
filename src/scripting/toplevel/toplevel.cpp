@@ -1431,7 +1431,7 @@ ASFUNCTIONBODY(ASString,split)
 			end=ovector[0];
 			if(rc<0)
 				end=th->data.size();
-			ASString* s=Class<ASString>::getInstanceS(th->data.substr(offset,end-offset));
+			ASString* s=Class<ASString>::getInstanceS(th->data.raw().substr(offset,end-offset));
 			ret->push(s);
 			offset=ovector[1];
 			//Insert capturing groups

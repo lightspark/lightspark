@@ -3652,8 +3652,9 @@ void Namespace::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_getPrefix),GETTER_METHOD,true);
-	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->setDeclaredMethodByQName("valueOf","",Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_ECMA_valueOf),DYNAMIC_TRAIT);
 }
 
 void Namespace::buildTraits(ASObject* o)
@@ -3793,6 +3794,11 @@ ASFUNCTIONBODY(Namespace,_toString)
 }
 
 ASFUNCTIONBODY(Namespace,_valueOf)
+{
+	return Class<ASString>::getInstanceS(obj->as<Namespace>()->uri);
+}
+
+ASFUNCTIONBODY(Namespace,_ECMA_valueOf)
 {
 	if(!obj->is<Namespace>())
 		throw Class<TypeError>::getInstanceS("Namespace.valueOf is not generic");

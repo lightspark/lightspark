@@ -506,6 +506,7 @@ public:
 	ASFUNCTION(_setPrefix);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_valueOf);
+	ASFUNCTION(_ECMA_valueOf);
 	bool isEqual(ASObject* o);
 };
 

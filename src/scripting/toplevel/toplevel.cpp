@@ -3742,9 +3742,16 @@ bool UInteger::isEqual(ASObject* o)
 	}
 }
 
-ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 {
 	return new Undefined;
+}
+
+ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+{
+	if(argslen)
+		LOG(LOG_NOT_IMPLEMENTED,"new Function() with argslen > 0");
+	return Class<IFunction>::getFunction(ASNop);
 }
 
 Class<IFunction>* Class<IFunction>::getClass()

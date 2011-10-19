@@ -335,7 +335,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function on obj ") << ((obj->classdef)?obj->classdef->class_name.name:_("Object")));
-			for(size_t i=0;i<m;++i)
+			for(int i=0;i<m;++i)
 				args[i]->decRef();
 			th->runtime_stack_push(new Undefined);
 		}
@@ -2482,7 +2482,7 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 		//we silently ignore calling undefined functions
 		if(f->is<Undefined>())
 		{
-			for(size_t i=0;i<m;++i)
+			for(int i=0;i<m;++i)
 				args[i]->decRef();
 			th->runtime_stack_push(new Undefined);
 		}

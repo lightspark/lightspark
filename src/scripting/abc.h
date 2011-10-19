@@ -266,8 +266,8 @@ public:
 	bool needsRest() { return (flags & NEED_REST) != 0;}
 	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
 	ASObject* getOptional(unsigned int i);
-	int numArgs() { return param_count; }
-	const multiname* paramTypeName(unsigned int i) const;
+	uint32_t numArgs() { return param_count; }
+	const multiname* paramTypeName(uint32_t i) const;
 	const multiname* returnTypeName() const;
 
 	std::vector<const Type*> paramTypes;

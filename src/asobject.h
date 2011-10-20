@@ -106,7 +106,7 @@
 
 #define ASFUNCTIONBODY_GETTER_SETTER_CB(c,name,callback) \
 		ASFUNCTIONBODY_GETTER(c,name) \
-		ASFUNCTIONBODY_SETTER(c,name,callback)
+		ASFUNCTIONBODY_SETTER_CB(c,name,callback)
 
 /* registers getter/setter with Class_base. To be used in ::sinit()-functions */
 #define REGISTER_GETTER(c,name) \

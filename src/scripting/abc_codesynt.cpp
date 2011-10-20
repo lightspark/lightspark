@@ -156,6 +156,7 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"nextValue",(void*)&ABCVm::nextValue,ARGS_OBJ_OBJ},
 	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
 	{"abstract_i",(void*)&abstract_i,ARGS_INT},
+	{"abstract_ui",(void*)&abstract_ui,ARGS_INT},
 	{"abstract_b",(void*)&abstract_b,ARGS_BOOL},
 	{"pushNaN",(void*)&ABCVm::pushNaN,ARGS_NONE},
 	{"pushNull",(void*)&ABCVm::pushNull,ARGS_NONE},
@@ -526,6 +527,9 @@ void method_info::abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& b
 			break;
 		case STACK_INT:
 			e.first=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),e.first);
+			break;
+		case STACK_UINT:
+			e.first=builder.CreateCall(ex->FindFunctionNamed("abstract_ui"),e.first);
 			break;
 		case STACK_NUMBER:
 			e.first=builder.CreateCall(ex->FindFunctionNamed("abstract_d"),e.first);
@@ -3950,7 +3954,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT)
 					value=Builder.CreateCall(ex->FindFunctionNamed("increment_i"), v1.first);
-				else if(v1.second==STACK_INT)
+				else if(v1.second==STACK_INT || v1.second==STACK_UINT)
 				{
 					constant = llvm::ConstantInt::get(int_type, 1);
 					value=Builder.CreateAdd(v1.first,constant);
@@ -3967,7 +3971,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT)
 					value=Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), v1.first);
-				else if(v1.second==STACK_INT)
+				else if(v1.second==STACK_INT || v1.second==STACK_UINT)
 				{
 					constant = llvm::ConstantInt::get(int_type, 1);
 					value=Builder.CreateSub(v1.first,constant);

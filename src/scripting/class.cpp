@@ -23,6 +23,8 @@
 
 using namespace lightspark;
 
+Class<ASObject>* Class<ASObject>::this_class = NULL;
+
 ASObject* lightspark::new_asobject()
 {
 	return Class<ASObject>::getInstanceS();

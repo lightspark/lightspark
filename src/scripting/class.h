@@ -100,6 +100,7 @@ protected:
 			handleConstruction(ret,args,argslen,true);
 		return ret;
 	}
+	static Class<T>* this_class;
 public:
 	template<typename... Args>
 	static T* getInstanceS(Args&&... args)
@@ -112,12 +113,12 @@ public:
 	}
 	static Class<T>* getClass(const QName& name)
 	{
-		std::map<QName, Class_base*>::iterator it=sys->classes.find(name);
 		Class<T>* ret=NULL;
-		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		if(!this_class) //This class is not yet in the map, create it
 		{
 			ret=new Class<T>(name);
 			sys->classes.insert(std::make_pair(name,ret));
+			this_class = ret;
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->prototype = _MNR(new_asobject());
 
@@ -129,7 +130,7 @@ public:
 			ret->addPrototypeGetter();
 		}
 		else
-			ret=static_cast<Class<T>*>(it->second);
+			ret=this_class;
 
 		ret->incRef();
 		return ret;
@@ -159,6 +160,8 @@ public:
 		return Class_base::coerce(o);
 	}
 };
+
+template<class T> Class<T>* Class<T>::this_class = NULL;
 
 template<>
 inline ASObject* Class<Number>::coerce(ASObject* o) const
@@ -221,6 +224,7 @@ private:
 			handleConstruction(ret,args,argslen,true);
 		return ret;
 	}
+	static Class<ASObject>* this_class;
 public:
 	static ASObject* getInstanceS()
 	{
@@ -229,19 +233,19 @@ public:
 	}
 	static Class<ASObject>* getClass(const QName& name)
 	{
-		std::map<QName, Class_base*>::iterator it=sys->classes.find(name);
 		Class<ASObject>* ret=NULL;
-		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		if(!this_class) //This class is not yet in the map, create it
 		{
 			ret=new Class<ASObject>(name);
 			sys->classes.insert(std::make_pair(name,ret));
+			this_class = ret;
 			ret->prototype = _MNR(new_asobject());
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ASObject::sinit(ret);
 			ret->addPrototypeGetter();
 		}
 		else
-			ret=static_cast<Class<ASObject>*>(it->second);
+			ret=this_class;
 
 		ret->incRef();
 		return ret;

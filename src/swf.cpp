@@ -1128,7 +1128,6 @@ void ParseThread::parseSWF(UI8 ver)
 			{
 				case END_TAG:
 				{
-					LOG(LOG_INFO,_("End of parsing @ ") << f.tellg());
 					if(!empty)
 						root->commitFrame(false);
 					else

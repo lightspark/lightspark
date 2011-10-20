@@ -1276,8 +1276,8 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				{
 					popTypeFromStack(static_stack_types,local_ip).second;
 
-					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
-					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0x96: //not

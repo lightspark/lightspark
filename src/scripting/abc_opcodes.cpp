@@ -2025,12 +2025,11 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->constructor=constructorFunc;
 	ret->class_index=n;
 
-	//Set the constructor variable to the class itself (this is accessed by object using the classdef)
-	ret->incRef();
-	ret->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
-
 	//Add prototype variable
 	ret->prototype = _MNR(new_asobject());
+	//Add the constructor variable to the class prototype
+	ret->incRef();
+	ret->prototype->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
 	if(ret->super != NULL)
 		ret->prototype->setprop_prototype(ret->super->prototype);
 	ret->addPrototypeGetter();

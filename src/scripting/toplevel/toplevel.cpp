@@ -1243,7 +1243,8 @@ void ASString::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
-	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(ASString::_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void ASString::buildTraits(ASObject* o)

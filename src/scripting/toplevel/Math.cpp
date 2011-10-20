@@ -215,7 +215,7 @@ ASFUNCTIONBODY(Math,pow)
 ASFUNCTIONBODY(Math,random)
 {
 	number_t ret=rand();
-	ret/=RAND_MAX;
+	ret/=(number_t(1.)+RAND_MAX);
 	return abstract_d(ret);
 }
 

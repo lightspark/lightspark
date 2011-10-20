@@ -2144,7 +2144,7 @@ void IFunction::finalize()
  */
 ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_args)
 {
-	return callImpl(obj, args, num_args, false);
+	return callImpl(obj, args, num_args);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
@@ -2152,6 +2152,7 @@ ASFUNCTIONBODY_GETTER(IFunction,length);
 
 ASFUNCTIONBODY(IFunction,apply)
 {
+	/* This function never changes the 'this' pointer of a method closure */
 	IFunction* th=static_cast<IFunction*>(obj);
 	assert_and_throw(argslen<=2);
 
@@ -2182,20 +2183,14 @@ ASFUNCTIONBODY(IFunction,apply)
 		}
 	}
 
-	bool overrideThis=true;
-	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this.getPtr() && th->closure_this->classdef && newObj->classdef &&
-				newObj->classdef->isSubClass(th->closure_this->classdef)) || newObj->classdef==NULL)
-	{
-		overrideThis=false;
-	}
-	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen,overrideThis);
+	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen);
 	delete[] newArgs;
 	return ret;
 }
 
 ASFUNCTIONBODY(IFunction,_call)
 {
+	/* This function never changes the 'this' pointer of a method closure */
 	IFunction* th=static_cast<IFunction*>(obj);
 	ASObject* newObj=NULL;
 	ASObject** newArgs=NULL;
@@ -2220,14 +2215,7 @@ ASFUNCTIONBODY(IFunction,_call)
 			newArgs[i]->incRef();
 		}
 	}
-	bool overrideThis=true;
-	//Only allow overriding if the type of args[0] is a subclass of closure_this
-	if(!(th->closure_this.getPtr() && th->closure_this->classdef && newObj->classdef &&
-			newObj->classdef->isSubClass(th->closure_this->classdef)) || newObj->classdef==NULL)
-	{
-		overrideThis=false;
-	}
-	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen,overrideThis);
+	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen);
 	delete[] newArgs;
 	return ret;
 }
@@ -2274,7 +2262,7 @@ void SyntheticFunction::finalize()
  * by ABCVm::executeFunction() or through JIT.
  * It consumes one reference of obj and one of each arg
  */
-ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
+ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint32_t numArgs)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -2342,8 +2330,8 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	cc->initialScopeStack=func_scope.size();
 	getVm()->curGlobalObj = ABCVm::getGlobalScope(cc);
 
-	if(isBound() && !thisOverride)
-	{
+	if(isBound())
+	{ /* closure_this can never been overriden */
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		if(obj)
 			obj->decRef();
@@ -2454,11 +2442,11 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
  * This executes a C++ function.
  * It consumes one reference of obj and one of each arg
  */
-ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
+ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args)
 {
 	ASObject* ret;
-	if(isBound() && !thisOverride)
-	{
+	if(isBound())
+	{ /* closure_this can never been overriden */
 		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		if(obj)
 			obj->decRef();

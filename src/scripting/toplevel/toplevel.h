@@ -241,7 +241,7 @@ class IFunction: public ASObject
 {
 CLASSBUILDABLE(IFunction);
 private:
-	virtual ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)=0;
+	virtual ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args)=0;
 protected:
 	IFunction();
 	virtual IFunction* clone()=0;
@@ -312,7 +312,7 @@ private:
 		return new Function(*this);
 	}
 	method_info* getMethodInfo() const { return NULL; }
-	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
+	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args);
 public:
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
@@ -340,7 +340,7 @@ private:
 		return new SyntheticFunction(*this);
 	}
 	method_info* getMethodInfo() const { return mi; }
-	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false);
+	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args);
 public:
 	void finalize();
 	IFunction* toFunction();

@@ -658,6 +658,7 @@ class Stage: public DisplayObjectContainer
 private:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
+	void onDisplayState(const tiny_string&);
 public:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}
@@ -670,6 +671,7 @@ public:
 	ASFUNCTION(_getScaleMode);
 	ASFUNCTION(_setScaleMode);
 	ASFUNCTION(_getLoaderInfo);
+	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
 };
 
 class StageScaleMode: public ASObject

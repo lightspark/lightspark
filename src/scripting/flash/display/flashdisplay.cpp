@@ -2704,7 +2704,15 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c,displayState);
 }
+
+void Stage::onDisplayState(const tiny_string&)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Stage.displayState = " << displayState);
+}
+
+ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,displayState,onDisplayState);
 
 void Stage::buildTraits(ASObject* o)
 {

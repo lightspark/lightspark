@@ -212,6 +212,7 @@ bool ASObject::has_valueOf()
 	valueOfName.name_s="valueOf";
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	valueOfName.isAttribute = false;
 	return hasPropertyByMultiname(valueOfName, true);
 }
 
@@ -225,6 +226,7 @@ _R<ASObject> ASObject::call_valueOf()
 	valueOfName.name_s="valueOf";
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	valueOfName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(valueOfName, true));
 
 	ASObject* o=getVariableByMultiname(valueOfName,SKIP_IMPL);
@@ -243,6 +245,7 @@ bool ASObject::has_toString()
 	toStringName.name_s="toString";
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	toStringName.isAttribute = false;
 	return hasPropertyByMultiname(toStringName, true);
 }
 
@@ -256,6 +259,7 @@ _R<ASObject> ASObject::call_toString()
 	toStringName.name_s="toString";
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	toStringName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(toStringName, true));
 
 	ASObject* o=getVariableByMultiname(toStringName,SKIP_IMPL);
@@ -1105,6 +1109,7 @@ bool ASObject::hasprop_prototype()
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s="prototype";
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	prototypeName.isAttribute = false;
 	return findGettable(prototypeName, false) != NULL;
 }
 
@@ -1114,6 +1119,7 @@ ASObject* ASObject::getprop_prototype()
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s="prototype";
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	prototypeName.isAttribute = false;
 	variable* var = findGettable(prototypeName, false);
 	return var ? var->var : NULL;
 }

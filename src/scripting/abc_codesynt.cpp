@@ -3393,12 +3393,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//increment
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				LOG(LOG_TRACE, "synt increment " << v1.second);
-				if(v1.second==STACK_OBJECT)
-				{
-					value=Builder.CreateCall(ex->FindFunctionNamed("increment"), v1.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
-				else if(v1.second==STACK_INT)
+				if(v1.second==STACK_INT)
 				{
 					constant = llvm::ConstantInt::get(int_type, 1);
 					value=Builder.CreateAdd(v1.first,constant);
@@ -3412,7 +3407,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else
-					throw UnsupportedException("Unsupported type for increment");
+				{
+					abstract_value(ex,Builder,v1);
+					value=Builder.CreateCall(ex->FindFunctionNamed("increment"), v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
 				break;
 			}
 			case 0x93:
@@ -3438,9 +3437,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//typeof
 				LOG(LOG_TRACE, _("synt typeof") );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall(ex->FindFunctionNamed("typeOf"), v1);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				abstract_value(ex,Builder,v1);
+				value=Builder.CreateCall(ex->FindFunctionNamed("typeOf"), v1.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
@@ -3449,12 +3448,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//not
 				LOG(LOG_TRACE, _("synt not") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_OBJECT)
-					value=Builder.CreateCall(ex->FindFunctionNamed("not"), v1.first);
-				else if(v1.second==STACK_BOOLEAN)
+				if(v1.second==STACK_BOOLEAN)
 					value=Builder.CreateNot(v1.first);
 				else
-					throw UnsupportedException("Unsupported type for not");
+				{
+					abstract_value(ex,Builder,v1);
+					value=Builder.CreateCall(ex->FindFunctionNamed("not"), v1.first);
+				}
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
@@ -3481,12 +3481,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt add") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-				{
-					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -3532,8 +3527,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else
-					throw UnsupportedException("Unsupported type for add");
-
+				{
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				}
 				break;
 			}
 			case 0xa1:
@@ -3668,14 +3667,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt modulo") );
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
-				{
-					throw UnsupportedException("Unsupported type for modulo");
-					v1.first=Builder.CreateSIToFP(v1.first,number_type);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
-				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
+				if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
 					v1.first=Builder.CreateFPToSI(v1.first,int_type);
 					value=Builder.CreateSRem(v1.first, v2.first);
@@ -3930,7 +3922,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt istypelate") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				assert_and_throw(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT);
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("isTypelate"),v1.first,v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;

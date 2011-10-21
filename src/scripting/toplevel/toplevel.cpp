@@ -2138,15 +2138,6 @@ void IFunction::finalize()
 	closure_this.reset();
 }
 
-/**
- * This provides a unified interface for calling a C++/ABC code function.
- * It consumes one reference of obj and one of each arg
- */
-ASObject* IFunction::call(ASObject* obj, ASObject* const* args, uint32_t num_args)
-{
-	return callImpl(obj, args, num_args);
-}
-
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
 ASFUNCTIONBODY_GETTER(IFunction,length);
 
@@ -2262,7 +2253,7 @@ void SyntheticFunction::finalize()
  * by ABCVm::executeFunction() or through JIT.
  * It consumes one reference of obj and one of each arg
  */
-ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint32_t numArgs)
+ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs)
 {
 	const int hit_threshold=10;
 	assert_and_throw(mi->body);
@@ -2449,14 +2440,14 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
  * This executes a C++ function.
  * It consumes one reference of obj and one of each arg
  */
-ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args)
+ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args)
 {
 	/*
 	 * We do not enforce ABCVm::limits.max_recursion here.
 	 * This should be okey, because there is no infinite recursion
 	 * using only builtin functions.
 	 * Additionally, we still need to run builtin code (such as the ASError constructor) when
-	 * ABCVm::limits.max_recursion is reached in SyntheticFunction::callImpl.
+	 * ABCVm::limits.max_recursion is reached in SyntheticFunction::call.
 	 */
 	ASObject* ret;
 	if(isBound())

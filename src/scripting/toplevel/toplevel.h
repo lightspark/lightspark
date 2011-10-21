@@ -236,8 +236,6 @@ public:
 class IFunction: public ASObject
 {
 CLASSBUILDABLE(IFunction);
-private:
-	virtual ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args)=0;
 protected:
 	IFunction();
 	virtual IFunction* clone()=0;
@@ -262,7 +260,7 @@ public:
 	 * Return the ASObject the function returned.
 	 * This never returns NULL.
 	 */
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
+	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args)=0;
 	IFunction* bind(_NR<ASObject> c, int level)
 	{
 		if(!isBound())
@@ -308,9 +306,9 @@ private:
 		return new Function(*this);
 	}
 	method_info* getMethodInfo() const { return NULL; }
-	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args);
 public:
 	IFunction* toFunction();
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	bool isEqual(ASObject* r)
 	{
 		Function* f=dynamic_cast<Function*>(r);
@@ -336,8 +334,8 @@ private:
 		return new SyntheticFunction(*this);
 	}
 	method_info* getMethodInfo() const { return mi; }
-	ASObject* callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args);
 public:
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	void finalize();
 	IFunction* toFunction();
 	std::vector<scope_entry> func_scope;

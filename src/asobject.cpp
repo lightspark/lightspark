@@ -540,7 +540,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 	if(obj)
 	{
 		//Initializing an already existing variable
-		LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << " already initialized");
+		LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << "already initialized");
 		o->decRef();
 		assert_and_throw(obj->typemname->qualifiedString()==typemname->qualifiedString());
 		return;

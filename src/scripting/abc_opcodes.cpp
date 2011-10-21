@@ -352,8 +352,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			}
 		}
 
-		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << *name << _(" on obj ") << 
-				((obj->classdef)?obj->classdef->class_name.name:"Object"));
+		LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->normalizedName() << " not found on " << obj->getClassname());
 		if(keepReturn)
 			th->runtime_stack_push(new Undefined);
 
@@ -383,15 +382,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 
 	if(prop.isNull())
 	{
-		if(obj->classdef)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Property not found ") << *name << _(" on type ") << obj->classdef->class_name);
-		}
-		else
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Property not found ") << *name);
-		}
-		ret=new Undefined;
+		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->getClassname());
+		ret = new Undefined;
 	}
 	else
 	{
@@ -1334,7 +1326,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super);
 	if(ret.isNull())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"getSuper: Did not find " << *name);
+		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->getClassname());
 		ret = _MNR(new Undefined);
 	}
 	else
@@ -1383,11 +1375,10 @@ void ABCVm::getLex(call_context* th, int n)
 
 	if(o==NULL)
 	{
-		LOG(LOG_CALLS, _("NOT found, trying Global") );
 		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 		if(o==NULL)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,_("NOT found ") << name->name_s<< _(", pushing Undefined"));
+			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< "was not found, pushing Undefined");
 			o=new Undefined;
 		}
 	}
@@ -1481,14 +1472,13 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	}
 	if(!found)
 	{
-		LOG(LOG_CALLS, _("NOT found, trying Global") );
 		ASObject* target;
 		ASObject* o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 		if(o)
 			ret=target;
 		else
 		{
-			LOG(LOG_NOT_IMPLEMENTED, _("NOT found, pushing Undefined"));
+			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found, pushing Undefined");
 			ret=new Undefined;
 		}
 	}

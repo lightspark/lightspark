@@ -448,21 +448,22 @@ variable* ASObject::findSettable(const multiname& name, bool borrowedMode, bool*
 	return ret;
 }
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
+
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_base* cls)
 {
 	check();
-
+	assert(!cls || classdef->isSubClass(cls));
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualClass)
 	bool has_getter=false;
 	variable* obj=findSettable(name, false, &has_getter);
 
-	if(obj==NULL && classdef)
+	if(!obj && cls)
 	{
 		//Look for borrowed traits before
 		//It's valid to override only a getter, so keep
 		//looking for a settable even if a super class sets
 		//has_getter to true.
-		Class_base* cur=getClass();
+		Class_base* cur=cls;
 		while(cur)
 		{
 			obj=cur->findSettable(name,true,&has_getter);
@@ -471,16 +472,30 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 			cur=cur->super;
 		}
 	}
-	if(obj==NULL)
+
+	if(!obj && cls)
+	{
+		//Look in prototype chain
+		ASObject* proto = cls->prototype.getPtr();
+		while(proto)
+	        {
+			obj = proto->findSettable(name, false, NULL /*prototypes never have getters/setters*/);
+			if(obj)
+				break;
+			proto = proto->getprop_prototype();
+		}
+	}
+
+	if(!obj)
 	{
 		if(has_getter)
 		{
 			tiny_string err=tiny_string("Error #1074: Illegal write to read-only property ")+name.normalizedName();
-			if(classdef)
-				err+=tiny_string(" on type ")+classdef->getQualifiedClassName();
+			if(cls)
+				err+=tiny_string(" on type ")+cls->getQualifiedClassName();
 			throw Class<ReferenceError>::getInstanceS(err);
 		}
-
+		//Create a new dynamic variable
 		obj=Variables.findObjVar(name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
 	}
 
@@ -713,17 +728,17 @@ variable* ASObject::findGettable(const multiname& name, bool borrowedMode)
 	return ret;
 }
 
-ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
 {
 	check();
-
+	assert(!cls || classdef->isSubClass(cls));
 	//Get from the current object without considering borrowed properties
 	variable* obj=findGettable(name, false);
 
-	if(obj==NULL && classdef)
+	if(!obj && cls)
 	{
 		//Look for borrowed traits before
-		Class_base* cur=getClass();
+		Class_base* cur=cls;
 		while(cur)
 		{
 			obj=cur->findGettable(name,true);
@@ -733,16 +748,10 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 		}
 	}
 
-	//If it has not been found
-	if(obj==NULL)
+	if(!obj && cls)
 	{
-		if(getClass()==NULL)
-			return NULL;
-		//Check if we can lazily define the requested property
-		ASObject* ret = Class<ASObject>::getClass()->lazyDefine(name);
-		if(ret)
-			return ret;
-		ASObject* proto = getClass()->prototype.getPtr();
+		//Check prototype chain
+		ASObject* proto = cls->prototype.getPtr();
 		while(proto)
 		{
 			obj = proto->findGettable(name, false);
@@ -750,7 +759,12 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 				return obj->var;
 			proto = proto->getprop_prototype();
 		}
-		return NULL;
+	}
+
+	if(!obj)
+	{
+		//Check if we can lazily define the requested property
+		return Class<ASObject>::getClass()->lazyDefine(name);
 	}
 
 	if(obj->getter)

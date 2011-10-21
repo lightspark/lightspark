@@ -3052,36 +3052,6 @@ ASObject* Class_base::coerce(ASObject* o) const
 	return o;
 }
 
-IFunction* Class_base::getBorrowedMethod(const multiname& name)
-{
-	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
-	if(ret && ret->var && ret->var->is<IFunction>())
-		return ret->var->as<IFunction>();
-	if(super)
-		return super->getBorrowedMethod(name);
-	return NULL;
-}
-
-IFunction* Class_base::getBorrowedSetter(const multiname& name)
-{
-	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
-	if(ret && ret->setter)
-		return ret->setter;
-	if(super)
-		return super->getBorrowedSetter(name);
-	return NULL;
-}
-
-IFunction* Class_base::getBorrowedGetter(const multiname& name)
-{
-	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,BORROWED_TRAIT);
-	if(ret && ret->getter)
-		return ret->getter;
-	if(super)
-		return super->getBorrowedGetter(name);
-	return NULL;
-}
-
 ASFUNCTIONBODY(Class_base,_toString)
 {
 	Class_base* th = obj->as<Class_base>();

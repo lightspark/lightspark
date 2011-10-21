@@ -309,10 +309,30 @@ public:
 	virtual void finalize();
 
 	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};
-	virtual ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+
+	virtual ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
+	{
+		return getVariableByMultiname(name,opt,classdef);
+	}
+	/*
+	 * Gets a variable of this object. It looks through all classes (beginning at cls),
+	 * then the prototype chain, and then instance variables.
+	 * If the property found is a getter, it is called and its return value returned.
+	 */
+	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
+	virtual void setVariableByMultiname(const multiname& name, ASObject* o)
+	{
+		setVariableByMultiname(name,o,classdef);
+	}
+	/*
+	 * Sets  variable of this object. It looks through all classes (beginning at cls),
+	 * then the prototype chain, and then instance variables.
+	 * If the property found is a setter, it is called with the given 'o'.
+	 * If no property is found, an instance variable is created.
+	 */
+	void setVariableByMultiname(const multiname& name, ASObject* o, Class_base* cls);
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname);
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind);

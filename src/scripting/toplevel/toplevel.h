@@ -160,10 +160,6 @@ public:
 	 * The returned object must be decRef'ed by caller.
 	 */
 	virtual ASObject* coerce(ASObject* o) const;
-
-	IFunction* getBorrowedMethod(const multiname& mn);
-	IFunction* getBorrowedSetter(const multiname& mn);
-	IFunction* getBorrowedGetter(const multiname& mn);
 };
 
 class Template_base : public ASObject

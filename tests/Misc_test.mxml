@@ -49,13 +49,6 @@
 		Tests.assertEquals("undefined",v+"","var v:*; v==undefined");
 		Tests.assertEquals("undefined",memberVar+"","member var v:*; v==undefined");
 
-		var s1="Hello";
-		var s2="World";
-		var toStr = s1.toString;
-		Tests.assertEquals("Hello",toStr(),"Method closure");
-		Tests.assertEquals("Hello",toStr.apply(s2),"(MethodClosure).apply(otherobj) keeps this");
-		Tests.assertEquals("Hello",toStr.call(s2),"(MethodClosure).call(otherobj) keeps this");
-
 		Tests.report(visual, this.name);
 	}
 	]]>

@@ -804,7 +804,8 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 		//We try to convert this to an index, otherwise bail out
 		case multiname::NAME_STRING:
 			len=name.name_s.len();
-			assert_and_throw(len);
+			if(!len)
+				return false;
 			for(int i=0;i<len;i++)
 			{
 				if(name.name_s[i]<'0' || name.name_s[i]>'9')

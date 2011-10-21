@@ -366,6 +366,7 @@ class Class<IFunction>: public Class_base
 private:
 	Class<IFunction>():Class_base(QName("Function","")){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
+	static Class<IFunction>* this_class;
 public:
 	static Class<IFunction>* getClass();
 	static Function* getFunction(Function::as_function v)

@@ -3859,6 +3859,8 @@ ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen
 	return new Undefined;
 }
 
+Class<IFunction>* Class<IFunction>::this_class = NULL;
+
 ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 {
 	if(argslen)
@@ -3868,9 +3870,8 @@ ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, c
 
 Class<IFunction>* Class<IFunction>::getClass()
 {
-	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
 	Class<IFunction>* ret=NULL;
-	if(it==sys->classes.end()) //This class is not yet in the map, create it
+	if(!this_class) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
 		ret->prototype = _MNR(new_asobject());
@@ -3878,6 +3879,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->max_level=ret->super->max_level+1;
 		ret->prototype->setprop_prototype(ret->super->prototype);
 
+		this_class = ret;
 		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 
 		//we cannot use sinit, as we need to set max_level before calling 'classes.insert' before calling
@@ -3893,7 +3895,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	}
 	else
-		ret=static_cast<Class<IFunction>*>(it->second);
+		ret=this_class;
 
 	ret->incRef();
 	return ret;

@@ -1802,7 +1802,12 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 
 	if(o==NULL)
-		throw RunTimeException("Could not resolve property in constructProp");
+	{
+		for(int i=0;i<m;++i)
+			args[i]->decRef();
+		obj->decRef();
+		throw Class<ReferenceError>::getInstanceS("Error #1065: Variable is not defined.");
+	}
 
 	//The get protocol expects that we incRef the var
 	o->incRef();

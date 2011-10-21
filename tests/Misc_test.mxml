@@ -9,6 +9,10 @@
 	<![CDATA[
 	import Tests;
 	private var memberVar:*;
+
+	function f4() { return "42"; }
+	function get getter_returning_function() { return f4; }
+
 	private function appComplete():void
 	{
 		function f1():String { return 1; }
@@ -48,6 +52,18 @@
 		var v2:*;
 		Tests.assertEquals("undefined",v+"","var v:*; v==undefined");
 		Tests.assertEquals("undefined",memberVar+"","member var v:*; v==undefined");
+
+		//Check that a method closure can never change its 'this'
+		var s1="Hello";
+		var s2="World";
+		var toStr = s1.toString;
+		Tests.assertEquals("Hello",toStr(),"Method closure");
+		Tests.assertEquals("Hello",toStr.apply(s2),"(MethodClosure).apply(otherobj) keeps this");
+		Tests.assertEquals("Hello",toStr.call(s2),"(MethodClosure).call(otherobj) keeps this");
+
+		//Check if a getter returning a function can be called
+		Tests.assertEquals("function Function() {}",getter_returning_function,"A getter that returns a function");
+		Tests.assertEquals("42",getter_returning_function(),"Calling a getter that returns a function calls the function");
 
 		Tests.report(visual, this.name);
 	}

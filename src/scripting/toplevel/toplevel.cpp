@@ -2183,7 +2183,7 @@ ASFUNCTIONBODY(IFunction,apply)
 		}
 	}
 
-	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen);
+	ASObject* ret=th->call(newObj,newArgs,newArgsLen);
 	delete[] newArgs;
 	return ret;
 }
@@ -2215,7 +2215,7 @@ ASFUNCTIONBODY(IFunction,_call)
 			newArgs[i]->incRef();
 		}
 	}
-	ASObject* ret=th->callImpl(newObj,newArgs,newArgsLen);
+	ASObject* ret=th->call(newObj,newArgs,newArgsLen);
 	delete[] newArgs;
 	return ret;
 }
@@ -2265,10 +2265,14 @@ void SyntheticFunction::finalize()
 ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint32_t numArgs)
 {
 	const int hit_threshold=10;
-	if(mi->body==NULL)
+	assert_and_throw(mi->body);
+
+	if(ABCVm::cur_recursion == sys->currentVm->limits.max_recursion)
 	{
-//		LOG(LOG_NOT_IMPLEMENTED,_("Not initialized function"));
-		return NULL;
+		for(uint32_t i=0;i<numArgs;i++)
+			args[i]->decRef();
+		obj->decRef();
+		throw Class<ASError>::getInstanceS("Error #1023: Stack overflow occurred");
 	}
 
 	/* resolve argument and return types */
@@ -2379,6 +2383,7 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 	//obtain a local reference to this function, as it may delete itself
 	this->incRef();
 
+	ABCVm::cur_recursion++; //increment current recursion depth
 	while (true)
 	{
 		try
@@ -2418,12 +2423,14 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
 			if (no_handler)
 			{
 				delete cc;
+				ABCVm::cur_recursion--; //decrement current recursion depth
 				throw excobj;
 			}
 			continue;
 		}
 		break;
 	}
+	ABCVm::cur_recursion--; //decrement current recursion depth
 
 	delete cc;
 	hit_count++;
@@ -2444,6 +2451,13 @@ ASObject* SyntheticFunction::callImpl(ASObject* obj, ASObject* const* args, uint
  */
 ASObject* Function::callImpl(ASObject* obj, ASObject* const* args, uint32_t num_args)
 {
+	/*
+	 * We do not enforce ABCVm::limits.max_recursion here.
+	 * This should be okey, because there is no infinite recursion
+	 * using only builtin functions.
+	 * Additionally, we still need to run builtin code (such as the ASError constructor) when
+	 * ABCVm::limits.max_recursion is reached in SyntheticFunction::callImpl.
+	 */
 	ASObject* ret;
 	if(isBound())
 	{ /* closure_this can never been overriden */

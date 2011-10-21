@@ -1329,7 +1329,7 @@ ASObject* DefineSoundTag::instance() const
 	return Class<Sound>::getInstanceS();
 }
 
-ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
+ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	LOG(LOG_TRACE,_("ScriptLimitsTag Tag"));
 	in >> MaxRecursionDepth >> ScriptTimeoutSeconds;

@@ -664,6 +664,17 @@ public:
 	static bool strictEqualImpl(ASObject*, ASObject*);
 	static void publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event);
 
+	/* The current recursion level. Each call increases this by one,
+	 * each return from a call decreases this. */
+	static uint32_t cur_recursion;
+
+	static struct abc_limits {
+		/* maxmium number of recursion allowed. See ScriptLimitsTag */
+		uint32_t max_recursion;
+		/* maxmium number of seconds for script execution. See ScriptLimitsTag */
+		uint32_t script_timeout;
+	} limits;
+
 };
 
 class DoABCTag: public ControlTag

@@ -662,13 +662,15 @@ public:
 	CSMTextSettingsTag(RECORDHEADER h, std::istream& in);
 };
 
-class ScriptLimitsTag: public Tag
+class ScriptLimitsTag: public ControlTag
 {
 private:
 	UI16_SWF MaxRecursionDepth;
 	UI16_SWF ScriptTimeoutSeconds;
 public:
 	ScriptLimitsTag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const{ return ABC_TAG; }
+	void execute(RootMovieClip* root);
 };
 
 class ProductInfoTag: public Tag

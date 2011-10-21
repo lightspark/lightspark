@@ -56,6 +56,10 @@ using namespace lightspark;
 
 TLSDATA bool lightspark::isVmThread=false;
 
+uint32_t ABCVm::cur_recursion = 0;
+//these limits can be overwritten by a ScriptLimitsTag
+ABCVm::abc_limits ABCVm::limits = { /*max_recursion=*/ 256, /*max_timeout=*/ 20 };
+
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	int dest=in.tellg();
@@ -139,6 +143,12 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			sys->currentVm->addEvent(NullRef,e);
 		}
 	}
+}
+
+void ScriptLimitsTag::execute(RootMovieClip* root)
+{
+	ABCVm::limits.max_recursion = MaxRecursionDepth;
+	ABCVm::limits.script_timeout = ScriptTimeoutSeconds;
 }
 
 void ABCVm::registerClasses()

@@ -618,7 +618,8 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	{
 		//Hack, insert with empty name
 		//Here the object MUST exist
-		var_iterator inserted=Variables.insert(ret,make_pair(name, 
+		LOG(LOG_NOT_IMPLEMENTED,"Hack: creating variable " << mname << " which should already be there.");
+		var_iterator inserted=Variables.insert(ret,make_pair(name,
 					variable(nsNameAndKind("",NAMESPACE), createKind)));
 		return &inserted->second;
 	}

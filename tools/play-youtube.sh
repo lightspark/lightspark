@@ -41,5 +41,5 @@ fi
 sh "$basedir"/youtube-args-dumper.sh "$URL" > "$paramfile"
 wget "$(sh "$basedir"/youtube-get-player.sh "$URL")" -O "$playerfile"
 
-$LIGHTSPARK "$playerfile" -p "$paramfile"
+$LIGHTSPARK "$playerfile" -p "$paramfile" --url "$URL"
 rm "$playerfile" "$paramfile"

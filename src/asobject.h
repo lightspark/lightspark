@@ -418,6 +418,9 @@ public:
 	 */
 	template<class T> const T* as() const { return static_cast<const T*>(this); }
 	template<class T> T* as() { return static_cast<T*>(this); }
+
+	//Debugging function, returns getClass()->class_name or "[no class]"
+	tiny_string getClassname() const;
 };
 
 class Number;

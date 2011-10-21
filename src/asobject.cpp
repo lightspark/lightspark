@@ -1169,3 +1169,11 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	else
 		ret->setVar(obj);
 }
+
+tiny_string ASObject::getClassname() const
+{
+	if(classdef)
+		return classdef->class_name.getQualifiedName();
+	else
+		return "[no class]";
+}

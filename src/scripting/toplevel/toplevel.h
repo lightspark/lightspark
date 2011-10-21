@@ -128,7 +128,6 @@ public:
 	ABCContext* context;
 	QName class_name;
 	int class_index;
-	int max_level;
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	Class_base(const QName& name);

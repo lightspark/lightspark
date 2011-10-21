@@ -81,7 +81,6 @@ ASFUNCTIONBODY(ASError,_constructor)
 void ASError::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
@@ -113,7 +112,6 @@ void SecurityError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void SecurityError::buildTraits(ASObject* o)
@@ -135,7 +133,6 @@ void ArgumentError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void ArgumentError::buildTraits(ASObject* o)
@@ -157,7 +154,6 @@ void DefinitionError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void DefinitionError::buildTraits(ASObject* o)
@@ -179,7 +175,6 @@ void EvalError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void EvalError::buildTraits(ASObject* o)
@@ -201,7 +196,6 @@ void RangeError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void RangeError::buildTraits(ASObject* o)
@@ -223,7 +217,6 @@ void ReferenceError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void ReferenceError::buildTraits(ASObject* o)
@@ -245,7 +238,6 @@ void SyntaxError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void SyntaxError::buildTraits(ASObject* o)
@@ -267,7 +259,6 @@ void TypeError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void TypeError::buildTraits(ASObject* o)
@@ -289,7 +280,6 @@ void URIError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void URIError::buildTraits(ASObject* o)
@@ -311,7 +301,6 @@ void VerifyError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void VerifyError::buildTraits(ASObject* o)

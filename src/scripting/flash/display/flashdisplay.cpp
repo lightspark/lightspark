@@ -86,7 +86,6 @@ void LoaderInfo::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderURL),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("loader","",Class<IFunction>::getFunction(_getLoader),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
@@ -336,7 +335,6 @@ void Loader::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),NORMAL_METHOD,true);
@@ -456,7 +454,6 @@ void Sprite::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),NORMAL_METHOD,true);
@@ -753,7 +750,6 @@ void FrameLabel::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("frame","",Class<IFunction>::getFunction(_getFrame),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
 }
@@ -803,7 +799,6 @@ void Scene::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("labels","",Class<IFunction>::getFunction(_getLabels),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("numFrames","",Class<IFunction>::getFunction(_getNumFrames),GETTER_METHOD,true);
@@ -844,7 +839,6 @@ void MovieClip::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<Sprite>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),GETTER_METHOD,true);
@@ -1205,7 +1199,6 @@ void DisplayObject::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_setWidth),SETTER_METHOD,true);
@@ -1942,7 +1935,6 @@ void DisplayObjectContainer::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<InteractiveObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getChildIndex","",Class<IFunction>::getFunction(_getChildIndex),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setChildIndex","",Class<IFunction>::getFunction(_setChildIndex),NORMAL_METHOD,true);
@@ -2125,7 +2117,6 @@ void InteractiveObject::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_setMouseEnabled),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_setDoubleClickEnabled),SETTER_METHOD,true);
@@ -2528,7 +2519,6 @@ void Shape::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),GETTER_METHOD,true);
 }
 
@@ -2667,7 +2657,6 @@ void MorphShape::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void MorphShape::buildTraits(ASObject* o)
@@ -2696,7 +2685,6 @@ void Stage::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
@@ -3426,7 +3414,6 @@ void Bitmap::sinit(Class_base* c)
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -3495,7 +3482,6 @@ void SimpleButton::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<InteractiveObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(_getUpState),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(_setUpState),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(_getDownState),GETTER_METHOD,true);
@@ -3940,7 +3926,6 @@ void AVM1Movie::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void AVM1Movie::buildTraits(ASObject* o)
@@ -3958,7 +3943,6 @@ void Shader::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 ASFUNCTIONBODY(Shader,_constructor)

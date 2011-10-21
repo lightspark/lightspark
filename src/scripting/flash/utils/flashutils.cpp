@@ -653,7 +653,6 @@ void Timer::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(_getCurrentCount),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_getRepeatCount),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_setRepeatCount),SETTER_METHOD,true);
@@ -869,7 +868,6 @@ void Dictionary::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void Dictionary::buildTraits(ASObject* o)

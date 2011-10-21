@@ -114,7 +114,6 @@ void XML::finalize()
 void XML::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(XML::_toString),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
@@ -784,7 +783,6 @@ void XMLList::finalize()
 void XMLList::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
@@ -1208,7 +1206,6 @@ ASFUNCTIONBODY(ASString,_getLength)
 void ASString::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(split),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr),NORMAL_METHOD,true);
@@ -1785,7 +1782,6 @@ void Integer::sinit(Class_base* c)
 	c->setVariableByQName("MAX_VALUE","",new Integer(2147483647),DECLARED_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648),DECLARED_TRAIT);
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),DYNAMIC_TRAIT);
 }
 
@@ -2056,7 +2052,6 @@ tiny_string Number::toString(bool debugMsg)
 void Number::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Must create and link the number the hard way
 	Number* ninf=new Number(-numeric_limits<double>::infinity());
@@ -2525,7 +2520,6 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false
 void RegExp::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
@@ -2988,7 +2982,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn)
 }
 
 Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),referencedObjectsMutex("referencedObjects"),
-	super(NULL),context(NULL),class_name(name),class_index(-1),max_level(0)
+	super(NULL),context(NULL),class_name(name),class_index(-1)
 {
 	type=T_CLASS;
 }
@@ -3455,7 +3449,6 @@ void Class_base::describeTraits(xmlpp::Element* root,
 void ASQName::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("local_name","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
@@ -3587,7 +3580,6 @@ tiny_string ASQName::toString(bool debugMsg)
 void Namespace::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
@@ -3782,7 +3774,6 @@ void UInteger::sinit(Class_base* c)
 	//Right now we pretend to be signed, to make comparisons work
 	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff),DECLARED_TRAIT);
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
@@ -3842,13 +3833,12 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret=new Class<IFunction>;
 		ret->prototype = _MNR(new_asobject());
 		ret->super=Class<ASObject>::getClass();
-		ret->max_level=ret->super->max_level+1;
 		ret->prototype->setprop_prototype(ret->super->prototype);
 
 		this_class = ret;
 		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 
-		//we cannot use sinit, as we need to set max_level before calling 'classes.insert' before calling
+		//we cannot use sinit, as we need to setup 'this_class' before calling
 		//addPrototypeGetter and setDeclaredMethodByQName.
 		//Thus we make sure that everything is in order when getFunction() below is called
 		ret->addPrototypeGetter();
@@ -3870,7 +3860,6 @@ Class<IFunction>* Class<IFunction>::getClass()
 void Global::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 void GlobalObject::registerGlobalScope(Global* scope)

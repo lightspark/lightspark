@@ -1993,7 +1993,6 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		assert_and_throw(baseClass->getObjectType()==T_CLASS);
 		ret->super=static_cast<Class_base*>(baseClass);
-		ret->max_level=ret->super->max_level+1;
 	}
 
 	ret->class_scope=th->scope_stack;

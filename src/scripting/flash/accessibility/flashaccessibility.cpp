@@ -31,7 +31,6 @@ void AccessibilityProperties::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	REGISTER_GETTER_SETTER(c,name);
 }
 
@@ -47,7 +46,6 @@ void AccessibilityImplementation::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 }
 
 ASFUNCTIONBODY(AccessibilityImplementation,_constructor)

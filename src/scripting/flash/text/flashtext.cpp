@@ -55,7 +55,6 @@ void TextField::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
@@ -342,7 +341,6 @@ void TextFormat::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
 	c->super=Class<ASObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	REGISTER_GETTER_SETTER(c,color);
 }
 
@@ -362,7 +360,6 @@ void StyleSheet::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
 	c->super=Class<EventDispatcher>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("setStyle","",Class<IFunction>::getFunction(setStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getStyle","",Class<IFunction>::getFunction(getStyle),NORMAL_METHOD,true);
@@ -420,7 +417,6 @@ void StaticText::sinit(Class_base* c)
 	//TODO: spec says that constructor should throw ArgumentError
 	c->setConstructor(NULL);
 	c->super=Class<InteractiveObject>::getClass();
-	c->max_level=c->super->max_level+1;
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(_getText),GETTER_METHOD,true);
 }
 

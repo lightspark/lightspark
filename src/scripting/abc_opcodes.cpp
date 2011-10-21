@@ -1670,7 +1670,20 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,_("asTypelate"));
 
-	assert_and_throw(type->getObjectType()==T_CLASS);
+	//HACK: until we have implemented all flash classes
+	if(type->is<Undefined>())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"asTypelate with undefined");
+		type->decRef();
+		return obj;
+	}
+
+	if(!type->is<Class_base>())
+	{
+		obj->decRef();
+		type->decRef();
+		throw Class<TypeError>::getInstanceS("Error #1009: Not a type in asTypelate");
+	}
 	Class_base* c=static_cast<Class_base*>(type);
 	//Special case numeric types
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)

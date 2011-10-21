@@ -1669,7 +1669,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			{
 				LOG(LOG_NOT_IMPLEMENTED,_("Getter not linkable") << ": " << mname);
 			}
-			
+
 			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
 			break;
 		}
@@ -1843,14 +1843,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		case traits_info::Getter:
 		{
 			LOG(LOG_CALLS,_("Getter trait: ") << *mname << _(" #") << t->method);
-			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
-			//We have to override if there is a method with the same name,
-			//even if the namespace are different, if both are protected
-			assert_and_throw(obj->getObjectType()==T_CLASS);
-			Class_inherit* prot=static_cast<Class_inherit*>(obj);
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
 			{
@@ -1858,49 +1853,55 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				m->validProfName=true;
 			}
 #endif
-			if(t->kind&0x20 && prot->use_protected && mname->ns[0]==prot->protected_ns)
+			//A script can also have a getter trait
+			if(obj->is<Class_base>())
 			{
-				//Walk the super chain and find variables to override
-				Class_base* cur=prot->super;
-				while(cur)
+				Class_inherit* prot=static_cast<Class_inherit*>(obj);
+				if(t->kind&0x20 && prot->use_protected && mname->ns[0]==prot->protected_ns)
 				{
-					if(cur->use_protected)
+					//Walk the super chain and find variables to override
+					Class_base* cur=prot->super;
+					while(cur)
 					{
-						variable* var=cur->Variables.findObjVar(mname->name_s,cur->protected_ns,
-								NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
-						if(var)
+						if(cur->use_protected)
 						{
-							assert(var->getter);
-							//A superclass defined a protected method that we have to override.
-							f->incRef();
-							obj->setDeclaredMethodByQName(mname->name_s,cur->protected_ns,f,GETTER_METHOD,isBorrowed);
+							variable* var=cur->Variables.findObjVar(mname->name_s,cur->protected_ns,
+									NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
+							if(var)
+							{
+								assert(var->getter);
+								//A superclass defined a protected method that we have to override.
+								f->incRef();
+								obj->setDeclaredMethodByQName(mname->name_s,cur->protected_ns,f,GETTER_METHOD,isBorrowed);
+							}
 						}
+						cur=cur->super;
 					}
-					cur=cur->super;
 				}
+
+				f->inClass = prot;
+
+				//Methods save a copy of the scope stack of the class
+				f->acquireScope(prot->class_scope);
+			}
+			else
+			{
+				assert(scriptid != -1);
+				obj->incRef();
+				f->addToScope(scope_entry(_MR(obj),false));
 			}
 
-			f->inClass = prot;
 			obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,GETTER_METHOD,isBorrowed);
-
-			//Methods save a copy of the scope stack of the class
-			f->acquireScope(prot->class_scope);
-
 			LOG(LOG_TRACE,_("End Getter trait: ") << *mname);
 			break;
 		}
 		case traits_info::Setter:
 		{
 			LOG(LOG_CALLS,_("Setter trait: ") << *mname << _(" #") << t->method);
-			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
-			//We have to override if there is a method with the same name,
-			//even if the namespace are different, if both are protected
-			assert_and_throw(obj->getObjectType()==T_CLASS);
-			Class_inherit* prot=static_cast<Class_inherit*>(obj);
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
 			{
@@ -1908,33 +1909,46 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				m->validProfName=true;
 			}
 #endif
-			if(t->kind&0x20 && prot->use_protected && mname->ns[0]==prot->protected_ns)
+			//A script can also have a setter trait
+			if(obj->is<Class_base>())
 			{
-				//Walk the super chain and find variables to override
-				Class_base* cur=prot->super;
-				while(cur)
+
+				Class_inherit* prot=static_cast<Class_inherit*>(obj);
+				//We have to override if there is a method with the same name,
+				//even if the namespace are different, if both are protected
+				if(t->kind&0x20 && prot->use_protected && mname->ns[0]==prot->protected_ns)
 				{
-					if(cur->use_protected)
+					//Walk the super chain and find variables to override
+					Class_base* cur=prot->super;
+					while(cur)
 					{
-						variable* var=cur->Variables.findObjVar(mname->name_s,cur->protected_ns,
-								NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
-						if(var)
+						if(cur->use_protected)
 						{
-							assert(var->setter);
-							//A superclass defined a protected method that we have to override.
-							f->incRef();
-							obj->setDeclaredMethodByQName(mname->name_s,cur->protected_ns,f,SETTER_METHOD,isBorrowed);
+							variable* var=cur->Variables.findObjVar(mname->name_s,cur->protected_ns,
+									NO_CREATE_TRAIT,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
+							if(var)
+							{
+								assert(var->setter);
+								//A superclass defined a protected method that we have to override.
+								f->incRef();
+								obj->setDeclaredMethodByQName(mname->name_s,cur->protected_ns,f,SETTER_METHOD,isBorrowed);
+							}
 						}
+						cur=cur->super;
 					}
-					cur=cur->super;
 				}
+
+				f->inClass = prot;
+				//Methods save a copy of the scope stack of the class
+				f->acquireScope(prot->class_scope);
+			} else {
+				//This is a script's trait
+				assert(scriptid != -1);
+				obj->incRef();
+				f->addToScope(scope_entry(_MR(obj),false));
 			}
 
-			f->inClass = prot;
 			obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,SETTER_METHOD,isBorrowed);
-
-			//Methods save a copy of the scope stack of the class
-			f->acquireScope(prot->class_scope);
 
 			LOG(LOG_TRACE,_("End Setter trait: ") << *mname);
 			break;

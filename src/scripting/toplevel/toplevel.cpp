@@ -2115,16 +2115,6 @@ void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 		out->writeByte(bigEndianPtr[i]);
 }
 
-IFunction* SyntheticFunction::toFunction()
-{
-	return this;
-}
-
-IFunction* Function::toFunction()
-{
-	return this;
-}
-
 IFunction::IFunction():closure_this(NULL),inClass(NULL),length(0)
 {
 	type=T_FUNCTION;

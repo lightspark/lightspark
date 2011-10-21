@@ -307,7 +307,6 @@ private:
 	}
 	method_info* getMethodInfo() const { return NULL; }
 public:
-	IFunction* toFunction();
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	bool isEqual(ASObject* r)
 	{
@@ -337,7 +336,6 @@ private:
 public:
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	void finalize();
-	IFunction* toFunction();
 	std::vector<scope_entry> func_scope;
 	bool isEqual(ASObject* r)
 	{

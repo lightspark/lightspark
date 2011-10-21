@@ -222,6 +222,10 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 	//Add arguments to SystemState
 	string vars(v);
 	uint32_t cur=0;
+	char* pfile = getenv("LIGHTSPARK_PLUGIN_PARAMFILE");
+        ofstream f;
+	if(pfile)
+		f.open(pfile);
 	while(cur<vars.size())
 	{
 		int n1=vars.find('=',cur);
@@ -267,6 +271,8 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 		if(ok)
 		{
 			//cout << varName << ' ' << varValue << endl;
+			if(pfile)
+				f << varName << endl << varValue << endl;
 			params->setVariableByQName(varName,"",
 					lightspark::Class<lightspark::ASString>::getInstanceS(varValue),DYNAMIC_TRAIT);
 		}

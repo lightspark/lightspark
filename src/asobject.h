@@ -361,7 +361,7 @@ public:
 		return type;
 	}
 	/* Implements ECMA's 9.8 ToString operation, but returns the concrete value */
-	tiny_string toString(bool debugMsg=false);
+	tiny_string toString();
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
@@ -419,8 +419,8 @@ public:
 	template<class T> const T* as() const { return static_cast<const T*>(this); }
 	template<class T> T* as() { return static_cast<T*>(this); }
 
-	//Debugging function, returns getClass()->class_name or "[no class]"
-	tiny_string getClassname() const;
+	/* Returns a debug string identifying this object */
+	virtual std::string toDebugString() const;
 };
 
 class Number;

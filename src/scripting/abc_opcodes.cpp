@@ -100,7 +100,7 @@ ASObject* ABCVm::convert_s(ASObject* o)
 	ASObject* ret=o;
 	if(o->getObjectType()!=T_STRING)
 	{
-		ret=Class<ASString>::getInstanceS(o->toString(false));
+		ret=Class<ASString>::getInstanceS(o->toString());
 		o->decRef();
 	}
 	return ret;
@@ -173,7 +173,7 @@ void ABCVm::getLocal_int(int n, int v)
 
 void ABCVm::getLocal(ASObject* o, int n)
 {
-	LOG(LOG_CALLS,_("getLocal[") << n << _("] (") << o << _(") ") << o->toString(true));
+	LOG(LOG_CALLS,_("getLocal[") << n << _("] (") << o << _(") ") << o->toDebugString());
 }
 
 void ABCVm::getLocal_short(int n)
@@ -193,7 +193,7 @@ void ABCVm::setLocal_int(int n, int v)
 
 void ABCVm::setLocal_obj(int n, ASObject* v)
 {
-	LOG(LOG_CALLS,_("setLocal[") << n << _("] = ") << v->toString(true));
+	LOG(LOG_CALLS,_("setLocal[") << n << _("] = ") << v->toDebugString());
 }
 
 intptr_t ABCVm::pushShort(intptr_t n)
@@ -214,7 +214,7 @@ void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
 ASObject* ABCVm::getSlot(ASObject* obj, int n)
 {
 	ASObject* ret=obj->getSlot(n);
-	LOG(LOG_CALLS,"getSlot " << n << " " << ret->toString(true));
+	LOG(LOG_CALLS,"getSlot " << n << " " << ret << "=" << ret->toDebugString());
 	//getSlot can only access properties defined in the current
 	//script, so they should already be defind by this script
 	assert(!ret->is<Definable>());
@@ -352,7 +352,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			}
 		}
 
-		LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->normalizedName() << " not found on " << obj->getClassname());
+		LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
 		if(keepReturn)
 			th->runtime_stack_push(new Undefined);
 
@@ -382,7 +382,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 
 	if(prop.isNull())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->getClassname());
+		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
 		ret = new Undefined;
 	}
 	else
@@ -1326,7 +1326,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super);
 	if(ret.isNull())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->getClassname());
+		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->toDebugString());
 		ret = _MNR(new Undefined);
 	}
 	else

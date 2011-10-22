@@ -880,11 +880,9 @@ bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigne
 	return true;
 }
 
-tiny_string Array::toString(bool debugMsg)
+tiny_string Array::toString()
 {
 	assert_and_throw(implEnable);
-	if(debugMsg)
-		return ASObject::toString(debugMsg);
 	return toString_priv();
 }
 

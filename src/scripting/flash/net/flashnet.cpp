@@ -1342,11 +1342,9 @@ tiny_string URLVariables::toString_priv()
 	return tmp;
 }
 
-tiny_string URLVariables::toString(bool debugMsg)
+tiny_string URLVariables::toString()
 {
 	assert_and_throw(implEnable);
-	if(debugMsg)
-		return ASObject::toString(debugMsg);
 	return toString_priv();
 }
 

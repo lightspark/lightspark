@@ -30,25 +30,36 @@ using namespace std;
 
 REGISTER_CLASS_NAME2(ASObject,"Object","");
 
-tiny_string ASObject::toString(bool debugMsg)
+string ASObject::toDebugString() const
 {
 	check();
-	//TODO: move this debugMsg thing to its own function (maybe toString_debug)
-	if(debugMsg) {
-		tiny_string ret;
-		if(getClass())
-		{
-			ret="[object ";
-			ret+=getClass()->class_name.name;
-			ret+="]";
-			return ret;
-		}
-		else
-			ret="[object Object]";
-
-		return ret;
+	string ret;
+	if(getClass())
+	{
+		ret="[object ";
+		ret+=getClass()->class_name.name.raw_buf();
+		ret+="]";
 	}
+	else if(this->is<Undefined>())
+		ret = "Undefined";
+	else if(this->is<Null>())
+		ret = "Null";
+	else if(this->is<Class_base>())
+	{
+		ret = "[class ";
+		ret+=this->as<Class_base>()->class_name.getQualifiedName().raw_buf();
+		ret+="]";
+	}
+	else
+	{
+		assert(false);
+	}
+	return ret;
+}
 
+tiny_string ASObject::toString()
+{
+	check();
 	switch(this->getObjectType())
 	{
 	case T_UNDEFINED:
@@ -1170,10 +1181,3 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 		ret->setVar(obj);
 }
 
-tiny_string ASObject::getClassname() const
-{
-	if(classdef)
-		return classdef->class_name.getQualifiedName();
-	else
-		return "[no class]";
-}

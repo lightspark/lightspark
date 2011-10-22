@@ -636,10 +636,8 @@ tiny_string XML::toString_priv()
 	return ret;
 }
 
-tiny_string XML::toString(bool debugMsg)
+tiny_string XML::toString()
 {
-	if(debugMsg)
-		return ASObject::toString(true);
 	return toString_priv();
 }
 
@@ -1068,11 +1066,8 @@ tiny_string XMLList::toString_priv() const
 	}
 }
 
-tiny_string XMLList::toString(bool debugMsg)
+tiny_string XMLList::toString()
 {
-	if(debugMsg)
-		return ASObject::toString(true);
-
 	return toString_priv();
 }
 
@@ -1754,7 +1749,7 @@ bool Integer::isEqual(ASObject* o)
 	}
 }
 
-tiny_string Integer::toString(bool debugMsg)
+tiny_string Integer::toString()
 {
 	char buf[20];
 	if(val<0)
@@ -1792,7 +1787,7 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 	out->writeU29(val);
 }
 
-tiny_string UInteger::toString(bool debugMsg)
+tiny_string UInteger::toString()
 {
 	char buf[20];
 	snprintf(buf,sizeof(buf),"%u",val);
@@ -2009,7 +2004,7 @@ ASFUNCTIONBODY(Number,_toString)
 	if(radix==10)
 	{
 		//see e 15.7.4.2
-		return Class<ASString>::getInstanceS(th->toString(false));
+		return Class<ASString>::getInstanceS(th->toString());
 	}
 	else if(radix==16)
 		snprintf(buf,20,"%"PRIx64,(int64_t)th->val);
@@ -2025,7 +2020,7 @@ ASFUNCTIONBODY(Number,generator)
 		return abstract_d(args[0]->toNumber());
 }
 
-tiny_string Number::toString(bool debugMsg)
+tiny_string Number::toString()
 {
 	if(std::isnan(val))
 		return "NaN";
@@ -3050,7 +3045,7 @@ void Class_base::addImplementedInterface(Class_base* i)
 	interfaces_added.push_back(i);
 }
 
-tiny_string Class_base::toString(bool debugMsg)
+tiny_string Class_base::toString()
 {
 	tiny_string ret="[Class ";
 	ret+=class_name.name;
@@ -3549,7 +3544,7 @@ ASFUNCTIONBODY(ASQName,_toString)
 	if(!obj->is<ASQName>())
 		throw Class<TypeError>::getInstanceS("QName.toString is not generic");
 	ASQName* th=static_cast<ASQName*>(obj);
-	return Class<ASString>::getInstanceS(th->toString(false));
+	return Class<ASString>::getInstanceS(th->toString());
 }
 
 bool ASQName::isEqual(ASObject* o)
@@ -3563,11 +3558,8 @@ bool ASQName::isEqual(ASObject* o)
 	return false;
 }
 
-tiny_string ASQName::toString(bool debugMsg)
+tiny_string ASQName::toString()
 {
-	if(debugMsg)
-		return ASObject::toString(true);
-
 	tiny_string s;
 	if(uri_is_null)
 		s = "*::";

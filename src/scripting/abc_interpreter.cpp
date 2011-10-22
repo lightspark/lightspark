@@ -834,7 +834,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> i;
 				assert_and_throw(context->locals[i]);
 				context->locals[i]->incRef();
-				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toString(true) );
+				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
 				context->runtime_stack_push(context->locals[i]);
 				break;
 			}
@@ -1363,7 +1363,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//getlocal_n
 				int i=opcode&3;
 				assert_and_throw(context->locals[i]);
-				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toString(true) );
+				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);
 				break;

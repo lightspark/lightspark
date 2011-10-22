@@ -74,7 +74,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(decode);
 	ASFUNCTION(_toString);
-	tiny_string toString(bool debugMsg=false);
+	tiny_string toString();
 };
 
 class URLLoaderDataFormat: public ASObject

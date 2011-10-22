@@ -145,7 +145,7 @@ public:
 	 */
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
-	tiny_string toString(bool debugMsg);
+	tiny_string toString();
 	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 	ASObject *describeType() const;
 	void describeInstance(xmlpp::Element* root) const;
@@ -444,6 +444,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;
+	std::string toDebugString() const { return std::string("\"") + data.raw() + "\""; }
 };
 
 class Null: public ASObject
@@ -477,7 +478,7 @@ public:
 	tiny_string getURI() const { return uri; }
 	tiny_string getLocalName() const { return local_name; }
 	bool isEqual(ASObject* o);
-	tiny_string toString(bool debugMsg);
+	tiny_string toString();
 };
 
 class Namespace: public ASObject
@@ -520,7 +521,7 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_toString);
-	tiny_string toString(bool debugMsg = false);
+	tiny_string toString();
 	int32_t toInt()
 	{
 		return val;
@@ -543,7 +544,7 @@ public:
 	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
 
 	static void sinit(Class_base* c);
-	tiny_string toString(bool debugMsg = false);
+	tiny_string toString();
 	int32_t toInt()
 	{
 		return val;
@@ -574,7 +575,7 @@ public:
 	double val;
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
-	tiny_string toString(bool debugMsg = false);
+	tiny_string toString();
 	unsigned int toUInt()
 	{
 		return (unsigned int)(val);
@@ -638,7 +639,7 @@ public:
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
-	tiny_string toString(bool debugMsg=false);
+	tiny_string toString();
 	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
@@ -689,7 +690,7 @@ public:
 	bool hasComplexContent() const;
 	void append(_R<XML> x);
 	void append(_R<XMLList> x);
-	tiny_string toString(bool debugMsg=false);
+	tiny_string toString();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);

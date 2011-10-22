@@ -1055,11 +1055,8 @@ _R<ASObject> Dictionary::nextValue(uint32_t index)
 	}
 }
 
-tiny_string Dictionary::toString(bool debugMsg)
+tiny_string Dictionary::toString()
 {
-	if(debugMsg)
-		return ASObject::toString(debugMsg);
-		
 	std::stringstream retstr;
 	retstr << "{";
 	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
@@ -1071,7 +1068,7 @@ tiny_string Dictionary::toString(bool debugMsg)
 		++it;
 	}
 	retstr << "}";
-	
+
 	return retstr.str();
 }
 

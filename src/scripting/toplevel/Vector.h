@@ -41,7 +41,7 @@ public:
 
 	//Overloads
 	tiny_string toString(bool debugMsg=false);
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 
 	//TODO: do we need to implement generator?
 	ASFUNCTION(_constructor);

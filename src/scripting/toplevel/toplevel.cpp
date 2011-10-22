@@ -486,7 +486,7 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 	recursiveGetDescendantsByQName(rootXML, node, name, ns, ret);
 }
 
-ASObject* XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+_NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0)
 		return ASObject::getVariableByMultiname(name,opt);
@@ -494,7 +494,7 @@ ASObject* XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION
 	if(node==NULL)
 	{
 		//This is possible if the XML object was created from an empty string
-		return NULL;
+		return NullRef;
 	}
 
 	bool isAttr=name.isAttribute;
@@ -515,10 +515,10 @@ ASObject* XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION
 		//To have attributes we must be an Element
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		if(element==NULL)
-			return NULL;
+			return NullRef;
 		xmlpp::Attribute* attr=element->get_attribute(buf);
 		if(attr==NULL)
-			return NULL;
+			return NullRef;
 
 		_NR<XML> rootXML=NullRef;
 		if(root.isNull())
@@ -531,10 +531,7 @@ ASObject* XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION
 
 		std::vector<_R<XML> > retnode;
 		retnode.push_back(_MR(Class<XML>::getInstanceS(rootXML, attr)));
-		XMLList* ret=Class<XMLList>::getInstanceS(retnode);
-		//The new object will be incReffed by the calling code
-		ret->fake_decRef();
-		return ret;
+		return _MNR(Class<XMLList>::getInstanceS(retnode));
 	}
 	else
 	{
@@ -561,12 +558,9 @@ ASObject* XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION
 			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 
 		if(ret.size()==0 && (opt & XML_STRICT)!=0)
-			return NULL;
+			return NullRef;
 
-		XMLList* retObj=Class<XMLList>::getInstanceS(ret);
-		//The new object will be incReffed by the calling code
-		retObj->fake_decRef();
-		return retObj;
+		return _MNR(Class<XMLList>::getInstanceS(ret));
 	}
 }
 
@@ -908,7 +902,7 @@ ASFUNCTIONBODY(XMLList,descendants)
 	return Class<XMLList>::getInstanceS(ret);
 }
 
-ASObject* XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+_NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 		return ASObject::getVariableByMultiname(name,opt);
@@ -921,9 +915,9 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	if(Array::isValidMultiname(name,index))
 	{
 		if(index<nodes.size())
-			return nodes[index].getPtr();
+			return nodes[index];
 		else
-			return NULL;
+			return NullRef;
 	}
 	else
 	{
@@ -931,27 +925,18 @@ ASObject* XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		std::vector<_R<XML> >::iterator it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
-			ASObject *o=(*it)->getVariableByMultiname(name,opt);
-			XMLList *x=dynamic_cast<XMLList *>(o);
+			_NR<ASObject> o=(*it)->getVariableByMultiname(name,opt);
+			XMLList *x=dynamic_cast<XMLList *>(o.getPtr());
 			if(!x)
 				continue;
 
 			retnodes.insert(retnodes.end(), x->nodes.begin(), x->nodes.end());
-
-			// Hack to delete o that was fake_decRef'ed by
-			// XML::getVariableByMultiname. This can be
-			// removed when the refcounting in
-			// getVariableByMultiname is fixed.
-			o->incRef();
-			o->decRef();
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
-			return NULL;
+			return NullRef;
 
-		XMLList *ret=Class<XMLList>::getInstanceS(retnodes);
-		ret->fake_decRef();
-		return ret;
+		return _MNR(Class<XMLList>::getInstanceS(retnodes));
 	}
 }
 
@@ -3913,17 +3898,18 @@ ASObject* GlobalObject::getVariableByString(const std::string& str, ASObject*& t
 
 ASObject* GlobalObject::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
 {
-	ASObject* o=NULL;
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		o=globalScopes[i]->getVariableByMultiname(name);
-		if(o)
+		_NR<ASObject> o=globalScopes[i]->getVariableByMultiname(name);
+		if(!o.isNull())
 		{
 			target=globalScopes[i];
-			break;
+			o->incRef();
+			return o.getPtr();
 		}
 	}
-	return o;
+	
+	return NULL;
 }
 
 GlobalObject::~GlobalObject()

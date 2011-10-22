@@ -1774,8 +1774,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		case traits_info::Class:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
-			if(tmpo)
+			_NR<ASObject> tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
+			if(!tmpo.isNull())
 				return;
 			ASObject* ret;
 
@@ -2032,8 +2032,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		case traits_info::Const:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
-			if(tmpo)
+			_NR<ASObject> tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
+			if(!tmpo.isNull())
 				return;
 
 			ASObject* ret;
@@ -2052,8 +2052,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		case traits_info::Slot:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
-			if(tmpo)
+			_NR<ASObject> tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
+			if(!tmpo.isNull())
 				return;
 
 			multiname* tname=getMultiname(t->type_name,NULL);

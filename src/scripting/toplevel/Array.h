@@ -125,7 +125,7 @@ public:
 	{
 		data.resize(n);
 	}
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);

@@ -86,7 +86,7 @@ public:
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
@@ -128,7 +128,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);
@@ -151,7 +151,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);

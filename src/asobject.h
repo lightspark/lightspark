@@ -310,7 +310,7 @@ public:
 
 	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};
 
-	virtual ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
+	virtual _NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
 		return getVariableByMultiname(name,opt,classdef);
 	}
@@ -319,7 +319,7 @@ public:
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o)

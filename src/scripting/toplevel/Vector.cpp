@@ -123,7 +123,7 @@ ASFUNCTIONBODY(Vector,push)
 }
 
 /* this handles the [] operator, because vec[12] becomes vec.12 in bytecode */
-ASObject* Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+_NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 		return ASObject::getVariableByMultiname(name,opt);
@@ -138,12 +138,13 @@ ASObject* Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPT
 
 	if(index < vec.size())
 	{
-			return vec[index]; //incRef is done by caller
+		vec[index]->incRef();
+		return _MNR(vec[index]);
 	}
 	else
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Vector: Access beyond size");
-		return NULL; //TODO: test if we should throw something or if we should return new Undefined();
+		return NullRef; //TODO: test if we should throw something or if we should return new Undefined();
 	}
 }
 

@@ -229,7 +229,7 @@ _R<ASObject> ASObject::call_valueOf()
 	valueOfName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(valueOfName, true));
 
-	ASObject* o=getVariableByMultiname(valueOfName,SKIP_IMPL);
+	_NR<ASObject> o=getVariableByMultiname(valueOfName,SKIP_IMPL);
 	assert_and_throw(o->is<IFunction>());
 	IFunction* f=o->as<IFunction>();
 
@@ -262,7 +262,7 @@ _R<ASObject> ASObject::call_toString()
 	toStringName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(toStringName, true));
 
-	ASObject* o=getVariableByMultiname(toStringName,SKIP_IMPL);
+	_NR<ASObject> o=getVariableByMultiname(toStringName,SKIP_IMPL);
 	assert_and_throw(o->is<IFunction>());
 	IFunction* f=o->as<IFunction>();
 
@@ -710,8 +710,8 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
 
-	ASObject* ret=getVariableByMultiname(name);
-	assert_and_throw(ret);
+	_NR<ASObject> ret=getVariableByMultiname(name);
+	assert_and_throw(!ret.isNull());
 	return ret->toInt();
 }
 
@@ -728,7 +728,7 @@ variable* ASObject::findGettable(const multiname& name, bool borrowedMode)
 	return ret;
 }
 
-ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
+_NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -756,7 +756,10 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 		{
 			obj = proto->findGettable(name, false);
 			if(obj)
-				return obj->var;
+			{
+				obj->var->incRef();
+				return _MNR(obj->var);
+			}
 			proto = proto->getprop_prototype();
 		}
 	}
@@ -764,7 +767,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 	if(!obj)
 	{
 		//Check if we can lazily define the requested property
-		return Class<ASObject>::getClass()->lazyDefine(name);
+		return _MNR(Class<ASObject>::getClass()->lazyDefine(name));
 	}
 
 	if(obj->getter)
@@ -783,9 +786,8 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 		target->incRef();
 		ASObject* ret=getter->call(target,NULL,0);
 		LOG(LOG_CALLS,_("End of getter"));
-		//The returned value is already owned by the caller
-		ret->fake_decRef();
-		return ret;
+		// No incRef because ret is a new instance
+		return _MNR(ret);
 	}
 	else
 	{
@@ -803,9 +805,10 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 			this->incRef();
 			IFunction* f=obj->var->as<IFunction>()->bind(_MR(this),-1);
 			//No incref is needed, as the function is a new instance
-			return f;
+			return _MNR(f);
 		}
-		return obj->var;
+		obj->var->incRef();
+		return _MNR(obj->var);
 	}
 }
 

@@ -972,8 +972,8 @@ void NetStream::execute()
 				onMetaDataName.name_type=multiname::NAME_STRING;
 				onMetaDataName.name_s="onMetaData";
 				onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
-				ASObject* callback = client->getVariableByMultiname(onMetaDataName);
-				if(callback && callback->getObjectType() == T_FUNCTION)
+				_NR<ASObject> callback = client->getVariableByMultiname(onMetaDataName);
+				if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
 				{
 					ASObject* callbackArgs[1];
 					ASObject* metadata = Class<ASObject>::getInstanceS();
@@ -1004,7 +1004,7 @@ void NetStream::execute()
 					metadata->incRef();
 					callbackArgs[0] = metadata;
 					callback->incRef();
-					_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback)),
+					_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback.getPtr())),
 							_MR(client), callbackArgs, 1));
 					getVm()->addEvent(NullRef,event);
 				}
@@ -1227,8 +1227,8 @@ void URLVariables::decode(const tiny_string& s)
 			propName.name_type=multiname::NAME_STRING;
 			propName.name_s=name;
 			propName.ns.push_back(nsNameAndKind("",NAMESPACE));
-			ASObject* curValue=getVariableByMultiname(propName);
-			if(curValue)
+			_NR<ASObject> curValue=getVariableByMultiname(propName);
+			if(!curValue.isNull())
 			{
 				//If the variable already exists we have to create an Array of values
 				Array* arr=NULL;
@@ -1236,11 +1236,11 @@ void URLVariables::decode(const tiny_string& s)
 				{
 					arr=Class<Array>::getInstanceS();
 					curValue->incRef();
-					arr->push(curValue);
+					arr->push(curValue.getPtr());
 					setVariableByMultiname(propName,arr);
 				}
 				else
-					arr=Class<Array>::cast(curValue);
+					arr=Class<Array>::cast(curValue.getPtr());
 
 				arr->push(Class<ASString>::getInstanceS(value));
 			}

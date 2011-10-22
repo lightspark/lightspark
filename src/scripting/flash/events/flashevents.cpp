@@ -155,9 +155,9 @@ ASFUNCTIONBODY(Event,formatToString)
 		propName.name_type=multiname::NAME_STRING;
 		propName.name_s=prop;
 		propName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
-		ASObject *obj=th->getVariableByMultiname(propName);
-		if (obj)
-			msg += obj->toString();
+		_NR<ASObject> value=th->getVariableByMultiname(propName);
+		if (!value.isNull())
+			msg += value->toString();
 	}
 	msg += "]";
 
@@ -524,10 +524,10 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		cloneName.name_s="clone";
 		cloneName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
 
-		ASObject *clone=e->getVariableByMultiname(cloneName);
-		if(clone && clone->getObjectType()==T_FUNCTION)
+		_NR<ASObject> clone=e->getVariableByMultiname(cloneName);
+		if(!clone.isNull() && clone->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f = static_cast<IFunction*>(clone);
+			IFunction* f = static_cast<IFunction*>(clone.getPtr());
 			e->incRef();
 			ASObject* funcRet=f->call(e.getPtr(),NULL,0);
 			//Verify that the returned object is actually an event

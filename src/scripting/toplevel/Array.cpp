@@ -714,7 +714,7 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-ASObject* Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+_NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 		return ASObject::getVariableByMultiname(name,opt);
@@ -739,16 +739,16 @@ ASObject* Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 					ret=new Undefined;
 					data[index].data=ret;
 				}
+				ret->incRef();
 				break;
 			case DATA_INT:
 				ret=abstract_i(data[index].data_i);
-				ret->fake_decRef();
 				break;
 		}
-		return ret;
+		return _MNR(ret);
 	}
 	else
-		return NULL;
+		return NullRef;
 }
 
 void Array::setVariableByMultiname_i(const multiname& name, intptr_t value)

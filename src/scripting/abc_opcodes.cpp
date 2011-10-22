@@ -291,17 +291,20 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		LOG(LOG_CALLS,obj->classdef->class_name);
 
 	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+	_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
 
-	if(o)
+	if(!o.isNull())
 	{
 		//Run the deferred initialization if needed
 		if(o->is<Definable>())
 		{
 			LOG(LOG_CALLS,_("We got a function not yet valid"));
-			o=o->as<Definable>()->define();
+			ASObject *defined=o->as<Definable>()->define();
+			defined->incRef();
+			o=_MNR(defined);
 		}
-		callImpl(th, o, obj, args, m, called_mi, keepReturn);
+		o->incRef();
+		callImpl(th, o.getPtr(), obj, args, m, called_mi, keepReturn);
 	}
 	else
 	{
@@ -313,13 +316,13 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s="callProperty";
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			ASObject* o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
+			_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 
-			if(o)
+			if(!o.isNull())
 			{
 				assert_and_throw(o->getObjectType()==T_FUNCTION);
 
-				IFunction* f=static_cast<IFunction*>(o);
+				IFunction* f=static_cast<IFunction*>(o.getPtr());
 				//Create a new array
 				ASObject** proxyArgs=new ASObject*[m+1];
 				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
@@ -375,9 +378,10 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("getProperty ") << *name << ' ' << obj);
 
-	ASObject* ret=obj->getVariableByMultiname(*name);
+	_NR<ASObject> prop=obj->getVariableByMultiname(*name);
+	ASObject *ret;
 
-	if(ret==NULL)
+	if(prop.isNull())
 	{
 		if(obj->classdef)
 		{
@@ -387,17 +391,22 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,_("Property not found ") << *name);
 		}
-		return new Undefined;
+		ret=new Undefined;
 	}
 	else
 	{
-		if(ret->is<Definable>())
+		if(prop->is<Definable>())
 		{
 			LOG(LOG_CALLS,_("Property ") << name << _(" is not yet valid"));
-			ret=ret->as<Definable>()->define();
+			ret=prop->as<Definable>()->define();
+			ret->incRef();
+		}
+		else
+		{
+			prop->incRef();
+			ret=prop.getPtr();
 		}
 	}
-	ret->incRef();
 	obj->decRef();
 	return ret;
 }
@@ -1322,21 +1331,25 @@ void ABCVm::getSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
-	ASObject* ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super);
-	if(!ret)
+	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super);
+	if(ret.isNull())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"getSuper: Did not find " << *name);
-		ret = new Undefined;
+		ret = _MNR(new Undefined);
 	}
 	else
 	{
 		if(ret->is<Definable>())
-			ret = ret->as<Definable>()->define();
-		ret->incRef();
+		{
+			ASObject *defined = ret->as<Definable>()->define();
+			defined->incRef();
+			ret = _MNR(defined);
+		}
 	}
 
 	obj->decRef();
-	th->runtime_stack_push(ret);
+	ret->incRef();
+	th->runtime_stack_push(ret.getPtr());
 }
 
 void ABCVm::getLex(call_context* th, int n)
@@ -1358,10 +1371,11 @@ void ABCVm::getLex(call_context* th, int n)
 		if(!it->considerDynamic)
 			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 
-		o=it->object->getVariableByMultiname(*name, opt);
-
-		if(o)
+		_NR<ASObject> prop=it->object->getVariableByMultiname(*name, opt);
+		if(!prop.isNull())
 		{
+			prop->incRef();
+			o=prop.getPtr();
 			target=it->object.getPtr();
 			break;
 		}
@@ -1545,9 +1559,12 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	assert_and_throw(th->inClass->super);
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
-	ASObject* f = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super);
-	if(f)
-		callImpl(th, f, obj, args, m, called_mi, keepReturn);
+	_NR<ASObject> f = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super);
+	if(!f.isNull())
+	{
+		f->incRef();
+		callImpl(th, f.getPtr(), obj, args, m, called_mi, keepReturn);
+	}
 	else
 	{
 		LOG(LOG_ERROR,_("Calling an undefined function ") << name->name_s);
@@ -1770,10 +1787,9 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	ASObject* o=obj->getVariableByMultiname(*name);
+	_NR<ASObject> o=obj->getVariableByMultiname(*name);
 
-
-	if(o==NULL)
+	if(o.isNull())
 	{
 		for(int i=0;i<m;++i)
 			args[i]->decRef();
@@ -1781,13 +1797,12 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		throw Class<ReferenceError>::getInstanceS("Error #1065: Variable is not defined.");
 	}
 
-	//The get protocol expects that we incRef the var
-	o->incRef();
-
 	if(o->is<Definable>())
 	{
 		LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-		o=o->as<Definable>()->define();
+		ASObject *defined=o->as<Definable>()->define();
+		defined->incRef();
+		o=_MNR(defined);
 		LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
 	}
 
@@ -1795,7 +1810,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	ASObject* ret;
 	if(o->getObjectType()==T_CLASS)
 	{
-		Class_base* o_class=static_cast<Class_base*>(o);
+		Class_base* o_class=static_cast<Class_base*>(o.getPtr());
 		ret=o_class->getInstance(true,args,m);
 	}
 	else if(o->getObjectType()==T_FUNCTION)

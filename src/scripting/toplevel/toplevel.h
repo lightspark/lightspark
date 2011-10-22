@@ -210,9 +210,9 @@ private:
 public:
 	//Name is 'Object' because trace(new f()) gives "[object Object]"
 	Class_function() : Class_base(QName("Object","")) {}
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
-		return NULL;
+		return NullRef;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
@@ -637,7 +637,7 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString(bool debugMsg=false);
 	void toXMLString_priv(xmlBufferPtr buf);
@@ -681,7 +681,7 @@ public:
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(generator);
 	ASFUNCTION(descendants);
-	ASObject* getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);

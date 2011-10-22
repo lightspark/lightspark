@@ -55,6 +55,7 @@ public:
 	operator bool() { return valid; }
 	static void initLogging(LOG_LEVEL l) DLL_PUBLIC;
 	static LOG_LEVEL getLevel() DLL_PUBLIC {return log_level;}
+	static int calls_indent;
 
 };
 

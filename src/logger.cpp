@@ -23,6 +23,7 @@ sem_t Log::mutex;
 bool Log::loggingInited = false;
 LOG_LEVEL Log::log_level=LOG_INFO;
 const char* Log::level_names[]={"ERROR", "INFO","NOT_IMPLEMENTED","CALLS","TRACE"};
+int Log::calls_indent = 0;
 
 Log::Log(LOG_LEVEL l)
 {
@@ -30,6 +31,8 @@ Log::Log(LOG_LEVEL l)
 	{
 		cur_level=l;
 		valid=true;
+		if(l >= LOG_CALLS)
+			message << std::string(2*calls_indent,' ');
 	}
 	else
 		valid=false;

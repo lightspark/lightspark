@@ -2340,6 +2340,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	this->incRef();
 
 	ABCVm::cur_recursion++; //increment current recursion depth
+	Log::calls_indent++;
 	while (true)
 	{
 		try
@@ -2380,6 +2381,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			{
 				delete cc;
 				ABCVm::cur_recursion--; //decrement current recursion depth
+				Log::calls_indent--;
 				throw excobj;
 			}
 			continue;
@@ -2387,6 +2389,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		break;
 	}
 	ABCVm::cur_recursion--; //decrement current recursion depth
+	Log::calls_indent--;
 
 	delete cc;
 	hit_count++;

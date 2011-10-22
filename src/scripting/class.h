@@ -111,11 +111,12 @@ public:
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
-	static Class<T>* getClass(const QName& name)
+	static Class<T>* getClass()
 	{
 		Class<T>* ret=NULL;
 		if(!this_class) //This class is not yet in the map, create it
 		{
+			QName name(ClassName<T>::name,ClassName<T>::ns);
 			ret=new Class<T>(name);
 			sys->classes.insert(std::make_pair(name,ret));
 			this_class = ret;
@@ -134,10 +135,6 @@ public:
 
 		ret->incRef();
 		return ret;
-	}
-	static Class<T>* getClass()
-	{
-		return getClass(QName(ClassName<T>::name,ClassName<T>::ns));
 	}
 	static T* cast(ASObject* o)
 	{
@@ -231,16 +228,38 @@ public:
 		Class<ASObject>* c=Class<ASObject>::getClass();
 		return c->getInstance(true,NULL,0);
 	}
-	static Class<ASObject>* getClass(const QName& name)
+	/* This creates a stub class, i.e. a class with given name but without
+	 * any implementation.
+	 */
+	static Class<ASObject>* getStubClass(const QName& name)
+	{
+		Class<ASObject>* ret = new Class<ASObject>(name);
+
+		ret->super = Class<ASObject>::getClass();
+		ret->prototype = _MNR(new_asobject());
+		ret->prototype->setprop_prototype(ret->super->prototype);
+		ret->incRef();
+		ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
+		ret->addPrototypeGetter();
+
+		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+		sys->classes.insert(std::make_pair(name,ret));
+		ret->incRef();
+		return ret;
+	}
+	static Class<ASObject>* getClass()
 	{
 		Class<ASObject>* ret=NULL;
 		if(!this_class) //This class is not yet in the map, create it
 		{
+			QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
 			ret=new Class<ASObject>(name);
 			sys->classes.insert(std::make_pair(name,ret));
 			this_class = ret;
 			ret->prototype = _MNR(new_asobject());
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+			ret->incRef();
+			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 			ASObject::sinit(ret);
 			ret->addPrototypeGetter();
 		}
@@ -249,10 +268,6 @@ public:
 
 		ret->incRef();
 		return ret;
-	}
-	static Class<ASObject>* getClass()
-	{
-		return getClass(QName(ClassName<ASObject>::name,ClassName<ASObject>::ns));
 	}
 	static ASObject* cast(ASObject* o)
 	{

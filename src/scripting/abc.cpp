@@ -223,14 +223,14 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("StageQuality","flash.display",Class<StageQuality>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("StageDisplayState","flash.display",Class<StageDisplayState>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("IBitmapDrawable","flash.display",
-			Class<ASObject>::getClass(QName("IBitmapDrawable","flash.display")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("IBitmapDrawable","flash.display")),DECLARED_TRAIT);
 	builtin->setVariableByQName("BitmapData","flash.display",
-			Class<ASObject>::getClass(QName("BitmapData","flash.display")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("BitmapData","flash.display")),DECLARED_TRAIT);
 	builtin->setVariableByQName("Bitmap","flash.display",Class<Bitmap>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("GraphicsGradientFill","flash.display",
-			Class<ASObject>::getClass(QName("GraphicsGradientFill","flash.display")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("GraphicsGradientFill","flash.display")),DECLARED_TRAIT);
 	builtin->setVariableByQName("GraphicsPath","flash.display",
-			Class<ASObject>::getClass(QName("GraphicsPath","flash.display")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("GraphicsPath","flash.display")),DECLARED_TRAIT);
 	builtin->setVariableByQName("MorphShape","flash.display",Class<MorphShape>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("SpreadMethod","flash.display",Class<SpreadMethod>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("InterpolationMethod","flash.display",Class<InterpolationMethod>::getClass(),DECLARED_TRAIT);
@@ -240,15 +240,15 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Shader","flash.display",Class<Shader>::getClass(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("DropShadowFilter","flash.filters",
-			Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("DropShadowFilter","flash.filters")),DECLARED_TRAIT);
 	builtin->setVariableByQName("BitmapFilter","flash.filters",
-			Class<ASObject>::getClass(QName("BitmapFilter","flash.filters")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("BitmapFilter","flash.filters")),DECLARED_TRAIT);
 	builtin->setVariableByQName("GlowFilter","flash.filters",
-			Class<ASObject>::getClass(QName("GlowFilter","flash.filters")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("GlowFilter","flash.filters")),DECLARED_TRAIT);
 	builtin->setVariableByQName("BevelFilter","flash.filters",
-			Class<ASObject>::getClass(QName("BevelFilter","flash.filters")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("BevelFilter","flash.filters")),DECLARED_TRAIT);
 	builtin->setVariableByQName("ColorMatrixFilter","flash.filters",
-			Class<ASObject>::getClass(QName("ColorMatrixFilter","flash.filters")),DECLARED_TRAIT);
+			Class<ASObject>::getStubClass(QName("ColorMatrixFilter","flash.filters")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("Font","flash.text",Class<Font>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getClass(),DECLARED_TRAIT);
@@ -279,8 +279,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("clearInterval","flash.utils",Class<IFunction>::getFunction(clearInterval),DECLARED_TRAIT);
 	builtin->setVariableByQName("clearTimeout","flash.utils",Class<IFunction>::getFunction(clearTimeout),DECLARED_TRAIT);
 	builtin->setVariableByQName("describeType","flash.utils",Class<IFunction>::getFunction(describeType),DECLARED_TRAIT);
-	builtin->setVariableByQName("IExternalizable","flash.utils",
-			Class<ASObject>::getClass(QName("IExternalizable","flash.utils")),DECLARED_TRAIT);
+	builtin->setVariableByQName("IExternalizable","flash.utils",Class<ASObject>::getStubClass(QName("IExternalizable","flash.utils")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass(),DECLARED_TRAIT);
@@ -288,8 +287,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Transform","flash.geom",Class<Transform>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Point","flash.geom",Class<Point>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Vector3D","flash.geom",Class<Vector3D>::getClass(),DECLARED_TRAIT);
-	builtin->setVariableByQName("Matrix3D","flash.geom",
-			Class<ASObject>::getClass(QName("Matrix3D", "flash.geom")),DECLARED_TRAIT);
+	builtin->setVariableByQName("Matrix3D","flash.geom",Class<ASObject>::getStubClass(QName("Matrix3D", "flash.geom")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Event","flash.events",Class<Event>::getClass(),DECLARED_TRAIT);
@@ -310,12 +308,10 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("KeyboardEvent","flash.events",Class<KeyboardEvent>::getClass(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("sendToURL","flash.net",Class<IFunction>::getFunction(sendToURL),DECLARED_TRAIT);
-	builtin->setVariableByQName("LocalConnection","flash.net",
-			Class<ASObject>::getClass(QName("LocalConnection","flash.net")),DECLARED_TRAIT);
+	builtin->setVariableByQName("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")),DECLARED_TRAIT);
 	builtin->setVariableByQName("NetConnection","flash.net",Class<NetConnection>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("NetStream","flash.net",Class<NetStream>::getClass(),DECLARED_TRAIT);
-	builtin->setVariableByQName("NetStreamPlayOptions","flash.net",
-			Class<ASObject>::getClass(QName("NetStreamPlayOptions","flash.net")),DECLARED_TRAIT);
+	builtin->setVariableByQName("NetStreamPlayOptions","flash.net",Class<ASObject>::getStubClass(QName("NetStreamPlayOptions","flash.net")),DECLARED_TRAIT);
 	builtin->setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass(),DECLARED_TRAIT);
@@ -323,26 +319,24 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("URLVariables","flash.net",Class<URLVariables>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("SharedObject","flash.net",Class<SharedObject>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("ObjectEncoding","flash.net",Class<ObjectEncoding>::getClass(),DECLARED_TRAIT);
-	builtin->setVariableByQName("Socket","flash.net",Class<ASObject>::getClass(QName("Socket","flash.net")),DECLARED_TRAIT);
-	builtin->setVariableByQName("Responder","flash.net",Class<ASObject>::getClass(QName("Responder","flash.net")),DECLARED_TRAIT);
+	builtin->setVariableByQName("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")),DECLARED_TRAIT);
+	builtin->setVariableByQName("Responder","flash.net",Class<ASObject>::getStubClass(QName("Responder","flash.net")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("fscommand","flash.system",Class<IFunction>::getFunction(fscommand),DECLARED_TRAIT);
 	builtin->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Security","flash.system",Class<Security>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("SecurityDomain","flash.system",Class<SecurityDomain>::getClass(),DECLARED_TRAIT);
-	builtin->setVariableByQName("LoaderContext","flash.system",
-			Class<ASObject>::getClass(QName("LoaderContext","flash.system")),DECLARED_TRAIT);
+	builtin->setVariableByQName("LoaderContext","flash.system",Class<ASObject>::getStubClass(QName("LoaderContext","flash.system")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Video","flash.media",Class<Video>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Sound","flash.media",Class<Sound>::getClass(),DECLARED_TRAIT);
 	builtin->setVariableByQName("SoundLoaderContext","flash.media",Class<SoundLoaderContext>::getClass(),DECLARED_TRAIT);
 
-	builtin->setVariableByQName("ContextMenu","flash.ui",
-			Class<ASObject>::getClass(QName("ContextMenu","flash.ui")),DECLARED_TRAIT);
-	builtin->setVariableByQName("ContextMenuItem","flash.ui",
-			Class<ASObject>::getClass(QName("ContextMenuItem","flash.ui")),DECLARED_TRAIT);
+	builtin->setVariableByQName("Keyboard","flash.ui",Class<ASObject>::getStubClass(QName("Keyboard","flash.ui")),DECLARED_TRAIT);
+	builtin->setVariableByQName("ContextMenu","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenu","flash.ui")),DECLARED_TRAIT);
+	builtin->setVariableByQName("ContextMenuItem","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenuItem","flash.ui")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("Accelerometer", "flash.sensors", Class<Accelerometer>::getClass(), DECLARED_TRAIT);
 

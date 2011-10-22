@@ -62,8 +62,13 @@
 		Tests.assertEquals("Hello",toStr.call(s2),"(MethodClosure).call(otherobj) keeps this");
 
 		//Check if a getter returning a function can be called
-		Tests.assertEquals("function Function() {}",getter_returning_function,"A getter that returns a function");
+		Tests.assertEquals("function Function() {}",getter_returning_function + "","A getter that returns a function");
 		Tests.assertEquals("42",getter_returning_function(),"Calling a getter that returns a function calls the function");
+
+		Tests.assertEquals("[object Object]",Object(),"Object()");
+		Tests.assertEquals("[object Object]",Object(undefined),"Object()");
+		Tests.assertEquals("[object Object]",Object(null),"Object()");
+		Tests.assertEquals("4",Object(4),"Object(4) = 4");
 
 		Tests.report(visual, this.name);
 	}

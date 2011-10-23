@@ -331,6 +331,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 				//We now suppress special handling
 				LOG(LOG_CALLS,_("Proxy::callProperty"));
 				f->incRef();
+				obj->incRef();
 				ASObject* ret=f->call(obj,proxyArgs,m+1);
 				//call getMethodInfo only after the call, so it's updated
 				if(called_mi)

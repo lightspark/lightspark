@@ -933,8 +933,6 @@ ABCVm::~ABCVm()
 	delete uint_manager;
 	delete number_manager;
 	delete global;
-	delete Type::anyType;
-	delete Type::voidType;
 }
 
 int ABCVm::getEventQueueSize()

@@ -240,6 +240,9 @@ ASFUNCTIONBODY(TextField,_setTextFormat)
 		LOG(LOG_NOT_IMPLEMENTED,"setTextFormat with more than one parameter");
 
 	TextFormat* tf = Class<TextFormat>::cast(args[0]);
+	if(tf->getObjectType() == T_NULL)
+		return NULL;
+
 	if(tf->color != NULL)
 		th->textColor = tf->color->toUInt();
 

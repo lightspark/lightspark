@@ -181,6 +181,8 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 
 void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 {
+	if(m_sys->currentVm == NULL)
+		return;
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
 	number_t localX, localY;
@@ -192,6 +194,8 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 
 void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
 {
+	if(m_sys->currentVm == NULL)
+		return;
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
 	number_t localX, localY;
@@ -202,6 +206,8 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
 
 void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 {
+	if(m_sys->currentVm == NULL)
+		return;
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::GENERIC_HIT);
 	number_t localX, localY;
@@ -219,6 +225,8 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 
 void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 {
+	if(m_sys->currentVm == NULL)
+		return;
 	SpinlockLocker locker(inputDataSpinlock);
 	mousePos = Vector2(x,y);
 	Locker locker2(mutexDragged);

@@ -139,6 +139,8 @@ void SystemState::staticInit()
 
 void SystemState::staticDeinit()
 {
+	delete Type::anyType;
+	delete Type::voidType;
 #ifdef ENABLE_CURL
 	curl_global_cleanup();
 #endif

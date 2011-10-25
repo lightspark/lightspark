@@ -2232,7 +2232,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	}
 
 	/* resolve argument and return types */
-	if(mi->paramTypes.empty())
+	if(!mi->returnType)
 	{
 		mi->paramTypes.reserve(mi->numArgs());
 		for(size_t i=0;i < mi->numArgs();++i)

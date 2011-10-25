@@ -263,7 +263,7 @@ public:
 		profTime(0),
 		validProfName(false),
 #endif
-		option_count(0),f(NULL),context(NULL),body(NULL)
+		option_count(0),f(NULL),context(NULL),body(NULL),returnType(NULL)
 	{
 	}
 };

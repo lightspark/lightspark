@@ -508,9 +508,9 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
  * must be provided if getMultinameRTData(midx) returns 2.
  * This is a helper used by codesynt.
  */
-multiname* ABCContext::s_getMultiname(call_context* th, ASObject* n, ASObject* n2, int midx)
+multiname* ABCContext::s_getMultiname(ABCContext* th, ASObject* n, ASObject* n2, int midx)
 {
-	return th->context->getMultinameImpl(n,n2,midx);
+	return th->getMultinameImpl(n,n2,midx);
 }
 
 /*

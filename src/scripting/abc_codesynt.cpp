@@ -169,7 +169,7 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"getGlobalScope",(void*)&ABCVm::getGlobalScope,ARGS_CONTEXT},
 	{"findPropStrict",(void*)&ABCVm::findPropStrict,ARGS_CONTEXT_OBJ},
 	{"findProperty",(void*)&ABCVm::findProperty,ARGS_CONTEXT_OBJ},
-	{"getMultiname",(void*)&ABCContext::s_getMultiname,ARGS_CONTEXT_OBJ_OBJ_INT},
+	{"getMultiname",(void*)&ABCContext::s_getMultiname,ARGS_OBJ_OBJ_OBJ_INT},
 	{"typeOf",(void*)ABCVm::typeOf,ARGS_OBJ},
 	{"coerce_s",(void*)&ABCVm::coerce_s,ARGS_OBJ},
 	{"checkfilter",(void*)&ABCVm::checkfilter,ARGS_OBJ},
@@ -337,6 +337,12 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	sig_obj_obj_int.push_back(voidptr_type);
 	sig_obj_obj_int.push_back(int_type);
 
+	vector<const llvm::Type*> sig_obj_obj_obj_int;
+	sig_obj_obj_obj_int.push_back(voidptr_type);
+	sig_obj_obj_obj_int.push_back(voidptr_type);
+	sig_obj_obj_obj_int.push_back(voidptr_type);
+	sig_obj_obj_obj_int.push_back(int_type);
+
 	vector<const llvm::Type*> sig_number_obj;
 	sig_number_obj.push_back(number_type);
 	sig_number_obj.push_back(voidptr_type);
@@ -425,6 +431,9 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 				break;
 			case ARGS_OBJ_OBJ_INT:
 				FT=llvm::FunctionType::get(ret_type, sig_obj_obj_int, false);
+				break;
+			case ARGS_OBJ_OBJ_OBJ_INT:
+				FT=llvm::FunctionType::get(ret_type, sig_obj_obj_obj_int, false);
 				break;
 			case ARGS_NUMBER_OBJ:
 				FT=llvm::FunctionType::get(ret_type, sig_number_obj, false);
@@ -691,42 +700,46 @@ void method_info::consumeStackForRTMultiname(static_stack_types_vector& stack, i
 /* Adds instructions to the builder to resolve the given multiname */
 inline llvm::Value* getMultiname(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& Builder, vector<stack_entry>& static_stack,
 				llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index,
-				llvm::Value* context, ABCContext* abccontext, int multinameIndex)
+				ABCContext* abccontext, int multinameIndex)
 {
-	llvm::Value* mindx = llvm::ConstantInt::get(int_type, multinameIndex);
 	int rtdata=abccontext->getMultinameRTData(multinameIndex);
 	llvm::Value* name;
-	//HACK: we need to reinterpret the pointer to the generic type
-	//llvm::Value* reint_context=Builder.CreateBitCast(context,voidptr_type);
-	llvm::Value* constnull = llvm::ConstantExpr::getIntToPtr(llvm::ConstantInt::get(int_type, 0), voidptr_type);
 	if(rtdata==0)
 	{
-		name = Builder.CreateCall4(ex->FindFunctionNamed("getMultiname"), context, constnull, constnull, mindx);
-	}
-	else if(rtdata==1)
-	{
-		stack_entry rt1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-		/*if(rt1.second==STACK_INT)
-			name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_i"), context, rt1.first, mindx);
-		else if(rt1.second==STACK_NUMBER)
-			name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_d"), context, rt1.first, mindx);
-		else*/
-		{
-			abstract_value(ex,Builder,rt1);
-			name = Builder.CreateCall4(ex->FindFunctionNamed("getMultiname"), context, rt1.first, constnull, mindx);
-		}
-	}
-	else if(rtdata==2)
-	{
-		stack_entry rt1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-		stack_entry rt2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-		abstract_value(ex,Builder,rt1);
-		abstract_value(ex,Builder,rt2);
-		name = Builder.CreateCall4(ex->FindFunctionNamed("getMultiname"), context, rt1.first, rt2.first, mindx);
+		//Multinames without runtime date persist
+		multiname* mname = ABCContext::s_getMultiname(abccontext,NULL,NULL,multinameIndex);
+		name = llvm::ConstantExpr::getIntToPtr(llvm::ConstantInt::get(ptr_type, (intptr_t)mname),voidptr_type);
 	}
 	else
-		assert(false);
+	{
+		llvm::Value* context = llvm::ConstantExpr::getIntToPtr(llvm::ConstantInt::get(ptr_type, (intptr_t)abccontext), voidptr_type);
+		llvm::Value* mindx = llvm::ConstantInt::get(int_type, multinameIndex);
+		if(rtdata==1)
+		{
+			llvm::Value* constnull = llvm::ConstantExpr::getIntToPtr(llvm::ConstantInt::get(int_type, 0), voidptr_type);
+			stack_entry rt1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+			/*if(rt1.second==STACK_INT) //TODO: for them, first parameter is call_context, not ABCContext
+				name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_i"), context, rt1.first, mindx);
+			else if(rt1.second==STACK_NUMBER)
+				name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_d"), context, rt1.first, mindx);
+			else*/
+			{
+				abstract_value(ex,Builder,rt1);
+				name = Builder.CreateCall4(ex->FindFunctionNamed("getMultiname"), context, rt1.first, constnull, mindx);
+			}
+		}
+		else if(rtdata==2)
+		{
+			stack_entry rt1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+			stack_entry rt2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+			abstract_value(ex,Builder,rt1);
+			abstract_value(ex,Builder,rt2);
+			name = Builder.CreateCall4(ex->FindFunctionNamed("getMultiname"), context, rt1.first, rt2.first, mindx);
+		}
+		else
+			assert(false);
+	}
 	return name;
 }
 
@@ -3114,7 +3127,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt findpropstrict") );
 				u30 t;
 				code >> t;
-				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,context,this->context,t);
+				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,this->context,t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), context, name);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
@@ -3125,7 +3138,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt findproperty") );
 				u30 t;
 				code >> t;
-				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,context,this->context,t);
+				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,this->context,t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("findProperty"), context, name);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
@@ -3148,7 +3161,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code >> t;
 				stack_entry value=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,context,this->context,t);
+				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,this->context,t);
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(value.second==STACK_INT)
 					Builder.CreateCall3(ex->FindFunctionNamed("setProperty_i"),value.first, obj.first, name);
@@ -3232,7 +3245,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt getproperty") );
 				u30 t;
 				code >> t;
-				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,context,this->context,t);
+				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,this->context,t);
 
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				abstract_value(ex,Builder,obj);
@@ -3262,7 +3275,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code >> t;
 				stack_entry val=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,context,this->context,t);
+				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,this->context,t);
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				Builder.CreateCall4(ex->FindFunctionNamed("initProperty"), context, obj.first, val.first, name);
 				break;
@@ -3273,7 +3286,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt deleteproperty") );
 				u30 t;
 				code >> t;
-				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,context,this->context,t);
+				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,this->context,t);
 				stack_entry v=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				abstract_value(ex,Builder,v);
 				Builder.CreateCall3(ex->FindFunctionNamed("deleteProperty"), context, v.first, name);

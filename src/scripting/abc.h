@@ -367,7 +367,7 @@ struct opcode_handler
 enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER,
 	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT,
 	ARGS_CONTEXT_INT_INT_INT, ARGS_CONTEXT_INT_INT_INT_BOOL, ARGS_CONTEXT_OBJ_OBJ_INT, ARGS_CONTEXT_OBJ, ARGS_CONTEXT_OBJ_OBJ,
-	ARGS_CONTEXT_OBJ_OBJ_OBJ };
+	ARGS_CONTEXT_OBJ_OBJ_OBJ, ARGS_OBJ_OBJ_OBJ_INT };
 
 struct typed_opcode_handler
 {
@@ -380,15 +380,14 @@ class ABCContext
 {
 friend class ABCVm;
 friend class method_info;
-private:
+public:
 	method_info* get_method(unsigned int m);
 	const tiny_string& getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
-	static multiname* s_getMultiname(call_context*, ASObject* rt1, ASObject* rt2, int m);
+	static multiname* s_getMultiname(ABCContext*, ASObject* rt1, ASObject* rt2, int m);
 	static multiname* s_getMultiname_i(call_context*, uint32_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
 	ASObject* getConstant(int kind, int index);
-public:
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;

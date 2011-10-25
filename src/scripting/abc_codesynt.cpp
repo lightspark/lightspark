@@ -34,9 +34,12 @@ using namespace lightspark;
 
 static const llvm::Type* void_type = NULL;
 static const llvm::Type* int_type = NULL;
+static const llvm::Type* intptr_type = NULL;
 static const llvm::Type* voidptr_type = NULL;
 static const llvm::Type* number_type = NULL;
+static const llvm::Type* numberptr_type = NULL;
 static const llvm::Type* bool_type = NULL;
+static const llvm::Type* boolptr_type = NULL;
 static const llvm::Type* ptr_type = NULL;
 static const llvm::Type* context_type = NULL;
 
@@ -219,19 +222,23 @@ void ABCVm::registerFunctions()
 
 	//Create types
 	ptr_type=ex->getTargetData()->getIntPtrType(llvm_context);
-	voidptr_type=llvm::PointerType::getUnqual(ptr_type);
+	//Pointer to 8 bit type, needed for pointer arithmetic
+	voidptr_type=llvm::IntegerType::get(getVm()->llvm_context,8)->getPointerTo();
 	number_type=llvm::Type::getDoubleTy(llvm_context);
+	numberptr_type=llvm::Type::getDoublePtrTy(llvm_context);
 	bool_type=llvm::IntegerType::get(llvm_context,1);
+	boolptr_type=bool_type->getPointerTo();
 	void_type=llvm::Type::getVoidTy(llvm_context);
 	int_type=llvm::IntegerType::get(getVm()->llvm_context,32);
+	intptr_type=int_type->getPointerTo();
 	assert(int_type != ptr_type); //needed in stackTypeFromLLVMType()
 
 	//All the opcodes needs a pointer to the context
 	std::vector<const llvm::Type*> struct_elems;
-	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
-	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
+	struct_elems.push_back(voidptr_type->getPointerTo());
+	struct_elems.push_back(voidptr_type->getPointerTo());
+	struct_elems.push_back(int_type);
+	struct_elems.push_back(int_type);
 	context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
 
 	//newActivation needs both method_info and the context
@@ -634,7 +641,7 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 	vector<const llvm::Type*> sig;
 	sig.push_back(context_type);
 
-	return llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	return llvm::FunctionType::get(voidptr_type, sig, false);
 }
 
 void method_info::consumeStackForRTMultiname(static_stack_types_vector& stack, int multinameIndex) const
@@ -1555,6 +1562,10 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 		//If every predecessor blocks agree with the type of a local we pass it over
 		for(bit=blocks.begin();bit!=blocks.end();++bit)
 		{
+			//locals_start for the first block must not be updated,
+			//they are the parameters
+			if(bit->first == 0)
+				continue;
 			block_info& cur=bit->second;
 			vector<STACK_TYPE> new_start;
 			new_start.resize(body->local_count,STACK_NONE);
@@ -1598,6 +1609,10 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 	map<unsigned int,block_info>::iterator bit;
 	for(bit=blocks.begin();bit!=blocks.end();++bit)
 	{
+		//For the first block, we won't have to allocate space
+		//as those are direclty read from the parameters
+		if(bit->first == 0)
+			continue;
 		block_info& cur=bit->second;
 		cur.locals_start_obj.resize(cur.locals_start.size(),NULL);
 		for(unsigned int i=0;i<cur.locals_start.size();i++)
@@ -1690,10 +1705,71 @@ SyntheticFunction::synt_function method_info::synt_method()
 	//Creating a mapping between blocks and starting address
 	map<unsigned int,block_info> blocks;
 
-
 	//Let's build a block for the real function code
 	addBlock(blocks, 0, "begin");
 
+	/* Setup locals. Those hold the parameters on entry.
+	 * SyntheticFunction::call() coerces the objects to those types.
+	 * Then we get a primitive type, we diretly load its 'val' member and
+	 * set the corresponding static_local's type. */
+	blocks[0].locals_start.resize(body->local_count,STACK_NONE);
+	blocks[0].locals_start_obj.resize(body->local_count,NULL);
+#define LOAD_LOCALPTR \
+	/*local[0] corresponds to 'this', arguments start at 1*/ \
+	constant = llvm::ConstantInt::get(int_type, i+1); \
+	llvm::Value* t=Builder.CreateGEP(locals,constant); /*Compute locals[i] = locals + i*/ \
+        t=Builder.CreateLoad(t,"Primitive*"); /*Load Primitive* n = locals[i]*/
+
+	for(int i=0;i<paramTypes.size();++i)
+	{
+		if(paramTypes[i] == Class<Number>::getClass())
+		{
+			/* yield t = locals[i+1] */
+			LOAD_LOCALPTR
+			/*calc n+offsetof(Number,val) = &n->val*/
+			t=Builder.CreateGEP(t, llvm::ConstantInt::get(int_type, offsetof(Number,val)));
+			t=Builder.CreateBitCast(t,numberptr_type); //cast t from int8* to number*
+			blocks[0].locals_start[i+1] = STACK_NUMBER;
+			//locals_start_obj should hold the pointer to the local's value
+			blocks[0].locals_start_obj[i+1] = t;
+			LOG(LOG_TRACE,"found STACK_NUMBER parameter for local " << i+1);
+		}
+		else if(paramTypes[i] == Class<Integer>::getClass())
+		{
+			/* yield t = locals[i+1] */
+			LOAD_LOCALPTR
+			/*calc n+offsetof(Number,val) = &n->val*/
+			t=Builder.CreateGEP(t, llvm::ConstantInt::get(int_type, offsetof(Integer,val)));
+			t=Builder.CreateBitCast(t,intptr_type); //cast t from int8* to int32_t*
+			blocks[0].locals_start[i+1] = STACK_INT;
+			//locals_start_obj should hold the pointer to the local's value
+			blocks[0].locals_start_obj[i+1] = t;
+		}
+		else if(paramTypes[i] == Class<UInteger>::getClass())
+		{
+			/* yield t = locals[i+1] */
+			LOAD_LOCALPTR
+			/*calc n+offsetof(Number,val) = &n->val*/
+			t=Builder.CreateGEP(t, llvm::ConstantInt::get(int_type, offsetof(UInteger,val)));
+			t=Builder.CreateBitCast(t,intptr_type); //cast t from int8* to uint32_t*
+			blocks[0].locals_start[i+1] = STACK_UINT;
+			//locals_start_obj should hold the pointer to the local's value
+			blocks[0].locals_start_obj[i+1] = t;
+		}
+		else if(paramTypes[i] == Class<Boolean>::getClass())
+		{
+			/* yield t = locals[i+1] */
+			LOAD_LOCALPTR
+			/*calc n+offsetof(Number,val) = &n->val*/
+			t=Builder.CreateGEP(t, llvm::ConstantInt::get(int_type, offsetof(Boolean,val)));
+			t=Builder.CreateBitCast(t,boolptr_type); //cast t from int8* to bool*
+			blocks[0].locals_start[i+1] = STACK_BOOLEAN;
+			//locals_start_obj should hold the pointer to the local's value
+			blocks[0].locals_start_obj[i+1] = t;
+		}
+
+	}
+#undef LOAD_LOCALPTR
 	doAnalysis(blocks,Builder);
 
 	//Let's reset the stream

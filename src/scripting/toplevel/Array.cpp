@@ -822,6 +822,9 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 			//TODO: check that this is really an integer
 			index=name.name_d;
 			break;
+		case multiname::NAME_OBJECT:
+			//TODO: should be use toPrimitive here?
+			return false;
 		default:
 			throw UnsupportedException("Array::isValidMultiname not completely implemented");
 	}

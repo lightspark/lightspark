@@ -160,8 +160,7 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
-		assert_and_throw(implEnable);
-		throw UnsupportedException("setVariableByMultiName_i not supported for Proxy");
+		setVariableByMultiname(name,abstract_i(value));
 	}
 	bool deleteVariableByMultiname(const multiname& name)
 	{

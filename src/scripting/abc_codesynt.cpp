@@ -3563,21 +3563,30 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
-					//TODO: 32bit check
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					value=Builder.CreateFAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
-					//TODO: 32bit check
 					v2.first=Builder.CreateSIToFP(v2.first,number_type);
+					value=Builder.CreateFAdd(v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
+				else if(v1.second==STACK_NUMBER && v2.second==STACK_UINT)
+				{
+					v2.first=Builder.CreateUIToFP(v2.first,number_type);
+					value=Builder.CreateFAdd(v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
+				else if(v1.second==STACK_UINT && v2.second==STACK_NUMBER)
+				{
+					v1.first=Builder.CreateUIToFP(v1.first,number_type);
 					value=Builder.CreateFAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
 				{
-					//TODO: 32bit check
 					value=Builder.CreateFAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}

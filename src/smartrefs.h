@@ -203,6 +203,10 @@ public:
 	{
 		return m!=r;
 	}
+	explicit operator bool() const
+	{
+		return m != NULL;
+	}
 	~NullableRef()
 	{
 		if(m)

@@ -48,7 +48,7 @@ void debug_d(number_t f)
 	LOG(LOG_CALLS, _("debug_d ")<< f);
 }
 
-void debug_i(intptr_t i)
+void debug_i(int32_t i)
 {
 	LOG(LOG_CALLS, _("debug_i ")<< i);
 }
@@ -65,7 +65,7 @@ opcode_handler ABCVm::opcode_table_args3_pointers[]={
 	{"setProperty",(void*)&ABCVm::setProperty},
 };
 
-typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
+typed_opcode_handler ABCVm::opcode_table_uint32_t[]={
 	{"bitAnd_oo",(void*)&ABCVm::bitAnd,ARGS_OBJ_OBJ},
 	{"bitAnd_oi",(void*)&ABCVm::bitAnd_oi,ARGS_OBJ_INT},
 	{"pushByte",(void*)&ABCVm::pushByte,ARGS_INT},
@@ -248,7 +248,7 @@ void ABCVm::registerFunctions()
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
 
-	//Lazy pushing, no context, (ASObject*, uintptr_t, int)
+	//Lazy pushing, no context, (ASObject*, uint32_t, int)
 	sig.clear();
 	sig.push_back(voidptr_type);
 	sig.push_back(int_type);
@@ -293,7 +293,7 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setProperty_i",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setProperty_i);
 
-	register_table(int_type,opcode_table_uintptr_t,sizeof(opcode_table_uintptr_t)/sizeof(typed_opcode_handler));
+	register_table(int_type,opcode_table_uint32_t,sizeof(opcode_table_uint32_t)/sizeof(typed_opcode_handler));
 	register_table(number_type,opcode_table_number_t,sizeof(opcode_table_number_t)/sizeof(typed_opcode_handler));
 	register_table(void_type,opcode_table_void,sizeof(opcode_table_void)/sizeof(typed_opcode_handler));
 	register_table(voidptr_type,opcode_table_voidptr,sizeof(opcode_table_voidptr)/sizeof(typed_opcode_handler));

@@ -87,9 +87,9 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	intptr_t getVariableByMultiname_i(const multiname& name);
+	int32_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
-	void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 };
 
@@ -129,13 +129,13 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	intptr_t getVariableByMultiname_i(const multiname& name)
+	int32_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Dictionary");
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o);
-	void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool deleteVariableByMultiname(const multiname& name);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString();
@@ -152,13 +152,13 @@ public:
 	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	intptr_t getVariableByMultiname_i(const multiname& name)
+	int32_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Proxy");
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o);
-	void setVariableByMultiname_i(const multiname& name, intptr_t value)
+	void setVariableByMultiname_i(const multiname& name, int32_t value)
 	{
 		setVariableByMultiname(name,abstract_i(value));
 	}

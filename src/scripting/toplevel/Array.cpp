@@ -678,7 +678,7 @@ ASFUNCTIONBODY(Array,_toString)
 	return Class<ASString>::getInstanceS(th->toString_priv());
 }
 
-intptr_t Array::getVariableByMultiname_i(const multiname& name)
+int32_t Array::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -750,7 +750,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 		return NullRef;
 }
 
-void Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
+void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;

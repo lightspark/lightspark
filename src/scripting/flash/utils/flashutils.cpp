@@ -532,7 +532,7 @@ _NR<ASObject> ByteArray::getVariableByMultiname(const multiname& name, GET_VARIA
 	return _MNR(abstract_i(bytes[index]));
 }
 
-intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
+int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -566,7 +566,7 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 		bytes[index]=0;
 }
 
-void ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
+void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -879,7 +879,7 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 	return NULL;
 }
 
-void Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
+void Dictionary::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
 	Dictionary::setVariableByMultiname(name,abstract_i(value));

@@ -1373,7 +1373,7 @@ public:
 	RunState();
 };
 
-ASObject* abstract_i(intptr_t i);
+ASObject* abstract_i(int32_t i);
 ASObject* abstract_ui(uint32_t i);
 ASObject* abstract_d(number_t i);
 

@@ -439,7 +439,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 }
 
 //Pre: we already know that n is not zero and that we are going to use an RT multiname from getMultinameRTData
-multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
+multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 {
 	//We are allowed to access only the ABCContext, as the stack is not synced
 	multiname* ret;

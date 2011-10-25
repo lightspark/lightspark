@@ -214,12 +214,12 @@ public:
 	{
 		return NullRef;
 	}
-	intptr_t getVariableByMultiname_i(const multiname& name)
+	int32_t getVariableByMultiname_i(const multiname& name)
 	{
 		throw UnsupportedException("Class_function::getVariableByMultiname_i");
 		return 0;
 	}
-	void setVariableByMultiname_i(const multiname& name, intptr_t value)
+	void setVariableByMultiname_i(const multiname& name, int32_t value)
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname_i");
 	}
@@ -518,7 +518,7 @@ friend class Number;
 friend class Array;
 friend class ABCVm;
 friend class ABCContext;
-friend ASObject* abstract_i(intptr_t i);
+friend ASObject* abstract_i(int32_t i);
 CLASSBUILDABLE(Integer);
 private:
 	Integer(int32_t v=0):val(v){type=T_INTEGER;}

@@ -320,8 +320,8 @@ public:
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
-	virtual intptr_t getVariableByMultiname_i(const multiname& name);
-	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	virtual int32_t getVariableByMultiname_i(const multiname& name);
+	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o)
 	{
 		setVariableByMultiname(name,o,classdef);

@@ -568,7 +568,7 @@ ASFUNCTIONBODY(ColorTransform,setColor)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
 	assert_and_throw(argslen==1);
-	uintptr_t tmp=args[0]->toInt();
+	uint32_t tmp=args[0]->toInt();
 	//Setting multiplier to 0
 	th->redMultiplier=0;
 	th->greenMultiplier=0;

@@ -26,20 +26,20 @@
 using namespace std;
 using namespace lightspark;
 
-uintptr_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
+uint32_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
 {
-	uintptr_t i1=val1->toUInt();
-	uintptr_t i2=val2->toUInt();
+	uint32_t i1=val1->toUInt();
+	uint32_t i2=val2->toUInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("bitAnd_oo ") << hex << i1 << '&' << i2 << dec);
 	return i1&i2;
 }
 
-uintptr_t ABCVm::bitAnd_oi(ASObject* val1, intptr_t val2)
+uint32_t ABCVm::bitAnd_oi(ASObject* val1, int32_t val2)
 {
-	uintptr_t i1=val1->toUInt();
-	uintptr_t i2=val2;
+	uint32_t i1=val1->toUInt();
+	uint32_t i2=val2;
 	val1->decRef();
 	LOG(LOG_CALLS,_("bitAnd_oi ") << hex << i1 << '&' << i2 << dec);
 	return i1&i2;
@@ -54,7 +54,7 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 	obj->decRef();
 }
 
-void ABCVm::setProperty_i(intptr_t value,ASObject* obj,multiname* name)
+void ABCVm::setProperty_i(int32_t value,ASObject* obj,multiname* name)
 {
 	LOG(LOG_CALLS,_("setProperty_i ") << *name << ' ' <<obj);
 
@@ -78,18 +78,18 @@ bool ABCVm::convert_b(ASObject* o)
 	return ret;
 }
 
-uintptr_t ABCVm::convert_u(ASObject* o)
+uint32_t ABCVm::convert_u(ASObject* o)
 {
 	LOG(LOG_CALLS, _("convert_u") );
-	uintptr_t ret=o->toUInt();
+	uint32_t ret=o->toUInt();
 	o->decRef();
 	return ret;
 }
 
-intptr_t ABCVm::convert_i(ASObject* o)
+int32_t ABCVm::convert_i(ASObject* o)
 {
 	LOG(LOG_CALLS, _("convert_i") );
-	intptr_t ret=o->toInt();
+	int32_t ret=o->toInt();
 	o->decRef();
 	return ret;
 }
@@ -196,7 +196,7 @@ void ABCVm::setLocal_obj(int n, ASObject* v)
 	LOG(LOG_CALLS,_("setLocal[") << n << _("] = ") << v->toDebugString());
 }
 
-intptr_t ABCVm::pushShort(intptr_t n)
+int32_t ABCVm::pushShort(intptr_t n)
 {
 	LOG(LOG_CALLS, _("pushShort ") << n );
 	return n;
@@ -231,7 +231,7 @@ number_t ABCVm::negate(ASObject* v)
 	return ret;
 }
 
-intptr_t ABCVm::negate_i(ASObject* o)
+int32_t ABCVm::negate_i(ASObject* o)
 {
 	LOG(LOG_CALLS,_("negate_i"));
 
@@ -240,15 +240,15 @@ intptr_t ABCVm::negate_i(ASObject* o)
 	return -n;
 }
 
-uintptr_t ABCVm::bitNot(ASObject* val)
+uint32_t ABCVm::bitNot(ASObject* val)
 {
-	uintptr_t i1=val->toUInt();
+	uint32_t i1=val->toUInt();
 	val->decRef();
 	LOG(LOG_CALLS,_("bitNot ") << hex << i1 << dec);
 	return ~i1;
 }
 
-uintptr_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
+uint32_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 {
 	int i1=val1->toUInt();
 	int i2=val2->toUInt();
@@ -258,7 +258,7 @@ uintptr_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 	return i1^i2;
 }
 
-uintptr_t ABCVm::bitOr_oi(ASObject* val2, uintptr_t val1)
+uint32_t ABCVm::bitOr_oi(ASObject* val2, uint32_t val1)
 {
 	int i1=val1;
 	int i2=val2->toUInt();
@@ -267,7 +267,7 @@ uintptr_t ABCVm::bitOr_oi(ASObject* val2, uintptr_t val1)
 	return i1|i2;
 }
 
-uintptr_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
+uint32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 {
 	int i1=val1->toUInt();
 	int i2=val2->toUInt();
@@ -362,12 +362,12 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	LOG(LOG_CALLS,_("End of calling ") << *name);
 }
 
-intptr_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
+int32_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("getProperty_i ") << *name );
 
 	//TODO: implement exception handling to find out if no integer can be returned
-	intptr_t ret=obj->getVariableByMultiname_i(*name);
+	int32_t ret=obj->getVariableByMultiname_i(*name);
 
 	obj->decRef();
 	return ret;
@@ -447,7 +447,7 @@ number_t ABCVm::decrement(ASObject* o)
 	return n-1;
 }
 
-uintptr_t ABCVm::decrement_i(ASObject* o)
+uint32_t ABCVm::decrement_i(ASObject* o)
 {
 	LOG(LOG_CALLS,_("decrement_i"));
 
@@ -478,7 +478,7 @@ bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
 	return ret;
 }
 
-bool ABCVm::ifLT_oi(ASObject* obj2, intptr_t val1)
+bool ABCVm::ifLT_oi(ASObject* obj2, int32_t val1)
 {
 	LOG(LOG_CALLS,_("ifLT_oi"));
 
@@ -493,7 +493,7 @@ bool ABCVm::ifLT_oi(ASObject* obj2, intptr_t val1)
 	return ret;
 }
 
-bool ABCVm::ifLT_io(intptr_t val2, ASObject* obj1)
+bool ABCVm::ifLT_io(int32_t val2, ASObject* obj1)
 {
 	LOG(LOG_CALLS,_("ifLT_io "));
 
@@ -514,7 +514,7 @@ bool ABCVm::ifNE(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-bool ABCVm::ifNE_oi(ASObject* obj1, intptr_t val2)
+bool ABCVm::ifNE_oi(ASObject* obj1, int32_t val2)
 {
 	//HACK
 	if(obj1->getObjectType()==T_UNDEFINED)
@@ -526,13 +526,13 @@ bool ABCVm::ifNE_oi(ASObject* obj1, intptr_t val2)
 	return ret;
 }
 
-intptr_t ABCVm::pushByte(intptr_t n)
+int32_t ABCVm::pushByte(intptr_t n)
 {
 	LOG(LOG_CALLS, _("pushByte ") << n );
 	return n;
 }
 
-number_t ABCVm::multiply_oi(ASObject* val2, intptr_t val1)
+number_t ABCVm::multiply_oi(ASObject* val2, int32_t val1)
 {
 	double num1=val1;
 	double num2=val2->toNumber();
@@ -551,7 +551,7 @@ number_t ABCVm::multiply(ASObject* val2, ASObject* val1)
 	return num1*num2;
 }
 
-intptr_t ABCVm::multiply_i(ASObject* val2, ASObject* val1)
+int32_t ABCVm::multiply_i(ASObject* val2, ASObject* val1)
 {
 	int num1=val1->toInt();
 	int num2=val2->toInt();
@@ -822,7 +822,7 @@ bool ABCVm::ifTrue(ASObject* obj1)
 	return ret;
 }
 
-intptr_t ABCVm::modulo(ASObject* val1, ASObject* val2)
+int32_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 {
 	uint32_t num1=val1->toUInt();
 	uint32_t num2=val2->toUInt();
@@ -837,7 +837,7 @@ intptr_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 	return num1%num2;
 }
 
-number_t ABCVm::subtract_oi(ASObject* val2, intptr_t val1)
+number_t ABCVm::subtract_oi(ASObject* val2, int32_t val1)
 {
 	int num2=val2->toInt();
 	int num1=val1;
@@ -857,7 +857,7 @@ number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 	return num1-num2;
 }
 
-number_t ABCVm::subtract_io(intptr_t val2, ASObject* val1)
+number_t ABCVm::subtract_io(int32_t val2, ASObject* val1)
 {
 	if(val1->getObjectType()==T_UNDEFINED)
 	{
@@ -873,7 +873,7 @@ number_t ABCVm::subtract_io(intptr_t val2, ASObject* val1)
 	return num1-num2;
 }
 
-intptr_t ABCVm::subtract_i(ASObject* val2, ASObject* val1)
+int32_t ABCVm::subtract_i(ASObject* val2, ASObject* val1)
 {
 	if(val1->getObjectType()==T_UNDEFINED ||
 		val2->getObjectType()==T_UNDEFINED)
@@ -988,7 +988,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 
 }
 
-intptr_t ABCVm::add_i(ASObject* val2, ASObject* val1)
+int32_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 {
 	if(val1->getObjectType()==T_UNDEFINED ||
 		val2->getObjectType()==T_UNDEFINED)
@@ -997,8 +997,8 @@ intptr_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 		LOG(LOG_NOT_IMPLEMENTED,_("add_i: HACK"));
 		return 0;
 	}
-	int num2=val2->toInt();
-	int num1=val1->toInt();
+	int32_t num2=val2->toInt();
+	int32_t num1=val1->toInt();
 
 	val1->decRef();
 	val2->decRef();
@@ -1006,14 +1006,14 @@ intptr_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 	return num1+num2;
 }
 
-ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
+ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 {
 	//Implement ECMA add algorithm, for XML and default
 	if(val2->getObjectType()==T_INTEGER)
 	{
 		Integer* ip=static_cast<Integer*>(val2);
-		intptr_t num2=ip->val;
-		intptr_t num1=val1;
+		int32_t num2=ip->val;
+		int32_t num1=val1;
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << num1 << '+' << num2);
 		return abstract_i(num1+num2);
@@ -1094,7 +1094,7 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 
 }
 
-uintptr_t ABCVm::lShift(ASObject* val1, ASObject* val2)
+uint32_t ABCVm::lShift(ASObject* val1, ASObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
@@ -1106,7 +1106,7 @@ uintptr_t ABCVm::lShift(ASObject* val1, ASObject* val2)
 	return ret;
 }
 
-uintptr_t ABCVm::lShift_io(uintptr_t val1, ASObject* val2)
+uint32_t ABCVm::lShift_io(uint32_t val1, ASObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1&0x1f;
@@ -1117,7 +1117,7 @@ uintptr_t ABCVm::lShift_io(uintptr_t val1, ASObject* val2)
 	return ret;
 }
 
-uintptr_t ABCVm::rShift(ASObject* val1, ASObject* val2)
+uint32_t ABCVm::rShift(ASObject* val1, ASObject* val2)
 {
 	int32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
@@ -1127,7 +1127,7 @@ uintptr_t ABCVm::rShift(ASObject* val1, ASObject* val2)
 	return i2>>i1;
 }
 
-uintptr_t ABCVm::urShift(ASObject* val1, ASObject* val2)
+uint32_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
@@ -1137,7 +1137,7 @@ uintptr_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 	return i2>>i1;
 }
 
-uintptr_t ABCVm::urShift_io(uintptr_t val1, ASObject* val2)
+uint32_t ABCVm::urShift_io(uint32_t val1, ASObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1&0x1f;
@@ -1895,7 +1895,7 @@ number_t ABCVm::increment(ASObject* o)
 	return n+1;
 }
 
-uintptr_t ABCVm::increment_i(ASObject* o)
+uint32_t ABCVm::increment_i(ASObject* o)
 {
 	LOG(LOG_CALLS,_("increment_i"));
 

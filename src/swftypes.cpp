@@ -1121,7 +1121,7 @@ ASObject* lightspark::abstract_d(number_t i)
 	return ret;
 }
 
-ASObject* lightspark::abstract_i(intptr_t i)
+ASObject* lightspark::abstract_i(int32_t i)
 {
 	Integer* ret=getVm()->int_manager->get<Integer>();
 	ret->val=i;

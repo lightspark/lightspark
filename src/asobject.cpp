@@ -436,7 +436,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 }
 
 //In all setter we first pass the value to the interface to see if special handling is possible
-void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
+void ASObject::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	check();
 	setVariableByMultiname(name,abstract_i(value));
@@ -717,7 +717,7 @@ void ASObject::initSlot(unsigned int n, const multiname& name)
 	Variables.initSlot(n,name.name_s,name.ns[0]);
 }
 
-intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
+int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
 

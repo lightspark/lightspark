@@ -37,7 +37,7 @@ struct data_slot
 	};
 	explicit data_slot(ASObject* o,DATA_TYPE t=DATA_OBJECT):type(t),data(o){}
 	data_slot():type(DATA_OBJECT),data(NULL){}
-	explicit data_slot(intptr_t i):type(DATA_INT),data_i(i){}
+	explicit data_slot(int32_t i):type(DATA_INT),data_i(i){}
 };
 
 class Array: public ASObject
@@ -126,9 +126,9 @@ public:
 		data.resize(n);
 	}
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
-	intptr_t getVariableByMultiname_i(const multiname& name);
+	int32_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
-	void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString();
 	uint32_t nextNameIndex(uint32_t cur_index);

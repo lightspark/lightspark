@@ -1307,7 +1307,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
-	obj->setVariableByMultiname(*name,value,th->inClass->super);
+	obj->setVariableByMultiname(*name,value,th->inClass->super.getPtr());
 	obj->decRef();
 }
 
@@ -1323,7 +1323,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
-	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super);
+	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super.getPtr());
 	if(ret.isNull())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->toDebugString());
@@ -1406,10 +1406,9 @@ void ABCVm::constructSuper(call_context* th, int m)
 	assert_and_throw(th->inClass->super);
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
-	Class_base* super = th->inClass->super;
-	LOG(LOG_CALLS,_("Super prototype name ") << super->class_name);
+	LOG(LOG_CALLS,_("Super prototype name ") << th->inClass->super->class_name);
 
-	super->handleConstruction(obj,args, m, false);
+	th->inClass->super->handleConstruction(obj,args, m, false);
 	LOG(LOG_CALLS,_("End super construct "));
 
 	delete[] args;
@@ -1549,7 +1548,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	assert_and_throw(th->inClass->super);
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
-	_NR<ASObject> f = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super);
+	_NR<ASObject> f = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super.getPtr());
 	if(!f.isNull())
 	{
 		f->incRef();
@@ -1934,7 +1933,7 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 {
 	if(c->super)
-		newClassRecursiveLink(target, c->super);
+		newClassRecursiveLink(target, c->super.getPtr());
 
 	const vector<Class_base*>& interfaces=c->getInterfaces();
 	for(unsigned int i=0;i<interfaces.size();i++)
@@ -1982,7 +1981,7 @@ void ABCVm::newClass(call_context* th, int n)
 	if(baseClass->getObjectType()!=T_NULL)
 	{
 		assert_and_throw(baseClass->getObjectType()==T_CLASS);
-		ret->super=static_cast<Class_base*>(baseClass);
+		ret->super=_MR(static_cast<Class_base*>(baseClass));
 	}
 
 	ret->class_scope=th->scope_stack;

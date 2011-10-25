@@ -335,6 +335,11 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o, Class_base* cls);
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname);
 	virtual bool deleteVariableByMultiname(const multiname& name);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, _R<ASObject> o, TRAIT_KIND traitKind)
+	{
+		o->incRef();
+		setVariableByQName(name,ns,o.getPtr(),traitKind);
+	}
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind);
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances

@@ -331,7 +331,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	{
 		if(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL)
 			return true;
-		cur=cur->super;
+		cur=cur->super.getPtr();
 	}
 
 	//Check prototype inheritance chain
@@ -480,7 +480,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 			obj=cur->findSettable(name,true,&has_getter);
 			if(obj)
 				break;
-			cur=cur->super;
+			cur=cur->super.getPtr();
 		}
 	}
 
@@ -755,7 +755,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 			obj=cur->findGettable(name,true);
 			if(obj)
 				break;
-			cur=cur->super;
+			cur=cur->super.getPtr();
 		}
 	}
 

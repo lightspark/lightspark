@@ -113,7 +113,7 @@ void XML::finalize()
 
 void XML::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(XML::_toString),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
@@ -780,7 +780,7 @@ void XMLList::finalize()
 
 void XMLList::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
@@ -1200,7 +1200,7 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(split),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr),NORMAL_METHOD,true);
@@ -1776,7 +1776,7 @@ void Integer::sinit(Class_base* c)
 {
 	c->setVariableByQName("MAX_VALUE","",new Integer(2147483647),DECLARED_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648),DECLARED_TRAIT);
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),DYNAMIC_TRAIT);
 }
 
@@ -2046,7 +2046,7 @@ tiny_string Number::toString()
 
 void Number::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Must create and link the number the hard way
 	Number* ninf=new Number(-numeric_limits<double>::infinity());
@@ -2517,7 +2517,7 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false
 
 void RegExp::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
@@ -3166,12 +3166,6 @@ void Class_base::finalize()
 		constructor->decRef();
 		constructor=NULL;
 	}
-
-	if(super)
-	{
-		super->decRef();
-		super=NULL;
-	}
 }
 
 Template_base::Template_base(QName name) : template_name(name)
@@ -3193,8 +3187,13 @@ Class_object* Class_object::getClass()
 	else
 		ret=static_cast<Class_object*>(it->second);
 
-	ret->incRef();
 	return ret;
+}
+_R<Class_object> Class_object::getRef()
+{
+	Class_object* ret = getClass();
+	ret->incRef();
+	return _MR(ret);
 }
 
 const std::vector<Class_base*>& Class_base::getInterfaces() const
@@ -3313,12 +3312,12 @@ ASObject *Class_base::describeType() const
 void Class_base::describeInstance(xmlpp::Element* root) const
 {
 	// extendsClass
-	const Class_base* c=super;
+	const Class_base* c=super.getPtr();
 	while(c)
 	{
 		xmlpp::Element* extends_class=root->add_child("extendsClass");
 		extends_class->set_attribute("type", c->getQualifiedClassName().raw_buf());
-		c=c->super;
+		c=c->super.getPtr();
 	}
 
 	// implementsInterface
@@ -3332,7 +3331,7 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 			xmlpp::Element* node=root->add_child("implementsInterface");
 			node->set_attribute("type", (*it)->getQualifiedClassName().raw_buf());
 		}
-		c=c->super;
+		c=c->super.getPtr();
 	}
 
 	// variables, methods, accessors
@@ -3340,7 +3339,7 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 	while(c && c->class_index>=0)
 	{
 		c->describeTraits(root, c->context->instances[c->class_index].traits);
-		c=c->super;
+		c=c->super.getPtr();
 	}
 }
 
@@ -3446,7 +3445,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 
 void ASQName::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("local_name","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
@@ -3574,7 +3573,7 @@ tiny_string ASQName::toString()
 
 void Namespace::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
@@ -3755,7 +3754,7 @@ void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const
 		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 		if(var)
 			break;
-		cur=cur->super;
+		cur=cur->super.getPtr();
 	}
 	assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(var->var);
@@ -3768,7 +3767,7 @@ void UInteger::sinit(Class_base* c)
 	//TODO: add in the JIT support for unsigned number
 	//Right now we pretend to be signed, to make comparisons work
 	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff),DECLARED_TRAIT);
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
@@ -3826,7 +3825,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 	{
 		ret=new Class<IFunction>;
 		ret->prototype = _MNR(new_asobject());
-		ret->super=Class<ASObject>::getClass();
+		ret->super=Class<ASObject>::getRef();
 		ret->prototype->setprop_prototype(ret->super->prototype);
 
 		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
@@ -3846,13 +3845,12 @@ Class<IFunction>* Class<IFunction>::getClass()
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);
 
-	ret->incRef();
 	return ret;
 }
 
 void Global::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 }
 
 void GlobalObject::registerGlobalScope(Global* scope)

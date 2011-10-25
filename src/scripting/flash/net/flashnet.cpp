@@ -51,7 +51,7 @@ URLRequest::URLRequest():method(GET)
 void URLRequest::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_setURL),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_getURL),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(_setMethod),SETTER_METHOD,true);
@@ -196,7 +196,7 @@ ASFUNCTIONBODY(URLRequest,_setData)
 
 void URLRequestMethod::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setVariableByQName("GET","",Class<ASString>::getInstanceS("GET"),DECLARED_TRAIT);
 	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"),DECLARED_TRAIT);
 }
@@ -214,7 +214,7 @@ void URLLoader::finalize()
 void URLLoader::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat),SETTER_METHOD,true);
@@ -409,7 +409,7 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 
 void URLLoaderDataFormat::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables"),DECLARED_TRAIT);
 	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text"),DECLARED_TRAIT);
 	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"),DECLARED_TRAIT);
@@ -417,12 +417,12 @@ void URLLoaderDataFormat::sinit(Class_base* c)
 
 void SharedObject::sinit(Class_base* c)
 {
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 };
 
 void ObjectEncoding::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setVariableByQName("AMF0","",abstract_i(AMF0),DECLARED_TRAIT);
 	c->setVariableByQName("AMF3","",abstract_i(AMF3),DECLARED_TRAIT);
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
@@ -436,7 +436,7 @@ void NetConnection::sinit(Class_base* c)
 {
 	//assert(c->constructor==NULL);
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(_getConnected),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
@@ -594,7 +594,7 @@ NetStream::~NetStream()
 void NetStream::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"),DECLARED_TRAIT);
 	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
@@ -1251,7 +1251,7 @@ void URLVariables::decode(const tiny_string& s)
 void URLVariables::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	c->setDeclaredMethodByQName("decode","",Class<IFunction>::getFunction(decode),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }

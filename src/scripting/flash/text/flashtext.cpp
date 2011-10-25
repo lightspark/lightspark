@@ -54,7 +54,7 @@ ASFUNCTIONBODY(lightspark::Font,enumerateFonts)
 void TextField::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
-	c->super=Class<DisplayObject>::getClass();
+	c->super=Class<DisplayObject>::getRef();
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
@@ -343,7 +343,7 @@ void TextFormatAlign ::sinit(Class_base* c)
 void TextFormat::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
-	c->super=Class<ASObject>::getClass();
+	c->super=Class<ASObject>::getRef();
 	REGISTER_GETTER_SETTER(c,color);
 }
 
@@ -362,7 +362,7 @@ void StyleSheet::finalize()
 void StyleSheet::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
-	c->super=Class<EventDispatcher>::getClass();
+	c->super=Class<EventDispatcher>::getRef();
 	c->setDeclaredMethodByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("setStyle","",Class<IFunction>::getFunction(setStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getStyle","",Class<IFunction>::getFunction(getStyle),NORMAL_METHOD,true);
@@ -419,7 +419,7 @@ void StaticText::sinit(Class_base* c)
 {
 	//TODO: spec says that constructor should throw ArgumentError
 	c->setConstructor(NULL);
-	c->super=Class<InteractiveObject>::getClass();
+	c->super=Class<InteractiveObject>::getRef();
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(_getText),GETTER_METHOD,true);
 }
 

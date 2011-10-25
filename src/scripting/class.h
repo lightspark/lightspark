@@ -125,15 +125,20 @@ public:
 			ret->incRef();
 			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 			T::sinit(ret);
-			if(ret->super != NULL)
+			if(ret->super)
 				ret->prototype->setprop_prototype(ret->super->prototype);
 			ret->addPrototypeGetter();
 		}
 		else
 			ret=static_cast<Class<T>*>(it->second);
 
-		ret->incRef();
 		return ret;
+	}
+	static _R<Class<T>> getRef()
+	{
+		Class<T>* ret = getClass();
+		ret->incRef();
+		return _MR(ret);
 	}
 	static T* cast(ASObject* o)
 	{
@@ -227,11 +232,11 @@ public:
 	/* This creates a stub class, i.e. a class with given name but without
 	 * any implementation.
 	 */
-	static Class<ASObject>* getStubClass(const QName& name)
+	static _R<Class<ASObject>> getStubClass(const QName& name)
 	{
 		Class<ASObject>* ret = new Class<ASObject>(name);
 
-		ret->super = Class<ASObject>::getClass();
+		ret->super = Class<ASObject>::getRef();
 		ret->prototype = _MNR(new_asobject());
 		ret->prototype->setprop_prototype(ret->super->prototype);
 		ret->incRef();
@@ -241,7 +246,7 @@ public:
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 		sys->classes.insert(std::make_pair(name,ret));
 		ret->incRef();
-		return ret;
+		return _MR(ret);
 	}
 	static Class<ASObject>* getClass()
 	{
@@ -262,8 +267,13 @@ public:
 		else
 			ret=static_cast<Class<ASObject>*>(it->second);
 
-		ret->incRef();
 		return ret;
+	}
+	static _R<Class<ASObject>> getRef()
+	{
+		Class<ASObject>* ret = getClass();
+		ret->incRef();
+		return _MR(ret);
 	}
 	static ASObject* cast(ASObject* o)
 	{

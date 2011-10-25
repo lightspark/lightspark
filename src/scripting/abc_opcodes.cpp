@@ -1035,18 +1035,9 @@ ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
 		return Class<ASString>::getInstanceS(a+b);
 	}
-	else if(val2->getObjectType()==T_ARRAY)
-	{
-		throw UnsupportedException("Array add not supported in add_oi");
-		/*//Array concatenation
-		ASArray* ar=static_cast<ASArray*>(val1);
-		ar->push(val2);
-		return ar;*/
-	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Add between integer and ") << val2->getObjectType());
-		return new Undefined;
+		return add(val2,abstract_i(val1));
 	}
 
 }
@@ -1078,18 +1069,9 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
 		return Class<ASString>::getInstanceS(a+b);
 	}
-	else if(val2->getObjectType()==T_ARRAY)
-	{
-		throw UnsupportedException("Array add not supported in add_od");
-		/*//Array concatenation
-		ASArray* ar=static_cast<ASArray*>(val1);
-		ar->push(val2);
-		return ar;*/
-	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Add between types number and ") << val2->getObjectType());
-		return new Undefined;
+		return add(val2,abstract_d(val1));
 	}
 
 }

@@ -167,6 +167,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("undefined","",new Undefined,DECLARED_TRAIT);
 	builtin->setVariableByQName("Math","",Class<Math>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Namespace","",Class<Namespace>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("AS3","",Class<Namespace>::getInstanceS(AS3),DECLARED_TRAIT);
 	builtin->setVariableByQName("Date","",Class<Date>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("RegExp","",Class<RegExp>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("QName","",Class<ASQName>::getRef(),DECLARED_TRAIT);

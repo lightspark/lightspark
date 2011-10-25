@@ -624,16 +624,15 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
 
-	//TODO: HACK: this is needed if the property should be present but it's not
-	if(mname.ns.size()>1)
+	if(createKind == DYNAMIC_TRAIT)
 	{
-		//Hack, insert with empty name
-		//Here the object MUST exist
-		LOG(LOG_NOT_IMPLEMENTED,"Hack: creating variable " << mname << " which should already be there.");
+		if(mname.ns.begin()->name != "")
+			throw Class<ReferenceError>::getInstanceS("Error #1056: Trying to create a dynamic variable with namespace != \"\"");
 		var_iterator inserted=Variables.insert(ret,make_pair(name,
 					variable(nsNameAndKind("",NAMESPACE), createKind)));
 		return &inserted->second;
 	}
+	assert(mname.ns.size() == 1);
 	var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0], createKind)));
 	return &inserted->second;
 }

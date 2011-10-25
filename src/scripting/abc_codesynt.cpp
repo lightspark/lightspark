@@ -495,27 +495,20 @@ inline stack_entry method_info::static_stack_peek(llvm::IRBuilder<>& builder, ve
 	return stack_entry(llvm_stack_peek(builder,dynamic_stack,dynamic_stack_index),STACK_OBJECT);
 }
 
-inline STACK_TYPE stackTypeFromLLVMType(const llvm::Type* type)
+/* Checks if both types correspond */
+inline void checkStackTypeFromLLVMType(const llvm::Type* type, STACK_TYPE st)
 {
-	if(type == number_type)
-		return STACK_NUMBER;
-	else if(type == voidptr_type)
-		return STACK_OBJECT;
-	else if(type == int_type)
-		return STACK_INT;
-	else if(type == bool_type)
-		return STACK_BOOLEAN;
-	else
-	{
-		//STACK_UINT is not used in abc_codesynth
-		assert_and_throw(false);
-		return STACK_NONE;
-	}
+	assert(st != STACK_NONE);
+	assert(st != STACK_NUMBER || type == number_type);
+	assert(st != STACK_INT || type == int_type);
+	assert(st != STACK_UINT || type == int_type); //INT and UINT have the same llvm representation
+	assert(st != STACK_OBJECT || type == voidptr_type);
+	assert(st != STACK_BOOLEAN || type == bool_type);
 }
 
 inline void method_info::static_stack_push(vector<stack_entry>& static_stack, const stack_entry& e)
 {
-	assert(stackTypeFromLLVMType(e.first->getType()) == e.second);
+	checkStackTypeFromLLVMType(e.first->getType(),e.second);
 	static_stack.push_back(e);
 }
 
@@ -548,13 +541,7 @@ inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 {
 	for(unsigned int i=0;i<static_stack.size();i++)
 	{
-		if(static_stack[i].second==STACK_OBJECT);
-		else if(static_stack[i].second==STACK_INT)
-			static_stack[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_stack[i].first);
-		else if(static_stack[i].second==STACK_NUMBER)
-			static_stack[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_d"),static_stack[i].first);
-		else if(static_stack[i].second==STACK_BOOLEAN)
-			static_stack[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_b"),static_stack[i].first);
+		abstract_value(ex, builder, static_stack[i]);
 		llvm_stack_push(ex,builder,static_stack[i].first,dynamic_stack,dynamic_stack_index);
 	}
 	static_stack.clear();
@@ -606,6 +593,13 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 				//decRef the previous contents
 				builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
 				llvm::Value* v=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_locals[i].first);
+				builder.CreateStore(v,t);
+			}
+			else if(static_locals[i].second==STACK_UINT)
+			{
+				//decRef the previous contents
+				builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
+				llvm::Value* v=builder.CreateCall(ex->FindFunctionNamed("abstract_ui"),static_locals[i].first);
 				builder.CreateStore(v,t);
 			}
 			else if(static_locals[i].second==STACK_NUMBER)
@@ -1615,6 +1609,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				case STACK_OBJECT:
 					cur.locals_start_obj[i]=Builder.CreateAlloca(voidptr_type);
 					break;
+				case STACK_UINT:
 				case STACK_INT:
 					cur.locals_start_obj[i]=Builder.CreateAlloca(int_type);
 					break;

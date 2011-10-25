@@ -486,7 +486,7 @@ private:
 	static ASObject* pushString(call_context* th, int n); 
 	static void getLex(call_context* th, int n); 
 	static ASObject* getScopeObject(call_context* th, int n); 
-	static void deleteProperty(call_context* th, ASObject* obj, multiname* name);
+	static bool deleteProperty(ASObject* obj, multiname* name);
 	static void initProperty(call_context* th, ASObject* obj, ASObject* val, multiname* name);
 	static void newClass(call_context* th, int n); 
 	static void newArray(call_context* th, int n); 

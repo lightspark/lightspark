@@ -897,7 +897,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t;
 				multiname* name = context->context->getMultiname(t,context);
 				ASObject* obj=context->runtime_stack_pop();
-				deleteProperty(context,obj,name);
+				bool ret = deleteProperty(obj,name);
+				context->runtime_stack_push(abstract_b(ret));
 				break;
 			}
 			case 0x6c:

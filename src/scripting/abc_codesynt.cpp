@@ -128,7 +128,6 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"setSuper",(void*)&ABCVm::setSuper,ARGS_CONTEXT_INT},
 	{"newObject",(void*)&ABCVm::newObject,ARGS_CONTEXT_INT},
 	{"getDescendants",(void*)&ABCVm::getDescendants,ARGS_CONTEXT_INT},
-	{"deleteProperty",(void*)&ABCVm::deleteProperty,ARGS_CONTEXT_OBJ_OBJ},
 	{"call",(void*)&ABCVm::call,ARGS_CONTEXT_INT_INT},
 	{"coerce",(void*)&ABCVm::coerce,ARGS_CONTEXT_INT},
 	{"getLex",(void*)&ABCVm::getLex,ARGS_CONTEXT_INT},
@@ -212,7 +211,8 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"ifTrue",(void*)&ABCVm::ifTrue,ARGS_OBJ},
 	{"ifFalse",(void*)&ABCVm::ifFalse,ARGS_OBJ},
 	{"convert_b",(void*)&ABCVm::convert_b,ARGS_OBJ},
-	{"hasNext2",(void*)ABCVm::hasNext2,ARGS_CONTEXT_INT_INT}
+	{"hasNext2",(void*)ABCVm::hasNext2,ARGS_CONTEXT_INT_INT},
+	{"deleteProperty",(void*)&ABCVm::deleteProperty,ARGS_OBJ_OBJ},
 };
 
 void ABCVm::registerFunctions()
@@ -1247,6 +1247,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					code >> t;
 					popTypeFromStack(static_stack_types,local_ip);
 					consumeStackForRTMultiname(static_stack_types,t);
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					break;
 				}
 				case 0x6c: //getslot
@@ -3291,7 +3292,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,this->context,t);
 				stack_entry v=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				abstract_value(ex,Builder,v);
-				Builder.CreateCall3(ex->FindFunctionNamed("deleteProperty"), context, v.first, name);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("deleteProperty"), v.first, name);
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
 			case 0x6c:

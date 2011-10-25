@@ -670,10 +670,14 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 ASFUNCTIONBODY(ASObject,generator)
 {
 	//By default we assume it's a passthrough cast
-	assert_and_throw(argslen==1);
-	LOG(LOG_CALLS,_("Passthrough of ") << args[0]);
-	args[0]->incRef();
-	return args[0];
+	if(argslen==1)
+	{
+		LOG(LOG_CALLS,_("Passthrough of ") << args[0]);
+		args[0]->incRef();
+		return args[0];
+	}
+	else
+		return Class<ASObject>::getInstanceS();
 }
 
 ASFUNCTIONBODY(ASObject,_toString)

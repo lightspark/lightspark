@@ -243,17 +243,17 @@ void ABCVm::registerFunctions()
 
 	//newActivation needs both method_info and the context
 	sig.push_back(context_type);
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	sig.push_back(voidptr_type);
+	FT=llvm::FunctionType::get(voidptr_type, sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
 
 	//Lazy pushing, no context, (ASObject*, uintptr_t, int)
 	sig.clear();
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	sig.push_back(voidptr_type);
 	sig.push_back(int_type);
 	sig.push_back(int_type);
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	FT=llvm::FunctionType::get(voidptr_type, sig, false);
 	int elems=sizeof(opcode_table_args_pointer_2int)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
 	{
@@ -262,10 +262,10 @@ void ABCVm::registerFunctions()
 	}
 
 	sig.clear();
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	sig.push_back(voidptr_type);
 	sig.push_back(number_type);
 	sig.push_back(int_type);
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	FT=llvm::FunctionType::get(voidptr_type, sig, false);
 	elems=sizeof(opcode_table_args_pointer_number_int)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
 	{
@@ -276,9 +276,9 @@ void ABCVm::registerFunctions()
 
 	//Lazy pushing, no context, (ASObject*, ASObject*, void*)
 	sig.clear();
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	sig.push_back(voidptr_type);
+	sig.push_back(voidptr_type);
+	sig.push_back(voidptr_type);
 	FT=llvm::FunctionType::get(void_type, sig, false);
 	elems=sizeof(opcode_table_args3_pointers)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)

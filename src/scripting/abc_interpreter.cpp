@@ -887,7 +887,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				ASObject* value=context->runtime_stack_pop();
 			        multiname* name=context->context->getMultiname(t,context);
 			        ASObject* obj=context->runtime_stack_pop();
-				initProperty(context,obj,value,name);
+				initProperty(obj,value,name);
 				break;
 			}
 			case 0x6a:

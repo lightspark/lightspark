@@ -1500,7 +1500,7 @@ bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-void ABCVm::initProperty(call_context* th, ASObject* obj, ASObject* value, multiname* name)
+void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 {
 	LOG(LOG_CALLS, _("initProperty ") << *name << ' ' << obj);
 

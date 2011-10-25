@@ -137,7 +137,7 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"constructSuper",(void*)&ABCVm::constructSuper,ARGS_CONTEXT_INT},
 	{"newArray",(void*)&ABCVm::newArray,ARGS_CONTEXT_INT},
 	{"newClass",(void*)&ABCVm::newClass,ARGS_CONTEXT_INT},
-	{"initProperty",(void*)&ABCVm::initProperty,ARGS_CONTEXT_OBJ_OBJ_OBJ},
+	{"initProperty",(void*)&ABCVm::initProperty,ARGS_OBJ_OBJ_OBJ},
 	{"kill",(void*)&ABCVm::kill,ARGS_INT},
 	{"jump",(void*)&ABCVm::jump,ARGS_INT},
 	{"callProperty",(void*)&ABCVm::callProperty,ARGS_CONTEXT_INT_INT_INT_BOOL},
@@ -306,6 +306,11 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	sig_obj_obj.push_back(voidptr_type);
 	sig_obj_obj.push_back(voidptr_type);
 
+	vector<const llvm::Type*> sig_obj_obj_obj;
+	sig_obj_obj_obj.push_back(voidptr_type);
+	sig_obj_obj_obj.push_back(voidptr_type);
+	sig_obj_obj_obj.push_back(voidptr_type);
+
 	vector<const llvm::Type*> sig_obj_int;
 	sig_obj_int.push_back(voidptr_type);
 	sig_obj_int.push_back(int_type);
@@ -404,6 +409,9 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 		{
 			case ARGS_OBJ_OBJ:
 				FT=llvm::FunctionType::get(ret_type, sig_obj_obj, false);
+				break;
+			case ARGS_OBJ_OBJ_OBJ:
+				FT=llvm::FunctionType::get(ret_type, sig_obj_obj_obj, false);
 				break;
 			case ARGS_NONE:
 				FT=llvm::FunctionType::get(ret_type, sig_none, false);
@@ -3280,7 +3288,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry val=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* name = getMultiname(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index,this->context,t);
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				Builder.CreateCall4(ex->FindFunctionNamed("initProperty"), context, obj.first, val.first, name);
+				Builder.CreateCall3(ex->FindFunctionNamed("initProperty"), obj.first, val.first, name);
 				break;
 			}
 			case 0x6a:

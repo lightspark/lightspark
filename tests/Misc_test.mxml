@@ -13,6 +13,8 @@
 	function f4() { return "42"; }
 	function get getter_returning_function() { return f4; }
 
+	function method1(v) { ; }
+
 	private function appComplete():void
 	{
 		function f1():String { return 1; }
@@ -69,6 +71,34 @@
 		Tests.assertEquals("[object Object]",Object(undefined),"Object()");
 		Tests.assertEquals("[object Object]",Object(null),"Object()");
 		Tests.assertEquals("4",Object(4),"Object(4) = 4");
+
+		function f5(v) { ;}
+		function f6(v:Number) { ;}
+		function f7(v:*) {;}
+		function f8(v:Number, v:*) {;}
+		f5();
+		Tests.assertTrue(true, "function f5(v) { ; }; f5(): No ArgumentError");
+		f7();
+		Tests.assertTrue(true, "function f7(v:*) { ; }; f7(): No ArgumentError");
+		try {
+			f8(1);
+			Tests.assertDontReach("function f8(v:Number,v:*) { ; }; f8(1): No ArgumentError");
+		} catch(e:ArgumentError) {
+			Tests.assertTrue(true, "function f8(v:Number,v:*) { ; }; f8(1): ArgumentError");
+		}
+		try {
+			f6();
+			Tests.assertDontReach("function f6(v:Number) { ; }; f6(): No ArgumentError");
+		} catch(e:ArgumentError) {
+			Tests.assertTrue(true, "function f6(v:Number) { ; }; f6(): ArgumentError");
+		}
+		try {
+			method1();
+			Tests.assertDontReach("method method1(v) { ; }; method1(): No ArgumentError");
+		} catch(e:ArgumentError) {
+			Tests.assertTrue(true, "method method1(v) { ; }; method1(): ArgumentError");
+		}
+
 
 		Tests.report(visual, this.name);
 	}

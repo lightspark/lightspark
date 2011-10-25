@@ -1138,6 +1138,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0x45: //callsuper
+				case 0x4c: //callproplex
 				case 0x46: //callproperty
 				case 0x4a: //constructprop
 				case 0x4e: //callsupervoid
@@ -2914,9 +2915,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				Builder.CreateCall5(ex->FindFunctionNamed("callSuper"), context, constant, constant2, constant3, constant4);
 				break;
 			}
-			case 0x46:
+			case 0x4c: //callproplex
+			case 0x46: //callproperty
 			{
-				//callproperty
+				//Both opcodes are fully equal
 				//TODO: Implement static resolution where possible
 				LOG(LOG_TRACE, _("synt callproperty") );
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);

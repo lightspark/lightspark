@@ -687,7 +687,6 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 {
 	bool stop;
 	stringstream code(body->code);
-	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
 	for (unsigned int i=0;i<body->exception_count;i++)
 	{
 		exception_info& exc=body->exceptions[i];
@@ -749,7 +748,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			else if(!fallthrough)
 			{
 				//the last instruction was a branch which cannot fallthrough,
-				//but there is now new block registered at local_ip.
+				//but there is no new block registered at local_ip.
 				//The only way that the next instructions are reachable
 				//is when we have a label here.
 				//ignore debugfile/debugline on the way

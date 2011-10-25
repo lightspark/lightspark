@@ -568,15 +568,7 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
-	assert_and_throw(implEnable);
-	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
-	{
-		ASObject::setVariableByMultiname_i(name,value);
-		return;
-	}
-
-	throw UnsupportedException("ByteArray::setVariableByMultiname_i not completely implemented");
+	setVariableByMultiname(name, abstract_i(value));
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)

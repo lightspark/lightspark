@@ -1358,7 +1358,6 @@ ASFUNCTIONBODY(ASString,split)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
-	assert(argslen >= 1);
 	ASObject* delimiter=args[0];
 	if(argslen == 0 || delimiter->getObjectType()==T_UNDEFINED)
 	{
@@ -1402,16 +1401,24 @@ ASFUNCTIONBODY(ASString,split)
 		int ovector[30];
 		offset=0;
 		unsigned int end;
+		uint32_t lastMatch = 0;
 		do
 		{
 			//offset is a byte offset that must point to the beginning of an utf8 character
 			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
 			end=ovector[0];
 			if(rc<0)
-				end=th->data.size();
-			ASString* s=Class<ASString>::getInstanceS(th->data.raw().substr(offset,end-offset));
+				break;
+			if(ovector[0] == ovector[1])
+			{ //matched the empty string
+				offset++;
+				continue;
+			}
+			//Extract string from last match until the beginning of the current match
+			ASString* s=Class<ASString>::getInstanceS(th->data.raw().substr(lastMatch,end-lastMatch));
 			ret->push(s);
-			offset=ovector[1];
+			lastMatch=offset=ovector[1];
+
 			//Insert capturing groups
 			for(int i=1;i<rc;i++)
 			{
@@ -1421,11 +1428,23 @@ ASFUNCTIONBODY(ASString,split)
 			}
 		}
 		while(end<th->data.size());
+		if(lastMatch != th->data.size()+1)
+		{
+			ASString* s=Class<ASString>::getInstanceS(th->data.raw().substr(lastMatch,th->data.size()-lastMatch));
+			ret->push(s);
+		}
 		pcre_free(pcreRE);
 	}
 	else
 	{
 		const tiny_string& del=args[0]->toString();
+		if(del.len() == 0)
+		{
+			//the string is empty, so split every character
+			for(size_t i=0;i<th->data.size();++i)
+				ret->push( Class<ASString>::getInstanceS(th->data.substr(i,1)) );
+			return ret;
+		}
 		unsigned int start=0;
 		do
 		{

@@ -3620,6 +3620,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateFMul(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
+				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
+				{
+					value=Builder.CreateFMul(v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
 				else
 				{
 					abstract_value(ex,Builder,v1);

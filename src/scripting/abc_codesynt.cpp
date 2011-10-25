@@ -1820,6 +1820,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	bool last_is_branch=true; //the 'begin' block branching to blocks[0].BB is handled above
 
 	int local_ip=0;
+	u30 localIndex;
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(1)
 	{
@@ -3134,12 +3135,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				break;
 			}
-			case 0x62:
+			case 0x62: //getlocal
+				code >> localIndex;
+			case 0xd0: //getlocal_0
+			case 0xd1: //getlocal_1
+			case 0xd2: //getlocal_2
+			case 0xd3: //getlocal_3
 			{
-				//getlocal
-				LOG(LOG_TRACE, _("synt getlocal") );
-				u30 i;
-				code >> i;
+				int i=(opcode==0x62)?((uint32_t)localIndex):(opcode&3);
+				LOG(LOG_TRACE, "synt getlocal " << i);
 				constant = llvm::ConstantInt::get(int_type, i);
 				if(static_locals[i].second==STACK_NONE)
 				{
@@ -3160,7 +3164,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), static_locals[i].first, constant);
 				}
-				else if(static_locals[i].second==STACK_INT)
+				else if(static_locals[i].second==STACK_INT
+					|| static_locals[i].second==STACK_UINT)
 				{
 					static_stack_push(static_stack,static_locals[i]);
 					if(Log::getLevel()>=LOG_CALLS)
@@ -3176,29 +3181,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					throw UnsupportedException("Unsupported type for getlocal");
 
-				break;
-			}
-			case 0x63:
-			{
-				//setlocal
-				u30 i;
-				code >> i;
-				LOG(LOG_TRACE, _("synt setlocal ") << i);
-				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(static_locals[i].second==STACK_OBJECT)
-					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
-
-				static_locals[i]=e;
-				if(Log::getLevel()>=LOG_CALLS)
-				{
-					constant = llvm::ConstantInt::get(int_type, i);
-					if(e.second==STACK_INT)
-						Builder.CreateCall2(ex->FindFunctionNamed("setLocal_int"), constant, e.first);
-					else if(e.second==STACK_OBJECT)
-						Builder.CreateCall2(ex->FindFunctionNamed("setLocal_obj"), constant, e.first);
-					else
-						Builder.CreateCall(ex->FindFunctionNamed("setLocal"), constant);
-				}
 				break;
 			}
 			case 0x64:
@@ -4070,58 +4052,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				Builder.CreateCall2(ex->FindFunctionNamed("incLocal_i"), context, constant);
 				break;
 			}
-			case 0xd0:
-			case 0xd1:
-			case 0xd2:
-			case 0xd3:
+			case 0x63: //setlocal
+				code >> localIndex;
+			case 0xd4: //setlocal_0
+			case 0xd5: //setlocal_1
+			case 0xd6: //setlocal_2
+			case 0xd7: //setlocal_3
 			{
-				//getlocal_n
-				int i=opcode&3;
-				LOG(LOG_TRACE, _("synt getlocal_n ") << i << " " << static_locals[i].second);
-				constant = llvm::ConstantInt::get(int_type, i);
-
-				if(static_locals[i].second==STACK_NONE)
-				{
-					llvm::Value* t=Builder.CreateGEP(locals,constant);
-					t=Builder.CreateLoad(t,"stack");
-					static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
-					static_locals[i]=stack_entry(t,STACK_OBJECT);
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-					if(Log::getLevel()>=LOG_CALLS)
-						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), t, constant);
-				}
-				else if(static_locals[i].second==STACK_OBJECT)
-				{
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
-					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()>=LOG_CALLS)
-						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), static_locals[i].first, constant);
-				}
-				else if(static_locals[i].second==STACK_INT)
-				{
-					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()>=LOG_CALLS)
-						Builder.CreateCall2(ex->FindFunctionNamed("getLocal_int"), constant, static_locals[i].first);
-				}
-				else if(static_locals[i].second==STACK_NUMBER ||
-						static_locals[i].second==STACK_BOOLEAN)
-				{
-					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()>=LOG_CALLS)
-						Builder.CreateCall(ex->FindFunctionNamed("getLocal_short"), constant);
-				}
-				else
-					throw UnsupportedException("Unsupported type for getlocal");
-
-				break;
-			}
-			case 0xd5:
-			case 0xd6:
-			case 0xd7:
-			{
-				//setlocal_n
-				int i=opcode&3;
+				int i=(opcode==0x63)?((uint32_t)localIndex):(opcode&3);
 				LOG(LOG_TRACE, _("synt setlocal_n ") << i );
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				//DecRef previous local
@@ -4131,7 +4069,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				static_locals[i]=e;
 				if(Log::getLevel()>=LOG_CALLS)
 				{
-					constant = llvm::ConstantInt::get(int_type, opcode&3);
+					constant = llvm::ConstantInt::get(int_type, i);
 					if(e.second==STACK_INT)
 						Builder.CreateCall2(ex->FindFunctionNamed("setLocal_int"), constant, e.first);
 					else if(e.second==STACK_OBJECT)

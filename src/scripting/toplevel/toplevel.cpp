@@ -2245,6 +2245,21 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		mi->returnType = t;
 	}
 
+	if(numArgs < mi->numArgs()-mi->option_count)
+	{
+		/* Not enough arguments provided.
+		 * We throw if this is a method.
+		 * We won't throw if all arguments are of 'Any' type.
+		 * This is in accordance with the proprietary player. */
+		if(isMethod())
+			throw Class<ArgumentError>::getInstanceS("Not enough arguments provided");
+		for(size_t i=0;i < mi->numArgs();++i)
+		{
+			if(mi->paramTypes[i] != Type::anyType)
+				throw Class<ArgumentError>::getInstanceS("Not enough arguments provided");
+		}
+	}
+
 	//Temporarily disable JITting
 	if(!mi->body->exception_count && sys->useJit && (hit_count==hit_threshold || sys->useInterpreter==false))
 	{
@@ -2315,7 +2330,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		if(iOptional >= 0)
 			cc->locals[i+1]=mi->getOptional(iOptional);
 		else
+		else {
+			assert(mi->paramTypes[i] == Type::anyType);
 			cc->locals[i+1]=new Undefined();
+		}
 	}
 
 	assert(i==args_len);

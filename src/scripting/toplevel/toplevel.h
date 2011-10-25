@@ -467,7 +467,7 @@ public:
 
 class ASQName: public ASObject
 {
-friend class ABCContext;
+friend class multiname;
 friend class Namespace;
 CLASSBUILDABLE(ASQName);
 private:

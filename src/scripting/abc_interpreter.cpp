@@ -794,7 +794,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//findpropstrict
 				u30 t;
 				code >> t;
-				context->runtime_stack_push(findPropStrict(context,t));
+				context->runtime_stack_push(findPropStrict(context,context->context->getMultiname(t,context)));
 				break;
 			}
 			case 0x5e:
@@ -802,7 +802,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//findproperty
 				u30 t;
 				code >> t;
-				context->runtime_stack_push(findProperty(context,t));
+				context->runtime_stack_push(findProperty(context,context->context->getMultiname(t,context)));
 				break;
 			}
 			case 0x60:
@@ -884,7 +884,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//initproperty
 				u30 t;
 				code >> t;
-				initProperty(context,t);
+				ASObject* value=context->runtime_stack_pop();
+			        multiname* name=context->context->getMultiname(t,context);
+			        ASObject* obj=context->runtime_stack_pop();
+				initProperty(context,obj,value,name);
 				break;
 			}
 			case 0x6a:
@@ -892,7 +895,9 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//deleteproperty
 				u30 t;
 				code >> t;
-				deleteProperty(context, t);
+				multiname* name = context->context->getMultiname(t,context);
+				ASObject* obj=context->runtime_stack_pop();
+				deleteProperty(context,obj,name);
 				break;
 			}
 			case 0x6c:

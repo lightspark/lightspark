@@ -1396,9 +1396,8 @@ void ABCVm::constructSuper(call_context* th, int m)
 	delete[] args;
 }
 
-ASObject* ABCVm::findProperty(call_context* th, int n)
+ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 {
-	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("findProperty ") << *name );
 
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
@@ -1432,9 +1431,8 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	return ret;
 }
 
-ASObject* ABCVm::findPropStrict(call_context* th, int n)
+ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 {
-	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("findPropStrict ") << *name );
 
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
@@ -1502,12 +1500,8 @@ bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-void ABCVm::initProperty(call_context* th, int n)
+void ABCVm::initProperty(call_context* th, ASObject* obj, ASObject* value, multiname* name)
 {
-	ASObject* value=th->runtime_stack_pop();
-	multiname* name=th->context->getMultiname(n,th);
-	ASObject* obj=th->runtime_stack_pop();
-
 	LOG(LOG_CALLS, _("initProperty ") << *name << ' ' << obj);
 
 	obj->setVariableByMultiname(*name,value);
@@ -2151,11 +2145,9 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 	delete[] args;
 }
 
-void ABCVm::deleteProperty(call_context* th, int n)
+void ABCVm::deleteProperty(call_context* th, ASObject* obj, multiname* name)
 {
-	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,_("deleteProperty ") << *name);
-	ASObject* obj=th->runtime_stack_pop();
 	bool ret = obj->deleteVariableByMultiname(*name);
 
 	//TODO: Now we assume that all objects are dynamic

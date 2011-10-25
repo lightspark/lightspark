@@ -214,21 +214,6 @@ private:
 
 	std::vector<u30> param_names;
 
-	//Helper functions to peek/pop/push in the static stack
-	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
-			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
-			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
-	//Helper function to generate the right object for a concrete type
-	void abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, stack_entry& e);
-
-	//Helper functions that generates LLVM to access the stack at runtime
-	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
-	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
-	void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
-			llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
-
 	//Helper functions to sync the static stack and locals to the memory 
 	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, 
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
@@ -381,7 +366,8 @@ struct opcode_handler
 
 enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER,
 	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT,
-	ARGS_CONTEXT_INT_INT_INT, ARGS_CONTEXT_INT_INT_INT_BOOL};
+	ARGS_CONTEXT_INT_INT_INT, ARGS_CONTEXT_INT_INT_INT_BOOL, ARGS_CONTEXT_OBJ_OBJ_INT, ARGS_CONTEXT_OBJ, ARGS_CONTEXT_OBJ_OBJ,
+	ARGS_CONTEXT_OBJ_OBJ_OBJ };
 
 struct typed_opcode_handler
 {
@@ -398,10 +384,9 @@ private:
 	method_info* get_method(unsigned int m);
 	const tiny_string& getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
-	static multiname* s_getMultiname(call_context*, ASObject*, int m);
+	static multiname* s_getMultiname(call_context*, ASObject* rt1, ASObject* rt2, int m);
 	static multiname* s_getMultiname_i(call_context*, uint32_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
-	int getMultinameRTData(int n) const;
 	ASObject* getConstant(int kind, int index);
 public:
 	u16 minor;
@@ -432,8 +417,9 @@ public:
 
 	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
+	int getMultinameRTData(int n) const;
 	multiname* getMultiname(unsigned int m, call_context* th);
-	multiname* getMultinameImpl(ASObject* rt, unsigned int m);
+	multiname* getMultinameImpl(ASObject* rt1, ASObject* rt2, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in) DLL_PUBLIC;
 	void exec();
@@ -501,12 +487,12 @@ private:
 	static ASObject* pushString(call_context* th, int n); 
 	static void getLex(call_context* th, int n); 
 	static ASObject* getScopeObject(call_context* th, int n); 
-	static void deleteProperty(call_context* th, int n); 
-	static void initProperty(call_context* th, int n); 
+	static void deleteProperty(call_context* th, ASObject* obj, multiname* name);
+	static void initProperty(call_context* th, ASObject* obj, ASObject* val, multiname* name);
 	static void newClass(call_context* th, int n); 
 	static void newArray(call_context* th, int n); 
-	static ASObject* findPropStrict(call_context* th, int n);
-	static ASObject* findProperty(call_context* th, int n);
+	static ASObject* findPropStrict(call_context* th, multiname* name);
+	static ASObject* findProperty(call_context* th, multiname* name);
 	static int32_t pushByte(intptr_t n);
 	static int32_t pushShort(intptr_t n);
 	static void pushInt(call_context* th, int n);

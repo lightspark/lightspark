@@ -348,7 +348,9 @@ void ABCVm::registerClasses()
 	global->registerGlobalScope(builtin);
 }
 
-//This function is used at compile time
+/* This function determines how many stack values are needed for
+ * resolving the multiname at index mi
+ */
 int ABCContext::getMultinameRTData(int mi) const
 {
 	if(mi==0)
@@ -357,29 +359,20 @@ int ABCContext::getMultinameRTData(int mi) const
 	const multiname_info* m=&constant_pool.multinames[mi];
 	switch(m->kind)
 	{
-		case 0x07:
-		case 0x09:
-		case 0x0e:
-		case 0x1d:
+		case 0x07: //QName
+		case 0x0d: //QNameA
+		case 0x09: //Multiname
+		case 0x0e: //MultinameA
+		case 0x1d: //Templated name
 			return 0;
-		case 0x0f:
-		case 0x1b:
+		case 0x0f: //RTQName
+		case 0x10: //RTQNameA
+		case 0x1b: //MultinameL
+		case 0x1c: //MultinameLA
 			return 1;
-/*		case 0x0d:
-			LOG(CALLS, _("QNameA"));
-			break;
-		case 0x10:
-			LOG(CALLS, _("RTQNameA"));
-			break;
-		case 0x11:
-			LOG(CALLS, _("RTQNameL"));
-			break;
-		case 0x12:
-			LOG(CALLS, _("RTQNameLA"));
-			break;
-		case 0x1c:
-			LOG(CALLS, _("MultinameLA"));
-			break;*/
+		case 0x11: //RTQNameL
+		case 0x12: //RTQNameLA
+			return 2;
 		default:
 			LOG(LOG_ERROR,_("getMultinameRTData not yet implemented for this kind ") << hex << m->kind);
 			throw UnsupportedException("kind not implemented for getMultinameRTData");
@@ -498,34 +491,45 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
  */
 multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
 {
-	bool needsStack = getMultinameRTData(n);
-	ASObject* rt = NULL;
-	if(needsStack)
-		rt = context->runtime_stack_pop();
-	return getMultinameImpl(rt,n);
+	int fromStack = getMultinameRTData(n);
+	ASObject* rt1 = NULL;
+	ASObject* rt2 = NULL;
+	if(fromStack > 0)
+		rt1 = context->runtime_stack_pop();
+	if(fromStack > 1)
+		rt2 = context->runtime_stack_pop();
+	return getMultinameImpl(rt1,rt2,n);
 }
 
 /*
  * Gets a multiname without accessing the runtime stack.
  * The object from the top of the stack must be provided in 'n'
- * if getMultinameRTData(midx) returns 1.
+ * if getMultinameRTData(midx) returns 1 and the top two objects
+ * must be provided if getMultinameRTData(midx) returns 2.
  * This is a helper used by codesynt.
  */
-multiname* ABCContext::s_getMultiname(call_context* th, ASObject* n, int midx)
+multiname* ABCContext::s_getMultiname(call_context* th, ASObject* n, ASObject* n2, int midx)
 {
-	return th->context->getMultinameImpl(n,midx);
+	return th->context->getMultinameImpl(n,n2,midx);
 }
 
 /*
  * Gets a multiname without accessing the runtime stack.
- * The object from the top of the stack must be provided in 'n'
- * if getMultinameRTData(midx) returns 1
+ * If getMultinameRTData(midx) return 1 then the object
+ * from the top of the stack must be provided in 'n'.
+ * If getMultinameRTData(midx) return 2 then the two objects
+ * from the top of the stack must be provided in 'n' and 'n2'.
+ *
+ * ATTENTION: The returned multiname may change its value
+ * with the next invocation of getMultinameImpl if
+ * getMultinameRTData(midx) != 0.
  */
-multiname* ABCContext::getMultinameImpl(ASObject* n, unsigned int midx)
+multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int midx)
 {
 	multiname* ret;
 	multiname_info* m=&constant_pool.multinames[midx];
 
+	/* If this multiname is not cached, resolve its static parts */
 	if(m->cached==NULL)
 	{
 		m->cached=new multiname;
@@ -541,9 +545,9 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, unsigned int midx)
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
 		{
-			case 0x07:
+			case 0x07: //QName
+			case 0x0D: //QNameA
 			{
-				assert(!n);
 				const namespace_info* n=&constant_pool.namespaces[m->ns];
 				if(n->name)
 					ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
@@ -557,7 +561,6 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, unsigned int midx)
 			case 0x09: //Multiname
 			case 0x0e: //MultinameA
 			{
-				assert(!n);
 				const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
@@ -571,7 +574,8 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, unsigned int midx)
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
-			case 0x1b:
+			case 0x1b: //MultinameL
+			case 0x1c: //MultinameLA
 			{
 				const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
@@ -581,62 +585,23 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, unsigned int midx)
 					ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
-				assert(n);
-				if(n->getObjectType()==T_INTEGER)
-				{
-					Integer* o=static_cast<Integer*>(n);
-					ret->name_i=o->val;
-					ret->name_type=multiname::NAME_INT;
-				}
-				else if(n->getObjectType()==T_NUMBER)
-				{
-					Number* o=static_cast<Number*>(n);
-					ret->name_d=o->val;
-					ret->name_type=multiname::NAME_NUMBER;
-				}
-				else if(n->getObjectType()==T_QNAME)
-				{
-					ASQName* qname=static_cast<ASQName*>(n);
-					ret->name_s=qname->local_name;
-					ret->name_type=multiname::NAME_STRING;
-				}
-				else if(n->getObjectType()==T_OBJECT ||
-						n->getObjectType()==T_CLASS ||
-						n->getObjectType()==T_FUNCTION)
-				{
-					ret->name_o=n;
-					ret->name_type=multiname::NAME_OBJECT;
-					n->incRef();
-				}
-				else if(n->getObjectType()==T_STRING)
-				{
-					ASString* o=static_cast<ASString*>(n);
-					ret->name_s=o->data;
-					ret->name_type=multiname::NAME_STRING;
-				}
-				else
-				{
-					ret->name_s=n->toString();
-					ret->name_type=multiname::NAME_STRING;
-				}
-				n->decRef();
 				break;
 			}
 			case 0x0f: //RTQName
+			case 0x10: //RTQNameA
 			{
-				assert(n);
-				assert_and_throw(n->classdef==Class<Namespace>::getClass());
-				Namespace* tmpns=static_cast<Namespace*>(n);
-				//TODO: What is the right ns kind?
-				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
 				ret->name_type=multiname::NAME_STRING;
 				ret->name_s=getString(m->name);
-				n->decRef();
 				break;
 			}
-			case 0x1d:
+			case 0x11: //RTQNameL
+			case 0x12: //RTQNameLA
 			{
-				assert(!n);
+				//Everything is dynamic
+				break;
+			}
+			case 0x1d: //Template instance Name
+			{
 				multiname_info* td=&constant_pool.multinames[m->type_definition];
 				//builds a name by concating the templateName$TypeName1$TypeName2...
 				//this naming scheme is defined by the ABC compiler
@@ -653,120 +618,68 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, unsigned int midx)
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
-	/*		case 0x0d:
-				LOG(CALLS, _("QNameA"));
-				break;
-			case 0x10:
-				LOG(CALLS, _("RTQNameA"));
-				break;
-			case 0x11:
-				LOG(CALLS, _("RTQNameL"));
-				break;
-			case 0x12:
-				LOG(CALLS, _("RTQNameLA"));
-				break;
-			case 0x1c:
-				LOG(CALLS, _("MultinameLA"));
-				break;*/
 			default:
 				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
-		return ret;
 	}
-	else
+
+	/* Now resolve its dynamic parts */
+	ret=m->cached;
+	if(midx==0)
+		return ret;
+	switch(m->kind)
 	{
-		ret=m->cached;
-		if(midx==0)
-			return ret;
-		switch(m->kind)
+		case 0x1d: //Template instance name
+		case 0x07: //QName
+		case 0x0d: //QNameA
+		case 0x09: //Multiname
+		case 0x0e: //MultinameA
 		{
-			case 0x1d: //Generics, still not implemented
-			case 0x07:
-			case 0x09:
-			case 0x0e:
-			{
-				//Nothing to do, the cached value is enough
-				assert(!n);
-				break;
-			}
-			case 0x1b:
-			{
-				assert(n);
-				if(n->getObjectType()==T_INTEGER)
-				{
-					Integer* o=static_cast<Integer*>(n);
-					ret->name_i=o->val;
-					ret->name_type=multiname::NAME_INT;
-				}
-				else if(n->getObjectType()==T_NUMBER)
-				{
-					Number* o=static_cast<Number*>(n);
-					ret->name_d=o->val;
-					ret->name_type=multiname::NAME_NUMBER;
-				}
-				else if(n->getObjectType()==T_QNAME)
-				{
-					ASQName* qname=static_cast<ASQName*>(n);
-					ret->name_s=qname->local_name;
-					ret->name_type=multiname::NAME_STRING;
-				}
-				else if(n->getObjectType()==T_OBJECT 
-						|| n->getObjectType()==T_CLASS
-						|| n->getObjectType()==T_FUNCTION)
-				{
-					ret->name_o=n;
-					ret->name_type=multiname::NAME_OBJECT;
-					n->incRef();
-				}
-				else if(n->getObjectType()==T_STRING)
-				{
-					ASString* o=static_cast<ASString*>(n);
-					ret->name_s=o->data;
-					ret->name_type=multiname::NAME_STRING;
-				}
-				else
-				{
-					ret->name_s=n->toString();
-					ret->name_type=multiname::NAME_STRING;
-				}
-				n->decRef();
-				break;
-			}
-			case 0x0f: //RTQName
-			{
-				//Reset the namespaces
-				ret->ns.clear();
-				assert(n);
-				assert_and_throw(n->classdef==Class<Namespace>::getClass());
-				Namespace* tmpns=static_cast<Namespace*>(n);
-				//TODO: What is the right kind?
-				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
-				n->decRef();
-				break;
-			}
-	/*		case 0x0d:
-				LOG(CALLS, _("QNameA"));
-				break;
-			case 0x10:
-				LOG(CALLS, _("RTQNameA"));
-				break;
-			case 0x11:
-				LOG(CALLS, _("RTQNameL"));
-				break;
-			case 0x12:
-				LOG(CALLS, _("RTQNameLA"));
-				break;
-			case 0x1c:
-				LOG(CALLS, _("MultinameLA"));
-				break;*/
-			default:
-				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented");
+			//Nothing to do, everything is static
+			assert(!n && !n2);
+			break;
 		}
-		ret->name_s.len();
-		return ret;
+		case 0x1b: //MultinameL
+		case 0x1c: //MultinameLA
+		{
+			assert(n && !n2);
+			ret->setName(n);
+			n->decRef();
+			break;
+		}
+		case 0x0f: //RTQName
+		case 0x10: //RTQNameA
+		{
+			assert(n && !n2);
+			assert_and_throw(n->classdef==Class<Namespace>::getClass());
+			Namespace* tmpns=static_cast<Namespace*>(n);
+			//TODO: What is the right kind?
+			ret->ns.clear();
+			ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
+			n->decRef();
+			break;
+		}
+		case 0x11: //RTQNameL
+		case 0x12: //RTQNameLA
+		{
+			assert(n && n2);
+			assert_and_throw(n2->classdef==Class<Namespace>::getClass());
+			Namespace* tmpns=static_cast<Namespace*>(n2);
+			ret->ns.clear();
+			//TODO: What is the right kind?
+			ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
+			assert_and_throw(n->getObjectType()==T_STRING); //TODO: see MultinameL
+			ret->setName(n);
+			n->decRef();
+			n2->decRef();
+			break;
+		}
+		default:
+			LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
+			throw UnsupportedException("Multiname to String not implemented");
 	}
+	return ret;
 }
 
 ABCContext::ABCContext(istream& in)
@@ -2466,15 +2379,16 @@ ASFUNCTIONBODY(lightspark,undefinedFunction)
 	return NULL;
 }
 
+/* Multiname types that end in 'A' are attributes names */
 bool multiname_info::isAttributeName() const
 {
 	switch(kind)
 	{
-		case 0x0d:
-		case 0x10:
-		case 0x12:
-		case 0x0e:
-		case 0x1c:
+		case 0x0d: //QNameA
+		case 0x10: //RTQNameA
+		case 0x12: //RTQNameLA
+		case 0x0e: //MultinameA
+		case 0x1c: //MultinameLA
 			return true;
 		default:
 			return false;

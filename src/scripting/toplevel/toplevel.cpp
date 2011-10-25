@@ -2234,11 +2234,14 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	/* resolve argument and return types */
 	if(!mi->returnType)
 	{
+		mi->hasExplicitTypes = false;
 		mi->paramTypes.reserve(mi->numArgs());
 		for(size_t i=0;i < mi->numArgs();++i)
 		{
 			const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i));
 			mi->paramTypes.push_back(t);
+			if(t != Type::anyType)
+				mi->hasExplicitTypes = true;
 		}
 
 		const Type* t = Type::getTypeFromMultiname(mi->returnTypeName());
@@ -2251,13 +2254,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		 * We throw if this is a method.
 		 * We won't throw if all arguments are of 'Any' type.
 		 * This is in accordance with the proprietary player. */
-		if(isMethod())
+		if(isMethod() || mi->hasExplicitTypes)
 			throw Class<ArgumentError>::getInstanceS("Not enough arguments provided");
-		for(size_t i=0;i < mi->numArgs();++i)
-		{
-			if(mi->paramTypes[i] != Type::anyType)
-				throw Class<ArgumentError>::getInstanceS("Not enough arguments provided");
-		}
 	}
 
 	//Temporarily disable JITting

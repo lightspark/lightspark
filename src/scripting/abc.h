@@ -257,7 +257,7 @@ public:
 
 	std::vector<const Type*> paramTypes;
 	const Type* returnType;
-
+	bool hasExplicitTypes;
 	method_info():
 #ifdef PROFILING_SUPPORT
 		profTime(0),

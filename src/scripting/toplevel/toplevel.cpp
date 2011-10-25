@@ -2291,19 +2291,24 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT);
 	}
 
-	/* coerce arguments to expected types */
-	ASObject** newArgs = new ASObject*[passedToLocals];
-	for(int i=0;i<passedToLocals;++i)
-	{
-		newArgs[i] = mi->paramTypes[i]->coerce(args[i]);
-	}
-
 	/* setup call_context */
-	call_context* cc=new call_context(mi,newArgs,passedToLocals,inClass);
-	cc->code=new istringstream(mi->body->code);
-	cc->scope_stack=func_scope;
-	cc->initialScopeStack=func_scope.size();
-	getVm()->curGlobalObj = ABCVm::getGlobalScope(cc);
+	call_context cc;
+	cc.inClass = inClass;
+	cc.mi=mi;
+	cc.locals_size=mi->body->local_count+1;
+	ASObject* locals[cc.locals_size];
+	cc.locals=locals;
+	memset(cc.locals,0,sizeof(ASObject*)*cc.locals_size);
+	cc.max_stack = mi->body->max_stack;
+	ASObject* stack[cc.max_stack];
+	cc.stack=stack;
+	cc.stack_index=0;
+	cc.context=mi->context;
+	//cc.code= new istringstream(mi->body->code);
+	cc.scope_stack=func_scope;
+	cc.initialScopeStack=func_scope.size();
+	cc.exec_pos=0;
+	getVm()->curGlobalObj = ABCVm::getGlobalScope(&cc);
 
 	if(isBound())
 	{ /* closure_this can never been overriden */
@@ -2316,27 +2321,28 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	assert_and_throw(obj);
 	obj->incRef(); //this is free'd in ~call_context
-	cc->locals[0]=obj;
+	cc.locals[0]=obj;
 
+	/* coerce arguments to expected types */
+	for(int i=0;i<passedToLocals;++i)
+	{
+		cc.locals[i+1] = mi->paramTypes[i]->coerce(args[i]);
+	}
 
-	//Fixup missing parameters
-	uint32_t i=passedToLocals;
 	//Fill missing parameters until optional parameters begin
 	//like fun(a,b,c,d=3,e=5) called as fun(1,2) becomes
 	//locals = {this, 1, 2, Undefined, 3, 5}
-	for(;i<args_len;++i)
+	for(uint32_t i=passedToLocals;i<args_len;++i)
 	{
 		int iOptional = mi->option_count-args_len+i;
 		if(iOptional >= 0)
-			cc->locals[i+1]=mi->getOptional(iOptional);
-		else
+			cc.locals[i+1]=mi->paramTypes[i]->coerce(mi->getOptional(iOptional));
 		else {
 			assert(mi->paramTypes[i] == Type::anyType);
-			cc->locals[i+1]=new Undefined();
+			cc.locals[i+1]=new Undefined();
 		}
 	}
 
-	assert(i==args_len);
 	assert_and_throw(mi->needsArgs()==false || mi->needsRest()==false);
 	if(mi->needsRest()) //TODO
 	{
@@ -2345,11 +2351,13 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		for(uint32_t j=0;j<passedToRest;j++)
 			rest->set(j,args[passedToLocals+j]);
 
-		cc->locals[i+1]=rest;
+		assert_and_throw(cc.locals_size>args_len+1);
+		cc.locals[args_len+1]=rest;
 	}
 	else if(mi->needsArgs())
 	{
-		cc->locals[i+1]=argumentsArray;
+		assert_and_throw(cc.locals_size>args_len+1);
+		cc.locals[args_len+1]=argumentsArray;
 	}
 	//Parameters are ready
 
@@ -2366,14 +2374,14 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			if(mi->body->exception_count || (val==NULL && sys->useInterpreter))
 			{
 				//This is not a hot function, execute it using the interpreter
-				ret=ABCVm::executeFunction(this,cc);
+				ret=ABCVm::executeFunction(this,&cc);
 			}
 			else
-				ret=val(cc);
+				ret=val(&cc);
 		}
 		catch (ASObject* excobj) // Doesn't have to be an ASError at all.
 		{
-			unsigned int pos = cc->exec_pos;
+			unsigned int pos = cc.exec_pos;
 			bool no_handler = true;
 
 			LOG(LOG_TRACE, "got an " << excobj->toString());
@@ -2381,23 +2389,22 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			for (unsigned int i=0;i<mi->body->exception_count;i++)
 			{
 				exception_info exc=mi->body->exceptions[i];
-				multiname* name=mi->context->getMultiname(exc.exc_type, cc);
+				multiname* name=mi->context->getMultiname(exc.exc_type, &cc);
 				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to);
 				if (pos > exc.from && pos <= exc.to && ABCContext::isinstance(excobj, name))
 				{
 					no_handler = false;
-					cc->exec_pos = (uint32_t)exc.target;
-					cc->runtime_stack_clear();
-					cc->runtime_stack_push(excobj);
-					cc->scope_stack.clear();
-					cc->scope_stack=func_scope;
-					cc->initialScopeStack=func_scope.size();
+					cc.exec_pos = (uint32_t)exc.target;
+					cc.runtime_stack_clear();
+					cc.runtime_stack_push(excobj);
+					cc.scope_stack.clear();
+					cc.scope_stack=func_scope;
+					cc.initialScopeStack=func_scope.size();
 					break;
 				}
 			}
 			if (no_handler)
 			{
-				delete cc;
 				ABCVm::cur_recursion--; //decrement current recursion depth
 				Log::calls_indent--;
 				throw excobj;
@@ -2409,12 +2416,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	ABCVm::cur_recursion--; //decrement current recursion depth
 	Log::calls_indent--;
 
-	delete cc;
 	hit_count++;
 
 	this->decRef(); //free local ref
 	obj->decRef();
-	delete[] newArgs;
 
 	if(ret==NULL)
 		ret=new Undefined;

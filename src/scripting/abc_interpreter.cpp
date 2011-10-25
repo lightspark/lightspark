@@ -38,10 +38,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 {
 	method_info* mi=function->mi;
 
+	istringstream code(mi->body->code);
 	//This may be non-zero and point to the position of an exception handler
-	context->code->seekg(context->exec_pos);
+	code.seekg(context->exec_pos);
 
-	istringstream& code=*(context->code);
 	int code_len=code.str().length();
 
 	u8 opcode;

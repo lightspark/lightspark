@@ -1187,50 +1187,10 @@ void ABCVm::not_impl(int n)
 	throw UnsupportedException("Not implemented opcode");
 }
 
-void call_context::runtime_stack_push(ASObject* s)
-{
-	if(stack_index>=mi->body->max_stack)
-		throw RunTimeException("Stack overflow");
-	stack[stack_index++]=s;
-}
-
 void call_context::runtime_stack_clear()
 {
 	while(stack_index > 0)
 		stack[--stack_index]->decRef();
-}
-
-ASObject* call_context::runtime_stack_pop()
-{
-	if(stack_index==0)
-		throw RunTimeException("Empty stack");
-
-	ASObject* ret=stack[--stack_index];
-	return ret;
-}
-
-ASObject* call_context::runtime_stack_peek()
-{
-	if(stack_index==0)
-	{
-		LOG(LOG_ERROR,_("Empty stack"));
-		return NULL;
-	}
-	return stack[stack_index-1];
-}
-
-call_context::call_context(method_info* th, ASObject* const* args, const unsigned int num_args, Class_base* _inClass)
-	: exec_pos(0),code(NULL),inClass(_inClass)
-{
-	mi=th;
-	locals=new ASObject*[th->body->local_count+1];
-	locals_size=th->body->local_count+1;
-	memset(locals,0,sizeof(ASObject*)*locals_size);
-	if(args)
-		memcpy(locals+1,args,num_args*sizeof(ASObject*));
-	stack=new ASObject*[th->body->max_stack];
-	stack_index=0;
-	context=th->context;
 }
 
 call_context::~call_context()
@@ -1246,15 +1206,11 @@ call_context::~call_context()
 		}
 	}
 
-	for(int i=0;i<locals_size;i++)
+	for(uint32_t i=0;i<locals_size;i++)
 	{
 		if(locals[i])
 			locals[i]->decRef();
 	}
-	delete[] locals;
-	delete[] stack;
-
-	delete code;
 }
 
 bool ABCContext::isinstance(ASObject* obj, multiname* name)

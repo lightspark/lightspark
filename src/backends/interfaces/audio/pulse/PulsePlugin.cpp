@@ -424,7 +424,7 @@ void PulseAudioStream::setVolume(double vol)
 {
 	struct pa_cvolume volume;
 	pa_cvolume_set(&volume, pa_stream_get_sample_spec(stream)->channels,
-					pa_sw_volume_from_linear(vol));
+					vol*PA_VOLUME_NORM);
 	pa_context_set_sink_input_volume(
 			pa_stream_get_context(stream),
 			pa_stream_get_index(stream),

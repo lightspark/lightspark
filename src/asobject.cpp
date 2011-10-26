@@ -114,6 +114,7 @@ _R<ASObject> ASObject::nextValue(uint32_t index)
 
 void ASObject::sinit(Class_base* c)
 {
+	c->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(hasOwnProperty),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
@@ -345,9 +346,6 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 			proto = proto->getprop_prototype();
 		}
 	}
-
-	if(Class<ASObject>::getClass()->lazyDefine(name)!=NULL)
-		return true;
 
 	//Must not ask for non borrowed traits as static class member are not valid
 	return false;
@@ -779,10 +777,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	}
 
 	if(!obj)
-	{
-		//Check if we can lazily define the requested property
-		return _MNR(Class<ASObject>::getClass()->lazyDefine(name));
-	}
+		return NullRef;
 
 	if(obj->getter)
 	{

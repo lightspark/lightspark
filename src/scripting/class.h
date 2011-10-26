@@ -283,7 +283,6 @@ public:
 	{
 		ASObject::buildTraits(o);
 	}
-	ASObject* lazyDefine(const multiname& name);
 };
 
 /* This is a class which was instantiated from a Template<T> */

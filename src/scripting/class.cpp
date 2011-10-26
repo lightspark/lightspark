@@ -28,21 +28,6 @@ ASObject* lightspark::new_asobject()
 	return Class<ASObject>::getInstanceS();
 }
 
-ASObject* Class<ASObject>::lazyDefine(const multiname& name)
-{
-	if(name.ns.empty())
-		return NULL;
-
-	if(binary_search(name.ns.begin(),name.ns.end(),nsNameAndKind(AS3,NAMESPACE)) && name.name_s=="hasOwnProperty")
-	{
-		ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
-		setVariableByQName("hasOwnProperty",AS3,ret,BORROWED_TRAIT);
-		return ret;
-	}
-	else
-		return NULL;
-}
-
 void Class_inherit::finalize()
 {
 	Class_base::finalize();

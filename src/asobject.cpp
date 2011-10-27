@@ -880,7 +880,7 @@ void variables_map::dumpVariables()
 				kind="NoCreate: ";
 				assert(false);
 		}
-		LOG(LOG_INFO, kind <<  '[' << it->second.ns.name << "] "<< it->first << ' ' <<
+		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< it->first << ' ' <<
 			it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
 	}
 }

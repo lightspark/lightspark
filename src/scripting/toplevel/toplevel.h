@@ -106,6 +106,7 @@ class Class_base: public ASObject, public Type
 {
 friend class ABCVm;
 friend class ABCContext;
+template<class T> friend class Template;
 private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
@@ -119,6 +120,7 @@ private:
 	std::set<ASObject*> referencedObjects;
 	void finalizeObjects() const;
 protected:
+	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
 public:
 	void addPrototypeGetter();
@@ -159,6 +161,13 @@ public:
 	 * The returned object must be decRef'ed by caller.
 	 */
 	virtual ASObject* coerce(ASObject* o) const;
+
+	void setSuper(_R<Class_base> super_)
+	{
+		assert(super == NULL);
+		super = super_;
+		copyBorrowedTraitsFromSuper();
+	}
 };
 
 class Template_base : public ASObject

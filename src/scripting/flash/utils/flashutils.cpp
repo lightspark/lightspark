@@ -644,7 +644,7 @@ void Timer::tick()
 void Timer::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<EventDispatcher>::getRef();
+	c->setSuper(Class<EventDispatcher>::getRef());
 	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(_getCurrentCount),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_getRepeatCount),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_setRepeatCount),SETTER_METHOD,true);
@@ -859,7 +859,7 @@ void Dictionary::finalize()
 void Dictionary::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 }
 
 void Dictionary::buildTraits(ASObject* o)

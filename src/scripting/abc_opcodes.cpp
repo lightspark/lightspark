@@ -1953,21 +1953,6 @@ void ABCVm::newClass(call_context* th, int n)
 	assert_and_throw(th->context);
 	ret->context=th->context;
 
-	//Null is a "valid" base class
-	if(baseClass->getObjectType()!=T_NULL)
-	{
-		assert_and_throw(baseClass->getObjectType()==T_CLASS);
-		ret->super=_MR(static_cast<Class_base*>(baseClass));
-	}
-
-	ret->class_scope=th->scope_stack;
-	ret->incRef();
-	ret->class_scope.emplace_back(_MR(ret),false);
-
-	LOG(LOG_CALLS,_("Building class traits"));
-	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
-		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
-
 	//Add protected namespace if needed
 	if(th->context->instances[n].isProtectedNs())
 	{
@@ -1976,6 +1961,23 @@ void ABCVm::newClass(call_context* th, int n)
 		const namespace_info& ns_info=th->context->constant_pool.namespaces[ns];
 		ret->protected_ns=nsNameAndKind(th->context->getString(ns_info.name),(NS_KIND)(int)ns_info.kind);
 	}
+
+	//Null is a "valid" base class
+	if(baseClass->getObjectType()!=T_NULL)
+	{
+		assert_and_throw(baseClass->getObjectType()==T_CLASS);
+		ret->setSuper(_MR(static_cast<Class_base*>(baseClass)));
+	}
+
+	ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+
+	ret->class_scope=th->scope_stack;
+	ret->incRef();
+	ret->class_scope.emplace_back(_MR(ret),false);
+
+	LOG(LOG_CALLS,_("Building class traits"));
+	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
+		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
 	LOG(LOG_CALLS,_("Adding immutable object traits to class"));
 	//Class objects also contains all the methods/getters/setters declared for instances

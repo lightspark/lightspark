@@ -62,7 +62,6 @@ public:
 		bool ret=
 #endif
 		sys->classes.insert(std::make_pair(name,this)).second;
-		this->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 		assert(ret);
 	}
 	void finalize();
@@ -119,12 +118,11 @@ public:
 		{
 			ret=new Class<T>(name);
 			sys->classes.insert(std::make_pair(name,ret));
-			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->prototype = _MNR(new_asobject());
-
+			T::sinit(ret);
+			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
 			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-			T::sinit(ret);
 			if(ret->super)
 				ret->prototype->setprop_prototype(ret->super->prototype);
 			ret->addPrototypeGetter();
@@ -236,7 +234,7 @@ public:
 	{
 		Class<ASObject>* ret = new Class<ASObject>(name);
 
-		ret->super = Class<ASObject>::getRef();
+		ret->setSuper(Class<ASObject>::getRef());
 		ret->prototype = _MNR(new_asobject());
 		ret->prototype->setprop_prototype(ret->super->prototype);
 		ret->incRef();
@@ -258,10 +256,11 @@ public:
 			ret=new Class<ASObject>(name);
 			sys->classes.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
+			ASObject::sinit(ret);
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
 			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-			ASObject::sinit(ret);
+
 			ret->addPrototypeGetter();
 		}
 		else

@@ -115,7 +115,7 @@ void XML::finalize()
 
 void XML::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(XML::_toString),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
@@ -782,7 +782,7 @@ void XMLList::finalize()
 
 void XMLList::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
@@ -1203,7 +1203,7 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(split),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr),NORMAL_METHOD,true);
@@ -1797,9 +1797,9 @@ tiny_string Integer::toString()
 
 void Integer::sinit(Class_base* c)
 {
+	c->setSuper(Class<ASObject>::getRef());
 	c->setVariableByQName("MAX_VALUE","",new Integer(2147483647),DECLARED_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648),DECLARED_TRAIT);
-	c->super=Class<ASObject>::getRef();
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),DYNAMIC_TRAIT);
 }
 
@@ -2069,7 +2069,7 @@ tiny_string Number::toString()
 
 void Number::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Must create and link the number the hard way
 	Number* ninf=new Number(-numeric_limits<double>::infinity());
@@ -2561,7 +2561,7 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false
 
 void RegExp::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
@@ -3033,6 +3033,48 @@ Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",N
 	type=T_CLASS;
 }
 
+/*
+ * This copies the non-static traits of the super class to this
+ * class.
+ *
+ * If a property is in the protected namespace of the super class, a copy is
+ * created with the protected namespace of this class.
+ * That is necessary, because superclass methods are called with the protected ns
+ * of the current class.
+ *
+ * use_protns and protectedns must be set before this function is called
+ */
+void Class_base::copyBorrowedTraitsFromSuper()
+{
+	assert(Variables.Variables.empty());
+	variables_map::var_iterator i = super->Variables.Variables.begin();
+	for(;i != super->Variables.Variables.end(); ++i)
+	{
+		const tiny_string& name = i->first;
+		variable& v = i->second;
+		//copy only static and instance methods
+		if(v.kind != BORROWED_TRAIT)
+			continue;
+		if(v.var)
+			v.var->incRef();
+		if(v.getter)
+			v.getter->incRef();
+		if(v.setter)
+			v.setter->incRef();
+		const variables_map::var_iterator ret_end=Variables.Variables.upper_bound(name);
+		variables_map::var_iterator inserted=Variables.Variables.insert(ret_end,make_pair(name,v));
+
+		//Overwrite protected ns
+		if(super->use_protected && v.ns.count(nsNameAndKind(super->protected_ns.name,PROTECTED_NAMESPACE)))
+		{
+			assert(use_protected);
+			//add this classes protected ns
+			inserted->second.ns.insert(nsNameAndKind(protected_ns.name,PROTECTED_NAMESPACE));
+		}
+	}
+}
+
+
 ASObject* Class_base::coerce(ASObject* o) const
 {
 	assert(!o->is<Definable>());
@@ -3483,7 +3525,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 
 void ASQName::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("local_name","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
@@ -3611,7 +3653,7 @@ tiny_string ASQName::toString()
 
 void Namespace::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
@@ -3804,8 +3846,8 @@ void UInteger::sinit(Class_base* c)
 {
 	//TODO: add in the JIT support for unsigned number
 	//Right now we pretend to be signed, to make comparisons work
+	c->setSuper(Class<ASObject>::getRef());
 	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff),DECLARED_TRAIT);
-	c->super=Class<ASObject>::getRef();
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
@@ -3863,7 +3905,11 @@ Class<IFunction>* Class<IFunction>::getClass()
 	{
 		ret=new Class<IFunction>;
 		ret->prototype = _MNR(new_asobject());
-		ret->super=Class<ASObject>::getRef();
+		//This function is called from Class<ASObject>::getRef(),
+		//so the Class<ASObject> we obtain will not have any
+		//declared methods! Therefore, we define those methods by ourself
+		//below
+		ret->setSuper(Class<ASObject>::getRef());
 		ret->prototype->setprop_prototype(ret->super->prototype);
 
 		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
@@ -3879,6 +3925,8 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(IFunction::_getter_length),GETTER_METHOD,true);
 		ret->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+		//actually defined on Class<ASObject>, see comment above
+		ret->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(hasOwnProperty),NORMAL_METHOD,true);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);
@@ -3888,7 +3936,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 
 void Global::sinit(Class_base* c)
 {
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 }
 
 void GlobalObject::registerGlobalScope(Global* scope)

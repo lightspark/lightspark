@@ -30,7 +30,7 @@ REGISTER_CLASS_NAME(AccessibilityImplementation);
 void AccessibilityProperties::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	REGISTER_GETTER_SETTER(c,name);
 }
 
@@ -45,7 +45,7 @@ ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties,name);
 void AccessibilityImplementation::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 }
 
 ASFUNCTIONBODY(AccessibilityImplementation,_constructor)

@@ -327,13 +327,8 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(Variables.findObjVar(name, NO_CREATE_TRAIT, validTraits)!=NULL)
 		return true;
 
-	Class_base* cur=classdef;
-	while(cur)
-	{
-		if(cur->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL)
-			return true;
-		cur=cur->super.getPtr();
-	}
+	if(classdef && classdef->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL)
+		return true;
 
 	//Check prototype inheritance chain
 	if(getClass())
@@ -381,34 +376,20 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 	{
 		case NORMAL_METHOD:
 		{
-			if(obj->var!=NULL)
-			{
-				//This happens when interfaces are declared multiple times
-				assert_and_throw(o==obj->var);
-				return;
-			}
 			obj->setVar(o);
 			break;
 		}
 		case GETTER_METHOD:
 		{
 			if(obj->getter!=NULL)
-			{
-				//This happens when interfaces are declared multiple times
-				assert_and_throw(o==obj->getter);
-				return;
-			}
+				obj->getter->decRef();
 			obj->getter=o;
 			break;
 		}
 		case SETTER_METHOD:
 		{
 			if(obj->setter!=NULL)
-			{
-				//This happens when interfaces are declared multiple times
-				assert_and_throw(o==obj->setter);
-				return;
-			}
+				obj->setter->decRef();
 			obj->setter=o;
 			break;
 		}
@@ -472,14 +453,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 		//It's valid to override only a getter, so keep
 		//looking for a settable even if a super class sets
 		//has_getter to true.
-		Class_base* cur=cls;
-		while(cur)
-		{
-			obj=cur->findSettable(name,true,&has_getter);
-			if(obj)
-				break;
-			cur=cur->super.getPtr();
-		}
+		obj=cls->findSettable(name,true,&has_getter);
 	}
 
 	if(!obj && cls)
@@ -728,10 +702,6 @@ ASFUNCTIONBODY(ASObject,_constructor)
 
 void ASObject::initSlot(unsigned int n, const multiname& name)
 {
-	//Should be correct to use the level on the classdef chain
-#ifndef NDEBUG
-	assert(!initialized);
-#endif
 	Variables.initSlot(n,name.name_s,name.ns[0]);
 }
 
@@ -767,14 +737,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	if(!obj && cls)
 	{
 		//Look for borrowed traits before
-		Class_base* cur=cls;
-		while(cur)
-		{
-			obj=cur->findGettable(name,true);
-			if(obj)
-				break;
-			cur=cur->super.getPtr();
-		}
+		obj=cls->findGettable(name,true);
 	}
 
 	if(!obj && cls)
@@ -858,9 +821,12 @@ void variables_map::check() const
 			if(it->second.var==NULL && next->second.var==NULL)
 				continue;
 
+			if((it->second.kind == BORROWED_TRAIT && next->second.kind != BORROWED_TRAIT)
+				|| (it->second.kind != BORROWED_TRAIT && next->second.kind == BORROWED_TRAIT))
+				continue;
 			if(it->second.var==NULL || next->second.var==NULL)
 			{
-				cout << it->first << endl;
+				cout << it->first << " " << it->second.ns << endl;
 				cout << it->second.var << ' ' << it->second.setter << ' ' << it->second.getter << endl;
 				cout << next->second.var << ' ' << next->second.setter << ' ' << next->second.getter << endl;
 				abort();

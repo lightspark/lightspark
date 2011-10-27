@@ -31,7 +31,7 @@ REGISTER_CLASS_NAME(Vector);
 void Vector::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->super=Class<ASObject>::getRef();
+	c->setSuper(Class<ASObject>::getRef());
 	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
 }
 

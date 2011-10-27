@@ -154,7 +154,7 @@ struct variable
 
 class variables_map
 {
-private:
+public:
 	std::multimap<tiny_string,variable> Variables;
 	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
 	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;

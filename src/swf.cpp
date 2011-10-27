@@ -305,8 +305,7 @@ void SystemState::parseParametersFromFile(const char* f)
 void SystemState::setParameters(_R<ASObject> p)
 {
 	parameters=p;
-	p->incRef();
-	loaderInfo->setVariableByQName("parameters","",p.getPtr(), DECLARED_TRAIT);
+	loaderInfo->parameters = p;
 }
 
 _NR<ASObject> SystemState::getParameters() const

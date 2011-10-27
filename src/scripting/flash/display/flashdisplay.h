@@ -434,6 +434,7 @@ private:
 	LOAD_STATUS loadStatus;
 	Spinlock spinlock;
 public:
+	ASPROPERTY_GETTER(_NR<ASObject>,parameters);
 	LoaderInfo():bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(NullRef),loadStatus(STARTED) {}
 	LoaderInfo(_R<Loader> l):bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(l),loadStatus(STARTED) {}
 	void finalize();

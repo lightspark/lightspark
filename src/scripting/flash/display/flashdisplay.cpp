@@ -96,7 +96,10 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
+	REGISTER_GETTER(c,parameters);
 }
+
+ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
 
 void LoaderInfo::buildTraits(ASObject* o)
 {
@@ -151,6 +154,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
 	th->sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
+	th->parameters = _MR(Class<ASObject>::getInstanceS());
 	return NULL;
 }
 

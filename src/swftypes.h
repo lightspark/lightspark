@@ -86,6 +86,11 @@ typedef double number_t;
 class ASObject;
 class Bitmap;
 
+/*
+ * String class.
+ * The string can contain '\0's, so don't use raw_buf().
+ * Use len() to determine actual size.
+ */
 class tiny_string
 {
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
@@ -118,7 +123,7 @@ private:
 		assert(type==DYNAMIC);
 		char* oldBuf=buf;
 		buf=new char[s];
-		strcpy(buf,oldBuf);
+		memcpy(buf,oldBuf,stringSize);
 		delete[] oldBuf;
 	}
 	void resetToStatic()
@@ -126,9 +131,10 @@ private:
 		if(type==DYNAMIC)
 		{
 			delete[] buf;
-			stringSize=0;
+			stringSize=1;
 		}
 		buf=_buf_static;
+		buf[0] = '\0';
 		type=STATIC;
 	}
 public:
@@ -154,19 +160,19 @@ public:
 		}
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
-		strcpy(buf,r.buf);
+		memcpy(buf,r.buf,stringSize);
 	}
 	tiny_string(const std::string& r):buf(_buf_static),stringSize(r.size()+1),type(STATIC)
 	{
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
-		strcpy(buf,r.c_str());
+		memcpy(buf,r.c_str(),stringSize);
 	}
 	tiny_string(const Glib::ustring& r):buf(_buf_static),stringSize(r.bytes()+1),type(STATIC)
 	{
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
-		strcpy(buf,r.c_str());
+		memcpy(buf,r.c_str(),stringSize);
 	}
 	~tiny_string()
 	{
@@ -194,7 +200,7 @@ public:
 		{
 			if(stringSize > STATIC_SIZE)
 				createBuffer(stringSize);
-			strcpy(buf,s.buf);
+			memcpy(buf,s.buf,stringSize);
 		}
 		return *this;
 	}
@@ -204,7 +210,7 @@ public:
 		stringSize=s.size()+1;
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
-		strcpy(buf,s.c_str());
+		memcpy(buf,s.c_str(),stringSize);
 		return *this;
 	}
 	tiny_string& operator=(const Glib::ustring& s)
@@ -213,7 +219,7 @@ public:
 		stringSize=s.bytes()+1;
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
-		strcpy(buf,s.c_str());
+		memcpy(buf,s.c_str(),stringSize);
 		return *this;
 	}
 	tiny_string& operator=(const char* s)
@@ -226,39 +232,36 @@ public:
 	const tiny_string operator+(const tiny_string& r) const;
 	bool operator<(const tiny_string& r) const
 	{
-		return strcmp(buf,r.buf)<0;
+		//don't check trailing \0
+		return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))<0;
 	}
 	bool operator==(const tiny_string& r) const
 	{
 		//The length is checked as an optimization before checking the contents
 		if(stringSize != r.stringSize)
 			return false;
-
-		return strcmp(buf,r.buf)==0;
+		//don't check trailing \0
+		return memcmp(buf,r.buf,stringSize-1)==0;
 	}
 	bool operator==(const Glib::ustring& r) const
 	{
 		//The length is checked as an optimization before checking the contents
 		if(stringSize != r.bytes()+1)
 			return false;
-
-		return strcmp(buf,r.c_str())==0;
+		//don't check trailing \0
+		return memcmp(buf,r.c_str(),stringSize-1)==0;
 	}
 	bool operator==(const std::string& r) const
 	{
 		//The length is checked as an optimization before checking the contents
 		if(stringSize != r.size()+1)
 			return false;
-
-		return strcmp(buf,r.c_str())==0;
+		//don't check trailing \0
+		return memcmp(buf,r.c_str(),stringSize-1)==0;
 	}
 	bool operator!=(const tiny_string& r) const
 	{
-		//The length is checked as an optimization before checking the contents
-		if(stringSize != r.stringSize)
-			return true;
-
-		return strcmp(buf,r.buf)!=0;
+		return !(*this==r);
 	}
 	bool operator==(const char* r) const
 	{
@@ -266,7 +269,7 @@ public:
 	}
 	bool operator!=(const char* r) const
 	{
-		return strcmp(buf,r)!=0;
+		return !(*this==r);
 	}
 	const char* raw_buf() const
 	{
@@ -276,11 +279,15 @@ public:
 	{
 		return *(buf+i);
 	}
-	int len() const
+	uint32_t len() const
 	{
 		return stringSize-1;
 	}
 	tiny_string substr(uint32_t start, uint32_t end) const;
+	bool startsWith(const char* o) const
+	{
+		return strncmp(buf,o,strlen(o)) == 0;
+	}
 };
 
 class QName

@@ -1167,7 +1167,8 @@ ASString::ASString(const ustring& s):data(s)
 	type=T_STRING;
 }
 
-ASString::ASString(const tiny_string& s):data(s.raw_buf())
+ASString::ASString(const tiny_string& s)
+	: data(std::string(s.raw_buf(),s.len())) //See ASString(const char* s, uint32_t len)
 {
 	type=T_STRING;
 }

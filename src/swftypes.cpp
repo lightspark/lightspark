@@ -39,22 +39,25 @@ using namespace lightspark;
 extern TLSDATA ParseThread* pt;
 
 tiny_string& tiny_string::operator+=(const char* s)
-{
+{	//deprecated, cannot handle '\0' inside string
 	if(type==READONLY)
 	{
 		char* tmp=buf;
 		makePrivateCopy(tmp);
 	}
 	uint32_t addedLen=strlen(s);
-	stringSize+=addedLen;
-	if(type==STATIC && stringSize > STATIC_SIZE)
+	uint32_t newStringSize=stringSize + addedLen;
+	if(type==STATIC && newStringSize > STATIC_SIZE)
 	{
-		createBuffer(stringSize);
-		strcpy(buf,_buf_static);
+		createBuffer(newStringSize);
+		//don't copy trailing \0
+		memcpy(buf,_buf_static,stringSize-1);
 	}
 	else if(type==DYNAMIC && addedLen!=0)
-		resizeBuffer(stringSize);
-	strcat(buf,s);
+		resizeBuffer(newStringSize);
+	//also copy \0 at the end
+	memcpy(buf+stringSize-1,s,addedLen+1);
+	stringSize=newStringSize;
 	return *this;
 }
 
@@ -65,16 +68,18 @@ tiny_string& tiny_string::operator+=(const tiny_string& r)
 		char* tmp=buf;
 		makePrivateCopy(tmp);
 	}
-	uint32_t addedLen=r.stringSize-1;
-	stringSize+=addedLen;
-	if(type==STATIC && stringSize > STATIC_SIZE)
+	uint32_t newStringSize=stringSize + r.stringSize-1;
+	if(type==STATIC && newStringSize > STATIC_SIZE)
 	{
-		createBuffer(stringSize);
-		strcpy(buf,_buf_static);
+		createBuffer(newStringSize);
+		//don't copy trailing \0
+		memcpy(buf,_buf_static,stringSize-1);
 	}
-	else if(type==DYNAMIC && addedLen!=0)
-		resizeBuffer(stringSize);
-	strcat(buf,r.buf);
+	else if(type==DYNAMIC && r.stringSize>1)
+		resizeBuffer(newStringSize);
+	//start position is where the \0 was
+	memcpy(buf+stringSize-1,r.buf,r.stringSize);
+	stringSize=newStringSize;
 	return *this;
 }
 
@@ -93,7 +98,7 @@ tiny_string tiny_string::substr(uint32_t start, uint32_t end) const
 	int subSize=end-start+1;
 	if(subSize > STATIC_SIZE)
 		ret.createBuffer(subSize);
-	strncpy(ret.buf,buf+start,end-start);
+	memcpy(ret.buf,buf+start,end-start);
 	ret.buf[end-start]=0;
 	ret.stringSize = subSize;
 	return ret;

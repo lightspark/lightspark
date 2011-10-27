@@ -1943,6 +1943,8 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	Class_inherit* ret=new Class_inherit(className);
+	ret->isFinal = th->context->instances[n].isFinal();
+	ret->isSealed = th->context->instances[n].isSealed();
 #ifdef PROFILING_SUPPORT
 	if(!constructor->validProfName)
 	{
@@ -1965,8 +1967,10 @@ void ABCVm::newClass(call_context* th, int n)
 	//Null is a "valid" base class
 	if(baseClass->getObjectType()!=T_NULL)
 	{
-		assert_and_throw(baseClass->getObjectType()==T_CLASS);
-		ret->setSuper(_MR(static_cast<Class_base*>(baseClass)));
+		assert_and_throw(baseClass->is<Class_base>());
+		Class_base* base = baseClass->as<Class_base>();
+		assert(!base->isFinal);
+		ret->setSuper(_MR(base));
 	}
 
 	ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);

@@ -123,6 +123,8 @@ protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
 public:
+	bool isFinal:1;
+	bool isSealed:1;
 	void addPrototypeGetter();
 	ASPROPERTY_GETTER(_NR<ASObject>,prototype);
 	_NR<Class_base> super;

@@ -2772,9 +2772,13 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	unsigned int index=args[0]->toInt();
-	assert_and_throw(index<th->data.size());
-	//Character codes are expected to be positive
-	return abstract_i(th->data[index]);
+	if(index<th->data.size())
+	{
+		//Character codes are expected to be positive
+		return abstract_i(th->data[index]);
+	}
+	else
+		return abstract_d(Number::NaN);
 }
 
 ASFUNCTIONBODY(ASString,indexOf)

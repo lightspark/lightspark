@@ -939,12 +939,12 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	}
 	else if(val1->is<ASString>() || val2->is<ASString>())
 	{
-		string a(val1->toString().raw_buf());
-		string b(val2->toString().raw_buf());
+		tiny_string a = val1->toString();
+		tiny_string b = val2->toString();
 		LOG(LOG_CALLS,"add " << a << '+' << b);
 		val1->decRef();
 		val2->decRef();
-		return Class<ASString>::getInstanceS(a+b);
+		return Class<ASString>::getInstanceS(a + b);
 	}
 	else if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
 	{

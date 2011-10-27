@@ -1392,6 +1392,7 @@ std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::ostream& operator<<(std::ostream& s, const STRING& r);
+std::ostream& operator<<(std::ostream& s, const nsNameAndKind& r);
 std::ostream& operator<<(std::ostream& s, const multiname& r);
 std::ostream& operator<<(std::ostream& s, const tiny_string& r) DLL_PUBLIC;
 std::ostream& operator<<(std::ostream& s, const QName& r);

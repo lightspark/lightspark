@@ -188,36 +188,42 @@ std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)
 	return s;
 }
 
+std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
+{
+	string prefix;
+	switch(r.kind)
+	{
+		case 0x08:
+			prefix="ns:";
+			break;
+		case 0x16:
+			prefix="pakns:";
+			break;
+		case 0x17:
+			prefix="pakintns:";
+			break;
+		case 0x18:
+			prefix="protns:";
+			break;
+		case 0x19:
+			prefix="explns:";
+			break;
+		case 0x1a:
+			prefix="staticprotns:";
+			break;
+		case 0x05:
+			prefix="privns:";
+			break;
+	}
+	s << prefix << r.name;
+	return s;
+}
+
 std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 {
 	for(unsigned int i=0;i<r.ns.size();i++)
 	{
-		string prefix;
-		switch(r.ns[i].kind)
-		{
-			case 0x08:
-				prefix="ns:";
-				break;
-			case 0x16:
-				prefix="pakns:";
-				break;
-			case 0x17:
-				prefix="pakintns:";
-				break;
-			case 0x18:
-				prefix="protns:";
-				break;
-			case 0x19:
-				prefix="explns:";
-				break;
-			case 0x1a:
-				prefix="staticprotns:";
-				break;
-			case 0x05:
-				prefix="privns:";
-				break;
-		}
-		s << '[' << prefix << r.ns[i].name << "] ";
+		s << '[' << r.ns[i] << "] ";
 	}
 	if(r.name_type==multiname::NAME_INT)
 		s << r.name_i;

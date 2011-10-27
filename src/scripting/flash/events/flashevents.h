@@ -359,8 +359,9 @@ class ABCContextInitEvent: public Event
 friend class ABCVm;
 private:
 	ABCContext* context;
+	bool lazy;
 public:
-	ABCContextInitEvent(ABCContext* c) DLL_PUBLIC;
+	ABCContextInitEvent(ABCContext* c, bool lazy) DLL_PUBLIC;
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return CONTEXT_INIT; }
 };

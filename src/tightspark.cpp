@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 			ABCContext* context=new ABCContext(f);
 			contexts.push_back(context);
 			f.close();
-			vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
+			vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context,false)));
 		}
 		else
 		{

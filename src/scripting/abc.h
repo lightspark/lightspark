@@ -421,7 +421,7 @@ public:
 	multiname* getMultinameImpl(ASObject* rt1, ASObject* rt2, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in) DLL_PUBLIC;
-	void exec();
+	void exec(bool lazy);
 
 	static bool isinstance(ASObject* obj, multiname* name);
 

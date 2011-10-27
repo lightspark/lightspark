@@ -80,7 +80,7 @@ void DoABCTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
 	/* currentVM will free the context*/
-	sys->currentVm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
+	sys->currentVm->addEvent(NullRef,_MR(new ABCContextInitEvent(context,false)));
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -104,7 +104,7 @@ void DoABCDefineTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	/* currentVM will free the context*/
-	sys->currentVm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
+	sys->currentVm->addEvent(NullRef,_MR(new ABCContextInitEvent(context,((int32_t)Flags)&1)));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -1051,7 +1051,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case CONTEXT_INIT:
 			{
 				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second.getPtr());
-				ev->context->exec();
+				ev->context->exec(ev->lazy);
 				contexts.push_back(ev->context);
 				break;
 			}
@@ -1273,7 +1273,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
  * ABCContext constructor. Now create the internal structures for them
  * and execute the main/init function.
  */
-void ABCContext::exec()
+void ABCContext::exec(bool lazy)
 {
 	//Take script entries and declare their traits
 	unsigned int i=0;
@@ -1321,7 +1321,8 @@ void ABCContext::exec()
 	//Register it as one of the global scopes
 	getGlobal()->registerGlobalScope(global);
 	//the script init of the last script is the main entry point
-	runScriptInit(i, global);
+	if(!lazy)
+		runScriptInit(i, global);
 	LOG(LOG_CALLS, _("End of Entry Point"));
 }
 

@@ -750,7 +750,7 @@ ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
 	return NULL;
 }
 
-ABCContextInitEvent::ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEvent"),context(c)
+ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event("ABCContextInitEvent"),context(c),lazy(l)
 {
 }
 

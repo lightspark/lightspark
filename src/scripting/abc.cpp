@@ -667,9 +667,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			assert_and_throw(n2->classdef==Class<Namespace>::getClass());
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
-			//TODO: What is the right kind?
 			ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
-			assert_and_throw(n->getObjectType()==T_STRING); //TODO: see MultinameL
 			ret->setName(n);
 			n->decRef();
 			n2->decRef();

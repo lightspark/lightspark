@@ -3049,12 +3049,12 @@ ASObject* Class_base::coerce(ASObject* o) const
 		|| (class_name.name=="Class" && class_name.ns==""))
 		       return o; /* 'this' is the type of a class */
 	       else
-		       throw Class<TypeError>::getInstanceS("Wrong type");
+		       throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
 	}
 	//o->getClass() == NULL for primitive types
 	//those are handled in overloads Class<Number>::coerce etc.
 	if(!o->getClass() || !o->getClass()->isSubClass(this))
-		throw Class<TypeError>::getInstanceS("Wrong type");
+		throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
 	return o;
 }
 

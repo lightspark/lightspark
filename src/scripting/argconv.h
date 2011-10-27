@@ -62,7 +62,7 @@ public:
 	{
 		T* o = dynamic_cast<T*>(obj);
 		if(!o)
-			throw Class<ArgumentError>::getInstanceS("Wrong type");
+			throw Class<ArgumentError>::getInstanceS("Error #1034: Wrong type");
 		o->incRef();
 		return _MR(o);
 	}
@@ -88,7 +88,7 @@ public:
 
 		T* o = dynamic_cast<T*>(obj);
 		if(!o)
-			throw Class<ArgumentError>::getInstanceS("Wrong type");
+			throw Class<ArgumentError>::getInstanceS("Error #1034: Wrong type");
 		o->incRef();
 		return _MNR(o);
 	}

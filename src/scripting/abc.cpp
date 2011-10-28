@@ -258,6 +258,8 @@ void ABCVm::registerClasses()
 			Class<ASObject>::getStubClass(QName("BevelFilter","flash.filters")),DECLARED_TRAIT);
 	builtin->setVariableByQName("ColorMatrixFilter","flash.filters",
 			Class<ASObject>::getStubClass(QName("ColorMatrixFilter","flash.filters")),DECLARED_TRAIT);
+	builtin->setVariableByQName("BlurFilter","flash.filters",
+			Class<ASObject>::getStubClass(QName("BlurFilter","flash.filters")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("Font","flash.text",Class<Font>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getRef(),DECLARED_TRAIT);

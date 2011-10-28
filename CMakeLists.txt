@@ -396,8 +396,8 @@ SET(CPACK_NSIS_MENU_LINKS "")
 #Therefore we cannot strip afterwards
 SET(CPACK_STRIP_FILES FALSE)
 SET(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/COPYING)
-SET(CPACK_NSIS_HELP_LINK "http:////lightspark.github.com")
-SET(CPACK_NSIS_URL_INFO_ABOUT "http:////lightspark.github.com")
+SET(CPACK_NSIS_HELP_LINK "http:////www.lightspark.org")
+SET(CPACK_NSIS_URL_INFO_ABOUT "http:////www.lightspark.org")
 SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/media/lightspark-logo.svg)
 IF(WIN32)
   SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "

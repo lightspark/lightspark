@@ -21,6 +21,7 @@
 #include "abc.h"
 #include "class.h"
 #include "parsing/amf3_generator.h"
+#include "argconv.h"
 
 using namespace std;
 using namespace lightspark;
@@ -33,6 +34,8 @@ void Vector::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
 	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("length",AS3,Class<IFunction>::getFunction(getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length",AS3,Class<IFunction>::getFunction(setLength),SETTER_METHOD,true);
 }
 
 void Vector::setTypes(const std::vector<Type*>& types)
@@ -108,6 +111,34 @@ ASFUNCTIONBODY(Vector,push)
 		th->vec.push_back( th->vec_type->coerce(args[i]) );
 	}
 	return abstract_ui(th->vec.size());
+}
+
+ASFUNCTIONBODY(Vector,getLength)
+{
+	return abstract_ui(obj->as<Vector>()->vec.size());
+}
+
+ASFUNCTIONBODY(Vector,setLength)
+{
+	Vector* th = obj->as<Vector>();
+	uint32_t len;
+	ARG_UNPACK (len);
+	if(len <= th->vec.size())
+	{
+		th->vec.resize(len);
+	}
+	else
+	{
+		/* We should enlarge the vector
+		 * with the type's 'default' value.
+		 * That's probably just 'Null' cast to that
+		 * type. (Casting Undefined, would be wrong,
+		 * because that gave 'NaN' for Number)
+		 */
+		while(th->vec.size() < len)
+			th->vec.push_back( th->vec_type->coerce( new Null ) );
+	}
+        return NULL;
 }
 
 /* this handles the [] operator, because vec[12] becomes vec.12 in bytecode */

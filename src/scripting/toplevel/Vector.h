@@ -48,6 +48,8 @@ public:
 	ASFUNCTION(_applytype);
 
 	ASFUNCTION(push);
+	ASFUNCTION(getLength);
+	ASFUNCTION(setLength);
 };
 
 

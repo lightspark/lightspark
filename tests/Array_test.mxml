@@ -112,6 +112,14 @@
 		Tests.assertEquals(i3.toLocaleString(), "[object String],[object String],[object String]", "toLocaleString()");
 		Tests.assertEquals(false,(["a","b",3] == ["a","b",3]),"Arrays not equals -> different objects");
 		Tests.assertEquals(false,(["a","b",3] === ["a","b",3]),"Arrays not equals -> different objects");
+
+		var j:Array = new Array();
+		j[-1] = "x";
+		j[7.4] = "y";
+		Tests.assertEquals("x",j[-1],"Array[-1]");
+		Tests.assertEquals("y",j[7.4],"Array[7.4]");
+		Tests.assertEquals("",j,"Associative elements do not appear in array");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

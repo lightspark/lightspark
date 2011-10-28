@@ -99,6 +99,9 @@
 			Tests.assertTrue(true, "method method1(v) { ; }; method1(): ArgumentError");
 		}
 
+		var v1 = new Object();
+		v1["ö"] = "ä";
+		Tests.assertEquals("ä", v1.ö, "Multibyte identifier", true);
 
 		Tests.report(visual, this.name);
 	}

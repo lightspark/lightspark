@@ -65,6 +65,7 @@ REGISTER_CLASS_NAME(GradientType);
 REGISTER_CLASS_NAME(BlendMode);
 REGISTER_CLASS_NAME(SpreadMethod);
 REGISTER_CLASS_NAME(InterpolationMethod);
+REGISTER_CLASS_NAME(IBitmapDrawable);
 REGISTER_CLASS_NAME(Bitmap);
 REGISTER_CLASS_NAME(SimpleButton);
 REGISTER_CLASS_NAME(FrameLabel);
@@ -1243,6 +1244,9 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
+
+	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
+	IBitmapDrawable::linkTraits(c);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
@@ -3384,6 +3388,11 @@ void StageDisplayState::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"),DECLARED_TRAIT);
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
+}
+
+void IBitmapDrawable::linkTraits(Class_base* c)
+{
+	/* Does not implement any AS3 visible methods */
 }
 
 Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this), size(0,0), data(NULL)

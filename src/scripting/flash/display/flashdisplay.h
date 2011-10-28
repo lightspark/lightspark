@@ -43,7 +43,13 @@ class InteractiveObject;
 class Downloader;
 class AccessibilityProperties;
 
-class DisplayObject: public EventDispatcher
+class IBitmapDrawable
+{
+public:
+	static void linkTraits(Class_base* c);
+};
+
+class DisplayObject: public EventDispatcher, public IBitmapDrawable
 {
 friend class TokenContainer;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);

@@ -554,7 +554,7 @@ PolicyFile::PolicyFile(URLInfo _url, TYPE _type):
  */
 PolicyFile::~PolicyFile()
 {
-	RecMutex::Lock l(mutex);
+	Mutex::Lock l(mutex);
 	for(list<PolicyAllowAccessFrom*>::iterator i = allowAccessFrom.begin();
 			i != allowAccessFrom.end(); ++i)
 		delete (*i);
@@ -590,7 +590,7 @@ URLPolicyFile::URLPolicyFile(const URLInfo& _url):
  */
 URLPolicyFile::~URLPolicyFile()
 {
-	RecMutex::Lock l(mutex);
+	Mutex::Lock l(mutex);
 	for(list<PolicyAllowHTTPRequestHeadersFrom*>::iterator i = allowHTTPRequestHeadersFrom.begin();
 			i != allowHTTPRequestHeadersFrom.end(); ++i)
 		delete (*i);
@@ -606,7 +606,7 @@ URLPolicyFile::~URLPolicyFile()
  */
 URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
 {
-	RecMutex::Lock l(mutex);
+	Mutex::Lock l(mutex);
 
 	if(isMaster())
 		return this;
@@ -647,7 +647,7 @@ void URLPolicyFile::load()
 
 	URLPolicyFile* master = getMasterPolicyFile();
 
-	RecMutex::Lock l(mutex);
+	Mutex::Lock l(mutex);
 	//Check if this file is allowed/ignored by the master policy file
 	if(!isMaster())
 	{

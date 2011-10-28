@@ -41,6 +41,8 @@ public:
 
 	//Overloads
 	tiny_string toString(bool debugMsg=false);
+	void setVariableByMultiname(const multiname& name, ASObject* o);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 
 	//TODO: do we need to implement generator?
@@ -50,6 +52,7 @@ public:
 	ASFUNCTION(push);
 	ASFUNCTION(getLength);
 	ASFUNCTION(setLength);
+	ASFUNCTION(_toString);
 };
 
 

@@ -595,6 +595,10 @@ public:
 	ASFUNCTION(_toString);
 	tiny_string toString();
 	static tiny_string toString(number_t val);
+	static bool isInteger(number_t val)
+	{
+		return floor(val) == val;
+	}
 	unsigned int toUInt()
 	{
 		return (unsigned int)(val);

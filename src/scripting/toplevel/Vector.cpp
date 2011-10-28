@@ -34,8 +34,10 @@ void Vector::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
 	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("length",AS3,Class<IFunction>::getFunction(getLength),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length",AS3,Class<IFunction>::getFunction(setLength),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(setLength),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 }
 
 void Vector::setTypes(const std::vector<Type*>& types)
@@ -89,14 +91,21 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 
 ASFUNCTIONBODY(Vector,_constructor)
 {
-	//length:uint = 0, fixed:Boolean = false
+	uint32_t len;
+	bool fixed;
+	ARG_UNPACK (len, 0) (fixed, false);
 	assert_and_throw(argslen <= 2);
 	ASObject::_constructor(obj,NULL,0);
 
 	Vector* th=static_cast< Vector *>(obj);
 	assert(th->vec_type);
-	//TODO
-	th->fixed = false;
+	th->fixed = fixed;
+	th->vec.resize(len);
+
+	/* See setLength */
+	for(size_t i=0;i < len; ++i)
+		th->vec[i] = th->vec_type->coerce( new Null );
+
 	return NULL;
 }
 
@@ -143,6 +152,36 @@ ASFUNCTIONBODY(Vector,setLength)
         return NULL;
 }
 
+ASFUNCTIONBODY(Vector,_toString)
+{
+	tiny_string ret;
+	Vector* th = obj->as<Vector>();
+	for(size_t i=0; i < th->vec.size(); ++i)
+	{
+		ret += th->vec[i]->toString();
+		if(i!=th->vec.size()-1)
+			ret += ',';
+	}
+	return Class<ASString>::getInstanceS(ret);
+}
+bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+{
+	if(!considerDynamic)
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	if(name.ns[0].name!="")
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	unsigned int index=0;
+	if(!Array::isValidMultiname(name,index))
+		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+
+	if(index < vec.size())
+		return true;
+	else
+		return false;
+}
+
 /* this handles the [] operator, because vec[12] becomes vec.12 in bytecode */
 _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
@@ -166,6 +205,33 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Vector: Access beyond size");
 		return NullRef; //TODO: test if we should throw something or if we should return new Undefined();
+	}
+}
+
+void Vector::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	assert_and_throw(name.ns.size()>0);
+	if(name.ns[0].name!="")
+		return ASObject::setVariableByMultiname(name, o);
+
+	unsigned int index=0;
+	if(!Array::isValidMultiname(name,index))
+		return ASObject::setVariableByMultiname(name, o);
+
+	if(index < vec.size())
+	{
+		vec[index]->decRef();
+		vec[index] = o;
+	}
+	else if(index == vec.size())
+	{
+		vec.push_back( o );
+	}
+	else
+	{
+		/* Spec says: one may not set a value with an index more than
+		 * one beyond the current final index. */
+		throw Class<ArgumentError>::getInstanceS("Vector accessed out-of-bounds");
 	}
 }
 

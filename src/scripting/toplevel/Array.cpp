@@ -819,11 +819,14 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 			break;
 		//This is already an int, so its good enough
 		case multiname::NAME_INT:
+			if(name.name_i < 0)
+				return false;
 			index=name.name_i;
 			break;
 		case multiname::NAME_NUMBER:
-			//TODO: check that this is really an integer
-			index=name.name_d;
+			if(!Number::isInteger(name.name_d))
+				return false;
+			index = name.name_d;
 			break;
 		case multiname::NAME_OBJECT:
 			//TODO: should be use toPrimitive here?

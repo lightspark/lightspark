@@ -10,6 +10,8 @@ When you consider the tree good to release and have the changelog updated go to 
 
 $cd lightspark
 
+Bump version in CMakeFile and commit the change
+
 tag it
 
 $git tag lightspark-0.5.2

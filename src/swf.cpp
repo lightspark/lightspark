@@ -465,6 +465,7 @@ void SystemState::destroy()
 	//This deletes the {int,uint,number}_managers; therefore no Number/.. object may be
 	//decRef'ed after this line as it would cause a manager->put()
 	delete currentVm;
+	currentVm = NULL;
 
 	//Some objects needs to remove the jobs when destroyed so keep the timerThread until now
 	delete timerThread;

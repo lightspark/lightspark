@@ -270,13 +270,13 @@ public:
 	}
 };
 
-class IEventDispatcher: public InterfaceClass
+class IEventDispatcher
 {
 public:
 	static void linkTraits(Class_base* c);
 };
 
-class EventDispatcher: public ASObject
+class EventDispatcher: public ASObject, public IEventDispatcher
 {
 private:
 	Mutex handlersMutex;

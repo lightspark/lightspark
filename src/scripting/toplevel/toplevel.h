@@ -99,12 +99,6 @@ public:
 	tiny_string getName() const { return "void"; }
 };
 
-class InterfaceClass: public ASObject
-{
-protected:
-	static void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
-};
-
 class Class_base: public ASObject, public Type
 {
 friend class ABCVm;

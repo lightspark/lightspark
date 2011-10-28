@@ -3882,24 +3882,6 @@ bool Namespace::isEqual(ASObject* o)
 	return false;
 }
 
-void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
-{
-	variable* var=NULL;
-	Class_base* cur=c;
-	//Find the origin
-	while(cur)
-	{
-		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
-		if(var)
-			break;
-		cur=cur->super.getPtr();
-	}
-	assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
-	IFunction* f=static_cast<IFunction*>(var->var);
-	f->incRef();
-	c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
-}
-
 void UInteger::sinit(Class_base* c)
 {
 	//TODO: add in the JIT support for unsigned number

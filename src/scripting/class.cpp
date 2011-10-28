@@ -70,3 +70,21 @@ Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const 
 {
 	throw Class<TypeError>::getInstanceS("Error #1007: Cannot construct global object");
 }
+
+void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
+{
+	variable* var=NULL;
+	Class_base* cur=c;
+	//Find the origin
+	while(cur)
+	{
+		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+		if(var)
+			break;
+		cur=cur->super.getPtr();
+	}
+	assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
+	IFunction* f=static_cast<IFunction*>(var->var);
+	f->incRef();
+	c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
+}

@@ -377,7 +377,7 @@ void EventDispatcher::finalize()
 void EventDispatcher::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->addImplementedInterface(Class<IEventDispatcher>::getClass());
+	c->addImplementedInterface(InterfaceClass<IEventDispatcher>::getClass());
 	c->setSuper(Class<ASObject>::getRef());
 
 	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener),NORMAL_METHOD,true);

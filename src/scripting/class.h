@@ -345,6 +345,55 @@ public:
 	}
 };
 
+/* InterfaceClass implements interfaces. E.g., if you declare a variable of type IEventDispatcher in AS3,
+ * then the type in our code will be InterfaceClass<IEventDispatcher>.
+ * All classes that implement an interface in AS3 do so in the C++ code, i.e.
+ * EventDispatcher derives from IEventDispatcher both in AS3 and C++ code.
+ * This makes it possible to use C++ casts similar to their AS3 counterparts.
+ *
+ * TODO: InterfaceClass should derive from Type, not from Class_base!
+ */
+void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
+template<class T>
+class InterfaceClass: public Class_base
+{
+	virtual ~InterfaceClass() {}
+	void buildInstanceTraits(ASObject*) const {}
+	ASObject* getInstance(bool, ASObject* const*, unsigned int)
+	{
+		assert(false);
+		return NULL;
+	}
+	ASObject* generator(ASObject* const*, const unsigned int)
+	{
+		assert(false);
+		return NULL;
+	}
+	InterfaceClass(const QName& name):Class_base(name) {}
+public:
+	static InterfaceClass<T>* getClass()
+	{
+		QName name(ClassName<T>::name,ClassName<T>::ns);
+		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(name);
+		InterfaceClass<T>* ret=NULL;
+		if(it==getSys()->classes.end())
+		{	//This class is not yet in the map, create it
+			ret=new InterfaceClass<T>(name);
+			getSys()->classes.insert(std::make_pair(name,ret));
+		}
+		else
+			ret=static_cast<InterfaceClass<T>*>(it->second);
+
+		return ret;
+	}
+	static _R<InterfaceClass<T>> getRef()
+	{
+		InterfaceClass<T>* ret = getClass();
+		ret->incRef();
+		return _MR(ret);
+	}
+};
+
 /* This is a class which was instantiated from a Template<T> */
 template<class T>
 class TemplatedClass : public Class<T>

@@ -312,7 +312,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("AsyncErrorEvent","flash.events",Class<AsyncErrorEvent>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("FullScreenEvent","flash.events",Class<FullScreenEvent>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("TextEvent","flash.events",Class<TextEvent>::getRef(),DECLARED_TRAIT);
-	builtin->setVariableByQName("IEventDispatcher","flash.events",Class<IEventDispatcher>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("IEventDispatcher","flash.events",InterfaceClass<IEventDispatcher>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("FocusEvent","flash.events",Class<FocusEvent>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("NetStatusEvent","flash.events",Class<NetStatusEvent>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("HTTPStatusEvent","flash.events",Class<HTTPStatusEvent>::getRef(),DECLARED_TRAIT);

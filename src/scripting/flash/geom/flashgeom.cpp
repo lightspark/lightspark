@@ -1005,8 +1005,8 @@ MATRIX Matrix::getMATRIX() const
 	MATRIX ret;
 	ret.ScaleX = a;
 	ret.ScaleY = d;
-	ret.RotateSkew0 = c;
-	ret.RotateSkew1 = b;
+	ret.RotateSkew1 = c;
+	ret.RotateSkew0 = b;
 	ret.TranslateX = tx;
 	ret.TranslateY = ty;
 	return ret;

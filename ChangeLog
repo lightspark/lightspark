@@ -1,10 +1,17 @@
 lightspark: An open source flash player implementation
 
+Version 0.5.2.1:
+	* Patch version to fix up reported version.
+
 Version 0.5.2:
 	* Requires llvm 2.8
 	* Added LIGHTSPARK_PLUGIN_PARAMFILE environment variable to let the
-	plugin write parameter files that are compatible with lightsparks '-p'
-	commandline switch
+	  plugin write parameter files that are compatible with lightsparks '-p'
+	  commandline switch
+	* Many bugfixes and changes to the VM that make many more  tests pass
+ 	* Reorganized code that implements the Flash and AS3 API into
+	  directories and files that more closely match the respective package
+	  and class hierarchies
 
 Version 0.5.1:
 	* Misc fixes to better support YouTube, Vimeo, Flowplayer

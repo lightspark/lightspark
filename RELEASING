@@ -19,10 +19,10 @@ $git push --tags origin master
 
 make a tarball of it
 
-$git archive --format tar --prefix=lightspark-0.5.2/ lightspark-0.5.2 |gzip >../lightspark-0.5.2.tgz
+$git archive --format tar --prefix=lightspark-0.5.2/ lightspark-0.5.2 |gzip -9 >../lightspark-0.5.2.tar.gz
 
 sign the tarball for publishing on Launchpad
-$gpg --armor --sign --detach-sig lightspark-0.5.2.tgz
+$gpg --armor --sign --detach-sig lightspark-0.5.2.tar.gz
 
 Upload to Launchpad
 --------------------
@@ -33,4 +33,4 @@ Create milestone and release in this interface, name both lightspark-0.5.2
 
 https://launchpad.net/lightspark/trunk
 
-LP will prompt for descriptions, changelogs and uploads of .tgz and .asc files.
+LP will prompt for descriptions, changelogs and uploads of .tar.gz and .asc files.

@@ -2730,7 +2730,7 @@ _NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t 
 {
 	_NR<InteractiveObject> ret;
 	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type);
-	if(!ret && isHittable(type))
+	if(!ret)
 	{
 		/* If nothing else is hit, we hit the stage */
 		this->incRef();

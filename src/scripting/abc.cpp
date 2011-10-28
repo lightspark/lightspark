@@ -180,6 +180,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Vector","__AS3__.vec",Template<Vector>::getTemplate(),DECLARED_TRAIT);
 	//Some instances must be included, they are not created by AS3 code
 	builtin->setVariableByQName("Vector$Object","__AS3__.vec",Template<Vector>::getTemplateInstance(Class<ASObject>::getClass()),DECLARED_TRAIT);
+	builtin->setVariableByQName("Vector$Number","__AS3__.vec",Template<Vector>::getTemplateInstance(Class<Number>::getClass()),DECLARED_TRAIT);
 	builtin->setVariableByQName("Error","",Class<ASError>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("SecurityError","",Class<SecurityError>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("ArgumentError","",Class<ArgumentError>::getRef(),DECLARED_TRAIT);

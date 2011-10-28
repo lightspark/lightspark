@@ -32,12 +32,18 @@ using namespace lightspark;
 
 class StandaloneEngineData: public EngineData
 {
+	guint destroyHandlerId;
 public:
-	StandaloneEngineData()
+	StandaloneEngineData() : destroyHandlerId(0)
 	{
 #ifndef _WIN32
 		visual = XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
 #endif
+	}
+	~StandaloneEngineData()
+	{
+		if(destroyHandlerId && widget)
+			g_signal_handler_disconnect(widget, destroyHandlerId);
 	}
 	static void StandaloneDestroy(GtkWidget *widget, gpointer data)
 	{
@@ -51,7 +57,7 @@ public:
 	{
 		GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		gtk_window_set_title((GtkWindow*)window,"Lightspark");
-		g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),this);
+		destroyHandlerId = g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),this);
 		return window;
 	}
 	NativeWindow getWindowForGnash()

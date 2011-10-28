@@ -41,6 +41,13 @@
 
 		//TODO: test if the following throws
 		//var v7:Vector.<DisplayObject> = Vector.<DisplayObject>(v);
+
+		var v7:Vector.<Number> = new Vector.<Number>();
+		v7.push(3);
+		v7.length = 2;
+		Tests.assertEquals(v7[0],3,"Vector.size 1");
+		Tests.assertEquals(v7[1],0,"Vector.size 2");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

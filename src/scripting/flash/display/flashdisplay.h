@@ -377,6 +377,7 @@ public:
 	ASFUNCTION(lineStyle);
 	ASFUNCTION(beginFill);
 	ASFUNCTION(beginGradientFill);
+	ASFUNCTION(beginBitmapFill);
 	ASFUNCTION(endFill);
 	ASFUNCTION(drawRect);
 	ASFUNCTION(drawRoundRect);

@@ -2953,6 +2953,7 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginBitmapFill","",Class<IFunction>::getFunction(beginBitmapFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(endFill),NORMAL_METHOD,true);
 }
 
@@ -3322,6 +3323,34 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	}
 
 	style.Gradient = grad;
+	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,beginBitmapFill)
+{
+	Graphics* th = obj->as<Graphics>();
+	_NR<BitmapData> bitmap;
+	_NR<Matrix> matrix;
+	bool repeat, smooth;
+	ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
+
+	th->checkAndSetScaling();
+	FILLSTYLE style(-1);
+	if(repeat && smooth)
+		style.FillStyleType = REPEATING_BITMAP;
+	else if(repeat && !smooth)
+		style.FillStyleType = NON_SMOOTHED_REPEATING_BITMAP;
+	else if(!repeat && smooth)
+		style.FillStyleType = CLIPPED_BITMAP;
+	else
+		style.FillStyleType = NON_SMOOTHED_CLIPPED_BITMAP;
+
+	if(!matrix.isNull())
+		style.Matrix = matrix->getMATRIX();
+
+	//TODO: style.bitmap should be a reference
+	style.bitmap = bitmap.getPtr();
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 	return NULL;
 }

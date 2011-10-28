@@ -1908,8 +1908,6 @@ istream& lightspark::operator>>(istream& in, d64& v)
 istream& lightspark::operator>>(istream& in, string_info& v)
 {
 	in >> v.size;
-	//TODO: String are expected to be UTF-8 encoded.
-	//This temporary implementation assume ASCII, so fail if high bit is set
 	uint8_t t;
 	string tmp;
 	tmp.reserve(v.size);
@@ -1917,8 +1915,6 @@ istream& lightspark::operator>>(istream& in, string_info& v)
 	{
 		in.read((char*)&t,1);
 		tmp.push_back(t);
-		if(t&0x80)
-			LOG(LOG_NOT_IMPLEMENTED,_("Multibyte not handled"));
 	}
 	v.val=tmp;
 	return in;

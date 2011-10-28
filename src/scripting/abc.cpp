@@ -231,10 +231,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("StageAlign","flash.display",Class<StageAlign>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("StageQuality","flash.display",Class<StageQuality>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("StageDisplayState","flash.display",Class<StageDisplayState>::getRef(),DECLARED_TRAIT);
-	builtin->setVariableByQName("IBitmapDrawable","flash.display",
-			Class<ASObject>::getStubClass(QName("IBitmapDrawable","flash.display")),DECLARED_TRAIT);
-	builtin->setVariableByQName("BitmapData","flash.display",
-			Class<ASObject>::getStubClass(QName("BitmapData","flash.display")),DECLARED_TRAIT);
+	builtin->setVariableByQName("BitmapData","flash.display",Class<BitmapData>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Bitmap","flash.display",Class<Bitmap>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("IBitmapDrawable","flash.display",InterfaceClass<IBitmapDrawable>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("GraphicsGradientFill","flash.display",

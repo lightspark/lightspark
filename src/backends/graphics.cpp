@@ -448,11 +448,9 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			if(style.bitmap==NULL)
 				throw RunTimeException("Invalid bitmap");
 
-			IntSize size = style.bitmap->getBitmapSize();
-
 			cairo_surface_t* surface = cairo_image_surface_create_for_data (style.bitmap->data,
-										CAIRO_FORMAT_ARGB32, size.width, size.height,
-										cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, size.width));
+										CAIRO_FORMAT_ARGB32, style.bitmap->width, style.bitmap->height,
+										cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, style.bitmap->width));
 
 			pattern = cairo_pattern_create_for_surface(surface);
 			cairo_surface_destroy(surface);

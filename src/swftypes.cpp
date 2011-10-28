@@ -734,7 +734,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 			try
 			{
 				_R<DictionaryTag> dict=getParseThread()->getRootMovie()->dictionaryLookup(bitmapId);
-				v.bitmap=dynamic_cast<Bitmap*>(dict.getPtr());
+				v.bitmap=dynamic_cast<Bitmap*>(dict.getPtr())->data.getPtr();
 				if(v.bitmap==NULL)
 				{
 					LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);

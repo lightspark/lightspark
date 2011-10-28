@@ -84,7 +84,7 @@ enum FILE_TYPE { FT_UNKNOWN=0, FT_SWF, FT_COMPRESSED_SWF, FT_PNG, FT_JPEG, FT_GI
 typedef double number_t;
 
 class ASObject;
-class Bitmap;
+class BitmapData;
 
 /* Iterates over utf8 characters */
 class CharIterator /*: public forward_iterator<uint32_t>*/
@@ -1160,7 +1160,7 @@ public:
 	MATRIX Matrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
-	Bitmap* bitmap;
+	BitmapData* bitmap;
 	virtual ~FILLSTYLE(){}
 };
 

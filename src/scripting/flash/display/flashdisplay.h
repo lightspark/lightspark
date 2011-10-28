@@ -749,22 +749,37 @@ public:
 	IntSize(uint32_t w, uint32_t h):width(h),height(h){}
 };
 
+class BitmapData: public ASObject, public IBitmapDrawable
+{
+CLASSBUILDABLE(BitmapData);
+private:
+	static void sinit(Class_base* c);
+	uint8_t* getData() { return data; }
+	int getWidth() { return width; }
+	int getHeight() { return height; }
+public:
+	BitmapData() : data(NULL), width(0), height(0) {}
+	~BitmapData();
+	/* the bitmaps data in cairo's internal representation */
+	uint8_t* data;
+	ASPROPERTY_GETTER(int32_t, width);
+	ASPROPERTY_GETTER(int32_t, height);
+	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
+	bool fromJPEG(uint8_t* data, int len);
+	bool fromJPEG(std::istream& s);
+};
+
 class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;
 protected:
-	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
-	bool fromJPEG( uint8_t* data, int len);
-	bool fromJPEG(std::istream& s);
-	IntSize size;
-	/* the bitmaps data in cairo's internal representation */
-	uint8_t* data;
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
 public:
-	Bitmap() : TokenContainer(this), size(0,0), data(NULL) {}
-	Bitmap(std::istream *s, FILE_TYPE type=FT_UNKNOWN);
-	~Bitmap();
+	_NR<BitmapData> data;
+	/* Call this after updating any member of 'data' */
+	void updatedData();
+	Bitmap(std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	static void sinit(Class_base* c);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);

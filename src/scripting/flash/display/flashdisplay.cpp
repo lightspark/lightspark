@@ -66,6 +66,7 @@ REGISTER_CLASS_NAME(BlendMode);
 REGISTER_CLASS_NAME(SpreadMethod);
 REGISTER_CLASS_NAME(InterpolationMethod);
 REGISTER_CLASS_NAME(IBitmapDrawable);
+REGISTER_CLASS_NAME(BitmapData);
 REGISTER_CLASS_NAME(Bitmap);
 REGISTER_CLASS_NAME(SimpleButton);
 REGISTER_CLASS_NAME(FrameLabel);
@@ -3395,8 +3396,25 @@ void IBitmapDrawable::linkTraits(Class_base* c)
 	/* Does not implement any AS3 visible methods */
 }
 
-Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this), size(0,0), data(NULL)
+void BitmapData::sinit(Class_base* c)
 {
+	c->setSuper(Class<ASObject>::getRef());
+	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
+	REGISTER_GETTER(c,width);
+	REGISTER_GETTER(c,height);
+
+	IBitmapDrawable::linkTraits(c);
+}
+
+ASFUNCTIONBODY_GETTER(BitmapData, width);
+ASFUNCTIONBODY_GETTER(BitmapData, height);
+
+Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
+{
+	data = _MR(Class<BitmapData>::getInstanceS());
+	if(!s)
+		return;
+
 	if(type==FT_UNKNOWN)
 	{
 		// Try to detect the format from the stream
@@ -3411,7 +3429,7 @@ Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this), size(0,0
 	switch(type)
 	{
 		case FT_JPEG:
-			fromJPEG(*s);
+			data->fromJPEG(*s);
 			break;
 		case FT_PNG:
 		case FT_GIF:
@@ -3421,9 +3439,10 @@ Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this), size(0,0
 			LOG(LOG_ERROR,_("Unsupported image type"));
 			break;
 	}
+	Bitmap::updatedData();
 }
 
-Bitmap::~Bitmap()
+BitmapData::~BitmapData()
 {
 	if(data)
 		delete[] data;
@@ -3436,6 +3455,20 @@ void Bitmap::sinit(Class_base* c)
 	c->setSuper(Class<DisplayObject>::getRef());
 }
 
+void Bitmap::updatedData()
+{
+	FILLSTYLE style(-1);
+	style.FillStyleType=CLIPPED_BITMAP;
+	style.bitmap=data.getPtr();
+	tokens.clear();
+	tokens.emplace_back(GeomToken(SET_FILL, style));
+	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, data->height)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(data->width, data->height)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(data->width, 0)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
+	requestInvalidation();
+}
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	if(!data)
@@ -3451,16 +3484,16 @@ _NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t
 
 IntSize Bitmap::getBitmapSize() const
 {
-	return size;
+	return IntSize(data->width, data->height);
 }
 
-bool Bitmap::fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha)
+bool BitmapData::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)
 {
 	if(!rgb)
 		return false;
 
-	size.width = width;
-	size.height = height;
+	width = w;
+	height = h;
 	if(hasAlpha)
 		data = CairoRenderer::convertBitmapWithAlphaToCairo(rgb, width, height);
 	else
@@ -3472,33 +3505,27 @@ bool Bitmap::fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlph
 		return false;
 	}
 
-	FILLSTYLE style(-1);
-	style.FillStyleType=CLIPPED_BITMAP;
-	style.bitmap=this;
-	tokens.clear();
-	tokens.emplace_back(GeomToken(SET_FILL, style));
-	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, size.height)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(size.width, size.height)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(size.width, 0)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
-	requestInvalidation();
-
 	return true;
 }
 
-bool Bitmap::fromJPEG(uint8_t *inData, int len)
+bool BitmapData::fromJPEG(uint8_t *inData, int len)
 {
 	assert(!data);
-	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &size.width, &size.height);
-	return fromRGB(rgb, size.width, size.height, false);
+	/* flash uses signed values for width and height */
+	uint32_t w,h;
+	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &w, &h);
+	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
 }
 
-bool Bitmap::fromJPEG(std::istream &s)
+bool BitmapData::fromJPEG(std::istream &s)
 {
 	assert(!data);
-	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &size.width, &size.height);
-	return fromRGB(rgb, size.width, size.height, false);
+	/* flash uses signed values for width and height */
+	uint32_t w,h;
+	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &w, &h);
+	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
 }
 
 void SimpleButton::sinit(Class_base* c)

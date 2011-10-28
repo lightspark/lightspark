@@ -3214,7 +3214,6 @@ void Class_base::recursiveBuild(ASObject* target)
 	if(super)
 		super->recursiveBuild(target);
 
-	LOG(LOG_TRACE,_("Building traits for ") << class_name);
 	buildInstanceTraits(target);
 }
 

@@ -447,6 +447,7 @@ public:
 	}
 };
 
+struct multiname;
 class QName
 {
 public:
@@ -461,6 +462,7 @@ public:
 			return ns<r.ns;
 	}
 	tiny_string getQualifiedName() const;
+	operator multiname() const;
 };
 
 class UI8 
@@ -687,6 +689,16 @@ struct multiname
 	void setName(ASObject* n);
 	bool isQName() const { return ns.size() == 1; }
 };
+
+inline QName::operator multiname() const
+{
+	multiname ret;
+	ret.name_type = multiname::NAME_STRING;
+	ret.name_s = name;
+	ret.ns.push_back( nsNameAndKind(ns, PACKAGE_NAMESPACE) );
+	ret.isAttribute = false;
+	return ret;
+}
 
 class FLOAT 
 {

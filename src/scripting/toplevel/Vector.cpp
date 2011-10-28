@@ -125,6 +125,8 @@ ASFUNCTIONBODY(Vector,setLength)
 	ARG_UNPACK (len);
 	if(len <= th->vec.size())
 	{
+		for(size_t i=len; i< th->vec.size(); ++i)
+			th->vec[i]->decRef();
 		th->vec.resize(len);
 	}
 	else

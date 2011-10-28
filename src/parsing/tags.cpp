@@ -653,7 +653,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 			inData[i] = 0xFF;
 	}
 
-	data->fromRGB(inData, BitmapWidth, BitmapHeight, true);
+	bitmapData->fromRGB(inData, BitmapWidth, BitmapHeight, true);
 	Bitmap::updatedData();
 }
 
@@ -1388,7 +1388,7 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Diction
 	uint8_t* inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
 
-	data->fromJPEG(inData,dataSize);
+	bitmapData->fromJPEG(inData,dataSize);
 	Bitmap::updatedData();
 	delete[] inData;
 }
@@ -1413,7 +1413,7 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 	in.read((char*)inData,dataSize);
 
 	//TODO: check header. Could also be PNG or GIF
-	data->fromJPEG(inData,dataSize);
+	bitmapData->fromJPEG(inData,dataSize);
 	Bitmap::updatedData();
 	delete[] inData;
 

@@ -3461,11 +3461,11 @@ ASFUNCTIONBODY(BitmapData,draw)
 	{
 		Bitmap* bm = drawableO->as<Loader>()->getContent()->as<Bitmap>();
 		delete[] th->data;
-		th->dataSize = bm->data->dataSize;
+		th->dataSize = bm->bitmapData->dataSize;
 		th->data = new uint8_t[th->dataSize];
-		memcpy(th->data, bm->data->data, th->dataSize);
-		th->width = bm->data->width;
-		th->height = bm->data->height;
+		memcpy(th->data, bm->bitmapData->data, th->dataSize);
+		th->width = bm->bitmapData->width;
+		th->height = bm->bitmapData->height;
 		return NULL;
 	}
 
@@ -3475,7 +3475,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 
 Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
 {
-	data = _MR(Class<BitmapData>::getInstanceS());
+	bitmapData = _MR(Class<BitmapData>::getInstanceS());
 	if(!s)
 		return;
 
@@ -3493,7 +3493,7 @@ Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
 	switch(type)
 	{
 		case FT_JPEG:
-			data->fromJPEG(*s);
+			bitmapData->fromJPEG(*s);
 			break;
 		case FT_PNG:
 		case FT_GIF:
@@ -3517,27 +3517,27 @@ void Bitmap::sinit(Class_base* c)
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
 	c->setSuper(Class<DisplayObject>::getRef());
+	REGISTER_GETTER(c,bitmapData);
 }
+
+ASFUNCTIONBODY_GETTER(Bitmap,bitmapData);
 
 void Bitmap::updatedData()
 {
 	FILLSTYLE style(-1);
 	style.FillStyleType=CLIPPED_BITMAP;
-	style.bitmap=data.getPtr();
+	style.bitmap=bitmapData.getPtr();
 	tokens.clear();
 	tokens.emplace_back(GeomToken(SET_FILL, style));
 	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, data->height)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(data->width, data->height)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(data->width, 0)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, bitmapData->height)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->width, bitmapData->height)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->width, 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
 	requestInvalidation();
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if(!data)
-		return false;
-
 	return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 }
 
@@ -3548,7 +3548,7 @@ _NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t
 
 IntSize Bitmap::getBitmapSize() const
 {
-	return IntSize(data->width, data->height);
+	return IntSize(bitmapData->width, bitmapData->height);
 }
 
 bool BitmapData::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)

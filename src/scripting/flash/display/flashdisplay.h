@@ -779,7 +779,7 @@ protected:
 	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
 public:
-	_NR<BitmapData> data;
+	ASPROPERTY_GETTER(_NR<BitmapData>,bitmapData);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
 	Bitmap(std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);

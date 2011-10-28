@@ -242,12 +242,12 @@ public:
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 * This function new[]'s the returned value, which has to be freed by the caller.
 	 */
-	static uint8_t* convertBitmapToCairo(uint8_t* data, uint32_t width, uint32_t height);
+	static uint8_t* convertBitmapToCairo(uint8_t* data, uint32_t width, uint32_t height, size_t* dataSize);
 	/*
 	 * Converts data (which is in ARGB format) to the format internally used by cairo.
 	 * This function new[]'s the returned value, which has to be freed by the caller.
 	 */
-	static uint8_t* convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t width, uint32_t height);
+	static uint8_t* convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t width, uint32_t height, size_t* dataSize);
 };
 
 class CairoTokenRenderer : public CairoRenderer

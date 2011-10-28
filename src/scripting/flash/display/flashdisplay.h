@@ -758,12 +758,14 @@ private:
 	int getWidth() { return width; }
 	int getHeight() { return height; }
 public:
-	BitmapData() : data(NULL), width(0), height(0) {}
+	BitmapData() : data(NULL), dataSize(0), width(0), height(0) {}
 	~BitmapData();
 	/* the bitmaps data in cairo's internal representation */
 	uint8_t* data;
+	size_t dataSize;
 	ASPROPERTY_GETTER(int32_t, width);
 	ASPROPERTY_GETTER(int32_t, height);
+	ASFUNCTION(draw);
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
 	bool fromJPEG(uint8_t* data, int len);
 	bool fromJPEG(std::istream& s);

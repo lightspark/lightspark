@@ -3400,6 +3400,7 @@ void BitmapData::sinit(Class_base* c)
 {
 	c->setSuper(Class<ASObject>::getRef());
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
+	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(draw),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
 
@@ -3408,6 +3409,40 @@ void BitmapData::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER(BitmapData, width);
 ASFUNCTIONBODY_GETTER(BitmapData, height);
+
+ASFUNCTIONBODY(BitmapData,draw)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	_NR<ASObject> drawableO;
+	_NR<Matrix> matrix;
+	_NR<ColorTransform> ctransform;
+	_NR<ASString> blendMode;
+	_NR<Rectangle> clipRect;
+	bool smoothing;
+	ARG_UNPACK (drawableO) (matrix, NullRef) (ctransform, NullRef) (blendMode, NullRef)
+					(clipRect, NullRef) (smoothing, false);
+
+	if(!drawableO->getClass() || !drawableO->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass()) )
+		throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
+
+	if(!matrix.isNull() || !ctransform.isNull() || !blendMode.isNull() || !clipRect.isNull() || smoothing)
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters");
+
+	if(drawableO->is<Loader>() && drawableO->as<Loader>()->getContent()->is<Bitmap>())
+	{
+		Bitmap* bm = drawableO->as<Loader>()->getContent()->as<Bitmap>();
+		delete[] th->data;
+		th->dataSize = bm->data->dataSize;
+		th->data = new uint8_t[th->dataSize];
+		memcpy(th->data, bm->data->data, th->dataSize);
+		th->width = bm->data->width;
+		th->height = bm->data->height;
+		return NULL;
+	}
+
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawableO->toDebugString());
+	return NULL;
+}
 
 Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
 {
@@ -3495,9 +3530,9 @@ bool BitmapData::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)
 	width = w;
 	height = h;
 	if(hasAlpha)
-		data = CairoRenderer::convertBitmapWithAlphaToCairo(rgb, width, height);
+		data = CairoRenderer::convertBitmapWithAlphaToCairo(rgb, width, height, &dataSize);
 	else
-		data = CairoRenderer::convertBitmapToCairo(rgb, width, height);
+		data = CairoRenderer::convertBitmapToCairo(rgb, width, height, &dataSize);
 	delete[] rgb;
 	if(!data)
 	{

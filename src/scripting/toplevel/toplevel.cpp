@@ -2369,7 +2369,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc.scope_stack=func_scope;
 	cc.initialScopeStack=func_scope.size();
 	cc.exec_pos=0;
-	getVm()->curGlobalObj = ABCVm::getGlobalScope(&cc);
+
+	/* Set the current global object, each script in each DoABCTag has its own */
+	Global* saved_global = getVm()->curGlobalObj;
+	getVm()->curGlobalObj = cc.scope_stack[0].object->as<Global>();
 
 	if(isBound())
 	{ /* closure_this can never been overriden */
@@ -2468,6 +2471,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			{
 				ABCVm::cur_recursion--; //decrement current recursion depth
 				Log::calls_indent--;
+				getVm()->curGlobalObj = saved_global;
 				throw excobj;
 			}
 			continue;
@@ -2476,6 +2480,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	}
 	ABCVm::cur_recursion--; //decrement current recursion depth
 	Log::calls_indent--;
+	getVm()->curGlobalObj= saved_global;
 
 	hit_count++;
 

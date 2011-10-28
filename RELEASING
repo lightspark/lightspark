@@ -1,0 +1,34 @@
+Steps used to make a new release
+=================================
+
+Here's what was used to release 0.5.2. In the future slight changes will be needed to adjust for the version numbers
+
+Make the tarball
+-------------------
+
+When you consider the tree good to release and have the changelog updated go to a git checkout
+
+$cd lightspark
+
+tag it
+
+$git tag lightspark-0.5.2
+$git push --tags origin master
+
+make a tarball of it
+
+$git archive --format tar --prefix=lightspark-0.5.2/ lightspark-0.5.2 |gzip >../lightspark-0.5.2.tgz
+
+sign the tarball for publishing on Launchpad
+$gpg --armor --sign --detach-sig lightspark-0.5.2.tgz
+
+Upload to Launchpad
+--------------------
+
+Currently only available to project managers (Alessandro and Jani).
+
+Create milestone and release in this interface, name both lightspark-0.5.2
+
+https://launchpad.net/lightspark/trunk
+
+LP will prompt for descriptions, changelogs and uploads of .tgz and .asc files.

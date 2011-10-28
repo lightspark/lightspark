@@ -364,10 +364,10 @@ class InterfaceClass: public Class_base
 		assert(false);
 		return NULL;
 	}
-	ASObject* generator(ASObject* const*, const unsigned int)
+	ASObject* generator(ASObject* const* args, const unsigned int argslen)
 	{
-		assert(false);
-		return NULL;
+		assert(argslen == 1);
+		return args[0];
 	}
 	InterfaceClass(const QName& name):Class_base(name) {}
 public:

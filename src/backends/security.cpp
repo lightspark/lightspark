@@ -58,7 +58,7 @@ SecurityManager::SecurityManager():
  */
 SecurityManager::~SecurityManager()
 {
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 
 	URLPFileMapIt i = pendingURLPFiles.begin();
 	for(; i != pendingURLPFiles.end(); ++i)
@@ -98,7 +98,7 @@ PolicyFile* SecurityManager::addPolicyFile(const URLInfo& url)
  */
 URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
 {
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 
 	URLPolicyFile* file = new URLPolicyFile(url);
 	if(file->isValid())
@@ -122,7 +122,7 @@ URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
  */
 URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 {
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 
 	URLPFileMapConstItPair range = loadedURLPFiles.equal_range(url.getHostname());
 	URLPFileMapConstIt i = range.first;
@@ -164,7 +164,7 @@ URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
  */
 void SecurityManager::loadPolicyFile(URLPolicyFile* file)
 {
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 
 	if(pendingURLPFiles.count(file->getURL().getHostname()) > 0)
 	{
@@ -211,7 +211,7 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 	if(loadPendingPolicies)
 		getSys()->securityManager->loadPolicyFile(master);
 
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 	//Check if the master policy file is loaded.
 	//If another user-added relevant policy file is already loaded, 
 	//it's master will have already been loaded too (to check if it is allowed).
@@ -427,7 +427,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	//Search for the policy files to check
 	URLPFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
 
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 
 	//Check the policy files
 	if(files != NULL)
@@ -509,7 +509,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	//Search for the policy files to check
 	URLPFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
 
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 
 	//Check the policy files
 	if(files != NULL)
@@ -554,7 +554,7 @@ PolicyFile::PolicyFile(URLInfo _url, TYPE _type):
  */
 PolicyFile::~PolicyFile()
 {
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 	for(list<PolicyAllowAccessFrom*>::iterator i = allowAccessFrom.begin();
 			i != allowAccessFrom.end(); ++i)
 		delete (*i);
@@ -590,7 +590,7 @@ URLPolicyFile::URLPolicyFile(const URLInfo& _url):
  */
 URLPolicyFile::~URLPolicyFile()
 {
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 	for(list<PolicyAllowHTTPRequestHeadersFrom*>::iterator i = allowHTTPRequestHeadersFrom.begin();
 			i != allowHTTPRequestHeadersFrom.end(); ++i)
 		delete (*i);
@@ -606,7 +606,7 @@ URLPolicyFile::~URLPolicyFile()
  */
 URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
 {
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 
 	if(isMaster())
 		return this;
@@ -647,7 +647,7 @@ void URLPolicyFile::load()
 
 	URLPolicyFile* master = getMasterPolicyFile();
 
-	Mutex::Lock l(mutex);
+	RecMutex::Lock l(mutex);
 	//Check if this file is allowed/ignored by the master policy file
 	if(!isMaster())
 	{

@@ -32,6 +32,7 @@ class XMLDocument;
 
 class XMLNode: public ASObject
 {
+friend class XML;
 protected:
 	_NR<XMLDocument> root;
 	xmlpp::Node* node;

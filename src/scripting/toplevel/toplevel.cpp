@@ -38,6 +38,7 @@
 #include "abc.h"
 #include "toplevel.h"
 #include "flash/events/flashevents.h"
+#include "flash/xml/flashxml.h"
 #include "swf.h"
 #include "compat.h"
 #include "class.h"
@@ -158,6 +159,10 @@ ASFUNCTIONBODY(XML,generator)
 	{
 		args[0]->incRef();
 		return args[0];
+	}
+	else if(args[0]->is<XMLNode>())
+	{
+		return Class<XML>::getInstanceS(args[0]->as<XMLNode>()->node);
 	}
 	else
 		throw RunTimeException("Type not supported in XML()");

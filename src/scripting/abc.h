@@ -582,6 +582,7 @@ private:
 	static number_t decrement(ASObject*);
 	static uint32_t decrement_i(ASObject*);
 	static bool strictEquals(ASObject*,ASObject*);
+	static ASObject* esc_xattr(ASObject* o);
 	//Utility
 	static void not_impl(int p);
 	static void wrong_exec_pos();

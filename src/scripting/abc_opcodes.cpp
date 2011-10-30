@@ -2203,3 +2203,21 @@ void ABCVm::newArray(call_context* th, int n)
 	th->runtime_stack_push(ret);
 }
 
+ASObject* ABCVm::esc_xattr(ASObject* o)
+{
+	/* TODO: implement correct escaping according to E4X
+	 * For now we just cut the string at the first \0 byte, which is wrong
+	 * but supresses more errors */
+	tiny_string t = o->toString();
+	o->decRef();
+	uint32_t i;
+	for(i=0;i<t.len();++i)
+	{
+		if(t[i] == '\0')
+			break;
+	}
+	if(i == t.len())
+		return Class<ASString>::getInstanceS(t);
+	else
+		return Class<ASString>::getInstanceS(t.substr(0,i));
+}

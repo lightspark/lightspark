@@ -178,7 +178,8 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"getScopeObject",(void*)&ABCVm::getScopeObject,ARGS_CONTEXT_INT},
 	{"getSlot",(void*)&ABCVm::getSlot,ARGS_OBJ_INT},
 	{"convert_s",(void*)&ABCVm::convert_s,ARGS_OBJ},
-	{"coerce_s",(void*)&ABCVm::coerce_s,ARGS_OBJ}
+	{"coerce_s",(void*)&ABCVm::coerce_s,ARGS_OBJ},
+	{"esc_xattr",(void*)&ABCVm::esc_xattr,ARGS_OBJ},
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
@@ -1276,6 +1277,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					popTypeFromStack(static_stack_types,local_ip);
 					break;
 				}
+				case 0x72: //esc_xattr
 				case 0x70: //convert_s
 				{
 					popTypeFromStack(static_stack_types,local_ip);
@@ -3341,6 +3343,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_s"), v1.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
+			}
+			case 0x72: //esc_xattr
+			{
+				LOG(LOG_TRACE, _("synt esc_xattr") );
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				abstract_value(ex,Builder,v1);
+				value=Builder.CreateCall(ex->FindFunctionNamed("esc_xattr"), v1.first);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 			}
 			case 0x73:
 			{

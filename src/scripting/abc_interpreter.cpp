@@ -943,7 +943,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//FIXME: Properly escape as described in ECMA-357 section 10.2
 				//esc_xattr
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(convert_s(val));
+				context->runtime_stack_push(esc_xattr(val));
 				break;
 			}case 0x73:
 			{

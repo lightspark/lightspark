@@ -137,7 +137,7 @@ enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, BORROWED
 
 struct variable
 {
-	nsNameAndKind ns;
+	std::set<nsNameAndKind> ns;
 	ASObject* var;
 	multiname* typemname;
 	const Type* type;
@@ -146,9 +146,9 @@ struct variable
 	TRAIT_KIND kind;
 	//obj_var(ASObject* _v, Class_base* _t):var(_v),type(_t),{}
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k)
-		:ns(_ns),var(NULL),typemname(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k){}
+		: var(NULL),typemname(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k) { ns.insert(_ns); }
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type)
-		:ns(_ns),var(_v),typemname(_t),type(type),setter(NULL),getter(NULL),kind(_k){}
+		: var(_v),typemname(_t),type(type),setter(NULL),getter(NULL),kind(_k) { ns.insert(_ns); }
 	void setVar(ASObject* v);
 };
 

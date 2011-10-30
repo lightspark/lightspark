@@ -503,10 +503,14 @@ struct nsNameAndKind
 	{
 		return name < r.name;
 	}
+	bool operator>(const nsNameAndKind& r) const
+	{
+		return name > r.name;
+	}
 	bool operator==(const nsNameAndKind& r) const
-  	{
+	{
 		return /*kind==r.kind &&*/ name==r.name;
-  	}
+	}
 };
 
 struct multiname

@@ -305,7 +305,7 @@ variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& n
 		if(!(ret->second.kind & traitKinds))
 			continue;
 
-		if(ret->second.ns==ns)
+		if(ret->second.ns.count(ns))
 			return &ret->second;
 	}
 
@@ -572,6 +572,28 @@ void variable::setVar(ASObject* v)
 	var=v;
 }
 
+template<class Set1, class Set2>
+bool is_disjoint(const Set1 &set1, const Set2 &set2)
+{
+	if(set1.empty() || set2.empty()) return true;
+
+	typename Set1::const_iterator
+		it1 = set1.begin(),
+		it1End = set1.end();
+	typename Set2::const_iterator
+		it2 = set2.begin(),
+		it2End = set2.end();
+	if(*it1 > *set2.rbegin() || *it2 > *set1.rbegin()) return true;
+
+	while(it1 != it1End && it2 != it2End)
+	{
+		if(*it1 == *it2) return false;
+		if(*it1 < *it2) { it1++; }
+		else { it2++; }
+	}
+	return true;
+}
+
 void variables_map::killObjVar(const multiname& mname)
 {
 	tiny_string name=mname.normalizedName();
@@ -579,18 +601,13 @@ void variables_map::killObjVar(const multiname& mname)
 	assert_and_throw(ret.first!=ret.second);
 
 	//Find the namespace
-	assert_and_throw(!mname.ns.empty());
-	for(unsigned int i=0;i<mname.ns.size();i++)
+	var_iterator start=ret.first;
+	for(;start!=ret.second;++start)
 	{
-		const nsNameAndKind& ns=mname.ns[i];
-		var_iterator start=ret.first;
-		for(;start!=ret.second;++start)
+		if(!is_disjoint(mname.ns,start->second.ns))
 		{
-			if(start->second.ns==ns)
-			{
-				Variables.erase(start);
-				return;
-			}
+			Variables.erase(start);
+			return;
 		}
 	}
 
@@ -614,7 +631,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 			continue;
 		//Check if one the namespace is already present
 		//We can use binary search, as the namespace are ordered
-		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.ns))
+		if(!is_disjoint(mname.ns,ret->second.ns))
 			return &ret->second;
 	}
 
@@ -966,17 +983,13 @@ void variables_map::initSlot(unsigned int n, const tiny_string& name, const nsNa
 		slots_vars.resize(n,Variables.end());
 
 	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
-	if(ret.first!=ret.second)
+	var_iterator start=ret.first;
+	for(;start!=ret.second;++start)
 	{
-		//Check if this namespace is already present
-		var_iterator start=ret.first;
-		for(;start!=ret.second;++start)
+		if(start->second.ns.count(ns))
 		{
-			if(start->second.ns==ns)
-			{
-				slots_vars[n-1]=start;
-				return;
-			}
+			slots_vars[n-1]=start;
+			return;
 		}
 	}
 
@@ -1073,7 +1086,8 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 	auto it=Variables.begin();
 	for(;it!=Variables.end();it++)
 	{
-		assert_and_throw(it->second.ns.name=="");
+		assert_and_throw(it->second.ns.size() == 1)
+		assert_and_throw(it->second.ns.begin()->name=="");
 		out->writeStringVR(stringMap,it->first);
 		it->second.var->serialize(out, stringMap, objMap);
 	}

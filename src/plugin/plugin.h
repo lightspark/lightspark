@@ -34,13 +34,12 @@
 class NPDownloader;
 typedef void(*helper_t)(void*);
 
-class NPDownloadManager: public lightspark::DownloadManager
+class NPDownloadManager: public lightspark::StandaloneDownloadManager
 {
 private:
 	NPP instance;
 public:
 	NPDownloadManager(NPP i);
-	~NPDownloadManager();
 	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner);
 	lightspark::Downloader* downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
 			lightspark::ILoadable* owner);

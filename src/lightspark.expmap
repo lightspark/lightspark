@@ -10,6 +10,7 @@ global:
 		*lightspark::Event*;
 		*lightspark::Downloader*;
 		*lightspark::DownloadManager*;
+		*lightspark::StandaloneDownloadManager*;
 		*lightspark::ExtVariant*;
 		*lightspark::ExtIdentifier*;
 		*lightspark::ExtObject*;

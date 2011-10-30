@@ -54,14 +54,6 @@ NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
 }
 
 /**
- * \brief Destructor for NPDownloaderManager
- */
-NPDownloadManager::~NPDownloadManager()
-{
-	cleanUp();
-}
-
-/**
  * \brief Create a Downloader for an URL.
  *
  * Returns a pointer to a newly created Downloader for the given URL.
@@ -72,6 +64,14 @@ NPDownloadManager::~NPDownloadManager()
  */
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner)
 {
+	// Handle RTMP requests internally, not through NPAPI
+	if(url.getProtocol()=="rtmp" ||
+	   url.getProtocol()=="rtmpe" ||
+	   url.getProtocol()=="rtmps")
+	{
+		return StandaloneDownloadManager::download(url, cached, owner);
+	}
+
 	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
@@ -91,6 +91,14 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
 		lightspark::ILoadable* owner)
 {
+	// Handle RTMP requests internally, not through NPAPI
+	if(url.getProtocol()=="rtmp" ||
+	   url.getProtocol()=="rtmpe" ||
+	   url.getProtocol()=="rtmps")
+	{
+		return StandaloneDownloadManager::downloadWithData(url, data, owner);
+	}
+
 	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), data, instance, owner);
@@ -100,8 +108,13 @@ lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::UR
 
 void NPDownloadManager::destroy(lightspark::Downloader* downloader)
 {
-	//Convert to a dynamic_cast if any other downloader is ever created by NPDownloadManager
-	NPDownloader* d=static_cast<NPDownloader*>(downloader);
+	NPDownloader* d=dynamic_cast<NPDownloader*>(downloader);
+	if(!d)
+	{
+		StandaloneDownloadManager::destroy(downloader);
+		return;
+	}
+
 	/*If the NP stream is already destroyed we can surely destroy the Downloader.
 	  Moreover, if ASYNC_DESTROY is already set, destroy is being called for the second time.
 	  This may happen when:

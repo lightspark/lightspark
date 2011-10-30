@@ -19,6 +19,7 @@
 
 #include "rtmputils.h"
 #include "swf.h"
+#include "logger.h"
 
 #ifdef ENABLE_RTMP
 #include <librtmp/rtmp.h>
@@ -56,12 +57,12 @@ void RTMPDownloader::execute()
 	char* urlBuf=new char[urlLen+1];
 	strncpy(urlBuf,rtmpUrl.raw_buf(),urlLen);
 	int ret=RTMP_SetupURL(rtmpCtx, urlBuf);
-	cout << "Setup " << ret << endl;
+	LOG(LOG_TRACE, "RTMP_SetupURL " << rtmpUrl << " " << ret);
 	//TODO: add return if fails
 	ret=RTMP_Connect(rtmpCtx, NULL);
-	cout << "Connect " << ret << endl;
+	LOG(LOG_TRACE, "Connect_Connect " << ret);
 	ret=RTMP_ConnectStream(rtmpCtx, 0);
-	cout << "ConnectStream " << ret << endl;
+	LOG(LOG_TRACE, "RTMP_ConnectStream " << ret);
 	//TODO: implement unsafe buffer concept
 	char buf[4096];
 	RTMP_SetBufferMS(rtmpCtx, 3600000);
@@ -70,7 +71,6 @@ void RTMPDownloader::execute()
 	{
 		//TODO: avoid the copy in the temporary buffer
 		ret=RTMP_Read(rtmpCtx,buf,4096);
-		cout << "DL " << ret << endl;
 		if(ret==0 || hasFailed() || aborting)
 			break;
 		append((uint8_t*)buf,ret);

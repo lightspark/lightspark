@@ -483,14 +483,24 @@ ASFUNCTIONBODY(NetConnection,connect)
 		th->_connected = false;
 		ASString* command = static_cast<ASString*>(args[0]);
 		th->uri = URLInfo(command->toString());
-		
+
 		if(sys->securityManager->evaluatePoliciesURL(th->uri, true) != SecurityManager::ALLOWED)
 		{
 			//TODO: find correct way of handling this case
 			throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
 		}
+		
+		if(!(th->uri.getProtocol() == "rtmp" ||
+		     th->uri.getProtocol() == "rtmpe" ||
+		     th->uri.getProtocol() == "rtmps"))
+		{
+			throw UnsupportedException("NetConnection::connect: only RTMP is supported");
+		}
 
-		throw UnsupportedException("NetConnection::connect to FMS");
+		// We actually create the connection later in
+		// NetStream::play(). For now, we support only
+		// streaming, not remoting (NetConnection.call() is
+		// not implemented).
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
@@ -711,11 +721,10 @@ ASFUNCTIONBODY(NetStream,play)
 	if(th->connection->uri.isValid())
 	{
 		//We should connect to FMS
-		assert_and_throw(argslen>=2 && argslen<=4);
+		assert_and_throw(argslen>=1 && argslen<=4);
 		//Args: name, start, len, reset
 		th->url=th->connection->uri;
 		th->url.setStream(args[0]->toString());
-		assert(th->url.getProtocol()=="rtmpe");
 	}
 	else
 	{

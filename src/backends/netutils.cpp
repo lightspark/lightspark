@@ -194,9 +194,9 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached,
 		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: local file"));
 		downloader=new LocalDownloader(url.getPath(), cached, owner);
 	}
-	else if(url.getProtocol() == "rtmpe")
+	else if(url.getProtocol().substr(0, 4) == "rtmp")
 	{
-		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: RTMPE stream"));
+		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: RTMP stream"));
 		downloader=new RTMPDownloader(url.getParsedURL(), url.getStream(), owner);
 	}
 	else

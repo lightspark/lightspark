@@ -434,6 +434,13 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	if(url.getProtocol() == "file" && sys->getOrigin().getProtocol() == "file")
 		return ALLOWED;
 
+	//Streaming from RTMP is always allowed (see
+	//http://forums.adobe.com/thread/422391)
+	if(url.getProtocol() == "rtmp" ||
+	   url.getProtocol() == "rtmpe" ||
+	   url.getProtocol() == "rtmps")
+		return ALLOWED;
+
 	LOG(LOG_INFO, _("SECURITY: Evaluating URL for cross domain policies:"));
 	LOG(LOG_INFO, _("SECURITY: --> URL:    ") << url);
 	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << sys->getOrigin());

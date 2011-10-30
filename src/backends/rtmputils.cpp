@@ -29,7 +29,7 @@ using namespace lightspark;
 using namespace std;
 
 RTMPDownloader::RTMPDownloader(const tiny_string& _url, const tiny_string& _stream, ILoadable* o):
-	ThreadedDownloader(_url, false, o), //No caching to file allowed
+	ThreadedDownloader(_url, true, o),
 	stream(_stream)
 {
 }

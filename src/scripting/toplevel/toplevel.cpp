@@ -3121,16 +3121,6 @@ void Class_base::setConstructor(IFunction* c)
 
 void Class_base::handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink)
 {
-/*	if(getActualClass()->class_index==-2)
-	{
-		abort();
-		//We have to build the method traits
-		SyntheticFunction* sf=static_cast<SyntheticFunction*>(this);
-		LOG(LOG_CALLS,_("Building method traits"));
-		for(int i=0;i<sf->mi->body->trait_count;i++)
-			sf->mi->context->buildTrait(this,&sf->mi->body->traits[i]);
-		sf->call(this,args,max_level);
-	}*/
 	if(buildAndLink)
 	{
 	#ifndef NDEBUG

@@ -14,16 +14,16 @@ import pickle
 #These regexp are used for finding important pieces in the source
 sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
 rconstructor = re.compile('[^/]*->setConstructor\(Class<IFunction>::getFunction\([^)]*\)\).*')
-#looks like builtin->setVariableByQName("Object","namespace",Class<ASObject>::getClass());
-rclass = re.compile('.*builtin->setVariableByQName\("([^"]*)","([^"]*)",Class<([^>]*)>::getClass\(\)\);.*')
-#looks like builtin->setVariableByQName("BitmapData","flash.display",Class<ASObject>::getClass(QName("BitmapData","flash.display")));
-rstupclass = re.compile('.*builtin->setVariableByQName\("([^"]*)","([^"]*)",Class<([^>]*)>::getClass\(QName.*')
+#looks like builtin->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getRef(),DECLARED_TRAIT);
+rclass = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(\),.*_TRAIT\)')
+#looks like builtin->setVariableByQName("System","flash.system",Class<ASObject>::getStubClass(QName("System","flash.system")),DECLARED_TRAIT);
+rstupclass = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *Class<ASObject>::getStubClass\(QName.*')
 #the line may start with anything but a comment character
-rget = re.compile('[^/]*->setGetterByQName\("([^"]*)".*')
-rset = re.compile('[^/]*->setSetterByQName\("([^"]*)".*')
-rmet = re.compile('[^/]*->setMethodByQName\("([^"]*)".*')
+rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *GETTER_METHOD, *([^ ]*)')
+rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *SETTER_METHOD, *([^ ]*)')
+rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *NORMAL_METHOD, *([^ ]*)')
 #Constant names do not contain lower-case letters
-rconst = re.compile('[^/]*->setVariableByQName\("([^"a-z]*)","",.*');
+rconst = re.compile('[^/]*->setVariableByQName\("([^"]*)",.*_TRAIT');
 
 def getFullname(cls,name):
 	if cls != "":
@@ -32,7 +32,7 @@ def getFullname(cls,name):
 		return name
 
 if not os.path.exists("pygil"):
-	print("This script is stupid! Please got to the scripts directory")
+	print("This script is stupid! Please got to the tools directory")
 	print("and run at from there by ./pygil")
 	exit(1)
 
@@ -48,13 +48,13 @@ curClass = ""
 
 #1. Step: parse scripting/abc.cpp to map the AS3 names to our class names
 f = open('../src/scripting/abc.cpp','r')
-for line in f:
+for line in f.read().replace("\n","").replace("\t"," ").split(";"):
 	m = rclass.match(line)
         if m:
 		internalToExternal[m.group(3)] = getFullname(m.group(2),m.group(1))
 	m = rstupclass.match(line)
 	#Object is the only real implementation of ASObject
-	if m and m.group(1) != "Object":
+	if m:
 		stubclasses.add(m.group(1))
 f.close()
 
@@ -63,14 +63,15 @@ f.close()
 #2. Step: parse the rest of the source files for the implementation of 
 p1 = Popen(["find", "..", "-name",'*.cpp'], stdout=PIPE)
 #return p1.communicate()[0]
-p2 = Popen(["xargs","grep","-h",
-	    "-e","sinit",
-	    "-e","set[a-zA-Z]*ByQName",
-	    "-e","setConstructor"], stdin=p1.stdout, stdout=PIPE)
+#p2 = Popen(["xargs","grep","-h",
+#	    "-e","sinit",
+#	    "-e","set[a-zA-Z]*ByQName",
+#	    "-e","setConstructor"], stdin=p1.stdout, stdout=PIPE)
+p2 = Popen(["xargs","cat"], stdin=p1.stdout, stdout=PIPE);
 p1.stdout.close() 
 
-
-for line in p2.communicate()[0].split("\n"):
+for line in p2.communicate()[0].split(";"):
+	line = line.replace("\n","").rstrip().rstrip();
 	m = sinit.match(line)
 	if m:
 		curClass = m.group(1)

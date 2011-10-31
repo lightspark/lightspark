@@ -235,6 +235,11 @@ public:
 		//don't check trailing \0
 		return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))<0;
 	}
+	bool operator>(const tiny_string& r) const
+	{
+		//don't check trailing \0
+		return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))>0;
+	}
 	bool operator==(const tiny_string& r) const
 	{
 		//The length is checked as an optimization before checking the contents

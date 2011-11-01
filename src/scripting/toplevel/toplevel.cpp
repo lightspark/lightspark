@@ -33,7 +33,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include <glib/glib.h>
+#include <glib.h>
 
 #include "abc.h"
 #include "toplevel.h"

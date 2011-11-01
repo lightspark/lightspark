@@ -365,8 +365,8 @@ void Loader::execute()
 		}
 		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
-		ParseThread* local_pt=new ParseThread(s,this,url.getParsedURL());
-		local_pt->run();
+		ParseThread local_pt(s,this,url.getParsedURL());
+		local_pt.run();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
 			SpinlockLocker l(downloaderLock);
@@ -374,7 +374,7 @@ void Loader::execute()
 			downloader=NULL;
 		}
 
-		_NR<DisplayObject> obj=local_pt->getParsedObject();
+		_NR<DisplayObject> obj=local_pt.getParsedObject();
 		if(obj.isNull())
 		{
 			// The stream did not contain RootMovieClip or Bitmap
@@ -404,8 +404,8 @@ void Loader::execute()
 		bytes_buf bb(bytes->bytes,bytes->len);
 		istream s(&bb);
 
-		ParseThread* local_pt = new ParseThread(s,this);
-		local_pt->run();
+		ParseThread local_pt(s,this);
+		local_pt.run();
 		bytes->decRef();
 		//Add a complete event for this object
 		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));

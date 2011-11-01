@@ -74,6 +74,7 @@ void lsglPopMatrix()
 		::abort();
 	}
 	memcpy(lsMVPMatrix, lsglMatrixStack->top(), LSGL_MATRIX_SIZE);
+	delete[] lsglMatrixStack->top();
 	lsglMatrixStack->pop();
 }
 

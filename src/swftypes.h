@@ -225,13 +225,17 @@ public:
 	{
 		resetToStatic();
 	}
-	explicit tiny_string(int i):buf(_buf_static),type(STATIC)
+	static tiny_string fromInt(int i)
 	{
-		stringSize=snprintf(buf,STATIC_SIZE,"%i",i)+1;
+		tiny_string t;
+		t.stringSize=snprintf(t.buf,STATIC_SIZE,"%i",i)+1;
+		return t;
 	}
-	explicit tiny_string(number_t d):buf(_buf_static),type(STATIC)
+	static tiny_string fromNumber(number_t d)
 	{
-		stringSize=snprintf(buf,STATIC_SIZE,"%g",d)+1;
+		tiny_string t;
+		t.stringSize=snprintf(t.buf,STATIC_SIZE,"%g",d)+1;
+		return t;
 	}
 	tiny_string& operator=(const tiny_string& s)
 	{

@@ -2823,7 +2823,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	ASString* ret=Class<ASString>::getInstanceS();
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		ret->data+=gunichar(args[i]->toInt());
+		ret->data += tiny_string(args[i]->toUInt());
 	}
 	return ret;
 }
@@ -4361,7 +4361,12 @@ bool lightspark::isXMLName(ASObject *obj)
 	  (0x3031 <= x && x <= 0x3035) || (0x309D <= x && x <= 0x309E) || \
 	  (0x30FC <= x && x <= 0x30FE))
 
-	for(auto it=name.begin();it!=name.end(); ++it)
+	auto it=name.begin();
+	if(!NC_START_CHAR(*it))
+		return false;
+	++it;
+
+	for(;it!=name.end(); ++it)
 	{
 		if(!(NC_CHAR(*it)))
 			return false;

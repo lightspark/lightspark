@@ -169,16 +169,15 @@ private:
 		assert(type==DYNAMIC);
 		char* oldBuf=buf;
 		buf=new char[s];
+		assert(s >= stringSize);
 		memcpy(buf,oldBuf,stringSize);
 		delete[] oldBuf;
 	}
 	void resetToStatic()
 	{
 		if(type==DYNAMIC)
-		{
 			delete[] buf;
-			stringSize=1;
-		}
+		stringSize=1;
 		buf=_buf_static;
 		buf[0] = '\0';
 		type=STATIC;
@@ -323,7 +322,16 @@ public:
 	/* returns the length in utf-8 characters, not counting the trailing \0 */
 	uint32_t numChars() const
 	{
-		return g_utf8_strlen(buf, numBytes());
+		//we cannot use g_utf8_strlen, as we may have '\0' inside our string
+		uint32_t len = 0;
+		char* end = buf+numBytes();
+		char* p = buf;
+		while(p < end)
+		{
+			p = g_utf8_next_char(p);
+			++len;
+		}
+		return len;
 	}
 	/* start and len are indices of utf8-characters */
 	tiny_string substr(uint32_t start, uint32_t len) const;

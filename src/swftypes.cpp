@@ -212,7 +212,8 @@ std::ostream& lightspark::operator<<(std::ostream& s, const QName& r)
 
 std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)
 {
-	s << r.buf;
+	//s << r.buf would stop at the first '\0'
+	s << std::string(r.buf,r.numBytes());
 	return s;
 }
 

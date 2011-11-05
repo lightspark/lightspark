@@ -3908,6 +3908,8 @@ Class<IFunction>* Class<IFunction>::getClass()
 		//addPrototypeGetter and setDeclaredMethodByQName.
 		//Thus we make sure that everything is in order when getFunction() below is called
 		ret->addPrototypeGetter();
+		//copy borrowed traits from ASObject by ourself
+		ASObject::sinit(ret);
 		ret->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
 		ret->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
 		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_getter_prototype),GETTER_METHOD,true);
@@ -3915,8 +3917,6 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(IFunction::_getter_length),GETTER_METHOD,true);
 		ret->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-		//copy borrowed traits from ASObject by ourself
-		ASObject::sinit(ret);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);

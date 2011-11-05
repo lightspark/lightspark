@@ -271,6 +271,10 @@ public:
 	}
 	tiny_string& operator+=(const char* s);
 	tiny_string& operator+=(const tiny_string& r);
+	tiny_string& operator+=(uint32_t c)
+	{
+		return (*this += tiny_string(c));
+	}
 	const tiny_string operator+(const tiny_string& r) const;
 	bool operator<(const tiny_string& r) const
 	{

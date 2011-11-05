@@ -216,8 +216,8 @@ ASFUNCTIONBODY(ByteArray,writeUTFBytes)
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	th->getBuffer(th->position+str->data.size()+1,true);
-	memcpy(th->bytes+th->position,str->data.c_str(),str->data.size()+1);
+	th->getBuffer(th->position+str->data.numBytes()+1,true);
+	memcpy(th->bytes+th->position,str->data.raw_buf(),str->data.numBytes()+1);
 
 	return NULL;
 }
@@ -607,7 +607,7 @@ void ByteArray::writeU29(int32_t val)
 void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_string& s)
 {
 	//TODO: use U29 format
-	const uint32_t len=s.len();
+	const uint32_t len=s.numBytes();
 	assert_and_throw(len<0x40);
 
 	if(len!=0)

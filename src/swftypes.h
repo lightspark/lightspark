@@ -40,7 +40,9 @@
 #ifdef BIG_ENDIAN
 #include <algorithm>
 #endif
-#include <glibmm/ustring.h>
+
+/* for utf8 handling */
+#include <glib.h>
 
 namespace lightspark
 {
@@ -86,6 +88,49 @@ typedef double number_t;
 class ASObject;
 class Bitmap;
 
+/* Iterates over utf8 characters */
+class CharIterator /*: public forward_iterator<uint32_t>*/
+{
+friend class tiny_string;
+private:
+	char* buf_ptr;
+public:
+	CharIterator(char* buf) : buf_ptr(buf) {}
+	/* Return the utf8-character value */
+	uint32_t operator*() const
+	{
+		return g_utf8_get_char(buf_ptr);
+	}
+	CharIterator& operator++() //prefix
+	{
+		buf_ptr = g_utf8_next_char(buf_ptr);
+		return *this;
+	}
+	CharIterator operator++(int) // postfix
+	{
+		CharIterator result = *this;
+	    ++(*this);
+	    return result;
+	}
+	bool operator==(const CharIterator& o) const
+	{
+		return buf_ptr == o.buf_ptr;
+	}
+	bool operator!=(const CharIterator& o) const { return !(*this == o); }
+	/* returns true if the current character is a digit */
+	bool isdigit() const
+	{
+		return g_unichar_isdigit(g_utf8_get_char(buf_ptr));
+	}
+	/* return the value of the current character interpreted as decimal digit,
+	 * i.e. '7' -> 7
+	 */
+	int32_t digit_value() const
+	{
+		return g_unichar_digit_value(g_utf8_get_char(buf_ptr));
+	}
+};
+
 /*
  * String class.
  * The string can contain '\0's, so don't use raw_buf().
@@ -96,6 +141,7 @@ class tiny_string
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
 	enum TYPE { READONLY=0, STATIC, DYNAMIC };
+	/*must be at least 6 bytes for tiny_string(uint32_t c) constructor */
 	#define STATIC_SIZE 64
 	char _buf_static[STATIC_SIZE];
 	char* buf;
@@ -138,7 +184,15 @@ private:
 		type=STATIC;
 	}
 public:
+	static const uint32_t npos = (uint32_t)(-1);
+
 	tiny_string():buf(_buf_static),stringSize(1),type(STATIC){buf[0]=0;}
+	/* construct from utf character */
+	tiny_string(uint32_t c):buf(_buf_static),type(STATIC)
+	{
+		stringSize = g_unichar_to_utf8(c,buf) + 1;
+		buf[stringSize-1] = '\0';
+	}
 	tiny_string(const char* s,bool copy=false):buf(_buf_static),type(READONLY)
 	{
 		if(copy)
@@ -163,12 +217,6 @@ public:
 		memcpy(buf,r.buf,stringSize);
 	}
 	tiny_string(const std::string& r):buf(_buf_static),stringSize(r.size()+1),type(STATIC)
-	{
-		if(stringSize > STATIC_SIZE)
-			createBuffer(stringSize);
-		memcpy(buf,r.c_str(),stringSize);
-	}
-	tiny_string(const Glib::ustring& r):buf(_buf_static),stringSize(r.bytes()+1),type(STATIC)
 	{
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
@@ -213,15 +261,6 @@ public:
 		memcpy(buf,s.c_str(),stringSize);
 		return *this;
 	}
-	tiny_string& operator=(const Glib::ustring& s)
-	{
-		resetToStatic();
-		stringSize=s.bytes()+1;
-		if(stringSize > STATIC_SIZE)
-			createBuffer(stringSize);
-		memcpy(buf,s.c_str(),stringSize);
-		return *this;
-	}
 	tiny_string& operator=(const char* s)
 	{
 		makePrivateCopy(s);
@@ -248,14 +287,6 @@ public:
 		//don't check trailing \0
 		return memcmp(buf,r.buf,stringSize-1)==0;
 	}
-	bool operator==(const Glib::ustring& r) const
-	{
-		//The length is checked as an optimization before checking the contents
-		if(stringSize != r.bytes()+1)
-			return false;
-		//don't check trailing \0
-		return memcmp(buf,r.c_str(),stringSize-1)==0;
-	}
 	bool operator==(const std::string& r) const
 	{
 		//The length is checked as an optimization before checking the contents
@@ -280,18 +311,105 @@ public:
 	{
 		return buf;
 	}
-	char operator[](int i) const
+	bool empty() const
 	{
-		return *(buf+i);
+		return stringSize == 1;
 	}
-	uint32_t len() const
+	/* returns the length in bytes, not counting the trailing \0 */
+	uint32_t numBytes() const
 	{
 		return stringSize-1;
 	}
-	tiny_string substr(uint32_t start, uint32_t end) const;
+	/* returns the length in utf-8 characters, not counting the trailing \0 */
+	uint32_t numChars() const
+	{
+		return g_utf8_strlen(buf, numBytes());
+	}
+	/* start and len are indices of utf8-characters */
+	tiny_string substr(uint32_t start, uint32_t len) const;
+	tiny_string substr(uint32_t start, const CharIterator& end) const;
+	/* start and len are indices of bytes */
+	tiny_string substr_bytes(uint32_t start, uint32_t len) const;
+	/* finds the first occurence of char in the utf-8 string
+	 * Return NULL if not found, else ptr to beginning of first occurence of c */
+	char* strchr(char c) const
+	{
+		//TODO: does this handle '\0' in middle of buf gracefully?
+		return g_utf8_strchr(buf, numBytes(), c);
+	}
+	char* strchrr(char c) const
+	{
+		//TODO: does this handle '\0' in middle of buf gracefully?
+		return g_utf8_strrchr(buf, numBytes(), c);
+	}
+	explicit operator std::string() const
+	{
+		return std::string(buf,stringSize-1);
+	}
 	bool startsWith(const char* o) const
 	{
 		return strncmp(buf,o,strlen(o)) == 0;
+	}
+	/* idx is an index of utf-8 characters */
+	uint32_t charAt(uint32_t idx) const
+	{
+		return g_utf8_get_char(g_utf8_offset_to_pointer(buf,idx));
+	}
+	/* start is an index of characters.
+	 * returns index of character */
+	uint32_t find(const tiny_string& needle, uint32_t start = 0) const
+	{
+		//TODO: omit copy into std::string
+		size_t bytepos = std::string(*this).find(needle.raw_buf(),start,needle.numBytes());
+		if(bytepos == std::string::npos)
+			return npos;
+		else
+			return g_utf8_pointer_to_offset(buf,buf+bytepos);
+	}
+	uint32_t rfind(const tiny_string& needle, uint32_t start = npos) const
+	{
+		//TODO: omit copy into std::string
+		size_t bytepos = std::string(*this).rfind(needle.raw_buf(),start,needle.numBytes());
+		if(bytepos == std::string::npos)
+			return npos;
+		else
+			return g_utf8_pointer_to_offset(buf,buf+bytepos);
+	}
+	tiny_string& replace(uint32_t pos1, uint32_t n1, const tiny_string& o);
+	tiny_string lowercase() const
+	{
+		//TODO: omit copy, handle \0 in string
+		char *strdown = g_utf8_strdown(buf,numBytes());
+		tiny_string ret(strdown,/*copy:*/true);
+		free(strdown);
+		return ret;
+	}
+	tiny_string uppercase() const
+	{
+		//TODO: omit copy, handle \0 in string
+		char *strup = g_utf8_strup(buf,numBytes());
+		tiny_string ret(strup,/*copy:*/true);
+		free(strup);
+		return ret;
+	}
+	/* iterate over utf8 characters */
+	CharIterator begin()
+	{
+		return CharIterator(buf);
+	}
+	CharIterator begin() const
+	{
+		return CharIterator(buf);
+	}
+	CharIterator end()
+	{
+		//points to the trailing '\0' byte
+		return CharIterator(buf+numBytes());
+	}
+	CharIterator end() const
+	{
+		//points to the trailing '\0' byte
+		return CharIterator(buf+numBytes());
 	}
 };
 

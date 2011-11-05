@@ -77,7 +77,7 @@ ATOMIC_INT32(DisplayObject::instanceCount);
 std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 {
 	s << "[" << r.getClass()->class_name << "]";
-	if(r.name.len() > 0)
+	if(!r.name.empty())
 		s << " name: " << r.name;
 	return s;
 }
@@ -1107,12 +1107,12 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 		{
 			if(th->scenes[i].labels[j].frame > th->state.FP)
 				break;
-			if(th->scenes[i].labels[j].name.len() != 0)
+			if(!th->scenes[i].labels[j].name.empty())
 				label = th->scenes[i].labels[j].name;
 		}
 	}
 
-	if(label.len() == 0)
+	if(label.empty())
 		return new Null();
 	else
 		return Class<ASString>::getInstanceS(label);
@@ -1976,7 +1976,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		return;
 	}
 	DisplayObject* obj = depthToLegacyChild.left.at(depth);
-	if(obj->name.len() > 0)
+	if(!obj->name.empty())
 	{
 		multiname objName;
 		objName.name_type=multiname::NAME_STRING;
@@ -1999,7 +1999,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		return;
 	}
 	_addChildAt(_MR(obj),depth-1); /* depth is 1 based in SWF */
-	if(obj->name.len() > 0)
+	if(!obj->name.empty())
 	{
 		obj->incRef();
 		multiname objName;

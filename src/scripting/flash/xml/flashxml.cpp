@@ -177,7 +177,7 @@ ASFUNCTIONBODY(XMLDocument,parseXML)
 	ASString* str=Class<ASString>::cast(args[0]);
 	try
 	{
-		th->parser.parse_memory_raw((const unsigned char*)str->data.c_str(), str->data.bytes());
+		th->parser.parse_memory_raw((const unsigned char*)str->data.raw_buf(), str->data.numBytes());
 	}
 	catch(const exception& e)
 	{

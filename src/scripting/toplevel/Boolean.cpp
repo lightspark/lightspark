@@ -52,7 +52,7 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 	case T_UINTEGER:
 		return o->as<UInteger>()->val != 0;
 	case T_STRING:
-		return o->as<ASString>()->data.size() > 0;
+		return !o->as<ASString>()->data.empty();
 	default:
 		//everything else is an Object regarding to the spec
 		return true;

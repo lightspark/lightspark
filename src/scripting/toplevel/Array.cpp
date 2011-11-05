@@ -797,21 +797,17 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 		return false;
 
 	index=0;
-	int len;
 	switch(name.name_type)
 	{
 		//We try to convert this to an index, otherwise bail out
 		case multiname::NAME_STRING:
-			len=name.name_s.len();
-			if(!len)
-				return false;
-			for(int i=0;i<len;i++)
+			for(auto i=name.name_s.begin(); i!=name.name_s.end(); ++i)
 			{
-				if(name.name_s[i]<'0' || name.name_s[i]>'9')
+				if(!i.isdigit())
 					return false;
 
 				index*=10;
-				index+=(name.name_s[i]-'0');
+				index+=i.digit_value();
 			}
 			break;
 		//This is already an int, so its good enough
@@ -868,17 +864,17 @@ bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigne
 {
 	if(ns!="")
 		return false;
-	assert_and_throw(name.len()!=0);
+	assert_and_throw(!name.empty());
 	index=0;
 	//First we try to convert the string name to an index, at the first non-digit
 	//we bail out
-	for(int i=0;i<name.len();i++)
+	for(auto i=name.begin(); i!=name.end(); ++i)
 	{
-		if(!isdigit(name[i]))
+		if(!i.isdigit())
 			return false;
 
 		index*=10;
-		index+=(name[i]-'0');
+		index+=i.digit_value();
 	}
 	return true;
 }

@@ -48,7 +48,6 @@
 #include "argconv.h"
 
 using namespace std;
-using namespace Glib;
 using namespace lightspark;
 
 SET_NAMESPACE("");
@@ -166,7 +165,7 @@ ASFUNCTIONBODY(XML,generator)
 	if(args[0]->getObjectType()==T_STRING)
 	{
 		ASString* str=Class<ASString>::cast(args[0]);
-		return Class<XML>::getInstanceS(str->data);
+		return Class<XML>::getInstanceS(std::string(str->data));
 	}
 	else if(args[0]->getObjectType()==T_NULL ||
 		args[0]->getObjectType()==T_UNDEFINED)
@@ -199,7 +198,7 @@ ASFUNCTIONBODY(XML,_constructor)
 	{
 		assert_and_throw(args[0]->getObjectType()==T_STRING);
 		ASString* str=Class<ASString>::cast(args[0]);
-		th->buildFromString(str->data);
+		th->buildFromString(std::string(str->data));
 	}
 	return NULL;
 }
@@ -459,7 +458,7 @@ void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const 
 		std::vector<_R<XML>>& ret)
 {
 	//Check if this node is being requested. The empty string means ALL
-	if(name.len()==0 || node->get_name()==name.raw_buf())
+	if(name.empty() || name == node->get_name())
 	{
 		root->incRef();
 		ret.push_back(_MR(Class<XML>::getInstanceS(root, node)));
@@ -501,7 +500,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	bool isAttr=name.isAttribute;
 	const tiny_string& normalizedName=name.normalizedName();
 	const char *buf=normalizedName.raw_buf();
-	if(normalizedName[0]=='@')
+	if(normalizedName.charAt(0)=='@')
 	{
 		isAttr=true;
 		buf+=1;
@@ -573,7 +572,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	bool isAttr=name.isAttribute;
 	const tiny_string& normalizedName=name.normalizedName();
 	const char *buf=normalizedName.raw_buf();
-	if(normalizedName[0]=='@')
+	if(normalizedName.charAt(0)=='@')
 	{
 		isAttr=true;
 		buf+=1;
@@ -809,7 +808,7 @@ ASFUNCTIONBODY(XMLList,_constructor)
 
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	th->buildFromString(str->data);
+	th->buildFromString(std::string(str->data));
 	return NULL;
 }
 
@@ -868,7 +867,7 @@ ASFUNCTIONBODY(XMLList,generator)
 	if(args[0]->getObjectType()==T_STRING)
 	{
 		ASString* str=Class<ASString>::cast(args[0]);
-		return Class<XMLList>::getInstanceS(str->data);
+		return Class<XMLList>::getInstanceS(std::string(str->data));
 	}
 	else if(args[0]->getClass()==Class<XMLList>::getClass())
 	{
@@ -1157,32 +1156,23 @@ ASString::ASString()
 	type=T_STRING;
 }
 
-ASString::ASString(const string& s):data(s)
+ASString::ASString(const string& s): data(s)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(const ustring& s):data(s)
+ASString::ASString(const tiny_string& s) : data(s)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(const tiny_string& s)
-	: data(std::string(s.raw_buf(),s.len())) //See ASString(const char* s, uint32_t len)
-{
-	type=T_STRING;
-}
-
-ASString::ASString(const char* s):data(s)
+ASString::ASString(const char* s) : data(s, /*copy:*/true)
 {
 	type=T_STRING;
 }
 
 ASString::ASString(const char* s, uint32_t len)
 {
-	//we cannot use the ustring(const char*,size_t) constructor,
-	//because it expects the number of utf8-characters as second
-	//parameter
 	data = std::string(s,len);
 	type=T_STRING;
 }
@@ -1198,7 +1188,7 @@ ASFUNCTIONBODY(ASString,_constructor)
 ASFUNCTIONBODY(ASString,_getLength)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	return abstract_i(th->data.size());
+	return abstract_i(th->data.numChars());
 }
 
 void ASString::sinit(Class_base* c)
@@ -1239,7 +1229,7 @@ ASFUNCTIONBODY(ASString,search)
 		return abstract_i(-1);
 
 	int options=PCRE_UTF8;
-	ustring restr;
+	tiny_string restr;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
@@ -1253,12 +1243,12 @@ ASFUNCTIONBODY(ASString,search)
 	}
 	else
 	{
-		restr = args[0]->toString().raw_buf();
+		restr = args[0]->toString();
 	}
 
 	const char* error;
 	int errorOffset;
-	pcre* pcreRE=pcre_compile(restr.c_str(), options, &error, &errorOffset,NULL);
+	pcre* pcreRE=pcre_compile(restr.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 		return abstract_i(ret);
 	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -1273,7 +1263,7 @@ ASFUNCTIONBODY(ASString,search)
 	int ovector[30];
 	int offset=0;
 	//Global is not used in search
-	int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
+	int rc=pcre_exec(pcreRE, NULL, th->data.raw_buf(), th->data.numBytes(), offset, 0, ovector, 30);
 	if(rc<0)
 	{
 		//No matches or error
@@ -1292,7 +1282,7 @@ ASFUNCTIONBODY(ASString,match)
 	Array* ret=NULL;
 
 	int options=PCRE_UTF8;
-	ustring restr;
+	tiny_string restr;
 	bool isGlobal = false;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
@@ -1307,11 +1297,11 @@ ASFUNCTIONBODY(ASString,match)
 		isGlobal = re->global;
 	}
 	else
-		restr = args[0]->toString().raw_buf();
+		restr = args[0]->toString();
 
 	const char* error;
 	int errorOffset;
-	pcre* pcreRE=pcre_compile(restr.c_str(), options, &error, &errorOffset,NULL);
+	pcre* pcreRE=pcre_compile(restr.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 		return new Null;
 	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -1328,7 +1318,7 @@ ASFUNCTIONBODY(ASString,match)
 	ret=Class<Array>::getInstanceS();
 	do
 	{
-		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
+		int rc=pcre_exec(pcreRE, NULL, th->data.raw_buf(), th->data.numBytes(), offset, 0, ovector, 30);
 		if(rc<0)
 		{
 			//No matches or error
@@ -1337,7 +1327,7 @@ ASFUNCTIONBODY(ASString,match)
 		}
 		//we cannot use ustrings substr here, because pcre returns those indices in bytes
 		//and ustring expects number of UTF8 characters. The same holds for ustring constructor
-		ret->push(Class<ASString>::getInstanceS(th->data.raw().substr(ovector[0],ovector[1]-ovector[0])));
+		ret->push(Class<ASString>::getInstanceS(th->data.substr_bytes(ovector[0],ovector[1]-ovector[0])));
 		offset=ovector[1];
 	}
 	while(isGlobal);
@@ -1372,11 +1362,11 @@ ASFUNCTIONBODY(ASString,split)
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
-		if(re->re.length() == 0)
+		if(re->re.empty())
 		{
 			//the RegExp is empty, so split every character
-			for(size_t i=0;i<th->data.size();++i)
-				ret->push( Class<ASString>::getInstanceS(th->data.substr(i,1)) );
+			for(auto i=th->data.begin();i!=th->data.end();++i)
+				ret->push( Class<ASString>::getInstanceS( tiny_string(*i) ) );
 			return ret;
 		}
 
@@ -1389,7 +1379,7 @@ ASFUNCTIONBODY(ASString,split)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &offset,NULL);
+		pcre* pcreRE=pcre_compile(re->re.raw_buf(), options, &error, &offset,NULL);
 		if(error)
 			return ret;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -1408,7 +1398,7 @@ ASFUNCTIONBODY(ASString,split)
 		do
 		{
 			//offset is a byte offset that must point to the beginning of an utf8 character
-			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.bytes(), offset, 0, ovector, 30);
+			int rc=pcre_exec(pcreRE, NULL, th->data.raw_buf(), th->data.numBytes(), offset, 0, ovector, 30);
 			end=ovector[0];
 			if(rc<0)
 				break;
@@ -1418,7 +1408,7 @@ ASFUNCTIONBODY(ASString,split)
 				continue;
 			}
 			//Extract string from last match until the beginning of the current match
-			ASString* s=Class<ASString>::getInstanceS(th->data.raw().substr(lastMatch,end-lastMatch));
+			ASString* s=Class<ASString>::getInstanceS(th->data.substr_bytes(lastMatch,end-lastMatch));
 			ret->push(s);
 			lastMatch=offset=ovector[1];
 
@@ -1426,14 +1416,14 @@ ASFUNCTIONBODY(ASString,split)
 			for(int i=1;i<rc;i++)
 			{
 				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
-				ASString* s=Class<ASString>::getInstanceS(th->data.raw().substr(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+				ASString* s=Class<ASString>::getInstanceS(th->data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
 				ret->push(s);
 			}
 		}
-		while(end<th->data.size());
-		if(lastMatch != th->data.size()+1)
+		while(end<th->data.numBytes());
+		if(lastMatch != th->data.numBytes()+1)
 		{
-			ASString* s=Class<ASString>::getInstanceS(th->data.raw().substr(lastMatch,th->data.size()-lastMatch));
+			ASString* s=Class<ASString>::getInstanceS(th->data.substr_bytes(lastMatch,th->data.numBytes()-lastMatch));
 			ret->push(s);
 		}
 		pcre_free(pcreRE);
@@ -1441,26 +1431,26 @@ ASFUNCTIONBODY(ASString,split)
 	else
 	{
 		const tiny_string& del=args[0]->toString();
-		if(del.len() == 0)
+		if(del.empty())
 		{
 			//the string is empty, so split every character
-			for(size_t i=0;i<th->data.size();++i)
-				ret->push( Class<ASString>::getInstanceS(th->data.substr(i,1)) );
+			for(auto i=th->data.begin();i!=th->data.end();++i)
+				ret->push( Class<ASString>::getInstanceS( tiny_string(*i) ) );
 			return ret;
 		}
 		unsigned int start=0;
 		do
 		{
-			int match=th->data.find(del.raw_buf(),start);
-			if(del.len()==0)
+			int match=th->data.find(del,start);
+			if(del.empty())
 				match++;
 			if(match==-1)
-				match=th->data.size();
+				match=th->data.numChars();
 			ASString* s=Class<ASString>::getInstanceS(th->data.substr(start,(match-start)));
 			ret->push(s);
-			start=match+del.len();
+			start=match+del.numChars();
 		}
-		while(start<th->data.size());
+		while(start<th->data.numChars());
 	}
 
 	return ret;
@@ -1473,12 +1463,12 @@ ASFUNCTIONBODY(ASString,substr)
 	if(argslen>=1)
 		start=args[0]->toInt();
 	if(start<0) {
-		start=th->data.size()+start;
+		start=th->data.numChars()+start;
 		if(start<0)
 			start=0;
 	}
-	if(start>(int)th->data.size())
-		start=th->data.size();
+	if(start>(int)th->data.numChars())
+		start=th->data.numChars();
 
 	int len=0x7fffffff;
 	if(argslen==2)
@@ -1495,16 +1485,16 @@ ASFUNCTIONBODY(ASString,substring)
 		start=args[0]->toInt();
 	if(start<0)
 		start=0;
-	if(start>(int)th->data.size())
-		start=th->data.size();
+	if(start>(int)th->data.numChars())
+		start=th->data.numChars();
 
 	int end=0x7fffffff;
 	if(argslen>=2)
 		end=args[1]->toInt();
 	if(end<0)
 		end=0;
-	if(end>(int)th->data.size())
-		end=th->data.size();
+	if(end>(int)th->data.numChars())
+		end=th->data.numChars();
 
 	if(start>end) {
 		int tmp=start;
@@ -1527,7 +1517,8 @@ double ASString::toNumber() const
 {
 	assert_and_throw(implEnable);
 
-	const char *s=data.c_str();
+	/* TODO: data holds a utf8-character sequence, not ascii! */
+	const char *s=data.raw_buf();
 	char *end=NULL;
 	while(g_ascii_isspace(*s))
 		s++;
@@ -1558,13 +1549,15 @@ double ASString::toNumber() const
 int32_t ASString::toInt()
 {
 	assert_and_throw(implEnable);
-	return atoi(data.c_str());
+	//TODO: this assumes data to be ascii, but it is utf8!
+	return atoi(data.raw_buf());
 }
 
 uint32_t ASString::toUInt()
 {
 	assert_and_throw(implEnable);
-	return atol(data.c_str());
+	//TODO: this assumes data to be ascii, but it is utf8!
+	return atol(data.raw_buf());
 }
 
 bool ASString::isEqual(ASObject* r)
@@ -2580,9 +2573,9 @@ ASFUNCTIONBODY(RegExp,_constructor)
 	if(argslen>1)
 	{
 		const tiny_string& flags=args[1]->toString();
-		for(int i=0;i<flags.len();i++)
+		for(auto i=flags.begin();i!=flags.end();++i)
 		{
-			switch(flags[i])
+			switch(*i)
 			{
 				case 'g':
 					th->global=true;
@@ -2625,7 +2618,7 @@ ASFUNCTIONBODY(RegExp,exec)
 		options|=PCRE_EXTENDED;
 	if(th->multiline)
 		options|=PCRE_MULTILINE;
-	pcre* pcreRE=pcre_compile(th->re.c_str(), options, &error, &errorOffset,NULL);
+	pcre* pcreRE=pcre_compile(th->re.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 		return new Null;
 	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -2668,9 +2661,7 @@ ASFUNCTIONBODY(RegExp,exec)
 
 	int ovector[30];
 	int offset=(th->global)?th->lastIndex:0;
-	const char* str=arg0.raw_buf();
-	int strLen=arg0.len();
-	int rc=pcre_exec(pcreRE, NULL, str, strLen, offset, 0, ovector, 30);
+	int rc=pcre_exec(pcreRE, NULL, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, 30);
 	if(rc<0)
 	{
 		//No matches or error
@@ -2680,7 +2671,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	Array* a=Class<Array>::getInstanceS();
 	//Push the whole result and the captured strings
 	for(int i=0;i<capturingGroups+1;i++)
-		a->push(Class<ASString>::getInstanceS(str+ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+		a->push(Class<ASString>::getInstanceS( arg0.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) ));
 	args[0]->incRef();
 	a->setVariableByQName("input","",args[0],DYNAMIC_TRAIT);
 	a->setVariableByQName("index","",abstract_i(ovector[0]),DYNAMIC_TRAIT);
@@ -2713,15 +2704,13 @@ ASFUNCTIONBODY(RegExp,test)
 
 	const char * error;
 	int errorOffset;
-	pcre * pcreRE = pcre_compile(th->re.c_str(), options, &error, &errorOffset, NULL);
+	pcre * pcreRE = pcre_compile(th->re.raw_buf(), options, &error, &errorOffset, NULL);
 	if(error)
 		return new Null;
 
-	const char* str=arg0.raw_buf();
-	int strLen=arg0.len();
 	int ovector[30];
 	int offset=(th->global)?th->lastIndex:0;
-	int rc = pcre_exec(pcreRE, NULL, str, strLen, offset, 0, ovector, 30);
+	int rc = pcre_exec(pcreRE, NULL, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, 30);
 	bool ret = (rc >= 0);
 
 	return abstract_b(ret);
@@ -2734,23 +2723,23 @@ ASFUNCTIONBODY(ASString,slice)
 	if(argslen>=1)
 		startIndex=args[0]->toInt();
 	if(startIndex<0) {
-		startIndex=th->data.size()+startIndex;
+		startIndex=th->data.numChars()+startIndex;
 		if(startIndex<0)
 			startIndex=0;
 	}
-	if(startIndex>(int)th->data.size())
-		startIndex=th->data.size();
+	if(startIndex>(int)th->data.numChars())
+		startIndex=th->data.numChars();
 
 	int endIndex=0x7fffffff;
 	if(argslen>=2)
 		endIndex=args[1]->toInt();
 	if(endIndex<0) {
-		endIndex=th->data.size()+endIndex;
+		endIndex=th->data.numChars()+endIndex;
 		if(endIndex<0)
 			endIndex=0;
 	}
-	if(endIndex>(int)th->data.size())
-		endIndex=th->data.size();
+	if(endIndex>(int)th->data.numChars())
+		endIndex=th->data.numChars();
 
 	if(endIndex<=startIndex)
 		return Class<ASString>::getInstanceS("");
@@ -2762,20 +2751,20 @@ ASFUNCTIONBODY(ASString,charAt)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	int index=args[0]->toInt();
-	int maxIndex=th->data.size();
+	int maxIndex=th->data.numChars();
 	if(index<0 || index>=maxIndex)
 		return Class<ASString>::getInstanceS();
-	return Class<ASString>::getInstanceS(th->data.c_str()+index, 1);
+	return Class<ASString>::getInstanceS( tiny_string(th->data.charAt(index)) );
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	unsigned int index=args[0]->toInt();
-	if(index<th->data.size())
+	if(index<th->data.numChars())
 	{
 		//Character codes are expected to be positive
-		return abstract_i(th->data[index]);
+		return abstract_i(th->data.charAt(index));
 	}
 	else
 		return abstract_d(Number::NaN);
@@ -2846,7 +2835,7 @@ ASFUNCTIONBODY(ASString,replace)
 	REPLACE_TYPE type;
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
 
-	string replaceWith;
+	tiny_string replaceWith;
 	if(argslen < 2)
 	{
 		type = STRING;
@@ -2855,7 +2844,7 @@ ASFUNCTIONBODY(ASString,replace)
 	else if(args[1]->getObjectType()!=T_FUNCTION)
 	{
 		type = STRING;
-		replaceWith=args[1]->toString().raw_buf();
+		replaceWith=args[1]->toString();
 	}
 	else
 		type = FUNC;
@@ -2873,7 +2862,7 @@ ASFUNCTIONBODY(ASString,replace)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
+		pcre* pcreRE=pcre_compile(re->re.raw_buf(), options, &error, &errorOffset,NULL);
 		if(error)
 			return ret;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -2890,7 +2879,7 @@ ASFUNCTIONBODY(ASString,replace)
 		int retDiff=0;
 		do
 		{
-			int rc=pcre_exec(pcreRE, NULL, ret->data.c_str(), ret->data.bytes(), offset, 0, ovector, 60);
+			int rc=pcre_exec(pcreRE, NULL, ret->data.raw_buf(), ret->data.numBytes(), offset, 0, ovector, 60);
 			if(rc<0)
 			{
 				//No matches or error
@@ -2902,10 +2891,10 @@ ASFUNCTIONBODY(ASString,replace)
 				//Get the replace for this match
 				IFunction* f=static_cast<IFunction*>(args[1]);
 				ASObject* subargs[3+capturingGroups];
-				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
-				subargs[0]=Class<ASString>::getInstanceS(ret->data.raw().substr(ovector[0],ovector[1]-ovector[0]));
+				//we index on bytes, not on UTF-8 characters
+				subargs[0]=Class<ASString>::getInstanceS(ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0]));
 				for(int i=0;i<capturingGroups;i++)
-					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.raw().substr(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
+					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
 				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
 				th->incRef();
 				subargs[capturingGroups+2]=th;
@@ -2914,37 +2903,37 @@ ASFUNCTIONBODY(ASString,replace)
 				ret->decRef();
 			} else {
 					size_t pos, ipos = 0;
-					string group;
+					tiny_string group;
 					int i, j;
-					while((pos = replaceWith.find("$", ipos)) != string::npos) {
+					while((pos = replaceWith.find("$", ipos)) != tiny_string::npos) {
 						i = 0;
 						ipos = pos;
-						while (++ipos < replaceWith.size()) {
-						j = replaceWith.at(ipos)-'0';
+						while (++ipos < replaceWith.numChars()) {
+						j = replaceWith.charAt(ipos)-'0';
 							if (j <0 || j> 9)
 								break;
 							i = 10*i + j;
 						}
 						if (i == 0)
 							continue;
-						group = ret->data.raw().substr(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
+						group = ret->data.substr_bytes(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
 						replaceWith.replace(pos, ipos-pos, group);
 					}
 			}
 			ret->data.replace(ovector[0],ovector[1]-ovector[0],replaceWith);
-			offset=ovector[0]+replaceWith.size();
-			retDiff+=replaceWith.size()-(ovector[1]-ovector[0]);
+			offset=ovector[0]+replaceWith.numBytes();
+			retDiff+=replaceWith.numBytes()-(ovector[1]-ovector[0]);
 		}
 		while(re->global);
 	}
 	else
 	{
 		const tiny_string& s=args[0]->toString();
-		int index=ret->data.find(s.raw_buf(),0);
+		int index=ret->data.find(s,0);
 		if(index==-1) //No result
 			return ret;
 		assert_and_throw(type==STRING);
-		ret->data.replace(index,s.len(),replaceWith);
+		ret->data.replace(index,s.numChars(),replaceWith);
 	}
 
 	return ret;
@@ -3907,9 +3896,10 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->prototype = _MNR(new_asobject());
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any
-		//declared methods! Therefore, we define those methods by ourself
-		//below
+		//declared methods yet! Therefore, set super will not copy
+		//up any borrowed traits from there. We do that by ourself.
 		ret->setSuper(Class<ASObject>::getRef());
+
 		ret->prototype->setprop_prototype(ret->super->prototype);
 
 		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
@@ -3925,8 +3915,8 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(IFunction::_getter_length),GETTER_METHOD,true);
 		ret->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-		//actually defined on Class<ASObject>, see comment above
-		ret->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(hasOwnProperty),NORMAL_METHOD,true);
+		//copy borrowed traits from ASObject by ourself
+		ASObject::sinit(ret);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);
@@ -4186,7 +4176,7 @@ ASFUNCTIONBODY(lightspark,trace)
 		if(args[i]->getObjectType() == T_STRING)
 		{
 			ASString* str = static_cast<ASString*>(args[i]);
-			cerr << str->data.raw();
+			cerr << str->data;
 		}
 		else
 			cerr << args[i]->toString();
@@ -4197,20 +4187,20 @@ ASFUNCTIONBODY(lightspark,trace)
 
 bool lightspark::isXMLName(ASObject *obj)
 {
-	ustring name;
+	tiny_string name;
 
 	if(obj->getObjectType()==lightspark::T_QNAME)
 	{
 		ASQName *q=static_cast<ASQName*>(obj);
-		name=ustring(q->getLocalName().raw_buf());
+		name=q->getLocalName();
 	}
 	else if(obj->getObjectType()==lightspark::T_UNDEFINED ||
 		obj->getObjectType()==lightspark::T_NULL)
 		name="";
 	else
-		name=ustring(obj->toString().raw_buf());
+		name=obj->toString();
 
-	if(name.length()==0)
+	if(name.empty())
 		return false;
 
 	// http://www.w3.org/TR/2006/REC-xml-names-20060816/#NT-NCName
@@ -4371,15 +4361,10 @@ bool lightspark::isXMLName(ASObject *obj)
 	  (0x3031 <= x && x <= 0x3035) || (0x309D <= x && x <= 0x309E) || \
 	  (0x30FC <= x && x <= 0x30FE))
 
-	ustring::const_iterator it=name.begin();
-	if(!NC_START_CHAR(*it))
-		return false;
-	++it;
-	while(it!=name.end())
+	for(auto it=name.begin();it!=name.end(); ++it)
 	{
 		if(!(NC_CHAR(*it)))
 			return false;
-		++it;
 	}
 
 	#undef NC_CHAR

@@ -90,18 +90,46 @@ const tiny_string tiny_string::operator+(const tiny_string& r) const
 	return ret;
 }
 
-tiny_string tiny_string::substr(uint32_t start, uint32_t end) const
+tiny_string& tiny_string::replace(uint32_t pos1, uint32_t n1, const tiny_string& o )
+{
+	assert(pos1 < numChars());
+	uint32_t bytestart = g_utf8_offset_to_pointer(buf,pos1)-buf;
+	if(pos1 + n1 > numChars())
+		n1 = numChars()-pos1;
+	uint32_t byteend = g_utf8_offset_to_pointer(buf,pos1+n1)-buf;
+	//TODO avoid copy into std::string
+	*this = std::string(*this).replace(bytestart,byteend-bytestart,std::string(o));
+	return *this;
+}
+
+tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len) const
 {
 	tiny_string ret;
-	//start and end are assumed to be valid
-	assert(end < stringSize);
-	int subSize=end-start+1;
-	if(subSize > STATIC_SIZE)
-		ret.createBuffer(subSize);
-	memcpy(ret.buf,buf+start,end-start);
-	ret.buf[end-start]=0;
-	ret.stringSize = subSize;
+	assert(start+len < stringSize);
+	if(len+1 > STATIC_SIZE)
+		ret.createBuffer(len+1);
+	memcpy(ret.buf,buf+start,len);
+	ret.buf[len]=0;
+	ret.stringSize = len+1;
 	return ret;
+}
+
+tiny_string tiny_string::substr(uint32_t start, uint32_t len) const
+{
+	assert_and_throw(start <= numChars());
+	if(start+len > numChars())
+		len = numChars()-start;
+	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+	uint32_t byteend = g_utf8_offset_to_pointer(buf,start+len) - buf;
+	return substr_bytes(bytestart, byteend-bytestart);
+}
+
+tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const
+{
+	assert_and_throw(start < numChars());
+	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+	uint32_t byteend = end.buf_ptr - buf;
+	return substr_bytes(bytestart, byteend-bytestart);
 }
 
 tiny_string multiname::qualifiedString() const
@@ -1186,25 +1214,25 @@ ASObject* lightspark::abstract_ui(uint32_t i)
 void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns)
 {
 	//Ok, let's split our string into namespace and name part
-	for(int i=tmp.len()-1;i>0;i--)
+	char* collon=tmp.strchrr(':');
+	if(collon)
 	{
-		if(tmp[i]==':')
-		{
-			assert_and_throw(tmp[i-1]==':');
-			ns=tmp.substr(0,i-1);
-			name=tmp.substr(i+1,tmp.len());
-			return;
-		}
+		/* collon is not the first character and there is
+		 * another collon before it */
+		assert_and_throw(collon != tmp.raw_buf() && *(collon-1) == ':');
+		uint32_t collon_offset = collon-tmp.raw_buf();
+		ns = tmp.substr_bytes(0,collon_offset-1);
+		name = tmp.substr_bytes(collon_offset+1,tmp.numChars()-collon_offset-1);
+		return;
 	}
 	// No namespace, look for a package name
-	for(int i=tmp.len()-1;i>0;i--)
+	char* dot = tmp.strchrr('.');
+	if(dot)
 	{
-		if(tmp[i]=='.')
-		{
-			ns=tmp.substr(0,i);
-			name=tmp.substr(i+1,tmp.len());
-			return;
-		}
+		uint32_t dot_offset = dot-tmp.raw_buf();
+		ns = tmp.substr_bytes(0,dot_offset);
+		name = tmp.substr_bytes(dot_offset+1,tmp.numChars()-dot_offset-1);
+		return;
 	}
 	//No namespace or package in the string
 	name=tmp;
@@ -1218,7 +1246,7 @@ RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(0),explicit_FP(false)
 tiny_string QName::getQualifiedName() const
 {
 	tiny_string ret;
-	if(ns.len())
+	if(!ns.empty())
 	{
 		ret+=ns;
 		ret+="::";

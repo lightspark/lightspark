@@ -2213,16 +2213,17 @@ ASObject* ABCVm::esc_xattr(ASObject* o)
 {
 	/* TODO: implement correct escaping according to E4X
 	 * For now we just cut the string at the first \0 byte, which is wrong
-	 * but supresses more errors */
+	 * but suppresses more errors */
 	tiny_string t = o->toString();
+	LOG(LOG_NOT_IMPLEMENTED,"esc_xattr on " << t);
 	o->decRef();
-	uint32_t i;
-	for(i=0;i<t.len();++i)
+	auto i=t.begin();
+	for(;i!=t.end();++i)
 	{
-		if(t[i] == '\0')
+		if(*i == '\0')
 			break;
 	}
-	if(i == t.len())
+	if(i == t.end())
 		return Class<ASString>::getInstanceS(t);
 	else
 		return Class<ASString>::getInstanceS(t.substr(0,i));

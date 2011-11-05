@@ -274,7 +274,7 @@ bool URLInfo::isSubOf(const URLInfo& url) const
 }
 bool URLInfo::isSubPathOf(const tiny_string& parent, const tiny_string& child)
 {
-	return child.substr(0, parent.len()) == parent;
+	return child.substr(0, parent.numChars()) == parent;
 }
 bool URLInfo::isSubDomainOf(const tiny_string& parent, const tiny_string& child)
 {

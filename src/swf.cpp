@@ -597,7 +597,7 @@ void SystemState::createEngines()
 	//Check if we should fall back on gnash
 	if(useGnashFallback && vmVersion!=AVM2)
 	{
-		if(dumpedSWFPath.len()==0) //The path is not known yet
+		if(dumpedSWFPath.empty()) //The path is not known yet
 		{
 			waitingForDump=true;
 			l.unlock();
@@ -1236,7 +1236,7 @@ RootMovieClip *ParseThread::getRootMovie()
 		objectSpinlock.lock();
 		parsedObject=_MNR(root);
 		objectSpinlock.unlock();
-		if(url.len()>0)
+		if(!url.empty())
 			root->setOrigin(url, "");
 		return root;
 	}

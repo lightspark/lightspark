@@ -104,15 +104,15 @@ void URLRequest::getPostData(vector<uint8_t>& outData) const
 		tiny_string strData="Content-type: application/x-www-form-urlencoded\r\nContent-length: ";
 		const tiny_string& tmpStr=data->toString();
 		char buf[20];
-		snprintf(buf,20,"%u\r\n\r\n",tmpStr.len());
+		snprintf(buf,20,"%u\r\n\r\n",tmpStr.numBytes());
 		strData+=buf;
 		strData+=tmpStr;
-		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.len());
+		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.numBytes());
 	}
 	else
 	{
 		const tiny_string& strData=data->toString();
-		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.len());
+		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.numBytes());
 	}
 }
 

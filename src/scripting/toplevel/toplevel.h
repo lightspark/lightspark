@@ -28,7 +28,6 @@
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include "scripting/abcutils.h"
-#include <glibmm/ustring.h>
 #include "Boolean.h"
 #include "Error.h"
 
@@ -426,12 +425,11 @@ private:
 	tiny_string toString_priv() const;
 	ASString();
 	ASString(const std::string& s);
-	ASString(const Glib::ustring& s);
 	ASString(const tiny_string& s);
 	ASString(const char* s);
 	ASString(const char* s, uint32_t len);
 public:
-	Glib::ustring data;
+	tiny_string data;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -461,7 +459,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;
-	std::string toDebugString() const { return std::string("\"") + data.raw() + "\""; }
+	std::string toDebugString() const { return std::string("\"") + std::string(data) + "\""; }
 };
 
 class Null: public ASObject
@@ -747,7 +745,7 @@ class RegExp: public ASObject
 CLASSBUILDABLE(RegExp);
 friend class ASString;
 private:
-	Glib::ustring re;
+	tiny_string re;
 	bool global;
 	bool ignoreCase;
 	bool extended;

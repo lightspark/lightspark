@@ -1250,7 +1250,7 @@ void CurlDownloader::threadAbort()
  */
 void CurlDownloader::execute()
 {
-	if(url.len()==0)
+	if(url.empty())
 	{
 		setFailed();
 		return;
@@ -1388,7 +1388,7 @@ void LocalDownloader::threadAbort()
  */
 void LocalDownloader::execute()
 {
-	if(url.len()==0)
+	if(url.empty())
 	{
 		setFailed();
 		return;

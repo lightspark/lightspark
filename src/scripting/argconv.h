@@ -156,7 +156,8 @@ inline tiny_string lightspark::ArgumentConversion<tiny_string>::toConcrete(ASObj
 template<>
 inline std::string lightspark::ArgumentConversion<std::string>::toConcrete(ASObject* obj)
 {
-	return Class<ASString>::cast(obj)->data;
+	//TODO: mark as deprecated, this should not be used. use tiny_string
+	return std::string(obj->toString());
 }
 
 template<>

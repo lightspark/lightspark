@@ -24,7 +24,6 @@
 #include "argconv.h"
 
 using namespace std;
-using namespace Glib;
 using namespace lightspark;
 
 SET_NAMESPACE("");
@@ -51,7 +50,7 @@ ASFUNCTIONBODY(ASError,getStackTrace)
 
 tiny_string ASError::toString(bool debugMsg)
 {
-	if( message.len() )
+	if( !message.empty() )
 		return name + ": " + message;
 	else
 		return name;

@@ -310,58 +310,55 @@ bool URLInfo::matchesDomain(const tiny_string& expression, const tiny_string& su
 	return false;
 }
 
-std::string URLInfo::encode(const std::string& u, ENCODING type)
+tiny_string URLInfo::encode(const tiny_string& u, ENCODING type)
 {
-	std::string str;
-	//Worst case, we need to encode EVERY character: X --> %YZ
-	//Expect moderate density, assume we need to encode about half of all characters
-	str.reserve(u.length()*2);
+	tiny_string str;
 	char buf[4];
 	
-	for(size_t i=0;i<u.length();i++)
+	for(auto i=u.begin();i!=u.end();++i)
 	{
 		if(type == ENCODE_SPACES)
 		{
-			if(u[i] == ' ')
+			if(*i == ' ')
 				str += "%20";
 			else
-				str += u[i];
+				str += *i;
 		}
 		else {
 			//A-Z, a-z or 0-9, all encoding types except encode spaces don't encode these characters
-			if((u[i] >= 0x41 && u[i] <= 0x5a) || (u[i] >= 0x61 && u[i] <= 0x7a) || (u[i] >= 0x30 && u[i] <= 0x39))
-				str += u[i];
+			if((*i >= 0x41 && *i <= 0x5a) || (*i >= 0x61 && *i <= 0x7a) || (*i >= 0x30 && *i <= 0x39))
+				str += *i;
 			//Additionally ENCODE_FORM doesn't decode: - _ . ~
 			else if(type == ENCODE_FORM && 
-					(u[i] == '-' || u[i] == '_' || u[i] == '.' || u[i] == '~'))
-				str += u[i];
+					(*i == '-' || *i == '_' || *i == '.' || *i == '~'))
+				str += *i;
 			//ENCODE_FORM encodes spaces as + instead of %20
-			else if(type == ENCODE_FORM && u[i] == ' ')
+			else if(type == ENCODE_FORM && *i == ' ')
 				str += '+';
 			//Additionally ENCODE_URICOMPONENT and ENCODE_URI don't encode:
 			//- _ . ! ~ * ' ( )
 			else if((type == ENCODE_URI || type == ENCODE_URICOMPONENT || type == ENCODE_ESCAPE) && 
-					(u[i] == '-' || u[i] == '_' || u[i] == '.' || u[i] == '!' || 
-					 u[i] == '~' || u[i] == '*' || u[i] == '\'' ||	u[i] == '(' || 
-					 u[i] == ')'))
-				str += u[i];
+					(*i == '-' || *i == '_' || *i == '.' || *i == '!' ||
+						*i == '~' || *i == '*' || *i == '\'' ||	*i == '(' ||
+						*i == ')'))
+				str += *i;
 			//Additionally ENCODE_URI doesn't encode:
 			//; / ? : @ & = + $ , # 
 			else if((type == ENCODE_URI || type == ENCODE_ESCAPE) && 
-						(u[i] == ';' || u[i] == '/' || u[i] == '?' || u[i] == ':' || 
-						 u[i] == '@' || u[i] == '&' || u[i] == '=' || u[i] == '+' || 
-						 u[i] == '$' || u[i] == ',' || u[i] == '#'))
-				str += u[i];
+						(*i == ';' || *i == '/' || *i == '?' || *i == ':' ||
+							*i == '@' || *i == '&' || *i == '=' || *i == '+' ||
+							*i == '$' || *i == ',' || *i == '#'))
+				str += *i;
 			//Additionally ENCODE_ESCAPE doesn't encode:
 			//@ - _ . * + /
 			else if(type == ENCODE_ESCAPE && 
-						(u[i] == '@' || u[i] == '-' || u[i] == '_' || u[i] == '.' || 
-						 u[i] == '*' || u[i] == '+' || u[i] == '/'))
-				str += u[i];
+						(*i == '@' || *i == '-' || *i == '_' || *i == '.' ||
+							*i == '*' || *i == '+' || *i == '/'))
+				str += *i;
 
 			else
 			{
-				sprintf(buf,"%%%02X",(unsigned char)u[i]);
+				sprintf(buf,"%%%02X",(unsigned char)*i);
 				str += buf;
 			}
 		}

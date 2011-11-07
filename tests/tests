@@ -119,7 +119,7 @@ while [ $# -ne 0 ]; do
 		if [ $1 == "-t" ] || [ $1 == "--tests" ]; then
 			shift;
 		fi
-		if [ -d "$@" ]; then
+		if [ $# -eq 1 ] && [ -d "$1" ]; then
 			TESTS=`find $@ -name '*.swf'`
 		else
 			TESTS=`echo $@ | sed 's/\(\.\|\.mxml\|\.swf\)  */.swf /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.swf/g'`;
@@ -270,10 +270,12 @@ for test in $TESTS; do
 	ev=$?
 
 	if [[ "$ev" != "0" ]]; then
-		if [ $COLORS -eq 1 ]; then
-			echo -e "\\e[0;31m$test failed with exit value $ev\\e[0m"
-		else
-			echo -e "$test failed with exit value $ev"
+		if [ $QUIET -eq 0 ]; then
+			if [ $COLORS -eq 1 ]; then
+				echo -e "\\e[0;31m$test failed with exit value $ev\\e[0m"
+			else
+				echo -e "$test failed with exit value $ev"
+			fi
 		fi
 		if [[ -n "$JUNITFILE" ]]; then
 			echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"exitvalue\">Exit Value $ev</failure></testcase>" >> "$JUNITFILE"
@@ -282,10 +284,8 @@ for test in $TESTS; do
 		FAILED_TESTS="$FAILED_TESTS $test"
 		continue
 	fi
-	lines=`cat $LOGFILE`
-	#Remove the RANDR error when running under xvfb
-	lines=`echo -e "$lines" | sed -e '/Xlib:  extension "RANDR" missing on display.*/d'`
-
+	#Remove the RANDR error when running under xvfb, convert control characters to something like \303
+	lines=`sed -e '/Xlib:  extension "RANDR" missing on display.*/d' -e 's/[[:cntrl:]]//' $LOGFILE`
 	if [ "`echo $lines | grep '==Failures'`" != "" ]; then
 		THISFAILEDCOUNT=`echo "$lines" | sed -n -e 's/.*=Failures (\(.*\)\/.*)=.*/\1/p'`
 		THISNUMTESTS=`echo "$lines" | sed -n -e 's/.*=Failures (.*\/\(.*\))=.*/\1/p'`
@@ -315,7 +315,7 @@ for test in $TESTS; do
 		#For xml output
 		tcnum=0
 		#Find all lines that start with '. [' or 'F [' or 'A ..F.. ['
-		tcnum=$(echo -e "$lines" | sed -n -e "/^\(A \)\?[F\.]\+ \[.*/p" \
+		tcnum=$(echo "$lines" | sed -n -e "/^\(A \)\?[F\.]\+ \[.*/p" \
 		| { while read L
 		do
 			tcnum=`expr $tcnum + 1`
@@ -337,9 +337,7 @@ for test in $TESTS; do
 	fi
 
 	if [ $QUIET -eq 1 ]; then
-		lines=`echo "$lines" |
-			sed -n -e "/${BARCHAR}*\(${NOFAILURESTITLE}\|${FAILURESTITLE}\)${BARCHAR}*/,/${SUCCESSTITLE}.*\|${FAILURETITLE}.*/p"
-			`
+		continue
 	fi
 	
 	if [ $FAILURES -eq 1 ]; then

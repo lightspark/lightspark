@@ -165,7 +165,7 @@ public:
 
 	void setSuper(_R<Class_base> super_)
 	{
-		assert(super == NULL);
+		assert(!super);
 		super = super_;
 		copyBorrowedTraitsFromSuper();
 	}
@@ -257,7 +257,7 @@ public:
 	Class_base* inClass;
 	/* returns wether this is this a method of a function */
 	bool isMethod() const { return inClass != NULL; }
-	bool isBound() const { return closure_this != NULL; }
+	bool isBound() const { return closure_this; }
 	void finalize();
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
@@ -276,7 +276,7 @@ public:
 		if(!isBound())
 		{
 			IFunction* ret=NULL;
-			if(c==NULL)
+			if(!c)
 			{
 				//If binding with null we are generated from newFunction, don't copy
 				ret=this;

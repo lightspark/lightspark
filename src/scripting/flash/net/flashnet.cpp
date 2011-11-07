@@ -850,7 +850,7 @@ void NetStream::tick()
 	if(audioStream && audioStream->isValid())
 	{
 		//TODO: use soundTransform->pan
-		if(soundTransform != NULL && soundTransform->volume != oldVolume)
+		if(soundTransform && soundTransform->volume != oldVolume)
 		{
 			audioStream->setVolume(soundTransform->volume);
 			oldVolume = soundTransform->volume;

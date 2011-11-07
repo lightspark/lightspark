@@ -846,7 +846,7 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 	//Check if the object is already in the queue
 	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail)
 		return;
-	if(invalidateQueueHead==NULL)
+	if(!invalidateQueueHead)
 	{
 		invalidateQueueHead=invalidateQueueTail=d;
 		//This is the first object added to the invalidation queue

@@ -849,7 +849,7 @@ int ABCVm::getEventQueueSize()
 void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 {
 	std::deque<_R<DisplayObject>> parents;
-	assert_and_throw(event->target==NULL);
+	assert_and_throw(!event->target);
 	event->setTarget(dispatcher);
 	/** rollOver/Out are special: according to spec 
 	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?  		
@@ -877,20 +877,20 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 		{
 			event->incRef();
 			_R<MouseEvent> mevent = _MR(dynamic_cast<MouseEvent*>(event.getPtr()));  
-			if(mevent->relatedObject != NULL) 
+			if(mevent->relatedObject)
 			{  
 				mevent->relatedObject->incRef();
 				rcur = mevent->relatedObject;
 			}
 		}
 		//If the relObj is non null, we get its ancestors to build a truncated parents queue for the target 
-		if(rcur != NULL)
+		if(rcur)
 		{
 			std::vector<_NR<DisplayObject>> rparents;
 			rparents.push_back(rcur);        
 			while(true)
 			{
-				if(rcur->getParent() == NULL)
+				if(!rcur->getParent())
 					break;
 				rcur = rcur->getParent();
 				rparents.push_back(rcur);
@@ -909,7 +909,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 			//Get the parents of cur that are not ancestors of rcur
 			while(true && doTarget)
 			{
-				if(cur->getParent() == NULL)
+				if(!cur->getParent())
 					break;        
 				cur = cur->getParent();
 				auto i = rparents.begin();        
@@ -932,7 +932,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 			_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
 			while(true)
 			{
-				if(cur->getParent() == NULL)
+				if(!cur->getParent())
 					break;
 				cur = cur->getParent();
 				parents.push_back(cur);
@@ -988,7 +988,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,_("Binding of ") << ev->class_name);
-				if(ev->tag != NULL)
+				if(ev->tag)
 					buildClassAndBindTag(ev->class_name.raw_buf(),ev->tag);
 				else
 					buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base);

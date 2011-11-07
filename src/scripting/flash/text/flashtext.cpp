@@ -242,7 +242,7 @@ ASFUNCTIONBODY(TextField,_setTextFormat)
 	if(tf->getObjectType() == T_NULL)
 		return NULL;
 
-	if(tf->color != NULL)
+	if(tf->color)
 		th->textColor = tf->color->toUInt();
 
 	LOG(LOG_NOT_IMPLEMENTED,"setTextFormat does not read all fields of TextFormat");

@@ -174,7 +174,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 		return NullRef;
 	}
 	assert(maskStack.empty());
-	assert(selected!=NULL); /* atleast we hit the stage */
+	assert(selected); /* atleast we hit the stage */
 	assert_and_throw(selected->getClass()->isSubClass(Class<InteractiveObject>::getClass()));
 	return selected;
 }
@@ -231,11 +231,11 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 	mousePos = Vector2(x,y);
 	Locker locker2(mutexDragged);
 	// Handle current drag operation
-	if(curDragged != NULL)
+	if(curDragged)
 	{
 		Vector2f local;
 		_NR<DisplayObjectContainer> parent = curDragged->getParent();
-		if(parent == NULL)
+		if(!parent)
 		{
 			stopDrag(curDragged.getPtr());
 			return;

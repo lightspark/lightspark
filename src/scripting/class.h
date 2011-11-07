@@ -374,7 +374,7 @@ public:
 			sys->classes.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
-			if(ret->super != NULL)
+			if(ret->super)
 				ret->prototype->setprop_prototype(ret->super->prototype);
 			ret->addPrototypeGetter();
 		}

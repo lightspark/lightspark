@@ -656,7 +656,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	ret->setVariableByQName("constructor","",sf,DYNAMIC_TRAIT);
 
 	ret->incRef();
-	assert_and_throw(sf->closure_this==NULL);
+	assert_and_throw(!sf->closure_this);
 	sf->incRef();
 	ASObject* ret2=sf->call(ret,args,argslen);
 	sf->decRef();
@@ -2005,7 +2005,7 @@ void ABCVm::newClass(call_context* th, int n)
 	//Add the constructor variable to the class prototype
 	ret->incRef();
 	ret->prototype->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
-	if(ret->super != NULL)
+	if(ret->super)
 		ret->prototype->setprop_prototype(ret->super->prototype);
 	ret->addPrototypeGetter();
 

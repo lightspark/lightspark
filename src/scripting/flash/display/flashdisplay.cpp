@@ -709,7 +709,7 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 			break;
 	}
 	/* When mouseChildren is false, we should get all events of our children */
-	if(ret != NULL && !mouseChildren)
+	if(ret && !mouseChildren)
 	{
 		this->incRef();
 		ret = _MNR(this);
@@ -722,7 +722,7 @@ _NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, n
 	_NR<InteractiveObject> ret = NullRef;
 	this->incRef();
 	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type);
-	if(ret==NULL && isHittable(type))
+	if(!ret && isHittable(type))
 	{
 		//The coordinates are locals
 		this->incRef();
@@ -2215,7 +2215,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 
 bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 {
-	if(child->getParent()==NULL)
+	if(!child->getParent())
 		return false;
 	assert_and_throw(child->getParent()==this);
 
@@ -2724,7 +2724,7 @@ _NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t 
 {
 	_NR<InteractiveObject> ret;
 	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type);
-	if(ret == NULL && isHittable(type))
+	if(!ret && isHittable(type))
 	{
 		/* If nothing else is hit, we hit the stage */
 		this->incRef();
@@ -3505,7 +3505,7 @@ void SimpleButton::buildTraits(ASObject* o)
 _NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> ret = NullRef;
-	if(hitTestState != NULL)
+	if(hitTestState)
 	{
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
@@ -3517,7 +3517,7 @@ _NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, nu
 	 * tested with the official flash player. It cannot work otherwise, as
 	 * hitTestState->parent == NULL. (This has also been verified)
 	 */
-	if(ret != NULL)
+	if(ret)
 	{
 		if(!isHittable(type))
 			return NullRef;
@@ -3626,7 +3626,7 @@ void SimpleButton::reflectState()
 ASFUNCTIONBODY(SimpleButton,_getUpState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	if(th->upState==NULL)
+	if(!th->upState)
 		return new Null;
 
 	th->upState->incRef();
@@ -3646,7 +3646,7 @@ ASFUNCTIONBODY(SimpleButton,_setUpState)
 ASFUNCTIONBODY(SimpleButton,_getHitTestState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	if(th->hitTestState==NULL)
+	if(!th->hitTestState)
 		return new Null;
 
 	th->hitTestState->incRef();
@@ -3665,7 +3665,7 @@ ASFUNCTIONBODY(SimpleButton,_setHitTestState)
 ASFUNCTIONBODY(SimpleButton,_getOverState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	if(th->overState==NULL)
+	if(!th->overState)
 		return new Null;
 
 	th->overState->incRef();
@@ -3685,7 +3685,7 @@ ASFUNCTIONBODY(SimpleButton,_setOverState)
 ASFUNCTIONBODY(SimpleButton,_getDownState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	if(th->downState==NULL)
+	if(!th->downState)
 		return new Null;
 
 	th->downState->incRef();

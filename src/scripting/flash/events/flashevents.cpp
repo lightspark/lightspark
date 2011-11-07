@@ -300,7 +300,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_localX)
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
 	//At this point, the target should be an InteractiveObject but check anyway
-	if((th->target != NULL)&&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass())))
+	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass())))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -317,7 +317,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_localY)
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
 	//At this point, the target should be an InteractiveObject but check anyway
-	if((th->target != NULL)&&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass())))	
+	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass())))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -336,7 +336,7 @@ void MouseEvent::setTarget(_NR<ASObject> t)
 {
 	target = t;
 	//If t is NULL, it means MouseEvent is being reset
-	if(t == NULL)
+	if(!t)
 	{
 		localX = 0;
 		localY = 0;

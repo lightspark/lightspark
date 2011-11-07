@@ -52,9 +52,7 @@ while [[ -n "$OLDFAILURES" ]]; do
 	F=${F%|}
 	OLDFAILURES=`echo "$OLDFAILURES" | tail -n +1001`
 	REGRESSION=`echo "$REGRESSION" | grep -Ev "$F"`
-	echo -n "."
 done
-echo ""
 
 if [[ "$QUIET" == "0" ]]; then
 	grep '<failure' <(echo -e "$REGRESSION")

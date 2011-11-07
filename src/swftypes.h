@@ -376,7 +376,8 @@ public:
 	uint32_t find(const tiny_string& needle, uint32_t start = 0) const
 	{
 		//TODO: omit copy into std::string
-		size_t bytepos = std::string(*this).find(needle.raw_buf(),start,needle.numBytes());
+		size_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+		size_t bytepos = std::string(*this).find(needle.raw_buf(),bytestart,needle.numBytes());
 		if(bytepos == std::string::npos)
 			return npos;
 		else
@@ -385,7 +386,13 @@ public:
 	uint32_t rfind(const tiny_string& needle, uint32_t start = npos) const
 	{
 		//TODO: omit copy into std::string
-		size_t bytepos = std::string(*this).rfind(needle.raw_buf(),start,needle.numBytes());
+		size_t bytestart;
+		if(start == npos)
+			bytestart = std::string::npos;
+		else
+			bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+
+		size_t bytepos = std::string(*this).rfind(needle.raw_buf(),bytestart,needle.numBytes());
 		if(bytepos == std::string::npos)
 			return npos;
 		else

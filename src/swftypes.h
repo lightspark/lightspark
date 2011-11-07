@@ -358,7 +358,7 @@ public:
 		//TODO: does this handle '\0' in middle of buf gracefully?
 		return g_utf8_strrchr(buf, numBytes(), c);
 	}
-	explicit operator std::string() const
+	/*explicit*/ operator std::string() const
 	{
 		return std::string(buf,stringSize-1);
 	}

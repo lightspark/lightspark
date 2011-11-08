@@ -413,7 +413,7 @@ void PulseAudioStream::fillStream(size_t toSend)
 		}
 	}
 
-	if(!pause)
+	if(!pause && pa_stream_is_corked(stream))
 		pa_stream_cork ( stream, 0, NULL, NULL ); //Start the stream, just in case it's still stopped
 }
 

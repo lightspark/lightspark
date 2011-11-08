@@ -65,49 +65,6 @@ uint64_t compat_msectiming()
 #endif
 }
 
-HMODULE LoadLib(const string filename)
-{
-  HMODULE ret;
-#if defined WIN32
-    ret = LoadLibrary(filename.c_str());
-#else
-  dlerror(); //clearing any remaining error
-  ret = dlopen(filename.c_str(), RTLD_LAZY);
-  if(!ret)
-  {
-    cerr << "Cannot open plugin: " << dlerror() << endl;
-  }
-#endif
-  return ret;
-}
-
-void *ExtractLibContent(HMODULE hLib, string WhatToExtract)
-{
-  void *ret;
-#if defined WIN32
-  ret = GetProcAdress(hLib, WhatToExtract.c_str());
-#else
-  dlerror(); //clearing any remaining error
-  ret = dlsym(hLib, WhatToExtract.c_str());
-  if(!ret)
-  {
-    cerr << "Cannot load symbol: " << dlerror() << endl;
-  }
-#endif
-  return ret;
-}
-
-void CloseLib(HMODULE hLib)
-{
-  #if defined WIN32
-    FreeLibrary(hLib);
-  #else
-    dlclose(hLib);
-  #endif
-  hLib = NULL;
-}
-
-
 #ifndef WIN32
 #include "timer.h"
 

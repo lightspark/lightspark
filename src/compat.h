@@ -141,20 +141,6 @@ void aligned_free(void *mem);
 	#endif
 #endif
 
-#ifndef WIN32
-  #define HMODULE void *
-#endif
-
-/***********
-Used for compatibility for loading library between Windows and POSIX
-************/
-HMODULE LoadLib(const std::string filename);
-
-void *ExtractLibContent(HMODULE hLib, std::string WhatToExtract);
-
-void CloseLib(HMODULE hLib);
-/*****************/
-
 template<class T>
 inline T minTmpl(T a, T b)
 {

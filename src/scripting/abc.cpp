@@ -1045,6 +1045,8 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					// We should report the function result
 					if(ev->result != NULL)
 						*(ev->result) = result;
+					else
+						result->decRef();
 				}
 				break;
 			}

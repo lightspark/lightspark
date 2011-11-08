@@ -1029,7 +1029,7 @@ ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 	else if(val2->getObjectType()==T_STRING)
 	{
 		//Convert argument to int32_t
-		tiny_string a((int32_t)val1);
+		tiny_string a = Integer::toString(val1);
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
@@ -1063,7 +1063,7 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
-		tiny_string a(val1);
+		tiny_string a = Number::toString(val1);
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);

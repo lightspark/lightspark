@@ -153,9 +153,9 @@ tiny_string multiname::normalizedName() const
 	switch(name_type)
 	{
 		case multiname::NAME_INT:
-			return tiny_string(name_i);
+			return Integer::toString(name_i);
 		case multiname::NAME_NUMBER:
-			return tiny_string(name_d);
+			return Number::toString(name_d);
 		case multiname::NAME_STRING:
 			return name_s;
 		case multiname::NAME_OBJECT:

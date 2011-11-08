@@ -225,18 +225,6 @@ public:
 	{
 		resetToStatic();
 	}
-	static tiny_string fromInt(int i)
-	{
-		tiny_string t;
-		t.stringSize=snprintf(t.buf,STATIC_SIZE,"%i",i)+1;
-		return t;
-	}
-	static tiny_string fromNumber(number_t d)
-	{
-		tiny_string t;
-		t.stringSize=snprintf(t.buf,STATIC_SIZE,"%g",d)+1;
-		return t;
-	}
 	tiny_string& operator=(const tiny_string& s)
 	{
 		resetToStatic();

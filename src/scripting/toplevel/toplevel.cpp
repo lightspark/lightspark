@@ -1767,6 +1767,12 @@ bool Integer::isEqual(ASObject* o)
 
 tiny_string Integer::toString()
 {
+	return Integer::toString(val);
+}
+
+/* static helper function */
+tiny_string Integer::toString(int32_t val)
+{
 	char buf[20];
 	if(val<0)
 	{
@@ -1804,6 +1810,12 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 }
 
 tiny_string UInteger::toString()
+{
+	return UInteger::toString(val);
+}
+
+/* static helper function */
+tiny_string UInteger::toString(uint32_t val)
 {
 	char buf[20];
 	snprintf(buf,sizeof(buf),"%u",val);
@@ -2037,6 +2049,12 @@ ASFUNCTIONBODY(Number,generator)
 }
 
 tiny_string Number::toString()
+{
+	return Number::toString(val);
+}
+
+/* static helper function */
+tiny_string Number::toString(number_t val)
 {
 	if(std::isnan(val))
 		return "NaN";
@@ -3448,10 +3466,10 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			node->set_attribute("returnType", rtname->name_s.raw_buf());
 
 			int firstOpt=method.numArgs() - method.option_count;
-			for(int j=0;j<method.numArgs(); j++)
+			for(uint32_t j=0;j<method.numArgs(); j++)
 			{
 				xmlpp::Element* param=node->add_child("parameter");
-				param->set_attribute("index", tiny_string(j+1).raw_buf());
+				param->set_attribute("index", UInteger::toString(j+1).raw_buf());
 				param->set_attribute("type", method.paramTypeName(j)->name_s.raw_buf());
 				param->set_attribute("optional", j>=firstOpt?"true":"false");
 			}

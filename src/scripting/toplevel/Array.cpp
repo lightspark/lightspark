@@ -525,13 +525,13 @@ bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_sl
 		tiny_string s1;
 		tiny_string s2;
 		if(d1.type==DATA_INT)
-			s1=tiny_string(d1.data_i);
+			s1=Integer::toString(d1.data_i);
 		else if(d1.type==DATA_OBJECT && d1.data)
 			s1=d1.data->toString();
 		else
 			s1="undefined";
 		if(d2.type==DATA_INT)
-			s2=tiny_string(d2.data_i);
+			s2=Integer::toString(d2.data_i);
 		else if(d2.type==DATA_OBJECT && d2.data)
 			s2=d2.data->toString();
 		else

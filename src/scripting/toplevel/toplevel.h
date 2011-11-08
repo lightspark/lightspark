@@ -537,6 +537,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_toString);
 	tiny_string toString();
+	static tiny_string toString(int32_t val);
 	int32_t toInt()
 	{
 		return val;
@@ -560,6 +561,7 @@ public:
 
 	static void sinit(Class_base* c);
 	tiny_string toString();
+	static tiny_string toString(uint32_t val);
 	int32_t toInt()
 	{
 		return val;
@@ -591,6 +593,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	tiny_string toString();
+	static tiny_string toString(number_t val);
 	unsigned int toUInt()
 	{
 		return (unsigned int)(val);

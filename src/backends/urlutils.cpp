@@ -153,7 +153,7 @@ URLInfo::URLInfo(const tiny_string& u)
 	if(getPort() > 0)
 	{
 		parsedURL += ":";
-		parsedURL += tiny_string((int) getPort());
+		parsedURL += Integer::toString(getPort());
 	}
 	parsedURL += getPath();
 	if(query != "")
@@ -249,7 +249,7 @@ const URLInfo URLInfo::goToURL(const tiny_string& u) const
 		if(getPort() > 0)
 		{
 			qualified += ":";
-			qualified += tiny_string((int) getPort());
+			qualified += Integer::toString(getPort());
 		}
 		if(str[0] != '/')
 			qualified += getPathDirectory();

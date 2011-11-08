@@ -187,10 +187,14 @@ public:
 
 	tiny_string():buf(_buf_static),stringSize(1),type(STATIC){buf[0]=0;}
 	/* construct from utf character */
-	tiny_string(uint32_t c):buf(_buf_static),type(STATIC)
+	static tiny_string fromChar(uint32_t c)
 	{
-		stringSize = g_unichar_to_utf8(c,buf) + 1;
-		buf[stringSize-1] = '\0';
+		tiny_string ret;
+		ret.buf = ret._buf_static;
+		ret.type = STATIC;
+		ret.stringSize = g_unichar_to_utf8(c,ret.buf) + 1;
+		ret.buf[ret.stringSize-1] = '\0';
+		return ret;
 	}
 	tiny_string(const char* s,bool copy=false):buf(_buf_static),type(READONLY)
 	{
@@ -261,7 +265,7 @@ public:
 	tiny_string& operator+=(const tiny_string& r);
 	tiny_string& operator+=(uint32_t c)
 	{
-		return (*this += tiny_string(c));
+		return (*this += tiny_string::fromChar(c));
 	}
 	const tiny_string operator+(const tiny_string& r) const;
 	bool operator<(const tiny_string& r) const

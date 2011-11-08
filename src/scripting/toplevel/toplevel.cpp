@@ -1366,7 +1366,7 @@ ASFUNCTIONBODY(ASString,split)
 		{
 			//the RegExp is empty, so split every character
 			for(auto i=th->data.begin();i!=th->data.end();++i)
-				ret->push( Class<ASString>::getInstanceS( tiny_string(*i) ) );
+				ret->push( Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) );
 			return ret;
 		}
 
@@ -1435,7 +1435,7 @@ ASFUNCTIONBODY(ASString,split)
 		{
 			//the string is empty, so split every character
 			for(auto i=th->data.begin();i!=th->data.end();++i)
-				ret->push( Class<ASString>::getInstanceS( tiny_string(*i) ) );
+				ret->push( Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) );
 			return ret;
 		}
 		unsigned int start=0;
@@ -2772,7 +2772,7 @@ ASFUNCTIONBODY(ASString,charAt)
 	int maxIndex=th->data.numChars();
 	if(index<0 || index>=maxIndex)
 		return Class<ASString>::getInstanceS();
-	return Class<ASString>::getInstanceS( tiny_string(th->data.charAt(index)) );
+	return Class<ASString>::getInstanceS( tiny_string::fromChar(th->data.charAt(index)) );
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
@@ -2841,7 +2841,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	ASString* ret=Class<ASString>::getInstanceS();
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		ret->data += tiny_string(args[i]->toUInt());
+		ret->data += tiny_string::fromChar(args[i]->toUInt());
 	}
 	return ret;
 }

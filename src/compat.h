@@ -33,6 +33,8 @@
 #include <assert.h>
 #define _(STRING) gettext(STRING)
 
+#include <glib.h>
+
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
@@ -44,9 +46,6 @@
 #undef exception_info // Let's hope MS functions always use _exception_info
 #define snprintf _snprintf
 #define isnan _isnan
-
-// No real functionality for now
-typedef int pid_t;
 
 // WINTODO: Hopefully, the MSVC instrinsics are similar enough
 //          to what the standard mandates
@@ -164,7 +163,7 @@ std::uint64_t compat_get_current_time_ms();
 std::uint64_t compat_get_current_time_us();
 std::uint64_t compat_get_thread_cputime_us();
 
-int kill_child(pid_t p);
+int kill_child(GPid p);
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 

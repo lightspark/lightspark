@@ -174,7 +174,7 @@ private:
 	//Data for handling Gnash fallback
 	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
 	VMVERSION vmVersion;
-	pid_t childPid;
+	GPid childPid;
 	bool useGnashFallback;
 
 	//Parameters/FlashVars

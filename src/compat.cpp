@@ -65,6 +65,17 @@ uint64_t compat_msectiming()
 #endif
 }
 
+int kill_child(GPid childPid)
+{
+#ifdef _WIN32
+	TerminateProcess(childPid, 0);
+#else
+	kill(childPid, SIGTERM);
+#endif
+	g_spawn_close_pid(childPid);
+	return 0;
+}
+
 #ifndef WIN32
 #include "timer.h"
 
@@ -94,14 +105,6 @@ void aligned_free(void *mem)
 {
 	return free(mem);
 }
-
-int kill_child(pid_t childPid)
-{
-	kill(childPid, SIGTERM);
-	waitpid(childPid, NULL, 0);
-	return 0;
-}
-
 
 #else
 #define EPOCH_BIAS  116444736000000000i64 // Number of 100 nanosecond units from 1/1/1601 to 1/1/1970
@@ -145,11 +148,4 @@ uint64_t compat_get_thread_cputime_us()
 	ret += u.QuadPart / 10i64;
 	return ret;
 }
-
-int kill_child(pid_t pid)
-{
-	DebugBreak();
-	return -1;
-}
-
 #endif

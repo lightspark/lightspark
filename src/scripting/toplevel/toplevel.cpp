@@ -3987,7 +3987,7 @@ ASObject* GlobalObject::getVariableAndTargetByMultiname(const multiname& name, A
 		if(!o.isNull())
 		{
 			target=globalScopes[i];
-			o->incRef();
+			// No incRef, return a reference borrowed from globalScopes
 			return o.getPtr();
 		}
 	}

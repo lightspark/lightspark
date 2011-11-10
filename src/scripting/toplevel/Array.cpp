@@ -801,6 +801,8 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 	{
 		//We try to convert this to an index, otherwise bail out
 		case multiname::NAME_STRING:
+			if(name.name_s.empty())
+				return false;
 			for(auto i=name.name_s.begin(); i!=name.name_s.end(); ++i)
 			{
 				if(!i.isdigit())

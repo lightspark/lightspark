@@ -2684,6 +2684,7 @@ ASFUNCTIONBODY(RegExp,exec)
 		entries+=namedSize;
 	}
 	th->lastIndex=ovector[1];
+	pcre_free(pcreRE);
 	return a;
 }
 
@@ -2711,6 +2712,7 @@ ASFUNCTIONBODY(RegExp,test)
 	int offset=(th->global)?th->lastIndex:0;
 	int rc = pcre_exec(pcreRE, NULL, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, 30);
 	bool ret = (rc >= 0);
+	pcre_free(pcreRE);
 
 	return abstract_b(ret);
 }
@@ -2924,6 +2926,8 @@ ASFUNCTIONBODY(ASString,replace)
 			retDiff+=replaceWith.numBytes()-(ovector[1]-ovector[0]);
 		}
 		while(re->global);
+
+		pcre_free(pcreRE);
 	}
 	else
 	{

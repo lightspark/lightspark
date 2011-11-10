@@ -1324,7 +1324,8 @@ void ABCVm::getLex(call_context* th, int n)
 		if(o==NULL)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< "was not found, pushing Undefined");
-			o=new Undefined;
+			th->runtime_stack_push(new Undefined);
+			return;
 		}
 	}
 
@@ -1415,7 +1416,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found, pushing Undefined");
-			ret=new Undefined;
+			return new Undefined;
 		}
 	}
 

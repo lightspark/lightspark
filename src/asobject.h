@@ -240,7 +240,7 @@ private:
 	variable* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
 	variable* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
 
-	ATOMIC_INT32(ref_count);
+	int32_t ref_count;
 	Manager* manager;
 	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
@@ -248,7 +248,7 @@ public:
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	bool initialized;
-	int getRefCount(){ return ref_count; }
+	int getRefCount(){ return g_atomic_int_get (&ref_count); }
 #endif
 	bool implEnable;
 	void setClass(Class_base* c);
@@ -261,30 +261,29 @@ public:
 	void incRef()
 	{
 		//std::cout << "incref " << this << std::endl;
-		ATOMIC_INCREMENT(ref_count);
-		assert(ref_count>0);
+		g_atomic_int_inc(&ref_count);
 	}
 	void decRef()
 	{
 		//std::cout << "decref " << this << std::endl;
-		assert_and_throw(ref_count>0);
-		uint32_t t=ATOMIC_DECREMENT(ref_count);
-		if(t==0)
+		if (g_atomic_int_dec_and_test(&ref_count))
 		{
 			if(manager)
 				manager->put(this);
 			else
 			{
-				//Let's make refcount very invalid
-				ref_count=-1024;
 				//std::cout << "delete " << this << std::endl;
 				delete this;
 			}
 		}
+		else
+		{
+			assert_and_throw ("ref count is less than 0" && false);
+		}
 	}
 	void fake_decRef()
 	{
-		ATOMIC_DECREMENT(ref_count);
+		g_atomic_int_dec_and_test(&ref_count);
 	}
 	static void s_incRef(ASObject* o)
 	{

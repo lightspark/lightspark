@@ -75,13 +75,12 @@ const TextureChunk& VideoDecoder::getTexture()
 
 void VideoDecoder::uploadFence()
 {
-	assert(fenceCount);
-	ATOMIC_DECREMENT(fenceCount);
+	g_atomic_int_dec_and_test (&fenceCount);
 }
 
 void VideoDecoder::waitForFencing()
 {
-	ATOMIC_INCREMENT(fenceCount);
+	g_atomic_int_inc (&fenceCount);
 }
 
 #ifdef ENABLE_LIBAVCODEC

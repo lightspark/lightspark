@@ -42,7 +42,7 @@ void ignore(std::istream& i, int count);
 class Tag
 {
 private:
-	ATOMIC_INT32(ref_count);
+	int32_t ref_count;
 protected:
 	RECORDHEADER Header;
 	void skip(std::istream& in) const
@@ -56,18 +56,12 @@ public:
 	virtual ~Tag(){}
 	void incRef()
 	{
-		ATOMIC_INCREMENT(ref_count);
-		assert(ref_count>0);
+		g_atomic_int_inc (&ref_count);
 	}
 	void decRef()
 	{
-		assert(ref_count>0);
-		uint32_t t=ATOMIC_DECREMENT(ref_count);
-		if(t==0)
-		{
-			ref_count=-1024;
+		if (g_atomic_int_dec_and_test (&ref_count))
 			delete this;
-		}
 	}
 };
 

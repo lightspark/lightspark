@@ -132,7 +132,7 @@ Double Amf3Deserializer::parseDouble() const
 			throw ParseException("Not enough data to parse double");
 	}
 	Double ret;
-	ret.dummy=BigEndianToHost64(tmp);
+	ret.dummy=GUINT64_FROM_BE(tmp);
 	return ret;
 }
 

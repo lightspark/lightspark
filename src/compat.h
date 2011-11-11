@@ -99,7 +99,7 @@ long lrint(double f);
 #ifdef HAVE_ATOMIC
 #include <atomic>
 #else
-#include <stdatomic.h>
+#include <cstdatomic>
 #endif
 #define ATOMIC_INT32(x) std::atomic<int32_t> x
 #define ATOMIC_INCREMENT(x) x.fetch_add(1)

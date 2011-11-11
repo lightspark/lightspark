@@ -768,8 +768,13 @@ class Global : public ASObject
 {
 CLASSBUILDABLE(Global);
 private:
+	Global(ABCContext* c, int s): context(c), scriptId(s) {}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {};
+	ABCContext* context;
+	int scriptId;
+public:
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
 class GlobalObject

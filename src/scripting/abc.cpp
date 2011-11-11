@@ -153,7 +153,7 @@ void ScriptLimitsTag::execute(RootMovieClip* root)
 
 void ABCVm::registerClasses()
 {
-	Global* builtin=Class<Global>::getInstanceS();
+	Global* builtin=Class<Global>::getInstanceS(nullptr, 0);
 	//Register predefined types, ASObject are enough for not implemented classes
 	builtin->setVariableByQName("Object","",Class<ASObject>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Class","",Class_object::getRef(),DECLARED_TRAIT);
@@ -1283,7 +1283,7 @@ void ABCContext::exec(bool lazy)
 		LOG(LOG_CALLS, _("Script N: ") << i );
 
 		//Creating a new global for this script
-		Global* global=Class<Global>::getInstanceS();
+		Global* global=Class<Global>::getInstanceS(this, i);
 #ifndef NDEBUG
 		global->initialized=false;
 #endif
@@ -1304,7 +1304,7 @@ void ABCContext::exec(bool lazy)
 	//The last script entry has to be run
 	LOG(LOG_CALLS, _("Last script (Entry Point)"));
 	//Creating a new global for the last script
-	Global* global=Class<Global>::getInstanceS();
+	Global* global=Class<Global>::getInstanceS(this, i);
 #ifndef NDEBUG
 		global->initialized=false;
 #endif
@@ -1330,8 +1330,7 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 {
 	LOG(LOG_CALLS, "Running script init for script " << i );
 
-	if(hasRunScriptInit[i])
-		throw Class<VerifyError>::getInstanceS("Script init did not define all DEFINABLEs");
+	assert(!hasRunScriptInit[i]);
 	hasRunScriptInit[i] = true;
 
 	method_info* m=get_method(scripts[i].init);
@@ -1677,10 +1676,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (constructor)");
 				ret = ci;
 			}
-			else if(scriptid != -1)
-				//create Definable even for internal/private classes as they maybe used
-				//as 'type' in a slot.
-				ret=new Definable(this,scriptid,obj,mname);
 			else
 				ret=new Undefined;
 

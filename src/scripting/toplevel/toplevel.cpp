@@ -2983,29 +2983,27 @@ ASObject* Void::coerce(ASObject* o) const
 
 bool Type::isTypeResolvable(const multiname* mn)
 {
+	assert_and_throw(mn->isQName());
+	assert(mn->name_type == multiname::NAME_STRING);
 	if(mn == 0)
-		return true;
+		return true; //any
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
-		&& mn->ns.size() == 1 && mn->ns[0].name == "")
+		&& mn->ns[0].name == "")
 		return true;
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
-		&& mn->ns.size() == 1 && mn->ns[0].name == "")
+		&& mn->ns[0].name == "")
 		return true;
 
-	ASObject* target;
-	ASObject* typeObject=getGlobal()->getVariableAndTargetByMultiname(*mn,target);
-	if(!typeObject)
-	{
-		//HACK: until we have implemented all flash classes, we need this hack
-		LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname: could not find " << *mn << ", using AnyType");
-		return true;
-	}
-	if(typeObject->is<Definable>())
-		return false;
-
-	return true;
+	//Check if the class has already been defined
+	auto i = sys->classes.find(QName(mn->name_s, mn->ns[0].name));
+	return i != sys->classes.end();
 }
 
+/*
+ * This should only be called after all global objects have been created
+ * by running ABCContext::exec() for all ABCContexts.
+ * Therefore, all classes are at least declared.
+ */
 const Type* Type::getTypeFromMultiname(const multiname* mn)
 {
 	if(mn == 0) //multiname idx zero indicates any type
@@ -3019,16 +3017,30 @@ const Type* Type::getTypeFromMultiname(const multiname* mn)
 		&& mn->ns.size() == 1 && mn->ns[0].name == "")
 		return Type::voidType;
 
-	ASObject* target;
-	ASObject* typeObject=getGlobal()->getVariableAndTargetByMultiname(*mn,target);
+	ASObject* typeObject;
+	/*
+	 * During the newClass opcode, the class is added to sys->classes.
+	 * The class variable in the global scope is only set a bit later.
+	 * When the class has to be resolved in between (for example, the
+	 * class has traits of the class's type), then we'll find it in
+	 * sys->classes, but getGlobal()->getVariableAndTargetByMultiname()
+	 * would still return "Undefined".
+	 */
+	auto i = sys->classes.find(QName(mn->name_s, mn->ns[0].name));
+	if(i != sys->classes.end())
+		typeObject = i->second;
+	else
+	{
+		ASObject* target;
+		typeObject=getGlobal()->getVariableAndTargetByMultiname(*mn,target);
+	}
+
 	if(!typeObject)
 	{
 		//HACK: until we have implemented all flash classes, we need this hack
 		LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname: could not find " << *mn << ", using AnyType");
 		return Type::anyType;
 	}
-	if(typeObject->is<Definable>())
-		typeObject = typeObject->as<Definable>()->define();
 
 	assert_and_throw(typeObject->is<Type>());
 	return typeObject->as<Type>();
@@ -3945,6 +3957,20 @@ Class<IFunction>* Class<IFunction>::getClass()
 void Global::sinit(Class_base* c)
 {
 	c->setSuper(Class<ASObject>::getRef());
+}
+
+_NR<ASObject> Global::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	_NR<ASObject> ret = ASObject::getVariableByMultiname(name, opt);
+	/*
+	 * All properties are registered by now, even if the script init has
+	 * not been run. Thus if ret == NULL, we don't have to run the script init.
+	 */
+	if(ret.isNull() || !context || context->hasRunScriptInit[scriptId])
+		return ret;
+	LOG(LOG_CALLS,"Access to " << name << ", running script init");
+	context->runScriptInit(scriptId, this);
+	return ASObject::getVariableByMultiname(name, opt);
 }
 
 void GlobalObject::registerGlobalScope(Global* scope)

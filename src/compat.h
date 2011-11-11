@@ -53,9 +53,6 @@ typedef int pid_t;
 // WINTODO: Hopefully, the MSVC instrinsics are similar enough
 //          to what the standard mandates
 #ifdef _MSC_VER
-#define ATOMIC_INT32(x) __declspec(align(4)) long x
-#define ATOMIC_INCREMENT(x) InterlockedIncrement(&x)
-#define ATOMIC_DECREMENT(x) InterlockedDecrement(&x)
 
 #define TLSDATA __declspec( thread )
 
@@ -103,9 +100,6 @@ long lrint(double f);
 #else
 #include <cstdatomic>
 #endif
-#define ATOMIC_INT32(x) std::atomic<int32_t> x
-#define ATOMIC_INCREMENT(x) x.fetch_add(1)
-#define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
 
 //Boolean type con acquire release barrier semantics
 #define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x

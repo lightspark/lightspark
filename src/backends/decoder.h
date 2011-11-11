@@ -72,7 +72,7 @@ protected:
 	/*
 		Derived classes must spinwaits on this to become false before deleting
 	*/
-	ATOMIC_INT32(fenceCount);
+	int32_t fenceCount;
 	uint32_t frameWidth;
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);

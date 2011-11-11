@@ -1921,11 +1921,10 @@ void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 
 void ABCVm::newClass(call_context* th, int n)
 {
-	LOG(LOG_CALLS, "newClass " << n );
-	method_info* constructor=&th->context->methods[th->context->instances[n].init];
 	int name_index=th->context->instances[n].name;
 	assert_and_throw(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
+	LOG(LOG_CALLS, "newClass " << *mname );
 
 	ASObject* baseClass=th->runtime_stack_pop();
 
@@ -1945,13 +1944,7 @@ void ABCVm::newClass(call_context* th, int n)
 	Class_inherit* ret=new Class_inherit(className);
 	ret->isFinal = th->context->instances[n].isFinal();
 	ret->isSealed = th->context->instances[n].isSealed();
-#ifdef PROFILING_SUPPORT
-	if(!constructor->validProfName)
-	{
-		constructor->profName=mname->name_s+"::__CONSTRUCTOR__";
-		constructor->validProfName=true;
-	}
-#endif
+
 	assert_and_throw(th->context);
 	ret->context=th->context;
 
@@ -1993,11 +1986,22 @@ void ABCVm::newClass(call_context* th, int n)
 			th->context->buildTrait(ret,&cur->traits[i],true);
 	}
 
-	SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(constructor);
-	constructorFunc->acquireScope(ret->class_scope);
-	constructorFunc->inClass = ret;
-	//add Constructor the the class methods
-	ret->constructor=constructorFunc;
+	method_info* constructor=&th->context->methods[th->context->instances[n].init];
+	if(constructor->body) /* e.g. interfaces have no valid constructor */
+	{
+#ifdef PROFILING_SUPPORT
+		if(!constructor->validProfName)
+		{
+			constructor->profName=mname->name_s+"::__CONSTRUCTOR__";
+			constructor->validProfName=true;
+		}
+#endif
+		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(constructor);
+		constructorFunc->acquireScope(ret->class_scope);
+		constructorFunc->inClass = ret;
+		//add Constructor the the class methods
+		ret->constructor=constructorFunc;
+	}
 	ret->class_index=n;
 
 	//Add prototype variable

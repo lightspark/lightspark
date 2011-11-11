@@ -36,6 +36,7 @@
 
 
 #include <glib.h>
+#include <cstdlib>
 
 #ifdef _WIN32
 

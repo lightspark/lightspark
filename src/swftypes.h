@@ -653,28 +653,28 @@ inline std::istream& operator>>(std::istream& s, UI8& v)
 inline std::istream& operator>>(std::istream& s, SI16_SWF& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=LittleEndianToHost16(v.val);
+	v.val=GUINT16_FROM_LE(v.val);
 	return s;
 }
 
 inline std::istream & operator>>(std::istream &s, SI16_FLV& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=BigEndianToHost16(v.val);
+	v.val=GUINT16_FROM_BE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16_SWF& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=LittleEndianToHost16(v.val);
+	v.val=GUINT16_FROM_LE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16_FLV& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=BigEndianToHost16(v.val);
+	v.val=GUINT16_FROM_BE(v.val);
 	return s;
 }
 
@@ -682,7 +682,7 @@ inline std::istream& operator>>(std::istream& s, UI24_SWF& v)
 {
 	assert(v.val==0);
 	s.read((char*)&v.val,3);
-	v.val=LittleEndianToUnsignedHost24(v.val);
+	v.val=GUINT32_FROM_LE(v.val);
 	return s;
 }
 
@@ -690,7 +690,7 @@ inline std::istream& operator>>(std::istream& s, UI24_FLV& v)
 {
 	assert(v.val==0);
 	s.read((char*)&v.val,3);
-	v.val=BigEndianToUnsignedHost24(v.val);
+	v.val=GUINT32_FROM_BE(v.val);
 	return s;
 }
 
@@ -698,7 +698,7 @@ inline std::istream& operator>>(std::istream& s, SI24_SWF& v)
 {
 	assert(v.val==0);
 	s.read((char*)&v.val,3);
-	v.val=LittleEndianToSignedHost24(v.val);
+	v.val=GUINT32_FROM_LE(v.val);
 	return s;
 }
 
@@ -706,21 +706,21 @@ inline std::istream& operator>>(std::istream& s, SI24_FLV& v)
 {
 	assert(v.val==0);
 	s.read((char*)&v.val,3);
-	v.val=BigEndianToSignedHost24(v.val);
+	v.val=GUINT32_FROM_BE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI32_SWF& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=LittleEndianToHost32(v.val);
+	v.val=GUINT32_FROM_LE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI32_FLV& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=BigEndianToHost32(v.val);
+	v.val=GUINT32_FROM_BE(v.val);
 	return s;
 }
 
@@ -762,7 +762,7 @@ inline std::istream& operator>>(std::istream& s, FLOAT& v)
 	};
 	float_reader dummy;
 	s.read((char*)&dummy.dump,4);
-	dummy.dump=LittleEndianToHost32(dummy.dump);
+	dummy.dump=GUINT32_FROM_LE(dummy.dump);
 	v.val=dummy.value;
 	return s;
 }
@@ -778,7 +778,7 @@ inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 	// "Wacky format" is 45670123. Thanks to Gnash for reversing :-)
 	s.read(((char*)&dummy.dump)+4,4);
 	s.read(((char*)&dummy.dump),4);
-	dummy.dump=LittleEndianToHost64(dummy.dump);
+	dummy.dump=GUINT64_FROM_LE(dummy.dump);
 	v.val=dummy.value;
 	return s;
 }

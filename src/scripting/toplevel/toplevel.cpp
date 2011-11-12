@@ -67,11 +67,11 @@ REGISTER_CLASS_NAME(XMLList);
 const Any* const Type::anyType = new Any();
 const Void* const Type::voidType = new Void();
 
-XML::XML():root(NULL),node(NULL),constructed(false)
+XML::XML():node(NULL),constructed(false)
 {
 }
 
-XML::XML(const string& str):root(NULL),node(NULL),constructed(true)
+XML::XML(const string& str):node(NULL),constructed(true)
 {
 	buildFromString(str);
 }
@@ -81,7 +81,7 @@ XML::XML(_R<XML> _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
 	assert(node);
 }
 
-XML::XML(xmlpp::Node* _n):root(NULL),constructed(true)
+XML::XML(xmlpp::Node* _n):constructed(true)
 {
 	assert(_n);
 	node=parser.get_document()->create_root_node_by_import(_n);
@@ -2105,7 +2105,7 @@ void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 		out->writeByte(bigEndianPtr[i]);
 }
 
-IFunction::IFunction():closure_this(NULL),inClass(NULL),length(0)
+IFunction::IFunction():inClass(NULL),length(0)
 {
 	type=T_FUNCTION;
 	prototype = _MR(new_asobject());
@@ -3031,7 +3031,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn)
 }
 
 Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),referencedObjectsMutex("referencedObjects"),
-	isFinal(false),isSealed(false),super(NULL),context(NULL),class_name(name),class_index(-1)
+	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1)
 {
 	type=T_CLASS;
 }

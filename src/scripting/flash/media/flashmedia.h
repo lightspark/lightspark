@@ -85,7 +85,7 @@ private:
 	_NR<NetStream> netStream;
 public:
 	Video(uint32_t w=320, uint32_t h=240)
-		: width(w),height(h),videoWidth(0),videoHeight(0),initialized(false),netStream(NULL)
+		: width(w),height(h),videoWidth(0),videoHeight(0),initialized(false),netStream()
 	{
 		sem_init(&mutex,0,1);
 	}

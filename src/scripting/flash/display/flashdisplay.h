@@ -394,9 +394,9 @@ protected:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
-	Shape():TokenContainer(this), graphics(NULL) {}
+	Shape():TokenContainer(this), graphics() {}
 	Shape(const std::vector<GeomToken>& tokens, float scaling)
-		: TokenContainer(this, tokens, scaling), graphics(NULL) {}
+		: TokenContainer(this, tokens, scaling), graphics() {}
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

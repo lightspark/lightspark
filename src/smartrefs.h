@@ -119,11 +119,7 @@ Ref<T> _MR(T* a)
 	return Ref<T>(a);
 }
 
-class NullRef_t
-{
-};
-
-extern NullRef_t NullRef;
+#define NullRef (nullptr)
 
 template<class T>
 class NullableRef
@@ -133,7 +129,7 @@ private:
 public:
 	NullableRef(): m(NULL) {}
 	explicit NullableRef(T* o):m(o){}
-	NullableRef(NullRef_t):m(NULL){}
+	NullableRef(std::nullptr_t):m(NULL){}
 	NullableRef(const NullableRef& r):m(r.m)
 	{
 		if(m)

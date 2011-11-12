@@ -201,7 +201,7 @@ void URLRequestMethod::sinit(Class_base* c)
 	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"),DECLARED_TRAIT);
 }
 
-URLLoader::URLLoader():dataFormat("text"),data(NULL),downloader(NULL)
+URLLoader::URLLoader():dataFormat("text"),data(),downloader(NULL)
 {
 }
 
@@ -576,7 +576,7 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 	}
 }
 
-NetStream::NetStream():frameRate(0),tickStarted(false),connection(NULL),downloader(NULL),
+NetStream::NetStream():frameRate(0),tickStarted(false),connection(),downloader(NULL),
 	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),
 	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false),
 	oldVolume(-1.0)

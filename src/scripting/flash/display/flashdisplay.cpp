@@ -444,7 +444,7 @@ void Loader::setContent(_R<DisplayObject> o)
 	_addChildAt(o, 0);
 }
 
-Sprite::Sprite():TokenContainer(this),graphics(NULL)
+Sprite::Sprite():TokenContainer(this),graphics()
 {
 }
 
@@ -1174,14 +1174,14 @@ void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
 	scenes.back().addFrameLabel(frame,label);
 }
 
-DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(NULL),parent(NULL),mask(NULL),onStage(false),
-	loaderInfo(NULL),alpha(1.0),visible(true),invalidateQueueNext(NULL)
+DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(),parent(),mask(),onStage(false),
+	loaderInfo(),alpha(1.0),visible(true),invalidateQueueNext()
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 
-DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(NULL),
-	parent(NULL),mask(NULL),onStage(false),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),name(d.name),invalidateQueueNext(NULL)
+DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(),
+	parent(),mask(),onStage(false),loaderInfo(),alpha(d.alpha),visible(d.visible),name(d.name),invalidateQueueNext()
 {
 	assert(!d.isConstructed());
 }

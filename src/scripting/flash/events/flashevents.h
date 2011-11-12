@@ -44,7 +44,7 @@ class Event: public ASObject
 {
 public:
 	Event(const tiny_string& t = "Event", bool b=false, bool c=false)
-		: type(t),target(NULL),currentTarget(NULL),bubbles(b),cancelable(c),
+		: type(t),target(),currentTarget(),bubbles(b),cancelable(c),
 		  eventPhase(0),defaultPrevented(false) {}
 	void finalize();
 	static void sinit(Class_base*);

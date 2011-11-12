@@ -39,6 +39,7 @@ private:
 	int second;
 	int millisecond;
 	Date();
+	virtual ~Date();
 	GDateTime *datetime;
 	ASObject *msSinceEpoch();
 public:

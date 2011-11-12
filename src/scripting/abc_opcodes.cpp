@@ -1300,7 +1300,6 @@ void ABCVm::getLex(call_context* th, int n)
 	ASObject* o = NULL;
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
-	ASObject* target;
 	for(;it!=th->scope_stack.rend();++it)
 	{
 		// XML_STRICT flag tells getVariableByMultiname to
@@ -1316,13 +1315,13 @@ void ABCVm::getLex(call_context* th, int n)
 		{
 			prop->incRef();
 			o=prop.getPtr();
-			target=it->object.getPtr();
 			break;
 		}
 	}
 
 	if(o==NULL)
 	{
+		ASObject* target;
 		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 		if(o==NULL)
 		{

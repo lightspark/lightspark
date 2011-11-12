@@ -65,3 +65,8 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 	context->buildInstanceTraits(o,class_index);
 }
 
+template<>
+Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+{
+	throw Class<TypeError>::getInstanceS("Error #1007: Cannot construct global object");
+}

@@ -161,6 +161,9 @@ public:
 };
 
 template<>
+Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
+
+template<>
 inline ASObject* Class<Number>::coerce(ASObject* o) const
 {
 	number_t n = o->toNumber();

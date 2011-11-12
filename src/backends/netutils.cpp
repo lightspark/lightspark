@@ -1291,12 +1291,12 @@ void CurlDownloader::execute()
 		}
 		//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		res = curl_easy_perform(curl);
+		curl_easy_cleanup(curl);
 		if(res!=0)
 		{
 			setFailed();
 			return;
 		}
-		curl_easy_cleanup(curl);
 	}
 	else
 	{

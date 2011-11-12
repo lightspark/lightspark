@@ -1294,6 +1294,9 @@ void ABCVm::getLex(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("getLex: ") << *name );
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
+	// o will be a reference owned by this function (or NULL). At
+	// the end the reference will be handed over to the runtime
+	// stack.
 	ASObject* o = NULL;
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
@@ -1327,10 +1330,10 @@ void ABCVm::getLex(call_context* th, int n)
 			th->runtime_stack_push(new Undefined);
 			return;
 		}
+		o->incRef();
 	}
 
 	th->runtime_stack_push(o);
-	o->incRef();
 }
 
 void ABCVm::constructSuper(call_context* th, int m)

@@ -539,7 +539,7 @@ bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_sl
 
 		//TODO: unicode support
 		if(isCaseInsensitive)
-			return strcasecmp(s1.raw_buf(),s2.raw_buf())<0;
+			return s1.strcasecmp(s2)<0;
 		else
 			return s1<s2;
 	}

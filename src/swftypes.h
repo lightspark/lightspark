@@ -406,6 +406,17 @@ public:
 		free(strup);
 		return ret;
 	}
+	/* like strcasecmp(s1.raw_buf(),s2.raw_buf()) but for unicode
+	 * TODO: slow! */
+	int strcasecmp(tiny_string& s2) const
+	{
+		char* str1 = g_utf8_casefold(this->raw_buf(),this->numBytes());
+		char* str2 = g_utf8_casefold(s2.raw_buf(),s2.numBytes());
+		int ret = g_utf8_collate(str1,str2);
+		g_free(str1);
+		g_free(str2);
+		return ret;
+	}
 	/* iterate over utf8 characters */
 	CharIterator begin()
 	{

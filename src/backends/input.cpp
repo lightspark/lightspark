@@ -43,7 +43,7 @@ InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(fal
 void InputThread::start(const EngineData* e)
 {
 	GtkWidget* container=e->container;
-	gtk_widget_set_can_focus(container,True);
+	gtk_widget_set_can_focus(container,TRUE);
 	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
 					GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK);
 	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(worker), this);

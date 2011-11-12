@@ -21,7 +21,6 @@
 #define _DECODER_H
 
 #include "compat.h"
-#include <inttypes.h>
 #include "threading.h"
 #include "graphics.h"
 #ifdef ENABLE_LIBAVCODEC

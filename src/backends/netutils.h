@@ -26,7 +26,6 @@
 #include <fstream>
 #include <list>
 #include <map>
-#include <inttypes.h>
 #include "swftypes.h"
 #include "thread_pool.h"
 #include "backends/urlutils.h"

@@ -25,7 +25,6 @@
 #include <pthread.h>
 #include <time.h>
 #include <semaphore.h>
-#include <inttypes.h>
 #include "thread_pool.h"
 
 namespace lightspark

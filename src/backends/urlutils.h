@@ -24,7 +24,6 @@
 #include "compat.h"
 #include <iostream>
 #include <string>
-#include <inttypes.h>
 #include "swftypes.h"
 
 namespace lightspark

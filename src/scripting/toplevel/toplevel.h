@@ -60,23 +60,20 @@ public:
 	 * It searches for the and object of the type in global object.
 	 * If no object of that name is found or it is not a Type,
 	 * then an exception is thrown.
-	 * If the object is a Definable and 'resolve' is true,
-	 * then it is defined prior returning, else the Definable
-	 * is returned as is.
 	 * The caller does not own the object returned.
 	 */
 	static const Type* getTypeFromMultiname(const multiname* mn);
 	/*
-	 * Checks if the type can be found and is not T_DEFINABLE
+	 * Checks if the type is already in sys->classes
 	 */
 	static bool isTypeResolvable(const multiname* mn);
 	/*
-         * Converts the given object to an object of this type.
-         * It consumes one reference of 'o'.
-         * The returned object must be decRef'ed by caller.
+	 * Converts the given object to an object of this type.
+	 * It consumes one reference of 'o'.
+	 * The returned object must be decRef'ed by caller.
 	 * If the argument cannot be converted, it throws a TypeError
-         */
-        virtual ASObject* coerce(ASObject* o) const=0;
+	 */
+	virtual ASObject* coerce(ASObject* o) const=0;
 };
 template<> inline Type* ASObject::as<Type>() { return dynamic_cast<Type*>(this); }
 template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<const Type*>(this); }
@@ -84,7 +81,7 @@ template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<c
 class Any: public Type
 {
 public:
-	ASObject* coerce(ASObject* o) const { assert(!o->is<Definable>()); return o; }
+	ASObject* coerce(ASObject* o) const { return o; }
 	virtual ~Any() {};
 };
 
@@ -713,34 +710,6 @@ public:
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);
-};
-
-/*
- * They are used as placeholders in Class traits.
- *
- * When one accesses a e.g. Class trait from a different script
- * and obtains a Definable, then one calls define() which executes
- * the associated script init. This script init function should
- * replace the Definable with the actual value (which is returned by define()).
- *
- */
-class Definable: public ASObject
-{
-private:
-	ABCContext* context; //context of scriptid
-	unsigned int scriptid; //which script does define this class
-	ASObject* global; //which global object belongs to that script
-	QName name; //the name of the class
-public:
-	Definable(ABCContext* c, unsigned int s, ASObject* g, multiname* n)
-		: context(c), scriptid(s), global(g), name(n->normalizedName(), n->ns[0].name)
-	{
-		type=T_DEFINABLE;
-		assert(n->isQName());
-	}
-	//The caller must incRef the returned object to keep it
-	//calling define will also cause a decRef on this
-	Class_base* define();
 };
 
 class RegExp: public ASObject

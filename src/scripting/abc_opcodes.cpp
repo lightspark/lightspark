@@ -217,7 +217,6 @@ ASObject* ABCVm::getSlot(ASObject* obj, int n)
 	LOG(LOG_CALLS,"getSlot " << n << " " << ret << "=" << ret->toDebugString());
 	//getSlot can only access properties defined in the current
 	//script, so they should already be defind by this script
-	assert(!ret->is<Definable>());
 	ret->incRef();
 	obj->decRef();
 	return ret;
@@ -295,14 +294,6 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 	if(!o.isNull())
 	{
-		//Run the deferred initialization if needed
-		if(o->is<Definable>())
-		{
-			LOG(LOG_CALLS,_("We got a function not yet valid"));
-			ASObject *defined=o->as<Definable>()->define();
-			defined->incRef();
-			o=_MNR(defined);
-		}
 		o->incRef();
 		callImpl(th, o.getPtr(), obj, args, m, called_mi, keepReturn);
 	}
@@ -387,17 +378,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	}
 	else
 	{
-		if(prop->is<Definable>())
-		{
-			LOG(LOG_CALLS,_("Property ") << name << _(" is not yet valid"));
-			ret=prop->as<Definable>()->define();
-			ret->incRef();
-		}
-		else
-		{
-			prop->incRef();
-			ret=prop.getPtr();
-		}
+		prop->incRef();
+		ret=prop.getPtr();
 	}
 	obj->decRef();
 	return ret;
@@ -681,16 +663,6 @@ void ABCVm::construct(call_context* th, int m)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
-
-	if(obj->getObjectType()==T_DEFINABLE)
-	{
-		throw UnsupportedException("Definable not supported in construct");
-	/*	LOG(LOG_CALLS,_("Deferred definition of property ") << name);
-		Definable* d=static_cast<Definable*>(o);
-		d->define(obj);
-		o=obj->getVariableByMultiname(name,owner);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);*/
-	}
 
 	LOG(LOG_CALLS,_("Constructing"));
 
@@ -1311,15 +1283,6 @@ void ABCVm::getSuper(call_context* th, int n)
 		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->toDebugString());
 		ret = _MNR(new Undefined);
 	}
-	else
-	{
-		if(ret->is<Definable>())
-		{
-			ASObject *defined = ret->as<Definable>()->define();
-			defined->incRef();
-			ret = _MNR(defined);
-		}
-	}
 
 	obj->decRef();
 	ret->incRef();
@@ -1365,12 +1328,6 @@ void ABCVm::getLex(call_context* th, int n)
 		}
 	}
 
-	if(o->is<Definable>())
-	{
-		LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-		o=o->as<Definable>()->define();
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
-	}
 	th->runtime_stack_push(o);
 	o->incRef();
 }
@@ -1762,15 +1719,6 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		throw Class<ReferenceError>::getInstanceS("Error #1065: Variable is not defined.");
 	}
 
-	if(o->is<Definable>())
-	{
-		LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-		ASObject *defined=o->as<Definable>()->define();
-		defined->incRef();
-		o=_MNR(defined);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
-	}
-
 	LOG(LOG_CALLS,_("Constructing"));
 	ASObject* ret;
 	if(o->getObjectType()==T_CLASS)
@@ -2027,13 +1975,6 @@ void ABCVm::newClass(call_context* th, int n)
 		if(obj==NULL)
 			continue;
 
-		if(obj->is<Definable>())
-		{
-			LOG(LOG_CALLS,_("Class ") << *name << _(" is not yet valid (as interface)"));
-			obj=obj->as<Definable>()->define();
-			LOG(LOG_CALLS,_("End of deferred init of class ") << *name);
-			assert_and_throw(obj);
-		}
 	}
 	//If the class is not an interface itself, link the traits
 	if(!th->context->instances[n].isInterface())

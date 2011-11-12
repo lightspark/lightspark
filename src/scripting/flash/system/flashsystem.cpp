@@ -98,13 +98,6 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 		return abstract_b(false);
 	else
 	{
-		//Check if the object has to be defined
-		if(o->is<Definable>())
-		{
-			LOG(LOG_CALLS,_("We got an object not yet valid"));
-			o=o->as<Definable>()->define();
-		}
-
 		if(o->getObjectType()!=T_CLASS)
 			return abstract_b(false);
 
@@ -128,14 +121,6 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	ASObject* target;
 	ASObject* o=getGlobal()->getVariableAndTargetByMultiname(name,target);
 	assert_and_throw(o);
-
-	//Check if the object has to be defined
-	if(o->is<Definable>())
-	{
-		LOG(LOG_CALLS,_("Deferred definition of property ") << name);
-		o=o->as<Definable>()->define();
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);
-	}
 
 	//TODO: specs says that also namespaces and function may be returned
 	assert_and_throw(o->getObjectType()==T_CLASS);

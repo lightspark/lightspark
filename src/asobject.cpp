@@ -631,10 +631,9 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	tiny_string name=mname.normalizedName();
 
 	const Type* type = NULL;
-	/* The typename may be T_DEFINABLE at this point. Then we only allow obj to be Null
-	 * and proceed.
-	 * If typename is resolvable right now, we coerce obj
-	 */
+	 /* If typename is resolvable right now, we coerce obj.
+	  * It it's not resolvable, then it must be a user defined class,
+	  * so we only allow Null and Undefined (which are both coerced to Null) */
 	if(!Type::isTypeResolvable(typemname))
 	{
 		assert_and_throw(obj->is<Null>() || obj->is<Undefined>());

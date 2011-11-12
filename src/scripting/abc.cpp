@@ -1120,14 +1120,6 @@ Class_inherit* ABCVm::findClassInherit(const string& s)
 		throw RunTimeException("Class not found in global");
 	}
 
-	if(derived_class->is<Definable>())
-	{
-		LOG(LOG_CALLS,_("Class ") << s << _(" is not yet valid"));
-		derived_class=derived_class->as<Definable>()->define();
-		LOG(LOG_CALLS,_("End of deferred init of class ") << s);
-		assert_and_throw(derived_class);
-	}
-
 	assert_and_throw(derived_class->getObjectType()==T_CLASS);
 
 	//Now the class is valid, check that it's not a builtin one

@@ -436,7 +436,6 @@ class Template_base;
 class ASString;
 class Function;
 class Array;
-class Definable;
 class Null;
 class Undefined;
 class Type;
@@ -448,7 +447,6 @@ template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
 template<> inline bool ASObject::is<Function>() const { return type==T_FUNCTION; }
 template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
 template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
-template<> inline bool ASObject::is<Definable>() const { return type==T_DEFINABLE; }
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
 template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }

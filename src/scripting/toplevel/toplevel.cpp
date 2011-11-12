@@ -67,25 +67,6 @@ REGISTER_CLASS_NAME(XMLList);
 const Any* const Type::anyType = new Any();
 const Void* const Type::voidType = new Void();
 
-Class_base* Definable::define()
-{
-	assert(getRefCount() > 0);
-
-	//Check if the class has already been defined
-	auto i = sys->classes.find(name);
-	if(i != sys->classes.end())
-		return i->second;
-
-	this->incRef(); //runScriptInit will decRef this
-	context->runScriptInit(scriptid, global);
-
-	i = sys->classes.find(name);
-	assert(i != sys->classes.end());
-	this->decRef();
-
-	return i->second;
-}
-
 XML::XML():root(NULL),node(NULL),constructed(false)
 {
 }
@@ -2975,7 +2956,6 @@ ASFUNCTIONBODY(ASString,generator)
 
 ASObject* Void::coerce(ASObject* o) const
 {
-	assert(!o->is<Definable>());
 	if(!o->is<Undefined>())
 		throw Class<TypeError>::getInstanceS("Trying to coerce o!=undefined to void");
 	return o;
@@ -3096,7 +3076,6 @@ void Class_base::copyBorrowedTraitsFromSuper()
 
 ASObject* Class_base::coerce(ASObject* o) const
 {
-	assert(!o->is<Definable>());
 	if(o->is<Null>())
 		return o;
 	if(o->is<Undefined>())

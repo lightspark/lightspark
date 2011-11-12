@@ -100,6 +100,61 @@ protected:
 		return ret;
 	}
 public:
+#ifdef _MSC_VER
+	static T* getInstanceS()
+	{
+		Class<T>* c=Class<T>::getClass();
+		T* ret = new T();
+		ret->setClass(c);
+		c->handleConstruction(ret,NULL,0,true);
+		return ret;
+	}
+	template<typename Arg1>
+	static T* getInstanceS(Arg1&& arg1)
+	{
+		Class<T>* c=Class<T>::getClass();
+		T* ret = new T(arg1);
+		ret->setClass(c);
+		c->handleConstruction(ret,NULL,0,true);
+		return ret;
+	}
+	template<typename Arg1, typename Arg2>
+	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2)
+	{
+		Class<T>* c=Class<T>::getClass();
+		T* ret = new T(arg1, arg2);
+		ret->setClass(c);
+		c->handleConstruction(ret,NULL,0,true);
+		return ret;
+	}
+	template<typename Arg1, typename Arg2, typename Arg3>
+	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3)
+	{
+		Class<T>* c=Class<T>::getClass();
+		T* ret = new T(arg1, arg2, arg3);
+		ret->setClass(c);
+		c->handleConstruction(ret,NULL,0,true);
+		return ret;
+	}
+	template<typename Arg1, typename Arg2, typename Arg3, typename Arg4>
+	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4)
+	{
+		Class<T>* c=Class<T>::getClass();
+		T* ret = new T(arg1, arg2, arg3, arg4);
+		ret->setClass(c);
+		c->handleConstruction(ret,NULL,0,true);
+		return ret;
+	}
+	template<typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
+	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4, Arg5&& arg5)
+	{
+		Class<T>* c=Class<T>::getClass();
+		T* ret = new T(arg1, arg2, arg3, arg4, arg5);
+		ret->setClass(c);
+		c->handleConstruction(ret,NULL,0,true);
+		return ret;
+	}
+#else
 	template<typename... Args>
 	static T* getInstanceS(Args&&... args)
 	{
@@ -109,6 +164,7 @@ public:
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
+#endif
 	static Class<T>* getClass()
 	{
 		QName name(ClassName<T>::name,ClassName<T>::ns);

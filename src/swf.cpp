@@ -376,7 +376,6 @@ void SystemState::destroy()
 	//Kill our child process if any
 	if(childPid)
 	{
-		assert(childPid!=getpid());
 		kill_child(childPid);
 	}
 	//Delete the temporary cookies file

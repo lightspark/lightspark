@@ -321,7 +321,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc, bool synchronous)
 {
 	// Convert raw arguments to objects
-	ASObject* objArgs[argc];
+	ASObject** objArgs = g_newa(ASObject*,argc);
 	for(uint32_t i = 0; i < argc; i++)
 	{
 		objArgs[i] = args[i]->getASObject();

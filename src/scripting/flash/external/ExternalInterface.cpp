@@ -100,7 +100,7 @@ ASFUNCTIONBODY(ExternalInterface,call)
 	// TODO: Check security constraints & throw SecurityException
 
 	// Convert given arguments to ExtVariants
-	const ExtVariant* callArgs[argslen-1];
+	const ExtVariant** callArgs = g_newa(const ExtVariant*,argslen-1);
 	for(uint32_t i = 0; i < argslen-1; i++)
 		callArgs[i] = new ExtVariant(args[i+1]);
 

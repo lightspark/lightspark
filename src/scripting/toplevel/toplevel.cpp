@@ -2309,11 +2309,11 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc.inClass = inClass;
 	cc.mi=mi;
 	cc.locals_size=mi->body->local_count+1;
-	ASObject* locals[cc.locals_size];
+	ASObject** locals = g_newa(ASObject*, cc.locals_size);
 	cc.locals=locals;
 	memset(cc.locals,0,sizeof(ASObject*)*cc.locals_size);
 	cc.max_stack = mi->body->max_stack;
-	ASObject* stack[cc.max_stack];
+	ASObject** stack = g_newa(ASObject*, cc.max_stack);
 	cc.stack=stack;
 	cc.stack_index=0;
 	cc.context=mi->context;
@@ -2891,7 +2891,7 @@ ASFUNCTIONBODY(ASString,replace)
 			{
 				//Get the replace for this match
 				IFunction* f=static_cast<IFunction*>(args[1]);
-				ASObject* subargs[3+capturingGroups];
+				ASObject** subargs = g_newa(ASObject*, 3+capturingGroups);
 				//we index on bytes, not on UTF-8 characters
 				subargs[0]=Class<ASString>::getInstanceS(ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0]));
 				for(int i=0;i<capturingGroups;i++)

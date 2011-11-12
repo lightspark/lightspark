@@ -769,7 +769,7 @@ void Downloader::openCache()
 	{
 		//Create a temporary file(name)
 		std::string cacheFilenameS = sys->config->getCacheDirectory() + "/" + sys->config->getCachePrefix() + "XXXXXX";
-		char cacheFilenameC[cacheFilenameS.length()+1];
+		char* cacheFilenameC = g_newa(char,cacheFilenameS.length()+1);
 		strncpy(cacheFilenameC, cacheFilenameS.c_str(), cacheFilenameS.length());
 		cacheFilenameC[cacheFilenameS.length()] = '\0';
 		//char cacheFilenameC[30] = "/tmp/lightsparkdownloadXXXXXX";

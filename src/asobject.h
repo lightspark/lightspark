@@ -360,7 +360,7 @@ public:
 	{
 		return Variables.getNameAt(i);
 	}
-	ASObject* getValueAt(int i);
+	_R<ASObject> getValueAt(int i);
 	SWFOBJECT_TYPE getObjectType() const
 	{
 		return type;

@@ -107,9 +107,7 @@ _R<ASObject> ASObject::nextValue(uint32_t index)
 {
 	assert_and_throw(implEnable);
 
-	ASObject* out = getValueAt(index-1);
-	out->incRef();
-	return _MR(out);
+	return getValueAt(index-1);
 }
 
 void ASObject::sinit(Class_base* c)
@@ -991,25 +989,25 @@ variable* variables_map::getValueAt(unsigned int index)
 		throw RunTimeException("getValueAt out of bounds");
 }
 
-ASObject* ASObject::getValueAt(int index)
+_R<ASObject> ASObject::getValueAt(int index)
 {
 	variable* obj=Variables.getValueAt(index);
 	assert_and_throw(obj);
-	ASObject* ret;
 	if(obj->getter)
 	{
 		//Call the getter
 		LOG(LOG_CALLS,_("Calling the getter"));
 		IFunction* getter=obj->getter;
 		incRef();
-		ret=getter->call(this,NULL,0);
-		ret->fake_decRef();
+		_R<ASObject> ret(getter->call(this,NULL,0));
 		LOG(LOG_CALLS,_("End of getter"));
+		return ret;
 	}
 	else
-		ret=obj->var;
-
-	return ret;
+	{
+		obj->var->incRef();
+		return _MR(obj->var);
+	}
 }
 
 tiny_string variables_map::getNameAt(unsigned int index) const

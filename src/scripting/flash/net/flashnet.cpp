@@ -1307,12 +1307,12 @@ tiny_string URLVariables::toString_priv()
 		const tiny_string& name=getNameAt(i);
 		//TODO: check if the allow_unicode flag should be true or false in g_uri_escape_string
 
-		ASObject* val=getValueAt(i);
+		_R<ASObject> val=getValueAt(i);
 		if(val->getObjectType()==T_ARRAY)
 		{
 			//Print using multiple properties
 			//Ex. ["foo","bar"] -> prop1=foo&prop1=bar
-			Array* arr=Class<Array>::cast(val);
+			Array* arr=Class<Array>::cast(val.getPtr());
 			for(int32_t j=0;j<arr->size();j++)
 			{
 				//Escape the name

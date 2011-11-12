@@ -1254,7 +1254,7 @@ void RootMovieClip::commitFrame(bool another)
 	setFramesLoaded(frames.size());
 
 	if(another)
-		frames.emplace_back();
+		frames.push_back(Frame());
 
 	if(getFramesLoaded()==1 && frameRate!=0)
 	{

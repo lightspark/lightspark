@@ -93,7 +93,7 @@ public:
 	*/
 	void pushMask(DisplayObject* d, const MATRIX& m)
 	{
-		maskStack.emplace_back(d,m);
+		maskStack.push_back(MaskData(d,m));
 	}
 	/**
 	  	Remove the last pushed mask

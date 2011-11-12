@@ -538,7 +538,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		{
 			ret->name_s="any";
 			ret->name_type=multiname::NAME_STRING;
-			ret->ns.emplace_back("",NAMESPACE);
+			ret->ns.emplace_back(nsNameAndKind("",NAMESPACE));
 			ret->isAttribute=false;
 			return ret;
 		}

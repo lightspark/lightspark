@@ -1921,7 +1921,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	ret->class_scope=th->scope_stack;
 	ret->incRef();
-	ret->class_scope.emplace_back(_MR(ret),false);
+	ret->class_scope.emplace_back(scope_entry(_MR(ret),false));
 
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)

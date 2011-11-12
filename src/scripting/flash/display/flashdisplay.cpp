@@ -864,7 +864,7 @@ void MovieClip::buildTraits(ASObject* o)
 
 MovieClip::MovieClip():totalFrames_unreliable(1),framesLoaded(0)
 {
-	frames.emplace_back();
+	frames.emplace_back(Frame());
 	scenes.resize(1);
 }
 
@@ -2977,7 +2977,7 @@ ASFUNCTIONBODY(Graphics,moveTo)
 	th->curX=args[0]->toInt();
 	th->curY=args[1]->toInt();
 
-	th->owner->tokens.emplace_back(MOVE, Vector2(th->curX, th->curY));
+	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(th->curX, th->curY)));
 	return NULL;
 }
 
@@ -2990,7 +2990,7 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
 
-	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x, y));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
 	th->owner->owner->requestInvalidation();
 
 	th->curX=x;
@@ -3010,9 +3010,9 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	int anchorX=args[2]->toInt();
 	int anchorY=args[3]->toInt();
 
-	th->owner->tokens.emplace_back(CURVE_QUADRATIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
-	                        Vector2(anchorX, anchorY));
+	                        Vector2(anchorX, anchorY)));
 	th->owner->owner->requestInvalidation();
 
 	th->curX=anchorX;
@@ -3035,10 +3035,10 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 	int anchorX=args[4]->toInt();
 	int anchorY=args[5]->toInt();
 
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(control1X, control1Y),
 	                        Vector2(control2X, control2Y),
-	                        Vector2(anchorX, anchorY));
+	                        Vector2(anchorX, anchorY)));
 	th->owner->owner->requestInvalidation();
 
 	th->curX=anchorX;
@@ -3092,43 +3092,43 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	 */
 
 	// D
-	th->owner->tokens.emplace_back(MOVE, Vector2(x+width, y+height-ellipseHeight));
+	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(x+width, y+height-ellipseHeight)));
 
 	// D -> E
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(x+width, y+height-ellipseHeight+kappaH),
 	                        Vector2(x+width-ellipseWidth+kappaW, y+height),
-	                        Vector2(x+width-ellipseWidth, y+height));
+	                        Vector2(x+width-ellipseWidth, y+height)));
 
 	// E -> F
-	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x+ellipseWidth, y+height));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+ellipseWidth, y+height)));
 
 	// F -> G
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(x+ellipseWidth-kappaW, y+height),
 	                        Vector2(x, y+height-kappaH),
-	                        Vector2(x, y+height-ellipseHeight));
+	                        Vector2(x, y+height-ellipseHeight)));
 
 	// G -> H
-	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x, y+ellipseHeight));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y+ellipseHeight)));
 
 	// H -> A
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(x, y+ellipseHeight-kappaH),
 	                        Vector2(x+ellipseWidth-kappaW, y),
-	                        Vector2(x+ellipseWidth, y));
+	                        Vector2(x+ellipseWidth, y)));
 
 	// A -> B
-	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x+width-ellipseWidth, y));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+width-ellipseWidth, y)));
 
 	// B -> C
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(x+width-ellipseWidth+kappaW, y),
 	                        Vector2(x+width, y+kappaH),
-	                        Vector2(x+width, y+ellipseHeight));
+	                        Vector2(x+width, y+ellipseHeight)));
 
 	// C -> D
-	th->owner->tokens.emplace_back(STRAIGHT, Vector2(x+width, y+height-ellipseHeight));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+width, y+height-ellipseHeight)));
 
 	th->owner->owner->requestInvalidation();
 	
@@ -3148,31 +3148,31 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	double kappa = KAPPA*radius;
 
 	// right
-	th->owner->tokens.emplace_back(MOVE, Vector2(x+radius, y));
+	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(x+radius, y)));
 
 	// bottom
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(x+radius, y+kappa ),
 	                        Vector2(x+kappa , y+radius),
-	                        Vector2(x       , y+radius));
+	                        Vector2(x       , y+radius)));
 
 	// left
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(x-kappa , y+radius),
 	                        Vector2(x-radius, y+kappa ),
-	                        Vector2(x-radius, y       ));
+	                        Vector2(x-radius, y       )));
 
 	// top
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(x-radius, y-kappa ),
 	                        Vector2(x-kappa , y-radius),
-	                        Vector2(x       , y-radius));
+	                        Vector2(x       , y-radius)));
 
 	// back to right
-	th->owner->tokens.emplace_back(CURVE_CUBIC,
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(x+kappa , y-radius),
 	                        Vector2(x+radius, y-kappa ),
-	                        Vector2(x+radius, y       ));
+	                        Vector2(x+radius, y       )));
 
 	th->owner->owner->requestInvalidation();
 	
@@ -3195,11 +3195,11 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	const Vector2 c(x+width,y+height);
 	const Vector2 d(x,y+height);
 
-	th->owner->tokens.emplace_back(MOVE, a);
-	th->owner->tokens.emplace_back(STRAIGHT, b);
-	th->owner->tokens.emplace_back(STRAIGHT, c);
-	th->owner->tokens.emplace_back(STRAIGHT, d);
-	th->owner->tokens.emplace_back(STRAIGHT, a);
+	th->owner->tokens.emplace_back(GeomToken(MOVE, a));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, b));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
 	th->owner->owner->requestInvalidation();
 	
 	return NULL;
@@ -3228,7 +3228,7 @@ ASFUNCTIONBODY(Graphics,lineStyle)
 	LINESTYLE2 style(-1);
 	style.Color = RGBA(color, alpha);
 	style.Width = thickness;
-	th->owner->tokens.emplace_back(SET_STROKE, style);
+	th->owner->tokens.emplace_back(GeomToken(SET_STROKE, style));
 	return NULL;
 }
 
@@ -3316,7 +3316,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	}
 
 	style.Gradient = grad;
-	th->owner->tokens.emplace_back(SET_FILL, style);
+	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 	return NULL;
 }
 
@@ -3333,7 +3333,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 	FILLSTYLE style(-1);
 	style.FillStyleType = SOLID_FILL;
 	style.Color         = RGBA(color, alpha);
-	th->owner->tokens.emplace_back(SET_FILL, style);
+	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 	return NULL;
 }
 
@@ -3457,12 +3457,12 @@ bool Bitmap::fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlph
 	style.FillStyleType=CLIPPED_BITMAP;
 	style.bitmap=this;
 	tokens.clear();
-	tokens.emplace_back(SET_FILL, style);
-	tokens.emplace_back(MOVE, Vector2(0, 0));
-	tokens.emplace_back(STRAIGHT, Vector2(0, size.height));
-	tokens.emplace_back(STRAIGHT, Vector2(size.width, size.height));
-	tokens.emplace_back(STRAIGHT, Vector2(size.width, 0));
-	tokens.emplace_back(STRAIGHT, Vector2(0, 0));
+	tokens.emplace_back(GeomToken(SET_FILL, style));
+	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, size.height)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(size.width, size.height)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(size.width, 0)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
 	requestInvalidation();
 
 	return true;

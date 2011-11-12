@@ -774,7 +774,7 @@ void Downloader::openCache()
 		cacheFilenameC[cacheFilenameS.length()] = '\0';
 		//char cacheFilenameC[30] = "/tmp/lightsparkdownloadXXXXXX";
 		//strcpy(cacheFilenameC, "/tmp/lightsparkdownloadXXXXXX");
-		int fd = mkstemp(cacheFilenameC);
+		int fd = g_mkstemp(cacheFilenameC);
 		if(fd == -1)
 			throw RunTimeException(_("Downloader::openCache: cannot create temporary file"));
 		//We are using fstream to read/write to the cache, so we don't need this FD

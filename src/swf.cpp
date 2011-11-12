@@ -1191,7 +1191,7 @@ void ParseThread::setRootMovie(RootMovieClip *root)
 RootMovieClip *ParseThread::getRootMovie()
 {
 	objectSpinlock.lock();
-	RootMovieClip *root=Class<RootMovieClip>::dyncast(parsedObject.getPtr());
+	RootMovieClip *root=dynamic_cast<RootMovieClip*>(parsedObject.getPtr());
 	objectSpinlock.unlock();
 	if(root)
 		return root;

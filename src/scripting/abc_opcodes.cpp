@@ -348,6 +348,8 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			th->runtime_stack_push(new Undefined);
 
 		obj->decRef();
+		for(int i=0;i<m;i++)
+			args[i]->decRef();
 		delete[] args;
 	}
 	LOG(LOG_CALLS,_("End of calling ") << *name);

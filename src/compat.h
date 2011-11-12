@@ -23,52 +23,48 @@
 // Set BOOST_FILEYSTEM_VERSION to 2 since boost-1.46 defaults to 3
 #define BOOST_FILESYSTEM_VERSION 2
 
-//Define cross platform helpers
-// TODO: This should be reworked to use CMake feature detection where possible
-
-// gettext support
-#include <locale.h>
-#include <libintl.h>
 #include <stddef.h>
 #include <assert.h>
+#include <cstdint>
+#include <iostream>
+// TODO: This should be reworked to use CMake feature detection where possible
+
+/* gettext support */
+#include <locale.h>
+#include <libintl.h>
 #define _(STRING) gettext(STRING)
+
 
 #include <glib.h>
 
-#ifdef WIN32
+#ifdef _WIN32
+
 #define WIN32_LEAN_AND_MEAN
-#include <winsock2.h>
+//#include <winsock2.h>
 #include <windows.h>
-#include <intrin.h>
+//#include <intrin.h>
+#include <io.h>
+
 #undef min
 #undef max
 #undef RGB
 #undef exception_info // Let's hope MS functions always use _exception_info
-#define snprintf _snprintf
-#define isnan _isnan
-
-// WINTODO: Hopefully, the MSVC instrinsics are similar enough
-//          to what the standard mandates
-#ifdef _MSC_VER
-#define ATOMIC_INT32(x) __declspec(align(4)) long x
-#define ATOMIC_INCREMENT(x) InterlockedIncrement(&x)
-#define ATOMIC_DECREMENT(x) InterlockedDecrement(&x)
-
-#define TLSDATA __declspec( thread )
+#define strncasecmp _strnicmp
+#define close _close
+//#define snprintf _snprintf
+/* those are C++11 but not available in Visual Studio 2010 */
+namespace std
+{
+	inline double copysign(double x, double y) { return _copysign(x, y); }
+	inline bool isnan(double d) { return (bool)_isnan(d); }
+	inline int signbit(double arg) { return (int)copysign(1,arg); }
+	inline bool isfinite(double d) { return (bool)_finite(d); }
+	inline bool isinf(double d) { return !isfinite(d) && !isnan(d); }
+}
+#undef DOUBLE_CLICK
 
 // Current Windows is always little-endian
 #define be64toh(x) _byteswap_uint64(x)
-
-#include <malloc.h>
-inline int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size)
-{
-	*memptr = _aligned_malloc(size, alignment);
-	return (*memptr != NULL) ? 0: -1;
-}
-inline void aligned_free(void *mem)
-{
-	_aligned_free(mem);
-}
 
 // Emulate these functions
 int round(double f);
@@ -77,69 +73,91 @@ long lrint(double f);
 
 // WINTODO: Should be set by CMake?
 #define PATH_MAX 260
-#define DATADIR "."
-#define GNASH_PATH "NONEXISTENT_PATH_GNASH_SUPPORT_DISABLED"
-
-#else
-#error At the moment, only Visual C++ is supported on Windows
-#endif
-
+//#define LS_DATADIR "."
+//#define GNASH_PATH "NONEXISTENT_PATH_GNASH_SUPPORT_DISABLED"
 
 #else //GCC
-#ifndef __STDC_LIMIT_MACROS
-#define __STDC_LIMIT_MACROS
+#	ifndef __STDC_LIMIT_MACROS
+#		define __STDC_LIMIT_MACROS
+#	endif
+
+#	ifndef __STDC_CONSTANT_MACROS
+#		define __STDC_CONSTANT_MACROS
+#	endif
+#endif //if _WIN32
+
+/* aligned_malloc */
+#ifdef _WIN32
+#	include <malloc.h>
+	inline int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size)
+	{
+		*memptr = _aligned_malloc(size, alignment);
+		return (*memptr != NULL) ? 0: -1;
+	}
+	inline void aligned_free(void *mem)
+	{
+		_aligned_free(mem);
+	}
+#else
+	int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size);
+	void aligned_free(void *mem);
 #endif
 
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif
-
-#define TLSDATA __thread
-#define CALLBACK
+#ifdef _WIN32
+// WINTODO: Hopefully, the MSVC instrinsics are similar enough
+//          to what the standard mandates
+#	define ATOMIC_INT32(x) __declspec(align(4)) volatile long x
+#	define ATOMIC_INCREMENT(x) InterlockedIncrement(&x)
+#	define ATOMIC_DECREMENT(x) InterlockedDecrement(&x)
+#	define ACQUIRE_RELEASE_FLAG(x) ATOMIC_INT32(x)
+#	define ACQUIRE_READ(x) InterlockedCompareExchange(const_cast<long*>(&x),1,1)
+#	define RELEASE_WRITE(x, v) InterlockedExchange(&x,v)
+#	define TLSDATA __declspec( thread )
+#else
+#	define TLSDATA __thread
+#	define CALLBACK
 
 //Support both atomic header ( gcc >= 4.6 ), and earlier ( stdatomic.h )
-#ifdef HAVE_ATOMIC
-#include <atomic>
-#else
-#include <stdatomic.h>
-#endif
-#define ATOMIC_INT32(x) std::atomic<int32_t> x
-#define ATOMIC_INCREMENT(x) x.fetch_add(1)
-#define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
+#	ifdef HAVE_ATOMIC
+#		include <atomic>
+#	else
+#		include <stdatomic.h>
+#	endif
+
+#	define ATOMIC_INT32(x) std::atomic<int32_t> x
+#	define ATOMIC_INCREMENT(x) x.fetch_add(1)
+#	define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
 
 //Boolean type con acquire release barrier semantics
-#define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
-#define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
-#define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
-int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size);
-void aligned_free(void *mem);
+#	define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
+#	define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
+#	define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
 #endif
 
-//Ensure compatibility on various targets
-#if defined(__FreeBSD__)
-#include <sys/endian.h>
-#elif defined(__APPLE__)
-#define _BSD_SOURCE
-#include <architecture/byte_order.h>
-#elif !defined(WIN32)
-#include <endian.h>
-#endif
 
-#include <iostream>
-
+/* DLL_LOCAL / DLL_PUBLIC */
 #if defined _WIN32 || defined __CYGWIN__
-// No DLLs, for now
-#   define DLL_PUBLIC
+/*
+#	ifdef BUILDING_DLL
+#   	define DLL_PUBLIC __declspec(dllexport)
+#	else
+#   	define DLL_PUBLIC __declspec(dllimport)
+#endif
+*/
+/* static linking on WIN32 */
+# 	define DLL_PUBLIC
 #	define DLL_LOCAL
 #else
-	#if __GNUC__ >= 4
-		#define DLL_PUBLIC __attribute__ ((visibility("default")))
-		#define DLL_LOCAL  __attribute__ ((visibility("hidden")))
-	#else
-		#error GCC version less than 4
-	#endif
+#	if __GNUC__ >= 4
+#		define DLL_PUBLIC __attribute__ ((visibility("default")))
+#		define DLL_LOCAL  __attribute__ ((visibility("hidden")))
+#	else
+#		define DLL_PUBLIC
+#		define DLL_LOCAL
+#	endif
 #endif
 
+/* min/max */
 template<class T>
 inline T minTmpl(T a, T b)
 {
@@ -155,13 +173,13 @@ inline T maxTmpl(T a, T b)
 #define dmin minTmpl<double>
 #define dmax maxTmpl<double>
 
-#include <cstdint>
-#include <sys/types.h>
-std::uint64_t compat_msectiming();
+/* timing */
+
+uint64_t compat_msectiming();
 void compat_msleep(unsigned int time);
-std::uint64_t compat_get_current_time_ms();
-std::uint64_t compat_get_current_time_us();
-std::uint64_t compat_get_thread_cputime_us();
+uint64_t compat_get_current_time_ms();
+uint64_t compat_get_current_time_us();
+uint64_t compat_get_thread_cputime_us();
 
 int kill_child(GPid p);
 

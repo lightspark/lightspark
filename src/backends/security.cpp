@@ -824,6 +824,8 @@ void URLPolicyFile::load()
 			elementType = parser.getNextElement();
 		}
 
+		delete[] buf;
+
 		//The last element was INVALID
 		if(elementType == CrossDomainPolicy::INVALID)
 			valid = false;

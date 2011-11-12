@@ -1865,7 +1865,7 @@ istream& lightspark::operator>>(istream& in, u16& v)
 {
 	uint16_t t;
 	in.read((char*)&t,2);
-	v.val=LittleEndianToHost16(t);
+	v.val=GINT16_FROM_LE(t);
 	return in;
 }
 
@@ -1878,7 +1878,7 @@ istream& lightspark::operator>>(istream& in, d64& v)
 	};
 	double_reader dummy;
 	in.read((char*)&dummy.dump,8);
-	dummy.dump=LittleEndianToHost64(dummy.dump);
+	dummy.dump=GINT64_FROM_LE(dummy.dump);
 	v.val=dummy.value;
 	return in;
 }

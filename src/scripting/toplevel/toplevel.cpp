@@ -2098,7 +2098,7 @@ void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 	out->writeByte(amf3::double_marker);
 	//We have to write the double in network byte order (big endian)
 	const uint64_t* tmpPtr=reinterpret_cast<const uint64_t*>(&val);
-	uint64_t bigEndianVal=BigEndianToHost64(*tmpPtr);
+	uint64_t bigEndianVal=GINT64_FROM_BE(*tmpPtr);
 	uint8_t* bigEndianPtr=reinterpret_cast<uint8_t*>(&bigEndianVal);
 
 	for(uint32_t i=0;i<8;i++)
@@ -2677,7 +2677,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	for(int i=0;i<namedGroups;i++)
 	{
 		nameEntry* entry=(nameEntry*)entries;
-		uint16_t num=BigEndianToHost16(entry->number);
+		uint16_t num=GINT16_FROM_BE(entry->number);
 		ASObject* captured=a->at(num);
 		captured->incRef();
 		a->setVariableByQName(entry->name,"",captured,DYNAMIC_TRAIT);

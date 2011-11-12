@@ -46,8 +46,15 @@ TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
 class StandaloneEngineData: public EngineData
 {
 public:
-	StandaloneEngineData(Display* d, VisualID v, Window win):
-		EngineData(d,v,win,0,0){}
+#ifdef _WIN32
+	StandaloneEngineData(GdkNativeWindow win):
+		EngineData(win,0,0) {}
+#else
+	StandaloneEngineData(GdkNativeWindow win):
+		EngineData(gdk_x11_display_get_xdisplay(gdk_display_get_default()),
+				XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system())),
+				win,0,0) {}
+#endif
 	void setupMainThreadCallback(ls_callback_t func, void* arg)
 	{
 		//Synchronizing with the main gtk thread is what we actually need
@@ -278,11 +285,7 @@ int main(int argc, char* argv[])
 	gtk_widget_show(socket);
 	gtk_widget_show(window);
 
-	VisualID visual=XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
-	Display* display=gdk_x11_display_get_xdisplay(gdk_display_get_default());
-	Window xembedWindow=gtk_socket_get_id((GtkSocket*)socket);
-
-	StandaloneEngineData* e=new StandaloneEngineData(display, visual, xembedWindow);
+	StandaloneEngineData* e=new StandaloneEngineData(gtk_socket_get_id((GtkSocket*)socket));
 
 	sys->setParamsAndEngine(e, true);
 	gdk_threads_leave();

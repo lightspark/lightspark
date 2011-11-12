@@ -47,7 +47,12 @@ extern "C" {
 }
 #endif
 
-#include <gdk/gdkx.h>
+
+#ifdef _WIN32
+#	include <gdk/gdkwin32.h>
+#else
+#	include <gdk/gdkx.h>
+#endif
 
 using namespace std;
 using namespace lightspark;
@@ -564,8 +569,12 @@ void SystemState::delayedCreation(SystemState* th)
 		gtk_widget_set_can_focus(plug, true);
 		gtk_widget_grab_focus(plug);
 	}
+#ifdef _WIN32
+	d->window=GDK_WINDOW_HWND(gtk_widget_get_window(plug));
+#else
 	d->window=GDK_WINDOW_XID(gtk_widget_get_window(plug));
 	XSync(d->display, False);
+#endif
 	//The lock is needed to avoid thread creation/destruction races
 	Locker l(th->mutex);
 	if(th->shutdown)

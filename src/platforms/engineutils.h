@@ -20,7 +20,9 @@
 #ifndef ENGINEUTILS_H
 #define ENGINEUTILS_H
 
-#include <X11/Xlib.h>
+#ifndef _WIN32
+#	include <X11/Xlib.h>
+#endif
 #include <gtk/gtk.h>
 
 namespace lightspark
@@ -31,14 +33,19 @@ typedef void (*ls_callback_t)(void*);
 class EngineData
 {
 public:
+#ifdef _WIN32
+	EngineData(GdkNativeWindow win, int w, int h) : window(win),width(w),height(h) {}
+#else
+	EngineData(Display* d, VisualID v, GdkNativeWindow win, int w, int h):
+			display(d),visual(v),window(win),container(NULL),width(w),height(h) {}
 	Display* display;
 	VisualID visual;
-	Window window;
+#endif
+	GdkNativeWindow window;
 	GtkWidget* container;
 	int width;
 	int height;
-	EngineData(Display* d, VisualID v, Window win, int w, int h):
-		display(d),visual(v),window(win),container(NULL),width(w),height(h){}
+
 	virtual ~EngineData() {}
 	virtual void setupMainThreadCallback(ls_callback_t func, void* arg) = 0;
 	virtual void stopMainDownload() = 0;

@@ -1018,6 +1018,8 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 						// We should report the function result
 						if(ev->result != NULL)
 							*(ev->result) = result;
+						else if(result)
+							result->decRef();
 					}
 					catch(ASObject* exception)
 					{
@@ -1045,7 +1047,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					// We should report the function result
 					if(ev->result != NULL)
 						*(ev->result) = result;
-					else
+					else if(result)
 						result->decRef();
 				}
 				break;

@@ -280,15 +280,18 @@ ASFUNCTIONBODY(Array,forEach)
 		params[2] = th;
 		th->incRef();
 
+		ASObject *funcret;
 		if( argslen == 1 )
 		{
-			f->call(new Null, params, 3);
+			funcret=f->call(new Null, params, 3);
 		}
 		else
 		{
 			args[1]->incRef();
-			f->call(args[1], params, 3);
+			funcret=f->call(args[1], params, 3);
 		}
+		if(funcret)
+			funcret->decRef();
 	}
 
 	return NULL;
@@ -569,7 +572,7 @@ bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_sl
 		objs[1]=new Undefined;
 
 	assert(comparator);
-	ASObject* ret=comparator->call(new Null, objs, 2);
+	_NR<ASObject> ret=_MNR(comparator->call(new Null, objs, 2));
 	assert_and_throw(ret);
 	return (ret->toInt()<0); //Less
 }

@@ -119,7 +119,14 @@ Ref<T> _MR(T* a)
 	return Ref<T>(a);
 }
 
+//#if defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ < 6)
+/* Fallback for gcc < 4.6 not supporting nullptr */
+class NullRef_t {};
+extern NullRef_t NullRef;
+/*#else
+typedef std::nullptr_t NullRef_t;
 #define NullRef (nullptr)
+#endif*/
 
 template<class T>
 class NullableRef
@@ -129,7 +136,7 @@ private:
 public:
 	NullableRef(): m(NULL) {}
 	explicit NullableRef(T* o):m(o){}
-	NullableRef(std::nullptr_t):m(NULL){}
+	NullableRef(NullRef_t):m(NULL){}
 	NullableRef(const NullableRef& r):m(r.m)
 	{
 		if(m)

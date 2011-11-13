@@ -153,7 +153,7 @@ void ScriptLimitsTag::execute(RootMovieClip* root)
 
 void ABCVm::registerClasses()
 {
-	Global* builtin=Class<Global>::getInstanceS(nullptr, 0);
+	Global* builtin=Class<Global>::getInstanceS((ABCContext*)0, 0);
 	//Register predefined types, ASObject are enough for not implemented classes
 	builtin->setVariableByQName("Object","",Class<ASObject>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Class","",Class_object::getRef(),DECLARED_TRAIT);

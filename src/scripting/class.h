@@ -208,7 +208,10 @@ public:
 	}
 	ASObject* generator(ASObject* const* args, const unsigned int argslen)
 	{
-		return T::generator(NULL, args, argslen);
+		ASObject *ret=T::generator(NULL, args, argslen);
+		for(unsigned int i=0;i<argslen;i++)
+			args[i]->decRef();
+		return ret;
 	}
 	ASObject* coerce(ASObject* o) const
 	{

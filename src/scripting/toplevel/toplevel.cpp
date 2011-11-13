@@ -858,6 +858,7 @@ ASFUNCTIONBODY(XMLList,generator)
 	else if(args[0]->getClass()==Class<XML>::getClass())
 	{
 		std::vector< _R<XML> > nodes;
+		args[0]->incRef();
 		nodes.push_back(_MR(Class<XML>::cast(args[0])));
 		return Class<XMLList>::getInstanceS(nodes);
 	}
@@ -3127,7 +3128,10 @@ ASFUNCTIONBODY_GETTER(Class_base, prototype);
 
 ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
 {
-	return ASObject::generator(NULL, args, argslen);
+	ASObject *ret=ASObject::generator(NULL, args, argslen);
+	for(unsigned int i=0;i<argslen;i++)
+		args[i]->decRef();
+	return ret;
 }
 
 void Class_base::addImplementedInterface(const multiname& i)

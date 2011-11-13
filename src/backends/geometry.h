@@ -56,6 +56,11 @@ public:
 		out.y = maxTmpl<T>(minTmpl<T>(y,r.Ymax),r.Ymin);
 		return out;
 	}
+	std::ostream& operator<<(std::ostream& s)
+	{
+		s << "{ "<< x << ',' << y << " }";
+		return s;
+	}
 };
 typedef Vector2Tmpl<int> Vector2;
 typedef Vector2Tmpl<double> Vector2f;

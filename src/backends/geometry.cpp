@@ -204,10 +204,3 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, vector< Geo
 	}
 }
 
-template<class T>
-std::ostream& lightspark::operator<<(std::ostream& s, const Vector2Tmpl<T>& p)
-{
-	s << "{ "<< p.x << ',' << p.y << " }";
-	return s;
-}
-

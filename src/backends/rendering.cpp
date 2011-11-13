@@ -584,6 +584,11 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 	if(GLEW_ARB_texture_non_power_of_two)
 		hasNPOTTextures=true;
+	if(!GLEW_ARB_framebuffer_object)
+	{
+		LOG(LOG_ERROR,"OpenGL does not support framebuffer objects!");
+		::abort();
+	}
 #else
 		//Open GLES 2.0 has NPOT textures
 		hasNPOTTextures=true;

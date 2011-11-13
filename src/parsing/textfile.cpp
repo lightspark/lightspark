@@ -73,17 +73,33 @@ int textFileWrite(const char *fn, char *s)
 	return(status);
 }
 
+#ifdef _WIN32
+const char* getExectuablePath()
+{
+	static char path[MAX_PATH];
+	size_t len = GetModuleFileNameA(NULL, path, MAX_PATH);
+	if(!len)
+		return "";
+	char* delim = strrchr(path,'\\');
+	if(delim)
+		*delim = '\0';
+	return path;
+}
+#endif
 
 char *dataFileRead(const char *fn)
 {
-	char *ret;
+	char *ret = 0;
 	int max_path_len=0;
-	const char *paths[] = { 
+	const char *paths[] = {
 		".",
 		"..",
 		"src",
-		DATADIR,
+		LS_DATADIR,
 		"/usr/share/lightspark",
+#ifdef _WIN32
+		getExectuablePath(),
+#endif
 	};
 	for(uint32_t i=0;i<sizeof(paths)/sizeof(const char*);i++)
 		max_path_len=imax(strlen(paths[i]),max_path_len);

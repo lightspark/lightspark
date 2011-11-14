@@ -1258,6 +1258,15 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				context->runtime_stack_push(ret);
 				break;
 			}
+			case 0xb1:
+			{
+				//instanceof
+				ASObject* type=context->runtime_stack_pop();
+				ASObject* value=context->runtime_stack_pop();
+				bool ret=instanceOf(value, type);
+				context->runtime_stack_push(abstract_b(ret));
+				break;
+			}
 			case 0xb2:
 			{
 				//istype

@@ -583,6 +583,7 @@ private:
 	static uint32_t decrement_i(ASObject*);
 	static bool strictEquals(ASObject*,ASObject*);
 	static ASObject* esc_xattr(ASObject* o);
+	static bool instanceOf(ASObject* value, ASObject* type);
 	//Utility
 	static void not_impl(int p);
 	static void wrong_exec_pos();

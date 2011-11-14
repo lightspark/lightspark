@@ -2178,3 +2178,26 @@ ASObject* ABCVm::esc_xattr(ASObject* o)
 	else
 		return Class<ASString>::getInstanceS(t.substr(0,i));
 }
+
+/* This should walk prototype chain of value, trying to find type. See ECMA.
+ * Its usage is disouraged in AS3 in favour of 'is' and 'as' (opcodes isType and asType)
+ */
+bool ABCVm::instanceOf(ASObject* value, ASObject* type)
+{
+	if(value->is<Null>())
+		return false;
+
+	if(type->is<IFunction>())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"instanceOf opcodes probably does the wrong thing");
+		return false;
+	}
+
+	if(!type->is<Class_base>())
+		throw Class<TypeError>::getInstanceS("Error #1040: instanceOf expects a class of function as second parameter!");
+
+	if(value->is<Class_base>())
+		return value->as<Class_base>()->isSubClass(type->as<Class_base>());
+	else
+		return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>());
+}

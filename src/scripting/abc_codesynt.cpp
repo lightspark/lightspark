@@ -214,6 +214,7 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"convert_b",(void*)&ABCVm::convert_b,ARGS_OBJ},
 	{"hasNext2",(void*)ABCVm::hasNext2,ARGS_CONTEXT_INT_INT},
 	{"deleteProperty",(void*)&ABCVm::deleteProperty,ARGS_OBJ_OBJ},
+	{"instanceOf",(void*)&ABCVm::instanceOf,ARGS_OBJ_OBJ},
 };
 
 void ABCVm::registerFunctions()
@@ -1490,6 +1491,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				case 0xae: //lessequals
 				case 0xaf: //greaterthan
 				case 0xb0: //greaterequals
+				case 0xb1: //instanceOf
 				case 0xb3: //istypelate
 				case 0xb4: //in
 				{
@@ -4017,6 +4019,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("greaterEquals"), v1.first, v2.first);
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
+				break;
+			}
+			case 0xb1:
+			{
+				//instanceOf
+				LOG(LOG_TRACE, _("synt instanceof") );
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("instanceOf"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}

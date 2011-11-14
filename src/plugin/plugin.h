@@ -25,6 +25,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "compat.h"
 #include "pluginbase.h"
 #include "parsing/streams.h"
 #include "backends/netutils.h"

@@ -39,19 +39,35 @@
 #include <cstdlib>
 
 #ifdef _WIN32
-
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #define WIN32_LEAN_AND_MEAN
 //#include <winsock2.h>
 #include <windows.h>
 //#include <intrin.h>
 #include <io.h>
-
-#undef min
-#undef max
+#undef DOUBLE_CLICK
 #undef RGB
-#undef exception_info // Let's hope MS functions always use _exception_info
+#ifndef PATH_MAX
+#define PATH_MAX 260
+#endif
+#ifdef __GNUC__
+/* There is a bug in mingw preventing those from being declared */
+extern "C" {
+_CRTIMP int __cdecl __MINGW_NOTHROW	_stricmp (const char*, const char*);
+_CRTIMP int __cdecl __MINGW_NOTHROW	_strnicmp (const char*, const char*, size_t);
+_CRTIMP int __cdecl __MINGW_NOTHROW _close (int);
+_CRTIMP void * __cdecl __MINGW_NOTHROW _aligned_malloc (size_t, size_t);
+_CRTIMP void __cdecl __MINGW_NOTHROW _aligned_free (void*);
+}
+#endif
 #define strncasecmp _strnicmp
-#define close _close
+#define strcasecmp _stricmp
+#endif
+
+#ifdef _MSC_VER
+#undef exception_info // Let's hope MS functions always use _exception_info
 /* those are C++11 but not available in Visual Studio 2010 */
 namespace std
 {
@@ -61,22 +77,13 @@ namespace std
 	inline bool isfinite(double d) { return (bool)_finite(d); }
 	inline bool isinf(double d) { return !isfinite(d) && !isnan(d); }
 }
-#undef DOUBLE_CLICK
-
-// Current Windows is always little-endian
-#define be64toh(x) _byteswap_uint64(x)
 
 // Emulate these functions
 int round(double f);
 long lrint(double f);
+#endif
 
-
-// WINTODO: Should be set by CMake?
-#define PATH_MAX 260
-//#define LS_DATADIR "."
-//#define GNASH_PATH "NONEXISTENT_PATH_GNASH_SUPPORT_DISABLED"
-
-#else //GCC
+#ifdef __GNUC__
 #	ifndef __STDC_LIMIT_MACROS
 #		define __STDC_LIMIT_MACROS
 #	endif
@@ -84,7 +91,7 @@ long lrint(double f);
 #	ifndef __STDC_CONSTANT_MACROS
 #		define __STDC_CONSTANT_MACROS
 #	endif
-#endif //if _WIN32
+#endif
 
 /* aligned_malloc */
 #ifdef _WIN32
@@ -136,16 +143,10 @@ long lrint(double f);
 
 
 /* DLL_LOCAL / DLL_PUBLIC */
-#if defined _WIN32 || defined __CYGWIN__
-/*
-#	ifdef BUILDING_DLL
-#   	define DLL_PUBLIC __declspec(dllexport)
-#	else
-#   	define DLL_PUBLIC __declspec(dllimport)
-#endif
-*/
-/* static linking on WIN32 */
-# 	define DLL_PUBLIC
+#if defined _WIN32
+/* There is no dllexport here, because we use direct linking with mingw */
+#	define DLL_PUBLIC
+#	define DLL_PUBLIC
 #	define DLL_LOCAL
 #else
 #	if __GNUC__ >= 4

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "config.h"
+#include "compat.h"
 
 using namespace lightspark;
 

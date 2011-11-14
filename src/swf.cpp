@@ -612,11 +612,11 @@ void SystemState::createEngines()
 		if(dumpedSWFPath.empty()) //The path is not known yet
 		{
 			waitingForDump=true;
-			l.unlock();
+			l.release();
 			fileDumpAvailable.wait();
 			if(shutdown)
 				return;
-			l.lock();
+			l.acquire();
 		}
 		LOG(LOG_INFO,_("Trying to invoke gnash!"));
 		//Dump the cookies to a temporary file
@@ -724,14 +724,14 @@ void SystemState::createEngines()
 		swfStream.close();
 
 		//Engines should not be started, stop everything
-		l.unlock();
+		l.release();
 		//We cannot stop the engines now, as this is inside a ThreadPool job
 		engineData->setupMainThreadCallback((ls_callback_t)delayedStopping, this);
 		return;
 	}
 
 
-	l.unlock();
+	l.release();
 	//The engines must be created in the context of the main thread
 	engineData->setupMainThreadCallback((ls_callback_t)delayedCreation, this);
 
@@ -744,7 +744,7 @@ void SystemState::createEngines()
 		setShutdownFlag();
 	}
 
-	l.lock();
+	l.acquire();
 	//As we lost the lock the shutdown procesure might have started
 	if(shutdown)
 		return;

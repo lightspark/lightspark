@@ -566,7 +566,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 
 	//Create a temporary copy of the listeners, as the list can be modified during the calls
 	vector<listener> tmpListener(h->second.begin(),h->second.end());
-	l.unlock();
+	l.release();
 	//TODO: check, ok we should also bind the level
 	for(unsigned int i=0;i<tmpListener.size();i++)
 	{

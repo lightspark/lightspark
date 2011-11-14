@@ -37,6 +37,10 @@ using Glib::Mutex;
 using Glib::StaticMutex;
 using Glib::Cond;
 
+typedef Glib::Mutex::Lock Locker;
+typedef Mutex Spinlock;
+typedef Mutex::Lock SpinlockLocker;
+
 typedef void* (*thread_worker)(void*);
 
 class IThreadJob
@@ -93,35 +97,6 @@ public:
 		assert(!lighted);
 		_s.signal();
 		lighted=true;
-	}
-};
-
-class Locker
-{
-private:
-	Mutex& _m;
-	bool acquired;
-public:
-	Locker(Mutex& m):_m(m),acquired(true)
-	{
-		_m.lock();
-	}
-	~Locker()
-	{
-		if(acquired)
-			_m.unlock();
-	}
-	void lock()
-	{
-		assert(acquired==false);
-		acquired=true;
-		_m.lock();
-	}
-	void unlock()
-	{
-		assert(acquired==true);
-		acquired=false;
-		_m.unlock();
 	}
 };
 
@@ -196,49 +171,6 @@ public:
 	}
 
 };
-
-class Spinlock
-{
-private:
-	pthread_spinlock_t l;
-public:
-	Spinlock()
-	{
-		pthread_spin_init(&l,0);
-	}
-	~Spinlock()
-	{
-		pthread_spin_destroy(&l);
-	}
-	void lock()
-	{
-		pthread_spin_lock(&l);
-	}
-	bool trylock()
-	{
-		return pthread_spin_trylock(&l)==0;
-	}
-	void unlock()
-	{
-		pthread_spin_unlock(&l);
-	}
-};
-
-class SpinlockLocker
-{
-private:
-	Spinlock& lock;
-public:
-	SpinlockLocker(Spinlock& _l):lock(_l)
-	{
-		lock.lock();
-	}
-	~SpinlockLocker()
-	{
-		lock.unlock();
-	}
-};
-
 };
 
 extern TLSDATA lightspark::IThreadJob* thisJob;

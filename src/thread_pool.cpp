@@ -113,7 +113,7 @@ void* ThreadPool::job_worker(void* t)
 		th->jobs.pop_front();
 		th->curJobs[index]=myJob;
 		myJob->executing=true;
-		l.unlock();
+		l.release();
 
 		assert(thisJob==NULL);
 		thisJob=myJob;
@@ -130,7 +130,7 @@ void* ThreadPool::job_worker(void* t)
 		profile->accountTime(chronometer.checkpoint());
 		thisJob=NULL;
 
-		l.lock();
+		l.acquire();
 		myJob->executing=false;
 		th->curJobs[index]=NULL;
 		if(myJob->destroyMe)
@@ -140,7 +140,7 @@ void* ThreadPool::job_worker(void* t)
 		}
 		else
 			myJob->jobFence();
-		l.unlock();
+		l.release();
 	}
 	return NULL;
 }

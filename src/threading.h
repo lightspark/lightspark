@@ -35,6 +35,7 @@ namespace lightspark
 
 using Glib::Mutex;
 using Glib::StaticMutex;
+using Glib::Cond;
 
 typedef void* (*thread_worker)(void*);
 
@@ -63,10 +64,9 @@ public:
 class Semaphore
 {
 private:
-	sem_t sem;
-	//TODO: use atomic incs and decs
-	//uint32_t blocked;
-	//uint32_t maxBlocked;
+	uint32_t value;
+	Mutex mutex;
+	Cond cond;
 public:
 	Semaphore(uint32_t init);
 	~Semaphore();

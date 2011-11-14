@@ -70,29 +70,40 @@ void IThreadJob::stop()
 	}
 }
 
-Semaphore::Semaphore(uint32_t init)//:blocked(0),maxBlocked(max)
+Semaphore::Semaphore(uint32_t init):value(init)
 {
-	sem_init(&sem,0,init);
 }
 
 Semaphore::~Semaphore()
 {
-	//On destrucion unblocks the blocked thread
-	signal();
-	sem_destroy(&sem);
+	//On destrucion unblocks all blocked threads
+	value = 4096;
+	cond.broadcast();
 }
 
 void Semaphore::wait()
 {
-	sem_wait(&sem);
+	Mutex::Lock lock(mutex);
+	while(value == 0)
+		cond.wait(mutex);
+	value--;
 }
 
 bool Semaphore::try_wait()
 {
-	return sem_trywait(&sem)==0;
+	Mutex::Lock lock(mutex);
+	if(value == 0)
+		return false;
+	else
+	{
+		value--;
+		return true;
+	}
 }
 
 void Semaphore::signal()
 {
-	sem_post(&sem);
+	Mutex::Lock lock(mutex);
+	value++;
+	cond.signal();
 }

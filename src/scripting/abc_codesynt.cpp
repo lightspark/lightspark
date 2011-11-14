@@ -233,7 +233,6 @@ void ABCVm::registerFunctions()
 	void_type=llvm::Type::getVoidTy(llvm_context);
 	int_type=llvm::IntegerType::get(getVm()->llvm_context,32);
 	intptr_type=int_type->getPointerTo();
-	assert(int_type != ptr_type); //needed in stackTypeFromLLVMType()
 
 	//All the opcodes needs a pointer to the context
 	std::vector<const llvm::Type*> struct_elems;

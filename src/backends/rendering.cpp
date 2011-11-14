@@ -886,9 +886,9 @@ void RenderThread::plotProfilingData()
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 	glDisableVertexAttribArray(COLOR_ATTRIB);
  
-	list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
+	list<ThreadProfile*>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();it++)
-		it->plot(1000000/m_sys->getFrameRate(),cr);
+		(*it)->plot(1000000/m_sys->getFrameRate(),cr);
 	glUniform1f(rt->directUniform, 0);
 
 	mapCairoTexture(windowWidth, windowHeight);

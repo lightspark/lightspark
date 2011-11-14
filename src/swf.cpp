@@ -445,6 +445,10 @@ void SystemState::destroy()
 	delete inputThread;
 	inputThread=NULL;
 	delete engineData;
+
+	for(auto it=profilingData.begin();it!=profilingData.end();it++)
+		delete *it;
+
 	sem_destroy(&terminated);
 	this->decRef(); //free a reference we obtained by 'new SystemState'
 }
@@ -809,8 +813,8 @@ bool SystemState::removeJob(ITickJob* job)
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 {
 	SpinlockLocker l(profileDataSpinlock);
-	profilingData.push_back(ThreadProfile(color,100));
-	ThreadProfile* ret=&profilingData.back();
+	profilingData.push_back(new ThreadProfile(color,100));
+	ThreadProfile* ret=profilingData.back();
 	return ret;
 }
 
@@ -1389,9 +1393,9 @@ void SystemState::tick()
 {
 	{
 		SpinlockLocker l(profileDataSpinlock);
-		list<ThreadProfile>::iterator it=profilingData.begin();
+		list<ThreadProfile*>::iterator it=profilingData.begin();
 		for(;it!=profilingData.end();++it)
-			it->tick();
+			(*it)->tick();
 	}
 	if(sys->currentVm==NULL)
 		return;

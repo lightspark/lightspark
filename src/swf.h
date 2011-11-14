@@ -108,6 +108,8 @@ public:
 class ThreadProfile
 {
 private:
+	/* ThreadProfile cannot be copied because Mutex cannot */
+	ThreadProfile(const ThreadProfile&) { assert(false); }
 	Mutex mutex;
 	class ProfilingData
 	{
@@ -252,7 +254,7 @@ public:
 	
 	//Performance profiling
 	ThreadProfile* allocateProfiler(const RGB& color);
-	std::list<ThreadProfile> profilingData;
+	std::list<ThreadProfile*> profilingData;
 	
 	Stage* stage;
 	ABCVm* currentVm;

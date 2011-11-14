@@ -22,6 +22,7 @@
 //
 // Implementation of Netscape entry points (NPN_*)
 //
+#include "compat.h"
 #include "npplat.h"
 #include <stdio.h>
 #include <stdlib.h>

@@ -21,6 +21,7 @@
 //
 // Implementation of plugin entry points (NPP_*)
 //
+#include "compat.h"
 #include "pluginbase.h"
 #include <stdio.h>
 

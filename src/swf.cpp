@@ -230,7 +230,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 	char* pfile = getenv("LIGHTSPARK_PLUGIN_PARAMFILE");
         ofstream f;
 	if(pfile)
-		f.open(pfile);
+		f.open(pfile, ios::binary|ios::out);
 	while(cur<vars.size())
 	{
 		int n1=vars.find('=',cur);
@@ -288,7 +288,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 
 void SystemState::parseParametersFromFile(const char* f)
 {
-	ifstream i(f);
+	ifstream i(f, ios::in|ios::binary);
 	if(!i)
 	{
 		LOG(LOG_ERROR,_("Parameters file not found"));
@@ -541,7 +541,7 @@ void SystemState::EngineCreator::threadAbort()
 void SystemState::enableGnashFallback()
 {
 	//Check if the gnash standalone executable is available
-	ifstream f(GNASH_PATH);
+	ifstream f(GNASH_PATH, ios::in|ios::binary);
 	if(f)
 		useGnashFallback=true;
 	f.close();
@@ -696,7 +696,7 @@ void SystemState::createEngines()
 		}
 
 		// Open the SWF file
-		std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::binary);
+		std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::in|ios::binary);
 		// Read the SWF file and write it to Gnash's stdin
 		char data[1024];
 		std::streamsize written, ret;

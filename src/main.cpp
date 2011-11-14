@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
 #endif
 
 	Log::initLogging(log_level);
-	ifstream f(fileName);
+	ifstream f(fileName, ios::in|ios::binary);
 	f.seekg(0, ios::end);
 	uint32_t fileSize=f.tellg();
 	f.seekg(0, ios::beg);

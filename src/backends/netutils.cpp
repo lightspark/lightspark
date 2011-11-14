@@ -814,7 +814,7 @@ void Downloader::openExistingCache(tiny_string filename)
 		cacheFilename = filename;
 
 		//Open the cache file
-		cache.open(cacheFilename.raw_buf(), std::fstream::in | std::fstream::out);
+		cache.open(cacheFilename.raw_buf(), std::fstream::binary | std::fstream::in | std::fstream::out);
 		if(!cache.is_open())
 			throw RunTimeException(_("Downloader::openCache: cannot open temporary cache file"));
 
@@ -1425,7 +1425,7 @@ void LocalDownloader::execute()
 		//Otherwise we follow the normal procedure
 		else {
 			std::ifstream file;
-			file.open(url.raw_buf(), std::ifstream::in);
+			file.open(url.raw_buf(), std::ios::in|std::ios::binary);
 
 			if(file.is_open())
 			{

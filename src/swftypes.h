@@ -395,7 +395,7 @@ public:
 		//TODO: omit copy, handle \0 in string
 		char *strdown = g_utf8_strdown(buf,numBytes());
 		tiny_string ret(strdown,/*copy:*/true);
-		free(strdown);
+		g_free(strdown);
 		return ret;
 	}
 	tiny_string uppercase() const
@@ -403,7 +403,7 @@ public:
 		//TODO: omit copy, handle \0 in string
 		char *strup = g_utf8_strup(buf,numBytes());
 		tiny_string ret(strup,/*copy:*/true);
-		free(strup);
+		g_free(strup);
 		return ret;
 	}
 	/* like strcasecmp(s1.raw_buf(),s2.raw_buf()) but for unicode

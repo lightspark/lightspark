@@ -619,7 +619,7 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	LOG(LOG_CALLS,"Plugin callback from the browser: " << objId.getString());
 
 	// Convert raw arguments to objects
-	const lightspark::ExtVariant* objArgs[argc];
+	const lightspark::ExtVariant** objArgs = g_newa(const lightspark::ExtVariant*,argc);
 	for(uint32_t i = 0; i < argc; i++)
 		objArgs[i] = new NPVariantObject(instance, args[i]);
 
@@ -879,7 +879,7 @@ void NPScriptObject::callExternal(void* d)
 		else
 		{
 			// These will get passed as arguments to NPN_Invoke(Default)
-			NPVariant variantArgs[data->argc];
+			NPVariant* variantArgs = g_newa(NPVariant,data->argc);
 			for(uint32_t i = 0; i < data->argc; i++)
 				NPVariantObject(data->instance, *(data->args[i])).copy(variantArgs[i]);
 

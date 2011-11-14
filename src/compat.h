@@ -52,7 +52,6 @@
 #undef exception_info // Let's hope MS functions always use _exception_info
 #define strncasecmp _strnicmp
 #define close _close
-//#define snprintf _snprintf
 /* those are C++11 but not available in Visual Studio 2010 */
 namespace std
 {

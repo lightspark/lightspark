@@ -119,14 +119,15 @@ Ref<T> _MR(T* a)
 	return Ref<T>(a);
 }
 
-//#if defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ < 6)
+#if defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ < 6)
 /* Fallback for gcc < 4.6 not supporting nullptr */
 class NullRef_t {};
 extern NullRef_t NullRef;
-/*#else
+#else
+/* This is needed for MSVC and can be used on gcc >= 4.6 */
 typedef std::nullptr_t NullRef_t;
 #define NullRef (nullptr)
-#endif*/
+#endif
 
 template<class T>
 class NullableRef

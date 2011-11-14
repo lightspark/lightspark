@@ -146,7 +146,12 @@ fi
 if [ $BLACKLIST -eq 1 ]; then
 	TESTS=`cat blacklist`
 else
-	TESTS=`comm -2 -3 <(echo $TESTS | tr ' ' '\n' | sort) <(sort blacklist)`
+	TEMP1=`mktemp`
+	TEMP2=`mktemp`
+	echo $TESTS | tr ' ' '\n' | sort > $TEMP1
+	sort blacklist > $TEMP2
+	TESTS=`comm -2 -3 $TEMP1 $TEMP2`
+	rm $TEMP1 $TEMP2
 fi
 
 if [ ! $COMPILE -eq 1 ]; then
@@ -210,7 +215,7 @@ FAILED_TESTS=""
 TOTALTESTCOUNT=`echo $TESTS | wc -w`
 
 if [ $PROPRIETARY -eq 0 ]; then
-	LOGFILE=`tempfile`
+	LOGFILE=`mktemp`
 else
 	LOGFILE="$PROPRIETARY_LOGFILE"
 fi

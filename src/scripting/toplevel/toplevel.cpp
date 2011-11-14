@@ -3031,7 +3031,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn)
 	return typeObject->as<Type>();
 }
 
-Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),referencedObjectsMutex("referencedObjects"),
+Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),
 	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1)
 {
 	type=T_CLASS;

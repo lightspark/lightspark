@@ -327,7 +327,7 @@ public:
 
 class CairoPangoRenderer : public CairoRenderer
 {
-	static Mutex pangoMutex;
+	static StaticMutex pangoMutex;
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */

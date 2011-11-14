@@ -224,7 +224,7 @@ _NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t 
 		return NullRef;
 }
 
-Sound::Sound():downloader(NULL),mutex("Sound mutex"),stopped(false),audioDecoder(NULL),audioStream(NULL),
+Sound::Sound():downloader(NULL),stopped(false),audioDecoder(NULL),audioStream(NULL),
 	bytesLoaded(0),bytesTotal(0),length(60*1000)
 {
 }

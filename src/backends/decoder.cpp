@@ -106,7 +106,7 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):
-	curBuffer(0),curBufferOffset(0),codecContext(NULL),ownedContext(true),mutex("VideoDecoder")
+	curBuffer(0),curBufferOffset(0),codecContext(NULL),ownedContext(true)
 {
 	//The tag is the header, initialize decoding
 	codecContext=avcodec_alloc_context();
@@ -160,7 +160,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint):
-	curBuffer(0),curBufferOffset(0),codecContext(_c),ownedContext(false),mutex("VideoDecoder")
+	curBuffer(0),curBufferOffset(0),codecContext(_c),ownedContext(false)
 {
 	status=INIT;
 	//The tag is the header, initialize decoding

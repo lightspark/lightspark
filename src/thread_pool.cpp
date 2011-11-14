@@ -28,7 +28,7 @@ using namespace lightspark;
 
 TLSDATA lightspark::IThreadJob* thisJob=NULL;
 
-ThreadPool::ThreadPool(SystemState* s):mutex("ThreadPool mutex"),stopFlag(false)
+ThreadPool::ThreadPool(SystemState* s):stopFlag(false)
 {
 	m_sys=s;
 	sem_init(&num_jobs,0,0);

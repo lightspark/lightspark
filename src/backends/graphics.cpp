@@ -837,7 +837,7 @@ uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, ui
 	return outData;
 }
 
-Mutex CairoPangoRenderer::pangoMutex("pangoMutex");
+StaticMutex CairoPangoRenderer::pangoMutex = GLIBMM_STATIC_MUTEX_INIT;
 
 void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData& tData)
 {

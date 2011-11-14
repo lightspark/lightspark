@@ -124,7 +124,7 @@ private:
 	int32_t len;
 	uint32_t tickCount;
 public:
-	ThreadProfile(const RGB& c,uint32_t l):mutex("ThreadProfile"),color(c),len(l),tickCount(0){}
+	ThreadProfile(const RGB& c,uint32_t l):color(c),len(l),tickCount(0){}
 	void accountTime(uint32_t time);
 	void setTag(const std::string& tag);
 	void tick();

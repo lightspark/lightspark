@@ -70,38 +70,6 @@ void IThreadJob::stop()
 	}
 }
 
-Mutex::Mutex(const char* n):name(n),foundBusy(0)
-{
-	sem_init(&sem,0,1);
-}
-
-Mutex::~Mutex()
-{
-	if(name)
-		LOG(LOG_TRACE,_("Mutex ") << name << _(" waited ") << foundBusy << _(" times"));
-	sem_destroy(&sem);
-}
-
-void Mutex::lock()
-{
-	if(name)
-	{
-		//If the semaphore can be acquired immediately just return
-		if(sem_trywait(&sem)==0)
-			return;
-
-		//Otherwise log the busy event and do a real wait
-		foundBusy++;
-	}
-
-	sem_wait(&sem);
-}
-
-void Mutex::unlock()
-{
-	sem_post(&sem);
-}
-
 Semaphore::Semaphore(uint32_t init)//:blocked(0),maxBlocked(max)
 {
 	sem_init(&sem,0,init);

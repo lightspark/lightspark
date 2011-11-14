@@ -1958,7 +1958,7 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 {
 }
 
-DisplayObjectContainer::DisplayObjectContainer():mouseChildren(true),mutexDisplayList("mutexDisplayList")
+DisplayObjectContainer::DisplayObjectContainer():mouseChildren(true)
 {
 }
 

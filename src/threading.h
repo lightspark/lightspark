@@ -26,25 +26,17 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <vector>
+#include <glibmm/thread.h>
+
+
 
 namespace lightspark
 {
 
-typedef void* (*thread_worker)(void*);
+using Glib::Mutex;
+using Glib::StaticMutex;
 
-class Mutex
-{
-friend class Locker;
-private:
-	sem_t sem;
-	const char* name;
-	uint32_t foundBusy;
-public:
-	Mutex(const char* name);
-	~Mutex();
-	void lock();
-	void unlock();
-};
+typedef void* (*thread_worker)(void*);
 
 class IThreadJob
 {

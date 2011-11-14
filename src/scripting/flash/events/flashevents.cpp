@@ -364,7 +364,7 @@ void IOErrorEvent::sinit(Class_base* c)
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),DECLARED_TRAIT);
 }
 
-EventDispatcher::EventDispatcher():handlersMutex("handlersMutex")
+EventDispatcher::EventDispatcher()
 {
 }
 

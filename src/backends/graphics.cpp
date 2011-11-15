@@ -272,9 +272,7 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 
 TextureChunk::TextureChunk(const TextureChunk& r):texId(0),chunks(NULL),width(r.width),height(r.height)
 {
-	assert(chunks==NULL);
-	assert(width==0 && height==0);
-	assert(texId==0);
+	*this = r;
 	return;
 }
 

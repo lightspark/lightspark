@@ -912,7 +912,7 @@ void RenderThread::coreRendering()
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
-	m_sys->Render(false);
+	m_sys->getStage()->Render(false);
 	assert(maskStack.empty());
 
 	if(m_sys->showProfilingData)

@@ -633,7 +633,11 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	ret->initialized=true;
 #endif
 	//Now add our classdef
-	ret->setClass(new Class_function());
+	Class_function *cf=new Class_function();
+	ret->setClass(cf);
+	//setClass created a new reference, we can release the local
+	//reference
+	cf->decRef();
 	ret->getClass()->prototype = sf->prototype;
 
 	sf->incRef();

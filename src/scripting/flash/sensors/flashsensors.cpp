@@ -24,8 +24,6 @@
 #include "flash/system/flashsystem.h"
 #include "compat.h"
 #include "backends/audio.h"
-#include "backends/builtindecoder.h"
-#include "backends/rendering.h"
 #include "backends/security.h"
 
 using namespace std;

@@ -23,7 +23,6 @@
 #include "decoder.h"
 #include "platforms/fastpaths.h"
 #include "swf.h"
-#include "graphics.h"
 #include "backends/rendering.h"
 
 #if LIBAVUTIL_VERSION_MAJOR < 51

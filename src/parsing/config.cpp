@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include "config.h"
-#include "swf.h"
 
 using namespace lightspark;
 

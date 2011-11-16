@@ -26,9 +26,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <cmath>
-#include "swf.h"
 #include "backends/geometry.h"
-#include "backends/rendering.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "compat.h"

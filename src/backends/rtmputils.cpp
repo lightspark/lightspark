@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include "rtmputils.h"
-#include "swf.h"
 #include "logger.h"
 
 #ifdef ENABLE_RTMP

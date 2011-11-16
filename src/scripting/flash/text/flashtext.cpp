@@ -20,7 +20,6 @@
 #include "flashtext.h"
 #include "class.h"
 #include "compat.h"
-#include "backends/rendering.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
 #include "argconv.h"

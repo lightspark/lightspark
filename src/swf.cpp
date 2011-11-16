@@ -23,7 +23,6 @@
 #include "scripting/abc.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
-#include "swf.h"
 #include "logger.h"
 #include "parsing/streams.h"
 #include "asobject.h"

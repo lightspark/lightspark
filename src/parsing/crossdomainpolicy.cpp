@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include "crossdomainpolicy.h"
-#include "swf.h"
 
 using namespace lightspark;
 

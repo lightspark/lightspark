@@ -19,7 +19,6 @@
 
 #include <glib.h>
 
-#include "swf.h"
 #include "compat.h"
 #include <string>
 #include <boost/filesystem.hpp>

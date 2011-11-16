@@ -20,7 +20,6 @@
 #include "scripting/abc.h"
 #include "audio.h"
 #include "input.h"
-#include "swf.h"
 #include "rendering.h"
 #include "compat.h"
 

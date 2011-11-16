@@ -564,6 +564,8 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 		bytes[index]=o->toInt();
 	else
 		bytes[index]=0;
+
+	o->decRef();
 }
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)

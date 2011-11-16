@@ -23,11 +23,8 @@
 #include "scripting/abc.h"
 #include "logger.h"
 #include <string.h>
-#include <algorithm>
 #include <stdlib.h>
 #include <cmath>
-#include "backends/geometry.h"
-#include "scripting/class.h"
 #include "exceptions.h"
 #include "compat.h"
 

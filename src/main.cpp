@@ -19,16 +19,11 @@
 
 #include "swf.h"
 #include "logger.h"
-#include "parsing/streams.h"
-#include "backends/netutils.h"
 #include "backends/security.h"
 #ifndef WIN32
 #include <sys/resource.h>
-#include <unistd.h>
 #include <gdk/gdkx.h>
 #endif
-#include <iostream>
-#include <fstream>
 #include "compat.h"
 
 #ifdef WIN32

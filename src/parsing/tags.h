@@ -21,7 +21,6 @@
 #define TAGS_H
 
 #include "compat.h"
-#include <list>
 #include <vector>
 #include <iostream>
 #include "swftypes.h"

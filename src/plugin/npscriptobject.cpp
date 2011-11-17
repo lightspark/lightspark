@@ -43,12 +43,12 @@ NPIdentifierObject::NPIdentifierObject(int32_t value)
 NPIdentifierObject::NPIdentifierObject(const ExtIdentifier& value)
 {
 	// It is possible we got a down-casted ExtIdentifier, so lets check for that
-	try
+	const NPIdentifierObject* npio = dynamic_cast<const NPIdentifierObject*>(&value);
+	if(npio)
 	{
-		dynamic_cast<const NPIdentifierObject&>(value).copy(identifier);
+		npio->copy(identifier);
 	}
-	// We got a real ExtIdentifier, lets convert it
-	catch(std::bad_cast&)
+	else
 	{
 		if(value.getType() == EI_STRING)
 			identifier = NPN_GetStringIdentifier(value.getString().c_str());
@@ -387,12 +387,12 @@ NPVariantObject::NPVariantObject(NPP _instance, bool value) : instance(_instance
 NPVariantObject::NPVariantObject(NPP _instance, const ExtVariant& value) : instance(_instance)
 {
 	// It's possible we got a down-casted NPVariantObject, so lets check for it
-	try
+	const NPVariantObject* npv = dynamic_cast<const NPVariantObject*>(&value);
+	if(npv)
 	{
-		dynamic_cast<const NPVariantObject&>(value).copy(variant);
+		npv->copy(variant);
 	}
-	// Seems we got a real ExtVariant, lets convert
-	catch(std::bad_cast&)
+	else
 	{
 		switch(value.getType())
 		{

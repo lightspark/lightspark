@@ -51,8 +51,7 @@ void RenderThread::wait()
 	{
 		//Signal potentially blocking semaphore
 		sem_post(&event);
-		int ret=pthread_join(t,NULL);
-		assert_and_throw(ret==0);
+		t->join();
 		status=TERMINATED;
 	}
 }
@@ -81,7 +80,7 @@ void RenderThread::start(const EngineData* data)
 {
 	status=STARTED;
 	engineData=data;
-	pthread_create(&t,NULL,(thread_worker)worker,this);
+	t = Glib::Thread::create(sigc::bind<0>(&RenderThread::worker,this), true);
 }
 
 void RenderThread::stop()
@@ -224,7 +223,7 @@ void RenderThread::SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocat
 	th->requestResize(allocation->width, allocation->height);
 }
 
-void* RenderThread::worker(RenderThread* th)
+void RenderThread::worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	/* set TLS variable for getRenderThread() */
@@ -238,7 +237,7 @@ void* RenderThread::worker(RenderThread* th)
 
 	th->windowWidth=e->width;
 	th->windowHeight=e->height;
-	
+
 	Display* d=XOpenDisplay(NULL);
 
 #ifndef ENABLE_GLES2
@@ -247,7 +246,7 @@ void* RenderThread::worker(RenderThread* th)
 	if(!glx_present)
 	{
 		LOG(LOG_ERROR,_("glX not present"));
-		return NULL;
+		return;
 	}
 	int attrib[10]={GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, GLX_DOUBLEBUFFER, True, None};
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
@@ -274,7 +273,7 @@ void* RenderThread::worker(RenderThread* th)
 	{
 		//No suitable id found
 		LOG(LOG_ERROR,_("No suitable graphics configuration available"));
-		return NULL;
+		return;
 	}
 	th->mFBConfig=fb[i];
 	cout << "Chosen config " << hex << fb[i] << dec << endl;
@@ -293,13 +292,13 @@ void* RenderThread::worker(RenderThread* th)
 
 	if (ed == EGL_NO_DISPLAY) {
 		LOG(LOG_ERROR, _("EGL not present"));
-		return NULL;
+		return;
 	}
 
 	EGLint major, minor;
 	if (eglInitialize(ed, &major, &minor) == EGL_FALSE) {
 		LOG(LOG_ERROR, _("EGL initialization failed"));
-		return NULL;
+		return;
 	}
 
 	LOG(LOG_INFO, _("EGL version: ") << eglQueryString(ed, EGL_VERSION));
@@ -342,7 +341,7 @@ void* RenderThread::worker(RenderThread* th)
 	{
 		//No suitable id found
 		LOG(LOG_ERROR,_("No suitable graphics configuration available"));
-		return NULL;
+		return;
 	}
 	th->mEGLConfig=conf[i];
 	cout << "Chosen config " << hex << conf[i] << dec << endl;
@@ -350,12 +349,12 @@ void* RenderThread::worker(RenderThread* th)
 	th->mEGLContext = eglCreateContext(ed, th->mEGLConfig, EGL_NO_CONTEXT, context_attribs);
 	if (th->mEGLContext == EGL_NO_CONTEXT) {
 		LOG(LOG_ERROR,_("Could not create EGL context"));
-		return NULL;
+		return;
 	}
 	EGLSurface win = eglCreateWindowSurface(ed, th->mEGLConfig, e->window, NULL);
 	if (win == EGL_NO_SURFACE) {
 		LOG(LOG_ERROR,_("Could not create EGL surface"));
-		return NULL;
+		return;
 	}
 	eglMakeCurrent(ed, win, win, th->mEGLContext);
 #endif
@@ -444,7 +443,7 @@ void* RenderThread::worker(RenderThread* th)
 	eglDestroyContext(ed, th->mEGLContext);
 #endif
 	XCloseDisplay(d);
-	return NULL;
+	return;
 }
 
 bool RenderThread::loadShaderPrograms()

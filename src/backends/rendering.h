@@ -34,12 +34,12 @@ class RenderThread: public ITickJob
 friend class DisplayObject;
 private:
 	SystemState* m_sys;
-	pthread_t t;
+	Glib::Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 
 	const EngineData* engineData;
-	static void* worker(RenderThread*);
+	static void worker(RenderThread*);
 
 	void commonGLInit(int width, int height);
 	void commonGLResize();

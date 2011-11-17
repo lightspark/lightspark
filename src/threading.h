@@ -173,5 +173,4 @@ public:
 };
 };
 
-extern TLSDATA lightspark::IThreadJob* thisJob;
 #endif

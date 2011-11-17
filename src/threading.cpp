@@ -50,7 +50,6 @@ void IThreadJob::run()
 {
 	try
 	{
-		assert(thisJob);
 		execute();
 	}
 	catch(JobTerminationException& ex)

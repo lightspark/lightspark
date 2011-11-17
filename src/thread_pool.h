@@ -27,8 +27,6 @@
 #include <stdlib.h>
 #include "threading.h"
 
-extern TLSDATA lightspark::IThreadJob* thisJob;
-
 namespace lightspark
 {
 

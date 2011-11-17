@@ -26,8 +26,6 @@
 
 using namespace lightspark;
 
-TLSDATA lightspark::IThreadJob* thisJob=NULL;
-
 ThreadPool::ThreadPool(SystemState* s):stopFlag(false)
 {
 	m_sys=s;
@@ -115,8 +113,6 @@ void* ThreadPool::job_worker(void* t)
 		myJob->executing=true;
 		l.release();
 
-		assert(thisJob==NULL);
-		thisJob=myJob;
 		chronometer.checkpoint();
 		try
 		{
@@ -128,7 +124,6 @@ void* ThreadPool::job_worker(void* t)
 			sys->setError(e.cause);
 		}
 		profile->accountTime(chronometer.checkpoint());
-		thisJob=NULL;
 
 		l.acquire();
 		myJob->executing=false;

@@ -13,26 +13,22 @@
 # LLVM_LIBS_JIT : ldflags needed to link against a LLVM JIT
 # LLVM_LIBS_JIT_OBJECTS : objects you need to add to your source when using LLVM JIT
 
-if (MSVC)
-  set(LLVM_ROOT "$ENV{LLVM_ROOT}")
-  if ("${LLVM_ROOT}" STREQUAL "")
-     set(LLVM_ROOT "C:/Program Files/LLVM")
-  endif ()
-  if (NOT IS_DIRECTORY ${LLVM_ROOT})
-    message(FATAL_ERROR "Could NOT find LLVM at: " ${LLVM_ROOT})
-  endif ()
+if(WIN32)
+  find_path(LLVM_INCLUDE_DIR NAMES llvm/LLVMContext.h)
+  message(STATUS "Found LLVM include directory: ${LLVM_INCLUDE_DIR}")
+  find_library(LLVM_SOMELIB NAMES LLVMSystem)
+  GET_FILENAME_COMPONENT(LLVM_LIB_DIR ${LLVM_SOMELIB} PATH CACHE)
+  message(STATUS "Found LLVM lib directory: ${LLVM_LIB_DIR}")
 
-  message(STATUS "Found LLVM: ${LLVM_ROOT}")
-  set(LLVM_BIN_DIR ${LLVM_ROOT}/bin)
-  set(LLVM_LIB_DIR ${LLVM_ROOT}/lib)
-  set(LLVM_INCLUDE_DIR ${LLVM_ROOT}/include)
-
+  #set(LLVM_BIN_DIR ${LLVM_ROOT}/bin)
+  message(STATUS "Using hardcoded LLVM version 2.8 on win32")
+  set(LLVM_STRING_VERSION "2.8")
   set(LLVM_COMPILE_FLAGS "")
   set(LLVM_LDFLAGS "")
   set(LLVM_LIBS_CORE LLVMLinker LLVMArchive LLVMBitWriter LLVMBitReader LLVMInstrumentation LLVMScalarOpts LLVMipo LLVMTransformUtils LLVMipa LLVMAnalysis LLVMTarget LLVMMC LLVMCore LLVMSupport LLVMSystem LLVMInstCombine)
   set(LLVM_LIBS_JIT LLVMX86AsmParser LLVMX86AsmPrinter LLVMX86CodeGen LLVMSelectionDAG LLVMAsmPrinter LLVMX86Info LLVMJIT LLVMExecutionEngine LLVMCodeGen LLVMScalarOpts LLVMTransformUtils LLVMipa LLVMAnalysis LLVMTarget LLVMMC LLVMCore LLVMSupport LLVMSystem)
   set(LLVM_LIBS_JIT_OBJECTS "")
-endif (MSVC)
+endif (WIN32)
 
 if (LLVM_INCLUDE_DIR)
   set(LLVM_FOUND TRUE)

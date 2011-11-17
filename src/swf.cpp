@@ -56,8 +56,6 @@ extern "C" {
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA ParseThread* pt;
-
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):parsingIsFailed(false),frameRate(0),
 	toBind(false), finishedLoading(false)
 {
@@ -1061,7 +1059,6 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 
 void ParseThread::execute()
 {
-	pt=this;
 	try
 	{
 		UI8 Signature[4];
@@ -1089,7 +1086,6 @@ void ParseThread::execute()
 	{
 		LOG(LOG_ERROR,_("Stream exception in ParseThread ") << e.what());
 	}
-	pt=NULL;
 }
 
 void ParseThread::parseSWF(UI8 ver)

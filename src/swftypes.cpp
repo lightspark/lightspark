@@ -31,8 +31,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA ParseThread* pt;
-
 tiny_string& tiny_string::operator+=(const char* s)
 {	//deprecated, cannot handle '\0' inside string
 	if(type==READONLY)
@@ -715,7 +713,8 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		//Lookup the bitmap in the dictionary
 		if(bitmapId!=65535)
 		{
-			try
+			LOG(LOG_ERROR,"bitmap resolving is broken!");
+			/*try
 			{
 				_R<DictionaryTag> dict=pt->getRootMovie()->dictionaryLookup(bitmapId);
 				v.bitmap=dynamic_cast<Bitmap*>(dict.getPtr());
@@ -730,7 +729,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 				//Thrown if the bitmapId does not exists in dictionary
 				LOG(LOG_ERROR,"Exception in FillStyle parsing: " << e.what());
 				v.bitmap=NULL;
-			}
+			}*/
 		}
 		else
 		{

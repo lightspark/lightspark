@@ -38,8 +38,6 @@
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA ParseThread* pt;
-
 _NR<Tag> TagFactory::readTag()
 {
 	RECORDHEADER h;

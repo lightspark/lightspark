@@ -30,7 +30,6 @@ using namespace std;
 using namespace lightspark;
 
 TLSDATA DLL_PUBLIC SystemState* sys=NULL;
-TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
 
 extern int count_reuse;
 extern int count_alloc;

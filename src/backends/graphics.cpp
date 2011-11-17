@@ -60,7 +60,7 @@ void lightspark::cleanGLErrors()
 
 void TextureBuffer::setAllocSize(uint32_t w, uint32_t h)
 {
-	if(rt->hasNPOTTextures)
+	if(getRenderThread()->hasNPOTTextures)
 	{
 		allocWidth=w;
 		allocHeight=h;
@@ -239,7 +239,7 @@ MatrixApplier::MatrixApplier(const MATRIX& m)
 	float matrix[16];
 	m.get4DMatrix(matrix);
 	lsglMultMatrixf(matrix);
-	rt->setMatrixUniform(LSGL_MODELVIEW);
+	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 void MatrixApplier::concat(const MATRIX& m)
@@ -247,13 +247,13 @@ void MatrixApplier::concat(const MATRIX& m)
 	float matrix[16];
 	m.get4DMatrix(matrix);
 	lsglMultMatrixf(matrix);
-	rt->setMatrixUniform(LSGL_MODELVIEW);
+	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 void MatrixApplier::unapply()
 {
 	lsglPopMatrix();
-	rt->setMatrixUniform(LSGL_MODELVIEW);
+	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 TextureChunk::TextureChunk(uint32_t w, uint32_t h)

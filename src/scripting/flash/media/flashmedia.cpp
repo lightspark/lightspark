@@ -105,7 +105,7 @@ void Video::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,num
 		videoHeight=netStream->getVideoHeight();
 
 		MatrixApplier ma(getConcatenatedMatrix());
-
+		RenderThread* rt = getRenderThread();
 		//if(!isSimple())
 		//	rt->acquireTempBuffer(0,width,0,height);
 

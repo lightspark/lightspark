@@ -626,16 +626,16 @@ void DisplayObject::renderPrologue() const
 	if(!mask.isNull())
 	{
 		if(mask->parent.isNull())
-			rt->pushMask(mask.getPtr(),MATRIX());
+			getRenderThread()->pushMask(mask.getPtr(),MATRIX());
 		else
-			rt->pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
+			getRenderThread()->pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
 	}
 }
 
 void DisplayObject::renderEpilogue() const
 {
 	if(!mask.isNull())
-		rt->popMask();
+		getRenderThread()->popMask();
 }
 
 void DisplayObjectContainer::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
@@ -1361,6 +1361,7 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 	 * so we need no locking here */
 	if(!cachedSurface.tex.isValid())
 		return;
+	RenderThread* rt = getRenderThread();
 	float enableMaskLookup=0.0f;
 	//If the maskEnabled is already set we are the mask!
 	if(!maskEnabled && rt->isMaskPresent())

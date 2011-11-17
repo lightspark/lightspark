@@ -955,7 +955,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		{
 			//New tag, flush the old one if present
 			if(curTag)
-				rt->renderText(cr, curTag->c_str(),curTagX,imax(curTagY-curTagH,0));
+				getRenderThread()->renderText(cr, curTag->c_str(),curTagX,imax(curTagY-curTagH,0));
 			//Measure tag
 			cairo_text_extents (cr, data[i].tag.c_str(), &te);
 			curTagLen=te.width;
@@ -971,7 +971,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 			else
 			{
 				//Tag is before this sample
-				rt->renderText(cr, curTag->c_str(), curTagX, imax(curTagY-curTagH,0));
+				getRenderThread()->renderText(cr, curTag->c_str(), curTagX, imax(curTagY-curTagH,0));
 				curTag=NULL;
 			}
 		}

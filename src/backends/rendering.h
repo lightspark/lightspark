@@ -222,6 +222,7 @@ public:
 	void setMatrixUniform(LSGL_MATRIX m) const;
 };
 
+RenderThread* getRenderThread();
+
 };
-extern TLSDATA lightspark::RenderThread* rt DLL_PUBLIC;
 #endif

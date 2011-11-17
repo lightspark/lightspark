@@ -34,6 +34,17 @@
 using namespace lightspark;
 using namespace std;
 
+static GStaticPrivate renderThread = G_STATIC_PRIVATE_INIT; /* TLS */
+RenderThread* lightspark::getRenderThread()
+{
+	RenderThread* ret = (RenderThread*)g_static_private_get(&renderThread);
+	/* If this is NULL, then you are not calling from the render thread,
+	 * which is disallowed! (OpenGL is not threadsafe)
+	 */
+	assert(ret);
+	return ret;
+}
+
 void RenderThread::wait()
 {
 	if(status==STARTED)
@@ -216,7 +227,9 @@ void RenderThread::SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocat
 void* RenderThread::worker(RenderThread* th)
 {
 	sys=th->m_sys;
-	rt=th;
+	/* set TLS variable for getRenderThread() */
+	g_static_private_set(&renderThread,th,NULL);
+
 	const EngineData* e=th->engineData;
 	SemaphoreLighter lighter(th->initialized);
 
@@ -859,7 +872,7 @@ void RenderThread::plotProfilingData()
 
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
 
-	glUniform1f(rt->directUniform, 1);
+	glUniform1f(directUniform, 1);
 
 	char frameBuf[20];
 	snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
@@ -889,7 +902,7 @@ void RenderThread::plotProfilingData()
 	list<ThreadProfile*>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();it++)
 		(*it)->plot(1000000/m_sys->getFrameRate(),cr);
-	glUniform1f(rt->directUniform, 0);
+	glUniform1f(directUniform, 0);
 
 	mapCairoTexture(windowWidth, windowHeight);
 
@@ -958,7 +971,7 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 				0,th->windowHeight/2-40);
 	}
 
-	glUniform1f(rt->alphaUniform, 1);
+	glUniform1f(alphaUniform, 1);
 	mapCairoTexture(windowWidth, windowHeight);
 	glFlush();
 }

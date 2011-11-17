@@ -38,7 +38,6 @@
 using namespace std;
 
 TLSDATA DLL_PUBLIC lightspark::SystemState* sys=NULL;
-TLSDATA DLL_PUBLIC lightspark::RenderThread* rt=NULL;
 
 /**
  * \brief Constructor for NPDownloadManager

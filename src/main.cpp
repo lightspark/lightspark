@@ -35,7 +35,6 @@ using namespace std;
 using namespace lightspark;
 
 TLSDATA DLL_PUBLIC SystemState* sys;
-TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
 
 class StandaloneEngineData: public EngineData
 {

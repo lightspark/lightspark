@@ -54,7 +54,11 @@
 using namespace std;
 using namespace lightspark;
 
-TLSDATA bool lightspark::isVmThread=false;
+static GStaticPrivate is_vm_thread = G_STATIC_PRIVATE_INIT; /* TLS */
+bool lightspark::isVmThread()
+{
+	return g_static_private_get(&is_vm_thread);
+}
 
 uint32_t ABCVm::cur_recursion = 0;
 //these limits can be overwritten by a ScriptLimitsTag
@@ -1099,7 +1103,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 		return false;
 	//If the event is a synchronization and we are running in the VM context
 	//we should handle it immediately to avoid deadlock
-	if(isVmThread && (ev->getEventType()==SYNC))
+	if(isVmThread() && (ev->getEventType()==SYNC))
 	{
 		assert(obj.isNull());
 		handleEvent(make_pair(obj, ev));
@@ -1350,7 +1354,10 @@ void ABCVm::Run(ABCVm* th)
 	//Spin wait until the VM is aknowledged by the SystemState
 	sys=th->m_sys;
 	while(getVm()!=th);
-	isVmThread=true;
+
+	/* set TLS variable for isVmThread() */
+        g_static_private_set(&is_vm_thread,(void*)1,NULL);
+
 	if(th->m_sys->useJit)
 	{
 		llvm::JITExceptionHandling = true;

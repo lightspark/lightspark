@@ -43,7 +43,7 @@
 namespace lightspark
 {
 
-extern TLSDATA bool isVmThread;
+bool isVmThread();
 
 class u8
 {

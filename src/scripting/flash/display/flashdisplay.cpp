@@ -1459,7 +1459,7 @@ void DisplayObject::setOnStage(bool staged)
 		{
 			this->incRef();
 			_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));
-			if(isVmThread)
+			if(isVmThread())
 				ABCVm::publicHandleEvent(_MR(this),e);
 			else
 				getVm()->addEvent(_MR(this),e);
@@ -1468,7 +1468,7 @@ void DisplayObject::setOnStage(bool staged)
 		{
 			this->incRef();
 			_R<Event> e=_MR(Class<Event>::getInstanceS("removedFromStage"));
-			if(isVmThread)
+			if(isVmThread())
 				ABCVm::publicHandleEvent(_MR(this),e);
 			else
 				getVm()->addEvent(_MR(this),e);

@@ -1136,18 +1136,13 @@ std::istream& lightspark::operator>>(std::istream& stream, GRADIENTBEVELFILTER& 
 
 std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 {
-	if(pt->version<=5)
-	{
-		UI16_SWF t;
-		s >> t;
-		v.toParse=t;
-	}
-	else
-	{
-		UI32_SWF t;
-		s >> t;
-		v.toParse=t;
-	}
+	/* In SWF version <=5 this was UI16_SWF,
+	 * but parsing will then stop before we get here
+	 * to fallback on gnash
+	 */
+	UI32_SWF t;
+	s >> t;
+	v.toParse=t;
 	return s;
 }
 

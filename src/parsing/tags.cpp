@@ -173,11 +173,8 @@ _NR<Tag> TagFactory::readTag()
 			break;
 		case 69:
 			//FileAttributes tag is mandatory on version>=8 and must be the first tag
-			if(pt->version>=8)
-			{
-				if(!firstTag)
-					LOG(LOG_ERROR,_("FileAttributes tag not in the beginning"));
-			}
+			if(!firstTag)
+				LOG(LOG_ERROR,_("FileAttributes tag not in the beginning"));
 			ret=new FileAttributesTag(h,f);
 			break;
 		case 70:
@@ -227,17 +224,6 @@ _NR<Tag> TagFactory::readTag()
 			ret=new UnimplementedTag(h,f);
 	}
 
-	//Check if this clip is the main clip and if AVM2 has been enabled by a FileAttributes tag
-	if(topLevel && firstTag && pt->getRootMovie()==sys)
-	{
-		sys->needsAVM2(pt->useAVM2);
-		if(pt->useNetwork
-		&& sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
-		{
-			sys->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
-			LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
-		}
-	}
 	firstTag=false;
 
 	unsigned int end=f.tellg();
@@ -1163,12 +1149,10 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	in >> Name;
-	if(pt->version>=6)
-	{
-		UI8 NamedAnchor=in.peek();
-		if(NamedAnchor==1)
-			in >> NamedAnchor;
-	}
+	/* We only support SWF version >=6 */
+	UI8 NamedAnchor=in.peek();
+	if(NamedAnchor==1)
+		in >> NamedAnchor;
 }
 
 DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
@@ -1300,11 +1284,6 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 	UB(2,bs);
 	UseNetwork=UB(1,bs);
 	UB(24,bs);
-
-	if(ActionScript3)
-		pt->useAVM2=true;
-
-	pt->useNetwork = UseNetwork;
 }
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)

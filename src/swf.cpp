@@ -981,7 +981,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 }
 
 ParseThread::ParseThread(istream& in, Loader *_loader, tiny_string srcurl)
-  : version(0),useAVM2(false),useNetwork(false),
+  : version(0),
     f(in),zlibFilter(NULL),backend(NULL),loader(_loader),
     parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
@@ -989,7 +989,7 @@ ParseThread::ParseThread(istream& in, Loader *_loader, tiny_string srcurl)
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
-  : version(0),useAVM2(false),useNetwork(false),
+  : version(0),
     f(in),zlibFilter(NULL),backend(NULL),loader(NULL),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
@@ -1100,14 +1100,42 @@ void ParseThread::parseSWF(UI8 ver)
 	try
 	{
 		parseSWFHeader(root, ver);
+		if(root->version < 9)
+		{
+			LOG(LOG_INFO,"SWF version " << root->version << " is not handled by lightspark, falling back to gnash (if available)");
+			//Enable flash fallback
+			sys->needsAVM2(false);
+			return; /* no more parsing necessary, handled by fallback */
+		}
 
-		//Create a top level TagFactory
 		TagFactory factory(f, true);
+		_NR<Tag> tag=factory.readTag();
+
+		FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag.getPtr());
+		if(!fat)
+		{
+			LOG(LOG_ERROR,"Invalid SWF - First tag must be a FileAttributesTag!");
+			return;
+		}
+		//Check if this clip is the main clip then honour its FileAttributesTag
+		if(root == sys)
+		{
+			sys->needsAVM2(fat->ActionScript3);
+			if(!fat->ActionScript3)
+				return; /* no more parsing necessary, handled by fallback */
+			if(fat->UseNetwork
+			&& sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+			{
+				sys->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
+				LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
+			}
+		}
+
 		bool done=false;
 		bool empty=true;
 		while(!done)
 		{
-			_NR<Tag> tag=factory.readTag();
+			tag=factory.readTag();
 			switch(tag->getType())
 			{
 				case END_TAG:

@@ -688,13 +688,12 @@ public:
 
 class FileAttributesTag: public Tag
 {
-private:
+public:
 	UB UseDirectBlit;
 	UB UseGPU;
 	UB HasMetadata;
 	UB ActionScript3;
 	UB UseNetwork;
-public:
 	FileAttributesTag(RECORDHEADER h, std::istream& in);
 };
 

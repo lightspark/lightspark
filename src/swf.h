@@ -341,8 +341,6 @@ class ParseThread: public IThreadJob
 {
 public:
 	int version;
-	bool useAVM2;
-	bool useNetwork;
 	// Parse an object from stream. The type is detected
 	// automatically. After parsing the new object is available
 	// from getParsedObject().

@@ -49,7 +49,7 @@ AudioManager::AudioManager ( PluginManager *sharedPluginManager ) :
 	oAudioPlugin(NULL), selectedAudioBackend(""), pluginManager(sharedPluginManager)
 {
 //	  string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
-	string DesiredAudio = sys->config->getAudioBackendName();
+	string DesiredAudio = getSys()->config->getAudioBackendName();
 	set_audiobackend ( DesiredAudio );
 }
 

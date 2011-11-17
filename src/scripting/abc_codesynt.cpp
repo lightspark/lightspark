@@ -499,7 +499,7 @@ static llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynam
 {
 	//decrement stack index
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(sys->currentVm->llvm_context,32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context,32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 

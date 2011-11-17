@@ -84,7 +84,7 @@ void DoABCTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
 	/* currentVM will free the context*/
-	sys->currentVm->addEvent(NullRef,_MR(new ABCContextInitEvent(context,false)));
+	getVm()->addEvent(NullRef,_MR(new ABCContextInitEvent(context,false)));
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -108,7 +108,7 @@ void DoABCDefineTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	/* currentVM will free the context*/
-	sys->currentVm->addEvent(NullRef,_MR(new ABCContextInitEvent(context,((int32_t)Flags)&1)));
+	getVm()->addEvent(NullRef,_MR(new ABCContextInitEvent(context,((int32_t)Flags)&1)));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -137,14 +137,14 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			//This will be done later
 			root->bindToName(className);
 			root->incRef();
-			sys->currentVm->addEvent(NullRef, _MR(new BindClassEvent(_MR(root),className)));
+			getVm()->addEvent(NullRef, _MR(new BindClassEvent(_MR(root),className)));
 
 		}
 		else
 		{
 			_R<DictionaryTag> t=root->dictionaryLookup(Tags[i]);
 			_R<BindClassEvent> e(new BindClassEvent(t,className));
-			sys->currentVm->addEvent(NullRef,e);
+			getVm()->addEvent(NullRef,e);
 		}
 	}
 }
@@ -754,7 +754,7 @@ ABCContext::ABCContext(istream& in)
 
 	hasRunScriptInit.resize(scripts.size(),false);
 #ifdef PROFILING_SUPPORT
-	sys->contextes.push_back(this);
+	getSys()->contextes.push_back(this);
 #endif
 }
 
@@ -1070,14 +1070,14 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				if(!ev->clip.isNull())
 					ev->clip->initFrame();
 				else
-					sys->getStage()->initFrame();
+					m_sys->getStage()->initFrame();
 				break;
 			}
 			case ADVANCE_FRAME:
 			{
 				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
-				sys->getStage()->advanceFrame();
+				m_sys->getStage()->advanceFrame();
 				ev->done.signal();
 				break;
 			}
@@ -1352,7 +1352,7 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 void ABCVm::Run(ABCVm* th)
 {
 	//Spin wait until the VM is aknowledged by the SystemState
-	sys=th->m_sys;
+	setTLSSys(th->m_sys);
 	while(getVm()!=th);
 
 	/* set TLS variable for isVmThread() */
@@ -1630,7 +1630,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				QName className(mname->name_s,mname->ns[0].name);
 
 				// Should the new definition overwrite the old one?
-				if(sys->classes.find(className)!=sys->classes.end())
+				if(getSys()->classes.find(className)!=getSys()->classes.end())
 				{
 					LOG(LOG_TRACE, "Trying to re-define interface " << className.getQualifiedName());
 					break;

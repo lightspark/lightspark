@@ -24,6 +24,7 @@
 #include "npscriptobject.h"
 
 using namespace std;
+using namespace lightspark;
 
 /* -- NPIdentifierObject -- */
 // Constructors
@@ -849,8 +850,8 @@ void NPScriptObject::callExternal(void* d)
 {
 	EXT_CALL_DATA* data = static_cast<EXT_CALL_DATA*>(d);
 	nsPluginInstance* plugin = (nsPluginInstance*)data->instance->pdata;
-	lightspark::SystemState* prevSys = sys;
-	sys=plugin->m_sys;
+	lightspark::SystemState* prevSys = getSys();
+	setTLSSys(plugin->m_sys);
 
 
 	// Assert we are in the main plugin thread
@@ -907,7 +908,7 @@ void NPScriptObject::callExternal(void* d)
 	}
 
 	sem_post(data->callStatus);
-	sys=prevSys;
+	setTLSSys(prevSys);
 }
 
 void NPScriptObject::setException(const std::string& message) const
@@ -1096,28 +1097,28 @@ NPScriptObjectGW::~NPScriptObjectGW()
 // Properties
 bool NPScriptObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* result)
 {
-	lightspark::SystemState* prevSys = sys;
-	sys = ((NPScriptObjectGW*) obj)->m_sys;
-	
+	lightspark::SystemState* prevSys = getSys();
+	setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
+
 	NPVariantObject* resultObj = ((NPScriptObjectGW*) obj)->so->getProperty(NPIdentifierObject(id));
 	if(resultObj == NULL)
 	{
-		sys = NULL;
+		setTLSSys( NULL );
 		return false;
 	}
 
 	resultObj->copy(*result);
 	delete resultObj;
 
-	sys = prevSys;
+	setTLSSys( prevSys );
 	return true;
 }
 
 // Enumeration
 bool NPScriptObjectGW::enumerate(NPObject* obj, NPIdentifier** value, uint32_t* count)
 {
-	lightspark::SystemState* prevSys = sys;
-	sys = ((NPScriptObjectGW*) obj)->m_sys;
+	lightspark::SystemState* prevSys = getSys();
+	setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
 
 	NPScriptObject* o = ((NPScriptObjectGW*) obj)->so;
 	lightspark::ExtIdentifier** ids = NULL;
@@ -1135,6 +1136,6 @@ bool NPScriptObjectGW::enumerate(NPObject* obj, NPIdentifier** value, uint32_t* 
 	if(ids != NULL)
 		delete ids;
 
-	sys = prevSys;
+	setTLSSys( prevSys );
 	return success;
 }

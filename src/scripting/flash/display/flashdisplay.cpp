@@ -118,16 +118,16 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 	{
 		SpinlockLocker l(spinlock);
 		bytesLoaded=b;
-		if(sys && sys->currentVm)
+		if(isVmThread())
 		{
 			this->incRef();
-			sys->currentVm->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
+			getVm()->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
 		}
 		if(loadStatus==INIT_SENT)
 		{
 			//The clip is also complete now
 			this->incRef();
-			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
+			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 			loadStatus=COMPLETE;
 		}
 	}
@@ -136,7 +136,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 void LoaderInfo::sendInit()
 {
 	this->incRef();
-	sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("init")));
+	getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("init")));
 	SpinlockLocker l(spinlock);
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
@@ -144,7 +144,7 @@ void LoaderInfo::sendInit()
 	{
 		//The clip is also complete now
 		this->incRef();
-		sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
+		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 		loadStatus=COMPLETE;
 	}
 }
@@ -249,7 +249,7 @@ ASFUNCTIONBODY(Loader,_constructor)
 	th->incRef();
 	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(th)));
 	//TODO: the parameters should only be set if the loaded clip uses AS3. See specs.
-	_NR<ASObject> p=sys->getParameters();
+	_NR<ASObject> p=getSys()->getParameters();
 	if(!p.isNull())
 	{
 		p->incRef();
@@ -292,7 +292,7 @@ ASFUNCTIONBODY(Loader,load)
 	th->source=URL;
 	//To be decreffed in jobFence
 	th->incRef();
-	sys->addJob(th);
+	getSys()->addJob(th);
 	return NULL;
 }
 
@@ -313,7 +313,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 		th->source=BYTES;
 		//To be decreffed in jobFence
 		th->incRef();
-		sys->addJob(th);
+		getSys()->addJob(th);
 	}
 	return NULL;
 }
@@ -358,23 +358,23 @@ void Loader::execute()
 		//TODO: add security checks
 		LOG(LOG_CALLS,_("Loader async execution ") << url);
 		assert_and_throw(postData.empty());
-		downloader=sys->downloadManager->download(url, false, contentLoaderInfo.getPtr());
+		downloader=getSys()->downloadManager->download(url, false, contentLoaderInfo.getPtr());
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
-			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
-			sys->downloadManager->destroy(downloader);
+			getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			getSys()->downloadManager->destroy(downloader);
 			return;
 		}
-		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
+		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
 		ParseThread local_pt(s,this,url.getParsedURL());
 		local_pt.run();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
 			SpinlockLocker l(downloaderLock);
-			sys->downloadManager->destroy(downloader);
+			getSys()->downloadManager->destroy(downloader);
 			downloader=NULL;
 		}
 
@@ -382,7 +382,7 @@ void Loader::execute()
 		if(obj.isNull())
 		{
 			// The stream did not contain RootMovieClip or Bitmap
-			sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
 			return;
 		}
 
@@ -412,7 +412,7 @@ void Loader::execute()
 		local_pt.run();
 		bytes->decRef();
 		//Add a complete event for this object
-		sys->currentVm->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));
+		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));
 	}
 	loaded=true;
 }
@@ -506,14 +506,14 @@ ASFUNCTIONBODY(Sprite,_startDrag)
 	}
 
 	th->incRef();
-	sys->getInputThread()->startDrag(_MR(th), bounds, offset);
+	getSys()->getInputThread()->startDrag(_MR(th), bounds, offset);
 	return NULL;
 }
 
 ASFUNCTIONBODY(Sprite,_stopDrag)
 {
 	Sprite* th=Class<Sprite>::cast(obj);
-	sys->getInputThread()->stopDrag(th);
+	getSys()->getInputThread()->stopDrag(th);
 	return NULL;
 }
 
@@ -677,13 +677,13 @@ void DisplayObject::Render(bool maskEnabled)
 void DisplayObject::hitTestPrologue() const
 {
 	if(!mask.isNull())
-		sys->getInputThread()->pushMask(mask.getPtr(),mask->getConcatenatedMatrix().getInverted());
+		getSys()->getInputThread()->pushMask(mask.getPtr(),mask->getConcatenatedMatrix().getInverted());
 }
 
 void DisplayObject::hitTestEpilogue() const
 {
 	if(!mask.isNull())
-		sys->getInputThread()->popMask();
+		getSys()->getInputThread()->popMask();
 }
 
 /*
@@ -1921,7 +1921,7 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 
 Vector2f DisplayObject::getLocalMousePos()
 {
-	return getConcatenatedMatrix().getInverted().multiply2D(sys->getInputThread()->getMousePos());
+	return getConcatenatedMatrix().getInverted().multiply2D(getSys()->getInputThread()->getMousePos());
 }
 
 ASFUNCTIONBODY(DisplayObject,_getMouseX)
@@ -2053,8 +2053,8 @@ InteractiveObject::InteractiveObject():mouseEnabled(true),doubleClickEnabled(fal
 
 InteractiveObject::~InteractiveObject()
 {
-	if(sys && sys->getInputThread())
-		sys->getInputThread()->removeListener(this);
+	if(getSys()->getInputThread())
+		getSys()->getInputThread()->removeListener(this);
 }
 
 _NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
@@ -2080,9 +2080,9 @@ ASFUNCTIONBODY(InteractiveObject,_constructor)
 	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
 	//Object registered very early are not supported this way (Stage for example)
-	if(sys && sys->getInputThread())
-		sys->getInputThread()->addListener(th);
-	
+	if(getSys()->getInputThread())
+		getSys()->getInputThread()->addListener(th);
+
 	return NULL;
 }
 
@@ -2293,7 +2293,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	th->_addChildAt(d,index);
 
 	//Notify the object
-	sys->currentVm->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
+	getVm()->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
 
 	//incRef again as the value is getting returned
 	d->incRef();
@@ -2318,7 +2318,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
-	sys->currentVm->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
+	getVm()->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
 
 	d->incRef();
 	return d.getPtr();
@@ -2737,11 +2737,11 @@ _NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t 
 uint32_t Stage::internalGetWidth() const
 {
 	uint32_t width;
-	if(sys->scaleMode==SystemState::NO_SCALE)
-		width=sys->getRenderThread()->windowWidth;
+	if(getSys()->scaleMode==SystemState::NO_SCALE)
+		width=getSys()->getRenderThread()->windowWidth;
 	else
 	{
-		RECT size=sys->getFrameSize();
+		RECT size=getSys()->getFrameSize();
 		width=size.Xmax/20;
 	}
 	return width;
@@ -2750,11 +2750,11 @@ uint32_t Stage::internalGetWidth() const
 uint32_t Stage::internalGetHeight() const
 {
 	uint32_t height;
-	if(sys->scaleMode==SystemState::NO_SCALE)
-		height=sys->getRenderThread()->windowHeight;
+	if(getSys()->scaleMode==SystemState::NO_SCALE)
+		height=getSys()->getRenderThread()->windowHeight;
 	else
 	{
-		RECT size=sys->getFrameSize();
+		RECT size=getSys()->getFrameSize();
 		height=size.Ymax/20;
 	}
 	return height;
@@ -2774,13 +2774,13 @@ ASFUNCTIONBODY(Stage,_getStageHeight)
 
 ASFUNCTIONBODY(Stage,_getLoaderInfo)
 {
-	return SystemState::_getLoaderInfo(sys,NULL,0);
+	return SystemState::_getLoaderInfo(getSys(),NULL,0);
 }
 
 ASFUNCTIONBODY(Stage,_getScaleMode)
 {
 	//Stage* th=static_cast<Stage*>(obj);
-	switch(sys->scaleMode)
+	switch(getSys()->scaleMode)
 	{
 		case SystemState::EXACT_FIT:
 			return Class<ASString>::getInstanceS("exactFit");
@@ -2799,15 +2799,15 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 	//Stage* th=static_cast<Stage*>(obj);
 	const tiny_string& arg0=args[0]->toString();
 	if(arg0=="exactFit")
-		sys->scaleMode=SystemState::EXACT_FIT;
-	else if(arg0=="showAll")	
-		sys->scaleMode=SystemState::SHOW_ALL;
-	else if(arg0=="noBorder")	
-		sys->scaleMode=SystemState::NO_BORDER;
-	else if(arg0=="noScale")	
-		sys->scaleMode=SystemState::NO_SCALE;
-	
-	RenderThread* rt=sys->getRenderThread();
+		getSys()->scaleMode=SystemState::EXACT_FIT;
+	else if(arg0=="showAll")
+		getSys()->scaleMode=SystemState::SHOW_ALL;
+	else if(arg0=="noBorder")
+		getSys()->scaleMode=SystemState::NO_BORDER;
+	else if(arg0=="noScale")
+		getSys()->scaleMode=SystemState::NO_SCALE;
+
+	RenderThread* rt=getSys()->getRenderThread();
 	rt->requestResize(rt->windowWidth, rt->windowHeight);
 	return NULL;
 }
@@ -2817,7 +2817,7 @@ void TokenContainer::requestInvalidation()
 	if(tokens.empty())
 		return;
 	owner->incRef();
-	sys->addToInvalidateQueue(_MR(owner));
+	getSys()->addToInvalidateQueue(_MR(owner));
 }
 
 void TokenContainer::invalidate()
@@ -2837,7 +2837,7 @@ void TokenContainer::invalidate()
 	CairoRenderer* r=new CairoTokenRenderer(owner, owner->cachedSurface, tokens,
 				owner->getConcatenatedMatrix(), x, y, width, height, scaling,
 				owner->getConcatenatedAlpha());
-	sys->addJob(r);
+	getSys()->addJob(r);
 }
 
 bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const
@@ -2850,11 +2850,11 @@ _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, 
 	//TODO: test against the CachedSurface
 	if(CairoTokenRenderer::hitTest(tokens, scaling, x, y))
 	{
-		if(sys->getInputThread()->isMaskPresent())
+		if(getSys()->getInputThread()->isMaskPresent())
 		{
 			number_t globalX, globalY;
 			owner->getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-			if(!sys->getInputThread()->isMasked(globalX, globalY))//You must be under the mask to be hit
+			if(!getSys()->getInputThread()->isMasked(globalX, globalY))//You must be under the mask to be hit
 				return NullRef;
 		}
 		return last;

@@ -216,7 +216,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 
 _NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
-	assert_and_throw(!sys->getInputThread()->isMaskPresent());
+	assert_and_throw(!getSys()->getInputThread()->isMaskPresent());
 	assert_and_throw(mask.isNull());
 	if(x>=0 && x<=width && y>=0 && y<=height)
 		return last;
@@ -231,8 +231,8 @@ Sound::Sound():downloader(NULL),stopped(false),audioDecoder(NULL),audioStream(NU
 
 Sound::~Sound()
 {
-	if(downloader && sys->downloadManager)
-		sys->downloadManager->destroy(downloader);
+	if(downloader && getSys()->downloadManager)
+		getSys()->downloadManager->destroy(downloader);
 }
 
 void Sound::sinit(Class_base* c)
@@ -270,7 +270,7 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//Notify an error during loading
 		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
+		getVm()->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
 		return NULL;
 	}
 
@@ -280,18 +280,18 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//This is a GET request
 		//Use disk cache our downloaded files
-		th->downloader=sys->downloadManager->download(th->url, true, th);
+		th->downloader=getSys()->downloadManager->download(th->url, true, th);
 	}
 	else
 	{
-		th->downloader=sys->downloadManager->downloadWithData(th->url, th->postData, th);
+		th->downloader=getSys()->downloadManager->downloadWithData(th->url, th->postData, th);
 		//Clean up the postData for the next load
 		th->postData.clear();
 	}
 	if(th->downloader->hasFailed())
 	{
 		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
+		getVm()->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
 	}
 	return NULL;
 }
@@ -307,7 +307,7 @@ ASFUNCTIONBODY(Sound,play)
 	{
 		//Add the object as a job so that playback starts
 		th->incRef();
-		sys->addJob(th);
+		getSys()->addJob(th);
 	}
 
 	return new Undefined;
@@ -338,8 +338,8 @@ void Sound::execute()
 				audioDecoder=streamDecoder->audioDecoder;
 
 			//TODO: Move the audio plugin check before
-			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
-				audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
+			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
+				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
 
 			if(audioStream && audioStream->paused() && !audioStream->pause)
 			{
@@ -380,7 +380,7 @@ void Sound::execute()
 		Locker l(mutex);
 		audioDecoder=NULL;
 		if(audioStream)
-			sys->audioManager->freeStreamPlugin(audioStream);
+			getSys()->audioManager->freeStreamPlugin(audioStream);
 		audioStream=NULL;
 	}
 	delete streamDecoder;
@@ -416,11 +416,11 @@ void Sound::setBytesLoaded(uint32_t b)
 	{
 		bytesLoaded=b;
 		this->incRef();
-		sys->currentVm->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
+		getVm()->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
 		if(bytesLoaded==bytesTotal)
 		{
 			this->incRef();
-			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
+			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 		}
 	}
 }

@@ -66,7 +66,7 @@ void InputThread::wait()
 gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
 {
 	//Set sys to this SystemState
-	sys=th->m_sys;
+	setTLSSys(th->m_sys);
 	gboolean ret=FALSE;
 	switch(event->type)
 	{

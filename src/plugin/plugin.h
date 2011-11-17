@@ -31,6 +31,9 @@
 #include "backends/urlutils.h"
 #include "npscriptobject.h"
 
+namespace lightspark
+{
+
 class NPDownloader;
 typedef void(*helper_t)(void*);
 
@@ -120,4 +123,5 @@ private:
 	lightspark::ParseThread* m_pt;
 };
 
+}
 #endif // __PLUGIN_H__

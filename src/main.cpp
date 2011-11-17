@@ -34,8 +34,6 @@
 using namespace std;
 using namespace lightspark;
 
-TLSDATA DLL_PUBLIC SystemState* sys;
-
 class StandaloneEngineData: public EngineData
 {
 public:
@@ -66,7 +64,7 @@ public:
 
 static void StandaloneDestroy(GtkWidget *widget, gpointer data)
 {
-	sys->setShutdownFlag();
+	getSys()->setShutdownFlag();
 	gtk_main_quit();
 }
 
@@ -226,7 +224,8 @@ int main(int argc, char* argv[])
 	ParseThread* pt = new ParseThread(f);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration
-	sys=new SystemState(pt, fileSize);
+	SystemState* sys =new SystemState(pt, fileSize);
+	setTLSSys(sys);
 
 	//This setting allows qualifying filename-only paths to fully qualified paths
 	//When the URL parameter is set, set the root URL to the given parameter

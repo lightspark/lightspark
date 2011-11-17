@@ -2239,7 +2239,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	const int hit_threshold=10;
 	assert_and_throw(mi->body);
 
-	if(ABCVm::cur_recursion == sys->currentVm->limits.max_recursion)
+	if(ABCVm::cur_recursion == getVm()->limits.max_recursion)
 	{
 		for(uint32_t i=0;i<numArgs;i++)
 			args[i]->decRef();
@@ -2275,7 +2275,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	}
 
 	//Temporarily disable JITting
-	if(!mi->body->exception_count && sys->useJit && (hit_count==hit_threshold || sys->useInterpreter==false))
+	if(!mi->body->exception_count && getSys()->useJit && (hit_count==hit_threshold || getSys()->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();
@@ -2385,7 +2385,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	{
 		try
 		{
-			if(mi->body->exception_count || (val==NULL && sys->useInterpreter))
+			if(mi->body->exception_count || (val==NULL && getSys()->useInterpreter))
 			{
 				//This is not a hot function, execute it using the interpreter
 				ret=ABCVm::executeFunction(this,&cc);
@@ -2980,8 +2980,8 @@ bool Type::isTypeResolvable(const multiname* mn)
 		return true;
 
 	//Check if the class has already been defined
-	auto i = sys->classes.find(QName(mn->name_s, mn->ns[0].name));
-	return i != sys->classes.end();
+	auto i = getSys()->classes.find(QName(mn->name_s, mn->ns[0].name));
+	return i != getSys()->classes.end();
 }
 
 /*
@@ -3011,8 +3011,8 @@ const Type* Type::getTypeFromMultiname(const multiname* mn)
 	 * sys->classes, but getGlobal()->getVariableAndTargetByMultiname()
 	 * would still return "Undefined".
 	 */
-	auto i = sys->classes.find(QName(mn->name_s, mn->ns[0].name));
-	if(i != sys->classes.end())
+	auto i = getSys()->classes.find(QName(mn->name_s, mn->ns[0].name));
+	if(i != getSys()->classes.end())
 		typeObject = i->second;
 	else
 	{
@@ -3263,12 +3263,12 @@ Class_object* Class_object::getClass()
 {
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName("Class",""));
+	std::map<QName, Class_base*>::iterator it=getSys()->classes.find(QName("Class",""));
 	Class_object* ret=NULL;
-	if(it==sys->classes.end()) //This class is not yet in the map, create it
+	if(it==getSys()->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class_object();
-		sys->classes.insert(std::make_pair(QName("Class",""),ret));
+		getSys()->classes.insert(std::make_pair(QName("Class",""),ret));
 	}
 	else
 		ret=static_cast<Class_object*>(it->second);
@@ -3905,9 +3905,9 @@ ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, c
 
 Class<IFunction>* Class<IFunction>::getClass()
 {
-	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
+	std::map<QName, Class_base*>::iterator it=getSys()->classes.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
 	Class<IFunction>* ret=NULL;
-	if(it==sys->classes.end()) //This class is not yet in the map, create it
+	if(it==getSys()->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
 		ret->prototype = _MNR(new_asobject());
@@ -3919,7 +3919,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 
 		ret->prototype->setprop_prototype(ret->super->prototype);
 
-		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
+		getSys()->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 
 		//we cannot use sinit, as we need to setup 'this_class' before calling
 		//addPrototypeGetter and setDeclaredMethodByQName.

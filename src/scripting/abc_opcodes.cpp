@@ -1888,8 +1888,8 @@ void ABCVm::newClass(call_context* th, int n)
 	assert_and_throw(mname->ns.size()==1);
 	QName className(mname->name_s,mname->ns[0].name);
 	//Check if this class has been already defined
-	auto oldDefinition=sys->classes.find(className);
-	if(oldDefinition!=sys->classes.end())
+	auto oldDefinition=getSys()->classes.find(className);
+	if(oldDefinition!=getSys()->classes.end())
 	{
 		LOG(LOG_CALLS,_("Class ") << className << _(" already defined. Pushing previous definition"));
 		baseClass->decRef();

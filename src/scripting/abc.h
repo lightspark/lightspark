@@ -704,12 +704,12 @@ ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned 
 
 inline GlobalObject* getGlobal()
 {
-	return sys->currentVm->global;
+	return getSys()->currentVm->global;
 }
 
 inline ABCVm* getVm()
 {
-	return sys->currentVm;
+	return getSys()->currentVm;
 }
 
 std::istream& operator>>(std::istream& in, u8& v);

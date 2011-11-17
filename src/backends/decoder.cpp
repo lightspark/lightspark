@@ -41,7 +41,7 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		frameHeight=h;
 		LOG(LOG_INFO,_("VIDEO DEC: Video frame size ") << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
-		videoTexture=sys->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
+		videoTexture=getSys()->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
 		return true;
 	}
 	else

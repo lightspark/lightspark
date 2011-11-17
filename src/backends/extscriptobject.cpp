@@ -374,7 +374,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		catch(LightsparkException& e)
 		{
 			LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
-			sys->setError(e.cause);
+			getSys()->setError(e.cause);
 		}
 
 		// Sync the syncEvent since we called the function synchronously
@@ -450,7 +450,7 @@ void ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
-		sys->setError(e.cause);
+		getSys()->setError(e.cause);
 		success = false;
 	}
 }

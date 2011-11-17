@@ -371,6 +371,10 @@ private:
 	void parseBitmap();
 };
 
+/* Returns the thread-specific SystemState */
+SystemState* getSys() DLL_PUBLIC;
+/* Set thread-specific SystemState to be returned by getSys() */
+void setTLSSys(SystemState* sys) DLL_PUBLIC;
+
 };
-extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
 #endif

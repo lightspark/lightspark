@@ -112,9 +112,7 @@ long lrint(double f);
 #	define ACQUIRE_RELEASE_FLAG(x) ATOMIC_INT32(x)
 #	define ACQUIRE_READ(x) InterlockedCompareExchange(const_cast<long*>(&x),1,1)
 #	define RELEASE_WRITE(x, v) InterlockedExchange(&x,v)
-#	define TLSDATA __declspec( thread )
 #else
-#	define TLSDATA __thread
 #	define CALLBACK
 
 //Support both atomic header ( gcc >= 4.6 ), and earlier ( stdatomic.h )

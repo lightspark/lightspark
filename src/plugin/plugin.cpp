@@ -36,8 +36,7 @@
 #define PLUGIN_DESCRIPTION "Shockwave Flash 10.2 r"SHORTVERSION
 
 using namespace std;
-
-TLSDATA DLL_PUBLIC lightspark::SystemState* sys=NULL;
+using namespace lightspark;
 
 /**
  * \brief Constructor for NPDownloadManager
@@ -264,7 +263,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 {
 	if(aPlugin)
 		delete (nsPluginInstance *)aPlugin;
-	sys=NULL;
+	setTLSSys( NULL );
 }
 
 ////////////////////////////////////////
@@ -276,7 +275,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	mainDownloaderStream(NULL),mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
 {
 	cout << "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others" << endl;
-	sys=NULL;
+	setTLSSys( NULL );
 	m_sys=new lightspark::SystemState(NULL,0);
 	//As this is the plugin, enable fallback on Gnash for older clips
 	m_sys->enableGnashFallback();
@@ -307,13 +306,13 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
 
 	//The sys var should be NULL in this thread
-	sys=NULL;
+	setTLSSys( NULL );
 }
 
 nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
-	sys=m_sys;
+	setTLSSys(m_sys);
 	if(mainDownloader)
 		mainDownloader->stop();
 
@@ -331,7 +330,7 @@ nsPluginInstance::~nsPluginInstance()
 
 	m_sys->destroy();
 	delete m_pt;
-	sys=NULL;
+	setTLSSys(NULL);
 }
 
 void nsPluginInstance::draw()
@@ -489,7 +488,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 {
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
 	LOG(LOG_INFO,_("Newstream for ") << stream->url);
-	sys=m_sys;
+	setTLSSys( m_sys );
 	if(dl)
 	{
 		//Check if async destructin of this downloader has been requested
@@ -545,8 +544,8 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
-	sys=NULL;
-	return NPERR_NO_ERROR; 
+	setTLSSys( NULL );
+	return NPERR_NO_ERROR;
 }
 
 void nsPluginInstance::StreamAsFile(NPStream* stream, const char* fname)
@@ -567,7 +566,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 {
 	if(stream->pdata)
 	{
-		sys=m_sys;
+		setTLSSys( m_sys );
 		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 
 		//Check if async destructin of this downloader has been requested
@@ -582,7 +581,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 		if(dl->hasFailed())
 			return -1;
 		dl->append((uint8_t*)buffer,len);
-		sys=NULL;
+		setTLSSys( NULL );
 		return len;
 	}
 	else
@@ -591,7 +590,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
-	sys=m_sys;
+	setTLSSys(m_sys);
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 	assert(dl);
 	//Check if async destructin of this downloader has been requested
@@ -609,7 +608,7 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 	}
 	//Notify our downloader of what happened
 	URLNotify(stream->url, reason, stream->pdata);
-	sys=NULL;
+	setTLSSys(NULL);
 	return NPERR_NO_ERROR;
 }
 

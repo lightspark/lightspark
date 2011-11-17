@@ -29,8 +29,6 @@
 using namespace std;
 using namespace lightspark;
 
-TLSDATA DLL_PUBLIC SystemState* sys=NULL;
-
 extern int count_reuse;
 extern int count_alloc;
 
@@ -83,7 +81,8 @@ int main(int argc, char* argv[])
 	Log::initLogging(log_level);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration
-	sys=new SystemState(NULL,0);
+	SystemState* sys=new SystemState(NULL,0);
+	setTLSSys(sys);
 
 	//Set a bit of SystemState using parameters
 	//One of useInterpreter or useJit must be enabled

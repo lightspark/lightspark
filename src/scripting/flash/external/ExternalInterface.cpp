@@ -40,15 +40,15 @@ void ExternalInterface::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)
 {
-	return abstract_b(sys->extScriptObject != NULL);
+	return abstract_b(getSys()->extScriptObject != NULL);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 {
-	if(sys->extScriptObject == NULL)
+	if(getSys()->extScriptObject == NULL)
 		return Class<ASString>::getInstanceS("");
 
-	ExtVariant* object = sys->extScriptObject->getProperty("name");
+	ExtVariant* object = getSys()->extScriptObject->getProperty("name");
 	if(object == NULL)
 		return Class<ASString>::getInstanceS("");
 
@@ -59,40 +59,40 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 
 ASFUNCTIONBODY(ExternalInterface, _getMarshallExceptions)
 {
-	if(sys->extScriptObject == NULL)
+	if(getSys()->extScriptObject == NULL)
 		return abstract_b(false);
 	else
-		return abstract_b(sys->extScriptObject->getMarshallExceptions());
+		return abstract_b(getSys()->extScriptObject->getMarshallExceptions());
 }
 
 ASFUNCTIONBODY(ExternalInterface, _setMarshallExceptions)
 {
-	if(sys->extScriptObject != NULL)
-		sys->extScriptObject->setMarshallExceptions(Boolean_concrete(args[0]));
+	if(getSys()->extScriptObject != NULL)
+		getSys()->extScriptObject->setMarshallExceptions(Boolean_concrete(args[0]));
 	return NULL;
 }
 
 
 ASFUNCTIONBODY(ExternalInterface,addCallback)
 {
-	if(sys->extScriptObject == NULL)
+	if(getSys()->extScriptObject == NULL)
 		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen == 2);
 
 	if(args[1]->getObjectType() == T_NULL)
-		sys->extScriptObject->removeMethod(args[0]->toString().raw_buf());
+		getSys()->extScriptObject->removeMethod(args[0]->toString().raw_buf());
 	else
 	{
 		IFunction* f=static_cast<IFunction*>(args[1]);
-		sys->extScriptObject->setMethod(args[0]->toString().raw_buf(), new ExtASCallback(f));
+		getSys()->extScriptObject->setMethod(args[0]->toString().raw_buf(), new ExtASCallback(f));
 	}
 	return abstract_b(true);
 }
 
 ASFUNCTIONBODY(ExternalInterface,call)
 {
-	if(sys->extScriptObject == NULL)
+	if(getSys()->extScriptObject == NULL)
 		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen >= 1 && args[0]->getObjectType() == T_STRING);
@@ -106,7 +106,7 @@ ASFUNCTIONBODY(ExternalInterface,call)
 
 	ASObject* asobjResult = NULL;
 	// Let the external script object call the external method
-	bool callSuccess = sys->extScriptObject->callExternal(args[0]->toString().raw_buf(), callArgs, argslen-1, &asobjResult);
+	bool callSuccess = getSys()->extScriptObject->callExternal(args[0]->toString().raw_buf(), callArgs, argslen-1, &asobjResult);
 
 	// Delete converted arguments
 	for(uint32_t i = 0; i < argslen-1; i++)

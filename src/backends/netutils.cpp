@@ -206,7 +206,7 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached,
 	}
 	downloader->enableFencingWaiting();
 	addDownloader(downloader);
-	sys->addJob(downloader);
+	getSys()->addJob(downloader);
 	return downloader;
 }
 
@@ -237,7 +237,7 @@ Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, cons
 	}
 	downloader->enableFencingWaiting();
 	addDownloader(downloader);
-	sys->addJob(downloader);
+	getSys()->addJob(downloader);
 	return downloader;
 }
 
@@ -768,7 +768,7 @@ void Downloader::openCache()
 	if(cached && !cache.is_open())
 	{
 		//Create a temporary file(name)
-		std::string cacheFilenameS = sys->config->getCacheDirectory() + "/" + sys->config->getCachePrefix() + "XXXXXX";
+		std::string cacheFilenameS = getSys()->config->getCacheDirectory() + "/" + getSys()->config->getCachePrefix() + "XXXXXX";
 		char* cacheFilenameC = g_newa(char,cacheFilenameS.length()+1);
 		strncpy(cacheFilenameC, cacheFilenameS.c_str(), cacheFilenameS.length());
 		cacheFilenameC[cacheFilenameS.length()] = '\0';
@@ -1111,7 +1111,7 @@ void Downloader::waitForData()
 /**
  * \brief Wait for termination of the downloader
  *
- * If \c sys->isShuttingDown(), calls \c setFailed() and returns.
+ * If \c getSys()->isShuttingDown(), calls \c setFailed() and returns.
  * Otherwise if \c !hasTerminated: wait for the \c terminated signal and set \c hasTerminated to \c true
  * Waits for the mutex at start and releases the mutex when finished.
  * \post \c terminated signal has been handled
@@ -1121,7 +1121,7 @@ void Downloader::waitForTermination()
 {
 	sem_wait(&mutex);
 	//-- Lock acquired
-	if(sys->isShuttingDown())
+	if(getSys()->isShuttingDown())
 	{
 		setFailed();
 		//++ Release lock

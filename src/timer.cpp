@@ -133,7 +133,7 @@ void TimerThread::dumpJobs()
 
 void* TimerThread::timer_worker(TimerThread* th)
 {
-	sys=th->m_sys;
+	setTLSSys(th->m_sys);
 	while(1)
 	{
 		//Wait until a time expires

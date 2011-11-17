@@ -275,7 +275,7 @@ void TextField::requestInvalidation()
 {
 	incRef();
 	updateSizes();
-	sys->addToInvalidateQueue(_MR(this));
+	getSys()->addToInvalidateQueue(_MR(this));
 }
 
 void TextField::invalidate()
@@ -303,7 +303,7 @@ void TextField::invalidate()
 	CairoPangoRenderer* r=new CairoPangoRenderer(this, cachedSurface, *this,
 				getConcatenatedMatrix(), x, y, width, height, 1.0f,
 				getConcatenatedAlpha());
-	sys->addJob(r);
+	getSys()->addJob(r);
 }
 
 void TextField::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const

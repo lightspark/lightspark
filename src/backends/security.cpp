@@ -228,7 +228,7 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 		master = addURLPolicyFile(masterURL);
 
 	if(loadPendingPolicies)
-		sys->securityManager->loadPolicyFile(master);
+		getSys()->securityManager->loadPolicyFile(master);
 
 	sem_wait(&mutex);
 	//-- Lock acquired
@@ -282,7 +282,7 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 					//++ Release lock
 					sem_post(&mutex);
 					//NOTE: loadPolicyFile() will change pendingURLPFiles, erasing & moving to loadURLPFiles
-					sys->securityManager->loadPolicyFile((*i).second);
+					getSys()->securityManager->loadPolicyFile((*i).second);
 					sem_wait(&mutex);
 					//-- Lock acquired
 
@@ -385,7 +385,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSandboxURL(const URLI
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateLocalDirectoryURL(const URLInfo& url)
 {
 	//The URL is local and points to a directory above the origin
-	if(url.getProtocol() == "file" && !url.isSubOf(sys->getOrigin()))
+	if(url.getProtocol() == "file" && !url.isSubOf(getSys()->getOrigin()))
 		return NA_RESTRICT_LOCAL_DIRECTORY;
 
 	return ALLOWED;
@@ -431,7 +431,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		bool loadPendingPolicies)
 {
 	//This check doesn't apply to local files
-	if(url.getProtocol() == "file" && sys->getOrigin().getProtocol() == "file")
+	if(url.getProtocol() == "file" && getSys()->getOrigin().getProtocol() == "file")
 		return ALLOWED;
 
 	//Streaming from RTMP is always allowed (see
@@ -443,11 +443,11 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 
 	LOG(LOG_INFO, _("SECURITY: Evaluating URL for cross domain policies:"));
 	LOG(LOG_INFO, _("SECURITY: --> URL:    ") << url);
-	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << sys->getOrigin());
+	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << getSys()->getOrigin());
 
 	//The URL has exactly the same domain name as the origin, always allowed
-	if(url.getProtocol() == sys->getOrigin().getProtocol() &&
-			url.getHostname() == sys->getOrigin().getHostname())
+	if(url.getProtocol() == getSys()->getOrigin().getProtocol() &&
+			url.getHostname() == getSys()->getOrigin().getHostname())
 	{
 		LOG(LOG_INFO, _("SECURITY: Same hostname as origin, allowing"));
 		return ALLOWED;
@@ -465,7 +465,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		URLPFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
-			if((*it)->allowsAccessFrom(sys->getOrigin(), url))
+			if((*it)->allowsAccessFrom(getSys()->getOrigin(), url))
 			{
 				LOG(LOG_INFO, _("SECURITY: ALLOWED: A policy file explicitly allowed access"));
 				delete files;
@@ -499,12 +499,12 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 		const tiny_string& header, bool loadPendingPolicies)
 {
 	//This check doesn't apply to local files
-	if(url.getProtocol() == "file" && sys->getOrigin().getProtocol() == "file")
+	if(url.getProtocol() == "file" && getSys()->getOrigin().getProtocol() == "file")
 		return ALLOWED;
 
 	LOG(LOG_INFO, _("SECURITY: Evaluating header for cross domain policies ('") << header << "'):");
 	LOG(LOG_INFO, _("SECURITY: --> URL: ") << url);
-	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << sys->getOrigin());
+	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << getSys()->getOrigin());
 
 	string headerStrLower(header.raw_buf());
 	transform(headerStrLower.begin(), headerStrLower.end(), headerStrLower.begin(), ::tolower);
@@ -534,8 +534,8 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	}
 
 	//The URL has exactly the same domain name as the origin, always allowed
-	if(url.getProtocol() == sys->getOrigin().getProtocol() &&
-			url.getHostname() == sys->getOrigin().getHostname())
+	if(url.getProtocol() == getSys()->getOrigin().getProtocol() &&
+			url.getHostname() == getSys()->getOrigin().getHostname())
 	{
 		LOG(LOG_INFO, _("SECURITY: ALLOWED: Same hostname as origin"));
 		return ALLOWED;
@@ -553,7 +553,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 		URLPFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
-			if((*it)->allowsHTTPRequestHeaderFrom(sys->getOrigin(), url, headerStrLower))
+			if((*it)->allowsHTTPRequestHeaderFrom(getSys()->getOrigin(), url, headerStrLower))
 			{
 				LOG(LOG_INFO, _("SECURITY: ALLOWED: A policy file explicitly allowed the header"));
 				delete files;
@@ -669,9 +669,9 @@ URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
 		return this;
 	}
 
-	URLPolicyFile* file = sys->securityManager->getURLPolicyFileByURL(url.goToURL("/crossdomain.xml"));
+	URLPolicyFile* file = getSys()->securityManager->getURLPolicyFileByURL(url.goToURL("/crossdomain.xml"));
 	if(file == NULL)
-		file = sys->securityManager->addURLPolicyFile(url.goToURL("/crossdomain.xml"));
+		file = getSys()->securityManager->addURLPolicyFile(url.goToURL("/crossdomain.xml"));
 
 	//++ Release lock
 	sem_post(&mutex);
@@ -714,7 +714,7 @@ void URLPolicyFile::load()
 	if(!isMaster())
 	{
 		//Load master policy file if not loaded yet
-		sys->securityManager->loadPolicyFile(master);
+		getSys()->securityManager->loadPolicyFile(master);
 		//Master policy file found and valid and has a site-control entry
 		if(master->isValid() && master->getSiteControl() != NULL)
 		{
@@ -730,7 +730,7 @@ void URLPolicyFile::load()
 	}
 
 	//No caching needed for this download, we don't expect very big files
-	Downloader* downloader=sys->downloadManager->download(url, false, NULL);
+	Downloader* downloader=getSys()->downloadManager->download(url, false, NULL);
 
 	//Wait until the file is fetched
 	downloader->waitForTermination();
@@ -789,7 +789,7 @@ void URLPolicyFile::load()
 		s.read((char*)buf,bufLength);
 
 		//We're done with the downloader, lets destroy ASAP
-		sys->downloadManager->destroy(downloader);
+		getSys()->downloadManager->destroy(downloader);
 
 		CrossDomainPolicy::POLICYFILESUBTYPE parserSubtype = CrossDomainPolicy::NONE;
 		if(subtype == HTTP)
@@ -853,7 +853,7 @@ void URLPolicyFile::load()
 	{
 		//Failed to download the file, marking this file as invalid
 		valid = false;
-		sys->downloadManager->destroy(downloader);
+		getSys()->downloadManager->destroy(downloader);
 	}
 
 	//++ Release lock

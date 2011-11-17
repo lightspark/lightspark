@@ -423,7 +423,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 				|| eventName=="frameConstructed") )
 	{
 		dispobj->incRef();
-		sys->registerFrameListener(_MR(dispobj));
+		getSys()->registerFrameListener(_MR(dispobj));
 	}
 
 	{
@@ -494,7 +494,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 					&& !th->hasEventListener("frameConstructed")) )
 	{
 		dispobj->incRef();
-		sys->unregisterFrameListener(_MR(dispobj));
+		getSys()->unregisterFrameListener(_MR(dispobj));
 	}
 
 	return NULL;

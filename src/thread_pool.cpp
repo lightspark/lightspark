@@ -86,7 +86,7 @@ ThreadPool::~ThreadPool()
 void* ThreadPool::job_worker(void* t)
 {
 	ThreadPool* th=static_cast<ThreadPool*>(t);
-	sys=th->m_sys;
+	setTLSSys(th->m_sys);
 
 	//Let's find out index (slow, but it's done only once)
 	uint32_t index=0;
@@ -95,7 +95,7 @@ void* ThreadPool::job_worker(void* t)
 		if(pthread_equal(th->threads[index],pthread_self()))
 			break;
 	}
-	ThreadProfile* profile=sys->allocateProfiler(RGB(200,200,0));
+	ThreadProfile* profile=getSys()->allocateProfiler(RGB(200,200,0));
 	char buf[16];
 	snprintf(buf,16,"Thread %u",index);
 	profile->setTag(buf);
@@ -121,7 +121,7 @@ void* ThreadPool::job_worker(void* t)
 		catch(LightsparkException& e)
 		{
 			LOG(LOG_ERROR,_("Exception in ThreadPool ") << e.what());
-			sys->setError(e.cause);
+			getSys()->setError(e.cause);
 		}
 		profile->accountTime(chronometer.checkpoint());
 

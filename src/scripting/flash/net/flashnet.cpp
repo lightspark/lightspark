@@ -66,7 +66,7 @@ void URLRequest::buildTraits(ASObject* o)
 
 URLInfo URLRequest::getRequestURL() const
 {
-	URLInfo ret=sys->getOrigin().goToURL(url);
+	URLInfo ret=getSys()->getOrigin().goToURL(url);
 	if(method!=GET)
 		return ret;
 
@@ -250,14 +250,14 @@ ASFUNCTIONBODY(URLLoader,load)
 	{
 		//Notify an error during loading
 		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
+		getSys()->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
 		return NULL;
 	}
 
 	//TODO: support the right events (like SecurityErrorEvent)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
 	SecurityManager::EVALUATIONRESULT evaluationResult = 
-		sys->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
+		getSys()->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
 			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
 	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
@@ -281,7 +281,7 @@ ASFUNCTIONBODY(URLLoader,load)
 
 	//To be decreffed in jobFence
 	th->incRef();
-	sys->addJob(th);
+	getSys()->addJob(th);
 	return NULL;
 }
 
@@ -295,7 +295,7 @@ void URLLoader::execute()
 	//TODO: support httpStatus, progress, open events
 
 	//Check for URL policies and send SecurityErrorEvent if needed
-	SecurityManager::EVALUATIONRESULT evaluationResult = sys->securityManager->evaluatePoliciesURL(url, true);
+	SecurityManager::EVALUATIONRESULT evaluationResult = getSys()->securityManager->evaluatePoliciesURL(url, true);
 	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 	{
 		this->incRef();
@@ -311,11 +311,11 @@ void URLLoader::execute()
 		{
 			//This is a GET request
 			//Don't cache our downloaded files
-			downloader=sys->downloadManager->download(url, false, NULL);
+			downloader=getSys()->downloadManager->download(url, false, NULL);
 		}
 		else
 		{
-			downloader=sys->downloadManager->downloadWithData(url, postData, NULL);
+			downloader=getSys()->downloadManager->downloadWithData(url, postData, NULL);
 			//Clean up the postData for the next load
 			postData.clear();
 		}
@@ -352,26 +352,26 @@ void URLLoader::execute()
 			}
 			//Send a complete event for this object
 			this->incRef();
-			sys->currentVm->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
+			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
 		}
 		else
 		{
 			//Notify an error during loading
 			this->incRef();
-			sys->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm()->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
 		}
 	}
 	else
 	{
 		//Notify an error during loading
 		this->incRef();
-		sys->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
+		getVm()->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
 	}
 
 	{
 		//Acquire the lock to ensure consistency in threadAbort
 		SpinlockLocker l(downloaderLock);
-		sys->downloadManager->destroy(downloader);
+		getSys()->downloadManager->destroy(downloader);
 		downloader = NULL;
 	}
 }
@@ -441,7 +441,7 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(_getConnected),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
-	sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
+	getSys()->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("protocol","",Class<IFunction>::getFunction(_getProtocol),GETTER_METHOD,true);
@@ -455,7 +455,7 @@ void NetConnection::buildTraits(ASObject* o)
 ASFUNCTIONBODY(NetConnection, _constructor)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);
-	th->objectEncoding = sys->staticNetConnectionDefaultObjectEncoding;
+	th->objectEncoding = getSys()->staticNetConnectionDefaultObjectEncoding;
 	return NULL;
 }
 ASFUNCTIONBODY(NetConnection,connect)
@@ -469,7 +469,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	//I'm following the specification to the letter. Testing showed
 	//that the official player allows connect(null) in localWithFile.
 	if(args[0]->getObjectType() != T_NULL
-	&& sys->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
+	&& getSys()->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetConnection::connect "
 				"from LOCAL_WITH_FILE sandbox");
 	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
@@ -484,7 +484,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 		ASString* command = static_cast<ASString*>(args[0]);
 		th->uri = URLInfo(command->toString());
 
-		if(sys->securityManager->evaluatePoliciesURL(th->uri, true) != SecurityManager::ALLOWED)
+		if(getSys()->securityManager->evaluatePoliciesURL(th->uri, true) != SecurityManager::ALLOWED)
 		{
 			//TODO: find correct way of handling this case
 			throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
@@ -517,7 +517,7 @@ ASFUNCTIONBODY(NetConnection,_getConnected)
 
 ASFUNCTIONBODY(NetConnection,_getDefaultObjectEncoding)
 {
-	return abstract_i(sys->staticNetConnectionDefaultObjectEncoding);
+	return abstract_i(getSys()->staticNetConnectionDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY(NetConnection,_setDefaultObjectEncoding)
@@ -525,9 +525,9 @@ ASFUNCTIONBODY(NetConnection,_setDefaultObjectEncoding)
 	assert_and_throw(argslen == 1);
 	int32_t value = args[0]->toInt();
 	if(value == 0)
-		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF0;
+		getSys()->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF0;
 	else if(value == 3)
-		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF3;
+		getSys()->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
 	return NULL;
@@ -595,9 +595,9 @@ NetStream::~NetStream()
 {
 	assert(!executing);
 	if(tickStarted)
-		sys->removeJob(this);
-	delete videoDecoder; 
-	delete audioDecoder; 
+		getSys()->removeJob(this);
+	delete videoDecoder;
+	delete audioDecoder;
 	sem_destroy(&mutex);
 }
 
@@ -732,10 +732,10 @@ ASFUNCTIONBODY(NetStream,play)
 		assert_and_throw(argslen>=1);
 		//args[0] is the url
 		//what is the meaning of the other arguments
-		th->url = sys->getOrigin().goToURL(args[0]->toString());
+		th->url = getSys()->getOrigin().goToURL(args[0]->toString());
 
-		SecurityManager::EVALUATIONRESULT evaluationResult = 
-			sys->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
+		SecurityManager::EVALUATIONRESULT evaluationResult =
+			getSys()->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
 				SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 				true); //Check for navigating up in local directories (not allowed)
 		if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
@@ -754,21 +754,21 @@ ASFUNCTIONBODY(NetStream,play)
 	}
 
 	assert_and_throw(th->downloader==NULL);
-	
+
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading
 		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
+		getVm()->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
 	}
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
 		//Cache our downloaded files
-		th->downloader=sys->downloadManager->download(th->url, true, NULL);
+		th->downloader=getSys()->downloadManager->download(th->url, true, NULL);
 		th->streamTime=0;
 		//To be decreffed in jobFence
 		th->incRef();
-		sys->addJob(th);
+		getSys()->addJob(th);
 	}
 	return NULL;
 }
@@ -786,7 +786,7 @@ ASFUNCTIONBODY(NetStream,resume)
 		th->paused = false;
 		sem_wait(&th->mutex);
 		if(th->audioStream)
-			sys->audioManager->resumeStreamPlugin(th->audioStream);
+			getSys()->audioManager->resumeStreamPlugin(th->audioStream);
 		sem_post(&th->mutex);
 		th->incRef();
 		getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify")));
@@ -802,7 +802,7 @@ ASFUNCTIONBODY(NetStream,pause)
 		th->paused = true;
 		sem_wait(&th->mutex);
 		if(th->audioStream)
-			sys->audioManager->pauseStreamPlugin(th->audioStream);
+			getSys()->audioManager->pauseStreamPlugin(th->audioStream);
 		sem_post(&th->mutex);
 		th->incRef();
 		getVm()->addEvent(_MR(th),_MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify")));
@@ -860,7 +860,7 @@ void NetStream::tick()
 		return;
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
-	if(audioStream && sys->audioManager->isTimingAvailablePlugin())
+	if(audioStream && getSys()->audioManager->isTimingAvailablePlugin())
 	{
 		assert(audioDecoder);
 		streamTime=audioStream->getPlayedTime()+audioDecoder->initialTime;
@@ -873,7 +873,7 @@ void NetStream::tick()
 	videoDecoder->skipUntil(streamTime);
 	//The next line ensures that the downloader will not be destroyed before the upload jobs are fenced
 	videoDecoder->waitForFencing();
-	sys->getRenderThread()->addUploadJob(videoDecoder);
+	getSys()->getRenderThread()->addUploadJob(videoDecoder);
 }
 
 bool NetStream::isReady() const
@@ -904,15 +904,15 @@ void NetStream::execute()
 	//checkPolicyFile only applies to per-pixel access, loading and playing is always allowed.
 	//So there is no need to disallow playing if policy files disallow it.
 	//We do need to check if per-pixel access is allowed.
-	SecurityManager::EVALUATIONRESULT evaluationResult = sys->securityManager->evaluatePoliciesURL(url, true);
+	SecurityManager::EVALUATIONRESULT evaluationResult = getSys()->securityManager->evaluatePoliciesURL(url, true);
 	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		rawAccessAllowed = true;
 
 	if(downloader->hasFailed())
 	{
 		this->incRef();
-		sys->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
-		sys->downloadManager->destroy(downloader);
+		getVm()->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
+		getSys()->downloadManager->destroy(downloader);
 		return;
 	}
 
@@ -921,7 +921,7 @@ void NetStream::execute()
 	istream s(downloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 
-	ThreadProfile* profile=sys->allocateProfiler(RGB(0,0,200));
+	ThreadProfile* profile=getSys()->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");
 	bool waitForFlush=true;
 	StreamDecoder* streamDecoder=NULL;
@@ -957,8 +957,8 @@ void NetStream::execute()
 			if(audioDecoder==NULL && streamDecoder->audioDecoder)
 				audioDecoder=streamDecoder->audioDecoder;
 
-			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && sys->audioManager->pluginLoaded())
-				audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
+			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
+				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
 
 			if(audioStream && audioStream->paused() && !paused)
 			{
@@ -1016,10 +1016,10 @@ void NetStream::execute()
 					assert(videoDecoder->frameRate);
 					frameRate=videoDecoder->frameRate;
 				}
-				sys->addTick(1000/frameRate,this);
+				getSys()->addTick(1000/frameRate,this);
 				//Also ask for a render rate equal to the video one (capped at 24)
 				float localRenderRate=dmin(frameRate,24);
-				sys->setRenderRate(localRenderRate);
+				getSys()->setRenderRate(localRenderRate);
 			}
 			profile->accountTime(chronometer.checkpoint());
 			if(aborting)
@@ -1060,18 +1060,18 @@ void NetStream::execute()
 		getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Flush")));
 	}
 	//Before deleting stops ticking, removeJobs also spin waits for termination
-	sys->removeJob(this);
+	getSys()->removeJob(this);
 	tickStarted=false;
 	sem_wait(&mutex);
 	//Change the state to invalid to avoid locking
 	videoDecoder=NULL;
 	audioDecoder=NULL;
 	//Clean up everything for a possible re-run
-	sys->downloadManager->destroy(downloader);
+	getSys()->downloadManager->destroy(downloader);
 	//This transition is critical, so the mutex is needed
 	downloader=NULL;
 	if(audioStream)
-		sys->audioManager->freeStreamPlugin(audioStream);
+		getSys()->audioManager->freeStreamPlugin(audioStream);
 	audioStream=NULL;
 	sem_post(&mutex);
 	delete streamDecoder;
@@ -1371,8 +1371,8 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 
 	//TODO: support the right events (like SecurityErrorEvent)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
-	SecurityManager::EVALUATIONRESULT evaluationResult = 
-		sys->securityManager->evaluateURLStatic(url, ~(SecurityManager::LOCAL_WITH_FILE),
+	SecurityManager::EVALUATIONRESULT evaluationResult =
+		getSys()->securityManager->evaluateURLStatic(url, ~(SecurityManager::LOCAL_WITH_FILE),
 			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 			true);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
@@ -1391,7 +1391,7 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 				"not allowed to navigate up for local files");
 
 	//Also check cross domain policies. TODO: this should be async as it could block if invoked from ExternalInterface
-	evaluationResult = sys->securityManager->evaluatePoliciesURL(url, true);
+	evaluationResult = getSys()->securityManager->evaluatePoliciesURL(url, true);
 	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 	{
 		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
@@ -1407,9 +1407,9 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	assert_and_throw(postData.empty());
 
 	//Don't cache our downloaded files
-	Downloader* downloader=sys->downloadManager->download(url, false, NULL);
+	Downloader* downloader=getSys()->downloadManager->download(url, false, NULL);
 	//TODO: make the download asynchronous instead of waiting for an unused response
 	downloader->waitForTermination();
-	sys->downloadManager->destroy(downloader);
+	getSys()->downloadManager->destroy(downloader);
 	return NULL;
 }

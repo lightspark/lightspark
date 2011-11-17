@@ -56,6 +56,19 @@ extern "C" {
 using namespace std;
 using namespace lightspark;
 
+static GStaticPrivate tls_system = G_STATIC_PRIVATE_INIT;
+SystemState* lightspark::getSys()
+{
+	SystemState* ret = (SystemState*)g_static_private_get(&tls_system);
+	assert(ret);
+	return ret;
+}
+
+void lightspark::setTLSSys(SystemState* sys)
+{
+        g_static_private_set(&tls_system,sys,NULL);
+}
+
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):parsingIsFailed(false),frameRate(0),
 	toBind(false), finishedLoading(false)
 {
@@ -158,8 +171,9 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
-	//Create the thread pool
-	sys=this;
+
+	setTLSSys(this);
+
 	sem_init(&terminated,0,0);
 
 	//Get starting time
@@ -522,13 +536,13 @@ void SystemState::startRenderTicks()
 
 void SystemState::EngineCreator::execute()
 {
-	sys->createEngines();
+	getSys()->createEngines();
 }
 
 void SystemState::EngineCreator::threadAbort()
 {
-	sys->fileDumpAvailable.signal();
-	sys->getRenderThread()->forceInitialization();
+	getSys()->fileDumpAvailable.signal();
+	getSys()->getRenderThread()->forceInitialization();
 }
 
 #ifndef GNASH_PATH
@@ -588,11 +602,11 @@ void SystemState::delayedCreation(SystemState* th)
 
 void SystemState::delayedStopping(SystemState* th)
 {
-	sys=th;
+	setTLSSys(th);
 	//This is called from the plugin, also kill the stream
 	th->engineData->stopMainDownload();
 	th->stopEngines();
-	sys=NULL;
+	setTLSSys(NULL);
 }
 
 void SystemState::createEngines()
@@ -910,7 +924,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		return;
 
 	Locker locker(mutex);
-	RECT size=sys->getFrameSize();
+	RECT size=getSys()->getFrameSize();
 	int width=size.Xmax/20;
 	int height=size.Ymax/20;
 	
@@ -1052,7 +1066,7 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 	LOG(LOG_INFO,_("FrameRate ") << frameRate);
 	root->setFrameRate(frameRate);
 	//TODO: setting render rate should be done when the clip is added to the displaylist
-	sys->setRenderRate(frameRate);
+	getSys()->setRenderRate(frameRate);
 	root->setFrameSize(FrameSize);
 	root->totalFrames_unreliable = FrameCount;
 }
@@ -1080,7 +1094,7 @@ void ParseThread::execute()
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
-		sys->setError(e.cause);
+		getSys()->setError(e.cause);
 	}
 	catch(std::exception& e)
 	{
@@ -1100,7 +1114,7 @@ void ParseThread::parseSWF(UI8 ver)
 		{
 			LOG(LOG_INFO,"SWF version " << root->version << " is not handled by lightspark, falling back to gnash (if available)");
 			//Enable flash fallback
-			sys->needsAVM2(false);
+			getSys()->needsAVM2(false);
 			return; /* no more parsing necessary, handled by fallback */
 		}
 
@@ -1114,15 +1128,15 @@ void ParseThread::parseSWF(UI8 ver)
 			return;
 		}
 		//Check if this clip is the main clip then honour its FileAttributesTag
-		if(root == sys)
+		if(root == getSys())
 		{
-			sys->needsAVM2(fat->ActionScript3);
+			getSys()->needsAVM2(fat->ActionScript3);
 			if(!fat->ActionScript3)
 				return; /* no more parsing necessary, handled by fallback */
 			if(fat->UseNetwork
-			&& sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+			&& getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
 			{
-				sys->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
+				getSys()->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
 				LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
 			}
 		}
@@ -1188,7 +1202,7 @@ void ParseThread::parseSWF(UI8 ver)
 					//Not yet implemented tag, ignore it
 					break;
 			}
-			if(sys->shouldTerminate() || aborting)
+			if(getSys()->shouldTerminate() || aborting)
 				break;
 		}
 	}
@@ -1293,6 +1307,7 @@ void RootMovieClip::commitFrame(bool another)
 
 	if(getFramesLoaded()==1 && frameRate!=0)
 	{
+		SystemState* sys = getSys();
 		if(this==sys)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
@@ -1420,7 +1435,7 @@ void SystemState::tick()
 		for(;it!=profilingData.end();++it)
 			(*it)->tick();
 	}
-	if(sys->currentVm==NULL)
+	if(getSys()->currentVm==NULL)
 		return;
 	/* See http://www.senocular.com/flash/tutorials/orderofoperations/
 	 * for the description of steps.
@@ -1442,7 +1457,7 @@ void SystemState::tick()
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
 	 * run their constructors (bottom-up)
 	 * and their frameScripts (Step 5) (bottom-up) */
-	sys->currentVm->addEvent(NullRef, _MR(new InitFrameEvent()));
+	getSys()->currentVm->addEvent(NullRef, _MR(new InitFrameEvent()));
 
 	/* Step 4: dispatch frameConstructed events */
 	/* (TODO: should be run between step 3 and 5 */
@@ -1471,7 +1486,7 @@ void SystemState::tick()
 
 	/* Step 0: Set current frame number to the next frame */
 	_R<AdvanceFrameEvent> advFrame = _MR(new AdvanceFrameEvent());
-	if(sys->currentVm->addEvent(NullRef, advFrame))
+	if(getSys()->currentVm->addEvent(NullRef, advFrame))
 		advFrame->done.wait();
 }
 
@@ -1510,6 +1525,6 @@ void RootMovieClip::advanceFrame()
 void RootMovieClip::constructionComplete()
 {
 	MovieClip::constructionComplete();
-	if(this==sys)
+	if(this==getSys())
 		loaderInfo->sendInit();
 }

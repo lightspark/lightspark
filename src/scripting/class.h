@@ -61,7 +61,7 @@ public:
 #ifndef NDEBUG
 		bool ret=
 #endif
-		sys->classes.insert(std::make_pair(name,this)).second;
+		getSys()->classes.insert(std::make_pair(name,this)).second;
 		assert(ret);
 	}
 	void finalize();
@@ -168,12 +168,12 @@ public:
 	static Class<T>* getClass()
 	{
 		QName name(ClassName<T>::name,ClassName<T>::ns);
-		std::map<QName, Class_base*>::iterator it=sys->classes.find(name);
+		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(name);
 		Class<T>* ret=NULL;
-		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		if(it==getSys()->classes.end()) //This class is not yet in the map, create it
 		{
 			ret=new Class<T>(name);
-			sys->classes.insert(std::make_pair(name,ret));
+			getSys()->classes.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
@@ -304,19 +304,19 @@ public:
 		ret->addPrototypeGetter();
 
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-		sys->classes.insert(std::make_pair(name,ret));
+		getSys()->classes.insert(std::make_pair(name,ret));
 		ret->incRef();
 		return _MR(ret);
 	}
 	static Class<ASObject>* getClass()
 	{
 		QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
-		std::map<QName, Class_base*>::iterator it=sys->classes.find(name);
+		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(name);
 		Class<ASObject>* ret=NULL;
-		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		if(it==getSys()->classes.end()) //This class is not yet in the map, create it
 		{
 			ret=new Class<ASObject>(name);
-			sys->classes.insert(std::make_pair(name,ret));
+			getSys()->classes.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
 			ASObject::sinit(ret);
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
@@ -428,12 +428,12 @@ public:
 	{
 		QName instantiatedQName = getQName(types,numtypes);
 
-		std::map<QName, Class_base*>::iterator it=sys->classes.find(instantiatedQName);
+		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(instantiatedQName);
 		Class<T>* ret=NULL;
-		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		if(it==getSys()->classes.end()) //This class is not yet in the map, create it
 		{
 			ret=new TemplatedClass<T>(instantiatedQName,types,numtypes,this);
-			sys->classes.insert(std::make_pair(instantiatedQName,ret));
+			getSys()->classes.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
 			if(ret->super)
@@ -449,12 +449,12 @@ public:
 
 	static Template<T>* getTemplate(const QName& name)
 	{
-		std::map<QName, Template_base*>::iterator it=sys->templates.find(name);
+		std::map<QName, Template_base*>::iterator it=getSys()->templates.find(name);
 		Template<T>* ret=NULL;
-		if(it==sys->templates.end()) //This class is not yet in the map, create it
+		if(it==getSys()->templates.end()) //This class is not yet in the map, create it
 		{
 			ret=new Template<T>(name);
-			sys->templates.insert(std::make_pair(name,ret));
+			getSys()->templates.insert(std::make_pair(name,ret));
 		}
 		else
 			ret=static_cast<Template<T>*>(it->second);

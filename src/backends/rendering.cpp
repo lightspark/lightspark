@@ -225,7 +225,7 @@ void RenderThread::SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocat
 
 void RenderThread::worker(RenderThread* th)
 {
-	sys=th->m_sys;
+	setTLSSys(th->m_sys);
 	/* set TLS variable for getRenderThread() */
 	g_static_private_set(&renderThread,th,NULL);
 
@@ -363,7 +363,7 @@ void RenderThread::worker(RenderThread* th)
 	th->commonGLResize();
 	lighter.light();
 	
-	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
+	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
 
 	glEnable(GL_TEXTURE_2D);
@@ -431,7 +431,7 @@ void RenderThread::worker(RenderThread* th)
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR,_("Exception in RenderThread ") << e.what());
-		sys->setError(e.cause);
+		th->m_sys->setError(e.cause);
 	}
 	glDisable(GL_TEXTURE_2D);
 	th->commonGLDeinit();
@@ -918,7 +918,7 @@ void RenderThread::coreRendering()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 	//Clear the back buffer
-	RGB bg=sys->getBackground();
+	RGB bg=m_sys->getBackground();
 	glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 	glClear(GL_COLOR_BUFFER_BIT);
 	lsglLoadIdentity();

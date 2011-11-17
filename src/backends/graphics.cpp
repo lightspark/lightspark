@@ -281,7 +281,7 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 	if(chunks)
 	{
 		//We were already initialized, so first clean up
-		sys->getRenderThread()->releaseTexture(*this);
+		getSys()->getRenderThread()->releaseTexture(*this);
 		delete[] chunks;
 	}
 	width=r.width;
@@ -318,7 +318,7 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	if(w==0 || h==0)
 	{
 		//The texture collapsed, release the resources
-		sys->getRenderThread()->releaseTexture(*this);
+		getSys()->getRenderThread()->releaseTexture(*this);
 		delete[] chunks;
 		chunks=NULL;
 		width=w;
@@ -368,7 +368,7 @@ const TextureChunk& CairoRenderer::getTexture()
 	 * so we need no locking for surface */
 	//Verify that the texture is large enough
 	if(!surface.tex.resizeIfLargeEnough(width, height))
-		surface.tex=sys->getRenderThread()->allocateTexture(width, height,false);
+		surface.tex=getSys()->getRenderThread()->allocateTexture(width, height,false);
 	surface.xOffset=xOffset;
 	surface.yOffset=yOffset;
 	surface.alpha=alpha;
@@ -402,7 +402,7 @@ void CairoRenderer::jobFence()
 	//If the data must be uploaded (there were no errors) the Job add itself to the upload queue.
 	//Otherwise it destroys itself
 	if(uploadNeeded)
-		sys->getRenderThread()->addUploadJob(this);
+		getSys()->getRenderThread()->addUploadJob(this);
 	else
 		delete this;
 }
@@ -711,8 +711,8 @@ void CairoRenderer::execute()
 		return;
 	}
 
-	int32_t windowWidth=sys->getRenderThread()->windowWidth;
-	int32_t windowHeight=sys->getRenderThread()->windowHeight;
+	int32_t windowWidth=getSys()->getRenderThread()->windowWidth;
+	int32_t windowHeight=getSys()->getRenderThread()->windowHeight;
 	//Discard stuff that it's outside the visible part
 	if(xOffset >= windowWidth || yOffset >= windowHeight
 		|| xOffset + width <= 0 || yOffset + height <= 0)

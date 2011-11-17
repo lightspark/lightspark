@@ -60,7 +60,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(_setPosition),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
-	sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
+	getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
 	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(readDouble),NORMAL_METHOD,true);
@@ -122,7 +122,7 @@ ASFUNCTIONBODY(ByteArray,_setPosition)
 
 ASFUNCTIONBODY(ByteArray,_getDefaultObjectEncoding)
 {
-	return abstract_i(sys->staticNetConnectionDefaultObjectEncoding);
+	return abstract_i(getSys()->staticNetConnectionDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY(ByteArray,_setDefaultObjectEncoding)
@@ -130,9 +130,9 @@ ASFUNCTIONBODY(ByteArray,_setDefaultObjectEncoding)
 	assert_and_throw(argslen == 1);
 	int32_t value = args[0]->toInt();
 	if(value == 0)
-		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF0;
+		getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF0;
 	else if(value == 3)
-		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
+		getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
 	return NULL;
@@ -628,7 +628,7 @@ void Timer::tick()
 	//This will be executed once if repeatCount was originally 1
 	//Otherwise it's executed until stopMe is set to true
 	this->incRef();
-	sys->currentVm->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timer")));
+	getVm()->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timer")));
 
 	if(repeatCount!=0)
 	{
@@ -636,7 +636,7 @@ void Timer::tick()
 		if(repeatCount<currentCount)
 		{
 			this->incRef();
-			sys->currentVm->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timerComplete")));
+			getVm()->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timerComplete")));
 			stopMe=true;
 			running=false;
 		}
@@ -690,7 +690,7 @@ ASFUNCTIONBODY(Timer,_setRepeatCount)
 	th->repeatCount=count;
 	if(th->repeatCount>0 && th->repeatCount<=th->currentCount)
 	{
-		sys->removeJob(th);
+		getSys()->removeJob(th);
 		th->decRef();
 		th->running=false;
 	}
@@ -731,9 +731,9 @@ ASFUNCTIONBODY(Timer,start)
 	th->stopMe=false;
 	th->incRef();
 	if(th->repeatCount==1)
-		sys->addWait(th->delay,th);
+		getSys()->addWait(th->delay,th);
 	else
-		sys->addTick(th->delay,th);
+		getSys()->addTick(th->delay,th);
 	return NULL;
 }
 
@@ -743,7 +743,7 @@ ASFUNCTIONBODY(Timer,reset)
 	if(th->running)
 	{
 		//This spin waits if the timer is running right now
-		sys->removeJob(th);
+		getSys()->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
 		th->currentCount=0;
@@ -760,7 +760,7 @@ ASFUNCTIONBODY(Timer,stop)
 	if(th->running)
 	{
 		//This spin waits if the timer is running right now
-		sys->removeJob(th);
+		getSys()->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
 
@@ -841,7 +841,7 @@ ASFUNCTIONBODY(lightspark,describeType)
 
 ASFUNCTIONBODY(lightspark,getTimer)
 {
-	uint64_t ret=compat_msectiming() - sys->startTime;
+	uint64_t ret=compat_msectiming() - getSys()->startTime;
 	return abstract_i(ret);
 }
 
@@ -1220,7 +1220,7 @@ ASFUNCTIONBODY(lightspark,setInterval)
 	args[0]->incRef();
 	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add interval through manager
-	uint32_t id = sys->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
+	uint32_t id = getSys()->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
 	return abstract_i(id);
 }
 
@@ -1242,21 +1242,21 @@ ASFUNCTIONBODY(lightspark,setTimeout)
 	args[0]->incRef();
 	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add timeout through manager
-	uint32_t id = sys->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
+	uint32_t id = getSys()->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
 	return abstract_i(id);
 }
 
 ASFUNCTIONBODY(lightspark,clearInterval)
 {
 	assert_and_throw(argslen == 1);
-	sys->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::INTERVAL, true);
+	getSys()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::INTERVAL, true);
 	return NULL;
 }
 
 ASFUNCTIONBODY(lightspark,clearTimeout)
 {
 	assert_and_throw(argslen == 1);
-	sys->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::TIMEOUT, true);
+	getSys()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::TIMEOUT, true);
 	return NULL;
 }
 
@@ -1290,7 +1290,7 @@ void IntervalRunner::tick()
 	{
 		//TODO: IntervalRunner deletes itself. Is this allowed?
 		//Delete ourselves from the active intervals list
-		sys->intervalManager->clearInterval(id, TIMEOUT, false);
+		getSys()->intervalManager->clearInterval(id, TIMEOUT, false);
 		//No actions may be performed after this point
 	}
 }
@@ -1306,7 +1306,7 @@ IntervalManager::~IntervalManager()
 	std::map<uint32_t,IntervalRunner*>::iterator it = runners.begin();
 	while(it != runners.end())
 	{
-		sys->removeJob((*it).second);
+		getSys()->removeJob((*it).second);
 		delete((*it).second);
 		runners.erase(it++);
 	}
@@ -1321,7 +1321,7 @@ uint32_t IntervalManager::setInterval(_R<IFunction> callback, ASObject** args, c
 	IntervalRunner* runner = new IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj, interval);
 
 	//Add runner as tickjob
-	sys->addTick(interval, runner);
+	getSys()->addTick(interval, runner);
 	//Add runner to map
 	runners[id] = runner;
 	//Increment currentID
@@ -1338,7 +1338,7 @@ uint32_t IntervalManager::setTimeout(_R<IFunction> callback, ASObject** args, co
 	IntervalRunner* runner = new IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj, interval);
 
 	//Add runner as waitjob
-	sys->addWait(interval, runner);
+	getSys()->addWait(interval, runner);
 	//Add runner to map
 	runners[id] = runner;
 	//increment currentID
@@ -1367,7 +1367,7 @@ void IntervalManager::clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE ty
 	{
 		if(removeJob)
 		{
-			sys->removeJob((*it).second);
+			getSys()->removeJob((*it).second);
 		}
 		delete (*it).second;
 		runners.erase(it);

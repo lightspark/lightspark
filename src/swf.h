@@ -24,7 +24,6 @@
 #include <fstream>
 #include <list>
 #include <map>
-#include <semaphore.h>
 #include <string>
 #include "swftypes.h"
 #include "scripting/flash/display/flashdisplay.h"
@@ -148,7 +147,7 @@ private:
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
-	sem_t terminated;
+	Semaphore terminated;
 	float renderRate;
 	bool error;
 	bool shutdown;

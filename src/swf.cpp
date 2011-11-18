@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include <string>
-#include <pthread.h>
 #include <algorithm>
 #include "scripting/abc.h"
 #include "scripting/flash/events/flashevents.h"
@@ -162,7 +161,7 @@ void SystemState::staticDeinit()
 }
 
 SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
-	RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),
+	RootMovieClip(NULL,true),terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	parameters(NullRef),
@@ -173,8 +172,6 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	cookiesFileName[0]=0;
 
 	setTLSSys(this);
-
-	sem_init(&terminated,0,0);
 
 	//Get starting time
 	if(parseThread) //ParseThread may be null in tightspark
@@ -460,7 +457,6 @@ void SystemState::destroy()
 	for(auto it=profilingData.begin();it!=profilingData.end();it++)
 		delete *it;
 
-	sem_destroy(&terminated);
 	this->decRef(); //free a reference we obtained by 'new SystemState'
 }
 
@@ -505,14 +501,14 @@ void SystemState::setShutdownFlag()
 	}
 	shutdown=true;
 
-	sem_post(&terminated);
+	terminated.signal();
 	if(standalone)
 		gtk_main_quit();
 }
 
 void SystemState::wait()
 {
-	sem_wait(&terminated);
+	terminated.wait();
 	//Acquire the mutex to sure that the engines are not being started right now
 	Locker l(mutex);
 	renderThread->wait();

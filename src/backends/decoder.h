@@ -52,7 +52,7 @@ protected:
 public:
 	Decoder():status(PREINIT),flushing(false),flushed(0){}
 	virtual ~Decoder(){}
-	bool isValid() const DLL_PUBLIC
+	bool isValid() const
 	{
 		return status>=VALID;
 	}
@@ -224,7 +224,7 @@ public:
 	AudioDecoder():sampleRate(0),channelCount(0),initialTime(-1){}
 	virtual ~AudioDecoder(){};
 	virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
-	bool hasDecodedFrames() const DLL_PUBLIC
+	bool hasDecodedFrames() const
 	{
 		return !samplesBuffer.isEmpty();
 	}

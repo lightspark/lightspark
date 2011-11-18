@@ -145,7 +145,7 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s, ScriptDataTag* tag)
 					double d;
 				} tmp;
 				s.read((char*)&tmp.i,8);
-				tmp.i=be64toh(tmp.i);
+				tmp.i=GINT64_FROM_BE(tmp.i);
 				tag->metadataDouble[varName.getString()] = tmp.d;
 				//cout << "FLV metadata double: " << varName.getString() << " = " << tmp.d << endl;
 				break;

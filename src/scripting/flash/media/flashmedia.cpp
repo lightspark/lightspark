@@ -86,17 +86,14 @@ void Video::finalize()
 
 Video::~Video()
 {
-	sem_destroy(&mutex);
 }
 
 void Video::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
-	sem_wait(&mutex);
+	Mutex::Lock l(mutex);
 	if(skipRender(maskEnabled))
-	{
-		sem_post(&mutex);
 		return;
-	}
+
 	if(!netStream.isNull() && netStream->lockIfReady())
 	{
 		//All operations here should be non blocking
@@ -122,7 +119,6 @@ void Video::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,num
 		ma.unapply();
 		netStream->unlock();
 	}
-	sem_post(&mutex);
 }
 
 bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -166,10 +162,9 @@ ASFUNCTIONBODY(Video,_getWidth)
 ASFUNCTIONBODY(Video,_setWidth)
 {
 	Video* th=Class<Video>::cast(obj);
+	Mutex::Lock l(th->mutex);
 	assert_and_throw(argslen==1);
-	sem_wait(&th->mutex);
 	th->width=args[0]->toInt();
-	sem_post(&th->mutex);
 	return NULL;
 }
 
@@ -183,9 +178,8 @@ ASFUNCTIONBODY(Video,_setHeight)
 {
 	Video* th=Class<Video>::cast(obj);
 	assert_and_throw(argslen==1);
-	sem_wait(&th->mutex);
+	Mutex::Lock l(th->mutex);
 	th->height=args[0]->toInt();
-	sem_post(&th->mutex);
 	return NULL;
 }
 
@@ -195,9 +189,8 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	assert_and_throw(argslen==1);
 	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED) //Drop the connection
 	{
-		sem_wait(&th->mutex);
+		Mutex::Lock l(th->mutex);
 		th->netStream=NullRef;
-		sem_post(&th->mutex);
 		return NULL;
 	}
 
@@ -208,9 +201,8 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	//Acquire the netStream
 	args[0]->incRef();
 
-	sem_wait(&th->mutex);
+	Mutex::Lock l(th->mutex);
 	th->netStream=_MR(Class<NetStream>::cast(args[0]));
-	sem_post(&th->mutex);
 	return NULL;
 }
 

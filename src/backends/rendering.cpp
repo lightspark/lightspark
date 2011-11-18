@@ -50,7 +50,7 @@ void RenderThread::wait()
 	if(status==STARTED)
 	{
 		//Signal potentially blocking semaphore
-		sem_post(&event);
+		event.signal();
 		t->join();
 		status=TERMINATED;
 	}
@@ -59,14 +59,13 @@ void RenderThread::wait()
 RenderThread::RenderThread(SystemState* s):
 	m_sys(s),status(CREATED),currentPixelBuffer(0),currentPixelBufferOffset(0),
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),largeTextureSize(0),
-	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
+	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),
 	tempTex(false),hasNPOTTextures(false),cairoTextureContext(NULL)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
 	
 	m_sys=s;
-	sem_init(&event,0,0);
 
 #ifdef WIN32
 	fontPath = "TimesNewRoman.ttf";
@@ -80,7 +79,7 @@ void RenderThread::start(const EngineData* data)
 {
 	status=STARTED;
 	engineData=data;
-	t = Glib::Thread::create(sigc::bind<0>(&RenderThread::worker,this), true);
+	t = Thread::create(sigc::bind<0>(&RenderThread::worker,this), true);
 }
 
 void RenderThread::stop()
@@ -91,7 +90,6 @@ void RenderThread::stop()
 RenderThread::~RenderThread()
 {
 	wait();
-	sem_destroy(&event);
 	LOG(LOG_INFO,_("~RenderThread this=") << this);
 }
 
@@ -372,7 +370,7 @@ void RenderThread::worker(RenderThread* th)
 		Chronometer chronometer;
 		while(1)
 		{
-			sem_wait(&th->event);
+			th->event.wait();
 			if(th->m_sys->isShuttingDown())
 				break;
 			chronometer.checkpoint();
@@ -777,7 +775,7 @@ void RenderThread::requestResize(uint32_t w, uint32_t h)
 	newWidth=w;
 	newHeight=h;
 	resizeNeeded=true;
-	sem_post(&event);
+	event.signal();
 }
 
 void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
@@ -985,7 +983,7 @@ void RenderThread::addUploadJob(ITextureUploadable* u)
 	}
 	uploadJobs.push_back(u);
 	uploadNeeded=true;
-	sem_post(&event);
+	event.signal();
 }
 
 ITextureUploadable* RenderThread::getUploadJob()
@@ -1004,7 +1002,7 @@ void RenderThread::draw(bool force)
 	if(renderNeeded && !force) //A rendering is already queued
 		return;
 	renderNeeded=true;
-	sem_post(&event);
+	event.signal();
 	time_d = compat_get_current_time_ms();
 	uint64_t diff=time_d-time_s;
 	if(diff>1000)

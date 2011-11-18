@@ -34,7 +34,7 @@ class RenderThread: public ITickJob
 friend class DisplayObject;
 private:
 	SystemState* m_sys;
-	Glib::Thread* t;
+	Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 
@@ -75,7 +75,7 @@ private:
 	void handleNewTexture();
 	void finalizeUpload();
 	void handleUpload();
-	sem_t event;
+	Semaphore event;
 	std::string fontPath;
 	uint32_t newWidth;
 	uint32_t newHeight;

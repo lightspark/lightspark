@@ -21,14 +21,11 @@
 #define _THREADING_H
 
 #include "compat.h"
-#include <pthread.h>
 #include <semaphore.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <vector>
 #include <glibmm/thread.h>
-
-
 
 namespace lightspark
 {
@@ -41,30 +38,6 @@ using Glib::Thread;
 typedef Glib::Mutex::Lock Locker;
 typedef Mutex Spinlock;
 typedef Mutex::Lock SpinlockLocker;
-
-typedef void* (*thread_worker)(void*);
-
-class IThreadJob
-{
-friend class ThreadPool;
-friend class Condition;
-private:
-	sem_t jobTerminated;
-	bool jobHasTerminated;
-protected:
-	bool destroyMe;
-	bool executing;
-	bool aborting;
-	virtual void execute()=0;
-	virtual void threadAbort()=0;
-	virtual void jobFence()=0;
-public:
-	IThreadJob();
-	virtual ~IThreadJob();
-	void waitForJobTermination();
-	void run();
-	void stop() DLL_PUBLIC;
-};
 
 class Semaphore
 {
@@ -99,6 +72,27 @@ public:
 		_s.signal();
 		lighted=true;
 	}
+};
+
+class IThreadJob
+{
+friend class ThreadPool;
+friend class Condition;
+private:
+	Semaphore jobTerminated;
+protected:
+	bool destroyMe;
+	bool executing;
+	bool aborting;
+	virtual void execute()=0;
+	virtual void threadAbort()=0;
+	virtual void jobFence()=0;
+public:
+	IThreadJob();
+	virtual ~IThreadJob();
+	void waitForJobTermination();
+	void run();
+	void stop() DLL_PUBLIC;
 };
 
 template<class T, uint32_t size>

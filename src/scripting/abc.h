@@ -437,7 +437,7 @@ friend class method_info;
 private:
 	std::vector<ABCContext*> contexts;
 	SystemState* m_sys;
-	pthread_t t;
+	Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 
@@ -605,8 +605,8 @@ private:
 	static typed_opcode_handler opcode_table_bool_t[];
 
 	//Synchronization
-	sem_t event_queue_mutex;
-	sem_t sem_event_count;
+	Mutex event_queue_mutex;
+	Cond sem_event_cond;
 
 	//Event handling
 	bool shuttingdown;
@@ -668,7 +668,6 @@ class DoABCTag: public ControlTag
 {
 private:
 	ABCContext* context;
-	pthread_t thread;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const{ return ABC_TAG; }
@@ -681,7 +680,6 @@ private:
 	UI32_SWF Flags;
 	STRING Name;
 	ABCContext* context;
-	pthread_t thread;
 public:
 	DoABCDefineTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const{ return ABC_TAG; }

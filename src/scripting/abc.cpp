@@ -792,8 +792,6 @@ void ABCContext::dumpProfilingData(ostream& f) const
 
 ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curGlobalObj(NULL)
 {
-	sem_init(&event_queue_mutex,0,1);
-	sem_init(&sem_event_count,0,0);
 	m_sys=s;
 	int_manager=new Manager(15);
 	uint_manager=new Manager(15);
@@ -805,20 +803,20 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curGlo
 void ABCVm::start()
 {
 	status=STARTED;
-	pthread_create(&t,NULL,(thread_worker)Run,this);
+	t = Glib::Thread::create(sigc::bind(&Run,this), true);
 }
 
 void ABCVm::shutdown()
 {
 	if(status==STARTED)
 	{
-		//signal potentially blocking semaphores
+		//Signal the Vm thread
+		event_queue_mutex.lock();
 		shuttingdown=true;
-		sem_post(&sem_event_count);
-		if(pthread_join(t,NULL)!=0)
-		{
-			LOG(LOG_ERROR,_("pthread_join in ABCVm failed"));
-		}
+		sem_event_cond.signal();
+		event_queue_mutex.unlock();
+		//Wait for the vm thread
+		t->join();
 		status=TERMINATED;
 	}
 }
@@ -837,8 +835,6 @@ ABCVm::~ABCVm()
 	for(size_t i=0;i<contexts.size();++i)
 		delete contexts[i];
 
-	sem_destroy(&sem_event_count);
-	sem_destroy(&event_queue_mutex);
 	delete int_manager;
 	delete uint_manager;
 	delete number_manager;
@@ -1000,6 +996,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				break;
 			}
 			case SHUTDOWN:
+				//no need to lock as this is the vm thread
 				shuttingdown=true;
 				break;
 			case SYNC:
@@ -1110,10 +1107,9 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 		return true;
 	}
 
-	sem_wait(&event_queue_mutex);
+	Mutex::Lock l(event_queue_mutex);
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
-	sem_post(&event_queue_mutex);
-	sem_post(&sem_event_count);
+	sem_event_cond.signal();
 	return true;
 }
 
@@ -1393,23 +1389,23 @@ void ABCVm::Run(ABCVm* th)
 	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(0,200,0));
 	profile->setTag("VM");
 	//When aborting execution remaining events should be handled
-	bool bailOut=false;
 	bool firstMissingEvents=true;
-	//bailout is used to keep the vm running. When bailout is true only process events until the queue is empty
-	while(!bailOut || !th->events_queue.empty())
+	while(true)
 	{
 		try
 		{
-			sem_wait(&th->sem_event_count);
+			th->event_queue_mutex.lock();
+			while(th->events_queue.empty() && !th->shuttingdown)
+				th->sem_event_cond.wait(th->event_queue_mutex);
+
 			if(th->shuttingdown)
-				bailOut=true;
-			if(bailOut)
 			{
 				//If the queue is empty stop immediately
 				if(th->events_queue.empty())
+				{
+					th->event_queue_mutex.unlock();
 					break;
-				//else
-				//	LOG(LOG_INFO,th->events_queue.size() << _(" events missing before exit"));
+				}
 				else if(firstMissingEvents)
 				{
 					LOG(LOG_INFO,th->events_queue.size() << _(" events missing before exit"));
@@ -1417,20 +1413,20 @@ void ABCVm::Run(ABCVm* th)
 				}
 			}
 			Chronometer chronometer;
-			sem_wait(&th->event_queue_mutex);
+
 			pair<_NR<EventDispatcher>,_R<Event>> e=th->events_queue.front();
 			th->events_queue.pop_front();
-			sem_post(&th->event_queue_mutex);
+
+			th->event_queue_mutex.unlock();
+			//handle event without lock
 			th->handleEvent(e);
-			if(th->shuttingdown)
-				bailOut=true;
 			profile->accountTime(chronometer.checkpoint());
 		}
 		catch(LightsparkException& e)
 		{
 			LOG(LOG_ERROR,_("Error in VM ") << e.cause);
 			th->m_sys->setError(e.cause);
-			bailOut=true;
+			break;
 		}
 		catch(ASObject*& e)
 		{
@@ -1439,7 +1435,7 @@ void ABCVm::Run(ABCVm* th)
 			else
 				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
 			th->m_sys->setError(_("Unhandled ActionScript exception"));
-			bailOut=true;
+			break;
 		}
 	}
 	if(th->m_sys->useJit)

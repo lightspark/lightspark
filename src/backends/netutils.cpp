@@ -1176,7 +1176,6 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 	//We haven't set the length of the download uet, so set it from the headers
 	th->parseHeader(header, true);
 
-	//std::cerr << "CURL header: " << header << std::endl;
 	return size*nmemb;
 }
 

@@ -396,7 +396,7 @@ void EventDispatcher::dumpHandlers()
 {
 	std::map<tiny_string,list<listener> >::iterator it=handlers.begin();
 	for(;it!=handlers.end();++it)
-		std::cout << it->first << std::endl;
+		LOG(LOG_INFO, it->first);
 }
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)

@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 
 	if(fileNames.empty() || error)
 	{
-		cout << "Usage: " << argv[0] << " [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] <file.abc> [<file2.abc>]" << endl;
+		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] <file.abc> [<file2.abc>]");
 		exit(-1);
 	}
 

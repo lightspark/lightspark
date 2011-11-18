@@ -4180,7 +4180,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	{
 		if(it2->second.BB->getTerminator()==NULL)
 		{
-			cout << "start at " << it2->first << endl;
+			LOG(LOG_ERROR, "start at " << it2->first);
 			throw RunTimeException("Missing terminator");
 		}
 	}

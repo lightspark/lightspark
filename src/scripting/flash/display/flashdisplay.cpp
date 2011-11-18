@@ -2130,10 +2130,10 @@ void InteractiveObject::sinit(Class_base* c)
 
 void DisplayObjectContainer::dumpDisplayList()
 {
-	cout << "Size: " << dynamicDisplayList.size() << endl;
+	LOG(LOG_INFO, "Size: " << dynamicDisplayList.size());
 	list<_R<DisplayObject> >::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
-		cout << (*it)->getClass()->class_name << endl;
+		LOG(LOG_INFO, (*it)->getClass()->class_name);
 }
 
 void DisplayObjectContainer::setOnStage(bool staged)

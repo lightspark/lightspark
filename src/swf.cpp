@@ -690,7 +690,7 @@ void SystemState::createEngines()
 				argsStr += args[i];
 				i++;
 			}
-			cerr << "Invoking '" << GNASH_PATH << argsStr << " < " << dumpedSWFPath.raw_buf() << "'" << endl;
+			LOG(LOG_INFO, "Invoking '" << GNASH_PATH << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
 		}
 
 		GError* errmsg;

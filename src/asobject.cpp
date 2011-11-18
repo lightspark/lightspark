@@ -823,15 +823,15 @@ void variables_map::check() const
 				continue;
 			if(it->second.var==NULL || next->second.var==NULL)
 			{
-				cout << it->first << " " << it->second.ns << endl;
-				cout << it->second.var << ' ' << it->second.setter << ' ' << it->second.getter << endl;
-				cout << next->second.var << ' ' << next->second.setter << ' ' << next->second.getter << endl;
+				LOG(LOG_INFO, it->first << " " << it->second.ns);
+				LOG(LOG_INFO, it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
+				LOG(LOG_INFO, next->second.var << ' ' << next->second.setter << ' ' << next->second.getter);
 				abort();
 			}
 
 			if(it->second.var->getObjectType()!=T_FUNCTION || next->second.var->getObjectType()!=T_FUNCTION)
 			{
-				cout << it->first << endl;
+				LOG(LOG_INFO, it->first);
 				abort();
 			}
 		}

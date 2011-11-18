@@ -60,7 +60,7 @@ void PluginManager::findPlugins()
 	int patternOvector[3];
 
 #if defined DEBUG
-	cout << "Looking for plugins under " << plugins_folder << " for pattern " << pattern << endl;
+	LOG(LOG_INFO, "Looking for plugins under " << plugins_folder << " for pattern " << pattern);
 #endif
 
 	if ( !is_directory ( plugins_folder ) )

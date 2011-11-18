@@ -72,7 +72,7 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 	{
 		case GDK_KEY_PRESS:
 		{
-			//cout << "key press" << endl;
+			//LOG(LOG_INFO, "key press");
 			switch(event->key.keyval)
 			{
 				case GDK_q:
@@ -152,7 +152,7 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 		}
 		default:
 //#ifdef EXPENSIVE_DEBUG
-//			cout << "GDKTYPE " << event->type << endl;
+//			LOG(LOG_INFO, "GDKTYPE " << event->type);
 //#endif
 			break;
 	}

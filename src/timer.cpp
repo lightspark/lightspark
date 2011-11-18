@@ -96,7 +96,7 @@ void TimerThread::dumpJobs()
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	//Find if the job is in the list
 	for(;it!=pendingEvents.end();++it)
-		cout << (*it)->job << endl;
+		LOG(LOG_INFO, (*it)->job );
 }
 
 void TimerThread::worker(TimerThread* th)

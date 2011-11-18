@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 	bindtextdomain("lightspark", "/usr/share/locale");
 	textdomain("lightspark");
 
-	cout << "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others" << endl;
+	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others");
 
 	//Make GTK thread enabled
 	g_thread_init(NULL);
@@ -188,14 +188,14 @@ int main(int argc, char* argv[])
 
 	if(fileName==NULL)
 	{
-		cout << endl << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 
-			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" << 
+		LOG(LOG_ERROR, endl << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
+			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" <<
 			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
 			" [--exit-on-error]" <<
 #ifdef PROFILING_SUPPORT
-			" [--profiling-output|-o profiling-file]" << 
+			" [--profiling-output|-o profiling-file]" <<
 #endif
-			" <file.swf>" << endl;
+			" <file.swf>");
 		exit(1);
 	}
 
@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
 	f.seekg(0, ios::beg);
 	if(!f)
 	{
-		cout << argv[0] << ": " << fileName << ": No such file or directory" << endl;
+		LOG(LOG_ERROR, argv[0] << ": " << fileName << ": No such file or directory");
 		exit(2);
 	}
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );

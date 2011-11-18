@@ -274,14 +274,14 @@ void RenderThread::worker(RenderThread* th)
 		return;
 	}
 	th->mFBConfig=fb[i];
-	cout << "Chosen config " << hex << fb[i] << dec << endl;
+	LOG(LOG_INFO, "Chosen config " << hex << fb[i] << dec);
 	XFree(fb);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
 	GLXWindow glxWin=e->window;
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
-		cout << "Indirect!!" << endl;
+		LOG(LOG_INFO, "Indirect!!");
 #else
 	int a;
 	eglBindAPI(EGL_OPENGL_ES_API);
@@ -342,7 +342,7 @@ void RenderThread::worker(RenderThread* th)
 		return;
 	}
 	th->mEGLConfig=conf[i];
-	cout << "Chosen config " << hex << conf[i] << dec << endl;
+	LOG(LOG_INFO, "Chosen config " << hex << conf[i] << dec);
 
 	th->mEGLContext = eglCreateContext(ed, th->mEGLConfig, EGL_NO_CONTEXT, context_attribs);
 	if (th->mEGLContext == EGL_NO_CONTEXT) {

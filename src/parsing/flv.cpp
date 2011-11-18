@@ -170,7 +170,7 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s, ScriptDataTag* tag)
 				return;
 			}
 			default:
-				cout << (int)Type << endl;
+				LOG(LOG_ERROR,"Unknown type in flv parsing: " << (int)Type);
 				throw ParseException("Unexpected type in FLV");
 		}
 	}

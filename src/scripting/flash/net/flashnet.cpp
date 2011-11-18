@@ -581,7 +581,6 @@ NetStream::NetStream():frameRate(0),tickStarted(false),connection(),downloader(N
 	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false),
 	oldVolume(-1.0)
 {
-	sem_init(&mutex,0,1);
 }
 
 void NetStream::finalize()
@@ -598,7 +597,6 @@ NetStream::~NetStream()
 		getSys()->removeJob(this);
 	delete videoDecoder;
 	delete audioDecoder;
-	sem_destroy(&mutex);
 }
 
 void NetStream::sinit(Class_base* c)
@@ -784,10 +782,11 @@ ASFUNCTIONBODY(NetStream,resume)
 	if(th->paused)
 	{
 		th->paused = false;
-		sem_wait(&th->mutex);
-		if(th->audioStream)
-			getSys()->audioManager->resumeStreamPlugin(th->audioStream);
-		sem_post(&th->mutex);
+		{
+			Mutex::Lock l(th->mutex);
+			if(th->audioStream)
+				getSys()->audioManager->resumeStreamPlugin(th->audioStream);
+		}
 		th->incRef();
 		getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify")));
 	}
@@ -800,10 +799,11 @@ ASFUNCTIONBODY(NetStream,pause)
 	if(!th->paused)
 	{
 		th->paused = true;
-		sem_wait(&th->mutex);
-		if(th->audioStream)
-			getSys()->audioManager->pauseStreamPlugin(th->audioStream);
-		sem_post(&th->mutex);
+		{
+			Mutex::Lock l(th->mutex);
+			if(th->audioStream)
+				getSys()->audioManager->pauseStreamPlugin(th->audioStream);
+		}
 		th->incRef();
 		getVm()->addEvent(_MR(th),_MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify")));
 	}
@@ -887,16 +887,16 @@ bool NetStream::isReady() const
 
 bool NetStream::lockIfReady()
 {
-	sem_wait(&mutex);
+	mutex.lock();
 	bool ret=isReady();
 	if(!ret) //If the data is not valid so not release the lock to keep the condition
-		sem_post(&mutex);
+		mutex.unlock();
 	return ret;
 }
 
 void NetStream::unlock()
 {
-	sem_post(&mutex);
+	mutex.unlock();
 }
 
 void NetStream::execute()
@@ -1062,7 +1062,8 @@ void NetStream::execute()
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	getSys()->removeJob(this);
 	tickStarted=false;
-	sem_wait(&mutex);
+
+	Mutex::Lock l(mutex);
 	//Change the state to invalid to avoid locking
 	videoDecoder=NULL;
 	audioDecoder=NULL;
@@ -1073,16 +1074,15 @@ void NetStream::execute()
 	if(audioStream)
 		getSys()->audioManager->freeStreamPlugin(audioStream);
 	audioStream=NULL;
-	sem_post(&mutex);
 	delete streamDecoder;
 }
 
 void NetStream::threadAbort()
 {
+	Mutex::Lock l(mutex);
 	//This will stop the rendering loop
 	closed = true;
 
-	sem_wait(&mutex);
 	if(downloader)
 		downloader->stop();
 
@@ -1098,7 +1098,6 @@ void NetStream::threadAbort()
 		audioDecoder->setFlushing();
 		audioDecoder->skipAll();
 	}
-	sem_post(&mutex);
 }
 
 ASFUNCTIONBODY(NetStream,_getBytesLoaded)

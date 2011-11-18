@@ -159,7 +159,7 @@ private:
 	AudioDecoder* audioDecoder;
 	AudioStream *audioStream;
 	uint32_t streamTime;
-	sem_t mutex;
+	Mutex mutex;
 	//IThreadJob interface for long jobs
 	void execute();
 	void threadAbort();

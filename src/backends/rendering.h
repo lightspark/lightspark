@@ -84,7 +84,7 @@ private:
 	int offsetX;
 	int offsetY;
 
-#ifndef WIN32
+#ifndef _WIN32
 	Display* mDisplay;
 #ifndef ENABLE_GLES2
 	GLXFBConfig mFBConfig;

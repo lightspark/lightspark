@@ -75,7 +75,7 @@ void Config::load()
 	delete parser;
 	parser = NULL;
 
-#ifndef WIN32
+#ifndef _WIN32
 	//Expand tilde in path
 	if(cacheDirectory.length() > 0 && cacheDirectory[0] == '~')
 		cacheDirectory.replace(0, 1, getenv("HOME"));

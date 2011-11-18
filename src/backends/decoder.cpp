@@ -337,7 +337,7 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 		free(buf.ch[1]);
 		free(buf.ch[2]);
 	}
-#ifdef WIN32
+#ifdef _WIN32
 	//FIXME!!
 #else
 	int ret=posix_memalign((void**)&buf.ch[0], 16, bufferSize);

@@ -103,7 +103,7 @@ long lrint(double f);
 	void aligned_free(void *mem);
 #endif
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 // WINTODO: Hopefully, the MSVC instrinsics are similar enough
 //          to what the standard mandates
 #	define ATOMIC_INT32(x) __declspec(align(4)) volatile long x
@@ -112,8 +112,10 @@ long lrint(double f);
 #	define ACQUIRE_RELEASE_FLAG(x) ATOMIC_INT32(x)
 #	define ACQUIRE_READ(x) InterlockedCompareExchange(const_cast<long*>(&x),1,1)
 #	define RELEASE_WRITE(x, v) InterlockedExchange(&x,v)
-#else
+#else //GCC
+#ifndef _WIN32
 #	define CALLBACK
+#endif
 
 //Support both atomic header ( gcc >= 4.6 ), and earlier ( stdatomic.h )
 #	ifdef HAVE_ATOMIC

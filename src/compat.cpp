@@ -17,14 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#if defined WIN32
-  #include <windows.h>
-#else
-  #include <unistd.h>
-  #include <time.h>
-  #include <dlfcn.h>
-#include <sys/wait.h>
-#endif
 
 #include "compat.h"
 #include <string>
@@ -34,14 +26,14 @@ using namespace std;
 
 void compat_msleep(unsigned int time)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	Sleep(time);
 #else
 	usleep(time*1000);
 #endif
 }
 
-#ifdef WIN32
+#ifdef _MSC_VER
 int round(double f)
 {
     return ( f < 0.0 ) ? (int) ( f - 0.5 ) : (int) ( f + 0.5 );
@@ -56,8 +48,8 @@ long lrint(double f)
 
 uint64_t compat_msectiming()
 {
-#ifdef WIN32
-	return GetTickCount64();
+#ifdef _WIN32
+	return GetTickCount(); //TODO: use GetTickCount64
 #else
 	timespec t;
 	clock_gettime(CLOCK_MONOTONIC,&t);

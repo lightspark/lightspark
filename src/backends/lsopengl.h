@@ -40,7 +40,7 @@
 	#define glPixelStorei(...)
 #else
 	#include <GL/glew.h>
-	#ifndef WIN32
+	#ifndef _WIN32
 		#include <GL/glx.h>
 	#endif
 #endif

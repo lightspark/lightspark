@@ -20,16 +20,11 @@
 #include "swf.h"
 #include "logger.h"
 #include "backends/security.h"
-#ifndef WIN32
+#ifndef _WIN32
 #include <sys/resource.h>
 #include <gdk/gdkx.h>
 #endif
 #include "compat.h"
-
-#ifdef WIN32
-#include <windows.h>
-#undef main
-#endif
 
 using namespace std;
 using namespace lightspark;
@@ -199,7 +194,7 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-#ifndef WIN32
+#ifndef _WIN32
 	struct rlimit rl;
 	getrlimit(RLIMIT_AS,&rl);
 	rl.rlim_cur=400000000;
@@ -234,7 +229,7 @@ int main(int argc, char* argv[])
 		sys->setOrigin(url, fileName);
 		sandboxType = SecurityManager::REMOTE;
 	}
-#ifndef WIN32
+#ifndef _WIN32
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != SecurityManager::REMOTE)
 	{

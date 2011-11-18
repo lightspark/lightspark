@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #pragma pack(pop)
 #endif
 

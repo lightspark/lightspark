@@ -67,7 +67,7 @@ RenderThread::RenderThread(SystemState* s):
 	
 	m_sys=s;
 
-#ifdef WIN32
+#ifdef _WIN32
 	fontPath = "TimesNewRoman.ttf";
 #else
 	fontPath = "Serif";

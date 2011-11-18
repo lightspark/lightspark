@@ -706,6 +706,23 @@ void method_info::consumeStackForRTMultiname(static_stack_types_vector& stack, i
 	}
 }
 
+/* Implements ECMA's ToNumber algorith */
+static llvm::Value* llvm_ToNumber(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& Builder, stack_entry& e)
+{
+	switch(e.second)
+	{
+	case STACK_BOOLEAN:
+	case STACK_INT:
+		return Builder.CreateSIToFP(e.first,number_type);
+	case STACK_UINT:
+		return Builder.CreateUIToFP(e.first,number_type);
+	case STACK_NUMBER:
+		return e.first;
+	default:
+		return Builder.CreateCall(ex->FindFunctionNamed("convert_d"), e.first);
+	}
+}
+
 /* Adds instructions to the builder to resolve the given multiname */
 inline llvm::Value* getMultiname(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& Builder, vector<stack_entry>& static_stack,
 				llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index,
@@ -3388,13 +3405,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//convert_d
 				LOG(LOG_TRACE, _("synt convert_d") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT)
-					value=Builder.CreateSIToFP(v1.first,number_type);
-				else if(v1.second==STACK_NUMBER)
-					value=v1.first;
-				else
-					value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1.first);
-
+				value = llvm_ToNumber(ex, Builder, v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				break;
 			}
@@ -3484,25 +3495,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//increment
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				LOG(LOG_TRACE, "synt increment " << v1.second);
-				if(v1.second==STACK_INT)
-				{
-					constant = llvm::ConstantInt::get(int_type, 1);
-					value=Builder.CreateAdd(v1.first,constant);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
-				else if(v1.second==STACK_NUMBER)
-				{
-					constant = llvm::ConstantInt::get(int_type, 1);
-					//convert constant to float and add
-					value=Builder.CreateFAdd(v1.first,Builder.CreateSIToFP(constant,number_type));
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					value=Builder.CreateCall(ex->FindFunctionNamed("increment"), v1.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
+				value = llvm_ToNumber(ex, Builder, v1);
+				//Create floating point '1' by converting an int '1'
+				constant = llvm::ConstantInt::get(int_type, 1);
+				value=Builder.CreateFAdd(value, Builder.CreateSIToFP(constant, number_type));
+				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				break;
 			}
 			case 0x93:
@@ -3510,18 +3507,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//decrement
 				LOG(LOG_TRACE, _("synt decrement") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT)
-				{
-					constant = llvm::ConstantInt::get(int_type, 1);
-					value=Builder.CreateSub(v1.first,constant);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					value=Builder.CreateCall(ex->FindFunctionNamed("decrement"), v1.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
+				value = llvm_ToNumber(ex, Builder, v1);
+				//Create floating point '1' by converting an int '1'
+				constant = llvm::ConstantInt::get(int_type, 1);
+				value=Builder.CreateFSub(value, Builder.CreateSIToFP(constant, number_type));
+				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				break;
 			}
 			case 0x95:

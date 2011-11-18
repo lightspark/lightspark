@@ -1035,7 +1035,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//increment
 				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_i(increment(val));
+				ASObject* ret=abstract_d(increment(val));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1051,7 +1051,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//decrement
 				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_i(decrement(val));
+				ASObject* ret=abstract_d(decrement(val));
 				context->runtime_stack_push(ret);
 				break;
 			}

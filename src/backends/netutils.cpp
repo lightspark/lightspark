@@ -41,8 +41,6 @@ using namespace lightspark;
  */
 DownloadManager::DownloadManager()
 {
-	sem_init(&mutex, 0, 1);
-	//== Lock initialized
 }
 
 /**
@@ -50,8 +48,6 @@ DownloadManager::DownloadManager()
  */
 DownloadManager::~DownloadManager()
 {
-	//== Destroy lock
-	sem_destroy(&mutex);
 }
 
 /**
@@ -59,15 +55,11 @@ DownloadManager::~DownloadManager()
  */
 void DownloadManager::stopAll()
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
 
 	std::list<Downloader*>::iterator it=downloaders.begin();
 	for(;it!=downloaders.end();it++)
 		(*it)->stop();
-
-	//++ Release lock
-	sem_post(&mutex);
 }
 
 /**
@@ -81,8 +73,7 @@ void DownloadManager::stopAll()
  */
 void DownloadManager::cleanUp()
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
 
 	while(!downloaders.empty())
 	{
@@ -90,15 +81,10 @@ void DownloadManager::cleanUp()
 		//cleanUp should only happen after stopAll has been called
 		assert((*it)->hasFinished());
 
-		//++ Release lock
-		sem_post(&mutex);
+		l.release();
 		destroy(*it);
-		sem_wait(&mutex);
-		//-- Lock acquired
+		l.acquire();
 	}
-
-	//== Destroy lock
-	sem_destroy(&mutex);
 }
 
 /**
@@ -128,11 +114,8 @@ void StandaloneDownloadManager::destroy(Downloader* downloader)
  */
 void DownloadManager::addDownloader(Downloader* downloader)
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
 	downloaders.push_back(downloader);
-	//++ Release lock
-	sem_post(&mutex);
 }
 
 /**
@@ -142,20 +125,16 @@ void DownloadManager::addDownloader(Downloader* downloader)
  */
 bool DownloadManager::removeDownloader(Downloader* downloader)
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
+
 	for(std::list<Downloader*>::iterator it=downloaders.begin(); it!=downloaders.end(); ++it)
 	{
 		if((*it) == downloader)
 		{
 			downloaders.erase(it);
-			//++ Release lock
-			sem_post(&mutex);
 			return true;
 		}
 	}
-	//++ Release lock
-	sem_post(&mutex);
 	return false;
 }
 
@@ -249,7 +228,7 @@ Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, cons
  * \param[in] _cached Whether or not to cache this download.
  */
 Downloader::Downloader(const tiny_string& _url, bool _cached, ILoadable* o):
-	cacheHasOpened(false),hasTerminated(false),                   //LOCKING
+	cacheOpened(0),cacheHasOpened(false),dataAvailable(0),terminated(0),hasTerminated(false), //LOCKING
 	waitingForCache(false),waitingForData(false),waitingForTermination(false), //STATUS
 	forceStop(true),failed(false),finished(false),                //FLAGS
 	url(_url),originalURL(url),                                   //PROPERTIES
@@ -259,17 +238,6 @@ Downloader::Downloader(const tiny_string& _url, bool _cached, ILoadable* o):
 	redirected(false),requestStatus(0),                           //HTTP REDIR, STATUS & HEADERS
 	owner(o)                                                   //PROGRESS
 {
-	sem_init(&mutex,0,1);
-	//== Lock initialized 
-
-	sem_init(&cacheOpened,0,0);
-	//== Initialize cacheOpened signal
-	sem_init(&dataAvailable,0,0);
-	//== Initialize dataAvailable signal
-
-	sem_init(&terminated,0,0);
-	//== Initialize terminated signal
-
 	setg(NULL,NULL,NULL);
 }
 
@@ -281,7 +249,7 @@ Downloader::Downloader(const tiny_string& _url, bool _cached, ILoadable* o):
  * \param[in] data Additional data to send to the host
  */
 Downloader::Downloader(const tiny_string& _url, const std::vector<uint8_t>& _data, ILoadable* o):
-	cacheHasOpened(false),hasTerminated(false),                   //LOCKING
+	cacheOpened(0),cacheHasOpened(false),dataAvailable(0),terminated(0),hasTerminated(false), //LOCKING
 	waitingForCache(false),waitingForData(false),waitingForTermination(false), //STATUS
 	forceStop(true),failed(false),finished(false),                //FLAGS
 	url(_url),originalURL(url),                                   //PROPERTIES
@@ -291,17 +259,6 @@ Downloader::Downloader(const tiny_string& _url, const std::vector<uint8_t>& _dat
 	redirected(false),requestStatus(0),data(_data),               //HTTP REDIR, STATUS & HEADERS
 	owner(o)                                                   //PROGRESS
 {
-	sem_init(&mutex,0,1);
-	//== Lock initialized 
-
-	sem_init(&cacheOpened,0,0);
-	//== Initialize cacheOpened signal
-	sem_init(&dataAvailable,0,0);
-	//== Initialize dataAvailable signal
-
-	sem_init(&terminated,0,0);
-	//== Initialize terminated signal
-
 	setg(NULL,NULL,NULL);
 }
 
@@ -316,8 +273,7 @@ Downloader::~Downloader()
 {
 	waitForTermination();
 
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
 
 	if(cached)
 	{
@@ -334,17 +290,6 @@ Downloader::~Downloader()
 	{
 		free(stableBuffer);
 	}
-
-	//== Destroy terminated signal
-	sem_destroy(&terminated);
-
-	//== Destroy dataAvailable signal
-	sem_destroy(&dataAvailable);
-	//== Destroy cacheOpened signal 
-	sem_destroy(&cacheOpened);
-
-	//== Destroy lock
-	sem_destroy(&mutex);
 }
 
 /**
@@ -356,9 +301,7 @@ Downloader::~Downloader()
  */
 Downloader::int_type Downloader::underflow()
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
-
+	Mutex::Lock l(mutex);
 	//Let's see if the other buffer contains new data
 	syncBuffers();
 	if(egptr()-gptr()>0)
@@ -374,28 +317,16 @@ Downloader::int_type Downloader::underflow()
 	{
 		//The download has failed or has finished
 		if(failed || finished)
-		{
-			//++ Release lock
-			sem_post(&mutex);
 			return EOF;
-		}
 		//We haven't reached the end of the download, more bytes should follow
 		else
 		{
-			//++ Release lock
-			sem_post(&mutex);
-			waitForData();
-			sem_wait(&mutex);
-			//-- Lock acquired
+			waitForData_locked();
 			syncBuffers();
-			
+
 			//Check if we haven't failed or finished (and there wasn't any new data)
 			if(failed || (finished && startReceivedLength==receivedLength))
-			{
-				//++ Release lock
-				sem_post(&mutex);
 				return EOF;
-			}
 		}
 	}
 
@@ -410,11 +341,7 @@ Downloader::int_type Downloader::underflow()
 
 	if(cached)
 	{
-		//++ Release lock
-		sem_post(&mutex);
 		waitForCache();
-		sem_wait(&mutex);
-		//-- Lock acquired
 
 		size_t newCacheSize = receivedLength-(cachePos+cacheSize);
 		if(newCacheSize > cacheMaxSize)
@@ -429,7 +356,6 @@ Downloader::int_type Downloader::underflow()
 		cache.read((char*)stableBuffer, cacheSize);
 		if(cache.fail())
 		{
-			sem_post(&mutex);
 			throw RunTimeException(_("Downloader::underflow: reading from cache file failed"));
 		}
 
@@ -449,18 +375,10 @@ Downloader::int_type Downloader::underflow()
 
 	//If we've failed, don't bother any more
 	if(failed)
-	{
-		//++ Release lock
-		sem_post(&mutex);
 		return EOF;
-	}
 
 	//Set our new iterators in the buffer (begin, cursor, end)
 	setg(begin, cur, end);
-
-	//++ Release lock
-	sem_post(&mutex);
-
 
 	//Cast to unsigned, otherwise 0xff would become eof
 	return (unsigned char)stableBuffer[index];
@@ -498,19 +416,14 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 	assert_and_throw(mode==std::ios_base::in);
 	assert_and_throw(buffer && stableBuffer);
 
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
 	syncBuffers();
 
 	// read from stream until we have enough data
 	uint32_t tmplen = receivedLength;
 	while (!hasTerminated && pos > receivedLength) 
 	{
-		//++ Release lock
-		sem_post(&mutex);
-		waitForData();
-		sem_wait(&mutex);
-		//-- Lock acquired
+		waitForData_locked();
 		syncBuffers();
 		if (tmplen == receivedLength)
 			break; // no new data read
@@ -519,11 +432,7 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 	
 	if(cached)
 	{
-		//++ Release lock
-		sem_post(&mutex);
 		waitForCache();
-		sem_wait(&mutex);
-		//-- Lock acquired
 
 		//The requested position is inside our current window
 		if(pos >= cachePos && pos <= cachePos+cacheSize)
@@ -551,11 +460,7 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 		}
 		//The requested position is bigger then our current amount of available data
 		else if(pos > receivedLength)
-		{
-			//++ Release lock
-			sem_post(&mutex);
 			return -1;
-		}
 	}
 	else
 	{
@@ -564,15 +469,9 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 			setg((char*)stableBuffer,(char*)stableBuffer+pos,(char*)stableBuffer+receivedLength);
 		//The requested position is bigger then our current amount of available data
 		else
-		{
-			//++ Release lock
-			sem_post(&mutex);
 			return -1;
-		}
 	}
 
-	//++ Release lock
-	sem_post(&mutex);
 	return pos;
 }
 
@@ -596,11 +495,8 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 				break;
 			case std::ios_base::cur:
 			{
-				sem_wait(&mutex);
-				//-- Lock acquired
+				Mutex::Lock l(mutex);
 				pos_type tmp = getOffset();
-				//++ Release lock
-				sem_post(&mutex);
 				seekpos(tmp+off,mode);
 				break;
 			}
@@ -614,14 +510,8 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 		}
 	}
 
-	sem_wait(&mutex);
-	//-- Lock acquired
-
-	pos_type ret=getOffset();
-
-	//++ Release lock
-	sem_post(&mutex);
-	return ret;
+	Mutex::Lock l(mutex);
+	return getOffset();
 }
 
 /**
@@ -664,13 +554,11 @@ void Downloader::setFailed()
 	if(waitingForData)
 	{
 		waitingForData = false;
-		//++ Signal dataAvailable
-		sem_post(&dataAvailable);
+		dataAvailable.signal();
 	}
 
 	waitingForTermination = false;
-	//++ Signal terminated
-	sem_post(&terminated);
+	terminated.signal();
 }
 
 /**
@@ -696,13 +584,11 @@ void Downloader::setFinished()
 	if(waitingForData)
 	{
 		waitingForData = false;
-		//++ Signal dataAvailable
-		sem_post(&dataAvailable);
+		dataAvailable.signal();
 	}
 
 	waitingForTermination = false;
-	//++ Signal terminated
-	sem_post(&terminated);
+	terminated.signal();
 }
 
 /**
@@ -711,12 +597,10 @@ void Downloader::setFinished()
  * (Re)allocates the buffer to a given size
  * Waits for mutex at start and releases mutex when finished.
  * \post \c buffer is (re)allocated
+ * mutex must be locked on entry
  */
 void Downloader::allocateBuffer(size_t size)
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
-	
 	//Create buffer
 	if(buffer == NULL)
 	{
@@ -745,9 +629,6 @@ void Downloader::allocateBuffer(size_t size)
 		}
 		//Synchronization of the buffers will be done at the first chance
 	}
-
-	//++ Release lock
-	sem_post(&mutex);
 }
 
 /**
@@ -758,12 +639,10 @@ void Downloader::allocateBuffer(size_t size)
  * \throw RunTimeException Temporary file could not be created
  * \throw RunTimeException Called when the downloader isn't cached or when the cache is already open
  * \see Downloader::openExistingCache()
+ * mutex must be hold prior calling
  */
 void Downloader::openCache()
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
-
 	//Only act if the downloader is cached and the cache hasn't been opened yet
 	if(cached && !cache.is_open())
 	{
@@ -780,8 +659,6 @@ void Downloader::openCache()
 		//We are using fstream to read/write to the cache, so we don't need this FD
 		close(fd);
 
-		//++ Release lock
-		sem_post(&mutex);
 		//Let the openExistingCache function handle the rest
 		openExistingCache(tiny_string(cacheFilenameC, true));
 	}
@@ -801,12 +678,10 @@ void Downloader::openCache()
  * \throw RunTimeException File could not be opened
  * \throw RunTimeException Called when the downloader isn't cached or when the cache is already open
  * \see Downloader::allocateBuffer()
+ * mutex must be hold on entering
  */
 void Downloader::openExistingCache(tiny_string filename)
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
-
 	//Only act if the downloader is cached and the cache hasn't been opened yet
 	if(cached && !cache.is_open())
 	{
@@ -818,22 +693,14 @@ void Downloader::openExistingCache(tiny_string filename)
 		if(!cache.is_open())
 			throw RunTimeException(_("Downloader::openCache: cannot open temporary cache file"));
 
-		//++ Release lock
-		sem_post(&mutex);
 		allocateBuffer(cacheMaxSize);
-		sem_wait(&mutex);
-		//-- Lock acquired
 
 		LOG(LOG_INFO, _("NET: Downloading to cache file: ") << cacheFilename);
 
-		//++ Signal cacheOpened
-		sem_post(&cacheOpened);
+		cacheOpened.signal();
 	}
 	else
 		throw RunTimeException(_("Downloader::openCache: downloader isn't cached or called twice"));
-
-	//++ Release lock
-	sem_post(&mutex);
 }
 
 /**
@@ -843,12 +710,10 @@ void Downloader::openExistingCache(tiny_string filename)
  * Can be called multiple times if the length isn't known up front (reallocating the buffer on the fly).
  * Waits for mutex at start and releases mutex when finished.
  * \post \c buffer is (re)allocated 
+ * mutex must be hold prior calling
  */
 void Downloader::setLength(uint32_t _length)
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
-
 	//Set the length
 	length=_length;
 
@@ -856,23 +721,12 @@ void Downloader::setLength(uint32_t _length)
 	if(cached)
 	{
 		if(!cache.is_open())
-		{
-			//++ Release lock
-			sem_post(&mutex);
-
 			openCache();
-		}
-		else
-			//++ Release lock
-			sem_post(&mutex);
 	}
 	else
 	{
 		if(buffer == NULL)
 			LOG(LOG_INFO, _("NET: Downloading to memory"));
-		//++ Release lock
-		sem_post(&mutex);
-
 		allocateBuffer(length);
 	}
 	notifyOwnerAboutBytesTotal();
@@ -894,8 +748,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 	if(added==0)
 		return;
 
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
 
 	//If the added data would overflow the buffer, grow it
 	if((receivedLength+added)>length)
@@ -909,11 +762,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 			newLength = length + bufferMinGrowth;
 		assert(newLength>=receivedLength+added);
 
-		//++ Release lock
-		sem_post(&mutex);
 		setLength(newLength);
-		sem_wait(&mutex);
-		//-- Lock acquired
 	}
 
 	if(cached)
@@ -930,12 +779,9 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 	if(waitingForData)
 	{
 		waitingForData = false;
-		//++ Signal dataAvailable
-		sem_post(&dataAvailable);
+		dataAvailable.signal();
 	}
 
-	//++ Release lock
-	sem_post(&mutex);
 	notifyOwnerAboutBytesLoaded();
 }
 
@@ -974,8 +820,7 @@ void Downloader::parseHeaders(const char* _headers, bool _setLength)
  */
 void Downloader::parseHeader(std::string header, bool _setLength)
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
 
 	if(header.substr(0, 9) == "HTTP/1.1 " || header.substr(0, 9) == "HTTP/1.0 ") 
 	{
@@ -1022,17 +867,12 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 				//Only read the length when we're not redirecting
 				if(getRequestStatus()/100 != 3)
 				{
-					//++ Release lock
-					sem_post(&mutex);
 					setLength(atoi(headerValue.c_str()));
 					return;
 				}
 			}
 		}
 	}
-
-	//++ Release lock
-	sem_post(&mutex);
 }
 
 /**
@@ -1052,12 +892,10 @@ void Downloader::stop()
 	length = receivedLength;
 
 	waitingForData = false;
-	//++ Signal dataAvailable
-	sem_post(&dataAvailable);
+	dataAvailable.signal();
 
 	waitingForTermination = false;
-	//++ Signal terminated
-	sem_post(&terminated);
+	terminated.signal();
 }
 
 /**
@@ -1067,26 +905,20 @@ void Downloader::stop()
  * Waits for the mutex at start and releases the mutex when finished.
  * \post \c cacheOpened signals has been handled
  * \post \c cacheHasOpened = true
+ * mutex must be locked on entry
  */
 void Downloader::waitForCache()
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
 	if(!cacheHasOpened)
 	{
 		waitingForCache = true;
-		//++ Release lock
-		sem_post(&mutex);
 
-		sem_wait(&cacheOpened);
-		//-- CacheOpen signalled
+		mutex.unlock();
+		cacheOpened.wait();
+		mutex.lock();
 
-		sem_wait(&mutex);
-		//-- Lock acquired
 		cacheHasOpened = true;
 	}
-	//++ Release lock
-	sem_post(&mutex);
 }
 
 /**
@@ -1096,16 +928,12 @@ void Downloader::waitForCache()
  * Waits for the mutex at start and releases the mutex when finished.
  * \post \c dataAvailable signal has been handled
  */
-void Downloader::waitForData()
+void Downloader::waitForData_locked()
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
 	waitingForData = true;
-	//++ Release lock
-	sem_post(&mutex);
-
-	sem_wait(&dataAvailable);
-	//-- Terminated signalled
+	mutex.unlock();
+	dataAvailable.wait();
+	mutex.lock();
 }
 
 /**
@@ -1119,31 +947,23 @@ void Downloader::waitForData()
  */
 void Downloader::waitForTermination()
 {
-	sem_wait(&mutex);
-	//-- Lock acquired
+	Mutex::Lock l(mutex);
 	if(getSys()->isShuttingDown())
 	{
 		setFailed();
-		//++ Release lock
-		sem_post(&mutex);
 		return;
 	}
 
 	if(!hasTerminated)
 	{
 		waitingForTermination = true;
-		//++ Release lock
-		sem_post(&mutex);
 
-		sem_wait(&terminated);
-		//-- Terminated signalled
+		l.release();
+		terminated.wait();
+		l.acquire();
 
-		sem_wait(&mutex);
-		//-- Lock acquired
 		hasTerminated = true;
 	}
-	//++ Release lock
-	sem_post(&mutex);
 }
 
 void Downloader::notifyOwnerAboutBytesTotal() const
@@ -1400,17 +1220,11 @@ void LocalDownloader::execute()
 		//This prevents unneeded copying of the file's data
 		if(isCached())
 		{
-			sem_wait(&mutex);
-			//-- Lock acquired
-
+			Mutex::Lock l(mutex);
 			//Make sure we don't delete the local file afterwards
 			keepCache = true;
 
-			//++ Release lock
-			sem_post(&mutex);
 			openExistingCache(url);
-			sem_wait(&mutex);
-			//-- Lock acquired
 
 			cache.seekg(0, std::ios::end);
 			//Report that we've downloaded everything already
@@ -1418,9 +1232,6 @@ void LocalDownloader::execute()
 			receivedLength = length;
 			notifyOwnerAboutBytesLoaded();
 			notifyOwnerAboutBytesTotal();
-
-			//++ Release lock
-			sem_post(&mutex);
 		}
 		//Otherwise we follow the normal procedure
 		else {
@@ -1430,7 +1241,10 @@ void LocalDownloader::execute()
 			if(file.is_open())
 			{
 				file.seekg(0, std::ios::end);
-				setLength(file.tellg());
+				{
+					Mutex::Lock l(mutex);
+					setLength(file.tellg());
+				}
 				file.seekg(0, std::ios::beg);
 
 				char buffer[bufSize];

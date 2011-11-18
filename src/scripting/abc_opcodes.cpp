@@ -802,8 +802,8 @@ bool ABCVm::ifTrue(ASObject* obj1)
 
 int32_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 {
-	uint32_t num1=val1->toUInt();
-	uint32_t num2=val2->toUInt();
+	int32_t num1=val1->toInt();
+	int32_t num2=val2->toInt();
 
 	val1->decRef();
 	val2->decRef();

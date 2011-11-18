@@ -24,7 +24,6 @@
 #include "asobject.h"
 #include "toplevel/toplevel.h"
 #include <string>
-#include <semaphore.h>
 
 #undef MOUSE_EVENT
 
@@ -337,20 +336,19 @@ public:
 class SynchronizationEvent: public Event
 {
 private:
-	sem_t s;
+	Semaphore s;
 public:
-	SynchronizationEvent():Event("SynchronizationEvent"){sem_init(&s,0,0);}
-	SynchronizationEvent(const tiny_string& _s):Event(_s){sem_init(&s,0,0);}
+	SynchronizationEvent():Event("SynchronizationEvent"),s(0) {}
+	SynchronizationEvent(const tiny_string& _s):Event(_s),s(0) {}
 	static void sinit(Class_base*);
-	~SynchronizationEvent(){sem_destroy(&s);}
 	EVENT_TYPE getEventType() const { return SYNC; }
 	void sync()
 	{
-		sem_post(&s);
+		s.signal();
 	}
 	void wait()
 	{
-		sem_wait(&s);
+		s.wait();
 	}
 };
 

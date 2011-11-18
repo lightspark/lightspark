@@ -23,7 +23,6 @@
 #include "compat.h"
 #include <streambuf>
 #include <fstream>
-#include <semaphore.h>
 #include <inttypes.h>
 #include "zlib.h"
 

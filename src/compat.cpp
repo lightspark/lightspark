@@ -79,12 +79,28 @@ int kill_child(GPid childPid)
 #ifndef WIN32
 #include "timer.h"
 
+uint64_t timespecToMsecs(timespec t)
+{
+	uint64_t ret=0;
+	ret+=(t.tv_sec*1000LL);
+	ret+=(t.tv_nsec/1000000LL);
+	return ret;
+}
+
+uint64_t timespecToUsecs(timespec t)
+{
+	uint64_t ret=0;
+	ret+=(t.tv_sec*1000000LL);
+	ret+=(t.tv_nsec/1000LL);
+	return ret;
+}
+
 uint64_t compat_get_current_time_ms()
 {
 	timespec tp;
 	//Get current clock to schedule next wakeup
 	clock_gettime(CLOCK_REALTIME,&tp);
-	return lightspark::timespecToMsecs(tp);
+	return timespecToMsecs(tp);
 }
 
 uint64_t compat_get_thread_cputime_us()
@@ -94,7 +110,7 @@ uint64_t compat_get_thread_cputime_us()
 	#error no thread clock available
 #endif
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
-	return lightspark::timespecToUsecs(tp);
+	return timespecToUsecs(tp);
 }
 
 int aligned_malloc(void **memptr, size_t alignment, size_t size)

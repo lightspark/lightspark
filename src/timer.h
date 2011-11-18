@@ -22,14 +22,13 @@
 
 #include "compat.h"
 #include <list>
-#include <pthread.h>
 #include <time.h>
-#include <semaphore.h>
-#include "thread_pool.h"
+#include "threading.h"
 
 namespace lightspark
 {
 
+class SystemState;
 //Jobs that run on tick are supposed to be very short
 //For longer jobs use ThreadPool
 class ITickJob
@@ -48,11 +47,6 @@ public:
 	virtual ~ITickJob(){};
 };
 
-uint64_t timespecToUsecs(timespec t);
-uint64_t timespecToMsecs(timespec t);
-timespec msecsToTimespec(uint64_t time);
-
-typedef void* (*thread_worker)(void*);
 class TimerThread
 {
 private:

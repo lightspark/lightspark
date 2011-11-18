@@ -551,11 +551,7 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 {
 	// This object is always created in the main plugin thread, so lets save
 	// so that we can check if we are in the main plugin thread later on.
-	mainThread = pthread_self();
-
-	// Only one external call can be made at a time
-	sem_init(&mutex, 0, 1);
-	sem_init(&externalCallsFinished, 0, 1);
+	mainThread = Thread::self();
 
 	setProperty("$version", "LNX 10,2,"SHORTVERSION);
 
@@ -578,23 +574,21 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 // Destructor preparator
 void NPScriptObject::destroy()
 {
-	sem_wait(&mutex);
+	mutex.lock();
 	// Prevents new external calls from continuing
 	shuttingDown = true;
-	sem_post(&mutex);
+	mutex.unlock();
 
 	// If an external call is running, wake it up
 	if(callStatusses.size() > 0)
-		sem_post(callStatusses.top());
+		callStatusses.top()->signal();
 	// Wait for all external calls to finish
-	sem_wait(&externalCallsFinished);
+	Mutex::Lock l(externalCall);
 }
 
 // Destructor
 NPScriptObject::~NPScriptObject()
 {
-	sem_destroy(&mutex);
-
 	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator meth_it = methods.begin();
 	while(meth_it != methods.end())
 	{
@@ -754,26 +748,24 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 		const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result)
 {
 	// Make sure we are the only external call being executed
-	sem_wait(&mutex);
-	
+	mutex.lock();
 	// If we are shutting down, then don't even continue
 	if(shuttingDown)
 	{
-		sem_post(&mutex);
+		mutex.unlock();
 		return false;
 	}
 
 	// If we are the first external call, then indicate that an external call is running
 	if(callStatusses.size() == 0)
-		sem_wait(&externalCallsFinished);
+		externalCall.lock();
 
 	// Signals when the async has been completed
 	// True if NPN_Invoke succeeded
 	bool success = false;
 
 	// Used to signal completion of asynchronous external call
-	sem_t callStatus;
-	sem_init(&callStatus, 0, 0);
+	Semaphore callStatus(0);
 	// Add this callStatus semaphore to the list of running call statuses to be cleaned up on shutdown
 	callStatusses.push(&callStatus);
 	//We forge an anonymous function with the right number of arguments
@@ -796,7 +788,7 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	LOG(LOG_CALLS,"Invoking " << scriptString << " in the browser ");
 
 	EXT_CALL_DATA data = {
-		&mainThread,
+		mainThread,
 		instance,
 		scriptString.c_str(),
 		args,
@@ -807,11 +799,11 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	};
 
 	// Called JS may invoke a callback, which in turn may invoke another external method, which needs this mutex
-	sem_post(&mutex);
+	mutex.unlock();
 
 	// We are in the main thread,
 	// so we can call the method ourselves synchronously straight away
-	if(pthread_equal(pthread_self(), mainThread))
+	if(Thread::self() == mainThread)
 		callExternal(&data);
 	// We are not in the main thread
 	else
@@ -830,19 +822,18 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 	}
 
 	// Wait for the (possibly asynchronously) called function to finish
-	sem_wait(&callStatus);
+	callStatus.wait();
 
-	sem_wait(&mutex);
+	mutex.lock();
 
 	// This call status doesn't need to be cleaned up anymore on shutdown
 	callStatusses.pop();
-	sem_destroy(&callStatus);
 
 	// If we are the last external call, then indicate that all external calls are now finished
 	if(callStatusses.size() == 0)
-		sem_post(&externalCallsFinished);
+		externalCall.unlock();
 
-	sem_post(&mutex);
+	mutex.unlock();
 	return success;
 }
 
@@ -855,7 +846,7 @@ void NPScriptObject::callExternal(void* d)
 
 
 	// Assert we are in the main plugin thread
-	assert(pthread_equal(pthread_self(), *data->mainThread));
+	assert(Thread::self() == data->mainThread);
 
 	// This will hold the result from our NPN_Invoke(Default) call
 	NPVariant resultVariant;
@@ -907,7 +898,7 @@ void NPScriptObject::callExternal(void* d)
 		}
 	}
 
-	sem_post(data->callStatus);
+	data->callStatus->signal();
 	setTLSSys(prevSys);
 }
 

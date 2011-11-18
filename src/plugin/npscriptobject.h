@@ -221,13 +221,13 @@ public:
 	bool callExternal(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result);
 
 	typedef struct {
-		pthread_t* mainThread;
+		Thread* mainThread;
 		NPP instance;
 		const char* scriptString;
 		const lightspark::ExtVariant** args;
 		uint32_t argc;
 		lightspark::ASObject** result;
-		sem_t* callStatus;
+		Semaphore* callStatus;
 		bool* success;
 	} EXT_CALL_DATA;
 	// This must be called from the plugin thread
@@ -285,12 +285,12 @@ private:
 	NPScriptObjectGW* gw;
 	NPP instance;
 	// Used to determine if a method is called in the main plugin thread
-	pthread_t mainThread;
+	Thread* mainThread;
 
 	// Provides mutual exclusion for external calls
-	sem_t mutex;
-	std::stack<sem_t*> callStatusses;
-	sem_t externalCallsFinished;
+	Mutex mutex;
+	std::stack<Semaphore*> callStatusses;
+	Mutex externalCall;
 
 	// The root callback currently being invoked. If this is not NULL
 	// when invoke() gets called, we can assume the invoke()

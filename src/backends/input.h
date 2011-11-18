@@ -45,7 +45,7 @@ class InputThread
 {
 private:
 	SystemState* m_sys;
-	pthread_t t;
+	Thread* t;
 	bool terminated;
 	bool threaded;
 	static gboolean worker(GtkWidget *widget, GdkEvent *event, InputThread* th);

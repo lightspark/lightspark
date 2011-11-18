@@ -58,7 +58,7 @@ void InputThread::wait()
 	if(terminated)
 		return;
 	if(threaded)
-		pthread_join(t,NULL);
+		t->join();
 	terminated=true;
 }
 

@@ -210,7 +210,7 @@ public:
 class IntervalManager
 {
 private:
-	sem_t mutex;
+	Mutex mutex;
 	std::map<uint32_t,IntervalRunner*> runners;
 	uint32_t currentID;
 public:

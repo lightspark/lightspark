@@ -1297,7 +1297,6 @@ void IntervalRunner::tick()
 
 IntervalManager::IntervalManager() : currentID(1)
 {
-	sem_init(&mutex, 0, 1);
 }
 
 IntervalManager::~IntervalManager()
@@ -1310,12 +1309,11 @@ IntervalManager::~IntervalManager()
 		delete((*it).second);
 		runners.erase(it++);
 	}
-	sem_destroy(&mutex);
 }
 
 uint32_t IntervalManager::setInterval(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, uint32_t interval)
 {
-	sem_wait(&mutex);
+	Mutex::Lock l(mutex);
 
 	uint32_t id = getFreeID();
 	IntervalRunner* runner = new IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj, interval);
@@ -1327,12 +1325,11 @@ uint32_t IntervalManager::setInterval(_R<IFunction> callback, ASObject** args, c
 	//Increment currentID
 	currentID++;
 
-	sem_post(&mutex);
 	return currentID-1;
 }
 uint32_t IntervalManager::setTimeout(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, uint32_t interval)
 {
-	sem_wait(&mutex);
+	Mutex::Lock l(mutex);
 
 	uint32_t id = getFreeID();
 	IntervalRunner* runner = new IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj, interval);
@@ -1344,7 +1341,6 @@ uint32_t IntervalManager::setTimeout(_R<IFunction> callback, ASObject** args, co
 	//increment currentID
 	currentID++;
 
-	sem_post(&mutex);
 	return currentID-1;
 }
 
@@ -1359,8 +1355,8 @@ uint32_t IntervalManager::getFreeID()
 
 void IntervalManager::clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE type, bool removeJob)
 {
-	sem_wait(&mutex);
-	
+	Mutex::Lock l(mutex);
+
 	std::map<uint32_t,IntervalRunner*>::iterator it = runners.find(id);
 	//If the entry exists and the types match, remove its tickjob, delete its intervalRunner and erase their entry
 	if(it != runners.end() && (*it).second->getType() == type)
@@ -1372,6 +1368,4 @@ void IntervalManager::clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE ty
 		delete (*it).second;
 		runners.erase(it);
 	}
-
-	sem_post(&mutex);
 }

@@ -36,6 +36,7 @@ namespace lightspark
 using Glib::Mutex;
 using Glib::StaticMutex;
 using Glib::Cond;
+using Glib::Thread;
 
 typedef Glib::Mutex::Lock Locker;
 typedef Mutex Spinlock;

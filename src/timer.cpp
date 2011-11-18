@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include "swf.h"
-#include <errno.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -54,12 +53,7 @@ timespec lightspark::msecsToTimespec(uint64_t time)
 
 TimerThread::TimerThread(SystemState* s):m_sys(s),currentJob(NULL),stopped(false),joined(false)
 {
-	sem_init(&mutex,0,1);
-	//Workaround for an issue in Ubuntu Oneiric
-	memset(&newEvent, 0, sizeof(newEvent));
-	sem_init(&newEvent,0,0);
-
-	pthread_create(&t,NULL,(thread_worker)timer_worker,this);
+	t = Glib::Thread::create(sigc::bind<0>(&TimerThread::worker,this), true);
 }
 
 void TimerThread::stop()
@@ -67,7 +61,7 @@ void TimerThread::stop()
 	if(!stopped)
 	{
 		stopped=true;
-		sem_post(&newEvent);
+		newEvent.signal();
 	}
 }
 
@@ -77,7 +71,7 @@ void TimerThread::wait()
 	{
 		joined=true;
 		stop();
-		pthread_join(t,NULL);
+		t->join();
 	}
 }
 
@@ -87,8 +81,6 @@ TimerThread::~TimerThread()
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	for(;it!=pendingEvents.end();++it)
 		delete *it;
-	sem_destroy(&mutex);
-	sem_destroy(&newEvent);
 }
 
 void TimerThread::insertNewEvent_nolock(TimingEvent* e)
@@ -98,7 +90,7 @@ void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 	if(pendingEvents.empty() || (*it)->timing > e->timing)
 	{
 		pendingEvents.insert(it, e);
-		sem_post(&newEvent);
+		newEvent.signal();
 		return;
 	}
 	++it;
@@ -117,9 +109,9 @@ void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 
 void TimerThread::insertNewEvent(TimingEvent* e)
 {
-	sem_wait(&mutex);
+	mutex.lock();
 	insertNewEvent_nolock(e);
-	sem_post(&mutex);
+	mutex.unlock();
 }
 
 //Unsafe debugging routine
@@ -131,48 +123,38 @@ void TimerThread::dumpJobs()
 		cout << (*it)->job << endl;
 }
 
-void* TimerThread::timer_worker(TimerThread* th)
+void TimerThread::worker(TimerThread* th)
 {
 	setTLSSys(th->m_sys);
 	while(1)
 	{
 		//Wait until a time expires
-		sem_wait(&th->mutex);
+		th->mutex.lock();
 		//Check if there is any event
 		while(th->pendingEvents.empty())
 		{
-			sem_post(&th->mutex);
-			sem_wait(&th->newEvent);
+			th->newEvent.wait(th->mutex);
 			if(th->stopped)
 				pthread_exit(0);
-			sem_wait(&th->mutex);
 		}
 
 		//Get expiration of first event
 		uint64_t timing=th->pendingEvents.front()->timing;
+		Glib::TimeVal tv;
+		tv.add_milliseconds(timing);
 		//Wait for the absolute time, or a newEvent signal
-		timespec tmpt=msecsToTimespec(timing);
-		sem_post(&th->mutex);
-		int ret;
-		while ((ret=sem_timedwait(&th->newEvent, &tmpt)) == -1 && errno==EINTR)
-		    continue;
+		bool newEvent = th->newEvent.timed_wait(th->mutex,tv);
+
 		if(th->stopped)
-			pthread_exit(0);
-
-		if(ret==0)
-			continue;
-
-		//The first event has expired
-		int err=errno;
-		if(err!=ETIMEDOUT)
 		{
-			LOG(LOG_ERROR,_("Unexpected failure of sem_timedwait.. Trying to go on. errno=") << err);
-			continue;
+			th->mutex.unlock();
+			return;
 		}
 
-		//Note: it may happen that between the sem_timewait and this code another event gets inserted in the front. In this 
-		//case it's not an error to execute it now, as it's expiration time is the first anyway and before the one expired
-		sem_wait(&th->mutex);
+		//We got a new event, maybe with a smaller timing
+		if(newEvent)
+			continue;
+
 		TimingEvent* e=th->pendingEvents.front();
 		th->pendingEvents.pop_front();
 
@@ -193,7 +175,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 			destroyEvent=false;
 		}
 
-		sem_post(&th->mutex);
+		th->mutex.unlock();
 
 		//Now execute the job
 		//NOTE: jobs may be invalid if they has been cancelled in the meantime
@@ -231,7 +213,7 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 
 bool TimerThread::removeJob(ITickJob* job)
 {
-	sem_wait(&mutex);
+	Mutex::Lock l(mutex);
 
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	bool first=true;
@@ -249,10 +231,7 @@ bool TimerThread::removeJob(ITickJob* job)
 	//The job ended
 
 	if(it==pendingEvents.end())
-	{
-		sem_post(&mutex);
 		return false;
-	}
 
 	//If we are waiting of this event it's not safe to remove it
 	//so we flag it has invalid and the worker thread will remove it
@@ -269,7 +248,6 @@ bool TimerThread::removeJob(ITickJob* job)
 		delete e;
 	}
 
-	sem_post(&mutex);
 	return true;
 }
 

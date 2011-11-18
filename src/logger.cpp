@@ -18,8 +18,11 @@
 **************************************************************************/
 
 #include "logger.h"
+#include "threading.h"
 
-sem_t Log::mutex;
+using namespace lightspark;
+
+static StaticMutex mutex;
 bool Log::loggingInited = false;
 LOG_LEVEL Log::log_level=LOG_INFO;
 const char* Log::level_names[]={"ERROR", "INFO","NOT_IMPLEMENTED","CALLS","TRACE"};
@@ -42,9 +45,8 @@ Log::~Log()
 {
 	if(valid)
 	{
-		sem_wait(&mutex);
+		Mutex::Lock l(mutex);
 		std::cout << level_names[cur_level] << ": " << message.str();
-		sem_post(&mutex);
 	}
 }
 
@@ -58,7 +60,6 @@ void Log::initLogging(LOG_LEVEL l)
 	if(!loggingInited)
 	{
 		loggingInited=true;
-		sem_init(&mutex,0,1);
 		log_level=l;
 	}
 }

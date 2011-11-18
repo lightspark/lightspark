@@ -21,7 +21,6 @@
 #define _THREADING_H
 
 #include "compat.h"
-#include <semaphore.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <vector>

@@ -4190,29 +4190,30 @@ ASFUNCTIONBODY(lightspark,print)
 	if(args[0]->getObjectType() == T_STRING)
 	{
 		ASString* str = static_cast<ASString*>(args[0]);
-		cerr << str->data << endl;
+		Log::print(str->data);
 	}
 	else
-		cerr << args[0]->toString() << endl;
+		Log::print(args[0]->toString());
 	return NULL;
 }
 
 ASFUNCTIONBODY(lightspark,trace)
 {
+	stringstream s;
 	for(uint32_t i = 0; i< argslen;i++)
 	{
 		if(i > 0)
-			cerr << " ";
+			s << " ";
 
 		if(args[i]->getObjectType() == T_STRING)
 		{
 			ASString* str = static_cast<ASString*>(args[i]);
-			cerr << str->data;
+			s << str->data;
 		}
 		else
-			cerr << args[i]->toString();
+			s << args[i]->toString();
 	}
-	cerr << endl;
+	Log::print(s.str());
 	return NULL;
 }
 

@@ -210,7 +210,7 @@ NPError NS_PluginInitialize()
 	char *envvar = getenv("LIGHTSPARK_PLUGIN_LOGLEVEL");
 	if (envvar)
 		log_level=(LOG_LEVEL) min(4, max(0, atoi(envvar)));
-	Log::initLogging(log_level);
+	Log::setLogLevel(log_level);
 	lightspark::SystemState::staticInit();
 	return NPERR_NO_ERROR;
 }

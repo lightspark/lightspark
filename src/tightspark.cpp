@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 		exit(-1);
 	}
 
-	Log::initLogging(log_level);
+	Log::setLogLevel(log_level);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration
 	SystemState* sys=new SystemState(NULL,0);

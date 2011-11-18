@@ -23,7 +23,6 @@
 using namespace lightspark;
 
 static StaticMutex mutex;
-bool Log::loggingInited = false;
 LOG_LEVEL Log::log_level=LOG_INFO;
 const char* Log::level_names[]={"ERROR", "INFO","NOT_IMPLEMENTED","CALLS","TRACE"};
 int Log::calls_indent = 0;
@@ -55,11 +54,8 @@ std::ostream& Log::operator()()
 	return message;
 }
 
-void Log::initLogging(LOG_LEVEL l)
+void Log::print(const std::string& s)
 {
-	if(!loggingInited)
-	{
-		loggingInited=true;
-		log_level=l;
-	}
+	Mutex::Lock l(mutex);
+	std::cerr << s << std::endl;
 }

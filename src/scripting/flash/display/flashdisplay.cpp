@@ -389,7 +389,7 @@ void Loader::execute()
 		// Wait until the object is constructed before adding
 		// to the Loader
 		while (!obj->isConstructed() && !aborting)
-			compat_msleep(100);
+			/* TODO: use a Cond or Semaphore here */;
 
 		if(aborting)
 			return;

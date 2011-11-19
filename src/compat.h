@@ -177,8 +177,6 @@ inline T maxTmpl(T a, T b)
 
 uint64_t compat_msectiming();
 void compat_msleep(unsigned int time);
-uint64_t compat_get_current_time_ms();
-uint64_t compat_get_current_time_us();
 uint64_t compat_get_thread_cputime_us();
 
 int kill_child(GPid p);

@@ -118,11 +118,10 @@ void TimerThread::worker(TimerThread* th)
 		}
 
 		//Get expiration of first event
-		uint64_t timing=th->pendingEvents.front()->timing;
-		Glib::TimeVal tv;
-		tv.add_milliseconds(timing);
+		Glib::TimeVal timing=th->pendingEvents.front()->timing;
+		//LOG(LOG_ERROR,"waiting until " << timing << " milliseconds");
 		//Wait for the absolute time, or a newEvent signal
-		bool newEvent = th->newEvent.timed_wait(th->mutex,tv);
+		bool newEvent = th->newEvent.timed_wait(th->mutex,timing);
 
 		if(th->stopped)
 		{
@@ -149,7 +148,7 @@ void TimerThread::worker(TimerThread* th)
 		bool destroyEvent=true;
 		if(e->isTick) //Let's schedule the event again
 		{
-			e->timing+=e->tickTime;
+			e->timing.add_milliseconds(e->tickTime);
 			th->insertNewEvent_nolock(e); //newEvent may be signaled, and will be waited by sem_timedwait
 			destroyEvent=false;
 		}
@@ -176,7 +175,8 @@ void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
 	e->isTick=true;
 	e->job=job;
 	e->tickTime=tickTime;
-	e->timing=compat_get_current_time_ms()+tickTime;
+	e->timing.assign_current_time();
+	e->timing.add_milliseconds(tickTime);
 	insertNewEvent(e);
 }
 
@@ -186,7 +186,8 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 	e->isTick=false;
 	e->job=job;
 	e->tickTime=0;
-	e->timing=compat_get_current_time_ms()+waitTime;
+	e->timing.assign_current_time();
+	e->timing.add_milliseconds(waitTime);
 	insertNewEvent(e);
 }
 

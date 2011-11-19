@@ -24,15 +24,6 @@
 
 using namespace std;
 
-void compat_msleep(unsigned int time)
-{
-#ifdef _WIN32
-	Sleep(time);
-#else
-	usleep(time*1000);
-#endif
-}
-
 #ifdef _MSC_VER
 int round(double f)
 {
@@ -70,29 +61,12 @@ int kill_child(GPid childPid)
 
 #ifndef WIN32
 #include "timer.h"
-
-uint64_t timespecToMsecs(timespec t)
-{
-	uint64_t ret=0;
-	ret+=(t.tv_sec*1000LL);
-	ret+=(t.tv_nsec/1000000LL);
-	return ret;
-}
-
 uint64_t timespecToUsecs(timespec t)
 {
 	uint64_t ret=0;
 	ret+=(t.tv_sec*1000000LL);
 	ret+=(t.tv_nsec/1000LL);
 	return ret;
-}
-
-uint64_t compat_get_current_time_ms()
-{
-	timespec tp;
-	//Get current clock to schedule next wakeup
-	clock_gettime(CLOCK_REALTIME,&tp);
-	return timespecToMsecs(tp);
 }
 
 uint64_t compat_get_thread_cputime_us()
@@ -115,31 +89,6 @@ void aligned_free(void *mem)
 }
 
 #else
-#define EPOCH_BIAS  116444736000000000i64 // Number of 100 nanosecond units from 1/1/1601 to 1/1/1970
-static uint64_t get_corrected_wintime()
-{
-	// Gets time in 100 nanosecond units
-	FILETIME ft;
-	GetSystemTimeAsFileTime(&ft);
-	ULARGE_INTEGER ret;
-	ret.HighPart = ft.dwHighDateTime;
-	ret.LowPart = ft.dwLowDateTime;
-
-	// Compensates epoch difference
-	return ret.QuadPart - EPOCH_BIAS;
-}
-uint64_t compat_get_current_time_ms()
-{
-	// Note: we could also use _ftime here
-	uint64_t ret = get_corrected_wintime();
-	return ret / 10000i64;
-}
-uint64_t compat_get_current_time_us()
-{
-	uint64_t ret = get_corrected_wintime();
-	return ret / 10i64;
-}
-
 uint64_t compat_get_thread_cputime_us()
 {
 	// WINTODO: On Vista/7 we might want to use the processor cycles API
@@ -150,10 +99,10 @@ uint64_t compat_get_thread_cputime_us()
 	ULARGE_INTEGER u;
 	u.HighPart = KernelTime.dwHighDateTime;
 	u.LowPart = KernelTime.dwLowDateTime;
-	ret = u.QuadPart / 10i64;
+	ret = u.QuadPart / 10;
 	u.HighPart = UserTime.dwHighDateTime;
 	u.LowPart = UserTime.dwLowDateTime;
-	ret += u.QuadPart / 10i64;
+	ret += u.QuadPart / 10;
 	return ret;
 }
 #endif

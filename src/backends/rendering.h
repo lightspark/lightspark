@@ -95,7 +95,8 @@ private:
 #endif
 	Window mWindow;
 #endif
-	uint64_t time_s, time_d;
+	Glib::TimeVal time_s, time_d;
+	static Glib::TimeVal FPS_time;
 
 	bool loadShaderPrograms();
 	bool tempBufferAcquired;

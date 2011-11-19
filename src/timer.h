@@ -56,7 +56,7 @@ private:
 		bool isTick;
 		ITickJob* job;
 		//Timing are in milliseconds
-		uint64_t timing;
+		Glib::TimeVal timing;
 		uint32_t tickTime;
 	};
 	Mutex mutex;

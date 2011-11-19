@@ -58,11 +58,25 @@ void RTMPDownloader::execute()
 	strncpy(urlBuf,rtmpUrl.raw_buf(),urlLen+1);
 	int ret=RTMP_SetupURL(rtmpCtx, urlBuf);
 	LOG(LOG_TRACE, "RTMP_SetupURL " << rtmpUrl << " " << ret);
-	//TODO: add return if fails
+	if(!ret)
+	{
+		setFailed();
+		goto cleanup;
+	}
 	ret=RTMP_Connect(rtmpCtx, NULL);
 	LOG(LOG_TRACE, "Connect_Connect " << ret);
+	if(!ret)
+	{
+		setFailed();
+		goto cleanup;
+	}
 	ret=RTMP_ConnectStream(rtmpCtx, 0);
 	LOG(LOG_TRACE, "RTMP_ConnectStream " << ret);
+	if(!ret)
+	{
+		setFailed();
+		goto cleanup;
+	}
 	//TODO: implement unsafe buffer concept
 	char buf[4096];
 	RTMP_SetBufferMS(rtmpCtx, 3600000);
@@ -75,6 +89,7 @@ void RTMPDownloader::execute()
 			break;
 		append((uint8_t*)buf,ret);
 	}
+cleanup:
 	RTMP_Close(rtmpCtx);
 	RTMP_Free(rtmpCtx);
 	delete[] urlBuf;

@@ -239,9 +239,56 @@ void RenderThread::worker(RenderThread* th)
 	th->windowWidth=e->width;
 	th->windowHeight=e->height;
 
+#if defined(_WIN32)
+	HGLRC           hRC=NULL;                           // Permanent Rendering Context
+	HDC             hDC=NULL;                           // Private GDI Device Context
+	PIXELFORMATDESCRIPTOR pfd =
+		{
+			sizeof(PIXELFORMATDESCRIPTOR),
+			1,
+			PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
+			PFD_TYPE_RGBA,            //The kind of framebuffer. RGBA or palette.
+			32,                        //Colordepth of the framebuffer.
+			0, 0, 0, 0, 0, 0,
+			0,
+			0,
+			0,
+			0, 0, 0, 0,
+			24,                        //Number of bits for the depthbuffer
+			0,                        //Number of bits for the stencilbuffer
+			0,                        //Number of Aux buffers in the framebuffer.
+			PFD_MAIN_PLANE,
+			0,
+			0, 0, 0
+		};
+	if(!(hDC = GetDC(e->window)))
+	{
+		LOG(LOG_ERROR,"GetDC failed");
+		return;
+	}
+	int PixelFormat;
+	if (!(PixelFormat=ChoosePixelFormat(hDC,&pfd)))
+	{
+		LOG(LOG_ERROR,"ChoosePixelFormat failed");
+		return;
+	}
+	if(!SetPixelFormat(hDC,PixelFormat,&pfd))
+	{
+		LOG(LOG_ERROR,"SetPixelFormat failed");
+		return;
+	}
+	if (!(hRC=wglCreateContext(hDC)))
+	{
+		LOG(LOG_ERROR,"wglCreateContext failed");
+		return;
+	}
+	if(!wglMakeCurrent(hDC,hRC))
+	{
+		LOG(LOG_ERROR,"wglMakeCurrent failed");
+		return;
+	}
+#elif !defined(ENABLE_GLES2)
 	Display* d=XOpenDisplay(NULL);
-
-#ifndef ENABLE_GLES2
 	int a,b;
 	Bool glx_present=glXQueryVersion(d,&a,&b);
 	if(!glx_present)
@@ -285,7 +332,8 @@ void RenderThread::worker(RenderThread* th)
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		LOG(LOG_INFO, "Indirect!!");
-#else
+#else //egl
+	Display* d=XOpenDisplay(NULL);
 	int a;
 	eglBindAPI(EGL_OPENGL_ES_API);
 	EGLDisplay ed = EGL_NO_DISPLAY;
@@ -408,19 +456,17 @@ void RenderThread::worker(RenderThread* th)
 			if(th->m_sys->isOnError())
 			{
 				th->renderErrorPage(th, th->m_sys->standalone);
-#ifndef ENABLE_GLES2
-				glXSwapBuffers(d,glxWin);
-#else
-				eglSwapBuffers(ed, win);
-#endif
 			}
-			else
-			{
-#ifndef ENABLE_GLES2
-				glXSwapBuffers(d,glxWin);
+
+#if defined(_WIN32)
+			SwapBuffers(hDC);
+#elif !defined(ENABLE_GLES2)
+			glXSwapBuffers(d,glxWin);
 #else
-				eglSwapBuffers(ed, win);
+			eglSwapBuffers(ed, win);
 #endif
+			if(!th->m_sys->isOnError())
+			{
 				th->coreRendering();
 				//Call glFlush to offload work on the GPU
 				glFlush();
@@ -436,14 +482,20 @@ void RenderThread::worker(RenderThread* th)
 	}
 	glDisable(GL_TEXTURE_2D);
 	th->commonGLDeinit();
-#ifndef ENABLE_GLES2
+
+#if defined(_WIN32)
+	wglMakeCurrent(NULL,NULL);
+	wglDeleteContext(hRC);
+	/* Do not ReleaseDC(e->window,hDC); as our window does not have CS_OWNDC */
+#elif !defined(ENABLE_GLES2)
 	glXMakeCurrent(d,None,NULL);
 	glXDestroyContext(d,th->mContext);
+	XCloseDisplay(d);
 #else
 	eglMakeCurrent(ed, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroyContext(ed, th->mEGLContext);
-#endif
 	XCloseDisplay(d);
+#endif
 	return;
 }
 

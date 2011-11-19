@@ -1419,18 +1419,11 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					}
-					else if(t1==STACK_INT && t2==STACK_INT)
-					{
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-						cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					}
-					else if(t1==STACK_NUMBER || t2==STACK_NUMBER)
+					else /* both t1 and t2 are UINT or INT or NUMBER or BOOLEAN */
 					{
 						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
 						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					}
-					else
-						throw UnsupportedException("Unsuppoted types for add");
 
 					break;
 				}
@@ -3562,12 +3555,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt add") );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v2.first, v1.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				}
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+				if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -3577,51 +3565,18 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				}
-				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
-				{
-					value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v2.first, v1.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_INT)
-				{
-					value=Builder.CreateAdd(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
-				{
-					v1.first=Builder.CreateSIToFP(v1.first,number_type);
-					value=Builder.CreateFAdd(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
-				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
-				{
-					v2.first=Builder.CreateSIToFP(v2.first,number_type);
-					value=Builder.CreateFAdd(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
-				else if(v1.second==STACK_NUMBER && v2.second==STACK_UINT)
-				{
-					v2.first=Builder.CreateUIToFP(v2.first,number_type);
-					value=Builder.CreateFAdd(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
-				else if(v1.second==STACK_UINT && v2.second==STACK_NUMBER)
-				{
-					v1.first=Builder.CreateUIToFP(v1.first,number_type);
-					value=Builder.CreateFAdd(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
-				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
-				{
-					value=Builder.CreateFAdd(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				}
-				else
+				else if(v1.second==STACK_OBJECT || v2.second==STACK_OBJECT)
 				{
 					abstract_value(ex,Builder,v1);
 					abstract_value(ex,Builder,v2);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				}
+				else /* v1 and v2 are BOOLEAN, UINT, INT or NUMBER */
+				{
+					/* adding promotes everything to NUMBER */
+					value=Builder.CreateFAdd(llvm_ToNumber(ex, Builder, v1), llvm_ToNumber(ex, Builder, v2));
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				break;
 			}

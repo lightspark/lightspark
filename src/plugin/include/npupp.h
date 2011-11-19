@@ -1626,6 +1626,7 @@ typedef OSErr (* NP_LOADDS BP_GetSupportedMIMETypesUPP)(BPSupportedMIMETypes*, U
 #endif
 #endif /* MAC */
 
+#ifndef OSCALL
 #if defined(_WINDOWS)
 #define OSCALL WINAPI
 #else
@@ -1633,6 +1634,7 @@ typedef OSErr (* NP_LOADDS BP_GetSupportedMIMETypesUPP)(BPSupportedMIMETypes*, U
 #define OSCALL _System
 #else
 #define OSCALL
+#endif
 #endif
 #endif
 

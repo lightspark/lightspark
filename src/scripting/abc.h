@@ -38,7 +38,6 @@
 #include <map>
 #include <set>
 #include "swf.h"
-#include "abcutils.h"
 
 namespace lightspark
 {

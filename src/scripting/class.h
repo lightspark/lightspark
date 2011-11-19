@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "scripting/abcutils.h"
 #include "scripting/toplevel/Array.h"
 #include "compat.h"
 #include "asobject.h"

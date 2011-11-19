@@ -22,6 +22,7 @@
 #include "class.h"
 #include "exceptions.h"
 #include "compat.h"
+#include "abcutils.h"
 
 using namespace std;
 using namespace lightspark;

@@ -20,6 +20,7 @@
 #include "abc.h"
 #include "compat.h"
 #include "exceptions.h"
+#include "abcutils.h"
 #include <string>
 #include <sstream>
 

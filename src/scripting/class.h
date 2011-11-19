@@ -418,7 +418,7 @@ public:
 			assert_and_throw(types[i]->getObjectType() == T_CLASS);
 			Class_base* o_class = static_cast<Class_base*>(types[i]);
 			ret.name += "$";
-			ret.name += o_class->class_name.getQualifiedName();
+			ret.name += o_class->class_name.name;
 		}
 		return ret;
 	}

@@ -25,7 +25,7 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
+SET_NAMESPACE("__AS3__.vec");
 REGISTER_CLASS_NAME(Vector);
 
 void Vector::sinit(Class_base* c)

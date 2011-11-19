@@ -53,8 +53,8 @@ protected:
 	/* this is private because one never deletes a Type */
 	~Type() {}
 public:
-	static const Any* const anyType;
-	static const Void* const voidType;
+	static Any* const anyType;
+	static Void* const voidType;
 	/*
 	 * This returns the Type for the given multiname.
 	 * It searches for the and object of the type in global object.

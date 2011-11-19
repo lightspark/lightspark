@@ -64,8 +64,8 @@ REGISTER_CLASS_NAME2(ASString, "String", "");
 REGISTER_CLASS_NAME(XML);
 REGISTER_CLASS_NAME(XMLList);
 
-const Any* const Type::anyType = new Any();
-const Void* const Type::voidType = new Void();
+Any* const Type::anyType = new Any();
+Void* const Type::voidType = new Void();
 
 XML::XML():node(NULL),constructed(false)
 {

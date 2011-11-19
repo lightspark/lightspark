@@ -3414,6 +3414,12 @@ Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this), size(0,0
 	}
 }
 
+Bitmap::~Bitmap()
+{
+	if(data)
+		delete[] data;
+}
+
 void Bitmap::sinit(Class_base* c)
 {
 //	c->constructor=Class<IFunction>::getFunction(_constructor);

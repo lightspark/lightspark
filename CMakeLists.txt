@@ -113,6 +113,12 @@ ELSE(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None")
 ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 
+IF(CMAKE_SYSTEM_NAME STREQUAL CMAKE_HOST_SYSTEM_NAME)
+  SET(CROSSCOMPILING FALSE)
+ELSE()
+  SET(CROSSCOMPILING TRUE)
+ENDIF()
+
 # Using relative folders, cmake happens by itself CMAKE_INSTALL_PREFIX
 IF(UNIX)
 	 SET(ETCDIR "/etc") #Using absolute folder

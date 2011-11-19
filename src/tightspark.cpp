@@ -71,13 +71,13 @@ int main(int argc, char* argv[])
 		}
 	}
 
-
 	if(fileNames.empty() || error)
 	{
 		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] <file.abc> [<file2.abc>]");
 		exit(-1);
 	}
 
+	g_thread_init(NULL);
 	Log::setLogLevel(log_level);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration

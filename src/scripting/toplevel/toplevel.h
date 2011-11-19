@@ -46,6 +46,8 @@ class Void;
 /* This abstract class represents a type, i.e. something that a value can be coerced to.
  * Currently Class_base and Template_base implement this interface.
  * If you let another class implement this interface, change ASObject->is<Type>(), too!
+ * You never take ownership of a type, so there is no need to incRef/decRef them.
+ * Types are guaranteed to survive until SystemState::destroy().
  */
 class Type
 {

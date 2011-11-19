@@ -1820,9 +1820,9 @@ void ABCVm::getDescendants(call_context* th, int n)
 		obj->decRef();
 		throw Class<TypeError>::getInstanceS("Only XML and XMLList objects have descendants");
 	}
-	obj->decRef();
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	th->runtime_stack_push(retObj);
+	obj->decRef();
 }
 
 number_t ABCVm::increment(ASObject* o)

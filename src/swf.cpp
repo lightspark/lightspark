@@ -59,7 +59,6 @@ static GStaticPrivate tls_system = G_STATIC_PRIVATE_INIT;
 SystemState* lightspark::getSys()
 {
 	SystemState* ret = (SystemState*)g_static_private_get(&tls_system);
-	assert(ret);
 	return ret;
 }
 

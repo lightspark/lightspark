@@ -180,7 +180,7 @@ private:
 	QName template_name;
 public:
 	Template_base(QName name);
-	virtual Class_base* applyType(ASObject* const* args, const unsigned int argslen)=0;
+	virtual Class_base* applyType(const std::vector<Type*>& t)=0;
 };
 
 class Class_object: public Class_base

@@ -353,19 +353,11 @@ class TemplatedClass : public Class<T>
 private:
 	/* the Template<T>* this class was generated from */
 	const Template_base* templ;
-	std::vector<Class_base*> types;
+	std::vector<Type*> types;
 public:
-	TemplatedClass(const QName& name, ASObject* const* _types, const unsigned int numtypes, Template_base* _templ)
-		: Class<T>(name), templ(_templ)
+	TemplatedClass(const QName& name, const std::vector<Type*>& _types, Template_base* _templ)
+		: Class<T>(name), templ(_templ), types(_types)
 	{
-		assert(types.empty());
-		types.reserve(numtypes);
-		for(size_t i=0;i<numtypes;++i)
-		{
-			assert_and_throw(_types[i]->getObjectType() == T_CLASS);
-			Class_base* o_class = static_cast<Class_base*>(_types[i]);
-			types.push_back(o_class);
-		}
 	}
 
 	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
@@ -394,7 +386,7 @@ public:
 		return templ;
 	}
 
-	const std::vector<Class_base*> getTypes() const
+	const std::vector<Type*> getTypes() const
 	{
 		return types;
 	}
@@ -407,32 +399,28 @@ class Template : public Template_base
 public:
 	Template(QName name) : Template_base(name) {};
 
-	QName getQName(ASObject* const* types, const unsigned int numtypes)
+	QName getQName(const std::vector<Type*>& types)
 	{
 		//This is the naming scheme that the ABC compiler uses,
 		//and we need to stay in sync here
-		assert_and_throw(numtypes);
 		QName ret(ClassName<T>::name, ClassName<T>::ns);
-		for(size_t i=0;i<numtypes;++i)
+		for(size_t i=0;i<types.size();++i)
 		{
-			assert_and_throw(types[i]->getObjectType() == T_CLASS);
-			Class_base* o_class = static_cast<Class_base*>(types[i]);
 			ret.name += "$";
-			ret.name += o_class->class_name.name;
+			ret.name += types[i]->getName();
 		}
 		return ret;
 	}
 
-	/* this function will take ownership of the types objects */
-	Class_base* applyType(ASObject* const* types, const unsigned int numtypes)
+	Class_base* applyType(const std::vector<Type*>& types)
 	{
-		QName instantiatedQName = getQName(types,numtypes);
+		QName instantiatedQName = getQName(types);
 
 		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(instantiatedQName);
 		Class<T>* ret=NULL;
 		if(it==getSys()->classes.end()) //This class is not yet in the map, create it
 		{
-			ret=new TemplatedClass<T>(instantiatedQName,types,numtypes,this);
+			ret=new TemplatedClass<T>(instantiatedQName,types,this);
 			getSys()->classes.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
@@ -447,11 +435,10 @@ public:
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(Class_base* type)
+	static Ref<Class_base> getTemplateInstance(Type* type)
 	{
-		type->incRef();
-		ASObject* obj = type;
-		return _MR(getTemplate()->applyType(&obj,1));
+		std::vector<Type*> t(1,type);
+		return _MR(getTemplate()->applyType(t));
 	}
 
 	static Template<T>* getTemplate(const QName& name)

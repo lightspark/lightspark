@@ -744,7 +744,22 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	Template_base* o_template=static_cast<Template_base*>(obj);
 
 	/* Instantiate the template to obtain a class */
-	Class_base* o_class = o_template->applyType(args,m);
+
+	std::vector<Type*> t(m);
+	for(uint32_t i=0;i<m;++i)
+	{
+		if(args[i]->is<Class_base>())
+			t[i] = args[i]->as<Class_base>();
+		else if(args[i]->is<Null>())
+			t[i] = Type::anyType;
+		else
+			throw Class<TypeError>::getInstanceS("Wrong type in applytype");
+	}
+
+	Class_base* o_class = o_template->applyType(t);
+
+	for(uint32_t i=0;i<m;++i)
+		args[i]->decRef();
 
 	th->runtime_stack_push(o_class);
 	delete[] args;

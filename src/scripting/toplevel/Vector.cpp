@@ -35,7 +35,7 @@ void Vector::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
 }
 
-void Vector::setTypes(const std::vector<Class_base*>& types)
+void Vector::setTypes(const std::vector<Type*>& types)
 {
 	assert(vec_type == NULL);
 	assert_and_throw(types.size() == 1);
@@ -48,7 +48,7 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 	assert_and_throw(args[0]->getClass());
 	assert_and_throw(o_class->getTypes().size() == 1);
 
-	Class_base* type = o_class->getTypes()[0];
+	Type* type = o_class->getTypes()[0];
 
 	if(args[0]->getClass() == Class<Array>::getClass())
 	{
@@ -61,26 +61,20 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 			ASObject* obj = a->at(i);
 			obj->incRef();
 			//Convert the elements of the array to the type of this vector
-			//by calling the type's generator
-			ret->vec.push_back( type->generator(&obj,1) );
+			ret->vec.push_back( type->coerce(obj) );
 		}
 		return ret;
 	}
 	else if(args[0]->getClass()->getTemplate() == Template<Vector>::getTemplate())
 	{
 		Vector* arg = static_cast<Vector*>(args[0]);
-		TemplatedClass<Vector>* arg_class = static_cast<TemplatedClass<Vector>*>(arg->getClass());
-		Class_base* arg_type = arg_class->getTypes()[0];
-
-		if(!arg_type->isSubClass(type))
-			throw ArgumentError("Cannot convert one Vector into another because type of first is not subclass of later");
 
 		//create object without calling _constructor
 		Vector* ret = o_class->getInstance(false,NULL,0);
 		for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 		{
 			(*i)->incRef();
-			ret->vec.push_back( *i );
+			ret->vec.push_back( type->coerce(*i) );
 		}
 		return ret;
 	}

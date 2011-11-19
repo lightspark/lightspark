@@ -19,6 +19,7 @@
 
 #include "rtmputils.h"
 #include "logger.h"
+#include "swf.h"
 
 #ifdef ENABLE_RTMP
 #include <librtmp/rtmp.h>
@@ -49,10 +50,10 @@ void RTMPDownloader::execute()
 	rtmpUrl+=" playpath=";
 	rtmpUrl+=stream;
 	rtmpUrl+=" swfUrl=";
-	rtmpUrl+=sys->getOrigin().getURL();
+	rtmpUrl+=getSys()->getOrigin().getURL();
 	rtmpUrl+=" swfVfy=1";
 	//Setup url needs a char*, not a const char*...
-	int urlLen=rtmpUrl.len();
+	int urlLen=rtmpUrl.numBytes();
 	char* urlBuf=new char[urlLen+1];
 	strncpy(urlBuf,rtmpUrl.raw_buf(),urlLen);
 	int ret=RTMP_SetupURL(rtmpCtx, urlBuf);

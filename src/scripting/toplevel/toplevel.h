@@ -74,6 +74,9 @@ public:
 	 * If the argument cannot be converted, it throws a TypeError
 	 */
 	virtual ASObject* coerce(ASObject* o) const=0;
+
+	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
+	virtual tiny_string getName() const=0;
 };
 template<> inline Type* ASObject::as<Type>() { return dynamic_cast<Type*>(this); }
 template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<const Type*>(this); }
@@ -83,6 +86,7 @@ class Any: public Type
 public:
 	ASObject* coerce(ASObject* o) const { return o; }
 	virtual ~Any() {};
+	tiny_string getName() const { return "any"; }
 };
 
 class Void: public Type
@@ -90,6 +94,7 @@ class Void: public Type
 public:
 	ASObject* coerce(ASObject* o) const;
 	virtual ~Void() {};
+	tiny_string getName() const { return "void"; }
 };
 
 class InterfaceClass: public ASObject
@@ -145,6 +150,7 @@ public:
 	 */
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
+	tiny_string getName() const { return class_name.name; }
 	tiny_string toString();
 	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 	ASObject *describeType() const;

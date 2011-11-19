@@ -96,16 +96,11 @@ void NPIdentifierObject::copy(NPIdentifier& dest) const
 // Comparator
 bool NPIdentifierObject::operator<(const ExtIdentifier& other) const
 {
-	// It is possible we got a down-casted NPIdentifierObject, so lets check for that
-	try
-	{
-		return identifier < dynamic_cast<const NPIdentifierObject&>(other).getNPIdentifier();
-	}
-	// We got a real ExtIdentifier, let ExtIdentifier::operator< handle this
-	catch(std::bad_cast&)
-	{
+	const NPIdentifierObject* npi = dynamic_cast<const NPIdentifierObject*>(&other);
+	if(npi)
+		return identifier < npi->getNPIdentifier();
+	else
 		return ExtIdentifier::operator<(other);
-	}
 }
 
 // Type determination
@@ -290,16 +285,11 @@ NPObject* NPObjectObject::getNPObject(NPP instance, const lightspark::ExtObject&
 		{
 			property = obj.getProperty(i);
 
-			// The returned property might be an NPVariantObject, which would save us a conversion
-			try
-			{
-				dynamic_cast<NPVariantObject&>(*property).copy(varProperty);
-			}
-			// We got a real ExtVariant, so we need to convert it to NPVariantObject first
-			catch(std::bad_cast&)
-			{
+			NPVariantObject* npv = dynamic_cast<NPVariantObject*>(property);
+			if(npv)
+				npv->copy(varProperty);
+			else
 				NPVariantObject(instance, *property).copy(varProperty);
-			}
 
 			// Push the value onto the newly created Array
 			NPN_Invoke(instance, result, NPN_GetStringIdentifier("push"), &varProperty, 1, &resultVariant);
@@ -323,17 +313,11 @@ NPObject* NPObjectObject::getNPObject(NPP instance, const lightspark::ExtObject&
 			for(uint32_t i = 0; i < count; i++)
 			{
 				property = obj.getProperty(*ids[i]);
-
-				// The returned property might be an NPVariantObject, which would save us a conversion
-				try
-				{
-					dynamic_cast<NPVariantObject&>(*property).copy(varProperty);
-				}
-				// We got a real ExtVariant, so we need to convert it to NPVariantObject first
-				catch(std::bad_cast&)
-				{
+				NPVariantObject* npv = dynamic_cast<NPVariantObject*>(property);
+				if(npv)
+					npv->copy(varProperty);
+				else
 					NPVariantObject(instance, *property).copy(varProperty);
-				}
 
 				// Set the properties
 				NPN_SetProperty(instance, result, NPIdentifierObject(*ids[i]).getNPIdentifier(), &varProperty);

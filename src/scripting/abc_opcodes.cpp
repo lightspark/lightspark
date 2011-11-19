@@ -278,7 +278,7 @@ uint32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 
 void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
@@ -315,12 +315,11 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 				IFunction* f=static_cast<IFunction*>(o.getPtr());
 				//Create a new array
-				ASObject** proxyArgs=new ASObject*[m+1];
+				ASObject** proxyArgs=g_newa(ASObject*, m+1);
 				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
 				for(int i=0;i<m;i++)
 					proxyArgs[i+1]=args[i];
-				delete[] args;
 
 				//We now suppress special handling
 				LOG(LOG_CALLS,_("Proxy::callProperty"));
@@ -338,7 +337,6 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 				obj->decRef();
 				LOG(LOG_CALLS,_("End of calling ") << *name);
-				delete[] proxyArgs;
 				return;
 			}
 		}
@@ -350,7 +348,6 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		obj->decRef();
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
-		delete[] args;
 	}
 	LOG(LOG_CALLS,_("End of calling ") << *name);
 }
@@ -664,7 +661,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 void ABCVm::construct(call_context* th, int m)
 {
 	LOG(LOG_CALLS, _("construct ") << m);
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
@@ -716,14 +713,13 @@ void ABCVm::construct(call_context* th, int m)
 	obj->decRef();
 	LOG(LOG_CALLS,_("End of constructing ") << ret);
 	th->runtime_stack_push(ret);
-	delete[] args;
 }
 
 void ABCVm::constructGenericType(call_context* th, int m)
 {
 	LOG(LOG_CALLS, _("constructGenericType ") << m);
 	assert_and_throw(m==1);
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
@@ -737,7 +733,6 @@ void ABCVm::constructGenericType(call_context* th, int m)
 		th->runtime_stack_push(obj);
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
-		delete[] args;
 		return;
 	}
 
@@ -762,7 +757,6 @@ void ABCVm::constructGenericType(call_context* th, int m)
 		args[i]->decRef();
 
 	th->runtime_stack_push(o_class);
-	delete[] args;
 }
 
 ASObject* ABCVm::typeOf(ASObject* obj)
@@ -1359,7 +1353,7 @@ void ABCVm::getLex(call_context* th, int n)
 void ABCVm::constructSuper(call_context* th, int m)
 {
 	LOG(LOG_CALLS, _("constructSuper ") << m);
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
@@ -1373,8 +1367,6 @@ void ABCVm::constructSuper(call_context* th, int m)
 
 	th->inClass->super->handleConstruction(obj,args, m, false);
 	LOG(LOG_CALLS,_("End super construct "));
-
-	delete[] args;
 }
 
 ASObject* ABCVm::findProperty(call_context* th, multiname* name)
@@ -1492,7 +1484,7 @@ void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 
 void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
@@ -1723,7 +1715,7 @@ bool ABCVm::ifFalse(ASObject* obj1)
 
 void ABCVm::constructProp(call_context* th, int n, int m)
 {
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
@@ -1759,7 +1751,6 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	th->runtime_stack_push(ret);
 	obj->decRef();
-	delete[] args;
 	LOG(LOG_CALLS,_("End of constructing ") << ret);
 }
 
@@ -2064,7 +2055,7 @@ bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 
 void ABCVm::call(call_context* th, int m, method_info** called_mi)
 {
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
@@ -2117,7 +2108,6 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 			throw Class<TypeError>::getInstanceS("Error #1006: Tried to call something that is not a function");
 	}
 	LOG(LOG_CALLS,_("End of call ") << m << ' ' << f);
-	delete[] args;
 }
 
 bool ABCVm::deleteProperty(ASObject* obj, multiname* name)

@@ -132,10 +132,13 @@ ENDIF(UNIX)
 # lightspark executable target
 IF(COMPILE_LIGHTSPARK)
   ADD_EXECUTABLE(lightspark main.cpp)
-  TARGET_LINK_LIBRARIES(lightspark ${Boost_LIBRARIES} ${GTK_LIBRARIES} ${GLIBMM_LIBRARIES})
+  TARGET_LINK_LIBRARIES(lightspark spark)
+  #With STATICDEPS, all deps are compiled into spark
+  IF(NOT STATICDEPS)
+    TARGET_LINK_LIBRARIES(lightspark ${Boost_LIBRARIES} ${GTK_LIBRARIES} ${GLIBMM_LIBRARIES})
+  ENDIF()
 
   IF(UNIX)
-    TARGET_LINK_LIBRARIES(lightspark ${X11_LIBRARIES})
     INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark.frag DESTINATION ${DATADIR}/lightspark)
     INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark.vert DESTINATION ${DATADIR}/lightspark)
     INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark-blitter.vert DESTINATION ${DATADIR}/lightspark)
@@ -148,7 +151,10 @@ ENDIF(COMPILE_LIGHTSPARK)
 IF(COMPILE_TIGHTSPARK)
   ADD_EXECUTABLE(tightspark tightspark.cpp)
   TARGET_LINK_LIBRARIES(tightspark spark)
-  TARGET_LINK_LIBRARIES(tightspark ${Boost_LIBRARIES})
+  #With STATICDEPS, all deps are compiled into spark
+  IF(NOT STATICDEPS)
+    TARGET_LINK_LIBRARIES(tightspark ${Boost_LIBRARIES})
+  ENDIF()
 
   IF(UNIX)
     INSTALL(TARGETS tightspark RUNTIME DESTINATION ${BINDIR})

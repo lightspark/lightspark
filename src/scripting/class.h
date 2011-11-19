@@ -447,6 +447,13 @@ public:
 		return ret;
 	}
 
+	static Ref<Class_base> getTemplateInstance(Class_base* type)
+	{
+		type->incRef();
+		ASObject* obj = type;
+		return _MR(getTemplate()->applyType(&obj,1));
+	}
+
 	static Template<T>* getTemplate(const QName& name)
 	{
 		std::map<QName, Template_base*>::iterator it=getSys()->templates.find(name);

@@ -3196,7 +3196,6 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	//As constructors are not binded, we should change here the level
 	if(constructor)
 	{
-		LOG(LOG_CALLS,_("Calling Instance init ") << class_name);
 		target->incRef();
 		ASObject* ret=constructor->call(target,args,argslen);
 		assert_and_throw(ret->is<Undefined>());

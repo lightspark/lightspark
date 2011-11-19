@@ -154,6 +154,7 @@ private:
 	RenderThread* renderThread;
 	InputThread* inputThread;
 	EngineData* engineData;
+	Thread* mainThread;
 	void startRenderTicks();
 	/**
 		Create the rendering and input engines

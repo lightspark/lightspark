@@ -161,7 +161,7 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),terminated(0),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),engineData(NULL),fileDumpAvailable(0),
+	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),fileDumpAvailable(0),
 	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
@@ -172,6 +172,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 
 	setTLSSys(this);
 
+	mainThread = Thread::self();
 	//Get starting time
 	if(parseThread) //ParseThread may be null in tightspark
 		parseThread->setRootMovie(this);
@@ -502,7 +503,13 @@ void SystemState::setShutdownFlag()
 
 	terminated.signal();
 	if(standalone)
+	{
+		if(Thread::self() != mainThread)
+			gdk_threads_enter();
 		gtk_main_quit();
+		if(Thread::self() != mainThread)
+			 gdk_threads_leave();
+	}
 }
 
 void SystemState::wait()

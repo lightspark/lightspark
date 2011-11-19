@@ -192,9 +192,7 @@ IF(ENABLE_GLES2)
 ENDIF(ENABLE_GLES2)
 
 IF(WIN32)
-  INCLUDE(FindWin32Stdint REQUIRED)
-  INCLUDE_DIRECTORIES(${STDINT_INCLUDE_DIRS})
-  SET(EXTRA_LIBS_LIBRARIES ${EXTRA_LIBS_LIBRARIES} WS2_32.lib)
+  SET(EXTRA_LIBS_LIBRARIES ${EXTRA_LIBS_LIBRARIES} ws2_32.lib imagehlp.lib)
 ENDIF(WIN32)
 
 IF(UNIX)
@@ -254,8 +252,13 @@ IF(ENABLE_LIBAVCODEC)
 ENDIF(ENABLE_LIBAVCODEC)	
 
 IF(CMAKE_COMPILER_IS_GNUCC)
-  SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--no-undefined ${CMAKE_EXE_LINKER_FLAGS}")
-  SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed,-z,noexecstack ${CMAKE_SHARED_LINKER_FLAGS}")
+  IF(MINGW)
+    SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed,--no-undefined -mthreads ${CMAKE_EXE_LINKER_FLAGS}")
+    SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed,--no-undefined -mthreads ${CMAKE_SHARED_LINKER_FLAGS}")
+  ELSE()
+    SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--no-undefined ${CMAKE_EXE_LINKER_FLAGS}")
+    SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed,-z,noexecstack,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
+  ENDIF()
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 LINK_DIRECTORIES(${LLVM_LIB_DIR})
@@ -283,8 +286,13 @@ ENDIF(ENABLE_DEBIAN_ALTERNATIVES)
 
 # Compiler defaults flags for different profiles
 IF(CMAKE_COMPILER_IS_GNUCC)
-  SET(CMAKE_CXX_FLAGS
+  IF(MINGW)
+    SET(CMAKE_CXX_FLAGS
+	   "${CMAKE_CXX_FLAGS} -mms-bitfields -mthreads -fexceptions -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -std=c++0x -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
+  ELSE()
+   SET(CMAKE_CXX_FLAGS
 	  "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
+  ENDIF()
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
   SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
   SET(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
@@ -296,6 +304,10 @@ ENDIF(CMAKE_COMPILER_IS_GNUCC)
 IF(MSVC)
   ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DVPCOMPAT -DPTW32_STATIC_LIB -DPCRE_STATIC)
 ENDIF(MSVC)
+
+IF(CROSSCOMPILING AND MINGW)
+  ADD_DEFINITIONS(-DLIBXML_STATIC -DGLEW_STATIC)
+ENDIF()
 
 # Check if the system have atomic header ( gcc >= 4.6 )
 INCLUDE (CheckIncludeFileCXX)

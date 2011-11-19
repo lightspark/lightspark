@@ -55,7 +55,7 @@ void RTMPDownloader::execute()
 	//Setup url needs a char*, not a const char*...
 	int urlLen=rtmpUrl.numBytes();
 	char* urlBuf=new char[urlLen+1];
-	strncpy(urlBuf,rtmpUrl.raw_buf(),urlLen);
+	strncpy(urlBuf,rtmpUrl.raw_buf(),urlLen+1);
 	int ret=RTMP_SetupURL(rtmpCtx, urlBuf);
 	LOG(LOG_TRACE, "RTMP_SetupURL " << rtmpUrl << " " << ret);
 	//TODO: add return if fails

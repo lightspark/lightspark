@@ -43,12 +43,15 @@ Find liblightsparkBACKENDplugin libraries
 ****************************/
 void PluginManager::findPlugins()
 {
-	//Search for all files under ${PRIVATELIBDIR}/plugins
+	//Search for all files under the plugins directory
 	//Verify if they are audio plugins
 	//If true, add to list of audio plugins
-	string froot ( PRIVATELIBDIR ), fplugins ( "/plugins/" ); //LS should always look in the plugins folder, nowhere else
-	const path plugins_folder = froot + fplugins;
-	const string pattern ( "liblightspark+[A-Za-z]+plugin.so" );
+#ifdef _WIN32
+	const path plugins_folder = getExectuablePath();
+#else
+	const path plugins_folder = string(PRIVATELIBDIR) + "/plugins/";
+#endif
+	const string pattern ( "liblightspark+[A-Za-z]+plugin.*" );
 
 	//Stuff used by/for pcre
 	const char* patternError;
@@ -69,17 +72,18 @@ void PluginManager::findPlugins()
 	}
 	else
 	{
-		for ( recursive_directory_iterator itr ( plugins_folder ), end_itr; itr != end_itr; ++itr )
+		for ( directory_iterator itr ( plugins_folder ), end_itr; itr != end_itr; ++itr )
 		{
-			if ( is_regular_file ( itr.status() ) )   //Is it a real file? This will remove symlink
+			if ( is_regular_file ( *itr ) )   //Is it a real file? This will remove symlink
 			{
 				string leaf_name = itr->path().filename();
 				int rc=pcre_exec(file_pattern, NULL, leaf_name.c_str(), leaf_name.length(), 0, 0, patternOvector, 3);
 				if ( rc > 0 )   // Does it answer to the desired pattern?
 				{
-					string fullpath = plugins_folder.directory_string() + leaf_name;
+					path fullpath = plugins_folder.directory_string();
+					fullpath /= leaf_name;
 					//Try to load the file and see if it's an audio plugin
-					if ( GModule* h_plugin = g_module_open( fullpath.c_str(), G_MODULE_BIND_LAZY) )
+					if ( GModule* h_plugin = g_module_open( fullpath.string().c_str(), G_MODULE_BIND_LAZY) )
 					{
 						PLUGIN_FACTORY p_factory_function;
 						PLUGIN_CLEANUP p_cleanup_function;
@@ -89,7 +93,7 @@ void PluginManager::findPlugins()
 						{  //Does it contain the LS IPlugin?
 							IPlugin *p_plugin = p_factory_function (); //Instanciate the plugin
 							LOG ( LOG_INFO, _ ( "A plugin was found. Adding it to the list." ) );
-							addPluginToList ( p_plugin, fullpath ); //Add the plugin info to the audio plugins list
+							addPluginToList ( p_plugin, fullpath.string() ); //Add the plugin info to the audio plugins list
 
 							p_cleanup_function ( p_plugin );
 							g_module_close ( h_plugin );

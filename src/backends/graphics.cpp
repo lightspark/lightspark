@@ -777,7 +777,7 @@ bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float sc
 {
 	//We render the alpha value of a single pixel, hopefully this is not too slow
 	int32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_A8, 1);
-	uint8_t* pixelBytes=new uint8_t[cairoWidthStride];
+	uint8_t* pixelBytes=g_newa(uint8_t, cairoWidthStride);
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(pixelBytes, CAIRO_FORMAT_A8, 1, 1, cairoWidthStride);
 
 	cairo_t* cr=cairo_create(cairoSurface);

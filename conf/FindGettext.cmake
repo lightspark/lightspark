@@ -56,7 +56,7 @@ MACRO(GETTEXT_CREATE_TRANSLATIONS _potFile _firstPoFileArg)
          DEPENDS ${_absPotFile} ${_absFile} 
       )
 
-      INSTALL(FILES ${_gmoFile} DESTINATION share/locale/${_lang}/LC_MESSAGES RENAME ${_potBasename}.mo) 
+      INSTALL(FILES ${_gmoFile} DESTINATION ${DATADIR}/locale/${_lang}/LC_MESSAGES RENAME ${_potBasename}.mo)
       SET(_gmoFiles ${_gmoFiles} ${_gmoFile})
 
    ENDFOREACH (_currentPoFile )

@@ -130,9 +130,11 @@ ENDIF()
 IF(UNIX)
    SET(ETCDIR "/etc") #Using absolute folder
    SET(BINDIR "bin")
-   SET(DATADIR "${CMAKE_INSTALL_PREFIX}/share")
+   SET(DATADIR "share")
    SET(LSDATADIR "${DATADIR}/lightspark")
    SET(LIBDIR "lib${LIB_SUFFIX}")
+   #We need a absolute path here because we use it for rpath
+   #later on
    SET(PRIVATELIBDIR "${CMAKE_INSTALL_PREFIX}/${LIBDIR}/lightspark")
    SET(CMAKE_INSTALL_RPATH "${PRIVATELIBDIR}")
 ELSE()
@@ -157,11 +159,8 @@ SET(ENABLE_RTMP FALSE CACHE BOOL "Enable librtmp and dependent functionality?")
 SET(ENABLE_PROFILING FALSE CACHE BOOL "Enable profiling support? (Causes performance issues)")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
 
-IF(ENABLE_DEBIAN_ALTERNATIVES)
+IF(ENABLE_DEBIAN_ALTERNATIVES OR WIN32)
   SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
-ENDIF(ENABLE_DEBIAN_ALTERNATIVES)
-IF(WIN32)
-  SET(PLUGIN_DIRECTORY ".") #Relative to install prefix
 ENDIF()
 
 IF(NOT CMAKE_BUILD_TYPE)
@@ -171,7 +170,6 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 
 # The library is searched in its private library directory
 SET(CMAKE_SKIP_BUILD_RPATH FALSE)
-SET(PRIVATELIBDIR "${CMAKE_INSTALL_PREFIX}/${LIBDIR}/lightspark")
 SET(CMAKE_INSTALL_RPATH "${PRIVATELIBDIR}")
 
 # Libraries we need

@@ -652,18 +652,21 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 	}
 }
 
-void PluginEngineData::setupMainThreadCallback(lightspark::ls_callback_t func, void* arg)
+void callHelper(sigc::slot<void>* slot)
 {
-	NPN_PluginThreadAsyncCall(instance->mInstance, func, arg);
+	(*slot)();
+	delete slot;
+}
+
+void PluginEngineData::setupMainThreadCallback(const sigc::slot<void>& slot)
+{
+	//create a slot on heap to survive the return of this function
+	typedef void (*npn_callback)(void *);
+	NPN_PluginThreadAsyncCall(instance->mInstance, (npn_callback)callHelper, new sigc::slot<void>(slot));
 }
 
 void PluginEngineData::stopMainDownload()
 {
 	if(instance->mainDownloader)
 		instance->mainDownloader->stop();
-}
-
-bool PluginEngineData::isSizable() const
-{
-	return false;
 }

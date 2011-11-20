@@ -32,24 +32,23 @@
 using namespace lightspark;
 using namespace std;
 
-InputThread::InputThread(SystemState* s):m_sys(s),terminated(false),threaded(false),
+InputThread::InputThread(SystemState* s):m_sys(s),engineData(NULL),terminated(false),threaded(false),
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
 	dragLimit(NULL)
 {
 	LOG(LOG_INFO,_("Creating input thread"));
 }
 
-void InputThread::start(const EngineData* e)
+void InputThread::start(EngineData* e)
 {
-	GtkWidget* container=e->container;
-	gtk_widget_set_can_focus(container,TRUE);
-	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-					GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK);
-	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(worker), this);
+	engineData = e;
+	engineData->setInputHandler(sigc::bind(&worker, this));
 }
 
 InputThread::~InputThread()
 {
+	if(engineData)
+		engineData->removeInputHandler();
 	wait();
 }
 
@@ -62,8 +61,8 @@ void InputThread::wait()
 	terminated=true;
 }
 
-//This is a GTK event handler and the gdk lock is already acquired
-gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
+//This is guarded gdk_threads_enter/leave
+bool InputThread::worker(GdkEvent *event, InputThread* th)
 {
 	//Set sys to this SystemState
 	setTLSSys(th->m_sys);
@@ -77,10 +76,7 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 			{
 				case GDK_q:
 					if(th->m_sys->standalone)
-					{
 						th->m_sys->setShutdownFlag();
-						gtk_main_quit();
-					}
 					break;
 				case GDK_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
@@ -125,7 +121,6 @@ gboolean InputThread::worker(GtkWidget *widget, GdkEvent *event, InputThread* th
 		case GDK_BUTTON_PRESS:
 		{
 			//Grab focus, to receive keypresses
-			gtk_widget_grab_focus(widget);
 			if(event->button.button == 1)
 				th->handleMouseDown(event->button.x,event->button.y);
 			ret=TRUE;

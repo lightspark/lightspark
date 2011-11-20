@@ -66,22 +66,38 @@ public:
 	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::ILoadable* owner);
 };
 
-class PluginEngineData: public lightspark::EngineData
+class PluginEngineData:
+#ifdef _WIN32
+	public HWNDEngineData
+#else
+	public GtkEngineData
+#endif
 {
 private:
 	nsPluginInstance* instance;
 public:
 #ifdef _WIN32
-	PluginEngineData(nsPluginInstance* i, HWND win, int w, int h)
-		:EngineData(win,w,h),instance(i) {}
+	PluginEngineData(nsPluginInstance* i, HWND hw, int w, int h)
+		: HWNDEngineData(hw,w,h), instance(i)
+	{
+	}
 #else
-	PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h)
-		:EngineData(d,v,win,w,h),instance(i) {}
+	GtkWidget* wrap(Window win)
+	{
+		gdk_threads_enter();
+		GtkWidget* ret = gtk_plug_new(win);
+		gdk_threads_leave();
+		return ret;
+	}
+	PluginEngineData(nsPluginInstance* i, Display* /*unused*/, VisualID v, Window win, int w, int h)
+		: GtkEngineData(wrap(win),w,h), instance(i)
+	{
+		visual = v;
+	}
 #endif
-	PluginEngineData();
-	void setupMainThreadCallback(lightspark::ls_callback_t func, void* arg);
+	void setupMainThreadCallback(const sigc::slot<void>& slot);
 	void stopMainDownload();
-	bool isSizable() const;
+	bool isSizable() const { return false; }
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

@@ -28,9 +28,7 @@
 #include "smartrefs.h"
 #include <vector>
 
-#include <gtk/gtk.h>
-
-#include <scripting/class.h>
+#include "scripting/class.h"
 
 namespace lightspark
 {
@@ -45,10 +43,11 @@ class InputThread
 {
 private:
 	SystemState* m_sys;
+	EngineData* engineData;
 	Thread* t;
 	bool terminated;
 	bool threaded;
-	static gboolean worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
+	static bool worker(GdkEvent *event, InputThread* th);
 	static void delayedCreation(InputThread* th);
 
 	std::vector<InteractiveObject* > listeners;
@@ -80,7 +79,7 @@ public:
 	InputThread(SystemState* s);
 	~InputThread();
 	void wait();
-	void start(const EngineData* data);
+	void start(EngineData* data);
 	void addListener(InteractiveObject* ob);
 	void removeListener(InteractiveObject* ob);
 	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);

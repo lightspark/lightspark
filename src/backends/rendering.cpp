@@ -78,10 +78,13 @@ RenderThread::RenderThread(SystemState* s):
 	time_s.assign_current_time();
 }
 
-void RenderThread::start(const EngineData* data)
+/* this is called in the context of the gtk main thread */
+void RenderThread::start(EngineData* data)
 {
 	status=STARTED;
 	engineData=data;
+	/* this function must be called in the gtk main thread */
+	engineData->setSizeChangeHandler(sigc::mem_fun(this,&RenderThread::requestResize));
 	t = Thread::create(sigc::bind<0>(&RenderThread::worker,this), true);
 }
 
@@ -218,23 +221,14 @@ void RenderThread::handleUpload()
 	prevUploadJob=u;
 }
 
-void RenderThread::SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data)
-{
-	RenderThread* th=static_cast<RenderThread*>(data);
-	th->requestResize(allocation->width, allocation->height);
-}
-
 void RenderThread::worker(RenderThread* th)
 {
 	setTLSSys(th->m_sys);
 	/* set TLS variable for getRenderThread() */
 	g_static_private_set(&renderThread,th,NULL);
 
-	const EngineData* e=th->engineData;
+	EngineData* e=th->engineData;
 	SemaphoreLighter lighter(th->initialized);
-
-	//Get information about changes in the available space
-	g_signal_connect(e->container,"size-allocate",G_CALLBACK(SizeAllocateCallback),th);
 
 	th->windowWidth=e->width;
 	th->windowHeight=e->height;
@@ -496,6 +490,7 @@ void RenderThread::worker(RenderThread* th)
 	eglDestroyContext(ed, th->mEGLContext);
 	XCloseDisplay(d);
 #endif
+	e->removeSizeChangeHandler();
 	return;
 }
 

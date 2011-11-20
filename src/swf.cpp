@@ -45,13 +45,6 @@ extern "C" {
 }
 #endif
 
-
-#ifdef _WIN32
-#	include <gdk/gdkwin32.h>
-#else
-#	include <gdk/gdkx.h>
-#endif
-
 using namespace std;
 using namespace lightspark;
 
@@ -560,54 +553,39 @@ void SystemState::enableGnashFallback()
 	f.close();
 }
 
-void SystemState::delayedCreation(SystemState* th)
+/*
+ * This is run from the gtk main thread.
+ * gtk/gdk functions may only be called from within that
+ * gtk main thread for portability. Win32 does not support
+ * gtk/gdk calls from other threads!
+ */
+void SystemState::delayedCreation()
 {
-	EngineData* d=th->engineData;
-	//Create a plug in the XEmbed window
-	GtkWidget* plug=gtk_plug_new(d->window);
-	if(d->isSizable())
-	{
-		int32_t reqWidth=th->getFrameSize().Xmax/20;
-		int32_t reqHeight=th->getFrameSize().Ymax/20;
-		if(th->standalone)
-			gtk_widget_set_size_request(plug, reqWidth, reqHeight);
-		d->width=reqWidth;
-		d->height=reqHeight;
-	}
-	d->container = plug;
-	//Realize the widget now, as we need the X window
-	gtk_widget_realize(plug);
-	//Show it now
-	gtk_widget_show(plug);
-	gtk_widget_map(plug);
-	if (th->standalone)
-	{
-		gtk_widget_set_can_focus(plug, true);
-		gtk_widget_grab_focus(plug);
-	}
-#ifdef _WIN32
-	d->window=GDK_WINDOW_HWND(gtk_widget_get_window(plug));
-#else
-	d->window=GDK_WINDOW_XID(gtk_widget_get_window(plug));
-	XSync(d->display, False);
-#endif
+	gdk_threads_enter();
+
+	int32_t reqWidth=getFrameSize().Xmax/20;
+	int32_t reqHeight=getFrameSize().Ymax/20;
+
+	engineData->showWindow(reqWidth, reqHeight);
+
 	//The lock is needed to avoid thread creation/destruction races
-	Locker l(th->mutex);
-	if(th->shutdown)
+	Locker l(mutex);
+	if(shutdown)
 		return;
-	th->renderThread->start(th->engineData);
-	th->inputThread->start(th->engineData);
+	renderThread->start(engineData);
+	inputThread->start(engineData);
 	//If the render rate is known start the render ticks
-	if(th->renderRate)
-		th->startRenderTicks();
+	if(renderRate)
+		startRenderTicks();
+	gdk_threads_leave();
 }
 
-void SystemState::delayedStopping(SystemState* th)
+void SystemState::delayedStopping()
 {
-	setTLSSys(th);
+	setTLSSys(this);
 	//This is called from the plugin, also kill the stream
-	th->engineData->stopMainDownload();
-	th->stopEngines();
+	engineData->stopMainDownload();
+	stopEngines();
 	setTLSSys(NULL);
 }
 
@@ -739,14 +717,14 @@ void SystemState::createEngines()
 		//Engines should not be started, stop everything
 		l.release();
 		//We cannot stop the engines now, as this is inside a ThreadPool job
-		engineData->setupMainThreadCallback((ls_callback_t)delayedStopping, this);
+		engineData->setupMainThreadCallback(sigc::mem_fun(this, &SystemState::delayedStopping));
 		return;
 	}
 
 
 	l.release();
 	//The engines must be created in the context of the main thread
-	engineData->setupMainThreadCallback((ls_callback_t)delayedCreation, this);
+	engineData->setupMainThreadCallback(sigc::mem_fun(this, &SystemState::delayedCreation));
 
 	renderThread->waitForInitialization();
 

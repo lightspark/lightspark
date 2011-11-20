@@ -167,8 +167,8 @@ private:
 	*/
 	void stopEngines();
 
-	static void delayedCreation(SystemState* th);
-	static void delayedStopping(SystemState* th);
+	void delayedCreation();
+	void delayedStopping();
 	//Useful to wait for complete download of the SWF
 	Semaphore fileDumpAvailable;
 	tiny_string dumpedSWFPath;

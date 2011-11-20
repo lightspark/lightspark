@@ -20,33 +20,37 @@
 #include "swf.h"
 #include "logger.h"
 #include "backends/security.h"
+#include "platforms/engineutils.h"
 #ifndef _WIN32
-#include <sys/resource.h>
-#include <gdk/gdkx.h>
+#	include <sys/resource.h>
 #endif
 #include "compat.h"
+
 
 using namespace std;
 using namespace lightspark;
 
-class StandaloneEngineData: public EngineData
+class StandaloneEngineData: public GtkEngineData
 {
 public:
-#ifdef _WIN32
-	StandaloneEngineData(GdkNativeWindow win):
-		EngineData(win,0,0) {}
-#else
-	StandaloneEngineData(GdkNativeWindow win):
-		EngineData(gdk_x11_display_get_xdisplay(gdk_display_get_default()),
-				XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system())),
-				win,0,0) {}
-#endif
-	void setupMainThreadCallback(ls_callback_t func, void* arg)
+	StandaloneEngineData(GtkWidget* w): GtkEngineData(w,0,0)
 	{
-		//Synchronizing with the main gtk thread is what we actually need
-		gdk_threads_enter();
-		func(arg);
-		gdk_threads_leave();
+#ifndef _WIN32
+		visual = XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
+#endif
+	}
+	static int callHelper(sigc::slot<void>* slot)
+	{
+		(*slot)();
+		delete slot;
+		/* we must return 'false' or gtk will call this periodically */
+		return 0;
+	}
+	/* func must return 'false' or it will be called periodically! */
+	void setupMainThreadCallback(const sigc::slot<void>& slot)
+	{
+		//create a slot on heap to survive the return of this function
+		g_idle_add((GSourceFunc)callHelper,new sigc::slot<void>(slot));
 	}
 	void stopMainDownload()
 	{
@@ -60,7 +64,6 @@ public:
 static void StandaloneDestroy(GtkWidget *widget, gpointer data)
 {
 	getSys()->setShutdownFlag();
-	gtk_main_quit();
 }
 
 int main(int argc, char* argv[])
@@ -272,12 +275,8 @@ int main(int argc, char* argv[])
 	GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title((GtkWindow*)window,"Lightspark");
 	g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),NULL);
-	GtkWidget* socket=gtk_socket_new();
-	gtk_container_add(GTK_CONTAINER(window), socket);
-	gtk_widget_show(socket);
-	gtk_widget_show(window);
 
-	StandaloneEngineData* e=new StandaloneEngineData(gtk_socket_get_id((GtkSocket*)socket));
+	StandaloneEngineData* e=new StandaloneEngineData(window);
 
 	sys->setParamsAndEngine(e, true);
 	gdk_threads_leave();

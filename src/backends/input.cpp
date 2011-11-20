@@ -42,7 +42,7 @@ InputThread::InputThread(SystemState* s):m_sys(s),engineData(NULL),terminated(fa
 void InputThread::start(EngineData* e)
 {
 	engineData = e;
-	engineData->setInputHandler(sigc::bind(&worker, this));
+	engineData->setInputHandler(sigc::mem_fun(this, &InputThread::worker));
 }
 
 InputThread::~InputThread()
@@ -62,10 +62,10 @@ void InputThread::wait()
 }
 
 //This is guarded gdk_threads_enter/leave
-bool InputThread::worker(GdkEvent *event, InputThread* th)
+bool InputThread::worker(GdkEvent *event)
 {
 	//Set sys to this SystemState
-	setTLSSys(th->m_sys);
+	setTLSSys(m_sys);
 	gboolean ret=FALSE;
 	switch(event->type)
 	{
@@ -75,31 +75,31 @@ bool InputThread::worker(GdkEvent *event, InputThread* th)
 			switch(event->key.keyval)
 			{
 				case GDK_q:
-					if(th->m_sys->standalone)
-						th->m_sys->setShutdownFlag();
+					if(m_sys->standalone)
+						m_sys->setShutdownFlag();
 					break;
 				case GDK_p:
-					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
+					m_sys->showProfilingData=!m_sys->showProfilingData;
 					break;
 				case GDK_m:
-					if (!th->m_sys->audioManager->pluginLoaded())
+					if (!m_sys->audioManager->pluginLoaded())
 						break;
-					th->m_sys->audioManager->toggleMuteAll();
-					if(th->m_sys->audioManager->allMuted())
+					m_sys->audioManager->toggleMuteAll();
+					if(m_sys->audioManager->allMuted())
 						LOG(LOG_INFO, "All sounds muted");
 					else
 						LOG(LOG_INFO, "All sounds unmuted");
 					break;
 				case GDK_c:
-					if(th->m_sys->hasError())
+					if(m_sys->hasError())
 					{
 						GtkClipboard *clipboard;
 						clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-						gtk_clipboard_set_text(clipboard, th->m_sys->getErrorCause().c_str(),
-								th->m_sys->getErrorCause().size());
+						gtk_clipboard_set_text(clipboard, m_sys->getErrorCause().c_str(),
+								m_sys->getErrorCause().size());
 						clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-						gtk_clipboard_set_text(clipboard, th->m_sys->getErrorCause().c_str(),
-								th->m_sys->getErrorCause().size());
+						gtk_clipboard_set_text(clipboard, m_sys->getErrorCause().c_str(),
+								m_sys->getErrorCause().size());
 						LOG(LOG_INFO, "Copied error to clipboard");
 					}
 					else
@@ -114,7 +114,7 @@ bool InputThread::worker(GdkEvent *event, InputThread* th)
 		case GDK_EXPOSE:
 		{
 			//Signal the renderThread
-			th->m_sys->getRenderThread()->draw(false);
+			m_sys->getRenderThread()->draw(false);
 			ret=TRUE;
 			break;
 		}
@@ -122,26 +122,26 @@ bool InputThread::worker(GdkEvent *event, InputThread* th)
 		{
 			//Grab focus, to receive keypresses
 			if(event->button.button == 1)
-				th->handleMouseDown(event->button.x,event->button.y);
+				handleMouseDown(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
 		case GDK_2BUTTON_PRESS:
 		{
 			if(event->button.button == 1)
-				th->handleMouseDoubleClick(event->button.x,event->button.y);
+				handleMouseDoubleClick(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
 		case GDK_BUTTON_RELEASE:
 		{
-			th->handleMouseUp(event->button.x,event->button.y);
+			handleMouseUp(event->button.x,event->button.y);
 			ret=TRUE;
 			break;
 		}
 		case GDK_MOTION_NOTIFY:
 		{
-			th->handleMouseMove(event->motion.x,event->motion.y);
+			handleMouseMove(event->motion.x,event->motion.y);
 			ret=TRUE;
 			break;
 		}

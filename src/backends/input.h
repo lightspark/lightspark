@@ -47,8 +47,7 @@ private:
 	Thread* t;
 	bool terminated;
 	bool threaded;
-	static bool worker(GdkEvent *event, InputThread* th);
-	static void delayedCreation(InputThread* th);
+	bool worker(GdkEvent *event);
 
 	std::vector<InteractiveObject* > listeners;
 	Mutex mutexListeners;

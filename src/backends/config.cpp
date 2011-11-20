@@ -42,6 +42,21 @@ Config::Config():
 	audioBackendNames[0] = "pulseaudio";
 	audioBackendNames[1] = "openal";
 	audioBackendNames[2] = "sdl";
+#ifdef AUDIO_BACKEND
+	/* AUDIO_BACKEND is defined by cmake, lets find its index.
+	 * AUDIO_BACKEND may consist of multiple backends,
+	 * then we just leave the default (see above)
+	 */
+	audioBackendName = AUDIO_BACKEND;
+	for(int i=0;i<3;++i)
+	{
+		if(audioBackendName == audioBackendNames[i])
+		{
+			audioBackend = (AUDIOBACKEND)i;
+			break;
+		}
+	}
+#endif
 }
 
 Config::~Config()

@@ -40,7 +40,7 @@ namespace lightspark
 
 		//-- SETTINGS VALUES
 		enum AUDIOBACKEND { PULSEAUDIO=0, OPENAL=1, SDL=2 };
-		const char* audioBackendNames[3];
+		std::string audioBackendNames[3];
 
 		//-- SETTINGS
 		//Specifies the default cache directory = "~/.cache/lightspark"

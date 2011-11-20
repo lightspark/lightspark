@@ -324,14 +324,15 @@ void SystemState::stopEngines()
 	if(threadPool)
 		threadPool->forceStop();
 	timerThread->wait();
+	/* first shutdown the vm, because it can use all the others */
+	if(currentVm)
+		currentVm->shutdown();
 	delete downloadManager;
 	downloadManager=NULL;
 	delete securityManager;
 	securityManager=NULL;
 	delete config;
 	config=NULL;
-	if(currentVm)
-		currentVm->shutdown();
 	delete threadPool;
 	threadPool=NULL;
 	//Now stop the managers

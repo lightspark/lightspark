@@ -78,7 +78,12 @@ int main(int argc, char* argv[])
 	LOG_LEVEL log_level=LOG_INFO;
 
 	setlocale(LC_ALL, "");
-	bindtextdomain("lightspark", "/usr/share/locale");
+#ifdef _WIN32
+	const char* localedir = getExectuablePath();
+#else
+	const char* localedir = "/usr/share/locale";
+#endif
+	bindtextdomain("lightspark", localedir);
 	textdomain("lightspark");
 
 	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others");

@@ -73,20 +73,6 @@ int textFileWrite(const char *fn, char *s)
 	return(status);
 }
 
-#ifdef _WIN32
-const char* getExectuablePath()
-{
-	static char path[MAX_PATH];
-	size_t len = GetModuleFileNameA(NULL, path, MAX_PATH);
-	if(!len)
-		return "";
-	char* delim = strrchr(path,'\\');
-	if(delim)
-		*delim = '\0';
-	return path;
-}
-#endif
-
 char *dataFileRead(const char *fn)
 {
 	char *ret = 0;

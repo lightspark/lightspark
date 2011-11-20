@@ -255,4 +255,9 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 }
 #endif // __BYTE_ORDER == __BIG_ENDIAN
 
+#ifdef _WIN32
+/* returns the path of the current executable */
+const char* getExectuablePath();
+#endif
+
 #endif

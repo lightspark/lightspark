@@ -106,3 +106,20 @@ uint64_t compat_get_thread_cputime_us()
 	return ret;
 }
 #endif
+
+#ifdef _WIN32
+const char* getExectuablePath()
+{
+	static char path[MAX_PATH] = {0};
+	if(!path[0])
+	{
+		size_t len = GetModuleFileNameA(NULL, path, MAX_PATH);
+		if(!len)
+			return "";
+		char* delim = strrchr(path,'\\');
+		if(delim)
+			*delim = '\0';
+	}
+	return path;
+}
+#endif

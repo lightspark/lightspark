@@ -52,5 +52,10 @@ IF(NOT STATICDEPS)
   TARGET_LINK_LIBRARIES(lightsparkplugin spark ${GTK_LIBRARIES} ${X11_LIBRARIES} ${GLIBMM_LIBRARIES})
 ENDIF()
 
+IF(WIN32)
+  #For win32 firefox, plugins have to start with 'np'
+  SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES OUTPUT_NAME nplightsparkplugin PREFIX "")
+ENDIF()
+
 INSTALL(TARGETS lightsparkplugin DESTINATION ${PLUGIN_DIRECTORY})
 

@@ -795,7 +795,7 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 		// Main thread is not occupied by an invoked callback,
 		// so ask the browser to asynchronously call our external function.
 		if(currentCallback == NULL)
-			NPN_PluginThreadAsyncCall(instance, &callExternal, &data);
+			NPN_PluginThreadAsyncCall(instance, &NPScriptObject::callExternal, &data);
 		// Main thread is occupied by an invoked callback.
 		// Wake it up and ask it run our external call
 		else

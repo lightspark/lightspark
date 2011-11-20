@@ -24,14 +24,27 @@ INCLUDE_DIRECTORIES("..")
 INCLUDE_DIRECTORIES("include/npapi")
 
 INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
-ADD_DEFINITIONS(-DMOZ_X11)
 IF(UNIX)
+	ADD_DEFINITIONS(-DMOZ_X11)
 	ADD_DEFINITIONS(-DXP_UNIX)
+ELSE()
+	ADD_DEFINITIONS(-DXP_WIN)
 ENDIF(UNIX)
 
 # Firefox plugin target
-ADD_LIBRARY(lightsparkplugin SHARED np_entry.cpp npn_gate.cpp npp_gate.cpp
-	plugin.cpp npscriptobject.cpp)
+SET(PLUGIN_SOURCES ${PLUGIN_SOURCES}
+	np_entry.cpp
+	npn_gate.cpp
+	npp_gate.cpp
+	plugin.cpp
+	npscriptobject.cpp)
+
+IF(WIN32)
+	SET(PLUGIN_SOURCES ${PLUGIN_SOURCES} plugin.rc plugin.def)
+ENDIF(WIN32)
+
+ADD_LIBRARY(lightsparkplugin SHARED ${PLUGIN_SOURCES})
+
 TARGET_LINK_LIBRARIES(lightsparkplugin spark ${GTK_LIBRARIES})
 
 IF(UNIX)

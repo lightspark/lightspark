@@ -403,6 +403,23 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		LOG(LOG_ERROR,_("No size in SetWindow"));
 		return NPERR_GENERIC_ERROR;
 	}
+#ifdef _WIN32
+	if (mWindow == (HWND) aWindow->window)
+	{
+		// The page with the plugin is being resized.
+		// Save any UI information because the next time
+		// around expect a SetWindow with a new window id.
+		LOG(LOG_ERROR,"Resize not supported");
+	}
+	else
+	{
+		assert(mWindow==0);
+		mWindow = (HWND) aWindow->window;
+		PluginEngineData* e= new PluginEngineData(this, mWindow, mWidth, mHeight);
+		LOG(LOG_INFO,"Plugin Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
+		m_sys->setParamsAndEngine(e, false);
+	}
+#else
 	if (mWindow == (Window) aWindow->window)
 	{
 		// The page with the plugin is being resized.
@@ -425,6 +442,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		LOG(LOG_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
 		m_sys->setParamsAndEngine(e, false);
 	}
+#endif
 	//draw();
 	return NPERR_NO_ERROR;
 }
@@ -632,11 +650,6 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 			dl->setFailed();
 			break;
 	}
-}
-
-PluginEngineData::PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h):
-	EngineData(d,v,win,w,h),instance(i)
-{
 }
 
 void PluginEngineData::setupMainThreadCallback(lightspark::ls_callback_t func, void* arg)

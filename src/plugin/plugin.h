@@ -70,7 +70,14 @@ class PluginEngineData: public lightspark::EngineData
 private:
 	nsPluginInstance* instance;
 public:
-	PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h);
+#ifdef _WIN32
+	PluginEngineData(nsPluginInstance* i, HWND win, int w, int h)
+		:EngineData(win,w,h),instance(i) {}
+#else
+	PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h)
+		:EngineData(d,v,win,w,h),instance(i) {}
+#endif
+	PluginEngineData();
 	void setupMainThreadCallback(lightspark::ls_callback_t func, void* arg);
 	void stopMainDownload();
 	bool isSizable() const;
@@ -109,12 +116,16 @@ private:
 	NPBool mInitialized;
 
 	GtkWidget* mContainer;
+#ifdef _WIN32
+	HWND mWindow;
+#else
 	Window mWindow;
 	Display *mDisplay;
-	int mX, mY;
-	int mWidth, mHeight;
 	Visual* mVisual;
 	Colormap mColormap;
+#endif
+	int mX, mY;
+	int mWidth, mHeight;
 	unsigned int mDepth;
 
 	std::istream mainDownloaderStream;

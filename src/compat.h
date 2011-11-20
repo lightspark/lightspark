@@ -60,10 +60,12 @@ _CRTIMP int __cdecl __MINGW_NOTHROW	_strnicmp (const char*, const char*, size_t)
 _CRTIMP int __cdecl __MINGW_NOTHROW _close (int);
 _CRTIMP void * __cdecl __MINGW_NOTHROW _aligned_malloc (size_t, size_t);
 _CRTIMP void __cdecl __MINGW_NOTHROW _aligned_free (void*);
+_CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MALLOC;
 }
 #endif
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
+#define strdup _strdup
 #endif
 
 #ifdef _MSC_VER

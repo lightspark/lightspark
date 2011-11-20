@@ -22,6 +22,12 @@
 include_directories(".")
 INCLUDE_DIRECTORIES("..")
 
+#Export symbols
+IF(WIN32)
+  ADD_DEFINITIONS("-DDLL_PUBLIC=__declspec(dllexport)")
+ENDIF()
+
+
 IF(${AUDIO_BACKEND} MATCHES "pulse")
     add_subdirectory(pulse)
 ENDIF(${AUDIO_BACKEND} MATCHES "pulse")

@@ -145,19 +145,19 @@ long lrint(double f);
 
 
 /* DLL_LOCAL / DLL_PUBLIC */
-#if defined _WIN32
-/* There is no dllexport here, because we use direct linking with mingw */
-#	define DLL_PUBLIC
+/* When building on win32, DLL_PUBLIC is set top __declspec(dllexport)
+ * during build of the audio plugins.
+ * The browser plugin uses its own definitions from npapi.
+ * And the liblightspark.dll is linked directly (without need for dllexport)
+ */
+#ifndef DLL_PUBLIC
+#if __GNUC__ >= 4
+#	define DLL_PUBLIC __attribute__ ((visibility("default")))
+#	define DLL_LOCAL  __attribute__ ((visibility("hidden")))
+#else
 #	define DLL_PUBLIC
 #	define DLL_LOCAL
-#else
-#	if __GNUC__ >= 4
-#		define DLL_PUBLIC __attribute__ ((visibility("default")))
-#		define DLL_LOCAL  __attribute__ ((visibility("hidden")))
-#	else
-#		define DLL_PUBLIC
-#		define DLL_LOCAL
-#	endif
+#endif
 #endif
 
 /* min/max */

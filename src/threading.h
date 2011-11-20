@@ -38,7 +38,7 @@ typedef Glib::Mutex::Lock Locker;
 typedef Mutex Spinlock;
 typedef Mutex::Lock SpinlockLocker;
 
-class Semaphore
+class DLL_PUBLIC Semaphore
 {
 private:
 	uint32_t value;

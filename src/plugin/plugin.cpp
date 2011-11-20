@@ -670,3 +670,14 @@ void PluginEngineData::stopMainDownload()
 	if(instance->mainDownloader)
 		instance->mainDownloader->stop();
 }
+
+#ifdef _WIN32
+/* Setup for getExectuablePath() */
+extern HINSTANCE g_hinstance;
+extern "C"
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+	g_hinstance = hinstDLL;
+	return TRUE;
+}
+#endif

@@ -108,12 +108,16 @@ uint64_t compat_get_thread_cputime_us()
 #endif
 
 #ifdef _WIN32
+/* If we are run from standalone, g_hinstance stays NULL.
+ * In the plugin, DLLMain sets it to the dll's instance.
+ */
+HINSTANCE g_hinstance = NULL;
 const char* getExectuablePath()
 {
 	static char path[MAX_PATH] = {0};
 	if(!path[0])
 	{
-		size_t len = GetModuleFileNameA(NULL, path, MAX_PATH);
+		size_t len = GetModuleFileNameA(g_hinstance, path, MAX_PATH);
 		if(!len)
 			return "";
 		char* delim = strrchr(path,'\\');

@@ -685,8 +685,10 @@ void SystemState::createEngines()
 				&gnash_stdin, NULL, NULL, &errmsg))
 		{
 			LOG(LOG_ERROR,"Spawning gnash failed: " << errmsg->message);
+			l.release();
+			engineData->setupMainThreadCallback(sigc::mem_fun(this, &SystemState::delayedStopping));
+			return;
 		}
-
 		// Open the SWF file
 		std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::in|ios::binary);
 		// Read the SWF file and write it to Gnash's stdin

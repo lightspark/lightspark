@@ -741,7 +741,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	/* Instantiate the template to obtain a class */
 
 	std::vector<Type*> t(m);
-	for(uint32_t i=0;i<m;++i)
+	for(int i=0;i<m;++i)
 	{
 		if(args[i]->is<Class_base>())
 			t[i] = args[i]->as<Class_base>();
@@ -753,7 +753,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 
 	Class_base* o_class = o_template->applyType(t);
 
-	for(uint32_t i=0;i<m;++i)
+	for(int i=0;i<m;++i)
 		args[i]->decRef();
 
 	th->runtime_stack_push(o_class);

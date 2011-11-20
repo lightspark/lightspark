@@ -655,7 +655,7 @@ void SystemState::createEngines()
 		char bufXid[32];
 		char bufWidth[32];
 		char bufHeight[32];
-		snprintf(bufXid,32,"%lu",engineData->window);
+		snprintf(bufXid,32,"%lu",(long unsigned)engineData->window);
 		snprintf(bufWidth,32,"%u",engineData->width);
 		snprintf(bufHeight,32,"%u",engineData->height);
 		string params("FlashVars=");

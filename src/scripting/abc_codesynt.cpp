@@ -1833,7 +1833,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	llvm::Value* t=Builder.CreateGEP(locals,constant); /*Compute locals[i] = locals + i*/ \
         t=Builder.CreateLoad(t,"Primitive*"); /*Load Primitive* n = locals[i]*/
 
-	for(int i=0;i<paramTypes.size();++i)
+	for(unsigned i=0;i<paramTypes.size();++i)
 	{
 		if(paramTypes[i] == Class<Number>::getClass())
 		{

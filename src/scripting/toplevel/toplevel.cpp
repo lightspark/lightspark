@@ -3464,7 +3464,8 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			assert(rtname->name_type==multiname::NAME_STRING);
 			node->set_attribute("returnType", rtname->name_s.raw_buf());
 
-			int firstOpt=method.numArgs() - method.option_count;
+			assert(method.numArgs() >= method.option_count);
+			uint32_t firstOpt=method.numArgs() - method.option_count;
 			for(uint32_t j=0;j<method.numArgs(); j++)
 			{
 				xmlpp::Element* param=node->add_child("parameter");

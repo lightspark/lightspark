@@ -64,8 +64,7 @@ private:
 	Thread* t;
 	std::list<TimingEvent*> pendingEvents;
 	SystemState* m_sys;
-	ITickJob* volatile currentJob;
-	bool stopped;
+	volatile bool stopped;
 	bool joined;
 	static void worker(TimerThread*);
 	void insertNewEvent(TimingEvent* e);

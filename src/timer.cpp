@@ -27,7 +27,7 @@
 using namespace lightspark;
 using namespace std;
 
-TimerThread::TimerThread(SystemState* s):m_sys(s),currentJob(NULL),stopped(false),joined(false)
+TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false)
 {
 	t = Thread::create(sigc::bind<0>(&TimerThread::worker,this), true);
 }
@@ -102,71 +102,65 @@ void TimerThread::dumpJobs()
 void TimerThread::worker(TimerThread* th)
 {
 	setTLSSys(th->m_sys);
+
+	th->mutex.lock();
 	while(1)
 	{
-		//Wait until a time expires
-		th->mutex.lock();
-		//Check if there is any event
+		/* Wait until the first event appears */
 		while(th->pendingEvents.empty())
 		{
 			th->newEvent.wait(th->mutex);
 			if(th->stopped)
-			{
-				th->mutex.unlock();
-				return;
-			}
+				break;
 		}
 
-		//Get expiration of first event
+		/* Get expiration of first event */
 		Glib::TimeVal timing=th->pendingEvents.front()->timing;
-		//LOG(LOG_ERROR,"waiting until " << timing << " milliseconds");
-		//Wait for the absolute time, or a newEvent signal
-		bool newEvent = th->newEvent.timed_wait(th->mutex,timing);
+		/* Wait for the absolute time or a newEvent signal
+		 * this unlocks the mutex and relocks it before returing
+		 */
+		th->newEvent.timed_wait(th->mutex,timing);
 
 		if(th->stopped)
-		{
-			th->mutex.unlock();
-			return;
-		}
+			break;
 
-		//We got a new event, maybe with a smaller timing
-		if(newEvent)
+		if(th->pendingEvents.empty())
 			continue;
 
 		TimingEvent* e=th->pendingEvents.front();
+
+		/* check if the top even is due now. It could be have been removed/inserted
+		 * while we slept */
+		Glib::TimeVal now;
+		now.assign_current_time();
+		if((now-timing).negative()) /* timing > now */
+			continue;
+
 		th->pendingEvents.pop_front();
 
-		if(e->job && e->job->stopMe)
+		if(e->job->stopMe)
 		{
-			//Abort the tick by invalidating the job
-			e->job=NULL;
-			e->isTick=false;
+			delete e;
+			continue;
 		}
 
-		th->currentJob=e->job;
-
 		bool destroyEvent=true;
-		if(e->isTick) //Let's schedule the event again
+		if(e->isTick)
 		{
 			e->timing.add_milliseconds(e->tickTime);
-			th->insertNewEvent_nolock(e); //newEvent may be signaled, and will be waited by sem_timedwait
+			th->insertNewEvent_nolock(e);
 			destroyEvent=false;
 		}
 
 		th->mutex.unlock();
+		e->job->tick();
+		th->mutex.lock();
 
-		//Now execute the job
-		//NOTE: jobs may be invalid if they has been cancelled in the meantime
-		assert(e->job || !e->isTick);
-		if(e->job)
-			e->job->tick();
-
-		th->currentJob=NULL;
-
-		//Cleanup
+		/* Cleanup */
 		if(destroyEvent)
 			delete e;
 	}
+	th->mutex.unlock();
 }
 
 void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
@@ -205,28 +199,16 @@ bool TimerThread::removeJob(ITickJob* job)
 		first=false;
 	}
 
-	//Spin wait until the job ends (per design should be very short)
-	//As we hold the mutex and currentJob is not NULL we are surely executing a job
-	while(currentJob==job);
-	//The job ended
-
 	if(it==pendingEvents.end())
 		return false;
 
-	//If we are waiting of this event it's not safe to remove it
-	//so we flag it has invalid and the worker thread will remove it
-	//this is equivalent, as the event is not going to be fired
 	TimingEvent* e=*it;
+	pendingEvents.erase(it);
+	delete e;
+
+	/* the worker is waiting on this job, wake him up */
 	if(first)
-	{
-		e->job=NULL;
-		e->isTick=false;
-	}
-	else
-	{
-		pendingEvents.erase(it);
-		delete e;
-	}
+		newEvent.signal();
 
 	return true;
 }

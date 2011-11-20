@@ -1779,8 +1779,8 @@ tiny_string Integer::toString(int32_t val)
 void Integer::sinit(Class_base* c)
 {
 	c->setSuper(Class<ASObject>::getRef());
-	c->setVariableByQName("MAX_VALUE","",new Integer(2147483647),DECLARED_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648),DECLARED_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",new Integer(numeric_limits<int32_t>::max()),DECLARED_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",new Integer(numeric_limits<int32_t>::min()),DECLARED_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),DYNAMIC_TRAIT);
 }
 

@@ -306,3 +306,13 @@ void VerifyError::buildTraits(ASObject* o)
 {
 }
 
+ASFUNCTIONBODY(UninitializedError,_constructor)
+{
+	assert(argslen<=1);
+	UninitializedError* th=static_cast<UninitializedError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}

@@ -517,9 +517,9 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	}
 
 	bool isAttr=name.isAttribute;
-	const tiny_string& normalizedName=name.normalizedName();
+	const tiny_string normalizedName=name.normalizedName();
 	const char *buf=normalizedName.raw_buf();
-	if(normalizedName.charAt(0)=='@')
+	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
 	{
 		isAttr=true;
 		buf+=1;
@@ -593,9 +593,9 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
 	bool isAttr=name.isAttribute;
-	const tiny_string& normalizedName=name.normalizedName();
+	const tiny_string normalizedName=name.normalizedName();
 	const char *buf=normalizedName.raw_buf();
-	if(normalizedName.charAt(0)=='@')
+	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
 	{
 		isAttr=true;
 		buf+=1;

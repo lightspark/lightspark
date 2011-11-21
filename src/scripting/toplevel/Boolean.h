@@ -47,7 +47,6 @@ public:
 	}
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
-	tiny_string toString(bool debugMsg);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_valueOf);

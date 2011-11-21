@@ -94,7 +94,7 @@ ASFUNCTIONBODY(Boolean,_toString)
 		throw Class<TypeError>::getInstanceS("");
 
 	Boolean* th=static_cast<Boolean*>(obj);
-	return Class<ASString>::getInstanceS(th->toString(false));
+	return Class<ASString>::getInstanceS(th->toString());
 }
 
 ASFUNCTIONBODY(Boolean,_valueOf)
@@ -114,11 +114,6 @@ void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
 	throw UnsupportedException("Boolean:serialize not implemented");
-}
-
-tiny_string Boolean::toString(bool debugMsg)
-{
-	return (val)?"true":"false";
 }
 
 bool Boolean::isEqual(ASObject* r)

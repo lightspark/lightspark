@@ -262,7 +262,7 @@ for test in $TESTS; do
 		if [ $DEBUG -eq 1 ]; then
 			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test >$LOGFILE 2>&1
 		else
-			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 2>$LOGFILE 1>/dev/null
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 1>$LOGFILE 2>/dev/null
 		fi
 	else
 		if [ $DEBUG -eq 1 ]; then

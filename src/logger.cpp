@@ -46,7 +46,7 @@ Log::~Log()
 	if(valid)
 	{
 		Mutex::Lock l(mutex);
-		std::cout << level_names[cur_level] << ": " << message.str();
+		std::cerr << level_names[cur_level] << ": " << message.str();
 	}
 }
 
@@ -58,7 +58,7 @@ std::ostream& Log::operator()()
 void Log::print(const std::string& s)
 {
 	Mutex::Lock l(mutex);
-	std::cerr << s << std::endl;
+	std::cout << s << std::endl;
 }
 
 void Log::redirect(std::string filename)

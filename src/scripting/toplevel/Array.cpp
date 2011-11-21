@@ -85,6 +85,8 @@ ASFUNCTIONBODY(Array,_constructor)
 	if(argslen==1 && args[0]->getObjectType()==T_INTEGER)
 	{
 		int size=args[0]->toInt();
+		if(size < 0)
+			throw Class<RangeError>::getInstanceS("Array constructor with negative size");
 		LOG(LOG_CALLS,_("Creating array of length ") << size);
 		th->resize(size);
 	}

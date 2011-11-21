@@ -328,11 +328,6 @@ nsPluginInstance::~nsPluginInstance()
 		m_pt->stop();
 	m_sys->setShutdownFlag();
 
-	m_sys->wait();
-
-	// Delete our external script object
-	delete m_sys->extScriptObject;
-
 	m_sys->destroy();
 	delete m_pt;
 	setTLSSys(NULL);

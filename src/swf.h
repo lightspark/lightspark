@@ -232,7 +232,6 @@ public:
 	bool isOnError() const;
 	void setShutdownFlag() DLL_PUBLIC;
 	void tick();
-	void wait() DLL_PUBLIC;
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;

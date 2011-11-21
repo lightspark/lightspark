@@ -300,7 +300,6 @@ int main(int argc, char* argv[])
 	gtk_main();
 	gdk_threads_leave();
 
-	sys->wait();
 	sys->destroy();
 	delete pt;
 

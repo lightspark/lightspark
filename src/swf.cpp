@@ -32,6 +32,7 @@
 #include "backends/rendering.h"
 #include "backends/security.h"
 #include "backends/image.h"
+#include "backends/extscriptobject.h"
 
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
@@ -375,6 +376,16 @@ void SystemState::destroy()
 #ifdef PROFILING_SUPPORT
 	saveProfilingInformation();
 #endif
+	terminated.wait();
+	//Acquire the mutex to sure that the engines are not being started right now
+	Locker l(mutex);
+	renderThread->wait();
+	inputThread->wait();
+	if(currentVm)
+		currentVm->shutdown();
+
+	l.release();
+
 	//Kill our child process if any
 	if(childPid)
 	{
@@ -398,6 +409,7 @@ void SystemState::destroy()
 		threadPool->forceStop();
 	stopEngines();
 
+	delete extScriptObject;
 	delete intervalManager;
 	//Finalize ourselves
 	finalize();
@@ -504,17 +516,6 @@ void SystemState::setShutdownFlag()
 		if(Thread::self() != mainThread)
 			 gdk_threads_leave();
 	}
-}
-
-void SystemState::wait()
-{
-	terminated.wait();
-	//Acquire the mutex to sure that the engines are not being started right now
-	Locker l(mutex);
-	renderThread->wait();
-	inputThread->wait();
-	if(currentVm)
-		currentVm->shutdown();
 }
 
 float SystemState::getRenderRate()

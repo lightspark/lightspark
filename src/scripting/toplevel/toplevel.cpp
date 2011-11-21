@@ -101,6 +101,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(attribute),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("name",AS3,Class<IFunction>::getFunction(name),NORMAL_METHOD,true);
@@ -269,6 +270,39 @@ ASFUNCTIONBODY(XML,appendChild)
 	assert_and_throw(ret);
 	arg->incRef();
 	return arg;
+}
+
+/* returns the named attribute in an XMLList */
+ASFUNCTIONBODY(XML,attribute)
+{
+	XML* th = obj->as<XML>();
+	tiny_string attrname;
+	//see spec for QName handling
+	if(argslen > 0 && args[0]->is<QName>())
+		LOG(LOG_NOT_IMPLEMENTED,"XML.attribute called with QName");
+	ARG_UNPACK (attrname);
+
+	xmlpp::Element* elem=dynamic_cast<xmlpp::Element*>(th->node);
+        if(elem==NULL)
+		return Class<XMLList>::getInstanceS();
+	xmlpp::Attribute* attribute = elem->get_attribute(attrname);
+	if(!attribute)
+	{
+		LOG(LOG_ERROR,"attribute " << attrname << " not found");
+		return Class<XMLList>::getInstanceS();
+	}
+	_NR<XML> rootXML=NullRef;
+	if(th->root.isNull())
+	{
+		th->incRef();
+		rootXML=_MR(th);
+	}
+	else
+		rootXML=th->root;
+
+	std::vector<_R<XML>> ret;
+	ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, attribute)));
+	return Class<XMLList>::getInstanceS(ret);
 }
 
 ASFUNCTIONBODY(XML,attributes)

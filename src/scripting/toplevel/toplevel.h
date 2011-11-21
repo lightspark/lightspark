@@ -650,6 +650,7 @@ public:
 	ASFUNCTION(nodeKind);
 	ASFUNCTION(children);
 	ASFUNCTION(attributes);
+	ASFUNCTION(attribute);
 	ASFUNCTION(appendChild);
 	ASFUNCTION(localName);
 	ASFUNCTION(name);

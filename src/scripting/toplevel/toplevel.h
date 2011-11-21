@@ -464,7 +464,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;
-	std::string toDebugString() const { return std::string("\"") + std::string(data) + "\""; }
+	std::string toDebugString() { return std::string("\"") + std::string(data) + "\""; }
 };
 
 class Null: public ASObject
@@ -550,6 +550,7 @@ public:
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 	ASFUNCTION(generator);
+	std::string toDebugString() { return toString()+"i"; }
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;
@@ -579,6 +580,7 @@ public:
 	bool isEqual(ASObject* o);
 	ASFUNCTION(generator);
 	ASFUNCTION(_toString);
+	std::string toDebugString() { return toString()+"ui"; }
 	//CHECK: should this have a special serialization?
 };
 
@@ -618,6 +620,7 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(generator);
+	std::string toDebugString() { return toString()+"d"; }
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;

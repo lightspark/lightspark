@@ -30,7 +30,7 @@ using namespace std;
 
 REGISTER_CLASS_NAME2(ASObject,"Object","");
 
-string ASObject::toDebugString() const
+string ASObject::toDebugString()
 {
 	check();
 	string ret;

@@ -538,10 +538,10 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		//To have attributes we must be an Element
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		if(element==NULL)
-			return NullRef;
+			return _MNR(Class<XMLList>::getInstanceS());
 		xmlpp::Attribute* attr=element->get_attribute(buf);
 		if(attr==NULL)
-			return NullRef;
+			return _MNR(Class<XMLList>::getInstanceS());
 
 		_NR<XML> rootXML=NullRef;
 		if(root.isNull())

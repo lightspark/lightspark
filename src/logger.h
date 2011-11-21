@@ -54,6 +54,8 @@ public:
 	static void setLogLevel(LOG_LEVEL l) { log_level = l; };
 	static LOG_LEVEL getLevel() {return log_level;}
 	static int calls_indent;
+	/* redirect logging and print() to that file */
+	static void redirect(std::string filename) DLL_PUBLIC;
 
 };
 

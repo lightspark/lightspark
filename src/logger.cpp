@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <fstream>
 #include "logger.h"
 #include "threading.h"
 
@@ -58,4 +59,12 @@ void Log::print(const std::string& s)
 {
 	Mutex::Lock l(mutex);
 	std::cerr << s << std::endl;
+}
+
+void Log::redirect(std::string filename)
+{
+	Mutex::Lock l(mutex);
+	static std::ofstream file(filename);
+	std::cout.rdbuf(file.rdbuf());
+	std::cerr.rdbuf(file.rdbuf());
 }

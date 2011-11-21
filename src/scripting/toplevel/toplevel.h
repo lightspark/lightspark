@@ -623,6 +623,7 @@ public:
 			std::map<const ASObject*, uint32_t>& objMap) const;
 };
 
+class XMLList;
 class XML: public ASObject
 {
 private:
@@ -638,6 +639,7 @@ private:
 	void buildFromString(const std::string& str);
 	bool constructed;
 	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
+	XMLList* getAllAttributes();
 public:
 	XML();
 	XML(const std::string& str);

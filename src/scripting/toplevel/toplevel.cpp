@@ -307,24 +307,28 @@ ASFUNCTIONBODY(XML,attribute)
 
 ASFUNCTIONBODY(XML,attributes)
 {
-	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==0);
-	assert(th->node);
+	return obj->as<XML>()->getAllAttributes();
+}
+
+XMLList* XML::getAllAttributes()
+{
+	assert(node);
 	//Needed dynamic cast, we want the type check
-	xmlpp::Element* elem=dynamic_cast<xmlpp::Element*>(th->node);
+	xmlpp::Element* elem=dynamic_cast<xmlpp::Element*>(node);
 	if(elem==NULL)
 		return Class<XMLList>::getInstanceS();
 	const xmlpp::Element::AttributeList& list=elem->get_attributes();
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
 	std::vector<_R<XML>> ret;
 	_NR<XML> rootXML=NullRef;
-	if(th->root.isNull())
+	if(root.isNull())
 	{
-		th->incRef();
-		rootXML=_MR(th);
+		this->incRef();
+		rootXML=_MR(this);
 	}
 	else
-		rootXML=th->root;
+		rootXML=this->root;
 
 	for(;it!=list.end();it++)
 		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
@@ -525,6 +529,10 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		//Lookup attribute
 		//TODO: support namespaces
 		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
+
+		if(normalizedName.empty())
+			return _MR(getAllAttributes());
+
 		//Normalize the name to the string form
 		assert(node);
 		//To have attributes we must be an Element

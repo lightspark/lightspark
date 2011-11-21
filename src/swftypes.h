@@ -39,6 +39,9 @@
 /* for utf8 handling */
 #include <glib.h>
 
+/* forward declare for tiny_string conversion */
+namespace Glib { class ustring; }
+
 namespace lightspark
 {
 
@@ -289,6 +292,13 @@ public:
 		//don't check trailing \0
 		return memcmp(buf,r.c_str(),stringSize-1)==0;
 	}
+	bool operator!=(const std::string& r) const
+	{
+		if(stringSize != r.size()+1)
+			return true;
+		//don't check trailing \0
+		return memcmp(buf,r.c_str(),stringSize-1)!=0;
+	}
 	bool operator!=(const tiny_string& r) const
 	{
 		return !(*this==r);
@@ -301,6 +311,8 @@ public:
 	{
 		return !(*this==r);
 	}
+	bool operator==(const Glib::ustring&) const;
+	bool operator!=(const Glib::ustring&) const;
 	const char* raw_buf() const
 	{
 		return buf;
@@ -349,6 +361,7 @@ public:
 	{
 		return std::string(buf,stringSize-1);
 	}
+	operator Glib::ustring() const;
 	bool startsWith(const char* o) const
 	{
 		return strncmp(buf,o,strlen(o)) == 0;

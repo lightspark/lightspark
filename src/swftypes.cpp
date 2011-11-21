@@ -25,11 +25,27 @@
 #include <string.h>
 #include <stdlib.h>
 #include <cmath>
+#include <glibmm/ustring.h>
 #include "exceptions.h"
 #include "compat.h"
 
 using namespace std;
 using namespace lightspark;
+
+tiny_string::operator Glib::ustring() const
+{
+	return Glib::ustring(buf,numChars());
+}
+
+bool tiny_string::operator==(const Glib::ustring& u) const
+{
+	return *this == u.raw();
+}
+
+bool tiny_string::operator!=(const Glib::ustring& u) const
+{
+	return *this != u.raw();
+}
 
 tiny_string& tiny_string::operator+=(const char* s)
 {	//deprecated, cannot handle '\0' inside string

@@ -109,13 +109,12 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 		l.acquire();
 		myJob->executing=false;
 		th->curJobs[index]=NULL;
+
+		myJob->jobFence();
+
 		if(myJob->destroyMe)
-		{
-			myJob->jobFence();
 			delete myJob;
-		}
-		else
-			myJob->jobFence();
+
 		l.release();
 	}
 }

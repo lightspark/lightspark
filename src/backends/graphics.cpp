@@ -32,32 +32,6 @@
 
 using namespace lightspark;
 
-void lightspark::cleanGLErrors()
-{
-#ifdef EXPENSIVE_DEBUG
-	int errorCount = 0;
-	GLenum err;
-	while(1)
-	{
-		err=glGetError();
-		if(err!=GL_NO_ERROR)
-		{
-			errorCount++;
-			LOG(LOG_ERROR,_("GL error ")<< err);
-		}
-		else
-			break;
-	}
-
-	if(errorCount)
-	{
-		LOG(LOG_ERROR,_("Ignoring ") << errorCount << _(" openGL errors"));
-	}
-#else
-	while(glGetError()!=GL_NO_ERROR);
-#endif
-}
-
 void TextureBuffer::setAllocSize(uint32_t w, uint32_t h)
 {
 	if(getRenderThread()->hasNPOTTextures)
@@ -107,7 +81,6 @@ void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)
 {
 	assert(!inited);
 	inited=true;
-	cleanGLErrors();
 
 	setAllocSize(w,h);
 	width=w;
@@ -117,7 +90,6 @@ void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)
 	assert(texId==0);
 	glGenTextures(1,&texId);
 	assert(texId!=0);
-	assert(glGetError()!=GL_INVALID_OPERATION);
 	
 	assert(filtering==GL_NEAREST || filtering==GL_LINEAR);
 	
@@ -130,19 +102,14 @@ void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)
 	
 	//Allocate the texture
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-	GLenum err=glGetError();
-	assert(err!=GL_INVALID_OPERATION);
-	if(err==GL_INVALID_VALUE)
-	{
-		LOG(LOG_ERROR,_("GL_INVALID_VALUE after glTexImage2D, width=") << allocWidth << _(" height=") << allocHeight);
-		throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::init");
-	}
 	
 	glBindTexture(GL_TEXTURE_2D,0);
 	
-#ifdef EXPENSIVE_DEBUG
-	cleanGLErrors();
-#endif
+	if(RenderThread::handleGLErrors())
+	{
+		LOG(LOG_ERROR,_("OpenGL error in TextureBuffer::init"));
+		throw RunTimeException("OpenGL error in TextureBuffer::init");
+	}
 }
 
 void TextureBuffer::resize(uint32_t w, uint32_t h)
@@ -154,21 +121,15 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 			glBindTexture(GL_TEXTURE_2D,texId);
 			LOG(LOG_CALLS,_("Reallocating texture to size ") << w << 'x' << h);
 			setAllocSize(w,h);
-			while(glGetError()!=GL_NO_ERROR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-			GLenum err=glGetError();
-			assert(err!=GL_INVALID_OPERATION);
-			if(err==GL_INVALID_VALUE)
+			if(RenderThread::handleGLErrors())
 			{
-				LOG(LOG_ERROR,_("GL_INVALID_VALUE after glTexImage2D, width=") << allocWidth << _(" height=") << allocHeight);
-				throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::resize");
+				LOG(LOG_ERROR,_("OpenGL error in TextureBuffer::resize"));
+				throw RunTimeException("OpenGL error in TextureBuffer::resize");
 			}
 		}
 		width=w;
 		height=h;
-#ifdef EXPENSIVE_DEBUG
-		cleanGLErrors();
-#endif
 	}
 }
 
@@ -181,8 +142,6 @@ void TextureBuffer::setRequestedAlignment(uint32_t w, uint32_t h)
 
 void TextureBuffer::setTexScale(GLuint uniformLocation)
 {
-	cleanGLErrors();
-
 	float v1=width;
 	float v2=height;
 	v1/=allocWidth;
@@ -192,18 +151,12 @@ void TextureBuffer::setTexScale(GLuint uniformLocation)
 
 void TextureBuffer::bind()
 {
-	cleanGLErrors();
-
 	glBindTexture(GL_TEXTURE_2D,texId);
-	assert(glGetError()==GL_NO_ERROR);
 }
 
 void TextureBuffer::unbind()
 {
-	cleanGLErrors();
-
 	glBindTexture(GL_TEXTURE_2D,0);
-	assert(glGetError()==GL_NO_ERROR);
 }
 
 void TextureBuffer::shutdown()

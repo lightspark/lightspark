@@ -36,8 +36,6 @@ namespace lightspark
 
 class DisplayObject;
 
-void cleanGLErrors();
-
 class TextureBuffer
 {
 private:

@@ -674,14 +674,11 @@ void RenderThread::commonGLInit(int width, int height)
 	glGenBuffers(2,pixelBuffers);
 
 	//Set uniforms
-	cleanGLErrors();
 	glUseProgram(blitter_program);
 	int texScale=glGetUniformLocation(blitter_program,"texScale");
 	tempTex.setTexScale(texScale);
-	cleanGLErrors();
 
 	glUseProgram(gpu_program);
-	cleanGLErrors();
 	int tex=glGetUniformLocation(gpu_program,"g_tex1");
 	if(tex!=-1)
 		glUniform1i(tex,0);
@@ -704,7 +701,6 @@ void RenderThread::commonGLInit(int width, int height)
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
 	if(fragmentTexScaleUniform!=-1)
 		glUniform2f(fragmentTexScaleUniform,1.0f/width,1.0f/height);
-	cleanGLErrors();
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	glEnable(GL_TEXTURE_2D);
@@ -725,15 +721,15 @@ void RenderThread::commonGLInit(int width, int height)
 	if(status != GL_FRAMEBUFFER_COMPLETE)
 	{
 		LOG(LOG_ERROR,_("Incomplete FBO status ") << status << _("... Aborting"));
-		err=glGetError();
-		while(err!=GL_NO_ERROR)
-		{
-			LOG(LOG_ERROR,_("GL errors during initialization: ") << err);
-			err=glGetError();
-		}
 		::abort();
 	}
 	glGenTextures(1, &cairoTextureID);
+
+	if(handleGLErrors())
+	{
+		LOG(LOG_ERROR,_("GL errors during initialization"));
+		::abort();
+	}
 }
 
 void RenderThread::commonGLResize()
@@ -977,6 +973,8 @@ void RenderThread::coreRendering()
 
 	if(m_sys->showProfilingData)
 		plotProfilingData();
+
+	handleGLErrors();
 }
 
 //Renders the error message which caused the VM to stop.
@@ -1092,16 +1090,13 @@ GLuint RenderThread::allocateNewGLTexture() const
 	GLuint tmp;
 	glGenTextures(1,&tmp);
 	assert(tmp!=0);
-	assert(glGetError()!=GL_INVALID_OPERATION);
 	//If the previous call has not failed these should not fail (in specs, we trust)
 	glBindTexture(GL_TEXTURE_2D,tmp);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	//Allocate the texture
-	while(glGetError()!=GL_NO_ERROR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, 0);
-	GLenum err=glGetError();
-	if(err)
+	if(handleGLErrors())
 	{
 		LOG(LOG_ERROR,_("Can't allocate large texture... Aborting"));
 		::abort();
@@ -1341,6 +1336,7 @@ void RenderThread::renderTextured(const TextureChunk& chunk, int32_t x, int32_t 
 	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 	delete[] vertex_coords;
 	delete[] texture_coords;
+	handleGLErrors();
 }
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
@@ -1368,7 +1364,6 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		glPixelStorei(GL_UNPACK_SKIP_ROWS,curY);
 		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*CHUNKSIZE);
 		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*CHUNKSIZE);
-		while(glGetError()!=GL_NO_ERROR);
 #ifndef ENABLE_GLES2
 		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, data);
 #else
@@ -1381,7 +1376,6 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, gdata);
 		delete[] gdata;
 #endif
-		assert(glGetError()!=GL_INVALID_OPERATION);
 	}
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS,0);
@@ -1393,4 +1387,27 @@ void RenderThread::setMatrixUniform(LSGL_MATRIX m) const
 	GLint uni = (m == LSGL_MODELVIEW) ? modelviewMatrixUniform:projectionMatrixUniform;
 
 	glUniformMatrix4fv(uni, 1, GL_FALSE, lsMVPMatrix);
+}
+
+bool RenderThread::handleGLErrors()
+{
+	int errorCount = 0;
+	GLenum err;
+	while(1)
+	{
+		err=glGetError();
+		if(err!=GL_NO_ERROR)
+		{
+			errorCount++;
+			LOG(LOG_ERROR,_("GL error ")<< err);
+		}
+		else
+			break;
+	}
+
+	if(errorCount)
+	{
+		LOG(LOG_ERROR,_("Ignoring ") << errorCount << _(" openGL errors"));
+	}
+	return errorCount;
 }

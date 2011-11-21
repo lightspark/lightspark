@@ -221,6 +221,7 @@ public:
 	void mapCairoTexture(int w, int h);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
 	void setMatrixUniform(LSGL_MATRIX m) const;
+	static bool handleGLErrors();
 };
 
 RenderThread* getRenderThread();

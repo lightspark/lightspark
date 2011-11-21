@@ -244,8 +244,14 @@ ASFUNCTIONBODY(URLLoader,load)
 	URLRequest* urlRequest=Class<URLRequest>::dyncast(arg);
 	assert_and_throw(urlRequest);
 
-	assert_and_throw(th->downloader==NULL);
 	th->url=urlRequest->getRequestURL();
+
+	if(th->downloader)
+	{
+		/* the cbs player first constructs l = URLLoader(url) and then calls l.load(url) again */
+		LOG(LOG_NOT_IMPLEMENTED,"URLLoader::load called with download already running - ignored");
+		return NULL;
+	}
 
 	if(!th->url.isValid())
 	{

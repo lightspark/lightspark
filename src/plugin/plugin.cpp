@@ -199,7 +199,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	LOG_LEVEL log_level = LOG_INFO;
+	LOG_LEVEL log_level = LOG_NOT_IMPLEMENTED;
 
 	/* setup glib/gtk, this is already done on firefox/linux, but needs to be done
 	 * on firefox/windows */

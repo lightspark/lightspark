@@ -219,6 +219,7 @@ void URLLoader::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
 }
 
 void URLLoader::buildTraits(ASObject* o)
@@ -282,6 +283,12 @@ ASFUNCTIONBODY(URLLoader,load)
 	//To be decreffed in jobFence
 	th->incRef();
 	getSys()->addJob(th);
+	return NULL;
+}
+
+ASFUNCTIONBODY(URLLoader,close)
+{
+	obj->as<URLLoader>()->threadAbort();
 	return NULL;
 }
 

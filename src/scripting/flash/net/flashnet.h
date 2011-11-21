@@ -115,6 +115,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
+	ASFUNCTION(close);
 	ASFUNCTION(_getDataFormat);
 	ASFUNCTION(_getData);
 	ASFUNCTION(_setDataFormat);

@@ -2713,7 +2713,12 @@ ASFUNCTIONBODY(RegExp,exec)
 	Array* a=Class<Array>::getInstanceS();
 	//Push the whole result and the captured strings
 	for(int i=0;i<capturingGroups+1;i++)
-		a->push(Class<ASString>::getInstanceS( arg0.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) ));
+	{
+		if(ovector[i*2] != -1)
+			a->push(Class<ASString>::getInstanceS( arg0.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) ));
+		else
+			a->push(new Undefined);
+	}
 	args[0]->incRef();
 	a->setVariableByQName("input","",args[0],DYNAMIC_TRAIT);
 	a->setVariableByQName("index","",abstract_i(ovector[0]),DYNAMIC_TRAIT);

@@ -810,19 +810,16 @@ bool ABCVm::ifTrue(ASObject* obj1)
 	return ret;
 }
 
-int32_t ABCVm::modulo(ASObject* val1, ASObject* val2)
+number_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 {
-	int32_t num1=val1->toInt();
-	int32_t num2=val2->toInt();
+	number_t num1=val1->toNumber();
+	number_t num2=val2->toNumber();
 
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("modulo ")  << num1 << '%' << num2);
-	//Special case 0%0
-	//TODO: should be NaN
-	if(num1==0 && num2==0)
-		return 0;
-	return num1%num2;
+	/* fmod returns NaN if num2 == 0 as the spec mandates */
+	return ::fmod(num1,num2);
 }
 
 number_t ABCVm::subtract_oi(ASObject* val2, int32_t val1)

@@ -78,7 +78,6 @@ typed_opcode_handler ABCVm::opcode_table_uint32_t[]={
 	{"bitOr_oi",(void*)&ABCVm::bitOr_oi,ARGS_OBJ_INT},
 	{"lShift",(void*)&ABCVm::lShift,ARGS_OBJ_OBJ},
 	{"lShift_io",(void*)&ABCVm::lShift_io,ARGS_INT_OBJ},
-	{"modulo",(void*)&ABCVm::modulo,ARGS_OBJ_OBJ},
 	{"urShift",(void*)&ABCVm::urShift,ARGS_OBJ_OBJ},
 	{"rShift",(void*)&ABCVm::rShift,ARGS_OBJ_OBJ},
 	{"urShift_io",(void*)&ABCVm::urShift_io,ARGS_INT_OBJ},
@@ -1457,23 +1456,10 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				}
 				case 0xa4: //modulo
 				{
-					STACK_TYPE t1,t2;
-					t1=popTypeFromStack(static_stack_types,local_ip).second;
-					t2=popTypeFromStack(static_stack_types,local_ip).second;
+					popTypeFromStack(static_stack_types,local_ip).second;
+					popTypeFromStack(static_stack_types,local_ip).second;
 
-					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(t1==STACK_INT && t2==STACK_NUMBER)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(t1==STACK_NUMBER && t2==STACK_INT)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(t1==STACK_INT && t2==STACK_INT)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else if(t1==STACK_NUMBER && t2==STACK_NUMBER)
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					else
-						throw UnsupportedException("Unsuppoted types for modulo");
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
+					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
 				}
 				case 0xa5: //lshift
@@ -3717,31 +3703,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt modulo") );
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
-				{
-					v1.first=Builder.CreateFPToSI(v1.first,int_type);
-					value=Builder.CreateSRem(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
-				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
-				{
-					v1.first=Builder.CreateFPToSI(v1.first,int_type);
-					v2.first=Builder.CreateFPToSI(v2.first,int_type);
-					value=Builder.CreateSRem(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_INT)
-				{
-					value=Builder.CreateSRem(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					abstract_value(ex,Builder,v2);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
+				v1.first = llvm_ToNumber(ex, Builder, v1);
+				v2.first = llvm_ToNumber(ex, Builder, v2);
+				value=Builder.CreateFRem(v1.first, v2.first);
+				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				break;
 			}
 			case 0xa5:

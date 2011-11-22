@@ -408,7 +408,7 @@ void Downloader::syncBuffers()
  * \brief Called by the streambuf API
  *
  * Called by the streambuf API to seek to an absolute position
- * Waits for the mutex at start and releases the mutex when finished.
+ * Mutex must be locked on entry.
  * \throw RunTimeException Cache file could not be read
  */
 Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode mode)
@@ -416,7 +416,6 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 	assert_and_throw(mode==std::ios_base::in);
 	assert_and_throw(buffer && stableBuffer);
 
-	Mutex::Lock l(mutex);
 	syncBuffers();
 
 	// read from stream until we have enough data
@@ -486,6 +485,7 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 	assert_and_throw(mode==std::ios_base::in);
 	assert_and_throw(buffer != NULL);
 
+	Mutex::Lock l(mutex);
 	if (off != 0)
 	{
 		switch (dir)
@@ -495,13 +495,14 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 				break;
 			case std::ios_base::cur:
 			{
-				Mutex::Lock l(mutex);
 				pos_type tmp = getOffset();
 				seekpos(tmp+off,mode);
 				break;
 			}
 			case std::ios_base::end:
+				l.release();
 				waitForTermination();
+				l.acquire();
 				if (finished)
 					seekpos(length+off,mode);
 				break;
@@ -510,7 +511,6 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 		}
 	}
 
-	Mutex::Lock l(mutex);
 	return getOffset();
 }
 

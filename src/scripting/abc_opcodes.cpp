@@ -1338,7 +1338,7 @@ void ABCVm::getLex(call_context* th, int n)
 		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 		if(o==NULL)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< "was not found, pushing Undefined");
+			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found, pushing Undefined");
 			th->runtime_stack_push(new Undefined);
 			return;
 		}

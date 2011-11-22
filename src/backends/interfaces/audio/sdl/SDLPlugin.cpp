@@ -154,7 +154,6 @@ void SDLAudioStream::async_callback(void *unused, uint8_t *stream, int len)
 	if (!s->decoder->hasDecodedFrames())
 		return;
 
-	SDL_LockAudio();
 	uint8_t *buf = new uint8_t[len];
 	int readcount = 0;
 	while (readcount < len)
@@ -166,6 +165,7 @@ void SDLAudioStream::async_callback(void *unused, uint8_t *stream, int len)
 			break;
 		readcount += ret;
 	}
+	SDL_LockAudio();
 	SDL_MixAudio(stream, buf, readcount, s->curvolume);
 	SDL_UnlockAudio();
 	delete[] buf;

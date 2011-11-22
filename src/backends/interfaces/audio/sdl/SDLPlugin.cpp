@@ -134,7 +134,7 @@ bool SDLAudioStream::init()
 	fmt.freq = decoder->sampleRate;
 	fmt.format = AUDIO_S16;
 	fmt.channels = decoder->channelCount;
-	fmt.samples = 512;     
+	fmt.samples = 4096;
 	fmt.callback = async_callback;
 	fmt.userdata = this;
 	if ( SDL_OpenAudio(&fmt, NULL) < 0 ) {

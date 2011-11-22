@@ -30,10 +30,10 @@
 using namespace std;
 using namespace lightspark;
 
-class StandaloneEngineData: public GtkEngineData
+class StandaloneEngineData: public EngineData
 {
 public:
-	StandaloneEngineData(GtkWidget* w): GtkEngineData(w,0,0)
+	StandaloneEngineData(GtkWidget* w): EngineData(w,0,0)
 	{
 #ifndef _WIN32
 		visual = XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));

@@ -194,9 +194,19 @@ char* NPP_GetMIMEDescription(void)
 	return (char*)(MIME_TYPES_DESCRIPTION);
 }
 
+#ifdef _WIN32
+static void gtk_main_runner()
+{
+	gdk_threads_enter();
+	gtk_main();
+	gdk_threads_leave();
+}
+#endif
+
 /////////////////////////////////////
 // general initialization and shutdown
 //
+static Thread* gtkThread = NULL;
 NPError NS_PluginInitialize()
 {
 	LOG_LEVEL log_level = LOG_NOT_IMPLEMENTED;
@@ -217,12 +227,26 @@ NPError NS_PluginInitialize()
 
 	Log::setLogLevel(log_level);
 	lightspark::SystemState::staticInit();
+#ifdef _WIN32
+	/* On win32, we link statically to gtk. Therefore we need to run
+	 * our own gtk main loop.
+	 * On linux, this is done by the firefox process.
+	 */
+	gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner), true);
+#endif
 	return NPERR_NO_ERROR;
 }
 
 void NS_PluginShutdown()
 {
 	LOG(LOG_INFO,"Lightspark plugin shutdown");
+	if(gtkThread)
+	{
+		gdk_threads_enter();
+		gtk_main_quit();
+		gdk_threads_leave();
+		gtkThread->join();
+	}
 	lightspark::SystemState::staticDeinit();
 }
 
@@ -389,6 +413,52 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 
 }
 
+#ifdef _WIN32
+/*
+ * Create a GtkWidget and embed it into that mWindow. This unifies the other code,
+ * because on any platform and standalone/plugin, we always handle GtkWidgets.
+ * Additionally, firefox always crashed on me when trying to directly draw into
+ * mWindow.
+ * This must be run in the gtk_main() thread for AttachThreadInput to make sense.
+ */
+static void createEngineData_win32(nsPluginInstance* th, HWND parent_hwnd, int width, int height, SystemState* m_sys)
+{
+	LOG(LOG_INFO,"Plugin Window " << hex << parent_hwnd << dec << " Width: " << width << " Height: " << height);
+	gdk_threads_enter();
+
+	GtkWidget* widget=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	/* Remove window decorations */
+	gtk_window_set_decorated((GtkWindow*)widget, FALSE);
+	/* Realize to construct hwnd */
+	gtk_widget_realize(widget);
+	HWND window = (HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget));
+	/* Set WS_CHILD, remove WS_POPUP - see MSDN on SetParent */
+	DWORD dwStyle = GetWindowLong (window, GWL_STYLE);
+	dwStyle |= WS_CHILD;
+	dwStyle &= ~WS_POPUP;
+	SetWindowLong(window, GWL_STYLE, dwStyle);
+	SetForegroundWindow(window);
+	/* Re-parent */
+	SetParent(window, parent_hwnd);
+	/* Attach our thread to that of the parent.
+	 * This ensures that we get messages for input events*/
+	DWORD parentThreadId;
+	if(!(parentThreadId = GetWindowThreadProcessId(parent_hwnd, NULL)))
+		LOG(LOG_ERROR,"GetWindowThreadProcessId failed");
+	DWORD myThreadId;
+	if(!(myThreadId = GetCurrentThreadId()))
+		LOG(LOG_ERROR,"GetCurrentThreadId failed");
+	if(!AttachThreadInput(myThreadId, parentThreadId, TRUE))
+		LOG(LOG_ERROR,"AttachThreadInput failed");
+	/* Set window size */
+	gtk_widget_set_size_request(widget, width, height);
+	gdk_threads_leave();
+
+	PluginEngineData* e= new PluginEngineData(th, widget, width, height);
+	m_sys->setParamsAndEngine(e, false);
+}
+#endif
+
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
 	if(aWindow == NULL)
@@ -415,9 +485,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	{
 		assert(mWindow==0);
 		mWindow = (HWND) aWindow->window;
-		PluginEngineData* e= new PluginEngineData(this, mWindow, mWidth, mHeight);
-		LOG(LOG_INFO,"Plugin Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
-		m_sys->setParamsAndEngine(e, false);
+		EngineData::setupMainThreadCallback(sigc::bind(&createEngineData_win32,this, mWindow, mWidth, mHeight, m_sys));
 	}
 #else
 	if (mWindow == (Window) aWindow->window)
@@ -438,7 +506,14 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		mColormap = ws_info->colormap;
 
 		VisualID visual=XVisualIDFromVisual(mVisual);
-		PluginEngineData* e= new PluginEngineData(this, mDisplay, visual, mWindow, mWidth, mHeight);
+
+		/* mWindow is actually a gtk_socket (see gecko documentation) */
+		gdk_threads_enter();
+		GtkWidget* widget = gtk_plug_new(mWindow);
+		gdk_threads_leave();
+
+		PluginEngineData* e= new PluginEngineData(this, widget, mWidth, mHeight);
+		e->visual = visual;
 		LOG(LOG_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
 		m_sys->setParamsAndEngine(e, false);
 	}
@@ -650,19 +725,6 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 			dl->setFailed();
 			break;
 	}
-}
-
-void callHelper(sigc::slot<void>* slot)
-{
-	(*slot)();
-	delete slot;
-}
-
-void PluginEngineData::setupMainThreadCallback(const sigc::slot<void>& slot)
-{
-	//create a slot on heap to survive the return of this function
-	typedef void (*npn_callback)(void *);
-	NPN_PluginThreadAsyncCall(instance->mInstance, (npn_callback)callHelper, new sigc::slot<void>(slot));
 }
 
 void PluginEngineData::stopMainDownload()

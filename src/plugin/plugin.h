@@ -66,36 +66,13 @@ public:
 	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::ILoadable* owner);
 };
 
-class PluginEngineData:
-#ifdef _WIN32
-	public HWNDEngineData
-#else
-	public GtkEngineData
-#endif
+class PluginEngineData:	public EngineData
 {
 private:
 	nsPluginInstance* instance;
 public:
-#ifdef _WIN32
-	PluginEngineData(nsPluginInstance* i, HWND hw, int w, int h)
-		: HWNDEngineData(hw,w,h), instance(i)
-	{
-	}
-#else
-	GtkWidget* wrap(Window win)
-	{
-		gdk_threads_enter();
-		GtkWidget* ret = gtk_plug_new(win);
-		gdk_threads_leave();
-		return ret;
-	}
-	PluginEngineData(nsPluginInstance* i, Display* /*unused*/, VisualID v, Window win, int w, int h)
-		: GtkEngineData(wrap(win),w,h), instance(i)
-	{
-		visual = v;
-	}
-#endif
-	void setupMainThreadCallback(const sigc::slot<void>& slot);
+	PluginEngineData(nsPluginInstance* i, GtkWidget* widget, int w, int h)
+		: EngineData(widget,w,h), instance(i) {}
 	void stopMainDownload();
 	bool isSizable() const { return false; }
 };

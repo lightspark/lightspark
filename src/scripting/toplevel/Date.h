@@ -37,7 +37,6 @@ private:
 	int hour;
 	int minute;
 	int second;
-	int millisecond;
 	Date();
 	virtual ~Date();
 	GDateTime *datetime;

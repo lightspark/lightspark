@@ -27,7 +27,7 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(Date);
 
-Date::Date():extrayears(0), datetime(NULL)
+Date::Date():extrayears(0), nan(false), datetime(NULL)
 {
 }
 
@@ -88,6 +88,12 @@ const gint64 MS_IN_400_YEARS = 1.26227808e+13;
 ASFUNCTIONBODY(Date,_constructor)
 {
 	Date* th=static_cast<Date*>(obj);
+	for (uint32_t i = 0; i < argslen; i++) {
+		if(args[i]->getObjectType()==T_NUMBER && std::isnan(args[i]->toNumber())) {
+			th->nan = true;
+			return NULL;
+		}
+	}
 	if (argslen == 1)
 	{
 	//GLib's GDateTime sensibly does not support and store very large year numbers
@@ -130,6 +136,11 @@ ASFUNCTIONBODY(Date,_constructor)
 
 ASFUNCTIONBODY(Date,UTC)
 {
+	for (uint32_t i = 0; i < argslen; i++) {
+		if(args[i]->getObjectType()==T_NUMBER && std::isnan(args[i]->toNumber())) {
+			return abstract_d(Number::NaN);
+		}
+	}
 	number_t year, month, day, hour, minute, second, millisecond;
 	ARG_UNPACK (year) (month) (day, 1) (hour, 0) (minute, 0) (second, 0) (millisecond, 0);
 	if (millisecond < 1000)
@@ -146,6 +157,9 @@ ASFUNCTIONBODY(Date,UTC)
 ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	GTimeSpan diff = g_date_time_get_utc_offset(th->datetime);
 	return abstract_d(diff/1000000);
 }
@@ -158,102 +172,153 @@ ASFUNCTIONBODY(Date,timezoneOffset)
 ASFUNCTIONBODY(Date,getUTCFullYear)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(th->extrayears + g_date_time_get_year(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getUTCMonth)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_month(th->datetime)-1);
 }
 
 ASFUNCTIONBODY(Date,getUTCDate)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_day_of_month(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getUTCDay)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_day_of_week(th->datetime)%7);
 }
 
 ASFUNCTIONBODY(Date,getUTCHours)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_hour(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getUTCMinutes)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_minute(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getUTCSeconds)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_second(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getUTCMilliseconds)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_microsecond(th->datetime)/1000);
 }
 
 ASFUNCTIONBODY(Date,getFullYear)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(th->extrayears + g_date_time_get_year(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMonth)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_month(th->datetime)-1);
 }
 
 ASFUNCTIONBODY(Date,getDate)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_day_of_month(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getDay)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_day_of_week(th->datetime)%7);
 }
 
 ASFUNCTIONBODY(Date,getHours)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_hour(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMinutes)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_minute(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getSeconds)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_second(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMilliseconds)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(g_date_time_get_microsecond(th->datetime)/1000);
 }
 
 ASFUNCTIONBODY(Date,getTime)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return abstract_d(th->toNumber());
 }
 
@@ -514,6 +579,9 @@ ASFUNCTIONBODY(Date,setUTCMilliseconds)
 ASFUNCTIONBODY(Date,valueOf)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	return th->msSinceEpoch();
 }
 

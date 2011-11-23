@@ -49,6 +49,8 @@ namespace lightspark
 		std::string cacheDirectory;
 		//Specifies what prefix the cache files should have, default="cache"
 		std::string cachePrefix;
+		//Specifies the filename including full path of the gnash executable
+		std::string gnashPath;
 
 		//Specifies what audio backend should, default=PULSEAUDIO
 		AUDIOBACKEND audioBackend;
@@ -60,6 +62,7 @@ namespace lightspark
 
 		const std::string& getCacheDirectory() const { return cacheDirectory; }
 		const std::string& getCachePrefix() const { return cachePrefix; }
+		const std::string& getGnashPath() const { return gnashPath; }
 
 		AUDIOBACKEND getAudioBackend() const { return audioBackend; }
 		const std::string& getAudioBackendName() const { return audioBackendName; }

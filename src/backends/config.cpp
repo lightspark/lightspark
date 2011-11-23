@@ -29,6 +29,42 @@ using namespace lightspark;
 using namespace std;
 using namespace boost::filesystem;
 
+#ifdef WIN32
+const std::string LS_REG_KEY = "SOFTWARE\\MozillaPlugins\\@lightspark.github.com/Lightspark;version=1";
+std::string readRegistryEntry(std::string name)
+{
+	char lszValue[255];
+	HKEY hKey;
+	LONG returnStatus;
+	DWORD dwType=REG_SZ;
+	DWORD dwSize=sizeof(lszValue);;
+	returnStatus = RegOpenKeyEx(HKEY_CURRENT_USER, LS_REG_KEY.c_str(), 0L, KEY_QUERY_VALUE, &hKey);
+	if(returnStatus != ERROR_SUCCESS)
+	{
+		LOG(LOG_ERROR,"Could not open registry key " << LS_REG_KEY);
+		return "";
+	}
+	returnStatus = RegQueryValueEx(hKey, name.c_str(), NULL, &dwType, (LPBYTE)&lszValue, &dwSize);
+	if(returnStatus != ERROR_SUCCESS)
+	{
+		LOG(LOG_ERROR,"Could not read registry key value " << LS_REG_KEY << "\\" << name);
+		return "";
+	}
+	if(dwType != REG_SZ)
+	{
+		LOG(LOG_ERROR,"Registry key" << LS_REG_KEY << "\\" << name << " has unexpected type");
+		return "";
+	}
+	RegCloseKey(hKey);
+	if(dwSize == 0)
+		return "";
+	/* strip terminating '\0' - string may or may not have one */
+	if(lszValue[dwSize] == '\0')
+		dwSize--;
+	return std::string(lszValue,dwSize);
+}
+#endif
+
 Config::Config():
 	parser(NULL),
 	//CONFIGURATION FILENAME AND SEARCH DIRECTORIES
@@ -114,6 +150,16 @@ void Config::load()
 
 	//Set the audio backend name
 	audioBackendName = audioBackendNames[audioBackend];
+
+#ifdef WIN32
+	gnashPath = readRegistryEntry("GnashPath");
+	LOG(LOG_INFO, "Read gnash's path from registry: " << gnashPath);
+#else
+#	ifndef GNASH_PATH
+#	error No GNASH_PATH defined
+#	endif
+	gnashPath = GNASH_PATH;
+#endif
 }
 
 void Config::handleEntry()

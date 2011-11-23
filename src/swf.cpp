@@ -542,14 +542,10 @@ void SystemState::EngineCreator::threadAbort()
 	getSys()->getRenderThread()->forceInitialization();
 }
 
-#ifndef GNASH_PATH
-#error No GNASH_PATH defined
-#endif
-
 void SystemState::enableGnashFallback()
 {
 	//Check if the gnash standalone executable is available
-	ifstream f(GNASH_PATH, ios::in|ios::binary);
+	ifstream f(config->getGnashPath(), ios::in|ios::binary);
 	if(f)
 		useGnashFallback=true;
 	f.close();
@@ -650,7 +646,7 @@ void SystemState::createEngines()
 		/* TODO: pass -F hostFD to assist in loading urls */
 		char* args[] =
 		{
-			strdup(GNASH_PATH),
+			strdup(config->getGnashPath().c_str()),
 			strdup("-x"), //Xid
 			bufXid,
 			strdup("-j"), //Width
@@ -676,7 +672,7 @@ void SystemState::createEngines()
 				argsStr += args[i];
 				i++;
 			}
-			LOG(LOG_INFO, "Invoking '" << GNASH_PATH << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
+			LOG(LOG_INFO, "Invoking '" << config->getGnashPath() << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
 		}
 
 		GError* errmsg;

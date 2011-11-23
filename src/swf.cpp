@@ -1191,6 +1191,7 @@ void ParseThread::parseSWF(UI8 ver)
 		root->parsingFailed();
 		throw;
 	}
+	LOG(LOG_INFO,_("End of parsing"));
 }
 
 void ParseThread::parseBitmap()

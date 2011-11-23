@@ -62,7 +62,6 @@ _NR<Tag> TagFactory::readTag()
 	switch(h.getTagType())
 	{
 		case 0:
-			LOG(LOG_INFO,_("End of parsing @ ") << f.tellg());
 			ret=new EndTag(h,f);
 			break;
 		case 1:

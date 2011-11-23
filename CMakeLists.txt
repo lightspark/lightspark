@@ -374,3 +374,32 @@ if(UNIX)
 endif(UNIX)
 
 SUBDIRS(src)
+
+#-- CPack setup - use 'make package' to build
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Lightspark is an LGPLv3 licensed cross-platform Flash player and browser plugin")
+SET(CPACK_PACKAGE_VENDOR "Lightspark Team")
+SET(CPACK_PACKAGE_NAME "Lightspark")
+SET(CPACK_PACKAGE_VERSION_MAJOR "${MAJOR_VERSION}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${MINOR_VERSION}")
+SET(CPACK_PACKAGE_VERSION_PATCH "${PATCH_VERSION}")
+SET(CPACK_NSIS_MENU_LINKS "")
+SET(CPACK_STRIP_FILES TRUE)
+SET(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/COPYING)
+SET(CPACK_NSIS_HELP_LINK "http:////lightspark.github.com")
+SET(CPACK_NSIS_URL_INFO_ABOUT "http:////lightspark.github.com")
+SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/media/lightspark-logo.svg)
+IF(WIN32)
+  SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Description' 'Lightspark'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'ProductName' 'Lightspark'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Vendor' 'Lightspark Team'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Version' '1'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Path' '$INSTDIR\\\\nplightsparkplugin.dll'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1\\\\MimeTypes\\\\application/x-shockwave-flash' '' ''
+  ")
+  SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+  DeleteRegKey HKLM 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1'
+  ")
+ENDIF(WIN32)
+#Must come after the definitions
+INCLUDE(CPack)

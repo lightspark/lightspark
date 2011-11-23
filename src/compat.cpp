@@ -112,6 +112,27 @@ uint64_t compat_get_thread_cputime_us()
  * In the plugin, DLLMain sets it to the dll's instance.
  */
 HINSTANCE g_hinstance = NULL;
+#define DEFDLLMAIN(x) extern "C" BOOL WINAPI x##_DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+DEFDLLMAIN(gio);
+DEFDLLMAIN(glib);
+DEFDLLMAIN(atk);
+DEFDLLMAIN(pango);
+DEFDLLMAIN(gdk);
+DEFDLLMAIN(gtk);
+
+#define RUNDLLMAIN(x) x##_DllMain(hinstDLL, fdwReason, lpvReserved)
+extern "C"
+BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+	RUNDLLMAIN(gio);
+	RUNDLLMAIN(glib);
+	RUNDLLMAIN(atk);
+	RUNDLLMAIN(pango);
+	RUNDLLMAIN(gdk);
+	RUNDLLMAIN(gtk);
+	return TRUE;
+}
+
 const char* getExectuablePath()
 {
 	static char path[MAX_PATH] = {0};

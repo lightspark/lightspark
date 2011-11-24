@@ -94,6 +94,9 @@ ASFUNCTIONBODY(Date,_constructor)
 			return NULL;
 		}
 	}
+	if (argslen == 0) {
+		th->datetime = g_date_time_new_now_utc();
+	} else
 	if (argslen == 1)
 	{
 	//GLib's GDateTime sensibly does not support and store very large year numbers

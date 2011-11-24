@@ -77,6 +77,7 @@ ENDIF(GNASH_EXE_PATH)
 
 # Some directory shortcuts
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
+INCLUDE(Pack)
 # If we're gcc, then use nasm to get fastpath.  If MSVC, just use inline asm to get around
 # CMake issues 
 IF(CMAKE_COMPILER_IS_GNUCC)
@@ -383,7 +384,9 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "${MAJOR_VERSION}")
 SET(CPACK_PACKAGE_VERSION_MINOR "${MINOR_VERSION}")
 SET(CPACK_PACKAGE_VERSION_PATCH "${PATCH_VERSION}")
 SET(CPACK_NSIS_MENU_LINKS "")
-SET(CPACK_STRIP_FILES TRUE)
+#In release builds, we already strip symbols (see LDFLAGS), and compress by upx
+#Therefore we cannot strip afterwards
+SET(CPACK_STRIP_FILES FALSE)
 SET(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/COPYING)
 SET(CPACK_NSIS_HELP_LINK "http:////lightspark.github.com")
 SET(CPACK_NSIS_URL_INFO_ABOUT "http:////lightspark.github.com")

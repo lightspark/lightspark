@@ -57,5 +57,6 @@ IF(WIN32)
   SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES OUTPUT_NAME nplightsparkplugin PREFIX "")
 ENDIF()
 
+PACK_LIBRARY(lightsparkplugin)
 INSTALL(TARGETS lightsparkplugin DESTINATION ${PLUGIN_DIRECTORY})
 

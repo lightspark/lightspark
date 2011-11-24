@@ -2728,7 +2728,7 @@ ASFUNCTIONBODY(RegExp,exec)
 		uint16_t num=GINT16_FROM_BE(entry->number);
 		ASObject* captured=a->at(num);
 		captured->incRef();
-		a->setVariableByQName(entry->name,"",captured,DYNAMIC_TRAIT);
+		a->setVariableByQName(tiny_string(entry->name, true),"",captured,DYNAMIC_TRAIT);
 		entries+=namedSize;
 	}
 	th->lastIndex=ovector[1];

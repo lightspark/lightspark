@@ -41,6 +41,7 @@ private:
 	Date();
 	virtual ~Date();
 	GDateTime *datetime;
+	GDateTime *datetimeUTC;
 	ASObject *msSinceEpoch();
 public:
 	static void sinit(Class_base*);

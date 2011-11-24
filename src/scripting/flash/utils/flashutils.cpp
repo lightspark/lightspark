@@ -23,6 +23,7 @@
 #include "class.h"
 #include "compat.h"
 #include "parsing/amf3_generator.h"
+#include "argconv.h"
 #include <sstream>
 
 using namespace std;
@@ -68,6 +69,9 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUnsignedInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTF","",Class<IFunction>::getFunction(readUTF),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTFBytes","",Class<IFunction>::getFunction(readUTFBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeUTF","",Class<IFunction>::getFunction(writeUTF),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),NORMAL_METHOD,true);
@@ -205,6 +209,66 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	uint8_t* buf=out->getBuffer(length,true);
 	memcpy(buf,th->bytes+th->position,length);
 	th->position+=length;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,readUTF)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+
+	if(th->len < th->position+2)
+	{
+		LOG(LOG_ERROR,"ByteArray::readUTF not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+
+	uint16_t length;
+	memcpy(&length,th->bytes+th->position,2);
+	th->position+=2;
+
+	if(th->position+length > th->len)
+	{
+		LOG(LOG_ERROR,"ByteArray::readUTF not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+
+	uint8_t *bufStart=th->bytes+th->position;
+	th->position+=length;
+	return Class<ASString>::getInstanceS((char *)bufStart,length);
+}
+
+ASFUNCTIONBODY(ByteArray,readUTFBytes)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	uint32_t length;
+
+	ARG_UNPACK (length);
+	if(th->position+length > th->len)
+	{
+		LOG(LOG_ERROR,"ByteArray::readUTFBytes not enough data");
+		//TODO: throw AS exceptions
+		return NULL;
+	}
+
+	uint8_t *bufStart=th->bytes+th->position;
+	th->position+=length;
+	return Class<ASString>::getInstanceS((char *)bufStart,length);
+}
+
+ASFUNCTIONBODY(ByteArray,writeUTF)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	//Validate parameters
+	assert_and_throw(argslen==1);
+	assert_and_throw(args[0]->getObjectType()==T_STRING);
+	ASString* str=Class<ASString>::cast(args[0]);
+	th->getBuffer(th->position+str->data.numBytes()+3,true);
+	uint16_t bytes=(uint16_t)str->data.numBytes();
+	memcpy(th->bytes+th->position,&bytes,2);
+	memcpy(th->bytes+th->position+2,str->data.raw_buf(),bytes+1);
 
 	return NULL;
 }

@@ -43,7 +43,7 @@ IF(WIN32)
 	SET(PLUGIN_SOURCES ${PLUGIN_SOURCES} plugin.rc plugin.def)
 ENDIF(WIN32)
 
-ADD_LIBRARY(lightsparkplugin SHARED ${PLUGIN_SOURCES})
+ADD_LIBRARY(lightsparkplugin MODULE ${PLUGIN_SOURCES})
 
 TARGET_LINK_LIBRARIES(lightsparkplugin spark)
 

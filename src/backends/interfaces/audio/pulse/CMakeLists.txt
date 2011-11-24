@@ -45,7 +45,7 @@ ADD_DEFINITIONS(-DPULSE_BACKEND=TRUE)
 SET(PULSEPLUGIN_SOURCES PulsePlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp)
 
 # liblightsparkpulseplugin.so target
-ADD_LIBRARY(pulseplugin SHARED ${PULSEPLUGIN_SOURCES})
+ADD_LIBRARY(pulseplugin MODULE ${PULSEPLUGIN_SOURCES})
 TARGET_LINK_LIBRARIES(pulseplugin spark) #Need to link some functions with the decoders
 TARGET_LINK_LIBRARIES(pulseplugin ${PULSE_LIBS_LIBRARIES} ${Boost_LIBRARIES})
 SET_TARGET_PROPERTIES(pulseplugin PROPERTIES OUTPUT_NAME lightsparkpulseplugin)

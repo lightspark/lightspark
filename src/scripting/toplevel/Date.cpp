@@ -74,6 +74,7 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setUTCMinutes",AS3,Class<IFunction>::getFunction(setUTCMinutes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setUTCSeconds",AS3,Class<IFunction>::getFunction(setUTCSeconds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setUTCMilliseconds",AS3,Class<IFunction>::getFunction(setUTCMilliseconds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTime",AS3,Class<IFunction>::getFunction(setTime),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(timezoneOffset),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("UTC","",Class<IFunction>::getFunction(UTC),NORMAL_METHOD,false);
@@ -622,6 +623,22 @@ ASFUNCTIONBODY(Date,setUTCMilliseconds)
 	th->datetime = g_date_time_to_local(th->datetimeUTC);
 
 	return abstract_d(1000*g_date_time_to_unix(th->datetime));
+}
+
+ASFUNCTIONBODY(Date,setTime)
+{
+	Date* th=static_cast<Date*>(obj);
+	number_t ms;
+	ARG_UNPACK (ms);
+
+	if(th->datetimeUTC)
+		g_date_time_unref(th->datetimeUTC);
+	th->datetimeUTC = g_date_time_new_from_unix_utc(ms/1000);
+	th->datetimeUTC = g_date_time_add(th->datetimeUTC, (int64_t(ms)%1000)*1000);
+	if(th->datetime)
+		g_date_time_unref(th->datetime);
+	th->datetime = g_date_time_to_local(th->datetimeUTC);
+	return abstract_d(ms);
 }
 
 ASFUNCTIONBODY(Date,valueOf)

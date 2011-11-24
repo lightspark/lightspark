@@ -81,6 +81,7 @@ public:
 	ASFUNCTION(setUTCMinutes);
 	ASFUNCTION(setUTCSeconds);
 	ASFUNCTION(setUTCMilliseconds);
+	ASFUNCTION(setTime);
 	ASFUNCTION(timezoneOffset);
 	tiny_string toString(bool debugMsg=false);
 	tiny_string toString_priv() const;

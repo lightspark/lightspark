@@ -78,6 +78,7 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(timezoneOffset),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("UTC","",Class<IFunction>::getFunction(UTC),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 }
 
 void Date::buildTraits(ASObject* o)
@@ -663,7 +664,7 @@ ASObject* Date::msSinceEpoch()
 						g_date_time_get_microsecond(datetime)/1000);
 }
 
-tiny_string Date::toString(bool debugMsg)
+tiny_string Date::toString()
 {
 	assert_and_throw(implEnable);
 	return toString_priv();
@@ -672,6 +673,12 @@ tiny_string Date::toString(bool debugMsg)
 tiny_string Date::toString_priv() const
 {
 	return g_date_time_format(datetime, "%a %b %e %H:%M:%S %Z%z %Y");
+}
+
+ASFUNCTIONBODY(Date,_toString)
+{
+	Date* th=static_cast<Date*>(obj);
+	return Class<ASString>::getInstanceS(th->toString());
 }
 
 void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

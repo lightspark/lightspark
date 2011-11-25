@@ -83,7 +83,8 @@ public:
 	ASFUNCTION(setUTCMilliseconds);
 	ASFUNCTION(setTime);
 	ASFUNCTION(timezoneOffset);
-	tiny_string toString(bool debugMsg=false);
+	ASFUNCTION(_toString);
+	tiny_string toString();
 	tiny_string toString_priv() const;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

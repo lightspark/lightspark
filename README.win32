@@ -10,11 +10,12 @@ I assume that your currently one level above the directory
 2. Install mingw-cross-env by
   1. hg clone http://hg.savannah.nongnu.org/hgweb/mingw-cross-env
   2. cd mingw-cross-env
-  3. make gcc llvm glibmm gtk2 ffmpeg cairo pango boost libxml++ glew freetype curl gdb JOBS=5 -j3
+  3. Apply the patch from http://lists.nongnu.org/archive/html/mingw-cross-env-list/2011-11/msg00072.html
+  4. make gcc llvm glibmm gtk2 ffmpeg cairo pango boost libxml++ glew freetype curl gdb JOBS=5 -j3
      (This may ask you to install additional packages. Do so using the package manager of your distribution.
       For Ubuntu oneiric, use 'apt-get install libtool yasm scons flex unzip wget')
-  4. make strip
-  5. cd ..
+  5. make strip
+  6. cd ..
 
 3. Build lightspark
   1. mkdir mingw && cd mingw

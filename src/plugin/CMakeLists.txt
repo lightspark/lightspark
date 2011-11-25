@@ -55,6 +55,7 @@ ENDIF()
 IF(WIN32)
   #For win32 firefox, plugins have to start with 'np'
   SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES OUTPUT_NAME nplightsparkplugin PREFIX "")
+  SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES LINK_FLAGS "-Wl,--enable-stdcall-fixup")
 ENDIF()
 
 PACK_LIBRARY(lightsparkplugin)

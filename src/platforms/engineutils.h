@@ -44,7 +44,9 @@ private:
 	GtkWidget* widget;
 	Mutex handlerMutex;
         sigc::slot<bool,GdkEvent*> inputHandler;
+	gulong inputHandlerId;
 	sigc::slot<void,int32_t,int32_t> sizeHandler;
+	gulong sizeHandlerId;
 	/* This function must be called from the gtk main thread
 	 * and within gdk_threads_enter/leave */
 	virtual GtkWidget* createGtkWidget()=0;
@@ -63,8 +65,12 @@ public:
 #ifndef _WIN32
 	VisualID visual;
 #endif
-	EngineData() : widget(0), width(0), height(0), window(0) {}
-	virtual ~EngineData() {}
+	EngineData() : widget(0), inputHandlerId(0), sizeHandlerId(0), width(0), height(0), window(0) {}
+	virtual ~EngineData()
+	{
+		removeSizeChangeHandler();
+		removeInputHandler();
+	}
 	virtual bool isSizable() const = 0;
 	virtual void stopMainDownload() = 0;
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
@@ -107,16 +113,21 @@ public:
 	void setInputHandler(const sigc::slot<bool,GdkEvent*>& ic)
 	{
 		Mutex::Lock l(handlerMutex);
+		assert(!inputHandlerId);
 		inputHandler = ic;
 		gtk_widget_set_can_focus(widget,TRUE);
 		gtk_widget_add_events(widget,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
 						GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK);
-		g_signal_connect(widget, "event", G_CALLBACK(inputDispatch), this);
+		inputHandlerId = g_signal_connect(widget, "event", G_CALLBACK(inputDispatch), this);
 	}
 	void removeInputHandler()
 	{
 		Mutex::Lock l(handlerMutex);
-		inputHandler = sigc::slot<bool,GdkEvent*>();
+		if(inputHandlerId)
+		{
+			g_signal_handler_disconnect(widget, inputHandlerId);
+			inputHandler = sigc::slot<bool,GdkEvent*>();
+		}
 	}
 	static void sizeDispatch(GtkWidget* widget, GdkRectangle* allocation, EngineData* e)
 	{
@@ -128,13 +139,18 @@ public:
 	void setSizeChangeHandler(const sigc::slot<void,int32_t,int32_t>& sc)
 	{
 		Mutex::Lock l(handlerMutex);
+		assert(!sizeHandlerId);
 		sizeHandler = sc;
-		g_signal_connect(widget, "size-allocate", G_CALLBACK(sizeDispatch), this);
+		sizeHandlerId = g_signal_connect(widget, "size-allocate", G_CALLBACK(sizeDispatch), this);
 	}
 	void removeSizeChangeHandler()
 	{
 		Mutex::Lock l(handlerMutex);
-		sizeHandler = sigc::slot<void,int32_t,int32_t>();
+		if(sizeHandlerId)
+		{
+			g_signal_handler_disconnect(widget, sizeHandlerId);
+			sizeHandler = sigc::slot<void,int32_t,int32_t>();
+		}
 	}
 };
 

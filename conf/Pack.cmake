@@ -1,4 +1,4 @@
-IF(${CMAKE_BUILD_TYPE} MATCHES "Release")
+IF(${CMAKE_BUILD_TYPE} MATCHES "Release" AND MINGW)
   INCLUDE(FindSelfPackers)
   IF(SELF_PACKER_FOR_EXECUTABLE)
     message(STATUS "Found ${SELF_PACKER_FOR_EXECUTABLE}, using it for compression")

@@ -1000,52 +1000,16 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				break;
 			}
 			case SHUTDOWN:
+			{
 				//no need to lock as this is the vm thread
 				shuttingdown=true;
-				break;
-			case SYNC:
-			{
-				SynchronizationEvent* ev=static_cast<SynchronizationEvent*>(e.second.getPtr());
-				ev->sync();
 				break;
 			}
 			case FUNCTION:
 			{
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second.getPtr());
-				// We should catch exceptions and report them
-				if(ev->exception != NULL)
+				try
 				{
-					//SyncEvents are only used in this code path
-					try
-					{
-						ev->obj->incRef();
-						ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs);
-						// We should report the function result
-						if(ev->result != NULL)
-							*(ev->result) = result;
-						else if(result)
-							result->decRef();
-					}
-					catch(ASObject* exception)
-					{
-						// Report the exception
-						*(ev->exception) = exception;
-					}
-					catch(LightsparkException& e)
-					{
-						//An internal error happended, sync and rethrow
-						if(!ev->sync.isNull())
-							ev->sync->sync();
-						throw e;
-					}
-					// We should synchronize the passed SynchronizationEvent
-					if(!ev->sync.isNull())
-						ev->sync->sync();
-				}
-				// Exceptions aren't expected and shouldn't be ignored
-				else
-				{
-					assert(ev->sync.isNull());
 					if(!ev->obj.isNull())
 						ev->obj->incRef();
 					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs);
@@ -1054,6 +1018,26 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 						*(ev->result) = result;
 					else if(result)
 						result->decRef();
+				}
+				catch(ASObject* exception)
+				{
+					if(ev->exception)
+					{
+						// Report the exception
+						*(ev->exception) = exception;
+					}
+					else
+					{
+						//Exception unhandled, report up
+						ev->done.signal();
+						throw e;
+					}
+				}
+				catch(LightsparkException& e)
+				{
+					//An internal error happended, sync and rethrow
+					ev->done.signal();
+					throw e;
 				}
 				break;
 			}
@@ -1089,9 +1073,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				break;
 			}
 			default:
-				throw UnsupportedException("Not supported event");
+				assert(false);
 		}
 	}
+
+	/* If this was a waitable event, signal it */
+	if(e.second->is<WaitableEvent>())
+		e.second->as<WaitableEvent>()->done.signal();
 }
 
 /*! \brief enqueue an event, a reference is acquired
@@ -1099,19 +1087,23 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 * * \param ev event that will be sent */
 bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 {
-	//If the system should terminate new events are not accepted
-	if(m_sys->shouldTerminate())
-		return false;
-	//If the event is a synchronization and we are running in the VM context
-	//we should handle it immediately to avoid deadlock
-	if(isVmThread() && (ev->getEventType()==SYNC))
+	/* We have to run waitable events directly,
+	 * because otherwise waiting on them in the vm thread
+	 * will block the vm thread from executing them.
+	 */
+	if(isVmThread() && ev->is<WaitableEvent>())
 	{
-		assert(obj.isNull());
-		handleEvent(make_pair(obj, ev));
+		handleEvent( make_pair(obj,ev) );
 		return true;
 	}
 
+
 	Mutex::Lock l(event_queue_mutex);
+
+	//If the system should terminate new events are not accepted
+	if(shuttingdown)
+		return false;
+
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	sem_event_cond.signal();
 	return true;
@@ -1396,32 +1388,31 @@ void ABCVm::Run(ABCVm* th)
 	bool firstMissingEvents=true;
 	while(true)
 	{
+		th->event_queue_mutex.lock();
+		while(th->events_queue.empty() && !th->shuttingdown)
+			th->sem_event_cond.wait(th->event_queue_mutex);
+
+		if(th->shuttingdown)
+		{
+			//If the queue is empty stop immediately
+			if(th->events_queue.empty())
+			{
+				th->event_queue_mutex.unlock();
+				break;
+			}
+			else if(firstMissingEvents)
+			{
+				LOG(LOG_INFO,th->events_queue.size() << _(" events missing before exit"));
+				firstMissingEvents = false;
+			}
+		}
+		Chronometer chronometer;
+		pair<_NR<EventDispatcher>,_R<Event>> e=th->events_queue.front();
+		th->events_queue.pop_front();
+
+		th->event_queue_mutex.unlock();
 		try
 		{
-			th->event_queue_mutex.lock();
-			while(th->events_queue.empty() && !th->shuttingdown)
-				th->sem_event_cond.wait(th->event_queue_mutex);
-
-			if(th->shuttingdown)
-			{
-				//If the queue is empty stop immediately
-				if(th->events_queue.empty())
-				{
-					th->event_queue_mutex.unlock();
-					break;
-				}
-				else if(firstMissingEvents)
-				{
-					LOG(LOG_INFO,th->events_queue.size() << _(" events missing before exit"));
-					firstMissingEvents = false;
-				}
-			}
-			Chronometer chronometer;
-
-			pair<_NR<EventDispatcher>,_R<Event>> e=th->events_queue.front();
-			th->events_queue.pop_front();
-
-			th->event_queue_mutex.unlock();
 			//handle event without lock
 			th->handleEvent(e);
 			profile->accountTime(chronometer.checkpoint());
@@ -1430,15 +1421,22 @@ void ABCVm::Run(ABCVm* th)
 		{
 			LOG(LOG_ERROR,_("Error in VM ") << e.cause);
 			th->m_sys->setError(e.cause);
+			/* do not allow any more event to be enqueued */
+			th->shuttingdown = true;
+			th->signalEventWaiters();
 			break;
 		}
 		catch(ASObject*& e)
 		{
+			th->shuttingdown = true;
 			if(e->getClass())
 				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->getClass()->class_name);
 			else
 				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
 			th->m_sys->setError(_("Unhandled ActionScript exception"));
+			/* do not allow any more event to be enqueued */
+			th->shuttingdown = true;
+			th->signalEventWaiters();
 			break;
 		}
 	}
@@ -1446,6 +1444,20 @@ void ABCVm::Run(ABCVm* th)
 	{
 		th->ex->clearAllGlobalMappings();
 		delete th->module;
+	}
+}
+
+/* This breaks the lock on all enqueued events to prevent deadlocking */
+void ABCVm::signalEventWaiters()
+{
+	assert(shuttingdown);
+	//we do not need a lock because th->shuttingdown keeps other events from being enqueued
+	while(!events_queue.empty())
+	{
+		pair<_NR<EventDispatcher>,_R<Event>> e=events_queue.front();
+                events_queue.pop_front();
+		if(e.second->is<WaitableEvent>())
+			e.second->as<WaitableEvent>()->done.signal();
 	}
 }
 

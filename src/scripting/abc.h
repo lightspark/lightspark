@@ -608,9 +608,10 @@ private:
 	Cond sem_event_cond;
 
 	//Event handling
-	bool shuttingdown;
+	volatile bool shuttingdown;
 	std::deque<std::pair<_NR<EventDispatcher>,_R<Event> > > events_queue;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
+	void signalEventWaiters();
 	void buildClassAndBindTag(const std::string& s, _R<DictionaryTag> t);
 	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
 	Class_inherit* findClassInherit(const std::string& s);

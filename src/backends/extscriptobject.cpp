@@ -326,12 +326,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	{
 		objArgs[i] = args[i]->getASObject();
 	}
-
-	// This event is not actually added to the VM event queue.
-	// It is instead synched by the VM (or ourselves) after 
-	// the callback has completed execution.
-	syncEvent = new SynchronizationEvent;
-
+	assert(funcEvent == NullRef);
 	// Explanation for argument "synchronous":
 	// Take a callback which (indirectly) calls another callback, while running in the VM thread.
 	// The parent waits for the result of the second. (hence, the VM is suspended)
@@ -344,25 +339,18 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	if(!synchronous)
 	{
 		func->incRef();
-		syncEvent->incRef();
-		funcEvent = new FunctionEvent(_MR(func), _MR(new Null), objArgs, argc, &result, &exception, _MR(syncEvent));
+		funcEvent = _MR(new FunctionEvent(_MR(func), _MR(new Null), objArgs, argc, &result, &exception));
 		// Add the callback function event to the VM event queue
-		funcEvent->incRef();
-		bool added=getVm()->addEvent(NullRef,_MR(funcEvent));
-		if(added==false)
-		{
-			//Could not add the event, so the VM is shutting down
-			syncEvent->decRef();
-			syncEvent=NULL;
-		}
-		// We won't use this event any more
-		funcEvent->decRef();
+		bool added=getVm()->addEvent(NullRef,funcEvent);
+		if(!added)
+			funcEvent = NullRef;
 	}
 	// The caller indicated the VM is currently suspended, so call synchronously.
 	else
 	{
 		try
 		{
+			/* TODO: shouldn't we pass some global object instead of Null? */
 			result = func->call(new Null, objArgs, argc);
 		}
 		// Catch AS exceptions and pass them on
@@ -376,32 +364,25 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 			LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
 			getSys()->setError(e.cause);
 		}
-
-		// Sync the syncEvent since we called the function synchronously
-		syncEvent->sync();
 	}
 
 }
 void ExtASCallback::wait()
 {
-	if(syncEvent != NULL)
-		syncEvent->wait();
+	if(!funcEvent.isNull())
+		funcEvent->done.wait();
 }
 void ExtASCallback::wakeUp()
 {
-	if(syncEvent != NULL)
-		syncEvent->sync();
+	if(!funcEvent.isNull())
+		funcEvent->done.signal();
 }
 bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 {
 	// syncEvent should be not-NULL since call() should have set it
-	if(syncEvent == NULL)
+	if(funcEvent.isNull())
 		return false;
 
-	// We've no use for syncEvent anymore
-	syncEvent->decRef();
-	// Clean up pointers
-	syncEvent = NULL;
 	funcEvent = NULL;
 	// Did the callback throw an AS exception?
 	if(exception != NULL)

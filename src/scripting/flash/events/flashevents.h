@@ -66,6 +66,15 @@ public:
 	bool defaultPrevented;
 };
 
+/* Base class for all events that the one can wait on */
+class WaitableEvent : public Event
+{
+public:
+	WaitableEvent(const tiny_string& t = "Event", bool b=false, bool c=false)
+		: Event(t,b,c), done(0) {}
+	Semaphore done;
+};
+
 class EventPhase: public ASObject
 {
 public:
@@ -312,9 +321,8 @@ public:
 	EVENT_TYPE getEventType() const { return SHUTDOWN; }
 };
 
-class SynchronizationEvent;
 
-class FunctionEvent: public Event
+class FunctionEvent: public WaitableEvent
 {
 friend class ABCVm;
 private:
@@ -324,32 +332,12 @@ private:
 	unsigned int numArgs;
 	ASObject** result;
 	ASObject** exception;
-	_NR<SynchronizationEvent> sync;
 public:
 	FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj=NullRef, ASObject** _args=NULL, uint32_t _numArgs=0, 
-			ASObject** _result=NULL, ASObject** _exception=NULL, _NR<SynchronizationEvent> _sync=NullRef);
+			ASObject** _result=NULL, ASObject** _exception=NULL);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return FUNCTION; }
-};
-
-class SynchronizationEvent: public Event
-{
-private:
-	Semaphore s;
-public:
-	SynchronizationEvent():Event("SynchronizationEvent"),s(0) {}
-	SynchronizationEvent(const tiny_string& _s):Event(_s),s(0) {}
-	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() const { return SYNC; }
-	void sync()
-	{
-		s.signal();
-	}
-	void wait()
-	{
-		s.wait();
-	}
 };
 
 class ABCContextInitEvent: public Event
@@ -377,11 +365,10 @@ public:
 	EVENT_TYPE getEventType() const { return INIT_FRAME; }
 };
 
-class AdvanceFrameEvent: public Event
+class AdvanceFrameEvent: public WaitableEvent
 {
 public:
-	Semaphore done;
-	AdvanceFrameEvent(): Event("AdvanceFrameEvent"), done(0) {}
+	AdvanceFrameEvent(): WaitableEvent("AdvanceFrameEvent") {}
 	EVENT_TYPE getEventType() const { return ADVANCE_FRAME; }
 };
 

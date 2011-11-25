@@ -179,7 +179,7 @@ protected:
 class DLL_PUBLIC ExtASCallback : public ExtCallback
 {
 public:
-	ExtASCallback(IFunction* _func) : func(_func), syncEvent(NULL), funcEvent(NULL), result(NULL) { func->incRef(); }
+	ExtASCallback(IFunction* _func) : func(_func), result(NULL) { func->incRef(); }
 	~ExtASCallback() { func->decRef(); }
 
 	// Don't forget to delete this copy after use
@@ -193,8 +193,7 @@ public:
 	bool getResult(const ExtScriptObject& so, ExtVariant** _result);
 private:
 	IFunction* func;
-	SynchronizationEvent* syncEvent;
-	FunctionEvent* funcEvent;
+	_NR<FunctionEvent> funcEvent;
 	ASObject* result;
 };
 

@@ -768,9 +768,9 @@ void HTTPStatusEvent::sinit(Class_base* c)
 }
 
 FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _args, uint32_t _numArgs, 
-		ASObject** _result, ASObject** _exception, _NR<SynchronizationEvent> _sync):
-		Event("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs),
-		result(_result),exception(_exception),sync(_sync)
+		ASObject** _result, ASObject** _exception):
+		WaitableEvent("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs),
+		result(_result),exception(_exception)
 {
 	args = new ASObject*[numArgs];
 	uint32_t i;

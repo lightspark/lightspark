@@ -40,6 +40,7 @@
 #include "flash/events/flashevents.h"
 #include "flash/display/flashdisplay.h"
 #include "flash/net/flashnet.h"
+#include "flash/net/URLStream.h"
 #include "flash/system/flashsystem.h"
 #include "flash/sensors/flashsensors.h"
 #include "flash/utils/flashutils.h"
@@ -320,6 +321,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("NetStream","flash.net",Class<NetStream>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("NetStreamPlayOptions","flash.net",Class<ASObject>::getStubClass(QName("NetStreamPlayOptions","flash.net")),DECLARED_TRAIT);
 	builtin->setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("URLStream","flash.net",Class<URLStream>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("URLRequestMethod","flash.net",Class<URLRequestMethod>::getRef(),DECLARED_TRAIT);

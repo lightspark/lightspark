@@ -152,8 +152,30 @@ void Config::load()
 	audioBackendName = audioBackendNames[audioBackend];
 
 #ifdef WIN32
-	gnashPath = readRegistryEntry("GnashPath");
-	LOG(LOG_INFO, "Read gnash's path from registry: " << gnashPath);
+	std::string regGnashPath = readRegistryEntry("GnashPath");
+	if(regGnashPath.empty())
+	{
+		const char* s = getExectuablePath();
+		if(!s)
+			LOG(LOG_ERROR,"Could not get executable path!");
+		else
+		{
+			path gnash_exec_path = s;
+			gnash_exec_path /= "sdl-gnash.exe";
+			if(is_regular_file(gnash_exec_path))
+			{
+				LOG(LOG_INFO,"Found gnash at " << gnash_exec_path);
+				gnashPath = gnash_exec_path.string();
+			}
+			else
+				LOG(LOG_ERROR, "Could not find gnash in " << gnash_exec_path);
+		}
+	}
+	else
+	{
+		LOG(LOG_INFO, "Read gnash's path from registry: " << regGnashPath);
+		gnashPath = regGnashPath;
+	}
 #else
 #	ifndef GNASH_PATH
 #	error No GNASH_PATH defined

@@ -162,6 +162,8 @@ private:
 		@pre engine and useAVM2 are known
 	*/
 	void createEngines();
+
+	void launchGnash();
 	/**
 	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
 	*/

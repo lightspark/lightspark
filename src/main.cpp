@@ -33,38 +33,35 @@ using namespace lightspark;
 class StandaloneEngineData: public EngineData
 {
 public:
-	StandaloneEngineData(GtkWidget* w): EngineData(w,0,0)
+	StandaloneEngineData()
 	{
 #ifndef _WIN32
 		visual = XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
 #endif
 	}
-	static int callHelper(sigc::slot<void>* slot)
+	static void StandaloneDestroy(GtkWidget *widget, gpointer data)
 	{
-		(*slot)();
-		delete slot;
-		/* we must return 'false' or gtk will call this periodically */
+		getSys()->setShutdownFlag();
+	}
+	GtkWidget* createGtkWidget()
+	{
+		GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+		gtk_window_set_title((GtkWindow*)window,"Lightspark");
+		g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),NULL);
+		return window;
+	}
+	NativeWindow getWindowForGnash()
+	{
+		/* passing and invalid window id to gnash makes
+		 * it create its own window */
 		return 0;
 	}
-	/* func must return 'false' or it will be called periodically! */
-	void setupMainThreadCallback(const sigc::slot<void>& slot)
-	{
-		//create a slot on heap to survive the return of this function
-		g_idle_add((GSourceFunc)callHelper,new sigc::slot<void>(slot));
-	}
-	void stopMainDownload()
-	{
-	}
+	void stopMainDownload() {}
 	bool isSizable() const
 	{
 		return true;
 	}
 };
-
-static void StandaloneDestroy(GtkWidget *widget, gpointer data)
-{
-	getSys()->setShutdownFlag();
-}
 
 int main(int argc, char* argv[])
 {
@@ -271,16 +268,7 @@ int main(int argc, char* argv[])
 		sys->setProfilingOutput(profilingFileName);
 #endif
 
-	gdk_threads_enter();
-	//Create the main window
-	GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title((GtkWindow*)window,"Lightspark");
-	g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),NULL);
-
-	StandaloneEngineData* e=new StandaloneEngineData(window);
-
-	sys->setParamsAndEngine(e, true);
-	gdk_threads_leave();
+	sys->setParamsAndEngine(new StandaloneEngineData(), true);
 
 	sys->securityManager->setSandboxType(sandboxType);
 	if(sandboxType == SecurityManager::REMOTE)

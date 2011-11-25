@@ -588,144 +588,27 @@ void SystemState::createEngines()
 		return;
 	}
 	//Check if we should fall back on gnash
-	if(!config->getGnashPath().empty() && vmVersion!=AVM2)
+	if(vmVersion!=AVM2)
 	{
-		if(dumpedSWFPath.empty()) //The path is not known yet
-		{
-			waitingForDump=true;
-			l.release();
-			fileDumpAvailable.wait();
-			if(shutdown)
-				return;
-			l.acquire();
-		}
-		LOG(LOG_INFO,_("Trying to invoke gnash!"));
-		//Dump the cookies to a temporary file
-		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
-		int file=g_mkstemp(cookiesFileName);
-		if(file!=-1)
-		{
-			std::string data("Set-Cookie: " + rawCookies);
-			ssize_t res;
-			size_t written = 0;
-			// Keep writing until everything we wanted to write actually got written
-			do
-			{
-				res = write(file, data.c_str()+written, data.size()-written);
-				if(res < 0)
-				{
-					LOG(LOG_ERROR, _("Error during writing of cookie file for Gnash"));
-					break;
-				}
-				written += res;
-			} while(written < data.size());
-			close(file);
-			g_setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
-		}
-		else
-			cookiesFileName[0]=0;
-
-
-		//Allocate some buffers to store gnash arguments
-		char bufXid[32];
-		char bufWidth[32];
-		char bufHeight[32];
-		snprintf(bufXid,32,"%lu",(long unsigned)engineData->window);
-		snprintf(bufWidth,32,"%u",engineData->width);
-		snprintf(bufHeight,32,"%u",engineData->height);
-		string params("FlashVars=");
-		params+=rawParameters;
-		/* TODO: pass -F hostFD to assist in loading urls */
-		char* args[] =
-		{
-			strdup(config->getGnashPath().c_str()),
-			strdup("-x"), //Xid
-			bufXid,
-			strdup("-j"), //Width
-			bufWidth,
-			strdup("-k"), //Height
-			bufHeight,
-			strdup("-u"), //SWF url
-			strdup(origin.getParsedURL().raw_buf()),
-			strdup("-P"), //SWF parameters
-			strdup(params.c_str()),
-			strdup("-vv"),
-			strdup("-"),
-			NULL
-		};
-
-		// Print out an informative message about how we are invoking Gnash
-		{
-			int i = 1;
-			std::string argsStr = "";
-			while(args[i] != NULL)
-			{
-				argsStr += " ";
-				argsStr += args[i];
-				i++;
-			}
-			LOG(LOG_INFO, "Invoking '" << config->getGnashPath() << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
-		}
-
-		GError* errmsg;
-		int gnash_stdin;
-
-		if(!g_spawn_async_with_pipes(NULL, args, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, &childPid,
-				&gnash_stdin, NULL, NULL, &errmsg))
-		{
-			LOG(LOG_ERROR,"Spawning gnash failed: " << errmsg->message);
-			l.release();
-			engineData->setupMainThreadCallback(sigc::mem_fun(this, &SystemState::delayedStopping));
-			return;
-		}
-		// Open the SWF file
-		std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::in|ios::binary);
-		// Read the SWF file and write it to Gnash's stdin
-		char data[1024];
-		std::streamsize written, ret;
-		bool stop = false;
-		while(!swfStream.eof() && !swfStream.fail() && !stop)
-		{
-			swfStream.read(data, 1024);
-			// Keep writing until everything we wanted to write actually got written
-			written = 0;
-			do
-			{
-				ret = write(gnash_stdin, data+written, swfStream.gcount()-written);
-				if(ret < 0)
-				{
-					LOG(LOG_ERROR, _("Error during writing of SWF file to Gnash"));
-					stop = true;
-					break;
-				}
-				written += ret;
-			} while(written < swfStream.gcount());
-		}
-		// Close the write end of Gnash's stdin, signalling EOF to Gnash.
-		close(gnash_stdin);
-		// Close the SWF file
-		swfStream.close();
+		launchGnash();
 
 		//Engines should not be started, stop everything
 		l.release();
 		//We cannot stop the engines now, as this is inside a ThreadPool job
-		engineData->setupMainThreadCallback(sigc::mem_fun(this, &SystemState::delayedStopping));
+		//Running this in the Gtk thread is unnecessary, though. Any other thread
+		//would be okey.
+		engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedStopping));
 		return;
 	}
 
-
 	l.release();
 	//The engines must be created in the context of the main thread
-	engineData->setupMainThreadCallback(sigc::mem_fun(this, &SystemState::delayedCreation));
+	engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedCreation));
 
 	renderThread->waitForInitialization();
 
 	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
-	if(vmVersion != AVM2)
-	{
-		LOG(LOG_INFO, "Unsupported flash file (AVM1), shutting down...");
-		setShutdownFlag();
-	}
+
 
 	l.acquire();
 	//As we lost the lock the shutdown procesure might have started
@@ -734,6 +617,134 @@ void SystemState::createEngines()
 	if(currentVm)
 		currentVm->start();
 }
+
+void SystemState::launchGnash()
+{
+	/* mutex must be locked on entry */
+	assert(!mutex.trylock());
+
+	if(config->getGnashPath().empty())
+	{
+		LOG(LOG_INFO, "Unsupported flash file (AVM1), and no gnash found");
+		setShutdownFlag();
+		return;
+	}
+	if(dumpedSWFPath.empty()) //The path is not known yet
+	{
+		waitingForDump=true;
+		mutex.unlock();
+		fileDumpAvailable.wait();
+		mutex.lock();
+		if(shutdown)
+			return;
+	}
+	LOG(LOG_INFO,_("Trying to invoke gnash!"));
+	//Dump the cookies to a temporary file
+	strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
+	int file=g_mkstemp(cookiesFileName);
+	if(file!=-1)
+	{
+		std::string data("Set-Cookie: " + rawCookies);
+		ssize_t res;
+		size_t written = 0;
+		// Keep writing until everything we wanted to write actually got written
+		do
+		{
+			res = write(file, data.c_str()+written, data.size()-written);
+			if(res < 0)
+			{
+				LOG(LOG_ERROR, _("Error during writing of cookie file for Gnash"));
+				break;
+			}
+			written += res;
+		} while(written < data.size());
+		close(file);
+		g_setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
+	}
+	else
+		cookiesFileName[0]=0;
+
+
+	//Allocate some buffers to store gnash arguments
+	char bufXid[32];
+	char bufWidth[32];
+	char bufHeight[32];
+	snprintf(bufXid,32,"%lu",(long unsigned)engineData->getWindowForGnash());
+	/* Use swf dimensions in standalone mode and window dimensions in plugin mode */
+	snprintf(bufWidth,32,"%u",standalone ? getFrameSize().Xmax/20 : engineData->width);
+	snprintf(bufHeight,32,"%u",standalone ? getFrameSize().Ymax/20 : engineData->height);
+	string params("FlashVars=");
+	params+=rawParameters;
+	/* TODO: pass -F hostFD to assist in loading urls */
+	char* args[] =
+	{
+		strdup(config->getGnashPath().c_str()),
+		strdup("-x"), //Xid
+		bufXid,
+		strdup("-j"), //Width
+		bufWidth,
+		strdup("-k"), //Height
+		bufHeight,
+		strdup("-u"), //SWF url
+		strdup(origin.getParsedURL().raw_buf()),
+		strdup("-P"), //SWF parameters
+		strdup(params.c_str()),
+		strdup("-vv"),
+		strdup("-"),
+		NULL
+	};
+
+	// Print out an informative message about how we are invoking Gnash
+	{
+		int i = 1;
+		std::string argsStr = "";
+		while(args[i] != NULL)
+		{
+			argsStr += " ";
+			argsStr += args[i];
+			i++;
+		}
+		LOG(LOG_INFO, "Invoking '" << config->getGnashPath() << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
+	}
+
+	GError* errmsg;
+	int gnash_stdin;
+
+	if(!g_spawn_async_with_pipes(NULL, args, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, &childPid,
+			&gnash_stdin, NULL, NULL, &errmsg))
+	{
+		LOG(LOG_ERROR,"Spawning gnash failed: " << errmsg->message);
+		return;
+	}
+	// Open the SWF file
+	std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::in|ios::binary);
+	// Read the SWF file and write it to Gnash's stdin
+	char data[1024];
+	std::streamsize written, ret;
+	bool stop = false;
+	while(!swfStream.eof() && !swfStream.fail() && !stop)
+	{
+		swfStream.read(data, 1024);
+		// Keep writing until everything we wanted to write actually got written
+		written = 0;
+		do
+		{
+			ret = write(gnash_stdin, data+written, swfStream.gcount()-written);
+			if(ret < 0)
+			{
+				LOG(LOG_ERROR, _("Error during writing of SWF file to Gnash"));
+				stop = true;
+				break;
+			}
+			written += ret;
+		} while(written < swfStream.gcount());
+	}
+	// Close the write end of Gnash's stdin, signalling EOF to Gnash.
+	close(gnash_stdin);
+	// Close the SWF file
+	swfStream.close();
+}
+
 
 void SystemState::needsAVM2(bool n)
 {

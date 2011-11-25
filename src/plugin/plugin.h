@@ -71,10 +71,16 @@ class PluginEngineData:	public EngineData
 private:
 	nsPluginInstance* instance;
 public:
-	PluginEngineData(nsPluginInstance* i, GtkWidget* widget, int w, int h)
-		: EngineData(widget,w,h), instance(i) {}
+	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h) : instance(i)
+	{
+		width = w;
+		height = h;
+	}
 	void stopMainDownload();
 	bool isSizable() const { return false; }
+	NativeWindow getWindowForGnash();
+	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
+	GtkWidget* createGtkWidget();
 };
 
 class nsPluginInstance : public nsPluginInstanceBase
@@ -109,18 +115,12 @@ private:
 	NPP mInstance;
 	NPBool mInitialized;
 
-	GtkWidget* mContainer;
-#ifdef _WIN32
-	HWND mWindow;
-#else
-	Window mWindow;
-	Display *mDisplay;
-	Visual* mVisual;
-	Colormap mColormap;
-#endif
+	/* This is the window we got from firefox. It is not the
+	 * window we draw into. We create a child of mWindow and
+	 * draw into that.
+	 */
+	NativeWindow mWindow;
 	int mX, mY;
-	int mWidth, mHeight;
-	unsigned int mDepth;
 
 	std::istream mainDownloaderStream;
 	NPDownloader* mainDownloader;

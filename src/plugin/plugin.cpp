@@ -300,7 +300,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : 
-	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),
+	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mWindow(0),
 	mainDownloaderStream(NULL),mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
 {
 	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others");
@@ -419,10 +419,9 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
  * mWindow.
  * This must be run in the gtk_main() thread for AttachThreadInput to make sense.
  */
-static void createEngineData_win32(nsPluginInstance* th, HWND parent_hwnd, int width, int height, SystemState* m_sys)
+GtkWidget* PluginEngineData::createGtkWidget()
 {
-	LOG(LOG_INFO,"Plugin Window " << hex << parent_hwnd << dec << " Width: " << width << " Height: " << height);
-	gdk_threads_enter();
+	HWND parent_hwnd = instance->mWindow;
 
 	GtkWidget* widget=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	/* Remove window decorations */
@@ -450,10 +449,13 @@ static void createEngineData_win32(nsPluginInstance* th, HWND parent_hwnd, int w
 		LOG(LOG_ERROR,"AttachThreadInput failed");
 	/* Set window size */
 	gtk_widget_set_size_request(widget, width, height);
-	gdk_threads_leave();
 
-	PluginEngineData* e= new PluginEngineData(th, widget, width, height);
-	m_sys->setParamsAndEngine(e, false);
+	return widget;
+}
+#else
+GtkWidget* PluginEngineData::createGtkWidget()
+{
+	return gtk_plug_new(instance->mWindow);
 }
 #endif
 
@@ -464,59 +466,36 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 	mX = aWindow->x;
 	mY = aWindow->y;
-	mWidth = aWindow->width;
-	mHeight = aWindow->height;
-	if(mHeight==0 || mHeight==0)
+	uint32_t width = aWindow->width;
+	uint32_t height = aWindow->height;
+	if(width==0 || height==0)
 	{
 		LOG(LOG_ERROR,_("No size in SetWindow"));
 		return NPERR_GENERIC_ERROR;
 	}
-#ifdef _WIN32
-	if (mWindow == (HWND) aWindow->window)
+	if (mWindow == (NativeWindow) aWindow->window)
 	{
 		// The page with the plugin is being resized.
 		// Save any UI information because the next time
 		// around expect a SetWindow with a new window id.
 		LOG(LOG_ERROR,"Resize not supported");
+		return NPERR_NO_ERROR;
 	}
-	else
-	{
-		assert(mWindow==0);
-		mWindow = (HWND) aWindow->window;
-		EngineData::setupMainThreadCallback(sigc::bind(&createEngineData_win32,this, mWindow, mWidth, mHeight, m_sys));
-	}
-#else
-	if (mWindow == (Window) aWindow->window)
-	{
-		// The page with the plugin is being resized.
-		// Save any UI information because the next time
-		// around expect a SetWindow with a new window id.
-		LOG(LOG_ERROR,"Resize not supported");
-	}
-	else
-	{
-		assert(mWindow==0);
-		mWindow = (Window) aWindow->window;
-		NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
-		mDisplay = ws_info->display;
-		mVisual = ws_info->visual;
-		mDepth = ws_info->depth;
-		mColormap = ws_info->colormap;
+	assert(mWindow==0);
 
-		VisualID visual=XVisualIDFromVisual(mVisual);
+	PluginEngineData* e = new PluginEngineData(this, width, height);
+	mWindow = (NativeWindow) aWindow->window;
 
-		/* mWindow is actually a gtk_socket (see gecko documentation) */
-		gdk_threads_enter();
-		GtkWidget* widget = gtk_plug_new(mWindow);
-		gdk_threads_leave();
+	LOG(LOG_INFO,"From Browser: Window " << mWindow << " Width: " << width << " Height: " << height);
 
-		PluginEngineData* e= new PluginEngineData(this, widget, mWidth, mHeight);
-		e->visual = visual;
-		LOG(LOG_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
-		m_sys->setParamsAndEngine(e, false);
-	}
+#ifndef _WIN32
+	NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
+	//mDisplay = ws_info->display;
+	//mDepth = ws_info->depth;
+	//mColormap = ws_info->colormap;
+	e->visual = XVisualIDFromVisual(ws_info->visual);
 #endif
-	//draw();
+	m_sys->setParamsAndEngine(e, false);
 	return NPERR_NO_ERROR;
 }
 
@@ -729,6 +708,11 @@ void PluginEngineData::stopMainDownload()
 {
 	if(instance->mainDownloader)
 		instance->mainDownloader->stop();
+}
+
+NativeWindow PluginEngineData::getWindowForGnash()
+{
+	return instance->mWindow;
 }
 
 #ifdef _WIN32

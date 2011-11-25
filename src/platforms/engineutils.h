@@ -31,6 +31,13 @@
 namespace lightspark
 {
 
+/* There is GdkNativeWindow, but that is not HWND on win32!? */
+#ifdef _WIN32
+typedef HWND NativeWindow;
+#else
+typedef Window NativeWindow;
+#endif
+
 class EngineData
 {
 private:
@@ -38,28 +45,9 @@ private:
 	Mutex handlerMutex;
         sigc::slot<bool,GdkEvent*> inputHandler;
 	sigc::slot<void,int32_t,int32_t> sizeHandler;
-public:
-	int width;
-	int height;
-#ifdef _WIN32
-	HWND window;
-#else
-	Window window;
-	VisualID visual;
-#endif
-	EngineData(GtkWidget* wid, int w, int h)
-		: widget(wid), width(w), height(h)
-	{
-		gtk_widget_realize(widget);
-#ifdef _WIN32
-		window = (HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget));
-#else
-		window = GDK_WINDOW_XID(gtk_widget_get_window(widget));
-#endif
-	}
-	virtual ~EngineData() {}
-	virtual bool isSizable() const = 0;
-	virtual void stopMainDownload() = 0;
+	/* This function must be called from the gtk main thread
+	 * and within gdk_threads_enter/leave */
+	virtual GtkWidget* createGtkWidget()=0;
 	/* This functions runs in the thread of gtk_main() */
 	static int callHelper(sigc::slot<void>* slot)
 	{
@@ -68,14 +56,37 @@ public:
 		/* we must return 'false' or gtk will call this periodically */
 		return FALSE;
 	}
+public:
+	int width;
+	int height;
+	NativeWindow window;
+#ifndef _WIN32
+	VisualID visual;
+#endif
+	EngineData() : widget(0), width(0), height(0), window(0) {}
+	virtual ~EngineData() {}
+	virtual bool isSizable() const = 0;
+	virtual void stopMainDownload() = 0;
+	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
+	virtual NativeWindow getWindowForGnash()=0;
 	/* Runs 'func' in the thread of gtk_main() */
-	static void setupMainThreadCallback(const sigc::slot<void>& func)
+	static void runInGtkThread(const sigc::slot<void>& func)
 	{
 		g_idle_add((GSourceFunc)callHelper,new sigc::slot<void>(func));
 	}
-	/* This function must be called from the gtk main thread */
+	/* This function must be called from the gtk main thread
+	 * and within gdk_threads_enter/leave */
 	void showWindow(uint32_t w, uint32_t h)
 	{
+		assert(!widget);
+		widget = createGtkWidget();
+		/* create a window handle */
+		gtk_widget_realize(widget);
+#if _WIN32
+		window = (HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget));
+#else
+		window = GDK_WINDOW_XID(gtk_widget_get_window(widget));
+#endif
 		if(isSizable())
 		{
 			gtk_widget_set_size_request(widget, w, h);

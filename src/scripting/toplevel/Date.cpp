@@ -628,13 +628,19 @@ ASFUNCTIONBODY(Date,setUTCMilliseconds)
 ASFUNCTIONBODY(Date,setTime)
 {
 	Date* th=static_cast<Date*>(obj);
+	if(th->nan) {
+		return abstract_d(Number::NaN);
+	}
 	number_t ms;
 	ARG_UNPACK (ms);
+	gint64 m = gint64(ms);
 
+	th->extrayears = 400*(m/MS_IN_400_YEARS);
+	m %= MS_IN_400_YEARS;
 	if(th->datetimeUTC)
 		g_date_time_unref(th->datetimeUTC);
-	th->datetimeUTC = g_date_time_new_from_unix_utc(ms/1000);
-	th->datetimeUTC = g_date_time_add(th->datetimeUTC, (int64_t(ms)%1000)*1000);
+	th->datetimeUTC = g_date_time_new_from_unix_utc(m/1000);
+	th->datetimeUTC = g_date_time_add(th->datetimeUTC, (m%1000)*1000);
 	if(th->datetime)
 		g_date_time_unref(th->datetime);
 	th->datetime = g_date_time_to_local(th->datetimeUTC);

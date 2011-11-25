@@ -229,6 +229,7 @@ int main(int argc, char* argv[])
 	//NOTE: see SystemState declaration
 	SystemState* sys =new SystemState(pt, fileSize);
 	setTLSSys(sys);
+	sys->setDownloadedPath(fileName);
 
 	//This setting allows qualifying filename-only paths to fully qualified paths
 	//When the URL parameter is set, set the root URL to the given parameter

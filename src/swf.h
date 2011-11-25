@@ -177,7 +177,6 @@ private:
 	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
 	VMVERSION vmVersion;
 	GPid childPid;
-	bool useGnashFallback;
 
 	//Parameters/FlashVars
 	_NR<ASObject> parameters;
@@ -236,7 +235,6 @@ public:
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
-	void enableGnashFallback() DLL_PUBLIC;
 	void needsAVM2(bool n);
 	//DisplayObject interface
 	_NR<Stage> getStage() const;

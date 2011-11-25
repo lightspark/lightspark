@@ -156,7 +156,7 @@ void SystemState::staticDeinit()
 SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),fileDumpAvailable(0),
-	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
+	waitingForDump(false),vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(false),downloadManager(NULL),
@@ -223,8 +223,9 @@ static int hexToInt(char c)
 
 void SystemState::parseParametersFromFlashvars(const char* v)
 {
-	if(useGnashFallback) //Save a copy of the string
-		rawParameters=v;
+	//Save a copy of the string
+	rawParameters=v;
+
 	_R<ASObject> params=_MR(Class<ASObject>::getInstanceS());
 	//Add arguments to SystemState
 	string vars(v);
@@ -542,15 +543,6 @@ void SystemState::EngineCreator::threadAbort()
 	getSys()->getRenderThread()->forceInitialization();
 }
 
-void SystemState::enableGnashFallback()
-{
-	//Check if the gnash standalone executable is available
-	ifstream f(config->getGnashPath(), ios::in|ios::binary);
-	if(f)
-		useGnashFallback=true;
-	f.close();
-}
-
 /*
  * This is run from the gtk main thread.
  * gtk/gdk functions may only be called from within that
@@ -596,7 +588,7 @@ void SystemState::createEngines()
 		return;
 	}
 	//Check if we should fall back on gnash
-	if(useGnashFallback && vmVersion!=AVM2)
+	if(!config->getGnashPath().empty() && vmVersion!=AVM2)
 	{
 		if(dumpedSWFPath.empty()) //The path is not known yet
 		{

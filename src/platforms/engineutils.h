@@ -123,7 +123,7 @@ public:
 	void removeInputHandler()
 	{
 		Mutex::Lock l(handlerMutex);
-		if(inputHandlerId)
+		if(!inputHandler.empty())
 		{
 			g_signal_handler_disconnect(widget, inputHandlerId);
 			inputHandler = sigc::slot<bool,GdkEvent*>();
@@ -146,7 +146,7 @@ public:
 	void removeSizeChangeHandler()
 	{
 		Mutex::Lock l(handlerMutex);
-		if(sizeHandlerId)
+		if(!sizeHandler.empty())
 		{
 			g_signal_handler_disconnect(widget, sizeHandlerId);
 			sizeHandler = sigc::slot<void,int32_t,int32_t>();

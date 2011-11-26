@@ -333,9 +333,9 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 {
 	if(buf.ch[0])
 	{
-		free(buf.ch[0]);
-		free(buf.ch[1]);
-		free(buf.ch[2]);
+		aligned_free(buf.ch[0]);
+		aligned_free(buf.ch[1]);
+		aligned_free(buf.ch[2]);
 	}
 	int ret=aligned_malloc((void**)&buf.ch[0], 16, bufferSize);
 	assert(ret==0);

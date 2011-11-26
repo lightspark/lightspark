@@ -129,6 +129,8 @@ class FFMpegVideoDecoder: public VideoDecoder
 private:
 	class YUVBuffer
 	{
+	YUVBuffer(const YUVBuffer&); /* no impl */
+	YUVBuffer& operator=(const YUVBuffer&); /* no impl */
 	public:
 		uint8_t* ch[3];
 		uint32_t time;
@@ -137,9 +139,9 @@ private:
 		{
 			if(ch[0])
 			{
-				free(ch[0]);
-				free(ch[1]);
-				free(ch[2]);
+				aligned_free(ch[0]);
+				aligned_free(ch[1]);
+				aligned_free(ch[2]);
 			}
 		}
 	};

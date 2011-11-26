@@ -799,9 +799,9 @@ void SystemState::addWait(uint32_t waitTime, ITickJob* job)
 	timerThread->addWait(waitTime,job);
 }
 
-bool SystemState::removeJob(ITickJob* job)
+void SystemState::removeJob(ITickJob* job)
 {
-	return timerThread->removeJob(job);
+	timerThread->removeJob(job);
 }
 
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)

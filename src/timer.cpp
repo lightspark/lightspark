@@ -27,7 +27,7 @@
 using namespace lightspark;
 using namespace std;
 
-TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false)
+TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false),inExecution(NULL)
 {
 	t = Thread::create(sigc::bind<0>(&TimerThread::worker,this), true);
 }
@@ -85,9 +85,8 @@ void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 
 void TimerThread::insertNewEvent(TimingEvent* e)
 {
-	mutex.lock();
+	Mutex::Lock l(mutex);
 	insertNewEvent_nolock(e);
-	mutex.unlock();
 }
 
 //Unsafe debugging routine
@@ -144,20 +143,22 @@ void TimerThread::worker(TimerThread* th)
 			continue;
 		}
 
-		bool destroyEvent=true;
 		if(e->isTick)
 		{
+			/* re-enqueue*/
 			e->timing.add_milliseconds(e->tickTime);
 			th->insertNewEvent_nolock(e);
-			destroyEvent=false;
 		}
 
+		/* let removeJob() know what we are currently doing */
+		th->inExecution = e->job;
 		th->mutex.unlock();
 		e->job->tick();
+		th->inExecution = NULL;
 		th->mutex.lock();
 
 		/* Cleanup */
-		if(destroyEvent)
+		if(!e->isTick)
 			delete e;
 	}
 	th->mutex.unlock();
@@ -185,10 +186,14 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 	insertNewEvent(e);
 }
 
-bool TimerThread::removeJob(ITickJob* job)
+void TimerThread::removeJob(ITickJob* job)
 {
 	Mutex::Lock l(mutex);
+	/* Busy-wait until job is not executing anymore */
+	while(inExecution == job)
+		Thread::yield();
 
+	/* See if that job is currently pending */
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	bool first=true;
 	//Find if the job is in the list
@@ -200,7 +205,7 @@ bool TimerThread::removeJob(ITickJob* job)
 	}
 
 	if(it==pendingEvents.end())
-		return false;
+		return;
 
 	TimingEvent* e=*it;
 	pendingEvents.erase(it);
@@ -209,8 +214,6 @@ bool TimerThread::removeJob(ITickJob* job)
 	/* the worker is waiting on this job, wake him up */
 	if(first)
 		newEvent.signal();
-
-	return true;
 }
 
 Chronometer::Chronometer()

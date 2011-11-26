@@ -287,7 +287,7 @@ public:
 	void addJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
-	bool removeJob(ITickJob* job);
+	void removeJob(ITickJob* job);
 
 	void setRenderRate(float rate);
 	float getRenderRate();

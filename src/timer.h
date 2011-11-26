@@ -66,20 +66,28 @@ private:
 	SystemState* m_sys;
 	volatile bool stopped;
 	bool joined;
+	volatile ITickJob* inExecution;
 	static void worker(TimerThread*);
 	void insertNewEvent(TimingEvent* e);
 	void insertNewEvent_nolock(TimingEvent* e);
 	void dumpJobs();
 public:
 	TimerThread(SystemState* s);
+	/* Stopps the timer thread from executing any more jobs. This may return
+	 * before the current job has finished its execution.
+	 */
 	void stop();
+	/*
+	 * Like stop, but waits until the current job has finished, too.
+	 */
 	void wait();
 	~TimerThread();
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
-	//Returns if the job has been found or not
-	//If the canceled job is currently executing this waits for it to complete
-	bool removeJob(ITickJob* job);
+	/* Remove the job from the list of pending tasks. If it is currently executing,
+	 * wait until it is done.
+	 */
+	void removeJob(ITickJob* job);
 };
 
 class Chronometer

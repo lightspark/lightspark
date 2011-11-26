@@ -3447,6 +3447,9 @@ IntSize Bitmap::getBitmapSize() const
 
 bool Bitmap::fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha)
 {
+	if(!rgb)
+		return false;
+
 	size.width = width;
 	size.height = height;
 	if(hasAlpha)

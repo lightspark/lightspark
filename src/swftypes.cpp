@@ -729,10 +729,9 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		//Lookup the bitmap in the dictionary
 		if(bitmapId!=65535)
 		{
-			LOG(LOG_ERROR,"bitmap resolving is broken!");
-			/*try
+			try
 			{
-				_R<DictionaryTag> dict=pt->getRootMovie()->dictionaryLookup(bitmapId);
+				_R<DictionaryTag> dict=getParseThread()->getRootMovie()->dictionaryLookup(bitmapId);
 				v.bitmap=dynamic_cast<Bitmap*>(dict.getPtr());
 				if(v.bitmap==NULL)
 				{
@@ -745,7 +744,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 				//Thrown if the bitmapId does not exists in dictionary
 				LOG(LOG_ERROR,"Exception in FillStyle parsing: " << e.what());
 				v.bitmap=NULL;
-			}*/
+			}
 		}
 		else
 		{

@@ -61,6 +61,14 @@ void lightspark::setTLSSys(SystemState* sys)
         g_static_private_set(&tls_system,sys,NULL);
 }
 
+static GStaticPrivate parse_thread_tls = G_STATIC_PRIVATE_INIT; /* TLS */
+ParseThread* lightspark::getParseThread()
+{
+	ParseThread* pt = (ParseThread*)g_static_private_get(&parse_thread_tls);
+	assert(pt);
+	return pt;
+}
+
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):parsingIsFailed(false),frameRate(0),
 	toBind(false), finishedLoading(false)
 {
@@ -1053,6 +1061,7 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 
 void ParseThread::execute()
 {
+	g_static_private_set(&parse_thread_tls,this,NULL);
 	try
 	{
 		UI8 Signature[4];

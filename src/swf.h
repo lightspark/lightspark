@@ -375,5 +375,7 @@ SystemState* getSys() DLL_PUBLIC;
 /* Set thread-specific SystemState to be returned by getSys() */
 void setTLSSys(SystemState* sys) DLL_PUBLIC;
 
+ParseThread* getParseThread();
+
 };
 #endif

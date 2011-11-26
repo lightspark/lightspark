@@ -215,6 +215,11 @@ void SystemState::setCookies(const char* c)
 	rawCookies=c;
 }
 
+const std::string& SystemState::getCookies()
+{
+	return rawCookies;
+}
+
 static int hexToInt(char c)
 {
 	if(c>='0' && c<='9')

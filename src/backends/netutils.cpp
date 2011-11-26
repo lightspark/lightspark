@@ -1105,6 +1105,8 @@ void CurlDownloader::execute()
 		// Empty string means that CURL will decompress if the
 		// server send a compressed file
 		curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+		if (!getSys()->getCookies().empty())
+			curl_easy_setopt(curl, CURLOPT_COOKIE, getSys()->getCookies().c_str());
 		if(!data.empty())
 		{
 			curl_easy_setopt(curl, CURLOPT_POST, 1);

@@ -280,8 +280,9 @@ public:
 	void parseParametersFromFlashvars(const char* vars) DLL_PUBLIC;
 	_NR<ASObject> getParameters() const;
 
-	//Cookies management for Gnash fallback
+	//Cookies management (HTTP downloads and Gnash fallback)
 	void setCookies(const char* c) DLL_PUBLIC;
+	const std::string& getCookies();
 
 	//Interfaces to the internal thread pool and timer thread
 	void addJob(IThreadJob* j) DLL_PUBLIC;

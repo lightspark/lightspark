@@ -310,8 +310,10 @@ std::ostream& lightspark::operator<<(std::ostream& s, const RGB& r)
 MATRIX MATRIX::getInverted() const
 {
 	MATRIX ret;
-	assert(isInvertible());
-	const number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
+	number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
+	/* regularize so we can work with singular matrices */
+	if(fabs(den) < 1e-6)
+		den = copysign(1e-6,den);
 	ret.ScaleX=ScaleY/den;
 	ret.RotateSkew1=-RotateSkew1/den;
 	ret.RotateSkew0=-RotateSkew0/den;

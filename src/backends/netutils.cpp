@@ -1102,6 +1102,9 @@ void CurlDownloader::execute()
 		//Its probably a good idea to limit redirections, 100 should be more than enough
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 100);
 		curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0");
+		// Empty string means that CURL will decompress if the
+		// server send a compressed file
+		curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
 		if(!data.empty())
 		{
 			curl_easy_setopt(curl, CURLOPT_POST, 1);

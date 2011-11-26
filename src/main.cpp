@@ -41,13 +41,17 @@ public:
 	}
 	static void StandaloneDestroy(GtkWidget *widget, gpointer data)
 	{
+		StandaloneEngineData* e = (StandaloneEngineData*)data;
+		RecMutex::Lock l(e->mutex);
+		/* no need to destroy it - it's already done */
+		e->widget = NULL;
 		getSys()->setShutdownFlag();
 	}
 	GtkWidget* createGtkWidget()
 	{
 		GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		gtk_window_set_title((GtkWindow*)window,"Lightspark");
-		g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),NULL);
+		g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),this);
 		return window;
 	}
 	NativeWindow getWindowForGnash()

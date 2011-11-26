@@ -29,7 +29,9 @@
 namespace lightspark
 {
 
+/* Be aware that on win32, both Mutex and RecMutex are recursive! */
 using Glib::Mutex;
+using Glib::RecMutex;
 using Glib::StaticMutex;
 using Glib::Cond;
 using Glib::Thread;

@@ -40,9 +40,11 @@ typedef Window NativeWindow;
 
 class EngineData
 {
-private:
+protected:
 	GtkWidget* widget;
-	Mutex handlerMutex;
+	/* use a recursive mutex, because g_signal_connect may directly call
+	 * the specific handler */
+	RecMutex mutex;
         sigc::slot<bool,GdkEvent*> inputHandler;
 	gulong inputHandlerId;
 	sigc::slot<void,int32_t,int32_t> sizeHandler;
@@ -68,8 +70,13 @@ public:
 	EngineData() : widget(0), inputHandlerId(0), sizeHandlerId(0), width(0), height(0), window(0) {}
 	virtual ~EngineData()
 	{
+		RecMutex::Lock l(mutex);
 		removeSizeChangeHandler();
 		removeInputHandler();
+
+		//TODO: run in gtk thread && gdk_threads_enter/leave
+		if(widget)
+			gtk_widget_destroy(widget);
 	}
 	virtual bool isSizable() const = 0;
 	virtual void stopMainDownload() = 0;
@@ -84,6 +91,8 @@ public:
 	 * and within gdk_threads_enter/leave */
 	void showWindow(uint32_t w, uint32_t h)
 	{
+		RecMutex::Lock l(mutex);
+
 		assert(!widget);
 		widget = createGtkWidget();
 		/* create a window handle */
@@ -104,7 +113,7 @@ public:
 	}
 	static gboolean inputDispatch(GtkWidget *widget, GdkEvent *event, EngineData* e)
 	{
-		Mutex::Lock l(e->handlerMutex);
+		RecMutex::Lock l(e->mutex);
 		if(!e->inputHandler.empty())
 			return e->inputHandler(event);
 		return false;
@@ -112,7 +121,10 @@ public:
 	/* This function must be called from the gtk_main() thread */
 	void setInputHandler(const sigc::slot<bool,GdkEvent*>& ic)
 	{
-		Mutex::Lock l(handlerMutex);
+		RecMutex::Lock l(mutex);
+		if(!widget)
+			return;
+
 		assert(!inputHandlerId);
 		inputHandler = ic;
 		gtk_widget_set_can_focus(widget,TRUE);
@@ -122,8 +134,8 @@ public:
 	}
 	void removeInputHandler()
 	{
-		Mutex::Lock l(handlerMutex);
-		if(!inputHandler.empty())
+		RecMutex::Lock l(mutex);
+		if(!inputHandler.empty() && widget)
 		{
 			g_signal_handler_disconnect(widget, inputHandlerId);
 			inputHandler = sigc::slot<bool,GdkEvent*>();
@@ -131,22 +143,25 @@ public:
 	}
 	static void sizeDispatch(GtkWidget* widget, GdkRectangle* allocation, EngineData* e)
 	{
-		Mutex::Lock l(e->handlerMutex);
-		if(!e->sizeHandler.empty())
+		RecMutex::Lock l(e->mutex);
+		if(!e->sizeHandler.empty() && widget)
 			e->sizeHandler(allocation->width, allocation->height);
 	}
 	/* This function must be called from the gtk_main() thread */
 	void setSizeChangeHandler(const sigc::slot<void,int32_t,int32_t>& sc)
 	{
-		Mutex::Lock l(handlerMutex);
+		RecMutex::Lock l(mutex);
+		if(!widget)
+			return;
+
 		assert(!sizeHandlerId);
 		sizeHandler = sc;
 		sizeHandlerId = g_signal_connect(widget, "size-allocate", G_CALLBACK(sizeDispatch), this);
 	}
 	void removeSizeChangeHandler()
 	{
-		Mutex::Lock l(handlerMutex);
-		if(!sizeHandler.empty())
+		RecMutex::Lock l(mutex);
+		if(!sizeHandler.empty() && widget)
 		{
 			g_signal_handler_disconnect(widget, sizeHandlerId);
 			sizeHandler = sigc::slot<void,int32_t,int32_t>();

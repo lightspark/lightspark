@@ -41,6 +41,7 @@ void Capabilities::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(_getLanguage),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("playerType","",Class<IFunction>::getFunction(playerType),GETTER_METHOD,true);
 	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"),DECLARED_TRAIT);
 	c->setVariableByQName("serverString","",Class<ASString>::getInstanceS(""),DECLARED_TRAIT);
 }
@@ -49,6 +50,11 @@ ASFUNCTIONBODY(Capabilities,_constructor)
 {
 	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS("AVMPlus"),DECLARED_TRAIT);
 	return NULL;
+}
+
+ASFUNCTIONBODY(Capabilities,playerType)
+{
+	return Class<ASString>::getInstanceS("PlugIn");
 }
 
 ASFUNCTIONBODY(Capabilities,_getLanguage)

@@ -37,12 +37,12 @@ class ThreadPool
 private:
 	Mutex mutex;
 	Thread* threads[NUM_THREADS];
-	IThreadJob* curJobs[NUM_THREADS];
+	IThreadJob* volatile curJobs[NUM_THREADS];
 	std::deque<IThreadJob*> jobs;
 	Semaphore num_jobs;
 	static void job_worker(ThreadPool* th, uint32_t threadIndex);
 	SystemState* m_sys;
-	bool stopFlag;
+	volatile bool stopFlag;
 public:
 	ThreadPool(SystemState* s);
 	~ThreadPool();

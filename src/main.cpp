@@ -75,6 +75,7 @@ int main(int argc, char* argv[])
 #ifdef PROFILING_SUPPORT
 	char* profilingFileName=NULL;
 #endif
+	char *HTTPcookie=NULL;
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
 	bool useJit=false;
@@ -178,6 +179,16 @@ int main(int argc, char* argv[])
 		{
 			exitOnError = true;
 		}
+		else if(strcmp(argv[i],"--HTTP-cookies")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				fileName=NULL;
+				break;
+			}
+			HTTPcookie=argv[i];
+		}
 		else
 		{
 			//No options flag, so set the swf file name
@@ -195,7 +206,7 @@ int main(int argc, char* argv[])
 		LOG(LOG_ERROR, endl << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
 			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" <<
 			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
-			" [--exit-on-error]" <<
+			" [--exit-on-error] [--HTTP-cookies cookie]" <<
 #ifdef PROFILING_SUPPORT
 			" [--profiling-output|-o profiling-file]" <<
 #endif
@@ -271,6 +282,8 @@ int main(int argc, char* argv[])
 	if(profilingFileName)
 		sys->setProfilingOutput(profilingFileName);
 #endif
+	if(HTTPcookie)
+		sys->setCookies(HTTPcookie);
 
 	sys->setParamsAndEngine(new StandaloneEngineData(), true);
 

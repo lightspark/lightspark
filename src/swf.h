@@ -171,10 +171,11 @@ private:
 
 	void delayedCreation();
 	void delayedStopping();
-	//Useful to wait for complete download of the SWF
-	Semaphore fileDumpAvailable;
+
+	/* dumpedSWFPathAvailable is signaled after dumpedSWFPath has been set */
+	Semaphore dumpedSWFPathAvailable;
 	tiny_string dumpedSWFPath;
-	bool waitingForDump;
+
 	//Data for handling Gnash fallback
 	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
 	VMVERSION vmVersion;

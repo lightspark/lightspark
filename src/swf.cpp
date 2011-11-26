@@ -163,8 +163,8 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	RootMovieClip(NULL,true),terminated(0),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),fileDumpAvailable(0),
-	waitingForDump(false),vmVersion(VMNONE),childPid(0),
+	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
+	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(false),downloadManager(NULL),
@@ -207,9 +207,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 void SystemState::setDownloadedPath(const tiny_string& p)
 {
 	dumpedSWFPath=p;
-	Locker l(mutex);
-	if(waitingForDump)
-		fileDumpAvailable.signal();
+	dumpedSWFPathAvailable.signal();
 }
 
 void SystemState::setCookies(const char* c)
@@ -547,7 +545,7 @@ void SystemState::EngineCreator::execute()
 
 void SystemState::EngineCreator::threadAbort()
 {
-	getSys()->fileDumpAvailable.signal();
+	getSys()->dumpedSWFPathAvailable.signal();
 	getSys()->getRenderThread()->forceInitialization();
 }
 
@@ -634,15 +632,12 @@ void SystemState::launchGnash()
 		setShutdownFlag();
 		return;
 	}
-	if(dumpedSWFPath.empty()) //The path is not known yet
-	{
-		waitingForDump=true;
-		mutex.unlock();
-		fileDumpAvailable.wait();
-		mutex.lock();
-		if(shutdown)
-			return;
-	}
+
+	/* wait for dumpedSWFPath */
+	dumpedSWFPathAvailable.wait();
+	if(dumpedSWFPath.empty())
+		return;
+
 	LOG(LOG_INFO,_("Trying to invoke gnash!"));
 	//Dump the cookies to a temporary file
 	strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");

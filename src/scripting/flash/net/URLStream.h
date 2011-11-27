@@ -49,7 +49,16 @@ private:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(close);
-	ASPROPERTY_GETTER(uint32_t,bytesAvailable);
+	ASFUNCTION(bytesAvailable);
+	ASFUNCTION(readByte);
+	ASFUNCTION(readBytes);
+	ASFUNCTION(readDouble);
+	ASFUNCTION(readFloat);
+	ASFUNCTION(readInt);
+	ASFUNCTION(readUnsignedInt);
+	ASFUNCTION(readObject);
+	ASFUNCTION(readUTF);
+	ASFUNCTION(readUTFBytes);
 };
 
 }

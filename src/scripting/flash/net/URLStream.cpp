@@ -42,10 +42,18 @@ void URLStream::sinit(Class_base* c)
 	c->setSuper(Class<EventDispatcher>::getRef());
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
-	REGISTER_GETTER(c,bytesAvailable);
+	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(bytesAvailable),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(readDouble),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readFloat","",Class<IFunction>::getFunction(readFloat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTF","",Class<IFunction>::getFunction(readUTF),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTFBytes","",Class<IFunction>::getFunction(readUTFBytes),NORMAL_METHOD,true);
 }
-
-ASFUNCTIONBODY_GETTER(URLStream,bytesAvailable);
 
 void URLStream::buildTraits(ASObject* o)
 {
@@ -201,4 +209,54 @@ void URLStream::finalize()
 {
 	EventDispatcher::finalize();
 	data.reset();
+}
+
+ASFUNCTIONBODY(URLStream,bytesAvailable) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::_getBytesAvailable(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readByte) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readByte(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readBytes) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readBytes(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readDouble) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readDouble(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readFloat) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readFloat(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readInt) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readInt(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readUnsignedInt) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readUnsignedInt(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readObject) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readObject(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readUTF) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readUTF(th->data.getPtr(), args, argslen);
+}
+
+ASFUNCTIONBODY(URLStream,readUTFBytes) {
+	URLStream* th=static_cast<URLStream*>(obj);
+	return ByteArray::readUTFBytes(th->data.getPtr(), args, argslen);
 }

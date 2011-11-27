@@ -401,6 +401,7 @@ void SystemState::destroy()
 	//Kill our child process if any
 	if(childPid)
 	{
+		LOG(LOG_INFO,"Terminating gnash...");
 		kill_child(childPid);
 	}
 	//Delete the temporary cookies file
@@ -704,27 +705,40 @@ void SystemState::launchGnash()
 	};
 
 	// Print out an informative message about how we are invoking Gnash
+	int i = 1;
+	std::string argsStr = args[0];
+	while(args[i] != NULL)
 	{
-		int i = 1;
-		std::string argsStr = "";
-		while(args[i] != NULL)
-		{
-			argsStr += " ";
-			argsStr += args[i];
-			i++;
-		}
-		LOG(LOG_INFO, "Invoking '" << config->getGnashPath() << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
+		argsStr += " ";
+		argsStr += args[i];
+		i++;
 	}
+	LOG(LOG_INFO, "Invoking '" << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
 
-	GError* errmsg;
 	int gnash_stdin;
 
-	if(!g_spawn_async_with_pipes(NULL, args, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, &childPid,
+	/* Unfortunately, g_spawn_async_with_pipes does not work under win32. First, it needs
+	 * an additional helper 'gspawn-helper-console.exe' and second, it crashes with a buffer overflow
+	 * when the plugin is run in ipc mode.
+	 */
+#if _WIN32
+	//TODO: escape argumetns, and spaces in filename
+	childPid = compat_spawn(args, &gnash_stdin);
+	if(!childPid)
+	{
+		LOG(LOG_ERROR,"Spawning gnash failed!");
+		return;
+	}
+#else
+	GError* errmsg;
+	if(!g_spawn_async_with_pipes(NULL, args, NULL, (GSpawnFlags)0, NULL, NULL, &childPid,
 			&gnash_stdin, NULL, NULL, &errmsg))
 	{
 		LOG(LOG_ERROR,"Spawning gnash failed: " << errmsg->message);
 		return;
 	}
+#endif
+
 	// Open the SWF file
 	std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::in|ios::binary);
 	// Read the SWF file and write it to Gnash's stdin

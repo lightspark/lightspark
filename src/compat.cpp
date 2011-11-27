@@ -55,8 +55,8 @@ int kill_child(GPid childPid)
 	TerminateProcess(childPid, 0);
 #else
 	kill(childPid, SIGTERM);
-#endif
 	g_spawn_close_pid(childPid);
+#endif
 	return 0;
 }
 

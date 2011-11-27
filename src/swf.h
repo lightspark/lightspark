@@ -179,7 +179,11 @@ private:
 	//Data for handling Gnash fallback
 	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
 	VMVERSION vmVersion;
+#ifdef _WIN32
+	HANDLE childPid;
+#else
 	GPid childPid;
+#endif
 
 	//Parameters/FlashVars
 	_NR<ASObject> parameters;

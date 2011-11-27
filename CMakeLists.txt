@@ -132,7 +132,8 @@ IF(UNIX)
    SET(ETCDIR "/etc") #Using absolute folder
    SET(BINDIR "bin")
    SET(DATADIR "share")
-   SET(LSDATADIR "${DATADIR}/lightspark")
+   # Absolute path, because this path is embedded in the binary
+   SET(LSDATADIR "${CMAKE_INSTALL_PREFIX}/${DATADIR}/lightspark")
    SET(LIBDIR "lib${LIB_SUFFIX}")
    #We need a absolute path here because we use it for rpath
    #later on

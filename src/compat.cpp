@@ -21,6 +21,7 @@
 #include "compat.h"
 #include <string>
 #include <stdlib.h>
+#include "logger.h"
 
 using namespace std;
 
@@ -147,4 +148,207 @@ const char* getExectuablePath()
 	}
 	return path;
 }
+
+/*
+Routine Description:
+
+    This routine appends the given argument to a command line such
+    that CommandLineToArgvW will return the argument string unchanged.
+    Arguments in a command line should be separated by spaces; this
+    function does not add these spaces.
+
+Arguments:
+
+    Argument - Supplies the argument to encode.
+
+    CommandLine - Supplies the command line to which we append the encoded argument string.
+
+    Force - Supplies an indication of whether we should quote
+            the argument even if it does not contain any characters that would
+            ordinarily require quoting.
+
+    Taken from http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx
+*/
+void ArgvQuote(const std::string& Argument, std::string& CommandLine, bool Force = false)
+{
+    //
+    // Unless we're told otherwise, don't quote unless we actually
+    // need to do so --- hopefully avoid problems if programs won't
+    // parse quotes properly
+    //
+
+    if (Force == false &&
+        Argument.empty () == false &&
+        Argument.find_first_of (" \t\n\v\"") == Argument.npos)
+    {
+        CommandLine.append (Argument);
+    }
+    else {
+        CommandLine.push_back ('"');
+
+        for (auto It = Argument.begin () ; ; ++It) {
+            unsigned NumberBackslashes = 0;
+
+            while (It != Argument.end () && *It == '\\') {
+                ++It;
+                ++NumberBackslashes;
+            }
+
+            if (It == Argument.end ()) {
+
+                //
+                // Escape all backslashes, but let the terminating
+                // double quotation mark we add below be interpreted
+                // as a metacharacter.
+                //
+
+                CommandLine.append (NumberBackslashes * 2, '\\');
+                break;
+            }
+            else if (*It == '"') {
+
+                //
+                // Escape all backslashes and the following
+                // double quotation mark.
+                //
+
+                CommandLine.append (NumberBackslashes * 2 + 1, '\\');
+                CommandLine.push_back (*It);
+            }
+            else {
+
+                //
+                // Backslashes aren't special here.
+                //
+
+                CommandLine.append (NumberBackslashes, '\\');
+                CommandLine.push_back (*It);
+            }
+        }
+
+        CommandLine.push_back ('"');
+    }
+}
+
+#include <fcntl.h>
+/*
+ * Spawns a process from the given args,
+ * returns its process handle and writes
+ * the file descriptor of its stdin to
+ * stdinfd.
+ * Returns NULL on error.
+ */
+HANDLE compat_spawn(char** arg, int* stdinfd)
+{
+	/* Properly quote args into a command line */
+	string cmdline;
+	int i=0;
+	while(true)
+	{
+		ArgvQuote(arg[i],cmdline);
+		if(arg[++i] == NULL)
+			break;
+		else
+			cmdline += " ";
+	}
+
+	/* This is taken from http://msdn.microsoft.com/en-us/library/windows/desktop/ms682499%28v=vs.85%29.aspx */
+	SECURITY_ATTRIBUTES saAttr;
+
+	HANDLE hChildStdin_Rd = NULL;
+	HANDLE hChildStdin_Wr = NULL;
+
+	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	saAttr.bInheritHandle = TRUE;
+	saAttr.lpSecurityDescriptor = NULL;
+
+	if(!CreatePipe(&hChildStdin_Rd, &hChildStdin_Wr, &saAttr, 0))
+	{
+		LOG(LOG_ERROR,"CreatePipe");
+		return NULL;
+	}
+
+	// Ensure the write handle to the pipe for STDIN is not inherited.
+	if(!SetHandleInformation(hChildStdin_Wr, HANDLE_FLAG_INHERIT, 0))
+	{
+		LOG(LOG_ERROR,"SetHandleInformation");
+		return NULL;
+	}
+
+	// Create the child process.
+	PROCESS_INFORMATION piProcInfo;
+	STARTUPINFO siStartInfo;
+
+	// Set up members of the PROCESS_INFORMATION structure.
+	ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
+
+	// Set up members of the STARTUPINFO structure.
+	// This structure specifies the STDIN and STDOUT handles for redirection.
+	ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
+	siStartInfo.cb = sizeof(STARTUPINFO);
+	siStartInfo.hStdInput = hChildStdin_Rd;
+	siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+	// Create the child process.
+	if(!CreateProcess(NULL,
+			(LPSTR)cmdline.c_str(),     // command line
+			NULL,          // process security attributes
+			NULL,          // primary thread security attributes
+			TRUE,          // handles are inherited
+			0,             // creation flags
+			NULL,          // use parent's environment
+			NULL,          // use parent's current directory
+			&siStartInfo,  // STARTUPINFO pointer
+			&piProcInfo))  // receives PROCESS_INFORMATION
+	{
+		LOG(LOG_ERROR,"CreateProcess");
+		return NULL;
+	}
+
+	CloseHandle(piProcInfo.hThread);
+
+	*stdinfd = _open_osfhandle((intptr_t)hChildStdin_Wr, _O_RDONLY);
+	if(*stdinfd == -1)
+	{
+		LOG(LOG_ERROR,"_open_osfhandle");
+		return NULL;
+	}
+#if 0
+	HANDLE hInputFile = NULL;
+	/* Write file to pipe */
+	hInputFile = CreateFile(
+			stdinfile,
+			GENERIC_READ,
+			0,
+			NULL,
+			OPEN_EXISTING,
+			FILE_ATTRIBUTE_READONLY,
+			NULL);
+
+	if(hInputFile == INVALID_HANDLE_VALUE )
+	{
+		LOG(LOG_ERROR,"CreateFile");
+		return NULL;
+	}
+
+	DWORD dwRead, dwWritten;
+	CHAR chBuf[BUFSIZE];
+	BOOL bSuccess;
+
+	while(true)
+	{
+	  bSuccess = ReadFile(hInputFile, chBuf, BUFSIZE, &dwRead, NULL);
+	  if(!bSuccess || dwRead == 0 ) break;
+
+	  bSuccess = WriteFile(hChildStdin_Wr, chBuf, dwRead, &dwWritten, NULL);
+	  if(!bSuccess) break;
+	}
+
+	if(!CloseHandle(hChildStdin_Wr))
+		LOG(LOG_ERROR,"StdInWr CloseHandle");
+#endif
+
+	return piProcInfo.hProcess;
+}
+
 #endif

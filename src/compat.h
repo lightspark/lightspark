@@ -260,6 +260,7 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 #ifdef _WIN32
 /* returns the path of the current executable */
 const char* getExectuablePath();
+HANDLE compat_spawn(char** args, int* stdinfd);
 #endif
 
 #endif

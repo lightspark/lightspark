@@ -191,7 +191,7 @@ private:
 
 	//Cookies for Gnash fallback
 	std::string rawCookies;
-	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
+	char* cookiesFileName;
 
 	URLInfo url;
 	Spinlock profileDataSpinlock;

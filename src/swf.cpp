@@ -170,7 +170,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(false),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
-	cookiesFileName[0]=0;
+	cookiesFileName = NULL;
 
 	setTLSSys(this);
 
@@ -404,8 +404,11 @@ void SystemState::destroy()
 		kill_child(childPid);
 	}
 	//Delete the temporary cookies file
-	if(cookiesFileName[0])
+	if(cookiesFileName)
+	{
 		unlink(cookiesFileName);
+		g_free(cookiesFileName);
+	}
 	assert(shutdown);
 
 	renderThread->stop();
@@ -645,8 +648,7 @@ void SystemState::launchGnash()
 
 	LOG(LOG_INFO,_("Trying to invoke gnash!"));
 	//Dump the cookies to a temporary file
-	strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
-	int file=g_mkstemp(cookiesFileName);
+	int file=g_file_open_tmp("lightsparkcookiesXXXXXX",&cookiesFileName,NULL);
 	if(file!=-1)
 	{
 		std::string data("Set-Cookie: " + rawCookies);
@@ -667,7 +669,9 @@ void SystemState::launchGnash()
 		g_setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
 	}
 	else
-		cookiesFileName[0]=0;
+	{
+		LOG(LOG_ERROR,"Failed to create temporary coockie for gnash");
+	}
 
 
 	//Allocate some buffers to store gnash arguments

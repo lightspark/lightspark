@@ -620,9 +620,6 @@ void SystemState::createEngines()
 
 void SystemState::launchGnash()
 {
-	/* mutex must be locked on entry */
-	assert(!mutex.trylock());
-
 	if(config->getGnashPath().empty())
 	{
 		LOG(LOG_INFO, "Unsupported flash file (AVM1), and no gnash found");

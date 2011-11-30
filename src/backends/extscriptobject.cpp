@@ -388,7 +388,7 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 	if(funcEvent.isNull())
 		return false;
 
-	funcEvent = NULL;
+	funcEvent = NullRef;
 	// Did the callback throw an AS exception?
 	if(exception != NULL)
 	{

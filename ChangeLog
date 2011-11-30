@@ -4,6 +4,8 @@ Version 0.5.3:
 	* Support playing RTMP streams from Flash Media Server when
 	  compiled with ENABLE_RTMP=1
 	* Fixed several memory leaks
+	* Ported Lightspark to windows, including a firefox plugin
+	* Fixed multiple hangs and crashes
 
 Version 0.5.2.1:
 	* Patch version to fix up reported version.

@@ -45,7 +45,7 @@
 #define WIN32_LEAN_AND_MEAN
 //#include <winsock2.h>
 #include <windows.h>
-//#include <intrin.h>
+#include <math.h>
 #include <io.h>
 #undef DOUBLE_CLICK
 #undef RGB

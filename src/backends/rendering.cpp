@@ -728,7 +728,6 @@ void RenderThread::commonGLInit(int width, int height)
 	if(handleGLErrors())
 	{
 		LOG(LOG_ERROR,_("GL errors during initialization"));
-		::abort();
 	}
 }
 

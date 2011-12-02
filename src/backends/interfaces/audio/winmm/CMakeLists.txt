@@ -19,21 +19,11 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-include_directories(".")
+INCLUDE_DIRECTORIES(".")
 INCLUDE_DIRECTORIES("..")
 
-#Export symbols
-IF(WIN32)
-  ADD_DEFINITIONS("-DDLL_PUBLIC=__declspec(dllexport)")
-ENDIF()
+ADD_LIBRARY(winmmplugin MODULE WinMMPlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp)
+SET_TARGET_PROPERTIES(winmmplugin PROPERTIES OUTPUT_NAME lightsparkwinmmplugin)
+TARGET_LINK_LIBRARIES(winmmplugin spark winmm)
 
-
-IF(${AUDIO_BACKEND} MATCHES "pulse")
-    add_subdirectory(pulse)
-ENDIF(${AUDIO_BACKEND} MATCHES "pulse")
-IF(${AUDIO_BACKEND} MATCHES "winmm")
-    add_subdirectory(winmm)
-ENDIF()
-IF(${AUDIO_BACKEND} MATCHES "sdl")
-    add_subdirectory(sdl)
-ENDIF(${AUDIO_BACKEND} MATCHES "sdl")
+INSTALL(TARGETS winmmplugin LIBRARY DESTINATION ${PLUGINSDIR})

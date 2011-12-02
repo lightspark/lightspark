@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
 
 	if(fileName==NULL)
 	{
-		LOG(LOG_ERROR, endl << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
+		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
 			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" <<
 			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
 			" [--exit-on-error] [--HTTP-cookies cookie]" <<

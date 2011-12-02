@@ -100,10 +100,10 @@ void StandaloneDownloadManager::destroy(Downloader* downloader)
 	if(removeDownloader(downloader))
 	{
 		downloader->waitForTermination();
-		//NOTE: the following static cast should be safe. we now the type of created objects
-		ThreadedDownloader* thd=static_cast<ThreadedDownloader*>(downloader);
-		thd->waitFencing();
-		delete thd;
+		ThreadedDownloader* thd=dynamic_cast<ThreadedDownloader*>(downloader);
+		if(thd)
+			thd->waitFencing();
+		delete downloader;
 	}
 }
 

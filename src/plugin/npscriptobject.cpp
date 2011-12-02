@@ -18,6 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "version.h"
 #include "logger.h"
 #include "plugin.h"
 

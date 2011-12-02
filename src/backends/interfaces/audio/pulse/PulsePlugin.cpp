@@ -142,29 +142,24 @@ bool PulsePlugin::isTimingAvailable() const
 	return serverAvailable();
 }
 
-void PulsePlugin::freeStream ( AudioStream *audioStream )
+PulseAudioStream::~PulseAudioStream()
 {
-	pulseLock();
-	assert ( audioStream );
+	manager->pulseLock();
 
-	PulseAudioStream *s = static_cast<PulseAudioStream *> ( audioStream );
+	if( manager->serverAvailable() )
+		pa_stream_disconnect( stream );
 
-	if ( serverAvailable() )
-	{
-		pa_stream *toDelete = s->stream;
-		pa_stream_disconnect ( toDelete );
-	}
 	//Do not delete the stream now, let's wait termination. However, removing it from the list.
-	streams.remove(s);
-	audioStream = NULL;
+	manager->streams.remove(this);
 
-	pulseUnlock();
-	while ( s->streamStatus != PulseAudioStream::STREAM_DEAD );
-	pulseLock();
-	if ( s->stream )
-		pa_stream_unref ( s->stream );
-	pulseUnlock();
-	delete s;
+	manager->pulseUnlock();
+
+	while( streamStatus != PulseAudioStream::STREAM_DEAD );
+
+	manager->pulseLock();
+	if( stream )
+		pa_stream_unref ( stream );
+	manager->pulseUnlock();
 }
 
 void PulsePlugin::streamOverflowCB( pa_stream *p, void *userdata )
@@ -243,25 +238,21 @@ void PulsePlugin::contextStatusCB ( pa_context *context, PulsePlugin *th )
 		break;
 	}
 }
-void PulsePlugin::pauseStream(AudioStream *audioStream)
+void PulseAudioStream::pause()
 {
-	PulseAudioStream *pulseStream = NULL;
-	pulseStream = static_cast<PulseAudioStream *> ( audioStream );
-	if(pulseStream->isValid() && !pulseStream->paused())
+	if(isValid() && !ispaused())
 	{
-		pa_stream_cork(pulseStream->stream, 1, NULL, NULL);	//This will stop the stream's time from running
-		pulseStream->pause=true;
+		pa_stream_cork(stream, 1, NULL, NULL);	//This will stop the stream's time from running
+		paused=true;
 	}
 }
 
-void PulsePlugin::resumeStream(AudioStream *audioStream)
+void PulseAudioStream::resume()
 {
-	PulseAudioStream *pulseStream = NULL;
-	pulseStream = static_cast<PulseAudioStream *> ( audioStream );
-	if(pulseStream->isValid() && pulseStream->paused())
+	if(isValid() && ispaused())
 	{
-		pa_stream_cork(pulseStream->stream, 0, NULL, NULL);	//This will restart time
-		pulseStream->pause=false;
+		pa_stream_cork(stream, 0, NULL, NULL);	//This will restart time
+		paused=false;
 	}
 }
 
@@ -292,7 +283,7 @@ void PulsePlugin::stop()
 		stopped = true;
 		for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
 		{
-			freeStream( *it );
+			delete *it;
 		}
 		if(serverAvailable())
 		{
@@ -327,8 +318,8 @@ void PulsePlugin::unmuteAll()
 /****************************
 Stream's functions
 ****************************/
-PulseAudioStream::PulseAudioStream ( PulsePlugin* m )  : 
-	AudioStream(NULL, false), stream ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING )
+PulseAudioStream::PulseAudioStream ( PulsePlugin* m )  :
+	AudioStream(NULL), paused(false), stream ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING )
 {
 
 }
@@ -413,11 +404,11 @@ void PulseAudioStream::fillStream(size_t toSend)
 		}
 	}
 
-	if(!pause && pa_stream_is_corked(stream))
+	if(!paused && pa_stream_is_corked(stream))
 		pa_stream_cork ( stream, 0, NULL, NULL ); //Start the stream, just in case it's still stopped
 }
 
-bool PulseAudioStream::paused()
+bool PulseAudioStream::ispaused()
 {
 	assert_and_throw(isValid());
 	return pa_stream_is_corked(stream);

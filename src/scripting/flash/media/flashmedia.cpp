@@ -333,13 +333,6 @@ void Sound::execute()
 			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
 				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
 
-			if(audioStream && audioStream->paused() && !audioStream->pause)
-			{
-				//The audio stream is paused but should not!
-				//As we have new data fill the stream
-				audioStream->fill();
-			}
-
 			if(threadAborting)
 				throw JobTerminationException();
 		}
@@ -371,8 +364,7 @@ void Sound::execute()
 	{
 		Locker l(mutex);
 		audioDecoder=NULL;
-		if(audioStream)
-			getSys()->audioManager->freeStreamPlugin(audioStream);
+		delete audioStream;
 		audioStream=NULL;
 	}
 	delete streamDecoder;

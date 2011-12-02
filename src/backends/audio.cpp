@@ -58,18 +58,6 @@ bool AudioManager::pluginLoaded() const
 	return oAudioPlugin != NULL;
 }
 
-void AudioManager::freeStreamPlugin ( AudioStream *audioStream )
-{
-	if ( pluginLoaded() )
-	{
-		oAudioPlugin->freeStream ( audioStream );
-	}
-	else
-	{
-		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't free stream" ) );
-	}
-}
-
 AudioStream *AudioManager::createStreamPlugin ( AudioDecoder *decoder )
 {
 	if ( pluginLoaded() )
@@ -81,32 +69,6 @@ AudioStream *AudioManager::createStreamPlugin ( AudioDecoder *decoder )
 		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't create stream" ) );
 		return NULL;
 	}
-}
-
-void AudioManager::pauseStreamPlugin( AudioStream *audioStream )
-{
-	if ( pluginLoaded() )
-	{
-		oAudioPlugin->pauseStream ( audioStream );
-	}
-	else
-	{
-		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't pause stream" ) );
-	}
-
-}
-
-void AudioManager::resumeStreamPlugin( AudioStream *audioStream )
-{
-	if ( pluginLoaded() )
-	{
-		oAudioPlugin->resumeStream ( audioStream );
-	}
-	else
-	{
-		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't resume stream" ) );
-	}
-
 }
 
 bool AudioManager::isTimingAvailablePlugin() const

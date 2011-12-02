@@ -153,11 +153,8 @@ void SDLAudioStream::async_callback(void *unused, uint8_t *stream, int len)
 	SDL_UnlockAudio();
 	delete[] buf;
 }
-void SDLAudioStream::fill ()
-{
-	// this method is called nowhere ????
-}
-void SDLAudioStream::SetPause(bool pause_on) 
+
+void SDLAudioStream::SetPause(bool pause_on)
 {
 	if (pause_on)
 	{

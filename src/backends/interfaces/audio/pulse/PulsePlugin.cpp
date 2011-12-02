@@ -344,26 +344,6 @@ uint32_t PulseAudioStream::getPlayedTime ( )
 	return time / 1000;
 }
 
-void PulseAudioStream::fill ()
-{
-	if ( isValid() )
-	{
-		if ( streamStatus != PulseAudioStream::STREAM_READY ) //The stream is not yet ready, delay upload
-			return;
-		if ( !decoder->hasDecodedFrames() ) //No decoded data available yet, delay upload
-			return;
-		manager->pulseLock();
-		size_t frameSize = pa_stream_writable_size ( stream );
-		fillStream(frameSize);
-		manager->pulseUnlock();
-	}
-	else   //No sound server available
-	{
-		//Just skip all the contents
-		decoder->skipAll();
-	}
-}
-
 void PulseAudioStream::fillStream(size_t toSend)
 {
 	/* Write data until we have space on the server and we have data available.

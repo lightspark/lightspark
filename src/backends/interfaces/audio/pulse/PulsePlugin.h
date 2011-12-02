@@ -76,7 +76,6 @@ public:
 	uint32_t getPlayedTime ();
 	bool ispaused();
 	bool isValid();
-	void fill ();
 	void pause();
 	void resume();
 	~PulseAudioStream();

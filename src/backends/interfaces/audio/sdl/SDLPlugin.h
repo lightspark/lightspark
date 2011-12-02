@@ -67,7 +67,6 @@ public:
 	uint32_t getPlayedTime();
 	bool ispaused();
 	bool isValid();
-	void fill();
 	void mute();
 	void unmute();
 	void pause() { SetPause(true); }

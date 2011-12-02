@@ -605,7 +605,6 @@ void NetStream::finalize()
 
 NetStream::~NetStream()
 {
-	assert(!executing);
 	if(tickStarted)
 		getSys()->removeJob(this);
 	delete videoDecoder;
@@ -1035,7 +1034,7 @@ void NetStream::execute()
 				getSys()->setRenderRate(localRenderRate);
 			}
 			profile->accountTime(chronometer.checkpoint());
-			if(aborting)
+			if(threadAborting)
 				throw JobTerminationException();
 		}
 

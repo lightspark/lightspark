@@ -340,7 +340,7 @@ void Sound::execute()
 				audioStream->fill();
 			}
 
-			if(aborting)
+			if(threadAborting)
 				throw JobTerminationException();
 		}
 	}

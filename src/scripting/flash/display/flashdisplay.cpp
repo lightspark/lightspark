@@ -372,7 +372,7 @@ void Loader::execute()
 		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
 		ParseThread local_pt(s,this,url.getParsedURL());
-		local_pt.run();
+		local_pt.execute();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
 			SpinlockLocker l(downloaderLock);
@@ -390,10 +390,10 @@ void Loader::execute()
 
 		// Wait until the object is constructed before adding
 		// to the Loader
-		while (!obj->isConstructed() && !aborting)
+		while (!obj->isConstructed() && !threadAborting)
 			/* TODO: use a Cond or Semaphore here */;
 
-		if(aborting)
+		if(threadAborting)
 			return;
 
 		setContent(obj);
@@ -411,7 +411,7 @@ void Loader::execute()
 		istream s(&bb);
 
 		ParseThread local_pt(s,this);
-		local_pt.run();
+		local_pt.execute();
 		bytes->decRef();
 		//Add a complete event for this object
 		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));

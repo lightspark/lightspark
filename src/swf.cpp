@@ -1210,7 +1210,7 @@ void ParseThread::parseSWF(UI8 ver)
 					//Not yet implemented tag, ignore it
 					break;
 			}
-			if(getSys()->shouldTerminate() || aborting)
+			if(getSys()->shouldTerminate() || threadAborting)
 				break;
 		}
 	}

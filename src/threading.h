@@ -78,22 +78,38 @@ public:
 class IThreadJob
 {
 friend class ThreadPool;
-friend class Condition;
-private:
-	Semaphore jobTerminated;
-protected:
-	bool destroyMe;
-	bool executing;
-	bool aborting;
-	virtual void execute()=0;
-	virtual void threadAbort()=0;
-	virtual void jobFence()=0;
 public:
-	IThreadJob();
-	virtual ~IThreadJob();
-	void waitForJobTermination();
-	void run();
-	void stop() DLL_PUBLIC;
+	/*
+	 * Set to true by the ThreadPool just before threadAbort()
+	 * is called. For some implementations, it may be enough
+	 * to poll threadAborted and not implement threadAbort().
+	 */
+	volatile bool threadAborting;
+	/*
+	 * Called in a dedicated thread to do the actual
+	 * work. You may throw a JobTerminationException
+	 * to quit the job. (Or better: just return)
+	 */
+	virtual void execute()=0;
+	/*
+	 * Called asynchronously to abort a job
+	 * who is currently in execute().
+	 * 'aborting' is set to true before calling
+	 * this function.
+	 */
+	virtual void threadAbort() {};
+	/*
+	 * Called after the job has finished execute()'ing or
+	 * if the ThreadPool aborts and the job did not have
+	 * a chance to run yet.
+	 * You should use jobFence to signal blocking semaphores
+	 * and a like. There is no access to this object after
+	 * jobFence() is called, so you may safely call
+	 * 'delete this'.
+	 */
+	virtual void jobFence()=0;
+	IThreadJob() : threadAborting(false) {}
+	virtual ~IThreadJob() {}
 };
 
 template<class T, uint32_t size>

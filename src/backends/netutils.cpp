@@ -1148,7 +1148,7 @@ void CurlDownloader::execute()
 int CurlDownloader::progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(clientp);
-	return th->aborting || th->failed;
+	return th->threadAborting || th->failed;
 }
 
 /**

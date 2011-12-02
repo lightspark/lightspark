@@ -51,7 +51,10 @@ void ThreadPool::forceStop()
 			for(int i=0;i<NUM_THREADS;i++)
 			{
 				if(curJobs[i])
-					curJobs[i]->stop();
+				{
+					curJobs[i]->threadAborting = true;
+					curJobs[i]->threadAbort();
+				}
 			}
 			//Fence all the non executed jobs
 			std::deque<IThreadJob*>::iterator it=jobs.begin();
@@ -91,13 +94,16 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 		IThreadJob* myJob=th->jobs.front();
 		th->jobs.pop_front();
 		th->curJobs[index]=myJob;
-		myJob->executing=true;
 		l.release();
 
 		chronometer.checkpoint();
 		try
 		{
-			myJob->run();
+			myJob->execute();
+		}
+	        catch(JobTerminationException& ex)
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"Job terminated");
 		}
 		catch(LightsparkException& e)
 		{
@@ -107,13 +113,9 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 		profile->accountTime(chronometer.checkpoint());
 
 		l.acquire();
-		myJob->executing=false;
 		th->curJobs[index]=NULL;
 
 		myJob->jobFence();
-
-		if(myJob->destroyMe)
-			delete myJob;
 
 		l.release();
 	}

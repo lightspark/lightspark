@@ -26,45 +26,6 @@
 
 using namespace lightspark;
 
-//NOTE: thread jobs can be run only once
-IThreadJob::IThreadJob():jobTerminated(0),destroyMe(false),executing(false),aborting(false)
-{
-}
-
-IThreadJob::~IThreadJob()
-{
-	if(executing)
-		waitForJobTermination();
-}
-
-void IThreadJob::waitForJobTermination()
-{
-	jobTerminated.wait();
-}
-
-void IThreadJob::run()
-{
-	try
-	{
-		execute();
-	}
-	catch(JobTerminationException& ex)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Job terminated"));
-	}
-
-	jobTerminated.signal();
-}
-
-void IThreadJob::stop()
-{
-	if(executing)
-	{
-		aborting=true;
-		this->threadAbort();
-	}
-}
-
 Semaphore::Semaphore(uint32_t init):value(init)
 {
 }

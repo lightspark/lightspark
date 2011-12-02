@@ -136,13 +136,9 @@ private:
 	class EngineCreator: public IThreadJob
 	{
 	public:
-		EngineCreator()
-		{
-			destroyMe=true;
-		}
 		void execute();
 		void threadAbort();
-		void jobFence(){}
+		void jobFence() { delete this; }
 	};
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
@@ -359,6 +355,7 @@ public:
 	void setRootMovie(RootMovieClip *root);
 	RootMovieClip *getRootMovie();
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
+	void execute();
 private:
 	std::istream& f;
 	std::streambuf* zlibFilter;
@@ -368,7 +365,6 @@ private:
 	Spinlock objectSpinlock;
 	tiny_string url;
 	FILE_TYPE fileType;
-	void execute();
 	void threadAbort();
 	void jobFence() {};
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);

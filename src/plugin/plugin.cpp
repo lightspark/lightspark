@@ -346,8 +346,6 @@ nsPluginInstance::~nsPluginInstance()
 	// Kill all stuff relating to NPScriptObject which is still running
 	static_cast<NPScriptObject*>(m_sys->extScriptObject)->destroy();
 
-	if(m_pt)
-		m_pt->stop();
 	m_sys->setShutdownFlag();
 
 	m_sys->destroy();

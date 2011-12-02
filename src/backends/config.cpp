@@ -76,15 +76,14 @@ Config::Config():
 	audioBackend(PULSEAUDIO),audioBackendName("")
 {
 	audioBackendNames[0] = "pulseaudio";
-	audioBackendNames[1] = "openal";
-	audioBackendNames[2] = "sdl";
+	audioBackendNames[1] = "sdl";
 #ifdef AUDIO_BACKEND
 	/* AUDIO_BACKEND is defined by cmake, lets find its index.
 	 * AUDIO_BACKEND may consist of multiple backends,
 	 * then we just leave the default (see above)
 	 */
 	audioBackendName = AUDIO_BACKEND;
-	for(int i=0;i<3;++i)
+	for(int i=0;i<NUM_AUDIO_BACKENDS;++i)
 	{
 		if(audioBackendName == audioBackendNames[i])
 		{
@@ -192,8 +191,6 @@ void Config::handleEntry()
 	//Audio backend
 	if(group == "audio" && key == "backend" && value == audioBackendNames[PULSEAUDIO])
 		audioBackend = PULSEAUDIO;
-	else if(group == "audio" && key == "backend" && value == audioBackendNames[OPENAL])
-		audioBackend = OPENAL;
 	else if(group == "audio" && key == "backend" && value == audioBackendNames[SDL])
 		audioBackend = SDL;
 	//Cache directory

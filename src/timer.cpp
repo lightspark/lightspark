@@ -29,7 +29,7 @@ using namespace std;
 
 TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false),inExecution(NULL)
 {
-	t = Thread::create(sigc::bind<0>(&TimerThread::worker,this), true);
+	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker), true);
 }
 
 void TimerThread::stop()
@@ -98,35 +98,35 @@ void TimerThread::dumpJobs()
 		LOG(LOG_INFO, (*it)->job );
 }
 
-void TimerThread::worker(TimerThread* th)
+void TimerThread::worker()
 {
-	setTLSSys(th->m_sys);
+	setTLSSys(m_sys);
 
-	th->mutex.lock();
+	mutex.lock();
 	while(1)
 	{
 		/* Wait until the first event appears */
-		while(th->pendingEvents.empty())
+		while(pendingEvents.empty())
 		{
-			th->newEvent.wait(th->mutex);
-			if(th->stopped)
+			newEvent.wait(mutex);
+			if(stopped)
 				break;
 		}
 
 		/* Get expiration of first event */
-		Glib::TimeVal timing=th->pendingEvents.front()->timing;
+		Glib::TimeVal timing=pendingEvents.front()->timing;
 		/* Wait for the absolute time or a newEvent signal
 		 * this unlocks the mutex and relocks it before returing
 		 */
-		th->newEvent.timed_wait(th->mutex,timing);
+		newEvent.timed_wait(mutex,timing);
 
-		if(th->stopped)
+		if(stopped)
 			break;
 
-		if(th->pendingEvents.empty())
+		if(pendingEvents.empty())
 			continue;
 
-		TimingEvent* e=th->pendingEvents.front();
+		TimingEvent* e=pendingEvents.front();
 
 		/* check if the top even is due now. It could be have been removed/inserted
 		 * while we slept */
@@ -135,7 +135,7 @@ void TimerThread::worker(TimerThread* th)
 		if((now-timing).negative()) /* timing > now */
 			continue;
 
-		th->pendingEvents.pop_front();
+		pendingEvents.pop_front();
 
 		if(e->job->stopMe)
 		{
@@ -147,21 +147,21 @@ void TimerThread::worker(TimerThread* th)
 		{
 			/* re-enqueue*/
 			e->timing.add_milliseconds(e->tickTime);
-			th->insertNewEvent_nolock(e);
+			insertNewEvent_nolock(e);
 		}
 
 		/* let removeJob() know what we are currently doing */
-		th->inExecution = e->job;
-		th->mutex.unlock();
+		inExecution = e->job;
+		mutex.unlock();
 		e->job->tick();
-		th->inExecution = NULL;
-		th->mutex.lock();
+		inExecution = NULL;
+		mutex.lock();
 
 		/* Cleanup */
 		if(!e->isTick)
 			delete e;
 	}
-	th->mutex.unlock();
+	mutex.unlock();
 }
 
 void TimerThread::addTick(uint32_t tickTime, ITickJob* job)

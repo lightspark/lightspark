@@ -67,7 +67,7 @@ private:
 	volatile bool stopped;
 	bool joined;
 	volatile ITickJob* inExecution;
-	static void worker(TimerThread*);
+	void worker();
 	void insertNewEvent(TimingEvent* e);
 	void insertNewEvent_nolock(TimingEvent* e);
 	void dumpJobs();

@@ -434,6 +434,7 @@ SET(CPACK_NSIS_HELP_LINK "http:////www.lightspark.org")
 SET(CPACK_NSIS_URL_INFO_ABOUT "http:////www.lightspark.org")
 SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/media/lightspark-logo.svg)
 IF(WIN32)
+  SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Lightspark")
   SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Description' 'Lightspark'
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'ProductName' 'Lightspark'

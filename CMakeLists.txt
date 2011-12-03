@@ -186,7 +186,7 @@ ENDIF(UNIX)
 
 # Setting variables
 IF(WIN32)
-  SET(AUDIO_BACKEND "sdl" CACHE STRING "Which audio backends should be built?")
+  SET(AUDIO_BACKEND "winmm" CACHE STRING "Which audio backends should be built?")
 ELSE()
   SET(AUDIO_BACKEND "pulseaudio" CACHE STRING "Which audio backends should be built?")
 ENDIF()

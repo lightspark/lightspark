@@ -61,10 +61,6 @@ bool lightspark::isVmThread()
 	return g_static_private_get(&is_vm_thread);
 }
 
-uint32_t ABCVm::cur_recursion = 0;
-//these limits can be overwritten by a ScriptLimitsTag
-ABCVm::abc_limits ABCVm::limits = { /*max_recursion=*/ 256, /*max_timeout=*/ 20 };
-
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	int dest=in.tellg();
@@ -152,8 +148,8 @@ void SymbolClassTag::execute(RootMovieClip* root)
 
 void ScriptLimitsTag::execute(RootMovieClip* root)
 {
-	ABCVm::limits.max_recursion = MaxRecursionDepth;
-	ABCVm::limits.script_timeout = ScriptTimeoutSeconds;
+	getVm()->limits.max_recursion = MaxRecursionDepth;
+	getVm()->limits.script_timeout = ScriptTimeoutSeconds;
 }
 
 void ABCVm::registerClasses()
@@ -795,8 +791,11 @@ void ABCContext::dumpProfilingData(ostream& f) const
 }
 #endif
 
-ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curGlobalObj(NULL)
+ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curGlobalObj(NULL),
+	cur_recursion(0)
 {
+	limits.max_recursion = 256;
+	limits.script_timeout = 20;
 	m_sys=s;
 	int_manager=new Manager(15);
 	uint_manager=new Manager(15);

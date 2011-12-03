@@ -2286,7 +2286,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	const int hit_threshold=10;
 	assert_and_throw(mi->body);
 
-	if(ABCVm::cur_recursion == getVm()->limits.max_recursion)
+	uint32_t& cur_recursion = getVm()->cur_recursion;
+	if(cur_recursion == getVm()->limits.max_recursion)
 	{
 		for(uint32_t i=0;i<numArgs;i++)
 			args[i]->decRef();
@@ -2429,7 +2430,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	//obtain a local reference to this function, as it may delete itself
 	this->incRef();
 
-	ABCVm::cur_recursion++; //increment current recursion depth
+	cur_recursion++; //increment current recursion depth
 	Log::calls_indent++;
 	while (true)
 	{
@@ -2469,7 +2470,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			}
 			if (no_handler)
 			{
-				ABCVm::cur_recursion--; //decrement current recursion depth
+				cur_recursion--; //decrement current recursion depth
 				Log::calls_indent--;
 				getVm()->curGlobalObj = saved_global;
 				throw excobj;
@@ -2478,7 +2479,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		}
 		break;
 	}
-	ABCVm::cur_recursion--; //decrement current recursion depth
+	cur_recursion--; //decrement current recursion depth
 	Log::calls_indent--;
 	getVm()->curGlobalObj= saved_global;
 

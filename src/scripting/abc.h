@@ -653,9 +653,9 @@ public:
 
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */
-	static uint32_t cur_recursion;
+	uint32_t cur_recursion;
 
-	static struct abc_limits {
+	struct abc_limits {
 		/* maxmium number of recursion allowed. See ScriptLimitsTag */
 		uint32_t max_recursion;
 		/* maxmium number of seconds for script execution. See ScriptLimitsTag */

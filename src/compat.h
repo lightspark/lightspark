@@ -98,17 +98,18 @@ long lrint(double f);
 /* aligned_malloc */
 #ifdef _WIN32
 #	include <malloc.h>
-	inline int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size)
+	inline void aligned_malloc(void **memptr, std::size_t alignment, std::size_t size)
 	{
 		*memptr = _aligned_malloc(size, alignment);
-		return (*memptr != NULL) ? 0: -1;
+		if(!*memptr)
+			throw std::bad_alloc();
 	}
 	inline void aligned_free(void *mem)
 	{
 		_aligned_free(mem);
 	}
 #else
-	int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size);
+	void aligned_malloc(void **memptr, std::size_t alignment, std::size_t size);
 	void aligned_free(void *mem);
 #endif
 

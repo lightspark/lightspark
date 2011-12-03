@@ -337,27 +337,16 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 		aligned_free(buf.ch[1]);
 		aligned_free(buf.ch[2]);
 	}
-	int ret=aligned_malloc((void**)&buf.ch[0], 16, bufferSize);
-	assert(ret==0);
-	ret=aligned_malloc((void**)&buf.ch[1], 16, bufferSize/4);
-	assert(ret==0);
-	ret=aligned_malloc((void**)&buf.ch[2], 16, bufferSize/4);
-	assert(ret==0);
+	aligned_malloc((void**)&buf.ch[0], 16, bufferSize);
+	aligned_malloc((void**)&buf.ch[1], 16, bufferSize/4);
+	aligned_malloc((void**)&buf.ch[2], 16, bufferSize/4);
 }
 #endif //ENABLE_LIBAVCODEC
 
 void* AudioDecoder::operator new(size_t s)
 {
-	void* retAddr=NULL;
-
-	// fix warnings
-#ifndef NDEBUG
-	int ret =
-#endif
+	void* retAddr;
 	aligned_malloc(&retAddr, 16, s);
-	assert(ret==0);
-
-	assert(retAddr);
 	return retAddr;
 }
 void AudioDecoder::operator delete(void* addr)

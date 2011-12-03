@@ -102,7 +102,7 @@ void TimerThread::worker()
 {
 	setTLSSys(m_sys);
 
-	mutex.lock();
+	Mutex::Lock l(mutex);
 	while(1)
 	{
 		/* Wait until the first event appears */
@@ -110,7 +110,7 @@ void TimerThread::worker()
 		{
 			newEvent.wait(mutex);
 			if(stopped)
-				break;
+				return;
 		}
 
 		/* Get expiration of first event */
@@ -121,7 +121,7 @@ void TimerThread::worker()
 		newEvent.timed_wait(mutex,timing);
 
 		if(stopped)
-			break;
+			return;
 
 		if(pendingEvents.empty())
 			continue;
@@ -152,16 +152,15 @@ void TimerThread::worker()
 
 		/* let removeJob() know what we are currently doing */
 		inExecution = e->job;
-		mutex.unlock();
+		l.release();
 		e->job->tick();
 		inExecution = NULL;
-		mutex.lock();
+		l.acquire();
 
 		/* Cleanup */
 		if(!e->isTick)
 			delete e;
 	}
-	mutex.unlock();
 }
 
 void TimerThread::addTick(uint32_t tickTime, ITickJob* job)

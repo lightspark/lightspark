@@ -20,7 +20,6 @@
 #include "scripting/abc.h"
 #include "parsing/textfile.h"
 #include "rendering.h"
-#include "glmatrices.h"
 #include "compat.h"
 #include <sstream>
 
@@ -841,7 +840,7 @@ void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 #endif
 }
 
-void RenderThread::renderMaskToTmpBuffer() const
+void RenderThread::renderMaskToTmpBuffer()
 {
 	assert(!maskStack.empty());
 	//Clear the tmp buffer

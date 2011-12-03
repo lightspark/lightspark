@@ -31,54 +31,46 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stack>
-#include "glmatrices.h"
+#include "rendering_context.h"
 #include "../logger.h"
 
 using namespace std;
 
-GLfloat lsIdentityMatrix[16] = {
+#define LSGL_MATRIX_SIZE (16*sizeof(GLfloat))
+
+const GLfloat RenderContext::lsIdentityMatrix[16] = {
 								1, 0, 0, 0,
 								0, 1, 0, 0,
 								0, 0, 1, 0,
 								0, 0, 0, 1
 								};
 
-//The matrix stack used by push and pop
-stack<GLfloat*> *lsglMatrixStack = new stack<GLfloat*>;
-
-//The current matrix
-GLfloat lsMVPMatrix[16];
-
-void lsglLoadMatrixf(const GLfloat *m)
+void RenderContext::lsglLoadMatrixf(const GLfloat *m)
 {
 	memcpy(lsMVPMatrix, m, LSGL_MATRIX_SIZE);
 }
 
-void lsglLoadIdentity()
+void RenderContext::lsglLoadIdentity()
 {
 	lsglLoadMatrixf(lsIdentityMatrix);
 }
 
-void lsglPushMatrix()
+void RenderContext::lsglPushMatrix()
 {
 	GLfloat *top = new GLfloat[16];
 	memcpy(top, lsMVPMatrix, LSGL_MATRIX_SIZE);
-	lsglMatrixStack->push(top);
+	lsglMatrixStack.push(top);
 }
 
-void lsglPopMatrix()
+void RenderContext::lsglPopMatrix()
 {
-	if (lsglMatrixStack->size() == 0)
-	{
-		LOG(LOG_ERROR, "Popping from empty stack!");
-		::abort();
-	}
-	memcpy(lsMVPMatrix, lsglMatrixStack->top(), LSGL_MATRIX_SIZE);
-	delete[] lsglMatrixStack->top();
-	lsglMatrixStack->pop();
+	assert(lsglMatrixStack.size() > 0);
+	memcpy(lsMVPMatrix, lsglMatrixStack.top(), LSGL_MATRIX_SIZE);
+	delete[] lsglMatrixStack.top();
+	lsglMatrixStack.pop();
 }
 
-void lsglMultMatrixf(const GLfloat *m)
+void RenderContext::lsglMultMatrixf(const GLfloat *m)
 {
 	GLfloat tmp[16];
 	for(int i=0;i<4;i++)
@@ -96,7 +88,7 @@ void lsglMultMatrixf(const GLfloat *m)
 	memcpy(lsMVPMatrix, tmp, LSGL_MATRIX_SIZE);
 }
 
-void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ)
+void RenderContext::lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ)
 {
 	static GLfloat scale[16];
 
@@ -107,7 +99,7 @@ void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ)
 	lsglMultMatrixf(scale);
 }
 
-void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ)
+void RenderContext::lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ)
 {
 	static GLfloat trans[16];
 
@@ -118,7 +110,7 @@ void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ)
 	lsglMultMatrixf(trans);
 }
 
-void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+void RenderContext::lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
 {
 	GLfloat ortho[16];
 	memset(ortho, 0, sizeof(ortho));

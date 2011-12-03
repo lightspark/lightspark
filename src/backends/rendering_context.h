@@ -17,22 +17,31 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef GLMATRICES_H
-#define GLMATRICES_H
+#ifndef RENDERCONTEXT_H
+#define RENDERCONTEXT_H
 
+#include <stack>
 #include "lsopengl.h"
 
-#define LSGL_MATRIX_SIZE (16*sizeof(GLfloat))
-
-extern GLfloat lsIdentityMatrix[16];
-extern GLfloat lsMVPMatrix[16];
-void lsglLoadMatrixf(const GLfloat *m);
-void lsglLoadIdentity();
-void lsglPushMatrix();
-void lsglPopMatrix();
-void lsglMultMatrixf(const GLfloat *m);
-void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
-void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
-void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+class RenderContext
+{
+protected:
+	static const GLfloat lsIdentityMatrix[16];
+	GLfloat lsMVPMatrix[16];
+	std::stack<GLfloat*> lsglMatrixStack;
+public:
+	RenderContext()
+	{
+		lsglLoadIdentity();
+	}
+	void lsglLoadMatrixf(const GLfloat *m);
+	void lsglLoadIdentity();
+	void lsglPushMatrix();
+	void lsglPopMatrix();
+	void lsglMultMatrixf(const GLfloat *m);
+	void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
+	void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
+	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+};
 
 #endif

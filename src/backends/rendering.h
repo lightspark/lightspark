@@ -21,6 +21,7 @@
 #define RENDERING_H
 
 #include "lsopengl.h"
+#include "rendering_context.h"
 #include "timer.h"
 
 namespace lightspark
@@ -29,7 +30,7 @@ namespace lightspark
 enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
 enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 
-class RenderThread: public ITickJob
+class RenderThread: public ITickJob, public RenderContext
 {
 friend class DisplayObject;
 private:
@@ -184,7 +185,7 @@ public:
 	{
 		return !maskStack.empty();
 	}
-	void renderMaskToTmpBuffer() const;
+	void renderMaskToTmpBuffer();
 	void requestResize(uint32_t w, uint32_t h);
 	void waitForInitialization()
 	{

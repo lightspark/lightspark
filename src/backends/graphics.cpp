@@ -24,7 +24,6 @@
 #include "logger.h"
 #include "exceptions.h"
 #include "backends/rendering.h"
-#include "glmatrices.h"
 #include "compat.h"
 #include "scripting/flash/text/flashtext.h"
 
@@ -173,10 +172,11 @@ TextureBuffer::~TextureBuffer()
 	shutdown();
 }
 
+
 MatrixApplier::MatrixApplier()
 {
 	//First of all try to preserve current matrix
-	lsglPushMatrix();
+	getRenderThread()->lsglPushMatrix();
 
 	//TODO: implement smart stack flush
 	//Save all the current stack, compute using SSE the final matrix and push that one
@@ -187,11 +187,11 @@ MatrixApplier::MatrixApplier()
 MatrixApplier::MatrixApplier(const MATRIX& m)
 {
 	//First of all try to preserve current matrix
-	lsglPushMatrix();
+	getRenderThread()->lsglPushMatrix();
 
 	float matrix[16];
 	m.get4DMatrix(matrix);
-	lsglMultMatrixf(matrix);
+	getRenderThread()->lsglMultMatrixf(matrix);
 	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
 
@@ -199,15 +199,16 @@ void MatrixApplier::concat(const MATRIX& m)
 {
 	float matrix[16];
 	m.get4DMatrix(matrix);
-	lsglMultMatrixf(matrix);
+	getRenderThread()->lsglMultMatrixf(matrix);
 	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 void MatrixApplier::unapply()
 {
-	lsglPopMatrix();
+	getRenderThread()->lsglPopMatrix();
 	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
+
 
 TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 {

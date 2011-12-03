@@ -31,7 +31,6 @@
 #include "backends/rendering.h"
 #include "backends/geometry.h"
 #include "backends/image.h"
-#include "backends/glmatrices.h"
 #include "compat.h"
 #include "flash/accessibility/flashaccessibility.h"
 #include "argconv.h"
@@ -1374,14 +1373,14 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 		rt->renderMaskToTmpBuffer();
 		enableMaskLookup=1.0f;
 	}
-	lsglPushMatrix();
-	lsglLoadIdentity();
+	rt->lsglPushMatrix();
+	rt->lsglLoadIdentity();
 	rt->setMatrixUniform(LSGL_MODELVIEW);
 	glUniform1f(rt->maskUniform, enableMaskLookup);
 	glUniform1f(rt->yuvUniform, 0);
 	glUniform1f(rt->alphaUniform, cachedSurface.alpha);
 	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
-	lsglPopMatrix();
+	rt->lsglPopMatrix();
 	rt->setMatrixUniform(LSGL_MODELVIEW);
 }
 

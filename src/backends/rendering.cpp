@@ -33,8 +33,8 @@
 using namespace lightspark;
 using namespace std;
 
-/* calulcate FPS every second */
-Glib::TimeVal RenderThread::FPS_time(/*seconds*/1,/*microseconds*/0);
+/* calculate FPS every second */
+const Glib::TimeVal RenderThread::FPS_time(/*seconds*/1,/*microseconds*/0);
 
 static GStaticPrivate renderThread = G_STATIC_PRIVATE_INIT; /* TLS */
 RenderThread* lightspark::getRenderThread()

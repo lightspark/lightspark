@@ -73,25 +73,16 @@ Config::Config():
 	//DEFAULT SETTINGS
 	defaultCacheDirectory((string) g_get_user_cache_dir() + "/lightspark"),
 	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),
-	audioBackend(PULSEAUDIO),audioBackendName("")
+	audioBackend(INVALID),audioBackendName("")
 {
-	audioBackendNames[0] = "pulseaudio";
-	audioBackendNames[1] = "sdl";
-#ifdef AUDIO_BACKEND
-	/* AUDIO_BACKEND is defined by cmake, lets find its index.
-	 * AUDIO_BACKEND may consist of multiple backends,
-	 * then we just leave the default (see above)
-	 */
-	audioBackendName = AUDIO_BACKEND;
-	for(int i=0;i<NUM_AUDIO_BACKENDS;++i)
-	{
-		if(audioBackendName == audioBackendNames[i])
-		{
-			audioBackend = (AUDIOBACKEND)i;
-			break;
-		}
-	}
+#ifdef _WIN32
+	const char* exePath = getExectuablePath();
+	if(exePath)
+		userConfigDirectory = exePath;
 #endif
+	audioBackendNames[PULSEAUDIO] = "pulseaudio";
+	audioBackendNames[SDL] = "sdl";
+	audioBackendNames[WINMM] = "winmm";
 }
 
 Config::~Config()
@@ -147,10 +138,19 @@ void Config::load()
 		}
 	}
 
+	/* If no audio backend was specified, use a default */
+	if(audioBackend == INVALID)
+	{
+#ifdef _WIN32
+		audioBackend = WINMM;
+#else
+		audioBackend = PULSEAUDIO;
+#endif
+	}
 	//Set the audio backend name
 	audioBackendName = audioBackendNames[audioBackend];
 
-#ifdef WIN32
+#ifdef _WIN32
 	std::string regGnashPath = readRegistryEntry("GnashPath");
 	if(regGnashPath.empty())
 	{
@@ -193,6 +193,8 @@ void Config::handleEntry()
 		audioBackend = PULSEAUDIO;
 	else if(group == "audio" && key == "backend" && value == audioBackendNames[SDL])
 		audioBackend = SDL;
+	else if(group == "audio" && key == "backend" && value == audioBackendNames[WINMM])
+		 audioBackend = WINMM;
 	//Cache directory
 	else if(group == "cache" && key == "directory")
 		cacheDirectory = value;

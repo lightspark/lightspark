@@ -36,11 +36,11 @@ namespace lightspark
 		//-- CONFIGURATION FILENAME AND SEARCH DIRECTORIES
 		const std::string configFilename;
 		const char* const* systemConfigDirectories;
-		const std::string userConfigDirectory;
+		std::string userConfigDirectory;
 
 		//-- SETTINGS VALUES
-		enum AUDIOBACKEND { PULSEAUDIO=0, SDL=1, NUM_AUDIO_BACKENDS };
-		std::string audioBackendNames[2];
+		enum AUDIOBACKEND { PULSEAUDIO=0, SDL, WINMM, NUM_AUDIO_BACKENDS, INVALID=1024 };
+		std::string audioBackendNames[NUM_AUDIO_BACKENDS];
 
 		//-- SETTINGS
 		//Specifies the default cache directory = "~/.cache/lightspark"

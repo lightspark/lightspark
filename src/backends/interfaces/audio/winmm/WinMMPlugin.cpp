@@ -95,6 +95,11 @@ WinMMStream::~WinMMStream()
 	freeBuffers.signal();
 	workerThread->join();
 
+	/* Stop playing */
+	if(waveOutReset(hWaveOut) != MMSYSERR_NOERROR)
+		LOG(LOG_ERROR,"waveOutReset failed");
+
+	/* Close handle */
 	if(waveOutClose(hWaveOut) != MMSYSERR_NOERROR)
 		LOG(LOG_ERROR,"waveOutClose failed");
 

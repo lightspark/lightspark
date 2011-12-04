@@ -37,3 +37,8 @@ Create milestone and release in this interface, name both lightspark-0.5.2
 https://launchpad.net/lightspark/trunk
 
 LP will prompt for descriptions, changelogs and uploads of .tar.gz and .asc files.
+
+Mark bugs from "Fix committed" to "Fix released"
+--------------------
+See
+https://bugs.launchpad.net/lightspark/+bugs?field.searchtext=&field.status%3Alist=FIXCOMMITTED

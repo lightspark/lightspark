@@ -854,7 +854,7 @@ void RenderThread::renderMaskToTmpBuffer()
 		maskStack[i].m.get4DMatrix(matrix);
 		lsglLoadMatrixf(matrix);
 		setMatrixUniform(LSGL_MODELVIEW);
-		maskStack[i].d->Render(true);
+		maskStack[i].d->Render(*this, true);
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
@@ -966,7 +966,7 @@ void RenderThread::coreRendering()
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
-	m_sys->getStage()->Render(false);
+	m_sys->getStage()->Render(*this, false);
 	assert(maskStack.empty());
 
 	if(m_sys->showProfilingData)

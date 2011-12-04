@@ -306,12 +306,12 @@ void TextField::invalidate()
 	getSys()->addJob(r);
 }
 
-void TextField::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+void TextField::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
 	//if(!isSimple())
 	//	rt->acquireTempBuffer(t1,t2,t3,t4);
 
-	defaultRender(maskEnabled);
+	defaultRender(ctxt, maskEnabled);
 
 	//if(!isSimple())
 	//	rt->blitTempBuffer(t1,t2,t3,t4);

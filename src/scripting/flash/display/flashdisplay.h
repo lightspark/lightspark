@@ -42,6 +42,7 @@ class DisplayObjectContainer;
 class InteractiveObject;
 class Downloader;
 class AccessibilityProperties;
+class RenderContext;
 
 class IBitmapDrawable
 {
@@ -91,7 +92,7 @@ protected:
 	/* cachedSurface may only be read/written from within the render thread */
 	CachedSurface cachedSurface;
 
-	void defaultRender(bool maskEnabled) const;
+	void defaultRender(RenderContext& ctxt, bool maskEnabled) const;
 	DisplayObject(const DisplayObject& d);
 	void renderPrologue() const;
 	void renderEpilogue() const;
@@ -101,7 +102,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
-	virtual void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+	virtual void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
@@ -135,7 +136,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	void Render(bool maskEnabled);
+	void Render(RenderContext& ctxt, bool maskEnabled);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 	//API to handle mask support in hit testing
@@ -234,7 +235,7 @@ protected:
 	void setOnStage(bool staged);
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
+	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList();
@@ -343,7 +344,7 @@ protected:
 	void requestInvalidation();
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
-	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
+	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool tokensEmpty() const { return tokens.empty(); }
 	bool isOpaqueImpl(number_t x, number_t y) const;
 };
@@ -396,8 +397,8 @@ protected:
 	_NR<Graphics> graphics;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
-	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
-		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
+	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+		{ TokenContainer::renderImpl(ctxt, maskEnabled,t1,t2,t3,t4); }
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
@@ -515,7 +516,7 @@ private:
 	_NR<Graphics> graphics;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
+	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
 	Sprite();
@@ -776,8 +777,8 @@ class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;
 protected:
-	void renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
-		{ TokenContainer::renderImpl(maskEnabled,t1,t2,t3,t4); }
+	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+		{ TokenContainer::renderImpl(ctxt, maskEnabled,t1,t2,t3,t4); }
 public:
 	ASPROPERTY_GETTER(_NR<BitmapData>,bitmapData);
 	/* Call this after updating any member of 'data' */

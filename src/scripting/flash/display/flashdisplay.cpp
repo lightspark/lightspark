@@ -639,26 +639,26 @@ void DisplayObject::renderEpilogue() const
 		getRenderThread()->popMask();
 }
 
-void DisplayObjectContainer::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+void DisplayObjectContainer::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	Locker l(mutexDisplayList);
 	//Now draw also the display list
 	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
-		(*it)->Render(maskEnabled);
+		(*it)->Render(ctxt, maskEnabled);
 }
 
-void Sprite::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+void Sprite::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//Draw the dynamically added graphics, if any
 	//Should clean only the bounds of the graphics
 	if(!tokensEmpty())
-		defaultRender(maskEnabled);
+		defaultRender(ctxt, maskEnabled);
 
-	DisplayObjectContainer::renderImpl(maskEnabled, t1, t2, t3, t4);
+	DisplayObjectContainer::renderImpl(ctxt, maskEnabled, t1, t2, t3, t4);
 }
 
-void DisplayObject::Render(bool maskEnabled)
+void DisplayObject::Render(RenderContext& ctxt, bool maskEnabled)
 {
 	if(!isConstructed() || skipRender(maskEnabled))
 		return;
@@ -670,7 +670,7 @@ void DisplayObject::Render(bool maskEnabled)
 
 	renderPrologue();
 
-	renderImpl(maskEnabled,t1,t2,t3,t4);
+	renderImpl(ctxt, maskEnabled,t1,t2,t3,t4);
 
 	renderEpilogue();
 }
@@ -1359,7 +1359,7 @@ bool DisplayObject::skipRender(bool maskEnabled) const
 	return visible==false || alpha==0.0 || (!maskEnabled && !maskOf.isNull());
 }
 
-void DisplayObject::defaultRender(bool maskEnabled) const
+void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 {
 	/* cachedSurface is only modified from within the render thread
 	 * so we need no locking here */
@@ -1373,14 +1373,14 @@ void DisplayObject::defaultRender(bool maskEnabled) const
 		rt->renderMaskToTmpBuffer();
 		enableMaskLookup=1.0f;
 	}
-	rt->lsglPushMatrix();
-	rt->lsglLoadIdentity();
+	ctxt.lsglPushMatrix();
+	ctxt.lsglLoadIdentity();
 	rt->setMatrixUniform(LSGL_MODELVIEW);
 	glUniform1f(rt->maskUniform, enableMaskLookup);
 	glUniform1f(rt->yuvUniform, 0);
 	glUniform1f(rt->alphaUniform, cachedSurface.alpha);
 	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
-	rt->lsglPopMatrix();
+	ctxt.lsglPopMatrix();
 	rt->setMatrixUniform(LSGL_MODELVIEW);
 }
 
@@ -2561,12 +2561,12 @@ bool DisplayObjectContainer::isOpaque(number_t x, number_t y) const
 	return false;
 }
 
-void TokenContainer::renderImpl(bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+void TokenContainer::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
 	//if(!owner->isSimple())
 	//	rt->acquireTempBuffer(t1,t2,t3,t4);
 
-	owner->defaultRender(maskEnabled);
+	owner->defaultRender(ctxt, maskEnabled);
 
 	//if(!owner->isSimple())
 	//	rt->blitTempBuffer(t1,t2,t3,t4);

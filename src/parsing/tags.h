@@ -179,7 +179,7 @@ private:
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }
-	void renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
+	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	virtual ASObject* instance() const;
 };
 

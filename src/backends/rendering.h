@@ -191,8 +191,6 @@ public:
 	GLint maskUniform;
 	GLint alphaUniform;
 	GLint directUniform;
-	GLint projectionMatrixUniform;
-	GLint modelviewMatrixUniform;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
 
@@ -203,7 +201,6 @@ public:
 	cairo_t* getCairoContext(int w, int h);
 	void mapCairoTexture(int w, int h);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
-	void setMatrixUniform(LSGL_MATRIX m) const;
 };
 
 RenderThread* getRenderThread();

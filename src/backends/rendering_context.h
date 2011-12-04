@@ -36,10 +36,14 @@ enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 class RenderContext
 {
 protected:
+	/* Modelview matrix manipulation */
 	static const GLfloat lsIdentityMatrix[16];
 	GLfloat lsMVPMatrix[16];
 	std::stack<GLfloat*> lsglMatrixStack;
+	GLint projectionMatrixUniform;
+	GLint modelviewMatrixUniform;
 
+	/* Textures */
 	Mutex mutexLargeTexture;
 	uint32_t largeTextureSize;
 	class LargeTexture
@@ -56,6 +60,7 @@ public:
 	{
 		lsglLoadIdentity();
 	}
+	/* Modelview matrix manipulation */
 	void lsglLoadMatrixf(const GLfloat *m);
 	void lsglLoadIdentity();
 	void lsglPushMatrix();
@@ -64,6 +69,12 @@ public:
 	void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
 	void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
 	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+	/*
+	 * Uploads the current matrix as the specified type.
+	 */
+	void setMatrixUniform(LSGL_MATRIX m) const;
+
+	/* Textures */
 	/**
 		Render a quad of given size using the given chunk
 	*/

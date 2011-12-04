@@ -1289,10 +1289,3 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	glPixelStorei(GL_UNPACK_SKIP_ROWS,0);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH,0);
 }
-
-void RenderThread::setMatrixUniform(LSGL_MATRIX m) const
-{
-	GLint uni = (m == LSGL_MODELVIEW) ? modelviewMatrixUniform:projectionMatrixUniform;
-
-	glUniformMatrix4fv(uni, 1, GL_FALSE, lsMVPMatrix);
-}

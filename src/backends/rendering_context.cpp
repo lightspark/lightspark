@@ -238,3 +238,10 @@ bool RenderContext::handleGLErrors()
 	}
 	return errorCount;
 }
+
+void RenderContext::setMatrixUniform(LSGL_MATRIX m) const
+{
+	GLint uni = (m == LSGL_MODELVIEW) ? modelviewMatrixUniform:projectionMatrixUniform;
+
+	glUniformMatrix4fv(uni, 1, GL_FALSE, lsMVPMatrix);
+}

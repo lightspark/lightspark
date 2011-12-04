@@ -1375,13 +1375,13 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 	}
 	ctxt.lsglPushMatrix();
 	ctxt.lsglLoadIdentity();
-	rt->setMatrixUniform(LSGL_MODELVIEW);
+	ctxt.setMatrixUniform(LSGL_MODELVIEW);
 	glUniform1f(rt->maskUniform, enableMaskLookup);
 	glUniform1f(rt->yuvUniform, 0);
 	glUniform1f(rt->alphaUniform, cachedSurface.alpha);
 	ctxt.renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	ctxt.lsglPopMatrix();
-	rt->setMatrixUniform(LSGL_MODELVIEW);
+	ctxt.setMatrixUniform(LSGL_MODELVIEW);
 }
 
 void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,

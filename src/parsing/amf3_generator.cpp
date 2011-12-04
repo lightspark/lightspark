@@ -244,6 +244,16 @@ ValueType Amf3Deserializer::parseValue() const
 
 	switch(marker)
 	{
+		case false_marker:
+		{
+			ret=BoolType(false);
+			break;
+		}
+		case true_marker:
+		{
+			ret=BoolType(true);
+			break;
+		}
 		case integer_marker:
 		{
 			ret=parseInteger();

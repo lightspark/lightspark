@@ -21,6 +21,7 @@
 #include "toplevel.h"
 #include "class.h"
 #include "argconv.h"
+#include "parsing/amf3_generator.h"
 
 using namespace lightspark;
 using namespace std;
@@ -113,7 +114,10 @@ ASFUNCTIONBODY(Boolean,_valueOf)
 void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
-	throw UnsupportedException("Boolean:serialize not implemented");
+	if(val)
+		out->writeByte(amf3::true_marker);
+	else
+		out->writeByte(amf3::false_marker);
 }
 
 bool Boolean::isEqual(ASObject* r)

@@ -622,21 +622,21 @@ void Sprite::requestInvalidation()
 	TokenContainer::requestInvalidation();
 }
 
-void DisplayObject::renderPrologue() const
+void DisplayObject::renderPrologue(RenderContext& ctxt) const
 {
 	if(!mask.isNull())
 	{
 		if(mask->parent.isNull())
-			getRenderThread()->pushMask(mask.getPtr(),MATRIX());
+			ctxt.pushMask(mask.getPtr(),MATRIX());
 		else
-			getRenderThread()->pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
+			ctxt.pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
 	}
 }
 
-void DisplayObject::renderEpilogue() const
+void DisplayObject::renderEpilogue(RenderContext& ctxt) const
 {
 	if(!mask.isNull())
-		getRenderThread()->popMask();
+		ctxt.popMask();
 }
 
 void DisplayObjectContainer::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
@@ -668,11 +668,11 @@ void DisplayObject::Render(RenderContext& ctxt, bool maskEnabled)
 	if(!notEmpty)
 		return;
 
-	renderPrologue();
+	renderPrologue(ctxt);
 
 	renderImpl(ctxt, maskEnabled,t1,t2,t3,t4);
 
-	renderEpilogue();
+	renderEpilogue(ctxt);
 }
 
 void DisplayObject::hitTestPrologue() const
@@ -1368,9 +1368,9 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 	RenderThread* rt = getRenderThread();
 	float enableMaskLookup=0.0f;
 	//If the maskEnabled is already set we are the mask!
-	if(!maskEnabled && rt->isMaskPresent())
+	if(!maskEnabled && ctxt.isMaskPresent())
 	{
-		rt->renderMaskToTmpBuffer();
+		ctxt.renderMaskToTmpBuffer();
 		enableMaskLookup=1.0f;
 	}
 	ctxt.lsglPushMatrix();

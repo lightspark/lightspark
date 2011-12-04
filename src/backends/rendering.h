@@ -102,14 +102,6 @@ private:
 	void coreRendering();
 	void plotProfilingData();
 	Semaphore initialized;
-	class MaskData
-	{
-	public:
-		DisplayObject* d;
-		MATRIX m;
-		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
-	};
-	std::vector<MaskData> maskStack;
 
 	static void SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data);
 public:
@@ -146,28 +138,7 @@ public:
 		Enqueue something to be uploaded to texture
 	*/
 	void addUploadJob(ITextureUploadable* u);
-	/**
-	  	Add a mask to the stack mask
-		@param d The DisplayObject used as a mask
-		@param m The total matrix from the parent of the object to stage
-		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
-	*/
-	void pushMask(DisplayObject* d, const MATRIX& m)
-	{
-		maskStack.push_back(MaskData(d,m));
-	}
-	/**
-	  	Remove the last pushed mask
-	*/
-	void popMask()
-	{
-		maskStack.pop_back();
-	}
-	bool isMaskPresent()
-	{
-		return !maskStack.empty();
-	}
-	void renderMaskToTmpBuffer();
+
 	void requestResize(uint32_t w, uint32_t h);
 	void waitForInitialization()
 	{
@@ -181,7 +152,6 @@ public:
 	//OpenGL programs
 	int gpu_program;
 	int blitter_program;
-	GLuint fboId;
 	TextureBuffer tempTex;
 	uint32_t windowWidth;
 	uint32_t windowHeight;

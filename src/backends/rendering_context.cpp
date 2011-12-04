@@ -33,6 +33,7 @@
 #include <stack>
 #include "rendering_context.h"
 #include "../logger.h"
+#include "scripting/flash/display/flashdisplay.h"
 
 using namespace std;
 using namespace lightspark;
@@ -244,4 +245,24 @@ void RenderContext::setMatrixUniform(LSGL_MATRIX m) const
 	GLint uni = (m == LSGL_MODELVIEW) ? modelviewMatrixUniform:projectionMatrixUniform;
 
 	glUniformMatrix4fv(uni, 1, GL_FALSE, lsMVPMatrix);
+}
+
+void RenderContext::renderMaskToTmpBuffer()
+{
+	assert(!maskStack.empty());
+	//Clear the tmp buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	for(uint32_t i=0;i<maskStack.size();i++)
+	{
+		float matrix[16];
+		maskStack[i].m.get4DMatrix(matrix);
+		lsglLoadMatrixf(matrix);
+		setMatrixUniform(LSGL_MODELVIEW);
+		maskStack[i].d->Render(*this, true);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
 }

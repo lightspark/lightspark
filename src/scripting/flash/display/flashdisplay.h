@@ -94,8 +94,8 @@ protected:
 
 	void defaultRender(RenderContext& ctxt, bool maskEnabled) const;
 	DisplayObject(const DisplayObject& d);
-	void renderPrologue() const;
-	void renderEpilogue() const;
+	void renderPrologue(RenderContext& ctxt) const;
+	void renderEpilogue(RenderContext& ctxt) const;
 	void hitTestPrologue() const;
 	void hitTestEpilogue() const;
 	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

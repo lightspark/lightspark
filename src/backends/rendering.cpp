@@ -840,26 +840,6 @@ void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 #endif
 }
 
-void RenderThread::renderMaskToTmpBuffer()
-{
-	assert(!maskStack.empty());
-	//Clear the tmp buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	glClearColor(0,0,0,0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	for(uint32_t i=0;i<maskStack.size();i++)
-	{
-		float matrix[16];
-		maskStack[i].m.get4DMatrix(matrix);
-		lsglLoadMatrixf(matrix);
-		setMatrixUniform(LSGL_MODELVIEW);
-		maskStack[i].d->Render(*this, true);
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_BACK);
-}
-
 cairo_t* RenderThread::getCairoContext(int w, int h)
 {
 	if (!cairoTextureContext) {

@@ -36,6 +36,8 @@ enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 class RenderContext
 {
 protected:
+	GLuint fboId;
+
 	/* Modelview matrix manipulation */
 	static const GLfloat lsIdentityMatrix[16];
 	GLfloat lsMVPMatrix[16];
@@ -55,6 +57,16 @@ protected:
 		~LargeTexture(){/*delete[] bitmap;*/}
 	};
 	std::vector<LargeTexture> largeTextures;
+
+	/* Masks */
+	class MaskData
+	{
+	public:
+		DisplayObject* d;
+		MATRIX m;
+		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
+	};
+	std::vector<MaskData> maskStack;
 public:
 	RenderContext() : largeTextureSize(0)
 	{
@@ -80,6 +92,31 @@ public:
 	*/
 	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h);
 
+	/* Masks */
+	/**
+		Add a mask to the stack mask
+		@param d The DisplayObject used as a mask
+		@param m The total matrix from the parent of the object to stage
+		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
+	*/
+	void pushMask(DisplayObject* d, const MATRIX& m)
+	{
+		maskStack.push_back(MaskData(d,m));
+	}
+	/**
+		Remove the last pushed mask
+	*/
+	void popMask()
+	{
+		maskStack.pop_back();
+	}
+	bool isMaskPresent()
+	{
+		return !maskStack.empty();
+	}
+	void renderMaskToTmpBuffer();
+
+	/* Utility */
 	static bool handleGLErrors();
 };
 

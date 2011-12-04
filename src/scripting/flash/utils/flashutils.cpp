@@ -672,16 +672,15 @@ void ByteArray::writeU29(int32_t val)
 
 void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_string& s)
 {
-	//TODO: use U29 format
 	const uint32_t len=s.numBytes();
-	assert_and_throw(len<0x40);
 
 	if(len!=0)
 		assert_and_throw(stringMap.find(s)==stringMap.end());
 
-	//A new string
-	writeByte((len<<1)|1);
-	
+	//The first bit must be 1, the next 29 bits
+	//store the number of bytes of the string
+	writeU29((len<<1) | 1);
+
 	getBuffer(position+len,true);
 	memcpy(bytes+position,s.raw_buf(),len);
 	position+=len;

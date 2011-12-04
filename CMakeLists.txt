@@ -32,15 +32,16 @@ IF(EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 	SET(GIT_VERSION "-git")
 
 	#Find out if we are exactly at a tag. Then the version
-	#is enough.
-	EXECUTE_PROCESS(COMMAND git describe --tags
+	#is enough. Only consider the official release tags like
+	#'lightspark-0.5.3'
+	EXECUTE_PROCESS(COMMAND git describe --match "lightspark-*" --tags
 			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 			OUTPUT_VARIABLE GIT_DESC
 			ERROR_QUIET
 			OUTPUT_STRIP_TRAILING_WHITESPACE)
 	#Check if that command failed (maybe git is not installed at all)
 	IF(GIT_DESC)
-		EXECUTE_PROCESS(COMMAND git describe --tags --abbrev=0
+		EXECUTE_PROCESS(COMMAND git describe --match "lightspark-*" --tags --abbrev=0
 				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 				OUTPUT_VARIABLE GIT_DESC_ABBREV
 				ERROR_QUIET

@@ -1365,7 +1365,7 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 	 * so we need no locking here */
 	if(!cachedSurface.tex.isValid())
 		return;
-	RenderThread* rt = getRenderThread();
+
 	float enableMaskLookup=0.0f;
 	//If the maskEnabled is already set we are the mask!
 	if(!maskEnabled && ctxt.isMaskPresent())
@@ -1376,9 +1376,9 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 	ctxt.lsglPushMatrix();
 	ctxt.lsglLoadIdentity();
 	ctxt.setMatrixUniform(LSGL_MODELVIEW);
-	glUniform1f(rt->maskUniform, enableMaskLookup);
-	glUniform1f(rt->yuvUniform, 0);
-	glUniform1f(rt->alphaUniform, cachedSurface.alpha);
+	glUniform1f(ctxt.maskUniform, enableMaskLookup);
+	glUniform1f(ctxt.yuvUniform, 0);
+	glUniform1f(ctxt.alphaUniform, cachedSurface.alpha);
 	ctxt.renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	ctxt.lsglPopMatrix();
 	ctxt.setMatrixUniform(LSGL_MODELVIEW);

@@ -102,14 +102,13 @@ void Video::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number
 		videoHeight=netStream->getVideoHeight();
 
 		MatrixApplier ma(getConcatenatedMatrix());
-		RenderThread* rt = getRenderThread();
 		//if(!isSimple())
 		//	rt->acquireTempBuffer(0,width,0,height);
 
 		//Enable texture lookup and YUV to RGB conversion
-		glUniform1f(rt->maskUniform, 0);
-		glUniform1f(rt->yuvUniform, 1);
-		glUniform1f(rt->alphaUniform, alpha);
+		glUniform1f(ctxt.maskUniform, 0);
+		glUniform1f(ctxt.yuvUniform, 1);
+		glUniform1f(ctxt.alphaUniform, alpha);
 		//width and height will not change now (the Video mutex is acquired)
 		ctxt.renderTextured(netStream->getTexture(), 0, 0, width, height);
 

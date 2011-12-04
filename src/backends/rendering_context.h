@@ -116,6 +116,11 @@ public:
 	}
 	void renderMaskToTmpBuffer();
 
+	/* Misc uniforms TODO: create setters for them */
+	GLint yuvUniform;
+	GLint maskUniform;
+	GLint alphaUniform;
+
 	/* Utility */
 	static bool handleGLErrors();
 };

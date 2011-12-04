@@ -157,9 +157,6 @@ public:
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
 	GLint fragmentTexScaleUniform;
-	GLint yuvUniform;
-	GLint maskUniform;
-	GLint alphaUniform;
 	GLint directUniform;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);

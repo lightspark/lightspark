@@ -35,6 +35,7 @@
 #include "../logger.h"
 
 using namespace std;
+using namespace lightspark;
 
 #define LSGL_MATRIX_SIZE (16*sizeof(GLfloat))
 

@@ -23,6 +23,9 @@
 #include <stack>
 #include "lsopengl.h"
 
+namespace lightspark
+{
+
 class RenderContext
 {
 protected:
@@ -44,4 +47,5 @@ public:
 	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
 };
 
+}
 #endif

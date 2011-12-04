@@ -292,7 +292,12 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 			//cout << varName << ' ' << varValue << endl;
 			if(pfile)
 				f << varName << endl << varValue << endl;
-			params->setVariableByQName(varName,"",
+
+			/* That does occur in the wild */
+			if(params->hasPropertyByMultiname(QName(varName,""), true))
+				LOG(LOG_ERROR,"Flash parameters has duplicate key '" << varName << "' - ignoring");
+			else
+				params->setVariableByQName(varName,"",
 					lightspark::Class<lightspark::ASString>::getInstanceS(varValue),DYNAMIC_TRAIT);
 		}
 		cur=n2+1;

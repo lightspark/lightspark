@@ -133,6 +133,7 @@ public:
 
 class TextureChunk
 {
+friend class RenderContext;
 friend class RenderThread;
 private:
 	uint32_t texId;

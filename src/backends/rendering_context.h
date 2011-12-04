@@ -22,18 +22,37 @@
 
 #include <stack>
 #include "lsopengl.h"
+#include "graphics.h"
 
 namespace lightspark
 {
 
+enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
+enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
+
+/*
+ * The RenderContext contains all (public) functions that are needed by DisplayObjects to draw themselves.
+ */
 class RenderContext
 {
 protected:
 	static const GLfloat lsIdentityMatrix[16];
 	GLfloat lsMVPMatrix[16];
 	std::stack<GLfloat*> lsglMatrixStack;
+
+	Mutex mutexLargeTexture;
+	uint32_t largeTextureSize;
+	class LargeTexture
+	{
+	public:
+		GLuint id;
+		uint8_t* bitmap;
+		LargeTexture(uint8_t* b):id(-1),bitmap(b){}
+		~LargeTexture(){/*delete[] bitmap;*/}
+	};
+	std::vector<LargeTexture> largeTextures;
 public:
-	RenderContext()
+	RenderContext() : largeTextureSize(0)
 	{
 		lsglLoadIdentity();
 	}
@@ -45,6 +64,12 @@ public:
 	void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
 	void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
 	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+	/**
+		Render a quad of given size using the given chunk
+	*/
+	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h);
+
+	static bool handleGLErrors();
 };
 
 }

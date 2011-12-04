@@ -1379,7 +1379,7 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 	glUniform1f(rt->maskUniform, enableMaskLookup);
 	glUniform1f(rt->yuvUniform, 0);
 	glUniform1f(rt->alphaUniform, cachedSurface.alpha);
-	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
+	ctxt.renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	ctxt.lsglPopMatrix();
 	rt->setMatrixUniform(LSGL_MODELVIEW);
 }

@@ -27,9 +27,6 @@
 namespace lightspark
 {
 
-enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
-enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
-
 class RenderThread: public ITickJob, public RenderContext
 {
 friend class DisplayObject;
@@ -52,17 +49,6 @@ private:
 	uint32_t pixelBufferHeight;
 	void resizePixelBuffers(uint32_t w, uint32_t h);
 	ITextureUploadable* prevUploadJob;
-	Mutex mutexLargeTexture;
-	uint32_t largeTextureSize;
-	class LargeTexture
-	{
-	public:
-		GLuint id;
-		uint8_t* bitmap;
-		LargeTexture(uint8_t* b):id(-1),bitmap(b){}
-		~LargeTexture(){/*delete[] bitmap;*/}
-	};
-	std::vector<LargeTexture> largeTextures;
 	GLuint allocateNewGLTexture() const;
 	LargeTexture& allocateNewTexture();
 	bool allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
@@ -153,10 +139,6 @@ public:
 	*/
 	void releaseTexture(const TextureChunk& chunk);
 	/**
-		Render a quad of given size using the given chunk
-	*/
-	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h);
-	/**
 		Load the given data in the given texture chunk
 	*/
 	void loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data);
@@ -222,7 +204,6 @@ public:
 	void mapCairoTexture(int w, int h);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
 	void setMatrixUniform(LSGL_MATRIX m) const;
-	static bool handleGLErrors();
 };
 
 RenderThread* getRenderThread();

@@ -111,7 +111,7 @@ void Video::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number
 		glUniform1f(rt->yuvUniform, 1);
 		glUniform1f(rt->alphaUniform, alpha);
 		//width and height will not change now (the Video mutex is acquired)
-		rt->renderTextured(netStream->getTexture(), 0, 0, width, height);
+		ctxt.renderTextured(netStream->getTexture(), 0, 0, width, height);
 
 		//if(!isSimple())
 		//	rt->blitTempBuffer(0,width,0,height);

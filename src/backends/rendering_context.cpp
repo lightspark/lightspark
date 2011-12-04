@@ -126,3 +126,115 @@ void RenderContext::lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloa
 	lsglMultMatrixf(ortho);
 }
 
+void RenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h)
+{
+	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
+	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
+	uint32_t startX, startY, endX, endY;
+	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE-1)/CHUNKSIZE)*((chunk.height+CHUNKSIZE-1)/CHUNKSIZE));
+
+	uint32_t curChunk=0;
+	//The 4 corners of each texture are specified as the vertices of 2 triangles,
+	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
+	GLfloat *vertex_coords = new GLfloat[chunk.getNumberOfChunks()*12];
+	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*12];
+	for(uint32_t i=0, k=0;i<chunk.height;i+=CHUNKSIZE)
+	{
+		startY=h*i/chunk.height;
+		endY=min(h*(i+CHUNKSIZE)/chunk.height,h);
+		//Take yOffset into account
+		startY = (y<0)?startY:y+startY;
+		endY = (y<0)?endY:y+endY;
+		for(uint32_t j=0;j<chunk.width;j+=CHUNKSIZE)
+		{
+			startX=w*j/chunk.width;
+			endX=min(w*(j+CHUNKSIZE)/chunk.width,w);
+			//Take xOffset into account
+			startX = (x<0)?startX:x+startX;
+			endX = (x<0)?endX:x+endX;
+			const uint32_t curChunkId=chunk.chunks[curChunk];
+			const uint32_t blockX=((curChunkId%blocksPerSide)*CHUNKSIZE);
+			const uint32_t blockY=((curChunkId/blocksPerSide)*CHUNKSIZE);
+			const uint32_t availX=min(int(chunk.width-j),CHUNKSIZE);
+			const uint32_t availY=min(int(chunk.height-i),CHUNKSIZE);
+			float startU=blockX;
+			startU/=largeTextureSize;
+			float startV=blockY;
+			startV/=largeTextureSize;
+			float endU=blockX+availX;
+			endU/=largeTextureSize;
+			float endV=blockY+availY;
+			endV/=largeTextureSize;
+
+			//Upper-right triangle of the quad
+			texture_coords[k] = startU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = startX;
+			vertex_coords[k+1] = startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = endX;
+			vertex_coords[k+1] = startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = endX;
+			vertex_coords[k+1] = endY;
+			k+=2;
+
+			//Lower-left triangle of the quad
+			texture_coords[k] = startU;
+			texture_coords[k+1] = startV;
+			vertex_coords[k] = startX;
+			vertex_coords[k+1] = startY;
+			k+=2;
+			texture_coords[k] = endU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = endX;
+			vertex_coords[k+1] = endY;
+			k+=2;
+			texture_coords[k] = startU;
+			texture_coords[k+1] = endV;
+			vertex_coords[k] = startX;
+			vertex_coords[k+1] = endY;
+			k+=2;
+
+			curChunk++;
+		}
+	}
+
+	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
+	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
+	glEnableVertexAttribArray(VERTEX_ATTRIB);
+	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+	glDrawArrays(GL_TRIANGLES, 0, curChunk*6);
+	glDisableVertexAttribArray(VERTEX_ATTRIB);
+	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+	delete[] vertex_coords;
+	delete[] texture_coords;
+	handleGLErrors();
+}
+
+bool RenderContext::handleGLErrors()
+{
+	int errorCount = 0;
+	GLenum err;
+	while(1)
+	{
+		err=glGetError();
+		if(err!=GL_NO_ERROR)
+		{
+			errorCount++;
+			LOG(LOG_ERROR,_("GL error ")<< err);
+		}
+		else
+			break;
+	}
+
+	if(errorCount)
+	{
+		LOG(LOG_ERROR,_("Ignoring ") << errorCount << _(" openGL errors"));
+	}
+	return errorCount;
+}

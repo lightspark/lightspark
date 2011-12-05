@@ -98,7 +98,10 @@ void XML::sinit(Class_base* c)
 {
 	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(XML::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
@@ -441,6 +444,12 @@ ASFUNCTIONBODY(XML,_hasComplexContent)
 {
 	XML *th=static_cast<XML*>(obj);
 	return abstract_b(th->hasComplexContent());
+}
+
+ASFUNCTIONBODY(XML,valueOf)
+{
+	obj->incRef();
+	return obj;
 }
 
 bool XML::hasSimpleContent() const
@@ -816,7 +825,10 @@ void XMLList::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
 }
 
@@ -926,6 +938,12 @@ ASFUNCTIONBODY(XMLList,descendants)
 	vector<_R<XML>> ret;
 	th->getDescendantsByQName(args[0]->toString(),"",ret);
 	return Class<XMLList>::getInstanceS(ret);
+}
+
+ASFUNCTIONBODY(XMLList,valueOf)
+{
+	obj->incRef();
+	return obj;
 }
 
 _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)

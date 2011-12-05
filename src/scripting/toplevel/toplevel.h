@@ -661,6 +661,7 @@ public:
 	ASFUNCTION(generator);
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
+	ASFUNCTION(valueOf);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
@@ -708,6 +709,7 @@ public:
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(generator);
 	ASFUNCTION(descendants);
+	ASFUNCTION(valueOf);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);

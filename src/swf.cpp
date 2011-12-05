@@ -574,7 +574,10 @@ void SystemState::delayedCreation()
 	//The lock is needed to avoid thread creation/destruction races
 	Locker l(mutex);
 	if(shutdown)
+	{
+		gdk_threads_leave();
 		return;
+	}
 	renderThread->start(engineData);
 	inputThread->start(engineData);
 	//If the render rate is known start the render ticks

@@ -27,21 +27,11 @@ EngineData::EngineData() : widget(0), inputHandlerId(0), sizeHandlerId(0), width
 {
 }
 
-static void destroyWidget(GtkWidget* widget)
-{
-	gdk_threads_enter();
-	gtk_widget_destroy(widget);
-	gdk_threads_leave();
-}
-
 EngineData::~EngineData()
 {
 	RecMutex::Lock l(mutex);
 	removeSizeChangeHandler();
 	removeInputHandler();
-
-	if(widget)
-		runInGtkThread(sigc::bind(&destroyWidget,widget));
 }
 
 /* gtk main loop handling */

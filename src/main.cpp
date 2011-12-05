@@ -41,10 +41,21 @@ public:
 		visual = XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
 #endif
 	}
+	static void destroyWidget(GtkWidget* widget)
+	{
+		gdk_threads_enter();
+		gtk_widget_destroy(widget);
+		gdk_threads_leave();
+	}
 	~StandaloneEngineData()
 	{
-		if(destroyHandlerId && widget)
-			g_signal_handler_disconnect(widget, destroyHandlerId);
+		if(widget)
+		{
+			if(destroyHandlerId)
+				g_signal_handler_disconnect(widget, destroyHandlerId);
+
+			runInGtkThread(sigc::bind(&destroyWidget,widget));
+		}
 	}
 	static void StandaloneDestroy(GtkWidget *widget, gpointer data)
 	{

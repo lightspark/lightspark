@@ -602,6 +602,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				pushScope(context);
 				break;
 			}
+			case 0x31:
+			{
+				//pushnamespace
+				u30 t;
+				code >> t;
+				context->runtime_stack_push( pushNamespace(context, t) );
+				break;
+			}
 			case 0x32:
 			{
 				//hasnext2

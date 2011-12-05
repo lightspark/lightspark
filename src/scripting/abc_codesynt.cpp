@@ -162,6 +162,7 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"pushNaN",(void*)&ABCVm::pushNaN,ARGS_NONE},
 	{"pushNull",(void*)&ABCVm::pushNull,ARGS_NONE},
 	{"pushUndefined",(void*)&ABCVm::pushUndefined,ARGS_NONE},
+	{"pushNamespace",(void*)&ABCVm::pushNamespace,ARGS_CONTEXT_INT},
 	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ},
 	{"asTypelate",(void*)&ABCVm::asTypelate,ARGS_OBJ_OBJ},
 	{"getGlobalScope",(void*)&ABCVm::getGlobalScope,ARGS_CONTEXT},
@@ -1026,6 +1027,13 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				case 0x30: //pushscope
 				{
 					static_stack_types.clear();
+					break;
+				}
+				case 0x31: //pushnamespace
+				{
+					u30 t;
+					code >> t;
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					break;
 				}
 				case 0x1d: //popscope
@@ -2838,6 +2846,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, _("synt pushscope") );
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), context);
+				break;
+			}
+			case 0x31:
+			{
+				//pushnamespace
+				LOG(LOG_TRACE, _("synt pushnamespace") );
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(int_type, t);
+				value = Builder.CreateCall2(ex->FindFunctionNamed("pushNamespace"), context, constant);
+				static_stack_push(static_stack, stack_entry(value,STACK_OBJECT));
 				break;
 			}
 			case 0x32:

@@ -2208,3 +2208,11 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 	else
 		return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>());
 }
+
+Namespace* ABCVm::pushNamespace(call_context* th, int n)
+{
+	const namespace_info& ns_info=th->context->constant_pool.namespaces[n];
+	assert(ns_info.kind == NAMESPACE);
+	LOG(LOG_CALLS, _("pushNamespace ") << th->context->getString(ns_info.name) );
+	return Class<Namespace>::getInstanceS(th->context->getString(ns_info.name));
+}

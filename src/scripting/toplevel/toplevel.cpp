@@ -3907,10 +3907,9 @@ bool Namespace::isEqual(ASObject* o)
 
 void UInteger::sinit(Class_base* c)
 {
-	//TODO: add in the JIT support for unsigned number
-	//Right now we pretend to be signed, to make comparisons work
 	c->setSuper(Class<ASObject>::getRef());
-	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff),DECLARED_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),DECLARED_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),DECLARED_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 

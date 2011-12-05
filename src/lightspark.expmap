@@ -18,6 +18,7 @@ global:
 		*lightspark::ExtASCallback*;
 		*lightspark::ExtBuiltinCallback*;
 		*lightspark::ExtScriptObject*;
+		*lightspark::EngineData*;
 		rt;
 		sys;
 		pt;

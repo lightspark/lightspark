@@ -76,7 +76,8 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Math.cpp
   scripting/toplevel/Vector.cpp
   scripting/class.cpp
-  scripting/toplevel/toplevel.cpp)
+  scripting/toplevel/toplevel.cpp
+  platforms/engineutils.cpp)
 IF(MINGW)
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
 ELSE()

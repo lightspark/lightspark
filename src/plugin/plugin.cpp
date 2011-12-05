@@ -195,19 +195,9 @@ char* NPP_GetMIMEDescription(void)
 	return (char*)(MIME_TYPES_DESCRIPTION);
 }
 
-#ifdef _WIN32
-static void gtk_main_runner()
-{
-	gdk_threads_enter();
-	gtk_main();
-	gdk_threads_leave();
-}
-#endif
-
 /////////////////////////////////////
 // general initialization and shutdown
 //
-static Thread* gtkThread = NULL;
 NPError NS_PluginInitialize()
 {
 	LOG_LEVEL log_level = LOG_NOT_IMPLEMENTED;
@@ -228,12 +218,13 @@ NPError NS_PluginInitialize()
 
 	Log::setLogLevel(log_level);
 	lightspark::SystemState::staticInit();
-#ifdef _WIN32
-	/* On win32, we link statically to gtk. Therefore we need to run
-	 * our own gtk main loop.
-	 * On linux, this is done by the firefox process.
+
+	/* On linux, firefox runs its own gtk main loop
+	 * which we can utilise through g_add_idle
+	 * but we must not create our own gtk_main.
 	 */
-	gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner), true);
+#ifdef _WIN32
+	EngineData::startGTKMain();
 #endif
 	return NPERR_NO_ERROR;
 }
@@ -241,14 +232,10 @@ NPError NS_PluginInitialize()
 void NS_PluginShutdown()
 {
 	LOG(LOG_INFO,"Lightspark plugin shutdown");
-	if(gtkThread)
-	{
-		gdk_threads_enter();
-		gtk_main_quit();
-		gdk_threads_leave();
-		gtkThread->join();
-	}
 	lightspark::SystemState::staticDeinit();
+#ifdef _WIN32
+	EngineData::quitGTKMain();
+#endif
 }
 
 // get values per plugin

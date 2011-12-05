@@ -245,6 +245,7 @@ int main(int argc, char* argv[])
 	cerr.exceptions( ios::failbit | ios::badbit);
 	ParseThread* pt = new ParseThread(f);
 	SystemState::staticInit();
+	EngineData::startGTKMain();
 	//NOTE: see SystemState declaration
 	SystemState* sys =new SystemState(pt, fileSize);
 	setTLSSys(sys);
@@ -309,14 +310,14 @@ int main(int argc, char* argv[])
 	//Start the parser
 	sys->addJob(pt);
 
-	gdk_threads_enter();
-	gtk_main();
-	gdk_threads_leave();
-
+	/* Destroy blocks until the 'terminated' flag is set by
+	 * SystemState::setShutdownFlag.
+	 */
 	sys->destroy();
 	delete pt;
 
 	SystemState::staticDeinit();
+	EngineData::quitGTKMain();
 	return 0;
 }
 

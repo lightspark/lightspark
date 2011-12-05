@@ -530,14 +530,6 @@ void SystemState::setShutdownFlag()
 	shutdown=true;
 
 	terminated.signal();
-	if(standalone)
-	{
-		if(Thread::self() != mainThread)
-			gdk_threads_enter();
-		gtk_main_quit();
-		if(Thread::self() != mainThread)
-			 gdk_threads_leave();
-	}
 }
 
 float SystemState::getRenderRate()

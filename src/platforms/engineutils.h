@@ -28,6 +28,9 @@
 #	include <gdk/gdkx.h>
 #endif
 
+#include "compat.h"
+#include "threading.h"
+
 namespace lightspark
 {
 
@@ -38,14 +41,14 @@ typedef HWND NativeWindow;
 typedef Window NativeWindow;
 #endif
 
-class EngineData
+class DLL_PUBLIC EngineData
 {
 protected:
 	GtkWidget* widget;
 	/* use a recursive mutex, because g_signal_connect may directly call
 	 * the specific handler */
 	RecMutex mutex;
-        sigc::slot<bool,GdkEvent*> inputHandler;
+	sigc::slot<bool,GdkEvent*> inputHandler;
 	gulong inputHandlerId;
 	sigc::slot<void,int32_t,int32_t> sizeHandler;
 	gulong sizeHandlerId;
@@ -60,6 +63,7 @@ protected:
 		/* we must return 'false' or gtk will call this periodically */
 		return FALSE;
 	}
+	static Thread* gtkThread;
 public:
 	int width;
 	int height;
@@ -67,17 +71,8 @@ public:
 #ifndef _WIN32
 	VisualID visual;
 #endif
-	EngineData() : widget(0), inputHandlerId(0), sizeHandlerId(0), width(0), height(0), window(0) {}
-	virtual ~EngineData()
-	{
-		RecMutex::Lock l(mutex);
-		removeSizeChangeHandler();
-		removeInputHandler();
-
-		//TODO: run in gtk thread && gdk_threads_enter/leave
-		if(widget)
-			gtk_widget_destroy(widget);
-	}
+	EngineData();
+	virtual ~EngineData();
 	virtual bool isSizable() const = 0;
 	virtual void stopMainDownload() = 0;
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
@@ -167,6 +162,9 @@ public:
 			sizeHandler = sigc::slot<void,int32_t,int32_t>();
 		}
 	}
+
+	static void startGTKMain();
+	static void quitGTKMain();
 };
 
 };

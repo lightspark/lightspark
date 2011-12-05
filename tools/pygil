@@ -15,13 +15,17 @@ import pickle
 sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
 rconstructor = re.compile('[^/]*->setConstructor\(Class<IFunction>::getFunction\([^)]*\)\).*')
 #looks like builtin->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getRef(),DECLARED_TRAIT);
-rclass = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(\),.*_TRAIT\)')
+rclass          = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(\),.*_TRAIT\)')
+rinterfaceclass = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(\),.*_TRAIT\)')
 #looks like builtin->setVariableByQName("System","flash.system",Class<ASObject>::getStubClass(QName("System","flash.system")),DECLARED_TRAIT);
 rstupclass = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *Class<ASObject>::getStubClass\(QName.*')
 #the line may start with anything but a comment character
 rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *GETTER_METHOD, *([^ ]*)')
 rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *SETTER_METHOD, *([^ ]*)')
 rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *NORMAL_METHOD, *([^ ]*)')
+rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
+rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
+rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
 #Constant names do not contain lower-case letters
 rconst = re.compile('[^/]*->setVariableByQName\("([^"]*)",.*_TRAIT');
 
@@ -51,7 +55,14 @@ f = open('../src/scripting/abc.cpp','r')
 for line in f.read().replace("\n","").replace("\t"," ").split(";"):
 	m = rclass.match(line)
         if m:
-		internalToExternal[m.group(3)] = getFullname(m.group(2),m.group(1))
+		fullname = getFullname(m.group(2),m.group(1))
+		internalToExternal[m.group(3)] = fullname
+		classes.add(fullname)
+	m = rinterfaceclass.match(line)
+	if m:
+		fullname = getFullname(m.group(2),m.group(1))
+		internalToExternal[m.group(3)] = fullname
+		classes.add(fullname)
 	m = rstupclass.match(line)
 	#Object is the only real implementation of ASObject
 	if m:
@@ -80,7 +91,6 @@ for line in p2.communicate()[0].split(";"):
 		else:
 			curClass = internalToExternal[curClass]
 		curScope = curClass
-		classes.add(curClass)
 		continue
 	m = rconstructor.match(line)
 	if m:
@@ -91,8 +101,21 @@ for line in p2.communicate()[0].split(";"):
 	if m:
 		getters.add((curClass, m.group(1)))
 		continue
+	m = rget2.match(line)
+	if m:
+		getters.add((curClass, m.group(1)))
+		continue
 	m = rset.match(line)
 	if m:
+		setters.add((curClass, m.group(1)))
+		continue
+	m = rset2.match(line)
+	if m:
+		setters.add((curClass, m.group(1)))
+		continue
+	m = rgetset2.match(line)
+	if m:
+		getters.add((curClass, m.group(1)))
 		setters.add((curClass, m.group(1)))
 		continue
 	m = rmet.match(line)

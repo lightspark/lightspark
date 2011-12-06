@@ -106,8 +106,13 @@ tiny_string& tiny_string::replace(uint32_t pos1, uint32_t n1, const tiny_string&
 	if(pos1 + n1 > numChars())
 		n1 = numChars()-pos1;
 	uint32_t byteend = g_utf8_offset_to_pointer(buf,pos1+n1)-buf;
+	return replace_bytes(bytestart, byteend-bytestart, o);
+}
+
+tiny_string& tiny_string::replace_bytes(uint32_t bytestart, uint32_t bytenum, const tiny_string& o)
+{
 	//TODO avoid copy into std::string
-	*this = std::string(*this).replace(bytestart,byteend-bytestart,std::string(o));
+	*this = std::string(*this).replace(bytestart,bytenum,std::string(o));
 	return *this;
 }
 

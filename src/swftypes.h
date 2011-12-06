@@ -399,6 +399,7 @@ public:
 			return g_utf8_pointer_to_offset(buf,buf+bytepos);
 	}
 	tiny_string& replace(uint32_t pos1, uint32_t n1, const tiny_string& o);
+	tiny_string& replace_bytes(uint32_t bytestart, uint32_t bytenum, const tiny_string& o);
 	tiny_string lowercase() const
 	{
 		//TODO: omit copy, handle \0 in string

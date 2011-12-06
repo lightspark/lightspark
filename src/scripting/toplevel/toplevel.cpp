@@ -2998,7 +2998,7 @@ ASFUNCTIONBODY(ASString,replace)
 						replaceWith.replace(pos, ipos-pos, group);
 					}
 			}
-			ret->data.replace(ovector[0],ovector[1]-ovector[0],replaceWith);
+			ret->data.replace_bytes(ovector[0],ovector[1]-ovector[0],replaceWith);
 			offset=ovector[0]+replaceWith.numBytes();
 			retDiff+=replaceWith.numBytes()-(ovector[1]-ovector[0]);
 		}

@@ -46,6 +46,8 @@ REGISTER_CLASS_NAME(TextEvent);
 REGISTER_CLASS_NAME(ErrorEvent);
 REGISTER_CLASS_NAME(SecurityErrorEvent);
 REGISTER_CLASS_NAME(AsyncErrorEvent);
+REGISTER_CLASS_NAME(StatusEvent);
+REGISTER_CLASS_NAME(DataEvent);
 
 void IEventDispatcher::linkTraits(Class_base* c)
 {
@@ -792,4 +794,24 @@ BindClassEvent::BindClassEvent(_R<RootMovieClip> b, const tiny_string& c)
 BindClassEvent::BindClassEvent(_R<DictionaryTag> t, const tiny_string& c)
 	: Event("bindClass"),tag(t),class_name(c)
 {
+}
+
+void StatusEvent::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<Event>::getRef());
+
+	/* TODO: dispatch this event */
+	c->setVariableByQName("STATUS","",Class<ASString>::getInstanceS("status"),DECLARED_TRAIT);
+}
+
+void DataEvent::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<Event>::getRef());
+
+	/* TODO: dispatch this event */
+	c->setVariableByQName("DATA","",Class<ASString>::getInstanceS("data"),DECLARED_TRAIT);
+	/* TODO: dispatch this event */
+	c->setVariableByQName("UPLOAD_COMPLETE_DATA","",Class<ASString>::getInstanceS("uploadCompleteData"),DECLARED_TRAIT);
 }

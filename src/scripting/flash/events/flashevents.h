@@ -380,5 +380,21 @@ public:
 	EVENT_TYPE getEventType() const { return FLUSH_INVALIDATION_QUEUE; };
 };
 
+class StatusEvent: public Event
+{
+public:
+	StatusEvent() : Event("StatusEvent") {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
+};
+
+class DataEvent: public Event
+{
+public:
+	DataEvent() : Event("DataEvent") {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
+};
+
 };
 #endif

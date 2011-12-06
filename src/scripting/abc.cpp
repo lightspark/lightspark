@@ -311,6 +311,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("NetStatusEvent","flash.events",Class<NetStatusEvent>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("HTTPStatusEvent","flash.events",Class<HTTPStatusEvent>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("KeyboardEvent","flash.events",Class<KeyboardEvent>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("StatusEvent","flash.events",Class<StatusEvent>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("DataEvent","flash.events",Class<DataEvent>::getRef(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("sendToURL","flash.net",Class<IFunction>::getFunction(sendToURL),DECLARED_TRAIT);
 	builtin->setVariableByQName("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")),DECLARED_TRAIT);

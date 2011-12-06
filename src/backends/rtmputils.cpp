@@ -85,7 +85,7 @@ void RTMPDownloader::execute()
 	{
 		//TODO: avoid the copy in the temporary buffer
 		ret=RTMP_Read(rtmpCtx,buf,4096);
-		if(ret==0 || hasFailed() || aborting)
+		if(ret==0 || hasFailed() || threadAborting)
 			break;
 		append((uint8_t*)buf,ret);
 	}

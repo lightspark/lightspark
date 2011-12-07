@@ -65,7 +65,9 @@ std::ostream& printContainer(std::ostream& os, const T& v)
 	os << "[";
 	for (typename T::const_iterator i = v.begin(); i != v.end(); ++i)
 	{
-		os << " " << *i;
+		if(i != v.begin())
+			os << " ";
+		os << *i;
 	}
 	os << "]";
 	return os;

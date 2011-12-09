@@ -400,14 +400,17 @@ void RenderThread::worker()
 	/* set TLS variable for getRenderThread() */
 	g_static_private_set(&renderThread, this, NULL);
 
-	init();
-
 	ThreadProfile* profile=m_sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-
-	glEnable(GL_TEXTURE_2D);
 	try
 	{
+		init();
+
+		ThreadProfile* profile=m_sys->allocateProfiler(RGB(200,0,0));
+		profile->setTag("Render");
+
+		glEnable(GL_TEXTURE_2D);
+
 		Chronometer chronometer;
 		while(1)
 		{
@@ -464,6 +467,8 @@ void RenderThread::worker()
 			profile->accountTime(chronometer.checkpoint());
 			renderNeeded=false;
 		}
+
+		deinit();
 	}
 	catch(LightsparkException& e)
 	{
@@ -471,7 +476,6 @@ void RenderThread::worker()
 		m_sys->setError(e.cause);
 	}
 
-	deinit();
 }
 
 void RenderThread::deinit()

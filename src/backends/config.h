@@ -55,6 +55,9 @@ namespace lightspark
 		//Specifies what audio backend should, default=PULSEAUDIO
 		AUDIOBACKEND audioBackend;
 		std::string audioBackendName;
+
+		//Specifies if rendering should be done
+		bool renderingEnabled;
 	public:
 		Config();
 		~Config();
@@ -66,6 +69,8 @@ namespace lightspark
 
 		AUDIOBACKEND getAudioBackend() const { return audioBackend; }
 		const std::string& getAudioBackendName() const { return audioBackendName; }
+
+		bool isRenderingEnabled() const { return renderingEnabled; }
 	};
 }
 

@@ -73,7 +73,8 @@ Config::Config():
 	//DEFAULT SETTINGS
 	defaultCacheDirectory((string) g_get_user_cache_dir() + "/lightspark"),
 	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),
-	audioBackend(INVALID),audioBackendName("")
+	audioBackend(INVALID),audioBackendName(""),
+	renderingEnabled(true)
 {
 #ifdef _WIN32
 	const char* exePath = getExectuablePath();
@@ -183,6 +184,7 @@ void Config::load()
 #endif
 }
 
+/* This is called by the parser for each entry in the configuration file */
 void Config::handleEntry()
 {
 	string group = parser->getGroup();
@@ -195,6 +197,9 @@ void Config::handleEntry()
 		audioBackend = SDL;
 	else if(group == "audio" && key == "backend" && value == audioBackendNames[WINMM])
 		 audioBackend = WINMM;
+	//Rendering
+	else if(group == "rendering" && key == "enabled")
+		renderingEnabled = atoi(value.c_str());
 	//Cache directory
 	else if(group == "cache" && key == "directory")
 		cacheDirectory = value;

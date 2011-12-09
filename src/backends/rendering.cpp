@@ -65,9 +65,6 @@ RenderThread::RenderThread(SystemState* s):
 	tempTex(false),hasNPOTTextures(false),cairoTextureContext(NULL)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
-	
-	m_sys=s;
-
 #ifdef _WIN32
 	fontPath = "TimesNewRoman.ttf";
 #else

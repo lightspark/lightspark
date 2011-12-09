@@ -54,7 +54,6 @@ void RenderThread::wait()
 		//Signal potentially blocking semaphore
 		event.signal();
 		t->join();
-		status=TERMINATED;
 	}
 }
 
@@ -476,6 +475,15 @@ void RenderThread::worker()
 		m_sys->setError(e.cause);
 	}
 
+	/* cleanup */
+	//Keep addUploadJob from enqueueing
+	status=TERMINATED;
+	//Fence existing jobs
+	Locker l(mutexUploadJobs);
+	if(prevUploadJob)
+		prevUploadJob->uploadFence();
+	for(auto i=uploadJobs.begin(); i != uploadJobs.end(); ++i)
+		(*i)->uploadFence();
 }
 
 void RenderThread::deinit()
@@ -611,13 +619,6 @@ bool RenderThread::loadShaderPrograms()
 
 void RenderThread::commonGLDeinit()
 {
-	//Fence any object that is still waiting for upload
-	Locker l(mutexUploadJobs);
-	deque<ITextureUploadable*>::iterator it=uploadJobs.begin();
-	if(prevUploadJob)
-		prevUploadJob->uploadFence();
-	for(;it!=uploadJobs.end();it++)
-		(*it)->uploadFence();
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glDeleteFramebuffers(1,&fboId);
 	tempTex.shutdown();
@@ -1010,7 +1011,7 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 void RenderThread::addUploadJob(ITextureUploadable* u)
 {
 	Locker l(mutexUploadJobs);
-	if(m_sys->isShuttingDown() || status==TERMINATED)
+	if(m_sys->isShuttingDown() || status!=STARTED)
 	{
 		u->uploadFence();
 		return;

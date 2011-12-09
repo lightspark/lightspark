@@ -34,7 +34,7 @@ private:
 	SystemState* m_sys;
 	Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
-	STATUS status;
+	volatile STATUS status;
 
 	EngineData* engineData;
 	void worker();

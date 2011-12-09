@@ -571,16 +571,22 @@ void SystemState::delayedCreation()
 
 	engineData->showWindow(reqWidth, reqHeight);
 
-	//The lock is needed to avoid thread creation/destruction races
-	Locker l(mutex);
-	if(shutdown)
-	{
-		gdk_threads_leave();
-		return;
-	}
-	renderThread->start(engineData);
 	inputThread->start(engineData);
-	//If the render rate is known start the render ticks
+
+	if(config->isRenderingEnabled())
+	{
+		renderThread->start(engineData);
+	}
+	else
+	{
+		getRenderThread()->windowWidth = reqWidth;
+		getRenderThread()->windowHeight = reqHeight;
+		resizeCompleted();
+		//This just signals the 'initalized' semaphore
+		renderThread->forceInitialization();
+		LOG(LOG_INFO,"Rendering is disabled by configuration");
+	}
+
 	if(renderRate)
 		startRenderTicks();
 	gdk_threads_leave();

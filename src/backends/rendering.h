@@ -37,7 +37,9 @@ private:
 	STATUS status;
 
 	EngineData* engineData;
-	static void worker(RenderThread*);
+	void worker();
+	void init();
+	void deinit();
 
 	void commonGLInit(int width, int height);
 	void commonGLResize();
@@ -71,16 +73,21 @@ private:
 	int offsetX;
 	int offsetY;
 
-#ifndef _WIN32
+#ifdef _WIN32
+	HGLRC mRC;
+	HDC mDC;
+#else
 	Display* mDisplay;
+	Window mWindow;
 #ifndef ENABLE_GLES2
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
 #else
+	EGLDisplay mEGLDisplay;
 	EGLContext mEGLContext;
 	EGLConfig mEGLConfig;
+	EGLSurface mEGLSurface;
 #endif
-	Window mWindow;
 #endif
 	Glib::TimeVal time_s, time_d;
 	static const Glib::TimeVal FPS_time;

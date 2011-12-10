@@ -655,8 +655,11 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 	cairoPathFromTokens(cr, tokens, scaleFactor, false);
 }
 
+StaticMutex CairoRenderer::cairoMutex = GLIBMM_STATIC_MUTEX_INIT;
+
 void CairoRenderer::execute()
 {
+	Mutex::Lock l(cairoMutex);
 	if(width==0 || height==0)
 	{
 		uploadNeeded = false;

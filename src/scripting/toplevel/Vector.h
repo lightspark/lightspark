@@ -45,6 +45,10 @@ public:
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 
+	uint32_t nextNameIndex(uint32_t cur_index);
+	_R<ASObject> nextName(uint32_t index);
+	_R<ASObject> nextValue(uint32_t index);
+
 	//TODO: do we need to implement generator?
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_applytype);

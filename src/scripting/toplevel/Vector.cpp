@@ -248,4 +248,30 @@ tiny_string Vector::toString(bool debugMsg)
 	return t;
 }
 
+uint32_t Vector::nextNameIndex(uint32_t cur_index)
+{
+	if(cur_index < vec.size())
+		return cur_index+1;
+	else
+		return 0;
+}
+
+_R<ASObject> Vector::nextName(uint32_t index)
+{
+	if(index<=vec.size())
+		return _MR(abstract_i(index-1));
+	else
+		throw RunTimeException("Vector::nextName out of bounds");
+}
+
+_R<ASObject> Vector::nextValue(uint32_t index)
+{
+	if(index<=vec.size())
+	{
+		vec[index-1]->incRef();
+		return _MR(vec[index-1]);
+	}
+	else
+		throw RunTimeException("Vector::nextValue out of bounds");
+}
 

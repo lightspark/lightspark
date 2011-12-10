@@ -612,10 +612,10 @@ void SystemState::createEngines()
 	//Check if we should fall back on gnash
 	if(vmVersion!=AVM2)
 	{
+		l.release();
 		launchGnash();
 
 		//Engines should not be started, stop everything
-		l.release();
 		//We cannot stop the engines now, as this is inside a ThreadPool job
 		//Running this in the Gtk thread is unnecessary, though. Any other thread
 		//would be okey.
@@ -642,15 +642,21 @@ void SystemState::createEngines()
 
 void SystemState::launchGnash()
 {
+	Locker l(mutex);
 	if(config->getGnashPath().empty())
 	{
 		LOG(LOG_INFO, "Unsupported flash file (AVM1), and no gnash found");
+		l.release();
 		setShutdownFlag();
+		l.acquire();
 		return;
 	}
 
 	/* wait for dumpedSWFPath */
+	l.release();
 	dumpedSWFPathAvailable.wait();
+	l.acquire();
+
 	if(dumpedSWFPath.empty())
 		return;
 

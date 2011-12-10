@@ -179,7 +179,7 @@ protected:
 class DLL_PUBLIC ExtASCallback : public ExtCallback
 {
 public:
-	ExtASCallback(IFunction* _func) : func(_func), result(NULL) { func->incRef(); }
+	ExtASCallback(IFunction* _func) : func(_func), result(NULL), funcWasCalled(false) { func->incRef(); }
 	~ExtASCallback() { func->decRef(); }
 
 	// Don't forget to delete this copy after use
@@ -195,6 +195,7 @@ private:
 	IFunction* func;
 	_NR<FunctionEvent> funcEvent;
 	ASObject* result;
+	bool funcWasCalled;
 };
 
 /**

@@ -346,8 +346,8 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		func->incRef();
 		funcEvent = _MR(new FunctionEvent(_MR(func), _MR(new Null), objArgs, argc, &result, &exception));
 		// Add the callback function event to the VM event queue
-		bool added=getVm()->addEvent(NullRef,funcEvent);
-		if(!added)
+		funcWasCalled=getVm()->addEvent(NullRef,funcEvent);
+		if(!funcWasCalled)
 			funcEvent = NullRef;
 	}
 	// The caller indicated the VM is currently suspended, so call synchronously.
@@ -369,6 +369,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 			LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
 			getSys()->setError(e.cause);
 		}
+		funcWasCalled = true;
 	}
 
 }
@@ -384,10 +385,6 @@ void ExtASCallback::wakeUp()
 }
 bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 {
-	// syncEvent should be not-NULL since call() should have set it
-	if(funcEvent.isNull())
-		return false;
-
 	funcEvent = NullRef;
 	// Did the callback throw an AS exception?
 	if(exception != NULL)
@@ -399,6 +396,11 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 		so.setException(exception->toString().raw_buf());
 		exception->decRef();
 		LOG(LOG_ERROR, "ASObject exception caught in external callback");
+		success = false;
+	}
+	// There was an error executing the function
+	else if(!funcWasCalled)
+	{
 		success = false;
 	}
 	// Did the callback return a non-NULL result?

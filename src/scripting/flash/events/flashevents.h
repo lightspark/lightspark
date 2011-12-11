@@ -204,16 +204,14 @@ public:
 class ProgressEvent: public Event
 {
 private:
-	uint32_t bytesLoaded;
-	uint32_t bytesTotal;
+	ASPROPERTY_GETTER_SETTER(number_t,bytesLoaded);
+	ASPROPERTY_GETTER_SETTER(number_t,bytesTotal);
 public:
 	ProgressEvent();
 	ProgressEvent(uint32_t loaded, uint32_t total);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(_getBytesLoaded);
-	ASFUNCTION(_getBytesTotal);
 };
 
 class TimerEvent: public Event

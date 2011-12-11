@@ -224,9 +224,12 @@ void ProgressEvent::sinit(Class_base* c)
 	c->setSuper(Class<Event>::getRef());
 
 	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c,bytesLoaded);
+	REGISTER_GETTER_SETTER(c,bytesTotal);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesLoaded);
+ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesTotal);
 
 void ProgressEvent::buildTraits(ASObject* o)
 {
@@ -241,18 +244,6 @@ ASFUNCTIONBODY(ProgressEvent,_constructor)
 		th->bytesTotal=args[4]->toInt();
 
 	return NULL;
-}
-
-ASFUNCTIONBODY(ProgressEvent,_getBytesLoaded)
-{
-	ProgressEvent* th=static_cast<ProgressEvent*>(obj);
-	return abstract_d(th->bytesLoaded);
-}
-
-ASFUNCTIONBODY(ProgressEvent,_getBytesTotal)
-{
-	ProgressEvent* th=static_cast<ProgressEvent*>(obj);
-	return abstract_d(th->bytesTotal);
 }
 
 void TimerEvent::sinit(Class_base* c)

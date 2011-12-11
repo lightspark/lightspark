@@ -277,10 +277,8 @@ void RenderThread::init()
 	int a,b;
 	Bool glx_present=glXQueryVersion(mDisplay, &a, &b);
 	if(!glx_present)
-	{
-		LOG(LOG_ERROR,_("glX not present"));
-		return;
-	}
+		throw RunTimeException("glX not present");
+
 	int attrib[10]={GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, GLX_DOUBLEBUFFER, True, None};
 	GLXFBConfig* fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
 	if(!fb)
@@ -468,8 +466,17 @@ void RenderThread::worker()
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,_("Exception in RenderThread ") << e.what());
-		m_sys->setError(e.cause);
+		LOG(LOG_ERROR,_("Exception in RenderThread, stopping rendering: ") << e.what());
+		//TODO: add a comandline switch to disable rendering. Then add that commandline switch
+		//to the test runner script and uncomment the next line
+		//m_sys->setError(e.cause);
+	}
+	catch(RunTimeException& e)
+	{
+		LOG(LOG_ERROR,_("Exception in RenderThread, stopping rendering: ") << e.what());
+		//TODO: add a comandline switch to disable rendering. Then add that commandline switch
+		//to the test runner script and uncomment the next line
+		//m_sys->setError(e.cause);
 	}
 
 	/* cleanup */

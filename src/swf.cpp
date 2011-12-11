@@ -782,13 +782,25 @@ void SystemState::launchGnash()
 }
 
 
-void SystemState::needsAVM2(bool n)
+void SystemState::needsAVM2(bool avm2)
 {
 	Locker l(mutex);
-	assert(currentVm==NULL);
-	//Create the virtual machine if needed
-	if(n)
+
+	/* Check if we already loaded another swf. If not, then
+	 * vmVersion is VMNONE.
+	 */
+	if((vmVersion == AVM1 && avm2)
+	|| (vmVersion == AVM2 && !avm2))
 	{
+		LOG(LOG_NOT_IMPLEMENTED,"Cannot embed AVM1 media into AVM2 media and vice versa!");
+		return;
+	}
+
+	//Create the virtual machine if needed
+	if(avm2)
+	{
+		//needsAVM2 is only called for the SystemState movie
+		assert(!currentVm);
 		vmVersion=AVM2;
 		LOG(LOG_INFO,_("Creating VM"));
 		currentVm=new ABCVm(this);

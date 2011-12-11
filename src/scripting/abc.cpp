@@ -23,7 +23,11 @@
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Target/TargetData.h>
+#ifdef LLVM_3
+#include <llvm/Support/TargetSelect.h>
+#else
 #include <llvm/Target/TargetSelect.h>
+#endif
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Transforms/Scalar.h> 

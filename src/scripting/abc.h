@@ -23,6 +23,13 @@
 #ifdef LLVM_28
 #define alignof alignOf
 #endif
+#ifdef LLVM_3
+#define LLVMTYPE llvm::Type*
+#define LLVMMAKEARRAYREF(T) makeArrayRef(T)
+#else
+#define LLVMTYPE const llvm::Type*
+#define LLVMMAKEARRAYREF(T) T
+#endif
 
 #include "compat.h"
 #include <cstddef>
@@ -594,7 +601,7 @@ private:
 	static ASObject* constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen);
 
 	//Opcode tables
-	void register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len);
+	void register_table(LLVMTYPE ret_type,typed_opcode_handler* table, int table_len);
 	static opcode_handler opcode_table_args_pointer_2int[];
 	static opcode_handler opcode_table_args_pointer_number_int[];
 	static opcode_handler opcode_table_args3_pointers[];

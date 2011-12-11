@@ -561,7 +561,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 
 		if(strcmp(stream->url, dl->getURL().raw_buf()) != 0)
 		{
-			LOG(LOG_INFO, _("NET: PLUGIN: redirect detected"));
+			LOG(LOG_INFO, "NET: PLUGIN: redirect detected from " << dl->getURL() << " to " << stream->url);
 			dl->setRedirected(lightspark::tiny_string(stream->url));
 		}
 		if(NP_VERSION_MINOR >= NPVERS_HAS_RESPONSE_HEADERS)

@@ -39,9 +39,11 @@
  * will be emitted if more than the unpacked arguments are provided by the caller.
  *
  * To specify default values, use the (var, defvalue) operator like
- * ARG_UNPACK (i) (b,true) (o,_NR(new Undefined));
+ * ARG_UNPACK (i) (b,true) (o,NullRef);
  * this will work as above if all arguments are supplied. When the second argument is not supplied, no error is thrown and
- * b is set to 'true'. If the third argument is not supplied, not error is thrown and o is set to _NR(new Undefined).
+ * b is set to 'true'. If the third argument is not supplied, not error is thrown and o is set to NullRef. Note that you cannot
+ * put a Null into DisplayObject, as Null derives directly from ASObject (i.e. Null is not a subclass DisplayObject).
+ * If a 'null' value is provided for an Object type, it's reference is set to a NullRef.
  */
 
 namespace lightspark

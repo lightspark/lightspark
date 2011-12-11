@@ -21,7 +21,8 @@
 #define ARGCONV_H_
 
 #include "toplevel/toplevel.h"
-#include "class.h"
+#include "toplevel/ASString.h"
+#include "toplevel/Boolean.h"
 
 /* Usage of ARG_UNPACK:
  * You have to use it within a ASFUNCTIONBODY() { }, because it uses the implicit arguments 'args' and 'argslen'.

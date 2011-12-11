@@ -38,6 +38,7 @@ const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
 class Event;
 class ABCContext;
 class Template_base;
+class ASString;
 class method_info;
 struct call_context;
 struct traits_info;
@@ -411,54 +412,6 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 			std::map<const ASObject*, uint32_t>& objMap) const;
-};
-
-/*
- * The AS String class.
- * The 'data' is immutable -> it cannot be changed after creation of the object
- */
-class ASString: public ASObject
-{
-CLASSBUILDABLE(ASString);
-private:
-	tiny_string toString_priv() const;
-	ASString();
-	ASString(const std::string& s);
-	ASString(const tiny_string& s);
-	ASString(const char* s);
-	ASString(const char* s, uint32_t len);
-public:
-	tiny_string data;
-	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(charAt);
-	ASFUNCTION(charCodeAt);
-	ASFUNCTION(concat);
-	ASFUNCTION(fromCharCode);
-	ASFUNCTION(indexOf);
-	ASFUNCTION(lastIndexOf);
-	ASFUNCTION(match);
-	ASFUNCTION(replace);
-	ASFUNCTION(search);
-	ASFUNCTION(slice);
-	ASFUNCTION(split);
-	ASFUNCTION(substr);
-	ASFUNCTION(substring);
-	ASFUNCTION(toLowerCase);
-	ASFUNCTION(toUpperCase);
-	ASFUNCTION(_toString);
-	ASFUNCTION(_getLength);
-	bool isEqual(ASObject* r);
-	TRISTATE isLess(ASObject* r);
-	number_t toNumber() const;
-	int32_t toInt();
-	uint32_t toUInt();
-	ASFUNCTION(generator);
-	//Serialization interface
-	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-			std::map<const ASObject*, uint32_t>& objMap) const;
-	std::string toDebugString() { return std::string("\"") + std::string(data) + "\""; }
 };
 
 class Null: public ASObject

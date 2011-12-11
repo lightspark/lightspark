@@ -23,6 +23,7 @@
 #include <limits>
 #include "compat.h"
 #include "parsing/amf3_generator.h"
+#include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"
 
 using namespace lightspark;

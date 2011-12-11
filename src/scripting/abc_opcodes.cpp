@@ -23,6 +23,7 @@
 #include "exceptions.h"
 #include "compat.h"
 #include "abcutils.h"
+#include "scripting/toplevel/ASString.h"
 
 using namespace std;
 using namespace lightspark;

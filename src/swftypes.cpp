@@ -26,8 +26,10 @@
 #include <stdlib.h>
 #include <cmath>
 #include <glibmm/ustring.h>
+
 #include "exceptions.h"
 #include "compat.h"
+#include "scripting/toplevel/ASString.h"
 
 using namespace std;
 using namespace lightspark;

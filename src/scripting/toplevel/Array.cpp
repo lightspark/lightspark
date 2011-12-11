@@ -19,7 +19,7 @@
 
 #include "Array.h"
 #include "abc.h"
-#include "class.h"
+#include "argconv.h"
 #include "parsing/amf3_generator.h"
 
 using namespace std;

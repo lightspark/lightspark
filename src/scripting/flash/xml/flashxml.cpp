@@ -16,12 +16,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
+#include <libxml/tree.h>
 
 #include "flashxml.h"
 #include "swf.h"
 #include "compat.h"
-#include "class.h"
-#include <libxml/tree.h>
+#include "argconv.h"
 
 using namespace std;
 using namespace lightspark;

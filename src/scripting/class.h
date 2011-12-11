@@ -254,21 +254,6 @@ inline ASObject* Class<Boolean>::coerce(ASObject* o) const
 }
 
 template<>
-inline ASObject* Class<ASString>::coerce(ASObject* o) const
-{ //Special handling for Null and Undefined follows avm2overview's description of 'coerce_s' opcode
-	if(o->is<Null>())
-		return o;
-	if(o->is<Undefined>())
-	{
-		o->decRef();
-		return new Null;
-	}
-	tiny_string n = o->toString();
-	o->decRef();
-	return Class<ASString>::getInstanceS(n);
-}
-
-template<>
 class Class<ASObject>: public Class_base
 {
 private:

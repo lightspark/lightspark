@@ -19,7 +19,7 @@
 
 #include "abc.h"
 #include "flashgeom.h"
-#include "class.h"
+#include "argconv.h"
 
 using namespace lightspark;
 using namespace std;

@@ -70,6 +70,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/utils/flashutils.cpp
   scripting/flash/xml/flashxml.cpp
   scripting/toplevel/Array.cpp
+  scripting/toplevel/ASString.cpp
   scripting/toplevel/Boolean.cpp
   scripting/toplevel/Date.cpp
   scripting/toplevel/Error.cpp

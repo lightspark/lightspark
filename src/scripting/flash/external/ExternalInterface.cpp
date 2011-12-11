@@ -20,6 +20,7 @@
 #include "ExternalInterface.h"
 #include "class.h"
 #include "backends/extscriptobject.h"
+#include "toplevel/ASString.h"
 
 using namespace lightspark;
 

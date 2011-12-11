@@ -33,6 +33,7 @@
 #include <limits>
 #include <cmath>
 #include "swf.h"
+#include "toplevel/ASString.h"
 #include "toplevel/Date.h"
 #include "toplevel/Math.h"
 #include "toplevel/Vector.h"

@@ -22,7 +22,7 @@
 
 #include "flashsystem.h"
 #include "abc.h"
-#include "class.h"
+#include "argconv.h"
 #include "compat.h"
 #include "backends/security.h"
 

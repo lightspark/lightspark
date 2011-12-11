@@ -106,6 +106,10 @@ public:
 		gtk_widget_show(widget);
 		gtk_widget_map(widget);
 	}
+	GtkWidget* getGTKWidget()
+	{
+		return widget;
+	}
 	static gboolean inputDispatch(GtkWidget *widget, GdkEvent *event, EngineData* e)
 	{
 		RecMutex::Lock l(e->mutex);

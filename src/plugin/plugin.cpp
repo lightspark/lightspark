@@ -203,10 +203,15 @@ NPError NS_PluginInitialize()
 	LOG_LEVEL log_level = LOG_NOT_IMPLEMENTED;
 
 	/* setup glib/gtk, this is already done on firefox/linux, but needs to be done
-	 * on firefox/windows */
-	g_thread_init(NULL);
+	 * on firefox/windows (because there we statically link to gtk) */
+	if(!g_thread_supported())
+		g_thread_init(NULL);
+#ifdef _WIN32
+	//Calling gdk_threads_init multiple times (once by firefox, once by us)
+	//will break in various different ways (hangs, segfaults, etc.)
 	gdk_threads_init();
 	gtk_init(NULL, NULL);
+#endif
 
 	char *envvar = getenv("LIGHTSPARK_PLUGIN_LOGLEVEL");
 	if (envvar)

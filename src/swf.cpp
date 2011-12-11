@@ -619,20 +619,23 @@ void SystemState::createEngines()
 		//We cannot stop the engines now, as this is inside a ThreadPool job
 		//Running this in the Gtk thread is unnecessary, though. Any other thread
 		//would be okey.
-		engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedStopping));
+		//TODO: delayedStopping may be scheduled after SystemState::destroy has finished
+		//      and this SystemState object has been deleted.
+		//      We cannot wait for that function to finish, because we run in a ThreadPool
+		//      and the function will wait for all ThreadPool jobs to finish.
+		//engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedStopping));
 		return;
 	}
 
-	l.release();
 	//The engines must be created in the context of the main thread
 	engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedCreation));
 
+	//Wait for delayedCreation to finish so it is protected by our 'mutex'
+	//Otherwise SystemState::destroy may delete this object before delayedCreation is scheduled.
 	renderThread->waitForInitialization();
 
 	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
 
-
-	l.acquire();
 	//As we lost the lock the shutdown procesure might have started
 	if(shutdown)
 		return;

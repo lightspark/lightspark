@@ -657,37 +657,33 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 		return NPERR_NO_ERROR;
 	}
 	dl->state=NPDownloader::STREAM_DESTROYED;
-	if(stream->notifyData)
-	{
-		//URLNotify will be called later
-		return NPERR_NO_ERROR;
-	}
+
 	//Notify our downloader of what happened
-	URLNotify(stream->url, reason, stream->pdata);
+	switch(reason)
+	{
+		case NPRES_DONE:
+			LOG(LOG_INFO,_("Download complete ") << stream->url);
+			dl->setFinished();
+			break;
+		case NPRES_USER_BREAK:
+			LOG(LOG_ERROR,_("Download stopped ") << stream->url);
+			dl->setFailed();
+			break;
+		case NPRES_NETWORK_ERR:
+			LOG(LOG_ERROR,_("Download error ") << stream->url);
+			dl->setFailed();
+			break;
+	}
 	setTLSSys(NULL);
 	return NPERR_NO_ERROR;
 }
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
-	//If the download was successful, termination is handle in DestroyStream
-	NPDownloader* dl=static_cast<NPDownloader*>(notifyData);
-	assert(dl);
-	switch(reason)
-	{
-		case NPRES_DONE:
-			LOG(LOG_INFO,_("Download complete ") << url);
-			dl->setFinished();
-			break;
-		case NPRES_USER_BREAK:
-			LOG(LOG_ERROR,_("Download stopped ") << url);
-			dl->setFailed();
-			break;
-		case NPRES_NETWORK_ERR:
-			LOG(LOG_ERROR,_("Download error ") << url);
-			dl->setFailed();
-			break;
-	}
+	/* This is called after DestroyStream, which may have already deleted the
+	 * NPDownloader (by calling asyncDownloaderDestruction), which 'notifyData' points to.
+	 * Therefore, we cannot do anything here.
+	 */
 }
 
 void PluginEngineData::stopMainDownload()

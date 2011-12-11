@@ -743,7 +743,7 @@ void SystemState::launchGnash()
 		return;
 	}
 #else
-	GError* errmsg;
+	GError* errmsg = NULL;
 	if(!g_spawn_async_with_pipes(NULL, args, NULL, (GSpawnFlags)0, NULL, NULL, &childPid,
 			&gnash_stdin, NULL, NULL, &errmsg))
 	{

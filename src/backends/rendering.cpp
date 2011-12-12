@@ -247,31 +247,16 @@ void RenderThread::init()
 			0, 0, 0
 		};
 	if(!(mDC = GetDC(engineData->window)))
-	{
-		LOG(LOG_ERROR,"GetDC failed");
-		return;
-	}
+		throw RunTimeException("GetDC failed");
 	int PixelFormat;
 	if (!(PixelFormat=ChoosePixelFormat(mDC,&pfd)))
-	{
-		LOG(LOG_ERROR,"ChoosePixelFormat failed");
-		return;
-	}
+		throw RunTimeException("ChoosePixelFormat failed");
 	if(!SetPixelFormat(mDC,PixelFormat,&pfd))
-	{
-		LOG(LOG_ERROR,"SetPixelFormat failed");
-		return;
-	}
+		throw RunTimeException("SetPixelFormat failed");
 	if (!(mRC=wglCreateContext(mDC)))
-	{
-		LOG(LOG_ERROR,"wglCreateContext failed");
-		return;
-	}
+		throw RunTimeException("wglCreateContext failed");
 	if(!wglMakeCurrent(mDC,mRC))
-	{
-		LOG(LOG_ERROR,"wglMakeCurrent failed");
-		return;
-	}
+		throw RunTimeException("wglMakeCurrent failed");
 #elif !defined(ENABLE_GLES2)
 	mDisplay = XOpenDisplay(NULL);
 	int a,b;
@@ -288,10 +273,7 @@ void RenderThread::init()
 		fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
 	}
 	if(!fb)
-	{
-		LOG(LOG_ERROR,_("Could not find any GLX configuration"));
-		::abort();
-	}
+		throw RunTimeException(_("Could not find any GLX configuration"));
 	int i;
 	for(i=0;i<a;i++)
 	{
@@ -303,8 +285,7 @@ void RenderThread::init()
 	if(i==a)
 	{
 		//No suitable id found
-		LOG(LOG_ERROR,_("No suitable graphics configuration available"));
-		return;
+		throw RunTimeException(_("No suitable graphics configuration available"));
 	}
 	mFBConfig=fb[i];
 	LOG(LOG_INFO, "Chosen config " << hex << fb[i] << dec);
@@ -319,15 +300,10 @@ void RenderThread::init()
 	eglBindAPI(EGL_OPENGL_ES_API);
 	mEGLDisplay = eglGetDisplay(mDisplay);
 	if (mEGLDisplay == EGL_NO_DISPLAY)
-	{
-		LOG(LOG_ERROR, _("EGL not present"));
-		return;
-	}
+		throw RunTimeException(_("EGL not present"));
 		EGLint major, minor;
-	if (eglInitialize(mEGLDisplay, &major, &minor) == EGL_FALSE) {
-		LOG(LOG_ERROR, _("EGL initialization failed"));
-		return;
-	}
+	if (eglInitialize(mEGLDisplay, &major, &minor) == EGL_FALSE)
+		throw RunTimeException(_("EGL initialization failed"));
 
 	LOG(LOG_INFO, _("EGL version: ") << eglQueryString(mEGLDisplay, EGL_VERSION));
 	EGLint config_attribs[] = {
@@ -342,19 +318,13 @@ void RenderThread::init()
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
-	if (!eglChooseConfig(mEGLDisplay, config_attribs, 0, 0, &a)) {
-		LOG(LOG_ERROR,_("Could not get number of EGL configurations"));
-	}
+	if (!eglChooseConfig(mEGLDisplay, config_attribs, 0, 0, &a))
+		throw RunTimeException(_("Could not get number of EGL configurations"));
 	else
-	{
-	    LOG(LOG_INFO, "Number of EGL configurations: " << a);
-	}
+		LOG(LOG_INFO, "Number of EGL configurations: " << a);
 	EGLConfig *conf = new EGLConfig[a];
 	if (!eglChooseConfig(mEGLDisplay, config_attribs, conf, a, &a))
-	{
-		LOG(LOG_ERROR,_("Could not find any EGL configuration"));
-		::abort();
-	}
+		throw RunTimeException(_("Could not find any EGL configuration"));
 
 	int i;
 	for(i=0;i<a;i++)
@@ -372,15 +342,11 @@ void RenderThread::init()
 	mEGLConfig=conf[i];
 	LOG(LOG_INFO, "Chosen config " << hex << conf[i] << dec);
 	mEGLContext = eglCreateContext(mEGLDisplay, mEGLConfig, EGL_NO_CONTEXT, context_attribs);
-	if (mEGLContext == EGL_NO_CONTEXT) {
-		LOG(LOG_ERROR,_("Could not create EGL context"));
-		return;
-	}
+	if (mEGLContext == EGL_NO_CONTEXT)
+		throw RunTimeException(_("Could not create EGL context"));
 	mEGLSurface = eglCreateWindowSurface(mEGLDisplay, mEGLConfig, engineData->window, NULL);
-	if (mEGLSurface == EGL_NO_SURFACE) {
-		LOG(LOG_ERROR,_("Could not create EGL surface"));
-		return;
-	}
+	if (mEGLSurface == EGL_NO_SURFACE)
+		throw RunTimeException(_("Could not create EGL surface"));
 	eglMakeCurrent(mEGLDisplay, mEGLSurface, mEGLSurface, mEGLContext);
 #endif
 

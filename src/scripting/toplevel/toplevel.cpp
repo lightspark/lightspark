@@ -2166,6 +2166,10 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false
 {
 }
 
+RegExp::RegExp(const tiny_string& _re):re(_re),global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)
+{
+}
+
 void RegExp::sinit(Class_base* c)
 {
 	c->setSuper(Class<ASObject>::getRef());
@@ -2223,16 +2227,21 @@ ASFUNCTIONBODY(RegExp,exec)
 	RegExp* th=static_cast<RegExp*>(obj);
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
+	return th->match(arg0);
+}
+
+ASObject *RegExp::match(const tiny_string& str)
+{
 	const char* error;
 	int errorOffset;
 	int options=PCRE_UTF8;
-	if(th->ignoreCase)
+	if(ignoreCase)
 		options|=PCRE_CASELESS;
-	if(th->extended)
+	if(extended)
 		options|=PCRE_EXTENDED;
-	if(th->multiline)
+	if(multiline)
 		options|=PCRE_MULTILINE;
-	pcre* pcreRE=pcre_compile(th->re.raw_buf(), options, &error, &errorOffset,NULL);
+	pcre* pcreRE=pcre_compile(re.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 		return new Null;
 	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -2274,8 +2283,8 @@ ASFUNCTIONBODY(RegExp,exec)
 	}
 
 	int ovector[30];
-	int offset=(th->global)?th->lastIndex:0;
-	int rc=pcre_exec(pcreRE, NULL, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, 30);
+	int offset=global?lastIndex:0;
+	int rc=pcre_exec(pcreRE, NULL, str.raw_buf(), str.numBytes(), offset, 0, ovector, 30);
 	if(rc<0)
 	{
 		//No matches or error
@@ -2287,12 +2296,11 @@ ASFUNCTIONBODY(RegExp,exec)
 	for(int i=0;i<capturingGroups+1;i++)
 	{
 		if(ovector[i*2] != -1)
-			a->push(Class<ASString>::getInstanceS( arg0.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) ));
+			a->push(Class<ASString>::getInstanceS( str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) ));
 		else
 			a->push(new Undefined);
 	}
-	args[0]->incRef();
-	a->setVariableByQName("input","",args[0],DYNAMIC_TRAIT);
+	a->setVariableByQName("input","",Class<ASString>::getInstanceS(str),DYNAMIC_TRAIT);
 	a->setVariableByQName("index","",abstract_i(ovector[0]),DYNAMIC_TRAIT);
 	for(int i=0;i<namedGroups;i++)
 	{
@@ -2303,7 +2311,7 @@ ASFUNCTIONBODY(RegExp,exec)
 		a->setVariableByQName(tiny_string(entry->name, true),"",captured,DYNAMIC_TRAIT);
 		entries+=namedSize;
 	}
-	th->lastIndex=ovector[1];
+	lastIndex=ovector[1];
 	pcre_free(pcreRE);
 	return a;
 }

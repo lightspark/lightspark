@@ -157,58 +157,61 @@ ASFUNCTIONBODY(ASString,match)
 	ASString* th=static_cast<ASString*>(obj);
 	if(argslen == 0 || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 		return new Null;
-	Array* ret=NULL;
+	ASObject* ret=NULL;
+	RegExp* re;
 
-	int options=PCRE_UTF8;
-	tiny_string restr;
-	bool isGlobal = false;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
-		RegExp* re=static_cast<RegExp*>(args[0]);
-		restr = re->re;
-		if(re->ignoreCase)
-			options|=PCRE_CASELESS;
-		if(re->extended)
-			options|=PCRE_EXTENDED;
-		if(re->multiline)
-			options|=PCRE_MULTILINE;
-		isGlobal = re->global;
+		re = args[0]->as<RegExp>();
+		re->incRef();
 	}
 	else
-		restr = args[0]->toString();
+	{
+		re = Class<RegExp>::getInstanceS(args[0]->toString());
+	}
 
-	const char* error;
-	int errorOffset;
-	pcre* pcreRE=pcre_compile(restr.raw_buf(), options, &error, &errorOffset,NULL);
-	if(error)
-		return new Null;
-	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
-	int capturingGroups;
-	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
-	if(infoOk!=0)
+	if (re->global)
 	{
-		pcre_free(pcreRE);
-		return new Null;
-	}
-	assert_and_throw(capturingGroups<10);
-	int ovector[30];
-	int offset=0;
-	ret=Class<Array>::getInstanceS();
-	do
-	{
-		int rc=pcre_exec(pcreRE, NULL, th->data.raw_buf(), th->data.numBytes(), offset, 0, ovector, 30);
-		if(rc<0)
+		Array *resarr = Class<Array>::getInstanceS();
+		int prevLastIndex = 0;
+		re->lastIndex = 0;
+
+		while (true)
 		{
-			//No matches or error
-			pcre_free(pcreRE);
-			return ret;
+			ASObject *match = re->match(th->data);
+
+			if (match->is<Null>())
+				break;
+
+			if (re->lastIndex == prevLastIndex)
+				// ECMA-262 Section 15.5.4.10 says
+				// that we should increase
+				// re->lastIndex by one and repeat,
+				// but this is closer to the observed
+				// behaviour.
+				break;
+
+			prevLastIndex = re->lastIndex;
+
+			assert(match->is<Array>());
+			resarr->push(match->as<Array>()->at(0));
 		}
-		//we cannot use ustrings substr here, because pcre returns those indices in bytes
-		//and ustring expects number of UTF8 characters. The same holds for ustring constructor
-		ret->push(Class<ASString>::getInstanceS(th->data.substr_bytes(ovector[0],ovector[1]-ovector[0])));
-		offset=ovector[1];
+
+		if (resarr->size() == 0)
+		{
+			resarr->decRef();
+			ret = new Null;
+		}
+		else
+			ret = resarr;
 	}
-	while(isGlobal);
+	else
+	{
+		ret = re->match(th->data);
+	}
+
+	re->decRef();
+
 	return ret;
 }
 

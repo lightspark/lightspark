@@ -691,9 +691,11 @@ private:
 	bool multiline;
 	int lastIndex;
 	RegExp();
+	RegExp(const tiny_string& _re);
 public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	ASObject *match(const tiny_string& str);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(exec);
 	ASFUNCTION(test);

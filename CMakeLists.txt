@@ -51,15 +51,14 @@ IF(EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 			#We are exactly at a tag
 			SET(GIT_VERSION "")
 		ELSE()
-			#Append the git hash to GIT_VERSION
-			EXECUTE_PROCESS(COMMAND git rev-parse --short HEAD
-				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-				OUTPUT_VARIABLE GIT_REVISION
-				ERROR_QUIET
-				OUTPUT_STRIP_TRAILING_WHITESPACE)
-			IF(GIT_REVISION)
-				SET(GIT_VERSION "-${GIT_REVISION}")
-			ENDIF()
+			#Append to GIT_VERSION
+			#GIT_DESC_ABBREV is of the form lightspark-0.5.3 (the name of the previous tag)
+			#GIT_DESC is of the form lightspark-0.5.3-69-gf49ec56 (tag-numberOfCommits-currentHash)
+			#We want GIT_REVISION to be 69-gf49ec56
+			#which denotes the number of commits since the last tag (=release)
+			#and the current commit's hash
+			STRING(REPLACE "${GIT_DESC_ABBREV}-" "" GIT_REVISION "${GIT_DESC}")
+			SET(GIT_VERSION "-${GIT_REVISION}")
 		ENDIF()
 	ENDIF()
 ELSE(EXISTS "${CMAKE_SOURCE_DIR}/.git/")

@@ -694,6 +694,7 @@ public:
 	ASFUNCTION(generator);
 	ASFUNCTION(exec);
 	ASFUNCTION(test);
+	ASPROPERTY_GETTER(bool, dotall);
 	ASPROPERTY_GETTER(bool, global);
 	ASPROPERTY_GETTER(bool, ignoreCase);
 	ASPROPERTY_GETTER(bool, extended);

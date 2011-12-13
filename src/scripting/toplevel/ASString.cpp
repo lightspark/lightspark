@@ -118,6 +118,8 @@ ASFUNCTIONBODY(ASString,search)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
+		if(re->dotall)
+			options|=PCRE_DOTALL;
 	}
 	else
 	{
@@ -260,6 +262,8 @@ ASFUNCTIONBODY(ASString,split)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
+		if(re->dotall)
+			options|=PCRE_DOTALL;
 		pcre* pcreRE=pcre_compile(re->source.raw_buf(), options, &error, &offset,NULL);
 		if(error)
 			return ret;
@@ -634,6 +638,8 @@ ASFUNCTIONBODY(ASString,replace)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
+		if(re->dotall)
+			options|=PCRE_DOTALL;
 		pcre* pcreRE=pcre_compile(re->source.raw_buf(), options, &error, &errorOffset,NULL);
 		if(error)
 			return ret;

@@ -2162,11 +2162,11 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 	throw UnsupportedException("Null::serialize not implemented");
 }
 
-RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)
+RegExp::RegExp():dotall(false),global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)
 {
 }
 
-RegExp::RegExp(const tiny_string& _re):global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0),source(_re)
+RegExp::RegExp(const tiny_string& _re):dotall(false),global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0),source(_re)
 {
 }
 
@@ -2176,6 +2176,7 @@ void RegExp::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
+	REGISTER_GETTER(c,dotall);
 	REGISTER_GETTER(c,global);
 	REGISTER_GETTER(c,ignoreCase);
 	REGISTER_GETTER(c,extended);
@@ -2193,7 +2194,7 @@ ASFUNCTIONBODY(RegExp,_constructor)
 	RegExp* th=static_cast<RegExp*>(obj);
 	if(argslen > 0)
 		th->source=args[0]->toString().raw_buf();
-	if(argslen>1)
+	if(argslen>1 && !args[1]->is<Undefined>())
 	{
 		const tiny_string& flags=args[1]->toString();
 		for(auto i=flags.begin();i!=flags.end();++i)
@@ -2213,8 +2214,12 @@ ASFUNCTIONBODY(RegExp,_constructor)
 					th->multiline=true;
 					break;
 				case 's':
-					throw UnsupportedException("RegExp not completely implemented");
-
+					// Defined in the Adobe online
+					// help but not in ECMA
+					th->dotall=true;
+					break;
+				default:
+					throw Class<SyntaxError>::getInstanceS("unknown flag in RegExp");
 			}
 		}
 	}
@@ -2237,6 +2242,7 @@ ASFUNCTIONBODY(RegExp,generator)
 	}
 }
 
+ASFUNCTIONBODY_GETTER(RegExp, dotall);
 ASFUNCTIONBODY_GETTER(RegExp, global);
 ASFUNCTIONBODY_GETTER(RegExp, ignoreCase);
 ASFUNCTIONBODY_GETTER(RegExp, extended);
@@ -2263,6 +2269,8 @@ ASObject *RegExp::match(const tiny_string& str)
 		options|=PCRE_EXTENDED;
 	if(multiline)
 		options|=PCRE_MULTILINE;
+	if(dotall)
+		options|=PCRE_DOTALL;
 	pcre* pcreRE=pcre_compile(source.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 		return new Null;
@@ -2351,6 +2359,8 @@ ASFUNCTIONBODY(RegExp,test)
 		options |= PCRE_EXTENDED;
 	if(th->multiline)
 		options |= PCRE_MULTILINE;
+	if(th->dotall)
+		options|=PCRE_DOTALL;
 
 	const char * error;
 	int errorOffset;

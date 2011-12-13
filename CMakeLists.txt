@@ -292,6 +292,7 @@ IF(ENABLE_LIBAVCODEC)
 ENDIF(ENABLE_LIBAVCODEC)
 
 pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(GTHREAD REQUIRED gthread-2.0)
 pkg_check_modules(GLIBMM REQUIRED glibmm-2.4)
 INCLUDE_DIRECTORIES(${GLIBMM_INCLUDE_DIRS})
 pkg_check_modules(GTK REQUIRED gtk+-2.0)

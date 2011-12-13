@@ -2193,7 +2193,20 @@ void RegExp::buildTraits(ASObject* o)
 ASFUNCTIONBODY(RegExp,_constructor)
 {
 	RegExp* th=static_cast<RegExp*>(obj);
-	if(argslen > 0)
+	if(argslen > 0 && args[0]->is<RegExp>())
+	{
+		if(argslen > 1 && !args[1]->is<Undefined>())
+			throw Class<TypeError>::getInstanceS("flags must be Undefined");
+		RegExp *src=args[0]->as<RegExp>();
+		th->source=src->source;
+		th->dotall=src->dotall;
+		th->global=src->global;
+		th->ignoreCase=src->ignoreCase;
+		th->extended=src->extended;
+		th->multiline=src->multiline;
+		return NULL;
+	}
+	else if(argslen > 0)
 		th->source=args[0]->toString().raw_buf();
 	if(argslen>1 && !args[1]->is<Undefined>())
 	{

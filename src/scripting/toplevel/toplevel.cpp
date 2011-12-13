@@ -2176,6 +2176,7 @@ void RegExp::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	REGISTER_GETTER(c,dotall);
 	REGISTER_GETTER(c,global);
 	REGISTER_GETTER(c,ignoreCase);
@@ -2375,6 +2376,27 @@ ASFUNCTIONBODY(RegExp,test)
 	pcre_free(pcreRE);
 
 	return abstract_b(ret);
+}
+
+ASFUNCTIONBODY(RegExp,_toString)
+{
+	if(!obj->is<RegExp>())
+		throw Class<TypeError>::getInstanceS("RegExp.toString is not generic");
+
+	RegExp* th=static_cast<RegExp*>(obj);
+	tiny_string ret;
+	ret = "/";
+	ret += th->source;
+	ret += "/";
+	if(th->global)
+		ret += "g";
+	if(th->ignoreCase)
+		ret += "i";
+	if(th->multiline)
+		ret += "m";
+	if(th->dotall)
+		ret += "s";
+	return Class<ASString>::getInstanceS(ret);
 }
 
 ASObject* Void::coerce(ASObject* o) const

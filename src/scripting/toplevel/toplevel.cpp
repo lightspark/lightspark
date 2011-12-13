@@ -2216,6 +2216,22 @@ ASFUNCTIONBODY(RegExp,_constructor)
 	return NULL;
 }
 
+
+ASFUNCTIONBODY(RegExp,generator)
+{
+	if(args[0]->is<RegExp>())
+	{
+		args[0]->incRef();
+		return args[0];
+	}
+	else
+	{
+		if (argslen > 1)
+			LOG(LOG_NOT_IMPLEMENTED, "RegExp generator: flags argument not implemented");
+		return Class<RegExp>::getInstanceS(args[0]->toString());
+	}
+}
+
 ASFUNCTIONBODY(RegExp,_getGlobal)
 {
 	RegExp* th=static_cast<RegExp*>(obj);

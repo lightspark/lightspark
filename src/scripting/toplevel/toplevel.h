@@ -697,6 +697,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASObject *match(const tiny_string& str);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(generator);
 	ASFUNCTION(exec);
 	ASFUNCTION(test);
 	ASFUNCTION(_getGlobal);

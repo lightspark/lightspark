@@ -2166,7 +2166,7 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),multiline(false
 {
 }
 
-RegExp::RegExp(const tiny_string& _re):re(_re),global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)
+RegExp::RegExp(const tiny_string& _re):global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0),source(_re)
 {
 }
 
@@ -2176,7 +2176,12 @@ void RegExp::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("global","",Class<IFunction>::getFunction(_getGlobal),GETTER_METHOD,true);
+	REGISTER_GETTER(c,global);
+	REGISTER_GETTER(c,ignoreCase);
+	REGISTER_GETTER(c,extended);
+	REGISTER_GETTER(c,multiline);
+	REGISTER_GETTER_SETTER(c,lastIndex);
+	REGISTER_GETTER(c,source);
 }
 
 void RegExp::buildTraits(ASObject* o)
@@ -2187,7 +2192,7 @@ ASFUNCTIONBODY(RegExp,_constructor)
 {
 	RegExp* th=static_cast<RegExp*>(obj);
 	if(argslen > 0)
-		th->re=args[0]->toString().raw_buf();
+		th->source=args[0]->toString().raw_buf();
 	if(argslen>1)
 	{
 		const tiny_string& flags=args[1]->toString();
@@ -2232,11 +2237,12 @@ ASFUNCTIONBODY(RegExp,generator)
 	}
 }
 
-ASFUNCTIONBODY(RegExp,_getGlobal)
-{
-	RegExp* th=static_cast<RegExp*>(obj);
-	return abstract_b(th->global);
-}
+ASFUNCTIONBODY_GETTER(RegExp, global);
+ASFUNCTIONBODY_GETTER(RegExp, ignoreCase);
+ASFUNCTIONBODY_GETTER(RegExp, extended);
+ASFUNCTIONBODY_GETTER(RegExp, multiline);
+ASFUNCTIONBODY_GETTER_SETTER(RegExp, lastIndex);
+ASFUNCTIONBODY_GETTER(RegExp, source);
 
 ASFUNCTIONBODY(RegExp,exec)
 {
@@ -2257,7 +2263,7 @@ ASObject *RegExp::match(const tiny_string& str)
 		options|=PCRE_EXTENDED;
 	if(multiline)
 		options|=PCRE_MULTILINE;
-	pcre* pcreRE=pcre_compile(re.raw_buf(), options, &error, &errorOffset,NULL);
+	pcre* pcreRE=pcre_compile(source.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 		return new Null;
 	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -2348,7 +2354,7 @@ ASFUNCTIONBODY(RegExp,test)
 
 	const char * error;
 	int errorOffset;
-	pcre * pcreRE = pcre_compile(th->re.raw_buf(), options, &error, &errorOffset, NULL);
+	pcre * pcreRE = pcre_compile(th->source.raw_buf(), options, &error, &errorOffset, NULL);
 	if(error)
 		return new Null;
 

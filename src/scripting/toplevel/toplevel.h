@@ -684,12 +684,6 @@ class RegExp: public ASObject
 CLASSBUILDABLE(RegExp);
 friend class ASString;
 private:
-	tiny_string re;
-	bool global;
-	bool ignoreCase;
-	bool extended;
-	bool multiline;
-	int lastIndex;
 	RegExp();
 	RegExp(const tiny_string& _re);
 public:
@@ -700,7 +694,12 @@ public:
 	ASFUNCTION(generator);
 	ASFUNCTION(exec);
 	ASFUNCTION(test);
-	ASFUNCTION(_getGlobal);
+	ASPROPERTY_GETTER(bool, global);
+	ASPROPERTY_GETTER(bool, ignoreCase);
+	ASPROPERTY_GETTER(bool, extended);
+	ASPROPERTY_GETTER(bool, multiline);
+	ASPROPERTY_GETTER_SETTER(int, lastIndex);
+	ASPROPERTY_GETTER(tiny_string, source);
 };
 
 class Global : public ASObject

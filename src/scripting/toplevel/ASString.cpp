@@ -111,7 +111,7 @@ ASFUNCTIONBODY(ASString,search)
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
-		restr = re->re;
+		restr = re->source;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
@@ -243,7 +243,7 @@ ASFUNCTIONBODY(ASString,split)
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
-		if(re->re.empty())
+		if(re->source.empty())
 		{
 			//the RegExp is empty, so split every character
 			for(auto i=th->data.begin();i!=th->data.end();++i)
@@ -260,7 +260,7 @@ ASFUNCTIONBODY(ASString,split)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
-		pcre* pcreRE=pcre_compile(re->re.raw_buf(), options, &error, &offset,NULL);
+		pcre* pcreRE=pcre_compile(re->source.raw_buf(), options, &error, &offset,NULL);
 		if(error)
 			return ret;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -634,7 +634,7 @@ ASFUNCTIONBODY(ASString,replace)
 			options|=PCRE_EXTENDED;
 		if(re->multiline)
 			options|=PCRE_MULTILINE;
-		pcre* pcreRE=pcre_compile(re->re.raw_buf(), options, &error, &errorOffset,NULL);
+		pcre* pcreRE=pcre_compile(re->source.raw_buf(), options, &error, &errorOffset,NULL);
 		if(error)
 			return ret;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3

@@ -18,11 +18,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "version.h"
 #include "logger.h"
 #include "plugin.h"
 
 #include "npscriptobject.h"
+#include "scripting/flash/system/flashsystem.h"
 
 using namespace std;
 using namespace lightspark;
@@ -538,7 +538,7 @@ NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 	// so that we can check if we are in the main plugin thread later on.
 	mainThread = Thread::self();
 
-	setProperty("$version", "LNX 10,2,"SHORTVERSION);
+	setProperty("$version", Capabilities::EMULATED_VERSION);
 
 	// Standard methods
 	setMethod("SetVariable", new lightspark::ExtBuiltinCallback(stdSetVariable));

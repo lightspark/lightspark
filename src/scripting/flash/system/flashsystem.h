@@ -29,6 +29,7 @@ namespace lightspark
 class Capabilities: public ASObject
 {
 public:
+	DLL_PUBLIC static const char* EMULATED_VERSION;
 	Capabilities(){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);

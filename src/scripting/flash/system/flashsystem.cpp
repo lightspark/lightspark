@@ -20,6 +20,7 @@
 #include <libxml++/libxml++.h>
 #include <libxml++/parsers/textreader.h>
 
+#include "version.h"
 #include "flashsystem.h"
 #include "abc.h"
 #include "argconv.h"
@@ -37,12 +38,18 @@ REGISTER_CLASS_NAME(SecurityDomain);
 REGISTER_CLASS_NAME(Capabilities);
 REGISTER_CLASS_NAME(Security);
 
+#ifdef _WIN32
+const char* Capabilities::EMULATED_VERSION = "WIN 11,1,0,"SHORTVERSION;
+#else
+const char* Capabilities::EMULATED_VERSION = "LNX 11,1,0,"SHORTVERSION;
+#endif
+
 void Capabilities::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(_getLanguage),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("playerType","",Class<IFunction>::getFunction(playerType),GETTER_METHOD,true);
-	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"),DECLARED_TRAIT);
+	c->setVariableByQName("version","",Class<ASString>::getInstanceS(EMULATED_VERSION),DECLARED_TRAIT);
 	c->setVariableByQName("serverString","",Class<ASString>::getInstanceS(""),DECLARED_TRAIT);
 }
 

@@ -700,6 +700,15 @@ void SystemState::launchGnash()
 	/* Use swf dimensions in standalone mode and window dimensions in plugin mode */
 	snprintf(bufWidth,32,"%u",standalone ? getFrameSize().Xmax/20 : engineData->width);
 	snprintf(bufHeight,32,"%u",standalone ? getFrameSize().Ymax/20 : engineData->height);
+	/* renderMode: 0: disable sound and rendering
+	 *             1: enable rendering and disable sound
+	 *             2: enable sound and disable rendering
+	 *             3: enable sound and rendering
+	 */
+	const char* renderMode = "3";
+	if(!config->isRenderingEnabled())
+		renderMode = "2";
+
 	string params("FlashVars=");
 	params+=rawParameters;
 	/* TODO: pass -F hostFD to assist in loading urls */
@@ -716,6 +725,8 @@ void SystemState::launchGnash()
 		strdup(origin.getParsedURL().raw_buf()),
 		strdup("-P"), //SWF parameters
 		strdup(params.c_str()),
+		strdup("--render-mode"),
+		strdup(renderMode),
 		strdup("-vv"),
 		strdup("-"),
 		NULL

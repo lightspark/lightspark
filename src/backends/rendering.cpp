@@ -437,13 +437,6 @@ void RenderThread::worker()
 		//to the test runner script and uncomment the next line
 		//m_sys->setError(e.cause);
 	}
-	catch(RunTimeException& e)
-	{
-		LOG(LOG_ERROR,_("Exception in RenderThread, stopping rendering: ") << e.what());
-		//TODO: add a comandline switch to disable rendering. Then add that commandline switch
-		//to the test runner script and uncomment the next line
-		//m_sys->setError(e.cause);
-	}
 
 	/* cleanup */
 	//Keep addUploadJob from enqueueing

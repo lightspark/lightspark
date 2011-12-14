@@ -18,13 +18,13 @@ VS_VERSION_INFO VERSIONINFO
 	BLOCK "040904e4"
 	BEGIN
 	VALUE "CompanyName", " "
-	VALUE "FileDescription", "Flash"
+	VALUE "FileDescription", "Shockwave Flash 11.1 r350"
 	VALUE "FileExtents", "swf"
 	VALUE "FileOpenName", "Flash"
-	VALUE "FileVersion", "1, 0, 0, 1"
+	VALUE "FileVersion", "11, 1, 0, 1"
 	VALUE "InternalName", "nplightsparkplugin"
 	VALUE "LegalCopyright", "Copyright © 2011 by the Lightspark team"
-	VALUE "MIMEType", "application/x-shockwave-flash|application/x-lightspark"
+	VALUE "MIMEType", "application/x-shockwave-flash"
 	VALUE "OriginalFilename", "nplightsparkplugin.dll"
 	VALUE "ProductName", "Shockwave Flash"
 	VALUE "ProductVersion", "1, 0, 0, 1"
@@ -34,4 +34,4 @@ VS_VERSION_INFO VERSIONINFO
 	BEGIN
 	VALUE "Translation", 0x409, 1252
 	END
-END 
+END

@@ -216,6 +216,25 @@ void RenderThread::handleUpload()
 	prevUploadJob=u;
 }
 
+void createGTKErrorText(EngineData* engineData)
+{
+	gdk_threads_enter();
+
+	GtkWidget* window = engineData->getGTKWidget();
+
+	//This does not work:
+	GtkWidget* label = gtk_button_new_with_label("OpenGL Error!");
+	gtk_container_add( GTK_CONTAINER(window), label);
+	gtk_widget_show( label );
+	gtk_widget_show_all( window );
+
+	//This works:
+	GdkColor color;
+	gdk_color_parse ("red", &color);
+	gtk_widget_modify_bg( window, GTK_STATE_NORMAL, &color);
+	gdk_threads_leave();
+}
+
 /*
  * Create an OpenGL context, load shaders and setup FBO
  */
@@ -226,6 +245,8 @@ void RenderThread::init()
 
 	windowWidth=engineData->width;
 	windowHeight=engineData->height;
+
+	throw RunTimeException("Something happend!");
 #if defined(_WIN32)
 	PIXELFORMATDESCRIPTOR pfd =
 		{
@@ -470,6 +491,7 @@ void RenderThread::worker()
 		//TODO: add a comandline switch to disable rendering. Then add that commandline switch
 		//to the test runner script and uncomment the next line
 		//m_sys->setError(e.cause);
+		engineData->runInGtkThread(sigc::bind(&createGTKErrorText, engineData));
 	}
 	catch(RunTimeException& e)
 	{
@@ -477,6 +499,7 @@ void RenderThread::worker()
 		//TODO: add a comandline switch to disable rendering. Then add that commandline switch
 		//to the test runner script and uncomment the next line
 		//m_sys->setError(e.cause);
+		engineData->runInGtkThread(sigc::bind(&createGTKErrorText, engineData));
 	}
 
 	/* cleanup */

@@ -1037,14 +1037,14 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					{
 						//Exception unhandled, report up
 						ev->done.signal();
-						throw e;
+						throw;
 					}
 				}
 				catch(LightsparkException& e)
 				{
 					//An internal error happended, sync and rethrow
 					ev->done.signal();
-					throw e;
+					throw;
 				}
 				break;
 			}

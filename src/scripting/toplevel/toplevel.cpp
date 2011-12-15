@@ -2034,7 +2034,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 				cur_recursion--; //decrement current recursion depth
 				Log::calls_indent--;
 				getVm()->curGlobalObj = saved_global;
-				throw excobj;
+				throw;
 			}
 			continue;
 		}

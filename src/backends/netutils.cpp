@@ -647,7 +647,7 @@ void Downloader::openCache()
 	if(cached && !cache.is_open())
 	{
 		//Create a temporary file(name)
-		std::string cacheFilenameS = getSys()->config->getCacheDirectory() + "/" + getSys()->config->getCachePrefix() + "XXXXXX";
+		std::string cacheFilenameS = Config::getConfig()->getCacheDirectory() + "/" + Config::getConfig()->getCachePrefix() + "XXXXXX";
 		char* cacheFilenameC = g_newa(char,cacheFilenameS.length()+1);
 		strncpy(cacheFilenameC, cacheFilenameS.c_str(), cacheFilenameS.length());
 		cacheFilenameC[cacheFilenameS.length()] = '\0';

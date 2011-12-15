@@ -259,7 +259,6 @@ public:
 	Stage* stage;
 	ABCVm* currentVm;
 
-	Config* config;
 	PluginManager* pluginManager;
 	AudioManager* audioManager;
 

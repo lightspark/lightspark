@@ -181,8 +181,6 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 		parseThread->setRootMovie(this);
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
-	config=new Config;
-	config->load();
 	pluginManager = new PluginManager;
 	audioManager=new AudioManager(pluginManager);
 	intervalManager=new IntervalManager();
@@ -350,8 +348,6 @@ void SystemState::stopEngines()
 	downloadManager=NULL;
 	delete securityManager;
 	securityManager=NULL;
-	delete config;
-	config=NULL;
 	delete threadPool;
 	threadPool=NULL;
 	//Now stop the managers
@@ -574,7 +570,7 @@ void SystemState::delayedCreation()
 
 	inputThread->start(engineData);
 
-	if(config->isRenderingEnabled())
+	if(Config::getConfig()->isRenderingEnabled())
 	{
 		renderThread->start(engineData);
 	}
@@ -647,7 +643,7 @@ void SystemState::createEngines()
 void SystemState::launchGnash()
 {
 	Locker l(mutex);
-	if(config->getGnashPath().empty())
+	if(Config::getConfig()->getGnashPath().empty())
 	{
 		LOG(LOG_INFO, "Unsupported flash file (AVM1), and no gnash found");
 		l.release();
@@ -706,7 +702,7 @@ void SystemState::launchGnash()
 	 *             3: enable sound and rendering
 	 */
 	const char* renderMode = "3";
-	if(!config->isRenderingEnabled())
+	if(!Config::getConfig()->isRenderingEnabled())
 		renderMode = "2";
 
 	string params("FlashVars=");
@@ -714,7 +710,7 @@ void SystemState::launchGnash()
 	/* TODO: pass -F hostFD to assist in loading urls */
 	char* args[] =
 	{
-		strdup(config->getGnashPath().c_str()),
+		strdup(Config::getConfig()->getGnashPath().c_str()),
 		strdup("-x"), //Xid
 		bufXid,
 		strdup("-j"), //Width

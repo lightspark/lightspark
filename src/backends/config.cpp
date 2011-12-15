@@ -29,6 +29,13 @@ using namespace lightspark;
 using namespace std;
 using namespace boost::filesystem;
 
+Config* Config::getConfig()
+{
+	static Config conf;
+	return &conf;
+
+}
+
 #ifdef WIN32
 const std::string LS_REG_KEY = "SOFTWARE\\MozillaPlugins\\@lightspark.github.com/Lightspark;version=1";
 std::string readRegistryEntry(std::string name)
@@ -84,16 +91,7 @@ Config::Config():
 	audioBackendNames[PULSEAUDIO] = "pulseaudio";
 	audioBackendNames[SDL] = "sdl";
 	audioBackendNames[WINMM] = "winmm";
-}
 
-Config::~Config()
-{
-	if(parser != NULL)
-		delete parser;
-}
-
-void Config::load()
-{
 	//Try system configs first
 	string sysDir;
 	const char* const* cursor = systemConfigDirectories;
@@ -182,6 +180,12 @@ void Config::load()
 #	endif
 	gnashPath = GNASH_PATH;
 #endif
+}
+
+Config::~Config()
+{
+	if(parser != NULL)
+		delete parser;
 }
 
 /* This is called by the parser for each entry in the configuration file */

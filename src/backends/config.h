@@ -58,10 +58,11 @@ namespace lightspark
 
 		//Specifies if rendering should be done
 		bool renderingEnabled;
-	public:
 		Config();
 		~Config();
-		void load();
+	public:
+		/* Returns the singleton config object */
+		static Config* getConfig();
 
 		const std::string& getCacheDirectory() const { return cacheDirectory; }
 		const std::string& getCachePrefix() const { return cachePrefix; }

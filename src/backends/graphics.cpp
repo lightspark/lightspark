@@ -24,6 +24,7 @@
 #include "logger.h"
 #include "exceptions.h"
 #include "backends/rendering.h"
+#include "backends/config.h"
 #include "compat.h"
 #include "scripting/flash/text/flashtext.h"
 
@@ -657,10 +658,11 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 
 StaticMutex CairoRenderer::cairoMutex = GLIBMM_STATIC_MUTEX_INIT;
 
+/* This implements IThreadJob::execute */
 void CairoRenderer::execute()
 {
 	Mutex::Lock l(cairoMutex);
-	if(width==0 || height==0)
+	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 	{
 		uploadNeeded = false;
 		return;

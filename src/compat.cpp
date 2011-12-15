@@ -121,6 +121,7 @@ DEFDLLMAIN(atk);
 DEFDLLMAIN(pango);
 DEFDLLMAIN(gdk);
 DEFDLLMAIN(gtk);
+DEFDLLMAIN(cairo);
 
 #define RUNDLLMAIN(x) x##_DllMain(hinstDLL, fdwReason, lpvReserved)
 extern "C"
@@ -128,6 +129,7 @@ BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	RUNDLLMAIN(gio);
 	RUNDLLMAIN(glib);
+	RUNDLLMAIN(cairo);
 	RUNDLLMAIN(atk);
 	RUNDLLMAIN(pango);
 	RUNDLLMAIN(gdk);

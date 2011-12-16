@@ -283,6 +283,7 @@ nsPluginInstanceBase * NS_NewPluginInstance(nsPluginCreateData * aCreateDataStru
 
 void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 {
+	LOG(LOG_INFO,"NS_DestroyPluginInstance " << aPlugin);
 	if(aPlugin)
 		delete (nsPluginInstance *)aPlugin;
 	setTLSSys( NULL );
@@ -331,6 +332,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 
 nsPluginInstance::~nsPluginInstance()
 {
+	LOG(LOG_INFO, "~nsPluginInstance " << this);
 	//Shutdown the system
 	setTLSSys(m_sys);
 	if(mainDownloader)

@@ -44,6 +44,11 @@ ASString::ASString(const tiny_string& s) : data(s)
 	type=T_STRING;
 }
 
+ASString::ASString(const Glib::ustring& s) : data(s)
+{
+	type=T_STRING;
+}
+
 ASString::ASString(const char* s) : data(s, /*copy:*/true)
 {
 	type=T_STRING;

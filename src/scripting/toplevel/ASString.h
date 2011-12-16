@@ -22,6 +22,8 @@
 
 #include "class.h"
 
+namespace Glib { class ustring; }
+
 namespace lightspark
 {
 /*
@@ -36,6 +38,7 @@ private:
 	ASString();
 	ASString(const std::string& s);
 	ASString(const tiny_string& s);
+	ASString(const Glib::ustring& s);
 	ASString(const char* s);
 	ASString(const char* s, uint32_t len);
 public:

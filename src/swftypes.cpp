@@ -34,6 +34,26 @@
 using namespace std;
 using namespace lightspark;
 
+/* Implementation of Glib::ustring conversion for libxml++.
+ * We implement them in the source file to not pollute the header with glib.h
+ */
+tiny_string::tiny_string(const Glib::ustring& r):buf(_buf_static),stringSize(r.bytes()+1),type(STATIC)
+{
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf,r.c_str(),stringSize);
+}
+
+tiny_string& tiny_string::operator=(const Glib::ustring& r)
+{
+	resetToStatic();
+	stringSize = r.bytes()+1;
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf,r.c_str(),stringSize);
+	return *this;
+}
+
 tiny_string::operator Glib::ustring() const
 {
 	return Glib::ustring(buf,numChars());
@@ -47,6 +67,17 @@ bool tiny_string::operator==(const Glib::ustring& u) const
 bool tiny_string::operator!=(const Glib::ustring& u) const
 {
 	return *this != u.raw();
+}
+
+const tiny_string tiny_string::operator+(const Glib::ustring& r) const
+{
+	return *this + tiny_string(r);
+}
+
+tiny_string& tiny_string::operator+=(const Glib::ustring& s)
+{
+	//TODO: optimize
+	return *this += tiny_string(s);
 }
 
 tiny_string& tiny_string::operator+=(const char* s)

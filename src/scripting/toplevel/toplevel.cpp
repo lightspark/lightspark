@@ -112,6 +112,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
 }
 
 void XML::buildFromString(const string& str)
@@ -449,6 +450,34 @@ ASFUNCTIONBODY(XML,valueOf)
 {
 	obj->incRef();
 	return obj;
+}
+
+void XML::getText(vector<_R<XML>> &ret)
+{
+	xmlpp::Node::NodeList nl = node->get_children();
+	xmlpp::Node::NodeList::iterator i;
+	_NR<XML> childroot = root;
+	if(childroot.isNull())
+	{
+		this->incRef();
+		childroot = _MR(this);
+	}
+	for(i=nl.begin(); i!= nl.end(); ++i)
+	{
+		xmlpp::TextNode* nodeText = dynamic_cast<xmlpp::TextNode*>(*i);
+		//The official implementation seems to ignore whitespace-only textnodes
+		if(nodeText && !nodeText->is_white_space())
+			ret.push_back( _MR(Class<XML>::getInstanceS(childroot, nodeText)) );
+	}
+}
+
+ASFUNCTIONBODY(XML,text)
+{
+	XML *th = obj->as<XML>();
+	ARG_UNPACK;
+	vector<_R<XML>> ret;
+	th->getText(ret);
+	return Class<XMLList>::getInstanceS(ret);
 }
 
 bool XML::hasSimpleContent() const
@@ -829,6 +858,7 @@ void XMLList::sinit(Class_base* c)
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(XMLList,_constructor)
@@ -943,6 +973,19 @@ ASFUNCTIONBODY(XMLList,valueOf)
 {
 	obj->incRef();
 	return obj;
+}
+
+ASFUNCTIONBODY(XMLList,text)
+{
+	XMLList* th = obj->as<XMLList>();
+	ARG_UNPACK;
+	std::vector<_R<XML>> ret;
+	std::vector<_R<XML> >::iterator it=th->nodes.begin();
+        for(; it!=th->nodes.end(); ++it)
+        {
+		(*it)->getText(ret);
+	}
+	return Class<XMLList>::getInstanceS(ret);
 }
 
 _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)

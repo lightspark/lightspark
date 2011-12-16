@@ -580,6 +580,7 @@ public:
 class XMLList;
 class XML: public ASObject
 {
+friend class XMLList;
 private:
 	//The parser will destroy the document and all the childs on destruction
 	xmlpp::DomParser parser;
@@ -594,6 +595,7 @@ private:
 	bool constructed;
 	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
 	XMLList* getAllAttributes();
+	void getText(std::vector<_R<XML>> &ret);
 public:
 	XML();
 	XML(const std::string& str);
@@ -615,6 +617,7 @@ public:
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
 	ASFUNCTION(valueOf);
+	ASFUNCTION(text);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
@@ -663,6 +666,7 @@ public:
 	ASFUNCTION(generator);
 	ASFUNCTION(descendants);
 	ASFUNCTION(valueOf);
+	ASFUNCTION(text);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);

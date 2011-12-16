@@ -771,6 +771,12 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			ret="undefined";
 			break;
 		case T_OBJECT:
+			if(obj->is<XML>() || obj->is<XMLList>())
+			{
+				ret = "xml";
+				break;
+			}
+			//fallthrough
 		case T_NULL:
 		case T_ARRAY:
 		case T_CLASS: //this is not clear from spec, but was tested

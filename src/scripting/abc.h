@@ -211,7 +211,7 @@ friend std::istream& operator>>(std::istream& in, method_info& v);
 friend struct block_info;
 friend class SyntheticFunction;
 private:
-	enum { NEED_ARGUMENTS=1,NEED_REST=4, HAS_OPTIONAL=8};
+	enum { NEED_ARGUMENTS=0x01, NEED_ACTIVATION=0x02, NEED_REST=0x04, HAS_OPTIONAL=0x08, SET_DXNS=0x40, HAS_PARAM_NAMES=0x80 };
 	u30 param_count;
 	u30 return_type;
 	std::vector<u30> param_type;
@@ -256,6 +256,7 @@ public:
 	bool needsArgs() { return (flags & NEED_ARGUMENTS) != 0;}
 	bool needsRest() { return (flags & NEED_REST) != 0;}
 	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
+	bool hasDXNS() { return (flags & SET_DXNS) != 0;}
 	ASObject* getOptional(unsigned int i);
 	uint32_t numArgs() { return param_count; }
 	const multiname* paramTypeName(uint32_t i) const;
@@ -591,6 +592,8 @@ private:
 	static ASObject* esc_xattr(ASObject* o);
 	static bool instanceOf(ASObject* value, ASObject* type);
 	static Namespace* pushNamespace(call_context* th, int n);
+	static void dxns(call_context* th, int n);
+	static void dxnslate(call_context* th, ASObject* value);
 	//Utility
 	static void not_impl(int p);
 	static void wrong_exec_pos();
@@ -627,7 +630,7 @@ private:
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
 public:
-	Global* curGlobalObj;
+	call_context* currentCallContext;
 	GlobalObject* global;
 	Manager* int_manager;
 	Manager* uint_manager;

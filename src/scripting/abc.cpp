@@ -798,7 +798,7 @@ void ABCContext::dumpProfilingData(ostream& f) const
 }
 #endif
 
-ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curGlobalObj(NULL),
+ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),currentCallContext(NULL),
 	cur_recursion(0)
 {
 	limits.max_recursion = 256;

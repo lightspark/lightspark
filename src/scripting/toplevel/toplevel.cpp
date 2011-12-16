@@ -1742,7 +1742,8 @@ ASFUNCTIONBODY(IFunction,apply)
 	//Validate parameters
 	if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
 	{
-		newObj=getVm()->curGlobalObj;
+		//get the current global object
+		newObj=getVm()->currentCallContext->scope_stack[0].object->as<Global>();
 		newObj->incRef();
 	}
 	else
@@ -1777,7 +1778,8 @@ ASFUNCTIONBODY(IFunction,_call)
 	uint32_t newArgsLen=0;
 	if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
 	{
-		newObj=getVm()->curGlobalObj;
+		//get the current global object
+		newObj=getVm()->currentCallContext->scope_stack[0].object->as<Global>();
 		newObj->incRef();
 	}
 	else
@@ -1933,8 +1935,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc.exec_pos=0;
 
 	/* Set the current global object, each script in each DoABCTag has its own */
-	Global* saved_global = getVm()->curGlobalObj;
-	getVm()->curGlobalObj = cc.scope_stack[0].object->as<Global>();
+	call_context* saved_cc = getVm()->currentCallContext;
+	getVm()->currentCallContext = &cc;
 
 	if(isBound())
 	{ /* closure_this can never been overriden */
@@ -2033,7 +2035,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			{
 				cur_recursion--; //decrement current recursion depth
 				Log::calls_indent--;
-				getVm()->curGlobalObj = saved_global;
+				getVm()->currentCallContext = saved_cc;
 				throw;
 			}
 			continue;
@@ -2042,7 +2044,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	}
 	cur_recursion--; //decrement current recursion depth
 	Log::calls_indent--;
-	getVm()->curGlobalObj= saved_global;
+	getVm()->currentCallContext = saved_cc;
 
 	hit_count++;
 

@@ -60,6 +60,10 @@ struct call_context
 	 * by {construct,call,get,set}Super
 	 * */
 	Class_base* inClass;
+	/* Current namespace set by 'default xml namespace = ...'.
+	 * Defaults to empty string according to ECMA-357 13.1.1.1
+	 */
+	tiny_string defaultNamespaceUri;
 	~call_context();
 	void runtime_stack_clear();
 	void runtime_stack_push(ASObject* s)

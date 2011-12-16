@@ -99,6 +99,21 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				setSuper(context,t);
 				break;
 			}
+			case 0x06:
+			{
+				//dxns
+				u30 t;
+				code >> t;
+				dxns(context,t);
+				break;
+			}
+			case 0x07:
+			{
+				//dxnslate
+				ASObject* v=context->runtime_stack_pop();
+				dxnslate(context, v);
+				break;
+			}
 			case 0x08:
 			{
 				//kill

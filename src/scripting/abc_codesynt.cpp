@@ -146,7 +146,9 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"incRef",(void*)&ASObject::s_incRef,ARGS_OBJ},
 	{"decRef",(void*)&ASObject::s_decRef,ARGS_OBJ},
 	{"decRef_safe",(void*)&ASObject::s_decRef_safe,ARGS_OBJ_OBJ},
-	{"wrong_exec_pos",(void*)&ABCVm::wrong_exec_pos,ARGS_NONE}
+	{"wrong_exec_pos",(void*)&ABCVm::wrong_exec_pos,ARGS_NONE},
+	{"dxns",(void*)&ABCVm::dxns,ARGS_CONTEXT_INT},
+	{"dxnslate",(void*)&ABCVm::dxnslate,ARGS_CONTEXT_OBJ},
 };
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
@@ -911,6 +913,17 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					u30 t;
 					code >> t;
 					static_stack_types.clear();
+					break;
+				}
+				case 0x06: //dxns
+				{
+					u30 t;
+					code >> t;
+					break;
+				}
+				case 0x07: //dxnslate
+				{
+					popTypeFromStack(static_stack_types,local_ip);
 					break;
 				}
 				case 0x08: //kill
@@ -2018,6 +2031,25 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("setSuper"), context, constant);
+				break;
+			}
+			case 0x06:
+			{
+				//dxns
+				LOG(LOG_TRACE, _("synt dxns") );
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(int_type, t);
+				Builder.CreateCall2(ex->FindFunctionNamed("dxns"), context, constant);
+				break;
+			}
+			case 0x07:
+			{
+				//dxnslate
+				LOG(LOG_TRACE, _("synt dxnslate") );
+				stack_entry v=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				abstract_value(ex,Builder,v);
+				Builder.CreateCall2(ex->FindFunctionNamed("dxns"), context, v.first);
 				break;
 			}
 			case 0x08:

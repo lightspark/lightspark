@@ -2217,3 +2217,22 @@ Namespace* ABCVm::pushNamespace(call_context* th, int n)
 	LOG(LOG_CALLS, _("pushNamespace ") << th->context->getString(ns_info.name) );
 	return Class<Namespace>::getInstanceS(th->context->getString(ns_info.name));
 }
+
+/* @spec-checked avm2overview */
+void ABCVm::dxns(call_context* th, int n)
+{
+	if(!th->mi->hasDXNS())
+		throw Class<VerifyError>::getInstanceS("dxns without SET_DXNS");
+
+	th->defaultNamespaceUri = th->context->getString(n);
+}
+
+/* @spec-checked avm2overview */
+void ABCVm::dxnslate(call_context* th, ASObject* o)
+{
+	if(!th->mi->hasDXNS())
+		throw Class<VerifyError>::getInstanceS("dxnslate without SET_DXNS");
+
+	th->defaultNamespaceUri = o->toString();
+	o->decRef();
+}

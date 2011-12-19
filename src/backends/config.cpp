@@ -159,13 +159,16 @@ Config::Config():
 		else
 		{
 			path gnash_exec_path = s;
-			gnash_exec_path /= "sdl-gnash.exe";
-			if(is_regular_file(gnash_exec_path))
+			if(is_regular_file(gnash_exec_path / "gtk-gnash.exe"))
 			{
-				LOG(LOG_INFO,"Found gnash at " << gnash_exec_path);
-				gnashPath = gnash_exec_path.string();
+				LOG(LOG_INFO,"Found gnash at " << (gnash_exec_path / "gtk-gnash.exe"));
+				gnashPath = (gnash_exec_path / "gtk-gnash.exe").string();
 			}
-			else
+			else if(is_regular_file(gnash_exec_path / "sdl-gnash.exe"))
+			{
+				LOG(LOG_INFO,"Found gnash at " << (gnash_exec_path / "sdl-gnash.exe"));
+				gnashPath = (gnash_exec_path / "sdl-gnash.exe").string();
+			}
 				LOG(LOG_ERROR, "Could not find gnash in " << gnash_exec_path);
 		}
 	}

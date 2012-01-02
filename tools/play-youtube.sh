@@ -18,6 +18,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
+
+PATH=$(pwd)/$(dirname $0)/../$(arch)/$(sed -n 's/CMAKE_BUILD_TYPE:STRING=\(.*\)/\1/ p' CMakeCache.txt)/bin:$PATH
+
 if test "x$LIGHTSPARK" = "x"; then
     LIGHTSPARK="lightspark"
 fi

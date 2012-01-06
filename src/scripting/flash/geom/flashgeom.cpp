@@ -838,7 +838,7 @@ ASFUNCTIONBODY(Point,distance)
 	assert_and_throw(argslen==2);
 	Point* pt1=static_cast<Point*>(args[0]);
 	Point* pt2=static_cast<Point*>(args[1]);
-	Point temp(pt2->x - pt1->x, pt2->y - pt1->x);
+	Point temp(pt2->x - pt1->x, pt2->y - pt1->y);
 	return abstract_d(temp.len());
 }
 

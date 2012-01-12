@@ -11,8 +11,10 @@
 	import flash.display.Sprite;
 	import Tests;
 
-	private function matrixEqual(m1:Matrix, m2:Matrix):Boolean {
-		return m1.a == m2.a && m1.b == m2.b && m1.c == m2.c && m1.d == m2.d && m1.tx == m2.tx && m1.ty == m2.ty;
+	private function assertMatrixEqual(m1:Matrix, m2:Matrix, msg:String):void {
+		for each (var p:String in ["a", "b", "c", "d", "tx", "ty"]) {
+			Tests.assertEqualsDelta(m2[p], m1[p], 0.00001, msg + "." + p);
+		}
 	}
 
 	private function appComplete():void
@@ -21,38 +23,51 @@
 		Tests.assertTrue(mat.a == 1 && mat.b == 0 && mat.c == 0 && mat.d == 1, "new Matrix()");
 		
 		var matc:Matrix = mat.clone();
-		Tests.assertTrue(matrixEqual(mat, matc), "matrix.clone");
+		assertMatrixEqual(mat, matc, "Matrix.clone");
 
 		var matm1:Matrix = new Matrix(1, 4, 2, 5, 3, 5);
 		var matm2:Matrix = new Matrix(2, 4, 5, 7, 9, 11);
 		var matm3:Matrix = new Matrix(22, 32, 29, 43, 40, 58);
 		matm1.concat(matm2);
-		Tests.assertTrue(matrixEqual(matm1, matm3), "matrix.concat");
+		assertMatrixEqual(matm1, matm3, "Matrix.concat");
 
 		mat.a = 50; mat.b = 60; mat.c = 5; mat.d = 100;
 		mat.identity();
-		Tests.assertTrue(mat.a == 1 && mat.b == 0 && mat.c == 0 && mat.d == 1, "Matrix.identity");
+		assertMatrixEqual(mat, new Matrix(1, 0, 0, 1, 0, 0), "Matrix.identity");
 		
 		var mat2:Matrix = new Matrix();
 		mat2.rotate(Math.PI / 2);
-		Tests.assertEqualsDelta(0,mat2.a,0.00001,"Matrix.rotate");
-		Tests.assertEqualsDelta(1,mat2.b,0.00001,"Matrix.rotate");
-		Tests.assertEqualsDelta(-1,mat2.c,0.00001,"Matrix.rotate");
-		Tests.assertEqualsDelta(0,mat2.d,0.00001,"Matrix.rotate");
+		assertMatrixEqual(mat2, new Matrix(0, 1, -1, 0, 0, 0), "Matrix.rotate");
+		
+		var mat2a:Matrix = new Matrix(1, 0, 0, 1, 2, 3);
+		mat2a.rotate(Math.PI / 2);
+		assertMatrixEqual(mat2a, new Matrix(0, 1, -1, 0, -3, 2), "Matrix.rotate.translated");
 		
 		var mat3:Matrix = new Matrix();
 		mat3.scale(4, 2);
-		Tests.assertTrue(mat3.a == 4 && mat3.b == 0 && mat3.c == 0 && mat3.d == 2, "Matrix.scale");
+		assertMatrixEqual(mat3, new Matrix(4, 0, 0, 2, 0, 0), "Matrix.scale");
+		
+ 		var mat3a:Matrix = new Matrix(1, 0, 0, 1, 2, 3);
+ 		mat3a.scale(4, 2);
+ 		assertMatrixEqual(mat3a, new Matrix(4, 0, 0, 2, 8, 6), "Matrix.scale.translated");
 		
 		var mat4:Matrix = new Matrix();
 		mat4.translate(4, 2);
-		Tests.assertTrue(mat4.tx == 4 && mat4.ty == 2, "Matrix.translate");
+		assertMatrixEqual(mat4, new Matrix(1, 0, 0, 1, 4, 2), "Matrix.translate");
+
+		var mat4a:Matrix = new Matrix(0, 1, -1, 0, 0, 0);
+		mat4a.translate(4, 2);
+		assertMatrixEqual(mat4a, new Matrix(0, 1, -1, 0, 4, 2), "Matrix.translate.rotated");
 
 		var mati1:Matrix = new Matrix(1, 4, 2, 5, 0, 0);
 		var mati2:Matrix = mati1.clone();
 		mati2.invert();
 		mati1.concat(mati2);
-		Tests.assertTrue(matrixEqual(mati1, new Matrix(1, 0, 0, 1, 0, 0)), "matrix.invert");
+		assertMatrixEqual(mati1, new Matrix(1, 0, 0, 1, 0, 0), "Matrix.invert");
+
+		var mat5:Matrix = new Matrix();
+		mat5.createBox(4, 2, Math.PI/2, 2, 4);
+		assertMatrixEqual(mat5, new Matrix(0, 2, -4, 0, 2, 4), "Matrix.createBox");
 
 		Tests.report(visual, this.name);
 	}

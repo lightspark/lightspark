@@ -65,6 +65,10 @@
 		mati1.concat(mati2);
 		assertMatrixEqual(mati1, new Matrix(1, 0, 0, 1, 0, 0), "Matrix.invert");
 
+		var mat5:Matrix = new Matrix();
+		mat5.createBox(4, 2, Math.PI/2, 2, 4);
+		assertMatrixEqual(mat5, new Matrix(0, 2, -4, 0, 2, 4), "Matrix.createBox");
+
 		Tests.report(visual, this.name);
 	}
 ]]>

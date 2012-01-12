@@ -1185,13 +1185,17 @@ ASFUNCTIONBODY(Matrix,translate)
 	number_t dx = args[0]->toNumber();
 	number_t dy = args[1]->toNumber();
 
-	number_t ttx, tty;
-
-	ttx = th->a * dx + th->c * dy + th->tx;
-	tty = th->b * dx + th->d * dy + th->ty;
-
-	th->tx = ttx;
-	th->ty = tty;
+	/*
+	                      [a     c    tx   ]
+	                      [b     d    ty   ]
+	                      [0     0    1    ]
+	      
+	      [1     0   dx]  [a     c    tx+dx]
+	      [0     1   dy]  [b     d    ty+dy]
+	      [0     0    1]  [0     0    1    ]
+	*/
+	th->tx += dx;
+	th->ty += dy;
 
 	return NULL;
 }
@@ -1201,17 +1205,32 @@ ASFUNCTIONBODY(Matrix,rotate)
 	assert_and_throw(argslen==1);
 	Matrix* th=static_cast<Matrix*>(obj);
 	number_t angle = args[0]->toNumber();
-	number_t ta, tb, tc, td;
+	number_t ta, tb, tc, td, tx, ty;
 
-	ta = th->a * cos(angle) + th->c * sin(angle);
-	tb = th->b * cos(angle) + th->d * sin(angle);
-	tc = th->c * cos(angle) - th->a * sin(angle);
-	td = th->d * cos(angle) - th->b * sin(angle);
+        /*
+	  with sin = sin(angle) and cos = cos(angle):
+
+	                  [a            c            tx           ]
+                          [b            d            ty           ]
+	                  [0            0            1            ]
+
+	  [cos   -sin  0] [a*cos-b*sin  c*cos-d*sin  tx*cos-ty*sin]
+	  [sin   cos   0] [a*sin+b*cos  c*sin+d*cos  tx*sin+ty*cos]
+	  [0     0     1] [0            0            1            ]
+	*/
+	ta = th->a * cos(angle) - th->b * sin(angle);
+	tb = th->a * sin(angle) + th->b * cos(angle);
+	tc = th->c * cos(angle) - th->d * sin(angle);
+	td = th->c * sin(angle) + th->d * cos(angle);
+	tx = th->tx * cos(angle) - th->ty * sin(angle);
+	ty = th->tx * sin(angle) + th->ty * cos(angle);
 
 	th->a = ta;
 	th->b = tb;
 	th->c = tc;
 	th->d = td;
+	th->tx = tx;
+	th->ty = ty;
 
 	return NULL;
 }
@@ -1223,21 +1242,39 @@ ASFUNCTIONBODY(Matrix,scale)
 	number_t sx = args[0]->toNumber();
 	number_t sy = args[1]->toNumber();
 
+	/*
+	                      [a     c    tx   ]
+	                      [b     d    ty   ]
+	                      [0     0    1    ]
+	      
+	      [sx    0     0] [a*sx  c*sx tx*sx]
+	      [0     sy    0] [b*sy  d*sy ty*sy]
+	      [0     0     1] [0     0    1    ]
+	*/
 	th->a *= sx;
-	th->b *= sx;
-	th->c *= sy;
+	th->b *= sy;
+	th->c *= sx;
 	th->d *= sy;
+	th->tx *= sx;
+	th->ty *= sy;
 		
 	return NULL;
 }
 
 void Matrix::_createBox (number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y) {
+	/*
+	 * sequence:
+	 *      identity();
+	 *      rotate(angle);
+	 *      scale(scaleX, scaleY);
+	 *      translate(x, y);
+	 */
 	a = scaleX * cos(angle);
-	b = scaleX * sin(angle);
-	c = -scaleY * sin(angle);
+	b = scaleY * sin(angle);
+	c = scaleX * -sin(angle);
 	d = scaleY * cos(angle);
-	tx = x * cos(angle) - y * sin(angle);
-	ty = x * sin(angle) + y * cos(angle);
+	tx = x;
+	ty = y;
 }
 
 ASFUNCTIONBODY(Matrix,createBox)

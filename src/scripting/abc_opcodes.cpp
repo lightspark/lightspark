@@ -960,7 +960,7 @@ int32_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 
 	val1->decRef();
 	val2->decRef();
-	LOG(LOG_CALLS,_("add_i ") << num1 << '-' << num2);
+	LOG(LOG_CALLS,_("add_i ") << num1 << '+' << num2);
 	return num1+num2;
 }
 

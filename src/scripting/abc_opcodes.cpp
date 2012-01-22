@@ -547,67 +547,33 @@ int32_t ABCVm::multiply_i(ASObject* val2, ASObject* val1)
 void ABCVm::incLocal(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("incLocal ") << n );
-	if(th->locals[n]->getObjectType()==T_NUMBER)
-	{
-		th->locals[n]->as<Number>()->val++;
-	}
-	else
-	{
-		number_t tmp=th->locals[n]->toNumber();
-		th->locals[n]->decRef();
-		th->locals[n]=abstract_d(tmp+1);
-	}
-
+	number_t tmp=th->locals[n]->toNumber();
+	th->locals[n]->decRef();
+	th->locals[n]=abstract_d(tmp+1);
 }
 
 void ABCVm::incLocal_i(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("incLocal_i ") << n );
-	if(th->locals[n]->getObjectType()==T_INTEGER)
-	{
-		Integer* i=static_cast<Integer*>(th->locals[n]);
-		i->val++;
-	}
-	else
-	{
-		int32_t tmp=th->locals[n]->toInt();
-		th->locals[n]->decRef();
-		th->locals[n]=abstract_i(tmp+1);
-	}
-
+	int32_t tmp=th->locals[n]->toInt();
+	th->locals[n]->decRef();
+	th->locals[n]=abstract_i(tmp+1);
 }
 
 void ABCVm::decLocal(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("decLocal ") << n );
-	if(th->locals[n]->getObjectType()==T_NUMBER)
-	{
-		th->locals[n]->as<Number>()->val--;
-	}
-	else
-	{
-		number_t tmp=th->locals[n]->toNumber();
-		th->locals[n]->decRef();
-		th->locals[n]=abstract_d(tmp-1);
-	}
-
+	number_t tmp=th->locals[n]->toNumber();
+	th->locals[n]->decRef();
+	th->locals[n]=abstract_d(tmp-1);
 }
 
 void ABCVm::decLocal_i(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("decLocal_i ") << n );
-	if(th->locals[n]->getObjectType()==T_INTEGER)
-	{
-		Integer* i=static_cast<Integer*>(th->locals[n]);
-		i->val--;
-	}
-	else
-	{
-		int32_t tmp=th->locals[n]->toInt();
-		th->locals[n]->decRef();
-		th->locals[n]=abstract_i(tmp-1);
-	}
-
+	int32_t tmp=th->locals[n]->toInt();
+	th->locals[n]->decRef();
+	th->locals[n]=abstract_i(tmp-1);
 }
 
 /* This is called for expressions like

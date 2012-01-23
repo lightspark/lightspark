@@ -870,6 +870,24 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 }
 
+bool Array::deleteVariableByMultiname(const multiname& name)
+{
+	assert_and_throw(implEnable);
+	unsigned int index=0;
+	if(!isValidMultiname(name,index))
+		return ASObject::deleteVariableByMultiname(name);
+
+	if(index>=data.capacity())
+	  return true;
+
+	if(data[index].type==DATA_OBJECT && data[index].data)
+		data[index].data->decRef();
+
+	data[index].data=NULL;
+	data[index].type=DATA_OBJECT;
+	return true;
+}
+
 bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index)
 {
 	if(ns!="")

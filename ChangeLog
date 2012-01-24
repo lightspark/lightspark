@@ -1,5 +1,14 @@
 lightspark: An open source flash player implementation
 
+Version 0.5.4:
+
+	* Fix build against LLVM-3.0
+	* Drop OpenAL backend
+	* ENABLE_RTMP=1 by default
+	* Many fixes for crashers and hangs
+	* API additions and fixes to XML, Vector, Matrix
+	* Code cleanups
+
 Version 0.5.3:
 	* Support playing RTMP streams from Flash Media Server when
 	  compiled with ENABLE_RTMP=1

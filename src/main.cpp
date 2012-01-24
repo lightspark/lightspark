@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 	bindtextdomain("lightspark", localedir);
 	textdomain("lightspark");
 
-	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others");
+	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2012 Alessandro Pignotti and others");
 
 	//Make GTK thread enabled
 	g_thread_init(NULL);

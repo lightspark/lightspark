@@ -297,7 +297,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mWindow(0),
 	mainDownloaderStream(NULL),mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
 {
-	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others");
+	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2012 Alessandro Pignotti and others");
 	setTLSSys( NULL );
 	m_sys=new lightspark::SystemState(NULL,0);
 	//Files running in the plugin have REMOTE sandbox

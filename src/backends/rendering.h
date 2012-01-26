@@ -21,25 +21,25 @@
 #define RENDERING_H
 
 #include "lsopengl.h"
+#include "rendering_context.h"
 #include "timer.h"
 
 namespace lightspark
 {
 
-enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
-enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
-
-class RenderThread: public ITickJob
+class RenderThread: public ITickJob, public RenderContext
 {
 friend class DisplayObject;
 private:
 	SystemState* m_sys;
-	pthread_t t;
+	Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
-	STATUS status;
+	volatile STATUS status;
 
-	const EngineData* engineData;
-	static void* worker(RenderThread*);
+	EngineData* engineData;
+	void worker();
+	void init();
+	void deinit();
 
 	void commonGLInit(int width, int height);
 	void commonGLResize();
@@ -51,17 +51,6 @@ private:
 	uint32_t pixelBufferHeight;
 	void resizePixelBuffers(uint32_t w, uint32_t h);
 	ITextureUploadable* prevUploadJob;
-	Mutex mutexLargeTexture;
-	uint32_t largeTextureSize;
-	class LargeTexture
-	{
-	public:
-		GLuint id;
-		uint8_t* bitmap;
-		LargeTexture(uint8_t* b):id(-1),bitmap(b){}
-		~LargeTexture(){/*delete[] bitmap;*/}
-	};
-	std::vector<LargeTexture> largeTextures;
 	GLuint allocateNewGLTexture() const;
 	LargeTexture& allocateNewTexture();
 	bool allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
@@ -75,7 +64,7 @@ private:
 	void handleNewTexture();
 	void finalizeUpload();
 	void handleUpload();
-	sem_t event;
+	Semaphore event;
 	std::string fontPath;
 	uint32_t newWidth;
 	uint32_t newHeight;
@@ -84,18 +73,24 @@ private:
 	int offsetX;
 	int offsetY;
 
-#ifndef WIN32
+#ifdef _WIN32
+	HGLRC mRC;
+	HDC mDC;
+#else
 	Display* mDisplay;
+	Window mWindow;
 #ifndef ENABLE_GLES2
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
 #else
+	EGLDisplay mEGLDisplay;
 	EGLContext mEGLContext;
 	EGLConfig mEGLConfig;
+	EGLSurface mEGLSurface;
 #endif
-	Window mWindow;
 #endif
-	uint64_t time_s, time_d;
+	Glib::TimeVal time_s, time_d;
+	static const Glib::TimeVal FPS_time;
 
 	bool loadShaderPrograms();
 	bool tempBufferAcquired;
@@ -114,14 +109,6 @@ private:
 	void coreRendering();
 	void plotProfilingData();
 	Semaphore initialized;
-	class MaskData
-	{
-	public:
-		DisplayObject* d;
-		MATRIX m;
-		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
-	};
-	std::vector<MaskData> maskStack;
 
 	static void SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data);
 public:
@@ -130,7 +117,7 @@ public:
 	/**
 	   The EngineData object must survive for the whole life of this RenderThread
 	*/
-	void start(const EngineData* data);
+	void start(EngineData* data);
 	/*
 	   The stop function should be call on exit even if the thread is not started
 	*/
@@ -151,10 +138,6 @@ public:
 	*/
 	void releaseTexture(const TextureChunk& chunk);
 	/**
-		Render a quad of given size using the given chunk
-	*/
-	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h);
-	/**
 		Load the given data in the given texture chunk
 	*/
 	void loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data);
@@ -162,28 +145,7 @@ public:
 		Enqueue something to be uploaded to texture
 	*/
 	void addUploadJob(ITextureUploadable* u);
-	/**
-	  	Add a mask to the stack mask
-		@param d The DisplayObject used as a mask
-		@param m The total matrix from the parent of the object to stage
-		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
-	*/
-	void pushMask(DisplayObject* d, const MATRIX& m)
-	{
-		maskStack.emplace_back(d,m);
-	}
-	/**
-	  	Remove the last pushed mask
-	*/
-	void popMask()
-	{
-		maskStack.pop_back();
-	}
-	bool isMaskPresent()
-	{
-		return !maskStack.empty();
-	}
-	void renderMaskToTmpBuffer() const;
+
 	void requestResize(uint32_t w, uint32_t h);
 	void waitForInitialization()
 	{
@@ -197,18 +159,12 @@ public:
 	//OpenGL programs
 	int gpu_program;
 	int blitter_program;
-	GLuint fboId;
 	TextureBuffer tempTex;
 	uint32_t windowWidth;
 	uint32_t windowHeight;
 	bool hasNPOTTextures;
 	GLint fragmentTexScaleUniform;
-	GLint yuvUniform;
-	GLint maskUniform;
-	GLint alphaUniform;
 	GLint directUniform;
-	GLint projectionMatrixUniform;
-	GLint modelviewMatrixUniform;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
 
@@ -219,9 +175,9 @@ public:
 	cairo_t* getCairoContext(int w, int h);
 	void mapCairoTexture(int w, int h);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
-	void setMatrixUniform(LSGL_MATRIX m) const;
 };
 
+RenderThread* getRenderThread();
+
 };
-extern TLSDATA lightspark::RenderThread* rt DLL_PUBLIC;
 #endif

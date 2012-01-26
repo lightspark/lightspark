@@ -1,5 +1,47 @@
 lightspark: An open source flash player implementation
 
+Version 0.5.4:
+
+	* Fix build against LLVM-3.0
+	* Drop OpenAL backend
+	* ENABLE_RTMP=1 by default
+	* Many fixes for crashers and hangs
+	* API additions and fixes to XML, Vector, Matrix
+	* Code cleanups
+
+Version 0.5.3:
+	* Support playing RTMP streams from Flash Media Server when
+	  compiled with ENABLE_RTMP=1
+	* Fixed several memory leaks
+	* Ported Lightspark to windows, including a firefox plugin
+	* Fixed multiple hangs and crashes
+
+Version 0.5.2.1:
+	* Patch version to fix up reported version.
+
+Version 0.5.2:
+	* Requires llvm 2.8
+	* Added LIGHTSPARK_PLUGIN_PARAMFILE environment variable to let the
+	  plugin write parameter files that are compatible with lightsparks '-p'
+	  commandline switch
+	* Many bugfixes and changes to the VM that make many more  tests pass
+ 	* Reorganized code that implements the Flash and AS3 API into
+	  directories and files that more closely match the respective package
+	  and class hierarchies
+
+Version 0.5.1:
+	* Misc fixes to better support YouTube, Vimeo, Flowplayer
+	* VM correctness improvements
+	* Support for AS templates
+	* Dropped half-finished AVM1 support
+	* Support for EGL/GLES2 rendering
+	* Support for loading external JPEGs
+	* Better text handling(e.g. coloring)
+	* Improved test runner, support for the Tamarin testsuite
+	* Various API fixes for bugs uncovered by the testsuite
+	* Dropped mozilla dependency, use internal NPAPI headers
+	* Added LIGHTSPARK_PLUGIN_LOGLEVEL environment variable to control the log level of the browser
+
 Version 0.5.0:
 	* Improved XML support
 	* Improved FFMpeg based media playback

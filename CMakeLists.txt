@@ -25,22 +25,56 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(LIGHTSPARK)
 SET(MAJOR_VERSION "0")
 SET(MINOR_VERSION "5")
-SET(PATCH_VERSION "0")
+SET(PATCH_VERSION "4")
 SET(SUBPATCH_VERSION "0")
 
 IF(EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 	SET(GIT_VERSION "-git")
+
+	#Find out if we are exactly at a tag. Then the version
+	#is enough. Only consider the official release tags like
+	#'lightspark-0.5.3'
+	EXECUTE_PROCESS(COMMAND git describe --match "lightspark-*" --tags
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+			OUTPUT_VARIABLE GIT_DESC
+			ERROR_QUIET
+			OUTPUT_STRIP_TRAILING_WHITESPACE)
+	#Check if that command failed (maybe git is not installed at all)
+	IF(GIT_DESC)
+		EXECUTE_PROCESS(COMMAND git describe --match "lightspark-*" --tags --abbrev=0
+				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+				OUTPUT_VARIABLE GIT_DESC_ABBREV
+				ERROR_QUIET
+				OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+		IF(${GIT_DESC} STREQUAL ${GIT_DESC_ABBREV})
+			#We are exactly at a tag
+			SET(GIT_VERSION "")
+		ELSE()
+			#Append to GIT_VERSION
+			#GIT_DESC_ABBREV is of the form lightspark-0.5.3 (the name of the previous tag)
+			#GIT_DESC is of the form lightspark-0.5.3-69-gf49ec56 (tag-numberOfCommits-currentHash)
+			#We want GIT_REVISION to be 69-gf49ec56
+			#which denotes the number of commits since the last tag (=release)
+			#and the current commit's hash
+			STRING(REPLACE "${GIT_DESC_ABBREV}-" "" GIT_REVISION "${GIT_DESC}")
+			SET(GIT_VERSION "-${GIT_REVISION}")
+		ENDIF()
+	ENDIF()
 ELSE(EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 	SET(GIT_VERSION "")
 ENDIF(EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 
 IF(SUBPATCH_VERSION EQUAL "0")
-	ADD_DEFINITIONS(-DVERSION="${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}${GIT_VERSION}")
+	SET(FULLVERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}${GIT_VERSION}")
 ELSE(SUBPATCH_VERSION EQUAL "0")
-	ADD_DEFINITIONS(-DVERSION="${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}.${SUBPATCH_VERSION}${GIT_VERSION}")
+	SET(FULLVERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}.${SUBPATCH_VERSION}${GIT_VERSION}")
 ENDIF(SUBPATCH_VERSION EQUAL "0")
 
-ADD_DEFINITIONS(-DSHORTVERSION="${MINOR_VERSION}${PATCH_VERSION}${SUBPATCH_VERSION}")
+SET(SHORTVERSION "${MINOR_VERSION}${PATCH_VERSION}${SUBPATCH_VERSION}")
+
+CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/src/version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/version.h" @ONLY)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 
 # GCC 4.4+ is required, GCC_VERSION macro taken from GCC manual
 INCLUDE(CheckCSourceCompiles)
@@ -77,6 +111,7 @@ ENDIF(GNASH_EXE_PATH)
 
 # Some directory shortcuts
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
+INCLUDE(Pack)
 # If we're gcc, then use nasm to get fastpath.  If MSVC, just use inline asm to get around
 # CMake issues 
 IF(CMAKE_COMPILER_IS_GNUCC)
@@ -89,6 +124,14 @@ IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 	IF(CMAKE_COMPILER_IS_GNUCC)
 	   ENABLE_LANGUAGE(ASM-NASM)        
 	ENDIF(CMAKE_COMPILER_IS_GNUCC)
+ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "unknown" AND ${CMAKE_SYSTEM} MATCHES "GNU-0.3")
+	# GNU Hurd is i386
+	SET(i386 1)
+	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 32")
+	# nasm for assembly optimizations
+	IF(CMAKE_COMPILER_IS_GNUCC)
+	   ENABLE_LANGUAGE(ASM-NASM)
+	ENDIF ()
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x86_64$|^amd64$")
 	SET(x86_64 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 64")
@@ -100,25 +143,54 @@ ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc")
 	SET(ppc 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None ppc")
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maltivec -D__STDC_CONSTANT_MACROS -fPIC")
-ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-	SET(arm 1)
-	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None arm")
 ELSE(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
-	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
+	# All non-x86 non-ppc architectures.
+	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None")
 ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
+
+IF(CMAKE_SYSTEM_NAME STREQUAL CMAKE_HOST_SYSTEM_NAME)
+  SET(CROSSCOMPILING FALSE)
+ELSE()
+  SET(CROSSCOMPILING TRUE)
+ENDIF()
+
+#On mingw-cross-env, all depedencies are static libs
+IF(CROSSCOMPILING AND MINGW)
+  SET(STATICDEPS TRUE)
+ELSE()
+  SET(STATICDEPS FALSE)
+ENDIF()
 
 # Using relative folders, cmake happens by itself CMAKE_INSTALL_PREFIX
 IF(UNIX)
-	 SET(ETCDIR "/etc") #Using absolute folder
+   SET(ETCDIR "/etc") #Using absolute folder
    SET(BINDIR "bin")
-   SET(DATADIR "${CMAKE_INSTALL_PREFIX}/share")
+   SET(DATADIR "share")
+   # Absolute path, because this path is embedded in the binary
+   SET(LSDATADIR "${CMAKE_INSTALL_PREFIX}/${DATADIR}/lightspark")
    SET(LIBDIR "lib${LIB_SUFFIX}")
+   #We need a absolute path here because we use it for rpath
+   #later on
    SET(PRIVATELIBDIR "${CMAKE_INSTALL_PREFIX}/${LIBDIR}/lightspark")
    SET(CMAKE_INSTALL_RPATH "${PRIVATELIBDIR}")
+   SET(PLUGINSDIR "${PRIVATELIBDIR}/plugins")
+ELSE()
+  SET(ETCDIR ".")
+  SET(BINDIR ".")
+  SET(DATADIR ".")
+  SET(LSDATADIR ".")
+  SET(LIBDIR ".")
+  SET(PRIVATELIBDIR ".")
+  SET(PLUGINSDIR ".")
 ENDIF(UNIX)
 
 # Setting variables
-SET(AUDIO_BACKEND "pulseaudio" CACHE STRING "Which audio backends should be built?")
+IF(WIN32)
+  SET(AUDIO_BACKEND "winmm" CACHE STRING "Which audio backends should be built?")
+ELSE()
+  SET(AUDIO_BACKEND "pulseaudio" CACHE STRING "Which audio backends should be built?")
+ENDIF()
+
 SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\\Program Files (Windows)")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
@@ -129,6 +201,11 @@ SET(ENABLE_LIBAVCODEC TRUE CACHE BOOL "Enable libavcodec and dependent functiona
 SET(ENABLE_RTMP FALSE CACHE BOOL "Enable librtmp and dependent functionality?")
 SET(ENABLE_PROFILING FALSE CACHE BOOL "Enable profiling support? (Causes performance issues)")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
+
+IF(ENABLE_DEBIAN_ALTERNATIVES OR WIN32)
+  SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
+ENDIF()
+
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
 		"Choose the type of build, options are: Debug Release RelWithDebInfo Profile" FORCE)
@@ -136,15 +213,24 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 
 # The library is searched in its private library directory
 SET(CMAKE_SKIP_BUILD_RPATH FALSE)
-SET(PRIVATELIBDIR "${CMAKE_INSTALL_PREFIX}/${LIBDIR}/lightspark")
 SET(CMAKE_INSTALL_RPATH "${PRIVATELIBDIR}")
 
 # Libraries we need
+INCLUDE(FindPkgConfig REQUIRED)
 INCLUDE(FindGettext REQUIRED)
 INCLUDE(FindLLVM REQUIRED)
-IF(${LLVM_STRING_VERSION} VERSION_LESS 2.9)
+IF(${LLVM_STRING_VERSION} VERSION_LESS 2.8)
+	MESSAGE(FATAL_ERROR "LLVM >=2.8 is required!")
+ENDIF(${LLVM_STRING_VERSION} VERSION_LESS 2.8)
+IF(${LLVM_STRING_VERSION} VERSION_EQUAL 2.9)
+	MESSAGE(FATAL_ERROR "LLVM !=2.9 is required!")
+ENDIF(${LLVM_STRING_VERSION} VERSION_EQUAL 2.9)
+IF(${LLVM_STRING_VERSION} VERSION_EQUAL 2.8)
 	ADD_DEFINITIONS(-DLLVM_28)
-ENDIF(${LLVM_STRING_VERSION} VERSION_LESS 2.9)
+ENDIF(${LLVM_STRING_VERSION} VERSION_EQUAL 2.8)
+IF(${LLVM_STRING_VERSION} VERSION_GREATER 2.9)
+	ADD_DEFINITIONS(-DLLVM_3)
+ENDIF(${LLVM_STRING_VERSION} VERSION_GREATER 2.9)
 INCLUDE(FindZLIB REQUIRED)
 INCLUDE(FindFreetype REQUIRED)
 IF(NOT(ENABLE_GLES2))
@@ -153,43 +239,32 @@ INCLUDE(FindGLEW REQUIRED)
 ENDIF(NOT(ENABLE_GLES2))
 INCLUDE(FindPCRE REQUIRED)
 INCLUDE(FindJPEG REQUIRED)
-IF(UNIX)
-  INCLUDE(FindPkgConfig REQUIRED)
-	pkg_check_modules(XMLPP REQUIRED libxml++-2.6>=2.33.1)
-ENDIF(UNIX)
-
-if(WIN32)
-  INCLUDE(FindPThreads REQUIRED)
-ELSE(WIN32)
-  INCLUDE(FindThreads REQUIRED)
-ENDIF(WIN32)
+pkg_check_modules(XMLPP REQUIRED libxml++-2.6>=2.33.1)
 
 find_package(Boost COMPONENTS filesystem system REQUIRED)
 if(Boost_FOUND)
   INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 ENDIF(Boost_FOUND) 
+
+pkg_check_modules(CAIRO_LIBS REQUIRED cairo pangocairo)
+
 IF(UNIX)
-  INCLUDE(FindPkgConfig REQUIRED)
-  pkg_check_modules(EXTRA_LIBS REQUIRED x11 cairo pangocairo)
+  pkg_check_modules(X11 REQUIRED x11)
+  INCLUDE_DIRECTORIES(${X11_INCLUDE_DIRS})
 ENDIF(UNIX)
 
 IF(ENABLE_GLES2)
-  INCLUDE(FindPkgConfig REQUIRED)
   pkg_check_modules(GLES2 REQUIRED egl glesv2)
   ADD_DEFINITIONS(-DENABLE_GLES2)
 ENDIF(ENABLE_GLES2)
 
 IF(WIN32)
-  INCLUDE(FindWin32Stdint REQUIRED)
-  INCLUDE_DIRECTORIES(${STDINT_INCLUDE_DIRS})
-  SET(EXTRA_LIBS_LIBRARIES ${EXTRA_LIBS_LIBRARIES} WS2_32.lib)
+  SET(EXTRA_LIBS_LIBRARIES ${EXTRA_LIBS_LIBRARIES} ws2_32.lib imagehlp.lib)
 ENDIF(WIN32)
 
-IF(UNIX)
-  IF(AUDIO_BACKEND)
-    ADD_DEFINITIONS(-DAUDIO_BACKEND="${AUDIO_BACKEND}")
-  ENDIF(AUDIO_BACKEND)
-ENDIF(UNIX)
+IF(AUDIO_BACKEND)
+  ADD_DEFINITIONS(-DAUDIO_BACKEND="${AUDIO_BACKEND}")
+ENDIF(AUDIO_BACKEND)
 
 IF(ENABLE_LIBAVCODEC)
 	pkg_check_modules(FFMPEG libavcodec libavutil libavformat)
@@ -215,11 +290,14 @@ IF(ENABLE_LIBAVCODEC)
   ADD_DEFINITIONS(-DENABLE_LIBAVCODEC)
 ENDIF(ENABLE_LIBAVCODEC)
 
+pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(GTHREAD REQUIRED gthread-2.0)
+pkg_check_modules(GLIBMM REQUIRED glibmm-2.4)
+INCLUDE_DIRECTORIES(${GLIBMM_INCLUDE_DIRS})
 pkg_check_modules(GTK REQUIRED gtk+-2.0)
 
 INCLUDE_DIRECTORIES(${LLVM_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
-INCLUDE_DIRECTORIES(${Threads_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${FREETYPE_INCLUDE_DIRS})
 IF(ENABLE_GLES2)
 	INCLUDE_DIRECTORIES(${GLES2_INCLUDE_DIRS})
@@ -230,7 +308,8 @@ ENDIF(ENABLE_GLES2)
 INCLUDE_DIRECTORIES(${PCRE_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${JPEG_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${XMLPP_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES(${EXTRA_LIBS_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${CAIRO_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${GLIB_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
 
 IF(ENABLE_LIBAVCODEC)
@@ -239,20 +318,27 @@ IF(ENABLE_LIBAVCODEC)
 ENDIF(ENABLE_LIBAVCODEC)	
 
 IF(CMAKE_COMPILER_IS_GNUCC)
-  SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--no-undefined ${CMAKE_EXE_LINKER_FLAGS}")
-  SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed,-z,noexecstack ${CMAKE_SHARED_LINKER_FLAGS}")
+  IF(MINGW)
+    SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed,--no-undefined -mthreads ${CMAKE_EXE_LINKER_FLAGS}")
+    SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed,--no-undefined,--enable-stdcall-fixup -mthreads ${CMAKE_SHARED_LINKER_FLAGS}")
+  ELSE()
+    SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--no-undefined ${CMAKE_EXE_LINKER_FLAGS}")
+    SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed,-z,noexecstack,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
+  ENDIF()
+  SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "-s")
+  SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-s")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 LINK_DIRECTORIES(${LLVM_LIB_DIR})
 
-IF(COMPILE_PLUGIN)
-  ADD_DEFINITIONS(-DMOZ_X11)
-ENDIF(COMPILE_PLUGIN)
-
 IF(ENABLE_CURL)
-  INCLUDE(FindCURL REQUIRED)
+  pkg_check_modules(CURL REQUIRED libcurl)
   INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
-  SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${CURL_LIBRARIES})
+  IF(STATICDEPS)
+    SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${CURL_STATIC_LIBRARIES})
+  ELSE()
+    SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${CURL_LIBRARIES})
+  ENDIF()
   ADD_DEFINITIONS(-DENABLE_CURL)
 ENDIF(ENABLE_CURL)
 
@@ -266,25 +352,30 @@ IF(ENABLE_PROFILING)
   ADD_DEFINITIONS(-DPROFILING_SUPPORT)
 ENDIF(ENABLE_PROFILING)
 
-IF(ENABLE_DEBIAN_ALTERNATIVES)
-  SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
-ENDIF(ENABLE_DEBIAN_ALTERNATIVES)
-
 # Compiler defaults flags for different profiles
 IF(CMAKE_COMPILER_IS_GNUCC)
-  SET(CMAKE_CXX_FLAGS
-	"${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x -Wdisabled-optimization")
+  IF(MINGW)
+    SET(CMAKE_CXX_FLAGS
+	   "${CMAKE_CXX_FLAGS} -mms-bitfields -mthreads -fexceptions -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -std=c++0x -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
+  ELSE()
+   SET(CMAKE_CXX_FLAGS
+	  "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
+  ENDIF()
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
   SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
   SET(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
   SET(CMAKE_CXX_FLAGS_LEANDEBUG "-g -O2")
-  ADD_DEFINITIONS(-DDATADIR="${DATADIR}/lightspark" -DGNASH_PATH="${GNASH_EXE_PATH}" -DPRIVATELIBDIR="${PRIVATELIBDIR}")
+  ADD_DEFINITIONS(-DLS_DATADIR="${LSDATADIR}" -DGNASH_PATH="${GNASH_EXE_PATH}" -DPRIVATELIBDIR="${PRIVATELIBDIR}")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 IF(MSVC)
   ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DVPCOMPAT -DPTW32_STATIC_LIB -DPCRE_STATIC)
 ENDIF(MSVC)
+
+IF(STATICDEPS)
+  ADD_DEFINITIONS(-DLIBXML_STATIC -DGLEW_STATIC)
+ENDIF()
 
 # Check if the system have atomic header ( gcc >= 4.6 )
 INCLUDE (CheckIncludeFileCXX)
@@ -322,6 +413,45 @@ GETTEXT_CREATE_TRANSLATIONS(i18n/lightspark.pot ALL i18n/pl.po i18n/fr.po
 if(UNIX)
 	INSTALL(FILES etc/xdg/lightspark.conf
 		      DESTINATION ${ETCDIR}/xdg/)
+ELSE()
+  INSTALL(FILES COPYING DESTINATION "." RENAME COPYING.txt)
+  INSTALL(FILES COPYING.LESSER DESTINATION "." RENAME COPYING.LESSER.txt)
 endif(UNIX)
 
 SUBDIRS(src)
+
+#-- CPack setup - use 'make package' to build
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Lightspark is an LGPLv3 licensed cross-platform Flash player and browser plugin")
+SET(CPACK_PACKAGE_VENDOR "Lightspark Team")
+SET(CPACK_PACKAGE_NAME "Lightspark")
+SET(CPACK_PACKAGE_VERSION_MAJOR "${MAJOR_VERSION}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${MINOR_VERSION}")
+IF(SUBPATCH_VERSION EQUAL "0")
+  SET(CPACK_PACKAGE_VERSION_PATCH "${PATCH_VERSION}${GIT_VERSION}")
+ELSE()
+  SET(CPACK_PACKAGE_VERSION_PATCH "${PATCH_VERSION}.${SUBPATCH_VERSION}${GIT_VERSION}")
+ENDIF()
+SET(CPACK_NSIS_MENU_LINKS "")
+#In release builds, we already strip symbols (see LDFLAGS), and compress by upx
+#Therefore we cannot strip afterwards
+SET(CPACK_STRIP_FILES FALSE)
+SET(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/COPYING)
+SET(CPACK_NSIS_HELP_LINK "http:////www.lightspark.org")
+SET(CPACK_NSIS_URL_INFO_ABOUT "http:////www.lightspark.org")
+SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/media/lightspark-logo.svg)
+IF(WIN32)
+  SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Lightspark")
+  SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Description' 'Lightspark'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'ProductName' 'Lightspark'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Vendor' 'Lightspark Team'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Version' '1'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Path' '$INSTDIR\\\\nplightsparkplugin.dll'
+  WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1\\\\MimeTypes\\\\application/x-shockwave-flash' '' ''
+  ")
+  SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+  DeleteRegKey HKLM 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1'
+  ")
+ENDIF(WIN32)
+#Must come after the definitions
+INCLUDE(CPack)

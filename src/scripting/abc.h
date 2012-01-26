@@ -20,6 +20,17 @@
 #ifndef _ABC_H
 #define _ABC_H
 
+#ifdef LLVM_28
+#define alignof alignOf
+#endif
+#ifdef LLVM_3
+#define LLVMTYPE llvm::Type*
+#define LLVMMAKEARRAYREF(T) makeArrayRef(T)
+#else
+#define LLVMTYPE const llvm::Type*
+#define LLVMMAKEARRAYREF(T) T
+#endif
+
 #include "compat.h"
 #include <cstddef>
 #include <llvm/Module.h>
@@ -34,12 +45,11 @@
 #include <map>
 #include <set>
 #include "swf.h"
-#include "abcutils.h"
 
 namespace lightspark
 {
 
-extern TLSDATA bool isVmThread;
+bool isVmThread();
 
 class u8
 {
@@ -160,13 +170,24 @@ struct option_detail
 struct block_info
 {
 	llvm::BasicBlock* BB;
+	/* current type of locals, changed through interpreting the opcodes in doAnalysis */
 	std::vector<STACK_TYPE> locals;
+	/* types of locals at the start of the block
+	 * This is computed in doAnalysis. It is != STACK_NONE when all preceding blocks end with
+	 * the local having the same type. */
 	std::vector<STACK_TYPE> locals_start;
+	/* if locals_start[i] != STACK_NONE, then locals_start_obj[i] is an Alloca of the given type.
+	 * SyncLocals at the end of one block Store's the current locals to locals_start_obj. (if both have the same type)
+	 * At the beginning of this block, static_locals[i] is initialized by a Load(locals_start_obj[i]). */
 	std::vector<llvm::Value*> locals_start_obj;
+	/* there is no need to transfer the given local to this block by a preceding block
+	 * because this and all successive blocks will not read the local before writing to it.
+	 */
 	std::vector<bool> locals_reset;
+	/* getlocal/setlocal in this block used the given local */
 	std::vector<bool> locals_used;
-	std::set<block_info*> preds;
-	std::set<block_info*> seqs;
+	std::set<block_info*> preds; /* preceding blocks */
+	std::set<block_info*> seqs; /* subsequent blocks */
 	std::map<int,STACK_TYPE> push_types;
 
 	//Needed for indexed access
@@ -174,6 +195,7 @@ struct block_info
 	block_info(const method_info* mi, const char* blockName);
 	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
 };
+std::ostream& operator<<(std::ostream& o, const block_info& b);
 
 typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
@@ -187,8 +209,9 @@ class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);
 friend struct block_info;
+friend class SyntheticFunction;
 private:
-	enum { NEED_ARGUMENTS=1,NEED_REST=4, HAS_OPTIONAL=8};
+	enum { NEED_ARGUMENTS=0x01, NEED_ACTIVATION=0x02, NEED_REST=0x04, HAS_OPTIONAL=0x08, SET_DXNS=0x40, HAS_PARAM_NAMES=0x80 };
 	u30 param_count;
 	u30 return_type;
 	std::vector<u30> param_type;
@@ -196,21 +219,6 @@ private:
 	u8 flags;
 
 	std::vector<u30> param_names;
-
-	//Helper functions to peek/pop/push in the static stack
-	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
-			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
-			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
-	//Helper function to generate the right object for a concrete type
-	void abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, stack_entry& e);
-
-	//Helper functions that generates LLVM to access the stack at runtime
-	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
-	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
-	void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
-			llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
 
 	//Helper functions to sync the static stack and locals to the memory 
 	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, 
@@ -248,16 +256,21 @@ public:
 	bool needsArgs() { return (flags & NEED_ARGUMENTS) != 0;}
 	bool needsRest() { return (flags & NEED_REST) != 0;}
 	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
+	bool hasDXNS() { return (flags & SET_DXNS) != 0;}
 	ASObject* getOptional(unsigned int i);
-	int numArgs() { return param_count; }
-	const multiname* paramTypeName(unsigned int i) const;
+	uint32_t numArgs() { return param_count; }
+	const multiname* paramTypeName(uint32_t i) const;
 	const multiname* returnTypeName() const;
+
+	std::vector<const Type*> paramTypes;
+	const Type* returnType;
+	bool hasExplicitTypes;
 	method_info():
 #ifdef PROFILING_SUPPORT
 		profTime(0),
 		validProfName(false),
 #endif
-		option_count(0),f(NULL),context(NULL),body(NULL)
+		option_count(0),f(NULL),context(NULL),body(NULL),returnType(NULL)
 	{
 	}
 };
@@ -298,6 +311,10 @@ struct traits_info
 struct instance_info
 {
 	enum { ClassSealed=0x01,ClassFinal=0x02,ClassInterface=0x04,ClassProtectedNs=0x08};
+	bool isInterface() const { return flags&ClassInterface; }
+	bool isSealed() const { return flags&ClassSealed; }
+	bool isFinal() const { return flags&ClassFinal; }
+	bool isProtectedNs() const { return flags&ClassProtectedNs; }
 	u30 name;
 	u30 supername;
 	u8 flags;
@@ -354,8 +371,10 @@ struct opcode_handler
 	void* addr;
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, 
-	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT};
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER,
+	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT,
+	ARGS_CONTEXT_INT_INT_INT, ARGS_CONTEXT_INT_INT_INT_BOOL, ARGS_CONTEXT_OBJ_OBJ_INT, ARGS_CONTEXT_OBJ, ARGS_CONTEXT_OBJ_OBJ,
+	ARGS_CONTEXT_OBJ_OBJ_OBJ, ARGS_OBJ_OBJ_OBJ_INT, ARGS_OBJ_OBJ_OBJ };
 
 struct typed_opcode_handler
 {
@@ -368,16 +387,14 @@ class ABCContext
 {
 friend class ABCVm;
 friend class method_info;
-private:
+public:
 	method_info* get_method(unsigned int m);
 	const tiny_string& getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
-	static multiname* s_getMultiname(call_context*, ASObject*, int m);
-	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
+	static multiname* s_getMultiname(ABCContext*, ASObject* rt1, ASObject* rt2, int m);
+	static multiname* s_getMultiname_i(call_context*, uint32_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
-	int getMultinameRTData(int n) const;
 	ASObject* getConstant(int kind, int index);
-public:
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -392,6 +409,8 @@ public:
 	std::vector<script_info> scripts;
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
+
+	std::vector<bool> hasRunScriptInit;
 	/**
 		Construct and insert in the a object a given trait
 		@param obj the tarhget object
@@ -399,26 +418,23 @@ public:
 		@param isBorrowed True if we're building a trait on behalf of an object, False otherwise
 		@param deferred_initialization A pointer to a function that can be used to build the given trait later
 	*/
-	void buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, IFunction* deferred_initialization=NULL);
+	void buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid=-1);
+	void runScriptInit(unsigned int scriptid, ASObject* g);
+
 	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
+	int getMultinameRTData(int n) const;
 	multiname* getMultiname(unsigned int m, call_context* th);
+	multiname* getMultinameImpl(ASObject* rt1, ASObject* rt2, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in) DLL_PUBLIC;
-	void exec();
+	void exec(bool lazy);
 
 	static bool isinstance(ASObject* obj, multiname* name);
 
 #ifdef PROFILING_SUPPORT
 	void dumpProfilingData(std::ostream& f) const;
 #endif
-};
-
-struct thisAndLevel
-{
-	ASObject* cur_this;
-	int cur_level;
-	thisAndLevel(ASObject* t,int l):cur_this(t),cur_level(l){}
 };
 
 class ABCVm
@@ -428,7 +444,7 @@ friend class method_info;
 private:
 	std::vector<ABCContext*> contexts;
 	SystemState* m_sys;
-	pthread_t t;
+	Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 
@@ -438,11 +454,11 @@ private:
 
 	void registerFunctions();
 	//Interpreted AS instructions
+	//If you change a definition here, update the opcode_table_* entry in abc_codesynth
 	static bool hasNext2(call_context* th, int n, int m); 
-	static void callPropVoid(call_context* th, int n, int m, method_info*& called_mi);
-	static void callSuperVoid(call_context* th, int n, int m, method_info*& called_mi);
-	static void callSuper(call_context* th, int n, int m, method_info*& called_mi);
-	static void callProperty(call_context* th, int n, int m, method_info*& called_mi);
+	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
+	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
+	static void callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 
 	static void setLocal_int(int n,int v); 
@@ -457,12 +473,12 @@ private:
 	static bool ifEq(ASObject*, ASObject*); 
 	static bool ifStrictEq(ASObject*, ASObject*); 
 	static bool ifNE(ASObject*, ASObject*); 
-	static bool ifNE_oi(ASObject*, intptr_t); 
+	static bool ifNE_oi(ASObject*, int32_t);
 	static bool ifLT(ASObject*, ASObject*); 
 	static bool ifGT(ASObject*, ASObject*); 
 	static bool ifLE(ASObject*, ASObject*); 
-	static bool ifLT_oi(ASObject*, intptr_t); 
-	static bool ifLT_io(intptr_t, ASObject*); 
+	static bool ifLT_oi(ASObject*, int32_t);
+	static bool ifLT_io(int32_t, ASObject*);
 	static bool ifNLT(ASObject*, ASObject*); 
 	static bool ifNGT(ASObject*, ASObject*); 
 	static bool ifNGE(ASObject*, ASObject*); 
@@ -477,14 +493,14 @@ private:
 	static ASObject* pushString(call_context* th, int n); 
 	static void getLex(call_context* th, int n); 
 	static ASObject* getScopeObject(call_context* th, int n); 
-	static void deleteProperty(call_context* th, int n); 
-	static void initProperty(call_context* th, int n); 
+	static bool deleteProperty(ASObject* obj, multiname* name);
+	static void initProperty(ASObject* obj, ASObject* val, multiname* name);
 	static void newClass(call_context* th, int n); 
 	static void newArray(call_context* th, int n); 
-	static ASObject* findPropStrict(call_context* th, int n);
-	static ASObject* findProperty(call_context* th, int n);
-	static intptr_t pushByte(intptr_t n);
-	static intptr_t pushShort(intptr_t n);
+	static ASObject* findPropStrict(call_context* th, multiname* name);
+	static ASObject* findProperty(call_context* th, multiname* name);
+	static int32_t pushByte(intptr_t n);
+	static int32_t pushShort(intptr_t n);
 	static void pushInt(call_context* th, int n);
 	static void pushUInt(call_context* th, int n);
 	static void pushDouble(call_context* th, int n);
@@ -494,10 +510,10 @@ private:
 	static void decLocal(call_context* th, int n);
 	static void coerce(call_context* th, int n);
 	static ASObject* getProperty(ASObject* obj, multiname* name);
-	static intptr_t getProperty_i(ASObject* obj, multiname* name);
+	static int32_t getProperty_i(ASObject* obj, multiname* name);
 	static void setProperty(ASObject* value,ASObject* obj, multiname* name);
-	static void setProperty_i(intptr_t value,ASObject* obj, multiname* name);
-	static void call(call_context* th, int n, method_info*& called_mi);
+	static void setProperty_i(int32_t value,ASObject* obj, multiname* name);
+	static void call(call_context* th, int n, method_info** called_mi);
 	static void constructSuper(call_context* th, int n);
 	static void construct(call_context* th, int n);
 	static void constructGenericType(call_context* th, int n);
@@ -516,7 +532,7 @@ private:
 	static bool _not(ASObject*);
 	static bool equals(ASObject*,ASObject*);
 	static number_t negate(ASObject*);
-	static intptr_t negate_i(ASObject*);
+	static int32_t negate_i(ASObject*);
 	static void pop();
 	static ASObject* typeOf(ASObject*);
 	static void _throw(call_context* th);
@@ -526,29 +542,29 @@ private:
 	static bool isType(ASObject* obj, multiname* name);
 	static void swap();
 	static ASObject* add(ASObject*,ASObject*);
-	static intptr_t add_i(ASObject*,ASObject*);
-	static ASObject* add_oi(ASObject*,intptr_t);
+	static int32_t add_i(ASObject*,ASObject*);
+	static ASObject* add_oi(ASObject*,int32_t);
 	static ASObject* add_od(ASObject*,number_t);
-	static uintptr_t bitAnd(ASObject*,ASObject*);
-	static uintptr_t bitNot(ASObject*);
-	static uintptr_t bitAnd_oi(ASObject* val1, intptr_t val2);
-	static uintptr_t bitOr(ASObject*,ASObject*);
-	static uintptr_t bitOr_oi(ASObject*,uintptr_t);
-	static uintptr_t bitXor(ASObject*,ASObject*);
-	static uintptr_t rShift(ASObject*,ASObject*);
-	static uintptr_t urShift(ASObject*,ASObject*);
-	static uintptr_t urShift_io(uintptr_t,ASObject*);
-	static uintptr_t lShift(ASObject*,ASObject*);
-	static uintptr_t lShift_io(uintptr_t,ASObject*);
+	static uint32_t bitAnd(ASObject*,ASObject*);
+	static uint32_t bitNot(ASObject*);
+	static uint32_t bitAnd_oi(ASObject* val1, int32_t val2);
+	static uint32_t bitOr(ASObject*,ASObject*);
+	static uint32_t bitOr_oi(ASObject*,uint32_t);
+	static uint32_t bitXor(ASObject*,ASObject*);
+	static uint32_t rShift(ASObject*,ASObject*);
+	static uint32_t urShift(ASObject*,ASObject*);
+	static uint32_t urShift_io(uint32_t,ASObject*);
+	static uint32_t lShift(ASObject*,ASObject*);
+	static uint32_t lShift_io(uint32_t,ASObject*);
 	static number_t multiply(ASObject*,ASObject*);
-	static intptr_t multiply_i(ASObject*,ASObject*);
-	static number_t multiply_oi(ASObject*, intptr_t);
+	static int32_t multiply_i(ASObject*,ASObject*);
+	static number_t multiply_oi(ASObject*, int32_t);
 	static number_t divide(ASObject*,ASObject*);
-	static intptr_t modulo(ASObject*,ASObject*);
+	static number_t modulo(ASObject*,ASObject*);
 	static number_t subtract(ASObject*,ASObject*);
-	static intptr_t subtract_i(ASObject*,ASObject*);
-	static number_t subtract_oi(ASObject*, intptr_t);
-	static number_t subtract_io(intptr_t, ASObject*);
+	static int32_t subtract_i(ASObject*,ASObject*);
+	static number_t subtract_oi(ASObject*, int32_t);
+	static number_t subtract_io(int32_t, ASObject*);
 	static number_t subtract_do(number_t, ASObject*);
 	static void popScope(call_context* th);
 	static ASObject* newActivation(call_context* th, method_info*);
@@ -557,8 +573,8 @@ private:
 	static void coerce_a();
 	static void label();
 	static void lookupswitch();
-	static intptr_t convert_i(ASObject*);
-	static uintptr_t convert_u(ASObject*);
+	static int32_t convert_i(ASObject*);
+	static uint32_t convert_u(ASObject*);
 	static number_t convert_d(ASObject*);
 	static ASObject* convert_s(ASObject*);
 	static bool convert_b(ASObject*);
@@ -568,56 +584,62 @@ private:
 	static bool lessThan(ASObject*,ASObject*);
 	static ASObject* nextName(ASObject* index, ASObject* obj);
 	static ASObject* nextValue(ASObject* index, ASObject* obj);
-	static uintptr_t increment_i(ASObject*);
+	static uint32_t increment_i(ASObject*);
 	static number_t increment(ASObject*);
 	static number_t decrement(ASObject*);
-	static uintptr_t decrement_i(ASObject*);
-	static ASObject* getGlobalScope(call_context* th);
+	static uint32_t decrement_i(ASObject*);
 	static bool strictEquals(ASObject*,ASObject*);
+	static ASObject* esc_xattr(ASObject* o);
+	static bool instanceOf(ASObject* value, ASObject* type);
+	static Namespace* pushNamespace(call_context* th, int n);
+	static void dxns(call_context* th, int n);
+	static void dxnslate(call_context* th, ASObject* value);
 	//Utility
 	static void not_impl(int p);
+	static void wrong_exec_pos();
 
 	//Internal utilities
 	static void method_reset(method_info* th);
 	static void newClassRecursiveLink(Class_base* target, Class_base* c);
+	static ASObject* constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen);
 
 	//Opcode tables
-	void register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len);
+	void register_table(LLVMTYPE ret_type,typed_opcode_handler* table, int table_len);
 	static opcode_handler opcode_table_args_pointer_2int[];
 	static opcode_handler opcode_table_args_pointer_number_int[];
 	static opcode_handler opcode_table_args3_pointers[];
-	static typed_opcode_handler opcode_table_uintptr_t[];
+	static typed_opcode_handler opcode_table_uint32_t[];
 	static typed_opcode_handler opcode_table_number_t[];
 	static typed_opcode_handler opcode_table_void[];
 	static typed_opcode_handler opcode_table_voidptr[];
 	static typed_opcode_handler opcode_table_bool_t[];
 
 	//Synchronization
-	sem_t event_queue_mutex;
-	sem_t sem_event_count;
+	Mutex event_queue_mutex;
+	Cond sem_event_cond;
 
 	//Event handling
-	bool shuttingdown;
+	volatile bool shuttingdown;
 	std::deque<std::pair<_NR<EventDispatcher>,_R<Event> > > events_queue;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
+	void signalEventWaiters();
 	void buildClassAndBindTag(const std::string& s, _R<DictionaryTag> t);
 	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
 	Class_inherit* findClassInherit(const std::string& s);
 
-	//These are used to keep track of the current 'this' for class methods, and relative level
-	//It's sane to have them per-Vm, as anyway the vm is single by specs, single threaded
-	std::vector<thisAndLevel> method_this_stack;
-
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
 public:
-	GlobalObject* Global;
+	call_context* currentCallContext;
+	GlobalObject* global;
 	Manager* int_manager;
 	Manager* uint_manager;
 	Manager* number_manager;
+
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;
+
 	ABCVm(SystemState* s) DLL_PUBLIC;
 	/**
 		Destroys the VM
@@ -636,15 +658,20 @@ public:
 	int getEventQueueSize();
 	void shutdown();
 
-	void pushObjAndLevel(ASObject* o, int l);
-	thisAndLevel popObjAndLevel();
-	thisAndLevel getCurObjAndLevel()
-	{
-		return method_this_stack.back();
-	}
-
+	static Global* getGlobalScope(call_context* th);
 	static bool strictEqualImpl(ASObject*, ASObject*);
 	static void publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event);
+
+	/* The current recursion level. Each call increases this by one,
+	 * each return from a call decreases this. */
+	uint32_t cur_recursion;
+
+	struct abc_limits {
+		/* maxmium number of recursion allowed. See ScriptLimitsTag */
+		uint32_t max_recursion;
+		/* maxmium number of seconds for script execution. See ScriptLimitsTag */
+		uint32_t script_timeout;
+	} limits;
 
 };
 
@@ -652,7 +679,6 @@ class DoABCTag: public ControlTag
 {
 private:
 	ABCContext* context;
-	pthread_t thread;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const{ return ABC_TAG; }
@@ -665,7 +691,6 @@ private:
 	UI32_SWF Flags;
 	STRING Name;
 	ABCContext* context;
-	pthread_t thread;
 public:
 	DoABCDefineTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const{ return ABC_TAG; }
@@ -688,12 +713,12 @@ ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned 
 
 inline GlobalObject* getGlobal()
 {
-	return sys->currentVm->Global;
+	return getSys()->currentVm->global;
 }
 
 inline ABCVm* getVm()
 {
-	return sys->currentVm;
+	return getSys()->currentVm;
 }
 
 std::istream& operator>>(std::istream& in, u8& v);

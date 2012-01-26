@@ -1,0 +1,63 @@
+#!/bin/bash
+
+QUIET="0"
+OUTPUT=""
+OLDFILE=""
+JUNITFILE=""
+
+while [ $# -ne 0 ]; do
+	if [ $1 == "-q" ] || [ $1 == "--quiet" ]; then
+		QUIET="1";
+	elif [ $1 == "-o" ] || [ $1 == "--output" ]; then
+		OUTPUT="$2"
+		shift
+	else
+		OLDFILE=$1
+		JUNITFILE=$2
+		shift
+	fi
+	shift;
+done
+
+if [[ -z "$OLDFILE" || -z "$JUNITFILE" ]]; then
+	echo "Usage example:"
+	echo "$0 [--quiet|-q] [--output|-o tests-regression.junit] proprietary.junit tests.junit"
+	exit 1
+fi
+
+if [[ ! -f "$OLDFILE" || ! -f "$JUNITFILE" ]]; then
+	echo "Either $OLDFILE or $JUNITFILE do not exist!"
+	exit 1
+fi
+
+#Transform
+#<testcase classname="somecls" name="totalFail"><failure..
+#  -> ^<testcase classname="somecls" name="totalFail"><failure|^<testcase classname="somecls" name="totalFail_tc.*"><failure
+#<testcase classname="somecls" name="someTCfail_tc3"><failure..
+#  -> ^<testcase classname="somecls" name="someTCfail_tc3"><failure
+#
+#So if an test previously exited with some exit code != 0 and now runs through but produces some failures, e.g. totalFail_tc1 failed,
+#then this is not a regression
+
+OLDFAILURES=`sed -n -e 's/\(.*_tc.*><failure\).*/^\1/p
+#continue to next line if the previous regexp matched
+t
+s/\(.*\)"><failure.*/^\1"><failure|^\1_tc.*"><failure/p' "$OLDFILE"`
+#OLDFAILURES=`echo "$OLDFAILURES" | tr '\n' '|'`
+#OLDFAILURES=${OLDFAILURES%|}
+#REGRESSION=`grep -Ev "$OLDFAILURES" $JUNITFILE`
+REGRESSION=`cat $JUNITFILE`
+while [[ -n "$OLDFAILURES" ]]; do
+	F=`echo "$OLDFAILURES" | head -n 1000 | tr '\n' '|'`
+	F=${F%|}
+	OLDFAILURES=`echo "$OLDFAILURES" | tail -n +1001`
+	REGRESSION=`echo "$REGRESSION" | grep -Ev "$F"`
+done
+
+if [[ "$QUIET" == "0" ]]; then
+	grep '<failure' <(echo -e "$REGRESSION")
+fi
+
+if [[ -n "$OUTPUT" ]]; then
+	echo -e "$REGRESSION" > $OUTPUT
+fi

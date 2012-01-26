@@ -22,12 +22,8 @@
 
 #include "compat.h"
 #include <deque>
-#include <pthread.h>
-#include <semaphore.h>
 #include <stdlib.h>
 #include "threading.h"
-
-extern TLSDATA lightspark::IThreadJob* thisJob;
 
 namespace lightspark
 {
@@ -40,13 +36,13 @@ class ThreadPool
 {
 private:
 	Mutex mutex;
-	pthread_t threads[NUM_THREADS];
-	IThreadJob* curJobs[NUM_THREADS];
+	Thread* threads[NUM_THREADS];
+	IThreadJob* volatile curJobs[NUM_THREADS];
 	std::deque<IThreadJob*> jobs;
-	sem_t num_jobs;
-	static void* job_worker(void*);
+	Semaphore num_jobs;
+	static void job_worker(ThreadPool* th, uint32_t threadIndex);
 	SystemState* m_sys;
-	bool stopFlag;
+	volatile bool stopFlag;
 public:
 	ThreadPool(SystemState* s);
 	~ThreadPool();

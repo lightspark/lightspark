@@ -29,6 +29,7 @@
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
 typedef IPlugin * ( *PLUGIN_FACTORY ) ();
 typedef void ( *PLUGIN_CLEANUP ) ( IPlugin * );
+typedef struct _GModule GModule;
 
 namespace lightspark
 {
@@ -43,7 +44,7 @@ private:
 	void addPluginToList ( IPlugin *o_plugin, std::string pathToPlugin );
 	void removePluginFromList ( std::string plugin_path );
 	int32_t findPluginInList ( std::string desiredname = "", std::string desiredbackend = "", std::string desiredpath = "",
-	                           HMODULE hdesiredLoadPlugin = NULL, IPlugin *o_desiredPlugin = NULL );
+								GModule* hdesiredLoadPlugin = NULL, IPlugin *o_desiredPlugin = NULL );
 	void loadPlugin ( uint32_t desiredindex );
 	void unloadPlugin ( uint32_t desiredIndex );
 
@@ -64,7 +65,7 @@ protected:
 	std::string backendName;	//backend (can be something like pulseaudio, opengl, ffmpeg)
 	std::string pluginPath;		//full path to the plugin file
 	bool enabled;		//should it be enabled (if the audio backend is present)?
-	HMODULE hLoadedPlugin;	//when loaded, handle to the plugin so we can unload it later
+	GModule* hLoadedPlugin;	//when loaded, handle to the plugin so we can unload it later
 	IPlugin *oLoadedPlugin;	//when instanciated, object to the class
 
 public:

@@ -17,7 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifdef WIN32
+#undef PACKED
+#ifdef _MSC_VER
 #define PACKED
 #pragma pack(push,1)
 #else

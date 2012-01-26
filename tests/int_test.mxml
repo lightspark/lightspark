@@ -10,12 +10,41 @@
 	import Tests;
 	private function appComplete():void
 	{
+		var mc_null:MovieClip = null;
+		var mc:MovieClip = new MovieClip();
+
 		Tests.assertEquals(int(3.2), 3, "int(3.2)", true);
 		Tests.assertEquals(int(3.8), 3, "int(3.8)", true);
 		Tests.assertEquals(int("3.2"), 3, "int(\"3.2\")", true);
-		Tests.assertEquals(int("3.8"), 3, "int(\"3.8\")", true);
+		Tests.assertEquals(int("3.8 "), 3, "int(\"3.8 \")", true);
+		Tests.assertEquals(int(" -3.2"), -3, "int(\" -3.2\")", true);
+		Tests.assertEquals(int("-3.8"), -3, "int(\"-3.8\")", true);
 		Tests.assertEquals(int(true), 1, "int(true)", true);
 		Tests.assertEquals(int(false), 0, "int(false)", true);
+		Tests.assertEquals(int(-3), -3, "int(-3)", true);
+		Tests.assertEquals(int("No number"),0,"int(\"No number\")",true);
+		Tests.assertEquals(int(" 0xFFFFFFF4 "),-12,"int(\" 0xFFFFFFF4 \")",true);
+		Tests.assertEquals(int(undefined),0,"int(undefined)",true);
+		Tests.assertEquals(int(mc_null),0,"int(null)",true);
+		Tests.assertEquals(int(mc),0,"int(MovieClip)",true);
+		Tests.assertEquals(int(NaN),0,"int(NaN)",true);
+
+
+		Tests.assertEquals(uint(3.2), 3, "uint(3.2)", true);
+		Tests.assertEquals(uint(3.8), 3, "uint(3.8)", true);
+		Tests.assertEquals(uint("3.2"), 3, "uint(\"3.2\")", true);
+		Tests.assertEquals(uint("3.8 "), 3, "uint(\"3.8 \")", true);
+		Tests.assertEquals(uint(" -3.2"), 4294967293, "uint(\" -3.2\")", true);
+		Tests.assertEquals(uint("-3.8"), 4294967293, "uint(\"-3.8\")", true);
+		Tests.assertEquals(uint(true), 1, "uint(true)", true);
+		Tests.assertEquals(uint(false), 0, "uint(false)", true);
+		Tests.assertEquals(uint(-4), 4294967292, "uint(-4)", true);
+		Tests.assertEquals(uint("No number"),0,"uint(\"No number\")",true);
+		Tests.assertEquals(uint(" 0xFFFFFFF4 "),4294967284,"uint(\" 0xFFFFFFF4 \")",true);
+		Tests.assertEquals(uint(undefined),0,"uint(undefined)",true);
+		Tests.assertEquals(uint(mc_null),0,"uint(null)",true);
+		Tests.assertEquals(uint(mc),0,"uint(MovieClip)",true);
+		Tests.assertEquals(uint(NaN),0,"uint(NaN)",true);
 
 		Tests.report(visual, this.name);
 	}

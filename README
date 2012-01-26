@@ -1,5 +1,5 @@
 INSTALLATION:
-To compile this software you need to install development packages for llvm-2.7,
+To compile this software you need to install development packages for llvm-2.8,
 opengl, curl, zlib, libavcodec, libglew, pcre.
 If sound is enabled (on by default), you will also need the development package
 for pulseaudio-libs and/or libsdl.

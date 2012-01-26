@@ -73,17 +73,19 @@ int textFileWrite(const char *fn, char *s)
 	return(status);
 }
 
-
 char *dataFileRead(const char *fn)
 {
-	char *ret;
+	char *ret = 0;
 	int max_path_len=0;
-	const char *paths[] = { 
+	const char *paths[] = {
 		".",
 		"..",
 		"src",
-		DATADIR,
+		LS_DATADIR,
 		"/usr/share/lightspark",
+#ifdef _WIN32
+		getExectuablePath(),
+#endif
 	};
 	for(uint32_t i=0;i<sizeof(paths)/sizeof(const char*);i++)
 		max_path_len=imax(strlen(paths[i]),max_path_len);

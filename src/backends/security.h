@@ -48,7 +48,7 @@ class SecurityManager
 public:
 	enum SANDBOXTYPE { REMOTE=1, LOCAL_WITH_FILE=2, LOCAL_WITH_NETWORK=4, LOCAL_TRUSTED=8 };
 private:
-	sem_t mutex;
+	RecMutex mutex;
 
 	const char* sandboxNames[4];
 	const char* sandboxTitles[4];
@@ -166,7 +166,7 @@ public:
 protected:
 	PolicyFile(URLInfo _url, TYPE _type);
 	virtual ~PolicyFile();
-	sem_t mutex;
+	Mutex mutex;
 
 	URLInfo url;
 	TYPE type;

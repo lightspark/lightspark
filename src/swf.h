@@ -24,11 +24,10 @@
 #include <fstream>
 #include <list>
 #include <map>
-#include <semaphore.h>
 #include <string>
 #include "swftypes.h"
-#include "scripting/flashdisplay.h"
-#include "scripting/flashnet.h"
+#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/net/flashnet.h"
 #include "timer.h"
 
 #include "platforms/engineutils.h"
@@ -58,8 +57,6 @@ protected:
 	Mutex mutex;
 	URLInfo origin;
 private:
-	//Semaphore to wait for new frames to be available
-	sem_t new_frame;
 	bool parsingIsFailed;
 	RGB Background;
 	Spinlock dictSpinlock;
@@ -76,9 +73,10 @@ private:
 	void initFrame();
 	void advanceFrame();
 	void setOnStage(bool staged);
+	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
-	~RootMovieClip();
+	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;
 	uint32_t fileLength;
 	RGB getBackground();
@@ -96,7 +94,7 @@ public:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
 	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
-	URLInfo& getOrigin() DLL_PUBLIC { return origin; };
+	URLInfo& getOrigin() { return origin; };
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
@@ -109,6 +107,8 @@ public:
 class ThreadProfile
 {
 private:
+	/* ThreadProfile cannot be copied because Mutex cannot */
+	ThreadProfile(const ThreadProfile&) { assert(false); }
 	Mutex mutex;
 	class ProfilingData
 	{
@@ -123,7 +123,7 @@ private:
 	int32_t len;
 	uint32_t tickCount;
 public:
-	ThreadProfile(const RGB& c,uint32_t l):mutex("ThreadProfile"),color(c),len(l),tickCount(0){}
+	ThreadProfile(const RGB& c,uint32_t l):color(c),len(l),tickCount(0){}
 	void accountTime(uint32_t time);
 	void setTag(const std::string& tag);
 	void tick();
@@ -136,24 +136,21 @@ private:
 	class EngineCreator: public IThreadJob
 	{
 	public:
-		EngineCreator()
-		{
-			destroyMe=true;
-		}
 		void execute();
 		void threadAbort();
-		void jobFence(){}
+		void jobFence() { delete this; }
 	};
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
-	sem_t terminated;
+	Semaphore terminated;
 	float renderRate;
 	bool error;
 	bool shutdown;
 	RenderThread* renderThread;
 	InputThread* inputThread;
 	EngineData* engineData;
+	Thread* mainThread;
 	void startRenderTicks();
 	/**
 		Create the rendering and input engines
@@ -161,22 +158,28 @@ private:
 		@pre engine and useAVM2 are known
 	*/
 	void createEngines();
+
+	void launchGnash();
 	/**
 	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
 	*/
 	void stopEngines();
 
-	static void delayedCreation(SystemState* th);
-	static void delayedStopping(SystemState* th);
-	//Useful to wait for complete download of the SWF
-	Semaphore fileDumpAvailable;
+	void delayedCreation();
+	void delayedStopping();
+
+	/* dumpedSWFPathAvailable is signaled after dumpedSWFPath has been set */
+	Semaphore dumpedSWFPathAvailable;
 	tiny_string dumpedSWFPath;
-	bool waitingForDump;
+
 	//Data for handling Gnash fallback
 	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
 	VMVERSION vmVersion;
-	pid_t childPid;
-	bool useGnashFallback;
+#ifdef _WIN32
+	HANDLE childPid;
+#else
+	GPid childPid;
+#endif
 
 	//Parameters/FlashVars
 	_NR<ASObject> parameters;
@@ -188,13 +191,13 @@ private:
 
 	//Cookies for Gnash fallback
 	std::string rawCookies;
-	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
+	char* cookiesFileName;
 
 	URLInfo url;
 	Spinlock profileDataSpinlock;
 
-	Mutex mutexEnterFrameListeners;
-	std::set<DisplayObject*> enterFrameListeners;
+	Mutex mutexFrameListeners;
+	std::set<_R<DisplayObject>> frameListeners;
 	/*
 	   The head of the invalidate queue
 	*/
@@ -213,6 +216,8 @@ private:
 	*/
 	tiny_string profOut;
 #endif
+protected:
+	~SystemState();
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 
@@ -229,12 +234,10 @@ public:
 	bool isOnError() const;
 	void setShutdownFlag() DLL_PUBLIC;
 	void tick();
-	void wait() DLL_PUBLIC;
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
-	void enableGnashFallback() DLL_PUBLIC;
 	void needsAVM2(bool n);
 	//DisplayObject interface
 	_NR<Stage> getStage() const;
@@ -243,42 +246,48 @@ public:
 	//before any other thread gets started
 	SystemState(ParseThread* p, uint32_t fileSize) DLL_PUBLIC;
 	void finalize();
-	~SystemState();
+	/* Stop engines, threads and free classes and objects.
+	 * This call will decRef this object in the end,
+	 * thus destroy() may cause a 'delete this'.
+	 */
+	void destroy() DLL_PUBLIC;
 	
 	//Performance profiling
 	ThreadProfile* allocateProfiler(const RGB& color);
-	std::list<ThreadProfile> profilingData;
+	std::list<ThreadProfile*> profilingData;
 	
 	Stage* stage;
 	ABCVm* currentVm;
 
-	Config* config;
 	PluginManager* pluginManager;
 	AudioManager* audioManager;
 
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
-	//Class map
+	//Class/Template map. They own one reference to each class/template
 	std::map<QName, Class_base*> classes;
+	std::map<QName, Template_base*> templates;
 
 	//Flags for command line options
 	bool useInterpreter;
 	bool useJit;
+	bool exitOnError;
 
 	//Parameters/FlashVars
 	void parseParametersFromFile(const char* f) DLL_PUBLIC;
 	void parseParametersFromFlashvars(const char* vars) DLL_PUBLIC;
 	_NR<ASObject> getParameters() const;
 
-	//Cookies management for Gnash fallback
+	//Cookies management (HTTP downloads and Gnash fallback)
 	void setCookies(const char* c) DLL_PUBLIC;
+	const std::string& getCookies();
 
 	//Interfaces to the internal thread pool and timer thread
 	void addJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
-	bool removeJob(ITickJob* job);
+	void removeJob(ITickJob* job);
 
 	void setRenderRate(float rate);
 	float getRenderRate();
@@ -307,8 +316,8 @@ public:
 	ObjectEncoding::ENCODING staticByteArrayDefaultObjectEncoding;
 	
 	//enterFrame event management
-	void registerEnterFrameListener(DisplayObject* clip);
-	void unregisterEnterFrameListener(DisplayObject* clip);
+	void registerFrameListener(_R<DisplayObject> clip);
+	void unregisterFrameListener(_R<DisplayObject> clip);
 
 	//tags management
 	void registerTag(Tag* t);
@@ -332,8 +341,6 @@ class ParseThread: public IThreadJob
 {
 public:
 	int version;
-	bool useAVM2;
-	bool useNetwork;
 	// Parse an object from stream. The type is detected
 	// automatically. After parsing the new object is available
 	// from getParsedObject().
@@ -347,18 +354,16 @@ public:
 	void setRootMovie(RootMovieClip *root);
 	RootMovieClip *getRootMovie();
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
+	void execute();
 private:
 	std::istream& f;
 	std::streambuf* zlibFilter;
 	std::streambuf* backend;
-	sem_t ended;
-	bool isEnded;
 	Loader *loader;
 	_NR<DisplayObject> parsedObject;
 	Spinlock objectSpinlock;
 	tiny_string url;
 	FILE_TYPE fileType;
-	void execute();
 	void threadAbort();
 	void jobFence() {};
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);
@@ -366,6 +371,12 @@ private:
 	void parseBitmap();
 };
 
+/* Returns the thread-specific SystemState */
+SystemState* getSys() DLL_PUBLIC;
+/* Set thread-specific SystemState to be returned by getSys() */
+void setTLSSys(SystemState* sys) DLL_PUBLIC;
+
+ParseThread* getParseThread();
+
 };
-extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
 #endif

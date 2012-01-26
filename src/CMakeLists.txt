@@ -34,13 +34,13 @@ SET(LIBSPARK_SOURCES
   backends/decoder.cpp
   backends/extscriptobject.cpp
   backends/geometry.cpp
-  backends/glmatrices.cpp
   backends/graphics.cpp
   backends/image.cpp
   backends/input.cpp
   backends/netutils.cpp
   backends/pluginmanager.cpp
   backends/rendering.cpp
+  backends/rendering_context.cpp
   backends/rtmputils.cpp
   backends/security.cpp
   backends/urlutils.cpp
@@ -56,52 +56,69 @@ SET(LIBSPARK_SOURCES
   scripting/abc_codesynt.cpp
   scripting/abc_interpreter.cpp
   scripting/abc_opcodes.cpp
+  scripting/flash/accessibility/flashaccessibility.cpp
+  scripting/flash/display/flashdisplay.cpp
+  scripting/flash/events/flashevents.cpp
+  scripting/flash/external/ExternalInterface.cpp
+  scripting/flash/geom/flashgeom.cpp
+  scripting/flash/media/flashmedia.cpp
+  scripting/flash/net/flashnet.cpp
+  scripting/flash/net/URLStream.cpp
+  scripting/flash/sensors/flashsensors.cpp
+  scripting/flash/system/flashsystem.cpp
+  scripting/flash/text/flashtext.cpp
+  scripting/flash/utils/flashutils.cpp
+  scripting/flash/xml/flashxml.cpp
+  scripting/toplevel/Array.cpp
+  scripting/toplevel/ASString.cpp
+  scripting/toplevel/Boolean.cpp
+  scripting/toplevel/Date.cpp
+  scripting/toplevel/Error.cpp
+  scripting/toplevel/Math.cpp
+  scripting/toplevel/Vector.cpp
   scripting/class.cpp
-  scripting/flashaccessibility.cpp
-  scripting/flashdisplay.cpp
-  scripting/flashevents.cpp
-  scripting/flashexternal.cpp
-  scripting/flashgeom.cpp
-  scripting/flashmedia.cpp
-  scripting/flashnet.cpp
-	scripting/flashsensors.cpp
-  scripting/flashsystem.cpp
-  scripting/flashtext.cpp
-  scripting/flashutils.cpp
-  scripting/flashxml.cpp
-  scripting/toplevel.cpp)
-IF(${i386})
-  SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)
-  IF(CMAKE_COMPILER_IS_GNUCC)
-    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_i686.asm)
-  ELSE (CMAKE_COMPILER_IS_GNUCC)
-    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_32vc.cpp)
-  ENDIF(CMAKE_COMPILER_IS_GNUCC)
-ELSEIF(${x86_64})
-  SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)
-  #Why is there a particular faspaths_32vc but none for 64 bit?
-  SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_amd64.asm)
-ELSE()
+  scripting/toplevel/toplevel.cpp
+  platforms/engineutils.cpp)
+IF(MINGW)
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
-ENDIF(${i386})
+ELSE()
+  IF(${i386})
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_i686.asm)
+  ELSEIF(${x86_64})
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_x86.cpp)
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_amd64.asm)
+  ELSE()
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
+  ENDIF(${i386})
+ENDIF(MINGW)
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/scripting)
 
 # liblightspark.so target
 IF(CMAKE_COMPILER_IS_GNUCC)
   ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})
-  SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
-  SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -Wl,--version-script=${PROJECT_SOURCE_DIR}/src/lightspark.expmap")
+  IF(NOT WIN32)
+    #win32's cmake doesn't like liblightspark and lightspark.exe having the same name
+    SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
+  ENDIF()
+  IF(MINGW)
+    SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "-Wl,--export-all-symbols")
+  ELSE()
+    SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "-Wl,--version-script=${PROJECT_SOURCE_DIR}/src/lightspark.expmap")
+  ENDIF()
   SET_TARGET_PROPERTIES(spark PROPERTIES LINK_INTERFACE_LIBRARIES "")
 ELSE (CMAKE_COMPILER_IS_GNUCC)
   ADD_LIBRARY(spark STATIC ${LIBSPARK_SOURCES})
 ENDIF (CMAKE_COMPILER_IS_GNUCC)
 
-TARGET_LINK_LIBRARIES(spark ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES}
-	${Boost_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT}
+TARGET_LINK_LIBRARIES(spark ${CAIRO_LIBRARIES} ${ZLIB_LIBRARIES}
+	${Boost_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${LLVM_LDFLAGS}
 	${OPTIONAL_LIBRARIES} ${GTK_LIBRARIES} ${FREETYPE_LIBRARIES} ${JPEG_LIBRARIES}
-	${PCRE_LIBRARIES}
-	${Threads_LIBRARIES} ${XMLPP_LIBRARIES} ${CMAKE_DL_LIBS})
+	${PCRE_LIBRARIES} ${GLIBMM_LIBRARIES}
+	${XMLPP_LIBRARIES} ${CMAKE_DL_LIBS} ${EXTRA_LIBS_LIBRARIES}
+	${X11_LIBRARIES})
 SET_TARGET_PROPERTIES(spark PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 SET_TARGET_PROPERTIES(spark PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
 
@@ -111,22 +128,26 @@ ELSE()
 	TARGET_LINK_LIBRARIES(spark ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES})
 ENDIF(ENABLE_GLES2)
 
-IF(UNIX)
-  INSTALL(TARGETS spark LIBRARY DESTINATION ${PRIVATELIBDIR})
-ENDIF(UNIX)
+PACK_LIBRARY(spark)
+#We have to use LIBRARY on linux and RUNTIME on win32
+INSTALL(TARGETS spark RUNTIME DESTINATION ${PRIVATELIBDIR} LIBRARY DESTINATION ${PRIVATELIBDIR})
 
 # lightspark executable target
 IF(COMPILE_LIGHTSPARK)
   ADD_EXECUTABLE(lightspark main.cpp)
   TARGET_LINK_LIBRARIES(lightspark spark)
-  TARGET_LINK_LIBRARIES(lightspark ${Boost_LIBRARIES} ${GTK_LIBRARIES} -lX11)
+  #With STATICDEPS, all deps are compiled into spark
+  IF(NOT STATICDEPS)
+    TARGET_LINK_LIBRARIES(lightspark ${Boost_LIBRARIES} ${X11_LIBRARIES} ${GTK_LIBRARIES} ${GLIBMM_LIBRARIES} ${GTHREAD_LIBRARIES})
+  ENDIF()
 
+  PACK_EXECUTABLE(lightspark)
+  INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark.frag DESTINATION ${LSDATADIR})
+  INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark.vert DESTINATION ${LSDATADIR})
+  INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark-blitter.vert DESTINATION ${LSDATADIR})
+  INSTALL(TARGETS lightspark RUNTIME DESTINATION ${BINDIR})
   IF(UNIX)
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark.frag DESTINATION ${DATADIR}/lightspark)
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark.vert DESTINATION ${DATADIR}/lightspark)
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/lightspark-blitter.vert DESTINATION ${DATADIR}/lightspark)
     INSTALL(FILES ${PROJECT_SOURCE_DIR}/docs/man/lightspark.1 DESTINATION share/man/man1)
-    INSTALL(TARGETS lightspark RUNTIME DESTINATION ${BINDIR})
   ENDIF(UNIX)
 ENDIF(COMPILE_LIGHTSPARK)
 
@@ -134,11 +155,13 @@ ENDIF(COMPILE_LIGHTSPARK)
 IF(COMPILE_TIGHTSPARK)
   ADD_EXECUTABLE(tightspark tightspark.cpp)
   TARGET_LINK_LIBRARIES(tightspark spark)
-  TARGET_LINK_LIBRARIES(tightspark ${Boost_LIBRARIES})
+  #With STATICDEPS, all deps are compiled into spark
+  IF(NOT STATICDEPS)
+    TARGET_LINK_LIBRARIES(tightspark ${Boost_LIBRARIES} ${GLIBMM_LIBRARIES} ${GTHREAD_LIBRARIES})
+  ENDIF()
 
-  IF(UNIX)
-    INSTALL(TARGETS tightspark RUNTIME DESTINATION ${BINDIR})
-  ENDIF(UNIX)
+  INSTALL(TARGETS tightspark RUNTIME DESTINATION ${BINDIR})
+  PACK_EXECUTABLE(tightspark)
 ENDIF(COMPILE_TIGHTSPARK)
 
 # Browser plugin

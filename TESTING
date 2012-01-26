@@ -1,0 +1,56 @@
+Instuctions for working with the Lightspark testsuite
+
+Installing Flex
+----------------
+
+In order to build SWF files from ActionScript sources you need an AS3 compiler
+One comes with the Flex SDK and it is recommended you install it if you plan
+on running the tests and doing development.
+
+Get Flex 4.1 Update.
+
+http://opensource.adobe.com/wiki/display/flexsdk/Download+Flex+4
+
+Follow the installation instuctions within, then check whether it is installed correctly
+
+$mxmlc --version
+Version 4.1.0 build 16076
+
+Installing the Adobe player
+---------------------------
+In order to get a known good Flash player to compare results against and
+test SFW files with you can download the free as in beer Adobe player.
+
+http://www.adobe.com/support/flashplayer/downloads.html
+
+Download the Projector content debugger and unpack it somewhere in your $PATH.
+
+Check if it is installed by running
+
+$flashplayerdebugger --version
+10,3,183,7
+
+Running the Tamarin testsuite
+-----------------------------
+
+cd tests
+
+One time setup and build of the tests
+
+hg clone http://hg.mozilla.org/tamarin-redux tamarin
+wget ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar
+./make-tamarin
+
+Run the entire suite
+./tests
+
+Run the entire suite using the Adobe player - everything should pass
+./tests -p
+
+Running the testsuite can take a long time and each test pops up a temporary window.
+In order to run the suite headless and not steal focus from other applications run
+
+xvfb-run -s '-extension GLX' -a ./tests
+
+You need to have Xvfb installed (apt-get install xvfb or similar)
+

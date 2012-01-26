@@ -21,8 +21,10 @@
 #define LOGGER_H
 
 #include "compat.h"
-#include <semaphore.h>
 #include <iostream>
+#include <sstream>
+#include <vector>
+#include <set>
 
 enum LOG_LEVEL { LOG_ERROR=0, LOG_INFO=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_TRACE=4};
 
@@ -38,21 +40,51 @@ do {							\
 class Log
 {
 private:
-	static sem_t mutex;
-	static bool loggingInited;
 	LOG_LEVEL cur_level;
 	bool valid;
 	static const char* level_names[];
 	static LOG_LEVEL log_level DLL_PUBLIC;
-
+	std::stringstream message;
 public:
+	static void print(const std::string& s);
 	Log(LOG_LEVEL l) DLL_PUBLIC;
 	~Log() DLL_PUBLIC;
 	std::ostream& operator()() DLL_PUBLIC;
 	operator bool() { return valid; }
-	static void initLogging(LOG_LEVEL l) DLL_PUBLIC;
-	static LOG_LEVEL getLevel() DLL_PUBLIC {return log_level;}
+	static void setLogLevel(LOG_LEVEL l) { log_level = l; };
+	static LOG_LEVEL getLevel() {return log_level;}
+	static int calls_indent;
+	/* redirect logging and print() to that file */
+	static void redirect(std::string filename) DLL_PUBLIC;
 
 };
+
+template<typename T>
+std::ostream& printContainer(std::ostream& os, const T& v)
+{
+	os << "[";
+	for (typename T::const_iterator i = v.begin(); i != v.end(); ++i)
+	{
+		if(i != v.begin())
+			os << " ";
+		os << *i;
+	}
+	os << "]";
+	return os;
+}
+
+/* convenience function to log std containers */
+namespace std {
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+{
+	return printContainer(os,v);
+}
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const std::set<T>& v)
+{
+	return printContainer(os,v);
+}
+}
 
 #endif

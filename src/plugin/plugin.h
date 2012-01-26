@@ -25,22 +25,25 @@
 #include <iostream>
 #include <sstream>
 
+#include "compat.h"
 #include "pluginbase.h"
 #include "parsing/streams.h"
 #include "backends/netutils.h"
 #include "backends/urlutils.h"
 #include "npscriptobject.h"
 
+namespace lightspark
+{
+
 class NPDownloader;
 typedef void(*helper_t)(void*);
 
-class NPDownloadManager: public lightspark::DownloadManager
+class NPDownloadManager: public lightspark::StandaloneDownloadManager
 {
 private:
 	NPP instance;
 public:
 	NPDownloadManager(NPP i);
-	~NPDownloadManager();
 	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner);
 	lightspark::Downloader* downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
 			lightspark::ILoadable* owner);
@@ -63,15 +66,26 @@ public:
 	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data, NPP _instance, lightspark::ILoadable* owner);
 };
 
-class PluginEngineData: public lightspark::EngineData
+class PluginEngineData:	public EngineData
 {
 private:
 	nsPluginInstance* instance;
 public:
-	PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h);
-	void setupMainThreadCallback(lightspark::ls_callback_t func, void* arg);
+	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h) : instance(i)
+	{
+		width = w;
+		height = h;
+	}
+	/* The widget must not be gtk_widget_destroy'ed in the destructor. This is done
+	 * by firefox.
+	 */
+	~PluginEngineData() {}
+
 	void stopMainDownload();
-	bool isSizable() const;
+	bool isSizable() const { return false; }
+	NativeWindow getWindowForGnash();
+	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
+	GtkWidget* createGtkWidget();
 };
 
 class nsPluginInstance : public nsPluginInstanceBase
@@ -106,14 +120,12 @@ private:
 	NPP mInstance;
 	NPBool mInitialized;
 
-	GtkWidget* mContainer;
-	Window mWindow;
-	Display *mDisplay;
+	/* This is the window we got from firefox. It is not the
+	 * window we draw into. We create a child of mWindow and
+	 * draw into that.
+	 */
+	NativeWindow mWindow;
 	int mX, mY;
-	int mWidth, mHeight;
-	Visual* mVisual;
-	Colormap mColormap;
-	unsigned int mDepth;
 
 	std::istream mainDownloaderStream;
 	NPDownloader* mainDownloader;
@@ -121,4 +133,5 @@ private:
 	lightspark::ParseThread* m_pt;
 };
 
+}
 #endif // __PLUGIN_H__

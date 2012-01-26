@@ -26,7 +26,6 @@
 #include <fstream>
 #include <list>
 #include <map>
-#include <inttypes.h>
 #include "swftypes.h"
 #include "thread_pool.h"
 #include "backends/urlutils.h"
@@ -48,7 +47,7 @@ public:
 class DLL_PUBLIC DownloadManager
 {
 private:
-	sem_t mutex;
+	Mutex mutex;
 	std::list<Downloader*> downloaders;
 protected:
 	DownloadManager();
@@ -93,15 +92,15 @@ protected:
 	Downloader(const tiny_string& _url, const std::vector<uint8_t>& data, ILoadable* o);
 	//-- LOCKING
 	//Provides internal mutual exclusing
-	sem_t mutex;
+	Mutex mutex;
 	//Signals the cache opening
-	sem_t cacheOpened;
+	Semaphore cacheOpened;
 	//True if cache has opened
 	bool cacheHasOpened;
 	//Signals new bytes available for reading
-	sem_t dataAvailable;
+	Semaphore dataAvailable;
 	//Signals termination of the download
-	sem_t terminated;
+	Semaphore terminated;
 	//True if the download is terminated
 	bool hasTerminated;
 
@@ -110,6 +109,7 @@ protected:
 	bool waitingForCache;
 	//True if the downloader is waiting for data
 	bool waitingForData;
+	void waitForData_locked();
 	//True if the downloader is waiting for termination
 	bool waitingForTermination;
 
@@ -196,7 +196,7 @@ public:
 	//Wait for cache to be opened
 	void waitForCache();
 	//Wait for data to become available
-	void waitForData();
+	void waitForData() { Mutex::Lock l(mutex); waitForData_locked(); }
 	//Wait for the download to terminate
 	void waitForTermination();
 

@@ -31,6 +31,7 @@ class PulseAudioStream;  //Early declaration
 
 class PulsePlugin : public IAudioPlugin
 {
+friend class PulseAudioStream;
 private:
 	pa_threaded_mainloop *mainLoop;
 	pa_context *context;
@@ -55,9 +56,6 @@ public:
 		      bool init_contextReady = false, bool init_noServer = false, bool init_stopped = false );
 	void set_device ( std::string desiredDevice, DEVICE_TYPES desiredType );
 	AudioStream *createStream ( lightspark::AudioDecoder *decoder );
-	void freeStream ( AudioStream *audioStream );
-	void pauseStream( AudioStream *audioStream );
-	void resumeStream( AudioStream *audioStream );
 	bool isTimingAvailable() const;
 	void pulseLock();
 	void pulseUnlock();
@@ -76,11 +74,13 @@ public:
 	enum STREAM_STATUS { STREAM_STARTING = 0, STREAM_READY = 1, STREAM_DEAD = 2 };
 	PulseAudioStream ( PulsePlugin *m );
 	uint32_t getPlayedTime ();
-	bool paused();
+	bool ispaused();
 	bool isValid();
-	void fill ();
-
+	void pause();
+	void resume();
+	~PulseAudioStream();
 private:
+	bool paused;
 	pa_stream *stream;
 	PulsePlugin *manager;
 	volatile STREAM_STATUS streamStatus;

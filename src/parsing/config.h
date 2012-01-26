@@ -21,6 +21,7 @@
 #define _CONFIG_PARSER_H
 
 #include <string>
+#include <vector>
 #include <glib.h>
 
 namespace lightspark
@@ -50,11 +51,11 @@ namespace lightspark
 
 		//These properties and their return types are only valid until the next read()
 		//They should be copied before use
-		const char* getGroup() { return group; }
-		const char* getKey() { return key; }
-		const char* getValue() { return g_key_file_get_value(file, group, key, NULL); }
-		const char* getValueString() { return g_key_file_get_string(file, group, key, NULL); }
-		char* const* getValueStringList(gsize* length) { return g_key_file_get_string_list(file, group, key, length, NULL); }
+		std::string getGroup() { return group; }
+		std::string getKey() { return key; }
+		std::string getValue();
+		std::string getValueString();
+		std::vector<std::string> getValueStringList();
 		bool getValueBoolean() { return (bool)g_key_file_get_boolean(file, group, key, NULL); }
 		bool* getValueBooleanList(gsize* length) { return (bool*)g_key_file_get_boolean_list(file, group, key, length, NULL); }
 		int getValueInteger() { return g_key_file_get_integer(file, group, key, NULL); }

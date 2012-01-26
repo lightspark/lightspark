@@ -42,7 +42,7 @@
 	}
 	private function reportTimeoutFunc():void
 	{
-		Tests.assertEquals(4, intervalCount, "setInterval(): intervalCountFunc(): called 4 times", true);
+		Tests.assertEquals(3, intervalCount, "setInterval(): intervalCountFunc(): called 3 times", true);
 		Tests.assertTrue(true, "setTimeout(): reportTimeoutFunc(): reached");
 		Tests.report(visual, this.name)
 	}

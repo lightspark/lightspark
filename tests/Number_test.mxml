@@ -10,9 +10,31 @@
 	import Tests;
 	private function appComplete():void
 	{
+		var mc_null:MovieClip = null;
+		var mc:MovieClip = new MovieClip();
 		var num:Number = 12.34;
 		Tests.assertEquals("12.34",num.toString(10),"Number::toString(10)");
 		Tests.assertEquals("c",num.toString(16),"Number::toString(16)");
+		Tests.assertEquals(2952663604,Number("0xAFFE1234"),"Number(\"0xAFFE1234\")");
+		Tests.assertEquals(3.7,Number("3.7  "),"Number(\"3.7  \")");
+		Tests.assertEquals(-3.7,Number("  -3.7"),"Number(\"  3.7\")");
+			
+		Tests.assertEquals(Number(3.2), 3.2, "Number(3.2)", true);
+		Tests.assertEquals(Number(3.8), 3.8, "Number(3.8)", true);
+		Tests.assertEquals(Number("3.2"), 3.2, "Number(\"3.2\")", true);
+		Tests.assertEquals(Number("3.8 "), 3.8, "Number(\"3.8 \")", true);
+		Tests.assertEquals(Number(" -3.2"), -3.2, "Number(\" -3.2\")", true);
+		Tests.assertEquals(Number("-3.8"), -3.8, "Number(\"-3.8\")", true);
+		Tests.assertEquals(Number(true), 1, "Number(true)", true);
+		Tests.assertEquals(Number(false), 0, "Number(false)", true);
+		Tests.assertEquals(Number(-4), -4, "Number(-4)", true);
+		Tests.assertTrue(isNaN(Number("No number")),"Number(\"No number\")",true);
+		Tests.assertEquals(Number(" 0xFFFFFFF4 "),4294967284,"Number(\" 0xFFFFFFF4 \")",true);
+		Tests.assertTrue(isNaN(Number(undefined)),"Number(undefined)",true);
+		Tests.assertEquals(Number(mc_null),0,"Number(null)",true);
+		Tests.assertTrue(isNaN(Number(mc)),"Number(MovieClip)",true);
+
+
 		Tests.report(visual, this.name);
 	}
 	]]>

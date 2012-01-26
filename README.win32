@@ -1,0 +1,27 @@
+-- How to crosscompile lightspark win32 binaries on a linux box --
+(This is the only supported way to build win32 binaries)
+
+I assume that your currently one level above the directory
+'git', which contains the lightspark sources.
+
+1. Apply this patch to your local cmake installation to fix a bug with .rc file handling:
+  http://public.kitware.com/Bug/file_download.php?file_id=4062&type=bug
+
+2. Install mingw-cross-env by
+  1. hg clone http://hg.savannah.nongnu.org/hgweb/mingw-cross-env
+  2. cd mingw-cross-env
+  3. Apply the patch from http://lists.nongnu.org/archive/html/mingw-cross-env-list/2011-11/msg00072.html
+  4. make gcc llvm glibmm gtk2 ffmpeg cairo pango boost libxml++ glew freetype curl
+     Note: You may want to add e.g. '-j4' to build four packages in parallel, or e.g. JOBS=3 to use three cpus per package.
+     Note: This may ask you to install additional packages. Do so using the package manager of your distribution.
+           For Ubuntu oneiric, use 'apt-get install libtool yasm scons flex unzip wget')
+  5. make strip
+  6. cd ..
+
+3. Build lightspark
+  1. mkdir mingw && cd mingw
+  2. cmake -DCMAKE_INSTALL_PREFIX=../mingw-build -DCMAKE_BUILD_TYPE=Debug -G'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=../mingw-cross-env/usr/i686-pc-mingw32/share/cmake/mingw-cross-env-conf.cmake ../git
+  3. make install
+  4. cd ..
+
+4. Run lightspark from 'mingw-build/lightspark'

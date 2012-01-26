@@ -142,29 +142,24 @@ bool PulsePlugin::isTimingAvailable() const
 	return serverAvailable();
 }
 
-void PulsePlugin::freeStream ( AudioStream *audioStream )
+PulseAudioStream::~PulseAudioStream()
 {
-	pulseLock();
-	assert ( audioStream );
+	manager->pulseLock();
 
-	PulseAudioStream *s = static_cast<PulseAudioStream *> ( audioStream );
+	if( manager->serverAvailable() )
+		pa_stream_disconnect( stream );
 
-	if ( serverAvailable() )
-	{
-		pa_stream *toDelete = s->stream;
-		pa_stream_disconnect ( toDelete );
-	}
 	//Do not delete the stream now, let's wait termination. However, removing it from the list.
-	streams.remove(s);
-	audioStream = NULL;
+	manager->streams.remove(this);
 
-	pulseUnlock();
-	while ( s->streamStatus != PulseAudioStream::STREAM_DEAD );
-	pulseLock();
-	if ( s->stream )
-		pa_stream_unref ( s->stream );
-	pulseUnlock();
-	delete s;
+	manager->pulseUnlock();
+
+	while( streamStatus != PulseAudioStream::STREAM_DEAD );
+
+	manager->pulseLock();
+	if( stream )
+		pa_stream_unref ( stream );
+	manager->pulseUnlock();
 }
 
 void PulsePlugin::streamOverflowCB( pa_stream *p, void *userdata )
@@ -243,25 +238,21 @@ void PulsePlugin::contextStatusCB ( pa_context *context, PulsePlugin *th )
 		break;
 	}
 }
-void PulsePlugin::pauseStream(AudioStream *audioStream)
+void PulseAudioStream::pause()
 {
-	PulseAudioStream *pulseStream = NULL;
-	pulseStream = static_cast<PulseAudioStream *> ( audioStream );
-	if(pulseStream->isValid() && !pulseStream->paused())
+	if(isValid() && !ispaused())
 	{
-		pa_stream_cork(pulseStream->stream, 1, NULL, NULL);	//This will stop the stream's time from running
-		pulseStream->pause=true;
+		pa_stream_cork(stream, 1, NULL, NULL);	//This will stop the stream's time from running
+		paused=true;
 	}
 }
 
-void PulsePlugin::resumeStream(AudioStream *audioStream)
+void PulseAudioStream::resume()
 {
-	PulseAudioStream *pulseStream = NULL;
-	pulseStream = static_cast<PulseAudioStream *> ( audioStream );
-	if(pulseStream->isValid() && pulseStream->paused())
+	if(isValid() && ispaused())
 	{
-		pa_stream_cork(pulseStream->stream, 0, NULL, NULL);	//This will restart time
-		pulseStream->pause=false;
+		pa_stream_cork(stream, 0, NULL, NULL);	//This will restart time
+		paused=false;
 	}
 }
 
@@ -292,7 +283,7 @@ void PulsePlugin::stop()
 		stopped = true;
 		for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
 		{
-			freeStream( *it );
+			delete *it;
 		}
 		if(serverAvailable())
 		{
@@ -327,8 +318,8 @@ void PulsePlugin::unmuteAll()
 /****************************
 Stream's functions
 ****************************/
-PulseAudioStream::PulseAudioStream ( PulsePlugin* m )  : 
-	AudioStream(NULL, false), stream ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING )
+PulseAudioStream::PulseAudioStream ( PulsePlugin* m )  :
+	AudioStream(NULL), paused(false), stream ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING )
 {
 
 }
@@ -353,55 +344,51 @@ uint32_t PulseAudioStream::getPlayedTime ( )
 	return time / 1000;
 }
 
-void PulseAudioStream::fill ()
+void PulseAudioStream::fillStream(size_t toSend)
 {
-	if ( isValid() )
+	/* Write data until we have space on the server and we have data available.
+	 * pa_stream_begin_write will return maximum 65472 bytes, but toSend is usually much bigger
+	 * so we loop until it is filled or we have no more decoded data
+	 */
+	while(toSend)
 	{
-		if ( streamStatus != PulseAudioStream::STREAM_READY ) //The stream is not yet ready, delay upload
-			return;
-		if ( !decoder->hasDecodedFrames() ) //No decoded data available yet, delay upload
-			return;
-		manager->pulseLock();
-		size_t frameSize = pa_stream_writable_size ( stream );
-		fillStream(frameSize);
-		manager->pulseUnlock();
-	}
-	else   //No sound server available
-	{
-		//Just skip all the contents
-		decoder->skipAll();
-	}
-}
-
-void PulseAudioStream::fillStream(size_t frameSize)
-{
-	int16_t *dest;
-	if ( frameSize == 0 ) //The server can't accept any data now
-		return;
-	//Write data until we have space on the server and we have data available
-	uint32_t totalWritten = 0;
-	pa_stream_begin_write ( stream, ( void** ) &dest, &frameSize );
-	do
-	{
-		uint32_t retSize = decoder->copyFrame ( dest + ( totalWritten / 2 ), frameSize );
-		if ( retSize == 0 ) //There is no more data
+		int16_t *dest;
+		uint32_t totalWritten = 0;
+		size_t frameSize = toSend;
+		int ret = pa_stream_begin_write ( stream, ( void** ) &dest, &frameSize );
+		assert(!ret);
+		toSend -= frameSize;
+		if (frameSize == 0)
 			break;
-		totalWritten += retSize;
-		frameSize -= retSize;
-	}
-	while ( frameSize );
 
-	if ( totalWritten )
-	{
-		pa_stream_write ( stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE );
-		if(!pause)
-			pa_stream_cork ( stream, 0, NULL, NULL ); //Start the stream, just in case it's still stopped
+		/* copy frames from the decoder until the buffer is full */
+		do
+		{
+			uint32_t retSize = decoder->copyFrame ( dest + ( totalWritten / 2 ), frameSize );
+			if ( retSize == 0 ) //There is no more data
+				break;
+			totalWritten += retSize;
+			frameSize -= retSize;
+		}
+		while ( frameSize );
+
+		if ( totalWritten )
+		{
+			pa_stream_write ( stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE );
+		}
+		else
+		{
+			//there was not any decoded data available
+			pa_stream_cancel_write ( stream );
+			break;
+		}
 	}
-	else
-		pa_stream_cancel_write ( stream );
+
+	if(!paused && pa_stream_is_corked(stream))
+		pa_stream_cork ( stream, 0, NULL, NULL ); //Start the stream, just in case it's still stopped
 }
 
-bool PulseAudioStream::paused()
+bool PulseAudioStream::ispaused()
 {
 	assert_and_throw(isValid());
 	return pa_stream_is_corked(stream);
@@ -437,7 +424,7 @@ void PulseAudioStream::setVolume(double vol)
 {
 	struct pa_cvolume volume;
 	pa_cvolume_set(&volume, pa_stream_get_sample_spec(stream)->channels,
-					pa_sw_volume_from_linear(vol));
+					vol*PA_VOLUME_NORM);
 	pa_context_set_sink_input_volume(
 			pa_stream_get_context(stream),
 			pa_stream_get_index(stream),

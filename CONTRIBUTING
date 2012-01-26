@@ -1,0 +1,17 @@
+Debug builds
+------------
+
+If you need source level debugging
+$cmake -DCMAKE_BUILD_TYPE=Debug . && make
+The libs and binaries will end up in a directory called Debug
+
+gdb setup
+----------
+To properly output C++ objects in gdb put this line in the
+.gdbinit file in your Lighspark dir
+set print object on
+
+Development guide in the wiki
+-----------------------------
+
+https://github.com/lightspark/lightspark/wiki/DevelopmentGuide

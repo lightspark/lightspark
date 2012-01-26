@@ -18,13 +18,11 @@
 **************************************************************************/
 
 #include <string>
-#include <pthread.h>
 #include <algorithm>
 #include "scripting/abc.h"
-#include "scripting/flashdisplay.h"
-#include "scripting/flashevents.h"
-#include "scripting/flashutils.h"
-#include "swf.h"
+#include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/utils/flashutils.h"
+#include "scripting/toplevel/ASString.h"
 #include "logger.h"
 #include "parsing/streams.h"
 #include "asobject.h"
@@ -35,6 +33,7 @@
 #include "backends/rendering.h"
 #include "backends/security.h"
 #include "backends/image.h"
+#include "backends/extscriptobject.h"
 
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
@@ -48,37 +47,46 @@ extern "C" {
 }
 #endif
 
-#include <gdk/gdkx.h>
-
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA ParseThread* pt;
-
-RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):mutex("mutexRoot"),parsingIsFailed(false),frameRate(0),
-	toBind(false)
+static GStaticPrivate tls_system = G_STATIC_PRIVATE_INIT;
+SystemState* lightspark::getSys()
 {
-	this->incRef();
-	sem_init(&new_frame,0,0);
+	SystemState* ret = (SystemState*)g_static_private_get(&tls_system);
+	return ret;
+}
+
+void lightspark::setTLSSys(SystemState* sys)
+{
+        g_static_private_set(&tls_system,sys,NULL);
+}
+
+static GStaticPrivate parse_thread_tls = G_STATIC_PRIVATE_INIT; /* TLS */
+ParseThread* lightspark::getParseThread()
+{
+	ParseThread* pt = (ParseThread*)g_static_private_get(&parse_thread_tls);
+	assert(pt);
+	return pt;
+}
+
+RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):parsingIsFailed(false),frameRate(0),
+	toBind(false), finishedLoading(false)
+{
 	if(li)
 		li->incRef();
 	loaderInfo=_MNR(li);
 
 	//We set the protoype to a generic MovieClip
 	if(!isSys)
-		setPrototype(Class<MovieClip>::getClass());
+		setClass(Class<MovieClip>::getClass());
 }
 
-RootMovieClip::~RootMovieClip()
-{
-	sem_destroy(&new_frame);
-}
 
 void RootMovieClip::parsingFailed()
 {
 	//The parsing is failed, we have no change to be ever valid
 	parsingIsFailed=true;
-	sem_post(&new_frame);
 }
 
 void RootMovieClip::bindToName(const tiny_string& n)
@@ -105,19 +113,19 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 	}
 }
 
-void SystemState::registerEnterFrameListener(DisplayObject* obj)
+void SystemState::registerFrameListener(_R<DisplayObject> obj)
 {
-	Locker l(mutexEnterFrameListeners);
+	Locker l(mutexFrameListeners);
 	obj->incRef();
-	enterFrameListeners.insert(obj);
+	frameListeners.insert(obj);
 }
 
-void SystemState::unregisterEnterFrameListener(DisplayObject* obj)
+void SystemState::unregisterFrameListener(_R<DisplayObject> obj)
 {
-	Locker l(mutexEnterFrameListeners);
-	if(enterFrameListeners.erase(obj))
-		obj->decRef();
+	Locker l(mutexFrameListeners);
+	frameListeners.erase(obj);
 }
+
 void RootMovieClip::setOnStage(bool staged)
 {
 	MovieClip::setOnStage(staged);
@@ -126,7 +134,7 @@ void RootMovieClip::setOnStage(bool staged)
 RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li)
 {
 	RootMovieClip* ret=new RootMovieClip(li);
-	ret->setPrototype(Class<MovieClip>::getClass());
+	ret->setClass(Class<MovieClip>::getClass());
 	return ret;
 }
 
@@ -147,32 +155,32 @@ void SystemState::staticInit()
 
 void SystemState::staticDeinit()
 {
+	delete Type::anyType;
+	delete Type::voidType;
 #ifdef ENABLE_CURL
 	curl_global_cleanup();
 #endif
 }
 
 SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
-	RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),engineData(NULL),fileDumpAvailable(0),
-	waitingForDump(false),vmVersion(VMNONE),childPid(0),useGnashFallback(false),
-	parameters(NullRef),mutexEnterFrameListeners("mutexEnterFrameListeners"),
+	RootMovieClip(NULL,true),terminated(0),renderRate(0),error(false),shutdown(false),
+	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
+	vmVersion(VMNONE),childPid(0),
+	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
-	currentVm(NULL),useInterpreter(true),useJit(false),downloadManager(NULL),
+	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(false),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
-	cookiesFileName[0]=0;
-	//Create the thread pool
-	sys=this;
-	sem_init(&terminated,0,0);
+	cookiesFileName = NULL;
 
+	setTLSSys(this);
+
+	mainThread = Thread::self();
 	//Get starting time
 	if(parseThread) //ParseThread may be null in tightspark
 		parseThread->setRootMovie(this);
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
-	config=new Config;
-	config->load();
 	pluginManager = new PluginManager;
 	audioManager=new AudioManager(pluginManager);
 	intervalManager=new IntervalManager();
@@ -186,7 +194,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	stage->_addChildAt(_MR(this),0);
 	startTime=compat_msectiming();
 	
-	setPrototype(Class<MovieClip>::getClass());
+	setClass(Class<MovieClip>::getClass());
 
 	//Override getStage as for SystemState that can't be null
 	setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(_getStage),GETTER_METHOD,false);
@@ -198,9 +206,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 void SystemState::setDownloadedPath(const tiny_string& p)
 {
 	dumpedSWFPath=p;
-	Locker l(mutex);
-	if(waitingForDump)
-		fileDumpAvailable.signal();
+	dumpedSWFPathAvailable.signal();
 }
 
 void SystemState::setCookies(const char* c)
@@ -208,14 +214,36 @@ void SystemState::setCookies(const char* c)
 	rawCookies=c;
 }
 
+const std::string& SystemState::getCookies()
+{
+	return rawCookies;
+}
+
+static int hexToInt(char c)
+{
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
+}
+
 void SystemState::parseParametersFromFlashvars(const char* v)
 {
-	if(useGnashFallback) //Save a copy of the string
-		rawParameters=v;
+	//Save a copy of the string
+	rawParameters=v;
+
 	_R<ASObject> params=_MR(Class<ASObject>::getInstanceS());
 	//Add arguments to SystemState
 	string vars(v);
 	uint32_t cur=0;
+	char* pfile = getenv("LIGHTSPARK_PLUGIN_PARAMFILE");
+        ofstream f;
+	if(pfile)
+		f.open(pfile, ios::binary|ios::out);
 	while(cur<vars.size())
 	{
 		int n1=vars.find('=',cur);
@@ -244,8 +272,8 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 					break;
 				}
 
-				int t1=Math::hexToInt(vars[j+1]);
-				int t2=Math::hexToInt(vars[j+2]);
+				int t1=hexToInt(vars[j+1]);
+				int t2=hexToInt(vars[j+2]);
 				if(t1==-1 || t2==-1)
 				{
 					ok=false;
@@ -261,7 +289,14 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 		if(ok)
 		{
 			//cout << varName << ' ' << varValue << endl;
-			params->setVariableByQName(varName,"",
+			if(pfile)
+				f << varName << endl << varValue << endl;
+
+			/* That does occur in the wild */
+			if(params->hasPropertyByMultiname(QName(varName,""), true))
+				LOG(LOG_ERROR,"Flash parameters has duplicate key '" << varName << "' - ignoring");
+			else
+				params->setVariableByQName(varName,"",
 					lightspark::Class<lightspark::ASString>::getInstanceS(varValue),DYNAMIC_TRAIT);
 		}
 		cur=n2+1;
@@ -271,7 +306,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 
 void SystemState::parseParametersFromFile(const char* f)
 {
-	ifstream i(f);
+	ifstream i(f, ios::in|ios::binary);
 	if(!i)
 	{
 		LOG(LOG_ERROR,_("Parameters file not found"));
@@ -293,8 +328,7 @@ void SystemState::parseParametersFromFile(const char* f)
 void SystemState::setParameters(_R<ASObject> p)
 {
 	parameters=p;
-	p->incRef();
-	loaderInfo->setVariableByQName("parameters","",p.getPtr(), DECLARED_TRAIT);
+	loaderInfo->parameters = p;
 }
 
 _NR<ASObject> SystemState::getParameters() const
@@ -307,14 +341,13 @@ void SystemState::stopEngines()
 	if(threadPool)
 		threadPool->forceStop();
 	timerThread->wait();
+	/* first shutdown the vm, because it can use all the others */
+	if(currentVm)
+		currentVm->shutdown();
 	delete downloadManager;
 	downloadManager=NULL;
 	delete securityManager;
 	securityManager=NULL;
-	delete config;
-	config=NULL;
-	if(currentVm)
-		currentVm->shutdown();
 	delete threadPool;
 	threadPool=NULL;
 	//Now stop the managers
@@ -345,22 +378,40 @@ void SystemState::finalize()
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
 	parameters.reset();
+	frameListeners.clear();
 }
 
 SystemState::~SystemState()
 {
+}
+
+void SystemState::destroy()
+{
 #ifdef PROFILING_SUPPORT
 	saveProfilingInformation();
 #endif
+	terminated.wait();
+	//Acquire the mutex to sure that the engines are not being started right now
+	Locker l(mutex);
+	renderThread->wait();
+	inputThread->wait();
+	if(currentVm)
+		currentVm->shutdown();
+
+	l.release();
+
 	//Kill our child process if any
 	if(childPid)
 	{
-		assert(childPid!=getpid());
+		LOG(LOG_INFO,"Terminating gnash...");
 		kill_child(childPid);
 	}
 	//Delete the temporary cookies file
-	if(cookiesFileName[0])
+	if(cookiesFileName)
+	{
 		unlink(cookiesFileName);
+		g_free(cookiesFileName);
+	}
 	assert(shutdown);
 
 	renderThread->stop();
@@ -376,17 +427,25 @@ SystemState::~SystemState()
 		threadPool->forceStop();
 	stopEngines();
 
+	delete extScriptObject;
+	delete intervalManager;
 	//Finalize ourselves
 	finalize();
 
-	//We are already being destroyed, make our prototype abandon us
-	setPrototype(NULL);
+	//We are already being destroyed, make our classdef abandon us
+	setClass(NULL);
 	
+	//Free the stage. This should free all objects on the displaylist
+	stage->decRef();
+	stage = NULL;
+
 	/*
-	   Now we have to kill all objects that are still alive. This is done is two passes
-	   1) call finalize on all objects, this will decRef all referenced objects
-	   2) delete all the objects. Now destroying an object should not cause accesses to
-	   	any other object */
+	 * 1) call finalize on all objects, this will free all referenced objects and thereby
+	 * cut circular references. After that, all ASObjects but classes and templates should
+	 * have been deleted through decRef. Else it is an error.
+	 * 2) decRef all the classes and templates to which we hold a reference through the
+	 * 'classes' and 'templates' maps.
+	 */
 
 	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
@@ -396,25 +455,19 @@ SystemState::~SystemState()
 	if(currentVm)
 		currentVm->finalize();
 
-	//Destroy the contents of all the classes
-	it=classes.begin();
-	for(;it!=classes.end();++it)
-	{
-		//Make sure classes survives their cleanUp
-		it->second->incRef();
-		it->second->cleanUp();
-	}
+	//Free classes by decRef'ing them
+	for(auto i = classes.begin(); i != classes.end(); ++i)
+		i->second->decRef();
 
-	//Destroy all registered classes
-	it=classes.begin();
-	for(;it!=classes.end();++it)
-	{
-		//DEPRECATED: to force garbage collection we delete all the classes
-		delete it->second;
-		//it->second->decRef()
-	}
+	//Free templates by decRef'ing them
+	for(auto i = templates.begin(); i != templates.end(); ++i)
+		i->second->decRef();
+
 	//The Vm must be destroyed this late to clean all managed integers and numbers
+	//This deletes the {int,uint,number}_managers; therefore no Number/.. object may be
+	//decRef'ed after this line as it would cause a manager->put()
 	delete currentVm;
+	currentVm = NULL;
 
 	//Some objects needs to remove the jobs when destroyed so keep the timerThread until now
 	delete timerThread;
@@ -425,7 +478,11 @@ SystemState::~SystemState()
 	delete inputThread;
 	inputThread=NULL;
 	delete engineData;
-	sem_destroy(&terminated);
+
+	for(auto it=profilingData.begin();it!=profilingData.end();it++)
+		delete *it;
+
+	this->decRef(); //free a reference we obtained by 'new SystemState'
 }
 
 bool SystemState::isOnError() const
@@ -445,6 +502,8 @@ bool SystemState::shouldTerminate() const
 
 void SystemState::setError(const string& c)
 {
+	if(exitOnError)
+		exit(1);
 	//We record only the first error for easier fix and reporting
 	if(!error)
 	{
@@ -467,20 +526,7 @@ void SystemState::setShutdownFlag()
 	}
 	shutdown=true;
 
-	sem_post(&terminated);
-	if(standalone)
-		gtk_main_quit();
-}
-
-void SystemState::wait()
-{
-	sem_wait(&terminated);
-	//Acquire the mutex to sure that the engines are not being started right now
-	Locker l(mutex);
-	renderThread->wait();
-	inputThread->wait();
-	if(currentVm)
-		currentVm->shutdown();
+	terminated.signal();
 }
 
 float SystemState::getRenderRate()
@@ -498,73 +544,58 @@ void SystemState::startRenderTicks()
 
 void SystemState::EngineCreator::execute()
 {
-	sys->createEngines();
+	getSys()->createEngines();
 }
 
 void SystemState::EngineCreator::threadAbort()
 {
-	sys->fileDumpAvailable.signal();
-	sys->getRenderThread()->forceInitialization();
+	getSys()->dumpedSWFPathAvailable.signal();
+	getSys()->getRenderThread()->forceInitialization();
 }
 
-#ifndef GNASH_PATH
-#error No GNASH_PATH defined
-#endif
-
-void SystemState::enableGnashFallback()
+/*
+ * This is run from the gtk main thread.
+ * gtk/gdk functions may only be called from within that
+ * gtk main thread for portability. Win32 does not support
+ * gtk/gdk calls from other threads!
+ */
+void SystemState::delayedCreation()
 {
-	//Check if the gnash standalone executable is available
-	ifstream f(GNASH_PATH);
-	if(f)
-		useGnashFallback=true;
-	f.close();
-}
+	gdk_threads_enter();
 
-void SystemState::delayedCreation(SystemState* th)
-{
-	EngineData* d=th->engineData;
-	//Create a plug in the XEmbed window
-	GtkWidget* plug=gtk_plug_new(d->window);
-	if(d->isSizable())
+	int32_t reqWidth=getFrameSize().Xmax/20;
+	int32_t reqHeight=getFrameSize().Ymax/20;
+
+	engineData->showWindow(reqWidth, reqHeight);
+
+	inputThread->start(engineData);
+
+	if(Config::getConfig()->isRenderingEnabled())
 	{
-		int32_t reqWidth=th->getFrameSize().Xmax/20;
-		int32_t reqHeight=th->getFrameSize().Ymax/20;
-		if(th->standalone)
-			gtk_widget_set_size_request(plug, reqWidth, reqHeight);
-		d->width=reqWidth;
-		d->height=reqHeight;
+		renderThread->start(engineData);
 	}
-	d->container = plug;
-	//Realize the widget now, as we need the X window
-	gtk_widget_realize(plug);
-	//Show it now
-	gtk_widget_show(plug);
-	gtk_widget_map(plug);
-	if (th->standalone)
+	else
 	{
-		gtk_widget_set_can_focus(plug, true);
-		gtk_widget_grab_focus(plug);
+		getRenderThread()->windowWidth = reqWidth;
+		getRenderThread()->windowHeight = reqHeight;
+		resizeCompleted();
+		//This just signals the 'initalized' semaphore
+		renderThread->forceInitialization();
+		LOG(LOG_INFO,"Rendering is disabled by configuration");
 	}
-	d->window=GDK_WINDOW_XID(gtk_widget_get_window(plug));
-	XSync(d->display, False);
-	//The lock is needed to avoid thread creation/destruction races
-	Locker l(th->mutex);
-	if(th->shutdown)
-		return;
-	th->renderThread->start(th->engineData);
-	th->inputThread->start(th->engineData);
-	//If the render rate is known start the render ticks
-	if(th->renderRate)
-		th->startRenderTicks();
+
+	if(renderRate)
+		startRenderTicks();
+	gdk_threads_leave();
 }
 
-void SystemState::delayedStopping(SystemState* th)
+void SystemState::delayedStopping()
 {
-	sys=th;
+	setTLSSys(this);
 	//This is called from the plugin, also kill the stream
-	th->engineData->stopMainDownload();
-	th->stopEngines();
-	sys=NULL;
+	engineData->stopMainDownload();
+	stopEngines();
+	setTLSSys(NULL);
 }
 
 void SystemState::createEngines()
@@ -576,177 +607,32 @@ void SystemState::createEngines()
 		return;
 	}
 	//Check if we should fall back on gnash
-	if(useGnashFallback && vmVersion!=AVM2)
+	if(vmVersion!=AVM2)
 	{
-		if(dumpedSWFPath.len()==0) //The path is not known yet
-		{
-			waitingForDump=true;
-			l.unlock();
-			fileDumpAvailable.wait();
-			if(shutdown)
-				return;
-			l.lock();
-		}
-		LOG(LOG_INFO,_("Trying to invoke gnash!"));
-		//Dump the cookies to a temporary file
-		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
-		int file=mkstemp(cookiesFileName);
-		if(file!=-1)
-		{
-			std::string data("Set-Cookie: " + rawCookies);
-			size_t res;
-			size_t written = 0;
-			// Keep writing until everything we wanted to write actually got written
-			do
-			{
-				res = write(file, data.c_str()+written, data.size()-written);
-				if(res < 0)
-				{
-					LOG(LOG_ERROR, _("Error during writing of cookie file for Gnash"));
-					break;
-				}
-				written += res;
-			} while(written < data.size());
-			close(file);
-			setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
-		}
-		else
-			cookiesFileName[0]=0;
-		sigset_t oldset;
-		sigset_t set;
-		sigfillset(&set);
-		//Blocks all signal to avoid terminating while forking with the browser signal handlers on
-		pthread_sigmask(SIG_SETMASK, &set, &oldset);
+		l.release();
+		launchGnash();
 
-		// This will be used to pipe the SWF's data to Gnash's stdin
-		int gnashStdin[2];
-		pipe(gnashStdin);
-
-		childPid=fork();
-		if(childPid==-1)
-		{
-			//Restore handlers
-			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
-			LOG(LOG_ERROR,_("Child process creation failed, lightspark continues"));
-			childPid=0;
-		}
-		else if(childPid==0) //Child process scope
-		{
-			// Close write end of Gnash's stdin pipe, we will only read
-			close(gnashStdin[1]);
-			// Point stdin to the read end of Gnash's stdin pipe
-			dup2(gnashStdin[0], fileno(stdin));
-			// Close the read end of the pipe
-			close(gnashStdin[0]);
-
-			//Allocate some buffers to store gnash arguments
-			char bufXid[32];
-			char bufWidth[32];
-			char bufHeight[32];
-			snprintf(bufXid,32,"%lu",engineData->window);
-			snprintf(bufWidth,32,"%u",engineData->width);
-			snprintf(bufHeight,32,"%u",engineData->height);
-			string params("FlashVars=");
-			params+=rawParameters;
-			char *const args[] =
-			{
-				strdup("gnash"), //argv[0]
-				strdup("-x"), //Xid
-				bufXid,
-				strdup("-j"), //Width
-				bufWidth,
-				strdup("-k"), //Height
-				bufHeight,
-				strdup("-u"), //SWF url
-				strdup(origin.getParsedURL().raw_buf()),
-				strdup("-P"), //SWF parameters
-				strdup(params.c_str()),
-				strdup("-vv"),
-				strdup("-"),
-				NULL
-			};
-
-			// Print out an informative message about how we are invoking Gnash
-			{
-				int i = 1;
-				std::string argsStr = "";
-				while(args[i] != NULL)
-				{
-					argsStr += " ";
-					argsStr += args[i];
-					i++;
-				}
-				cerr << "Invoking '" << GNASH_PATH << argsStr << " < " << dumpedSWFPath.raw_buf() << "'" << endl;
-			}
-
-			//Avoid calling browser signal handler during the short time between enabling signals and execve
-			sigaction(SIGTERM, NULL, NULL);
-			//Restore handlers
-			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
-			execve(GNASH_PATH, args, environ);
-			//If we are here execve failed, print an error and die
-			cerr << _("Execve failed, content will not be rendered") << endl;
-			exit(0);
-		}
-		else //Parent process scope
-		{
-			// Pass the SWF's data to Gnash
-			{
-				// Close read end of stdin pipe, we will only write to it.
-				close(gnashStdin[0]);
-				// Open the SWF file
-				std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::binary);
-				// Read the SWF file and write it to Gnash's stdin
-				char data[1024];
-				std::streamsize written, ret;
-				bool stop = false;
-				while(!swfStream.eof() && !swfStream.fail() && !stop)
-				{
-					swfStream.read(data, 1024);
-					// Keep writing until everything we wanted to write actually got written
-					written = 0;
-					do
-					{
-						ret = write(gnashStdin[1], data+written, swfStream.gcount()-written);
-						if(ret < 0)
-						{
-							LOG(LOG_ERROR, _("Error during writing of SWF file to Gnash"));
-							stop = true;
-							break;
-						}
-						written += ret;
-					} while(written < swfStream.gcount());
-				}
-				// Close the write end of Gnash's stdin, signalling EOF to Gnash.
-				close(gnashStdin[1]);
-				// Close the SWF file
-				swfStream.close();
-			}
-
-			//Restore handlers
-			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
-			//Engines should not be started, stop everything
-			l.unlock();
-			//We cannot stop the engines now, as this is inside a ThreadPool job
-			engineData->setupMainThreadCallback((ls_callback_t)delayedStopping, this);
-			return;
-		}
+		//Engines should not be started, stop everything
+		//We cannot stop the engines now, as this is inside a ThreadPool job
+		//Running this in the Gtk thread is unnecessary, though. Any other thread
+		//would be okey.
+		//TODO: delayedStopping may be scheduled after SystemState::destroy has finished
+		//      and this SystemState object has been deleted.
+		//      We cannot wait for that function to finish, because we run in a ThreadPool
+		//      and the function will wait for all ThreadPool jobs to finish.
+		//engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedStopping));
+		return;
 	}
 
-	l.unlock();
 	//The engines must be created in the context of the main thread
-	engineData->setupMainThreadCallback((ls_callback_t)delayedCreation, this);
+	engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedCreation));
 
+	//Wait for delayedCreation to finish so it is protected by our 'mutex'
+	//Otherwise SystemState::destroy may delete this object before delayedCreation is scheduled.
 	renderThread->waitForInitialization();
 
 	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
-	if(vmVersion != AVM2)
-	{
-		LOG(LOG_INFO, "Unsupported flash file (AVM1), shutting down...");
-		setShutdownFlag();
-	}
 
-	l.lock();
 	//As we lost the lock the shutdown procesure might have started
 	if(shutdown)
 		return;
@@ -754,13 +640,178 @@ void SystemState::createEngines()
 		currentVm->start();
 }
 
-void SystemState::needsAVM2(bool n)
+void SystemState::launchGnash()
 {
 	Locker l(mutex);
-	assert(currentVm==NULL);
-	//Create the virtual machine if needed
-	if(n)
+	if(Config::getConfig()->getGnashPath().empty())
 	{
+		LOG(LOG_INFO, "Unsupported flash file (AVM1), and no gnash found");
+		l.release();
+		setShutdownFlag();
+		l.acquire();
+		return;
+	}
+
+	/* wait for dumpedSWFPath */
+	l.release();
+	dumpedSWFPathAvailable.wait();
+	l.acquire();
+
+	if(dumpedSWFPath.empty())
+		return;
+
+	LOG(LOG_INFO,_("Trying to invoke gnash!"));
+	//Dump the cookies to a temporary file
+	int file=g_file_open_tmp("lightsparkcookiesXXXXXX",&cookiesFileName,NULL);
+	if(file!=-1)
+	{
+		std::string data("Set-Cookie: " + rawCookies);
+		ssize_t res;
+		size_t written = 0;
+		// Keep writing until everything we wanted to write actually got written
+		do
+		{
+			res = write(file, data.c_str()+written, data.size()-written);
+			if(res < 0)
+			{
+				LOG(LOG_ERROR, _("Error during writing of cookie file for Gnash"));
+				break;
+			}
+			written += res;
+		} while(written < data.size());
+		close(file);
+		g_setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
+	}
+	else
+	{
+		LOG(LOG_ERROR,"Failed to create temporary coockie for gnash");
+	}
+
+
+	//Allocate some buffers to store gnash arguments
+	char bufXid[32];
+	char bufWidth[32];
+	char bufHeight[32];
+	snprintf(bufXid,32,"%lu",(long unsigned)engineData->getWindowForGnash());
+	/* Use swf dimensions in standalone mode and window dimensions in plugin mode */
+	snprintf(bufWidth,32,"%u",standalone ? getFrameSize().Xmax/20 : engineData->width);
+	snprintf(bufHeight,32,"%u",standalone ? getFrameSize().Ymax/20 : engineData->height);
+	/* renderMode: 0: disable sound and rendering
+	 *             1: enable rendering and disable sound
+	 *             2: enable sound and disable rendering
+	 *             3: enable sound and rendering
+	 */
+	const char* renderMode = "3";
+	if(!Config::getConfig()->isRenderingEnabled())
+		renderMode = "2";
+
+	string params("FlashVars=");
+	params+=rawParameters;
+	/* TODO: pass -F hostFD to assist in loading urls */
+	char* args[] =
+	{
+		strdup(Config::getConfig()->getGnashPath().c_str()),
+		strdup("-x"), //Xid
+		bufXid,
+		strdup("-j"), //Width
+		bufWidth,
+		strdup("-k"), //Height
+		bufHeight,
+		strdup("-u"), //SWF url
+		strdup(origin.getParsedURL().raw_buf()),
+		strdup("-P"), //SWF parameters
+		strdup(params.c_str()),
+		strdup("--render-mode"),
+		strdup(renderMode),
+		strdup("-vv"),
+		strdup("-"),
+		NULL
+	};
+
+	// Print out an informative message about how we are invoking Gnash
+	int i = 1;
+	std::string argsStr = args[0];
+	while(args[i] != NULL)
+	{
+		argsStr += " ";
+		argsStr += args[i];
+		i++;
+	}
+	LOG(LOG_INFO, "Invoking '" << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
+
+	int gnash_stdin;
+
+	/* Unfortunately, g_spawn_async_with_pipes does not work under win32. First, it needs
+	 * an additional helper 'gspawn-helper-console.exe' and second, it crashes with a buffer overflow
+	 * when the plugin is run in ipc mode.
+	 */
+#if _WIN32
+	//TODO: escape argumetns, and spaces in filename
+	childPid = compat_spawn(args, &gnash_stdin);
+	if(!childPid)
+	{
+		LOG(LOG_ERROR,"Spawning gnash failed!");
+		return;
+	}
+#else
+	GError* errmsg = NULL;
+	if(!g_spawn_async_with_pipes(NULL, args, NULL, (GSpawnFlags)0, NULL, NULL, &childPid,
+			&gnash_stdin, NULL, NULL, &errmsg))
+	{
+		LOG(LOG_ERROR,"Spawning gnash failed: " << errmsg->message);
+		return;
+	}
+#endif
+
+	// Open the SWF file
+	std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::in|ios::binary);
+	// Read the SWF file and write it to Gnash's stdin
+	char data[1024];
+	std::streamsize written, ret;
+	bool stop = false;
+	while(!swfStream.eof() && !swfStream.fail() && !stop)
+	{
+		swfStream.read(data, 1024);
+		// Keep writing until everything we wanted to write actually got written
+		written = 0;
+		do
+		{
+			ret = write(gnash_stdin, data+written, swfStream.gcount()-written);
+			if(ret < 0)
+			{
+				LOG(LOG_ERROR, _("Error during writing of SWF file to Gnash"));
+				stop = true;
+				break;
+			}
+			written += ret;
+		} while(written < swfStream.gcount());
+	}
+	// Close the write end of Gnash's stdin, signalling EOF to Gnash.
+	close(gnash_stdin);
+	// Close the SWF file
+	swfStream.close();
+}
+
+
+void SystemState::needsAVM2(bool avm2)
+{
+	Locker l(mutex);
+
+	/* Check if we already loaded another swf. If not, then
+	 * vmVersion is VMNONE.
+	 */
+	if((vmVersion == AVM1 && avm2)
+	|| (vmVersion == AVM2 && !avm2))
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Cannot embed AVM1 media into AVM2 media and vice versa!");
+		return;
+	}
+
+	//Create the virtual machine if needed
+	if(avm2)
+	{
+		//needsAVM2 is only called for the SystemState movie
+		assert(!currentVm);
 		vmVersion=AVM2;
 		LOG(LOG_INFO,_("Creating VM"));
 		currentVm=new ABCVm(this);
@@ -807,16 +858,16 @@ void SystemState::addWait(uint32_t waitTime, ITickJob* job)
 	timerThread->addWait(waitTime,job);
 }
 
-bool SystemState::removeJob(ITickJob* job)
+void SystemState::removeJob(ITickJob* job)
 {
-	return timerThread->removeJob(job);
+	timerThread->removeJob(job);
 }
 
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 {
 	SpinlockLocker l(profileDataSpinlock);
-	profilingData.push_back(ThreadProfile(color,100));
-	ThreadProfile* ret=&profilingData.back();
+	profilingData.push_back(new ThreadProfile(color,100));
+	ThreadProfile* ret=profilingData.back();
 	return ret;
 }
 
@@ -826,7 +877,7 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 	//Check if the object is already in the queue
 	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail)
 		return;
-	if(invalidateQueueHead==NULL)
+	if(!invalidateQueueHead)
 	{
 		invalidateQueueHead=invalidateQueueTail=d;
 		//This is the first object added to the invalidation queue
@@ -915,7 +966,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		return;
 
 	Locker locker(mutex);
-	RECT size=sys->getFrameSize();
+	RECT size=getSys()->getFrameSize();
 	int width=size.Xmax/20;
 	int height=size.Ymax/20;
 	
@@ -960,7 +1011,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		{
 			//New tag, flush the old one if present
 			if(curTag)
-				rt->renderText(cr, curTag->c_str(),curTagX,imax(curTagY-curTagH,0));
+				getRenderThread()->renderText(cr, curTag->c_str(),curTagX,imax(curTagY-curTagH,0));
 			//Measure tag
 			cairo_text_extents (cr, data[i].tag.c_str(), &te);
 			curTagLen=te.width;
@@ -976,7 +1027,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 			else
 			{
 				//Tag is before this sample
-				rt->renderText(cr, curTag->c_str(), curTagX, imax(curTagY-curTagH,0));
+				getRenderThread()->renderText(cr, curTag->c_str(), curTagX, imax(curTagY-curTagH,0));
 				curTag=NULL;
 			}
 		}
@@ -984,22 +1035,20 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 }
 
 ParseThread::ParseThread(istream& in, Loader *_loader, tiny_string srcurl)
-  : version(0),useAVM2(false),useNetwork(false),
-    f(in),zlibFilter(NULL),backend(NULL),isEnded(false),loader(_loader),
+  : version(0),
+    f(in),zlibFilter(NULL),backend(NULL),loader(_loader),
     parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
-	sem_init(&ended,0,0);
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
-  : version(0),useAVM2(false),useNetwork(false),
-    f(in),zlibFilter(NULL),backend(NULL),isEnded(false),loader(NULL),
+  : version(0),
+    f(in),zlibFilter(NULL),backend(NULL),loader(NULL),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	setRootMovie(root);
-	sem_init(&ended,0,0);
 }
 
 ParseThread::~ParseThread()
@@ -1011,7 +1060,6 @@ ParseThread::~ParseThread()
 		delete zlibFilter;
 	}
 	parsedObject.reset();
-	sem_destroy(&ended);
 }
 
 FILE_TYPE ParseThread::recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4)
@@ -1022,7 +1070,7 @@ FILE_TYPE ParseThread::recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t
 		return FT_COMPRESSED_SWF;
 	else if((c1&0x80) && c2=='P' && c3=='N' && c4=='G')
 		return FT_PNG;
-	else if(c1==0xff && c2==0xd8 && c3==0xff && c4==0xe0)
+	else if(c1==0xff && c2==0xd8 && c3==0xff)
 		return FT_JPEG;
 	else if(c1=='G' && c2=='I' && c3=='F' && c4=='8')
 		return FT_GIF;
@@ -1048,7 +1096,8 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 		LOG(LOG_INFO, _("Compressed SWF file: Version ") << (int)version);
 		//The file is compressed, create a filtering streambuf
 		backend=f.rdbuf();
-		f.rdbuf(new zlib_filter(backend));
+		zlibFilter = new zlib_filter(backend);
+		f.rdbuf(zlibFilter);
 	}
 
 	f >> FrameSize >> FrameRate >> FrameCount;
@@ -1059,14 +1108,14 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 	LOG(LOG_INFO,_("FrameRate ") << frameRate);
 	root->setFrameRate(frameRate);
 	//TODO: setting render rate should be done when the clip is added to the displaylist
-	sys->setRenderRate(frameRate);
+	getSys()->setRenderRate(frameRate);
 	root->setFrameSize(FrameSize);
 	root->totalFrames_unreliable = FrameCount;
 }
 
 void ParseThread::execute()
 {
-	pt=this;
+	g_static_private_set(&parse_thread_tls,this,NULL);
 	try
 	{
 		UI8 Signature[4];
@@ -1088,15 +1137,12 @@ void ParseThread::execute()
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
-		sys->setError(e.cause);
+		getSys()->setError(e.cause);
 	}
 	catch(std::exception& e)
 	{
 		LOG(LOG_ERROR,_("Stream exception in ParseThread ") << e.what());
 	}
-	pt=NULL;
-
-	sem_post(&ended);
 }
 
 void ParseThread::parseSWF(UI8 ver)
@@ -1107,23 +1153,51 @@ void ParseThread::parseSWF(UI8 ver)
 	try
 	{
 		parseSWFHeader(root, ver);
+		if(root->version < 9)
+		{
+			LOG(LOG_INFO,"SWF version " << root->version << " is not handled by lightspark, falling back to gnash (if available)");
+			//Enable flash fallback
+			getSys()->needsAVM2(false);
+			return; /* no more parsing necessary, handled by fallback */
+		}
 
-		//Create a top level TagFactory
 		TagFactory factory(f, true);
+		_NR<Tag> tag=factory.readTag();
+
+		FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag.getPtr());
+		if(!fat)
+		{
+			LOG(LOG_ERROR,"Invalid SWF - First tag must be a FileAttributesTag!");
+			return;
+		}
+		//Check if this clip is the main clip then honour its FileAttributesTag
+		if(root == getSys())
+		{
+			getSys()->needsAVM2(fat->ActionScript3);
+			if(!fat->ActionScript3)
+				return; /* no more parsing necessary, handled by fallback */
+			if(fat->UseNetwork
+			&& getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+			{
+				getSys()->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
+				LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
+			}
+		}
+
 		bool done=false;
 		bool empty=true;
 		while(!done)
 		{
-			_NR<Tag> tag=factory.readTag();
+			tag=factory.readTag();
 			switch(tag->getType())
 			{
 				case END_TAG:
 				{
-					LOG(LOG_INFO,_("End of parsing @ ") << f.tellg());
 					if(!empty)
 						root->commitFrame(false);
 					else
 						root->revertFrame();
+					RELEASE_WRITE(root->finishedLoading,true);
 					done=true;
 					root->check();
 					break;
@@ -1171,7 +1245,7 @@ void ParseThread::parseSWF(UI8 ver)
 					//Not yet implemented tag, ignore it
 					break;
 			}
-			if(sys->shouldTerminate() || aborting)
+			if(getSys()->shouldTerminate() || threadAborting)
 				break;
 		}
 	}
@@ -1180,6 +1254,7 @@ void ParseThread::parseSWF(UI8 ver)
 		root->parsingFailed();
 		throw;
 	}
+	LOG(LOG_INFO,_("End of parsing"));
 }
 
 void ParseThread::parseBitmap()
@@ -1209,7 +1284,7 @@ void ParseThread::setRootMovie(RootMovieClip *root)
 RootMovieClip *ParseThread::getRootMovie()
 {
 	objectSpinlock.lock();
-	RootMovieClip *root=Class<RootMovieClip>::dyncast(parsedObject.getPtr());
+	RootMovieClip *root=dynamic_cast<RootMovieClip*>(parsedObject.getPtr());
 	objectSpinlock.unlock();
 	if(root)
 		return root;
@@ -1220,17 +1295,8 @@ RootMovieClip *ParseThread::getRootMovie()
 		objectSpinlock.lock();
 		parsedObject=_MNR(root);
 		objectSpinlock.unlock();
-		if(url.len()>0)
+		if(!url.empty())
 			root->setOrigin(url, "");
-
-		// The parser will call contentLoader's sendInit()
-		// during the parsing. We have to set loader's content
-		// here, before the event is sent.
-		if(loader)
-		{
-			root->incRef();
-			loader->setContent(_MNR(root));
-		}
 		return root;
 	}
 	else
@@ -1281,10 +1347,11 @@ void RootMovieClip::commitFrame(bool another)
 	setFramesLoaded(frames.size());
 
 	if(another)
-		frames.emplace_back();
+		frames.push_back(Frame());
 
 	if(getFramesLoaded()==1 && frameRate!=0)
 	{
+		SystemState* sys = getSys();
 		if(this==sys)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
@@ -1296,7 +1363,6 @@ void RootMovieClip::commitFrame(bool another)
 			sys->currentVm->addEvent(NullRef, _MR(new InitFrameEvent(_MNR(this))));
 		}
 	}
-	sem_post(&new_frame);
 }
 
 void RootMovieClip::revertFrame()
@@ -1409,11 +1475,11 @@ void SystemState::tick()
 {
 	{
 		SpinlockLocker l(profileDataSpinlock);
-		list<ThreadProfile>::iterator it=profilingData.begin();
+		list<ThreadProfile*>::iterator it=profilingData.begin();
 		for(;it!=profilingData.end();++it)
-			it->tick();
+			(*it)->tick();
 	}
-	if(sys->currentVm==NULL)
+	if(getSys()->currentVm==NULL)
 		return;
 	/* See http://www.senocular.com/flash/tutorials/orderofoperations/
 	 * for the description of steps.
@@ -1421,48 +1487,51 @@ void SystemState::tick()
 	/* TODO: Step 1: declare new objects */
 
 	/* Step 2: Send enterFrame events, if needed */
-	/* TODO: make this a child of the stage (spec says so)
-	 * so we only need to send this to the stage.
-	 * TODO: This event will be handled much later
-	 * than we send it, so until then there may already
-	 * be an eventListern.
-	 * Example of send vs. handled events:
-	 *  tick() -> initFrame,advanceFrame,initFrame,advanceFrame, enterFrame,initFrame,advanceFrame
-	 *  vm()   ->                                              | handle first initFrame, add event Listener
-	 *  We could make tick() wait for the completion of advanceFrame event.
-	 */
 	{
-		Locker l(mutexEnterFrameListeners);
-		if(!enterFrameListeners.empty())
+		Locker l(mutexFrameListeners);
+		if(!frameListeners.empty())
 		{
 			_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
-			auto it=enterFrameListeners.begin();
-			for(;it!=enterFrameListeners.end();it++)
-			{
-				(*it)->incRef();
-				getVm()->addEvent(_MR(*it),e);
-			}
+			auto it=frameListeners.begin();
+			for(;it!=frameListeners.end();it++)
+				getVm()->addEvent(*it,e);
 		}
-	}
-	//Enter frame should be sent to the stage too
-	if(stage->hasEventListener("enterFrame"))
-	{
-		_R<Event> e(Class<Event>::getInstanceS("enterFrame"));
-		stage->incRef();
-		getVm()->addEvent(_MR(stage),e);
 	}
 
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
 	 * run their constructors (bottom-up)
 	 * and their frameScripts (Step 5) (bottom-up) */
-	sys->currentVm->addEvent(NullRef, _MR(new InitFrameEvent()));
+	getSys()->currentVm->addEvent(NullRef, _MR(new InitFrameEvent()));
 
-	/* TODO: Step 4: dispatch frameConstructed */
-	/* TODO: Step 6: dispatch exitFrame event */
+	/* Step 4: dispatch frameConstructed events */
+	/* (TODO: should be run between step 3 and 5 */
+	{
+		Locker l(mutexFrameListeners);
+		if(!frameListeners.empty())
+		{
+			_R<Event> e(Class<Event>::getInstanceS("frameConstructed"));
+			auto it=frameListeners.begin();
+			for(;it!=frameListeners.end();it++)
+				getVm()->addEvent(*it,e);
+		}
+	}
+	/* Step 6: dispatch exitFrame event */
+	{
+		Locker l(mutexFrameListeners);
+		if(!frameListeners.empty())
+		{
+			_R<Event> e(Class<Event>::getInstanceS("exitFrame"));
+			auto it=frameListeners.begin();
+			for(;it!=frameListeners.end();it++)
+				getVm()->addEvent(*it,e);
+		}
+	}
 	/* TODO: Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 
 	/* Step 0: Set current frame number to the next frame */
-	sys->currentVm->addEvent(NullRef, _MR(new AdvanceFrameEvent()));
+	_R<AdvanceFrameEvent> advFrame = _MR(new AdvanceFrameEvent());
+	if(getSys()->currentVm->addEvent(NullRef, advFrame))
+		advFrame->done.wait();
 }
 
 void SystemState::resizeCompleted() const
@@ -1479,7 +1548,7 @@ void RootMovieClip::initFrame()
 {
 	LOG(LOG_CALLS,"Root:initFrame " << getFramesLoaded() << " " << state.FP);
 	/* We have to wait for at least one frame
-	 * so our class get the right prototype. Else we will
+	 * so our class get the right classdef. Else we will
 	 * call the wrong constructor. */
 	if(getFramesLoaded() == 0)
 		return;
@@ -1500,5 +1569,6 @@ void RootMovieClip::advanceFrame()
 void RootMovieClip::constructionComplete()
 {
 	MovieClip::constructionComplete();
-	loaderInfo->sendInit();
+	if(this==getSys())
+		loaderInfo->sendInit();
 }

@@ -31,7 +31,7 @@ const std::string IPlugin::get_pluginName()
 	return pluginName;
 }
 
-const PLUGIN_TYPES IPlugin::get_pluginType()
+PLUGIN_TYPES IPlugin::get_pluginType()
 {
 	return pluginType;
 }

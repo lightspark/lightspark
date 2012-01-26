@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "swf.h"
 #include <fstream>
 #include <cmath>
 #include <algorithm>
@@ -72,7 +71,7 @@ void ShapesBuilder::joinOutlines()
 					//CHECK: this works for adjacent shapes of the same color?
 					//Copy all the vertex but the origin in this one
 					for (int k = outlinesForColor[i].size()-2; k >= 0; k--)
-						outlinesForColor[j].emplace_back(outlinesForColor[i][k+1].type, outlinesForColor[i][k].i);
+						outlinesForColor[j].emplace_back(ShapePathSegment(outlinesForColor[i][k+1].type, outlinesForColor[i][k].i));
 					//Invalidate the origin, but not the high level vector
 					outlinesForColor[i].clear();
 					break;
@@ -112,15 +111,15 @@ void ShapesBuilder::extendFilledOutlineForColor(unsigned int color, const Vector
 			continue;
 		if(outlinesForColor[i].back().i==v1Index)
 		{
-			outlinesForColor[i].emplace_back(PATH_STRAIGHT, v2Index);
+			outlinesForColor[i].push_back(ShapePathSegment(PATH_STRAIGHT, v2Index));
 			return;
 		}
 	}
 	//No suitable outline found, create one
 	vector<ShapePathSegment> vertices;
 	vertices.reserve(2);
-	vertices.emplace_back(PATH_START, v1Index);
-	vertices.emplace_back(PATH_STRAIGHT, v2Index);
+	vertices.push_back(ShapePathSegment(PATH_START, v1Index));
+	vertices.push_back(ShapePathSegment(PATH_STRAIGHT, v2Index));
 	outlinesForColor.push_back(vertices);
 }
 
@@ -141,17 +140,17 @@ void ShapesBuilder::extendFilledOutlineForColorCurve(unsigned int color, const V
 			continue;
 		if(outlinesForColor[i].back().i==v1Index)
 		{
-			outlinesForColor[i].emplace_back(PATH_CURVE_QUADRATIC, v2Index);
-			outlinesForColor[i].emplace_back(PATH_CURVE_QUADRATIC, v3Index);
+			outlinesForColor[i].emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
+			outlinesForColor[i].emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
 			return;
 		}
 	}
 	//No suitable outline found, create one
 	vector<ShapePathSegment> vertices;
 	vertices.reserve(2);
-	vertices.emplace_back(PATH_START, v1Index);
-	vertices.emplace_back(PATH_CURVE_QUADRATIC, v2Index);
-	vertices.emplace_back(PATH_CURVE_QUADRATIC, v3Index);
+	vertices.emplace_back(ShapePathSegment(PATH_START, v1Index));
+	vertices.emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
+	vertices.emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
 	outlinesForColor.push_back(vertices);
 }
 
@@ -185,29 +184,22 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, vector< Geo
 			assert(stylesIt!=styles.end());
 		}
 		//Set the fill style
-		tokens.emplace_back(SET_FILL,*stylesIt);
+		tokens.push_back(GeomToken(SET_FILL,*stylesIt));
 		vector<vector<ShapePathSegment> >& outlinesForColor=it->second;
 		for(unsigned int i=0;i<outlinesForColor.size();i++)
 		{
 			vector<ShapePathSegment>& segments=outlinesForColor[i];
 			assert (segments[0].type == PATH_START);
-			tokens.emplace_back(MOVE, getVertex(segments[0].i));
+			tokens.push_back(GeomToken(MOVE, getVertex(segments[0].i)));
 			for(unsigned int j=1;j<segments.size();j++) {
 				ShapePathSegment segment = segments[j];
 				assert(segment.type != PATH_START);
 				if (segment.type == PATH_STRAIGHT)
-					tokens.emplace_back(STRAIGHT, getVertex(segment.i));
+					tokens.push_back(GeomToken(STRAIGHT, getVertex(segment.i)));
 				if (segment.type == PATH_CURVE_QUADRATIC)
-					tokens.emplace_back(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i));
+					tokens.push_back(GeomToken(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i)));
 			}
 		}
 	}
-}
-
-template<class T>
-std::ostream& lightspark::operator<<(std::ostream& s, const Vector2Tmpl<T>& p)
-{
-	s << "{ "<< p.x << ',' << p.y << " }";
-	return s;
 }
 

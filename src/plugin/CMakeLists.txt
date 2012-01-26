@@ -21,20 +21,43 @@
 # Dependencies
 INCLUDE_DIRECTORIES("include")
 INCLUDE_DIRECTORIES("..")
+INCLUDE_DIRECTORIES("include/npapi")
 
-pkg_check_modules(MOZ_PLUGIN REQUIRED nspr mozilla-plugin>=1.9.2 x11)
-INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS} ${MOZ_PLUGIN_INCLUDE_DIRS})
-ADD_DEFINITIONS(-DMOZ_X11)
+INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
 IF(UNIX)
+	ADD_DEFINITIONS(-DMOZ_X11)
 	ADD_DEFINITIONS(-DXP_UNIX)
+ELSE()
+	ADD_DEFINITIONS(-DXP_WIN)
 ENDIF(UNIX)
 
 # Firefox plugin target
-ADD_LIBRARY(lightsparkplugin SHARED np_entry.cpp npn_gate.cpp npp_gate.cpp
-	plugin.cpp npscriptobject.cpp)
-TARGET_LINK_LIBRARIES(lightsparkplugin spark ${MOZ_PLUGIN_LIBRARIES} ${GTK_LIBRARIES})
+SET(PLUGIN_SOURCES ${PLUGIN_SOURCES}
+	np_entry.cpp
+	npn_gate.cpp
+	npp_gate.cpp
+	plugin.cpp
+	npscriptobject.cpp)
 
-IF(UNIX)
-	INSTALL(TARGETS lightsparkplugin LIBRARY DESTINATION ${PLUGIN_DIRECTORY})
-ENDIF(UNIX)
+IF(WIN32)
+	SET(PLUGIN_SOURCES ${PLUGIN_SOURCES} plugin.rc plugin.def)
+ENDIF(WIN32)
+
+ADD_LIBRARY(lightsparkplugin MODULE ${PLUGIN_SOURCES})
+
+TARGET_LINK_LIBRARIES(lightsparkplugin spark)
+
+#With STATICDEPS, all deps are compiled into spark
+IF(NOT STATICDEPS)
+  TARGET_LINK_LIBRARIES(lightsparkplugin spark ${GTK_LIBRARIES} ${X11_LIBRARIES} ${GLIBMM_LIBRARIES})
+ENDIF()
+
+IF(WIN32)
+  #For win32 firefox, plugins have to start with 'np'
+  SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES OUTPUT_NAME nplightsparkplugin PREFIX "")
+  SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES LINK_FLAGS "-Wl,--enable-stdcall-fixup")
+ENDIF()
+
+PACK_LIBRARY(lightsparkplugin)
+INSTALL(TARGETS lightsparkplugin DESTINATION ${PLUGIN_DIRECTORY})
 

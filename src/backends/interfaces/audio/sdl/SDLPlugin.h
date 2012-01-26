@@ -32,6 +32,7 @@ class SDLAudioStream;
 
 class SDLPlugin : public IAudioPlugin
 {
+friend class SDLAudioStream;
 private:
 	int sdl_available;
 
@@ -41,9 +42,6 @@ public:
 	void set_device(std::string desiredDevice, IAudioPlugin::DEVICE_TYPES desiredType);
 
 	AudioStream *createStream(AudioDecoder *decoder);
-	void freeStream(AudioStream *audioStream);
-	void pauseStream( AudioStream *audioStream );
-	void resumeStream( AudioStream *audioStream );
 
 	void muteAll();
 	void unmuteAll();
@@ -55,6 +53,7 @@ public:
 class SDLAudioStream: public AudioStream
 {
 private:
+	SDLPlugin* manager;
 	int curvolume;
 	int unmutevolume;
 	uint32_t playedtime;
@@ -62,15 +61,16 @@ private:
 	static void async_callback(void *unused, uint8_t *stream, int len);
 public:
 	bool init();	
-	SDLAudioStream() { }
+	SDLAudioStream(SDLPlugin* _manager) : manager(_manager) { }
 
 	void SetPause(bool pause_on);
 	uint32_t getPlayedTime();
-	bool paused();
+	bool ispaused();
 	bool isValid();
-	void fill();
 	void mute();
 	void unmute();
+	void pause() { SetPause(true); }
+	void resume() { SetPause(false); }
 	void setVolume(double volume);
 	~SDLAudioStream();
 };

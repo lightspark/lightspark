@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "rtmputils.h"
+#include "logger.h"
 #include "swf.h"
 
 #ifdef ENABLE_RTMP
@@ -28,7 +29,7 @@ using namespace lightspark;
 using namespace std;
 
 RTMPDownloader::RTMPDownloader(const tiny_string& _url, const tiny_string& _stream, ILoadable* o):
-	ThreadedDownloader(_url, false, o), //No caching to file allowed
+	ThreadedDownloader(_url, true, o),
 	stream(_stream)
 {
 }
@@ -49,19 +50,33 @@ void RTMPDownloader::execute()
 	rtmpUrl+=" playpath=";
 	rtmpUrl+=stream;
 	rtmpUrl+=" swfUrl=";
-	rtmpUrl+=sys->getOrigin().getURL();
+	rtmpUrl+=getSys()->getOrigin().getURL();
 	rtmpUrl+=" swfVfy=1";
 	//Setup url needs a char*, not a const char*...
-	int urlLen=rtmpUrl.len();
+	int urlLen=rtmpUrl.numBytes();
 	char* urlBuf=new char[urlLen+1];
-	strncpy(urlBuf,rtmpUrl.raw_buf(),urlLen);
+	strncpy(urlBuf,rtmpUrl.raw_buf(),urlLen+1);
 	int ret=RTMP_SetupURL(rtmpCtx, urlBuf);
-	cout << "Setup " << ret << endl;
-	//TODO: add return if fails
+	LOG(LOG_TRACE, "RTMP_SetupURL " << rtmpUrl << " " << ret);
+	if(!ret)
+	{
+		setFailed();
+		goto cleanup;
+	}
 	ret=RTMP_Connect(rtmpCtx, NULL);
-	cout << "Connect " << ret << endl;
+	LOG(LOG_TRACE, "Connect_Connect " << ret);
+	if(!ret)
+	{
+		setFailed();
+		goto cleanup;
+	}
 	ret=RTMP_ConnectStream(rtmpCtx, 0);
-	cout << "ConnectStream " << ret << endl;
+	LOG(LOG_TRACE, "RTMP_ConnectStream " << ret);
+	if(!ret)
+	{
+		setFailed();
+		goto cleanup;
+	}
 	//TODO: implement unsafe buffer concept
 	char buf[4096];
 	RTMP_SetBufferMS(rtmpCtx, 3600000);
@@ -70,11 +85,11 @@ void RTMPDownloader::execute()
 	{
 		//TODO: avoid the copy in the temporary buffer
 		ret=RTMP_Read(rtmpCtx,buf,4096);
-		cout << "DL " << ret << endl;
-		if(ret==0 || hasFailed() || aborting)
+		if(ret==0 || hasFailed() || threadAborting)
 			break;
 		append((uint8_t*)buf,ret);
 	}
+cleanup:
 	RTMP_Close(rtmpCtx);
 	RTMP_Free(rtmpCtx);
 	delete[] urlBuf;

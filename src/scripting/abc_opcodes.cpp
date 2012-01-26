@@ -22,24 +22,26 @@
 #include "class.h"
 #include "exceptions.h"
 #include "compat.h"
+#include "abcutils.h"
+#include "scripting/toplevel/ASString.h"
 
 using namespace std;
 using namespace lightspark;
 
-uintptr_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
+uint32_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
 {
-	uintptr_t i1=val1->toUInt();
-	uintptr_t i2=val2->toUInt();
+	uint32_t i1=val1->toUInt();
+	uint32_t i2=val2->toUInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("bitAnd_oo ") << hex << i1 << '&' << i2 << dec);
 	return i1&i2;
 }
 
-uintptr_t ABCVm::bitAnd_oi(ASObject* val1, intptr_t val2)
+uint32_t ABCVm::bitAnd_oi(ASObject* val1, int32_t val2)
 {
-	uintptr_t i1=val1->toUInt();
-	uintptr_t i2=val2;
+	uint32_t i1=val1->toUInt();
+	uint32_t i2=val2;
 	val1->decRef();
 	LOG(LOG_CALLS,_("bitAnd_oi ") << hex << i1 << '&' << i2 << dec);
 	return i1&i2;
@@ -50,18 +52,11 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj);
 
 	//We have to reset the level before finding a variable
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
 	obj->setVariableByMultiname(*name,value);
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
-
 	obj->decRef();
 }
 
-void ABCVm::setProperty_i(intptr_t value,ASObject* obj,multiname* name)
+void ABCVm::setProperty_i(int32_t value,ASObject* obj,multiname* name)
 {
 	LOG(LOG_CALLS,_("setProperty_i ") << *name << ' ' <<obj);
 
@@ -72,14 +67,9 @@ void ABCVm::setProperty_i(intptr_t value,ASObject* obj,multiname* name)
 number_t ABCVm::convert_d(ASObject* o)
 {
 	LOG(LOG_CALLS, _("convert_d") );
-	if(o->getObjectType()!=T_UNDEFINED)
-	{
-		number_t ret=o->toNumber();
-		o->decRef();
-		return ret;
-	}
-	else
-		return numeric_limits<double>::quiet_NaN();
+	number_t ret=o->toNumber();
+	o->decRef();
+	return ret;
 }
 
 bool ABCVm::convert_b(ASObject* o)
@@ -90,18 +80,18 @@ bool ABCVm::convert_b(ASObject* o)
 	return ret;
 }
 
-uintptr_t ABCVm::convert_u(ASObject* o)
+uint32_t ABCVm::convert_u(ASObject* o)
 {
 	LOG(LOG_CALLS, _("convert_u") );
-	uintptr_t ret=o->toUInt();
+	uint32_t ret=o->toUInt();
 	o->decRef();
 	return ret;
 }
 
-intptr_t ABCVm::convert_i(ASObject* o)
+int32_t ABCVm::convert_i(ASObject* o)
 {
 	LOG(LOG_CALLS, _("convert_i") );
-	intptr_t ret=o->toInt();
+	int32_t ret=o->toInt();
 	o->decRef();
 	return ret;
 }
@@ -112,7 +102,7 @@ ASObject* ABCVm::convert_s(ASObject* o)
 	ASObject* ret=o;
 	if(o->getObjectType()!=T_STRING)
 	{
-		ret=Class<ASString>::getInstanceS(o->toString(false));
+		ret=Class<ASString>::getInstanceS(o->toString());
 		o->decRef();
 	}
 	return ret;
@@ -150,7 +140,7 @@ ASObject* ABCVm::checkfilter(ASObject* o)
 	Class_base* xmlClass=Class<XML>::getClass();
 	Class_base* xmlListClass=Class<XMLList>::getClass();
 
-	if (o->getPrototype()!=xmlClass && o->getPrototype()!=xmlListClass)
+	if (o->getClass()!=xmlClass && o->getClass()!=xmlListClass)
 		throw Class<TypeError>::getInstanceS();
 
 	return o;
@@ -158,24 +148,19 @@ ASObject* ABCVm::checkfilter(ASObject* o)
 
 ASObject* ABCVm::coerce_s(ASObject* o)
 {
-	LOG(LOG_CALLS, _("coerce_s") );
-	ASObject* ret=o;
-
-	if(o->getObjectType()!=T_STRING)
-	{
-		if(o->getObjectType()==T_UNDEFINED || o->getObjectType()==T_NULL)
-			ret=new Null;
-		else
-			ret=Class<ASString>::getInstanceS(o->toString(false));
-
-		o->decRef();
-	}
-	return ret;
+	return Class<ASString>::getClass()->coerce(o);
 }
 
 void ABCVm::coerce(call_context* th, int n)
 {
-	LOG(LOG_CALLS,_("coerce ") << *th->context->getMultiname(n,NULL));
+	multiname* mn = th->context->getMultiname(n,NULL);
+	LOG(LOG_CALLS,_("coerce ") << *mn);
+
+	const Type* type = Type::getTypeFromMultiname(mn);
+
+	ASObject* o=th->runtime_stack_pop();
+	o=type->coerce(o);
+	th->runtime_stack_push(o);
 }
 
 void ABCVm::pop()
@@ -190,7 +175,7 @@ void ABCVm::getLocal_int(int n, int v)
 
 void ABCVm::getLocal(ASObject* o, int n)
 {
-	LOG(LOG_CALLS,_("getLocal[") << n << _("] (") << o << _(") ") << o->toString(true));
+	LOG(LOG_CALLS,_("getLocal[") << n << _("] (") << o << _(") ") << o->toDebugString());
 }
 
 void ABCVm::getLocal_short(int n)
@@ -210,10 +195,10 @@ void ABCVm::setLocal_int(int n, int v)
 
 void ABCVm::setLocal_obj(int n, ASObject* v)
 {
-	LOG(LOG_CALLS,_("setLocal[") << n << _("] = ") << v->toString(true));
+	LOG(LOG_CALLS,_("setLocal[") << n << _("] = ") << v->toDebugString());
 }
 
-intptr_t ABCVm::pushShort(intptr_t n)
+int32_t ABCVm::pushShort(intptr_t n)
 {
 	LOG(LOG_CALLS, _("pushShort ") << n );
 	return n;
@@ -231,7 +216,9 @@ void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
 ASObject* ABCVm::getSlot(ASObject* obj, int n)
 {
 	ASObject* ret=obj->getSlot(n);
-	LOG(LOG_CALLS,"getSlot " << n << " " << ret->toString(true));
+	LOG(LOG_CALLS,"getSlot " << n << " " << ret << "=" << ret->toDebugString());
+	//getSlot can only access properties defined in the current
+	//script, so they should already be defind by this script
 	ret->incRef();
 	obj->decRef();
 	return ret;
@@ -245,7 +232,7 @@ number_t ABCVm::negate(ASObject* v)
 	return ret;
 }
 
-intptr_t ABCVm::negate_i(ASObject* o)
+int32_t ABCVm::negate_i(ASObject* o)
 {
 	LOG(LOG_CALLS,_("negate_i"));
 
@@ -254,15 +241,15 @@ intptr_t ABCVm::negate_i(ASObject* o)
 	return -n;
 }
 
-uintptr_t ABCVm::bitNot(ASObject* val)
+uint32_t ABCVm::bitNot(ASObject* val)
 {
-	uintptr_t i1=val->toUInt();
+	uint32_t i1=val->toUInt();
 	val->decRef();
 	LOG(LOG_CALLS,_("bitNot ") << hex << i1 << dec);
 	return ~i1;
 }
 
-uintptr_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
+uint32_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 {
 	int i1=val1->toUInt();
 	int i2=val2->toUInt();
@@ -272,7 +259,7 @@ uintptr_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 	return i1^i2;
 }
 
-uintptr_t ABCVm::bitOr_oi(ASObject* val2, uintptr_t val1)
+uint32_t ABCVm::bitOr_oi(ASObject* val2, uint32_t val1)
 {
 	int i1=val1;
 	int i2=val2->toUInt();
@@ -281,7 +268,7 @@ uintptr_t ABCVm::bitOr_oi(ASObject* val2, uintptr_t val1)
 	return i1|i2;
 }
 
-uintptr_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
+uint32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 {
 	int i1=val1->toUInt();
 	int i2=val2->toUInt();
@@ -291,130 +278,88 @@ uintptr_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 	return i1|i2;
 }
 
-void ABCVm::callProperty(call_context* th, int n, int m, method_info*& called_mi)
+void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	multiname* name=th->context->getMultiname(n,th);
-	LOG(LOG_CALLS,_("callProperty ") << *name << ' ' << m);
+	LOG(LOG_CALLS, (keepReturn ? "callProperty " : "callPropVoid") << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
-	if(obj->prototype)
-		LOG(LOG_CALLS,obj->prototype->class_name);
-
-	//We have to reset the level, as we may be getting a function defined at a lower level
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
+	if(obj->classdef)
+		LOG(LOG_CALLS,obj->classdef->class_name);
 
 	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
+	_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
 
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
-
-	if(o)
+	if(!o.isNull())
 	{
-		//Run the deferred initialization if needed
-		if(o->getObjectType()==T_DEFINABLE)
-		{
-			LOG(LOG_CALLS,_("We got a function not yet valid"));
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			o=obj->getVariableByMultiname(*name);
-		}
-
-		//If o is already a function call it
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(o);
-			//Methods has to be runned with their own class this
-			//The owner has to be increffed
-			obj->incRef();
-			f->incRef();
-			ASObject* ret=f->call(obj,args,m);
-			//call getMethodInfo only after the call, so it's updated
-			called_mi=f->getMethodInfo();
-			f->decRef();
-			if(ret==NULL)
-				ret=new Undefined;
-			th->runtime_stack_push(ret);
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function on obj ") << ((obj->prototype)?obj->prototype->class_name.name:_("Object")));
-			th->runtime_stack_push(new Undefined);
-		}
-		else if(o->getObjectType()==T_CLASS)
-		{
-			Class_base* c=static_cast<Class_base*>(o);
-			ASObject* ret=c->generator(args, m);
-			th->runtime_stack_push(ret);
-		}
-		else
-			throw UnsupportedException("Unexpected object to call");
+		o->incRef();
+		callImpl(th, o.getPtr(), obj, args, m, called_mi, keepReturn);
 	}
 	else
 	{
 		//If the object is a Proxy subclass, try to invoke callProperty
-		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
+		if(obj->classdef && obj->classdef->isSubClass(Class<Proxy>::getClass()))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
 			multiname callPropertyName;
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s="callProperty";
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
+			_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 
-			if(o)
+			if(!o.isNull())
 			{
 				assert_and_throw(o->getObjectType()==T_FUNCTION);
 
-				IFunction* f=static_cast<IFunction*>(o);
+				IFunction* f=static_cast<IFunction*>(o.getPtr());
 				//Create a new array
-				ASObject** proxyArgs=new ASObject*[m+1];
+				ASObject** proxyArgs=g_newa(ASObject*, m+1);
 				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
 				for(int i=0;i<m;i++)
 					proxyArgs[i+1]=args[i];
-				delete[] args;
 
 				//We now suppress special handling
 				LOG(LOG_CALLS,_("Proxy::callProperty"));
 				f->incRef();
+				obj->incRef();
 				ASObject* ret=f->call(obj,proxyArgs,m+1);
 				//call getMethodInfo only after the call, so it's updated
-				called_mi=f->getMethodInfo();
+				if(called_mi)
+					*called_mi=f->getMethodInfo();
 				f->decRef();
-				if(ret==NULL)
-					ret=new Undefined;
-				th->runtime_stack_push(ret);
+				if(keepReturn)
+					th->runtime_stack_push(ret);
+				else
+					ret->decRef();
 
 				obj->decRef();
 				LOG(LOG_CALLS,_("End of calling ") << *name);
-				delete[] proxyArgs;
 				return;
 			}
 		}
 
-		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << *name << _(" on obj ") << 
-				((obj->prototype)?obj->prototype->class_name.name:"Object"));
-		th->runtime_stack_push(new Undefined);
+		LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
+		if(keepReturn)
+			th->runtime_stack_push(new Undefined);
+
+		obj->decRef();
+		for(int i=0;i<m;i++)
+			args[i]->decRef();
 	}
 	LOG(LOG_CALLS,_("End of calling ") << *name);
-
-	obj->decRef();
-	delete[] args;
 }
 
-intptr_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
+int32_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("getProperty_i ") << *name );
 
 	//TODO: implement exception handling to find out if no integer can be returned
-	intptr_t ret=obj->getVariableByMultiname_i(*name);
+	int32_t ret=obj->getVariableByMultiname_i(*name);
 
 	obj->decRef();
 	return ret;
@@ -424,51 +369,19 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("getProperty ") << *name << ' ' << obj);
 
-	//We have to reset the level before finding a variable
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
+	_NR<ASObject> prop=obj->getVariableByMultiname(*name);
+	ASObject *ret;
 
-	ASObject* ret=obj->getVariableByMultiname(*name);
-
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
-	
-	if(ret==NULL)
+	if(prop.isNull())
 	{
-		if(obj->prototype)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Property not found ") << *name << _(" on type ") << obj->prototype->class_name);
-		}
-		else
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Property not found ") << *name);
-		}
-		return new Undefined;
+		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
+		ret = new Undefined;
 	}
 	else
 	{
-		//If we are getting a function object attach the the current scope
-		if(ret->getObjectType()==T_FUNCTION)
-		{
-			//TODO: maybe also the level should be binded
-			LOG(LOG_CALLS,_("Attaching this to function ") << name);
-			//the obj reference is acquired by the smart reference
-			IFunction* f=static_cast<IFunction*>(ret)->bind(_MR(obj),-1);
-			//No incref is needed, as the function is a new instance
-			return f;
-		}
-		else if(ret->getObjectType()==T_DEFINABLE)
-		{
-			//LOG(ERROR,_("Property ") << name << _(" is not yet valid"));
-			throw UnsupportedException("Definable not supported in getProperty");
-			/*Definable* d=static_cast<Definable*>(ret.obj);
-			d->define(obj);
-			ret=obj->getVariableByMultiname(*name,owner);
-			ret->incRef();*/
-		}
+		prop->incRef();
+		ret=prop.getPtr();
 	}
-	ret->incRef();
 	obj->decRef();
 	return ret;
 }
@@ -498,12 +411,14 @@ void ABCVm::pushScope(call_context* th)
 	th->scope_stack.emplace_back(scope_entry(_MR(t), false));
 }
 
-ASObject* ABCVm::getGlobalScope(call_context* th)
+Global* ABCVm::getGlobalScope(call_context* th)
 {
+	assert_and_throw(th->scope_stack.size() > 0);
 	ASObject* ret=th->scope_stack[0].object.getPtr();
+	assert_and_throw(ret->is<Global>());
 	LOG(LOG_CALLS,_("getGlobalScope: ") << ret);
 	ret->incRef();
-	return ret;
+	return ret->as<Global>();
 }
 
 number_t ABCVm::decrement(ASObject* o)
@@ -515,7 +430,7 @@ number_t ABCVm::decrement(ASObject* o)
 	return n-1;
 }
 
-uintptr_t ABCVm::decrement_i(ASObject* o)
+uint32_t ABCVm::decrement_i(ASObject* o)
 {
 	LOG(LOG_CALLS,_("decrement_i"));
 
@@ -546,7 +461,7 @@ bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
 	return ret;
 }
 
-bool ABCVm::ifLT_oi(ASObject* obj2, intptr_t val1)
+bool ABCVm::ifLT_oi(ASObject* obj2, int32_t val1)
 {
 	LOG(LOG_CALLS,_("ifLT_oi"));
 
@@ -561,7 +476,7 @@ bool ABCVm::ifLT_oi(ASObject* obj2, intptr_t val1)
 	return ret;
 }
 
-bool ABCVm::ifLT_io(intptr_t val2, ASObject* obj1)
+bool ABCVm::ifLT_io(int32_t val2, ASObject* obj1)
 {
 	LOG(LOG_CALLS,_("ifLT_io "));
 
@@ -582,7 +497,7 @@ bool ABCVm::ifNE(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-bool ABCVm::ifNE_oi(ASObject* obj1, intptr_t val2)
+bool ABCVm::ifNE_oi(ASObject* obj1, int32_t val2)
 {
 	//HACK
 	if(obj1->getObjectType()==T_UNDEFINED)
@@ -594,13 +509,13 @@ bool ABCVm::ifNE_oi(ASObject* obj1, intptr_t val2)
 	return ret;
 }
 
-intptr_t ABCVm::pushByte(intptr_t n)
+int32_t ABCVm::pushByte(intptr_t n)
 {
 	LOG(LOG_CALLS, _("pushByte ") << n );
 	return n;
 }
 
-number_t ABCVm::multiply_oi(ASObject* val2, intptr_t val1)
+number_t ABCVm::multiply_oi(ASObject* val2, int32_t val1)
 {
 	double num1=val1;
 	double num2=val2->toNumber();
@@ -619,7 +534,7 @@ number_t ABCVm::multiply(ASObject* val2, ASObject* val1)
 	return num1*num2;
 }
 
-intptr_t ABCVm::multiply_i(ASObject* val2, ASObject* val1)
+int32_t ABCVm::multiply_i(ASObject* val2, ASObject* val1)
 {
 	int num1=val1->toInt();
 	int num2=val2->toInt();
@@ -632,89 +547,93 @@ intptr_t ABCVm::multiply_i(ASObject* val2, ASObject* val1)
 void ABCVm::incLocal(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("incLocal ") << n );
-	if(th->locals[n]->getObjectType()==T_NUMBER)
-	{
-		Number* i=static_cast<Number*>(th->locals[n]);
-		i->val++;
-	}
-	else
-	{
-		number_t tmp=th->locals[n]->toNumber();
-		th->locals[n]->decRef();
-		th->locals[n]=abstract_d(tmp+1);
-	}
-
+	number_t tmp=th->locals[n]->toNumber();
+	th->locals[n]->decRef();
+	th->locals[n]=abstract_d(tmp+1);
 }
 
 void ABCVm::incLocal_i(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("incLocal_i ") << n );
-	if(th->locals[n]->getObjectType()==T_INTEGER)
-	{
-		Integer* i=static_cast<Integer*>(th->locals[n]);
-		i->val++;
-	}
-	else
-	{
-		int32_t tmp=th->locals[n]->toInt();
-		th->locals[n]->decRef();
-		th->locals[n]=abstract_i(tmp+1);
-	}
-
+	int32_t tmp=th->locals[n]->toInt();
+	th->locals[n]->decRef();
+	th->locals[n]=abstract_i(tmp+1);
 }
 
 void ABCVm::decLocal(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("decLocal ") << n );
-	if(th->locals[n]->getObjectType()==T_NUMBER)
-	{
-		Number* i=static_cast<Number*>(th->locals[n]);
-		i->val--;
-	}
-	else
-	{
-		number_t tmp=th->locals[n]->toNumber();
-		th->locals[n]->decRef();
-		th->locals[n]=abstract_d(tmp-1);
-	}
-
+	number_t tmp=th->locals[n]->toNumber();
+	th->locals[n]->decRef();
+	th->locals[n]=abstract_d(tmp-1);
 }
 
 void ABCVm::decLocal_i(call_context* th, int n)
 {
 	LOG(LOG_CALLS, _("decLocal_i ") << n );
-	if(th->locals[n]->getObjectType()==T_INTEGER)
-	{
-		Integer* i=static_cast<Integer*>(th->locals[n]);
-		i->val--;
-	}
-	else
-	{
-		int32_t tmp=th->locals[n]->toInt();
-		th->locals[n]->decRef();
-		th->locals[n]=abstract_i(tmp-1);
-	}
+	int32_t tmp=th->locals[n]->toInt();
+	th->locals[n]->decRef();
+	th->locals[n]=abstract_i(tmp-1);
+}
 
+/* This is called for expressions like
+ * function f() { ... }
+ * var v = new f();
+ */
+ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen)
+{
+	//See ECMA 13.2.2
+	assert(f->is<SyntheticFunction>());
+	SyntheticFunction* sf=f->as<SyntheticFunction>();
+
+	ASObject* ret=Class<ASObject>::getInstanceS();
+	assert(sf->mi->body);
+#ifndef NDEBUG
+	ret->initialized=false;
+#endif
+	LOG(LOG_CALLS,_("Building method traits"));
+	for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
+		th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+#ifndef NDEBUG
+	ret->initialized=true;
+#endif
+	//Now add our classdef
+	Class_function *cf=new Class_function();
+	ret->setClass(cf);
+	//setClass created a new reference, we can release the local
+	//reference
+	cf->decRef();
+	ret->getClass()->prototype = sf->prototype;
+
+	sf->incRef();
+	ret->setVariableByQName("constructor","",sf,DYNAMIC_TRAIT);
+
+	ret->incRef();
+	assert_and_throw(!sf->closure_this);
+	sf->incRef();
+	ASObject* ret2=sf->call(ret,args,argslen);
+	sf->decRef();
+
+	//ECMA: "return ret2 if it is an object, else ret"
+	if(ret2 && !ret2->is<Undefined>())
+	{
+		ret->decRef();
+		ret = ret2;
+	}
+	else if(ret2)
+		ret2->decRef();
+
+	return ret;
 }
 
 void ABCVm::construct(call_context* th, int m)
 {
 	LOG(LOG_CALLS, _("construct ") << m);
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
-
-	if(obj->getObjectType()==T_DEFINABLE)
-	{
-		throw UnsupportedException("Definable not supported in construct");
-	/*	LOG(LOG_CALLS,_("Deferred definition of property ") << name);
-		Definable* d=static_cast<Definable*>(o);
-		d->define(obj);
-		o=obj->getVariableByMultiname(name,owner);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);*/
-	}
 
 	LOG(LOG_CALLS,_("Constructing"));
 
@@ -730,7 +649,7 @@ void ABCVm::construct(call_context* th, int m)
 
 		case T_OBJECT:
 		{
-			Class_base* o_class=static_cast<Class_base*>(obj->getPrototype());
+			Class_base* o_class=static_cast<Class_base*>(obj->getClass());
 			assert(o_class);
 			ret=o_class->getInstance(true,args,m);
 			break;
@@ -747,41 +666,7 @@ void ABCVm::construct(call_context* th, int m)
 
 		case T_FUNCTION:
 		{
-			SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
-			assert_and_throw(sf);
-			ret=Class<ASObject>::getInstanceS();
-			if(sf->mi->body)
-			{
-#ifndef NDEBUG
-				ret->initialized=false;
-#endif
-				LOG(LOG_CALLS,_("Building method traits"));
-				for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-					th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
-#ifndef NDEBUG
-				ret->initialized=true;
-#endif
-				ret->incRef();
-				assert_and_throw(sf->closure_this==NULL);
-				sf->incRef();
-				ASObject* ret2=sf->call(ret,args,m);
-				sf->decRef();
-				if(ret2)
-					ret2->decRef();
-
-				//Let's see if an AS prototype has been defined on the function
-				multiname prototypeName;
-				prototypeName.name_type=multiname::NAME_STRING;
-				prototypeName.name_s="prototype";
-				prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-				ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
-				if(asp)
-					asp->incRef();
-
-				//Now add our prototype
-				sf->incRef();
-				ret->setPrototype(new Class_function(sf,asp));
-			}
+			ret = constructFunction(th, obj->as<IFunction>(), args, m);
 			break;
 		}
 
@@ -796,44 +681,50 @@ void ABCVm::construct(call_context* th, int m)
 	obj->decRef();
 	LOG(LOG_CALLS,_("End of constructing ") << ret);
 	th->runtime_stack_push(ret);
-	delete[] args;
 }
 
 void ABCVm::constructGenericType(call_context* th, int m)
 {
-//	throw UnsupportedException("constructGenericType not implement");
 	LOG(LOG_CALLS, _("constructGenericType ") << m);
 	assert_and_throw(m==1);
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
 
-/*	if(obj->getObjectType()==T_DEFINABLE)
+	if(obj->getObjectType() != T_TEMPLATE)
 	{
-		LOG(LOG_ERROR,_("Check"));
-		abort();
-		LOG(LOG_CALLS,_("Deferred definition of property ") << name);
-		Definable* d=static_cast<Definable*>(o);
-		d->define(obj);
-		o=obj->getVariableByMultiname(name,owner);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << name);
+		LOG(LOG_NOT_IMPLEMENTED, "constructGenericType of " << obj->getObjectType());
+		obj->decRef();
+		obj = new Undefined();
+		th->runtime_stack_push(obj);
+		for(int i=0;i<m;i++)
+			args[i]->decRef();
+		return;
 	}
 
-	LOG(LOG_CALLS,_("Constructing"));
-	Class_base* o_class=static_cast<Class_base*>(obj);
-	assert_and_throw(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance(true,args,m);*/
-	ASObject* ret=new Undefined;
+	Template_base* o_template=static_cast<Template_base*>(obj);
 
-	obj->decRef();
-	LOG(LOG_CALLS,_("End of constructing"));
-	th->runtime_stack_push(ret);
-	//TODO: remove when implemented
-	for(int i=0;i<m;i++)
+	/* Instantiate the template to obtain a class */
+
+	std::vector<Type*> t(m);
+	for(int i=0;i<m;++i)
+	{
+		if(args[i]->is<Class_base>())
+			t[i] = args[i]->as<Class_base>();
+		else if(args[i]->is<Null>())
+			t[i] = Type::anyType;
+		else
+			throw Class<TypeError>::getInstanceS("Wrong type in applytype");
+	}
+
+	Class_base* o_class = o_template->applyType(t);
+
+	for(int i=0;i<m;++i)
 		args[i]->decRef();
-	delete[] args;
+
+	th->runtime_stack_push(o_class);
 }
 
 ASObject* ABCVm::typeOf(ASObject* obj)
@@ -846,8 +737,15 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			ret="undefined";
 			break;
 		case T_OBJECT:
+			if(obj->is<XML>() || obj->is<XMLList>())
+			{
+				ret = "xml";
+				break;
+			}
+			//fallthrough
 		case T_NULL:
 		case T_ARRAY:
+		case T_CLASS: //this is not clear from spec, but was tested
 			ret="object";
 			break;
 		case T_BOOLEAN:
@@ -855,6 +753,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			break;
 		case T_NUMBER:
 		case T_INTEGER:
+		case T_UINTEGER:
 			ret="number";
 			break;
 		case T_STRING:
@@ -864,115 +763,10 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			ret="function";
 			break;
 		default:
-			return new Undefined;
+			assert_and_throw(false);
 	}
 	obj->decRef();
 	return Class<ASString>::getInstanceS(ret);
-}
-
-void ABCVm::callPropVoid(call_context* th, int n, int m, method_info*& called_mi)
-{
-	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_CALLS,"callPropVoid " << *name << ' ' << m);
-
-	ASObject** args=new ASObject*[m];
-	for(int i=0;i<m;i++)
-		args[m-i-1]=th->runtime_stack_pop();
-	ASObject* obj=th->runtime_stack_pop();
-
-	if(obj->prototype)
-		LOG(LOG_CALLS, obj->prototype->class_name);
-
-	//We have to reset the level, as we may be getting a function defined at a lower level
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name,true);
-
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
-
-	if(o)
-	{
-		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(o);
-			obj->incRef();
-
-			f->incRef();
-			ASObject* ret=f->call(obj,args,m);
-			//call getMethodInfo only after the call, so it's updated
-			called_mi=f->getMethodInfo();
-			f->decRef();
-			if(ret)
-				ret->decRef();
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << *name << _(" on obj ") << 
-					((obj->prototype)?obj->prototype->class_name.name:"Object"));
-		}
-		else
-			throw UnsupportedException("Not callable object in callPropVoid");
-	}
-	else
-	{
-		//If the object is a Proxy subclass, try to use callProperty
-		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
-		{
-			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-			multiname callPropertyName;
-			callPropertyName.name_type=multiname::NAME_STRING;
-			callPropertyName.name_s="callProperty";
-			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
-			if(o)
-			{
-				assert_and_throw(o->getObjectType()==T_FUNCTION);
-
-				IFunction* f=static_cast<IFunction*>(o);
-
-				//Create a new array
-				ASObject** proxyArgs=new ASObject*[m+1];
-				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
-				for(int i=0;i<m;i++)
-					proxyArgs[i+1]=args[i];
-				delete[] args;
-
-				//We now suppress special handling
-				LOG(LOG_CALLS,_("Proxy::callProperty"));
-				f->incRef();
-				ASObject* ret=f->call(obj,proxyArgs,m+1);
-				//call getMethodInfo only after the call, so it's updated
-				called_mi=f->getMethodInfo();
-				f->decRef();
-				if(ret)
-					ret->decRef();
-
-				//No need to decRef obj, as it has been passed to the function
-				LOG(LOG_CALLS,_("End of calling ") << *name);
-				delete[] proxyArgs;
-				return;
-			}
-		}
-
-		if(obj->prototype)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function ") << name->name_s << _(" on obj type ") << obj->prototype->class_name);
-		}
-		else
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function ") << name->name_s);
-		}
-	}
-
-	obj->decRef();
-	delete[] args;
-	LOG(LOG_CALLS,_("End of calling ") << *name);
 }
 
 void ABCVm::jump(int offset)
@@ -989,22 +783,19 @@ bool ABCVm::ifTrue(ASObject* obj1)
 	return ret;
 }
 
-intptr_t ABCVm::modulo(ASObject* val1, ASObject* val2)
+number_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 {
-	uint32_t num1=val1->toUInt();
-	uint32_t num2=val2->toUInt();
+	number_t num1=val1->toNumber();
+	number_t num2=val2->toNumber();
 
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("modulo ")  << num1 << '%' << num2);
-	//Special case 0%0
-	//TODO: should be NaN
-	if(num1==0 && num2==0)
-		return 0;
-	return num1%num2;
+	/* fmod returns NaN if num2 == 0 as the spec mandates */
+	return ::fmod(num1,num2);
 }
 
-number_t ABCVm::subtract_oi(ASObject* val2, intptr_t val1)
+number_t ABCVm::subtract_oi(ASObject* val2, int32_t val1)
 {
 	int num2=val2->toInt();
 	int num1=val1;
@@ -1016,7 +807,6 @@ number_t ABCVm::subtract_oi(ASObject* val2, intptr_t val1)
 
 number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 {
-	assert_and_throw(val1->getObjectType()!=T_UNDEFINED);
 	number_t num2=val2;
 	number_t num1=val1->toNumber();
 
@@ -1025,7 +815,7 @@ number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 	return num1-num2;
 }
 
-number_t ABCVm::subtract_io(intptr_t val2, ASObject* val1)
+number_t ABCVm::subtract_io(int32_t val2, ASObject* val1)
 {
 	if(val1->getObjectType()==T_UNDEFINED)
 	{
@@ -1041,7 +831,7 @@ number_t ABCVm::subtract_io(intptr_t val2, ASObject* val1)
 	return num1-num2;
 }
 
-intptr_t ABCVm::subtract_i(ASObject* val2, ASObject* val1)
+int32_t ABCVm::subtract_i(ASObject* val2, ASObject* val1)
 {
 	if(val1->getObjectType()==T_UNDEFINED ||
 		val2->getObjectType()==T_UNDEFINED)
@@ -1095,91 +885,68 @@ void ABCVm::kill(int n)
 
 ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 {
-	//Implement ECMA add algorithm, for XML and default
-	if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
+	//Implement ECMA add algorithm, for XML and default (see avm2overview)
+	if(val1->is<Number>() && val2->is<Number>())
 	{
-		intptr_t num2=val2->toInt();
-		intptr_t num1=val1->toInt();
-		LOG(LOG_CALLS,"add " << num1 << '+' << num2);
-		val1->decRef();
-		val2->decRef();
-		return abstract_i(num1+num2);
-	}
-	else if (val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_UNDEFINED)
-	{
-		intptr_t num1=val1->toInt();
-		LOG(LOG_CALLS,"add " << num1 << "+ undefined");
-		val1->decRef();
-		val2->decRef();
-		return abstract_i(num1);
-	}
-	else if (val1->getObjectType()==T_UNDEFINED && val2->getObjectType()==T_INTEGER)
-	{
-		intptr_t num2=val2->toInt();
-		LOG(LOG_CALLS,"add undefined + " << num2);
-		val1->decRef();
-		val2->decRef();
-		return abstract_i(num2);
-	}
-	else if(val1->getObjectType()==T_ARRAY)
-	{
-		//Array concatenation
-		Array* ar=static_cast<Array*>(val1);
-		ar->push(val2);
-		return val1;
-	}
-	else if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
-	{
-		string a(val1->toString().raw_buf());
-		string b(val2->toString().raw_buf());
-		LOG(LOG_CALLS,"add " << a << '+' << b);
-		val1->decRef();
-		val2->decRef();
-		return Class<ASString>::getInstanceS(a+b);
-	}
-	else if(val1->getObjectType()==T_NUMBER || val2->getObjectType()==T_NUMBER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		LOG(LOG_CALLS,"add " << num1 << '+' << num2);
+		double num1=val1->as<Number>()->val;
+		double num2=val2->as<Number>()->val;
+		LOG(LOG_CALLS,"addN " << num1 << '+' << num2);
 		val1->decRef();
 		val2->decRef();
 		return abstract_d(num1+num2);
 	}
-	else
+	else if(val1->is<ASString>() || val2->is<ASString>())
+	{
+		tiny_string a = val1->toString();
+		tiny_string b = val2->toString();
+		LOG(LOG_CALLS,"add " << a << '+' << b);
+		val1->decRef();
+		val2->decRef();
+		return Class<ASString>::getInstanceS(a + b);
+	}
+	else if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
 	{
 		//Check if the objects are both XML or XMLLists
 		Class_base* xmlClass=Class<XML>::getClass();
-		Class_base* xmlListClass=Class<XMLList>::getClass();
 
-		if((val1->getPrototype()==xmlClass || val1->getPrototype()==xmlListClass) &&
-			(val2->getPrototype()==xmlClass || val2->getPrototype()==xmlListClass))
-		{
-			XMLList* newList=Class<XMLList>::getInstanceS(true);
-			if(val1->getPrototype()==xmlClass)
-				newList->append(_MR(static_cast<XML*>(val1)));
-			else //if(val1->getPrototype()==xmlListClass)
-				newList->append(_MR(static_cast<XMLList*>(val1)));
+		XMLList* newList=Class<XMLList>::getInstanceS(true);
+		if(val1->getClass()==xmlClass)
+			newList->append(_MR(static_cast<XML*>(val1)));
+		else //if(val1->getClass()==xmlListClass)
+			newList->append(_MR(static_cast<XMLList*>(val1)));
 
-			if(val2->getPrototype()==xmlClass)
-				newList->append(_MR(static_cast<XML*>(val2)));
-			else //if(val2->getPrototype()==xmlListClass)
-				newList->append(_MR(static_cast<XMLList*>(val2)));
+		if(val2->getClass()==xmlClass)
+			newList->append(_MR(static_cast<XML*>(val2)));
+		else //if(val2->getClass()==xmlListClass)
+			newList->append(_MR(static_cast<XMLList*>(val2)));
 
-			//The references of val1 and val2 have been passed to the smart references
-			//no decRef is needed
-			return newList;
+		//The references of val1 and val2 have been passed to the smart references
+		//no decRef is needed
+		return newList;
+	}
+	else
+	{//If none of the above apply, convert both to primitives with no hint
+		_R<ASObject> val1p = val1->toPrimitive(NO_HINT);
+		_R<ASObject> val2p = val2->toPrimitive(NO_HINT);
+		val1->decRef();
+		val2->decRef();
+		if(val1p->is<ASString>() || val2p->is<ASString>())
+		{//If one is String, convert both to strings and concat
+			string a(val1p->toString().raw_buf());
+			string b(val2p->toString().raw_buf());
+			LOG(LOG_CALLS,"add " << a << '+' << b);
+			return Class<ASString>::getInstanceS(a+b);
 		}
 		else
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("Add between types ") << val1->getObjectType() << ' ' << val2->getObjectType());
-			return new Undefined;
+		{//Convert both to numbers and add
+			number_t result = val2p->toNumber() + val1p->toNumber();
+			return abstract_d(result);
 		}
 	}
 
 }
 
-intptr_t ABCVm::add_i(ASObject* val2, ASObject* val1)
+int32_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 {
 	if(val1->getObjectType()==T_UNDEFINED ||
 		val2->getObjectType()==T_UNDEFINED)
@@ -1188,23 +955,23 @@ intptr_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 		LOG(LOG_NOT_IMPLEMENTED,_("add_i: HACK"));
 		return 0;
 	}
-	int num2=val2->toInt();
-	int num1=val1->toInt();
+	int32_t num2=val2->toInt();
+	int32_t num1=val1->toInt();
 
 	val1->decRef();
 	val2->decRef();
-	LOG(LOG_CALLS,_("add_i ") << num1 << '-' << num2);
+	LOG(LOG_CALLS,_("add_i ") << num1 << '+' << num2);
 	return num1+num2;
 }
 
-ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
+ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 {
 	//Implement ECMA add algorithm, for XML and default
 	if(val2->getObjectType()==T_INTEGER)
 	{
 		Integer* ip=static_cast<Integer*>(val2);
-		intptr_t num2=ip->val;
-		intptr_t num1=val1;
+		int32_t num2=ip->val;
+		int32_t num1=val1;
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << num1 << '+' << num2);
 		return abstract_i(num1+num2);
@@ -1220,24 +987,15 @@ ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
 	else if(val2->getObjectType()==T_STRING)
 	{
 		//Convert argument to int32_t
-		tiny_string a((int32_t)val1);
+		tiny_string a = Integer::toString(val1);
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
 		return Class<ASString>::getInstanceS(a+b);
 	}
-	else if(val2->getObjectType()==T_ARRAY)
-	{
-		throw UnsupportedException("Array add not supported in add_oi");
-		/*//Array concatenation
-		ASArray* ar=static_cast<ASArray*>(val1);
-		ar->push(val2);
-		return ar;*/
-	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Add between integer and ") << val2->getObjectType());
-		return new Undefined;
+		return add(val2,abstract_i(val1));
 	}
 
 }
@@ -1263,29 +1021,20 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
-		tiny_string a(val1);
+		tiny_string a = Number::toString(val1);
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
 		return Class<ASString>::getInstanceS(a+b);
 	}
-	else if(val2->getObjectType()==T_ARRAY)
-	{
-		throw UnsupportedException("Array add not supported in add_od");
-		/*//Array concatenation
-		ASArray* ar=static_cast<ASArray*>(val1);
-		ar->push(val2);
-		return ar;*/
-	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Add between types number and ") << val2->getObjectType());
-		return new Undefined;
+		return add(val2,abstract_d(val1));
 	}
 
 }
 
-uintptr_t ABCVm::lShift(ASObject* val1, ASObject* val2)
+uint32_t ABCVm::lShift(ASObject* val1, ASObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
@@ -1297,7 +1046,7 @@ uintptr_t ABCVm::lShift(ASObject* val1, ASObject* val2)
 	return ret;
 }
 
-uintptr_t ABCVm::lShift_io(uintptr_t val1, ASObject* val2)
+uint32_t ABCVm::lShift_io(uint32_t val1, ASObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1&0x1f;
@@ -1308,7 +1057,7 @@ uintptr_t ABCVm::lShift_io(uintptr_t val1, ASObject* val2)
 	return ret;
 }
 
-uintptr_t ABCVm::rShift(ASObject* val1, ASObject* val2)
+uint32_t ABCVm::rShift(ASObject* val1, ASObject* val2)
 {
 	int32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
@@ -1318,7 +1067,7 @@ uintptr_t ABCVm::rShift(ASObject* val1, ASObject* val2)
 	return i2>>i1;
 }
 
-uintptr_t ABCVm::urShift(ASObject* val1, ASObject* val2)
+uint32_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
@@ -1328,7 +1077,7 @@ uintptr_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 	return i2>>i1;
 }
 
-uintptr_t ABCVm::urShift_io(uintptr_t val1, ASObject* val2)
+uint32_t ABCVm::urShift_io(uint32_t val1, ASObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1&0x1f;
@@ -1356,10 +1105,6 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 
 bool ABCVm::strictEqualImpl(ASObject* obj1, ASObject* obj2)
 {
-	//If we are dealing with objects, check the prototype
-	if(obj1->getObjectType()==T_OBJECT && obj2->getObjectType()==T_OBJECT && obj1->prototype!=obj2->prototype)
-			return false;
-
 	SWFOBJECT_TYPE type1=obj1->getObjectType();
 	SWFOBJECT_TYPE type2=obj2->getObjectType();
 	if(type1!=type2)
@@ -1492,68 +1237,42 @@ void ABCVm::_throw(call_context* th)
 void ABCVm::setSuper(call_context* th, int n)
 {
 	ASObject* value=th->runtime_stack_pop();
-	multiname* name=th->context->getMultiname(n,th); 
+	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,_("setSuper ") << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	//We modify the cur_level of obj
-	obj->decLevel();
+	assert_and_throw(th->inClass)
+	assert_and_throw(th->inClass->super);
+	assert_and_throw(obj->getClass());
+	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
-	obj->setVariableByMultiname(*name, value);
-
-	//And the reset it using the stack
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-	tl.cur_this->setLevel(tl.cur_level);
-
+	obj->setVariableByMultiname(*name,value,th->inClass->super.getPtr());
 	obj->decRef();
 }
 
 void ABCVm::getSuper(call_context* th, int n)
 {
-	multiname* name=th->context->getMultiname(n,th); 
+	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,_("getSuper ") << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
+	assert_and_throw(th->inClass);
+	assert_and_throw(th->inClass->super);
+	assert_and_throw(obj->getClass());
+	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
-	//We modify the cur_level of obj
-	obj->decLevel();
-
-	//Should we skip implementation? I think it's reasonable
-	ASObject* o=obj->getVariableByMultiname(*name, true);
-	//TODO: should bind if the return type is Function
-
-	tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-	//And we reset it using the stack
-	tl.cur_this->setLevel(tl.cur_level);
-
-	if(o)
+	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super.getPtr());
+	if(ret.isNull())
 	{
-		if(o->getObjectType()==T_DEFINABLE)
-		{
-			LOG(LOG_CALLS,_("We got an object not yet valid"));
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			o=obj->getVariableByMultiname(*name);
-		}
-		o->incRef();
-		th->runtime_stack_push(o);
-	}
-	else
-	{
-		LOG(LOG_NOT_IMPLEMENTED,_("NOT found ") << name->name_s<< _(", pushing Undefined"));
-		th->runtime_stack_push(new Undefined);
+		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->toDebugString());
+		ret = _MNR(new Undefined);
 	}
 
 	obj->decRef();
+	ret->incRef();
+	th->runtime_stack_push(ret.getPtr());
 }
 
 void ABCVm::getLex(call_context* th, int n)
@@ -1561,115 +1280,76 @@ void ABCVm::getLex(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("getLex: ") << *name );
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
+	// o will be a reference owned by this function (or NULL). At
+	// the end the reference will be handed over to the runtime
+	// stack.
 	ASObject* o = NULL;
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	ASObject* target;
 	for(;it!=th->scope_stack.rend();++it)
 	{
-		if(it->object==tl.cur_this)
-			tl.cur_this->resetLevel();
+		// XML_STRICT flag tells getVariableByMultiname to
+		// ignore non-existing properties in XML obejcts
+		// (normally it would return an empty XMLList if the
+		// property does not exist).
+		ASObject::GET_VARIABLE_OPTION opt=ASObject::XML_STRICT;
+		if(!it->considerDynamic)
+			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 
-		// Calling hasPropertyByMultiname first is necessary
-		// for skipping over XMLs and XMLLists that do not
-		// contain the property. getVariableByMultiname alone
-		// is not enough because XML/XMLList returns an empty
-		// XMLList when querying for a non-existing property.
-		if(it->object->hasPropertyByMultiname(*name, it->considerDynamic))
+		_NR<ASObject> prop=it->object->getVariableByMultiname(*name, opt);
+		if(!prop.isNull())
 		{
-			o=it->object->getVariableByMultiname(*name, !it->considerDynamic);
-			assert_and_throw(o);
-		}
-
-		if(it->object==tl.cur_this)
-			tl.cur_this->setLevel(tl.cur_level);
-
-		if(o)
-		{
-			target=it->object.getPtr();
+			prop->incRef();
+			o=prop.getPtr();
 			break;
 		}
 	}
 
 	if(o==NULL)
 	{
-		LOG(LOG_CALLS, _("NOT found, trying Global") );
+		ASObject* target;
 		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 		if(o==NULL)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,_("NOT found ") << name->name_s<< _(", pushing Undefined"));
-			o=new Undefined;
+			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found, pushing Undefined");
+			th->runtime_stack_push(new Undefined);
+			return;
 		}
+		o->incRef();
 	}
 
-	//If we are getting a function object attach the the current scope
-	if(o->getObjectType()==T_FUNCTION)
-	{
-		LOG(LOG_CALLS,_("Attaching this to function ") << name);
-		target->incRef();
-		IFunction* f=static_cast<IFunction*>(o)->bind(_MR(target),-1);
-		o=f;
-	}
-	else if(o->getObjectType()==T_DEFINABLE)
-	{
-		LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-		Definable* d=static_cast<Definable*>(o);
-		d->define(target);
-		o=target->getVariableByMultiname(*name);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
-	}
 	th->runtime_stack_push(o);
-	o->incRef();
 }
 
 void ABCVm::constructSuper(call_context* th, int m)
 {
 	LOG(LOG_CALLS, _("constructSuper ") << m);
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	assert_and_throw(obj->getLevel()!=0);
+	assert_and_throw(th->inClass);
+	assert_and_throw(th->inClass->super);
+	assert_and_throw(obj->getClass());
+	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
+	LOG(LOG_CALLS,_("Super prototype name ") << th->inClass->super->class_name);
 
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//Check that current 'this' is the object
-	assert_and_throw(tl.cur_this==obj);
-	assert_and_throw(tl.cur_level==obj->getLevel());
-
-	LOG(LOG_CALLS,_("Cur prototype name ") << obj->getActualPrototype()->class_name);
-	//Change current level
-	obj->decLevel();
-	LOG(LOG_CALLS,_("Super prototype name ") << obj->getActualPrototype()->class_name);
-
-	Class_base* curProt=obj->getActualPrototype();
-	curProt->handleConstruction(obj,args, m, false);
+	th->inClass->super->handleConstruction(obj,args, m, false);
 	LOG(LOG_CALLS,_("End super construct "));
-	obj->setLevel(tl.cur_level);
-
-	obj->decRef();
-	delete[] args;
 }
 
-ASObject* ABCVm::findProperty(call_context* th, int n)
+ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 {
-	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("findProperty ") << *name );
 
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
 	bool found=false;
 	ASObject* ret=NULL;
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	for(;it!=th->scope_stack.rend();++it)
 	{
-		if(it->object==tl.cur_this)
-			tl.cur_this->resetLevel();
-
 		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic);
-		if(it->object==tl.cur_this)
-			tl.cur_this->setLevel(tl.cur_level);
 
 		if(found)
 		{
@@ -1680,8 +1360,13 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	}
 	if(!found)
 	{
-		LOG(LOG_CALLS, _("NOT found, pushing global") );
-		ret=th->scope_stack[0].object.getPtr();
+		//try to find a global object where this is defined
+		ASObject* target;
+		ASObject* o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+		if(o)
+			ret=target;
+		else //else push the current global object
+			ret=th->scope_stack[0].object.getPtr();
 	}
 
 	//TODO: make this a regular assert
@@ -1690,24 +1375,17 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	return ret;
 }
 
-ASObject* ABCVm::findPropStrict(call_context* th, int n)
+ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 {
-	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("findPropStrict ") << *name );
 
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
 	bool found=false;
 	ASObject* ret=NULL;
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
 
 	for(;it!=th->scope_stack.rend();++it)
 	{
-		if(it->object==tl.cur_this)
-			tl.cur_this->resetLevel();
-
 		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic);
-		if(it->object==tl.cur_this)
-			tl.cur_this->setLevel(tl.cur_level);
 		if(found)
 		{
 			//We have to return the object, not the property
@@ -1717,15 +1395,14 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	}
 	if(!found)
 	{
-		LOG(LOG_CALLS, _("NOT found, trying Global") );
 		ASObject* target;
 		ASObject* o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 		if(o)
 			ret=target;
 		else
 		{
-			LOG(LOG_NOT_IMPLEMENTED, _("NOT found, pushing Undefined"));
-			ret=new Undefined;
+			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found, pushing Undefined");
+			return new Undefined;
 		}
 	}
 
@@ -1767,189 +1444,43 @@ bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-void ABCVm::initProperty(call_context* th, int n)
+void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 {
-	ASObject* value=th->runtime_stack_pop();
-	multiname* name=th->context->getMultiname(n,th);
-	ASObject* obj=th->runtime_stack_pop();
-
 	LOG(LOG_CALLS, _("initProperty ") << *name << ' ' << obj);
 
-	//We have to reset the level before finding a variable
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
-
 	obj->setVariableByMultiname(*name,value);
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
 
 	obj->decRef();
 }
 
-void ABCVm::callSuper(call_context* th, int n, int m, method_info*& called_mi)
+void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
-	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_CALLS,_("callSuper ") << *name << ' ' << m);
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(LOG_CALLS,(keepReturn ? "callSuper " : "callSuperVoid ") << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	//We modify the cur_level of obj
-	obj->decLevel();
-
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
-
-	//And the reset it using the stack
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-	tl.cur_this->setLevel(tl.cur_level);
-
-	if(o)
+	assert_and_throw(th->inClass);
+	assert_and_throw(th->inClass->super);
+	assert_and_throw(obj->getClass());
+	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
+	_NR<ASObject> f = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super.getPtr());
+	if(!f.isNull())
 	{
-		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(o);
-			obj->incRef();
-			f->incRef();
-			ASObject* ret=f->call(obj,args,m);
-			//call getMethodInfo only after the call, so it's updated
-			called_mi=f->getMethodInfo();
-			f->decRef();
-			th->runtime_stack_push(ret);
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function"));
-			th->runtime_stack_push(new Undefined);
-		}
-/*		else if(o->getObjectType()==T_DEFINABLE)
-		{
-			LOG(LOG_CALLS,_("We got a function not yet valid"));
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			IFunction* f=obj->getVariableByMultiname(*name)->toFunction();
-			if(f)
-			{
-				ASObject* ret=f->call(owner,args,m);
-				th->runtime_stack_push(ret);
-			}
-			else
-			{
-				LOG(LOG_NOT_IMPLEMENTED,_("No such function"));
-				th->runtime_stack_push(new Undefined);
-			}
-		}
-		else
-		{
-			//IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
-			//if(f)
-			//{
-			//	ASObject* ret=f->call(o,args,m);
-			//	th->runtime_stack_push(ret);
-			//}
-			//else
-			//{
-			//	LOG(LOG_NOT_IMPLEMENTED,_("No such function, returning Undefined"));
-			//	th->runtime_stack_push(new Undefined);
-			//}
-		}*/
-		else
-			throw UnsupportedException("Not callable object in callSuper");
+		f->incRef();
+		callImpl(th, f.getPtr(), obj, args, m, called_mi, keepReturn);
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function ") << name->name_s);
-		th->runtime_stack_push(new Undefined);
+		LOG(LOG_ERROR,_("Calling an undefined function ") << name->name_s);
+		if(keepReturn)
+			th->runtime_stack_push(new Undefined);
 	}
 	LOG(LOG_CALLS,_("End of callSuper ") << *name);
-
-	obj->decRef();
-	delete[] args;
-}
-
-void ABCVm::callSuperVoid(call_context* th, int n, int m, method_info*& called_mi)
-{
-	ASObject** args=new ASObject*[m];
-	for(int i=0;i<m;i++)
-		args[m-i-1]=th->runtime_stack_pop();
-
-	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_CALLS,_("callSuperVoid ") << *name << ' ' << m);
-
-	ASObject* obj=th->runtime_stack_pop();
-
-	//We modify the cur_level of obj
-	obj->decLevel();
-
-	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true);
-
-	//And the reset it using the stack
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	//What if using [sg]etSuper not on this??
-	assert_and_throw(tl.cur_this==obj);
-	tl.cur_this->setLevel(tl.cur_level);
-
-	if(o)
-	{
-		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=static_cast<IFunction*>(o);
-			obj->incRef();
-			f->incRef();
-			ASObject* ret=f->call(obj,args,m);
-			//call getMethodInfo only after the call, so it's updated
-			called_mi=f->getMethodInfo();
-			f->decRef();
-			if(ret)
-				ret->decRef();
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,_("We got a Undefined function"));
-		}
-/*		else if(o->getObjectType()==T_DEFINABLE)
-		{
-			LOG(LOG_CALLS,_("We got a function not yet valid"));
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
-			if(f)
-				f->call(owner,args,m);
-			else
-			{
-				LOG(LOG_NOT_IMPLEMENTED,_("No such function"));
-			}
-		}
-		else
-		{
-			//IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
-			//if(f)
-			//	f->call(o,args,m);
-			//else
-			//{
-			//	LOG(LOG_NOT_IMPLEMENTED,_("No such function, returning Undefined"));
-			//}
-		}*/
-		else
-			throw UnsupportedException("Not callable object in callSuperVoid");
-	}
-	else
-	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Calling an undefined function"));
-	}
-	LOG(LOG_CALLS,_("End of callSuperVoid ") << *name);
-
-	obj->decRef();
-	delete[] args;
 }
 
 bool ABCVm::isType(ASObject* obj, multiname* name)
@@ -1978,11 +1509,11 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		return real_ret;
 	}
 
-	if(obj->prototype)
+	if(obj->classdef)
 	{
 		assert_and_throw(type->getObjectType()==T_CLASS);
 
-		objc=obj->prototype;
+		objc=obj->classdef;
 	}
 	else if(obj->getObjectType()==T_CLASS)
 	{
@@ -2037,7 +1568,20 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,_("asTypelate"));
 
-	assert_and_throw(type->getObjectType()==T_CLASS);
+	//HACK: until we have implemented all flash classes
+	if(type->is<Undefined>())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"asTypelate with undefined");
+		type->decRef();
+		return obj;
+	}
+
+	if(!type->is<Class_base>())
+	{
+		obj->decRef();
+		type->decRef();
+		throw Class<TypeError>::getInstanceS("Error #1009: Not a type in asTypelate");
+	}
 	Class_base* c=static_cast<Class_base*>(type);
 	//Special case numeric types
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
@@ -2055,8 +1599,8 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	}
 
 	Class_base* objc;
-	if(obj->prototype)
-		objc=obj->prototype;
+	if(obj->classdef)
+		objc=obj->classdef;
 	else if(obj->getObjectType()==T_CLASS)
 	{
 		//Special case for Class
@@ -2065,8 +1609,9 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 			type->decRef();
 			return obj;
 		}
-		
-		objc=static_cast<Class_base*>(obj);
+		obj->decRef();
+		type->decRef();
+		return new Null;
 	}
 	else
 	{
@@ -2141,7 +1686,7 @@ bool ABCVm::ifFalse(ASObject* obj1)
 
 void ABCVm::constructProp(call_context* th, int n, int m)
 {
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
@@ -2151,81 +1696,32 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	if(tl.cur_this==obj)
-		obj->resetLevel();
+	_NR<ASObject> o=obj->getVariableByMultiname(*name);
 
-	ASObject* o=obj->getVariableByMultiname(*name);
-
-	if(tl.cur_this==obj)
-		obj->setLevel(tl.cur_level);
-
-	if(o==NULL)
-		throw RunTimeException("Could not resolve property in constructProp");
-
-	//The get protocol expects that we incRef the var
-	o->incRef();
-
-	if(o->getObjectType()==T_DEFINABLE)
+	if(o.isNull())
 	{
-		LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-		Definable* d=static_cast<Definable*>(o);
-		d->define(obj);
-		o=obj->getVariableByMultiname(*name);
-		LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
+		for(int i=0;i<m;++i)
+			args[i]->decRef();
+		obj->decRef();
+		throw Class<ReferenceError>::getInstanceS("Error #1065: Variable is not defined.");
 	}
 
 	LOG(LOG_CALLS,_("Constructing"));
 	ASObject* ret;
 	if(o->getObjectType()==T_CLASS)
 	{
-		Class_base* o_class=static_cast<Class_base*>(o);
+		Class_base* o_class=static_cast<Class_base*>(o.getPtr());
 		ret=o_class->getInstance(true,args,m);
 	}
 	else if(o->getObjectType()==T_FUNCTION)
 	{
-		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(o);
-		assert_and_throw(sf);
-		ret=Class<ASObject>::getInstanceS();
-		if(sf->mi->body)
-		{
-#ifndef NDEBUG
-			ret->initialized=false;
-#endif
-			LOG(LOG_CALLS,_("Building method traits"));
-			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
-#ifndef NDEBUG
-			ret->initialized=true;
-#endif
-			ret->incRef();
-			assert_and_throw(sf->closure_this==NULL);
-			sf->incRef();
-			ASObject* ret2=sf->call(ret,args,m);
-			sf->decRef();
-			if(ret2)
-				ret2->decRef();
-
-			//Let's see if an AS prototype has been defined on the function
-			multiname prototypeName;
-			prototypeName.name_type=multiname::NAME_STRING;
-			prototypeName.name_s="prototype";
-			prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
-			ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
-			if(asp)
-				asp->incRef();
-
-			//Now add our prototype
-			sf->incRef();
-			ret->setPrototype(new Class_function(sf,asp));
-		}
+		ret = constructFunction(th, o->as<IFunction>(), args, m);
 	}
 	else
 		throw RunTimeException("Cannot construct such an object in constructProp");
 
 	th->runtime_stack_push(ret);
 	obj->decRef();
-	delete[] args;
 	LOG(LOG_CALLS,_("End of constructing ") << ret);
 }
 
@@ -2276,16 +1772,28 @@ void ABCVm::getDescendants(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS,"getDescendants " << *name);
 	ASObject* obj=th->runtime_stack_pop();
-	assert_and_throw(obj->getPrototype()==Class<XML>::getClass());
-	XML* xmlObj=Class<XML>::cast(obj);
 	//The name must be a QName
 	assert_and_throw(name->name_type==multiname::NAME_STRING);
 	vector<_R<XML> > ret;
 	//TODO: support multiname and namespaces
-	xmlObj->getDescendantsByQName(name->name_s, "", ret);
-	obj->decRef();
+	if(obj->getClass()==Class<XML>::getClass())
+	{
+		XML* xmlObj=Class<XML>::cast(obj);
+		xmlObj->getDescendantsByQName(name->name_s, "", ret);
+	}
+	else if(obj->getClass()==Class<XMLList>::getClass())
+	{
+		XMLList* xmlObj=Class<XMLList>::cast(obj);
+		xmlObj->getDescendantsByQName(name->name_s, "", ret);
+	}
+	else
+	{
+		obj->decRef();
+		throw Class<TypeError>::getInstanceS("Only XML and XMLList objects have descendants");
+	}
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	th->runtime_stack_push(retObj);
+	obj->decRef();
 }
 
 number_t ABCVm::increment(ASObject* o)
@@ -2297,7 +1805,7 @@ number_t ABCVm::increment(ASObject* o)
 	return n+1;
 }
 
-uintptr_t ABCVm::increment_i(ASObject* o)
+uint32_t ABCVm::increment_i(ASObject* o)
 {
 	LOG(LOG_CALLS,_("increment_i"));
 
@@ -2335,7 +1843,7 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 {
 	if(c->super)
-		newClassRecursiveLink(target, c->super);
+		newClassRecursiveLink(target, c->super.getPtr());
 
 	const vector<Class_base*>& interfaces=c->getInterfaces();
 	for(unsigned int i=0;i<interfaces.size();i++)
@@ -2347,19 +1855,18 @@ void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 
 void ABCVm::newClass(call_context* th, int n)
 {
-	LOG(LOG_CALLS, "newClass " << n );
-	method_info* constructor=&th->context->methods[th->context->instances[n].init];
 	int name_index=th->context->instances[n].name;
 	assert_and_throw(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
+	LOG(LOG_CALLS, "newClass " << *mname );
 
 	ASObject* baseClass=th->runtime_stack_pop();
 
 	assert_and_throw(mname->ns.size()==1);
 	QName className(mname->name_s,mname->ns[0].name);
 	//Check if this class has been already defined
-	auto oldDefinition=sys->classes.find(className);
-	if(oldDefinition!=sys->classes.end())
+	auto oldDefinition=getSys()->classes.find(className);
+	if(oldDefinition!=getSys()->classes.end())
 	{
 		LOG(LOG_CALLS,_("Class ") << className << _(" already defined. Pushing previous definition"));
 		baseClass->decRef();
@@ -2369,41 +1876,39 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	Class_inherit* ret=new Class_inherit(className);
-#ifdef PROFILING_SUPPORT
-	if(!constructor->validProfName)
-	{
-		constructor->profName=mname->name_s+"::__CONSTRUCTOR__";
-		constructor->validProfName=true;
-	}
-#endif
+	ret->isFinal = th->context->instances[n].isFinal();
+	ret->isSealed = th->context->instances[n].isSealed();
+
 	assert_and_throw(th->context);
 	ret->context=th->context;
 
-	//Null is a "valid" base class
-	if(baseClass->getObjectType()!=T_NULL)
-	{
-		assert_and_throw(baseClass->getObjectType()==T_CLASS);
-		ret->super=static_cast<Class_base*>(baseClass);
-		ret->max_level=ret->super->max_level+1;
-		ret->setLevel(ret->max_level);
-	}
-
-	LOG(LOG_CALLS,_("Building class traits"));
-	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
-		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
-
-	ret->class_scope=th->scope_stack;
-	ret->incRef();
-	ret->class_scope.emplace_back(_MR(ret),false);
-
 	//Add protected namespace if needed
-	if((th->context->instances[n].flags)&0x08)
+	if(th->context->instances[n].isProtectedNs())
 	{
 		ret->use_protected=true;
 		int ns=th->context->instances[n].protectedNs;
 		const namespace_info& ns_info=th->context->constant_pool.namespaces[ns];
 		ret->protected_ns=nsNameAndKind(th->context->getString(ns_info.name),(NS_KIND)(int)ns_info.kind);
 	}
+
+	//Null is a "valid" base class
+	if(baseClass->getObjectType()!=T_NULL)
+	{
+		assert_and_throw(baseClass->is<Class_base>());
+		Class_base* base = baseClass->as<Class_base>();
+		assert(!base->isFinal);
+		ret->setSuper(_MR(base));
+	}
+
+	ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+
+	ret->class_scope=th->scope_stack;
+	ret->incRef();
+	ret->class_scope.emplace_back(scope_entry(_MR(ret),false));
+
+	LOG(LOG_CALLS,_("Building class traits"));
+	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
+		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
 	LOG(LOG_CALLS,_("Adding immutable object traits to class"));
 	//Class objects also contains all the methods/getters/setters declared for instances
@@ -2415,15 +1920,32 @@ void ABCVm::newClass(call_context* th, int n)
 			th->context->buildTrait(ret,&cur->traits[i],true);
 	}
 
-	SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(constructor);
-	constructorFunc->acquireScope(ret->class_scope);
-	//add Constructor the the class methods
-	ret->constructor=constructorFunc;
+	method_info* constructor=&th->context->methods[th->context->instances[n].init];
+	if(constructor->body) /* e.g. interfaces have no valid constructor */
+	{
+#ifdef PROFILING_SUPPORT
+		if(!constructor->validProfName)
+		{
+			constructor->profName=mname->name_s+"::__CONSTRUCTOR__";
+			constructor->validProfName=true;
+		}
+#endif
+		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(constructor);
+		constructorFunc->acquireScope(ret->class_scope);
+		constructorFunc->inClass = ret;
+		//add Constructor the the class methods
+		ret->constructor=constructorFunc;
+	}
 	ret->class_index=n;
 
-	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
+	//Add prototype variable
+	ret->prototype = _MNR(new_asobject());
+	//Add the constructor variable to the class prototype
 	ret->incRef();
-	ret->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
+	ret->prototype->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
+	if(ret->super)
+		ret->prototype->setprop_prototype(ret->super->prototype);
+	ret->addPrototypeGetter();
 
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->context->instances[n].interface_count;i++)
@@ -2439,18 +1961,9 @@ void ABCVm::newClass(call_context* th, int n)
 		if(obj==NULL)
 			continue;
 
-		if(obj->getObjectType()==T_DEFINABLE)
-		{
-			LOG(LOG_CALLS,_("Class ") << *name << _(" is not yet valid (as interface)"));
-			Definable* d=static_cast<Definable*>(obj);
-			d->define(target);
-			LOG(LOG_CALLS,_("End of deferred init of class ") << *name);
-			obj=target->getVariableByMultiname(*name);
-			assert_and_throw(obj);
-		}
 	}
 	//If the class is not an interface itself, link the traits
-	if(!((th->context->instances[n].flags)&0x04))
+	if(!th->context->instances[n].isInterface())
 	{
 		//Link all the interfaces for this class and all the bases
 		newClassRecursiveLink(ret, ret);
@@ -2464,7 +1977,8 @@ void ABCVm::newClass(call_context* th, int n)
 	//cinit must inherit the current scope
 	cinit->acquireScope(th->scope_stack);
 	ASObject* ret2=cinit->call(ret,NULL,0);
-	assert_and_throw(ret2==NULL);
+	assert_and_throw(ret2->is<Undefined>());
+	ret2->decRef();
 	LOG(LOG_CALLS,_("End of Class init ") << ret);
 	th->runtime_stack_push(ret);
 	cinit->decRef();
@@ -2510,61 +2024,70 @@ bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-void ABCVm::call(call_context* th, int m, method_info*& called_mi)
+void ABCVm::call(call_context* th, int m, method_info** called_mi)
 {
-	ASObject** args=new ASObject*[m];
+	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
 	ASObject* f=th->runtime_stack_pop();
 	LOG(LOG_CALLS,_("call ") << m << ' ' << f);
+	callImpl(th, f, obj, args, m, called_mi, true);
+}
 
-	if(f->getObjectType()==T_FUNCTION)
+void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn)
+{
+	if(f->is<Function>())
 	{
-		IFunction* func=static_cast<IFunction*>(f);
-		//TODO: check for correct level, member function are already binded
+		IFunction* func=f->as<Function>();
 		func->incRef();
 		ASObject* ret=func->call(obj,args,m);
 		//call getMethodInfo only after the call, so it's updated
-		called_mi=func->getMethodInfo();
+		if(called_mi)
+			*called_mi=func->getMethodInfo();
 		func->decRef();
-		//Push the value only if not null
-		if(ret)
+		if(keepReturn)
 			th->runtime_stack_push(ret);
 		else
-			th->runtime_stack_push(new Undefined);
-		f->decRef();
+			ret->decRef();
 	}
-	else if(f->getObjectType()==T_CLASS)
+	else if(f->is<Class_base>())
 	{
-		assert_and_throw(m==1);
-		Class_base* c=static_cast<Class_base*>(f);
-		ASObject* ret=c->generator(args,1);
+		obj->decRef();
+		Class_base* c=f->as<Class_base>();
+		ASObject* ret=c->generator(args,m);
 		assert_and_throw(ret);
-		th->runtime_stack_push(ret);
+		if(keepReturn)
+			th->runtime_stack_push(ret);
+		else
+			ret->decRef();
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,_("Function not good ") << f->getObjectType());
-		th->runtime_stack_push(new Undefined);
+		obj->decRef();
+		for(int i=0;i<m;++i)
+			args[i]->decRef();
+		//HACK: Until we have implemented the whole flash api
+		//we silently ignore calling undefined functions
+		if(f->is<Undefined>())
+		{
+			if(keepReturn)
+				th->runtime_stack_push(new Undefined);
+		}
+		else
+			throw Class<TypeError>::getInstanceS("Error #1006: Tried to call something that is not a function");
 	}
 	LOG(LOG_CALLS,_("End of call ") << m << ' ' << f);
-	delete[] args;
-
 }
 
-void ABCVm::deleteProperty(call_context* th, int n)
+bool ABCVm::deleteProperty(ASObject* obj, multiname* name)
 {
-	multiname* name=th->context->getMultiname(n,th); 
 	LOG(LOG_CALLS,_("deleteProperty ") << *name);
-	ASObject* obj=th->runtime_stack_pop();
-	obj->deleteVariableByMultiname(*name);
-
-	//TODO: Now we assume that all objects are dynamic
-	th->runtime_stack_push(abstract_b(true));
+	bool ret = obj->deleteVariableByMultiname(*name);
 
 	obj->decRef();
+	return ret;
 }
 
 ASObject* ABCVm::newFunction(call_context* th, int n)
@@ -2597,7 +2120,7 @@ ASObject* ABCVm::pushString(call_context* th, int n)
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
 {
-	ASObject* catchScope = new ASObject();
+	ASObject* catchScope = Class<ASObject>::getInstanceS();
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exception_count);
 	multiname* name = th->context->getMultiname(th->mi->body->exceptions[n].var_name, th);
 	catchScope->setVariableByMultiname(*name, new Undefined);
@@ -2616,3 +2139,72 @@ void ABCVm::newArray(call_context* th, int n)
 	th->runtime_stack_push(ret);
 }
 
+ASObject* ABCVm::esc_xattr(ASObject* o)
+{
+	/* TODO: implement correct escaping according to E4X
+	 * For now we just cut the string at the first \0 byte, which is wrong
+	 * but suppresses more errors */
+	tiny_string t = o->toString();
+	LOG(LOG_NOT_IMPLEMENTED,"esc_xattr on " << t);
+	o->decRef();
+	auto i=t.begin();
+	for(;i!=t.end();++i)
+	{
+		if(*i == '\0')
+			break;
+	}
+	if(i == t.end())
+		return Class<ASString>::getInstanceS(t);
+	else
+		return Class<ASString>::getInstanceS(t.substr(0,i));
+}
+
+/* This should walk prototype chain of value, trying to find type. See ECMA.
+ * Its usage is disouraged in AS3 in favour of 'is' and 'as' (opcodes isType and asType)
+ */
+bool ABCVm::instanceOf(ASObject* value, ASObject* type)
+{
+	if(value->is<Null>())
+		return false;
+
+	if(type->is<IFunction>())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"instanceOf opcodes probably does the wrong thing");
+		return false;
+	}
+
+	if(!type->is<Class_base>())
+		throw Class<TypeError>::getInstanceS("Error #1040: instanceOf expects a class of function as second parameter!");
+
+	if(value->is<Class_base>())
+		return value->as<Class_base>()->isSubClass(type->as<Class_base>());
+	else
+		return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>());
+}
+
+Namespace* ABCVm::pushNamespace(call_context* th, int n)
+{
+	const namespace_info& ns_info=th->context->constant_pool.namespaces[n];
+	assert(ns_info.kind == NAMESPACE);
+	LOG(LOG_CALLS, _("pushNamespace ") << th->context->getString(ns_info.name) );
+	return Class<Namespace>::getInstanceS(th->context->getString(ns_info.name));
+}
+
+/* @spec-checked avm2overview */
+void ABCVm::dxns(call_context* th, int n)
+{
+	if(!th->mi->hasDXNS())
+		throw Class<VerifyError>::getInstanceS("dxns without SET_DXNS");
+
+	th->defaultNamespaceUri = th->context->getString(n);
+}
+
+/* @spec-checked avm2overview */
+void ABCVm::dxnslate(call_context* th, ASObject* o)
+{
+	if(!th->mi->hasDXNS())
+		throw Class<VerifyError>::getInstanceS("dxnslate without SET_DXNS");
+
+	th->defaultNamespaceUri = o->toString();
+	o->decRef();
+}

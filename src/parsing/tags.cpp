@@ -27,25 +27,34 @@
 #include "scripting/abc.h"
 #include "tags.h"
 #include "backends/geometry.h"
-#include "backends/rendering.h"
 #include "backends/security.h"
 #include "swftypes.h"
-#include "swf.h"
 #include "logger.h"
 #include "compat.h"
+#include "streams.h"
 
 #undef RGB
 
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA ParseThread* pt;
-
 _NR<Tag> TagFactory::readTag()
 {
 	RECORDHEADER h;
-	f >> h;
-	
+
+	//Catch eofs
+	try
+	{
+		f >> h;
+	}
+	catch (ifstream::failure e) {
+		if(!f.eof()) //Only handle eof
+			throw e;
+		f.clear();
+		LOG(LOG_INFO,"Simulating EndTag at EOF @ " << f.tellg());
+		return _MR(new EndTag(h,f));
+	}
+
 	unsigned int expectedLen=h.getLength();
 	unsigned int start=f.tellg();
 	Tag* ret=NULL;
@@ -53,7 +62,6 @@ _NR<Tag> TagFactory::readTag()
 	switch(h.getTagType())
 	{
 		case 0:
-			LOG(LOG_TRACE, _("EndTag at position ") << f.tellg());
 			ret=new EndTag(h,f);
 			break;
 		case 1:
@@ -92,7 +100,7 @@ _NR<Tag> TagFactory::readTag()
 			ret=new SoundStreamBlockTag(h,f);
 			break;
 		case 20:
-			ret=new DefineBitsLosslessTag(h,f);
+			ret=new DefineBitsLosslessTag(h,f,1);
 			break;
 		case 21:
 			ret=new DefineBitsJPEG2Tag(h,f);
@@ -122,7 +130,7 @@ _NR<Tag> TagFactory::readTag()
 			ret=new DefineBitsJPEG3Tag(h,f);
 			break;
 		case 36:
-			ret=new DefineBitsLossless2Tag(h,f);
+			ret=new DefineBitsLosslessTag(h,f,2);
 			break;
 		case 37:
 			ret=new DefineEditTextTag(h,f);
@@ -162,11 +170,8 @@ _NR<Tag> TagFactory::readTag()
 			break;
 		case 69:
 			//FileAttributes tag is mandatory on version>=8 and must be the first tag
-			if(pt->version>=8)
-			{
-				if(!firstTag)
-					LOG(LOG_ERROR,_("FileAttributes tag not in the beginning"));
-			}
+			if(!firstTag)
+				LOG(LOG_ERROR,_("FileAttributes tag not in the beginning"));
 			ret=new FileAttributesTag(h,f);
 			break;
 		case 70:
@@ -216,17 +221,6 @@ _NR<Tag> TagFactory::readTag()
 			ret=new UnimplementedTag(h,f);
 	}
 
-	//Check if this clip is the main clip and if AVM2 has been enabled by a FileAttributes tag
-	if(topLevel && firstTag && pt->getRootMovie()==sys)
-	{
-		sys->needsAVM2(pt->useAVM2);
-		if(pt->useNetwork
-		&& sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
-		{
-			sys->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
-			LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
-		}
-	}
 	firstTag=false;
 
 	unsigned int end=f.tellg();
@@ -291,7 +285,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 		if(HasFontClass)
 			in >> FontClass;
 		in >> FontHeight;
-		textData.format.size = FontHeight;
+		textData.fontSize = FontHeight;
 	}
 	if(HasTextColor)
 		in >> TextColor;
@@ -316,7 +310,7 @@ ASObject* DefineEditTextTag::instance() const
 	TextField* ret=new TextField(textData);
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
-	ret->setPrototype(Class<TextField>::getClass());
+	ret->setClass(Class<TextField>::getClass());
 	return ret;
 }
 
@@ -346,7 +340,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				break;
 			case SHOW_TAG:
 			{
-				frames.emplace_back();
+				frames.emplace_back(Frame());
 				empty=true;
 				break;
 			}
@@ -387,10 +381,10 @@ ASObject* DefineSpriteTag::instance() const
 	if(bindedTo)
 	{
 		//A class is binded to this tag
-		ret->setPrototype(bindedTo);
+		ret->setClass(bindedTo);
 	}
 	else
-		ret->setPrototype(Class<MovieClip>::getClass());
+		ret->setClass(Class<MovieClip>::getClass());
 
 	return ret;
 }
@@ -621,7 +615,7 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 	ignore(in,dest-in.tellg());
 }
 
-DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):DictionaryTag(h)
+DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version):DictionaryTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -630,34 +624,46 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):Dictio
 	if(BitmapFormat==3)
 		in >> BitmapColorTableSize;
 
-	//TODO: read bitmap data
-	ignore(in,dest-in.tellg());
-}
-
-DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h)
-{
-	int dest=in.tellg();
-	dest+=h.getLength();
-	in >> CharacterId >> BitmapFormat >> BitmapWidth >> BitmapHeight;
-
-	if(BitmapFormat==3)
-		in >> BitmapColorTableSize;
-
-	//TODO: read bitmap data
-	ignore(in,dest-in.tellg());
-}
-
-ASObject* DefineBitsLossless2Tag::instance() const
-{
-	DefineBitsLossless2Tag* ret=new DefineBitsLossless2Tag(*this);
-	//TODO: check
-	if(bindedTo)
+	if(BitmapFormat != 5)
 	{
-		//A class is binded to this tag
-		ret->setPrototype(bindedTo);
+		LOG(LOG_NOT_IMPLEMENTED,"DefineBitsLossless(2)Tag with unsupported BitmapFormat");
+		ignore(in,dest-in.tellg());
+		return;
 	}
+
+	string cData;
+	size_t cSize = dest-in.tellg(); //rest of this tag
+	cData.resize(cSize);
+	in.read(&cData[0], cSize);
+	istringstream cDataStream(cData);
+	zlib_filter zf(cDataStream.rdbuf());
+	istream zfstream(&zf);
+
+	size_t size = BitmapWidth * BitmapHeight * 4;
+	uint8_t* inData=new(nothrow) uint8_t[size];
+	zfstream.read((char*)inData,size);
+	assert(!zfstream.fail() && !zfstream.eof());
+
+	if(version == 1)
+	{	/* for version 1, the alpha field is always zero
+		 * but should not be interpreted. Setting it to
+		 * 0xff (opaque) allows us to handle it as ARGB
+		 */
+		for(size_t i=0;i<size;i+=4)
+			inData[i] = 0xFF;
+	}
+
+	bitmapData->fromRGB(inData, BitmapWidth, BitmapHeight, true);
+	Bitmap::updatedData();
+}
+
+ASObject* DefineBitsLosslessTag::instance() const
+{
+	DefineBitsLosslessTag* ret=new DefineBitsLosslessTag(*this);
+	if(bindedTo)
+		ret->setClass(bindedTo);
 	else
-		ret->setPrototype(Class<Bitmap>::getClass());
+		ret->setClass(Class<Bitmap>::getClass());
 	return ret;
 }
 
@@ -689,7 +695,7 @@ ASObject* DefineTextTag::instance() const
 		computeCached();
 
 	StaticText* ret=new StaticText(tokens);
-	ret->setPrototype(Class<StaticText>::getClass());
+	ret->setClass(Class<StaticText>::getClass());
 	return ret;
 }
 
@@ -794,11 +800,11 @@ ASObject* DefineMorphShapeTag::instance() const
 {
 	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
 	assert_and_throw(bindedTo==NULL);
-	ret->setPrototype(Class<MorphShape>::getClass());
+	ret->setClass(Class<MorphShape>::getClass());
 	return ret;
 }
 
-void DefineMorphShapeTag::renderImpl(bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+void DefineMorphShapeTag::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	if(alpha==0)
 		return;
@@ -1141,12 +1147,10 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	in >> Name;
-	if(pt->version>=6)
-	{
-		UI8 NamedAnchor=in.peek();
-		if(NamedAnchor==1)
-			in >> NamedAnchor;
-	}
+	/* We only support SWF version >=6 */
+	UI8 NamedAnchor=in.peek();
+	if(NamedAnchor==1)
+		in >> NamedAnchor;
 }
 
 DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
@@ -1227,7 +1231,7 @@ ASObject* DefineButton2Tag::instance() const
 	}
 
 	SimpleButton* ret=new SimpleButton(states[0], states[1], states[2], states[3]);
-	ret->setPrototype(Class<SimpleButton>::getClass());
+	ret->setClass(Class<SimpleButton>::getClass());
 	return ret;
 }
 
@@ -1248,10 +1252,10 @@ ASObject* DefineVideoStreamTag::instance() const
 	if(bindedTo)
 	{
 		//A class is binded to this tag
-		ret->setPrototype(bindedTo);
+		ret->setClass(bindedTo);
 	}
 	else
-		ret->setPrototype(Class<Video>::getClass());
+		ret->setClass(Class<Video>::getClass());
 	return ret;
 }
 
@@ -1278,11 +1282,6 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 	UB(2,bs);
 	UseNetwork=UB(1,bs);
 	UB(24,bs);
-
-	if(ActionScript3)
-		pt->useAVM2=true;
-
-	pt->useNetwork = UseNetwork;
 }
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
@@ -1305,7 +1304,7 @@ ASObject* DefineSoundTag::instance() const
 	return Class<Sound>::getInstanceS();
 }
 
-ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
+ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	LOG(LOG_TRACE,_("ScriptLimitsTag Tag"));
 	in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
@@ -1389,8 +1388,19 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Diction
 	uint8_t* inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
 
-	Bitmap::fromJPEG(inData,dataSize);
+	bitmapData->fromJPEG(inData,dataSize);
+	Bitmap::updatedData();
 	delete[] inData;
+}
+
+ASObject* DefineBitsJPEG2Tag::instance() const
+{
+	DefineBitsJPEG2Tag* ret=new DefineBitsJPEG2Tag(*this);
+	if(bindedTo)
+		ret->setClass(bindedTo);
+	else
+		ret->setClass(Class<Bitmap>::getClass());
+	return ret;
 }
 
 DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),alphaData(NULL)
@@ -1403,7 +1413,8 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 	in.read((char*)inData,dataSize);
 
 	//TODO: check header. Could also be PNG or GIF
-	Bitmap::fromJPEG(inData,dataSize);
+	bitmapData->fromJPEG(inData,dataSize);
+	Bitmap::updatedData();
 	delete[] inData;
 
 	//Read alpha data (if any)
@@ -1414,6 +1425,16 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 		alphaData=new(nothrow) uint8_t[alphaSize];
 		in.read((char*)alphaData,alphaSize);
 	}
+}
+
+ASObject* DefineBitsJPEG3Tag::instance() const
+{
+	DefineBitsJPEG3Tag* ret=new DefineBitsJPEG3Tag(*this);
+	if(bindedTo)
+		ret->setClass(bindedTo);
+	else
+		ret->setClass(Class<Bitmap>::getClass());
+	return ret;
 }
 
 DefineBitsJPEG3Tag::~DefineBitsJPEG3Tag()

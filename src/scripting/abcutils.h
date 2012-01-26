@@ -28,6 +28,7 @@ namespace lightspark
 class method_info;
 class ABCContext;
 class ASObject;
+class Class_base;
 
 struct scope_entry
 {
@@ -46,20 +47,48 @@ struct call_context
 		ASObject** locals;
 		ASObject** stack;
 		uint32_t stack_index;
+		uint32_t exec_pos;
 	} PACKED;
 #include "packed_end.h"
 	ABCContext* context;
-	int locals_size;
+	uint32_t locals_size;
+	uint32_t max_stack;
 	std::vector<scope_entry> scope_stack;
 	int initialScopeStack;
-	void runtime_stack_push(ASObject* s);
-	void runtime_stack_clear();
-	ASObject* runtime_stack_pop();
-	ASObject* runtime_stack_peek();
 	method_info* mi;
-	std::istringstream* code;
-	call_context(method_info* th, int l, ASObject* const* args, const unsigned int numArgs);
+	/* This is the function's inClass that is currently executing. It is used
+	 * by {construct,call,get,set}Super
+	 * */
+	Class_base* inClass;
+	/* Current namespace set by 'default xml namespace = ...'.
+	 * Defaults to empty string according to ECMA-357 13.1.1.1
+	 */
+	tiny_string defaultNamespaceUri;
 	~call_context();
+	void runtime_stack_clear();
+	void runtime_stack_push(ASObject* s)
+	{
+		if(stack_index>=max_stack)
+			throw RunTimeException("Stack overflow");
+		stack[stack_index++]=s;
+	}
+	ASObject* runtime_stack_pop()
+	{
+		if(stack_index==0)
+			throw RunTimeException("Empty stack");
+
+		ASObject* ret=stack[--stack_index];
+		return ret;
+	}
+	ASObject* runtime_stack_peek()
+	{
+		if(stack_index==0)
+		{
+			LOG(LOG_ERROR,_("Empty stack"));
+			return NULL;
+		}
+		return stack[stack_index-1];
+	}
 };
 
 };

@@ -23,38 +23,83 @@
 #include "scripting/abc.h"
 #include "logger.h"
 #include <string.h>
-#include <algorithm>
 #include <stdlib.h>
 #include <cmath>
-#include "swf.h"
-#include "backends/geometry.h"
-#include "backends/rendering.h"
-#include "scripting/class.h"
+#include <glibmm/ustring.h>
+
 #include "exceptions.h"
 #include "compat.h"
+#include "scripting/toplevel/ASString.h"
 
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA ParseThread* pt;
+/* Implementation of Glib::ustring conversion for libxml++.
+ * We implement them in the source file to not pollute the header with glib.h
+ */
+tiny_string::tiny_string(const Glib::ustring& r):buf(_buf_static),stringSize(r.bytes()+1),type(STATIC)
+{
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf,r.c_str(),stringSize);
+}
+
+tiny_string& tiny_string::operator=(const Glib::ustring& r)
+{
+	resetToStatic();
+	stringSize = r.bytes()+1;
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf,r.c_str(),stringSize);
+	return *this;
+}
+
+tiny_string::operator Glib::ustring() const
+{
+	return Glib::ustring(buf,numChars());
+}
+
+bool tiny_string::operator==(const Glib::ustring& u) const
+{
+	return *this == u.raw();
+}
+
+bool tiny_string::operator!=(const Glib::ustring& u) const
+{
+	return *this != u.raw();
+}
+
+const tiny_string tiny_string::operator+(const Glib::ustring& r) const
+{
+	return *this + tiny_string(r);
+}
+
+tiny_string& tiny_string::operator+=(const Glib::ustring& s)
+{
+	//TODO: optimize
+	return *this += tiny_string(s);
+}
 
 tiny_string& tiny_string::operator+=(const char* s)
-{
+{	//deprecated, cannot handle '\0' inside string
 	if(type==READONLY)
 	{
 		char* tmp=buf;
 		makePrivateCopy(tmp);
 	}
 	uint32_t addedLen=strlen(s);
-	stringSize+=addedLen;
-	if(type==STATIC && stringSize > STATIC_SIZE)
+	uint32_t newStringSize=stringSize + addedLen;
+	if(type==STATIC && newStringSize > STATIC_SIZE)
 	{
-		createBuffer(stringSize);
-		strcpy(buf,_buf_static);
+		createBuffer(newStringSize);
+		//don't copy trailing \0
+		memcpy(buf,_buf_static,stringSize-1);
 	}
 	else if(type==DYNAMIC && addedLen!=0)
-		resizeBuffer(stringSize);
-	strcat(buf,s);
+		resizeBuffer(newStringSize);
+	//also copy \0 at the end
+	memcpy(buf+stringSize-1,s,addedLen+1);
+	stringSize=newStringSize;
 	return *this;
 }
 
@@ -65,16 +110,18 @@ tiny_string& tiny_string::operator+=(const tiny_string& r)
 		char* tmp=buf;
 		makePrivateCopy(tmp);
 	}
-	uint32_t addedLen=r.stringSize-1;
-	stringSize+=addedLen;
-	if(type==STATIC && stringSize > STATIC_SIZE)
+	uint32_t newStringSize=stringSize + r.stringSize-1;
+	if(type==STATIC && newStringSize > STATIC_SIZE)
 	{
-		createBuffer(stringSize);
-		strcpy(buf,_buf_static);
+		createBuffer(newStringSize);
+		//don't copy trailing \0
+		memcpy(buf,_buf_static,stringSize-1);
 	}
-	else if(type==DYNAMIC && addedLen!=0)
-		resizeBuffer(stringSize);
-	strcat(buf,r.buf);
+	else if(type==DYNAMIC && r.stringSize>1)
+		resizeBuffer(newStringSize);
+	//start position is where the \0 was
+	memcpy(buf+stringSize-1,r.buf,r.stringSize);
+	stringSize=newStringSize;
 	return *this;
 }
 
@@ -85,18 +132,51 @@ const tiny_string tiny_string::operator+(const tiny_string& r) const
 	return ret;
 }
 
-tiny_string tiny_string::substr(uint32_t start, uint32_t end) const
+tiny_string& tiny_string::replace(uint32_t pos1, uint32_t n1, const tiny_string& o )
+{
+	assert(pos1 < numChars());
+	uint32_t bytestart = g_utf8_offset_to_pointer(buf,pos1)-buf;
+	if(pos1 + n1 > numChars())
+		n1 = numChars()-pos1;
+	uint32_t byteend = g_utf8_offset_to_pointer(buf,pos1+n1)-buf;
+	return replace_bytes(bytestart, byteend-bytestart, o);
+}
+
+tiny_string& tiny_string::replace_bytes(uint32_t bytestart, uint32_t bytenum, const tiny_string& o)
+{
+	//TODO avoid copy into std::string
+	*this = std::string(*this).replace(bytestart,bytenum,std::string(o));
+	return *this;
+}
+
+tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len) const
 {
 	tiny_string ret;
-	//start and end are assumed to be valid
-	assert(end < stringSize);
-	int subSize=end-start+1;
-	if(subSize > STATIC_SIZE)
-		ret.createBuffer(subSize);
-	strncpy(ret.buf,buf+start,end-start);
-	ret.buf[end-start]=0;
-	ret.stringSize = subSize;
+	assert(start+len < stringSize);
+	if(len+1 > STATIC_SIZE)
+		ret.createBuffer(len+1);
+	memcpy(ret.buf,buf+start,len);
+	ret.buf[len]=0;
+	ret.stringSize = len+1;
 	return ret;
+}
+
+tiny_string tiny_string::substr(uint32_t start, uint32_t len) const
+{
+	assert_and_throw(start <= numChars());
+	if(start+len > numChars())
+		len = numChars()-start;
+	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+	uint32_t byteend = g_utf8_offset_to_pointer(buf,start+len) - buf;
+	return substr_bytes(bytestart, byteend-bytestart);
+}
+
+tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const
+{
+	assert_and_throw(start < numChars());
+	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+	uint32_t byteend = end.buf_ptr - buf;
+	return substr_bytes(bytestart, byteend-bytestart);
 }
 
 tiny_string multiname::qualifiedString() const
@@ -120,9 +200,9 @@ tiny_string multiname::normalizedName() const
 	switch(name_type)
 	{
 		case multiname::NAME_INT:
-			return tiny_string(name_i);
+			return Integer::toString(name_i);
 		case multiname::NAME_NUMBER:
-			return tiny_string(name_d);
+			return Number::toString(name_d);
 		case multiname::NAME_STRING:
 			return name_s;
 		case multiname::NAME_OBJECT:
@@ -134,6 +214,43 @@ tiny_string multiname::normalizedName() const
 	}
 }
 
+void multiname::setName(ASObject* n)
+{
+	if(n->is<Integer>())
+	{
+		name_i=n->as<Integer>()->val;
+		name_type = NAME_INT;
+	}
+	else if(n->is<UInteger>())
+	{
+		name_i=n->as<UInteger>()->val;
+		name_type = NAME_INT;
+	}
+	else if(n->is<Number>())
+	{
+		name_d=n->as<Number>()->val;
+		name_type = NAME_NUMBER;
+	}
+	else if(n->getObjectType()==T_QNAME)
+	{
+		ASQName* qname=static_cast<ASQName*>(n);
+		name_s=qname->local_name;
+		name_type = NAME_STRING;
+	}
+	else if(n->getObjectType()==T_STRING)
+	{
+		ASString* o=static_cast<ASString*>(n);
+		name_s=o->data;
+		name_type = NAME_STRING;
+	}
+	else
+	{
+		n->incRef();
+		name_o=n;
+		name_type = NAME_OBJECT;
+	}
+}
+
 std::ostream& lightspark::operator<<(std::ostream& s, const QName& r)
 {
 	s << r.ns << ':' << r.name;
@@ -142,7 +259,39 @@ std::ostream& lightspark::operator<<(std::ostream& s, const QName& r)
 
 std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)
 {
-	s << r.buf;
+	//s << r.buf would stop at the first '\0'
+	s << std::string(r.buf,r.numBytes());
+	return s;
+}
+
+std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
+{
+	string prefix;
+	switch(r.kind)
+	{
+		case 0x08:
+			prefix="ns:";
+			break;
+		case 0x16:
+			prefix="pakns:";
+			break;
+		case 0x17:
+			prefix="pakintns:";
+			break;
+		case 0x18:
+			prefix="protns:";
+			break;
+		case 0x19:
+			prefix="explns:";
+			break;
+		case 0x1a:
+			prefix="staticprotns:";
+			break;
+		case 0x05:
+			prefix="privns:";
+			break;
+	}
+	s << prefix << r.name;
 	return s;
 }
 
@@ -150,32 +299,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 {
 	for(unsigned int i=0;i<r.ns.size();i++)
 	{
-		string prefix;
-		switch(r.ns[i].kind)
-		{
-			case 0x08:
-				prefix="ns:";
-				break;
-			case 0x16:
-				prefix="pakns:";
-				break;
-			case 0x17:
-				prefix="pakintns:";
-				break;
-			case 0x18:
-				prefix="protns:";
-				break;
-			case 0x19:
-				prefix="explns:";
-				break;
-			case 0x1a:
-				prefix="staticprotns:";
-				break;
-			case 0x05:
-				prefix="privns:";
-				break;
-		}
-		s << '[' << prefix << r.ns[i].name << "] ";
+		s << '[' << r.ns[i] << "] ";
 	}
 	if(r.name_type==multiname::NAME_INT)
 		s << r.name_i;
@@ -224,8 +348,10 @@ std::ostream& lightspark::operator<<(std::ostream& s, const RGB& r)
 MATRIX MATRIX::getInverted() const
 {
 	MATRIX ret;
-	assert(isInvertible());
-	const number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
+	number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
+	/* regularize so we can work with singular matrices */
+	if(fabs(den) < 1e-6)
+		den = copysign(1e-6,den);
 	ret.ScaleX=ScaleY/den;
 	ret.RotateSkew1=-RotateSkew1/den;
 	ret.RotateSkew0=-RotateSkew0/den;
@@ -282,7 +408,7 @@ MATRIX MATRIX::multiplyMatrix(const MATRIX& r) const
 	return ret;
 }
 
-const bool MATRIX::operator!=(const MATRIX& r) const
+bool MATRIX::operator!=(const MATRIX& r) const
 {
 	return ScaleX!=r.ScaleX ||
 		RotateSkew1!=r.RotateSkew1 ||
@@ -645,13 +771,14 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		{
 			try
 			{
-				_R<DictionaryTag> dict=pt->getRootMovie()->dictionaryLookup(bitmapId);
-				v.bitmap=dynamic_cast<Bitmap*>(dict.getPtr());
-				if(v.bitmap==NULL)
+				_R<DictionaryTag> dict=getParseThread()->getRootMovie()->dictionaryLookup(bitmapId);
+				Bitmap* b = dynamic_cast<Bitmap*>(dict.getPtr());
+				if(!b)
 				{
 					LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
 					throw ParseException("Invalid ID for bitmap");
 				}
+				v.bitmap = b->bitmapData.getPtr();
 			}
 			catch(RunTimeException& e)
 			{
@@ -1064,18 +1191,13 @@ std::istream& lightspark::operator>>(std::istream& stream, GRADIENTBEVELFILTER& 
 
 std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 {
-	if(pt->version<=5)
-	{
-		UI16_SWF t;
-		s >> t;
-		v.toParse=t;
-	}
-	else
-	{
-		UI32_SWF t;
-		s >> t;
-		v.toParse=t;
-	}
+	/* In SWF version <=5 this was UI16_SWF,
+	 * but parsing will then stop before we get here
+	 * to fallback on gnash
+	 */
+	UI32_SWF t;
+	s >> t;
+	v.toParse=t;
 	return s;
 }
 
@@ -1121,12 +1243,7 @@ ASObject* lightspark::abstract_d(number_t i)
 	return ret;
 }
 
-ASObject* lightspark::abstract_b(bool i)
-{
-	return Class<Boolean>::getInstanceS(i);
-}
-
-ASObject* lightspark::abstract_i(intptr_t i)
+ASObject* lightspark::abstract_i(int32_t i)
 {
 	Integer* ret=getVm()->int_manager->get<Integer>();
 	ret->val=i;
@@ -1143,25 +1260,25 @@ ASObject* lightspark::abstract_ui(uint32_t i)
 void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns)
 {
 	//Ok, let's split our string into namespace and name part
-	for(int i=tmp.len()-1;i>0;i--)
+	char* collon=tmp.strchrr(':');
+	if(collon)
 	{
-		if(tmp[i]==':')
-		{
-			assert_and_throw(tmp[i-1]==':');
-			ns=tmp.substr(0,i-1);
-			name=tmp.substr(i+1,tmp.len());
-			return;
-		}
+		/* collon is not the first character and there is
+		 * another collon before it */
+		assert_and_throw(collon != tmp.raw_buf() && *(collon-1) == ':');
+		uint32_t collon_offset = collon-tmp.raw_buf();
+		ns = tmp.substr_bytes(0,collon_offset-1);
+		name = tmp.substr_bytes(collon_offset+1,tmp.numChars()-collon_offset-1);
+		return;
 	}
 	// No namespace, look for a package name
-	for(int i=tmp.len()-1;i>0;i--)
+	char* dot = tmp.strchrr('.');
+	if(dot)
 	{
-		if(tmp[i]=='.')
-		{
-			ns=tmp.substr(0,i);
-			name=tmp.substr(i+1,tmp.len());
-			return;
-		}
+		uint32_t dot_offset = dot-tmp.raw_buf();
+		ns = tmp.substr_bytes(0,dot_offset);
+		name = tmp.substr_bytes(dot_offset+1,tmp.numChars()-dot_offset-1);
+		return;
 	}
 	//No namespace or package in the string
 	name=tmp;
@@ -1175,7 +1292,7 @@ RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(0),explicit_FP(false)
 tiny_string QName::getQualifiedName() const
 {
 	tiny_string ret;
-	if(ns.len())
+	if(!ns.empty())
 	{
 		ret+=ns;
 		ret+="::";

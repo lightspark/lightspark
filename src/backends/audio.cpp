@@ -49,25 +49,13 @@ AudioManager::AudioManager ( PluginManager *sharedPluginManager ) :
 	oAudioPlugin(NULL), selectedAudioBackend(""), pluginManager(sharedPluginManager)
 {
 //	  string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
-	string DesiredAudio = sys->config->getAudioBackendName();
+	string DesiredAudio = Config::getConfig()->getAudioBackendName();
 	set_audiobackend ( DesiredAudio );
 }
 
 bool AudioManager::pluginLoaded() const
 {
 	return oAudioPlugin != NULL;
-}
-
-void AudioManager::freeStreamPlugin ( AudioStream *audioStream )
-{
-	if ( pluginLoaded() )
-	{
-		oAudioPlugin->freeStream ( audioStream );
-	}
-	else
-	{
-		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't free stream" ) );
-	}
 }
 
 AudioStream *AudioManager::createStreamPlugin ( AudioDecoder *decoder )
@@ -81,32 +69,6 @@ AudioStream *AudioManager::createStreamPlugin ( AudioDecoder *decoder )
 		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't create stream" ) );
 		return NULL;
 	}
-}
-
-void AudioManager::pauseStreamPlugin( AudioStream *audioStream )
-{
-	if ( pluginLoaded() )
-	{
-		oAudioPlugin->pauseStream ( audioStream );
-	}
-	else
-	{
-		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't pause stream" ) );
-	}
-
-}
-
-void AudioManager::resumeStreamPlugin( AudioStream *audioStream )
-{
-	if ( pluginLoaded() )
-	{
-		oAudioPlugin->resumeStream ( audioStream );
-	}
-	else
-	{
-		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't resume stream" ) );
-	}
-
 }
 
 bool AudioManager::isTimingAvailablePlugin() const

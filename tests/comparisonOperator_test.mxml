@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_comparison_operator_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		// NaN and integer
+		var a:Number = NaN;
+		Tests.assertFalse(a < 5, "NaN < 5", true);
+		Tests.assertFalse(a <= 5, "NaN <= 5", true);
+		Tests.assertFalse(a > 5, "NaN > 5", true);
+		Tests.assertFalse(a >= 5, "NaN => 5", true);
+		Tests.assertFalse(a == 5, "NaN == 5", true);
+		Tests.assertFalse(5 < a, "5 < NaN", true);
+		Tests.assertFalse(5 <= a, "5 <= NaN", true);
+		Tests.assertFalse(5 > a, "5 > NaN", true);
+		Tests.assertFalse(5 >= a, "5 => NaN", true);
+		Tests.assertFalse(5 == a, "5 == NaN", true);
+
+		// NaN and Number
+		Tests.assertFalse(a < 5.3, "NaN < 5.3", true);
+		Tests.assertFalse(a <= 5.3, "NaN <= 5.3", true);
+		Tests.assertFalse(a > 5.3, "NaN > 5.3", true);
+		Tests.assertFalse(a >= 5.3, "NaN => 5.3", true);
+		Tests.assertFalse(a == 5.3, "NaN == 5.3", true);
+		Tests.assertFalse(5.3 < a, "5.3 < NaN", true);
+		Tests.assertFalse(5.3 <= a, "5.3 <= NaN", true);
+		Tests.assertFalse(5.3 > a, "5.3 > NaN", true);
+		Tests.assertFalse(5.3 >= a, "5.3 => NaN", true);
+		Tests.assertFalse(5.3 == a, "5.3 == NaN", true);
+
+		// NaN and NaN
+		Tests.assertFalse(a < a, "NaN < NaN", true);
+		Tests.assertFalse(a <= a, "NaN <= NaN", true);
+		Tests.assertFalse(a > a, "NaN > NaN", true);
+		Tests.assertFalse(a >= a, "NaN >= NaN", true);
+		Tests.assertFalse(a == a, "NaN == NaN", true);
+
+		// null and Integer
+		var b:* = null;
+		Tests.assertFalse(b < 0, "null < 0", true);
+		Tests.assertTrue(b <= 0, "null <= 0", true);
+		Tests.assertFalse(b > 0, "null > 0", true);
+		Tests.assertTrue(b >= 0, "null >= 0", true);
+		Tests.assertFalse(0 < b, "0 < null", true);
+		Tests.assertTrue(0 <= b, "0 <= null", true);
+		Tests.assertFalse(0 > b, "0 > null", true);
+		Tests.assertTrue(0 >= b, "0 >= null", true);
+		Tests.assertFalse(b == 0, "null == 0", true);
+		Tests.assertFalse(0 == b, "0 == null", true);
+
+		// null and Number
+		Tests.assertFalse(b < 0.0, "null < 0.0", true);
+		Tests.assertTrue(b <= 0.0, "null <= 0.0", true);
+		Tests.assertFalse(b > 0.0, "null > 0.0", true);
+		Tests.assertTrue(b >= 0.0, "null >= 0.0", true);
+		Tests.assertFalse(0.0 < b, "0.0 < null", true);
+		Tests.assertTrue(0.0 <= b, "0.0 <= null", true);
+		Tests.assertFalse(0.0 > b, "0.0 > null", true);
+		Tests.assertTrue(0.0 >= b, "0.0 >= null", true);
+		Tests.assertFalse(b == 0.0, "null == 0.0", true);
+		Tests.assertFalse(0.0 == b, "0.0 == null", true);
+
+		// int and uint
+		Tests.assertFalse(int(5) < uint(4), "int < uint", true);
+		Tests.assertTrue(uint(4) < int(5), "uint < int", true);
+		Tests.assertFalse(int(5) == uint(4), "uint == int", true);
+		Tests.assertFalse(uint(4) == int(5), "int == uint", true);
+
+		// Boolean
+		Tests.assertTrue(true < 3,"true < 3");
+		Tests.assertFalse(3 < true,"3 < true");
+		Tests.assertTrue(true < uint(3),"true < uint(3)");
+		Tests.assertFalse(uint(3) < true,"uint(3) < true");
+		Tests.assertFalse(true < 0.5,"true < 0.5");
+		Tests.assertTrue(false < 0.5,"false < 0.5");
+		Tests.assertTrue(0.5 < true,"0.5 < true");
+		Tests.assertFalse(0.5 < false,"0.5 < false");
+		Tests.assertTrue(false < true,"false < true");
+
+		// null and undefined equality
+		var c:MovieClip = null;
+		var d:String = null;
+
+		Tests.assertTrue(undefined == b, "undefined == null", true);
+		Tests.assertTrue(b == undefined, "null == undefined", true);
+		Tests.assertTrue(c == d,"null == null for different types", true);
+
+		//Type conversion for basic types (Number,Int,UInt,Boolean,String)
+		Tests.assertTrue(3.0 == 3,"3.0 == 3");
+		Tests.assertTrue(-3.0 == -3,"-3.0 == -3");
+		Tests.assertTrue(3.0 == "3","3.0 == \"3\"");
+		//String is not converted to Boolean
+		Tests.assertTrue(true != "true","true != \"true\"");
+		//The boolean value is converted first (true -> 1, false -> 0)
+		Tests.assertTrue(true != 3,"true != 3");
+		Tests.assertTrue(true != -3,"true != -3");
+		Tests.assertTrue(true != 3.1,"true != 3.1");
+		Tests.assertTrue(3 != true,"3 != true");
+		Tests.assertTrue(true == 1,"true == 1");
+		Tests.assertTrue(true == 1.0,"true == 1.0");
+		Tests.assertTrue(false == 0,"false == 0");
+		Tests.assertTrue(false == 0.0,"false == 0.0");
+		//Strict inequality only does implicit conversion between Number/Int/UInt
+		Tests.assertTrue(3.0 === 3,"3.0 === 3");
+		Tests.assertTrue(-3.0 === -3,"-3.0 === -3");
+		Tests.assertTrue(3.0 !== "3","3.0 !== \"3\"");
+		Tests.assertTrue(true !== "true","true !== \"true\"");
+		Tests.assertTrue(true !== 3,"true !== 3");
+		Tests.assertTrue(true !== -3,"true !== -3");
+		Tests.assertTrue(true !== 3.1,"true !== 3.1");
+		Tests.assertTrue(3 !== true,"3 !== true");
+		Tests.assertTrue(true !== 1,"true === 1");
+		Tests.assertTrue(true !== 1.0,"true === 1.0");
+		Tests.assertTrue(false !== 0,"false === 0");
+		Tests.assertTrue(false !== 0.0,"false === 0.0");
+		Tests.assertTrue(undefined !== b, "undefined !== null", true);
+		Tests.assertTrue(b !== undefined, "null !== undefined", true);
+		Tests.assertTrue(c === d,"null === null for different types", true);
+		Tests.assertTrue(d === null, "null === null", true);
+		Tests.assertTrue(b === null, "null === null", true);
+		Tests.assertTrue(d === d, "null === null (MovieClip and Any)", true);
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

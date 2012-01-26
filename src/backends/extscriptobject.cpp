@@ -25,7 +25,8 @@
 #include "compat.h"
 #include "scripting/abc.h"
 #include "scripting/class.h"
-#include "scripting/toplevel.h"
+#include "scripting/toplevel/Array.h"
+#include "scripting/toplevel/ASString.h"
 
 #include "extscriptobject.h"
 
@@ -290,7 +291,13 @@ ASObject* ExtVariant::getASObject() const
 						}
 						else
 						{
+							conv.str("");
 							conv << ids[i]->getInt();
+							if(asobj->hasPropertyByMultiname(QName(conv.str(),""),true))
+							{
+								LOG(LOG_NOT_IMPLEMENTED,"ExtVariant::getASObject: duplicate property " << conv.str());
+								continue;
+							}
 							asobj->setVariableByQName(conv.str().c_str(), "",
 									property->getASObject(), DYNAMIC_TRAIT);
 						}
@@ -320,17 +327,12 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc, bool synchronous)
 {
 	// Convert raw arguments to objects
-	ASObject* objArgs[argc];
+	ASObject** objArgs = g_newa(ASObject*,argc);
 	for(uint32_t i = 0; i < argc; i++)
 	{
 		objArgs[i] = args[i]->getASObject();
 	}
-
-	// This event is not actually added to the VM event queue.
-	// It is instead synched by the VM (or ourselves) after 
-	// the callback has completed execution.
-	syncEvent = new SynchronizationEvent;
-
+	assert(funcEvent == NullRef);
 	// Explanation for argument "synchronous":
 	// Take a callback which (indirectly) calls another callback, while running in the VM thread.
 	// The parent waits for the result of the second. (hence, the VM is suspended)
@@ -343,25 +345,18 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	if(!synchronous)
 	{
 		func->incRef();
-		syncEvent->incRef();
-		funcEvent = new FunctionEvent(_MR(func), _MR(new Null), objArgs, argc, &result, &exception, _MR(syncEvent));
+		funcEvent = _MR(new FunctionEvent(_MR(func), _MR(new Null), objArgs, argc, &result, &exception));
 		// Add the callback function event to the VM event queue
-		funcEvent->incRef();
-		bool added=getVm()->addEvent(NullRef,_MR(funcEvent));
-		if(added==false)
-		{
-			//Could not add the event, so the VM is shutting down
-			syncEvent->decRef();
-			syncEvent=NULL;
-		}
-		// We won't use this event any more
-		funcEvent->decRef();
+		funcWasCalled=getVm()->addEvent(NullRef,funcEvent);
+		if(!funcWasCalled)
+			funcEvent = NullRef;
 	}
 	// The caller indicated the VM is currently suspended, so call synchronously.
 	else
 	{
 		try
 		{
+			/* TODO: shouldn't we pass some global object instead of Null? */
 			result = func->call(new Null, objArgs, argc);
 		}
 		// Catch AS exceptions and pass them on
@@ -373,35 +368,25 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		catch(LightsparkException& e)
 		{
 			LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
-			sys->setError(e.cause);
+			getSys()->setError(e.cause);
 		}
-
-		// Sync the syncEvent since we called the function synchronously
-		syncEvent->sync();
+		funcWasCalled = true;
 	}
 
 }
 void ExtASCallback::wait()
 {
-	if(syncEvent != NULL)
-		syncEvent->wait();
+	if(!funcEvent.isNull())
+		funcEvent->done.wait();
 }
 void ExtASCallback::wakeUp()
 {
-	if(syncEvent != NULL)
-		syncEvent->sync();
+	if(!funcEvent.isNull())
+		funcEvent->done.signal();
 }
 bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 {
-	// syncEvent should be not-NULL since call() should have set it
-	if(syncEvent == NULL)
-		return false;
-
-	// We've no use for syncEvent anymore
-	syncEvent->decRef();
-	// Clean up pointers
-	syncEvent = NULL;
-	funcEvent = NULL;
+	funcEvent = NullRef;
 	// Did the callback throw an AS exception?
 	if(exception != NULL)
 	{
@@ -412,6 +397,11 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 		so.setException(exception->toString().raw_buf());
 		exception->decRef();
 		LOG(LOG_ERROR, "ASObject exception caught in external callback");
+		success = false;
+	}
+	// There was an error executing the function
+	else if(!funcWasCalled)
+	{
 		success = false;
 	}
 	// Did the callback return a non-NULL result?
@@ -449,7 +439,7 @@ void ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR, "LightsparkException caught in external callback, cause: " << e.what());
-		sys->setError(e.cause);
+		getSys()->setError(e.cause);
 		success = false;
 	}
 }

@@ -35,6 +35,8 @@
 
 #include "backends/extscriptobject.h"
 
+namespace lightspark
+{
 /**
  * This class extends ExtIdentifier. As such it can be used the same way.
  * It can also convert NPIdentifiers into NPIdentifierObjects and vice versa.
@@ -219,13 +221,13 @@ public:
 	bool callExternal(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result);
 
 	typedef struct {
-		pthread_t* mainThread;
+		Thread* mainThread;
 		NPP instance;
 		const char* scriptString;
 		const lightspark::ExtVariant** args;
 		uint32_t argc;
 		lightspark::ASObject** result;
-		sem_t* callStatus;
+		Semaphore* callStatus;
 		bool* success;
 	} EXT_CALL_DATA;
 	// This must be called from the plugin thread
@@ -283,12 +285,12 @@ private:
 	NPScriptObjectGW* gw;
 	NPP instance;
 	// Used to determine if a method is called in the main plugin thread
-	pthread_t mainThread;
+	Thread* mainThread;
 
 	// Provides mutual exclusion for external calls
-	sem_t mutex;
-	std::stack<sem_t*> callStatusses;
-	sem_t externalCallsFinished;
+	Mutex mutex;
+	std::stack<Semaphore*> callStatusses;
+	Mutex externalCall;
 
 	// The root callback currently being invoked. If this is not NULL
 	// when invoke() gets called, we can assume the invoke()
@@ -343,55 +345,55 @@ public:
 	/* NPScriptObject forwarders */
 	static bool hasMethod(NPObject* obj, NPIdentifier id)
 	{
-		lightspark::SystemState* prevSys = sys;
-		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		lightspark::SystemState* prevSys = getSys();
+		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
 		bool success = ((NPScriptObjectGW*) obj)->so->hasMethod(NPIdentifierObject(id));
-		sys = prevSys;
+		setTLSSys(prevSys);
 		return success;
 	}
 	static bool invoke(NPObject* obj, NPIdentifier id,
 			const NPVariant* args, uint32_t argc, NPVariant* result)
 	{
-		lightspark::SystemState* prevSys = sys;
-		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		lightspark::SystemState* prevSys = getSys();
+		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
 		bool success = ((NPScriptObjectGW*) obj)->so->invoke(id, args, argc, result);
-		sys = prevSys;
+		setTLSSys(prevSys);
 		return success;
 	}
 	static bool invokeDefault(NPObject* obj,
 			const NPVariant* args, uint32_t argc, NPVariant* result)
 	{
-		lightspark::SystemState* prevSys = sys;
-		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		lightspark::SystemState* prevSys = getSys();
+		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
 		bool success = ((NPScriptObjectGW*) obj)->so->invokeDefault(args, argc, result);
-		sys = prevSys;
+		setTLSSys( prevSys );
 		return success;
 	}
 
 	static bool hasProperty(NPObject* obj, NPIdentifier id)
 	{
-		lightspark::SystemState* prevSys = sys;
-		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		lightspark::SystemState* prevSys = getSys();
+		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
 		bool success = ((NPScriptObjectGW*) obj)->so->hasProperty(NPIdentifierObject(id));
-		sys = prevSys;
+		setTLSSys( prevSys );
 		return success;
 	}
 	static bool getProperty(NPObject* obj, NPIdentifier id, NPVariant* result);
 	static bool setProperty(NPObject* obj, NPIdentifier id, const NPVariant* value)
 	{
-		lightspark::SystemState* prevSys = sys;
-		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		lightspark::SystemState* prevSys = getSys();
+		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
 		((NPScriptObjectGW*) obj)->so->setProperty(NPIdentifierObject(id), NPVariantObject(((NPScriptObjectGW*) obj)->instance, *value));
 		bool success = true;
-		sys = prevSys;
+		setTLSSys( prevSys );
 		return success;
 	}
 	static bool removeProperty(NPObject* obj, NPIdentifier id)
 	{
-		lightspark::SystemState* prevSys = sys;
-		sys = ((NPScriptObjectGW*) obj)->m_sys;
+		lightspark::SystemState* prevSys = getSys();
+		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
 		bool success = ((NPScriptObjectGW*) obj)->so->removeProperty(NPIdentifierObject(id));
-		sys = prevSys;
+		setTLSSys( prevSys );
 		return success;
 	}
 
@@ -407,4 +409,5 @@ private:
 	NPObject* pluginElementObject;
 };
 
+}
 #endif

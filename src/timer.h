@@ -22,15 +22,13 @@
 
 #include "compat.h"
 #include <list>
-#include <pthread.h>
 #include <time.h>
-#include <semaphore.h>
-#include <inttypes.h>
-#include "thread_pool.h"
+#include "threading.h"
 
 namespace lightspark
 {
 
+class SystemState;
 //Jobs that run on tick are supposed to be very short
 //For longer jobs use ThreadPool
 class ITickJob
@@ -49,11 +47,6 @@ public:
 	virtual ~ITickJob(){};
 };
 
-uint64_t timespecToUsecs(timespec t);
-uint64_t timespecToMsecs(timespec t);
-timespec msecsToTimespec(uint64_t time);
-
-typedef void* (*thread_worker)(void*);
 class TimerThread
 {
 private:
@@ -63,31 +56,38 @@ private:
 		bool isTick;
 		ITickJob* job;
 		//Timing are in milliseconds
-		uint64_t timing;
+		Glib::TimeVal timing;
 		uint32_t tickTime;
 	};
-	sem_t mutex;
-	sem_t newEvent;
-	pthread_t t;
+	Mutex mutex;
+	Cond newEvent;
+	Thread* t;
 	std::list<TimingEvent*> pendingEvents;
 	SystemState* m_sys;
-	ITickJob* volatile currentJob;
-	bool stopped;
+	volatile bool stopped;
 	bool joined;
-	static void* timer_worker(TimerThread*);
+	volatile ITickJob* inExecution;
+	void worker();
 	void insertNewEvent(TimingEvent* e);
 	void insertNewEvent_nolock(TimingEvent* e);
 	void dumpJobs();
 public:
 	TimerThread(SystemState* s);
+	/* Stopps the timer thread from executing any more jobs. This may return
+	 * before the current job has finished its execution.
+	 */
 	void stop();
+	/*
+	 * Like stop, but waits until the current job has finished, too.
+	 */
 	void wait();
 	~TimerThread();
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
-	//Returns if the job has been found or not
-	//If the canceled job is currently executing this waits for it to complete
-	bool removeJob(ITickJob* job);
+	/* Remove the job from the list of pending tasks. If it is currently executing,
+	 * wait until it is done.
+	 */
+	void removeJob(ITickJob* job);
 };
 
 class Chronometer

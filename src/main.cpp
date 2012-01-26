@@ -17,58 +17,73 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "version.h"
 #include "swf.h"
 #include "logger.h"
-#include "parsing/streams.h"
-#include "backends/netutils.h"
 #include "backends/security.h"
-#ifndef WIN32
-#include <sys/resource.h>
-#include <unistd.h>
-#include <gdk/gdkx.h>
+#include "platforms/engineutils.h"
+#ifndef _WIN32
+#	include <sys/resource.h>
 #endif
-#include <iostream>
-#include <fstream>
 #include "compat.h"
 
-#ifdef WIN32
-#include <windows.h>
-#undef main
-#endif
 
 using namespace std;
 using namespace lightspark;
 
-TLSDATA DLL_PUBLIC SystemState* sys;
-TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
-TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
-
 class StandaloneEngineData: public EngineData
 {
+	guint destroyHandlerId;
 public:
-	StandaloneEngineData(Display* d, VisualID v, Window win):
-		EngineData(d,v,win,0,0){}
-	void setupMainThreadCallback(ls_callback_t func, void* arg)
+	StandaloneEngineData() : destroyHandlerId(0)
 	{
-		//Synchronizing with the main gtk thread is what we actually need
+#ifndef _WIN32
+		visual = XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
+#endif
+	}
+	static void destroyWidget(GtkWidget* widget)
+	{
 		gdk_threads_enter();
-		func(arg);
+		gtk_widget_destroy(widget);
 		gdk_threads_leave();
 	}
-	void stopMainDownload()
+	~StandaloneEngineData()
 	{
+		if(widget)
+		{
+			if(destroyHandlerId)
+				g_signal_handler_disconnect(widget, destroyHandlerId);
+
+			runInGtkThread(sigc::bind(&destroyWidget,widget));
+		}
 	}
+	static void StandaloneDestroy(GtkWidget *widget, gpointer data)
+	{
+		StandaloneEngineData* e = (StandaloneEngineData*)data;
+		RecMutex::Lock l(e->mutex);
+		/* no need to destroy it - it's already done */
+		e->widget = NULL;
+		getSys()->setShutdownFlag();
+	}
+	GtkWidget* createGtkWidget()
+	{
+		GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+		gtk_window_set_title((GtkWindow*)window,"Lightspark");
+		destroyHandlerId = g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),this);
+		return window;
+	}
+	NativeWindow getWindowForGnash()
+	{
+		/* passing and invalid window id to gnash makes
+		 * it create its own window */
+		return 0;
+	}
+	void stopMainDownload() {}
 	bool isSizable() const
 	{
 		return true;
 	}
 };
-
-static void StandaloneDestroy(GtkWidget *widget, gpointer data)
-{
-	sys->setShutdownFlag();
-	gtk_main_quit();
-}
 
 int main(int argc, char* argv[])
 {
@@ -78,16 +93,23 @@ int main(int argc, char* argv[])
 #ifdef PROFILING_SUPPORT
 	char* profilingFileName=NULL;
 #endif
+	char *HTTPcookie=NULL;
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
 	bool useJit=false;
+	bool exitOnError=false;
 	LOG_LEVEL log_level=LOG_INFO;
 
 	setlocale(LC_ALL, "");
-	bindtextdomain("lightspark", "/usr/share/locale");
+#ifdef _WIN32
+	const char* localedir = getExectuablePath();
+#else
+	const char* localedir = "/usr/share/locale";
+#endif
+	bindtextdomain("lightspark", localedir);
 	textdomain("lightspark");
 
-	cout << "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others" << endl;
+	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others");
 
 	//Make GTK thread enabled
 	g_thread_init(NULL);
@@ -171,6 +193,20 @@ int main(int argc, char* argv[])
 		{
 			exit(0);
 		}
+		else if(strcmp(argv[i],"--exit-on-error")==0)
+		{
+			exitOnError = true;
+		}
+		else if(strcmp(argv[i],"--HTTP-cookies")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				fileName=NULL;
+				break;
+			}
+			HTTPcookie=argv[i];
+		}
 		else
 		{
 			//No options flag, so set the swf file name
@@ -185,17 +221,18 @@ int main(int argc, char* argv[])
 
 	if(fileName==NULL)
 	{
-		cout << endl << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 
-			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" << 
+		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
+			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" <<
 			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
+			" [--exit-on-error] [--HTTP-cookies cookie]" <<
 #ifdef PROFILING_SUPPORT
-			" [--profiling-output|-o profiling-file]" << 
+			" [--profiling-output|-o profiling-file]" <<
 #endif
-			" <file.swf>" << endl;
+			" <file.swf>");
 		exit(1);
 	}
 
-#ifndef WIN32
+#ifndef _WIN32
 	struct rlimit rl;
 	getrlimit(RLIMIT_AS,&rl);
 	rl.rlim_cur=400000000;
@@ -204,14 +241,14 @@ int main(int argc, char* argv[])
 
 #endif
 
-	Log::initLogging(log_level);
-	ifstream f(fileName);
+	Log::setLogLevel(log_level);
+	ifstream f(fileName, ios::in|ios::binary);
 	f.seekg(0, ios::end);
 	uint32_t fileSize=f.tellg();
 	f.seekg(0, ios::beg);
 	if(!f)
 	{
-		cout << argv[0] << ": " << fileName << ": No such file or directory" << endl;
+		LOG(LOG_ERROR, argv[0] << ": " << fileName << ": No such file or directory");
 		exit(2);
 	}
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
@@ -219,8 +256,11 @@ int main(int argc, char* argv[])
 	cerr.exceptions( ios::failbit | ios::badbit);
 	ParseThread* pt = new ParseThread(f);
 	SystemState::staticInit();
+	EngineData::startGTKMain();
 	//NOTE: see SystemState declaration
-	sys=new SystemState(pt, fileSize);
+	SystemState* sys =new SystemState(pt, fileSize);
+	setTLSSys(sys);
+	sys->setDownloadedPath(fileName);
 
 	//This setting allows qualifying filename-only paths to fully qualified paths
 	//When the URL parameter is set, set the root URL to the given parameter
@@ -229,7 +269,7 @@ int main(int argc, char* argv[])
 		sys->setOrigin(url, fileName);
 		sandboxType = SecurityManager::REMOTE;
 	}
-#ifndef WIN32
+#ifndef _WIN32
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
@@ -254,31 +294,17 @@ int main(int argc, char* argv[])
 	}
 	sys->useInterpreter=useInterpreter;
 	sys->useJit=useJit;
+	sys->exitOnError=exitOnError;
 	if(paramsFileName)
 		sys->parseParametersFromFile(paramsFileName);
 #ifdef PROFILING_SUPPORT
 	if(profilingFileName)
 		sys->setProfilingOutput(profilingFileName);
 #endif
+	if(HTTPcookie)
+		sys->setCookies(HTTPcookie);
 
-	gdk_threads_enter();
-	//Create the main window
-	GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title((GtkWindow*)window,"Lightspark");
-	g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),NULL);
-	GtkWidget* socket=gtk_socket_new();
-	gtk_container_add(GTK_CONTAINER(window), socket);
-	gtk_widget_show(socket);
-	gtk_widget_show(window);
-
-	VisualID visual=XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
-	Display* display=gdk_x11_display_get_xdisplay(gdk_display_get_default());
-	Window xembedWindow=gtk_socket_get_id((GtkSocket*)socket);
-
-	StandaloneEngineData* e=new StandaloneEngineData(display, visual, xembedWindow);
-
-	sys->setParamsAndEngine(e, true);
-	gdk_threads_leave();
+	sys->setParamsAndEngine(new StandaloneEngineData(), true);
 
 	sys->securityManager->setSandboxType(sandboxType);
 	if(sandboxType == SecurityManager::REMOTE)
@@ -295,15 +321,14 @@ int main(int argc, char* argv[])
 	//Start the parser
 	sys->addJob(pt);
 
-	gdk_threads_enter();
-	gtk_main();
-	gdk_threads_leave();
-
-	sys->wait();
-	delete sys;
+	/* Destroy blocks until the 'terminated' flag is set by
+	 * SystemState::setShutdownFlag.
+	 */
+	sys->destroy();
 	delete pt;
 
 	SystemState::staticDeinit();
+	EngineData::quitGTKMain();
 	return 0;
 }
 

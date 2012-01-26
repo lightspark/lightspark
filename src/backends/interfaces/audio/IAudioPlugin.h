@@ -29,15 +29,15 @@
 class AudioStream
 {
   protected:
-	AudioStream(lightspark::AudioDecoder *dec = NULL, bool initPause = false);
+	AudioStream(lightspark::AudioDecoder *dec = NULL);
 
   public:
 	lightspark::AudioDecoder *decoder;
-	bool pause;	//Indicates whether the stream is paused as a result of pauseStream being called
-	virtual bool paused() = 0;	//Is the stream paused? (corked)
+	virtual bool ispaused() = 0;	//Is the stream paused? (corked)
 	virtual bool isValid() = 0; //Is the stream alive, fully working?
+	virtual void pause() = 0;
+	virtual void resume() = 0;
 	virtual uint32_t getPlayedTime() = 0;
-	virtual void fill() = 0;
 	virtual ~AudioStream() {};
 	virtual void setVolume(double volume)
 		{LOG(LOG_NOT_IMPLEMENTED,"setVolume not implemented in plugin");}
@@ -68,9 +68,6 @@ public:
 	virtual void set_device ( std::string desiredDevice, DEVICE_TYPES desiredType ) = 0;
 	virtual std::string get_device ( DEVICE_TYPES desiredType );
 	virtual AudioStream *createStream ( lightspark::AudioDecoder *decoder ) = 0;
-	virtual void freeStream ( AudioStream *audioStream ) = 0;
-	virtual void pauseStream( AudioStream *audioStream ) = 0;	//Pause the stream (stops time from running, cork)
-	virtual void resumeStream( AudioStream *audioStream ) = 0;	//Resume the stream (restart time, uncork)
 	virtual bool isTimingAvailable() const = 0;
 
 	virtual void muteAll() { muteAllStreams = true; }

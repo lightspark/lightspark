@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Misc_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private var memberVar:*;
+
+	function f4() { return "42"; }
+	function get getter_returning_function() { return f4; }
+
+	function method1(v) { ; }
+
+	private function appComplete():void
+	{
+		function f1():String { return 1; }
+		//should be coerced to String on return
+		Tests.assertEquals("13", f1() + 3,"Return value coercion");
+
+		function f2():int { return "3" }
+		//should be coerced to String on return
+		Tests.assertEquals(4, f2()+1,"Return value coercion");
+
+		function f3():Array { return 3 }
+		try
+		{
+			f3();
+			Tests.assertDontReach("function f3():Array { return 3 }: No TypeError in return type conversion");
+		}
+		catch (e:TypeError)
+		{
+			Tests.assertTrue(true, "function f3():Array { return 3 }: TypeError in return type conversion");
+		}
+
+		//In AS3, the valueOf function is additionally defined as method
+		//this check is used in our test runner to see if we are running AS3
+		Tests.assertTrue((new Namespace).valueOf != Namespace.prototype.valueOf,"(new Namespace).valueOf != Namespace.prototype.valueOf");
+
+		//as/is does not take work if the left side is a Class
+		//this emits astypelate
+		Tests.assertEquals(null,MovieClip as DisplayObject,"MovieClip as DisplayObject = null");
+		//this emits istypelate
+		Tests.assertFalse(MovieClip is DisplayObject,"MovieClip is DisplayObject = false");
+		Tests.assertTrue(MovieClip is Class,"MovieClip is Class = true");
+
+		Tests.assertTrue(3 is Number,"3 is Number = true");
+
+		var v;
+		Tests.assertEquals("undefined",v+"","var v; v==undefined");
+		var v2:*;
+		Tests.assertEquals("undefined",v+"","var v:*; v==undefined");
+		Tests.assertEquals("undefined",memberVar+"","member var v:*; v==undefined");
+
+		//Check that a method closure can never change its 'this'
+		var s1="Hello";
+		var s2="World";
+		var toStr = s1.toString;
+		Tests.assertEquals("Hello",toStr(),"Method closure");
+		Tests.assertEquals("Hello",toStr.apply(s2),"(MethodClosure).apply(otherobj) keeps this");
+		Tests.assertEquals("Hello",toStr.call(s2),"(MethodClosure).call(otherobj) keeps this");
+
+		//Check if a getter returning a function can be called
+		Tests.assertEquals("function Function() {}",getter_returning_function + "","A getter that returns a function");
+		Tests.assertEquals("42",getter_returning_function(),"Calling a getter that returns a function calls the function");
+
+		Tests.assertEquals("[object Object]",Object(),"Object()");
+		Tests.assertEquals("[object Object]",Object(undefined),"Object()");
+		Tests.assertEquals("[object Object]",Object(null),"Object()");
+		Tests.assertEquals("4",Object(4),"Object(4) = 4");
+
+		function f5(v) { ;}
+		function f6(v:Number) { ;}
+		function f7(v:*) {;}
+		function f8(v:Number, v:*) {;}
+		f5();
+		Tests.assertTrue(true, "function f5(v) { ; }; f5(): No ArgumentError");
+		f7();
+		Tests.assertTrue(true, "function f7(v:*) { ; }; f7(): No ArgumentError");
+		try {
+			f8(1);
+			Tests.assertDontReach("function f8(v:Number,v:*) { ; }; f8(1): No ArgumentError");
+		} catch(e:ArgumentError) {
+			Tests.assertTrue(true, "function f8(v:Number,v:*) { ; }; f8(1): ArgumentError");
+		}
+		try {
+			f6();
+			Tests.assertDontReach("function f6(v:Number) { ; }; f6(): No ArgumentError");
+		} catch(e:ArgumentError) {
+			Tests.assertTrue(true, "function f6(v:Number) { ; }; f6(): ArgumentError");
+		}
+		try {
+			method1();
+			Tests.assertDontReach("method method1(v) { ; }; method1(): No ArgumentError");
+		} catch(e:ArgumentError) {
+			Tests.assertTrue(true, "method method1(v) { ; }; method1(): ArgumentError");
+		}
+
+		var v1 = new Object();
+		v1["ö"] = "ä";
+		Tests.assertEquals("ä", v1.ö, "Multibyte identifier", true);
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

@@ -1,0 +1,44 @@
+Steps used to make a new release
+=================================
+
+Here's what was used to release 0.5.2. In the future slight changes will be needed to adjust for the version numbers
+
+Make the tarball
+-------------------
+
+When you consider the tree good to release and have the changelog updated go to a git checkout
+
+$cd lightspark
+
+Bump version in CMakeLists.txt and commit the change
+
+tag it
+
+$git tag lightspark-0.5.2
+$git push --tags origin master
+
+make a tarball of it
+
+$git archive --format tar --prefix=lightspark-0.5.2/ lightspark-0.5.2 |gzip -9 >../lightspark-0.5.2.tar.gz
+
+sign the tarball for publishing on Launchpad
+$gpg --armor --sign --detach-sig lightspark-0.5.2.tar.gz
+
+Bump debian/changelog version as that is used by the daily Ubuntu package builds in Launchpad.
+$dch -i
+
+Upload to Launchpad
+--------------------
+
+Currently only available to project managers (Alessandro and Jani).
+
+Create milestone and release in this interface, name both lightspark-0.5.2
+
+https://launchpad.net/lightspark/trunk
+
+LP will prompt for descriptions, changelogs and uploads of .tar.gz and .asc files.
+
+Mark bugs from "Fix committed" to "Fix released"
+--------------------
+See
+https://bugs.launchpad.net/lightspark/+bugs?field.searchtext=&field.status%3Alist=FIXCOMMITTED

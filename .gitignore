@@ -27,3 +27,5 @@ obj/
 # Cscope
 cscope*
 
+#Testsuite
+tests/tamarin

@@ -54,16 +54,22 @@
 		callbackArgs = new Array();
 		ret2 = str.replace(re,func1);
 		Tests.assertEquals("refuncaceafunce", ret2, "replace(): non-global regexp replace with function", true);
-		Tests.assertArrayEquals([["pl", 2, "replaceable"], ["bl", 8, "replaceable"]], callbackArgs, 
+
+		Tests.assertEquals(2, callbackArgs.length);
+		Tests.assertArrayEquals(["pl", 2, "replaceable"], callbackArgs[0], 
+			"replace(): non-global regexp replace with function callback arguments", true);
+		Tests.assertArrayEquals(["bl", 8, "replaceable"], callbackArgs[1],
 			"replace(): non-global regexp replace with function callback arguments", true);
 
 		re = new RegExp("(([pb])l)","g");
 		callbackArgs = new Array();
 		ret2 = str.replace(re,func1);
+		Tests.assertEquals(2, callbackArgs.length);
 		Tests.assertEquals("refuncaceafunce", ret2, "replace(): non-global regexp replace with function", true);
-		Tests.assertArrayEquals([["pl","pl","p",2,"replaceable"],["bl","bl","b",8,"replaceable"]], callbackArgs,
-			"replace(): global regexp replace with capturing groups with function callback arguments", true);
-
+		Tests.assertArrayEquals(["pl","pl","p",2,"replaceable"], callbackArgs[0],
+			"replace(): global regexp replace with capturing groups with function callback arguments", false);
+		Tests.assertArrayEquals(["bl","bl","b",8,"replaceable"], callbackArgs[1],
+			"replace(): global regexp replace with capturing groups with function callback arguments", false);
 
 		//Split tests
 		str = new String("splittable");
@@ -143,7 +149,7 @@
 		Tests.assertEquals(e.lastIndexOf("b"), 4, "lastIndexOf() no offset");
 		Tests.assertEquals(e.lastIndexOf("b", 1), 1, "lastIndexOf() positive offset");
 		Tests.assertEquals(e.lastIndexOf("b", 0), -1, "lastIndexOf() zero offset");
-		Tests.assertEquals(e.lastIndexOf("ab", -100), 0, "lastIndexOf() negative offset (1)");
+		Tests.assertEquals(e.lastIndexOf("ab", -100), -1, "lastIndexOf() negative offset (1)");
 		Tests.assertEquals(e.lastIndexOf("bc", -100), -1, "lastIndexOf() negative offset (2)");
 		Tests.assertEquals(e.lastIndexOf("b", NaN), 4, "lastIndexOf() NaN offset");
 		Tests.assertEquals(e.lastIndexOf("b", undefined), 4, "lastIndexOf() undefined offset");
@@ -154,8 +160,18 @@
 		Tests.assertEquals(0x80,e.charCodeAt(0),"charCodeAt");
 
 		//Type conversions
-		e="10.0";
-		Tests.assertEquals(Number(e),10.0,"String to Number");
+		var mc:MovieClip = new MovieClip();
+		Tests.assertEquals(String(NaN), "NaN", "String(NaN)", true);
+		Tests.assertEquals(String(3.2), "3.2", "String(3.2)", true);
+		Tests.assertEquals(String(3.8), "3.8", "String(3.8)", true);
+		Tests.assertEquals(String(true), "true", "String(true)", true);
+		Tests.assertEquals(String(false), "false", "String(false)", true);
+		Tests.assertEquals(String(-4), "-4", "String(-4)", true);
+		Tests.assertEquals(String(null),"null","String(null)",true);
+		Tests.assertEquals(String(undefined),"undefined","String(undefined)",true);
+		Tests.assertEquals(String(mc),"[object MovieClip]","String(MovieClip)",true);
+		var array:Array = ["primary", "secondary", "tertiary"]; 
+		Tests.assertEquals(String(array),"primary,secondary,tertiary","String(Array)",true);
 
 		Tests.report(visual, this.name);
 	}

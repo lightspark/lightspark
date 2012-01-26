@@ -23,25 +23,9 @@
 
 using namespace lightspark;
 
-ASObject* Class<ASObject>::lazyDefine(const multiname& name)
+ASObject* lightspark::new_asobject()
 {
-	assert(!name.ns.empty());
-
-	//Check if we should do lazy definition
-	if(name.ns[0].name=="" && name.name_s=="toString")
-	{
-		ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
-		setVariableByQName("toString","",ret,BORROWED_TRAIT);
-		return ret;
-	}
-	else if(binary_search(name.ns.begin(),name.ns.end(),nsNameAndKind(AS3,NAMESPACE)) && name.name_s=="hasOwnProperty")
-	{
-		ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
-		setVariableByQName("hasOwnProperty",AS3,ret,BORROWED_TRAIT);
-		return ret;
-	}
-	else
-		return NULL;
+	return Class<ASObject>::getInstanceS();
 }
 
 void Class_inherit::finalize()
@@ -65,8 +49,8 @@ ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, cons
 		//Our super should not construct, we are going to do it ourselves
 		ret=super->getInstance(false,NULL,0);
 	}
-	//We override the prototype
-	ret->setPrototype(this);
+	//We override the classdef
+	ret->setClass(this);
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
 	return ret;
@@ -81,3 +65,26 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 	context->buildInstanceTraits(o,class_index);
 }
 
+template<>
+Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+{
+	throw Class<TypeError>::getInstanceS("Error #1007: Cannot construct global object");
+}
+
+void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
+{
+	variable* var=NULL;
+	Class_base* cur=c;
+	//Find the origin
+	while(cur)
+	{
+		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+		if(var)
+			break;
+		cur=cur->super.getPtr();
+	}
+	assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
+	IFunction* f=static_cast<IFunction*>(var->var);
+	f->incRef();
+	c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
+}

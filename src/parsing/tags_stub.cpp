@@ -20,13 +20,11 @@
 #include <istream>
 #include "tags.h"
 #include "logger.h"
-#include "swf.h"
 #include "compat.h"
 
 using namespace std;
 using namespace lightspark;
 
-extern TLSDATA ParseThread* pt;
 void lightspark::ignore(istream& i, int count);
 
 ProtectTag::ProtectTag(RECORDHEADER h, istream& in):ControlTag(h)

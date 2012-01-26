@@ -23,138 +23,145 @@
 // Set BOOST_FILEYSTEM_VERSION to 2 since boost-1.46 defaults to 3
 #define BOOST_FILESYSTEM_VERSION 2
 
-//Define cross platform helpers
-// TODO: This should be reworked to use CMake feature detection where possible
-
-// gettext support
-#include <locale.h>
-#include <libintl.h>
 #include <stddef.h>
 #include <assert.h>
+#include <cstdint>
+#include <iostream>
+// TODO: This should be reworked to use CMake feature detection where possible
+
+/* gettext support */
+#include <locale.h>
+#include <libintl.h>
 #define _(STRING) gettext(STRING)
 
-#ifdef WIN32
+
+#include <glib.h>
+#include <cstdlib>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #define WIN32_LEAN_AND_MEAN
-#include <winsock2.h>
+//#include <winsock2.h>
 #include <windows.h>
-#include <intrin.h>
-#undef min
-#undef max
+#include <math.h>
+#include <io.h>
+#undef DOUBLE_CLICK
 #undef RGB
-#undef exception_info // Let's hope MS functions always use _exception_info
-#define snprintf _snprintf
-#define isnan _isnan
-
-// No real functionality for now
-typedef int pid_t;
-
-// WINTODO: Hopefully, the MSVC instrinsics are similar enough
-//          to what the standard mandates
-#ifdef _MSC_VER
-#define ATOMIC_INT32(x) __declspec(align(4)) long x
-#define ATOMIC_INCREMENT(x) InterlockedIncrement(&x)
-#define ATOMIC_DECREMENT(x) InterlockedDecrement(&x)
-
-#define TLSDATA __declspec( thread )
-
-// Current Windows is always little-endian
-#define be64toh(x) _byteswap_uint64(x)
-
-#include <malloc.h>
-inline int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size)
-{
-	*memptr = _aligned_malloc(size, alignment);
-	return (*memptr != NULL) ? 0: -1;
+#ifndef PATH_MAX
+#define PATH_MAX 260
+#endif
+#ifdef __GNUC__
+/* There is a bug in mingw preventing those from being declared */
+extern "C" {
+_CRTIMP int __cdecl __MINGW_NOTHROW	_stricmp (const char*, const char*);
+_CRTIMP int __cdecl __MINGW_NOTHROW	_strnicmp (const char*, const char*, size_t);
+_CRTIMP int __cdecl __MINGW_NOTHROW _close (int);
+_CRTIMP void * __cdecl __MINGW_NOTHROW _aligned_malloc (size_t, size_t);
+_CRTIMP void __cdecl __MINGW_NOTHROW _aligned_free (void*);
+_CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MALLOC;
 }
-inline void aligned_free(void *mem)
+#endif
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#define strdup _strdup
+#endif
+
+#ifdef _MSC_VER
+#undef exception_info // Let's hope MS functions always use _exception_info
+/* those are C++11 but not available in Visual Studio 2010 */
+namespace std
 {
-	_aligned_free(mem);
+	inline double copysign(double x, double y) { return _copysign(x, y); }
+	inline bool isnan(double d) { return (bool)_isnan(d); }
+	inline int signbit(double arg) { return (int)copysign(1,arg); }
+	inline bool isfinite(double d) { return (bool)_finite(d); }
+	inline bool isinf(double d) { return !isfinite(d) && !isnan(d); }
 }
 
 // Emulate these functions
 int round(double f);
 long lrint(double f);
+#endif
 
+#ifdef __GNUC__
+#	ifndef __STDC_LIMIT_MACROS
+#		define __STDC_LIMIT_MACROS
+#	endif
 
-// WINTODO: Should be set by CMake?
-#define PATH_MAX 260
-#define DATADIR "."
-#define GNASH_PATH "NONEXISTENT_PATH_GNASH_SUPPORT_DISABLED"
+#	ifndef __STDC_CONSTANT_MACROS
+#		define __STDC_CONSTANT_MACROS
+#	endif
+#endif
 
+/* aligned_malloc */
+#ifdef _WIN32
+#	include <malloc.h>
+	inline void aligned_malloc(void **memptr, std::size_t alignment, std::size_t size)
+	{
+		*memptr = _aligned_malloc(size, alignment);
+		if(!*memptr)
+			throw std::bad_alloc();
+	}
+	inline void aligned_free(void *mem)
+	{
+		_aligned_free(mem);
+	}
 #else
-#error At the moment, only Visual C++ is supported on Windows
+	void aligned_malloc(void **memptr, std::size_t alignment, std::size_t size);
+	void aligned_free(void *mem);
 #endif
 
-
+#ifdef _MSC_VER
+// WINTODO: Hopefully, the MSVC instrinsics are similar enough
+//          to what the standard mandates
+#	define ATOMIC_INT32(x) __declspec(align(4)) volatile long x
+#	define ATOMIC_INCREMENT(x) InterlockedIncrement(&x)
+#	define ATOMIC_DECREMENT(x) InterlockedDecrement(&x)
+#	define ACQUIRE_RELEASE_FLAG(x) ATOMIC_INT32(x)
+#	define ACQUIRE_READ(x) InterlockedCompareExchange(const_cast<long*>(&x),1,1)
+#	define RELEASE_WRITE(x, v) InterlockedExchange(&x,v)
 #else //GCC
-#ifndef __STDC_LIMIT_MACROS
-#define __STDC_LIMIT_MACROS
+#ifndef _WIN32
+#	define CALLBACK
 #endif
-
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif
-
-#define TLSDATA __thread
-#define CALLBACK
 
 //Support both atomic header ( gcc >= 4.6 ), and earlier ( stdatomic.h )
-#ifdef HAVE_ATOMIC
-#include <atomic>
-#else
-#include <stdatomic.h>
-#endif
-#define ATOMIC_INT32(x) std::atomic<int32_t> x
-#define ATOMIC_INCREMENT(x) x.fetch_add(1)
-#define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
+#	ifdef HAVE_ATOMIC
+#		include <atomic>
+#	else
+#		include <cstdatomic>
+#	endif
+
+#	define ATOMIC_INT32(x) std::atomic<int32_t> x
+#	define ATOMIC_INCREMENT(x) x.fetch_add(1)
+#	define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
 
 //Boolean type con acquire release barrier semantics
-#define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
-#define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
-#define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
-int aligned_malloc(void **memptr, std::size_t alignment, std::size_t size);
-void aligned_free(void *mem);
+#	define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
+#	define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
+#	define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
 #endif
 
-//Ensure compatibility on various targets
-#if defined(__FreeBSD__)
-#include <sys/endian.h>
-#elif defined(__APPLE__)
-#define _BSD_SOURCE
-#include <architecture/byte_order.h>
-#elif !defined(WIN32)
-#include <endian.h>
-#endif
 
-#include <iostream>
-
-#if defined _WIN32 || defined __CYGWIN__
-// No DLLs, for now
-#   define DLL_PUBLIC
-#	define DLL_LOCAL
+/* DLL_LOCAL / DLL_PUBLIC */
+/* When building on win32, DLL_PUBLIC is set top __declspec(dllexport)
+ * during build of the audio plugins.
+ * The browser plugin uses its own definitions from npapi.
+ * And the liblightspark.dll is linked directly (without need for dllexport)
+ */
+#ifndef DLL_PUBLIC
+#if __GNUC__ >= 4
+#	define DLL_PUBLIC __attribute__ ((visibility("default")))
+#	define DLL_LOCAL  __attribute__ ((visibility("hidden")))
 #else
-	#if __GNUC__ >= 4
-		#define DLL_PUBLIC __attribute__ ((visibility("default")))
-		#define DLL_LOCAL  __attribute__ ((visibility("hidden")))
-	#else
-		#error GCC version less than 4
-	#endif
+#	define DLL_PUBLIC
+#	define DLL_LOCAL
+#endif
 #endif
 
-#ifndef WIN32
-  #define HMODULE void *
-#endif
-
-/***********
-Used for compatibility for loading library between Windows and POSIX
-************/
-HMODULE LoadLib(const std::string filename);
-
-void *ExtractLibContent(HMODULE hLib, std::string WhatToExtract);
-
-void CloseLib(HMODULE hLib);
-/*****************/
-
+/* min/max */
 template<class T>
 inline T minTmpl(T a, T b)
 {
@@ -170,26 +177,20 @@ inline T maxTmpl(T a, T b)
 #define dmin minTmpl<double>
 #define dmax maxTmpl<double>
 
-#include <cstdint>
-#include <sys/types.h>
-std::uint64_t compat_msectiming();
+/* timing */
+
+uint64_t compat_msectiming();
 void compat_msleep(unsigned int time);
-std::uint64_t compat_get_current_time_ms();
-std::uint64_t compat_get_current_time_us();
-std::uint64_t compat_get_thread_cputime_us();
+uint64_t compat_get_thread_cputime_us();
 
-int kill_child(pid_t p);
+int kill_child(GPid p);
 
-#if __BYTE_ORDER == __BIG_ENDIAN
-
-inline uint16_t LittleEndianToHost16(uint16_t x)
-{
-	return le16toh(x);
-}
+/* byte order */
+#if G_BYTE_ORDER == G_BIG_ENDIAN
 
 inline uint32_t LittleEndianToSignedHost24(uint32_t x)
 {
-	uint32_t ret=le32toh(x);
+	uint32_t ret=GINT32_FROM_LE(x);
 	assert(ret<0x1000000);
 	//Sign extend
 	if(ret&0x800000)
@@ -200,23 +201,8 @@ inline uint32_t LittleEndianToSignedHost24(uint32_t x)
 inline uint32_t LittleEndianToUnsignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
-	uint32_t ret=le32toh(x);
+	uint32_t ret=GINT32_FROM_LE(x);
 	return ret;
-}
-
-inline uint32_t LittleEndianToHost32(uint32_t x)
-{
-	return le32toh(x);
-}
-
-inline uint64_t LittleEndianToHost64(uint64_t x)
-{
-	return le64toh(x);
-}
-
-inline uint16_t BigEndianToHost16(uint16_t x)
-{
-	return x;
 }
 
 inline uint32_t BigEndianToSignedHost24(uint32_t x)
@@ -236,22 +222,8 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 	return x;
 }
 
-inline uint32_t BigEndianToHost32(uint32_t x)
-{
-	return x;
-}
 
-inline uint64_t BigEndianToHost64(uint64_t x)
-{
-	return x;
-}
-
-#else
-inline uint16_t LittleEndianToHost16(uint16_t x)
-{
-	return x;
-}
-
+#else //__BYTE_ORDER == __LITTLE_ENDIAN
 inline uint32_t LittleEndianToSignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
@@ -266,26 +238,11 @@ inline uint32_t LittleEndianToUnsignedHost24(uint32_t x)
 	return x;
 }
 
-inline uint32_t LittleEndianToHost32(uint32_t x)
-{
-	return x;
-}
-
-inline uint64_t LittleEndianToHost64(uint64_t x)
-{
-	return x;
-}
-
-inline uint16_t BigEndianToHost16(uint16_t x)
-{
-	return be16toh(x);
-}
-
 inline uint32_t BigEndianToSignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
 	//Discard the lowest byte, as it was the highest
-	uint32_t ret=be32toh(x)>>8;
+	uint32_t ret=GINT32_FROM_BE(x)>>8;
 	//Sign extend
 	if(ret&0x800000)
 		ret|=0xff000000;
@@ -296,20 +253,15 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
 	//Discard the lowest byte, as it was the highest
-	uint32_t ret=be32toh(x)>>8;
+	uint32_t ret=GINT32_FROM_BE(x)>>8;
 	return ret;
 }
-
-inline uint32_t BigEndianToHost32(uint32_t x)
-{
-	return be32toh(x);
-}
-
-inline uint64_t BigEndianToHost64(uint64_t x)
-{
-	return be64toh(x);
-}
-
 #endif // __BYTE_ORDER == __BIG_ENDIAN
+
+#ifdef _WIN32
+/* returns the path of the current executable */
+const char* getExectuablePath();
+HANDLE compat_spawn(char** args, int* stdinfd);
+#endif
 
 #endif

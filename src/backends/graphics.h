@@ -28,14 +28,13 @@
 #include "swftypes.h"
 #include "threading.h"
 #include <cairo.h>
+#include <pango/pango.h>
 #include "backends/geometry.h"
 
 namespace lightspark
 {
 
 class DisplayObject;
-
-void cleanGLErrors();
 
 class TextureBuffer
 {
@@ -134,6 +133,7 @@ public:
 
 class TextureChunk
 {
+friend class RenderContext;
 friend class RenderThread;
 private:
 	uint32_t texId;
@@ -223,6 +223,14 @@ protected:
 	*/
 	const float scaleFactor;
 	bool uploadNeeded;
+	/*
+	 * There are reports (http://lists.freedesktop.org/archives/cairo/2011-September/022247.html)
+	 * that cairo is not threadsafe, and I have encountered some spurious crashes, too.
+	 * So we use a global lock for all cairo calls until this issue is sorted out.
+	 * TODO: CairoRenderes are enqueued as IThreadJobs, therefore this mutex
+	 *       will serialize the thread pool when all thread pool workers are executing CairoRenderers!
+	 */
+	static StaticMutex cairoMutex;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
 	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface();
@@ -243,7 +251,12 @@ public:
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 * This function new[]'s the returned value, which has to be freed by the caller.
 	 */
-	static uint8_t* convertBitmapToCairo(uint8_t* data, uint32_t width, uint32_t height);
+	static uint8_t* convertBitmapToCairo(uint8_t* data, uint32_t width, uint32_t height, size_t* dataSize);
+	/*
+	 * Converts data (which is in ARGB format) to the format internally used by cairo.
+	 * This function new[]'s the returned value, which has to be freed by the caller.
+	 */
+	static uint8_t* convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t width, uint32_t height, size_t* dataSize);
 };
 
 class CairoTokenRenderer : public CairoRenderer
@@ -294,24 +307,17 @@ public:
 	static bool isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
 };
 
-class TextFormat_data
-{
-public:
-	/* the defaults are from the spec for flash.text.TextFormat */
-	TextFormat_data() : size(12), font("Times New Roman") {}
-	uint32_t size;
-	tiny_string font;
-};
-
 class TextData
 {
 public:
-	/* the default values are from the spec for flash.text.TextField */
-	TextData() : width(100), height(100), background(false), backgroundColor(0xFFFFFF),
+	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
+	TextData() : width(100), height(100), textWidth(0), textHeight(0), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
-		wordWrap(false) {}
+		wordWrap(false), autoSize(AS_NONE), fontSize(12), font("Times New Roman") {}
 	uint32_t width;
 	uint32_t height;
+	uint32_t textWidth;
+	uint32_t textHeight;
 	tiny_string text;
 	bool background;
 	RGB backgroundColor;
@@ -320,21 +326,31 @@ public:
 	bool multiline;
 	RGB textColor;
 	bool wordWrap;
-	TextFormat_data format;
+	enum AUTO_SIZE {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
+	AUTO_SIZE autoSize;
+	uint32_t fontSize;
+	tiny_string font;
 };
 
 class CairoPangoRenderer : public CairoRenderer
 {
-	static Mutex pangoMutex;
+	static StaticMutex pangoMutex;
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
 	void executeDraw(cairo_t* cr);
 	TextData textData;
+	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData);
 public:
 	CairoPangoRenderer(ASObject* _o, CachedSurface& _t, const TextData& _textData, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
 		: CairoRenderer(_o,_t,_m,_x,_y,_w,_h,_s,_a), textData(_textData) {}
+	/**
+		Helper. Uses Pango to find the size of the textdata
+		@param _texttData The textData being tested
+		@param w,h,tw,th are the (text)width and (text)height of the textData.
+	*/
+	static bool getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th);
 };
 
 };

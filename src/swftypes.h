@@ -21,11 +21,6 @@
 #define SWFTYPES_H
 
 #include "compat.h"
-#ifdef LLVM_28
-#include <llvm/System/DataTypes.h>
-#else
-#include <llvm/Support/DataTypes.h>
-#endif
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -36,31 +31,51 @@
 #include <string.h>
 #include <assert.h>
 #include "exceptions.h"
-#ifndef WIN32
- // TODO: Proper CMake check
- #include <arpa/inet.h>
-#endif
-#include <endian.h>
 
 #ifdef BIG_ENDIAN
 #include <algorithm>
 #endif
 
+/* for utf8 handling */
+#include <glib.h>
+
+/* forward declare for tiny_string conversion */
+namespace Glib { class ustring; }
+
 namespace lightspark
 {
 
-#define ASFUNCTION(name) \
-	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
-#define ASFUNCTIONBODY(c,name) \
-	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
-
-#define CLASSBUILDABLE(className) \
-	friend class Class<className>; 
-
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
-	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14};
+	/*UNUSED=7,*/ T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14, T_TEMPLATE=15};
 
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_UINT,STACK_NUMBER,STACK_BOOLEAN};
+inline std::ostream& operator<<(std::ostream& s, const STACK_TYPE& st)
+{
+	switch(st)
+	{
+	case STACK_NONE:
+		s << "none";
+		break;
+	case STACK_OBJECT:
+		s << "object";
+		break;
+	case STACK_INT:
+		s << "int";
+		break;
+	case STACK_UINT:
+		s << "uint";
+		break;
+	case STACK_NUMBER:
+		s << "number";
+		break;
+	case STACK_BOOLEAN:
+		s << "boolean";
+		break;
+	default:
+		assert(false);
+	}
+	return s;
+}
 
 enum TRISTATE { TFALSE=0, TTRUE, TUNDEFINED };
 
@@ -69,13 +84,62 @@ enum FILE_TYPE { FT_UNKNOWN=0, FT_SWF, FT_COMPRESSED_SWF, FT_PNG, FT_JPEG, FT_GI
 typedef double number_t;
 
 class ASObject;
-class Bitmap;
+class BitmapData;
 
+/* Iterates over utf8 characters */
+class CharIterator /*: public forward_iterator<uint32_t>*/
+{
+friend class tiny_string;
+private:
+	char* buf_ptr;
+public:
+	CharIterator(char* buf) : buf_ptr(buf) {}
+	/* Return the utf8-character value */
+	uint32_t operator*() const
+	{
+		return g_utf8_get_char(buf_ptr);
+	}
+	CharIterator& operator++() //prefix
+	{
+		buf_ptr = g_utf8_next_char(buf_ptr);
+		return *this;
+	}
+	CharIterator operator++(int) // postfix
+	{
+		CharIterator result = *this;
+	    ++(*this);
+	    return result;
+	}
+	bool operator==(const CharIterator& o) const
+	{
+		return buf_ptr == o.buf_ptr;
+	}
+	bool operator!=(const CharIterator& o) const { return !(*this == o); }
+	/* returns true if the current character is a digit */
+	bool isdigit() const
+	{
+		return g_unichar_isdigit(g_utf8_get_char(buf_ptr));
+	}
+	/* return the value of the current character interpreted as decimal digit,
+	 * i.e. '7' -> 7
+	 */
+	int32_t digit_value() const
+	{
+		return g_unichar_digit_value(g_utf8_get_char(buf_ptr));
+	}
+};
+
+/*
+ * String class.
+ * The string can contain '\0's, so don't use raw_buf().
+ * Use len() to determine actual size.
+ */
 class tiny_string
 {
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
 	enum TYPE { READONLY=0, STATIC, DYNAMIC };
+	/*must be at least 6 bytes for tiny_string(uint32_t c) constructor */
 	#define STATIC_SIZE 64
 	char _buf_static[STATIC_SIZE];
 	char* buf;
@@ -103,21 +167,33 @@ private:
 		assert(type==DYNAMIC);
 		char* oldBuf=buf;
 		buf=new char[s];
-		strcpy(buf,oldBuf);
+		assert(s >= stringSize);
+		memcpy(buf,oldBuf,stringSize);
 		delete[] oldBuf;
 	}
 	void resetToStatic()
 	{
 		if(type==DYNAMIC)
-		{
 			delete[] buf;
-			stringSize=0;
-		}
+		stringSize=1;
 		buf=_buf_static;
+		buf[0] = '\0';
 		type=STATIC;
 	}
 public:
+	static const uint32_t npos = (uint32_t)(-1);
+
 	tiny_string():buf(_buf_static),stringSize(1),type(STATIC){buf[0]=0;}
+	/* construct from utf character */
+	static tiny_string fromChar(uint32_t c)
+	{
+		tiny_string ret;
+		ret.buf = ret._buf_static;
+		ret.type = STATIC;
+		ret.stringSize = g_unichar_to_utf8(c,ret.buf) + 1;
+		ret.buf[ret.stringSize-1] = '\0';
+		return ret;
+	}
 	tiny_string(const char* s,bool copy=false):buf(_buf_static),type(READONLY)
 	{
 		if(copy)
@@ -139,25 +215,18 @@ public:
 		}
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
-		strcpy(buf,r.buf);
+		memcpy(buf,r.buf,stringSize);
 	}
 	tiny_string(const std::string& r):buf(_buf_static),stringSize(r.size()+1),type(STATIC)
 	{
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
-		strcpy(buf,r.c_str());
+		memcpy(buf,r.c_str(),stringSize);
 	}
+	tiny_string(const Glib::ustring& r);
 	~tiny_string()
 	{
 		resetToStatic();
-	}
-	explicit tiny_string(int i):buf(_buf_static),type(STATIC)
-	{
-		stringSize=snprintf(buf,STATIC_SIZE,"%i",i)+1;
-	}
-	explicit tiny_string(number_t d):buf(_buf_static),type(STATIC)
-	{
-		stringSize=snprintf(buf,STATIC_SIZE,"%g",d)+1;
 	}
 	tiny_string& operator=(const tiny_string& s)
 	{
@@ -173,7 +242,7 @@ public:
 		{
 			if(stringSize > STATIC_SIZE)
 				createBuffer(stringSize);
-			strcpy(buf,s.buf);
+			memcpy(buf,s.buf,stringSize);
 		}
 		return *this;
 	}
@@ -183,7 +252,7 @@ public:
 		stringSize=s.size()+1;
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);
-		strcpy(buf,s.c_str());
+		memcpy(buf,s.c_str(),stringSize);
 		return *this;
 	}
 	tiny_string& operator=(const char* s)
@@ -191,28 +260,65 @@ public:
 		makePrivateCopy(s);
 		return *this;
 	}
+	tiny_string& operator=(const Glib::ustring& s);
 	tiny_string& operator+=(const char* s);
 	tiny_string& operator+=(const tiny_string& r);
+	tiny_string& operator+=(const std::string& s)
+	{
+		//TODO: optimize
+		return *this += tiny_string(s);
+	}
+	tiny_string& operator+=(const Glib::ustring& s);
+	tiny_string& operator+=(uint32_t c)
+	{
+		return (*this += tiny_string::fromChar(c));
+	}
 	const tiny_string operator+(const tiny_string& r) const;
+	const tiny_string operator+(const char* s) const
+	{
+		return *this + tiny_string(s);
+	}
+	const tiny_string operator+(const std::string& r) const
+	{
+		return *this + tiny_string(r);
+	}
+	const tiny_string operator+(const Glib::ustring& r) const;
 	bool operator<(const tiny_string& r) const
 	{
-		return strcmp(buf,r.buf)<0;
+		//don't check trailing \0
+		return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))<0;
+	}
+	bool operator>(const tiny_string& r) const
+	{
+		//don't check trailing \0
+		return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))>0;
 	}
 	bool operator==(const tiny_string& r) const
 	{
 		//The length is checked as an optimization before checking the contents
 		if(stringSize != r.stringSize)
 			return false;
-
-		return strcmp(buf,r.buf)==0;
+		//don't check trailing \0
+		return memcmp(buf,r.buf,stringSize-1)==0;
+	}
+	bool operator==(const std::string& r) const
+	{
+		//The length is checked as an optimization before checking the contents
+		if(stringSize != r.size()+1)
+			return false;
+		//don't check trailing \0
+		return memcmp(buf,r.c_str(),stringSize-1)==0;
+	}
+	bool operator!=(const std::string& r) const
+	{
+		if(stringSize != r.size()+1)
+			return true;
+		//don't check trailing \0
+		return memcmp(buf,r.c_str(),stringSize-1)!=0;
 	}
 	bool operator!=(const tiny_string& r) const
 	{
-		//The length is checked as an optimization before checking the contents
-		if(stringSize != r.stringSize)
-			return true;
-
-		return strcmp(buf,r.buf)!=0;
+		return !(*this==r);
 	}
 	bool operator==(const char* r) const
 	{
@@ -220,23 +326,146 @@ public:
 	}
 	bool operator!=(const char* r) const
 	{
-		return strcmp(buf,r)!=0;
+		return !(*this==r);
 	}
+	bool operator==(const Glib::ustring&) const;
+	bool operator!=(const Glib::ustring&) const;
 	const char* raw_buf() const
 	{
 		return buf;
 	}
-	char operator[](int i) const
+	bool empty() const
 	{
-		return *(buf+i);
+		return stringSize == 1;
 	}
-	int len() const
+	/* returns the length in bytes, not counting the trailing \0 */
+	uint32_t numBytes() const
 	{
 		return stringSize-1;
 	}
-	tiny_string substr(uint32_t start, uint32_t end) const;
+	/* returns the length in utf-8 characters, not counting the trailing \0 */
+	uint32_t numChars() const
+	{
+		//we cannot use g_utf8_strlen, as we may have '\0' inside our string
+		uint32_t len = 0;
+		char* end = buf+numBytes();
+		char* p = buf;
+		while(p < end)
+		{
+			p = g_utf8_next_char(p);
+			++len;
+		}
+		return len;
+	}
+	/* start and len are indices of utf8-characters */
+	tiny_string substr(uint32_t start, uint32_t len) const;
+	tiny_string substr(uint32_t start, const CharIterator& end) const;
+	/* start and len are indices of bytes */
+	tiny_string substr_bytes(uint32_t start, uint32_t len) const;
+	/* finds the first occurence of char in the utf-8 string
+	 * Return NULL if not found, else ptr to beginning of first occurence of c */
+	char* strchr(char c) const
+	{
+		//TODO: does this handle '\0' in middle of buf gracefully?
+		return g_utf8_strchr(buf, numBytes(), c);
+	}
+	char* strchrr(char c) const
+	{
+		//TODO: does this handle '\0' in middle of buf gracefully?
+		return g_utf8_strrchr(buf, numBytes(), c);
+	}
+	/*explicit*/ operator std::string() const
+	{
+		return std::string(buf,stringSize-1);
+	}
+	operator Glib::ustring() const;
+	bool startsWith(const char* o) const
+	{
+		return strncmp(buf,o,strlen(o)) == 0;
+	}
+	/* idx is an index of utf-8 characters */
+	uint32_t charAt(uint32_t idx) const
+	{
+		return g_utf8_get_char(g_utf8_offset_to_pointer(buf,idx));
+	}
+	/* start is an index of characters.
+	 * returns index of character */
+	uint32_t find(const tiny_string& needle, uint32_t start = 0) const
+	{
+		//TODO: omit copy into std::string
+		size_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+		size_t bytepos = std::string(*this).find(needle.raw_buf(),bytestart,needle.numBytes());
+		if(bytepos == std::string::npos)
+			return npos;
+		else
+			return g_utf8_pointer_to_offset(buf,buf+bytepos);
+	}
+	uint32_t rfind(const tiny_string& needle, uint32_t start = npos) const
+	{
+		//TODO: omit copy into std::string
+		size_t bytestart;
+		if(start == npos)
+			bytestart = std::string::npos;
+		else
+			bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+
+		size_t bytepos = std::string(*this).rfind(needle.raw_buf(),bytestart,needle.numBytes());
+		if(bytepos == std::string::npos)
+			return npos;
+		else
+			return g_utf8_pointer_to_offset(buf,buf+bytepos);
+	}
+	tiny_string& replace(uint32_t pos1, uint32_t n1, const tiny_string& o);
+	tiny_string& replace_bytes(uint32_t bytestart, uint32_t bytenum, const tiny_string& o);
+	tiny_string lowercase() const
+	{
+		//TODO: omit copy, handle \0 in string
+		char *strdown = g_utf8_strdown(buf,numBytes());
+		tiny_string ret(strdown,/*copy:*/true);
+		g_free(strdown);
+		return ret;
+	}
+	tiny_string uppercase() const
+	{
+		//TODO: omit copy, handle \0 in string
+		char *strup = g_utf8_strup(buf,numBytes());
+		tiny_string ret(strup,/*copy:*/true);
+		g_free(strup);
+		return ret;
+	}
+	/* like strcasecmp(s1.raw_buf(),s2.raw_buf()) but for unicode
+	 * TODO: slow! */
+	int strcasecmp(tiny_string& s2) const
+	{
+		char* str1 = g_utf8_casefold(this->raw_buf(),this->numBytes());
+		char* str2 = g_utf8_casefold(s2.raw_buf(),s2.numBytes());
+		int ret = g_utf8_collate(str1,str2);
+		g_free(str1);
+		g_free(str2);
+		return ret;
+	}
+	/* iterate over utf8 characters */
+	CharIterator begin()
+	{
+		return CharIterator(buf);
+	}
+	CharIterator begin() const
+	{
+		return CharIterator(buf);
+	}
+	CharIterator end()
+	{
+		//points to the trailing '\0' byte
+		return CharIterator(buf+numBytes());
+	}
+	CharIterator end() const
+	{
+		//points to the trailing '\0' byte
+		return CharIterator(buf+numBytes());
+	}
 };
 
+struct multiname;
 class QName
 {
 public:
@@ -251,6 +480,7 @@ public:
 			return ns<r.ns;
 	}
 	tiny_string getQualifiedName() const;
+	operator multiname() const;
 };
 
 class UI8 
@@ -445,10 +675,14 @@ struct nsNameAndKind
 	{
 		return name < r.name;
 	}
+	bool operator>(const nsNameAndKind& r) const
+	{
+		return name > r.name;
+	}
 	bool operator==(const nsNameAndKind& r) const
-  	{
+	{
 		return /*kind==r.kind &&*/ name==r.name;
-  	}
+	}
 };
 
 struct multiname
@@ -469,7 +703,20 @@ struct multiname
 	*/
 	tiny_string normalizedName() const;
 	tiny_string qualifiedString() const;
+	/* sets name_type, name_s/name_d based on the object n */
+	void setName(ASObject* n);
+	bool isQName() const { return ns.size() == 1; }
 };
+
+inline QName::operator multiname() const
+{
+	multiname ret;
+	ret.name_type = multiname::NAME_STRING;
+	ret.name_s = name;
+	ret.ns.push_back( nsNameAndKind(ns, PACKAGE_NAMESPACE) );
+	ret.isAttribute = false;
+	return ret;
+}
 
 class FLOAT 
 {
@@ -524,10 +771,11 @@ class RGB
 public:
 	RGB(){};
 	RGB(int r,int g, int b):Red(r),Green(g),Blue(b){};
-	RGB(uint color):Red((color>>16)&0xFF),Green((color>>8)&0xFF),Blue(color&0xFF){}
+	RGB(uint32_t color):Red((color>>16)&0xFF),Green((color>>8)&0xFF),Blue(color&0xFF){}
 	UI8 Red;
 	UI8 Green;
 	UI8 Blue;
+	uint32_t toUInt() const { return Blue + (Green<<8) + (Red<<16); }
 };
 
 class RGBA
@@ -535,7 +783,7 @@ class RGBA
 public:
 	RGBA():Red(0),Green(0),Blue(0),Alpha(255){}
 	RGBA(int r, int g, int b, int a):Red(r),Green(g),Blue(b),Alpha(a){}
-	RGBA(uint color, int a):Red((color>>16)&0xFF),Green((color>>8)&0xFF),Blue(color&0xFF),Alpha(a){}
+	RGBA(uint32_t color, int a):Red((color>>16)&0xFF),Green((color>>8)&0xFF),Blue(color&0xFF),Alpha(a){}
 	UI8 Red;
 	UI8 Green;
 	UI8 Blue;
@@ -587,28 +835,28 @@ inline std::istream& operator>>(std::istream& s, UI8& v)
 inline std::istream& operator>>(std::istream& s, SI16_SWF& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=LittleEndianToHost16(v.val);
+	v.val=GINT16_FROM_LE(v.val);
 	return s;
 }
 
 inline std::istream & operator>>(std::istream &s, SI16_FLV& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=BigEndianToHost16(v.val);
+	v.val=GINT16_FROM_BE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16_SWF& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=LittleEndianToHost16(v.val);
+	v.val=GINT16_FROM_LE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16_FLV& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=BigEndianToHost16(v.val);
+	v.val=GINT16_FROM_BE(v.val);
 	return s;
 }
 
@@ -647,14 +895,14 @@ inline std::istream& operator>>(std::istream& s, SI24_FLV& v)
 inline std::istream& operator>>(std::istream& s, UI32_SWF& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=LittleEndianToHost32(v.val);
+	v.val=GINT32_FROM_LE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI32_FLV& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=BigEndianToHost32(v.val);
+	v.val=GINT32_FROM_BE(v.val);
 	return s;
 }
 
@@ -696,7 +944,7 @@ inline std::istream& operator>>(std::istream& s, FLOAT& v)
 	};
 	float_reader dummy;
 	s.read((char*)&dummy.dump,4);
-	dummy.dump=LittleEndianToHost32(dummy.dump);
+	dummy.dump=GINT32_FROM_LE(dummy.dump);
 	v.val=dummy.value;
 	return s;
 }
@@ -712,7 +960,7 @@ inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 	// "Wacky format" is 45670123. Thanks to Gnash for reversing :-)
 	s.read(((char*)&dummy.dump)+4,4);
 	s.read(((char*)&dummy.dump),4);
-	dummy.dump=LittleEndianToHost64(dummy.dump);
+	dummy.dump=GINT64_FROM_LE(dummy.dump);
 	v.val=dummy.value;
 	return s;
 }
@@ -871,7 +1119,7 @@ public:
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	Vector2f multiply2D(const Vector2f& in) const;
 	MATRIX multiplyMatrix(const MATRIX& r) const;
-	const bool operator!=(const MATRIX& r) const;
+	bool operator!=(const MATRIX& r) const;
 	MATRIX getInverted() const;
 	bool isInvertible() const;
 };
@@ -930,7 +1178,7 @@ public:
 	MATRIX Matrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
-	Bitmap* bitmap;
+	BitmapData* bitmap;
 	virtual ~FILLSTYLE(){}
 };
 
@@ -1325,9 +1573,8 @@ public:
 	RunState();
 };
 
-ASObject* abstract_i(intptr_t i);
+ASObject* abstract_i(int32_t i);
 ASObject* abstract_ui(uint32_t i);
-ASObject* abstract_b(bool i);
 ASObject* abstract_d(number_t i);
 
 void stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns);
@@ -1336,6 +1583,7 @@ std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::ostream& operator<<(std::ostream& s, const STRING& r);
+std::ostream& operator<<(std::ostream& s, const nsNameAndKind& r);
 std::ostream& operator<<(std::ostream& s, const multiname& r);
 std::ostream& operator<<(std::ostream& s, const tiny_string& r) DLL_PUBLIC;
 std::ostream& operator<<(std::ostream& s, const QName& r);

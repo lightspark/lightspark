@@ -26,13 +26,7 @@
 #include "../logger.h"
 #include "../exceptions.h"
 
-//Needed or not with compat.h and compat.cpp?
-#if defined WIN32
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#include <sys/types.h>
-#endif
+#include <gmodule.h>
 
 using namespace lightspark;
 using namespace std;
@@ -40,6 +34,7 @@ using namespace boost::filesystem;
 
 PluginManager::PluginManager()
 {
+	assert( g_module_supported() );
 	findPlugins();
 }
 
@@ -48,12 +43,15 @@ Find liblightsparkBACKENDplugin libraries
 ****************************/
 void PluginManager::findPlugins()
 {
-	//Search for all files under ${PRIVATELIBDIR}/plugins
+	//Search for all files under the plugins directory
 	//Verify if they are audio plugins
 	//If true, add to list of audio plugins
-	string froot ( PRIVATELIBDIR ), fplugins ( "/plugins/" ); //LS should always look in the plugins folder, nowhere else
-	const path plugins_folder = froot + fplugins;
-	const string pattern ( "liblightspark+[A-Za-z]+plugin.so" );
+#ifdef _WIN32
+	const path plugins_folder = getExectuablePath();
+#else
+	const path plugins_folder = string(PRIVATELIBDIR) + "/plugins/";
+#endif
+	const string pattern ( "liblightspark+[A-Za-z]+plugin.*" );
 
 	//Stuff used by/for pcre
 	const char* patternError;
@@ -65,7 +63,7 @@ void PluginManager::findPlugins()
 	int patternOvector[3];
 
 #if defined DEBUG
-	cout << "Looking for plugins under " << plugins_folder << " for pattern " << pattern << endl;
+	LOG(LOG_INFO, "Looking for plugins under " << plugins_folder << " for pattern " << pattern);
 #endif
 
 	if ( !is_directory ( plugins_folder ) )
@@ -74,33 +72,35 @@ void PluginManager::findPlugins()
 	}
 	else
 	{
-		for ( recursive_directory_iterator itr ( plugins_folder ), end_itr; itr != end_itr; ++itr )
+		for ( directory_iterator itr ( plugins_folder ), end_itr; itr != end_itr; ++itr )
 		{
-			if ( is_regular_file ( itr.status() ) )   //Is it a real file? This will remove symlink
+			if ( is_regular_file ( *itr ) )   //Is it a real file? This will remove symlink
 			{
 				string leaf_name = itr->path().filename();
 				int rc=pcre_exec(file_pattern, NULL, leaf_name.c_str(), leaf_name.length(), 0, 0, patternOvector, 3);
 				if ( rc > 0 )   // Does it answer to the desired pattern?
 				{
-					string fullpath = plugins_folder.directory_string() + leaf_name;
+					path fullpath = plugins_folder.directory_string();
+					fullpath /= leaf_name;
 					//Try to load the file and see if it's an audio plugin
-					if ( HMODULE h_plugin = LoadLib ( fullpath ) )
+					if ( GModule* h_plugin = g_module_open( fullpath.string().c_str(), G_MODULE_BIND_LAZY) )
 					{
-						PLUGIN_FACTORY p_factory_function = ( PLUGIN_FACTORY ) ExtractLibContent ( h_plugin, "create" );
-						PLUGIN_CLEANUP p_cleanup_function = ( PLUGIN_CLEANUP ) ExtractLibContent ( h_plugin, "release" );
+						PLUGIN_FACTORY p_factory_function;
+						PLUGIN_CLEANUP p_cleanup_function;
 
-						if ( p_factory_function != NULL && p_cleanup_function != NULL )   //Does it contain the LS IPlugin?
-						{
-							IPlugin *p_plugin = ( *p_factory_function ) (); //Instanciate the plugin
+						if ( g_module_symbol(h_plugin, "create", (void**)&p_factory_function)
+							&& g_module_symbol(h_plugin, "release", (void**)&p_cleanup_function) )
+						{  //Does it contain the LS IPlugin?
+							IPlugin *p_plugin = p_factory_function (); //Instanciate the plugin
 							LOG ( LOG_INFO, _ ( "A plugin was found. Adding it to the list." ) );
-							addPluginToList ( p_plugin, fullpath ); //Add the plugin info to the audio plugins list
+							addPluginToList ( p_plugin, fullpath.string() ); //Add the plugin info to the audio plugins list
 
-							( *p_cleanup_function ) ( p_plugin );
-							CloseLib ( h_plugin );
+							p_cleanup_function ( p_plugin );
+							g_module_close ( h_plugin );
 						}
 						else   //If doesn't implement our IPlugin interface entry points, close it
 						{
-							CloseLib ( h_plugin );
+							g_module_close( h_plugin );
 						}
 					}
 				}
@@ -206,7 +206,7 @@ Looks in the plugins list for the desired entry.
 If found, returns the location in the list (index). Else, returns -1 (which can't be an entry in the list)
 **************************/
 int32_t PluginManager::findPluginInList ( string desiredname, string desiredbackend,
-        string desiredpath, void* hdesiredloadPlugin, IPlugin* o_desiredPlugin )
+        string desiredpath, GModule* hdesiredloadPlugin, IPlugin* o_desiredPlugin )
 {
 	for ( uint32_t index = 0; index < pluginsList.size(); index++ )
 	{
@@ -231,7 +231,6 @@ int32_t PluginManager::findPluginInList ( string desiredname, string desiredback
 			return index;
 		}
 	}
-	LOG ( LOG_ERROR, _ ( "findPluginInList: no plugin found in list" ) );
 	return -1;
 }
 
@@ -239,11 +238,11 @@ int32_t PluginManager::findPluginInList ( string desiredname, string desiredback
 //Takes care to load and instanciate anything related to the plugin
 void PluginManager::loadPlugin ( uint32_t desiredindex )
 {
-	if (( pluginsList[desiredindex]->hLoadedPlugin = LoadLib ( pluginsList[desiredindex]->pluginPath ) ))
+	if( (pluginsList[desiredindex]->hLoadedPlugin = g_module_open( pluginsList[desiredindex]->pluginPath.c_str(), G_MODULE_BIND_LAZY)))
 	{
-		PLUGIN_FACTORY p_factory_function = ( PLUGIN_FACTORY ) ExtractLibContent ( pluginsList[desiredindex]->hLoadedPlugin, "create" );
-		if ( p_factory_function != NULL )   //Does it contain the LS IPlugin?
-		{
+		PLUGIN_FACTORY p_factory_function;
+		if ( g_module_symbol(pluginsList[desiredindex]->hLoadedPlugin, "create", (void**)&p_factory_function) )
+		{   //Does it contain the LS IPlugin?
 			pluginsList[desiredindex]->oLoadedPlugin = ( *p_factory_function ) (); //Instanciate the plugin
 			pluginsList[desiredindex]->enabled = true;
 		}
@@ -257,9 +256,9 @@ void PluginManager::unloadPlugin ( uint32_t desiredIndex )
 	{
 		if ( pluginsList[desiredIndex]->oLoadedPlugin != NULL )
 		{
-			PLUGIN_CLEANUP p_cleanup_function = ( PLUGIN_CLEANUP ) ExtractLibContent ( pluginsList[desiredIndex]->hLoadedPlugin, "release" );
+			PLUGIN_CLEANUP p_cleanup_function;
 
-			if ( p_cleanup_function != NULL )
+			if ( g_module_symbol(pluginsList[desiredIndex]->hLoadedPlugin, "release", (void**)&p_cleanup_function) )
 			{
 				p_cleanup_function ( pluginsList[desiredIndex]->oLoadedPlugin );
 			}
@@ -269,7 +268,7 @@ void PluginManager::unloadPlugin ( uint32_t desiredIndex )
 			}
 
 			pluginsList[desiredIndex]->oLoadedPlugin = NULL;
-			CloseLib ( pluginsList[desiredIndex]->hLoadedPlugin );
+			g_module_close ( pluginsList[desiredIndex]->hLoadedPlugin );
 		}
 		pluginsList[desiredIndex]->enabled = false; //Unselecting any entry in the plugins list
 	}
@@ -277,7 +276,8 @@ void PluginManager::unloadPlugin ( uint32_t desiredIndex )
 
 PluginManager::~PluginManager()
 {
-
+	for(auto i = pluginsList.begin(); i != pluginsList.end(); ++i)
+		delete *i;
 }
 
 

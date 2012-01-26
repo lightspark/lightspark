@@ -1,7 +1,6 @@
 #!/bin/bash
-
 #Set you lightspark executable path here
-LIGHTSPARK="lightspark"
+LIGHTSPARK=${LIGHTSPARK-"lightspark"}
 #Set the default loglevel here
 LOGLEVEL="0"
 #Set the default root URL here
@@ -10,17 +9,41 @@ ROOTURL="http://lightspark.sourceforge.net"
 MXMLC="mxmlc"
 #If you prefer no colors, you can permanently set the default here
 COLORS=1;
+#Seconds after which a process is killed
+TIMEOUTCMD="timeout 120"
 
+#Setting C locale to make sort and comm behave the same on every machine
+export LC_ALL="C"
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
 COMPILE_TESTS_SRC="";
-TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
+TESTS_FROM_SOURCE=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
+#Follow symbolic links as tamarin-SWF may be a symbolic link
+TESTS_TAMARIN=`find -L tamarin-SWF -name '*.swf' 2>/dev/null`;
+TESTS="$TESTS_FROM_SOURCE
+$TESTS_TAMARIN"
+TESTS=`echo $TESTS | sort | uniq`
 
 QUIET=0;
 FAILURES=0;
 COMPILE=0;
 QUIT=0;
 DEBUG=0;
+PROPRIETARY=0;
+BLACKLIST=0;
+JUNITFILE=""
+NOXVFB=0;
 
+if ! `which timeout > /dev/null`; then
+	echo "Warning: 'timeout' command not found"
+	TIMEOUTCMD=""
+fi
+
+if [ ! -d tamarin-SWF ]; then
+	echo "Warning: Directory 'tamarin-SWF' not found!"
+	echo "Did you built the tamarin testsuit with the 'make-tamarin' script?"
+fi
+
+ALLARGS=$*
 while [ $# -ne 0 ]; do
 	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then
 		echo "Usage: [-q|--quiet] [-nc|--no-colors] [-f|--failures] [-c|--compile] [-cq|--compile-quit] [-m|--mxmlc] [-e|--executable] [-d|--debug] [-l|--log-level level] [-u|--url url] [-t|--tests tests|tests]";
@@ -35,6 +58,10 @@ while [ $# -ne 0 ]; do
 		echo -e "\t-d|--debug\t\tDon't redirect stdout from lightspark to /dev/null (output gets cached in a variable so this isn't so useful)";
 		echo -e "\t-l|--log-level\t\tLightspark log-level";
 		echo -e "\t-t|--tests\t\tfiles to compile/test, must be last parameter (otherwise compile/test all files in this directory)";
+		echo -e "\t-p|--proprietary\t\tUse proprietary player to run tests";
+		echo -e "\t-j|--junit file\t\tWrite test results in junit's xml format to 'file'"
+		echo -e "\t-b|--blacklist file\t\tRun the testsuite on the blacklisted files only - those that do not fully pass with the proprietary player"
+		echo -e "\t--no-xvfb\t\tDo not run the testsuite under xvfb (when it is found)"
 		echo "Examples:";
 		echo -e "\t./tests -q -f\t\tTests all files, only reporting failures"
 		echo -e "\t./tests -q -c -t FILE\tRecompiles the file and runs it, only showing reports"
@@ -66,32 +93,77 @@ while [ $# -ne 0 ]; do
 	elif [ $1 == "-u" ] || [ $1 == "--url" ]; then
 		ROOTURL="$2"
 		shift
+	elif [ $1 == "-p" ] || [ $1 == "--proprietary" ]; then
+		PROPRIETARY=1
+		if ! which flashplayerdebugger > /dev/null; then
+			echo "You need the flashplayerdebugger binary."
+			echo "Please download it from Adobe's website."
+			exit 1
+		fi
+
+		if (test -f $HOME/mm.cfg) && (grep "TraceOutputFileEnable=1" $HOME/mm.cfg > /dev/null)
+		then
+			PROPRIETARY_LOGFILE=~/.macromedia/Flash_Player/Logs/flashlog.txt
+		else
+			echo -e "$HOME/mm.cfg not found or does not have TraceOutputFileEnable=1 in it"
+			exit 1
+		fi
+	elif [ $1 == "-b" ] || [ $1 == "--blacklist" ]; then
+		BLACKLIST=1
+	elif [ $1 == "-j" ] || [ $1 == "--junit" ]; then
+		JUNITFILE="$2"
+		shift
+	elif [ $1 == "--no-xvfb" ]; then
+		NOXVFB=1
 	else
 		if [ $1 == "-t" ] || [ $1 == "--tests" ]; then
 			shift;
 		fi
-		TESTS_SRC=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.mxml /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.mxml/g'`;
-		TESTS_SRC=`ls -1 $TESTS_SRC 2> /dev/null`;
-		TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
-		if [ $COMPILE -eq 1 ]; then
-			COMPILE_TESTS_SRC=$TESTS_SRC;
+		if [ $# -eq 1 ] && [ -d "$1" ]; then
+			TESTS=`find $@ -name '*.swf'`
+		else
+			TESTS=`echo $@ | sed 's/\(\.\|\.mxml\|\.swf\)  */.swf /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.swf/g'`;
 		fi
 		break;
 	fi;
 	shift;
 done
 
-if [ ! $COMPILE -eq 1 ]; then
-	for test in $TESTS_SRC; do
-		if [ "$test" == "template.mxml" ]; then
-			continue;
-		fi
+XVFB_NOT_RUNNING=`echo $XAUTHORITY | grep xvfb-run > /dev/null; echo $?`
+#Check for '--no-xfvb' or if we are already running under xvfb-run
+if [[ "$NOXVFB" == "0" && "$XVFB_NOT_RUNNING" == "1" ]]; then
+	if [ `which xvfb-run > /dev/null` ]; then
+		echo "Warning: 'xvfb-run' not found. Windows will pop up."
+		echo "xvfb-run is part of the XvFB package (e.g. apt-get install xvfb)."
+	else
+		xvfb-run -s '-extension GLX' -a $0 --no-xvfb $ALLARGS
+		exit $?
+	fi
+fi
 
-		testswf=`echo $test | sed 's/\.mxml\b/.swf/g'`;
-		if [ ! -e "$testswf" ] || [ "$test" -nt "$testswf" ]; then
+#Blacklisted tests fail the proprietary player are listed in the 'blacklist' file and are not run by default
+#If --blacklist or -b is passed run them instead of the other tests
+if [ $BLACKLIST -eq 1 ]; then
+	TESTS=`cat blacklist`
+else
+	TEMP1=`mktemp`
+	TEMP2=`mktemp`
+	echo $TESTS | tr ' ' '\n' | sort > $TEMP1
+	sort blacklist > $TEMP2
+	TESTS=`comm -2 -3 $TEMP1 $TEMP2`
+	rm $TEMP1 $TEMP2
+fi
+
+if [ ! $COMPILE -eq 1 ]; then
+	for test in $TESTS; do
+		testmxml=`echo $test | sed 's/\.swf\b/.mxml/g'`;
+		if [ ! -e "$testmxml" ]; then
+			continue
+		fi
+		if [ ! -e "$test" ] || [ "$testmxml" -nt "$test" ]; then
 			echo "Test $test is outdated, recompiling"
 			COMPILE_TESTS_SRC="${COMPILE_TESTS_SRC}
-			${test}"
+			${testmxml}"
 			COMPILE=1
 		fi
 	done
@@ -102,11 +174,7 @@ if [ $COMPILE -eq 1 ]; then
 	echo $COMPILE_TESTS_SRC 1>&2;
 	echo "Compiler: $MXMLC" 1>&2;
 	for test in $COMPILE_TESTS_SRC; do
-		if [ "$test" == "template.mxml" ]; then
-			continue;
-		fi
-
-		$MXMLC -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false -compiler.debug=true $test;
+		$MXMLC --strict=false -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false -compiler.debug=true $test;
 	done
 	if [ $QUIT -eq 1 ]; then
 		exit;
@@ -142,33 +210,139 @@ SUCCESSTITLE='SUCCESS';
 INFOPREFIX='\[INFO\]';
 CURLPREFIX='CURL header';
 INDENTPREFIX='\t';
-for test in $TESTS; do
-	if [ "$test" == "template.swf" ]; then
-		continue;
-	fi
 
+FAILED_TESTS=""
+TOTALTESTCOUNT=`echo $TESTS | wc -w`
+
+if [ $PROPRIETARY -eq 0 ]; then
+	LOGFILE=`mktemp`
+else
+	LOGFILE="$PROPRIETARY_LOGFILE"
+fi
+
+if [[ -n "$JUNITFILE" ]]; then
+	echo "<testsuite>" > "$JUNITFILE"
+fi
+for test in $TESTS; do
 	if [ ! -e $test ]; then
 		continue;
 	fi
-	sleep 0.25;
-
-	if [ $DEBUG -eq 1 ]; then
-		lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1`;
-	else
-		lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1 >/dev/null`;
-	fi
 
 	TESTCOUNT=`expr $TESTCOUNT + 1`;
-	if [ "`echo $lines | grep 'FAILURE'`" != "" ]; then
+
+	if [[ -n "$JUNITFILE" ]]; then
+		#for junit xml
+		#tamarin-SWF/ecma3/Boolean/e15_3_1_.swf -> class=ecma3.Boolean name=e15_3_1
+		#tamarin-SWF/as3/Expressions/isOperator/isOper_.swf -> class as3.Expressions name=isOperator/isOper
+		#Array_test.swf -> class=lsbase name=Array
+		#system_Security_test.swf -> class=flash.system name=Security
+		if [[ "$test" =~ tamarin-SWF/.* ]]; then
+			testclassdir=`dirname $test | cut -d'/' -f2-3`
+			testname=${test#tamarin-SWF/$testclassdir/}
+			testname=${testname%_.swf}
+			testclass=${testclassdir//\//.}
+		else
+			lstest=${test%_test.swf}
+			lstest=${lstest//_/.}
+			#Now system_Security_test.swf has become system.Security
+			#Match all components but the last
+			testclass=`echo $lstest | sed -n -e 's/^\(.*\)\..*/\1/p'`
+			if [ "$testclass" != "" ]; then
+				testclass="flash.$testclass"
+			else
+				testclass="lsbase"
+			fi
+			#Match the last component
+			testname=`echo $lstest | sed -n -e 's/\(.*\.\)*\([^.]*\)$/\2/p'`
+		fi
+	fi
+
+	echo > $LOGFILE
+	if [ $PROPRIETARY -eq 0 ]; then
+		if [ $DEBUG -eq 1 ]; then
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test >$LOGFILE 2>&1
+		else
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 1>$LOGFILE 2>/dev/null
+		fi
+	else
+		if [ $DEBUG -eq 1 ]; then
+			$TIMEOUTCMD flashplayerdebugger $test 2>&1
+		else
+			$TIMEOUTCMD flashplayerdebugger $test 2>/dev/null
+		fi
+	fi
+
+	ev=$?
+
+	if [[ "$ev" != "0" ]]; then
+		if [ $QUIET -eq 0 ]; then
+			if [ $COLORS -eq 1 ]; then
+				echo -e "\\e[0;31m$test failed with exit value $ev\\e[0m"
+			else
+				echo -e "$test failed with exit value $ev"
+			fi
+		fi
+		if [[ -n "$JUNITFILE" ]]; then
+			echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"exitvalue\">Exit Value $ev</failure></testcase>" >> "$JUNITFILE"
+		fi
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
-	elif [ "`echo $lines | grep 'SUCCESS'`" != "" ]; then
-		SUCCESSCOUNT=`expr $SUCCESSCOUNT + 1`;
+		FAILED_TESTS="$FAILED_TESTS $test"
+		continue
+	fi
+	#Remove the RANDR error when running under xvfb, convert control characters to something like \303
+	lines=`sed -e '/Xlib:  extension "RANDR" missing on display.*/d' -e 's/[[:cntrl:]]//' $LOGFILE`
+	if [ "`echo $lines | grep '==Failures'`" != "" ]; then
+		THISFAILEDCOUNT=`echo "$lines" | sed -n -e 's/.*=Failures (\(.*\)\/.*)=.*/\1/p'`
+		THISNUMTESTS=`echo "$lines" | sed -n -e 's/.*=Failures (.*\/\(.*\))=.*/\1/p'`
+		THISSUCCESSCOUNT=`expr $THISNUMTESTS - $THISFAILEDCOUNT`
+		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
+		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
+		FAILED_TESTS="$FAILED_TESTS $test"
+	elif [ "`echo $lines | grep '==No failures'`" != "" ]; then
+		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
+		THISNUMTESTS="$THISSUCCESSCOUNT"
+		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
+	else
+		if [ $COLORS -eq 1 ]; then
+			echo -e "\\e[0;31m$test printed no test summary!\\e[0m"
+		else
+			echo -e "$test printed no test summary!"
+		fi
+		if [[ -n "$JUNITFILE" ]]; then
+			echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"missingsummary\">Missing summary</failure></testcase>" >> "$JUNITFILE"
+		fi
+		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
+		FAILED_TESTS="$FAILED_TESTS $test"
+		continue
+	fi
+
+	if [[ -n "$JUNITFILE" ]]; then
+		#For xml output
+		tcnum=0
+		#Find all lines that start with '. [' or 'F [' or 'A ..F.. ['
+		tcnum=$(echo "$lines" | sed -n -e "/^\(A \)\?[F\.]\+ \[.*/p" \
+		| { while read L
+		do
+			tcnum=`expr $tcnum + 1`
+			#Escape <>& and remove non-printable characters
+			xml_l=`echo -e "$L" | sed -e 's/[^[:print:]]//g' -e 's/\&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'`
+			#Check if L starts with an 'F' or with 'A ...F'
+			if echo -e "$L" | grep -e "^\(A \.*\)\?F" > /dev/null ; then
+				echo "<testcase classname=\"$testclass\" name=\"${testname}_tc${tcnum}\"><failure type=\"testfailure\">$xml_l</failure></testcase>" >> "$JUNITFILE"
+			else
+				echo "<testcase classname=\"$testclass\" name=\"${testname}_tc${tcnum}\"/>" >> "$JUNITFILE"
+			fi
+		done
+		echo $tcnum
+		})
+		if [[ "$tcnum" != "$THISNUMTESTS" ]]; then
+			echo -e "\nError parsing test output of $test: Not enough testcases seen"
+			exit 1
+		fi
 	fi
 
 	if [ $QUIET -eq 1 ]; then
-		lines=`echo "$lines" |
-			sed -n -e "/${BARCHAR}*\(${NOFAILURESTITLE}\|${FAILURESTITLE}\)${BARCHAR}*/,/${SUCCESSTITLE}.*\|${FAILURETITLE}.*/p"
-			`
+		continue
 	fi
 	
 	if [ $FAILURES -eq 1 ]; then
@@ -184,11 +358,11 @@ for test in $TESTS; do
 	fi
 
 	if [ $COLORS -eq 1 ]; then
-		lines=`echo "$lines" | sed \
+		lines=`echo -e "Running $test ($TESTCOUNT/$TOTALTESTCOUNT)\n$lines" | sed \
 			-e "s/^\(${INFOPREFIX}\)\(.*\)$/${BLUE}\1${PURPLEB}\2${CLEAR}/" \
 			-e "s/^\(${CURLPREFIX}\)\(.*\)$/${PINK}\1${PINK}\2${CLEAR}/" \
 \
-			-e "/${ASSERTARRAYCHAR} /{
+			-e "/^${ASSERTARRAYCHAR} /{
 			s/${ASSERTFAILEDCHAR}/${REDB}\0${CLEAR}/g
 			}" \
 			-e "s/^\(${ASSERTFAILEDCHAR}\) \(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${REDB}\1 ${RED}\2${CLEAR}/g" \
@@ -202,7 +376,7 @@ for test in $TESTS; do
 			s/${INDENTPREFIX}\(.*\)/${INDENTPREFIX}${REDB}\1${CLEAR}/
 			}" \
 \
-			-e "/${ASSERTARRAYCHAR} /{
+			-e "/^${ASSERTARRAYCHAR} /{
 			s/\(${ASSERTSUCCESSCHAR}\)/${GREENB}\1${CLEAR}/g
 			}" \
 			-e "s/^\(${ASSERTSUCCESSCHAR}\) \(\[.*\)$/${GREENB}\1 ${GREEN}\2${CLEAR}/" \
@@ -215,6 +389,14 @@ for test in $TESTS; do
 
 	echo -e "$lines\n";
 done
+
+if [[ -n "$JUNITFILE" ]]; then
+	echo "</testsuite>" >> "$JUNITFILE"
+fi
+
+if [ $PROPRIETARY -eq 0 ]; then
+	rm $LOGFILE
+fi
 
 if [ $COLORS -eq 1 ]; then
 	echo -e "Tests run: $TESTCOUNT, \e[1;32m$SUCCESSCOUNT successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m" 1>&2

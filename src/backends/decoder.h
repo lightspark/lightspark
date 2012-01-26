@@ -21,7 +21,6 @@
 #define _DECODER_H
 
 #include "compat.h"
-#include <inttypes.h>
 #include "threading.h"
 #include "graphics.h"
 #ifdef ENABLE_LIBAVCODEC
@@ -53,7 +52,7 @@ protected:
 public:
 	Decoder():status(PREINIT),flushing(false),flushed(0){}
 	virtual ~Decoder(){}
-	bool isValid() const DLL_PUBLIC
+	bool isValid() const
 	{
 		return status>=VALID;
 	}
@@ -130,6 +129,8 @@ class FFMpegVideoDecoder: public VideoDecoder
 private:
 	class YUVBuffer
 	{
+	YUVBuffer(const YUVBuffer&); /* no impl */
+	YUVBuffer& operator=(const YUVBuffer&); /* no impl */
 	public:
 		uint8_t* ch[3];
 		uint32_t time;
@@ -138,9 +139,9 @@ private:
 		{
 			if(ch[0])
 			{
-				free(ch[0]);
-				free(ch[1]);
-				free(ch[2]);
+				aligned_free(ch[0]);
+				aligned_free(ch[1]);
+				aligned_free(ch[2]);
 			}
 		}
 	};
@@ -225,7 +226,7 @@ public:
 	AudioDecoder():sampleRate(0),channelCount(0),initialTime(-1){}
 	virtual ~AudioDecoder(){};
 	virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
-	bool hasDecodedFrames() const DLL_PUBLIC
+	bool hasDecodedFrames() const
 	{
 		return !samplesBuffer.isEmpty();
 	}
@@ -319,8 +320,8 @@ private:
 	AVFormatContext* formatCtx;
 	bool audioFound;
 	bool videoFound;
-	uint32_t audioIndex;
-	uint32_t videoIndex;
+	int32_t audioIndex;
+	int32_t videoIndex;
 	//We use our own copy of these to have access of the ffmpeg specific methods
 	FFMpegAudioDecoder* customAudioDecoder;
 	FFMpegVideoDecoder* customVideoDecoder;

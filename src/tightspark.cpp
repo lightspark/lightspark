@@ -29,10 +29,6 @@
 using namespace std;
 using namespace lightspark;
 
-TLSDATA DLL_PUBLIC SystemState* sys=NULL;
-TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
-TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
-
 extern int count_reuse;
 extern int count_alloc;
 
@@ -75,17 +71,18 @@ int main(int argc, char* argv[])
 		}
 	}
 
-
 	if(fileNames.empty() || error)
 	{
-		cout << "Usage: " << argv[0] << " [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] <file.abc> [<file2.abc>]" << endl;
+		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] <file.abc> [<file2.abc>]");
 		exit(-1);
 	}
 
-	Log::initLogging(log_level);
+	g_thread_init(NULL);
+	Log::setLogLevel(log_level);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration
-	sys=new SystemState(NULL,0);
+	SystemState* sys=new SystemState(NULL,0);
+	setTLSSys(sys);
 
 	//Set a bit of SystemState using parameters
 	//One of useInterpreter or useJit must be enabled
@@ -118,7 +115,7 @@ int main(int argc, char* argv[])
 			ABCContext* context=new ABCContext(f);
 			contexts.push_back(context);
 			f.close();
-			vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context)));
+			vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context,false)));
 		}
 		else
 		{
@@ -127,7 +124,6 @@ int main(int argc, char* argv[])
 	}
 	vm->start();
 	sys->setShutdownFlag();
-	sys->wait();
-	delete sys;
+	sys->destroy();
 	SystemState::staticDeinit();
 }

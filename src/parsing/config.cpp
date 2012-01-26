@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #include "config.h"
-#include "swf.h"
+#include "compat.h"
 
 using namespace lightspark;
 
@@ -83,4 +83,34 @@ bool ConfigParser::read()
 	//Increment currentKey for next round of reading
 	++currentKey;
 	return true;
+}
+
+std::string ConfigParser::getValue() 
+{
+	char *val = g_key_file_get_value(file, group, key, NULL);
+	std::string ret(val);
+	free(val);
+	return ret;
+}
+
+std::string ConfigParser::getValueString()
+{
+	char *val = g_key_file_get_string(file, group, key, NULL);
+	std::string ret(val);
+	free(val);
+	return ret;
+}
+
+std::vector<std::string> ConfigParser::getValueStringList()
+{
+	std::vector<std::string> ret;
+	gsize length;
+	gchar **valarr = g_key_file_get_string_list(file, group, key, &length, NULL);
+	if(!valarr)
+		return ret;
+
+	for(gsize i=0; i<length; i++)
+		ret.push_back(std::string(valarr[i]));
+	g_strfreev(valarr);
+	return ret;
 }

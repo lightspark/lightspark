@@ -20,6 +20,7 @@
 #include "abc.h"
 #include "compat.h"
 #include "exceptions.h"
+#include "abcutils.h"
 #include <string>
 #include <sstream>
 
@@ -38,7 +39,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 {
 	method_info* mi=function->mi;
 
-	istringstream& code=*(context->code);
+	istringstream code(mi->body->code);
+	//This may be non-zero and point to the position of an exception handler
+	code.seekg(context->exec_pos);
+
 	int code_len=code.str().length();
 
 	u8 opcode;
@@ -48,10 +52,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 		mi->profTime.resize(code_len,0);
 	uint64_t startTime=compat_get_thread_cputime_us();
 #define PROF_ACCOUNT_TIME(a, b)  do{a+=b;}while(0)
-#define PROF_IGNORE_TIME(a) a
+#define PROF_IGNORE_TIME(a) do{ a; } while(0)
 #else
-#define PROF_ACCOUNT_TIME(a, b)
-#define PROF_IGNORE_TIME(a)
+#define PROF_ACCOUNT_TIME(a, b) do{ ; }while(0)
+#define PROF_IGNORE_TIME(a) do{ ; } while(0)
 #endif
 
 	//Each case block builds the correct parameters for the interpreter function and call it
@@ -64,6 +68,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 		if(code.eof())
 			throw ParseException("End of code in interpreter");
 
+		//Save ip for exception handling in SyntheticFunction::callImpl
+		context->exec_pos = code.tellg();
 		switch(opcode)
 		{
 			case 0x02:
@@ -91,6 +97,21 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				u30 t;
 				code >> t;
 				setSuper(context,t);
+				break;
+			}
+			case 0x06:
+			{
+				//dxns
+				u30 t;
+				code >> t;
+				dxns(context,t);
+				break;
+			}
+			case 0x07:
+			{
+				//dxnslate
+				ASObject* v=context->runtime_stack_pop();
+				dxnslate(context, v);
 				break;
 			}
 			case 0x08:
@@ -434,7 +455,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				index_obj->decRef();
 
 				int dest=defaultdest;
-				if(index>=0 && index<=count)
+				if(index<=count)
 					dest=here+offsets[index];
 
 				if(dest >= code_len)
@@ -596,6 +617,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				pushScope(context);
 				break;
 			}
+			case 0x31:
+			{
+				//pushnamespace
+				u30 t;
+				code >> t;
+				context->runtime_stack_push( pushNamespace(context, t) );
+				break;
+			}
 			case 0x32:
 			{
 				//hasnext2
@@ -622,7 +651,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				call(context,t,called_mi);
+				call(context,t,&called_mi);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
@@ -645,7 +674,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t2;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callSuper(context,t,t2,called_mi);
+				callSuper(context,t,t2,&called_mi,true);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
@@ -661,7 +690,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t2;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callProperty(context,t,t2,called_mi);
+				callProperty(context,t,t2,&called_mi,true);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
@@ -708,7 +737,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t2;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callSuperVoid(context,t,t2,called_mi);
+				callSuper(context,t,t2,&called_mi,false);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
@@ -723,7 +752,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t2;
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callPropVoid(context,t,t2,called_mi);
+				callProperty(context,t,t2,&called_mi,false);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
@@ -789,7 +818,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//findpropstrict
 				u30 t;
 				code >> t;
-				context->runtime_stack_push(findPropStrict(context,t));
+				context->runtime_stack_push(findPropStrict(context,context->context->getMultiname(t,context)));
 				break;
 			}
 			case 0x5e:
@@ -797,7 +826,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//findproperty
 				u30 t;
 				code >> t;
-				context->runtime_stack_push(findProperty(context,t));
+				context->runtime_stack_push(findProperty(context,context->context->getMultiname(t,context)));
 				break;
 			}
 			case 0x60:
@@ -829,7 +858,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> i;
 				assert_and_throw(context->locals[i]);
 				context->locals[i]->incRef();
-				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toString(true) );
+				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
 				context->runtime_stack_push(context->locals[i]);
 				break;
 			}
@@ -879,7 +908,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//initproperty
 				u30 t;
 				code >> t;
-				initProperty(context,t);
+				ASObject* value=context->runtime_stack_pop();
+			        multiname* name=context->context->getMultiname(t,context);
+			        ASObject* obj=context->runtime_stack_pop();
+				initProperty(obj,value,name);
 				break;
 			}
 			case 0x6a:
@@ -887,7 +919,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//deleteproperty
 				u30 t;
 				code >> t;
-				deleteProperty(context, t);
+				multiname* name = context->context->getMultiname(t,context);
+				ASObject* obj=context->runtime_stack_pop();
+				bool ret = deleteProperty(obj,name);
+				context->runtime_stack_push(abstract_b(ret));
 				break;
 			}
 			case 0x6c:
@@ -932,7 +967,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//FIXME: Properly escape as described in ECMA-357 section 10.2
 				//esc_xattr
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(convert_s(val));
+				context->runtime_stack_push(esc_xattr(val));
 				break;
 			}case 0x73:
 			{
@@ -1024,7 +1059,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//increment
 				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_i(increment(val));
+				ASObject* ret=abstract_d(increment(val));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1040,7 +1075,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//decrement
 				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_i(decrement(val));
+				ASObject* ret=abstract_d(decrement(val));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1123,7 +1158,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				ASObject* v2=context->runtime_stack_pop();
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=abstract_i(modulo(v1, v2));
+				ASObject* ret=abstract_d(modulo(v1, v2));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1247,6 +1282,15 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				context->runtime_stack_push(ret);
 				break;
 			}
+			case 0xb1:
+			{
+				//instanceof
+				ASObject* type=context->runtime_stack_pop();
+				ASObject* value=context->runtime_stack_pop();
+				bool ret=instanceOf(value, type);
+				context->runtime_stack_push(abstract_b(ret));
+				break;
+			}
 			case 0xb2:
 			{
 				//istype
@@ -1358,7 +1402,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//getlocal_n
 				int i=opcode&3;
 				assert_and_throw(context->locals[i]);
-				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toString(true) );
+				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);
 				break;

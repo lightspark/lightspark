@@ -22,6 +22,8 @@
 
 #include <string>
 #include <vector>
+#include "compat.h"
+
 namespace lightspark
 {
 

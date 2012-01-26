@@ -17,12 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <fstream>
 #include "logger.h"
+#include "threading.h"
 
-sem_t Log::mutex;
-bool Log::loggingInited = false;
+using namespace lightspark;
+
+static StaticMutex mutex;
 LOG_LEVEL Log::log_level=LOG_INFO;
 const char* Log::level_names[]={"ERROR", "INFO","NOT_IMPLEMENTED","CALLS","TRACE"};
+int Log::calls_indent = 0;
 
 Log::Log(LOG_LEVEL l)
 {
@@ -30,7 +34,8 @@ Log::Log(LOG_LEVEL l)
 	{
 		cur_level=l;
 		valid=true;
-		sem_wait(&mutex);
+		if(l >= LOG_CALLS)
+			message << std::string(2*calls_indent,' ');
 	}
 	else
 		valid=false;
@@ -39,21 +44,27 @@ Log::Log(LOG_LEVEL l)
 Log::~Log()
 {
 	if(valid)
-		sem_post(&mutex);
+	{
+		Mutex::Lock l(mutex);
+		std::cerr << level_names[cur_level] << ": " << message.str();
+	}
 }
 
 std::ostream& Log::operator()()
 {
-	std::cout << level_names[cur_level] << ": ";
-	return std::cout;
+	return message;
 }
 
-void Log::initLogging(LOG_LEVEL l)
+void Log::print(const std::string& s)
 {
-	if(!loggingInited)
-	{
-		loggingInited=true;
-		sem_init(&mutex,0,1);
-		log_level=l;
-	}
+	Mutex::Lock l(mutex);
+	std::cout << s << std::endl;
+}
+
+void Log::redirect(std::string filename)
+{
+	Mutex::Lock l(mutex);
+	static std::ofstream file(filename);
+	std::cout.rdbuf(file.rdbuf());
+	std::cerr.rdbuf(file.rdbuf());
 }

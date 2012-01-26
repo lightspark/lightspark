@@ -50,10 +50,7 @@ public:
 	AudioManager ( PluginManager *sharePluginManager );
 	bool pluginLoaded() const;
 	AudioStream *createStreamPlugin ( AudioDecoder *decoder );
-	void freeStreamPlugin ( AudioStream *audioStream );
 	bool isTimingAvailablePlugin() const;
-	void pauseStreamPlugin( AudioStream *audioStream );	//Pause the stream (stops time from running, cork)
-	void resumeStreamPlugin( AudioStream *audioStream );	//Resume the stream (restart time, uncork)
 	void set_audiobackend ( std::string desired_backend );
 	void get_audioBackendsList();
 	void refresh_audioplugins_list();

@@ -18,6 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "version.h"
 #include "plugin.h"
 #include "logger.h"
 #include "compat.h"
@@ -33,13 +34,10 @@
 #define PLUGIN_NAME    "Shockwave Flash"
 #define FAKE_PLUGIN_NAME    "Lightspark player"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME";"FAKE_MIME_TYPE":swfls:"FAKE_PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.2 r"SHORTVERSION
+#define PLUGIN_DESCRIPTION "Shockwave Flash 11.1 r"SHORTVERSION
 
 using namespace std;
-
-TLSDATA DLL_PUBLIC lightspark::SystemState* sys=NULL;
-TLSDATA DLL_PUBLIC lightspark::RenderThread* rt=NULL;
-TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
+using namespace lightspark;
 
 /**
  * \brief Constructor for NPDownloadManager
@@ -54,14 +52,6 @@ NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
 }
 
 /**
- * \brief Destructor for NPDownloaderManager
- */
-NPDownloadManager::~NPDownloadManager()
-{
-	cleanUp();
-}
-
-/**
  * \brief Create a Downloader for an URL.
  *
  * Returns a pointer to a newly created Downloader for the given URL.
@@ -72,6 +62,14 @@ NPDownloadManager::~NPDownloadManager()
  */
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner)
 {
+	// Handle RTMP requests internally, not through NPAPI
+	if(url.getProtocol()=="rtmp" ||
+	   url.getProtocol()=="rtmpe" ||
+	   url.getProtocol()=="rtmps")
+	{
+		return StandaloneDownloadManager::download(url, cached, owner);
+	}
+
 	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
@@ -91,6 +89,14 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
 		lightspark::ILoadable* owner)
 {
+	// Handle RTMP requests internally, not through NPAPI
+	if(url.getProtocol()=="rtmp" ||
+	   url.getProtocol()=="rtmpe" ||
+	   url.getProtocol()=="rtmps")
+	{
+		return StandaloneDownloadManager::downloadWithData(url, data, owner);
+	}
+
 	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), data, instance, owner);
@@ -100,8 +106,13 @@ lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::UR
 
 void NPDownloadManager::destroy(lightspark::Downloader* downloader)
 {
-	//Convert to a dynamic_cast if any other downloader is ever created by NPDownloadManager
-	NPDownloader* d=static_cast<NPDownloader*>(downloader);
+	NPDownloader* d=dynamic_cast<NPDownloader*>(downloader);
+	if(!d)
+	{
+		StandaloneDownloadManager::destroy(downloader);
+		return;
+	}
+
 	/*If the NP stream is already destroyed we can surely destroy the Downloader.
 	  Moreover, if ASYNC_DESTROY is already set, destroy is being called for the second time.
 	  This may happen when:
@@ -189,12 +200,37 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	LOG_LEVEL log_level = LOG_INFO;
+	LOG_LEVEL log_level = LOG_NOT_IMPLEMENTED;
+
+	/* setup glib/gtk, this is already done on firefox/linux, but needs to be done
+	 * on firefox/windows (because there we statically link to gtk) */
+	if(!g_thread_supported())
+		g_thread_init(NULL);
+#ifdef _WIN32
+	//Calling gdk_threads_init multiple times (once by firefox, once by us)
+	//will break in various different ways (hangs, segfaults, etc.)
+	gdk_threads_init();
+	gtk_init(NULL, NULL);
+#endif
+
 	char *envvar = getenv("LIGHTSPARK_PLUGIN_LOGLEVEL");
 	if (envvar)
 		log_level=(LOG_LEVEL) min(4, max(0, atoi(envvar)));
-	Log::initLogging(log_level);
+
+	envvar = getenv("LIGHTSPARK_PLUGIN_LOGFILE");
+	if (envvar)
+		Log::redirect(envvar);
+
+	Log::setLogLevel(log_level);
 	lightspark::SystemState::staticInit();
+
+	/* On linux, firefox runs its own gtk main loop
+	 * which we can utilise through g_add_idle
+	 * but we must not create our own gtk_main.
+	 */
+#ifdef _WIN32
+	EngineData::startGTKMain();
+#endif
 	return NPERR_NO_ERROR;
 }
 
@@ -202,6 +238,9 @@ void NS_PluginShutdown()
 {
 	LOG(LOG_INFO,"Lightspark plugin shutdown");
 	lightspark::SystemState::staticDeinit();
+#ifdef _WIN32
+	EngineData::quitGTKMain();
+#endif
 }
 
 // get values per plugin
@@ -244,9 +283,10 @@ nsPluginInstanceBase * NS_NewPluginInstance(nsPluginCreateData * aCreateDataStru
 
 void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 {
+	LOG(LOG_INFO,"NS_DestroyPluginInstance " << aPlugin);
 	if(aPlugin)
 		delete (nsPluginInstance *)aPlugin;
-	sys=NULL;
+	setTLSSys( NULL );
 }
 
 ////////////////////////////////////////
@@ -254,14 +294,12 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : 
-	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),
+	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mWindow(0),
 	mainDownloaderStream(NULL),mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
 {
-	cout << "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others" << endl;
-	sys=NULL;
+	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2011 Alessandro Pignotti and others");
+	setTLSSys( NULL );
 	m_sys=new lightspark::SystemState(NULL,0);
-	//As this is the plugin, enable fallback on Gnash for older clips
-	m_sys->enableGnashFallback();
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 	//Find flashvars argument
@@ -289,31 +327,25 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
 
 	//The sys var should be NULL in this thread
-	sys=NULL;
+	setTLSSys( NULL );
 }
 
 nsPluginInstance::~nsPluginInstance()
 {
+	LOG(LOG_INFO, "~nsPluginInstance " << this);
 	//Shutdown the system
-	sys=m_sys;
+	setTLSSys(m_sys);
 	if(mainDownloader)
 		mainDownloader->stop();
 
 	// Kill all stuff relating to NPScriptObject which is still running
 	static_cast<NPScriptObject*>(m_sys->extScriptObject)->destroy();
 
-	if(m_pt)
-		m_pt->stop();
 	m_sys->setShutdownFlag();
 
-	m_sys->wait();
-
-	// Delete our external script object
-	delete m_sys->extScriptObject;
-
-	delete m_sys;
+	m_sys->destroy();
 	delete m_pt;
-	sys=NULL;
+	setTLSSys(NULL);
 }
 
 void nsPluginInstance::draw()
@@ -328,7 +360,7 @@ NPBool nsPluginInstance::init(NPWindow* aWindow)
   if(aWindow == NULL)
     return FALSE;
   
-  if (SetWindow(aWindow))
+  if (SetWindow(aWindow) == NPERR_NO_ERROR)
   mInitialized = TRUE;
 	
   return mInitialized;
@@ -372,44 +404,87 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 
 }
 
+#ifdef _WIN32
+/*
+ * Create a GtkWidget and embed it into that mWindow. This unifies the other code,
+ * because on any platform and standalone/plugin, we always handle GtkWidgets.
+ * Additionally, firefox always crashed on me when trying to directly draw into
+ * mWindow.
+ * This must be run in the gtk_main() thread for AttachThreadInput to make sense.
+ */
+GtkWidget* PluginEngineData::createGtkWidget()
+{
+	HWND parent_hwnd = instance->mWindow;
+
+	GtkWidget* widget=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	/* Remove window decorations */
+	gtk_window_set_decorated((GtkWindow*)widget, FALSE);
+	/* Realize to construct hwnd */
+	gtk_widget_realize(widget);
+	HWND window = (HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget));
+	/* Set WS_CHILD, remove WS_POPUP - see MSDN on SetParent */
+	DWORD dwStyle = GetWindowLong (window, GWL_STYLE);
+	dwStyle |= WS_CHILD;
+	dwStyle &= ~WS_POPUP;
+	SetWindowLong(window, GWL_STYLE, dwStyle);
+	SetForegroundWindow(window);
+	/* Re-parent */
+	SetParent(window, parent_hwnd);
+	/* Attach our thread to that of the parent.
+	 * This ensures that we get messages for input events*/
+	DWORD parentThreadId;
+	if(!(parentThreadId = GetWindowThreadProcessId(parent_hwnd, NULL)))
+		LOG(LOG_ERROR,"GetWindowThreadProcessId failed");
+	DWORD myThreadId;
+	if(!(myThreadId = GetCurrentThreadId()))
+		LOG(LOG_ERROR,"GetCurrentThreadId failed");
+	if(!AttachThreadInput(myThreadId, parentThreadId, TRUE))
+		LOG(LOG_ERROR,"AttachThreadInput failed");
+	/* Set window size */
+	gtk_widget_set_size_request(widget, width, height);
+
+	return widget;
+}
+#else
+GtkWidget* PluginEngineData::createGtkWidget()
+{
+	return gtk_plug_new(instance->mWindow);
+}
+#endif
+
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
 	if(aWindow == NULL)
-		return FALSE;
+		return NPERR_GENERIC_ERROR;
 
 	mX = aWindow->x;
 	mY = aWindow->y;
-	mWidth = aWindow->width;
-	mHeight = aWindow->height;
-	if(mHeight==0 || mHeight==0)
-	{
-		LOG(LOG_ERROR,_("No size in SetWindow"));
-		return FALSE;
-	}
-	if (mWindow == (Window) aWindow->window)
+	uint32_t width = aWindow->width;
+	uint32_t height = aWindow->height;
+	if (mWindow == (NativeWindow) aWindow->window)
 	{
 		// The page with the plugin is being resized.
 		// Save any UI information because the next time
 		// around expect a SetWindow with a new window id.
 		LOG(LOG_ERROR,"Resize not supported");
+		return NPERR_NO_ERROR;
 	}
-	else
-	{
-		assert(mWindow==0);
-		mWindow = (Window) aWindow->window;
-		NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
-		mDisplay = ws_info->display;
-		mVisual = ws_info->visual;
-		mDepth = ws_info->depth;
-		mColormap = ws_info->colormap;
+	assert(mWindow==0);
 
-		VisualID visual=XVisualIDFromVisual(mVisual);
-		PluginEngineData* e= new PluginEngineData(this, mDisplay, visual, mWindow, mWidth, mHeight);
-		LOG(LOG_INFO,"X Window " << hex << mWindow << dec << " Width: " << mWidth << " Height: " << mHeight);
-		m_sys->setParamsAndEngine(e, false);
-	}
-	//draw();
-	return TRUE;
+	PluginEngineData* e = new PluginEngineData(this, width, height);
+	mWindow = (NativeWindow) aWindow->window;
+
+	LOG(LOG_INFO,"From Browser: Window " << mWindow << " Width: " << width << " Height: " << height);
+
+#ifndef _WIN32
+	NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
+	//mDisplay = ws_info->display;
+	//mDepth = ws_info->depth;
+	//mColormap = ws_info->colormap;
+	e->visual = XVisualIDFromVisual(ws_info->visual);
+#endif
+	m_sys->setParamsAndEngine(e, false);
+	return NPERR_NO_ERROR;
 }
 
 string nsPluginInstance::getPageURL() const
@@ -471,7 +546,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 {
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
 	LOG(LOG_INFO,_("Newstream for ") << stream->url);
-	sys=m_sys;
+	setTLSSys( m_sys );
 	if(dl)
 	{
 		//Check if async destructin of this downloader has been requested
@@ -488,7 +563,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 
 		if(strcmp(stream->url, dl->getURL().raw_buf()) != 0)
 		{
-			LOG(LOG_INFO, _("NET: PLUGIN: redirect detected"));
+			LOG(LOG_INFO, "NET: PLUGIN: redirect detected from " << dl->getURL() << " to " << stream->url);
 			dl->setRedirected(lightspark::tiny_string(stream->url));
 		}
 		if(NP_VERSION_MINOR >= NPVERS_HAS_RESPONSE_HEADERS)
@@ -527,8 +602,8 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
-	sys=NULL;
-	return NPERR_NO_ERROR; 
+	setTLSSys( NULL );
+	return NPERR_NO_ERROR;
 }
 
 void nsPluginInstance::StreamAsFile(NPStream* stream, const char* fname)
@@ -549,7 +624,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 {
 	if(stream->pdata)
 	{
-		sys=m_sys;
+		setTLSSys( m_sys );
 		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 
 		//Check if async destructin of this downloader has been requested
@@ -564,7 +639,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 		if(dl->hasFailed())
 			return -1;
 		dl->append((uint8_t*)buffer,len);
-		sys=NULL;
+		setTLSSys( NULL );
 		return len;
 	}
 	else
@@ -573,7 +648,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
-	sys=m_sys;
+	setTLSSys(m_sys);
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 	assert(dl);
 	//Check if async destructin of this downloader has been requested
@@ -584,47 +659,33 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 		return NPERR_NO_ERROR;
 	}
 	dl->state=NPDownloader::STREAM_DESTROYED;
-	if(stream->notifyData)
-	{
-		//URLNotify will be called later
-		return NPERR_NO_ERROR;
-	}
+
 	//Notify our downloader of what happened
-	URLNotify(stream->url, reason, stream->pdata);
-	sys=NULL;
+	switch(reason)
+	{
+		case NPRES_DONE:
+			LOG(LOG_INFO,_("Download complete ") << stream->url);
+			dl->setFinished();
+			break;
+		case NPRES_USER_BREAK:
+			LOG(LOG_ERROR,_("Download stopped ") << stream->url);
+			dl->setFailed();
+			break;
+		case NPRES_NETWORK_ERR:
+			LOG(LOG_ERROR,_("Download error ") << stream->url);
+			dl->setFailed();
+			break;
+	}
+	setTLSSys(NULL);
 	return NPERR_NO_ERROR;
 }
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
-	//If the download was successful, termination is handle in DestroyStream
-	NPDownloader* dl=static_cast<NPDownloader*>(notifyData);
-	assert(dl);
-	switch(reason)
-	{
-		case NPRES_DONE:
-			LOG(LOG_INFO,_("Download complete ") << url);
-			dl->setFinished();
-			break;
-		case NPRES_USER_BREAK:
-			LOG(LOG_ERROR,_("Download stopped ") << url);
-			dl->setFailed();
-			break;
-		case NPRES_NETWORK_ERR:
-			LOG(LOG_ERROR,_("Download error ") << url);
-			dl->setFailed();
-			break;
-	}
-}
-
-PluginEngineData::PluginEngineData(nsPluginInstance* i, Display* d, VisualID v, Window win, int w, int h):
-	EngineData(d,v,win,w,h),instance(i)
-{
-}
-
-void PluginEngineData::setupMainThreadCallback(lightspark::ls_callback_t func, void* arg)
-{
-	NPN_PluginThreadAsyncCall(instance->mInstance, func, arg);
+	/* This is called after DestroyStream, which may have already deleted the
+	 * NPDownloader (by calling asyncDownloaderDestruction), which 'notifyData' points to.
+	 * Therefore, we cannot do anything here.
+	 */
 }
 
 void PluginEngineData::stopMainDownload()
@@ -633,7 +694,18 @@ void PluginEngineData::stopMainDownload()
 		instance->mainDownloader->stop();
 }
 
-bool PluginEngineData::isSizable() const
+NativeWindow PluginEngineData::getWindowForGnash()
 {
-	return false;
+	return instance->mWindow;
 }
+
+#ifdef _WIN32
+/* Setup for getExectuablePath() */
+extern HINSTANCE g_hinstance;
+extern "C"
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+	g_hinstance = hinstDLL;
+	return TRUE;
+}
+#endif

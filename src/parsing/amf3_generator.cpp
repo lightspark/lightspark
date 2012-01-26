@@ -18,7 +18,9 @@
 **************************************************************************/
 
 #include "amf3_generator.h"
-#include "scripting/toplevel.h"
+#include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/Array.h"
+#include "scripting/toplevel/ASString.h"
 #include "scripting/class.h"
 #include <iostream>
 #include <fstream>
@@ -131,7 +133,7 @@ Double Amf3Deserializer::parseDouble() const
 			throw ParseException("Not enough data to parse double");
 	}
 	Double ret;
-	ret.dummy=BigEndianToHost64(tmp);
+	ret.dummy=GINT64_FROM_BE(tmp);
 	return ret;
 }
 
@@ -243,6 +245,16 @@ ValueType Amf3Deserializer::parseValue() const
 
 	switch(marker)
 	{
+		case false_marker:
+		{
+			ret=BoolType(false);
+			break;
+		}
+		case true_marker:
+		{
+			ret=BoolType(true);
+			break;
+		}
 		case integer_marker:
 		{
 			ret=parseInteger();

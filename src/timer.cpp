@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include "swf.h"
-#include <errno.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -28,38 +27,9 @@
 using namespace lightspark;
 using namespace std;
 
-uint64_t lightspark::timespecToMsecs(timespec t)
+TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false),inExecution(NULL)
 {
-	uint64_t ret=0;
-	ret+=(t.tv_sec*1000LL);
-	ret+=(t.tv_nsec/1000000LL);
-	return ret;
-}
-
-uint64_t lightspark::timespecToUsecs(timespec t)
-{
-	uint64_t ret=0;
-	ret+=(t.tv_sec*1000000LL);
-	ret+=(t.tv_nsec/1000LL);
-	return ret;
-}
-
-timespec lightspark::msecsToTimespec(uint64_t time)
-{
-	timespec ret;
-	ret.tv_sec=time/1000LL;
-	ret.tv_nsec=(time%1000LL)*1000000LL;
-	return ret;
-}
-
-TimerThread::TimerThread(SystemState* s):m_sys(s),currentJob(NULL),stopped(false),joined(false)
-{
-	sem_init(&mutex,0,1);
-	//Workaround for an issue in Ubuntu Oneiric
-	memset(&newEvent, 0, sizeof(newEvent));
-	sem_init(&newEvent,0,0);
-
-	pthread_create(&t,NULL,(thread_worker)timer_worker,this);
+	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker), true);
 }
 
 void TimerThread::stop()
@@ -67,7 +37,7 @@ void TimerThread::stop()
 	if(!stopped)
 	{
 		stopped=true;
-		sem_post(&newEvent);
+		newEvent.signal();
 	}
 }
 
@@ -77,7 +47,7 @@ void TimerThread::wait()
 	{
 		joined=true;
 		stop();
-		pthread_join(t,NULL);
+		t->join();
 	}
 }
 
@@ -87,8 +57,6 @@ TimerThread::~TimerThread()
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	for(;it!=pendingEvents.end();++it)
 		delete *it;
-	sem_destroy(&mutex);
-	sem_destroy(&newEvent);
 }
 
 void TimerThread::insertNewEvent_nolock(TimingEvent* e)
@@ -98,7 +66,7 @@ void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 	if(pendingEvents.empty() || (*it)->timing > e->timing)
 	{
 		pendingEvents.insert(it, e);
-		sem_post(&newEvent);
+		newEvent.signal();
 		return;
 	}
 	++it;
@@ -117,9 +85,8 @@ void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 
 void TimerThread::insertNewEvent(TimingEvent* e)
 {
-	sem_wait(&mutex);
+	Mutex::Lock l(mutex);
 	insertNewEvent_nolock(e);
-	sem_post(&mutex);
 }
 
 //Unsafe debugging routine
@@ -128,83 +95,70 @@ void TimerThread::dumpJobs()
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	//Find if the job is in the list
 	for(;it!=pendingEvents.end();++it)
-		cout << (*it)->job << endl;
+		LOG(LOG_INFO, (*it)->job );
 }
 
-void* TimerThread::timer_worker(TimerThread* th)
+void TimerThread::worker()
 {
-	sys=th->m_sys;
+	setTLSSys(m_sys);
+
+	Mutex::Lock l(mutex);
 	while(1)
 	{
-		//Wait until a time expires
-		sem_wait(&th->mutex);
-		//Check if there is any event
-		while(th->pendingEvents.empty())
+		/* Wait until the first event appears */
+		while(pendingEvents.empty())
 		{
-			sem_post(&th->mutex);
-			sem_wait(&th->newEvent);
-			if(th->stopped)
-				pthread_exit(0);
-			sem_wait(&th->mutex);
+			newEvent.wait(mutex);
+			if(stopped)
+				return;
 		}
 
-		//Get expiration of first event
-		uint64_t timing=th->pendingEvents.front()->timing;
-		//Wait for the absolute time, or a newEvent signal
-		timespec tmpt=msecsToTimespec(timing);
-		sem_post(&th->mutex);
-		int ret;
-		while ((ret=sem_timedwait(&th->newEvent, &tmpt)) == -1 && errno==EINTR)
-		    continue;
-		if(th->stopped)
-			pthread_exit(0);
+		/* Get expiration of first event */
+		Glib::TimeVal timing=pendingEvents.front()->timing;
+		/* Wait for the absolute time or a newEvent signal
+		 * this unlocks the mutex and relocks it before returing
+		 */
+		newEvent.timed_wait(mutex,timing);
 
-		if(ret==0)
+		if(stopped)
+			return;
+
+		if(pendingEvents.empty())
 			continue;
 
-		//The first event has expired
-		int err=errno;
-		if(err!=ETIMEDOUT)
+		TimingEvent* e=pendingEvents.front();
+
+		/* check if the top even is due now. It could be have been removed/inserted
+		 * while we slept */
+		Glib::TimeVal now;
+		now.assign_current_time();
+		if((now-timing).negative()) /* timing > now */
+			continue;
+
+		pendingEvents.pop_front();
+
+		if(e->job->stopMe)
 		{
-			LOG(LOG_ERROR,_("Unexpected failure of sem_timedwait.. Trying to go on. errno=") << err);
+			delete e;
 			continue;
 		}
 
-		//Note: it may happen that between the sem_timewait and this code another event gets inserted in the front. In this 
-		//case it's not an error to execute it now, as it's expiration time is the first anyway and before the one expired
-		sem_wait(&th->mutex);
-		TimingEvent* e=th->pendingEvents.front();
-		th->pendingEvents.pop_front();
-
-		if(e->job && e->job->stopMe)
+		if(e->isTick)
 		{
-			//Abort the tick by invalidating the job
-			e->job=NULL;
-			e->isTick=false;
+			/* re-enqueue*/
+			e->timing.add_milliseconds(e->tickTime);
+			insertNewEvent_nolock(e);
 		}
 
-		th->currentJob=e->job;
+		/* let removeJob() know what we are currently doing */
+		inExecution = e->job;
+		l.release();
+		e->job->tick();
+		inExecution = NULL;
+		l.acquire();
 
-		bool destroyEvent=true;
-		if(e->isTick) //Let's schedule the event again
-		{
-			e->timing+=e->tickTime;
-			th->insertNewEvent_nolock(e); //newEvent may be signaled, and will be waited by sem_timedwait
-			destroyEvent=false;
-		}
-
-		sem_post(&th->mutex);
-
-		//Now execute the job
-		//NOTE: jobs may be invalid if they has been cancelled in the meantime
-		assert(e->job || !e->isTick);
-		if(e->job)
-			e->job->tick();
-
-		th->currentJob=NULL;
-
-		//Cleanup
-		if(destroyEvent)
+		/* Cleanup */
+		if(!e->isTick)
 			delete e;
 	}
 }
@@ -215,7 +169,8 @@ void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
 	e->isTick=true;
 	e->job=job;
 	e->tickTime=tickTime;
-	e->timing=compat_get_current_time_ms()+tickTime;
+	e->timing.assign_current_time();
+	e->timing.add_milliseconds(tickTime);
 	insertNewEvent(e);
 }
 
@@ -225,14 +180,19 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 	e->isTick=false;
 	e->job=job;
 	e->tickTime=0;
-	e->timing=compat_get_current_time_ms()+waitTime;
+	e->timing.assign_current_time();
+	e->timing.add_milliseconds(waitTime);
 	insertNewEvent(e);
 }
 
-bool TimerThread::removeJob(ITickJob* job)
+void TimerThread::removeJob(ITickJob* job)
 {
-	sem_wait(&mutex);
+	Mutex::Lock l(mutex);
+	/* Busy-wait until job is not executing anymore */
+	while(inExecution == job)
+		Thread::yield();
 
+	/* See if that job is currently pending */
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	bool first=true;
 	//Find if the job is in the list
@@ -243,34 +203,16 @@ bool TimerThread::removeJob(ITickJob* job)
 		first=false;
 	}
 
-	//Spin wait until the job ends (per design should be very short)
-	//As we hold the mutex and currentJob is not NULL we are surely executing a job
-	while(currentJob==job);
-	//The job ended
-
 	if(it==pendingEvents.end())
-	{
-		sem_post(&mutex);
-		return false;
-	}
+		return;
 
-	//If we are waiting of this event it's not safe to remove it
-	//so we flag it has invalid and the worker thread will remove it
-	//this is equivalent, as the event is not going to be fired
 	TimingEvent* e=*it;
-	if(first)
-	{
-		e->job=NULL;
-		e->isTick=false;
-	}
-	else
-	{
-		pendingEvents.erase(it);
-		delete e;
-	}
+	pendingEvents.erase(it);
+	delete e;
 
-	sem_post(&mutex);
-	return true;
+	/* the worker is waiting on this job, wake him up */
+	if(first)
+		newEvent.signal();
 }
 
 Chronometer::Chronometer()

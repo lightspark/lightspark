@@ -23,7 +23,6 @@
 #include "decoder.h"
 #include "platforms/fastpaths.h"
 #include "swf.h"
-#include "graphics.h"
 #include "backends/rendering.h"
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
@@ -42,7 +41,7 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		frameHeight=h;
 		LOG(LOG_INFO,_("VIDEO DEC: Video frame size ") << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
-		videoTexture=sys->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
+		videoTexture=getSys()->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
 		return true;
 	}
 	else
@@ -106,7 +105,7 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):
-	curBuffer(0),curBufferOffset(0),codecContext(NULL),ownedContext(true),mutex("VideoDecoder")
+	curBuffer(0),curBufferOffset(0),codecContext(NULL),ownedContext(true)
 {
 	//The tag is the header, initialize decoding
 	codecContext=avcodec_alloc_context();
@@ -160,7 +159,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint):
-	curBuffer(0),curBufferOffset(0),codecContext(_c),ownedContext(false),mutex("VideoDecoder")
+	curBuffer(0),curBufferOffset(0),codecContext(_c),ownedContext(false)
 {
 	status=INIT;
 	//The tag is the header, initialize decoding
@@ -265,7 +264,7 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 		if(status==INIT && fillDataAndCheckValidity())
 			status=VALID;
 
-		assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
+		assert(frameIn->pts==(int64_t)AV_NOPTS_VALUE || frameIn->pts==0);
 
 		copyFrameToBuffers(frameIn, time);
 	}
@@ -290,7 +289,7 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 		if(status==INIT && fillDataAndCheckValidity())
 			status=VALID;
 
-		assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
+		assert(frameIn->pts==(int64_t)AV_NOPTS_VALUE || frameIn->pts==0);
 
 		copyFrameToBuffers(frameIn, time);
 	}
@@ -334,35 +333,20 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 {
 	if(buf.ch[0])
 	{
-		free(buf.ch[0]);
-		free(buf.ch[1]);
-		free(buf.ch[2]);
+		aligned_free(buf.ch[0]);
+		aligned_free(buf.ch[1]);
+		aligned_free(buf.ch[2]);
 	}
-#ifdef WIN32
-	//FIXME!!
-#else
-	int ret=posix_memalign((void**)&buf.ch[0], 16, bufferSize);
-	assert(ret==0);
-	ret=posix_memalign((void**)&buf.ch[1], 16, bufferSize/4);
-	assert(ret==0);
-	ret=posix_memalign((void**)&buf.ch[2], 16, bufferSize/4);
-	assert(ret==0);
-#endif
+	aligned_malloc((void**)&buf.ch[0], 16, bufferSize);
+	aligned_malloc((void**)&buf.ch[1], 16, bufferSize/4);
+	aligned_malloc((void**)&buf.ch[2], 16, bufferSize/4);
 }
 #endif //ENABLE_LIBAVCODEC
 
 void* AudioDecoder::operator new(size_t s)
 {
-	void* retAddr=NULL;
-
-	// fix warnings
-#ifndef NDEBUG
-	int ret =
-#endif
+	void* retAddr;
 	aligned_malloc(&retAddr, 16, s);
-	assert(ret==0);
-
-	assert(retAddr);
 	return retAddr;
 }
 void AudioDecoder::operator delete(void* addr)
@@ -650,12 +634,12 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 		if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO && videoFound==false)
 		{
 			videoFound=true;
-			videoIndex=i;
+			videoIndex=(int32_t)i;
 		}
 		else if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO && audioFound==false)
 		{
 			audioFound=true;
-			audioIndex=i;
+			audioIndex=(int32_t)i;
 		}
 
 	}
@@ -699,7 +683,7 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 	//Should use dts
 	uint32_t mtime=pkt.dts*1000*time_base.num/time_base.den;
 
-	if(pkt.stream_index==audioIndex)
+	if(pkt.stream_index==(int)audioIndex)
 		customAudioDecoder->decodePacket(&pkt, mtime);
 	else
 		customVideoDecoder->decodePacket(&pkt, mtime);

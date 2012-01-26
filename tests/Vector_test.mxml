@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Vector_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+
+	public var gvec:Vector.<String>;
+
+	private function appComplete():void
+	{
+		Tests.assertEquals(null,gvec,"Unitialized slot:vector is null");
+		gvec = new Vector.<String>();
+		gvec.push("SlotTest");
+		Tests.assertEquals("SlotTest",gvec[0],"Slot test");
+
+		var v:Vector.<String> = new Vector.<String>();
+		v.push("TestStr");
+		Tests.assertEquals("TestStr",v[0],"Vector.<String>");
+
+		var v2:Vector.<Number> = new Vector.<Number>();
+		v2.push(1.7);
+		Tests.assertEquals(1.7,v2[0],"Vector.<Number>");
+		
+		var v3:Vector.<String> = Vector.<String>(["Hello", "World"]);
+		Tests.assertEquals("Hello",v3[0],"Vector from Array 1");
+		Tests.assertEquals("World",v3[1],"Vector from Array 2");
+
+		var v4:Vector.<String> = Vector.<String>(v);
+		Tests.assertEquals("TestStr",v4[0],"Vector from same type vector");
+
+		var v5:Vector.<MovieClip> = new Vector.<MovieClip>();
+		v5.push(new MovieClip());
+
+		var v6:Vector.<DisplayObject> = Vector.<DisplayObject>(v5);
+		Tests.assertEquals(v5[0],v6[0],"Vector from subtype vector");
+
+		//TODO: test if the following throws
+		//var v7:Vector.<DisplayObject> = Vector.<DisplayObject>(v);
+
+		var v7:Vector.<Number> = new Vector.<Number>();
+		v7.push(3);
+		v7.length = 2;
+		Tests.assertEquals(v7[0],3,"Vector.size 1");
+		Tests.assertEquals(v7[1],0,"Vector.size 2");
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

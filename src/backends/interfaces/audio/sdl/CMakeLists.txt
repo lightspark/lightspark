@@ -45,11 +45,9 @@ ADD_DEFINITIONS(-DSDL_BACKEND=TRUE)
 SET(SDLPLUGIN_SOURCES SDLPlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp)
 
 # liblightsparkSDLplugin.so target
-ADD_LIBRARY(sdlplugin SHARED ${SDLPLUGIN_SOURCES})
+ADD_LIBRARY(sdlplugin MODULE ${SDLPLUGIN_SOURCES})
 TARGET_LINK_LIBRARIES(sdlplugin spark) #Need to link some functions with the decoders
 TARGET_LINK_LIBRARIES(sdlplugin ${SDL_LIBRARIES} ${Boost_LIBRARIES})
 SET_TARGET_PROPERTIES(sdlplugin PROPERTIES OUTPUT_NAME lightsparksdlplugin)
 
-IF(UNIX)
-	INSTALL(TARGETS sdlplugin LIBRARY DESTINATION ${PRIVATELIBDIR}/plugins)
-ENDIF(UNIX)
+INSTALL(TARGETS sdlplugin DESTINATION ${PLUGINSDIR})

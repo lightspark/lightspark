@@ -166,10 +166,15 @@ ASFUNCTIONBODY(Event,formatToString)
 	return Class<ASString>::getInstanceS(msg);
 }
 
+Event* Event::cloneImpl() const
+{
+	return Class<Event>::getInstanceS(type, bubbles, cancelable);
+}
+
 ASFUNCTIONBODY(Event,clone)
 {
 	Event* th=static_cast<Event*>(obj);
-	return Class<Event>::getInstanceS(th->type, th->bubbles, th->cancelable);
+	return th->cloneImpl();
 }
 
 void EventPhase::sinit(Class_base* c)
@@ -218,6 +223,11 @@ ProgressEvent::ProgressEvent(uint32_t loaded, uint32_t total):Event("progress",f
 {
 }
 
+Event* ProgressEvent::cloneImpl() const
+{
+	return Class<ProgressEvent>::getInstanceS(bytesLoaded, bytesTotal);
+}
+
 void ProgressEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -238,6 +248,8 @@ void ProgressEvent::buildTraits(ASObject* o)
 ASFUNCTIONBODY(ProgressEvent,_constructor)
 {
 	ProgressEvent* th=static_cast<ProgressEvent*>(obj);
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
 	if(argslen>=4)
 		th->bytesLoaded=args[3]->toInt();
 	if(argslen>=5)

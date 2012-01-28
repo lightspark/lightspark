@@ -137,7 +137,7 @@ ASFUNCTIONBODY(Array,_concat)
 	//this array could die too
 	for(unsigned int i=0;i<ret->data.size();i++)
 	{
-		if(ret->data[i].type==DATA_OBJECT)
+		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
 			ret->data[i].data->incRef();
 	}
 

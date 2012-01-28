@@ -32,7 +32,18 @@
 		var simplexml:XML=new XML("<test>123</test>");
 
 		//Enable this when proper AS exception is thrown
-		//var xml9:XML=new XML("<broken>data<");
+		/*try
+		{
+			var xml9:XML=new XML("<broken>data<");
+		}
+		catch(e)
+		{
+		}*/
+
+		var ba1:ByteArray=new ByteArray();
+		ba1.writeUTFBytes("<test>123</test>");
+		var xml10:XML=new XML(ba1);
+		Tests.assertEquals(simplexml, xml10, "XML from ByteArray");
 
 		Tests.assertTrue(xml5==xml6, "equal nodes");
 		Tests.assertTrue(xml5!=xml7, "inequal child content");

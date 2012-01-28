@@ -184,12 +184,22 @@ ASFUNCTIONBODY(XML,_constructor)
 	{
 		th->buildFromString("");
 	}
-	else
+	else if(args[0]->getObjectType()==T_STRING)
 	{
-		assert_and_throw(args[0]->getObjectType()==T_STRING);
 		ASString* str=Class<ASString>::cast(args[0]);
 		th->buildFromString(std::string(str->data));
 	}
+	else if(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()))
+	{
+		//Official documentation says that generic Objects are not supported.
+		//ByteArray seems to be though (see XML test) so let's support it
+		ByteArray* ba=Class<ByteArray>::cast(args[0]);
+		uint32_t len=ba->getLength();
+		const uint8_t* str=ba->getBuffer(len, false);
+		th->buildFromString(std::string((const char*)str,len));
+	}
+	else
+		throw Class<TypeError>::getInstanceS("Unsupported type in XML conversion");
 	return NULL;
 }
 

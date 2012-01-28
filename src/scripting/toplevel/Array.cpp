@@ -137,7 +137,7 @@ ASFUNCTIONBODY(Array,_concat)
 	//this array could die too
 	for(unsigned int i=0;i<ret->data.size();i++)
 	{
-		if(ret->data[i].type==DATA_OBJECT)
+		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
 			ret->data[i].data->incRef();
 	}
 
@@ -418,9 +418,14 @@ ASFUNCTIONBODY(Array,slice)
 ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
-
+	assert_and_throw(argslen >= 1);
 	int startIndex=args[0]->toInt();
-	int deleteCount=args[1]->toUInt();
+	//By default, delete all the element up to the end
+	//Use the array len, it will be capped below
+	int deleteCount=th->data.size();
+	if(argslen > 1)
+		deleteCount=args[1]->toUInt();
+
 	int totalSize=th->data.size();
 	Array* ret=Class<Array>::getInstanceS();
 

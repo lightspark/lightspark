@@ -264,7 +264,7 @@ void RenderThread::init()
 	if(!glx_present)
 		throw RunTimeException("glX not present");
 
-	int attrib[10]={GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, GLX_DOUBLEBUFFER, True, None};
+	int attrib[10]={GLX_DOUBLEBUFFER, True, None};
 	GLXFBConfig* fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
 	if(!fb)
 	{

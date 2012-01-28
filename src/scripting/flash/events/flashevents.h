@@ -41,6 +41,11 @@ class MovieClip;
 
 class Event: public ASObject
 {
+private:
+	/*
+	 * To be implemented by each derived class to allow redispatching
+	 */
+	virtual Event* cloneImpl() const;
 public:
 	Event(const tiny_string& t = "Event", bool b=false, bool c=false)
 		: type(t),target(),currentTarget(),bubbles(b),cancelable(c),
@@ -206,6 +211,7 @@ class ProgressEvent: public Event
 private:
 	ASPROPERTY_GETTER_SETTER(number_t,bytesLoaded);
 	ASPROPERTY_GETTER_SETTER(number_t,bytesTotal);
+	Event* cloneImpl() const;
 public:
 	ProgressEvent();
 	ProgressEvent(uint32_t loaded, uint32_t total);

@@ -166,10 +166,15 @@ ASFUNCTIONBODY(Event,formatToString)
 	return Class<ASString>::getInstanceS(msg);
 }
 
+Event* Event::cloneImpl() const
+{
+	return Class<Event>::getInstanceS(type, bubbles, cancelable);
+}
+
 ASFUNCTIONBODY(Event,clone)
 {
 	Event* th=static_cast<Event*>(obj);
-	return Class<Event>::getInstanceS(th->type, th->bubbles, th->cancelable);
+	return th->cloneImpl();
 }
 
 void EventPhase::sinit(Class_base* c)
@@ -218,6 +223,11 @@ ProgressEvent::ProgressEvent(uint32_t loaded, uint32_t total):Event("progress",f
 {
 }
 
+Event* ProgressEvent::cloneImpl() const
+{
+	return Class<ProgressEvent>::getInstanceS(bytesLoaded, bytesTotal);
+}
+
 void ProgressEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -238,6 +248,8 @@ void ProgressEvent::buildTraits(ASObject* o)
 ASFUNCTIONBODY(ProgressEvent,_constructor)
 {
 	ProgressEvent* th=static_cast<ProgressEvent*>(obj);
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
 	if(argslen>=4)
 		th->bytesLoaded=args[3]->toInt();
 	if(argslen>=5)
@@ -512,27 +524,20 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		cloneName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
 
 		_NR<ASObject> clone=e->getVariableByMultiname(cloneName);
-		if(!clone.isNull() && clone->getObjectType()==T_FUNCTION)
+		//Clone always exists since it's implemented in Event itself
+		assert(!clone.isNull());
+		IFunction* f = static_cast<IFunction*>(clone.getPtr());
+		e->incRef();
+		ASObject* funcRet=f->call(e.getPtr(),NULL,0);
+		//Verify that the returned object is actually an event
+		Event* newEvent=dynamic_cast<Event*>(funcRet);
+		if(newEvent==NULL)
 		{
-			IFunction* f = static_cast<IFunction*>(clone.getPtr());
-			e->incRef();
-			ASObject* funcRet=f->call(e.getPtr(),NULL,0);
-			//Verify that the returned object is actually an event
-			Event* newEvent=dynamic_cast<Event*>(funcRet);
-			if(newEvent==NULL)
-			{
-				if(funcRet)
-					funcRet->decRef();
-				return abstract_b(false);
-			}
-			e=_MR(newEvent);
+			if(funcRet)
+				funcRet->decRef();
+			return abstract_b(false);
 		}
-		else
-		{
-			//TODO: support cloning of actual type
-			LOG(LOG_NOT_IMPLEMENTED,"Event cloning not supported!");
-			e=_MR(Class<Event>::getInstanceS(e->type,e->bubbles, e->cancelable));
-		}
+		e=_MR(newEvent);
 	}
 	th->incRef();
 	ABCVm::publicHandleEvent(_MR(th), e);

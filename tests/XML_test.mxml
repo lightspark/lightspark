@@ -45,6 +45,10 @@
 		var xml10:XML=new XML(ba1);
 		Tests.assertEquals(simplexml, xml10, "XML from ByteArray");
 
+		var xml11:XML=new XML('<foo a="val1"b="val2"/>');
+		var xml12:XML=new XML('<foo a="val1" b="val2"/>');
+
+		Tests.assertTrue(xml11==xml12, "XML with missing space between properties");
 		Tests.assertTrue(xml5==xml6, "equal nodes");
 		Tests.assertTrue(xml5!=xml7, "inequal child content");
 		Tests.assertTrue(xml5!=xml8, "inequal attribute values");

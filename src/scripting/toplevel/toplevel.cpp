@@ -63,8 +63,6 @@ REGISTER_CLASS_NAME(RegExp);
 Any* const Type::anyType = new Any();
 Void* const Type::voidType = new Void();
 
-
-
 Undefined::Undefined()
 {
 	type=T_UNDEFINED;

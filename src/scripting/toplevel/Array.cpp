@@ -418,9 +418,14 @@ ASFUNCTIONBODY(Array,slice)
 ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
-
+	assert_and_throw(argslen >= 1);
 	int startIndex=args[0]->toInt();
-	int deleteCount=args[1]->toUInt();
+	//By default, delete all the element up to the end
+	//Use the array len, it will be capped below
+	int deleteCount=th->data.size();
+	if(argslen > 1)
+		deleteCount=args[1]->toUInt();
+
 	int totalSize=th->data.size();
 	Array* ret=Class<Array>::getInstanceS();
 

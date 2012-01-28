@@ -6,6 +6,8 @@ Here's what was used to release 0.5.2. In the future slight changes will be need
 Make the tarball
 -------------------
 
+Make sure all supported sites work and there are no regressions.
+
 When you consider the tree good to release and have the changelog updated go to a git checkout
 
 $cd lightspark

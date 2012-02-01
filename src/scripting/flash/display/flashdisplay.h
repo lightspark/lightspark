@@ -50,6 +50,8 @@ public:
 	static void linkTraits(Class_base* c);
 };
 
+class Transform;
+
 class DisplayObject: public EventDispatcher, public IBitmapDrawable
 {
 friend class TokenContainer;
@@ -71,6 +73,7 @@ private:
 	void becomeMaskOf(_NR<DisplayObject> m);
 	void setMask(_NR<DisplayObject> m);
 	_NR<DisplayObjectContainer> parent;
+	_NR<Transform> transform;
 protected:
 	~DisplayObject();
 	/**
@@ -192,6 +195,7 @@ public:
 	ASFUNCTION(_setRotation);
 	ASFUNCTION(_getMouseX);
 	ASFUNCTION(_getMouseY);
+	ASFUNCTION(_getTransform);
 	ASFUNCTION(localToGlobal);
 	ASFUNCTION(globalToLocal);
 };

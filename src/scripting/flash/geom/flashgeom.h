@@ -138,13 +138,6 @@ public:
 	ASFUNCTION(_toString);
 };
 
-class Transform: public ASObject
-{
-public:
-	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
-};
-
 class Matrix: public ASObject
 {
 public:
@@ -183,6 +176,14 @@ public:
 	ASFUNCTION(_set_d);
 	ASFUNCTION(_set_tx);
 	ASFUNCTION(_set_ty);
+};
+
+class Transform: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASPROPERTY_GETTER_SETTER(_NR<Matrix>, matrix);
 };
 
 class Vector3D: public ASObject

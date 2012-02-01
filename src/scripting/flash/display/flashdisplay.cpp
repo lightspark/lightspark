@@ -1197,6 +1197,7 @@ void DisplayObject::finalize()
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
+	transform.reset();
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -1242,6 +1243,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(_getTransform),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
@@ -1249,6 +1251,19 @@ void DisplayObject::sinit(Class_base* c)
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
+
+ASFUNCTIONBODY(DisplayObject,_getTransform)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+
+	if(th->transform.isNull())
+		th->transform = _MNR(Class<Transform>::getInstanceS());
+
+	LOG(LOG_NOT_IMPLEMENTED, "DisplayObject::transform is a stub and does not reflect the real display state");
+
+	th->transform->incRef();
+	return th->transform.getPtr();
+}
 
 void DisplayObject::buildTraits(ASObject* o)
 {

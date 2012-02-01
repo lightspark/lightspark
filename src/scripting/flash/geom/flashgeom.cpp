@@ -920,7 +920,10 @@ void Transform::sinit(Class_base* c)
 	//c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
 	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c,matrix);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(Transform, matrix);
 
 void Transform::buildTraits(ASObject* o)
 {

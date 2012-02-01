@@ -26,4 +26,4 @@ fi
 
 echo "Dumping from " $URL >&2
 
-wget $URL -q -O - | grep -E -o "<embed(.*?)>" | grep -E -o 'flashvars=\"[^"]+\"' | cut -c11- | tr -d '"' | sed -e 's/&amp;/\n/g' -e 's/=/\n/g' | `dirname $0`/urldecode.sh
+wget $URL -q -O - | tr -d '\n' | grep -Eo "<script>[^<]*flashvars[^<]*</script>" | sed -e 's/.*flashvars=\\"\(.*\)/\1/g' -e 's/\\"/\n/' | head -1 | sed -e 's/\\u0026amp;/\n/g' -e 's/=/\n/g' | `dirname $0`/urldecode.sh

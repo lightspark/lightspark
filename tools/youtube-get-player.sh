@@ -23,4 +23,5 @@ if test $# -eq 0; then
 else
 	URL=$1
 fi
-wget $URL -q -O - | grep -E -o "<embed(.*?)>" | sed "s/ /\n/g" | grep src | cut -c5- | tr -d '"'
+
+wget $URL -q -O - | tr -d '\n' | grep -Eo "<script>[^<]*yt.playerConfig[^<]*</script>" | grep -Eo '\"url\":[^,]*' | cut -c8- | tr -d '"\\'

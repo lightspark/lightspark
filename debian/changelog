@@ -1,3 +1,9 @@
+lightspark (0.5.4.1-0ubuntu1~ppa1) precise; urgency=low
+
+  * New release
+
+ -- Jani Monoses <jani@ubuntu.com>  Thu, 02 Feb 2012 10:59:03 +0200
+
 lightspark (0.5.4-0ubuntu1~ppa1) precise; urgency=low
 
   * New release

@@ -36,7 +36,7 @@ playerfile="$(mktemp)"
 basedir="$(dirname "$0")"
 
 if test $# -eq 0; then
-	URL="http://www.youtube.com/watch?v=XSGBVzeBUbk"
+	URL="http://www.youtube.com/watch?v=YE7VzlLtp-4"
 else
 	URL=$1
 fi

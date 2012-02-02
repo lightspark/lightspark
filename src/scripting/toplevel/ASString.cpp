@@ -156,6 +156,9 @@ ASFUNCTIONBODY(ASString,search)
 		return abstract_i(ret);
 	}
 	ret=ovector[0];
+	// pcre_exec returns byte position, so we have to convert it to character position 
+	tiny_string tmp = th->data.substr_bytes(0, ret);
+	ret = tmp.numChars();
 	return abstract_i(ret);
 }
 

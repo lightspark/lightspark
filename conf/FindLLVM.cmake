@@ -50,6 +50,7 @@ else (LLVM_INCLUDE_DIR)
     /usr/lib/llvm-2.7/bin
     /usr/lib/llvm-2.8/bin
     /usr/lib/llvm-2.9/bin
+    /usr/lib/llvm-3.0/bin
     )
 
   find_program(LLVM_GCC_EXECUTABLE

@@ -739,6 +739,9 @@ ASFUNCTIONBODY(ASString,concat)
 
 ASFUNCTIONBODY(ASString,generator)
 {
-	assert(argslen==1);
-	return Class<ASString>::getInstanceS(args[0]->toString());
+	assert(argslen<=1);
+	if (argslen == 0)
+		return Class<ASString>::getInstanceS("");
+	else
+		return Class<ASString>::getInstanceS(args[0]->toString());
 }

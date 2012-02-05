@@ -114,7 +114,14 @@ _R<ASObject> ASObject::nextValue(uint32_t index)
 void ASObject::sinit(Class_base* c)
 {
 	c->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(hasOwnProperty),NORMAL_METHOD,true);
+
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("hasOwnProperty","",Class<IFunction>::getFunction(hasOwnProperty),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("isPrototypeOf","",Class<IFunction>::getFunction(isPrototypeOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("propertyIsEnumerable","",Class<IFunction>::getFunction(propertyIsEnumerable),DYNAMIC_TRAIT);
+	
 }
 
 void ASObject::buildTraits(ASObject* o)
@@ -691,6 +698,38 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	name.isAttribute=false;
 	bool ret=obj->hasPropertyByMultiname(name, true);
 	return abstract_b(ret);
+}
+
+ASFUNCTIONBODY(ASObject,valueOf)
+{
+	obj->incRef();
+	return obj;
+}
+
+ASFUNCTIONBODY(ASObject,isPrototypeOf)
+{
+	assert_and_throw(argslen==1);
+	bool ret= false;
+	if (obj->getObjectType() == T_OBJECT)
+	{
+		ASObject* v = obj->getprop_prototype();
+		while (v != NULL && v->getObjectType() != T_NULL && v->getObjectType() != T_UNDEFINED)
+		{
+			if (v == obj)
+			{
+				ret = true;
+				break;
+			}
+			v = v->getprop_prototype();
+		}
+	}
+	return abstract_b(ret);
+}
+
+ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"property attributes ReadOnly,DontEnum,DontDelete,Internal not implemented");
+	return abstract_b(true);
 }
 
 ASFUNCTIONBODY(ASObject,_constructor)

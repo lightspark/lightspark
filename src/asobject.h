@@ -257,6 +257,9 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(hasOwnProperty);
+	ASFUNCTION(valueOf);
+	ASFUNCTION(isPrototypeOf);
+	ASFUNCTION(propertyIsEnumerable);
 	void check() const;
 	void incRef()
 	{

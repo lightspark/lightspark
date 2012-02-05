@@ -62,7 +62,7 @@ ASString::ASString(const char* s, uint32_t len)
 
 ASFUNCTIONBODY(ASString,_constructor)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	if(args && argslen==1)
 		th->data=args[0]->toString().raw_buf();
 	return NULL;
@@ -70,7 +70,7 @@ ASFUNCTIONBODY(ASString,_constructor)
 
 ASFUNCTIONBODY(ASString,_getLength)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	return abstract_i(th->data.numChars());
 }
 
@@ -97,7 +97,25 @@ void ASString::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+
+	c->prototype->setVariableByQName("split","",Class<IFunction>::getFunction(split),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("substring","",Class<IFunction>::getFunction(substring),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("replace","",Class<IFunction>::getFunction(replace),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(concat),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("match","",Class<IFunction>::getFunction(match),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("search","",Class<IFunction>::getFunction(search),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("indexOf","",Class<IFunction>::getFunction(indexOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("lastIndexOf","",Class<IFunction>::getFunction(lastIndexOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("charCodeAt","",Class<IFunction>::getFunction(charCodeAt),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("charAt","",Class<IFunction>::getFunction(charAt),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("slice","",Class<IFunction>::getFunction(slice),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleLowerCase","",Class<IFunction>::getFunction(toLowerCase),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleUpperCase","",Class<IFunction>::getFunction(toUpperCase),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLowerCase","",Class<IFunction>::getFunction(toLowerCase),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toUpperCase","",Class<IFunction>::getFunction(toUpperCase),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void ASString::buildTraits(ASObject* o)
@@ -106,7 +124,7 @@ void ASString::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(ASString,search)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	int ret = -1;
 	if(argslen == 0 || args[0]->getObjectType() == T_UNDEFINED)
 		return abstract_i(-1);
@@ -164,7 +182,7 @@ ASFUNCTIONBODY(ASString,search)
 
 ASFUNCTIONBODY(ASString,match)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	if(argslen == 0 || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 		return new Null;
 	ASObject* ret=NULL;
@@ -240,7 +258,7 @@ ASFUNCTIONBODY(ASString,_toString)
 
 ASFUNCTIONBODY(ASString,split)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	Array* ret=Class<Array>::getInstanceS();
 	ASObject* delimiter=args[0];
 	if(argslen == 0 || delimiter->getObjectType()==T_UNDEFINED)
@@ -351,7 +369,7 @@ ASFUNCTIONBODY(ASString,split)
 
 ASFUNCTIONBODY(ASString,substr)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	int start=0;
 	if(argslen>=1)
 		start=args[0]->toInt();
@@ -372,7 +390,7 @@ ASFUNCTIONBODY(ASString,substr)
 
 ASFUNCTIONBODY(ASString,substring)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	int start=0;
 	if (argslen>=1)
 		start=args[0]->toInt();
@@ -502,7 +520,7 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 
 ASFUNCTIONBODY(ASString,slice)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	int startIndex=0;
 	if(argslen>=1)
 		startIndex=args[0]->toInt();
@@ -533,7 +551,7 @@ ASFUNCTIONBODY(ASString,slice)
 
 ASFUNCTIONBODY(ASString,charAt)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	int index=args[0]->toInt();
 	int maxIndex=th->data.numChars();
 	if(index<0 || index>=maxIndex)
@@ -543,7 +561,7 @@ ASFUNCTIONBODY(ASString,charAt)
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	unsigned int index=args[0]->toInt();
 	if(index<th->data.numChars())
 	{
@@ -556,7 +574,7 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 
 ASFUNCTIONBODY(ASString,indexOf)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	tiny_string arg0=args[0]->toString();
 	int startIndex=0;
 	if(argslen>1)
@@ -572,7 +590,7 @@ ASFUNCTIONBODY(ASString,indexOf)
 ASFUNCTIONBODY(ASString,lastIndexOf)
 {
 	assert_and_throw(argslen==1 || argslen==2);
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	tiny_string val=args[0]->toString();
 	size_t startIndex=th->data.npos;
 	if(argslen > 1 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
@@ -592,13 +610,13 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	return Class<ASString>::getInstanceS(th->data.lowercase());
 }
 
 ASFUNCTIONBODY(ASString,toUpperCase)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	return Class<ASString>::getInstanceS(th->data.uppercase());
 }
 
@@ -614,7 +632,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 
 ASFUNCTIONBODY(ASString,replace)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
@@ -729,7 +747,7 @@ ASFUNCTIONBODY(ASString,replace)
 
 ASFUNCTIONBODY(ASString,concat)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=GetStringFromObject(obj);
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
 	for(unsigned int i=0;i<argslen;i++)
 		ret->data+=args[i]->toString().raw_buf();
@@ -744,4 +762,12 @@ ASFUNCTIONBODY(ASString,generator)
 		return Class<ASString>::getInstanceS("");
 	else
 		return Class<ASString>::getInstanceS(args[0]->toString());
+}
+
+ASString* ASString::GetStringFromObject(ASObject* obj)
+{
+	if (obj->getObjectType() == T_STRING)
+		return static_cast<ASString*>(obj);
+	else
+		return Class<ASString>::getInstanceS(obj->toString());
 }

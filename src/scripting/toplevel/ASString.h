@@ -34,6 +34,7 @@ class ASString: public ASObject
 {
 CLASSBUILDABLE(ASString);
 private:
+	static ASString* GetStringFromObject(ASObject* obj);
 	tiny_string toString_priv() const;
 	ASString();
 	ASString(const std::string& s);

@@ -62,7 +62,7 @@ ASString::ASString(const char* s, uint32_t len)
 
 ASFUNCTIONBODY(ASString,_constructor)
 {
-	ASString* th=GetStringFromObject(obj);
+	ASString* th=static_cast<ASString*>(obj);
 	if(args && argslen==1)
 		th->data=args[0]->toString().raw_buf();
 	return NULL;
@@ -70,8 +70,7 @@ ASFUNCTIONBODY(ASString,_constructor)
 
 ASFUNCTIONBODY(ASString,_getLength)
 {
-	ASString* th=GetStringFromObject(obj);
-	return abstract_i(th->data.numChars());
+	return abstract_i(obj->toString().numChars());
 }
 
 void ASString::sinit(Class_base* c)
@@ -124,7 +123,7 @@ void ASString::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(ASString,search)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	int ret = -1;
 	if(argslen == 0 || args[0]->getObjectType() == T_UNDEFINED)
 		return abstract_i(-1);
@@ -166,7 +165,7 @@ ASFUNCTIONBODY(ASString,search)
 	int ovector[30];
 	int offset=0;
 	//Global is not used in search
-	int rc=pcre_exec(pcreRE, NULL, th->data.raw_buf(), th->data.numBytes(), offset, 0, ovector, 30);
+	int rc=pcre_exec(pcreRE, NULL, data.raw_buf(), data.numBytes(), offset, 0, ovector, 30);
 	if(rc<0)
 	{
 		//No matches or error
@@ -175,14 +174,14 @@ ASFUNCTIONBODY(ASString,search)
 	}
 	ret=ovector[0];
 	// pcre_exec returns byte position, so we have to convert it to character position 
-	tiny_string tmp = th->data.substr_bytes(0, ret);
+	tiny_string tmp = data.substr_bytes(0, ret);
 	ret = tmp.numChars();
 	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(ASString,match)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	if(argslen == 0 || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 		return new Null;
 	ASObject* ret=NULL;
@@ -206,7 +205,7 @@ ASFUNCTIONBODY(ASString,match)
 
 		while (true)
 		{
-			ASObject *match = re->match(th->data);
+			ASObject *match = re->match(data);
 
 			if (match->is<Null>())
 				break;
@@ -235,7 +234,7 @@ ASFUNCTIONBODY(ASString,match)
 	}
 	else
 	{
-		ret = re->match(th->data);
+		ret = re->match(data);
 	}
 
 	re->decRef();
@@ -258,12 +257,12 @@ ASFUNCTIONBODY(ASString,_toString)
 
 ASFUNCTIONBODY(ASString,split)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	Array* ret=Class<Array>::getInstanceS();
 	ASObject* delimiter=args[0];
 	if(argslen == 0 || delimiter->getObjectType()==T_UNDEFINED)
 	{
-		ret->push(Class<ASString>::getInstanceS(th->data));
+		ret->push(Class<ASString>::getInstanceS(data));
 		return ret;
 	}
 
@@ -274,7 +273,7 @@ ASFUNCTIONBODY(ASString,split)
 		if(re->source.empty())
 		{
 			//the RegExp is empty, so split every character
-			for(auto i=th->data.begin();i!=th->data.end();++i)
+			for(auto i=data.begin();i!=data.end();++i)
 				ret->push( Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) );
 			return ret;
 		}
@@ -309,7 +308,7 @@ ASFUNCTIONBODY(ASString,split)
 		do
 		{
 			//offset is a byte offset that must point to the beginning of an utf8 character
-			int rc=pcre_exec(pcreRE, NULL, th->data.raw_buf(), th->data.numBytes(), offset, 0, ovector, 30);
+			int rc=pcre_exec(pcreRE, NULL, data.raw_buf(), data.numBytes(), offset, 0, ovector, 30);
 			end=ovector[0];
 			if(rc<0)
 				break;
@@ -319,7 +318,7 @@ ASFUNCTIONBODY(ASString,split)
 				continue;
 			}
 			//Extract string from last match until the beginning of the current match
-			ASString* s=Class<ASString>::getInstanceS(th->data.substr_bytes(lastMatch,end-lastMatch));
+			ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(lastMatch,end-lastMatch));
 			ret->push(s);
 			lastMatch=offset=ovector[1];
 
@@ -327,14 +326,14 @@ ASFUNCTIONBODY(ASString,split)
 			for(int i=1;i<rc;i++)
 			{
 				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
-				ASString* s=Class<ASString>::getInstanceS(th->data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+				ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
 				ret->push(s);
 			}
 		}
-		while(end<th->data.numBytes());
-		if(lastMatch != th->data.numBytes()+1)
+		while(end<data.numBytes());
+		if(lastMatch != data.numBytes()+1)
 		{
-			ASString* s=Class<ASString>::getInstanceS(th->data.substr_bytes(lastMatch,th->data.numBytes()-lastMatch));
+			ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(lastMatch,data.numBytes()-lastMatch));
 			ret->push(s);
 		}
 		pcre_free(pcreRE);
@@ -345,23 +344,23 @@ ASFUNCTIONBODY(ASString,split)
 		if(del.empty())
 		{
 			//the string is empty, so split every character
-			for(auto i=th->data.begin();i!=th->data.end();++i)
+			for(auto i=data.begin();i!=data.end();++i)
 				ret->push( Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) );
 			return ret;
 		}
 		unsigned int start=0;
 		do
 		{
-			int match=th->data.find(del,start);
+			int match=data.find(del,start);
 			if(del.empty())
 				match++;
 			if(match==-1)
-				match=th->data.numChars();
-			ASString* s=Class<ASString>::getInstanceS(th->data.substr(start,(match-start)));
+				match=data.numChars();
+			ASString* s=Class<ASString>::getInstanceS(data.substr(start,(match-start)));
 			ret->push(s);
 			start=match+del.numChars();
 		}
-		while(start<th->data.numChars());
+		while(start<data.numChars());
 	}
 
 	return ret;
@@ -369,43 +368,43 @@ ASFUNCTIONBODY(ASString,split)
 
 ASFUNCTIONBODY(ASString,substr)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	int start=0;
 	if(argslen>=1)
 		start=args[0]->toInt();
 	if(start<0) {
-		start=th->data.numChars()+start;
+		start=data.numChars()+start;
 		if(start<0)
 			start=0;
 	}
-	if(start>(int)th->data.numChars())
-		start=th->data.numChars();
+	if(start>(int)data.numChars())
+		start=data.numChars();
 
 	int len=0x7fffffff;
 	if(argslen==2)
 		len=args[1]->toInt();
 
-	return Class<ASString>::getInstanceS(th->data.substr(start,len));
+	return Class<ASString>::getInstanceS(data.substr(start,len));
 }
 
 ASFUNCTIONBODY(ASString,substring)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	int start=0;
 	if (argslen>=1)
 		start=args[0]->toInt();
 	if(start<0)
 		start=0;
-	if(start>(int)th->data.numChars())
-		start=th->data.numChars();
+	if(start>(int)data.numChars())
+		start=data.numChars();
 
 	int end=0x7fffffff;
 	if(argslen>=2)
 		end=args[1]->toInt();
 	if(end<0)
 		end=0;
-	if(end>(int)th->data.numChars())
-		end=th->data.numChars();
+	if(end>(int)data.numChars())
+		end=data.numChars();
 
 	if(start>end) {
 		int tmp=start;
@@ -413,7 +412,7 @@ ASFUNCTIONBODY(ASString,substring)
 		end=tmp;
 	}
 
-	return Class<ASString>::getInstanceS(th->data.substr(start,end-start));
+	return Class<ASString>::getInstanceS(data.substr(start,end-start));
 }
 
 tiny_string ASString::toString_priv() const
@@ -520,53 +519,53 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 
 ASFUNCTIONBODY(ASString,slice)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	int startIndex=0;
 	if(argslen>=1)
 		startIndex=args[0]->toInt();
 	if(startIndex<0) {
-		startIndex=th->data.numChars()+startIndex;
+		startIndex=data.numChars()+startIndex;
 		if(startIndex<0)
 			startIndex=0;
 	}
-	if(startIndex>(int)th->data.numChars())
-		startIndex=th->data.numChars();
+	if(startIndex>(int)data.numChars())
+		startIndex=data.numChars();
 
 	int endIndex=0x7fffffff;
 	if(argslen>=2)
 		endIndex=args[1]->toInt();
 	if(endIndex<0) {
-		endIndex=th->data.numChars()+endIndex;
+		endIndex=data.numChars()+endIndex;
 		if(endIndex<0)
 			endIndex=0;
 	}
-	if(endIndex>(int)th->data.numChars())
-		endIndex=th->data.numChars();
+	if(endIndex>(int)data.numChars())
+		endIndex=data.numChars();
 
 	if(endIndex<=startIndex)
 		return Class<ASString>::getInstanceS("");
 	else
-		return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex-startIndex));
+		return Class<ASString>::getInstanceS(data.substr(startIndex,endIndex-startIndex));
 }
 
 ASFUNCTIONBODY(ASString,charAt)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	int index=args[0]->toInt();
-	int maxIndex=th->data.numChars();
+	int maxIndex=data.numChars();
 	if(index<0 || index>=maxIndex)
 		return Class<ASString>::getInstanceS();
-	return Class<ASString>::getInstanceS( tiny_string::fromChar(th->data.charAt(index)) );
+	return Class<ASString>::getInstanceS( tiny_string::fromChar(data.charAt(index)) );
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	unsigned int index=args[0]->toInt();
-	if(index<th->data.numChars())
+	if(index<data.numChars())
 	{
 		//Character codes are expected to be positive
-		return abstract_i(th->data.charAt(index));
+		return abstract_i(data.charAt(index));
 	}
 	else
 		return abstract_d(Number::NaN);
@@ -574,14 +573,14 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 
 ASFUNCTIONBODY(ASString,indexOf)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	tiny_string arg0=args[0]->toString();
 	int startIndex=0;
 	if(argslen>1)
 		startIndex=args[1]->toInt();
 
-	size_t pos = th->data.find(arg0.raw_buf(), startIndex);
-	if(pos == th->data.npos)
+	size_t pos = data.find(arg0.raw_buf(), startIndex);
+	if(pos == data.npos)
 		return abstract_i(-1);
 	else
 		return abstract_i(pos);
@@ -590,9 +589,9 @@ ASFUNCTIONBODY(ASString,indexOf)
 ASFUNCTIONBODY(ASString,lastIndexOf)
 {
 	assert_and_throw(argslen==1 || argslen==2);
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	tiny_string val=args[0]->toString();
-	size_t startIndex=th->data.npos;
+	size_t startIndex=data.npos;
 	if(argslen > 1 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 	{
 		int32_t i = args[1]->toInt();
@@ -601,8 +600,8 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 		startIndex = i;
 	}
 
-	size_t pos=th->data.rfind(val.raw_buf(), startIndex);
-	if(pos==th->data.npos)
+	size_t pos=data.rfind(val.raw_buf(), startIndex);
+	if(pos==data.npos)
 		return abstract_i(-1);
 	else
 		return abstract_i(pos);
@@ -610,14 +609,14 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
-	ASString* th=GetStringFromObject(obj);
-	return Class<ASString>::getInstanceS(th->data.lowercase());
+	tiny_string data = obj->toString();
+	return Class<ASString>::getInstanceS(data.lowercase());
 }
 
 ASFUNCTIONBODY(ASString,toUpperCase)
 {
-	ASString* th=GetStringFromObject(obj);
-	return Class<ASString>::getInstanceS(th->data.uppercase());
+	tiny_string data = obj->toString();
+	return Class<ASString>::getInstanceS(data.uppercase());
 }
 
 ASFUNCTIONBODY(ASString,fromCharCode)
@@ -632,10 +631,10 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 
 ASFUNCTIONBODY(ASString,replace)
 {
-	ASString* th=GetStringFromObject(obj);
+	tiny_string data = obj->toString();
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
-	ASString* ret=Class<ASString>::getInstanceS(th->data);
+	ASString* ret=Class<ASString>::getInstanceS(data);
 
 	tiny_string replaceWith;
 	if(argslen < 2)
@@ -700,8 +699,8 @@ ASFUNCTIONBODY(ASString,replace)
 				for(int i=0;i<capturingGroups;i++)
 					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
 				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
-				th->incRef();
-				subargs[capturingGroups+2]=th;
+				
+				subargs[capturingGroups+2]=Class<ASString>::getInstanceS(data);
 				ASObject* ret=f->call(new Null, subargs, 3+capturingGroups);
 				replaceWith=ret->toString().raw_buf();
 				ret->decRef();
@@ -712,15 +711,21 @@ ASFUNCTIONBODY(ASString,replace)
 					while((pos = replaceWith.find("$", ipos)) != tiny_string::npos) {
 						i = 0;
 						ipos = pos;
-						while (++ipos < replaceWith.numChars()) {
+						/* docu is not clear what to do if the $nn value is higher 
+						 * than the number of matching groups, 
+						 * but the ecma3/String/eregress_104375 test indicates
+						 * that we should take it as an $n value
+						 */
+						   
+						while (++ipos < replaceWith.numChars() && i<10) {
 						j = replaceWith.charAt(ipos)-'0';
-							if (j <0 || j> 9)
+							if (j <0 || j> 9 || rc < 10*i + j)
 								break;
 							i = 10*i + j;
 						}
 						if (i == 0)
 							continue;
-						group = ret->data.substr_bytes(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
+						group = (i >= rc) ? "" : ret->data.substr_bytes(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
 						replaceWith.replace(pos, ipos-pos, group);
 					}
 			}
@@ -747,8 +752,8 @@ ASFUNCTIONBODY(ASString,replace)
 
 ASFUNCTIONBODY(ASString,concat)
 {
-	ASString* th=GetStringFromObject(obj);
-	ASString* ret=Class<ASString>::getInstanceS(th->data);
+	tiny_string data = obj->toString();
+	ASString* ret=Class<ASString>::getInstanceS(data);
 	for(unsigned int i=0;i<argslen;i++)
 		ret->data+=args[i]->toString().raw_buf();
 
@@ -762,12 +767,4 @@ ASFUNCTIONBODY(ASString,generator)
 		return Class<ASString>::getInstanceS("");
 	else
 		return Class<ASString>::getInstanceS(args[0]->toString());
-}
-
-ASString* ASString::GetStringFromObject(ASObject* obj)
-{
-	if (obj->getObjectType() == T_STRING)
-		return static_cast<ASString*>(obj);
-	else
-		return Class<ASString>::getInstanceS(obj->toString());
 }

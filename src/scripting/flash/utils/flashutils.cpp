@@ -265,10 +265,10 @@ ASFUNCTIONBODY(ByteArray,writeUTF)
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	th->getBuffer(th->position+str->data.numBytes()+3,true);
+	th->getBuffer(th->position+str->data.numBytes()+2,true);
 	uint16_t bytes=(uint16_t)str->data.numBytes();
 	memcpy(th->bytes+th->position,&bytes,2);
-	memcpy(th->bytes+th->position+2,str->data.raw_buf(),bytes+1);
+	memcpy(th->bytes+th->position+2,str->data.raw_buf(),bytes);
 
 	return NULL;
 }
@@ -280,8 +280,8 @@ ASFUNCTIONBODY(ByteArray,writeUTFBytes)
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	th->getBuffer(th->position+str->data.numBytes()+1,true);
-	memcpy(th->bytes+th->position,str->data.raw_buf(),str->data.numBytes()+1);
+	th->getBuffer(th->position+str->data.numBytes(),true);
+	memcpy(th->bytes+th->position,str->data.raw_buf(),str->data.numBytes());
 
 	return NULL;
 }

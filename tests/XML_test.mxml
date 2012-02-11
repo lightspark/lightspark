@@ -58,6 +58,16 @@
 		var cdata:XML = new XML("<![CDATA[Lightspark]"+"]>");
 		Tests.assertEquals(cdata, "Lightspark", "Only CDATA node in file");
 
+		try
+		{
+			var xml11:XML = new XML("<?xml version='1.0' encoding='UTF-8'?><root><node/><?xml version='1.0' encoding='UTF-8'?><node/></root>");
+		}
+		catch(e:Object)
+		{
+			Tests.assertDontReach("throws when XML declaration is not at the beginning");
+		}
+
+
 		Tests.report(visual, this.name);
 	}
 	]]>

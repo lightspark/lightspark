@@ -125,12 +125,7 @@ void XML::buildFromString(const string& str)
 	}
 	else
 	{
-		string buf(str.c_str());
-		//if this is a CDATA node replace CDATA tags to make it look like a text-node
-		//for compatibility with the Adobe player
-		if (str.compare(0, 9, "<![CDATA[") == 0) {
-			buf = "<a>"+str.substr(9, str.size()-12)+"</a>";
-		}
+		string buf = parserQuirks(str);
 
 		try
 		{
@@ -142,6 +137,49 @@ void XML::buildFromString(const string& str)
 		}
 		node=parser.get_document()->get_root_node();
 	}
+}
+
+// Adobe player's XML parser accepts many strings which are not valid
+// XML according to the specs. This function attempts to massage
+// invalid-but-accepted-by-Adobe strings into valid XML so that
+// libxml++ parser doesn't throw an error.
+string XML::parserQuirks(const string& str)
+{
+	string buf = quirkCData(str);
+	buf = quirkXMLDeclarationInMiddle(buf);
+	return buf;
+}
+
+string XML::quirkCData(const string& str) {
+	//if this is a CDATA node replace CDATA tags to make it look like a text-node
+	//for compatibility with the Adobe player
+	if (str.compare(0, 9, "<![CDATA[") == 0) {
+		return "<a>"+str.substr(9, str.size()-12)+"</a>";
+	}
+	else
+		return str;
+}
+
+string XML::quirkXMLDeclarationInMiddle(const string& str) {
+	string buf(str);
+
+	// Adobe player ignores XML declarations in the middle of a
+	// string.
+	while (true)
+	{
+		size_t start = buf.find("<?xml ", 1);
+		if (start == buf.npos)
+			break;
+		
+		size_t end = buf.find("?>", start+5);
+		if (end == buf.npos)
+			break;
+		end += 2;
+		
+		buf.erase(start, end-start);
+	}
+
+	return buf;
 }
 
 ASFUNCTIONBODY(XML,generator)

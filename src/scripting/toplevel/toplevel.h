@@ -596,6 +596,9 @@ private:
 	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
 	XMLList* getAllAttributes();
 	void getText(std::vector<_R<XML>> &ret);
+	std::string parserQuirks(const std::string& str);
+	std::string quirkCData(const std::string& str);
+	std::string quirkXMLDeclarationInMiddle(const std::string& str);
 public:
 	XML();
 	XML(const std::string& str);

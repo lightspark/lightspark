@@ -328,6 +328,20 @@ public:
 	{
 		ASObject::buildTraits(o);
 	}
+	ASObject* generator(ASObject* const* args, const unsigned int argslen)
+	{
+		ASObject *ret;
+		if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
+			ret=Class<ASObject>::getInstanceS();
+		else
+		{
+			args[0]->incRef();
+			ret=args[0];
+		}
+		for(unsigned int i=0;i<argslen;i++)
+			args[i]->decRef();
+		return ret;
+	}
 };
 
 /* InterfaceClass implements interfaces. E.g., if you declare a variable of type IEventDispatcher in AS3,

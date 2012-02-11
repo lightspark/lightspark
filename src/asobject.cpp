@@ -665,16 +665,9 @@ ASFUNCTIONBODY(ASObject,generator)
 	//By default we assume it's a passthrough cast
 	if(argslen==1)
 	{
-		if (args[0]->is<Null>() || args[0]->is<Undefined>())
-		{
-			return Class<ASObject>::getInstanceS();
-		}
-		else
-		{
-			LOG(LOG_CALLS,_("Passthrough of ") << args[0]);
-			args[0]->incRef();
-			return args[0];
-		}
+		LOG(LOG_CALLS,_("Passthrough of ") << args[0]);
+		args[0]->incRef();
+		return args[0];
 	}
 	else
 		return Class<ASObject>::getInstanceS();

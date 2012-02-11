@@ -839,7 +839,13 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	//CHECK: what to do if ns is empty
 	ASObject* target=args[0];
 	Class_base* c;
-	if(target->getObjectType()!=T_CLASS)
+	SWFOBJECT_TYPE otype=target->getObjectType();
+	if(otype==T_NULL)
+		return Class<ASString>::getInstanceS("null");
+	else if(otype==T_UNDEFINED)
+		// Testing shows that this really returns "void"!
+		return Class<ASString>::getInstanceS("void");
+	else if(otype!=T_CLASS)
 	{
 		assert_and_throw(target->getClass());
 		c=target->getClass();

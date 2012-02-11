@@ -67,6 +67,9 @@
 			Tests.assertDontReach("throws when XML declaration is not at the beginning");
 		}
 
+		var xml12:XML = new XML("<root><!-- comment --><?instruction ?>text<a><c/></a><a/><b/></root>");
+		Tests.assertEquals(3, xml12.elements().length(), "elements (no parameter)");
+		Tests.assertEquals(2, xml12.elements("a").length(), "elements with name");
 
 		Tests.report(visual, this.name);
 	}

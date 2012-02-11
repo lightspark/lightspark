@@ -621,6 +621,7 @@ public:
 	ASFUNCTION(_hasComplexContent);
 	ASFUNCTION(valueOf);
 	ASFUNCTION(text);
+	ASFUNCTION(elements);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);

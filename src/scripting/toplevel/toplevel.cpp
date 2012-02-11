@@ -113,6 +113,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("elements",AS3,Class<IFunction>::getFunction(elements),NORMAL_METHOD,true);
 }
 
 void XML::buildFromString(const string& str)
@@ -525,6 +526,38 @@ ASFUNCTIONBODY(XML,text)
 	ARG_UNPACK;
 	vector<_R<XML>> ret;
 	th->getText(ret);
+	return Class<XMLList>::getInstanceS(ret);
+}
+
+ASFUNCTIONBODY(XML,elements)
+{
+	vector<_R<XML>> ret;
+	XML *th = obj->as<XML>();
+	tiny_string name;
+	ARG_UNPACK (name, "");
+	if (name=="*")
+		name="";
+
+	_NR<XML> rootXML=NullRef;
+	if(th->root.isNull())
+	{
+		th->incRef();
+		rootXML=_MR(th);
+	}
+	else
+		rootXML=th->root;
+
+	const xmlpp::Node::NodeList& children=th->node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=children.begin();
+	for(;it!=children.end();++it)
+	{
+		xmlElementType nodetype=(*it)->cobj()->type;
+		if(nodetype==XML_ELEMENT_NODE && (name.empty() || name == (*it)->get_name()))
+		{
+			rootXML->incRef();
+			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+		}
+	}
 	return Class<XMLList>::getInstanceS(ret);
 }
 

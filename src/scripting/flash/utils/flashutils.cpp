@@ -25,6 +25,7 @@
 #include "parsing/amf3_generator.h"
 #include "argconv.h"
 #include <sstream>
+#include <zlib.h>
 
 using namespace std;
 using namespace lightspark;
@@ -62,6 +63,10 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
+	c->setDeclaredMethodByQName("compress","",Class<IFunction>::getFunction(_compress),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uncompress","",Class<IFunction>::getFunction(_uncompress),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("deflate","",Class<IFunction>::getFunction(_deflate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("inflate","",Class<IFunction>::getFunction(_inflate),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(readDouble),NORMAL_METHOD,true);
@@ -684,6 +689,112 @@ void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_
 	getBuffer(position+len,true);
 	memcpy(bytes+position,s.raw_buf(),len);
 	position+=len;
+}
+
+void ByteArray::compress_zlib()
+{
+	if(len==0)
+		return;
+
+	unsigned long buflen=compressBound(len);
+	uint8_t *compressed=new uint8_t[buflen];
+
+	if(compress(compressed, &buflen, bytes, len)!=Z_OK)
+	{
+		delete[] compressed;
+		throw RunTimeException("zlib compress failed");
+	}
+
+	acquireBuffer(compressed, buflen);
+	position=buflen;
+}
+
+void ByteArray::uncompress_zlib()
+{
+	z_stream strm;
+	int status;
+
+	if(len==0)
+		return;
+
+	strm.zalloc=Z_NULL;
+	strm.zfree=Z_NULL;
+	strm.opaque=Z_NULL;
+	strm.avail_in=len;
+	strm.next_in=bytes;
+	strm.total_out=0;
+	status=inflateInit(&strm);
+	if(status==Z_VERSION_ERROR)
+		// should be IOError
+		throw Class<ASError>::getInstanceS("not valid compressed data");
+	else if(status!=Z_OK)
+		throw RunTimeException("zlib uncompress failed");
+
+	vector<uint8_t> buf(3*len);
+	do
+	{
+		strm.next_out=&buf[strm.total_out];
+		strm.avail_out=buf.size()-strm.total_out;
+		status=inflate(&strm, Z_NO_FLUSH);
+
+		if(status!=Z_OK && status!=Z_STREAM_END)
+		{
+			inflateEnd(&strm);
+			// should be IOError
+			throw Class<ASError>::getInstanceS("not valid compressed data");
+		}
+
+		if(strm.avail_out==0)
+			buf.resize(buf.size()+len);
+	} while(status!=Z_STREAM_END);
+
+	inflateEnd(&strm);
+
+	delete[] bytes;
+	len=strm.total_out;
+	bytes=new uint8_t[len];
+	memcpy(bytes, &buf[0], len);
+	position=len;
+}
+
+ASFUNCTIONBODY(ByteArray,_compress)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	tiny_string algorithm;
+	ARG_UNPACK(algorithm, "zlib");
+	if(algorithm=="zlib")
+		th->compress_zlib();
+	else
+		throw Class<ASError>::getInstanceS("Unsupported algorithm");
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_uncompress)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	tiny_string algorithm;
+	ARG_UNPACK(algorithm, "zlib");
+	if(algorithm=="zlib")
+		th->uncompress_zlib();
+	else
+		throw Class<ASError>::getInstanceS("Unsupported algorithm");
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_deflate)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->compress_zlib();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_inflate)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->uncompress_zlib();
+	return NULL;
 }
 
 void Timer::tick()

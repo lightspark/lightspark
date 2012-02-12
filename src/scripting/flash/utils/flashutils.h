@@ -41,6 +41,8 @@ protected:
 	uint32_t len;
 	uint32_t position;
 	ByteArray(const ByteArray& b);
+	void compress_zlib();
+	void uncompress_zlib();
 public:
 	ByteArray(uint8_t* b = NULL, uint32_t l = 0);
 	~ByteArray();
@@ -57,6 +59,10 @@ public:
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(_getDefaultObjectEncoding);
 	ASFUNCTION(_setDefaultObjectEncoding);
+	ASFUNCTION(_compress);
+	ASFUNCTION(_uncompress);
+	ASFUNCTION(_deflate);
+	ASFUNCTION(_inflate);
 	ASFUNCTION(readByte);
 	ASFUNCTION(readBytes);
 	ASFUNCTION(readDouble);

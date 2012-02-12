@@ -682,6 +682,12 @@ ASFUNCTIONBODY(ASObject,_toString)
 		ret+=obj->getClass()->class_name.name;
 		ret+="]";
 	}
+	else if (obj->is<Class_base>())
+	{
+		ret="[object ";
+		ret+=static_cast<Class_base*>(obj)->class_name.name;
+		ret+="]";
+	}
 	else
 		ret="[object Object]";
 
@@ -696,6 +702,12 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	name.name_s=args[0]->toString();
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	name.isAttribute=false;
+	if(obj->getClass())
+	{
+		ASObject* proto = obj->getClass()->prototype.getPtr();
+		if  (proto->hasPropertyByMultiname(name, true))
+			return abstract_b(false);
+	}
 	bool ret=obj->hasPropertyByMultiname(name, true);
 	return abstract_b(ret);
 }
@@ -709,27 +721,50 @@ ASFUNCTIONBODY(ASObject,valueOf)
 ASFUNCTIONBODY(ASObject,isPrototypeOf)
 {
 	assert_and_throw(argslen==1);
-	bool ret= false;
-	if (obj->getObjectType() == T_OBJECT)
+	bool ret =false;
+	Class_base* cls = args[0]->getClass();
+	
+	while (cls != NULL)
 	{
-		ASObject* v = obj->getprop_prototype();
-		while (v != NULL && v->getObjectType() != T_NULL && v->getObjectType() != T_UNDEFINED)
+		if (cls->prototype.getPtr() == obj)
 		{
-			if (v == obj)
-			{
-				ret = true;
-				break;
-			}
-			v = v->getprop_prototype();
+			ret = true;
+			break;
 		}
+		Class_base* clsparent = cls->prototype.getPtr()->getClass();
+		if (clsparent == cls)
+			break;
+		cls = clsparent;
 	}
 	return abstract_b(ret);
 }
 
 ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"property attributes ReadOnly,DontEnum,DontDelete,Internal not implemented");
-	return abstract_b(true);
+	assert_and_throw(argslen==1);
+	multiname name;
+	name.name_type=multiname::NAME_STRING;
+	name.name_s=args[0]->toString();
+	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.isAttribute=false;
+	unsigned int index = 0;
+	if (obj->is<Array>()) // propertyIsEnumerable(index) isn't mentioned in the ECMA specs but is tested for
+	{
+		Array* a = static_cast<Array*>(obj);
+		if (a->isValidMultiname(name,index))
+		{
+			return abstract_b(index < (unsigned int)a->size());
+		}
+	}
+	if(obj->getClass())
+	{
+		ASObject* proto = obj->getClass()->prototype.getPtr();
+		if  (proto->hasPropertyByMultiname(name, true))
+			return abstract_b(false);
+	}
+	if (obj->hasPropertyByMultiname(name,true))
+		return abstract_b(true);
+	return abstract_b(false);
 }
 
 ASFUNCTIONBODY(ASObject,_constructor)

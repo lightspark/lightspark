@@ -92,6 +92,7 @@ public:
 	ASFUNCTION(filter);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(_getLength);
+	ASFUNCTION(_setLength);
 	ASFUNCTION(forEach);
 	ASFUNCTION(_reverse);
 	ASFUNCTION(lastIndexOf);

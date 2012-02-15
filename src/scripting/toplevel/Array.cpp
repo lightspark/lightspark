@@ -47,6 +47,7 @@ void Array::sinit(Class_base* c)
 
 	// properties
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_setLength),SETTER_METHOD,true);
 
 	// public functions
 	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(_concat),NORMAL_METHOD,true);
@@ -264,6 +265,24 @@ ASFUNCTIONBODY(Array,_getLength)
 {
 	Array* th=static_cast<Array*>(obj);
 	return abstract_i(th->data.size());
+}
+
+ASFUNCTIONBODY(Array,_setLength)
+{
+	assert_and_throw(argslen == 1);
+	Array* th=static_cast<Array*>(obj);
+	uint32_t newLen=args[0]->toUInt();
+	//If newLen is equal to size do nothing
+	if(newLen==th->data.size())
+		return NULL;
+
+	for(uint32_t i=newLen;i < th->data.size(); i++)
+	{
+		if(th->data[i].type == DATA_OBJECT && th->data[i].data)
+			th->data[i].data->decRef();
+	}
+	th->resize(newLen);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Array,forEach)

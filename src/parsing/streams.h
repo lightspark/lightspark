@@ -33,6 +33,7 @@ private:
 	int consumed;
 	z_stream strm;
 	char buffer[4096];
+	bool eof;
 protected:
 	char in_buf[4096];
 	virtual int_type underflow();

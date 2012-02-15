@@ -28,7 +28,7 @@
 using namespace std;
 
 
-zlib_filter::zlib_filter(streambuf* b):backend(b),consumed(0)
+zlib_filter::zlib_filter(streambuf* b):backend(b),consumed(0),eof(false)
 {
 	strm.zalloc = Z_NULL;
 	strm.zfree = Z_NULL;
@@ -50,6 +50,8 @@ zlib_filter::~zlib_filter()
 zlib_filter::int_type zlib_filter::underflow()
 {
 	assert(gptr()==egptr());
+	if(eof)
+		return -1;
 
 	//First of all we add the length of the buffer to the consumed variable
 	consumed+=(gptr()-eback());
@@ -75,6 +77,7 @@ zlib_filter::int_type zlib_filter::underflow()
 		else if(ret==Z_STREAM_END)
 		{
 			//The stream ended, close the buffer here
+			eof=true;
 			break;
 		}
 		else

@@ -60,6 +60,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/flashdisplay.cpp
   scripting/flash/events/flashevents.cpp
   scripting/flash/external/ExternalInterface.cpp
+  scripting/flash/filters/flashfilters.cpp
   scripting/flash/geom/flashgeom.cpp
   scripting/flash/media/flashmedia.cpp
   scripting/flash/net/flashnet.cpp

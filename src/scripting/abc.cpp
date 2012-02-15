@@ -42,8 +42,9 @@
 #include "toplevel/Math.h"
 #include "toplevel/Vector.h"
 #include "flash/accessibility/flashaccessibility.h"
-#include "flash/events/flashevents.h"
 #include "flash/display/flashdisplay.h"
+#include "flash/events/flashevents.h"
+#include "flash/filters/flashfilters.h"
 #include "flash/net/flashnet.h"
 #include "flash/net/URLStream.h"
 #include "flash/system/flashsystem.h"
@@ -247,12 +248,9 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("AVM1Movie","flash.display",Class<AVM1Movie>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Shader","flash.display",Class<Shader>::getRef(),DECLARED_TRAIT);
 
-	builtin->setVariableByQName("DropShadowFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("DropShadowFilter","flash.filters")),DECLARED_TRAIT);
-	builtin->setVariableByQName("BitmapFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("BitmapFilter","flash.filters")),DECLARED_TRAIT);
-	builtin->setVariableByQName("GlowFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("GlowFilter","flash.filters")),DECLARED_TRAIT);
+	builtin->setVariableByQName("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("GlowFilter","flash.filters",Class<GlowFilter>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("BevelFilter","flash.filters",
 			Class<ASObject>::getStubClass(QName("BevelFilter","flash.filters")),DECLARED_TRAIT);
 	builtin->setVariableByQName("ColorMatrixFilter","flash.filters",

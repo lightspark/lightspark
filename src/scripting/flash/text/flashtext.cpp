@@ -53,7 +53,7 @@ ASFUNCTIONBODY(lightspark::Font,enumerateFonts)
 void TextField::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
-	c->setSuper(Class<DisplayObject>::getRef());
+	c->setSuper(Class<InteractiveObject>::getRef());
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);

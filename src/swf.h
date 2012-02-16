@@ -28,6 +28,7 @@
 #include "swftypes.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "timer.h"
 
 #include "platforms/engineutils.h"
@@ -328,6 +329,11 @@ public:
 
 	//Resize support
 	void resizeCompleted() const;
+
+	/*
+	 * The application domain for the main code
+	 */
+	_NR<ApplicationDomain> mainApplicationDomain;
 
 #ifdef PROFILING_SUPPORT
 	void setProfilingOutput(const tiny_string& t) DLL_PUBLIC;

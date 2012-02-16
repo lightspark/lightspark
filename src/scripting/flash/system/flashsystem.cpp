@@ -90,7 +90,9 @@ ASFUNCTIONBODY(ApplicationDomain,_constructor)
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 {
-	return Class<ApplicationDomain>::getInstanceS();
+	ApplicationDomain* ret=getSys()->mainApplicationDomain.getPtr();
+	ret->incRef();
+	return ret;
 }
 
 ASFUNCTIONBODY(ApplicationDomain,hasDefinition)

@@ -169,7 +169,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(false),downloadManager(NULL),
-	extScriptObject(NULL),scaleMode(SHOW_ALL)
+	extScriptObject(NULL),scaleMode(SHOW_ALL),mainApplicationDomain(NullRef)
 {
 	cookiesFileName = NULL;
 
@@ -190,6 +190,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
 	stage=Class<Stage>::getInstanceS();
+	mainApplicationDomain=_MR(Class<ApplicationDomain>::getInstanceS());
 	this->incRef();
 	stage->_addChildAt(_MR(this),0);
 	startTime=compat_msectiming();
@@ -377,6 +378,7 @@ void SystemState::finalize()
 	RootMovieClip::finalize();
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
+	mainApplicationDomain.reset();
 	parameters.reset();
 	frameListeners.clear();
 }

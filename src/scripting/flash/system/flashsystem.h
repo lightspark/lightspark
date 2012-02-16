@@ -50,6 +50,28 @@ public:
 	ASFUNCTION(hasDefinition);
 	ASFUNCTION(getDefinition);
 	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>, domainMemory);
+	template<class T>
+	T readFromDomainMemory(uint32_t addr) const
+	{
+		if(domainMemory.isNull())
+			throw RunTimeException("No memory domain is set");
+		uint32_t bufLen=domainMemory->getLength();
+		if(bufLen < (addr+sizeof(T)))
+			throw RunTimeException("Memory domain access is out of bounds");
+		uint8_t* buf=domainMemory->getBuffer(bufLen, false);
+		return *reinterpret_cast<T*>(buf+addr);
+	}
+	template<class T>
+	void writeToDomainMemory(uint32_t addr, T val)
+	{
+		if(domainMemory.isNull())
+			throw RunTimeException("No memory domain is set");
+		uint32_t bufLen=domainMemory->getLength();
+		if(bufLen < (addr+sizeof(T)))
+			throw RunTimeException("Memory domain access is out of bounds");
+		uint8_t* buf=domainMemory->getBuffer(bufLen, false);
+		*reinterpret_cast<T*>(buf+addr)=val;
+	}
 };
 
 class SecurityDomain: public ASObject

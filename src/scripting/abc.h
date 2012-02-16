@@ -456,6 +456,26 @@ private:
 	//Interpreted AS instructions
 	//If you change a definition here, update the opcode_table_* entry in abc_codesynth
 	static bool hasNext2(call_context* th, int n, int m); 
+	template<class T>
+	static void loadIntN(call_context* th)
+	{
+		ASObject* arg1=th->runtime_stack_pop();
+		uint32_t addr=arg1->toUInt();
+		arg1->decRef();
+		_R<ApplicationDomain> appDomain = getSys()->mainApplicationDomain;
+		T ret=appDomain->readFromDomainMemory<T>(addr);
+		th->runtime_stack_push(abstract_ui(ret));
+	}
+	template<class T>
+	static void storeIntN(call_context* th)
+	{
+		ASObject* arg1=th->runtime_stack_pop();
+		ASObject* arg2=th->runtime_stack_pop();
+		uint32_t addr=arg1->toUInt();
+		uint32_t val=arg2->toUInt();
+		_R<ApplicationDomain> appDomain = getSys()->mainApplicationDomain;
+		appDomain->writeToDomainMemory<T>(addr, val);
+	}
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn);

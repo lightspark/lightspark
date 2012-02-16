@@ -77,10 +77,19 @@ void ApplicationDomain::sinit(Class_base* c)
 	//Instance
 	c->setDeclaredMethodByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c,domainMemory);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(ApplicationDomain,domainMemory);
 
 void ApplicationDomain::buildTraits(ASObject* o)
 {
+}
+
+void ApplicationDomain::finalize()
+{
+	ASObject::finalize();
+	domainMemory.reset();
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_constructor)

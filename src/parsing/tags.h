@@ -537,7 +537,7 @@ public:
 	void execute(RootMovieClip* root){};
 };
 
-class DefineBitsLosslessTag: public DictionaryTag, public Bitmap
+class DefineBitsLosslessTag: public DictionaryTag, public BitmapData
 {
 private:
 	UI16_SWF CharacterId;
@@ -552,7 +552,7 @@ public:
 	ASObject* instance() const;
 };
 
-class DefineBitsTag: public DictionaryTag, public Bitmap
+class DefineBitsTag: public DictionaryTag, public BitmapData
 {
 private:
 	UI16_SWF CharacterId;
@@ -563,7 +563,7 @@ public:
 	int getId(){ return CharacterId; }
 };
 
-class DefineBitsJPEG2Tag: public DictionaryTag, public Bitmap
+class DefineBitsJPEG2Tag: public DictionaryTag, public BitmapData
 {
 private:
 	UI16_SWF CharacterId;
@@ -573,7 +573,7 @@ public:
 	ASObject* instance() const;
 };
 
-class DefineBitsJPEG3Tag: public DictionaryTag, public Bitmap
+class DefineBitsJPEG3Tag: public DictionaryTag, public BitmapData
 {
 private:
 	UI16_SWF CharacterId;

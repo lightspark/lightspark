@@ -654,17 +654,27 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 			inData[i] = 0xFF;
 	}
 
-	bitmapData->fromRGB(inData, BitmapWidth, BitmapHeight, true);
-	Bitmap::updatedData();
+	fromRGB(inData, BitmapWidth, BitmapHeight, true);
 }
 
 ASObject* DefineBitsLosslessTag::instance() const
 {
 	DefineBitsLosslessTag* ret=new DefineBitsLosslessTag(*this);
-	if(bindedTo)
+	//Flex imports bitmaps using BitmapAsset as the base class, which is derived from bitmap
+	//Also BitmapData is used in the wild though, so support both cases
+	if(bindedTo && bindedTo->isSubClass(Class<Bitmap>::getClass()))
+	{
+		ret->setClass(Class<BitmapData>::getClass());
+		Bitmap* bitmapRet=new Bitmap(_MR((BitmapData*)ret));
+		bitmapRet->setClass(bindedTo);
+		return bitmapRet;
+	}
+	else if(bindedTo && bindedTo->isSubClass(Class<BitmapData>::getClass()))
+	{
 		ret->setClass(bindedTo);
+	}
 	else
-		ret->setClass(Class<Bitmap>::getClass());
+		ret->setClass(Class<BitmapData>::getClass());
 	return ret;
 }
 
@@ -1389,8 +1399,7 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Diction
 	uint8_t* inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
 
-	bitmapData->fromJPEG(inData,dataSize);
-	Bitmap::updatedData();
+	fromJPEG(inData,dataSize);
 	delete[] inData;
 }
 
@@ -1400,7 +1409,7 @@ ASObject* DefineBitsJPEG2Tag::instance() const
 	if(bindedTo)
 		ret->setClass(bindedTo);
 	else
-		ret->setClass(Class<Bitmap>::getClass());
+		ret->setClass(Class<BitmapData>::getClass());
 	return ret;
 }
 
@@ -1414,8 +1423,7 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 	in.read((char*)inData,dataSize);
 
 	//TODO: check header. Could also be PNG or GIF
-	bitmapData->fromJPEG(inData,dataSize);
-	Bitmap::updatedData();
+	fromJPEG(inData,dataSize);
 	delete[] inData;
 
 	//Read alpha data (if any)
@@ -1434,7 +1442,7 @@ ASObject* DefineBitsJPEG3Tag::instance() const
 	if(bindedTo)
 		ret->setClass(bindedTo);
 	else
-		ret->setClass(Class<Bitmap>::getClass());
+		ret->setClass(Class<BitmapData>::getClass());
 	return ret;
 }
 

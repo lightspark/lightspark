@@ -772,13 +772,13 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 			try
 			{
 				_R<DictionaryTag> dict=getParseThread()->getRootMovie()->dictionaryLookup(bitmapId);
-				Bitmap* b = dynamic_cast<Bitmap*>(dict.getPtr());
+				BitmapData* b = dynamic_cast<BitmapData*>(dict.getPtr());
 				if(!b)
 				{
 					LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
 					throw ParseException("Invalid ID for bitmap");
 				}
-				v.bitmap = b->bitmapData.getPtr();
+				v.bitmap = b;
 			}
 			catch(RunTimeException& e)
 			{

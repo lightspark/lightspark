@@ -3603,6 +3603,12 @@ Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
 	Bitmap::updatedData();
 }
 
+Bitmap::Bitmap(_R<BitmapData> data) : TokenContainer(this)
+{
+	bitmapData = data;
+	Bitmap::updatedData();
+}
+
 BitmapData::~BitmapData()
 {
 	if(data)

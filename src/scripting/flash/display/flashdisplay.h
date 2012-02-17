@@ -796,6 +796,7 @@ public:
 	/* Call this after updating any member of 'data' */
 	void updatedData();
 	Bitmap(std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
+	Bitmap(_R<BitmapData> data);
 	static void sinit(Class_base* c);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);

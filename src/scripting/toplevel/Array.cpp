@@ -476,13 +476,16 @@ ASFUNCTIONBODY(Array,splice)
 ASFUNCTIONBODY(Array,join)
 {
 	Array* th=static_cast<Array*>(obj);
-	ASObject* del=args[0];
+	
+	tiny_string del = ",";
+	if (argslen == 1)
+	      del=args[0]->toString();
 	string ret;
 	for(int i=0;i<th->size();i++)
 	{
 		ret+=th->at(i)->toString().raw_buf();
 		if(i!=th->size()-1)
-			ret+=del->toString().raw_buf();
+			ret+=del.raw_buf();
 	}
 	return Class<ASString>::getInstanceS(ret);
 }

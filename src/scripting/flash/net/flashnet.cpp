@@ -74,7 +74,7 @@ URLInfo URLRequest::getRequestURL() const
 		return ret;
 
 	if(data->getClass()==Class<ByteArray>::getClass())
-		throw RunTimeException("ByteArray data not supported in URLRequest");
+		ret=ret.getParsedURL();
 	else
 	{
 		tiny_string newURL = ret.getParsedURL();
@@ -97,7 +97,16 @@ void URLRequest::getPostData(vector<uint8_t>& outData) const
 		return;
 
 	if(data->getClass()==Class<ByteArray>::getClass())
-		throw RunTimeException("ByteArray not support in URLRequest");
+	{
+		ByteArray *ba=data->as<ByteArray>();
+		const uint8_t *buf=ba->getBuffer(ba->getLength(), false);
+		tiny_string strData="Content-type: application/x-www-form-urlencoded\r\nContent-length: ";
+		char contentlenbuf[20];
+		snprintf(contentlenbuf,20,"%u\r\n\r\n",ba->getLength());
+		strData+=contentlenbuf;
+		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.numBytes());
+		outData.insert(outData.end(),buf,buf+ba->getLength());
+	}
 	else if(data->getClass()==Class<URLVariables>::getClass())
 	{
 		//Prepend the Content-Type header

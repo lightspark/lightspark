@@ -30,6 +30,7 @@ REGISTER_CLASS_NAME(Array);
 
 Array::Array()
 {
+	currentsize=0;
 	type=T_ARRAY;
 }
 
@@ -83,11 +84,9 @@ ASFUNCTIONBODY(Array,_constructor)
 {
 	Array* th=static_cast<Array*>(obj);
 
-	if(argslen==1 && args[0]->getObjectType()==T_INTEGER)
+	if(argslen==1 && (args[0]->getObjectType()==T_INTEGER || args[0]->getObjectType()==T_UINTEGER || args[0]->getObjectType()==T_NUMBER))
 	{
-		int size=args[0]->toInt();
-		if(size < 0)
-			throw Class<RangeError>::getInstanceS("Array constructor with negative size");
+		uint32_t size=args[0]->toUInt();
 		LOG(LOG_CALLS,_("Creating array of length ") << size);
 		th->resize(size);
 	}
@@ -106,39 +105,61 @@ ASFUNCTIONBODY(Array,_constructor)
 
 ASFUNCTIONBODY(Array,generator)
 {
-	Array* arr=Class<Array>::getInstanceS();
-	arr->resize(argslen);
-	for(unsigned int i=0;i<argslen;i++)
+	Array* th=Class<Array>::getInstanceS();
+	if(argslen==1 && (args[0]->getObjectType()==T_INTEGER || args[0]->getObjectType()==T_UINTEGER || args[0]->getObjectType()==T_NUMBER))
 	{
-		args[i]->incRef();
-		arr->set(i,args[i]);
+		uint32_t size=args[0]->toUInt();
+		LOG(LOG_CALLS,_("Creating array of length ") << size);
+		th->resize(size);
 	}
-	return arr;
+	else
+	{
+		LOG(LOG_CALLS,_("Called Array constructor"));
+		th->resize(argslen);
+		for(unsigned int i=0;i<argslen;i++)
+		{
+			th->set(i,args[i]);
+			args[i]->incRef();
+		}
+	}
+	return th;
 }
 
 ASFUNCTIONBODY(Array,_concat)
 {
 	Array* th=static_cast<Array*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
-	ret->data=th->data;
+	
+	// copy values into new array
+	ret->resize(th->size());
+	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	for(;it != th->data.end();++it)
+	{
+		ret->data[it->first]=it->second;
+	}
+	
 	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
 	{
 		Array* tmp=Class<Array>::cast(args[0]);
-		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
+		std::map<uint32_t, data_slot>::iterator ittmp=tmp->data.begin();
+		for(;ittmp != tmp->data.end();++ittmp)
+		{
+			ret->data[ret->size()+ittmp->first]=ittmp->second;
+		}
+		ret->resize(th->size()+tmp->size());
 	}
 	else
 	{
 		//Insert the arguments in the array
-		ret->data.reserve(ret->data.size()+argslen);
 		for(unsigned int i=0;i<argslen;i++)
 			ret->push(args[i]);
 	}
 
 	//All the elements in the new array should be increffed, as args will be deleted and
 	//this array could die too
-	for(unsigned int i=0;i<ret->data.size();i++)
+	for(unsigned int i=0;i<ret->size();i++)
 	{
-		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
+		if(ret->data.count(i) && ret->data[i].type==DATA_OBJECT && ret->data[i].data)
 			ret->data[i].data->incRef();
 	}
 
@@ -154,8 +175,10 @@ ASFUNCTIONBODY(Array,filter)
 	Array* ret=Class<Array>::getInstanceS();
 	ASObject *funcRet;
 
-	for(unsigned int i=0;i<th->data.size();i++)
+	for(unsigned int i=0;i<th->size();i++)
 	{
+		if (!th->data.count(i))
+			continue;
 		assert_and_throw(th->data[i].type==DATA_OBJECT);
 		params[0] = th->data[i].data;
 		th->data[i].data->incRef();
@@ -193,8 +216,10 @@ ASFUNCTIONBODY(Array, some)
 	ASObject* params[3];
 	ASObject *funcRet;
 
-	for(unsigned int i=0; i < th->data.size(); i++)
+	for(unsigned int i=0; i < th->size(); i++)
 	{
+		if (!th->data.count(i))
+			continue;
 		assert_and_throw(th->data[i].type==DATA_OBJECT);
 		params[0] = th->data[i].data;
 		th->data[i].data->incRef();
@@ -231,8 +256,10 @@ ASFUNCTIONBODY(Array, every)
 	ASObject* params[3];
 	ASObject *funcRet;
 
-	for(unsigned int i=0; i < th->data.size(); i++)
+	for(unsigned int i=0; i < th->size(); i++)
 	{
+		if (!th->data.count(i))
+			continue;
 		assert_and_throw(th->data[i].type==DATA_OBJECT);
 		params[0] = th->data[i].data;
 		th->data[i].data->incRef();
@@ -264,7 +291,7 @@ ASFUNCTIONBODY(Array, every)
 ASFUNCTIONBODY(Array,_getLength)
 {
 	Array* th=static_cast<Array*>(obj);
-	return abstract_i(th->data.size());
+	return abstract_ui(th->size());
 }
 
 ASFUNCTIONBODY(Array,_setLength)
@@ -273,14 +300,8 @@ ASFUNCTIONBODY(Array,_setLength)
 	Array* th=static_cast<Array*>(obj);
 	uint32_t newLen=args[0]->toUInt();
 	//If newLen is equal to size do nothing
-	if(newLen==th->data.size())
+	if(newLen==th->size())
 		return NULL;
-
-	for(uint32_t i=newLen;i < th->data.size(); i++)
-	{
-		if(th->data[i].type == DATA_OBJECT && th->data[i].data)
-			th->data[i].data->decRef();
-	}
 	th->resize(newLen);
 	return NULL;
 }
@@ -292,8 +313,10 @@ ASFUNCTIONBODY(Array,forEach)
 	IFunction* f = static_cast<IFunction*>(args[0]);
 	ASObject* params[3];
 
-	for(unsigned int i=0; i < th->data.size(); i++)
+	for(unsigned int i=0; i < th->size(); i++)
 	{
+		if (!th->data.count(i))
+			continue;
 		assert_and_throw(th->data[i].type==DATA_OBJECT);
 		params[0] = th->data[i].data;
 		th->data[i].data->incRef();
@@ -322,8 +345,14 @@ ASFUNCTIONBODY(Array, _reverse)
 {
 	Array* th = static_cast<Array*>(obj);
 
-	reverse(th->data.begin(), th->data.end());
-
+	std::map<uint32_t, data_slot> tmp = std::map<uint32_t, data_slot>(th->data);
+	uint32_t size = th->size();
+	th->data.clear();
+	std::map<uint32_t, data_slot>::iterator it=tmp.begin();
+	for(;it != tmp.end();++it)
+ 	{
+		th->data[size-(it->first+1)]=it->second;
+	}
 	th->incRef();
 	return th;
 }
@@ -338,7 +367,7 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	if(th->data.empty())
 		return abstract_d(0);
 
-	size_t i = th->data.size()-1;
+	size_t i = th->size()-1;
 
 	if(argslen == 2 && std::isnan(args[1]->toNumber()))
 		return abstract_i(0);
@@ -348,25 +377,25 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 		int j = args[1]->toInt(); //Preserve sign
 		if(j < 0) //Negative offset, use it as offset from the end of the array
 		{
-			if((size_t)-j > th->data.size())
+			if((size_t)-j > th->size())
 				i = 0;
 			else
-				i = th->data.size()+j;
+				i = th->size()+j;
 		}
 		else //Positive offset, use it directly
 		{
-			if((size_t)j > th->data.size()) //If the passed offset is bigger than the array, cap the offset
-				i = th->data.size()-1;
+			if((size_t)j > th->size()) //If the passed offset is bigger than the array, cap the offset
+				i = th->size()-1;
 			else
 				i = j;
 		}
 	}
-
-	DATA_TYPE dtype = th->data[i].type;
 	do
 	{
+		if (!th->data.count(i))
+		    continue;
+		DATA_TYPE dtype = th->data[i].type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		dtype = th->data[i].type;
 		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
 			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
 		{
@@ -382,20 +411,38 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 ASFUNCTIONBODY(Array,shift)
 {
 	Array* th=static_cast<Array*>(obj);
-	if(th->data.empty())
+	if(!th->size())
 		return new Undefined;
 	ASObject* ret;
-	if(th->data[0].type==DATA_OBJECT)
-		ret=th->data[0].data;
+	if(!th->data.count(0))
+		ret = new Undefined;
 	else
-		throw UnsupportedException("Array::shift not completely implemented");
-	th->data.erase(th->data.begin());
+	{
+		if(th->data[0].type==DATA_OBJECT)
+			ret=th->data[0].data;
+		else
+			ret = abstract_i(th->data[0].data_i);
+		th->data.erase(0);
+	}
+	for(uint32_t i= 1;i< th->size();i++)
+	{
+		if (th->data.count(i))
+		{
+			th->data[i-1]=th->data[i];
+		}
+		else if (th->data.count(i-1))
+		{
+			th->data.erase(i-1);
+		}
+	}
+	th->data.erase(th->size()-1);// erase here to avoid decref
+	th->resize(th->size()-1);
 	return ret;
 }
 
 int Array::capIndex(int i) const
 {
-	int totalSize=data.size();
+	int totalSize=size();
 
 	if(totalSize <= 0)
 		return 0;
@@ -427,10 +474,17 @@ ASFUNCTIONBODY(Array,slice)
 	endIndex=th->capIndex(endIndex);
 
 	Array* ret=Class<Array>::getInstanceS();
-	for(int i=startIndex; i<endIndex; i++) {
-		th->data[i].data->incRef();
-		ret->data.push_back(th->data[i]);
+	int j = 0;
+	for(int i=startIndex; i<endIndex; i++) 
+	{
+		if (th->data.count(i))
+		{
+			th->data[i].data->incRef();
+			ret->data[j] =th->data[i];
+		}
+		j++;
 	}
+	ret->resize(j);
 	return ret;
 }
 
@@ -441,11 +495,11 @@ ASFUNCTIONBODY(Array,splice)
 	int startIndex=args[0]->toInt();
 	//By default, delete all the element up to the end
 	//Use the array len, it will be capped below
-	int deleteCount=th->data.size();
+	int deleteCount=th->size();
 	if(argslen > 1)
 		deleteCount=args[1]->toUInt();
 
-	int totalSize=th->data.size();
+	int totalSize=th->size();
 	Array* ret=Class<Array>::getInstanceS();
 
 	startIndex=th->capIndex(startIndex);
@@ -453,23 +507,50 @@ ASFUNCTIONBODY(Array,splice)
 	if((startIndex+deleteCount)>totalSize)
 		deleteCount=totalSize-startIndex;
 
+	ret->resize(deleteCount);
 	if(deleteCount)
 	{
-		ret->data.reserve(deleteCount);
-
+		// write deleted items to return array
 		for(int i=0;i<deleteCount;i++)
-			ret->data.push_back(th->data[startIndex+i]);
-
-		th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+		{
+			if (th->data.count(startIndex+i))
+				ret->data[i] = th->data[startIndex+i];
+		}
+		// delete items from current array
+		for (int i = 0; i < deleteCount; i++)
+		{
+			if(th->data.count(startIndex+i))
+			{
+				th->data.erase(startIndex+i);
+			}
+		}
 	}
+	// remember items in current array that have to be moved to new position
+	vector<data_slot> tmp = vector<data_slot>(totalSize- (startIndex+deleteCount));
+	for (int i = startIndex+deleteCount; i < totalSize ; i++)
+	{
+		if (th->data.count(i))
+		{
+			tmp[i-(startIndex+deleteCount)] = th->data[i];
+			th->data.erase(i);
+		}
+	}
+	th->resize(startIndex);
 
+	
 	//Insert requested values starting at startIndex
-	for(unsigned int i=2,n=0;i<argslen;i++,n++)
+	for(unsigned int i=2;i<argslen;i++)
 	{
 		args[i]->incRef();
-		th->data.insert(th->data.begin()+startIndex+n,data_slot(args[i]));
+		th->push(args[i]);
 	}
-
+	// move remembered items to new position
+	for(int i=0;i<totalSize- (startIndex+deleteCount);i++)
+	{
+		if (tmp[i].type != DATA_OBJECT || tmp[i].data != NULL)
+			th->data[startIndex+i] = tmp[i];
+	}
+	th->resize((totalSize-deleteCount)+(argslen-2));
 	return ret;
 }
 
@@ -481,7 +562,7 @@ ASFUNCTIONBODY(Array,join)
 	if (argslen == 1)
 	      del=args[0]->toString();
 	string ret;
-	for(int i=0;i<th->size();i++)
+	for(uint32_t i=0;i<th->size();i++)
 	{
 		ret+=th->at(i)->toString().raw_buf();
 		if(i!=th->size()-1)
@@ -504,8 +585,10 @@ ASFUNCTIONBODY(Array,indexOf)
 	}
 
 	DATA_TYPE dtype;
-	for(;i<th->data.size();i++)
+	for(;i<th->size();i++)
 	{
+		if (!th->data.count(i))
+			continue;
 		dtype = th->data[i].type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
 		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
@@ -522,12 +605,22 @@ ASFUNCTIONBODY(Array,indexOf)
 ASFUNCTIONBODY(Array,_pop)
 {
 	Array* th=static_cast<Array*>(obj);
+	uint32_t size =th->size();
+	if (size == 0)
+		return new Undefined;
 	ASObject* ret;
-	if(!th->data.empty() && th->data.back().type==DATA_OBJECT)
-		ret=th->data.back().data;
+	if (th->data.count(size-1))
+	{
+		if(th->data[size-1].type==DATA_OBJECT)
+			ret=th->data[size-1].data;
+		else
+			ret = abstract_i(th->data[size-1].data_i);
+		th->data.erase(size-1);
+	}
 	else
-		throw UnsupportedException("Array::pop not completely implemented");
-	th->data.pop_back();
+		ret = new Undefined;
+
+	th->currentsize--;
 	return ret;
 }
 
@@ -630,12 +723,26 @@ ASFUNCTIONBODY(Array,_sort)
 				throw UnsupportedException("Array::sort not completely implemented");
 		}
 	}
-
+	std::vector<data_slot> tmp = vector<data_slot>(th->data.size());
+	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	int i = 0;
+	for(;it != th->data.end();++it)
+	{
+		tmp[i++]= it->second;
+	}
+	
 	if(comp)
-		sort(th->data.begin(),th->data.end(),sortComparatorWrapper(comp));
+		sort(tmp.begin(),tmp.end(),sortComparatorWrapper(comp));
 	else
-		sort(th->data.begin(),th->data.end(),sortComparatorDefault(isNumeric,isCaseInsensitive));
+		sort(tmp.begin(),tmp.end(),sortComparatorDefault(isNumeric,isCaseInsensitive));
 
+	th->data.clear();
+	std::vector<data_slot>::iterator ittmp=tmp.begin();
+	i = 0;
+	for(;ittmp != tmp.end();++ittmp)
+	{
+		th->data[i++]= *ittmp;
+	}
 	obj->incRef();
 	return obj;
 }
@@ -653,12 +760,23 @@ ASFUNCTIONBODY(Array,sortOn)
 ASFUNCTIONBODY(Array,unshift)
 {
 	Array* th=static_cast<Array*>(obj);
+	th->resize(th->size()+argslen);
+	for(uint32_t i=th->size();i> 0;i--)
+	{
+		if (th->data.count(i-1))
+		{
+			th->data[(i-1)+argslen]=th->data[i-1];
+			th->data.erase(i-1);
+		}
+		
+	}
+
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		th->data.insert(th->data.begin(),data_slot(args[i],DATA_OBJECT));
+		th->data[i] = data_slot(args[i],DATA_OBJECT);
 		args[i]->incRef();
 	}
-	return abstract_i(th->size());;
+	return abstract_i(th->size());
 }
 
 ASFUNCTIONBODY(Array,_push)
@@ -679,20 +797,24 @@ ASFUNCTIONBODY(Array,_map)
 	IFunction* func=static_cast<IFunction*>(args[0]);
 	Array* arrayRet=Class<Array>::getInstanceS();
 
-	for(uint32_t i=0;i<th->data.size();i++)
+	for(uint32_t i=0;i<th->size();i++)
 	{
 		ASObject* funcArgs[3];
-		const data_slot& slot=th->data[i];
-		if(slot.type==DATA_INT)
-			funcArgs[0]=abstract_i(slot.data_i);
-		else if(slot.type==DATA_OBJECT && slot.data)
-		{
-			funcArgs[0]=slot.data;
-			funcArgs[0]->incRef();
-		}
+		if (!th->data.count(i))
+			funcArgs[0]=new Null;
 		else
-			funcArgs[0]=new Undefined;
-
+		{
+			const data_slot& slot=th->data[i];
+			if(slot.type==DATA_INT)
+				funcArgs[0]=abstract_i(slot.data_i);
+			else if(slot.type==DATA_OBJECT && slot.data)
+			{
+				funcArgs[0]=slot.data;
+				funcArgs[0]->incRef();
+			}
+			else
+				funcArgs[0]=new Undefined;
+		}
 		funcArgs[1]=abstract_i(i);
 		funcArgs[2]=th;
 		funcArgs[2]->incRef();
@@ -717,8 +839,10 @@ int32_t Array::getVariableByMultiname_i(const multiname& name)
 	if(!isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname_i(name);
 
-	if(index<data.size())
+	if(index<size())
 	{
+		if (!data.count(index))
+			return 0;
 		switch(data[index].type)
 		{
 			case DATA_OBJECT:
@@ -758,9 +882,11 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	if(!isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname(name,opt);
 
-	if(index<data.size())
+	if(index<size())
 	{
 		ASObject* ret=NULL;
+		if (!data.count(index))
+			ret = new Undefined;
 		switch(data[index].type)
 		{
 			case DATA_OBJECT:
@@ -791,18 +917,13 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 		ASObject::setVariableByMultiname_i(name,value);
 		return;
 	}
-
-	if(index>=data.capacity())
-	{
-		//Heuristic, we increse the array 20%
-		int new_size=imax(index+1,data.size()*2);
-		data.reserve(new_size);
-	}
-	if(index>=data.size())
+	if(index>=size())
 		resize(index+1);
 
-	if(data[index].type==DATA_OBJECT && data[index].data)
+	if(data.count(index) && data[index].type==DATA_OBJECT && data[index].data)
 		data[index].data->decRef();
+	if(!data.count(index))
+		data[index] = data_slot();
 	data[index].data_i=value;
 	data[index].type=DATA_INT;
 }
@@ -817,7 +938,7 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	if(!isValidMultiname(name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
-	return index<data.size();
+	return index<size();
 }
 
 bool Array::isValidMultiname(const multiname& name, unsigned int& index)
@@ -871,17 +992,13 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o)
 	if(!isValidMultiname(name,index))
 		return ASObject::setVariableByMultiname(name,o);
 
-	if(index>=data.capacity())
-	{
-		//Heuristic, we increse the array 20%
-		int new_size=imax(index+1,data.size()*2);
-		data.reserve(new_size);
-	}
-	if(index>=data.size())
+	if(index>=size())
 		resize(index+1);
 
-	if(data[index].type==DATA_OBJECT && data[index].data)
+	if(data.count(index) && data[index].type==DATA_OBJECT && data[index].data)
 		data[index].data->decRef();
+	if(!data.count(index))
+		data[index] = data_slot();
 
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -904,14 +1021,14 @@ bool Array::deleteVariableByMultiname(const multiname& name)
 	if(!isValidMultiname(name,index))
 		return ASObject::deleteVariableByMultiname(name);
 
-	if(index>=data.capacity())
-	  return true;
-
+	if(index>=size())
+		return true;
+	if (!data.count(index))
+		return true;
 	if(data[index].type==DATA_OBJECT && data[index].data)
 		data[index].data->decRef();
 
-	data[index].data=NULL;
-	data[index].type=DATA_OBJECT;
+	data.erase(index);
 	return true;
 }
 
@@ -943,23 +1060,25 @@ tiny_string Array::toString()
 tiny_string Array::toString_priv() const
 {
 	string ret;
-	for(unsigned int i=0;i<data.size();i++)
+	for(uint32_t i=0;i<size();i++)
 	{
-		if(data[i].type==DATA_OBJECT)
+		if (data.count(i))
 		{
-			if(data[i].data)
-				ret+=data[i].data->toString().raw_buf();
+			if(data.at(i).type==DATA_OBJECT)
+			{
+				if(data.at(i).data)
+					ret+=data.at(i).data->toString().raw_buf();
+			}
+			else if(data.at(i).type==DATA_INT)
+			{
+				char buf[20];
+				snprintf(buf,20,"%i",data.at(i).data_i);
+				ret+=buf;
+			}
+			else
+				throw UnsupportedException("Array::toString not completely implemented");
 		}
-		else if(data[i].type==DATA_INT)
-		{
-			char buf[20];
-			snprintf(buf,20,"%i",data[i].data_i);
-			ret+=buf;
-		}
-		else
-			throw UnsupportedException("Array::toString not completely implemented");
-
-		if(i!=data.size()-1)
+		if(i!=size()-1)
 			ret+=',';
 	}
 	return ret;
@@ -968,9 +1087,11 @@ tiny_string Array::toString_priv() const
 _R<ASObject> Array::nextValue(uint32_t index)
 {
 	assert_and_throw(implEnable);
-	if(index<=data.size())
+	if(index<=size())
 	{
 		index--;
+		if(!data.count(index))
+			return _MR(new Undefined);
 		if(data[index].type==DATA_OBJECT)
 		{
 			if(data[index].data==NULL)
@@ -989,23 +1110,32 @@ _R<ASObject> Array::nextValue(uint32_t index)
 	else
 	{
 		//Fall back on object properties
-		return ASObject::nextValue(index-data.size());
+		return ASObject::nextValue(index-size());
 	}
 }
 
 uint32_t Array::nextNameIndex(uint32_t cur_index)
 {
 	assert_and_throw(implEnable);
-	if(cur_index<data.size())
-		return cur_index+1;
+	if(cur_index<size())
+	{
+		while (!data.count(cur_index) && cur_index<size())
+		{
+			cur_index++;
+		}
+		if(cur_index<size())
+			return cur_index+1;
+		else
+			return 0;
+	}
 	else
 	{
 		//Fall back on object properties
-		uint32_t ret=ASObject::nextNameIndex(cur_index-data.size());
+		uint32_t ret=ASObject::nextNameIndex(cur_index-size());
 		if(ret==0)
 			return 0;
 		else
-			return ret+data.size();
+			return ret+size();
 
 	}
 }
@@ -1013,29 +1143,31 @@ uint32_t Array::nextNameIndex(uint32_t cur_index)
 _R<ASObject> Array::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
-	if(index<=data.size())
+	if(index<=size())
 		return _MR(abstract_i(index-1));
 	else
 	{
 		//Fall back on object properties
-		return ASObject::nextName(index-data.size());
+		return ASObject::nextName(index-size());
 	}
 }
 
 ASObject* Array::at(unsigned int index) const
 {
-	if(data.size()<=index)
+	if(size()<=index)
 		outofbounds();
 
-	switch(data[index].type)
+	if (!data.count(index))
+		return new Undefined;
+	switch(data.at(index).type)
 	{
 		case DATA_OBJECT:
 		{
-			if(data[index].data)
-				return data[index].data;
+			if(data.at(index).data)
+				return data.at(index).data;
 		}
 		case DATA_INT:
-			return abstract_i(data[index].data_i);
+			return abstract_i(data.at(index).data_i);
 	}
 
 	//We should be here only if data is an object and is NULL
@@ -1052,19 +1184,21 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 {
 	assert_and_throw(objMap.find(this)==objMap.end());
 	out->writeByte(amf3::array_marker);
-	uint32_t denseCount = data.size();
+	uint32_t denseCount = size();
 	assert_and_throw(denseCount<0x20000000);
 	uint32_t value = (denseCount << 1) | 1;
 	out->writeU29(value);
 	serializeDynamicProperties(out, stringMap, objMap);
 	for(uint32_t i=0;i<denseCount;i++)
 	{
-		switch(data[i].type)
+		if (!data.count(i))
+			throw UnsupportedException("undefined not supported in Array::serialize");
+		switch(data.at(i).type)
 		{
 			case DATA_INT:
 				throw UnsupportedException("int not supported in Array::serialize");
 			case DATA_OBJECT:
-				data[i].data->serialize(out, stringMap, objMap);
+				data.at(i).data->serialize(out, stringMap, objMap);
 		}
 	}
 }
@@ -1072,9 +1206,9 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 void Array::finalize()
 {
 	ASObject::finalize();
-	for(unsigned int i=0;i<data.size();i++)
+	for(unsigned int i=0;i<size();i++)
 	{
-		if(data[i].type==DATA_OBJECT && data[i].data)
+		if(data.count(i) && data[i].type==DATA_OBJECT && data[i].data)
 			data[i].data->decRef();
 	}
 	data.clear();

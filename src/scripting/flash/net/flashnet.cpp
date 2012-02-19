@@ -44,7 +44,7 @@ REGISTER_CLASS_NAME(ObjectEncoding);
 REGISTER_CLASS_NAME(NetConnection);
 REGISTER_CLASS_NAME(NetStream);
 
-URLRequest::URLRequest():method(GET)
+URLRequest::URLRequest():method(GET),contentType("application/x-www-form-urlencoded")
 {
 }
 
@@ -58,6 +58,7 @@ void URLRequest::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(_getMethod),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_setData),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c,contentType);
 }
 
 void URLRequest::buildTraits(ASObject* o)
@@ -88,6 +89,20 @@ URLInfo URLRequest::getRequestURL() const
 	return ret;
 }
 
+/* Return contentType if it is a valid value for Content-Type header,
+ * otherwise raise ArgumentError.
+ */
+tiny_string URLRequest::validatedContentType() const
+{
+	if(contentType.find("\r")!=contentType.npos || 
+	   contentType.find("\n")!=contentType.npos)
+	{
+		throw Class<ArgumentError>::getInstanceS(tiny_string("Error #2096: The HTTP request header ") + contentType + tiny_string(" cannot be set via ActionScript."));
+	}
+
+	return contentType;
+}
+
 void URLRequest::getPostData(vector<uint8_t>& outData) const
 {
 	if(method!=POST)
@@ -99,12 +114,17 @@ void URLRequest::getPostData(vector<uint8_t>& outData) const
 	if(data->getClass()==Class<ByteArray>::getClass())
 	{
 		ByteArray *ba=data->as<ByteArray>();
-		const uint8_t *buf=ba->getBuffer(ba->getLength(), false);
-		tiny_string strData="Content-type: application/x-www-form-urlencoded\r\nContent-length: ";
+		tiny_string tmp="Content-type: ";
+		outData.insert(outData.end(),tmp.raw_buf(),tmp.raw_buf()+tmp.numBytes());
+		tmp=validatedContentType();
+		outData.insert(outData.end(),tmp.raw_buf(),tmp.raw_buf()+tmp.numBytes());
+		tmp="\r\nContent-length: ";
+		outData.insert(outData.end(),tmp.raw_buf(),tmp.raw_buf()+tmp.numBytes());
 		char contentlenbuf[20];
 		snprintf(contentlenbuf,20,"%u\r\n\r\n",ba->getLength());
-		strData+=contentlenbuf;
-		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.numBytes());
+		outData.insert(outData.end(),contentlenbuf,contentlenbuf+strlen(contentlenbuf));
+
+		const uint8_t *buf=ba->getBuffer(ba->getLength(), false);
 		outData.insert(outData.end(),buf,buf+ba->getLength());
 	}
 	else if(data->getClass()==Class<URLVariables>::getClass())
@@ -202,6 +222,8 @@ ASFUNCTIONBODY(URLRequest,_setData)
 
 	return NULL;
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(URLRequest,contentType);
 
 void URLRequestMethod::sinit(Class_base* c)
 {

@@ -39,6 +39,8 @@ private:
 	_NR<ASObject> data;
 	enum METHOD { GET=0, POST };
 	METHOD method;
+	tiny_string validatedContentType() const;
+	ASPROPERTY_GETTER_SETTER(tiny_string,contentType);
 public:
 	URLRequest();
 	void finalize();

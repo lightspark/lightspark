@@ -2471,7 +2471,12 @@ ASObject *RegExp::match(const tiny_string& str)
 			a->push(new Undefined);
 	}
 	a->setVariableByQName("input","",Class<ASString>::getInstanceS(str),DYNAMIC_TRAIT);
-	a->setVariableByQName("index","",abstract_i(ovector[0]),DYNAMIC_TRAIT);
+
+	// pcre_exec returns byte position, so we have to convert it to character position 
+	tiny_string tmp = str.substr_bytes(0, ovector[0]);
+	int index = tmp.numChars();
+
+	a->setVariableByQName("index","",abstract_i(index),DYNAMIC_TRAIT);
 	for(int i=0;i<namedGroups;i++)
 	{
 		nameEntry* entry=(nameEntry*)entries;

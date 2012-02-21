@@ -3633,42 +3633,26 @@ ASFUNCTIONBODY(lightspark,parseFloat)
 
 ASFUNCTIONBODY(lightspark,isNaN)
 {
-	if(args[0]->getObjectType()==T_UNDEFINED)
+	if(argslen==0)
+		return abstract_b(true);
+	else if(args[0]->getObjectType()==T_UNDEFINED)
 		return abstract_b(true);
 	else if(args[0]->getObjectType()==T_INTEGER)
 		return abstract_b(false);
-	else if(args[0]->getObjectType()==T_NUMBER)
-	{
-		if(std::isnan(args[0]->toNumber()))
-			return abstract_b(true);
-		else
-			return abstract_b(false);
-	}
 	else if(args[0]->getObjectType()==T_BOOLEAN)
 		return abstract_b(false);
-	else if(args[0]->getObjectType()==T_STRING)
-	{
-		double n=args[0]->toNumber();
-		return abstract_b(std::isnan(n));
-	}
 	else if(args[0]->getObjectType()==T_NULL)
 		return abstract_b(false); // because Number(null) == 0
 	else
-		throw UnsupportedException("Weird argument for isNaN");
+		return abstract_b(std::isnan(args[0]->toNumber()));
 }
 
 ASFUNCTIONBODY(lightspark,isFinite)
 {
-	if(args[0]->getObjectType()==T_NUMBER ||
-		args[0]->getObjectType()==T_INTEGER)
-	{
-		if(isfinite(args[0]->toNumber()))
-			return abstract_b(true);
-		else
-			return abstract_b(false);
-	}
+	if(argslen==0)
+		return abstract_b(false);
 	else
-		throw UnsupportedException("Weird argument for isFinite");
+		return abstract_b(isfinite(args[0]->toNumber()));
 }
 
 ASFUNCTIONBODY(lightspark,encodeURI)

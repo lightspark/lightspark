@@ -3586,49 +3586,47 @@ GlobalObject::~GlobalObject()
 
 ASFUNCTIONBODY(lightspark,parseInt)
 {
-	assert_and_throw(argslen==1 || argslen==2);
-	if(args[0]->getObjectType()==T_UNDEFINED)
+	tiny_string str;
+	int radix;
+	ARG_UNPACK (str, "") (radix, 0);
+
+	if(radix != 0 && (radix < 2 || radix > 36))
+		return abstract_d(numeric_limits<double>::quiet_NaN());
+
+	const char* cur=str.raw_buf();
+
+	errno=0;
+	char *end;
+	int64_t val=g_ascii_strtoll(cur, &end, radix);
+
+	if(errno==ERANGE)
 	{
-		LOG(LOG_ERROR,"Undefined passed to parseInt");
-		return new Undefined;
+		if(val==LONG_MAX)
+			return abstract_d(numeric_limits<double>::infinity());
+		if(val==LONG_MIN)
+			return abstract_d(-numeric_limits<double>::infinity());
 	}
-	else
-	{
-		int radix=0;
-		if(argslen==2)
-		{
-			radix=args[1]->toInt();
-			if(radix < 2 || radix > 36)
-				return abstract_d(numeric_limits<double>::quiet_NaN());
-		}
-		const tiny_string& str=args[0]->toString();
-		const char* cur=str.raw_buf();
 
-		errno=0;
-		char *end;
-		int64_t val=g_ascii_strtoll(cur, &end, radix);
+	if(end==cur)
+		return abstract_d(numeric_limits<double>::quiet_NaN());
 
-		if(errno==ERANGE)
-		{
-			if(val==LONG_MAX)
-				return abstract_d(numeric_limits<double>::infinity());
-			if(val==LONG_MIN)
-				return abstract_d(-numeric_limits<double>::infinity());
-		}
-
-		if(end==cur)
-			return abstract_d(numeric_limits<double>::quiet_NaN());
-
-		return abstract_d(val);
-	}
+	return abstract_d(val);
 }
 
 ASFUNCTIONBODY(lightspark,parseFloat)
 {
-	if(args[0]->getObjectType()==T_UNDEFINED)
-		return new Undefined;
-	else
-		return abstract_d(atof(args[0]->toString().raw_buf()));
+	tiny_string str;
+	const char *p;
+	char *end;
+	ARG_UNPACK (str, "");
+
+	p=str.raw_buf();
+	double d=strtod(p, &end);
+
+	if (end==p)
+		return abstract_d(numeric_limits<double>::quiet_NaN());
+
+	return abstract_d(d);
 }
 
 ASFUNCTIONBODY(lightspark,isNaN)

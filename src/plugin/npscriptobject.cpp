@@ -58,10 +58,12 @@ NPIdentifierObject::NPIdentifierObject(const ExtIdentifier& value)
 	}
 }
 NPIdentifierObject::NPIdentifierObject(const NPIdentifierObject& id)
+	: ExtIdentifier()
 {
 	id.copy(identifier);
 }
 NPIdentifierObject::NPIdentifierObject(const NPIdentifier& id)
+	: ExtIdentifier()
 {
 	copy(id, identifier);
 }
@@ -83,7 +85,11 @@ void NPIdentifierObject::stringToInt(const std::string& value)
 void NPIdentifierObject::copy(const NPIdentifier& from, NPIdentifier& dest)
 {
 	if(NPN_IdentifierIsString(from))
-		dest = NPN_GetStringIdentifier(NPN_UTF8FromIdentifier(from));
+	{
+		NPUTF8* str = NPN_UTF8FromIdentifier(from);
+		dest = NPN_GetStringIdentifier(str);
+		NPN_MemFree(str);
+	}
 	else
 		dest = NPN_GetIntIdentifier(NPN_IntFromIdentifier(from));
 }
@@ -117,7 +123,12 @@ NPIdentifierObject::EI_TYPE NPIdentifierObject::getType(const NPIdentifier& iden
 std::string NPIdentifierObject::getString(const NPIdentifier& identifier)
 {
 	if(getType(identifier) == EI_STRING)
-		return std::string(NPN_UTF8FromIdentifier(identifier));
+	{
+		NPUTF8* str = NPN_UTF8FromIdentifier(identifier);
+		std::string result(str);
+		NPN_MemFree(str);
+		return result;
+	}
 	else
 		return "";
 }
@@ -130,8 +141,10 @@ int32_t NPIdentifierObject::getInt(const NPIdentifier& identifier)
 }
 NPIdentifier NPIdentifierObject::getNPIdentifier() const
 {
-	if(getType() == EI_STRING) return NPN_GetStringIdentifier(getString().c_str());
-	else return NPN_GetIntIdentifier(getInt());
+	if(getType() == EI_STRING)
+		return NPN_GetStringIdentifier(getString().c_str());
+	else
+		return NPN_GetIntIdentifier(getInt());
 }
 
 /* -- NPObjectObject -- */
@@ -220,7 +233,7 @@ bool NPObjectObject::hasProperty(const lightspark::ExtIdentifier& id) const
 }
 lightspark::ExtVariant* NPObjectObject::getProperty(const lightspark::ExtIdentifier& id) const
 {
-	std::map<NPIdentifierObject, NPVariantObject>::const_iterator it = properties.find(id);
+	std::map<ExtIdentifier, ExtVariant>::const_iterator it = properties.find(id);
 	if(it == properties.end())
 		return NULL;
 
@@ -228,12 +241,12 @@ lightspark::ExtVariant* NPObjectObject::getProperty(const lightspark::ExtIdentif
 }
 void NPObjectObject::setProperty(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant& value)
 {
-	properties[id] =  NPVariantObject(instance, value);
+	properties[id] = value;
 }
 
 bool NPObjectObject::removeProperty(const lightspark::ExtIdentifier& id)
 {
-	std::map<NPIdentifierObject, NPVariantObject>::iterator it = properties.find(id);
+	std::map<ExtIdentifier, ExtVariant>::iterator it = properties.find(id);
 	if(it == properties.end())
 		return false;
 
@@ -244,11 +257,11 @@ bool NPObjectObject::enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count
 {
 	*count = properties.size();
 	*ids = new lightspark::ExtIdentifier*[properties.size()];
-	std::map<NPIdentifierObject, NPVariantObject>::const_iterator it;
+	std::map<ExtIdentifier, ExtVariant>::const_iterator it;
 	int i = 0;
 	for(it = properties.begin(); it != properties.end(); ++it)
 	{
-		(*ids)[i] = new NPIdentifierObject(it->first);
+		(*ids)[i] = new ExtIdentifier(it->first);
 		i++;
 	}
 
@@ -531,7 +544,7 @@ void NPVariantObject::copy(const NPVariant& from, NPVariant& dest)
 // Constructor
 NPScriptObject::NPScriptObject(NPScriptObjectGW* _gw) :
 	gw(_gw), instance(gw->getInstance()),
-	currentCallback(NULL), externalCallData(NULL),
+	currentCallback(NULL), hostCallData(NULL),
 	shuttingDown(false), marshallExceptions(false)
 {
 	// This object is always created in the main plugin thread, so lets save
@@ -574,7 +587,7 @@ void NPScriptObject::destroy()
 // Destructor
 NPScriptObject::~NPScriptObject()
 {
-	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator meth_it = methods.begin();
+	std::map<ExtIdentifier, lightspark::ExtCallback*>::iterator meth_it = methods.begin();
 	while(meth_it != methods.end())
 	{
 		delete (*meth_it).second;
@@ -591,7 +604,7 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 
 	NPIdentifierObject objId(id);
 	// Check if the method exists
-	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator it;
+	std::map<ExtIdentifier, lightspark::ExtCallback*>::iterator it;
 	it = methods.find(objId);
 	if(it == methods.end())
 		return false;
@@ -632,16 +645,16 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	callback->wait();
 	// As long as we get forced wake-ups, execute the requested external calls and keep waiting.
 	// Note that only the root callback can be forcibly woken up.
-	while(externalCallData != NULL)
+	while(hostCallData != NULL)
 	{
 		// Copy the external call data pointer
-		EXT_CALL_DATA* data = externalCallData;
+		HOST_CALL_DATA* data = hostCallData;
 		// Clear the external call data pointer BEFORE executing the call.
 		// This will make sure another nested external call will
 		// be handled properly.
-		externalCallData = NULL;
+		hostCallData = NULL;
 		// Execute the external call
-		callExternal(data);
+		hostCallHandler(data);
 		// Keep waiting
 		callback->wait();
 	}
@@ -677,7 +690,7 @@ bool NPScriptObject::invokeDefault(const NPVariant* args, uint32_t argc, NPVaria
 // ExtScriptObject interface: methods
 bool NPScriptObject::removeMethod(const lightspark::ExtIdentifier& id)
 {
-	std::map<NPIdentifierObject, lightspark::ExtCallback*>::iterator it = methods.find(id);
+	std::map<ExtIdentifier, lightspark::ExtCallback*>::iterator it = methods.find(id);
 	if(it == methods.end())
 		return false;
 
@@ -689,7 +702,7 @@ bool NPScriptObject::removeMethod(const lightspark::ExtIdentifier& id)
 // ExtScriptObject interface: properties
 NPVariantObject* NPScriptObject::getProperty(const lightspark::ExtIdentifier& id) const
 {
-	std::map<NPIdentifierObject, NPVariantObject>::const_iterator it = properties.find(id);
+	std::map<ExtIdentifier, ExtVariant>::const_iterator it = properties.find(id);
 	if(it == properties.end())
 		return NULL;
 
@@ -698,7 +711,7 @@ NPVariantObject* NPScriptObject::getProperty(const lightspark::ExtIdentifier& id
 }
 bool NPScriptObject::removeProperty(const lightspark::ExtIdentifier& id)
 {
-	std::map<NPIdentifierObject, NPVariantObject>::iterator it = properties.find(id);
+	std::map<ExtIdentifier, ExtVariant>::iterator it = properties.find(id);
 	if(it == properties.end())
 		return false;
 
@@ -711,14 +724,14 @@ bool NPScriptObject::enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count
 {
 	*count = properties.size()+methods.size();
 	*ids = new lightspark::ExtIdentifier*[properties.size()+methods.size()];
-	std::map<NPIdentifierObject, NPVariantObject>::const_iterator prop_it;
+	std::map<ExtIdentifier, ExtVariant>::const_iterator prop_it;
 	int i = 0;
 	for(prop_it = properties.begin(); prop_it != properties.end(); ++prop_it)
 	{
 		(*ids)[i] = new NPIdentifierObject(prop_it->first);
 		i++;
 	}
-	std::map<NPIdentifierObject, lightspark::ExtCallback*>::const_iterator meth_it;
+	std::map<ExtIdentifier, lightspark::ExtCallback*>::const_iterator meth_it;
 	for(meth_it = methods.begin(); meth_it != methods.end(); ++meth_it)
 	{
 		(*ids)[i] = new NPIdentifierObject(meth_it->first);
@@ -728,32 +741,117 @@ bool NPScriptObject::enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count
 	return true;
 }
 
-// ExtScriptObject interface: calling external methods
-bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
-		const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result)
+// This method allows calling a function on the main thread in a generic way.
+void NPScriptObject::doHostCall(NPScriptObject::HOST_CALL_TYPE type,
+	void* returnValue, void* arg1, void* arg2, void* arg3, void* arg4)
 {
+	// Used to signal completion of asynchronous external call
+	Semaphore callStatus(0);
+	HOST_CALL_DATA callData = {
+		this,
+		&callStatus,
+		type,
+		arg1,
+		arg2,
+		arg3,
+		arg4,
+		returnValue
+	};
+	
+	// We are in the main thread,
+	// so we can call the method ourselves synchronously straight away
+	if(Thread::self() == mainThread)
+	{
+		hostCallHandler(&callData);
+		return;
+	}
+
 	// Make sure we are the only external call being executed
 	mutex.lock();
 	// If we are shutting down, then don't even continue
 	if(shuttingDown)
 	{
 		mutex.unlock();
-		return false;
 	}
 
 	// If we are the first external call, then indicate that an external call is running
 	if(callStatusses.size() == 0)
-		externalCall.lock();
+		hostCall.lock();
 
+	// Add this callStatus semaphore to the list of running call statuses to be cleaned up on shutdown
+	callStatusses.push(&callStatus);
+
+	// Called JS may invoke a callback, which in turn may invoke another external method, which needs this mutex
+	mutex.unlock();
+
+	// Main thread is not occupied by an invoked callback,
+	// so ask the browser to asynchronously call our external function.
+	if(currentCallback == NULL)
+		NPN_PluginThreadAsyncCall(instance, &NPScriptObject::hostCallHandler, &callData);
+	// Main thread is occupied by an invoked callback.
+	// Wake it up and ask it run our external call
+	else
+	{
+		hostCallData = &callData;
+		currentCallback->wakeUp();
+	}
+
+	// Wait for the (possibly asynchronously) called function to finish
+	callStatus.wait();
+
+	mutex.lock();
+
+	// This call status doesn't need to be cleaned up anymore on shutdown
+	callStatusses.pop();
+
+	// If we are the last external call, then indicate that all external calls are now finished
+	if(callStatusses.size() == 0)
+		hostCall.unlock();
+
+	mutex.unlock();
+}
+
+void NPScriptObject::hostCallHandler(void* d)
+{
+	HOST_CALL_DATA* callData = static_cast<HOST_CALL_DATA*>(d);
+	
+	nsPluginInstance* plugin = (nsPluginInstance*)callData->so->instance->pdata;
+	lightspark::SystemState* prevSys = getSys();
+	bool tlsSysSet = false;
+	if(plugin && plugin->m_sys)
+	{
+		tlsSysSet = true;
+		setTLSSys(plugin->m_sys);
+	}
+
+	// Assert we are in the main plugin thread
+	callData->so->assertThread();
+
+	switch(callData->type)
+	{
+	case EXTERNAL_CALL:
+		*static_cast<bool*>(callData->returnValue) = callExternalHandler(callData->so->instance,
+			(const char*) (callData->arg1), (const ExtVariant**) (callData->arg2),
+			*((uint32_t*) (callData->arg3)), (ASObject**) (callData->arg4));
+		break;
+	default:
+		LOG(LOG_ERROR, "Unimplemented host call requested");
+	}
+
+	callData->callStatus->signal();
+	if(tlsSysSet)
+		setTLSSys(prevSys);
+}
+
+// ExtScriptObject interface: calling external methods
+bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
+		const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result)
+{
 	// Signals when the async has been completed
 	// True if NPN_Invoke succeeded
 	bool success = false;
 
-	// Used to signal completion of asynchronous external call
-	Semaphore callStatus(0);
-	// Add this callStatus semaphore to the list of running call statuses to be cleaned up on shutdown
-	callStatusses.push(&callStatus);
-	//We forge an anonymous function with the right number of arguments
+	// We forge an anonymous function with the right number of arguments
 	std::string argsString;
 	for(uint32_t i=0;i<argc;i++)
 	{
@@ -772,80 +870,29 @@ bool NPScriptObject::callExternal(const lightspark::ExtIdentifier& id,
 
 	LOG(LOG_CALLS,"Invoking " << scriptString << " in the browser ");
 
-	EXT_CALL_DATA data = {
-		mainThread,
-		instance,
-		scriptString.c_str(),
-		args,
-		argc,
-		result,
-		&callStatus,
-		&success
-	};
-
-	// Called JS may invoke a callback, which in turn may invoke another external method, which needs this mutex
-	mutex.unlock();
-
-	// We are in the main thread,
-	// so we can call the method ourselves synchronously straight away
-	if(Thread::self() == mainThread)
-		callExternal(&data);
-	// We are not in the main thread
-	else
-	{
-		// Main thread is not occupied by an invoked callback,
-		// so ask the browser to asynchronously call our external function.
-		if(currentCallback == NULL)
-			NPN_PluginThreadAsyncCall(instance, &NPScriptObject::callExternal, &data);
-		// Main thread is occupied by an invoked callback.
-		// Wake it up and ask it run our external call
-		else
-		{
-			externalCallData = &data;
-			currentCallback->wakeUp();
-		}
-	}
-
-	// Wait for the (possibly asynchronously) called function to finish
-	callStatus.wait();
-
-	mutex.lock();
-
-	// This call status doesn't need to be cleaned up anymore on shutdown
-	callStatusses.pop();
-
-	// If we are the last external call, then indicate that all external calls are now finished
-	if(callStatusses.size() == 0)
-		externalCall.unlock();
-
-	mutex.unlock();
+	doHostCall(EXTERNAL_CALL, &success, const_cast<char*>(scriptString.c_str()), const_cast<ExtVariant**>(args), &argc, result);
 	return success;
 }
 
-void NPScriptObject::callExternal(void* d)
+bool NPScriptObject::callExternalHandler(NPP instance, const char* scriptString,
+		const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result)
 {
-	EXT_CALL_DATA* data = static_cast<EXT_CALL_DATA*>(d);
-	nsPluginInstance* plugin = (nsPluginInstance*)data->instance->pdata;
-	lightspark::SystemState* prevSys = getSys();
-	setTLSSys(plugin->m_sys);
-
-
-	// Assert we are in the main plugin thread
-	assert(Thread::self() == data->mainThread);
+	// !!! We assume this method is only called on the main thread !!!
 
 	// This will hold the result from our NPN_Invoke(Default) call
 	NPVariant resultVariant;
 
 	NPObject* windowObject;
-	NPN_GetValue(data->instance, NPNVWindowNPObject, &windowObject);
+	NPN_GetValue(instance, NPNVWindowNPObject, &windowObject);
 
 	NPString script;
-	script.UTF8Characters = data->scriptString;
-	script.UTF8Length = strlen(data->scriptString);
-	*(data->success) = NPN_Evaluate(data->instance, windowObject, &script, &resultVariant);
+	script.UTF8Characters = scriptString;
+	script.UTF8Length = strlen(scriptString);
+	bool success;
+	success = NPN_Evaluate(instance, windowObject, &script, &resultVariant);
 
 	//Evaluate should have returned a function object, if not bail out
-	if(*(data->success))
+	if(success)
 	{
 		//SUCCESS
 		if(!NPVARIANT_IS_OBJECT(resultVariant))
@@ -856,35 +903,34 @@ void NPScriptObject::callExternal(void* d)
 		else
 		{
 			// These will get passed as arguments to NPN_Invoke(Default)
-			NPVariant* variantArgs = g_newa(NPVariant,data->argc);
-			for(uint32_t i = 0; i < data->argc; i++)
-				NPVariantObject(data->instance, *(data->args[i])).copy(variantArgs[i]);
+			NPVariant* variantArgs = g_newa(NPVariant,argc);
+			for(uint32_t i = 0; i < argc; i++)
+				NPVariantObject(instance, *(args[i])).copy(variantArgs[i]);
 
 			NPVariant evalResult = resultVariant;
 			NPObject* evalObj = NPVARIANT_TO_OBJECT(resultVariant);
 			// Lets try to invoke the default function on the object returned by the evaluation
-			*(data->success) = NPN_InvokeDefault(data->instance, evalObj,
-						variantArgs, data->argc, &resultVariant);
+			success = NPN_InvokeDefault(instance, evalObj,
+						variantArgs, argc, &resultVariant);
 
 			//Release the result fo the evaluation
 			NPN_ReleaseVariantValue(&evalResult);
 
 			// Release the converted arguments
-			for(uint32_t i = 0; i < data->argc; i++)
+			for(uint32_t i = 0; i < argc; i++)
 				NPN_ReleaseVariantValue(&(variantArgs[i]));
 
-			if(*(data->success))
+			if(success)
 			{
-				NPVariantObject tmp(data->instance, resultVariant);
-				*(data->result) = tmp.getASObject();
+				NPVariantObject tmp(instance, resultVariant);
+				*(result) = tmp.getASObject();
 				NPN_ReleaseVariantValue(&resultVariant);
 			}
 
 		}
 	}
 
-	data->callStatus->signal();
-	setTLSSys(prevSys);
+	return success;
 }
 
 void NPScriptObject::setException(const std::string& message) const
@@ -903,7 +949,7 @@ bool NPScriptObject::stdGetVariable(const lightspark::ExtScriptObject& so,
 	if(argc!=1 || args[0]->getType()!=lightspark::ExtVariant::EV_STRING)
 		return false;
 	//Only support properties currently
-	*result=so.getProperty(NPIdentifierObject(args[0]->getString()));
+	*result=so.getProperty(ExtIdentifier(args[0]->getString()));
 	if(*result)
 		return true;
 
@@ -1048,19 +1094,6 @@ NPScriptObjectGW::NPScriptObjectGW(NPP inst) : instance(inst)
 
 	NPN_GetValue(instance, NPNVWindowNPObject, &windowObject);
 	NPN_GetValue(instance, NPNVPluginElementNPObject, &pluginElementObject);
-
-	// Lets set these basic properties, fetched from the NPRuntime
-	if(pluginElementObject != NULL)
-	{
-		NPVariant result;
-		NPN_GetProperty(instance, pluginElementObject, NPN_GetStringIdentifier("id"), &result);
-		NPVariantObject objResult(instance, result);
-		so->setProperty("id", objResult);
-		NPN_ReleaseVariantValue(&result);
-		NPN_GetProperty(instance, pluginElementObject, NPN_GetStringIdentifier("name"), &result);
-		so->setProperty("name", NPVariantObject(instance, result));
-		NPN_ReleaseVariantValue(&result);
-	}
 }
 
 // Destructor

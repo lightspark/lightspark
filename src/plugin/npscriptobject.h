@@ -95,26 +95,10 @@ public:
 	
 	~NPObjectObject() {}
 
-	NPObjectObject& operator=(const lightspark::ExtObject& other);
-
-	// Properties
-	bool hasProperty(const lightspark::ExtIdentifier& id) const;
-	// The returned value should be "delete"d by the caller after use
-	lightspark::ExtVariant* getProperty(const lightspark::ExtIdentifier& id) const;
-	void setProperty(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant& value);
-	bool removeProperty(const lightspark::ExtIdentifier& id);
-
-	bool enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count) const;
-	uint32_t getLength() const { return properties.size(); }
-
 	NPObject* getNPObject() const { return getNPObject(instance, *this); }
 	static NPObject* getNPObject(NPP instance, const lightspark::ExtObject& obj);
 private:
 	NPP instance;
-	//std::map<NPIdentifierObject, NPVariantObject> properties;
-	std::map<ExtIdentifier, ExtVariant> properties;
-
-	static void copy(const lightspark::ExtObject& from, lightspark::ExtObject& to);
 };
 
 /**
@@ -213,7 +197,6 @@ public:
 	NPVariantObject* getProperty(const lightspark::ExtIdentifier& id) const;
 	void setProperty(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant& value)
 	{
-		//properties[id] = NPVariantObject(instance, value);
 		properties[id] = value;
 	}
 	bool removeProperty(const lightspark::ExtIdentifier& id);

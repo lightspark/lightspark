@@ -97,7 +97,7 @@ ExtObject::ExtObject(const ExtObject& other)
 // Copying
 ExtObject& ExtObject::operator=(const ExtObject& other)
 {
-	type = other.getType();
+	setType(other.getType());
 	other.copy(properties);
 	return *this;
 } 

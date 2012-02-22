@@ -158,7 +158,7 @@ NPObjectObject::NPObjectObject(NPP _instance) : instance(_instance)
 NPObjectObject::NPObjectObject(NPP _instance, lightspark::ExtObject& other) : instance(_instance)
 {
 	setType(other.getType());
-	copy(other, *this);
+	other.copy(properties);
 }
 NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) :
 	instance(_instance)
@@ -199,73 +199,6 @@ NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) :
 		}
 		NPN_MemFree(ids);
 	}
-}
-
-// Copying
-NPObjectObject& NPObjectObject::operator=(const lightspark::ExtObject& other)
-{
-	setType(other.getType());
-	copy(other, *this);
-	return *this;
-}
-void NPObjectObject::copy(const lightspark::ExtObject& from, lightspark::ExtObject& to)
-{
-	lightspark::ExtIdentifier** ids;
-	lightspark::ExtVariant* property;
-	uint32_t count;
-	if(from.enumerate(&ids, &count))
-	{
-		for(uint32_t i = 0; i < count; i++)
-		{
-			property = from.getProperty(*ids[i]);
-			to.setProperty(*ids[i], *property);
-			delete property;
-			delete ids[i];
-		}
-	}
-	delete ids;
-}
-
-// Properties
-bool NPObjectObject::hasProperty(const lightspark::ExtIdentifier& id) const
-{
-	return properties.find(id) != properties.end();
-}
-lightspark::ExtVariant* NPObjectObject::getProperty(const lightspark::ExtIdentifier& id) const
-{
-	std::map<ExtIdentifier, ExtVariant>::const_iterator it = properties.find(id);
-	if(it == properties.end())
-		return NULL;
-
-	return new NPVariantObject(instance, it->second);
-}
-void NPObjectObject::setProperty(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant& value)
-{
-	properties[id] = value;
-}
-
-bool NPObjectObject::removeProperty(const lightspark::ExtIdentifier& id)
-{
-	std::map<ExtIdentifier, ExtVariant>::iterator it = properties.find(id);
-	if(it == properties.end())
-		return false;
-
-	properties.erase(it);
-	return true;
-}
-bool NPObjectObject::enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count) const
-{
-	*count = properties.size();
-	*ids = new lightspark::ExtIdentifier*[properties.size()];
-	std::map<ExtIdentifier, ExtVariant>::const_iterator it;
-	int i = 0;
-	for(it = properties.begin(); it != properties.end(); ++it)
-	{
-		(*ids)[i] = new ExtIdentifier(it->first);
-		i++;
-	}
-
-	return true;
 }
 
 // Conversion to NPObject

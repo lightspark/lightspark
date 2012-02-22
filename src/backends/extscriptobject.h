@@ -96,7 +96,6 @@ public:
 	virtual void setType(EO_TYPE _type) { type = _type; }
 protected:
 	EO_TYPE type;
-private:
 	std::map<ExtIdentifier, ExtVariant> properties;
 };
 

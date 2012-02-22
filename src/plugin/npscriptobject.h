@@ -343,8 +343,8 @@ public:
 	static bool hasMethod(NPObject* obj, NPIdentifier id)
 	{
 		lightspark::SystemState* prevSys = getSys();
-		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
-		bool success = ((NPScriptObjectGW*) obj)->so->hasMethod(NPIdentifierObject(id));
+		setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
+		bool success = static_cast<NPScriptObjectGW*>(obj)->so->hasMethod(NPIdentifierObject(id));
 		setTLSSys(prevSys);
 		return success;
 	}
@@ -352,8 +352,8 @@ public:
 			const NPVariant* args, uint32_t argc, NPVariant* result)
 	{
 		lightspark::SystemState* prevSys = getSys();
-		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
-		bool success = ((NPScriptObjectGW*) obj)->so->invoke(id, args, argc, result);
+		setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
+		bool success = static_cast<NPScriptObjectGW*>(obj)->so->invoke(id, args, argc, result);
 		setTLSSys(prevSys);
 		return success;
 	}
@@ -361,8 +361,8 @@ public:
 			const NPVariant* args, uint32_t argc, NPVariant* result)
 	{
 		lightspark::SystemState* prevSys = getSys();
-		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
-		bool success = ((NPScriptObjectGW*) obj)->so->invokeDefault(args, argc, result);
+		setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
+		bool success = static_cast<NPScriptObjectGW*>(obj)->so->invokeDefault(args, argc, result);
 		setTLSSys( prevSys );
 		return success;
 	}
@@ -370,8 +370,8 @@ public:
 	static bool hasProperty(NPObject* obj, NPIdentifier id)
 	{
 		lightspark::SystemState* prevSys = getSys();
-		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
-		bool success = ((NPScriptObjectGW*) obj)->so->hasProperty(NPIdentifierObject(id));
+		setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
+		bool success = static_cast<NPScriptObjectGW*>(obj)->so->hasProperty(NPIdentifierObject(id));
 		setTLSSys( prevSys );
 		return success;
 	}
@@ -379,8 +379,9 @@ public:
 	static bool setProperty(NPObject* obj, NPIdentifier id, const NPVariant* value)
 	{
 		lightspark::SystemState* prevSys = getSys();
-		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
-		((NPScriptObjectGW*) obj)->so->setProperty(NPIdentifierObject(id), NPVariantObject(((NPScriptObjectGW*) obj)->instance, *value));
+		setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
+		static_cast<NPScriptObjectGW*>(obj)->so->setProperty(
+			NPIdentifierObject(id), NPVariantObject(static_cast<NPScriptObjectGW*>(obj)->instance, *value));
 		bool success = true;
 		setTLSSys( prevSys );
 		return success;
@@ -388,8 +389,8 @@ public:
 	static bool removeProperty(NPObject* obj, NPIdentifier id)
 	{
 		lightspark::SystemState* prevSys = getSys();
-		setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
-		bool success = ((NPScriptObjectGW*) obj)->so->removeProperty(NPIdentifierObject(id));
+		setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
+		bool success = static_cast<NPScriptObjectGW*>(obj)->so->removeProperty(NPIdentifierObject(id));
 		setTLSSys( prevSys );
 		return success;
 	}

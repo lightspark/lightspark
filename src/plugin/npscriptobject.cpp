@@ -748,7 +748,7 @@ void NPScriptObject::hostCallHandler(void* d)
 {
 	HOST_CALL_DATA* callData = static_cast<HOST_CALL_DATA*>(d);
 	
-	nsPluginInstance* plugin = (nsPluginInstance*)callData->so->instance->pdata;
+	nsPluginInstance* plugin = static_cast<nsPluginInstance*>(callData->so->instance->pdata);
 	lightspark::SystemState* prevSys = getSys();
 	bool tlsSysSet = false;
 	if(plugin && plugin->m_sys)
@@ -764,8 +764,8 @@ void NPScriptObject::hostCallHandler(void* d)
 	{
 	case EXTERNAL_CALL:
 		*static_cast<bool*>(callData->returnValue) = callExternalHandler(callData->so->instance,
-			(const char*) (callData->arg1), (const ExtVariant**) (callData->arg2),
-			*((uint32_t*) (callData->arg3)), (ASObject**) (callData->arg4));
+			static_cast<const char*>(callData->arg1), static_cast<const ExtVariant**>(callData->arg2),
+			*static_cast<uint32_t*>(callData->arg3), static_cast<ASObject**>(callData->arg4));
 		break;
 	default:
 		LOG(LOG_ERROR, "Unimplemented host call requested");
@@ -1040,9 +1040,9 @@ NPScriptObjectGW::~NPScriptObjectGW()
 bool NPScriptObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* result)
 {
 	lightspark::SystemState* prevSys = getSys();
-	setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
+	setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
 
-	NPVariantObject* resultObj = ((NPScriptObjectGW*) obj)->so->getProperty(NPIdentifierObject(id));
+	NPVariantObject* resultObj = static_cast<NPScriptObjectGW*>(obj)->so->getProperty(NPIdentifierObject(id));
 	if(resultObj == NULL)
 	{
 		setTLSSys( NULL );
@@ -1060,9 +1060,9 @@ bool NPScriptObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* re
 bool NPScriptObjectGW::enumerate(NPObject* obj, NPIdentifier** value, uint32_t* count)
 {
 	lightspark::SystemState* prevSys = getSys();
-	setTLSSys( ((NPScriptObjectGW*) obj)->m_sys );
+	setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
 
-	NPScriptObject* o = ((NPScriptObjectGW*) obj)->so;
+	NPScriptObject* o = static_cast<NPScriptObjectGW*>(obj)->so;
 	lightspark::ExtIdentifier** ids = NULL;
 	bool success = o->enumerate(&ids, count);
 	if(success)

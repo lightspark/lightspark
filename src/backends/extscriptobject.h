@@ -155,7 +155,7 @@ class ExtScriptObject;
 class DLL_PUBLIC ExtCallback
 {
 public:
-	ExtCallback() : success(false), exception(NULL) {}
+	ExtCallback() : success(false), exceptionThrown(false) {}
 	virtual ~ExtCallback() {}
 
 	// Don't forget to delete this copy after use
@@ -169,9 +169,11 @@ public:
 	virtual bool getResult(const ExtScriptObject& so, ExtVariant** result)=0;
 protected:
 	bool success;
-	ASObject* exception;
+	bool exceptionThrown;
+	tiny_string exception;
 };
 
+class ExternalCallEvent;
 /**
  * ExtCallback specialization for IFunctions
  */
@@ -192,8 +194,8 @@ public:
 	bool getResult(const ExtScriptObject& so, ExtVariant** _result);
 private:
 	IFunction* func;
-	_NR<FunctionEvent> funcEvent;
-	ASObject* result;
+	_NR<ExternalCallEvent> funcEvent;
+	ExtVariant* result;
 	bool funcWasCalled;
 };
 

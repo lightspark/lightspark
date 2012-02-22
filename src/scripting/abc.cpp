@@ -1018,25 +1018,46 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					if(!ev->obj.isNull())
 						ev->obj->incRef();
 					ASObject* result = ev->f->call(ev->obj.getPtr(),ev->args,ev->numArgs);
-					// We should report the function result
-					if(ev->result != NULL)
-						*(ev->result) = result;
-					else if(result)
+					if(result)
 						result->decRef();
 				}
 				catch(ASObject* exception)
 				{
-					if(ev->exception)
-					{
-						// Report the exception
-						*(ev->exception) = exception;
-					}
-					else
-					{
-						//Exception unhandled, report up
-						ev->done.signal();
-						throw;
-					}
+					//Exception unhandled, report up
+					ev->done.signal();
+					throw;
+				}
+				catch(LightsparkException& e)
+				{
+					//An internal error happended, sync and rethrow
+					ev->done.signal();
+					throw;
+				}
+				break;
+			}
+			case EXTERNAL_CALL:
+			{
+				ExternalCallEvent* ev=static_cast<ExternalCallEvent*>(e.second.getPtr());
+
+				// Convert ExtVariant arguments to ASObjects
+				ASObject** objArgs = g_newa(ASObject*,ev->numArgs);
+				for(uint32_t i = 0; i < ev->numArgs; i++)
+				{
+					objArgs[i] = ev->args[i]->getASObject();
+				}
+
+				try
+				{
+					ASObject* result = ev->f->call(new Null,objArgs,ev->numArgs);
+					// We should report the function result
+					*(ev->result) = new ExtVariant(result);
+					result->decRef();
+				}
+				catch(ASObject* exception)
+				{
+					// Report the exception
+					*(ev->exception) = exception->toString();
+					*(ev->thrown) = true;
 				}
 				catch(LightsparkException& e)
 				{
@@ -1068,7 +1089,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
 				m_sys->getStage()->advanceFrame();
-				ev->done.signal();
+				ev->done.signal(); // Won't this signal twice, wrt to the signal() below?
 				break;
 			}
 			case FLUSH_INVALIDATION_QUEUE:

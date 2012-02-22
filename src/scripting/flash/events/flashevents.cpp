@@ -766,10 +766,8 @@ void HTTPStatusEvent::sinit(Class_base* c)
 	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"),DECLARED_TRAIT);
 }
 
-FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _args, uint32_t _numArgs, 
-		ASObject** _result, ASObject** _exception):
-		WaitableEvent("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs),
-		result(_result),exception(_exception)
+FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _args, uint32_t _numArgs):
+		WaitableEvent("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs)
 {
 	args = new ASObject*[numArgs];
 	uint32_t i;
@@ -782,6 +780,17 @@ FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _a
 FunctionEvent::~FunctionEvent()
 {
 	delete[] args;
+}
+
+ExternalCallEvent::ExternalCallEvent(_R<IFunction> _f, const ExtVariant** _args,
+	uint32_t _numArgs, ExtVariant** _result, bool* _thrown, tiny_string* _exception):
+		WaitableEvent("ExternalCallEvent"),
+		f(_f),args(_args),numArgs(_numArgs),result(_result),thrown(_thrown),exception(_exception)
+{
+}
+
+ExternalCallEvent::~ExternalCallEvent()
+{
 }
 
 BindClassEvent::BindClassEvent(_R<RootMovieClip> b, const tiny_string& c)

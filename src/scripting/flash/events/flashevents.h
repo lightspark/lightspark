@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "toplevel/toplevel.h"
+#include "backends/extscriptobject.h"
 #include <string>
 
 #undef MOUSE_EVENT
@@ -30,8 +31,9 @@
 namespace lightspark
 {
 
-enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, INIT_FRAME,
-			FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME };
+enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
+	FUNCTION, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
+	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME };
 
 class ABCContext;
 class DictionaryTag;
@@ -334,14 +336,29 @@ private:
 	_NR<ASObject> obj;
 	ASObject** args;
 	unsigned int numArgs;
-	ASObject** result;
-	ASObject** exception;
 public:
-	FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj=NullRef, ASObject** _args=NULL, uint32_t _numArgs=0, 
-			ASObject** _result=NULL, ASObject** _exception=NULL);
+	FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj=NullRef, ASObject** _args=NULL, uint32_t _numArgs=0);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return FUNCTION; }
+};
+
+class ExternalCallEvent: public WaitableEvent
+{
+friend class ABCVm;
+private:
+	_R<IFunction> f;
+	ExtVariant const ** args;
+	unsigned int numArgs;
+	ExtVariant** result;
+	bool* thrown;
+	tiny_string* exception;
+public:
+	ExternalCallEvent(_R<IFunction> _f, const ExtVariant** _args, uint32_t _numArgs,
+			ExtVariant** _result, bool* _thrown, tiny_string* _exception);
+	~ExternalCallEvent();
+	static void sinit(Class_base*);
+	EVENT_TYPE getEventType() const { return EXTERNAL_CALL; }
 };
 
 class ABCContextInitEvent: public Event

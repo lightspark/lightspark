@@ -3655,80 +3655,44 @@ ASFUNCTIONBODY(lightspark,isFinite)
 
 ASFUNCTIONBODY(lightspark,encodeURI)
 {
-	if(args[0]->getObjectType() == T_STRING)
-	{
-		ASString* th=static_cast<ASString*>(args[0]);
-		return Class<ASString>::getInstanceS(URLInfo::encode(th->data, URLInfo::ENCODE_URI));
-	}
-	else
-	{
-		return Class<ASString>::getInstanceS(URLInfo::encode(args[0]->toString(), URLInfo::ENCODE_URI));
-	}
+	tiny_string str;
+	ARG_UNPACK (str, "undefined");
+	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_URI));
 }
 
 ASFUNCTIONBODY(lightspark,decodeURI)
 {
-	if(args[0]->getObjectType() == T_STRING)
-	{
-		ASString* th=static_cast<ASString*>(args[0]);
-		return Class<ASString>::getInstanceS(URLInfo::decode(th->data, URLInfo::ENCODE_URI));
-	}
-	else
-	{
-		return Class<ASString>::getInstanceS(URLInfo::decode(args[0]->toString(), URLInfo::ENCODE_URI));
-	}
+	tiny_string str;
+	ARG_UNPACK (str, "undefined");
+	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_URI));
 }
 
 ASFUNCTIONBODY(lightspark,encodeURIComponent)
 {
-	if(args[0]->getObjectType() == T_STRING)
-	{
-		ASString* th=static_cast<ASString*>(args[0]);
-		return Class<ASString>::getInstanceS(URLInfo::encode(th->data, URLInfo::ENCODE_URICOMPONENT));
-	}
-	else
-	{
-		return Class<ASString>::getInstanceS(URLInfo::encode(args[0]->toString(), URLInfo::ENCODE_URICOMPONENT));
-	}
+	tiny_string str;
+	ARG_UNPACK (str, "undefined");
+	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT));
 }
 
 ASFUNCTIONBODY(lightspark,decodeURIComponent)
 {
-	if(args[0]->getObjectType() == T_STRING)
-	{
-		ASString* th=static_cast<ASString*>(args[0]);
-		return Class<ASString>::getInstanceS(URLInfo::decode(th->data, URLInfo::ENCODE_URICOMPONENT));
-	}
-	else
-	{
-		return Class<ASString>::getInstanceS(URLInfo::decode(args[0]->toString(), URLInfo::ENCODE_URICOMPONENT));
-	}
+	tiny_string str;
+	ARG_UNPACK (str, "undefined");
+	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT));
 }
 
 ASFUNCTIONBODY(lightspark,escape)
 {
-	if(args[0]->getObjectType() == T_STRING)
-	{
-		ASString* th=static_cast<ASString*>(args[0]);
-		return Class<ASString>::getInstanceS(URLInfo::encode(th->data, URLInfo::ENCODE_ESCAPE));
-	}
-	else
-	{
-		return Class<ASString>::getInstanceS(URLInfo::encode(args[0]->toString(), URLInfo::ENCODE_ESCAPE));
-	}
+	tiny_string str;
+	ARG_UNPACK (str, "undefined");
+	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
 }
 
 ASFUNCTIONBODY(lightspark,unescape)
 {
-	if(args[0]->getObjectType() == T_STRING)
-	{
-		ASString* th=static_cast<ASString*>(args[0]);
-		return Class<ASString>::getInstanceS(URLInfo::decode(th->data, URLInfo::ENCODE_ESCAPE));
-	}
-	else
-	{
-		return Class<ASString>::getInstanceS(URLInfo::encode(args[0]->toString(), URLInfo::ENCODE_ESCAPE));
-	}
+	tiny_string str;
+	ARG_UNPACK (str, "undefined");
+	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
 }
 
 ASFUNCTIONBODY(lightspark,print)

@@ -1,18 +1,13 @@
-<?xml version="1.0"?>
-<mx:Application name="lightspark_external_ExternalInterface_test"
-	xmlns:mx="http://www.adobe.com/2006/mxml"
-	layout="absolute"
-	preinitialize="preinitialize();"
-	backgroundColor="blue">
-
-<mx:Script>
-	<![CDATA[
-	private function preinitialize():void
+package {
+import flash.display.*;
+import flash.external.*;
+public class external_ExternalInterface_test extends Sprite {
+	function returnTest(value:*):*
 	{
-		function returnTest(value:*):*
-		{
-			return function(... args):* { return value; }
-		}
+		return function(... args):* { return value; }
+	}
+	public function external_ExternalInterface_test() {
+		ExternalInterface.call("alert", "hello");
 		ExternalInterface.addCallback("returnCompositeTest", returnTest(["string", 3.14, 271, true,  {a : "str key", 2 : "int key"}]));
 		ExternalInterface.addCallback("returnTrueTest", returnTest(true));
 		ExternalInterface.addCallback("returnFalseTest", returnTest(false));
@@ -75,7 +70,9 @@
 			}
 		);
 
+		trace('Ext avilable' + ExternalInterface.available)
 		ExternalInterface.call("ready");
+		trace('Ext ready signalled')
 
 		ExternalInterface.call("foo.bar1");
 		ExternalInterface.call("foo.bar2()");
@@ -92,9 +89,5 @@
 
 		ExternalInterface.call("alert",obj);
 	}
-	]]>
-</mx:Script>
-
-<mx:UIComponent id="visual" />
-
-</mx:Application>
+}
+}

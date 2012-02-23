@@ -65,6 +65,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/media/flashmedia.cpp
   scripting/flash/net/flashnet.cpp
   scripting/flash/net/URLStream.cpp
+  scripting/flash/errors/flasherrors.cpp
   scripting/flash/sensors/flashsensors.cpp
   scripting/flash/system/flashsystem.cpp
   scripting/flash/text/flashtext.cpp

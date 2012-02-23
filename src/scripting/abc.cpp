@@ -54,6 +54,7 @@
 #include "flash/external/ExternalInterface.h"
 #include "flash/media/flashmedia.h"
 #include "flash/xml/flashxml.h"
+#include "flash/errors/flasherrors.h"
 #include "class.h"
 #include "exceptions.h"
 #include "compat.h"
@@ -350,6 +351,14 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("ContextMenuItem","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenuItem","flash.ui")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("Accelerometer", "flash.sensors", Class<Accelerometer>::getRef(), DECLARED_TRAIT);
+
+	builtin->setVariableByQName("IOError","flash.errors",Class<IOError>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("EOFError","flash.errors",Class<EOFError>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("IllegalOperationError","flash.errors",Class<IllegalOperationError>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("InvalidSWFError","flash.errors",Class<InvalidSWFError>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("MemoryError","flash.errors",Class<MemoryError>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("ScriptTimeoutError","flash.errors",Class<ScriptTimeoutError>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("StackOverflowError","flash.errors",Class<StackOverflowError>::getRef(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("isNaN","",Class<IFunction>::getFunction(isNaN),DECLARED_TRAIT);
 	builtin->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite),DECLARED_TRAIT);

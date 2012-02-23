@@ -30,6 +30,7 @@ class ASError: public ASObject
 CLASSBUILDABLE(ASError);
 protected:
 	ASPROPERTY_GETTER_SETTER(tiny_string, message);
+	void setErrorID(int32_t id) { errorID=id; }
 private:
 	ASPROPERTY_GETTER(int32_t, errorID);
 	ASPROPERTY_GETTER_SETTER(tiny_string, name);

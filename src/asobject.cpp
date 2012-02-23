@@ -300,7 +300,6 @@ bool ASObject::isPrimitive() const
 
 variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	cerr << "Find: " << n << endl;
 	const var_iterator ret_begin=Variables.lower_bound(n);
 	//This actually look for the first different name, if we accept also previous levels
 	//Otherwise we are just doing equal_range
@@ -517,7 +516,6 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
 {
-	cerr << "Set: " << name << endl;
 	assert_and_throw(Variables.findObjVar(name,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(name,ns,traitKind,traitKind);
 	obj->setVar(o);

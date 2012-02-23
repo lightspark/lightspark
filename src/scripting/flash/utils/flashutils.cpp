@@ -24,6 +24,7 @@
 #include "compat.h"
 #include "parsing/amf3_generator.h"
 #include "argconv.h"
+#include "flash/errors/flasherrors.h"
 #include <sstream>
 #include <zlib.h>
 
@@ -202,9 +203,7 @@ ASFUNCTIONBODY(ByteArray,readBoolean)
 	uint8_t ret;
 	if(!th->readByte(ret))
 	{
-		LOG(LOG_ERROR,"ByteArray::readByte not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	return abstract_b(ret!=0);
@@ -231,9 +230,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	//Error checks
 	if(length > th->len)
 	{
-		LOG(LOG_ERROR,"ByteArray::readBytes not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 	uint8_t* buf=out->getBuffer(length,true);
 	memcpy(buf,th->bytes+th->position,length);
@@ -248,9 +245,7 @@ ASFUNCTIONBODY(ByteArray,readUTF)
 
 	if(th->len < th->position+2)
 	{
-		LOG(LOG_ERROR,"ByteArray::readUTF not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	uint16_t length;
@@ -259,9 +254,7 @@ ASFUNCTIONBODY(ByteArray,readUTF)
 
 	if(th->position+length > th->len)
 	{
-		LOG(LOG_ERROR,"ByteArray::readUTF not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	uint8_t *bufStart=th->bytes+th->position;
@@ -277,9 +270,7 @@ ASFUNCTIONBODY(ByteArray,readUTFBytes)
 	ARG_UNPACK (length);
 	if(th->position+length > th->len)
 	{
-		LOG(LOG_ERROR,"ByteArray::readUTFBytes not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	uint8_t *bufStart=th->bytes+th->position;
@@ -362,9 +353,7 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 		length=(out->getLength()-offset);
 	else if(length > (out->getLength()-offset))
 	{
-		LOG(LOG_ERROR,"ByteArray::writeBytes not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<RangeError>::getInstanceS("Error #2006: The supplied index is out of bounds.");
 	}
 	uint8_t* buf=out->getBuffer(offset+length,false);
 	th->getBuffer(th->position+length,true);
@@ -505,9 +494,7 @@ ASFUNCTIONBODY(ByteArray, readByte)
 	uint8_t ret;
 	if(!th->readByte(ret))
 	{
-		LOG(LOG_ERROR,"ByteArray::readByte not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 	return abstract_i(ret);
 }
@@ -519,9 +506,7 @@ ASFUNCTIONBODY(ByteArray,readDouble)
 
 	if(th->len < th->position+8)
 	{
-		LOG(LOG_ERROR,"ByteArray::readDouble not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	double ret;
@@ -538,9 +523,7 @@ ASFUNCTIONBODY(ByteArray,readFloat)
 
 	if(th->len < th->position+4)
 	{
-		LOG(LOG_ERROR,"ByteArray::readFloat not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	float ret;
@@ -557,9 +540,7 @@ ASFUNCTIONBODY(ByteArray,readInt)
 
 	if(th->len < th->position+4)
 	{
-		LOG(LOG_ERROR,"ByteArray::readInt not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	int32_t ret;
@@ -576,9 +557,7 @@ ASFUNCTIONBODY(ByteArray,readShort)
 
 	if(th->len < th->position+2)
 	{
-		LOG(LOG_ERROR,"ByteArray::readShort not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	int16_t ret;
@@ -596,9 +575,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedByte)
 	uint8_t ret;
 	if (!th->readByte(ret))
 	{
-		LOG(LOG_ERROR,"ByteArray::readByte not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 	return abstract_ui(ret);
 }
@@ -610,9 +587,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedInt)
 
 	if(th->len < th->position+4)
 	{
-		LOG(LOG_ERROR,"ByteArray::readUnsignedInt not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	uint32_t ret;
@@ -629,9 +604,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedShort)
 
 	if(th->len < th->position+2)
 	{
-		LOG(LOG_ERROR,"ByteArray::readUnsignedShort not enough data");
-		//TODO: throw AS exceptions
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
 	uint16_t ret;
@@ -647,8 +620,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	assert_and_throw(argslen==0);
 	if(th->bytes==NULL)
 	{
-		LOG(LOG_ERROR,"No data to read");
-		return NULL;
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 	std::vector<ASObject*> ret;
 	Amf3Deserializer d(th);
@@ -830,8 +802,7 @@ void ByteArray::uncompress_zlib()
 	strm.total_out=0;
 	status=inflateInit(&strm);
 	if(status==Z_VERSION_ERROR)
-		// should be IOError
-		throw Class<ASError>::getInstanceS("not valid compressed data");
+		throw Class<IOError>::getInstanceS("not valid compressed data");
 	else if(status!=Z_OK)
 		throw RunTimeException("zlib uncompress failed");
 
@@ -845,8 +816,7 @@ void ByteArray::uncompress_zlib()
 		if(status!=Z_OK && status!=Z_STREAM_END)
 		{
 			inflateEnd(&strm);
-			// should be IOError
-			throw Class<ASError>::getInstanceS("not valid compressed data");
+			throw Class<IOError>::getInstanceS("not valid compressed data");
 		}
 
 		if(strm.avail_out==0)

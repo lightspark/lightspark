@@ -705,7 +705,7 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	if(obj->getClass())
 	{
 		ASObject* proto = obj->getClass()->prototype.getPtr();
-		if  (proto->hasPropertyByMultiname(name, true))
+		if  (proto != obj && proto->hasPropertyByMultiname(name, true))
 			return abstract_b(false);
 	}
 	bool ret=obj->hasPropertyByMultiname(name, true);

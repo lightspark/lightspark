@@ -256,5 +256,5 @@ print "Number of implemented getters/setters/methods/const:", len(setters),len(g
 print "Total number of implemented                        :", len(setters)+len(getters)+len(methods)+len(const)
 print "Number of missing classes (of which are stubs):     ", len(mclasses), len(stubclasses)
 print "Number of missing getters/setters/methods/consts:   ", (len(dsetters)-len(setters)), len(dgetters)-len(getters), len(dmethods)-len(methods), len(dconst)-len(const)
-print "Total number of missing:                            ", (len(dsetters)+len(dgetters)+len(dmethods)+len(dconst)) - (len(setters)+len(getters)+len(methods)-len(const))
+print "Total number of missing:                            ", (len(dsetters)+len(dgetters)+len(dmethods)+len(dconst)) - (len(setters)+len(getters)+len(methods)+len(const))
 print "Overall percentage completed:                       ", float(len(setters)+len(getters)+len(methods)+len(const))/float(len(dsetters)+len(dgetters)+len(dmethods)+len(dconst))*100

@@ -426,13 +426,13 @@ std::string URLInfo::decode(const std::string& u, ENCODING type)
 				   isxdigit(u[i+2]) && isxdigit(u[i+3]) &&
 				   isxdigit(u[i+4]) && isxdigit(u[i+5]))
 				{
-					tiny_string s=tiny_string::fromChar((uint32_t)strtoul(u.substr(i+2, 6).c_str(), NULL, 16));
+					tiny_string s=tiny_string::fromChar((uint32_t)strtoul(u.substr(i+2, 4).c_str(), NULL, 16));
 					str.append(s.raw_buf());
 					i += 5;
 				}
 				else if(isxdigit(u[i+1]) && isxdigit(u[i+2]))
 				{
-					tiny_string s=tiny_string::fromChar((uint32_t)strtoul(u.substr(i+1, 3).c_str(), NULL, 16));
+					tiny_string s=tiny_string::fromChar((uint32_t)strtoul(u.substr(i+1, 2).c_str(), NULL, 16));
 					str.append(s.raw_buf());
 					i += 2;
 				}

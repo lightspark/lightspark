@@ -3620,6 +3620,12 @@ ASFUNCTIONBODY(lightspark,parseFloat)
 	char *end;
 	ARG_UNPACK (str, "");
 
+	// parsing of hex numbers is not allowed
+	char* p1 = str.strchr('x');
+	if (p1) *p1='y';
+	p1 = str.strchr('X');
+	if (p1) *p1='Y';
+
 	p=str.raw_buf();
 	double d=strtod(p, &end);
 

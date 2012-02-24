@@ -551,7 +551,9 @@ ASFUNCTIONBODY(ASString,slice)
 ASFUNCTIONBODY(ASString,charAt)
 {
 	tiny_string data = obj->toString();
-	int index=args[0]->toInt();
+	int index;
+	ARG_UNPACK (index, 0);
+
 	int maxIndex=data.numChars();
 	if(index<0 || index>=maxIndex)
 		return Class<ASString>::getInstanceS();
@@ -561,7 +563,8 @@ ASFUNCTIONBODY(ASString,charAt)
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	tiny_string data = obj->toString();
-	unsigned int index=args[0]->toInt();
+	unsigned int index;
+	ARG_UNPACK (index, 0);
 	if(index<data.numChars())
 	{
 		//Character codes are expected to be positive
@@ -573,6 +576,8 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 
 ASFUNCTIONBODY(ASString,indexOf)
 {
+	if (argslen == 0)
+		return abstract_i(-1);
 	tiny_string data = obj->toString();
 	tiny_string arg0=args[0]->toString();
 	int startIndex=0;

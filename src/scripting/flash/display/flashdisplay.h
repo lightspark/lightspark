@@ -759,19 +759,27 @@ class BitmapData: public ASObject, public IBitmapDrawable
 {
 CLASSBUILDABLE(BitmapData);
 private:
+	size_t stride;
+	size_t dataSize;
 	static void sinit(Class_base* c);
 	uint8_t* getData() { return data; }
 	int getWidth() { return width; }
 	int getHeight() { return height; }
+	uint32_t getPixelPriv(uint32_t x, uint32_t y);
 public:
-	BitmapData() : data(NULL), dataSize(0), width(0), height(0) {}
+	BitmapData() : stride(0), dataSize(0), data(NULL), width(0), height(0) {}
 	~BitmapData();
-	/* the bitmaps data in cairo's internal representation */
+	/* the bitmaps data in premultiplied, native-endian 32 bit
+	 * ARGB format. stride is the number of bytes per row, may be
+	 * larger than width. dataSize is the total allocated size of
+	 * data (=stride*height) */
 	uint8_t* data;
-	size_t dataSize;
 	ASPROPERTY_GETTER(int32_t, width);
 	ASPROPERTY_GETTER(int32_t, height);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(draw);
+	ASFUNCTION(getPixel);
+	ASFUNCTION(getPixel32);
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
 	bool fromJPEG(uint8_t* data, int len);
 	bool fromJPEG(std::istream& s);

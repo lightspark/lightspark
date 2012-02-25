@@ -754,10 +754,10 @@ bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float sc
 	return pixelBytes[0]!=0x00;
 }
 
-uint8_t* CairoRenderer::convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t width, uint32_t height, size_t* dataSize)
+uint8_t* CairoRenderer::convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t width, uint32_t height, size_t* dataSize, size_t* stride)
 {
-	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
-	*dataSize = stride * height;
+	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	*dataSize = *stride * height;
 	uint8_t* outData = new uint8_t[*dataSize];
 	uint32_t* inData32 = (uint32_t*)inData;
 
@@ -765,23 +765,23 @@ uint8_t* CairoRenderer::convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t 
 	{
 		for(uint32_t j = 0; j < width; j++)
 		{
-			uint32_t* outDataPos = (uint32_t*)(outData+i*stride) + j;
+			uint32_t* outDataPos = (uint32_t*)(outData+i*(*stride)) + j;
 			*outDataPos = GINT32_FROM_BE( *(inData32+(i*width+j)) );
 		}
 	}
 	return outData;
 }
 
-uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, uint32_t height, size_t* dataSize)
+uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, uint32_t height, size_t* dataSize, size_t* stride)
 {
-	uint32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
-	*dataSize = stride * height;
+	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	*dataSize = *stride * height;
 	uint8_t* outData = new uint8_t[*dataSize];
 	for(uint32_t i = 0; i < height; i++)
 	{
 		for(uint32_t j = 0; j < width; j++)
 		{
-			uint32_t* outDataPos = (uint32_t*)(outData+i*stride) + j;
+			uint32_t* outDataPos = (uint32_t*)(outData+i*(*stride)) + j;
 			uint32_t pdata = 0xFF;
 			/* the alpha channel is set to zero above */
 			uint8_t* rgbData = ((uint8_t*)&pdata)+1;

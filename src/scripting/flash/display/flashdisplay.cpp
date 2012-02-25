@@ -38,6 +38,7 @@
 #include <fstream>
 #include <limits>
 #include <cmath>
+#include <cairo.h>
 
 using namespace std;
 using namespace lightspark;
@@ -3462,13 +3463,43 @@ void IBitmapDrawable::linkTraits(Class_base* c)
 
 void BitmapData::sinit(Class_base* c)
 {
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
 	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(draw),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPixel","",Class<IFunction>::getFunction(getPixel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPixel32","",Class<IFunction>::getFunction(getPixel32),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
 
 	IBitmapDrawable::linkTraits(c);
+}
+
+ASFUNCTIONBODY(BitmapData,_constructor)
+{
+	int width;
+	int height;
+	bool transparent;
+	uint32_t fillColor;
+	BitmapData* th = obj->as<BitmapData>();
+	ARG_UNPACK(width, 0)(height, 0)(transparent, true)(fillColor, 0xFFFFFFFF);
+
+	ASObject::_constructor(obj,NULL,0);
+	if(width==0 || height==0)
+		return NULL;
+
+	uint32_t *pixels=new uint32_t[width*height];
+	uint32_t c=GUINT32_TO_BE(fillColor); // fromRGB expects big endian data
+	if(!transparent)
+	{
+		uint8_t *alpha=reinterpret_cast<uint8_t *>(&c);
+		*alpha=0xFF;
+	}
+	for(int i=0; i<width*height; i++)
+		pixels[i]=c;
+	th->fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, true);
+
+	return NULL;
 }
 
 ASFUNCTIONBODY_GETTER(BitmapData, width);
@@ -3506,6 +3537,37 @@ ASFUNCTIONBODY(BitmapData,draw)
 
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawableO->toDebugString());
 	return NULL;
+}
+
+uint32_t BitmapData::getPixelPriv(uint32_t x, uint32_t y)
+{
+	if ((int)x >= width || (int)y >= height)
+		return 0;
+
+	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
+
+	return *p;
+}
+
+ASFUNCTIONBODY(BitmapData,getPixel)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	uint32_t x;
+	uint32_t y;
+	ARG_UNPACK(x)(y);
+
+	uint32_t pix=th->getPixelPriv(x, y);
+	return abstract_ui(pix & 0xffffff);
+}
+
+ASFUNCTIONBODY(BitmapData,getPixel32)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	uint32_t x;
+	uint32_t y;
+	ARG_UNPACK(x)(y);
+
+	return abstract_ui(th->getPixelPriv(x, y));
 }
 
 Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
@@ -3594,9 +3656,9 @@ bool BitmapData::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)
 	width = w;
 	height = h;
 	if(hasAlpha)
-		data = CairoRenderer::convertBitmapWithAlphaToCairo(rgb, width, height, &dataSize);
+		data = CairoRenderer::convertBitmapWithAlphaToCairo(rgb, width, height, &dataSize, &stride);
 	else
-		data = CairoRenderer::convertBitmapToCairo(rgb, width, height, &dataSize);
+		data = CairoRenderer::convertBitmapToCairo(rgb, width, height, &dataSize, &stride);
 	delete[] rgb;
 	if(!data)
 	{

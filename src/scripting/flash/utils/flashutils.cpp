@@ -793,6 +793,7 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 	{
 		//Resize the array
 		uint8_t* buf=new uint8_t[index+1];
+		memset(buf, 0, index+1);
 		memcpy(buf,bytes,len);
 		delete[] bytes;
 		len=index+1;

@@ -735,6 +735,7 @@ public:
 	~GlobalObject();
 };
 
+ASObject* eval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);

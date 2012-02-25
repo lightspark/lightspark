@@ -200,6 +200,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("XMLList","",Class<XMLList>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("int","",Class<Integer>::getRef(),DECLARED_TRAIT);
 
+	builtin->setVariableByQName("eval","",Class<IFunction>::getFunction(eval),DECLARED_TRAIT);
 	builtin->setVariableByQName("print","",Class<IFunction>::getFunction(print),DECLARED_TRAIT);
 	builtin->setVariableByQName("trace","",Class<IFunction>::getFunction(trace),DECLARED_TRAIT);
 	builtin->setVariableByQName("parseInt","",Class<IFunction>::getFunction(parseInt),DECLARED_TRAIT);

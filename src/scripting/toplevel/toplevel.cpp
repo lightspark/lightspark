@@ -3584,6 +3584,12 @@ GlobalObject::~GlobalObject()
 	return ret;
 }*/
 
+ASFUNCTIONBODY(lightspark,eval)
+{
+    // eval is not allowed in AS3, but an exception should be thrown
+	throw Class<EvalError>::getInstanceS("EvalError");
+}
+
 ASFUNCTIONBODY(lightspark,parseInt)
 {
 	tiny_string str;

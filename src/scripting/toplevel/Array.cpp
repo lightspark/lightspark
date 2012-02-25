@@ -86,7 +86,7 @@ ASFUNCTIONBODY(Array,_constructor)
 
 	if(argslen==1 && (args[0]->getObjectType()==T_INTEGER || args[0]->getObjectType()==T_UINTEGER || args[0]->getObjectType()==T_NUMBER))
 	{
-		int32_t size=args[0]->toInt();
+		number_t size=args[0]->toNumber();
 		if (size < 0)
 			throw Class<RangeError>::getInstanceS("");
 		LOG(LOG_CALLS,_("Creating array of length ") << size);
@@ -110,7 +110,7 @@ ASFUNCTIONBODY(Array,generator)
 	Array* th=Class<Array>::getInstanceS();
 	if(argslen==1 && (args[0]->getObjectType()==T_INTEGER || args[0]->getObjectType()==T_UINTEGER || args[0]->getObjectType()==T_NUMBER))
 	{
-		int32_t size=args[0]->toInt();
+		number_t size=args[0]->toNumber();
 		if (size < 0)
 			throw Class<RangeError>::getInstanceS("");
 		LOG(LOG_CALLS,_("Creating array of length ") << size);

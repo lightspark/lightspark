@@ -150,8 +150,8 @@ class UninitializedError: public ASError
 CLASSBUILDABLE(UninitializedError);
 	UninitializedError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "UninitializedError"){}
 	ASFUNCTION(_constructor);
-	static void sinit(Class_base* c) {}
-	static void buildTraits(ASObject* o) {}
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 };
 
 }

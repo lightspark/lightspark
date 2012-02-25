@@ -194,6 +194,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("SyntaxError","",Class<SyntaxError>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("TypeError","",Class<TypeError>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("URIError","",Class<URIError>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("UninitializedError","",Class<UninitializedError>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("VerifyError","",Class<VerifyError>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("XML","",Class<XML>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("XMLList","",Class<XMLList>::getRef(),DECLARED_TRAIT);

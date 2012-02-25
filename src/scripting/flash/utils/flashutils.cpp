@@ -295,7 +295,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert_and_throw(argslen>=1 && argslen<=3);
-	assert_and_throw(args[0]->getClass()==Class<ByteArray>::getClass());
+	assert_and_throw(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
 
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
 	uint32_t offset=0;
@@ -305,8 +305,13 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	if(argslen==3)
 		length=args[2]->toInt();
 	//TODO: Support offset (offset is in the destination!)
-	if(offset!=0 || length==0)
+	if(offset!=0)
+	{
 		throw UnsupportedException("offset in ByteArray::readBytes");
+	}
+
+	if(length == 0)
+		length = th->len;
 
 	//Error checks
 	if(length > th->len)
@@ -420,22 +425,25 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert_and_throw(argslen>=1 && argslen<=3);
-	assert_and_throw(args[0]->getClass()==Class<ByteArray>::getClass());
+	assert_and_throw(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
 	uint32_t offset=0;
 	uint32_t length=0;
 	if(argslen>=2)
-		offset=args[1]->toInt();
+		offset=args[1]->toUInt();
 	if(argslen==3)
-		length=args[2]->toInt();
+		length=args[2]->toUInt();
+
+	// We need to clamp offset to the beginning of the bytes array
+	if(offset > out->getLength()-1)
+		offset = 0;
+	// We need to clamp length to the end of the bytes array
+	if(length > out->getLength()-offset)
+		length = 0;
 
 	//If the length is 0 the whole buffer must be copied
 	if(length == 0)
 		length=(out->getLength()-offset);
-	else if(length > (out->getLength()-offset))
-	{
-		throw Class<RangeError>::getInstanceS("Error #2006: The supplied index is out of bounds.");
-	}
 	uint8_t* buf=out->getBuffer(offset+length,false);
 	th->getBuffer(th->position+length,true);
 	memcpy(th->bytes+th->position,buf+offset,length);

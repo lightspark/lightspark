@@ -337,19 +337,19 @@ tiny_string URLInfo::encode(const tiny_string& u, ENCODING type)
 				str += '+';
 			//Additionally ENCODE_URICOMPONENT and ENCODE_URI don't encode:
 			//- _ . ! ~ * ' ( )
-			else if((type == ENCODE_URI || type == ENCODE_URICOMPONENT || type == ENCODE_ESCAPE) && 
+			else if((type == ENCODE_URI || type == ENCODE_URICOMPONENT) && 
 					(*i == '-' || *i == '_' || *i == '.' || *i == '!' ||
 						*i == '~' || *i == '*' || *i == '\'' ||	*i == '(' ||
 						*i == ')'))
 				str += *i;
 			//Additionally ENCODE_URI doesn't encode:
 			//; / ? : @ & = + $ , # 
-			else if((type == ENCODE_URI || type == ENCODE_ESCAPE) && 
+			else if((type == ENCODE_URI) && 
 						(*i == ';' || *i == '/' || *i == '?' || *i == ':' ||
 							*i == '@' || *i == '&' || *i == '=' || *i == '+' ||
 							*i == '$' || *i == ',' || *i == '#'))
 				str += *i;
-			//Additionally ENCODE_ESCAPE doesn't encode:
+			// ENCODE_ESCAPE doesn't encode:
 			//@ - _ . * + /
 			else if(type == ENCODE_ESCAPE && 
 						(*i == '@' || *i == '-' || *i == '_' || *i == '.' ||

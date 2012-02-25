@@ -131,6 +131,36 @@ istream& lightspark::operator>>(istream& in, namespace_info& v)
 	return in;
 }
 
+istream& lightspark::operator>>(istream& in, method_info_simple& v)
+{
+	in >> v.param_count;
+	in >> v.return_type;
+
+	v.param_type.resize(v.param_count);
+	for(unsigned int i=0;i<v.param_count;i++)
+		in >> v.param_type[i];
+	
+	in >> v.name >> v.flags;
+	if(v.flags&0x08)
+	{
+		in >> v.option_count;
+		v.options.resize(v.option_count);
+		for(unsigned int i=0;i<v.option_count;i++)
+		{
+			in >> v.options[i].val >> v.options[i].kind;
+			if(v.options[i].kind>0x1a)
+				LOG(LOG_ERROR,_("Unexpected options type"));
+		}
+	}
+	if(v.flags&0x80)
+	{
+		v.param_names.resize(v.param_count);
+		for(unsigned int i=0;i<v.param_count;i++)
+			in >> v.param_names[i];
+	}
+	return in;
+}
+
 istream& lightspark::operator>>(istream& in, method_body_info& v)
 {
 	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> v.code_length;

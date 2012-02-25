@@ -1839,49 +1839,24 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 ASObject* method_info::getOptional(unsigned int i)
 {
-	assert_and_throw(i<options.size());
-	return context->getConstant(options[i].kind,options[i].val);
+	assert_and_throw(i<info.options.size());
+	return context->getConstant(info.options[i].kind,info.options[i].val);
 }
 
 const multiname* method_info::paramTypeName(unsigned int i) const
 {
-	assert_and_throw(i<param_type.size());
-	return context->getMultiname(param_type[i],NULL);
+	assert_and_throw(i<info.param_type.size());
+	return context->getMultiname(info.param_type[i],NULL);
 }
 
 const multiname* method_info::returnTypeName() const
 {
-	return context->getMultiname(return_type,NULL);
+	return context->getMultiname(info.return_type,NULL);
 }
 
 istream& lightspark::operator>>(istream& in, method_info& v)
 {
-	in >> v.param_count;
-	in >> v.return_type;
-
-	v.param_type.resize(v.param_count);
-	for(unsigned int i=0;i<v.param_count;i++)
-		in >> v.param_type[i];
-	
-	in >> v.name >> v.flags;
-	if(v.flags&0x08)
-	{
-		in >> v.option_count;
-		v.options.resize(v.option_count);
-		for(unsigned int i=0;i<v.option_count;i++)
-		{
-			in >> v.options[i].val >> v.options[i].kind;
-			if(v.options[i].kind>0x1a)
-				LOG(LOG_ERROR,_("Unexpected options type"));
-		}
-	}
-	if(v.flags&0x80)
-	{
-		v.param_names.resize(v.param_count);
-		for(unsigned int i=0;i<v.param_count;i++)
-			in >> v.param_names[i];
-	}
-	return in;
+	return in >> v.info;
 }
 
 ASFUNCTIONBODY(lightspark,undefinedFunction)

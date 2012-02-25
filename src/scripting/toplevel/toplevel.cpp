@@ -1999,7 +1999,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		mi->returnType = t;
 	}
 
-	if(numArgs < mi->numArgs()-mi->option_count)
+	if(numArgs < mi->numArgs()-mi->numOptions())
 	{
 		/* Not enough arguments provided.
 		 * We throw if this is a method.
@@ -2086,7 +2086,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	//locals = {this, 1, 2, Undefined, 3, 5}
 	for(uint32_t i=passedToLocals;i<args_len;++i)
 	{
-		int iOptional = mi->option_count-args_len+i;
+		int iOptional = mi->numOptions()-args_len+i;
 		if(iOptional >= 0)
 			cc.locals[i+1]=mi->paramTypes[i]->coerce(mi->getOptional(iOptional));
 		else {
@@ -3046,8 +3046,8 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			assert(rtname->name_type==multiname::NAME_STRING);
 			node->set_attribute("returnType", rtname->name_s.raw_buf());
 
-			assert(method.numArgs() >= method.option_count);
-			uint32_t firstOpt=method.numArgs() - method.option_count;
+			assert(method.numArgs() >= method.numOptions());
+			uint32_t firstOpt=method.numArgs() - method.numOptions();
 			for(uint32_t j=0;j<method.numArgs(); j++)
 			{
 				xmlpp::Element* param=node->add_child("parameter");

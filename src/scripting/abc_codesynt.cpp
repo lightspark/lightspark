@@ -1760,7 +1760,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		return f;
 
 	string method_name="method";
-	method_name+=context->getString(name).raw_buf();
+	method_name+=context->getString(info.name).raw_buf();
 	if(!body)
 	{
 		LOG(LOG_CALLS,_("Method ") << method_name << _(" should be intrinsic"));;

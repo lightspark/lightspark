@@ -215,6 +215,25 @@ struct exception_info
 	u30 var_name;
 };
 
+struct method_info_simple
+{
+	enum { NEED_ARGUMENTS=0x01, NEED_ACTIVATION=0x02, NEED_REST=0x04, HAS_OPTIONAL=0x08, SET_DXNS=0x40, HAS_PARAM_NAMES=0x80 };
+	bool needsArgs() { return (flags & NEED_ARGUMENTS) != 0;}
+	bool needsActivation() { return (flags & NEED_ACTIVATION) != 0;}
+	bool needsRest() { return (flags & NEED_REST) != 0;}
+	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
+	bool hasDXNS() { return (flags & SET_DXNS) != 0;}
+	bool hasParamNames() { return (flags & HAS_PARAM_NAMES) != 0;}
+	u30 param_count;
+	u30 return_type;
+	std::vector<u30> param_type;
+	u30 name;
+	u8 flags;
+	u30 option_count;
+	std::vector<option_detail> options;
+	std::vector<u30> param_names;
+};
+
 struct method_body_info
 {
 	u30 method;
@@ -243,6 +262,7 @@ std::istream& operator>>(std::istream& in, ns_set_info& v);
 std::istream& operator>>(std::istream& in, multiname_info& v);
 std::istream& operator>>(std::istream& in, cpool_info& v);
 std::istream& operator>>(std::istream& in, exception_info& v);
+std::istream& operator>>(std::istream& in, method_info_simple& v);
 std::istream& operator>>(std::istream& in, method_body_info& v);
 std::istream& operator>>(std::istream& in, instance_info& v);
 std::istream& operator>>(std::istream& in, traits_info& v);

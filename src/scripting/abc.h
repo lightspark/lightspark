@@ -95,14 +95,7 @@ friend std::istream& operator>>(std::istream& in, method_info& v);
 friend struct block_info;
 friend class SyntheticFunction;
 private:
-	enum { NEED_ARGUMENTS=0x01, NEED_ACTIVATION=0x02, NEED_REST=0x04, HAS_OPTIONAL=0x08, SET_DXNS=0x40, HAS_PARAM_NAMES=0x80 };
-	u30 param_count;
-	u30 return_type;
-	std::vector<u30> param_type;
-	std::vector<option_detail> options;
-	u8 flags;
-
-	std::vector<u30> param_names;
+	struct method_info_simple info;
 
 	//Helper functions to sync the static stack and locals to the memory 
 	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, 
@@ -131,18 +124,19 @@ public:
 	bool validProfName;
 #endif
 
-	u30 option_count;
 	SyntheticFunction::synt_function f;
-	u30 name;
 	ABCContext* context;
 	method_body_info* body;
 	SyntheticFunction::synt_function synt_method();
-	bool needsArgs() { return (flags & NEED_ARGUMENTS) != 0;}
-	bool needsRest() { return (flags & NEED_REST) != 0;}
-	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
-	bool hasDXNS() { return (flags & SET_DXNS) != 0;}
+	bool needsArgs() { return info.needsArgs(); }
+	bool needsActivation() { return info.needsActivation(); }
+	bool needsRest() { return info.needsRest(); }
+	bool hasOptional() { return info.hasOptional(); }
+	bool hasDXNS() { return info.hasDXNS(); }
+	bool hasParamNames() { return info.hasParamNames(); }
 	ASObject* getOptional(unsigned int i);
-	uint32_t numArgs() { return param_count; }
+	uint32_t numOptions() { return info.option_count; }
+	uint32_t numArgs() { return info.param_count; }
 	const multiname* paramTypeName(uint32_t i) const;
 	const multiname* returnTypeName() const;
 
@@ -154,7 +148,7 @@ public:
 		profTime(0),
 		validProfName(false),
 #endif
-		option_count(0),f(NULL),context(NULL),body(NULL),returnType(NULL)
+		f(NULL),context(NULL),body(NULL),returnType(NULL)
 	{
 	}
 };

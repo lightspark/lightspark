@@ -37,6 +37,7 @@ private:
 public:
 	ASError(const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error") : message(error_message), errorID(id), name(error_name){};
 	ASFUNCTION(_constructor);
+	ASFUNCTION(generator);
 	ASFUNCTION(getStackTrace);
 	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg=false);

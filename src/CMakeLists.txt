@@ -56,6 +56,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_codesynt.cpp
   scripting/abc_interpreter.cpp
   scripting/abc_opcodes.cpp
+  scripting/abctypes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp
   scripting/flash/display/flashdisplay.cpp
   scripting/flash/events/flashevents.cpp

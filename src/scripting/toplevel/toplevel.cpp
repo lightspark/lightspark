@@ -2006,7 +2006,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		 * We won't throw if all arguments are of 'Any' type.
 		 * This is in accordance with the proprietary player. */
 		if(isMethod() || mi->hasExplicitTypes)
-			throw Class<ArgumentError>::getInstanceS("Not enough arguments provided");
+			throw Class<ArgumentError>::getInstanceS("Error #1063: Not enough arguments provided");
 	}
 
 	//Temporarily disable JITting

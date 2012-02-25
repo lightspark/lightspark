@@ -587,7 +587,7 @@ ASFUNCTIONBODY(ByteArray, readByte)
 	{
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
-	return abstract_i(ret);
+	return abstract_i((int8_t)ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readDouble)
@@ -640,7 +640,7 @@ ASFUNCTIONBODY(ByteArray,readInt)
 	memcpy(&ret,th->bytes+th->position,4);
 	th->position+=4;
 
-	return abstract_i(th->endianOut(ret));
+	return abstract_i((int32_t)th->endianOut(ret));
 }
 
 ASFUNCTIONBODY(ByteArray,readShort)
@@ -657,7 +657,7 @@ ASFUNCTIONBODY(ByteArray,readShort)
 	memcpy(&ret,th->bytes+th->position,2);
 	th->position+=2;
 
-	return abstract_i(th->endianOut(ret));
+	return abstract_i((int16_t)th->endianOut(ret));
 }
 
 ASFUNCTIONBODY(ByteArray,readUnsignedByte)

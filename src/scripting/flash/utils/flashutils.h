@@ -32,6 +32,15 @@ namespace lightspark
 {
 const tiny_string flash_proxy="http://www.adobe.com/2006/actionscript/flash/proxy";
 
+class Endian : public ASObject
+{
+public:
+	static const char* bigEndian;
+	static const char* littleEndian;
+	Endian(){};
+	static void sinit(Class_base* c);
+};
+
 class ByteArray: public ASObject
 {
 friend class Loader;
@@ -40,6 +49,7 @@ protected:
 	uint8_t* bytes;
 	uint32_t len;
 	uint32_t position;
+	bool littleEndian;
 	ByteArray(const ByteArray& b);
 	void compress_zlib();
 	void uncompress_zlib();
@@ -57,6 +67,8 @@ public:
 	ASFUNCTION(_setLength);
 	ASFUNCTION(_getPosition);
 	ASFUNCTION(_setPosition);
+	ASFUNCTION(_getEndian);
+	ASFUNCTION(_setEndian);
 	ASFUNCTION(_getDefaultObjectEncoding);
 	ASFUNCTION(_setDefaultObjectEncoding);
 	ASFUNCTION(_compress);
@@ -99,6 +111,14 @@ public:
 	void acquireBuffer(uint8_t* buf, int bufLen);
 	uint8_t* getBuffer(unsigned int size, bool enableResize);
 	uint32_t getLength() const { return len; }
+
+	uint16_t endianIn(uint16_t value);
+	uint32_t endianIn(uint32_t value);
+	uint64_t endianIn(uint64_t value);
+
+	uint16_t endianOut(uint16_t value);
+	uint32_t endianOut(uint32_t value);
+	uint64_t endianOut(uint64_t value);
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

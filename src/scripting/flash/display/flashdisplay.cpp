@@ -404,14 +404,36 @@ void Loader::execute()
 		assert_and_throw(bytes->bytes);
 
 		//We only support swf files now
-		assert_and_throw(memcmp(bytes->bytes,"CWS",3)==0);
+		if(bytes->len > 3 && (memcmp(bytes->bytes,"CWS",3)==0 || memcmp(bytes->bytes,"FWS",3)==0))
+		{
+			bytes_buf bb(bytes->bytes,bytes->len);
+			istream s(&bb);
 
-		bytes_buf bb(bytes->bytes,bytes->len);
-		istream s(&bb);
+			ParseThread local_pt(s,this);
+			local_pt.execute();
+		}
+		// PNG files
+		else if(bytes->len > 8 && memcmp(bytes->bytes,"\x89PNG\r\n\x1a\n", 8) == 0)
+		{
+			LOG(LOG_NOT_IMPLEMENTED, "PNG files are not supported yet in Loader.loadBytes.");
+		}
+		// JPEG files
+		else if(bytes->len > 2 && memcmp(bytes->bytes,"\xff\xd8", 2) == 0)
+		{
+			LOG(LOG_NOT_IMPLEMENTED, "JPEG files are not supported yet in Loader.loadBytes.");
+		}
+		// GIF files
+		else if(bytes->len > 6 && (memcmp(bytes->bytes,"GIF89a", 6) == 0 || memcmp(bytes->bytes,"GIF87a", 6) == 0))
+		{
+			LOG(LOG_NOT_IMPLEMENTED, "GIF files are not supported yet in Loader.loadBytes.");
+		}
+		// Unknown filetype
+		else
+		{
+			LOG(LOG_ERROR, "Tried to load file of unknown type with Loader.loadBytes.");
+		}
 
-		ParseThread local_pt(s,this);
-		local_pt.execute();
-		bytes->decRef();
+		bytes.reset();
 		//Add a complete event for this object
 		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));
 	}

@@ -279,7 +279,11 @@ void InputThread::addListener(InteractiveObject* ob)
 #ifndef NDEBUG
 	vector<InteractiveObject*>::const_iterator it=find(listeners.begin(),listeners.end(),ob);
 	//Object is already register, should not happen
-	assert_and_throw(it==listeners.end());
+	if(it != listeners.end())
+	{
+		LOG(LOG_ERROR, "Trying to addListener an InteractiveObject that's already added.");
+		return;
+	}
 #endif
 	
 	//Register the listener

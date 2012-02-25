@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <fstream>
 #include <list>
+#include <queue>
 #include <map>
 #include <string>
 #include "swftypes.h"
@@ -39,6 +40,7 @@ namespace lightspark
 class ABCVm;
 class AudioManager;
 class Config;
+class ControlTag;
 class DownloadManager;
 class DisplayListTag;
 class DictionaryTag;
@@ -370,6 +372,7 @@ private:
 	Spinlock objectSpinlock;
 	tiny_string url;
 	FILE_TYPE fileType;
+	std::queue<_R<ControlTag>> controlTags;
 	void threadAbort();
 	void jobFence() {};
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);

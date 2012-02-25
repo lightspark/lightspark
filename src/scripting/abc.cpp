@@ -273,6 +273,7 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("ExternalInterface","flash.external",Class<ExternalInterface>::getRef(),DECLARED_TRAIT);
 
+	builtin->setVariableByQName("Endian","flash.utils",Class<Endian>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Dictionary","flash.utils",Class<Dictionary>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Proxy","flash.utils",Class<Proxy>::getRef(),DECLARED_TRAIT);

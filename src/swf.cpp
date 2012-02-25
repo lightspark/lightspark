@@ -1232,8 +1232,10 @@ void ParseThread::parseSWF(UI8 ver)
 					//fall through
 				case ABC_TAG:
 				{
+					// Add control tags to the queue, to be executed when the rest of the 
+					// SWF has been parsed.
 					_R<ControlTag> ctag = tag.cast<ControlTag>();
-					ctag->execute(root);
+					controlTags.push(ctag);
 					break;
 				}
 				case FRAMELABEL_TAG:
@@ -1257,6 +1259,15 @@ void ParseThread::parseSWF(UI8 ver)
 		throw;
 	}
 	LOG(LOG_INFO,_("End of parsing"));
+
+	// The whole SWF has been parsed, now execute all control tags, in the order
+	// in which they appeared in the file.
+	while(!controlTags.empty())
+	{
+		_R<ControlTag> ctag = controlTags.front();
+		controlTags.pop();
+		ctag->execute(root);
+	}
 }
 
 void ParseThread::parseBitmap()

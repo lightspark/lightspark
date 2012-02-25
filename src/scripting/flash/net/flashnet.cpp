@@ -1347,7 +1347,7 @@ tiny_string URLVariables::toString_priv()
 			//Print using multiple properties
 			//Ex. ["foo","bar"] -> prop1=foo&prop1=bar
 			Array* arr=Class<Array>::cast(val.getPtr());
-			for(int32_t j=0;j<arr->size();j++)
+			for(uint32_t j=0;j<arr->size();j++)
 			{
 				//Escape the name
 				char* escapedName=g_uri_escape_string(name.raw_buf(),NULL, false);

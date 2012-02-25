@@ -61,7 +61,7 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 		Vector* ret = o_class->getInstance(false,NULL,0);
 
 		Array* a = static_cast<Array*>(args[0]);
-		for(int i=0;i<a->size();++i)
+		for(unsigned int i=0;i<a->size();++i)
 		{
 			ASObject* obj = a->at(i);
 			obj->incRef();

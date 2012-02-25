@@ -3296,7 +3296,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	Array* ratios=Class<Array>::cast(args[3]);
 
 	int NumGradient = colors->size();
-	if (NumGradient != alphas->size() || NumGradient != ratios->size())
+	if (NumGradient != (int)alphas->size() || NumGradient != (int)ratios->size())
 		return NULL;
 
 	if (NumGradient < 1 || NumGradient > 15)

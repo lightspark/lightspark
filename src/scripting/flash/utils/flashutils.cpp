@@ -27,22 +27,34 @@
 #include "flash/errors/flasherrors.h"
 #include <sstream>
 #include <zlib.h>
+#include <endian.h>
 
 using namespace std;
 using namespace lightspark;
 
 SET_NAMESPACE("flash.utils");
 
+REGISTER_CLASS_NAME(Endian);
 REGISTER_CLASS_NAME(ByteArray);
 REGISTER_CLASS_NAME(Timer);
 REGISTER_CLASS_NAME(Dictionary);
 REGISTER_CLASS_NAME(Proxy);
 
-ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),len(l),position(0)
+const char* Endian::littleEndian = "littleEndian";
+const char* Endian::bigEndian = "bigEndian";
+
+void Endian::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setVariableByQName("LITTLE_ENDIAN","",Class<ASString>::getInstanceS(littleEndian),DECLARED_TRAIT);
+	c->setVariableByQName("BIG_ENDIAN","",Class<ASString>::getInstanceS(bigEndian),DECLARED_TRAIT);
+}
+
+ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),len(l),position(0),littleEndian(false)
 {
 }
 
-ByteArray::ByteArray(const ByteArray& b):ASObject(b),len(b.len),position(b.position)
+ByteArray::ByteArray(const ByteArray& b):ASObject(b),len(b.len),position(b.position),littleEndian(b.littleEndian)
 {
 	assert_and_throw(position==0);
 	bytes=new uint8_t[len];
@@ -61,6 +73,8 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(_getPosition),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(_setPosition),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(_getEndian),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(_setEndian),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
@@ -125,6 +139,54 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	return bytes;
 }
 
+uint16_t ByteArray::endianIn(uint16_t value)
+{
+	if(littleEndian)
+		return htole16(value);
+	else
+		return htobe16(value);
+}
+
+uint32_t ByteArray::endianIn(uint32_t value)
+{
+	if(littleEndian)
+		return htole32(value);
+	else
+		return htobe32(value);
+}
+
+uint64_t ByteArray::endianIn(uint64_t value)
+{
+	if(littleEndian)
+		return htole64(value);
+	else
+		return htobe64(value);
+}
+
+uint16_t ByteArray::endianOut(uint16_t value)
+{
+	if(littleEndian)
+		return le16toh(value);
+	else
+		return be16toh(value);
+}
+
+uint32_t ByteArray::endianOut(uint32_t value)
+{
+	if(littleEndian)
+		return le32toh(value);
+	else
+		return be32toh(value);
+}
+
+uint64_t ByteArray::endianOut(uint64_t value)
+{
+	if(littleEndian)
+		return le64toh(value);
+	else
+		return be64toh(value);
+}
+
 ASFUNCTIONBODY(ByteArray,_getPosition)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
@@ -136,6 +198,25 @@ ASFUNCTIONBODY(ByteArray,_setPosition)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	int pos=args[0]->toInt();
 	th->position=pos;
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_getEndian)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	if(th->littleEndian)
+		return Class<ASString>::getInstanceS(Endian::littleEndian);
+	else
+		return Class<ASString>::getInstanceS(Endian::bigEndian);
+}
+
+ASFUNCTIONBODY(ByteArray,_setEndian)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	if(args[0]->toString() == Endian::littleEndian)
+		th->littleEndian = true;
+	else if(args[0]->toString() == Endian::bigEndian)
+		th->littleEndian = false;
 	return NULL;
 }
 
@@ -326,9 +407,9 @@ ASFUNCTIONBODY(ByteArray,writeShort)
 	int32_t value;
 	ARG_UNPACK(value);
 
-	value = value & 0xffff;
+	int16_t value2 = th->endianIn(static_cast<uint16_t>(value & 0xffff));
 	th->getBuffer(th->position+2,true);
-	memcpy(th->bytes+th->position,&value,2);
+	memcpy(th->bytes+th->position,&value2,2);
 	th->position+=2;
 
 	return NULL;
@@ -400,10 +481,11 @@ ASFUNCTIONBODY(ByteArray,writeDouble)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==1);
 
-	double value=args[0]->toNumber();
+	double value = args[0]->toNumber();
+	uint64_t value2=th->endianIn(*reinterpret_cast<uint64_t*>(&value));
 
 	th->getBuffer(th->position+8,true);
-	memcpy(th->bytes+th->position,&value,8);
+	memcpy(th->bytes+th->position,&value2,8);
 	th->position+=8;
 
 	return NULL;
@@ -414,10 +496,11 @@ ASFUNCTIONBODY(ByteArray,writeFloat)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==1);
 
-	float value=args[0]->toNumber();
+	float value = args[0]->toNumber();
+	uint32_t value2=th->endianIn(*reinterpret_cast<uint32_t*>(&value));
 
 	th->getBuffer(th->position+4,true);
-	memcpy(th->bytes+th->position,&value,4);
+	memcpy(th->bytes+th->position,&value2,4);
 	th->position+=4;
 
 	return NULL;
@@ -428,7 +511,7 @@ ASFUNCTIONBODY(ByteArray,writeInt)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==1);
 
-	int32_t value=args[0]->toInt();
+	uint32_t value=th->endianIn(static_cast<uint32_t>(args[0]->toInt()));
 
 	th->getBuffer(th->position+4,true);
 	memcpy(th->bytes+th->position,&value,4);
@@ -442,7 +525,7 @@ ASFUNCTIONBODY(ByteArray,writeUnsignedInt)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==1);
 
-	uint32_t value=args[0]->toUInt();
+	uint32_t value=th->endianIn(args[0]->toUInt());
 
 	th->getBuffer(th->position+4,true);
 	memcpy(th->bytes+th->position,&value,4);
@@ -509,11 +592,12 @@ ASFUNCTIONBODY(ByteArray,readDouble)
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
-	double ret;
+	uint64_t ret;
 	memcpy(&ret,th->bytes+th->position,8);
 	th->position+=8;
+	ret = th->endianOut(ret);
 
-	return abstract_d(ret);
+	return abstract_d(*reinterpret_cast<double*>(&ret));
 }
 
 ASFUNCTIONBODY(ByteArray,readFloat)
@@ -526,11 +610,12 @@ ASFUNCTIONBODY(ByteArray,readFloat)
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
-	float ret;
+	uint32_t ret;
 	memcpy(&ret,th->bytes+th->position,4);
 	th->position+=4;
+	ret = th->endianOut(ret);
 
-	return abstract_d(ret);
+	return abstract_d(*reinterpret_cast<float*>(&ret));
 }
 
 ASFUNCTIONBODY(ByteArray,readInt)
@@ -543,11 +628,11 @@ ASFUNCTIONBODY(ByteArray,readInt)
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
-	int32_t ret;
+	uint32_t ret;
 	memcpy(&ret,th->bytes+th->position,4);
 	th->position+=4;
 
-	return abstract_i(ret);
+	return abstract_i(th->endianOut(ret));
 }
 
 ASFUNCTIONBODY(ByteArray,readShort)
@@ -560,11 +645,11 @@ ASFUNCTIONBODY(ByteArray,readShort)
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
-	int16_t ret;
+	uint16_t ret;
 	memcpy(&ret,th->bytes+th->position,2);
 	th->position+=2;
 
-	return abstract_i(ret);
+	return abstract_i(th->endianOut(ret));
 }
 
 ASFUNCTIONBODY(ByteArray,readUnsignedByte)
@@ -594,7 +679,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedInt)
 	memcpy(&ret,th->bytes+th->position,4);
 	th->position+=4;
 
-	return abstract_ui(ret);
+	return abstract_ui(th->endianOut(ret));
 }
 
 ASFUNCTIONBODY(ByteArray,readUnsignedShort)
@@ -611,7 +696,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedShort)
 	memcpy(&ret,th->bytes+th->position,2);
 	th->position+=2;
 
-	return abstract_ui(ret);
+	return abstract_ui(th->endianOut(ret));
 }
 
 ASFUNCTIONBODY(ByteArray,readObject)

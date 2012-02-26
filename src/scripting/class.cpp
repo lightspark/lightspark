@@ -83,8 +83,26 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 			break;
 		cur=cur->super.getPtr();
 	}
-	assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
-	IFunction* f=static_cast<IFunction*>(var->var);
-	f->incRef();
-	c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
+	assert_and_throw(var);
+	if(var->var)
+	{
+		assert_and_throw(var->var->getObjectType()==T_FUNCTION);
+		IFunction* f=var->var->as<IFunction>();
+		f->incRef();
+		c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
+	}
+	if(var->getter)
+	{
+		assert_and_throw(var->getter->getObjectType()==T_FUNCTION);
+		IFunction *f=var->getter->as<IFunction>();
+		f->incRef();
+		c->setDeclaredMethodByQName(name,interfaceNs,f,GETTER_METHOD,true);
+	}
+	if(var->setter)
+	{
+		assert_and_throw(var->setter->getObjectType()==T_FUNCTION);
+		IFunction *f=var->setter->as<IFunction>();
+		f->incRef();
+		c->setDeclaredMethodByQName(name,interfaceNs,f,SETTER_METHOD,true);
+	}
 }

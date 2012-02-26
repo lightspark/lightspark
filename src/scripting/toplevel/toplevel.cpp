@@ -202,6 +202,12 @@ ASFUNCTIONBODY(XML,generator)
 		args[0]->incRef();
 		return args[0];
 	}
+	else if(args[0]->getClass()==Class<XMLList>::getClass())
+	{
+		_R<XML> ret=args[0]->as<XMLList>()->reduceToXML();
+		ret->incRef();
+		return ret.getPtr();
+	}
 	else if(args[0]->is<XMLNode>())
 	{
 		return Class<XML>::getInstanceS(args[0]->as<XMLNode>()->node);
@@ -979,6 +985,16 @@ void XMLList::buildFromString(const std::string& str)
 	xmlpp::Node::NodeList::const_iterator it;
 	for(it=children.begin(); it!=children.end(); ++it)
 		nodes.push_back(_MR(Class<XML>::getInstanceS(*it)));
+}
+
+_R<XML> XMLList::reduceToXML() const
+{
+	//Needed to convert XMLList to XML
+	//Check if there is a single non null XML object. If not throw an exception
+	if(nodes.size()==1)
+		return nodes[0];
+	else
+		throw Class<TypeError>::getInstanceS("#1080");
 }
 
 ASFUNCTIONBODY(XMLList,_getLength)

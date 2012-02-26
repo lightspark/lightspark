@@ -467,10 +467,15 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 		//Look in prototype chain
 		ASObject* proto = cls->prototype.getPtr();
 		while(proto)
-	        {
-			obj = proto->findSettable(name, false, NULL /*prototypes never have getters/setters*/);
-			if(obj)
+		{
+			variable* tmp = proto->findSettable(name, false, NULL /*prototypes never have getters/setters*/);
+			
+			if(tmp)
+			{
+				if (tmp->kind != DYNAMIC_TRAIT) // dynamic prototype properties can be overridden 
+					obj = tmp;
 				break;
+			}
 			proto = proto->getprop_prototype();
 		}
 	}

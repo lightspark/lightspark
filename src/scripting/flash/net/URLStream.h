@@ -29,8 +29,7 @@
 namespace lightspark
 {
 
-/* TODO: implement IDataInput interface */
-class URLStream: public EventDispatcher, public IThreadJob
+class URLStream: public EventDispatcher, public IThreadJob, public IDataInput
 {
 CLASSBUILDABLE(URLStream);
 private:
@@ -39,7 +38,7 @@ private:
 	Spinlock downloaderLock;
 	Downloader* downloader;
 	std::vector<uint8_t> postData;
-	URLStream() : downloader(NULL) {}
+	URLStream() : data(_MNR(Class<ByteArray>::getInstanceS())), downloader(NULL) {}
 	void execute();
 	void threadAbort();
 	void jobFence();
@@ -47,16 +46,25 @@ private:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getEndian);
+	ASFUNCTION(_setEndian);
+	ASFUNCTION(_getObjectEncoding);
+	ASFUNCTION(_setObjectEncoding);
 	ASFUNCTION(load);
 	ASFUNCTION(close);
 	ASFUNCTION(bytesAvailable);
+	ASFUNCTION(readBoolean);
 	ASFUNCTION(readByte);
 	ASFUNCTION(readBytes);
 	ASFUNCTION(readDouble);
 	ASFUNCTION(readFloat);
 	ASFUNCTION(readInt);
-	ASFUNCTION(readUnsignedInt);
+	ASFUNCTION(readMultiByte);
 	ASFUNCTION(readObject);
+	ASFUNCTION(readShort);
+	ASFUNCTION(readUnsignedByte);
+	ASFUNCTION(readUnsignedInt);
+	ASFUNCTION(readUnsignedShort);
 	ASFUNCTION(readUTF);
 	ASFUNCTION(readUTFBytes);
 };

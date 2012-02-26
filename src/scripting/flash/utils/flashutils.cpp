@@ -35,6 +35,8 @@ using namespace lightspark;
 SET_NAMESPACE("flash.utils");
 
 REGISTER_CLASS_NAME(Endian);
+REGISTER_CLASS_NAME(IDataInput);
+REGISTER_CLASS_NAME(IDataOutput);
 REGISTER_CLASS_NAME(ByteArray);
 REGISTER_CLASS_NAME(Timer);
 REGISTER_CLASS_NAME(Dictionary);
@@ -50,6 +52,45 @@ void Endian::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setVariableByQName("LITTLE_ENDIAN","",Class<ASString>::getInstanceS(littleEndian),DECLARED_TRAIT);
 	c->setVariableByQName("BIG_ENDIAN","",Class<ASString>::getInstanceS(bigEndian),DECLARED_TRAIT);
+}
+
+void IDataInput::linkTraits(Class_base* c)
+{
+	lookupAndLink(c,"bytesAvailable","flash.utils:IDataInput");
+	lookupAndLink(c,"endian","flash.utils:IDataInput");
+	lookupAndLink(c,"objectEncoding","flash.utils:IDataInput");
+	lookupAndLink(c,"readBoolean","flash.utils:IDataInput");
+	lookupAndLink(c,"readByte","flash.utils:IDataInput");
+	lookupAndLink(c,"readBytes","flash.utils:IDataInput");
+	lookupAndLink(c,"readDouble","flash.utils:IDataInput");
+	lookupAndLink(c,"readFloat","flash.utils:IDataInput");
+	lookupAndLink(c,"readInt","flash.utils:IDataInput");
+	lookupAndLink(c,"readMultiByte","flash.utils:IDataInput");
+	lookupAndLink(c,"readObject","flash.utils:IDataInput");
+	lookupAndLink(c,"readShort","flash.utils:IDataInput");
+	lookupAndLink(c,"readUnsignedByte","flash.utils:IDataInput");
+	lookupAndLink(c,"readUnsignedInt","flash.utils:IDataInput");
+	lookupAndLink(c,"readUnsignedShort","flash.utils:IDataInput");
+	lookupAndLink(c,"readUTF","flash.utils:IDataInput");
+	lookupAndLink(c,"readUTFBytes","flash.utils:IDataInput");
+}
+
+void IDataOutput::linkTraits(Class_base* c)
+{
+	lookupAndLink(c,"endian","flash.utils:IDataOutput");
+	lookupAndLink(c,"objectEncoding","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeBoolean","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeByte","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeBytes","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeDouble","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeFloat","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeInt","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeMultiByte","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeObject","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeShort","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeUnsignedInt","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeUTF","flash.utils:IDataOutput");
+	lookupAndLink(c,"writeUTFBytes","flash.utils:IDataOutput");
 }
 
 ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),real_len(l),len(l),position(0),littleEndian(false),objectEncoding(ObjectEncoding::AMF3)
@@ -72,6 +113,9 @@ ByteArray::~ByteArray()
 
 void ByteArray::sinit(Class_base* c)
 {
+	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_setLength),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),GETTER_METHOD,true);
@@ -116,6 +160,11 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeShort","",Class<IFunction>::getFunction(writeShort),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),DYNAMIC_TRAIT);
+
+	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass());
+	IDataInput::linkTraits(c);
+	c->addImplementedInterface(InterfaceClass<IDataOutput>::getClass());
+	IDataOutput::linkTraits(c);
 }
 
 void ByteArray::buildTraits(ASObject* o)

@@ -292,6 +292,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("clearTimeout","flash.utils",Class<IFunction>::getFunction(clearTimeout),DECLARED_TRAIT);
 	builtin->setVariableByQName("describeType","flash.utils",Class<IFunction>::getFunction(describeType),DECLARED_TRAIT);
 	builtin->setVariableByQName("IExternalizable","flash.utils",Class<ASObject>::getStubClass(QName("IExternalizable","flash.utils")),DECLARED_TRAIT);
+	builtin->setVariableByQName("IDataInput","flash.utils",InterfaceClass<IDataInput>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("IDataOutput","flash.utils",InterfaceClass<IDataOutput>::getRef(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getRef(),DECLARED_TRAIT);

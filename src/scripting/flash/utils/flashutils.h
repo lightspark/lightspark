@@ -41,7 +41,19 @@ public:
 	static void sinit(Class_base* c);
 };
 
-class ByteArray: public ASObject
+class IDataInput
+{
+public:
+	static void linkTraits(Class_base* c);
+};
+
+class IDataOutput
+{
+public:
+	static void linkTraits(Class_base* c);
+};
+
+class ByteArray: public ASObject, public IDataInput, public IDataOutput
 {
 friend class Loader;
 friend class URLLoader;

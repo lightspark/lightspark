@@ -30,6 +30,7 @@
 		}
 		catch(e:Error)
 		{
+			Tests.assertTrue(e is TypeError, "XML from XMLList with more than an element");
 		}
 
 		var list2:XMLList=new XMLList();

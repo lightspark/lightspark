@@ -47,6 +47,7 @@ friend class Loader;
 friend class URLLoader;
 protected:
 	uint8_t* bytes;
+	uint32_t real_len;
 	uint32_t len;
 	uint32_t position;
 	bool littleEndian;

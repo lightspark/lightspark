@@ -40,6 +40,8 @@ REGISTER_CLASS_NAME(Timer);
 REGISTER_CLASS_NAME(Dictionary);
 REGISTER_CLASS_NAME(Proxy);
 
+#define BA_CHUNK_SIZE 4096
+
 const char* Endian::littleEndian = "littleEndian";
 const char* Endian::bigEndian = "bigEndian";
 
@@ -50,20 +52,22 @@ void Endian::sinit(Class_base* c)
 	c->setVariableByQName("BIG_ENDIAN","",Class<ASString>::getInstanceS(bigEndian),DECLARED_TRAIT);
 }
 
-ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),len(l),position(0),littleEndian(false)
+ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),real_len(l), len(l),position(0),littleEndian(false)
 {
 }
 
-ByteArray::ByteArray(const ByteArray& b):ASObject(b),len(b.len),position(b.position),littleEndian(b.littleEndian)
+ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),position(b.position),littleEndian(b.littleEndian)
 {
 	assert_and_throw(position==0);
-	bytes=new uint8_t[len];
+	bytes = (uint8_t*) malloc(len);
+	assert_and_throw(bytes);
 	memcpy(bytes,b.bytes,len);
 }
 
 ByteArray::~ByteArray()
 {
-	delete[] bytes;
+	if(bytes)
+		free(bytes);
 }
 
 void ByteArray::sinit(Class_base* c)
@@ -118,23 +122,31 @@ void ByteArray::buildTraits(ASObject* o)
 
 uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 {
+	// The first allocation is exactly the size we need,
+	// the subsequent reallocations happen in increments of BA_CHUNK_SIZE bytes
 	if(bytes==NULL)
 	{
 		len=size;
-		bytes=new uint8_t[len];
+		real_len=len;
+		bytes = (uint8_t*) malloc(len);
 	}
 	else if(enableResize==false)
 	{
 		assert_and_throw(size<=len);
 	}
-	else if(len<size) // && enableResize==true
+	else if(real_len<size) // && enableResize==true
 	{
-		//Resize the buffer
-		uint8_t* bytes2=new uint8_t[size];
-		memcpy(bytes2,bytes,len);
+		real_len += BA_CHUNK_SIZE;
+		// Reallocate the buffer, in chunks of BA_CHUNK_SIZE bytes
+		uint8_t* bytes2 = (uint8_t*) realloc(bytes, real_len);
+		assert_and_throw(bytes2);
+		bytes = bytes2;
 		len=size;
-		delete[] bytes;
 		bytes=bytes2;
+	}
+	else if(len<size)
+	{
+		len=size;
 	}
 	return bytes;
 }
@@ -245,23 +257,17 @@ ASFUNCTIONBODY(ByteArray,_setLength)
 	uint32_t newLen=args[0]->toInt();
 	if(newLen==th->len) //Nothing to do
 		return NULL;
-	uint8_t* newBytes=new uint8_t[newLen];
-	if(th->len<newLen)
+	uint32_t prevLen = th->len;
+	uint8_t* newBytes= (uint8_t*) realloc(th->bytes, newLen);
+	assert_and_throw(newBytes);
+	th->bytes = newBytes;
+	th->len = newLen;
+	th->real_len = newLen;
+	if(prevLen<newLen)
 	{
 		//Extend
-		memcpy(newBytes,th->bytes,th->len);
-		memset(newBytes+th->len,0,newLen-th->len);
+		memset(th->bytes+prevLen,0,newLen-prevLen);
 	}
-	else
-	{
-		//Truncate
-		memcpy(newBytes,th->bytes,newLen);
-	}
-	delete[] th->bytes;
-	th->bytes=newBytes;
-	th->len=newLen;
-	//TODO: check position
-	th->position=0;
 	return NULL;
 }
 
@@ -791,13 +797,9 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 
 	if(index>=len)
 	{
-		//Resize the array
-		uint8_t* buf=new uint8_t[index+1];
-		memset(buf, 0, index+1);
-		memcpy(buf,bytes,len);
-		delete[] bytes;
-		len=index+1;
-		bytes=buf;
+		uint32_t prevLen = len;
+		getBuffer(index+1, true);
+		memset(bytes+prevLen, 0, index+1);
 	}
 
 	if(o->getObjectType()!=T_UNDEFINED)
@@ -816,8 +818,9 @@ void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 {
 	if(bytes)
-		delete[] bytes;
+		free(bytes);
 	bytes=buf;
+	real_len=bufLen;
 	len=bufLen;
 	position=0;
 }
@@ -868,11 +871,12 @@ void ByteArray::compress_zlib()
 		return;
 
 	unsigned long buflen=compressBound(len);
-	uint8_t *compressed=new uint8_t[buflen];
+	uint8_t *compressed=(uint8_t*) malloc(buflen);
+	assert_and_throw(compressed);
 
 	if(compress(compressed, &buflen, bytes, len)!=Z_OK)
 	{
-		delete[] compressed;
+		free(compressed);
 		throw RunTimeException("zlib compress failed");
 	}
 
@@ -919,9 +923,11 @@ void ByteArray::uncompress_zlib()
 
 	inflateEnd(&strm);
 
-	delete[] bytes;
 	len=strm.total_out;
-	bytes=new uint8_t[len];
+	real_len = len;
+	uint8_t* bytes2=(uint8_t*) realloc(bytes, len);
+	assert_and_throw(bytes2);
+	bytes = bytes2;
 	memcpy(bytes, &buf[0], len);
 	position=len;
 }
@@ -969,9 +975,11 @@ ASFUNCTIONBODY(ByteArray,_inflate)
 ASFUNCTIONBODY(ByteArray,clear)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	delete[] th->bytes;
+	if(th->bytes)
+		free(th->bytes);
 	th->bytes = NULL;
 	th->len=0;
+	th->real_len=0;
 	th->position=0;
 	return NULL;
 }

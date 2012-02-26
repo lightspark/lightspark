@@ -52,11 +52,11 @@ void Endian::sinit(Class_base* c)
 	c->setVariableByQName("BIG_ENDIAN","",Class<ASString>::getInstanceS(bigEndian),DECLARED_TRAIT);
 }
 
-ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),real_len(l), len(l),position(0),littleEndian(false)
+ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),real_len(l),len(l),position(0),littleEndian(false),objectEncoding(ObjectEncoding::AMF3)
 {
 }
 
-ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),position(b.position),littleEndian(b.littleEndian)
+ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),position(b.position),littleEndian(b.littleEndian),objectEncoding(b.objectEncoding)
 {
 	assert_and_throw(position==0);
 	bytes = (uint8_t*) malloc(len);
@@ -79,6 +79,8 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(_setPosition),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(_getEndian),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(_setEndian),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
@@ -93,7 +95,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(readDouble),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readFloat","",Class<IFunction>::getFunction(readFloat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
-	//c->setDeclaredMethodByQName("readMultiByte","",Class<IFunction>::getFunction(readMultiByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readMultiByte","",Class<IFunction>::getFunction(readMultiByte),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readShort","",Class<IFunction>::getFunction(readShort),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUnsignedByte","",Class<IFunction>::getFunction(readUnsignedByte),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUnsignedInt","",Class<IFunction>::getFunction(readUnsignedInt),NORMAL_METHOD,true);
@@ -109,7 +111,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("writeDouble","",Class<IFunction>::getFunction(writeDouble),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeFloat","",Class<IFunction>::getFunction(writeFloat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeInt","",Class<IFunction>::getFunction(writeInt),NORMAL_METHOD,true);
-	//c->setDeclaredMethodByQName("writeMultiByte","",Class<IFunction>::getFunction(writeMultiByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeMultiByte","",Class<IFunction>::getFunction(writeMultiByte),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeUnsignedInt","",Class<IFunction>::getFunction(writeUnsignedInt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeShort","",Class<IFunction>::getFunction(writeShort),NORMAL_METHOD,true);
@@ -229,6 +231,24 @@ ASFUNCTIONBODY(ByteArray,_setEndian)
 		th->littleEndian = true;
 	else if(args[0]->toString() == Endian::bigEndian)
 		th->littleEndian = false;
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_getObjectEncoding)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	return abstract_ui(th->objectEncoding);
+}
+
+ASFUNCTIONBODY(ByteArray,_setObjectEncoding)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	uint32_t value;
+	ARG_UNPACK(value);
+	if(value!=ObjectEncoding::AMF0 && value!=ObjectEncoding::AMF3)
+		throw Class<ArgumentError>::getInstanceS("Error #2008: Parameter objectEncoding must be one of the accepted values.");
+
+	th->objectEncoding=value;
 	return NULL;
 }
 
@@ -398,12 +418,29 @@ ASFUNCTIONBODY(ByteArray,writeUTFBytes)
 	return NULL;
 }
 
+ASFUNCTIONBODY(ByteArray,writeMultiByte)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	tiny_string value;
+	tiny_string charset;
+	ARG_UNPACK(value)(charset);
+
+	// TODO: should convert from UTF-8 to charset
+	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.writeMultiByte doesn't convert charset");
+
+	th->getBuffer(th->position+value.numBytes(),true);
+	memcpy(th->bytes+th->position,value.raw_buf(),value.numBytes());
+
+	return NULL;
+}
+
 ASFUNCTIONBODY(ByteArray,writeObject)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert_and_throw(argslen==1);
 	//TODO: support AMF0
+	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
 	//TODO: support custom serialization
 	map<tiny_string, uint32_t> stringMap;
 	map<const ASObject*, uint32_t> objMap;
@@ -713,6 +750,23 @@ ASFUNCTIONBODY(ByteArray,readUnsignedShort)
 	return abstract_ui(th->endianOut(ret));
 }
 
+ASFUNCTIONBODY(ByteArray,readMultiByte)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	uint32_t strlen;
+	tiny_string charset;
+	ARG_UNPACK(strlen)(charset);
+
+	if(th->len < th->position+strlen)
+	{
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+	}
+
+	// TODO: should convert from charset to UTF-8
+	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.readMultiByte doesn't convert charset");
+	return Class<ASString>::getInstanceS((char*)th->bytes+th->position,strlen);
+}
+
 ASFUNCTIONBODY(ByteArray,readObject)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
@@ -721,6 +775,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	{
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
+	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
 	std::vector<ASObject*> ret;
 	Amf3Deserializer d(th);
 	try

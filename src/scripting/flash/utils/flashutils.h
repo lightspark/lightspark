@@ -51,6 +51,7 @@ protected:
 	uint32_t len;
 	uint32_t position;
 	bool littleEndian;
+	uint32_t objectEncoding;
 	ByteArray(const ByteArray& b);
 	void compress_zlib();
 	void uncompress_zlib();
@@ -70,6 +71,8 @@ public:
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(_getEndian);
 	ASFUNCTION(_setEndian);
+	ASFUNCTION(_getObjectEncoding);
+	ASFUNCTION(_setObjectEncoding);
 	ASFUNCTION(_getDefaultObjectEncoding);
 	ASFUNCTION(_setDefaultObjectEncoding);
 	ASFUNCTION(_compress);
@@ -83,6 +86,7 @@ public:
 	ASFUNCTION(readDouble);
 	ASFUNCTION(readFloat);
 	ASFUNCTION(readInt);
+	ASFUNCTION(readMultiByte);
 	ASFUNCTION(readObject);
 	ASFUNCTION(readShort);
 	ASFUNCTION(readUnsignedByte);
@@ -97,6 +101,7 @@ public:
 	ASFUNCTION(writeFloat);
 	ASFUNCTION(writeInt);
 	ASFUNCTION(writeUnsignedInt);
+	ASFUNCTION(writeMultiByte);
 	ASFUNCTION(writeObject);
 	ASFUNCTION(writeShort);
 	ASFUNCTION(writeUTF);

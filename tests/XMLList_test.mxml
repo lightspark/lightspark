@@ -23,6 +23,21 @@
 			str+=x.toXMLString();
 		Tests.assertEquals("<test1/><test2/>",str,"Sparse XMLList: elements order");
 
+		try
+		{
+			var xml3:XML = XML(list);
+			Tests.assertDontReach("XML from XMLList with more than an element");
+		}
+		catch(e:Error)
+		{
+		}
+
+		var list2:XMLList=new XMLList();
+		list2[1]=xml1;
+
+		var xml4:XML = XML(list2);
+		Tests.assertEquals(xml4.toXMLString(), xml1.toXMLString(), "XML from XMLList with a single element");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

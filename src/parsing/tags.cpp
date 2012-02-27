@@ -344,6 +344,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				empty=true;
 				break;
 			}
+			case SYMBOL_CLASS_TAG:
 			case ABC_TAG:
 			case CONTROL_TAG:
 				throw ParseException("Control tag inside a sprite. Should not happen.");

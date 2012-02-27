@@ -1195,6 +1195,14 @@ void ParseThread::parseSWF(UI8 ver)
 			{
 				case END_TAG:
 				{
+					// The whole frame has been parsed, now execute all queued SymbolClass tags,
+					// in the order in which they appeared in the file.
+					while(!symbolClassTags.empty())
+					{
+						symbolClassTags.front()->execute(root);
+						symbolClassTags.pop();
+					}
+
 					if(!empty)
 						root->commitFrame(false);
 					else
@@ -1216,9 +1224,27 @@ void ParseThread::parseSWF(UI8 ver)
 					empty=false;
 					break;
 				case SHOW_TAG:
+					// The whole frame has been parsed, now execute all queued SymbolClass tags,
+					// in the order in which they appeared in the file.
+					while(!symbolClassTags.empty())
+					{
+						symbolClassTags.front()->execute(root);
+						symbolClassTags.pop();
+					}
+
 					root->commitFrame(true);
 					empty=true;
 					break;
+				case SYMBOL_CLASS_TAG:
+				{
+					// Add symbol class tags to the queue, to be executed when the rest of the 
+					// frame has been parsed. This is to handle invalid SWF files that define ID's
+					// used in the SymbolClass tag only after the tag, which would otherwise result
+					// in "undefined dictionary ID" errors.
+					_R<ControlTag> stag = tag.cast<ControlTag>();
+					symbolClassTags.push(stag);
+					break;
+				}
 				case CONTROL_TAG:
 					/* The spec is not clear about that,
 					 * but it seems that all the CONTROL_TAGs
@@ -1232,10 +1258,8 @@ void ParseThread::parseSWF(UI8 ver)
 					//fall through
 				case ABC_TAG:
 				{
-					// Add control tags to the queue, to be executed when the rest of the 
-					// SWF has been parsed.
 					_R<ControlTag> ctag = tag.cast<ControlTag>();
-					controlTags.push(ctag);
+					ctag->execute(root);
 					break;
 				}
 				case FRAMELABEL_TAG:
@@ -1259,15 +1283,6 @@ void ParseThread::parseSWF(UI8 ver)
 		throw;
 	}
 	LOG(LOG_INFO,_("End of parsing"));
-
-	// The whole SWF has been parsed, now execute all control tags, in the order
-	// in which they appeared in the file.
-	while(!controlTags.empty())
-	{
-		_R<ControlTag> ctag = controlTags.front();
-		controlTags.pop();
-		ctag->execute(root);
-	}
 }
 
 void ParseThread::parseBitmap()

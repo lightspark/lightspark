@@ -372,7 +372,7 @@ private:
 	Spinlock objectSpinlock;
 	tiny_string url;
 	FILE_TYPE fileType;
-	std::queue<_R<ControlTag>> controlTags;
+	std::queue<_R<ControlTag>> symbolClassTags;
 	void threadAbort();
 	void jobFence() {};
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);

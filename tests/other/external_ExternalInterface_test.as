@@ -2,7 +2,7 @@ package {
 import flash.display.*;
 import flash.external.*;
 public class external_ExternalInterface_test extends Sprite {
-	function returnTest(value:*):*
+	internal function returnTest(value:*):*
 	{
 		return function(... args):* { return value; }
 	}
@@ -81,6 +81,9 @@ public class external_ExternalInterface_test extends Sprite {
 		ExternalInterface.call("alert","Passing arguments");
 		ExternalInterface.call("alert",true);
 		ExternalInterface.call("alert",2.4);
+
+		var arrayRet:Object=ExternalInterface.call("testArray");
+		ExternalInterface.call("trace",arrayRet.toString());
 
 		var obj:Object = new Object();
 		obj["prop1"] = "val1";

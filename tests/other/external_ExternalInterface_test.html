@@ -125,6 +125,11 @@ var foo = new Object();
 foo.bar1=function() { alert("Bar1 "+this); }
 foo.bar2=function() { alert("Bar2 "+this); }
 
+function testArray()
+{
+	return [0,1,"text",3];
+}
+
 </script>
 </head>
 <body onload="window.testPlayer = document.getElementById('testPlayer'); document.getElementById('trace').value = ''">

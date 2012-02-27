@@ -52,6 +52,11 @@ public:
 
 	// Since these objects get used as keys in std::maps, they need to be comparable.
 	virtual bool operator<(const ExtIdentifier& other) const;
+	// Since this class is used as keys in property maps
+	// it must implement a proper copy operator that must
+	// deal with any subclass by acquiring the contents in
+	// the internal data structures
+	ExtIdentifier& operator=(const ExtIdentifier& other);
 
 	enum EI_TYPE { EI_STRING, EI_INT32 };
 	virtual EI_TYPE getType() const { return type; }
@@ -121,6 +126,12 @@ public:
 	ExtVariant(bool value);
 	ExtVariant(const ExtVariant& other);
 	ExtVariant(ASObject* other);
+
+	// Since this class is used as value in property maps
+	// it must implement a proper copy operator that must
+	// deal with any subclass by acquiring the contents in
+	// the internal data structures
+	ExtVariant& operator=(const ExtVariant& other);
 
 	virtual ~ExtVariant() {}
 

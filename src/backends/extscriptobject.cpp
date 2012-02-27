@@ -56,9 +56,15 @@ ExtIdentifier::ExtIdentifier(int32_t value) :
 }
 ExtIdentifier::ExtIdentifier(const ExtIdentifier& other)
 {
+	*this=other;
+}
+
+ExtIdentifier& ExtIdentifier::operator=(const ExtIdentifier& other)
+{
 	type = other.getType();
 	strValue = other.getString();
 	intValue = other.getInt();
+	return *this;
 }
 
 // Convert integer string identifiers to integer identifiers
@@ -175,12 +181,7 @@ ExtVariant::ExtVariant(bool value) :
 }
 ExtVariant::ExtVariant(const ExtVariant& other)
 {
-	type = other.getType();
-	strValue = other.getString();
-	intValue = other.getInt();
-	doubleValue = other.getDouble();
-	booleanValue = other.getBoolean();
-	objectValue = *other.getObject();
+	*this=other;
 }
 ExtVariant::ExtVariant(ASObject* other) :
 	strValue(""), intValue(0), doubleValue(0), booleanValue(false)
@@ -230,6 +231,39 @@ ExtVariant::ExtVariant(ASObject* other) :
 		type = EV_VOID;
 		break;
 	}
+}
+
+ExtVariant& ExtVariant::operator=(const ExtVariant& other)
+{
+	type = other.getType();
+
+	switch(type)
+	{
+	case EV_STRING:
+		strValue = other.getString();
+		break;
+	case EV_INT32:
+		intValue = other.getInt();
+		break;
+	case EV_DOUBLE:
+		doubleValue = other.getDouble();
+		break;
+	case EV_BOOLEAN:
+		booleanValue = other.getBoolean();
+		break;
+	case EV_OBJECT:
+		{
+			ExtObject* tmpObj=other.getObject();
+			objectValue = *tmpObj;
+			delete tmpObj;
+		}
+		break;
+	case EV_NULL:
+	case EV_VOID:
+		break;
+	}
+
+	return *this;
 }
 
 // Conversion to ASObject

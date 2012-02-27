@@ -87,18 +87,18 @@ public:
 	ExtObject& operator=(const ExtObject& other);
 	void copy(std::map<ExtIdentifier, ExtVariant>& dest) const;
 
-	virtual bool hasProperty(const ExtIdentifier& id) const;
+	bool hasProperty(const ExtIdentifier& id) const;
 	// The returned value should be "delete"d by the caller after use
-	virtual ExtVariant* getProperty(const ExtIdentifier& id) const;
-	virtual void setProperty(const ExtIdentifier& id, const ExtVariant& value);
-	virtual bool removeProperty(const ExtIdentifier& id);
+	ExtVariant* getProperty(const ExtIdentifier& id) const;
+	void setProperty(const ExtIdentifier& id, const ExtVariant& value);
+	bool removeProperty(const ExtIdentifier& id);
 
-	virtual bool enumerate(ExtIdentifier*** ids, uint32_t* count) const;
-	virtual uint32_t getLength() const { return properties.size(); }
+	bool enumerate(ExtIdentifier*** ids, uint32_t* count) const;
+	uint32_t getLength() const { return properties.size(); }
 
 	enum EO_TYPE { EO_OBJECT, EO_ARRAY };
-	virtual EO_TYPE getType() const { return type; }
-	virtual void setType(EO_TYPE _type) { type = _type; }
+	EO_TYPE getType() const { return type; }
+	void setType(EO_TYPE _type) { type = _type; }
 protected:
 	EO_TYPE type;
 	std::map<ExtIdentifier, ExtVariant> properties;

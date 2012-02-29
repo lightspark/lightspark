@@ -877,8 +877,13 @@ _NR<ASObject> ByteArray::getVariableByMultiname(const multiname& name, GET_VARIA
 	if((opt & ASObject::SKIP_IMPL)!=0 || !Array::isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname(name,opt);
 
-	assert_and_throw(index<len);
-	return _MNR(abstract_i(bytes[index]));
+	if(index<len)
+	{
+		uint8_t value = bytes[index];
+		return _MNR(abstract_ui(static_cast<uint32_t>(value)));
+	}
+	else
+		return _MNR(new Undefined);
 }
 
 int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
@@ -888,8 +893,13 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 	if(!Array::isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname_i(name);
 
-	assert_and_throw(index<len);
-	return bytes[index];
+	if(index<len)
+	{
+		uint8_t value = bytes[index];
+		return static_cast<uint32_t>(value);
+	}
+	else
+		return _MNR(new Undefined);
 }
 
 void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
@@ -903,13 +913,13 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 	{
 		uint32_t prevLen = len;
 		getBuffer(index+1, true);
-		memset(bytes+prevLen, 0, index+1);
+		// Fill the gap between the end of the current data and the index with zeros
+		memset(bytes+prevLen, 0, index-prevLen);
 	}
 
-	if(o->getObjectType()!=T_UNDEFINED)
-		bytes[index]=o->toInt();
-	else
-		bytes[index]=0;
+	// Fill the byte pointed to by index with the truncated uint value of the object.
+	uint8_t value = static_cast<uint8_t>(o->toUInt() & 0xff);
+	bytes[index] = value;
 
 	o->decRef();
 }

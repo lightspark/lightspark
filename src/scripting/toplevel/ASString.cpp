@@ -459,15 +459,22 @@ double ASString::toNumber() const
 int32_t ASString::toInt()
 {
 	assert_and_throw(implEnable);
-	//TODO: this assumes data to be ascii, but it is utf8!
-	return atoi(data.raw_buf());
+	const char* cur=data.raw_buf();
+
+	errno=0;
+	char *end;
+	int64_t val=g_ascii_strtoll(cur, &end, 0);
+
+	if(errno==ERANGE || end > cur)
+		return static_cast<int32_t>(val);
+	else
+		return 0;
 }
 
 uint32_t ASString::toUInt()
 {
 	assert_and_throw(implEnable);
-	//TODO: this assumes data to be ascii, but it is utf8!
-	return atol(data.raw_buf());
+	return static_cast<uint32_t>(toInt());
 }
 
 bool ASString::isEqual(ASObject* r)

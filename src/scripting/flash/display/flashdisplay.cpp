@@ -3620,10 +3620,15 @@ void Bitmap::sinit(Class_base* c)
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
 	c->setSuper(Class<DisplayObject>::getRef());
-	REGISTER_GETTER(c,bitmapData);
+	REGISTER_GETTER_SETTER(c,bitmapData);
 }
 
-ASFUNCTIONBODY_GETTER(Bitmap,bitmapData);
+void Bitmap::onBitmapData(_NR<BitmapData>)
+{
+	Bitmap::updatedData();
+}
+
+ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData);
 
 void Bitmap::updatedData()
 {

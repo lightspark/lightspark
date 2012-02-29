@@ -788,11 +788,13 @@ public:
 class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;
+private:
+	void onBitmapData(_NR<BitmapData>);
 protected:
 	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 		{ TokenContainer::renderImpl(ctxt, maskEnabled,t1,t2,t3,t4); }
 public:
-	ASPROPERTY_GETTER(_NR<BitmapData>,bitmapData);
+	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
 	Bitmap(std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);

@@ -1497,7 +1497,27 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 
 	Class_base* objc=NULL;
 	Class_base* c=NULL;
-	assert_and_throw(type->getObjectType()==T_CLASS);
+	switch (type->getObjectType())
+	{
+		case T_NULL:
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_OBJECT:
+		case T_STRING:
+			obj->decRef();
+			type->decRef();
+			throw Class<TypeError>::getInstanceS("Error #1009");
+		case T_UNDEFINED:
+			obj->decRef();
+			type->decRef();
+			throw Class<TypeError>::getInstanceS("Error #1010");
+		case T_CLASS:
+			break;
+		default:
+			throw Class<TypeError>::getInstanceS("Error #1041");
+	}
+
 	c=static_cast<Class_base*>(type);
 	//Special case numeric types
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)

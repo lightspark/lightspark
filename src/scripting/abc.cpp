@@ -1470,7 +1470,7 @@ void ABCVm::Run(ABCVm* th)
 		{
 			th->shuttingdown = true;
 			if(e->getClass())
-				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->getClass()->class_name);
+				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->toString());
 			else
 				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
 			th->m_sys->setError(_("Unhandled ActionScript exception"));

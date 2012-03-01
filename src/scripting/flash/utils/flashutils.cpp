@@ -1109,7 +1109,7 @@ void Timer::tick()
 	if(repeatCount!=0)
 	{
 		currentCount++;
-		if(repeatCount<currentCount)
+		if(currentCount==repeatCount)
 		{
 			this->incRef();
 			getVm()->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timerComplete")));

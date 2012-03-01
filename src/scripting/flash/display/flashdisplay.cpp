@@ -317,6 +317,8 @@ ASFUNCTIONBODY(Loader,loadBytes)
 		th->incRef();
 		getSys()->addJob(th);
 	}
+	else
+		LOG(LOG_INFO, "Empty ByteArray passed to Loader.loadBytes");
 	return NULL;
 }
 

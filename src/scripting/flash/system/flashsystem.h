@@ -33,9 +33,15 @@ public:
 	DLL_PUBLIC static const char* EMULATED_VERSION;
 	Capabilities(){};
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLanguage);
-	ASFUNCTION(playerType);
+	ASFUNCTION(_getPlayerType);
+	ASFUNCTION(_getCPUArchitecture);
+	ASFUNCTION(_getIsDebugger);
+	ASFUNCTION(_getIsEmbeddedInAcrobat);
+	ASFUNCTION(_getLocalFileReadDisable);
+	ASFUNCTION(_getOS);
+	ASFUNCTION(_getVersion);
+	ASFUNCTION(_getServerString);
 };
 
 class ApplicationDomain: public ASObject

@@ -46,20 +46,18 @@ const char* Capabilities::EMULATED_VERSION = "LNX 11,1,0,"SHORTVERSION;
 
 void Capabilities::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(_getLanguage),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("playerType","",Class<IFunction>::getFunction(playerType),GETTER_METHOD,true);
-	c->setVariableByQName("version","",Class<ASString>::getInstanceS(EMULATED_VERSION),DECLARED_TRAIT);
-	c->setVariableByQName("serverString","",Class<ASString>::getInstanceS(""),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(_getLanguage),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("playerType","",Class<IFunction>::getFunction(_getPlayerType),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("version","",Class<IFunction>::getFunction(_getVersion),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("cpuArchitecture","",Class<IFunction>::getFunction(_getCPUArchitecture),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isDebugger","",Class<IFunction>::getFunction(_getIsDebugger),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isEmbeddedInAcrobat","",Class<IFunction>::getFunction(_getIsEmbeddedInAcrobat),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("localFileReadDisable","",Class<IFunction>::getFunction(_getLocalFileReadDisable),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("os","",Class<IFunction>::getFunction(_getOS),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("serverString","",Class<IFunction>::getFunction(_getServerString),GETTER_METHOD,false);
 }
 
-ASFUNCTIONBODY(Capabilities,_constructor)
-{
-	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS("AVMPlus"),DECLARED_TRAIT);
-	return NULL;
-}
-
-ASFUNCTIONBODY(Capabilities,playerType)
+ASFUNCTIONBODY(Capabilities,_getPlayerType)
 {
 	return Class<ASString>::getInstanceS("PlugIn");
 }
@@ -67,6 +65,43 @@ ASFUNCTIONBODY(Capabilities,playerType)
 ASFUNCTIONBODY(Capabilities,_getLanguage)
 {
 	return Class<ASString>::getInstanceS("en");
+}
+
+ASFUNCTIONBODY(Capabilities,_getCPUArchitecture)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Capabilities.cpuArchitecture is not implemented");
+	return Class<ASString>::getInstanceS("x86");
+}
+
+ASFUNCTIONBODY(Capabilities,_getIsDebugger)
+{
+	return abstract_b(false);
+}
+
+ASFUNCTIONBODY(Capabilities,_getIsEmbeddedInAcrobat)
+{
+	return abstract_b(false);
+}
+
+ASFUNCTIONBODY(Capabilities,_getLocalFileReadDisable)
+{
+	return abstract_b(true);
+}
+
+ASFUNCTIONBODY(Capabilities,_getOS)
+{
+	return Class<ASString>::getInstanceS("Linux");
+}
+
+ASFUNCTIONBODY(Capabilities,_getVersion)
+{
+	return Class<ASString>::getInstanceS(EMULATED_VERSION);
+}
+
+ASFUNCTIONBODY(Capabilities,_getServerString)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Capabilities.serverString is not implemented");
+	return Class<ASString>::getInstanceS("");
 }
 
 void ApplicationDomain::sinit(Class_base* c)

@@ -187,7 +187,8 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	}
 	else if(real_len<size) // && enableResize==true
 	{
-		real_len += BA_CHUNK_SIZE;
+		while(real_len < size)
+			real_len += BA_CHUNK_SIZE;
 		// Reallocate the buffer, in chunks of BA_CHUNK_SIZE bytes
 		uint8_t* bytes2 = (uint8_t*) realloc(bytes, real_len);
 		assert_and_throw(bytes2);

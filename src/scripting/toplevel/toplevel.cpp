@@ -1754,20 +1754,35 @@ ASFUNCTIONBODY(Number,_toString)
 		throw Class<TypeError>::getInstanceS("Number.toString is not generic");
 	Number* th=static_cast<Number*>(obj);
 	int radix=10;
-	char buf[20];
-	if(argslen==1)
-		radix=args[0]->toUInt();
-	assert_and_throw(radix==10 || radix==16);
+	ARG_UNPACK (radix,10);
+	if (radix < 2 || radix > 36)
+		throw Class<RangeError>::getInstanceS("Error #1003");
 
-	if(radix==10)
+	if(radix==10 || std::isnan(th->val) || std::isinf(th->val))
 	{
 		//see e 15.7.4.2
 		return Class<ASString>::getInstanceS(th->toString());
 	}
-	else if(radix==16)
-		snprintf(buf,20,"%"PRIx64,(int64_t)th->val);
+	else
+	{
+		tiny_string res = "";
+		static char digits[] ="0123456789abcdefghijklmnopqrstuvwxyz";
+		number_t v = th->val;
+		number_t r = (number_t)radix;
+		bool negative = v<0;
+		if (negative) 
+			v = -v;
+		do 
+		{
+			res = tiny_string::fromChar(digits[(int)(v-(floor(v/r)*radix))])+res;
+			v = v/r;
+		} 
+		while (v >= 1.0);
+		if (negative) 
+			res = tiny_string::fromChar('-')+res;
+		return Class<ASString>::getInstanceS(res);
+	}
 
-	return Class<ASString>::getInstanceS(buf);
 }
 
 ASFUNCTIONBODY(Number,generator)

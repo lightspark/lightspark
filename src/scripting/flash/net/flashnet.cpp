@@ -359,7 +359,8 @@ void URLLoader::execute()
 		}
 		else
 		{
-			downloader=getSys()->downloadManager->downloadWithData(url, postData, NULL);
+			downloader=getSys()->downloadManager->downloadWithData(url, postData,
+					"Content-Type: application/x-www-form-urlencoded", NULL);
 			//Clean up the postData for the next load
 			postData.clear();
 		}

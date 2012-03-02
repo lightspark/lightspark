@@ -57,7 +57,8 @@ protected:
 public:
 	virtual ~DownloadManager();
 	virtual Downloader* download(const URLInfo& url, bool cached, ILoadable* owner)=0;
-	virtual Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, ILoadable* owner)=0;
+	virtual Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data,
+			const char* contentType, ILoadable* owner)=0;
 	virtual void destroy(Downloader* downloader)=0;
 	void stopAll();
 
@@ -71,7 +72,8 @@ public:
 	StandaloneDownloadManager();
 	~StandaloneDownloadManager();
 	Downloader* download(const URLInfo& url, bool cached, ILoadable* owner);
-	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data, ILoadable* owner);
+	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data,
+			const char* contentType, ILoadable* owner);
 	void destroy(Downloader* downloader);
 };
 
@@ -89,7 +91,8 @@ private:
 protected:
 	//Abstract base class, can't be constructed
 	Downloader(const tiny_string& _url, bool _cached, ILoadable* o);
-	Downloader(const tiny_string& _url, const std::vector<uint8_t>& data, ILoadable* o);
+	Downloader(const tiny_string& _url, const std::vector<uint8_t>& data,
+			const char* contentType, ILoadable* o);
 	//-- LOCKING
 	//Provides internal mutual exclusing
 	Mutex mutex;
@@ -183,6 +186,7 @@ protected:
 	void parseHeader(std::string header, bool _setLength);
 	//Data to send to the host
 	const std::vector<uint8_t> data;
+	const char* contentType;
 
 	//-- PROGRESS MONITORING
 	ILoadable* owner;
@@ -241,7 +245,8 @@ public:
 protected:
 	//Abstract base class, can not be constructed
 	ThreadedDownloader(const tiny_string& url, bool cached, ILoadable* o);
-	ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data, ILoadable* o);
+	ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data,
+			const char* contentType, ILoadable* o);
 //	//This class can only get destroyed by DownloadManager
 //	virtual ~ThreadedDownloader();
 };
@@ -257,7 +262,8 @@ private:
 	void threadAbort();
 public:
 	CurlDownloader(const tiny_string& _url, bool _cached, ILoadable* o);
-	CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& data, ILoadable* o);
+	CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& data,
+			const char* contentType, ILoadable* o);
 };
 
 //LocalDownloader can be used as a thread job, standalone or as a streambuf

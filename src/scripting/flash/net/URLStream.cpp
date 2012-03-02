@@ -163,7 +163,8 @@ void URLStream::execute()
 		}
 		else
 		{
-			downloader=getSys()->downloadManager->downloadWithData(url, postData, NULL);
+			downloader=getSys()->downloadManager->downloadWithData(url, postData,
+					"application/x-www-form-urlencoded", NULL);
 			//Clean up the postData for the next load
 			postData.clear();
 		}

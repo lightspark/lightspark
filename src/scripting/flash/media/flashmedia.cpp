@@ -275,7 +275,8 @@ ASFUNCTIONBODY(Sound,load)
 	}
 	else
 	{
-		th->downloader=getSys()->downloadManager->downloadWithData(th->url, th->postData, th);
+		th->downloader=getSys()->downloadManager->downloadWithData(th->url, th->postData,
+				"Content-Type: application/x-www-form-urlencoded", th);
 		//Clean up the postData for the next load
 		th->postData.clear();
 	}

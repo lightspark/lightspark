@@ -216,11 +216,8 @@ public:
 	{
 		setVariableByMultiname(name,abstract_i(value));
 	}
-	bool deleteVariableByMultiname(const multiname& name)
-	{
-		assert_and_throw(implEnable);
-		throw UnsupportedException("deleteVariableByMultiName not supported for Proxy");
-	}
+	
+	bool deleteVariableByMultiname(const multiname& name);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString()
 	{

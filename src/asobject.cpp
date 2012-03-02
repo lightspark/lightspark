@@ -406,9 +406,21 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(ref_count>0);
 
-	//Only dynamic traits are deletable
-	variable* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	variable* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
+	
 	if(obj==NULL)
+	{
+		if (classdef && classdef->isSealed)
+			return false;
+
+		// fixed properties cannot be deleted
+		if (hasPropertyByMultiname(name,true))
+			return false;
+		//unknown variables must return true
+		return true;
+	}
+	//Only dynamic traits are deletable
+	if (obj->kind != DYNAMIC_TRAIT)
 		return false;
 
 	assert(obj->getter==NULL && obj->setter==NULL && obj->var!=NULL);

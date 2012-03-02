@@ -186,7 +186,15 @@ void NPDownloader::dlStartCallback(void* t)
 	if(th->data.empty())
 		e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
 	else
-		e=NPN_PostURLNotify(th->instance, th->url.raw_buf(), NULL, th->data.size(), (const char*)&th->data[0], false, th);
+	{
+		vector<uint8_t> tmpData;
+		tmpData.insert(tmpData.end(), th->contentType, th->contentType+strlen(th->contentType));
+		char buf[40];
+		snprintf(buf, 40, "\nContent-Length: %lu\n\n", th->data.size());
+		tmpData.insert(tmpData.end(), buf, buf+strlen(buf));
+		tmpData.insert(tmpData.end(), th->data.begin(), th->data.end());
+		e=NPN_PostURLNotify(th->instance, th->url.raw_buf(), NULL, tmpData.size(), (const char*)&tmpData[0], false, th);
+	}
 	if(e!=NPERR_NO_ERROR)
 		th->setFailed(); //No need to crash, we can just mark the download failed
 }

@@ -1114,15 +1114,26 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_ENCODING, "");
 		if (!getSys()->getCookies().empty())
 			curl_easy_setopt(curl, CURLOPT_COOKIE, getSys()->getCookies().c_str());
+
+		struct curl_slist *slist=NULL;
 		if(!data.empty())
 		{
 			curl_easy_setopt(curl, CURLOPT_POST, 1);
 			//data is const, it would not be invalidated
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &data.front());
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
+
+			//For POST it's mandatory to set the Content-Type
+			assert(contentType);
+			slist=curl_slist_append(slist, contentType);
+			curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
 		}
+
 		//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		res = curl_easy_perform(curl);
+
+		curl_slist_free_all(slist);
+
 		curl_easy_cleanup(curl);
 		if(res!=0)
 		{

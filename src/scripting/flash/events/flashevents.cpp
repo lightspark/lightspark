@@ -779,6 +779,7 @@ FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _a
 
 FunctionEvent::~FunctionEvent()
 {
+	//Since the array is used in Function::call the object inside are already been decReffed
 	delete[] args;
 }
 

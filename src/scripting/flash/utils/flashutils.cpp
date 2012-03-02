@@ -1624,10 +1624,38 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 
 bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 {
-	if(considerDynamic==false)
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+	//If a variable named like this already exist, use that
+	if(ASObject::hasPropertyByMultiname(name, considerDynamic) || !implEnable)
+	{
+		return ASObject::deleteVariableByMultiname(name);
+	}
 
-	throw UnsupportedException("Proxy::hasProperty");
+	//Check if there is a custom deleter defined, skipping implementation to avoid recursive calls
+	multiname hasPropertyName;
+	hasPropertyName.name_type=multiname::NAME_STRING;
+	hasPropertyName.name_s="hasProperty";
+	hasPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	_NR<ASObject> proxyHasProperty=getVariableByMultiname(hasPropertyName,ASObject::SKIP_IMPL);
+
+	if(proxyHasProperty.isNull())
+	{
+		return false;
+	}
+
+	assert_and_throw(proxyHasProperty->getObjectType()==T_FUNCTION);
+
+	IFunction* f=static_cast<IFunction*>(proxyHasProperty.getPtr());
+
+	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
+	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
+	//We now suppress special handling
+	implEnable=false;
+	LOG(LOG_CALLS,_("Proxy::hasProperty"));
+	incRef();
+	_NR<ASObject> ret=_MNR(f->call(this,&arg,1));
+	implEnable=true;
+	Boolean* b = static_cast<Boolean*>(ret.getPtr());
+	return b->val;
 }
 bool Proxy::deleteVariableByMultiname(const multiname& name)
 {

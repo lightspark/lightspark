@@ -1114,7 +1114,7 @@ void ByteArray::uncompress_zlib()
 	assert_and_throw(bytes2);
 	bytes = bytes2;
 	memcpy(bytes, &buf[0], len);
-	position=len;
+	position=0;
 }
 
 ASFUNCTIONBODY(ByteArray,_compress)

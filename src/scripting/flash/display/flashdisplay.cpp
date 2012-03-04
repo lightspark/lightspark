@@ -257,6 +257,7 @@ ASFUNCTIONBODY(Loader,_constructor)
 		p->incRef();
 		th->contentLoaderInfo->setVariableByQName("parameters","",p.getPtr(),DECLARED_TRAIT);
 	}
+	th->contentLoaderInfo->setLoaderURL(getSys()->getOrigin().getParsedURL());
 	return NULL;
 }
 
@@ -290,6 +291,7 @@ ASFUNCTIONBODY(Loader,load)
 	if(r==NULL)
 		throw Class<ArgumentError>::getInstanceS("Wrong argument in Loader::load");
 	th->url=r->getRequestURL();
+	th->contentLoaderInfo->setURL(th->url.getParsedURL());
 	r->getPostData(th->postData);
 	th->source=URL;
 	//To be decreffed in jobFence

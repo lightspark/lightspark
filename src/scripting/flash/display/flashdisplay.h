@@ -434,7 +434,6 @@ class Loader;
 
 class LoaderInfo: public EventDispatcher, public ILoadable
 {
-friend class RootMovieClip;
 private:
 	uint32_t bytesLoaded;
 	uint32_t bytesTotal;
@@ -471,6 +470,8 @@ public:
 		bytesTotal=b;
 	}
 	void setBytesLoaded(uint32_t b);
+	void setURL(const tiny_string& _url) { url=_url; }
+	void setLoaderURL(const tiny_string& _url) { loaderURL=_url; }
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer

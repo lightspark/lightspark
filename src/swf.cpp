@@ -108,8 +108,8 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 
 	if(!loaderInfo.isNull())
 	{
-		loaderInfo->url=origin.getParsedURL();
-		loaderInfo->loaderURL=origin.getParsedURL();
+		loaderInfo->setURL(origin.getParsedURL());
+		loaderInfo->setLoaderURL(origin.getParsedURL());
 	}
 }
 

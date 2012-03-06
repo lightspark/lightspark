@@ -544,15 +544,15 @@ ASFUNCTIONBODY(NetConnection,connect)
 		
 		if(!(th->uri.getProtocol() == "rtmp" ||
 		     th->uri.getProtocol() == "rtmpe" ||
-		     th->uri.getProtocol() == "rtmps"))
+		     th->uri.getProtocol() == "rtmps" ||
+		     th->uri.getProtocol() == "http"))
 		{
-			throw UnsupportedException("NetConnection::connect: only RTMP is supported");
+			LOG(LOG_ERROR, "Unsupported protocol " << th->uri.getProtocol() << " in NetConnection::connect");
+			throw UnsupportedException("NetConnection::connect: protocol not supported");
 		}
 
 		// We actually create the connection later in
-		// NetStream::play(). For now, we support only
-		// streaming, not remoting (NetConnection.call() is
-		// not implemented).
+		// NetStream::play() or NetConnection.call()
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
@@ -768,6 +768,12 @@ ASFUNCTIONBODY(NetStream,play)
 	th->paused = false;
 //	th->audioPaused = false;
 	assert(!th->connection.isNull());
+
+	if(th->connection->uri.getProtocol()=="http")
+	{
+		//Remoting connection used, this should not happen
+		throw RunTimeException("Remoting NetConnection used in NetStream::play");
+	}
 	
 	if(th->connection->uri.isValid())
 	{

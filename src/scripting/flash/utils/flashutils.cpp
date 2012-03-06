@@ -1025,16 +1025,29 @@ void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_
 {
 	const uint32_t len=s.numBytes();
 
-	if(len!=0)
-		assert_and_throw(stringMap.find(s)==stringMap.end());
+	//Check if the string is already in the map
+	auto it=stringMap.find(s);
+	if(it!=stringMap.end())
+	{
+		//The first bit must be 0, the next 29 bits
+		//store the index of the string in the map
+		writeU29(it->second << 1);
+	}
+	else
+	{
+		//The AMF3 spec says that the empty string is never sent by reference
+		//So add the string to the map only if it's not the empty string
+		if(len)
+			stringMap.insert(make_pair(s, stringMap.size()));
 
-	//The first bit must be 1, the next 29 bits
-	//store the number of bytes of the string
-	writeU29((len<<1) | 1);
+		//The first bit must be 1, the next 29 bits
+		//store the number of bytes of the string
+		writeU29((len<<1) | 1);
 
-	getBuffer(position+len,true);
-	memcpy(bytes+position,s.raw_buf(),len);
-	position+=len;
+		getBuffer(position+len,true);
+		memcpy(bytes+position,s.raw_buf(),len);
+		position+=len;
+	}
 }
 
 void ByteArray::compress_zlib()

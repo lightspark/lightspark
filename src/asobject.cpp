@@ -1159,11 +1159,24 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 
 	//0x0A -> object marker
 	out->writeByte(amf3::object_marker);
-	//0x0B -> a dynamic instance follows
-	out->writeByte(0x0B);
-	//The class name, empty if no alias is registered
-	out->writeStringVR(stringMap, "");
-	serializeDynamicProperties(out, stringMap, objMap);
+	//Check if the object has been already serialized
+	auto it=objMap.find(this);
+	if(it!=objMap.end())
+	{
+		//The least significant bit is 0 to signal a reference
+		out->writeU29(it->second << 1);
+	}
+	else
+	{
+		//Add the object to the map
+		objMap.insert(make_pair(this, objMap.size()));
+		//0x0B -> a dynamic instance follows
+		out->writeByte(0x0B);
+		//The class name, empty if no alias is registered
+		//TODO: support aliases
+		out->writeStringVR(stringMap, "");
+		serializeDynamicProperties(out, stringMap, objMap);
+	}
 }
 
 ASObject *ASObject::describeType() const

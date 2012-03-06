@@ -1188,21 +1188,34 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 {
 	assert_and_throw(objMap.find(this)==objMap.end());
 	out->writeByte(amf3::array_marker);
-	uint32_t denseCount = size();
-	assert_and_throw(denseCount<0x20000000);
-	uint32_t value = (denseCount << 1) | 1;
-	out->writeU29(value);
-	serializeDynamicProperties(out, stringMap, objMap);
-	for(uint32_t i=0;i<denseCount;i++)
+	//Check if the array has been already serialized
+	auto it=objMap.find(this);
+	if(it!=objMap.end())
 	{
-		if (!data.count(i))
-			throw UnsupportedException("undefined not supported in Array::serialize");
-		switch(data.at(i).type)
+		//The least significant bit is 0 to signal a reference
+		out->writeU29(it->second << 1);
+	}
+	else
+	{
+		//Add the array to the map
+		objMap.insert(make_pair(this, objMap.size()));
+
+		uint32_t denseCount = size();
+		assert_and_throw(denseCount<0x20000000);
+		uint32_t value = (denseCount << 1) | 1;
+		out->writeU29(value);
+		serializeDynamicProperties(out, stringMap, objMap);
+		for(uint32_t i=0;i<denseCount;i++)
 		{
-			case DATA_INT:
-				throw UnsupportedException("int not supported in Array::serialize");
-			case DATA_OBJECT:
-				data.at(i).data->serialize(out, stringMap, objMap);
+			if (!data.count(i))
+				throw UnsupportedException("undefined not supported in Array::serialize");
+			switch(data.at(i).type)
+			{
+				case DATA_INT:
+					throw UnsupportedException("int not supported in Array::serialize");
+				case DATA_OBJECT:
+					data.at(i).data->serialize(out, stringMap, objMap);
+			}
 		}
 	}
 }

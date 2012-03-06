@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_net_NetConnection_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function onResult(result:Object):void
+	{
+		Tests.assertEquals(result, 3, "Result");
+		Tests.report(visual, this.name);
+	}
+	private function onStatus(status:Object):void
+	{
+		trace(status);
+	}
+	private function appComplete():void
+	{
+		//To test, start a default installation of amfphp-2.0.1 on localhost
+		var connection:NetConnection=new NetConnection();
+		connection.connect("http://127.0.0.1/index.php");
+		var responder:Responder = new Responder(onResult, onStatus);
+		connection.call("ExampleService.returnOneParam", responder, 3);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

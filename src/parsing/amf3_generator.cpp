@@ -117,8 +117,10 @@ bool Amf3Deserializer::generateObjects(std::vector<ASObject*>& objs)
 amf3::Integer Amf3Deserializer::parseInteger() const
 {
 	amf3::Integer ret;
-	if(!input->readU29(ret.val))
+	uint32_t tmp;
+	if(!input->readU29(tmp))
 		throw ParseException("Not enough data to parse integer");
+	ret.val=tmp;
 	return ret;
 }
 
@@ -140,16 +142,16 @@ Double Amf3Deserializer::parseDouble() const
 Utf8String Amf3Deserializer::parseStringVR() const
 {
 	Utf8String ret;
-	int32_t strRef;
+	uint32_t strRef;
 	if(!input->readU29(strRef))
 		throw ParseException("Not enough data to parse string");
 
 	if((strRef&0x01)==0)
 		throw UnsupportedException("References not supported in parseStringVR");
 
-	int32_t strLen=strRef>>1;
+	uint32_t strLen=strRef>>1;
 	string retStr;
-	for(int32_t i=0;i<strLen;i++)
+	for(uint32_t i=0;i<strLen;i++)
 	{
 		uint8_t c;
 		if(!input->readByte(c))
@@ -163,7 +165,7 @@ Utf8String Amf3Deserializer::parseStringVR() const
 ArrayType Amf3Deserializer::parseArray() const
 {
 	ArrayType ret;
-	int32_t arrayRef;
+	uint32_t arrayRef;
 	if(!input->readU29(arrayRef))
 		throw ParseException("Not enough data to parse AMF3 array");
 
@@ -198,9 +200,8 @@ ArrayType Amf3Deserializer::parseArray() const
 ObjectType Amf3Deserializer::parseObject() const
 {
 	ObjectType ret;
-	//TODO: Use U29
-	uint8_t objRef;
-	if(!input->readByte(objRef))
+	uint32_t objRef;
+	if(!input->readU29(objRef))
 		throw ParseException("Not enough data to parse AMF3 object");
 
 	assert_and_throw((objRef&0x80)==0);

@@ -1536,7 +1536,10 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
 	out->writeByte(amf3::integer_marker);
-	out->writeU29(val);
+	//TODO: check behaviour for negative value
+	if(val>=0x40000000 || val<=(int32_t)0xbfffffff)
+		throw AssertionException("Range exception in Integer::serialize");
+	out->writeU29((uint32_t)val);
 }
 
 tiny_string UInteger::toString()

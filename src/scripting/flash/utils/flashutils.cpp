@@ -689,7 +689,7 @@ bool ByteArray::readByte(uint8_t& b)
 	return true;
 }
 
-bool ByteArray::readU29(int32_t& ret)
+bool ByteArray::readU29(uint32_t& ret)
 {
 	ret=0;
 	for(uint32_t i=0;i<4;i++)
@@ -998,11 +998,8 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 	position=0;
 }
 
-void ByteArray::writeU29(int32_t val)
+void ByteArray::writeU29(uint32_t val)
 {
-	if(val>=0x40000000 || val<=(int32_t)0xbfffffff)
-		throw AssertionException("Range exception in writeU29");
-
 	for(uint32_t i=0;i<4;i++)
 	{
 		uint8_t b;

@@ -1386,7 +1386,7 @@ ASObject *Undefined::describeType() const
 void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
-	throw UnsupportedException("Undefined::serialize not implemented");
+	out->writeByte(amf3::undefined_marker);
 }
 
 ASFUNCTIONBODY(Integer,_toString)
@@ -2319,7 +2319,7 @@ int Null::toInt()
 void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap) const
 {
-	throw UnsupportedException("Null::serialize not implemented");
+	out->writeByte(amf3::null_marker);
 }
 
 RegExp::RegExp():dotall(false),global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)

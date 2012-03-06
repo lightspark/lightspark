@@ -493,6 +493,7 @@ ASFUNCTIONBODY(ByteArray,writeUTFBytes)
 	ASString* str=Class<ASString>::cast(args[0]);
 	th->getBuffer(th->position+str->data.numBytes(),true);
 	memcpy(th->bytes+th->position,str->data.raw_buf(),str->data.numBytes());
+	th->position+=str->data.numBytes();
 
 	return NULL;
 }
@@ -509,6 +510,7 @@ ASFUNCTIONBODY(ByteArray,writeMultiByte)
 
 	th->getBuffer(th->position+value.numBytes(),true);
 	memcpy(th->bytes+th->position,value.raw_buf(),value.numBytes());
+	th->position+=value.numBytes();
 
 	return NULL;
 }

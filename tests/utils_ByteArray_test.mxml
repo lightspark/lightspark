@@ -53,7 +53,32 @@
 		ba5.position = 0;
 		Tests.assertEquals(-4.404500509e-300, ba5.readDouble(), "Read value written by writeDouble");
 		Tests.assertEqualsDelta(-4.5504006e-10, ba5.readFloat(), 0.0000000001, "Read value written by writeFloat");
-		
+
+		var ba6:ByteArray = new ByteArray;
+		//Create an object with a reference to itself and multiple copies of the same string
+		var complexObj:Object =  new Object();
+		complexObj["int"] = 1;
+		complexObj["number"] = 2.3;
+		complexObj["null"] = null;
+		complexObj["undefined"] = undefined;
+		complexObj["recursive"] = complexObj;
+		complexObj["str1"] = "StringVal";
+		complexObj["str2"] = "StringVal";
+
+		ba6.writeObject(complexObj);
+		Tests.assertEquals(ba6.length, 78, "Serialization length");
+
+		ba6.position = 0;
+		var complexObj2:Object = ba6.readObject();
+
+		Tests.assertEquals(complexObj2["int"], 1, "Int serialization");
+		Tests.assertEquals(complexObj2["number"], 2.3, "Number serialization");
+		Tests.assertEquals(complexObj2["null"], null, "Null serialization");
+		Tests.assertEquals(complexObj2["undefined"], undefined, "Undefined serialization");
+		Tests.assertEquals(complexObj2["recursive"], complexObj2, "Recursive serialization");
+		Tests.assertEquals(complexObj2["str1"], "StringVal", "String serialization - Copy 1");
+		Tests.assertEquals(complexObj2["str2"], "StringVal", "String serialization - Copy 2");
+
 		Tests.report(visual, this.name);
 	}
  ]]>

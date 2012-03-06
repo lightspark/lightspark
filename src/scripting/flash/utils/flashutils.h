@@ -72,10 +72,19 @@ public:
 	~ByteArray();
 	//Helper interface for serialization
 	bool readByte(uint8_t& b);
+	bool readShort(uint16_t& ret);
+	bool readUnsignedInt(uint32_t& ret);
 	bool readU29(int32_t& ret);
+	bool readUTF(tiny_string& ret);
 	void writeByte(uint8_t b);
+	void writeShort(uint16_t val);
+	void writeUnsignedInt(uint32_t val);
+	void writeUTF(const tiny_string& str);
+	uint32_t writeObject(ASObject* obj);
 	void writeStringVR(std::map<tiny_string, uint32_t>& stringMap, const tiny_string& s);
 	void writeU29(int32_t val);
+	uint32_t getPosition() const;
+	void setPosition(uint32_t p);
 	ASFUNCTION(_getBytesAvailable);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(_setLength);

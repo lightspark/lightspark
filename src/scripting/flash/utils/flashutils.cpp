@@ -251,17 +251,27 @@ uint64_t ByteArray::endianOut(uint64_t value)
 		return be64toh(value);
 }
 
+uint32_t ByteArray::getPosition() const
+{
+	return position;
+}
+
 ASFUNCTIONBODY(ByteArray,_getPosition)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	return abstract_i(th->position);
+	return abstract_i(th->getPosition());
+}
+
+void ByteArray::setPosition(uint32_t p)
+{
+	position=p;
 }
 
 ASFUNCTIONBODY(ByteArray,_setPosition)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	int pos=args[0]->toInt();
-	th->position=pos;
+	uint32_t pos=args[0]->toUInt();
+	th->setPosition(pos);
 	return NULL;
 }
 
@@ -401,6 +411,20 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	return NULL;
 }
 
+bool ByteArray::readUTF(tiny_string& ret)
+{
+	uint16_t stringLen;
+	if(!readShort(stringLen))
+		return false;
+	if(len < (position+stringLen))
+		return false;
+	//Very inefficient copy
+	//TODO: optmize
+	ret=string((char*)bytes+position, (size_t)stringLen);
+	position+=stringLen;
+	return true;
+}
+
 ASFUNCTIONBODY(ByteArray,readUTF)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
@@ -440,6 +464,15 @@ ASFUNCTIONBODY(ByteArray,readUTFBytes)
 	return Class<ASString>::getInstanceS((char *)bufStart,length);
 }
 
+void ByteArray::writeUTF(const tiny_string& str)
+{
+	getBuffer(position+str.numBytes()+2,true);
+	uint16_t numBytes=endianIn((uint16_t)str.numBytes());
+	memcpy(bytes+position,&numBytes,2);
+	memcpy(bytes+position+2,str.raw_buf(),str.numBytes());
+	position+=str.numBytes()+2;
+}
+
 ASFUNCTIONBODY(ByteArray,writeUTF)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
@@ -447,11 +480,7 @@ ASFUNCTIONBODY(ByteArray,writeUTF)
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	th->getBuffer(th->position+str->data.numBytes()+2,true);
-	uint16_t bytes=(uint16_t)str->data.numBytes();
-	memcpy(th->bytes+th->position,&bytes,2);
-	memcpy(th->bytes+th->position+2,str->data.raw_buf(),bytes);
-
+	th->writeUTF(str->data);
 	return NULL;
 }
 
@@ -484,19 +513,36 @@ ASFUNCTIONBODY(ByteArray,writeMultiByte)
 	return NULL;
 }
 
+uint32_t ByteArray::writeObject(ASObject* obj)
+{
+	//Return the length of the serialized object
+
+	//TODO: support AMF0
+	assert_and_throw(objectEncoding==ObjectEncoding::AMF3);
+	//TODO: support custom serialization
+	map<tiny_string, uint32_t> stringMap;
+	map<const ASObject*, uint32_t> objMap;
+	uint32_t oldPosition=position;
+	obj->serialize(this, stringMap, objMap);
+	return position-oldPosition;
+}
+
 ASFUNCTIONBODY(ByteArray,writeObject)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert_and_throw(argslen==1);
-	//TODO: support AMF0
-	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
-	//TODO: support custom serialization
-	map<tiny_string, uint32_t> stringMap;
-	map<const ASObject*, uint32_t> objMap;
-	args[0]->serialize(th, stringMap, objMap);
+	th->writeObject(args[0]);
 
 	return NULL;
+}
+
+void ByteArray::writeShort(uint16_t val)
+{
+	int16_t value2 = endianIn(val);
+	getBuffer(position+2,true);
+	memcpy(bytes+position,&value2,2);
+	position+=2;
 }
 
 ASFUNCTIONBODY(ByteArray,writeShort)
@@ -505,11 +551,7 @@ ASFUNCTIONBODY(ByteArray,writeShort)
 	int32_t value;
 	ARG_UNPACK(value);
 
-	int16_t value2 = th->endianIn(static_cast<uint16_t>(value & 0xffff));
-	th->getBuffer(th->position+2,true);
-	memcpy(th->bytes+th->position,&value2,2);
-	th->position+=2;
-
+	th->writeShort((static_cast<uint16_t>(value & 0xffff)));
 	return NULL;
 }
 
@@ -621,17 +663,20 @@ ASFUNCTIONBODY(ByteArray,writeInt)
 	return NULL;
 }
 
+void ByteArray::writeUnsignedInt(uint32_t val)
+{
+	getBuffer(position+4,true);
+	memcpy(bytes+position,&val,4);
+	position+=4;
+}
+
 ASFUNCTIONBODY(ByteArray,writeUnsignedInt)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==1);
 
 	uint32_t value=th->endianIn(args[0]->toUInt());
-
-	th->getBuffer(th->position+4,true);
-	memcpy(th->bytes+th->position,&value,4);
-	th->position+=4;
-
+	th->writeUnsignedInt(value);
 	return NULL;
 }
 
@@ -736,21 +781,30 @@ ASFUNCTIONBODY(ByteArray,readInt)
 	return abstract_i((int32_t)th->endianOut(ret));
 }
 
+bool ByteArray::readShort(uint16_t& ret)
+{
+	if (len < position+2)
+		return false;
+
+	uint16_t tmp;
+	memcpy(&tmp,bytes+position,2);
+	ret=endianOut(tmp);
+	position+=2;
+	return true;
+}
+
 ASFUNCTIONBODY(ByteArray,readShort)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
-	if(th->len < th->position+2)
+	uint16_t ret;
+	if(!th->readShort(ret))
 	{
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
-	uint16_t ret;
-	memcpy(&ret,th->bytes+th->position,2);
-	th->position+=2;
-
-	return abstract_i((int16_t)th->endianOut(ret));
+	return abstract_i((int16_t)ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readUnsignedByte)
@@ -766,21 +820,28 @@ ASFUNCTIONBODY(ByteArray,readUnsignedByte)
 	return abstract_ui(ret);
 }
 
+bool ByteArray::readUnsignedInt(uint32_t& ret)
+{
+	if(len < position+4)
+		return false;
+
+	uint32_t tmp;
+	memcpy(&tmp,bytes+position,4);
+	ret=endianOut(tmp);
+	position+=4;
+	return true;
+}
+
 ASFUNCTIONBODY(ByteArray,readUnsignedInt)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
-	if(th->len < th->position+4)
-	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
-	}
-
 	uint32_t ret;
-	memcpy(&ret,th->bytes+th->position,4);
-	th->position+=4;
+	if(!th->readUnsignedInt(ret))
+		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 
-	return abstract_ui(th->endianOut(ret));
+	return abstract_ui(ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readUnsignedShort)
@@ -788,16 +849,13 @@ ASFUNCTIONBODY(ByteArray,readUnsignedShort)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
-	if(th->len < th->position+2)
+	uint16_t ret;
+	if(!th->readShort(ret))
 	{
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
-	uint16_t ret;
-	memcpy(&ret,th->bytes+th->position,2);
-	th->position+=2;
-
-	return abstract_ui(th->endianOut(ret));
+	return abstract_ui(ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readMultiByte)

@@ -246,6 +246,16 @@ ValueType Amf3Deserializer::parseValue() const
 
 	switch(marker)
 	{
+		case null_marker:
+		{
+			ret=NullType();
+			break;
+		}
+		case undefined_marker:
+		{
+			ret=UndefinedType();
+			break;
+		}
 		case false_marker:
 		{
 			ret=BoolType(false);

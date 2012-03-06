@@ -135,6 +135,7 @@ private:
 	URLInfo uri;
 public:
 	NetConnection();
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -146,6 +147,7 @@ public:
 	ASFUNCTION(_setObjectEncoding);
 	ASFUNCTION(_getProtocol);
 	ASFUNCTION(_getURI);
+	ASPROPERTY_GETTER_SETTER(NullableRef<ASObject>,client);
 };
 
 class SoundTransform;

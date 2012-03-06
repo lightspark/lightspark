@@ -479,7 +479,6 @@ NetConnection::NetConnection():_connected(false)
 
 void NetConnection::sinit(Class_base* c)
 {
-	//assert(c->constructor==NULL);
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<EventDispatcher>::getRef());
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
@@ -491,10 +490,17 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("protocol","",Class<IFunction>::getFunction(_getProtocol),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c,client);
 }
 
 void NetConnection::buildTraits(ASObject* o)
 {
+}
+
+void NetConnection::finalize()
+{
+	EventDispatcher::finalize();
+	client.reset();
 }
 
 ASFUNCTIONBODY(NetConnection, _constructor)
@@ -620,6 +626,8 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 		return Class<ASString>::getInstanceS("null");
 	}
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(NetConnection, client);
 
 NetStream::NetStream():frameRate(0),tickStarted(false),connection(),downloader(NULL),
 	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),

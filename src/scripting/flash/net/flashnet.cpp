@@ -43,6 +43,7 @@ REGISTER_CLASS_NAME(SharedObject);
 REGISTER_CLASS_NAME(ObjectEncoding);
 REGISTER_CLASS_NAME(NetConnection);
 REGISTER_CLASS_NAME(NetStream);
+REGISTER_CLASS_NAME(Responder);
 
 URLRequest::URLRequest():method(GET),contentType("application/x-www-form-urlencoded")
 {
@@ -1454,5 +1455,43 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	//TODO: make the download asynchronous instead of waiting for an unused response
 	downloader->waitForTermination();
 	getSys()->downloadManager->destroy(downloader);
+	return NULL;
+}
+
+void Responder::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<ASObject>::getRef());
+	c->setDeclaredMethodByQName("onResult","",Class<IFunction>::getFunction(onResult),NORMAL_METHOD,true);
+}
+
+void Responder::finalize()
+{
+	ASObject::finalize();
+	result.reset();
+	status.reset();
+}
+
+ASFUNCTIONBODY(Responder, _constructor)
+{
+	Responder* th=Class<Responder>::cast(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	assert_and_throw(args[0]->getObjectType()==T_FUNCTION);
+	args[0]->incRef();
+	th->result = _MR(static_cast<IFunction*>(args[0]));
+	if(argslen==2 && args[1]->getObjectType()==T_FUNCTION)
+	{
+		args[1]->incRef();
+		th->status = _MR(static_cast<IFunction*>(args[1]));
+	}
+	return NULL;
+}
+
+ASFUNCTIONBODY(Responder, onResult)
+{
+	Responder* th=Class<Responder>::cast(obj);
+	assert_and_throw(argslen==1);
+	args[0]->incRef();
+	th->result->call(new Null, args, argslen);
 	return NULL;
 }

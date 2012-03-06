@@ -123,6 +123,18 @@ public:
 	ASFUNCTION(_setDataFormat);
 };
 
+class Responder: public ASObject
+{
+private:
+	_NR<IFunction> result;
+	_NR<IFunction> status;
+public:
+	static void sinit(Class_base*);
+	void finalize();
+	ASFUNCTION(_constructor);
+	ASFUNCTION(onResult);
+};
+
 class NetConnection: public EventDispatcher
 {
 friend class NetStream;

@@ -1362,17 +1362,26 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,_("MetadataTag Tag"));
 	in >> XmlString;
-
 	string XmlStringStd = XmlString;
-	xmlpp::TextReader xml((const unsigned char*)XmlStringStd.c_str(), XmlStringStd.length());
 
-	ostringstream output;
-	while(xml.read())
+	try
 	{
-		if(xml.get_depth() == 2 && xml.get_node_type() == xmlpp::TextReader::Element)
-			output << endl << "\t" << xml.get_local_name() << ":\t\t" << xml.read_string();
+		xmlpp::TextReader xml((const unsigned char*)XmlStringStd.c_str(), XmlStringStd.length());
+
+		ostringstream output;
+		while(xml.read())
+		{
+			if(xml.get_depth() == 2 && xml.get_node_type() == xmlpp::TextReader::Element)
+			{
+				output << endl << "\t" << xml.get_local_name() << ":\t\t" << xml.read_string();
+			}
+		}
+		LOG(LOG_INFO, "SWF Metadata:" << output.str());
 	}
-	LOG(LOG_INFO, "SWF Metadata:" << output.str());
+	catch(std::exception& e)
+	{
+		LOG(LOG_INFO, "SWF Metadata:" << XmlStringStd);
+	}
 }
 
 DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)

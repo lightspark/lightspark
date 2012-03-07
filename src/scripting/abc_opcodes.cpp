@@ -2116,7 +2116,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 
 	method_info* m=&th->context->methods[n];
 	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
-	f->func_scope=th->scope_stack;
+	f->acquireScope(th->scope_stack);
 
 	//Bind the function to null, as this is not a class method
 	f->bind(NullRef,-1);

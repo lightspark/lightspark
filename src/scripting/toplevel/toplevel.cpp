@@ -2215,6 +2215,23 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	return mi->returnType->coerce(ret);
 }
 
+void SyntheticFunction::acquireScope(const std::vector<scope_entry>& scope)
+{
+	// This method acquires the given scope stack, up to the depth
+	// specified in the the method_body_info of the method.
+	assert_and_throw(func_scope.empty());
+	int i = 0;
+	auto it = scope.begin();
+	auto end = scope.end();
+	for(; it != end; ++it)
+	{
+		i++;
+		if(i > mi->body->init_scope_depth)
+			break;
+		func_scope.emplace_back(*it);
+	}
+}
+
 /**
  * This executes a C++ function.
  * It consumes one reference of obj and one of each arg

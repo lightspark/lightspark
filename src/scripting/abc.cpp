@@ -1762,7 +1762,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				m->validProfName=true;
 			}
 #endif
-			//A script can also have a getter trait
+			// If the current object is a class, then make the method acquire
+			// the class's scope stack up to the right depth (as determined by
+			// the SyntheticFunction itself).
 			if(obj->is<Class_inherit>())
 			{
 				Class_inherit* prot = obj->as<Class_inherit>();
@@ -1771,12 +1773,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				//Methods save a copy of the scope stack of the class
 				f->acquireScope(prot->class_scope);
 			}
+			// If the current object is not a class, then make the method acquire
+			// use the given object as the scope object.
+			// TODO: check this behaviour, shouldn't we use the current call context's
+			// scope stack or some other scope stack, and not just one object?
 			else
 			{
 				assert(scriptid != -1);
 				obj->incRef();
 				f->addToScope(scope_entry(_MR(obj),false));
 			}
+			//A script can also have a getter trait
 			if(kind == traits_info::Getter)
 				obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,GETTER_METHOD,isBorrowed);
 			else if(kind == traits_info::Setter)

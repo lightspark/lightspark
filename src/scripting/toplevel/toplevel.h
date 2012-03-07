@@ -354,11 +354,7 @@ public:
 			return false;
 		return mi==sf->mi;
 	}
-	void acquireScope(const std::vector<scope_entry>& scope)
-	{
-		assert_and_throw(func_scope.empty());
-		func_scope=scope;
-	}
+	void acquireScope(const std::vector<scope_entry>& scope);
 	void addToScope(const scope_entry& s)
 	{
 		func_scope.emplace_back(s);

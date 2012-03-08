@@ -251,16 +251,20 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 				LOG(LOG_INFO, _("SECURITY: Searching for and loading pending non-master policy files (") <<
 						pendingURLPFiles.count(url.getHostname()) << ")");
 
-				range = pendingURLPFiles.equal_range(url.getHostname());
-				i = range.first;
-				for(; i != range.second; ++i)
+				while(true)
 				{
-					l.release();
-					//NOTE: loadPolicyFile() will change pendingURLPFiles, erasing & moving to loadURLPFiles
-					getSys()->securityManager->loadPolicyFile((*i).second);
-					l.acquire();
+					i=pendingURLPFiles.find(url.getHostname());
+					if(i==pendingURLPFiles.end())
+						break;
 
 					result->push_back((*i).second);
+
+					l.release();
+					getSys()->securityManager->loadPolicyFile((*i).second);
+					//NOTE: loadPolicyFile() will change pendingURLPFiles,
+					//erasing & moving to loadURLPFiles. Therefore, the
+					//iterator i is now invalid.
+					l.acquire();
 				}
 			}
 		}

@@ -1770,6 +1770,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 				//Methods save a copy of the scope stack of the class
 				f->acquireScope(prot->class_scope);
+				if(isBorrowed)
+					f->addToScope(scope_entry(_MR(obj),false));
 			}
 			else
 			{

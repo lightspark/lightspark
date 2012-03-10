@@ -27,7 +27,7 @@
 #include "flash/errors/flasherrors.h"
 #include <sstream>
 #include <zlib.h>
-#include <endian.h>
+#include <glib.h>
 
 using namespace std;
 using namespace lightspark;
@@ -206,49 +206,49 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 uint16_t ByteArray::endianIn(uint16_t value)
 {
 	if(littleEndian)
-		return htole16(value);
+		return GUINT16_TO_LE(value);
 	else
-		return htobe16(value);
+		return GUINT16_TO_BE(value);
 }
 
 uint32_t ByteArray::endianIn(uint32_t value)
 {
 	if(littleEndian)
-		return htole32(value);
+		return GUINT32_TO_LE(value);
 	else
-		return htobe32(value);
+		return GUINT32_TO_BE(value);
 }
 
 uint64_t ByteArray::endianIn(uint64_t value)
 {
 	if(littleEndian)
-		return htole64(value);
+		return GUINT64_TO_LE(value);
 	else
-		return htobe64(value);
+		return GUINT64_TO_BE(value);
 }
 
 uint16_t ByteArray::endianOut(uint16_t value)
 {
 	if(littleEndian)
-		return le16toh(value);
+		return GUINT16_FROM_LE(value);
 	else
-		return be16toh(value);
+		return GUINT16_FROM_BE(value);
 }
 
 uint32_t ByteArray::endianOut(uint32_t value)
 {
 	if(littleEndian)
-		return le32toh(value);
+		return GUINT32_FROM_LE(value);
 	else
-		return be32toh(value);
+		return GUINT32_FROM_BE(value);
 }
 
 uint64_t ByteArray::endianOut(uint64_t value)
 {
 	if(littleEndian)
-		return le64toh(value);
+		return GUINT64_FROM_LE(value);
 	else
-		return be64toh(value);
+		return GUINT64_FROM_BE(value);
 }
 
 uint32_t ByteArray::getPosition() const

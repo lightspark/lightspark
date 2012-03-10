@@ -41,6 +41,8 @@
 #include "toplevel/Date.h"
 #include "toplevel/Math.h"
 #include "toplevel/Vector.h"
+#include "toplevel/XML.h"
+#include "toplevel/XMLList.h"
 #include "flash/accessibility/flashaccessibility.h"
 #include "flash/display/flashdisplay.h"
 #include "flash/events/flashevents.h"

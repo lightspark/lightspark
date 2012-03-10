@@ -24,6 +24,8 @@
 #include "compat.h"
 #include "abcutils.h"
 #include "scripting/toplevel/ASString.h"
+#include "toplevel/XML.h"
+#include "toplevel/XMLList.h"
 
 using namespace std;
 using namespace lightspark;

@@ -25,6 +25,8 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"
+#include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/XMLList.h"
 
 using namespace lightspark;
 using namespace std;

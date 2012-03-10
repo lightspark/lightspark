@@ -1,0 +1,76 @@
+/**************************************************************************
+    Lightspark, a free flash player implementation
+
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**************************************************************************/
+
+#ifndef XMLLIST_H
+#define XMLLIST_H
+#include "asobject.h"
+#include "XML.h"
+#include <libxml/tree.h>
+#include <libxml++/parsers/domparser.h>
+
+namespace lightspark
+{
+class XMLList: public ASObject
+{
+private:
+	std::vector<_R<XML> > nodes;
+	bool constructed;
+	tiny_string toString_priv() const;
+	void buildFromString(const std::string& str);
+	void toXMLString_priv(xmlBufferPtr buf) const;
+public:
+	XMLList():constructed(false){}
+	/*
+	   Special constructor to build empty XMLList out of AS code
+	*/
+	XMLList(bool c):constructed(c){assert(c);}
+	XMLList(const std::vector<_R<XML> >& r):nodes(r),constructed(true){}
+	XMLList(const std::string& str);
+	void finalize();
+	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getLength);
+	ASFUNCTION(appendChild);
+	ASFUNCTION(_hasSimpleContent);
+	ASFUNCTION(_hasComplexContent);
+	ASFUNCTION(_toString);
+	ASFUNCTION(toXMLString);
+	ASFUNCTION(generator);
+	ASFUNCTION(descendants);
+	ASFUNCTION(valueOf);
+	ASFUNCTION(text);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	void setVariableByMultiname(const multiname& name, ASObject* o);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
+	_NR<XML> convertToXML() const;
+	bool hasSimpleContent() const;
+	bool hasComplexContent() const;
+	void append(_R<XML> x);
+	void append(_R<XMLList> x);
+	tiny_string toString();
+	bool isEqual(ASObject* r);
+	uint32_t nextNameIndex(uint32_t cur_index);
+	_R<ASObject> nextName(uint32_t index);
+	_R<ASObject> nextValue(uint32_t index);
+	_R<XML> reduceToXML() const;
+};
+}
+#endif

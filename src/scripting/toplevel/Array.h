@@ -45,7 +45,7 @@ class Array: public ASObject
 friend class ABCVm;
 CLASSBUILDABLE(Array);
 protected:
-	uint32_t currentsize;
+	uint64_t currentsize;
 	std::map<uint32_t,data_slot> data;
 	void outofbounds() const;
 	Array();
@@ -73,7 +73,7 @@ private:
 public:
 	void finalize();
 	//These utility methods are also used by ByteArray
-	static bool isValidMultiname(const multiname& name, unsigned int& index);
+	static bool isValidMultiname(const multiname& name, uint32_t& index);
 	static bool isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index);
 
 	static void sinit(Class_base*);
@@ -116,7 +116,7 @@ public:
 		else
 			outofbounds();
 	}
-	uint32_t size() const
+	uint64_t size() const
 	{
 		return currentsize;
 	}
@@ -125,7 +125,7 @@ public:
 		data[currentsize] = data_slot(o,DATA_OBJECT);
 		currentsize++;
 	}
-	void resize(uint32_t n)
+	void resize(uint64_t n)
 	{
 		for (uint32_t i = n; i < currentsize; i++)
 		{

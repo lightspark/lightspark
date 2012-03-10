@@ -87,7 +87,7 @@ ASFUNCTIONBODY(Array,_constructor)
 	if(argslen==1 && (args[0]->getObjectType()==T_INTEGER || args[0]->getObjectType()==T_UINTEGER || args[0]->getObjectType()==T_NUMBER))
 	{
 		number_t size=args[0]->toNumber();
-		if (size < 0)
+		if (size < 0 || size > UINT32_MAX)
 			throw Class<RangeError>::getInstanceS("");
 		LOG(LOG_CALLS,_("Creating array of length ") << size);
 		th->resize((uint32_t)size);
@@ -111,7 +111,7 @@ ASFUNCTIONBODY(Array,generator)
 	if(argslen==1 && (args[0]->getObjectType()==T_INTEGER || args[0]->getObjectType()==T_UINTEGER || args[0]->getObjectType()==T_NUMBER))
 	{
 		number_t size=args[0]->toNumber();
-		if (size < 0)
+		if (size < 0 || size > UINT32_MAX)
 			throw Class<RangeError>::getInstanceS("");
 		LOG(LOG_CALLS,_("Creating array of length ") << size);
 		th->resize((uint32_t)size);
@@ -788,6 +788,9 @@ ASFUNCTIONBODY(Array,_push)
 	Array* th=static_cast<Array*>(obj);
 	for(unsigned int i=0;i<argslen;i++)
 	{
+		if (th->size() > UINT32_MAX)
+			throw Class<RangeError>::getInstanceS("");
+			
 		th->push(args[i]);
 		args[i]->incRef();
 	}
@@ -885,7 +888,6 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname(name,opt);
-
 	if(index<size())
 	{
 		ASObject* ret=NULL;
@@ -938,14 +940,14 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	if(considerDynamic==false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
-	unsigned int index=0;
+	uint32_t index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
-	return index<size();
+	return (index<size()) && (data.count(index));
 }
 
-bool Array::isValidMultiname(const multiname& name, unsigned int& index)
+bool Array::isValidMultiname(const multiname& name, uint32_t& index)
 {
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
@@ -992,12 +994,12 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 void Array::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	assert_and_throw(implEnable);
-	unsigned int index=0;
+	uint32_t index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::setVariableByMultiname(name,o);
 
 	if(index>=size())
-		resize(index+1);
+		resize((uint64_t)index+1);
 
 	if(data.count(index) && data[index].type==DATA_OBJECT && data[index].data)
 		data[index].data->decRef();

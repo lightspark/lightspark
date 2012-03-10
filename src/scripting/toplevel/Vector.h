@@ -49,6 +49,15 @@ public:
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);
 
+	uint32_t size() const
+	{
+		return vec.size();
+	}
+        ASObject* at(unsigned int index) const
+        {
+                return vec.at(index);
+        }
+
 	//TODO: do we need to implement generator?
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_applytype);

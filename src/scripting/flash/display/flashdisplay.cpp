@@ -34,6 +34,7 @@
 #include "compat.h"
 #include "flash/accessibility/flashaccessibility.h"
 #include "argconv.h"
+#include "toplevel/Vector.h"
 
 #include <fstream>
 #include <limits>
@@ -2986,6 +2987,7 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawTriangles","",Class<IFunction>::getFunction(drawTriangles),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),NORMAL_METHOD,true);
@@ -3249,6 +3251,42 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
 	th->owner->owner->requestInvalidation();
 	
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,drawTriangles)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	_NR<Vector> vertices;
+	_NR<Vector> indices;
+	_NR<Vector> uvtData;
+	tiny_string culling;
+	ARG_UNPACK (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
+
+	if (!indices.isNull())
+		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support indices");
+	if (!uvtData.isNull())
+		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support uvtData");
+	if (culling != "none")
+		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support culling");
+
+	for (unsigned int i=0; i<vertices->size()/6; i++)
+	{
+		Vector2 a(vertices->at(6*i)->toNumber(),
+			  vertices->at(6*i+1)->toNumber());
+		Vector2 b(vertices->at(6*i+2)->toNumber(),
+			  vertices->at(6*i+3)->toNumber());
+		Vector2 c(vertices->at(6*i+4)->toNumber(),
+			  vertices->at(6*i+5)->toNumber());
+
+		th->owner->tokens.emplace_back(GeomToken(MOVE, a));
+		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, b));
+		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
+		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
+	}
+	
+	th->owner->owner->requestInvalidation();
+
 	return NULL;
 }
 

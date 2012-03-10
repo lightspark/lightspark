@@ -387,6 +387,7 @@ public:
 	ASFUNCTION(drawRect);
 	ASFUNCTION(drawRoundRect);
 	ASFUNCTION(drawCircle);
+	ASFUNCTION(drawTriangles);
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineTo);
 	ASFUNCTION(curveTo);

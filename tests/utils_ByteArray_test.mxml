@@ -8,6 +8,7 @@
 <mx:Script>
 	<![CDATA[
 	import flash.utils.ByteArray;
+	import flash.utils.Endian;
 	private function appComplete():void
 	{
 		var ba:ByteArray = new ByteArray();
@@ -15,6 +16,7 @@
 		Tests.assertEquals(3, ByteArray.defaultObjectEncoding, "Default object encoding");
 		Tests.assertEquals(0, ba.position, "Initial position");
 		Tests.assertEquals(0, ba.length, "Initial length");
+		Tests.assertEquals(Endian.BIG_ENDIAN, ba.endian, "Initial endian");
 
 		ba.writeByte(42);
 		Tests.assertEquals(1, ba.length, "Length after writeByte");
@@ -78,6 +80,54 @@
 		Tests.assertEquals(complexObj2["recursive"], complexObj2, "Recursive serialization");
 		Tests.assertEquals(complexObj2["str1"], "StringVal", "String serialization - Copy 1");
 		Tests.assertEquals(complexObj2["str2"], "StringVal", "String serialization - Copy 2");
+
+		var ba7:ByteArray = new ByteArray();
+		ba7.writeByte(0xF0);
+		ba7.writeByte(0xE0);
+		ba7.writeByte(0xD0);
+		ba7.writeByte(0xC0);
+		ba7.writeByte(0xB0);
+		ba7.writeByte(0xA0);
+		ba7.writeByte(0x90);
+		ba7.writeByte(0x80);
+
+		ba7.endian = Endian.BIG_ENDIAN;
+		ba7.position = 0;
+		Tests.assertEquals(240, ba7.readUnsignedByte(), "readUnsignedByte (big endian)");
+		ba7.position = 0;
+		Tests.assertEquals(-3872, ba7.readShort(), "readShort (big endian)");
+		ba7.position = 0;
+		Tests.assertEquals(61664, ba7.readUnsignedShort(), "readUnsignedShort (big endian)");
+		ba7.position = 0;
+		Tests.assertEquals(-253701952, ba7.readInt(), "readInt (big endian)");
+		ba7.position = 0;
+		Tests.assertEquals(4041265344, ba7.readUnsignedInt(), "readUnsignedInt (big endian)");
+		ba7.position = 0;
+		Tests.assertEqualsDelta(-5.56616043718606e29, ba7.readFloat(), 1e19, "readFloat (big endian)");
+		ba7.position = 0;
+		Tests.assertEqualsDelta(-5.34656515363983e+235, ba7.readDouble(), 1e225, "readDouble (big endian)");
+
+		ba7.endian = Endian.LITTLE_ENDIAN;
+		ba7.position = 0;
+		Tests.assertEquals(-7952, ba7.readShort(), "readShort (little endian)");
+		ba7.position = 0;
+		Tests.assertEquals(57584, ba7.readUnsignedShort(), "readUnsignedShort (little endian)");
+		ba7.position = 0;
+		Tests.assertEquals(-1060052752, ba7.readInt(), "readInt (little endian)");
+		ba7.position = 0;
+		Tests.assertEquals(3234914544, ba7.readUnsignedInt(), "readUnsignedInt (little endian)");
+		ba7.position = 0;
+		Tests.assertEqualsDelta(-6.527458190917969, ba7.readFloat(), 1e-10, "readFloat (little endian)");
+		ba7.position = 0;
+		Tests.assertEqualsDelta(-5.9196566415987e-306, ba7.readDouble(), 1e-316, "readDouble (little endian)");
+
+
+		var ba8:ByteArray = new ByteArray();
+		ba8.writeUTF("abc");
+		ba8.position = 0;
+		Tests.assertEquals(3, ba8.readShort(), "writeUTF: written length");
+		ba8.position = 0;
+		Tests.assertEquals("abc", ba8.readUTF(), "readUTF after writeUTF");
 
 		Tests.report(visual, this.name);
 	}

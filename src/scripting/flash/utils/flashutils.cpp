@@ -429,23 +429,13 @@ ASFUNCTIONBODY(ByteArray,readUTF)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 
-	if(th->len < th->position+2)
+	tiny_string res;
+	if (!th->readUTF(res))
 	{
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 
-	uint16_t length;
-	memcpy(&length,th->bytes+th->position,2);
-	th->position+=2;
-
-	if(th->position+length > th->len)
-	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
-	}
-
-	uint8_t *bufStart=th->bytes+th->position;
-	th->position+=length;
-	return Class<ASString>::getInstanceS((char *)bufStart,length);
+	return Class<ASString>::getInstanceS(res);
 }
 
 ASFUNCTIONBODY(ByteArray,readUTFBytes)

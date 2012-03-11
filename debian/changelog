@@ -1,3 +1,9 @@
+lightspark (0.5.5-0ubuntu1~ppa1) oneiric; urgency=low
+
+  * New release
+
+ -- Alessandro Pignotti <alex@avalon>  Sun, 11 Mar 2012 16:20:12 +0100
+
 lightspark (0.5.4.1-0ubuntu1~ppa1) precise; urgency=low
 
   * New release

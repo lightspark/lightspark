@@ -102,10 +102,6 @@ ASFUNCTIONBODY(Vector,_constructor)
 	th->fixed = fixed;
 	th->vec.resize(len);
 
-	/* See setLength */
-	for(size_t i=0;i < len; ++i)
-		th->vec[i] = th->vec_type->coerce( new Null );
-
 	return NULL;
 }
 
@@ -136,20 +132,9 @@ ASFUNCTIONBODY(Vector,setLength)
 	{
 		for(size_t i=len; i< th->vec.size(); ++i)
 			th->vec[i]->decRef();
-		th->vec.resize(len);
 	}
-	else
-	{
-		/* We should enlarge the vector
-		 * with the type's 'default' value.
-		 * That's probably just 'Null' cast to that
-		 * type. (Casting Undefined, would be wrong,
-		 * because that gave 'NaN' for Number)
-		 */
-		while(th->vec.size() < len)
-			th->vec.push_back( th->vec_type->coerce( new Null ) );
-	}
-        return NULL;
+	th->vec.resize(len);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Vector,_toString)
@@ -158,7 +143,12 @@ ASFUNCTIONBODY(Vector,_toString)
 	Vector* th = obj->as<Vector>();
 	for(size_t i=0; i < th->vec.size(); ++i)
 	{
-		ret += th->vec[i]->toString();
+		if (th->vec[i])
+			ret += th->vec[i]->toString();
+		else
+			// use the type's default value
+			ret += th->vec_type->coerce( new Null )->toString();
+
 		if(i!=th->vec.size()-1)
 			ret += ',';
 	}
@@ -198,8 +188,13 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 
 	if(index < vec.size())
 	{
-		vec[index]->incRef();
-		return _MNR(vec[index]);
+		if (vec[index])
+		{
+			vec[index]->incRef();
+			return _MNR(vec[index]);
+		}
+		else
+			return _MNR(vec_type->coerce( new Null ));
 	}
 	else
 	{
@@ -220,7 +215,8 @@ void Vector::setVariableByMultiname(const multiname& name, ASObject* o)
 
 	if(index < vec.size())
 	{
-		vec[index]->decRef();
+		if (vec[index])
+			vec[index]->decRef();
 		vec[index] = o;
 	}
 	else if(index == vec.size())
@@ -243,7 +239,10 @@ tiny_string Vector::toString(bool debugMsg)
 	{
 		if( i )
 			t += ",";
-		t += vec[i]->toString();
+		if (vec[i]) 
+			t += vec[i]->toString();
+		else
+			t += vec_type->coerce( new Null )->toString();
 	}
 	return t;
 }
@@ -268,8 +267,12 @@ _R<ASObject> Vector::nextValue(uint32_t index)
 {
 	if(index<=vec.size())
 	{
-		vec[index-1]->incRef();
-		return _MR(vec[index-1]);
+		if (vec[index])
+		{
+			vec[index-1]->incRef();
+			return _MR(vec[index-1]);
+		}
+		return _MR(vec_type->coerce( new Null ));
 	}
 	else
 		throw RunTimeException("Vector::nextValue out of bounds");

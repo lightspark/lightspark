@@ -79,6 +79,42 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(timezoneOffset),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("UTC","",Class<IFunction>::getFunction(UTC),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+
+	c->prototype->setVariableByQName("getTimezoneOffset","",Class<IFunction>::getFunction(getTimezoneOffset),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getTime","",Class<IFunction>::getFunction(getTime),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getFullYear","",Class<IFunction>::getFunction(getFullYear),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getMonth","",Class<IFunction>::getFunction(getMonth),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getDate","",Class<IFunction>::getFunction(getDate),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getDay","",Class<IFunction>::getFunction(getDay),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getHours","",Class<IFunction>::getFunction(getHours),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getMinutes","",Class<IFunction>::getFunction(getMinutes),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getSeconds","",Class<IFunction>::getFunction(getSeconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getMilliseconds","",Class<IFunction>::getFunction(getMilliseconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setFullYear","",Class<IFunction>::getFunction(setFullYear),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setMonth","",Class<IFunction>::getFunction(setMonth),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setDate","",Class<IFunction>::getFunction(setDate),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setHours","",Class<IFunction>::getFunction(setHours),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setMinutes","",Class<IFunction>::getFunction(setMinutes),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setSeconds","",Class<IFunction>::getFunction(setSeconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setMilliseconds","",Class<IFunction>::getFunction(setMilliseconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCFullYear","",Class<IFunction>::getFunction(getUTCFullYear),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCMonth","",Class<IFunction>::getFunction(getUTCMonth),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCDate","",Class<IFunction>::getFunction(getUTCDate),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCDay","",Class<IFunction>::getFunction(getUTCDay),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCHours","",Class<IFunction>::getFunction(getUTCHours),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCMinutes","",Class<IFunction>::getFunction(getUTCMinutes),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCSeconds","",Class<IFunction>::getFunction(getUTCSeconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCMilliseconds","",Class<IFunction>::getFunction(getUTCMilliseconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCFullYear","",Class<IFunction>::getFunction(setUTCFullYear),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCMonth","",Class<IFunction>::getFunction(setUTCMonth),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCDate","",Class<IFunction>::getFunction(setUTCDate),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCHours","",Class<IFunction>::getFunction(setUTCHours),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCMinutes","",Class<IFunction>::getFunction(setUTCMinutes),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCSeconds","",Class<IFunction>::getFunction(setUTCSeconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCMilliseconds","",Class<IFunction>::getFunction(setUTCMilliseconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setTime","",Class<IFunction>::getFunction(setTime),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void Date::buildTraits(ASObject* o)

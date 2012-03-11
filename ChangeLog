@@ -1,5 +1,10 @@
 lightspark: An open source flash player implementation
 
+Version 0.5.5:
+	
+	* Support Firefox 10
+	* Fixed mutiple bugs
+
 Version 0.5.4.1:
 
 	* Fix YouTube support

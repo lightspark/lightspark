@@ -589,13 +589,15 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<Geom
 			}
 
 			case CLEAR_FILL:
+			case FILL_KEEP_SOURCE:
 				if(skipPaint)
 					break;
 
 				cairo_fill(cr);
 
-				// Clear source.
-				cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
+				if(tokens[i].type==CLEAR_FILL)
+					// Clear source.
+					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 				break;
 			case CLEAR_STROKE:
 				if(skipPaint)
@@ -606,6 +608,24 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<Geom
 				// Clear source.
 				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
 				break;
+			case FILL_TRANSFORM_TEXTURE:
+			{
+				if(skipPaint)
+					break;
+
+				cairo_matrix_t origmat;
+				cairo_pattern_t* pattern;
+				pattern=cairo_get_source(cr);
+				cairo_pattern_get_matrix(pattern, &origmat);
+
+				cairo_matrix_t mat = MATRIXToCairo(tokens[i].textureTransform);
+				cairo_pattern_set_matrix(pattern, &mat);
+
+				cairo_fill(cr);
+
+				cairo_pattern_set_matrix(pattern, &origmat);
+				break;
+			}
 			default:
 				assert(false);
 		}

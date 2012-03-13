@@ -2955,6 +2955,8 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 			case CLEAR_FILL:
 			case CLEAR_STROKE:
 			case SET_FILL:
+			case FILL_KEEP_SOURCE:
+			case FILL_TRANSFORM_TEXTURE:
 				break;
 			case SET_STROKE:
 				strokeWidth = (double)(tokens[i].lineStyle.Width / 20.0);
@@ -2978,6 +2980,31 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 	return hasContent;
 
 #undef VECTOR_BOUNDS
+}
+
+/* Find the size of the active texture (bitmap set by the latest SET_FILL). */
+void TokenContainer::getTextureSize(int *width, int *height) const
+{
+	*width=0;
+	*height=0;
+
+	unsigned int len=tokens.size();
+	for(unsigned int i=0;i<len;i++)
+	{
+		const FILLSTYLE& style=tokens[len-i-1].fillStyle;
+		const FILL_STYLE_TYPE& fstype=style.FillStyleType;
+		if(tokens[len-i-1].type==SET_FILL && 
+		   (fstype==REPEATING_BITMAP ||
+		    fstype==NON_SMOOTHED_REPEATING_BITMAP ||
+		    fstype==CLIPPED_BITMAP ||
+		    fstype==NON_SMOOTHED_CLIPPED_BITMAP) &&
+		   style.bitmap)
+		{
+			*width=style.bitmap->getWidth();
+			*height=style.bitmap->getHeight();
+			return;
+		}
+	}
 }
 
 void Graphics::sinit(Class_base* c)
@@ -3254,6 +3281,45 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	return NULL;
 }
 
+/* Solve for c in the matrix equation
+ *
+ * [ 1 x1 y1 ] [ c[0] ]   [ u1 ]
+ * [ 1 x2 y2 ] [ c[1] ] = [ u2 ]
+ * [ 1 x3 y3 ] [ c[2] ]   [ u3 ]
+ *
+ * The result will be put in the output parameter c.
+ */
+void Graphics::solveVertexMapping(double x1, double y1,
+				  double x2, double y2,
+				  double x3, double y3,
+				  double u1, double u2, double u3,
+				  double c[3])
+{
+	double eps = 1e-15;
+	double det = fabs(x2*y3 + x1*y2 + y1*x3 - y2*x3 - x1*y3 - y1*x2);
+
+	if (det < eps)
+	{
+		// Degenerate matrix
+		c[0] = c[1] = c[2] = 0;
+		return;
+	}
+
+	// Symbolic solution of the equation by Gaussian elimination
+	if (fabs(x1-x2) < eps)
+	{
+		c[2] = (u2-u1)/(y2-y1);
+		c[1] = (u3 - u1 - (y3-y1)*c[2])/(x3-x1);
+		c[0] = u1 - x1*c[1] - y1*c[2];
+	}
+	else
+	{
+		c[2] = ((x2-x1)*(u3-u1) - (x3-x1)*(u2-u1))/((y3-y1)*(x2-x1) - (x3-x1)*(y2-y1));
+		c[1] = (u2 - u1 - (y2-y1)*c[2])/(x2-x1);
+		c[0] = u1 - x1*c[1] - y1*c[2];
+	}
+}
+
 ASFUNCTIONBODY(Graphics,drawTriangles)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
@@ -3265,24 +3331,93 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 
 	if (!indices.isNull())
 		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support indices");
-	if (!uvtData.isNull())
-		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support uvtData");
 	if (culling != "none")
 		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support culling");
 
-	for (unsigned int i=0; i<vertices->size()/6; i++)
+	// Validate parameters
+	if (vertices->size() % 6 != 0)
+		throw Class<ArgumentError>::getInstanceS("Error #2004");
+
+	unsigned int numvertices=vertices->size()/2;
+	unsigned int numtriangles=numvertices/3;
+	bool has_uvt=false;
+	int uvtElemSize=2;
+	int texturewidth=0;
+	int textureheight=0;
+	if (!uvtData.isNull())
 	{
-		Vector2 a(vertices->at(6*i)->toNumber(),
-			  vertices->at(6*i+1)->toNumber());
-		Vector2 b(vertices->at(6*i+2)->toNumber(),
-			  vertices->at(6*i+3)->toNumber());
-		Vector2 c(vertices->at(6*i+4)->toNumber(),
-			  vertices->at(6*i+5)->toNumber());
+		if (uvtData->size()==2*numvertices)
+		{
+			has_uvt=true;
+			uvtElemSize=2; /* (u, v) */
+		}
+		else if (uvtData->size()==3*numvertices)
+		{
+			has_uvt=true;
+			uvtElemSize=3; /* (u, v, t), t is ignored */
+			LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support t in uvtData parameter");
+		}
+		else
+		{
+			throw Class<ArgumentError>::getInstanceS("Error #2004");
+		}
+
+		th->owner->getTextureSize(&texturewidth, &textureheight);
+	}
+
+	// According to testing, drawTriangles first fills the current
+	// path and creates a new path, but keeps the source.
+	th->owner->tokens.emplace_back(FILL_KEEP_SOURCE);
+
+	if (has_uvt && (texturewidth==0 || textureheight==0))
+		return NULL;
+
+	// Construct the triangles
+	for (unsigned int i=0; i<numtriangles; i++)
+	{
+		double x1=vertices->at(6*i)->toNumber();
+		double y1=vertices->at(6*i+1)->toNumber();
+		double x2=vertices->at(6*i+2)->toNumber();
+		double y2=vertices->at(6*i+3)->toNumber();
+		double x3=vertices->at(6*i+4)->toNumber();
+		double y3=vertices->at(6*i+5)->toNumber();
+		Vector2 a(x1, y1);
+		Vector2 b(x2, y2);
+		Vector2 c(x3, y3);
 
 		th->owner->tokens.emplace_back(GeomToken(MOVE, a));
 		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, b));
 		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
 		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
+
+		if (has_uvt)
+		{
+			double t[6];
+			double u1=uvtData->at(3*i*uvtElemSize)->toNumber()*texturewidth;
+			double v1=uvtData->at(3*i*uvtElemSize+1)->toNumber()*textureheight;
+			double u2=uvtData->at((3*i+1)*uvtElemSize)->toNumber()*texturewidth;
+			double v2=uvtData->at((3*i+1)*uvtElemSize+1)->toNumber()*textureheight;
+			double u3=uvtData->at((3*i+2)*uvtElemSize)->toNumber()*texturewidth;
+			double v3=uvtData->at((3*i+2)*uvtElemSize+1)->toNumber()*textureheight;
+
+			// Use the known (x, y) and (u, v)
+			// correspondences to compute a transformation
+			// t from (x, y) space into (u, v) space
+			// (cairo needs the mapping in this
+			// direction).
+			//
+			// u = t[0] + t[1]*x + t[2]*y
+			// v = t[3] + t[4]*x + t[5]*y
+			//
+			// u and v parts can be solved separately.
+			th->solveVertexMapping(x1, y1, x2, y2, x3, y3,
+					       u1, u2, u3, t);
+			th->solveVertexMapping(x1, y1, x2, y2, x3, y3,
+					       v1, v2, v3, &t[3]);
+
+			MATRIX m(t[1], t[5], t[4], t[2], t[0], t[3]);
+			th->owner->tokens.emplace_back(GeomToken(FILL_TRANSFORM_TEXTURE, m));
+		}
 	}
 	
 	th->owner->owner->requestInvalidation();

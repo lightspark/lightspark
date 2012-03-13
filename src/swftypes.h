@@ -1114,7 +1114,7 @@ public:
 	int TranslateX;
 	int TranslateY;
 public:
-	MATRIX():ScaleX(1),ScaleY(1),RotateSkew0(0),RotateSkew1(0),TranslateX(0),TranslateY(0){}
+	MATRIX(number_t sx=1, number_t sy=1, number_t sk0=0, number_t sk1=0, int tx=0, int ty=0):ScaleX(sx),ScaleY(sy),RotateSkew0(sk0),RotateSkew1(sk1),TranslateX(tx),TranslateY(ty){}
 	void get4DMatrix(float matrix[16]) const;
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	Vector2f multiply2D(const Vector2f& in) const;

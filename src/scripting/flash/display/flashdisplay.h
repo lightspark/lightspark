@@ -339,6 +339,7 @@ public:
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 					 std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles,
 					 const Vector2& offset = Vector2(), int scaling = 1);
+	void getTextureSize(int *width, int *height) const;
 protected:
 	TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f) {}
 	TokenContainer(DisplayObject* _o, const std::vector<GeomToken>& _tokens, float _scaling)
@@ -369,6 +370,11 @@ private:
 			assert(curX == 0 && curY == 0);
 		}
 	}
+	static void solveVertexMapping(double x1, double y1,
+				       double x2, double y2,
+				       double x3, double y3,
+				       double u1, double u2, double u3,
+				       double c[3]);
 public:
 	Graphics():owner(NULL)
 	{
@@ -765,8 +771,6 @@ private:
 	size_t dataSize;
 	static void sinit(Class_base* c);
 	uint8_t* getData() { return data; }
-	int getWidth() { return width; }
-	int getHeight() { return height; }
 	uint32_t getPixelPriv(uint32_t x, uint32_t y);
 public:
 	BitmapData() : stride(0), dataSize(0), data(NULL), width(0), height(0) {}
@@ -785,6 +789,8 @@ public:
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
 	bool fromJPEG(uint8_t* data, int len);
 	bool fromJPEG(std::istream& s);
+	int getWidth() { return width; }
+	int getHeight() { return height; }
 };
 
 class Bitmap: public DisplayObject, public TokenContainer

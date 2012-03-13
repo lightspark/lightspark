@@ -524,10 +524,16 @@ ASFUNCTIONBODY(NetConnection,connect)
 	&& getSys()->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetConnection::connect "
 				"from LOCAL_WITH_FILE sandbox");
+
+	bool isNull = false;
+	bool isRTMP = false;
+	bool isRPC = false;
+
 	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
 	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 	{
 		th->_connected = false;
+		isNull = true;
 	}
 	//String argument means Flash Remoting/Flash Media Server
 	else
@@ -542,10 +548,18 @@ ASFUNCTIONBODY(NetConnection,connect)
 			throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
 		}
 		
-		if(!(th->uri.getProtocol() == "rtmp" ||
+		if(th->uri.getProtocol() == "rtmp" ||
 		     th->uri.getProtocol() == "rtmpe" ||
-		     th->uri.getProtocol() == "rtmps" ||
-		     th->uri.getProtocol() == "http"))
+		     th->uri.getProtocol() == "rtmps")
+		{
+			isRTMP = true;
+		}
+		else if(th->uri.getProtocol() == "http" ||
+		     th->uri.getProtocol() == "https")
+		{
+			isRPC = true;
+		}
+		else
 		{
 			LOG(LOG_ERROR, "Unsupported protocol " << th->uri.getProtocol() << " in NetConnection::connect");
 			throw UnsupportedException("NetConnection::connect: protocol not supported");
@@ -556,8 +570,11 @@ ASFUNCTIONBODY(NetConnection,connect)
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
-	th->incRef();
-	getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success")));
+	if(isNull || isRTMP)
+	{
+		th->incRef();
+		getVm()->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success")));
+	}
 	return NULL;
 }
 

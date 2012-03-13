@@ -238,8 +238,6 @@ ObjectType Amf3Deserializer::parseObject() const
 	if(!input->readU29(objRef))
 		throw ParseException("Not enough data to parse AMF3 object");
 
-	assert_and_throw((objRef&0x80)==0);
-
 	if((objRef&0x01)==0)
 	{
 		//Just a reference

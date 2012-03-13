@@ -129,6 +129,13 @@
 		ba8.position = 0;
 		Tests.assertEquals("abc", ba8.readUTF(), "readUTF after writeUTF");
 
+		var ba9:ByteArray = new ByteArray();
+		ba9.writeObject(128);
+		ba9.position = 0;
+		Tests.assertTrue(ba9[0]==0x04 && ba9[1]==0x81 && ba9[2]==0x00, "U29 serialization");
+		var tmp:Object = ba9.readObject();
+		Tests.assertEquals(tmp, 128, "U29 deserialization");
+
 		Tests.report(visual, this.name);
 	}
  ]]>

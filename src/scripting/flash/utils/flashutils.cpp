@@ -683,6 +683,8 @@ bool ByteArray::readByte(uint8_t& b)
 
 bool ByteArray::readU29(uint32_t& ret)
 {
+	//Be careful! This is different from u32 parsing.
+	//Here the most significant bits appears before in the stream!
 	ret=0;
 	for(uint32_t i=0;i<4;i++)
 	{
@@ -690,15 +692,16 @@ bool ByteArray::readU29(uint32_t& ret)
 			return false;
 
 		uint8_t tmp=bytes[position++];
+		ret <<= i*7;
 		if(i<3)
 		{
-			ret|=((tmp&0x7f) << i*7);
+			ret |= tmp&0x7f;
 			if((tmp&0x80)==0)
 				break;
 		}
 		else
 		{
-			ret|=(tmp << 21);
+			ret |= tmp;
 			//Sign extend
 			if(tmp&0x80)
 				ret|=0xe0000000;
@@ -997,17 +1000,16 @@ void ByteArray::writeU29(uint32_t val)
 		uint8_t b;
 		if(i<3)
 		{
-			b=val&0x7f;
-			val>>=7;
-			if(val)
-				b|=0x80;
+			uint32_t tmp=(val >> ((3-i)*7));
+			if(tmp==0)
+				continue;
+
+			b=(tmp&0x7f)|0x80;
 		}
 		else
-			b=val&0xff;
+			b=val&0x7f;
 
 		writeByte(b);
-		if(val==0)
-			break;
 	}
 }
 

@@ -8,22 +8,48 @@
 <mx:Script>
 	<![CDATA[
 	import Tests;
-	private function onResult(result:Object):void
+	private var callbackCount:int = 0;
+	private function report():void
 	{
-		Tests.assertEquals(result, 3, "Result");
+		Tests.assertEquals(2, callbackCount, "Number of callback called");
 		Tests.report(visual, this.name);
 	}
-	private function onStatus(status:Object):void
+	private function onResult(result:Object):void
 	{
-		trace(status);
+		Tests.assertEquals(3, result, "Value returned from RPC");
+		callbackCount++;
+		report();
+	}
+	private function onNullConnectStatus(status:Object):void
+	{
+		Tests.assertEquals("NetConnection.Connect.Success", status.info.code, "NetConnection.connect succeed");
+		callbackCount++;
+	}
+	private function onHttpConnectStatus(status:Object):void
+	{
+		Tests.assertTrue(false, "NetConnection.connect should not use netStatus events for RPC connections");
+		callbackCount++;
+	}
+	private function onCallStatus(status:Object):void
+	{
+		Tests.assertTrue(false, "NetConnection.call should not fail");
+		callbackCount++;
+		//This should not be called in successful execution
+		report();
 	}
 	private function appComplete():void
 	{
 		//To test, start a default installation of amfphp-2.0.1 on localhost
-		var connection:NetConnection=new NetConnection();
-		connection.connect("http://127.0.0.1/index.php");
-		var responder:Responder = new Responder(onResult, onStatus);
-		connection.call("ExampleService.returnOneParam", responder, 3);
+		var connection1:NetConnection=new NetConnection();
+		connection1.addEventListener("netStatus", onNullConnectStatus);
+		connection1.connect(null);
+
+		var connection2:NetConnection=new NetConnection();
+		connection2.addEventListener("netStatus", onHttpConnectStatus);
+		connection2.connect("http://127.0.0.1/index.php");
+		var responder:Responder = new Responder(onResult, onCallStatus);
+		//This must be the last statement, the report is done in the callback of this method
+		connection2.call("ExampleService.returnOneParam", responder, 3);
 	}
 	]]>
 </mx:Script>

@@ -483,8 +483,9 @@ ASFUNCTIONBODY(Array,slice)
 	{
 		if (th->data.count(i))
 		{
-			th->data[i].data->incRef();
-			ret->data[j] =th->data[i];
+			if(th->data[i].type == DATA_OBJECT)
+				th->data[i].data->incRef();
+			ret->data[j]=th->data[i];
 		}
 		j++;
 	}

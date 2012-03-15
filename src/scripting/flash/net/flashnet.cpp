@@ -1518,3 +1518,25 @@ ASFUNCTIONBODY(Responder, onResult)
 	th->result->call(new Null, args, argslen);
 	return NULL;
 }
+
+ASFUNCTIONBODY(lightspark,registerClassAlias)
+{
+	assert_and_throw(argslen==2 && args[0]->getObjectType()==T_STRING && args[1]->getObjectType()==T_CLASS);
+	const tiny_string& arg0 = args[0]->toString();
+	args[1]->incRef();
+	_R<Class_base> c=_MR(static_cast<Class_base*>(args[1]));
+	getSys()->aliasMap.insert(make_pair(arg0, c));
+	return NULL;
+}
+
+ASFUNCTIONBODY(lightspark,getClassByAlias)
+{
+	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
+	const tiny_string& arg0 = args[0]->toString();
+	auto it=getSys()->aliasMap.find(arg0);
+	if(it==getSys()->aliasMap.end())
+		throw Class<ReferenceError>::getInstanceS("Alias not set");
+
+	it->second->incRef();
+	return it->second.getPtr();
+}

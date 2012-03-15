@@ -340,6 +340,8 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("ObjectEncoding","flash.net",Class<ObjectEncoding>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")),DECLARED_TRAIT);
 	builtin->setVariableByQName("Responder","flash.net",Class<Responder>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("registerClassAlias","",Class<IFunction>::getFunction(registerClassAlias),DECLARED_TRAIT);
+	builtin->setVariableByQName("getClassByAlias","",Class<IFunction>::getFunction(getClassByAlias),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("fscommand","flash.system",Class<IFunction>::getFunction(fscommand),DECLARED_TRAIT);
 	builtin->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getRef(),DECLARED_TRAIT);

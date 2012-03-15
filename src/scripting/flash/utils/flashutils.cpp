@@ -514,8 +514,9 @@ uint32_t ByteArray::writeObject(ASObject* obj)
 	//TODO: support custom serialization
 	map<tiny_string, uint32_t> stringMap;
 	map<const ASObject*, uint32_t> objMap;
+	map<const Class_base*, uint32_t> traitsMap;
 	uint32_t oldPosition=position;
-	obj->serialize(this, stringMap, objMap);
+	obj->serialize(this, stringMap, objMap,traitsMap);
 	return position-oldPosition;
 }
 

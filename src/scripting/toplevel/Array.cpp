@@ -1187,7 +1187,8 @@ void Array::outofbounds() const
 }
 
 void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	assert_and_throw(objMap.find(this)==objMap.end());
 	out->writeByte(amf3::array_marker);
@@ -1207,7 +1208,7 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 		assert_and_throw(denseCount<0x20000000);
 		uint32_t value = (denseCount << 1) | 1;
 		out->writeU29(value);
-		serializeDynamicProperties(out, stringMap, objMap);
+		serializeDynamicProperties(out, stringMap, objMap, traitsMap);
 		for(uint32_t i=0;i<denseCount;i++)
 		{
 			if (!data.count(i))
@@ -1217,7 +1218,7 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 				case DATA_INT:
 					throw UnsupportedException("int not supported in Array::serialize");
 				case DATA_OBJECT:
-					data.at(i).data->serialize(out, stringMap, objMap);
+					data.at(i).data->serialize(out, stringMap, objMap, traitsMap);
 			}
 		}
 	}

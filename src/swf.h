@@ -337,6 +337,10 @@ public:
 	 */
 	_NR<ApplicationDomain> mainApplicationDomain;
 
+	/*
+	 * Support for class aliases in AMF3 serialization
+	 */
+	std::map<tiny_string, _R<Class_base> > aliasMap;
 #ifdef PROFILING_SUPPORT
 	void setProfilingOutput(const tiny_string& t) DLL_PUBLIC;
 	const tiny_string& getProfilingOutput() const;

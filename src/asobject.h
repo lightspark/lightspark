@@ -188,7 +188,8 @@ public:
 	~variables_map();
 	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-			std::map<const ASObject*, uint32_t>& objMap) const;
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const;
 	void dumpVariables();
 	void destroyContents();
 };
@@ -233,7 +234,8 @@ protected:
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const;
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const;
 private:
 	//maps variable name to namespace and var
 	variables_map Variables;
@@ -412,10 +414,10 @@ public:
 	  Serialization interface
 
 	  The various maps are used to implement reference type of the AMF3 spec
-	  TODO:	Add traits map
 	*/
 	virtual void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const;
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const;
 
 	virtual ASObject *describeType() const;
 

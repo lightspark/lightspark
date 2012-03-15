@@ -112,7 +112,8 @@ ASObject *Undefined::describeType() const
 }
 
 void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	out->writeByte(amf3::undefined_marker);
 }
@@ -261,7 +262,8 @@ void Integer::sinit(Class_base* c)
 }
 
 void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	out->writeByte(amf3::integer_marker);
 	//TODO: check behaviour for negative value
@@ -588,7 +590,8 @@ ASFUNCTIONBODY(Number,_constructor)
 }
 
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	out->writeByte(amf3::double_marker);
 	//We have to write the double in network byte order (big endian)
@@ -1045,7 +1048,8 @@ int Null::toInt()
 }
 
 void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	out->writeByte(amf3::null_marker);
 }

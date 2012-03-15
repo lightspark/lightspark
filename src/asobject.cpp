@@ -1131,54 +1131,99 @@ void ASObject::constructionComplete()
 }
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const
 {
-	Variables.serialize(out, stringMap, objMap);
+	Variables.serialize(out, stringMap, objMap, traitsMap);
 }
 
 void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	//Pairs of name, value
 	auto it=Variables.begin();
 	for(;it!=Variables.end();it++)
 	{
+		if(it->second.kind!=DYNAMIC_TRAIT)
+			continue;
 		assert_and_throw(it->second.ns.size() == 1)
 		assert_and_throw(it->second.ns.begin()->name=="");
 		out->writeStringVR(stringMap,it->first);
-		it->second.var->serialize(out, stringMap, objMap);
+		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
 	//The empty string closes the object
 	out->writeStringVR(stringMap, "");
 }
 
 void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap) const
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap) const
 {
-	Class_base* type=getClass();
-	if(type!=Class<ASObject>::getClass())
-		throw UnsupportedException("ASObject::serialize not completely implemented");
-
 	//0x0A -> object marker
 	out->writeByte(amf3::object_marker);
-	//Check if the object has been already serialized
+	//Check if the object has been already serialized to send it by reference
 	auto it=objMap.find(this);
 	if(it!=objMap.end())
 	{
 		//The least significant bit is 0 to signal a reference
 		out->writeU29(it->second << 1);
+		return;
 	}
+
+	//TODO: support IExternalizable objects
+	Class_base* type=getClass();
+
+	//Add the object to the map
+	objMap.insert(make_pair(this, objMap.size()));
+
+	//Check if an alias is registered
+	auto aliasIt=getSys()->aliasMap.begin();
+	const auto aliasEnd=getSys()->aliasMap.end();
+	//Linear search for alias
+	tiny_string alias;
+	for(;aliasIt!=aliasEnd;++aliasIt)
+	{
+		if(aliasIt->second==type)
+		{
+			alias=aliasIt->first;
+			break;
+		}
+	}
+	bool serializeTraits = alias.empty()==false;
+
+	uint32_t traitsCount=0;
+	const variables_map::const_var_iterator beginIt = Variables.Variables.begin();
+	const variables_map::const_var_iterator endIt = Variables.Variables.end();
+	//Check if the class traits has been already serialized to send it by reference
+	auto it2=traitsMap.find(type);
+	if(serializeTraits && it2!=traitsMap.end())
+		out->writeU29((it2->second << 2) | 1);
 	else
 	{
-		//Add the object to the map
-		objMap.insert(make_pair(this, objMap.size()));
-		//0x0B -> a dynamic instance follows
-		out->writeByte(0x0B);
-		//The class name, empty if no alias is registered
-		//TODO: support aliases
-		out->writeStringVR(stringMap, "");
-		serializeDynamicProperties(out, stringMap, objMap);
+		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
+		{
+			if(varIt->second.kind==DECLARED_TRAIT)
+				traitsCount++;
+		}
+		out->writeU29((traitsCount << 4) | 0x0B);
+		out->writeStringVR(stringMap, alias);
+		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
+		{
+			if(varIt->second.kind==DECLARED_TRAIT)
+			{
+				assert_and_throw(varIt->second.ns.size() == 1)
+				assert_and_throw(varIt->second.ns.begin()->name=="");
+				out->writeStringVR(stringMap, varIt->first);
+			}
+		}
 	}
+	for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
+	{
+		if(varIt->second.kind==DECLARED_TRAIT)
+			varIt->second.var->serialize(out, stringMap, objMap, traitsMap);
+	}
+	serializeDynamicProperties(out, stringMap, objMap, traitsMap);
 }
 
 ASObject *ASObject::describeType() const

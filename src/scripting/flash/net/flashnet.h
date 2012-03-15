@@ -285,6 +285,8 @@ public:
 };
 
 ASObject* sendToURL(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* registerClassAlias(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* getClassByAlias(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 };
 

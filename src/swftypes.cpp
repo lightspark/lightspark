@@ -183,8 +183,7 @@ tiny_string multiname::qualifiedString() const
 {
 	assert_and_throw(ns.size()==1);
 	assert_and_throw(name_type==NAME_STRING);
-	//TODO: what if the ns is empty
-	if(false && ns[0].name=="")
+	if(ns[0].name.empty())
 		return name_s;
 	else
 	{

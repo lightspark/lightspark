@@ -115,7 +115,7 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const
 {
-	out->writeByte(amf3::undefined_marker);
+	out->writeByte(undefined_marker);
 }
 
 ASFUNCTIONBODY(Integer,_toString)
@@ -265,7 +265,7 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const
 {
-	out->writeByte(amf3::integer_marker);
+	out->writeByte(integer_marker);
 	//TODO: check behaviour for negative value
 	if(val>=0x40000000 || val<=(int32_t)0xbfffffff)
 		throw AssertionException("Range exception in Integer::serialize");
@@ -593,7 +593,7 @@ void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const
 {
-	out->writeByte(amf3::double_marker);
+	out->writeByte(double_marker);
 	//We have to write the double in network byte order (big endian)
 	const uint64_t* tmpPtr=reinterpret_cast<const uint64_t*>(&val);
 	uint64_t bigEndianVal=GINT64_FROM_BE(*tmpPtr);
@@ -1051,7 +1051,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const
 {
-	out->writeByte(amf3::null_marker);
+	out->writeByte(null_marker);
 }
 
 RegExp::RegExp():dotall(false),global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)

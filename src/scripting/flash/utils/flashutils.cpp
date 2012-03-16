@@ -880,11 +880,11 @@ ASFUNCTIONBODY(ByteArray,readObject)
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}
 	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
-	std::vector<ASObject*> ret;
 	Amf3Deserializer d(th);
+	_NR<ASObject> ret(NullRef);
 	try
 	{
-		d.generateObjects(ret);
+		ret=d.readObject();
 	}
 	catch(LightsparkException& e)
 	{
@@ -892,18 +892,13 @@ ASFUNCTIONBODY(ByteArray,readObject)
 		//TODO: throw AS exception
 	}
 
-	if(ret.size()==0)
+	if(ret.isNull())
 	{
 		LOG(LOG_ERROR,"No objects in the AMF3 data. Returning Undefined");
 		return new Undefined;
 	}
-	if(ret.size()>1)
-	{
-		LOG(LOG_ERROR,"More than one object in the AMF3 data. Returning the first");
-		for(uint32_t i=1;i<ret.size();i++)
-			ret[i]->decRef();
-	}
-	return ret[0];
+	ret->incRef();
+	return ret.getPtr();
 }
 
 ASFUNCTIONBODY(ByteArray,_toString)

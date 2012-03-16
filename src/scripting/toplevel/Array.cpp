@@ -1191,7 +1191,7 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	assert_and_throw(objMap.find(this)==objMap.end());
-	out->writeByte(amf3::array_marker);
+	out->writeByte(array_marker);
 	//Check if the array has been already serialized
 	auto it=objMap.find(this);
 	if(it!=objMap.end())

@@ -23,157 +23,15 @@
 #include <string>
 #include <vector>
 #include "compat.h"
+#include "swftypes.h"
+#include "smartrefs.h"
+#include "asobject.h"
 
 namespace lightspark
 {
 
 class ASObject;
 class ByteArray;
-
-namespace amf3
-{
-
-template<class T>
-class ReferenceOrValue
-{
-public:
-	enum CONTENTS { NONE=0, REFERENCE, VALUE };
-	CONTENTS contents;
-	uint32_t reference;
-	T value;
-	ReferenceOrValue():contents(NONE){}
-	ReferenceOrValue<T>& operator=(uint32_t r)
-	{
-		contents=REFERENCE;
-		reference=r;
-		return *this;
-	}
-	//TODO: make movable
-	ReferenceOrValue<T>& operator=(const T& r)
-	{
-		contents=VALUE;
-		value=r;
-		return *this;
-	}
-};
-
-struct NullType {};
-
-struct UndefinedType {};
-
-struct BoolType
-{
-	bool val;
-	explicit BoolType(bool v):val(v){}
-	BoolType():val(0){}
-};
-
-struct Integer
-{
-	int32_t val;
-	explicit Integer(int32_t v):val(v){}
-	Integer():val(0){}
-};
-
-struct Double
-{
-	union
-	{
-		double val;
-		uint64_t dummy;
-	};
-	explicit Double(uint64_t v):dummy(v){}
-	Double():val(0){}
-};
-
-typedef ReferenceOrValue<std::string> Utf8String;
-typedef ReferenceOrValue<uint64_t> Date;
-
-class NameAndValue;
-class ValueType;
-
-struct Array
-{
-	std::vector<NameAndValue> m_associativeSection;
-	std::vector<ValueType> m_denseSection;
-};
-
-struct Object
-{
-	std::vector<NameAndValue> m_associativeSection;
-};
-
-typedef ReferenceOrValue<Array> ArrayType;
-typedef ReferenceOrValue<Object> ObjectType;
-
-class ValueType
-{
-public:
-	enum CONTENTS { NONE=0, NULLTYPE, UNDEFINEDTYPE, BOOL, INTEGER, DOUBLE, UTF8STRING, DATE, ARRAYTYPE, OBJECTTYPE };
-	CONTENTS contents;
-	//NullType,UndefinedType have no storage
-	BoolType boolVal;
-	Integer intVal;
-	Double doubleVal;
-	Utf8String stringVal;
-	//Date dateVal;
-	ArrayType arrayVal;
-	ObjectType objVal;
-	ValueType():contents(NONE){}
-	ValueType& operator=(NullType r)
-	{
-		contents=NULLTYPE;
-		return *this;
-	}
-	ValueType& operator=(UndefinedType r)
-	{
-		contents=UNDEFINEDTYPE;
-		return *this;
-	}
-	//TODO: make movable
-	ValueType& operator=(const BoolType& r)
-	{
-		contents=BOOL;
-		boolVal=r;
-		return *this;
-	}
-	ValueType& operator=(const Integer& r)
-	{
-		contents=INTEGER;
-		intVal=r;
-		return *this;
-	}
-	ValueType& operator=(const Double& r)
-	{
-		contents=DOUBLE;
-		doubleVal=r;
-		return *this;
-	}
-	ValueType& operator=(const Utf8String& r)
-	{
-		contents=UTF8STRING;
-		stringVal=r;
-		return *this;
-	}
-	ValueType& operator=(const ArrayType& r)
-	{
-		contents=ARRAYTYPE;
-		arrayVal=r;
-		return *this;
-	}
-	ValueType& operator=(const ObjectType& r)
-	{
-		contents=OBJECTTYPE;
-		objVal=r;
-		return *this;
-	}
-};
-
-struct NameAndValue
-{
-	Utf8String name;
-	ValueType value;
-};
 
 enum markers_type
 {
@@ -191,21 +49,25 @@ enum markers_type
 	xml_marker = 0xb
 };
 
-}; //namespace amf3
-
 class Amf3Deserializer
 {
 private:
 	ByteArray* input;
-	amf3::Utf8String parseStringVR() const;
-	amf3::ObjectType parseObject() const;
-	amf3::ArrayType parseArray() const;
-	amf3::ValueType parseValue() const;
-	amf3::Integer parseInteger() const;
-	amf3::Double parseDouble() const;
+	tiny_string parseStringVR(std::vector<tiny_string>& stringMap) const;
+	_R<ASObject> parseObject(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<Class_base*>& traitsMap) const;
+	_R<ASObject> parseArray(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<Class_base*>& traitsMap) const;
+	_R<ASObject> parseValue(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<Class_base*>& traitsMap) const;
+	_R<ASObject> parseInteger() const;
+	_R<ASObject> parseDouble() const;
 public:
 	Amf3Deserializer(ByteArray* i):input(i) {}
-	bool generateObjects(std::vector<ASObject*>& objs);
+	_R<ASObject> readObject() const;
 };
 
 };

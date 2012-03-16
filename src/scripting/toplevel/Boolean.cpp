@@ -116,9 +116,9 @@ void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	if(val)
-		out->writeByte(amf3::true_marker);
+		out->writeByte(true_marker);
 	else
-		out->writeByte(amf3::false_marker);
+		out->writeByte(false_marker);
 }
 
 bool Boolean::isEqual(ASObject* r)

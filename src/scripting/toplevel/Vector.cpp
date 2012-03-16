@@ -33,11 +33,52 @@ void Vector::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
-	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(getLength),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(setLength),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(getFixed),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(setFixed),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(_concat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("every",AS3,Class<IFunction>::getFunction(every),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("filter",AS3,Class<IFunction>::getFunction(filter),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("forEach",AS3,Class<IFunction>::getFunction(forEach),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("join",AS3,Class<IFunction>::getFunction(join),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("map",AS3,Class<IFunction>::getFunction(_map),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pop",AS3,Class<IFunction>::getFunction(_pop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),NORMAL_METHOD,true);
+	
+
+	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("every",AS3,Class<IFunction>::getFunction(every),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("map",AS3,Class<IFunction>::getFunction(_map),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("push",AS3,Class<IFunction>::getFunction(push),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("some",AS3,Class<IFunction>::getFunction(some),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
+
 }
 
 void Vector::setTypes(const std::vector<Type*>& types)
@@ -105,9 +146,196 @@ ASFUNCTIONBODY(Vector,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Vector,_concat)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
+	// copy values into new Vector
+	ret->vec.resize(th->size());
+	std::vector<ASObject*>::iterator it=th->vec.begin();
+	uint32_t index = 0;
+	for(;it != th->vec.end();++it)
+	{
+		if (*it)
+			ret->vec[index]=*it;
+		index++;
+	}
+	//Insert the arguments in the vector
+	for(unsigned int i=0;i<argslen;i++)
+	{
+		if (args[i]->is<Vector>())
+		{
+			Vector* arg=static_cast<Vector*>(args[i]);
+			ret->vec.resize(index+arg->size());
+			std::vector<ASObject*>::iterator it=arg->vec.begin();
+			for(;it != arg->vec.end();++it)
+			{
+				if (*it)
+				{
+					// force Class_base to ensure that a TypeError is thrown 
+					// if the object type does not match the base vector type
+					ret->vec[index]=((Class_base*)th->vec_type)->Class_base::coerce(*it);
+				}
+				index++;
+			}
+		}
+		else
+		{
+			ret->vec[index] = th->vec_type->coerce(args[i]);
+			index++;
+		}
+	}	
+
+	//All the elements in the new vector should be increffed, as args will be deleted and
+	//this vector could die too
+	for(unsigned int i=0;i<ret->size();i++)
+	{
+		if(ret->vec[i])
+			ret->vec[i]->incRef();
+	}
+
+	return ret;
+}
+
+ASFUNCTIONBODY(Vector,filter)
+{
+	if (argslen < 1 || argslen > 2)
+		throw Class<ArgumentError>::getInstanceS("Error #1063"); 
+	if (!args[0]->is<IFunction>())
+		throw Class<TypeError>::getInstanceS("Error #1034"); 
+	Vector* th=static_cast<Vector*>(obj);
+	  
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
+	ASObject *funcRet;
+
+	for(unsigned int i=0;i<th->size();i++)
+	{
+		if (!th->vec[i])
+			continue;
+		params[0] = th->vec[i];
+		th->vec[i]->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if(argslen==1)
+		{
+			funcRet=f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			funcRet=f->call(args[1], params, 3);
+		}
+		if(funcRet)
+		{
+			if(Boolean_concrete(funcRet))
+			{
+				th->vec[i]->incRef();
+				ret->vec.push_back(th->vec[i]);
+			}
+			funcRet->decRef();
+		}
+	}
+	return ret;
+}
+
+ASFUNCTIONBODY(Vector, some)
+{
+	if (argslen < 1)
+		throw Class<ArgumentError>::getInstanceS("Error #1063");
+	if (!args[0]->is<IFunction>())
+		throw Class<TypeError>::getInstanceS("Error #1034"); 
+	Vector* th=static_cast<Vector*>(obj);
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+	ASObject *funcRet;
+
+	for(unsigned int i=0; i < th->size(); i++)
+	{
+		if (!th->vec[i])
+			continue;
+		params[0] = th->vec[i];
+		th->vec[i]->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if(argslen==1)
+		{
+			funcRet=f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			funcRet=f->call(args[1], params, 3);
+		}
+		if(funcRet)
+		{
+			if(Boolean_concrete(funcRet))
+			{
+				return funcRet;
+			}
+			funcRet->decRef();
+		}
+	}
+	return abstract_b(false);
+}
+
+ASFUNCTIONBODY(Vector, every)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	if (argslen < 1)
+		throw Class<ArgumentError>::getInstanceS("Error #1063");
+	if (!args[0]->is<IFunction>())
+		throw Class<TypeError>::getInstanceS("Error #1034"); 
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+	ASObject *funcRet;
+
+	for(unsigned int i=0; i < th->size(); i++)
+	{
+		if (th->vec[i])
+		{
+			params[0] = th->vec[i];
+			th->vec[i]->incRef();
+		}
+		else
+			params[0] = new Null;
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if(argslen==1)
+		{
+			funcRet=f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			funcRet=f->call(args[1], params, 3);
+		}
+		if(funcRet)
+		{
+			if (funcRet->is<Undefined>() || funcRet->is<Null>())
+				throw Class<TypeError>::getInstanceS("Error #1006");
+			if(!Boolean_concrete(funcRet))
+			{
+				return funcRet;
+			}
+			funcRet->decRef();
+		}
+	}
+	return abstract_b(true);
+}
+
 ASFUNCTIONBODY(Vector,push)
 {
 	Vector* th=static_cast<Vector*>(obj);
+	if (th->fixed)
+		throw Class<RangeError>::getInstanceS("Error #1126");
 	for(size_t i = 0; i < argslen; ++i)
 	{
 		args[i]->incRef();
@@ -118,6 +346,21 @@ ASFUNCTIONBODY(Vector,push)
 	return abstract_ui(th->vec.size());
 }
 
+ASFUNCTIONBODY(Vector,_pop)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	if (th->fixed)
+		throw Class<RangeError>::getInstanceS("Error #1126");
+	uint32_t size =th->size();
+	if (size == 0)
+        return th->vec_type->coerce(new Null);
+	ASObject* ret = th->vec[size-1];
+	if (!ret)
+		ret = th->vec_type->coerce(new Null);
+	th->vec.pop_back();
+	return ret;
+}
+
 ASFUNCTIONBODY(Vector,getLength)
 {
 	return abstract_ui(obj->as<Vector>()->vec.size());
@@ -126,6 +369,8 @@ ASFUNCTIONBODY(Vector,getLength)
 ASFUNCTIONBODY(Vector,setLength)
 {
 	Vector* th = obj->as<Vector>();
+	if (th->fixed)
+		throw Class<RangeError>::getInstanceS("Error #1126");
 	uint32_t len;
 	ARG_UNPACK (len);
 	if(len <= th->vec.size())
@@ -135,6 +380,403 @@ ASFUNCTIONBODY(Vector,setLength)
 	}
 	th->vec.resize(len);
 	return NULL;
+}
+
+ASFUNCTIONBODY(Vector,getFixed)
+{
+	return abstract_b(obj->as<Vector>()->fixed);
+}
+
+ASFUNCTIONBODY(Vector,setFixed)
+{
+	Vector* th = obj->as<Vector>();
+	bool fixed;
+	ARG_UNPACK (fixed);
+	th->fixed = fixed;
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector,forEach)
+{
+	if (argslen < 1)
+		throw Class<ArgumentError>::getInstanceS("Error #1063");
+	if (!args[0]->is<IFunction>())
+		throw Class<TypeError>::getInstanceS("Error #1034"); 
+	Vector* th=static_cast<Vector*>(obj);
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+
+	for(unsigned int i=0; i < th->size(); i++)
+	{
+		if (!th->vec[i])
+			continue;
+		params[0] = th->vec[i];
+		th->vec[i]->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		ASObject *funcret;
+		if( argslen == 1 )
+		{
+			funcret=f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			funcret=f->call(args[1], params, 3);
+		}
+		if(funcret)
+			funcret->decRef();
+	}
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector, _reverse)
+{
+	Vector* th = static_cast<Vector*>(obj);
+
+	std::vector<ASObject*> tmp = std::vector<ASObject*>(th->vec);
+	uint32_t size = th->size();
+	th->vec.clear();
+	th->vec.resize(size);
+	std::vector<ASObject*>::iterator it=tmp.begin();
+	uint32_t index = size-1;
+	for(;it != tmp.end();++it)
+ 	{
+		th->vec[index]=*it;
+		index--;
+	}
+	th->incRef();
+	return th;
+}
+
+ASFUNCTIONBODY(Vector,lastIndexOf)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	int ret=-1;
+	ASObject* arg0=args[0];
+
+	if(th->vec.size() == 0)
+		return abstract_d(-1);
+
+	size_t i = th->size()-1;
+
+	if(argslen == 2 && std::isnan(args[1]->toNumber()))
+		return abstract_i(0);
+
+	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
+	{
+		int j = args[1]->toInt(); //Preserve sign
+		if(j < 0) //Negative offset, use it as offset from the end of the array
+		{
+			if((size_t)-j > th->size())
+				i = 0;
+			else
+				i = th->size()+j;
+		}
+		else //Positive offset, use it directly
+		{
+			if((size_t)j > th->size()) //If the passed offset is bigger than the array, cap the offset
+				i = th->size()-1;
+			else
+				i = j;
+		}
+	}
+	do
+	{
+		if (!th->vec[i])
+		    continue;
+		if (ABCVm::strictEqualImpl(th->vec[i],arg0))
+		{
+			ret=i;
+			break;
+		}
+	}
+	while(i--);
+
+	return abstract_i(ret);
+}
+
+ASFUNCTIONBODY(Vector,shift)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	if (th->fixed)
+		throw Class<RangeError>::getInstanceS("Error #1126");
+	if(!th->size())
+		return th->vec_type->coerce(new Null);
+	ASObject* ret;
+	if(th->vec[0])
+		ret=th->vec[0];
+	else
+		ret=th->vec_type->coerce(new Null);
+	for(uint32_t i= 1;i< th->size();i++)
+	{
+		if (th->vec[i])
+		{
+			th->vec[i-1]=th->vec[i];
+		}
+		else if (th->vec[i-1])
+		{
+			th->vec[i-1] = NULL;
+		}
+	}
+	th->vec.resize(th->size()-1);
+	return ret;
+}
+
+int Vector::capIndex(int i) const
+{
+	int totalSize=size();
+
+	if(totalSize <= 0)
+		return 0;
+	else if(i < -totalSize)
+		return 0;
+	else if(i > totalSize)
+		return totalSize;
+	else if(i>=0)     // 0 <= i < totalSize
+		return i;
+	else              // -totalSize <= i < 0
+	{
+		//A negative i is relative to the end
+		return i+totalSize;
+	}
+}
+
+ASFUNCTIONBODY(Vector,slice)
+{
+	Vector* th=static_cast<Vector*>(obj);
+
+	int startIndex=0;
+	int endIndex=16777215;
+	if(argslen>0)
+		startIndex=args[0]->toInt();
+	if(argslen>1)
+		endIndex=args[1]->toInt();
+
+	startIndex=th->capIndex(startIndex);
+	endIndex=th->capIndex(endIndex);
+	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
+	ret->vec.resize(endIndex-startIndex);
+	int j = 0;
+	for(int i=startIndex; i<endIndex; i++) 
+	{
+		if (th->vec[i])
+		{
+			th->vec[i]->incRef();
+			ret->vec[j] =th->vec_type->coerce(th->vec[i]);
+		}
+		j++;
+	}
+	return ret;
+}
+
+ASFUNCTIONBODY(Vector,splice)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	if (th->fixed)
+		throw Class<RangeError>::getInstanceS("Error #1126");
+	int startIndex=args[0]->toInt();
+	//By default, delete all the element up to the end
+	//Use the array len, it will be capped below
+	int deleteCount=th->size();
+	if(argslen > 1)
+		deleteCount=args[1]->toUInt();
+	int totalSize=th->size();
+	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
+
+	startIndex=th->capIndex(startIndex);
+
+	if((startIndex+deleteCount)>totalSize)
+		deleteCount=totalSize-startIndex;
+
+	ret->vec.resize(deleteCount);
+	if(deleteCount)
+	{
+		// write deleted items to return array
+		for(int i=0;i<deleteCount;i++)
+		{
+			if (th->vec[startIndex+i])
+				ret->vec[i] = th->vec[startIndex+i];
+		}
+		// delete items from current array
+		for (int i = 0; i < deleteCount; i++)
+		{
+			if(th->vec[startIndex+i])
+			{
+				th->vec[startIndex+i] = NULL;
+			}
+		}
+	}
+	// remember items in current array that have to be moved to new position
+	vector<ASObject*> tmp = vector<ASObject*>(totalSize- (startIndex+deleteCount));
+	tmp.resize(totalSize- (startIndex+deleteCount));
+	for (int i = startIndex+deleteCount; i < totalSize ; i++)
+	{
+		if (th->vec[i])
+		{
+			tmp[i-(startIndex+deleteCount)] = th->vec[i];
+			th->vec[i] = NULL;
+		}
+	}
+	th->vec.resize(startIndex);
+
+	
+	//Insert requested values starting at startIndex
+	for(unsigned int i=2;i<argslen;i++)
+	{
+		args[i]->incRef();
+		th->vec.push_back(args[i]);
+	}
+	// move remembered items to new position
+	th->vec.resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0));
+	for(int i=0;i<totalSize- (startIndex+deleteCount);i++)
+	{
+		if (tmp[i])
+			th->vec[startIndex+i+(argslen > 2 ? argslen-2 : 0)] = tmp[i];
+	}
+	return ret;
+}
+
+ASFUNCTIONBODY(Vector,join)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	
+	tiny_string del = ",";
+	if (argslen == 1)
+	      del=args[0]->toString();
+	string ret;
+	for(uint32_t i=0;i<th->size();i++)
+	{
+		if (th->vec[i])
+			ret+=th->vec[i]->toString().raw_buf();
+		if(i!=th->size()-1)
+			ret+=del.raw_buf();
+	}
+	return Class<ASString>::getInstanceS(ret);
+}
+
+ASFUNCTIONBODY(Vector,indexOf)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	int ret=-1;
+	ASObject* arg0=args[0];
+
+	int unsigned i = 0;
+	if(argslen == 2)
+	{
+		i = args[1]->toInt();
+	}
+
+	for(;i<th->size();i++)
+	{
+		if (!th->vec[i])
+			continue;
+		if(ABCVm::strictEqualImpl(th->vec[i],arg0))
+		{
+			ret=i;
+			break;
+		}
+	}
+	return abstract_i(ret);
+}
+bool Vector::sortComparatorWrapper::operator()(ASObject* d1, ASObject* d2)
+{
+	ASObject* objs[2];
+	if (d1)
+	{
+		objs[0] = d1;
+		objs[0]->incRef();
+	}
+	else
+		objs[0] = vec_type->coerce(new Null);
+	if (d2)
+	{
+		objs[1] = d2;
+		objs[1]->incRef();
+	}
+	else
+		objs[1] = vec_type->coerce(new Null);
+
+	assert(comparator);
+	_NR<ASObject> ret=_MNR(comparator->call(new Null, objs, 2));
+	assert_and_throw(ret);
+	return (ret->toNumber()<0); //Less
+}
+
+ASFUNCTIONBODY(Vector,_sort)
+{
+	if (argslen != 1)
+		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+	Vector* th=static_cast<Vector*>(obj);
+	
+	IFunction* comp=static_cast<IFunction*>(args[0]);
+	
+
+	sort(th->vec.begin(),th->vec.end(),sortComparatorWrapper(comp,th->vec_type));
+	obj->incRef();
+	return obj;
+}
+
+ASFUNCTIONBODY(Vector,unshift)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	if (th->fixed)
+		throw Class<RangeError>::getInstanceS("Error #1126");
+	th->vec.resize(th->size()+argslen);
+	for(uint32_t i=th->size();i> 0;i--)
+	{
+		if (th->vec[i-1])
+		{
+			th->vec[(i-1)+argslen]=th->vec[i-1];
+			th->vec[i-1] = NULL;
+		}
+		
+	}
+
+	for(uint32_t i=0;i<argslen;i++)
+	{
+		th->vec[i] = th->vec_type->coerce(args[i]);
+		args[i]->incRef();
+	}
+	return abstract_i(th->size());
+}
+
+ASFUNCTIONBODY(Vector,_map)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_FUNCTION);
+	IFunction* func=static_cast<IFunction*>(args[0]);
+	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
+
+	for(uint32_t i=0;i<th->size();i++)
+	{
+		ASObject* funcArgs[3];
+		if (!th->vec[i])
+			funcArgs[0]=new Null;
+		else
+		{
+			if(th->vec[i])
+			{
+				funcArgs[0]=th->vec[i];
+				funcArgs[0]->incRef();
+			}
+			else
+				funcArgs[0]=new Undefined;
+		}
+		funcArgs[1]=abstract_i(i);
+		funcArgs[2]=th;
+		funcArgs[2]->incRef();
+		ASObject* funcRet=func->call(new Null, funcArgs, 3);
+		assert_and_throw(funcRet);
+		ret->vec.push_back(funcRet);
+	}
+
+	return ret;
 }
 
 ASFUNCTIONBODY(Vector,_toString)
@@ -163,7 +805,7 @@ bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
 	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
+	if(!Vector::isValidMultiname(name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
 	if(index < vec.size())
@@ -183,7 +825,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 		return ASObject::getVariableByMultiname(name,opt);
 
 	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
+	if(!Vector::isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname(name,opt);
 
 	if(index < vec.size())
@@ -198,8 +840,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Vector: Access beyond size");
-		return NullRef; //TODO: test if we should throw something or if we should return new Undefined();
+		throw Class<RangeError>::getInstanceS("Error #1125");
 	}
 }
 
@@ -210,24 +851,25 @@ void Vector::setVariableByMultiname(const multiname& name, ASObject* o)
 		return ASObject::setVariableByMultiname(name, o);
 
 	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
+	if(!Vector::isValidMultiname(name,index))
 		return ASObject::setVariableByMultiname(name, o);
-
+	ASObject* o2 = this->vec_type->coerce(o);
+	  
 	if(index < vec.size())
 	{
 		if (vec[index])
 			vec[index]->decRef();
-		vec[index] = o;
+		vec[index] = o2;
 	}
-	else if(index == vec.size())
+	else if(!fixed && index == vec.size())
 	{
-		vec.push_back( o );
+		vec.push_back( o2 );
 	}
 	else
 	{
 		/* Spec says: one may not set a value with an index more than
 		 * one beyond the current final index. */
-		throw Class<ArgumentError>::getInstanceS("Vector accessed out-of-bounds");
+		throw Class<RangeError>::getInstanceS("Error #1125");
 	}
 }
 
@@ -278,3 +920,46 @@ _R<ASObject> Vector::nextValue(uint32_t index)
 		throw RunTimeException("Vector::nextValue out of bounds");
 }
 
+bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
+{
+	//First of all the multiname has to contain the null namespace
+	//As the namespace vector is sorted, we check only the first one
+	assert_and_throw(name.ns.size()!=0);
+	if(name.ns[0].name!="")
+		return false;
+
+	index=0;
+	switch(name.name_type)
+	{
+		//We try to convert this to an index, otherwise bail out
+		case multiname::NAME_STRING:
+        {
+			if(name.name_s.empty())
+                return false;
+            ASString* s = Class<ASString>::getInstanceS(name.name_s);
+            number_t n = s->toNumber();
+            delete s;
+            if(!Number::isInteger(n) || n<0)
+                return false;
+            index = n;
+            break;
+        }
+		//This is already an int, so its good enough
+		case multiname::NAME_INT:
+			if(name.name_i < 0)
+				throw Class<RangeError>::getInstanceS("Error #1125");
+			index=name.name_i;
+			break;
+		case multiname::NAME_NUMBER:
+			if(!Number::isInteger(name.name_d) || name.name_d < 0)
+				throw Class<RangeError>::getInstanceS("Error #1125");
+			index = name.name_d;
+			break;
+		case multiname::NAME_OBJECT:
+			//TODO: should be use toPrimitive here?
+			return false;
+		default:
+			throw UnsupportedException("Vector::isValidMultiname not completely implemented");
+	}
+	return true;
+}

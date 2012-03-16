@@ -31,6 +31,16 @@ class Vector: public ASObject
 	Type* vec_type;
 	bool fixed;
 	std::vector<ASObject*> vec;
+	int capIndex(int i) const;
+	class sortComparatorWrapper
+	{
+	private:
+		IFunction* comparator;
+		Type* vec_type;
+	public:
+		sortComparatorWrapper(IFunction* c, Type* v):comparator(c),vec_type(v){}
+		bool operator()(ASObject* d1, ASObject* d2);
+	};
 public:
 	Vector() : vec_type(NULL) {}
 	static void sinit(Class_base* c);
@@ -44,6 +54,7 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	static bool isValidMultiname(const multiname& name, uint32_t& index);
 
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
@@ -63,9 +74,29 @@ public:
 	ASFUNCTION(_applytype);
 
 	ASFUNCTION(push);
+	ASFUNCTION(_concat);
+	ASFUNCTION(_pop);
+	ASFUNCTION(join);
+	ASFUNCTION(shift);
+	ASFUNCTION(unshift);
+	ASFUNCTION(splice);
+	ASFUNCTION(_sort);
 	ASFUNCTION(getLength);
 	ASFUNCTION(setLength);
+	ASFUNCTION(filter);
+	ASFUNCTION(indexOf);
+	ASFUNCTION(_getLength);
+	ASFUNCTION(_setLength);
+	ASFUNCTION(getFixed);
+	ASFUNCTION(setFixed);
+	ASFUNCTION(forEach);
+	ASFUNCTION(_reverse);
+	ASFUNCTION(lastIndexOf);
+	ASFUNCTION(_map);
 	ASFUNCTION(_toString);
+	ASFUNCTION(slice);
+	ASFUNCTION(every);
+	ASFUNCTION(some);
 };
 
 

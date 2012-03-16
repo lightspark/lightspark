@@ -113,7 +113,7 @@ ASFUNCTIONBODY(Boolean,_valueOf)
 
 void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap) const
+				std::map<const Class_base*, uint32_t>& traitsMap) const
 {
 	if(val)
 		out->writeByte(true_marker);

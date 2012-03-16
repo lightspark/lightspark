@@ -189,7 +189,7 @@ public:
 	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap) const;
+				std::map<const Class_base*, uint32_t>& traitsMap) const;
 	void dumpVariables();
 	void destroyContents();
 };
@@ -417,7 +417,7 @@ public:
 	*/
 	virtual void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap) const;
+				std::map<const Class_base*, uint32_t>& traitsMap) const;
 
 	virtual ASObject *describeType() const;
 

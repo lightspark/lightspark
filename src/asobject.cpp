@@ -1139,7 +1139,7 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 
 void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap) const
+				std::map<const Class_base*, uint32_t>& traitsMap) const
 {
 	//Pairs of name, value
 	auto it=Variables.begin();
@@ -1158,7 +1158,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 
 void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap) const
+				std::map<const Class_base*, uint32_t>& traitsMap) const
 {
 	//0x0A -> object marker
 	out->writeByte(object_marker);
@@ -1202,6 +1202,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		out->writeU29((it2->second << 2) | 1);
 	else
 	{
+		if(serializeTraits)
+			traitsMap.insert(make_pair(type, traitsMap.size()));
 		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)

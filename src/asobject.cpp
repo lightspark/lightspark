@@ -1161,7 +1161,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				std::map<const Class_base*, uint32_t> traitsMap) const
 {
 	//0x0A -> object marker
-	out->writeByte(amf3::object_marker);
+	out->writeByte(object_marker);
 	//Check if the object has been already serialized to send it by reference
 	auto it=objMap.find(this);
 	if(it!=objMap.end())
@@ -1173,6 +1173,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 
 	//TODO: support IExternalizable objects
 	Class_base* type=getClass();
+	assert_and_throw(type);
 
 	//Add the object to the map
 	objMap.insert(make_pair(this, objMap.size()));
@@ -1206,7 +1207,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			if(varIt->second.kind==DECLARED_TRAIT)
 				traitsCount++;
 		}
-		out->writeU29((traitsCount << 4) | 0x0B);
+		uint32_t dynamicFlag=(type->isSealed)?0:(1 << 3);
+		out->writeU29((traitsCount << 4) | dynamicFlag | 0x03);
 		out->writeStringVR(stringMap, alias);
 		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 		{
@@ -1223,7 +1225,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		if(varIt->second.kind==DECLARED_TRAIT)
 			varIt->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
-	serializeDynamicProperties(out, stringMap, objMap, traitsMap);
+	if(!type->isSealed)
+		serializeDynamicProperties(out, stringMap, objMap, traitsMap);
 }
 
 ASObject *ASObject::describeType() const

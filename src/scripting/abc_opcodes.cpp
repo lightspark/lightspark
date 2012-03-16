@@ -688,7 +688,8 @@ void ABCVm::construct(call_context* th, int m)
 void ABCVm::constructGenericType(call_context* th, int m)
 {
 	LOG(LOG_CALLS, _("constructGenericType ") << m);
-	assert_and_throw(m==1);
+	if (m != 1)
+			throw Class<TypeError>::getInstanceS("Error #1128");
 	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
@@ -1740,7 +1741,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		ret = constructFunction(th, o->as<IFunction>(), args, m);
 	}
 	else
-		throw RunTimeException("Cannot construct such an object in constructProp");
+		throw Class<TypeError>::getInstanceS("Error #1007: Cannot construct such an object in constructProp");
 
 	th->runtime_stack_push(ret);
 	obj->decRef();

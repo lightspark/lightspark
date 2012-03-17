@@ -1251,7 +1251,8 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("isinstance ") << *name);
 
-	if(name->qualifiedString() == "::any")
+	//TODO: Should check against multiname index being 0, not the name!
+	if(name->qualifiedString() == "any")
 		return true;
 	
 	ASObject* target;

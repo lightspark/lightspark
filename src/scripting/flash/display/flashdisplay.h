@@ -66,6 +66,7 @@ private:
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;
+	float alpha;
 	/**
 	  	The object we are masking, if any
 	*/
@@ -90,7 +91,7 @@ protected:
 	number_t computeHeight();
 	bool isSimple() const;
 	bool skipRender(bool maskEnabled) const;
-	float alpha;
+	float clippedAlpha() const;
 	bool visible;
 	/* cachedSurface may only be read/written from within the render thread */
 	CachedSurface cachedSurface;

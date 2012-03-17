@@ -1202,14 +1202,14 @@ void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
 	scenes.back().addFrameLabel(frame,label);
 }
 
-DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),maskOf(),parent(),mask(),onStage(false),
-	loaderInfo(),alpha(1.0),visible(true),invalidateQueueNext()
+DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),alpha(1.0),maskOf(),parent(),mask(),onStage(false),
+	loaderInfo(),visible(true),invalidateQueueNext()
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 
-DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),maskOf(),
-	parent(),mask(),onStage(false),loaderInfo(),alpha(d.alpha),visible(d.visible),name(d.name),invalidateQueueNext()
+DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),alpha(d.alpha),maskOf(),
+	parent(),mask(),onStage(false),loaderInfo(),visible(d.visible),name(d.name),invalidateQueueNext()
 {
 	assert(!d.isConstructed());
 }
@@ -1350,12 +1350,19 @@ MATRIX DisplayObject::getConcatenatedMatrix() const
 		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
 }
 
+/* Return alpha value between 0 and 1. (The stored alpha value is not
+ * necessary bounded.) */
+float DisplayObject::clippedAlpha() const
+{
+	return dmin(dmax(alpha, 0.), 1.);
+}
+
 float DisplayObject::getConcatenatedAlpha() const
 {
 	if(parent.isNull())
-		return alpha;
+		return clippedAlpha();
 	else
-		return parent->getConcatenatedAlpha()*alpha;
+		return parent->getConcatenatedAlpha()*clippedAlpha();
 }
 
 MATRIX DisplayObject::getMatrix() const
@@ -1393,12 +1400,12 @@ void DisplayObject::valFromMatrix()
 bool DisplayObject::isSimple() const
 {
 	//TODO: Check filters
-	return alpha==1.0;
+	return clippedAlpha()==1.0;
 }
 
 bool DisplayObject::skipRender(bool maskEnabled) const
 {
-	return visible==false || alpha==0.0 || (!maskEnabled && !maskOf.isNull());
+	return visible==false || clippedAlpha()==0.0 || (!maskEnabled && !maskOf.isNull());
 }
 
 void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
@@ -1527,9 +1534,8 @@ ASFUNCTIONBODY(DisplayObject,_setAlpha)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	number_t val;
 	ARG_UNPACK (val);
-	//Clip val
-	val=dmax(0,val);
-	val=dmin(val,1);
+	/* The stored value is not clipped, _getAlpha will return the
+	 * stored value even if it is outside the [0, 1] range. */
 	th->alpha=val;
 	if(th->onStage)
 		th->requestInvalidation();

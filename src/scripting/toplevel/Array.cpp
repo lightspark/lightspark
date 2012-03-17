@@ -555,7 +555,7 @@ ASFUNCTIONBODY(Array,splice)
 		if (tmp[i].type != DATA_OBJECT || tmp[i].data != NULL)
 			th->data[startIndex+i] = tmp[i];
 	}
-	th->resize((totalSize-deleteCount)+(argslen-2));
+	th->resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0));
 	return ret;
 }
 

@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 #include <libxml/tree.h>
+#include <libxml++/nodes/textnode.h>
 
 #include "flashxml.h"
 #include "swf.h"
@@ -50,6 +51,7 @@ void XMLNode::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("attributes","",Class<IFunction>::getFunction(attributes),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeType","",Class<IFunction>::getFunction(_getNodeType),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeName","",Class<IFunction>::getFunction(_getNodeName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeValue","",Class<IFunction>::getFunction(_getNodeValue),GETTER_METHOD,true);
 }
 
 void XMLNode::buildTraits(ASObject* o)
@@ -133,6 +135,16 @@ ASFUNCTIONBODY(XMLNode,_getNodeName)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
 	return Class<ASString>::getInstanceS((const char*)th->node->cobj()->name);
+}
+
+ASFUNCTIONBODY(XMLNode,_getNodeValue)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	xmlpp::TextNode* textnode=dynamic_cast<xmlpp::TextNode*>(th->node);
+	if(textnode)
+		return Class<ASString>::getInstanceS(textnode->get_content());
+	else
+		return new Null;
 }
 
 void XMLDocument::sinit(Class_base* c)

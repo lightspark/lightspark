@@ -48,6 +48,7 @@ public:
 	ASFUNCTION(attributes);
 	ASFUNCTION(_getNodeType);
 	ASFUNCTION(_getNodeName);
+	ASFUNCTION(_getNodeValue);
 };
 
 class XMLDocument: public XMLNode

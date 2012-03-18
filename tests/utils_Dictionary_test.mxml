@@ -33,6 +33,21 @@
 		Tests.assertFalse(dict1 == dict3, "Dictionaries equal with different value object");
 		Tests.assertTrue(dict1 == dict4, "Dictionaries equal with itsself");
 
+		var obj:Object = new Object();
+		var obj2:Object = new Object();
+		var dict5:Dictionary = new Dictionary();
+		dict5[obj] = obj2;
+		for(var o:Object in dict5)
+		{
+			Tests.assertEquals(o, obj, "Iterating over keys");
+		}
+		for each(var o2:Object in dict5)
+		{
+			Tests.assertEquals(o2, obj2, "Iterating over values");
+		}
+		Tests.assertTrue(obj in dict5, "Key in Dictionary");
+		Tests.assertFalse(obj2 in dict5, "Value in Dictionary");
+
 		Tests.report(visual, this.name);
 	}
  ]]>

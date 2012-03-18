@@ -100,9 +100,11 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
 	REGISTER_GETTER(c,parameters);
+	REGISTER_GETTER(c,actionScriptVersion);
 }
 
 ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
+ASFUNCTIONBODY_GETTER(LoaderInfo,actionScriptVersion);
 
 void LoaderInfo::buildTraits(ASObject* o)
 {

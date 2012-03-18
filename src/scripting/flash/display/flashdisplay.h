@@ -454,8 +454,9 @@ private:
 	Spinlock spinlock;
 public:
 	ASPROPERTY_GETTER(_NR<ASObject>,parameters);
-	LoaderInfo():bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(NullRef),loadStatus(STARTED) {}
-	LoaderInfo(_R<Loader> l):bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(l),loadStatus(STARTED) {}
+	ASPROPERTY_GETTER(uint32_t,actionScriptVersion);
+	LoaderInfo():bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(NullRef),loadStatus(STARTED),actionScriptVersion(3) {}
+	LoaderInfo(_R<Loader> l):bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(l),loadStatus(STARTED),actionScriptVersion(3) {}
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

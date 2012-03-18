@@ -49,7 +49,7 @@ TARGET_LINK_LIBRARIES(lightsparkplugin spark)
 
 #With STATICDEPS, all deps are compiled into spark
 IF(NOT STATICDEPS)
-  TARGET_LINK_LIBRARIES(lightsparkplugin spark ${GTK_LIBRARIES} ${X11_LIBRARIES} ${GLIBMM_LIBRARIES})
+  TARGET_LINK_LIBRARIES(lightsparkplugin spark ${X11_LIBRARIES} ${GLIBMM_LIBRARIES})
 ENDIF()
 
 IF(WIN32)

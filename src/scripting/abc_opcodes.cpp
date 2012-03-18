@@ -1689,11 +1689,11 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 {
 	LOG(LOG_CALLS, _("in") );
 	multiname name;
-	name.name_type=multiname::NAME_STRING;
-	name.name_s=val1->toString();
+	name.name_type=multiname::NAME_OBJECT;
+	//Acquire the reference
+	name.name_o=val1;
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	bool ret=val2->hasPropertyByMultiname(name, true);
-	val1->decRef();
 	val2->decRef();
 	return ret;
 }

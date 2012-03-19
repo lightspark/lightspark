@@ -1171,12 +1171,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		return;
 	}
 
-	//TODO: support IExternalizable objects
 	Class_base* type=getClass();
 	assert_and_throw(type);
-
-	//Add the object to the map
-	objMap.insert(make_pair(this, objMap.size()));
 
 	//Check if an alias is registered
 	auto aliasIt=getSys()->aliasMap.begin();
@@ -1192,6 +1188,35 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		}
 	}
 	bool serializeTraits = alias.empty()==false;
+
+	if(type->isSubClass(InterfaceClass<IExternalizable>::getClass()))
+	{
+		//Custom serialization necessary
+		if(!serializeTraits)
+			throw Class<TypeError>::getInstanceS("#2004: IExternalizable class must have an alias registered");
+		out->writeU29(0x7);
+		out->writeStringVR(stringMap, alias);
+
+		//Invoke writeExternal
+		multiname writeExternalName;
+		writeExternalName.name_type=multiname::NAME_STRING;
+		writeExternalName.name_s="writeExternal";
+		writeExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		writeExternalName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		writeExternalName.isAttribute = false;
+
+		_NR<ASObject> o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
+		assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
+		IFunction* f=o->as<IFunction>();
+		this->incRef();
+		out->incRef();
+		ASObject* const tmpArg[1] = {out};
+		f->call(this, tmpArg, 1);
+		return;
+	}
+
+	//Add the object to the map
+	objMap.insert(make_pair(this, objMap.size()));
 
 	uint32_t traitsCount=0;
 	const variables_map::const_var_iterator beginIt = Variables.Variables.begin();

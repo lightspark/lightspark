@@ -302,13 +302,9 @@ bool ASObject::isPrimitive() const
 
 variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	const var_iterator ret_begin=Variables.lower_bound(n);
-	//This actually look for the first different name, if we accept also previous levels
-	//Otherwise we are just doing equal_range
-	const var_iterator ret_end=Variables.upper_bound(n);
-
-	var_iterator ret=ret_begin;
-	for(;ret!=ret_end;++ret)
+	pair<var_iterator, var_iterator> var_range=Variables.equal_range(n);
+	var_iterator ret=var_range.first;
+	for(;ret!=var_range.second;++ret)
 	{
 		if(!(ret->second.kind & traitKinds))
 			continue;
@@ -321,7 +317,7 @@ variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& n
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
 
-	var_iterator inserted=Variables.insert(ret_begin,make_pair(n, variable(ns, createKind)) );
+	var_iterator inserted=Variables.insert(var_range.first,make_pair(n, variable(ns, createKind)) );
 	return &inserted->second;
 }
 
@@ -616,15 +612,10 @@ void variables_map::killObjVar(const multiname& mname)
 variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
 	tiny_string name=mname.normalizedName();
-
-	const var_iterator ret_begin=Variables.lower_bound(name);
-	//This actually look for the first different name, if we accept also previous levels
-	//Otherwise we are just doing equal_range
-	const var_iterator ret_end=Variables.upper_bound(name);
-
+	pair<var_iterator, var_iterator> var_range=Variables.equal_range(name);
 	assert(!mname.ns.empty());
-	var_iterator ret=ret_begin;
-	for(;ret!=ret_end;++ret)
+	var_iterator ret=var_range.first;
+	for(;ret!=var_range.second;++ret)
 	{
 		if(!(ret->second.kind & traitKinds))
 			continue;

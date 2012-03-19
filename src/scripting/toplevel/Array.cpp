@@ -1188,7 +1188,7 @@ void Array::outofbounds() const
 
 void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) const
+				std::map<const Class_base*, uint32_t>& traitsMap)
 {
 	assert_and_throw(objMap.find(this)==objMap.end());
 	out->writeByte(array_marker);

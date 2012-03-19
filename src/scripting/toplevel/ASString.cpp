@@ -519,7 +519,7 @@ TRISTATE ASString::isLess(ASObject* r)
 
 void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) const
+				std::map<const Class_base*, uint32_t>& traitsMap)
 {
 	out->writeByte(string_marker);
 	out->writeStringVR(stringMap, data);

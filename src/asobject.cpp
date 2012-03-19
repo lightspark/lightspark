@@ -1158,7 +1158,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 
 void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) const
+				std::map<const Class_base*, uint32_t>& traitsMap)
 {
 	//0x0A -> object marker
 	out->writeByte(object_marker);

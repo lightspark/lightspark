@@ -49,6 +49,14 @@ enum markers_type
 	xml_marker = 0xb
 };
 
+class TraitsRef
+{
+public:
+	Class_base* type;
+	std::vector<tiny_string> traitsNames;
+	TraitsRef(Class_base* t):type(t){}
+};
+
 class Amf3Deserializer
 {
 private:
@@ -56,13 +64,13 @@ private:
 	tiny_string parseStringVR(std::vector<tiny_string>& stringMap) const;
 	_R<ASObject> parseObject(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
-			std::vector<Class_base*>& traitsMap) const;
+			std::vector<TraitsRef>& traitsMap) const;
 	_R<ASObject> parseArray(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
-			std::vector<Class_base*>& traitsMap) const;
+			std::vector<TraitsRef>& traitsMap) const;
 	_R<ASObject> parseValue(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
-			std::vector<Class_base*>& traitsMap) const;
+			std::vector<TraitsRef>& traitsMap) const;
 	_R<ASObject> parseInteger() const;
 	_R<ASObject> parseDouble() const;
 public:

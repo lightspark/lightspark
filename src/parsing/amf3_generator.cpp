@@ -32,7 +32,7 @@ _R<ASObject> Amf3Deserializer::readObject() const
 {
 	vector<tiny_string> stringMap;
 	vector<ASObject*> objMap;
-	vector<Class_base*> traitsMap;
+	vector<TraitsRef> traitsMap;
 	return parseValue(stringMap, objMap, traitsMap);
 }
 
@@ -93,7 +93,7 @@ tiny_string Amf3Deserializer::parseStringVR(std::vector<tiny_string>& stringMap)
 
 _R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
-			std::vector<Class_base*>& traitsMap) const
+			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t arrayRef;
 	if(!input->readU29(arrayRef))
@@ -138,7 +138,7 @@ _R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 
 _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
-			std::vector<Class_base*>& traitsMap) const
+			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t objRef;
 	if(!input->readU29(objRef))
@@ -160,48 +160,49 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		throw UnsupportedException("Custom externalizable objects not supported in parseObject");
 	}
 
-	Class_base* type=NULL;
-	std::vector<tiny_string> traitsNames;
+	TraitsRef traits(NULL);
 	if((objRef&0x02)==0)
 	{
 		//TODO: support traits reference, since we are currently ignoring class_name
 		//and assert if the number of traits is not zero we can safely do nothing
 		uint32_t traitsRef=objRef>>4;
-		throw UnsupportedException("Traits reference not supported in parseObject");
+		if(traitsMap.size() <= traitsRef)
+			throw ParseException("Invalid traits reference in AMF3 data");
+		traits=traitsMap[traitsRef];
 	}
 	else
 	{
 		uint32_t traitsCount=objRef>>4;
 		const tiny_string& className=parseStringVR(stringMap);
-		if(className!="")
+		//Add the type to the traitsMap
+		for(uint32_t i=0;i<traitsCount;i++)
+			traits.traitsNames.emplace_back(parseStringVR(stringMap));
+		if(!className.empty())
 		{
 			const auto it=getSys()->aliasMap.find(className);
 			if(it!=getSys()->aliasMap.end())
-				type=it->second.getPtr();
-		}
-		for(uint32_t i=0;i<traitsCount;i++)
-		{
-			traitsNames.emplace_back(parseStringVR(stringMap));
+				traits.type=it->second.getPtr();
+			traitsMap.push_back(traits);
 		}
 	}
 
-	_R<ASObject> ret=_MR((type)?type->getInstance(true, NULL, 0):
+	_R<ASObject> ret=_MR((traits.type)?traits.type->getInstance(true, NULL, 0):
 		Class<ASObject>::getInstanceS());
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 
-	for(uint32_t i=0;i<traitsNames.size();i++)
+	for(uint32_t i=0;i<traits.traitsNames.size();i++)
 	{
 		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
 		value->incRef();
 
 		multiname name;
 		name.name_type=multiname::NAME_STRING;
-		name.name_s=traitsNames[i];
+		name.name_s=traits.traitsNames[i];
 		name.ns.push_back(nsNameAndKind("",NAMESPACE));
 		name.isAttribute=false;
 
-		ret->setVariableByMultiname(name,value.getPtr(),type);
+		ret->setVariableByMultiname(name,value.getPtr(),traits.type);
 	}
 
 	bool dynamic=objRef&0x08;
@@ -220,7 +221,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 
 _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
-			std::vector<Class_base*>& traitsMap) const
+			std::vector<TraitsRef>& traitsMap) const
 {
 	//Read the first byte as it contains the object marker
 	uint8_t marker;

@@ -1202,7 +1202,6 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		writeExternalName.name_type=multiname::NAME_STRING;
 		writeExternalName.name_s="writeExternal";
 		writeExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		writeExternalName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 		writeExternalName.isAttribute = false;
 
 		_NR<ASObject> o=getVariableByMultiname(writeExternalName,SKIP_IMPL);

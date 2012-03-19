@@ -153,7 +153,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		return _MR(ret);
 	}
 
-	if((objRef&0x04)==0x04)
+	if((objRef&0x07)==0x07)
 	{
 		//Custom serialization
 		const tiny_string& className=parseStringVR(stringMap);
@@ -162,13 +162,14 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		assert_and_throw(it!=getSys()->aliasMap.end());
 
 		Class_base* type=it->second.getPtr();
+		traitsMap.push_back(TraitsRef(type));
+
 		_R<ASObject> ret=_MR(type->getInstance(true, NULL, 0));
 		//Invoke readExternal
 		multiname readExternalName;
 		readExternalName.name_type=multiname::NAME_STRING;
 		readExternalName.name_s="readExternal";
 		readExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		readExternalName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 		readExternalName.isAttribute = false;
 
 		_NR<ASObject> o=ret->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
@@ -184,9 +185,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 	TraitsRef traits(NULL);
 	if((objRef&0x02)==0)
 	{
-		//TODO: support traits reference, since we are currently ignoring class_name
-		//and assert if the number of traits is not zero we can safely do nothing
-		uint32_t traitsRef=objRef>>4;
+		uint32_t traitsRef=objRef>>2;
 		if(traitsMap.size() <= traitsRef)
 			throw ParseException("Invalid traits reference in AMF3 data");
 		traits=traitsMap[traitsRef];
@@ -198,13 +197,11 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		//Add the type to the traitsMap
 		for(uint32_t i=0;i<traitsCount;i++)
 			traits.traitsNames.emplace_back(parseStringVR(stringMap));
-		if(!className.empty())
-		{
-			const auto it=getSys()->aliasMap.find(className);
-			if(it!=getSys()->aliasMap.end())
-				traits.type=it->second.getPtr();
-			traitsMap.push_back(traits);
-		}
+
+		const auto it=getSys()->aliasMap.find(className);
+		if(it!=getSys()->aliasMap.end())
+			traits.type=it->second.getPtr();
+		traitsMap.emplace_back(traits);
 	}
 
 	_R<ASObject> ret=_MR((traits.type)?traits.type->getInstance(true, NULL, 0):

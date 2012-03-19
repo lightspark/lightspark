@@ -41,6 +41,12 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class IExternalizable
+{
+public:
+	static void linkTraits(Class_base* c);
+};
+
 class IDataInput
 {
 public:

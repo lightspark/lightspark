@@ -34,6 +34,7 @@ using namespace lightspark;
 
 SET_NAMESPACE("flash.utils");
 
+REGISTER_CLASS_NAME(IExternalizable);
 REGISTER_CLASS_NAME(Endian);
 REGISTER_CLASS_NAME(IDataInput);
 REGISTER_CLASS_NAME(IDataOutput);
@@ -52,6 +53,12 @@ void Endian::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setVariableByQName("LITTLE_ENDIAN","",Class<ASString>::getInstanceS(littleEndian),DECLARED_TRAIT);
 	c->setVariableByQName("BIG_ENDIAN","",Class<ASString>::getInstanceS(bigEndian),DECLARED_TRAIT);
+}
+
+void IExternalizable::linkTraits(Class_base* c)
+{
+	lookupAndLink(c,"readExternal","flash.utils:IExternalizable");
+	lookupAndLink(c,"writeExternal","flash.utils:IExternalizable");
 }
 
 void IDataInput::linkTraits(Class_base* c)

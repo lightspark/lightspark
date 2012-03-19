@@ -157,7 +157,28 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 	{
 		//Custom serialization
 		const tiny_string& className=parseStringVR(stringMap);
-		throw UnsupportedException("Custom externalizable objects not supported in parseObject");
+		assert_and_throw(!className.empty());
+		const auto it=getSys()->aliasMap.find(className);
+		assert_and_throw(it!=getSys()->aliasMap.end());
+
+		Class_base* type=it->second.getPtr();
+		_R<ASObject> ret=_MR(type->getInstance(true, NULL, 0));
+		//Invoke readExternal
+		multiname readExternalName;
+		readExternalName.name_type=multiname::NAME_STRING;
+		readExternalName.name_s="readExternal";
+		readExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		readExternalName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		readExternalName.isAttribute = false;
+
+		_NR<ASObject> o=ret->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
+		assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
+		IFunction* f=o->as<IFunction>();
+		ret->incRef();
+		input->incRef();
+		ASObject* const tmpArg[1] = {input};
+		f->call(ret.getPtr(), tmpArg, 1);
+		return ret;
 	}
 
 	TraitsRef traits(NULL);

@@ -10,6 +10,7 @@
 	import flash.utils.ByteArray;
 	import flash.utils.Endian;
 	import SerializableClass;
+	import CustomSerializableClass;
 	private function appComplete():void
 	{
 		var ba:ByteArray = new ByteArray();
@@ -159,6 +160,14 @@
 		ba12.position=0;
 		var tmp4:Object = ba12.readObject();
 		Tests.assertEquals(30, ba12.length, "Length of multiple instances of serialized class (traits references test)");
+
+		registerClassAlias("customalias", CustomSerializableClass);
+		var csc:CustomSerializableClass = new CustomSerializableClass();
+		var ba13:ByteArray = new ByteArray();
+		ba13.writeObject(csc);
+		ba13.position=0;
+		var tmp5:Object = ba13.readObject();
+		Tests.assertEquals(true, tmp5.ok, "Custom serialization");
 
 		Tests.report(visual, this.name);
 	}

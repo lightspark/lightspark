@@ -1,17 +1,20 @@
 package
 {
-public class CustomSerializableClass implement IExternalizable
+import flash.utils.IExternalizable;
+import flash.utils.IDataOutput;
+import flash.utils.IDataInput;
+public class CustomSerializableClass implements IExternalizable
 {
-	var ok:Boolean = true;
-	public function writeExternal(output:IDataOutput)
+	public var ok:Boolean = false;
+	public function writeExternal(output:IDataOutput):void
 	{
 		output.writeUTF("customstuff");
 	}
-	public function readExternal(input:IDataInput)
+	public function readExternal(input:IDataInput):void
 	{
 		var s:String=input.readUTF();
-		trace(s);
-		if(s!="customstuff)
-			ok = false;
+		if(s=="customstuff")
+			ok = true;
 	}
+}
 }

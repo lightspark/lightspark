@@ -144,7 +144,7 @@
 		ba10.position=0;
 		var tmp2:Object = ba10.readObject();
 		Tests.assertTrue(tmp2.a==1 && tmp2.b==2 && getQualifiedClassName(tmp2)=="Object", "Class instance serialized without alias");
-		Tests.assertEquals(11, ba10.length, "Length of serialization without alias");
+		Tests.assertEquals(12, ba10.length, "Length of serialization without alias");
 
 		registerClassAlias("classalias", SerializableClass);
 		var ba11:ByteArray = new ByteArray();
@@ -152,14 +152,14 @@
 		ba11.position=0;
 		var tmp3:Object = ba11.readObject();
 		Tests.assertTrue(tmp3.a==1 && tmp3.b==2 && getQualifiedClassName(tmp3)=="SerializableClass", "Class instance serialized with alias");
-		Tests.assertEquals(21, ba11.length, "Length of serialization with alias");
+		Tests.assertEquals(22, ba11.length, "Length of serialization with alias");
 
 		var sc2:SerializableClass = new SerializableClass(3,4);
 		var ba12:ByteArray = new ByteArray();
 		ba12.writeObject([sc, sc2]);
 		ba12.position=0;
 		var tmp4:Object = ba12.readObject();
-		Tests.assertEquals(30, ba12.length, "Length of multiple instances of serialized class (traits references test)");
+		Tests.assertEquals(32, ba12.length, "Length of multiple instances of serialized class (traits references test)");
 
 		registerClassAlias("customalias", CustomSerializableClass);
 		var csc:CustomSerializableClass = new CustomSerializableClass();

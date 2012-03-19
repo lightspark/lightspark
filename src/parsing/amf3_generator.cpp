@@ -192,6 +192,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 	}
 	else
 	{
+		traits.dynamic = objRef&0x08;
 		uint32_t traitsCount=objRef>>4;
 		const tiny_string& className=parseStringVR(stringMap);
 		//Add the type to the traitsMap
@@ -223,9 +224,8 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		ret->setVariableByMultiname(name,value.getPtr(),traits.type);
 	}
 
-	bool dynamic=objRef&0x08;
 	//Read dynamic name, value pairs
-	while(dynamic)
+	while(traits.dynamic)
 	{
 		const tiny_string& varName=parseStringVR(stringMap);
 		if(varName=="")

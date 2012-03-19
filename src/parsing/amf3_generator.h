@@ -54,7 +54,8 @@ class TraitsRef
 public:
 	Class_base* type;
 	std::vector<tiny_string> traitsNames;
-	TraitsRef(Class_base* t):type(t){}
+	bool dynamic;
+	TraitsRef(Class_base* t):type(t),dynamic(false){}
 };
 
 class Amf3Deserializer

@@ -1,6 +1,6 @@
 package
 {
-public class SerializableClass
+public dynamic class SerializableClass
 {
 	public var a:int;
 	public var b:int;

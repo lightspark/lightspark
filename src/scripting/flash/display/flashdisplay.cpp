@@ -396,9 +396,10 @@ void Loader::execute()
 		}
 
 		// Wait until the object is constructed before adding
-		// to the Loader
-		while (!obj->isConstructed() && !threadAborting)
-			/* TODO: use a Cond or Semaphore here */;
+		// to the Loader. Check threadAborting once per
+		// second.
+		while(!obj->waitUntilConstructed(1000) && !threadAborting)
+			/* do nothing */;
 
 		if(threadAborting)
 			return;
@@ -4326,6 +4327,8 @@ void MovieClip::advanceFrame()
 
 void MovieClip::constructionComplete()
 {
+	ASObject::constructionComplete();
+
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
 	 * now */

@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "swftypes.h"
 #include "smartrefs.h"
+#include "threading.h"
 #include <map>
 
 #define ASFUNCTION(name) \
@@ -246,6 +247,8 @@ private:
 	Manager* manager;
 	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
+	Glib::Mutex constructionMutex;
+	Glib::Cond constructionSignal;
 public:
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -256,6 +259,7 @@ public:
 	void setClass(Class_base* c);
 	Class_base* getClass() const { return classdef; }
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
+	bool waitUntilConstructed(unsigned long maxwait_ms=0);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(hasOwnProperty);

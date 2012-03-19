@@ -1118,7 +1118,31 @@ unsigned int ASObject::numVariables() const
 
 void ASObject::constructionComplete()
 {
-	//Nothing to be done now
+	Mutex::Lock lock(constructionMutex);
+	constructionSignal.broadcast();
+}
+
+bool ASObject::waitUntilConstructed(unsigned long maxwait_ms)
+{
+	Mutex::Lock lock(constructionMutex);
+
+	if(isConstructed())
+		return true;
+
+	// No need to loop over wait() because the construction state
+	// will change only once from false to true.
+	if(maxwait_ms==0)
+	{
+		constructionSignal.wait(constructionMutex);
+		return true;
+	}
+	else
+	{
+		Glib::TimeVal waitEnd;
+		waitEnd.assign_current_time();
+		waitEnd.add_milliseconds(maxwait_ms);
+		return constructionSignal.timed_wait(constructionMutex, waitEnd);
+	}
 }
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1321,4 +1345,3 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	else
 		ret->setVar(obj);
 }
-

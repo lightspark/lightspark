@@ -1506,6 +1506,97 @@ void ABCVm::signalEventWaiters()
 	}
 }
 
+void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Responder> responder)
+{
+	uint16_t version;
+	if(!message->readShort(version))
+		return;
+	assert_and_throw(version==0x0);
+	uint16_t numHeaders;
+	if(!message->readShort(numHeaders))
+		return;
+	for(uint32_t i=0;i<numHeaders;i++)
+	{
+		//Read the header name
+		//header names are method that must be
+		//invoked on the client object
+		multiname headerName;
+		headerName.name_type=multiname::NAME_STRING;
+		headerName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		if(!message->readUTF(headerName.name_s))
+			return;
+		//Read the must understand flag
+		uint8_t mustUnderstand;
+		if(!message->readByte(mustUnderstand))
+			return;
+		//Read the header length, not really useful
+		uint32_t headerLength;
+		if(!message->readUnsignedInt(headerLength))
+			return;
+
+		uint8_t marker;
+		if(!message->readByte(marker))
+			return;
+		assert_and_throw(marker==0x11);
+
+		_R<ASObject> obj=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
+
+		_NR<ASObject> callback;
+		if(!client.isNull())
+			callback = client->getVariableByMultiname(headerName);
+
+		//If mustUnderstand is set there must be a suitable callback on the client
+		if(mustUnderstand && (client.isNull() || callback.isNull() || callback->getObjectType()!=T_FUNCTION))
+		{
+			//TODO: use onStatus
+			throw UnsupportedException("Unsupported header with mustUnderstand");
+		}
+
+		if(!callback.isNull())
+		{
+			obj->incRef();
+			ASObject* const callbackArgs[1] {obj.getPtr()};
+			client->incRef();
+			callback->as<IFunction>()->call(client.getPtr(), callbackArgs, 1);
+		}
+	}
+	uint16_t numMessage;
+	if(!message->readShort(numMessage))
+		return;
+	assert_and_throw(numMessage==1);
+
+	tiny_string target;
+	if(!message->readUTF(target))
+		return;
+	//TODO: understand what's the use of response
+	tiny_string response;
+	if(!message->readUTF(response))
+		return;
+
+	assert_and_throw(target=="/1/onResult");
+	uint32_t objLen;
+	if(!message->readUnsignedInt(objLen))
+		return;
+	uint8_t marker;
+	if(!message->readByte(marker))
+		return;
+	assert_and_throw(marker==0x11);
+	_R<ASObject> ret=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
+
+	multiname onResultName;
+	onResultName.name_type=multiname::NAME_STRING;
+	onResultName.name_s="onResult";
+	onResultName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
+	if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
+	{
+		ret->incRef();
+		ASObject* const callbackArgs[1] {ret.getPtr()};
+		responder->incRef();
+		callback->as<IFunction>()->call(responder.getPtr(), callbackArgs, 1);
+	}
+}
+
 const tiny_string& ABCContext::getString(unsigned int s) const
 {
 	return constant_pool.strings[s];

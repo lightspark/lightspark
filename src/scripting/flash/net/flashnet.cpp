@@ -474,7 +474,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
 };
 
-NetConnection::NetConnection():_connected(false)
+NetConnection::NetConnection():_connected(false),downloader(NULL)
 {
 }
 
@@ -483,6 +483,7 @@ void NetConnection::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<EventDispatcher>::getRef());
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(call),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(_getConnected),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
@@ -501,6 +502,7 @@ void NetConnection::buildTraits(ASObject* o)
 void NetConnection::finalize()
 {
 	EventDispatcher::finalize();
+	responder.reset();
 	client.reset();
 }
 
@@ -510,6 +512,108 @@ ASFUNCTIONBODY(NetConnection, _constructor)
 	th->objectEncoding = getSys()->staticNetConnectionDefaultObjectEncoding;
 	return NULL;
 }
+
+ASFUNCTIONBODY(NetConnection,call)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	//Arguments are:
+	//1) A string for the command
+	//2) A Responder instance
+	//And other arguments to be passed to the server
+	assert_and_throw(argslen>=2 &&
+			args[0]->getObjectType()==T_STRING &&
+			args[1]->is<Responder>())
+	ASString* arg0=static_cast<ASString*>(args[0]);
+	args[1]->incRef();
+	th->responder=_MR(args[1]->as<Responder>());
+
+	if(!th->uri.isValid())
+		return NULL;
+
+	//This function is supposed to be passed a array for the rest
+	//of the arguments. Since that is not supported for native methods
+	//just create it here
+	_R<Array> rest=_MR(Class<Array>::getInstanceS());
+	for(uint32_t i=2;i<argslen;i++)
+	{
+		args[i]->incRef();
+		rest->push(args[i]);
+	}
+
+	_R<ByteArray> message=_MR(Class<ByteArray>::getInstanceS());
+	//Version?
+	message->writeByte(0x00);
+	message->writeByte(0x03);
+	//Number of headers: 0
+	message->writeShort(0);
+	//Number of messages: 1
+	message->writeShort(1);
+	//Write the command
+	message->writeUTF(arg0->data);
+	//Write a "response URI". Amfphp uses "/1" as a default, let's do that as well
+	message->writeUTF("/1");
+	uint32_t messageLenPosition=message->getPosition();
+	message->writeUnsignedInt(0x0);
+	//HACK: Write the escape code for AMF3 data, it's the only supported mode
+	message->writeByte(0x11);
+	uint32_t messageLen=message->writeObject(rest.getPtr());
+	message->setPosition(messageLenPosition);
+	message->writeUnsignedInt(messageLen+1);
+
+	uint32_t len=message->getLength();
+	uint8_t* buf=message->getBuffer(len, false);
+	th->messageData.insert(th->messageData.end(), buf, buf+len);
+
+	//To be decreffed in jobFence
+	th->incRef();
+	getSys()->addJob(th);
+	return NULL;
+}
+
+void NetConnection::execute()
+{
+	LOG(LOG_CALLS,_("NetConnection async execution ") << uri);
+	assert(!messageData.empty());
+	downloader=getSys()->downloadManager->downloadWithData(uri, messageData,
+			"Content-Type: application/x-amf", NULL);
+	//Get the whole answer
+	downloader->waitForTermination();
+	if(downloader->hasFailed()) //Check to see if the download failed for some reason
+	{
+		LOG(LOG_ERROR, "NetConnection::execute(): Download of URL failed: " << uri);
+//		getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+		getSys()->downloadManager->destroy(downloader);
+		return;
+	}
+	istream s(downloader);
+	_R<ByteArray> message=_MR(Class<ByteArray>::getInstanceS());
+	uint8_t* buf=message->getBuffer(downloader->getLength(), true);
+	s.read((char*)buf,downloader->getLength());
+	//Download is done, destroy it
+	{
+		//Acquire the lock to ensure consistency in threadAbort
+		SpinlockLocker l(downloaderLock);
+		getSys()->downloadManager->destroy(downloader);
+		downloader = NULL;
+	}
+	_R<ParseRPCMessageEvent> event=_MR(new ParseRPCMessageEvent(message, client, responder));
+	getVm()->addEvent(NullRef,event);
+	responder.reset();
+}
+
+void NetConnection::threadAbort()
+{
+	//We have to stop the downloader
+	SpinlockLocker l(downloaderLock);
+	if(downloader != NULL)
+		downloader->stop();
+}
+
+void NetConnection::jobFence()
+{
+	decRef();
+}
+
 ASFUNCTIONBODY(NetConnection,connect)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);

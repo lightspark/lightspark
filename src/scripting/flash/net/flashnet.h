@@ -135,7 +135,7 @@ public:
 	ASFUNCTION(onResult);
 };
 
-class NetConnection: public EventDispatcher
+class NetConnection: public EventDispatcher, public IThreadJob
 {
 friend class NetStream;
 private:
@@ -145,6 +145,16 @@ private:
 	ObjectEncoding::ENCODING objectEncoding;
 	tiny_string protocol;
 	URLInfo uri;
+	//Data for remoting support (NetConnection::call)
+	// The message data to be sent asynchronously
+	std::vector<uint8_t> messageData;
+	Spinlock downloaderLock;
+	Downloader* downloader;
+	_NR<Responder> responder;
+	//IThreadJob interface
+	void execute();
+	void threadAbort();
+	void jobFence();
 public:
 	NetConnection();
 	void finalize();
@@ -152,6 +162,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(connect);
+	ASFUNCTION(call);
 	ASFUNCTION(_getConnected);
 	ASFUNCTION(_getDefaultObjectEncoding);
 	ASFUNCTION(_setDefaultObjectEncoding);

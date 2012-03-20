@@ -1222,12 +1222,11 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	const variables_map::const_var_iterator endIt = Variables.Variables.end();
 	//Check if the class traits has been already serialized to send it by reference
 	auto it2=traitsMap.find(type);
-	if(serializeTraits && it2!=traitsMap.end())
+	if(it2!=traitsMap.end())
 		out->writeU29((it2->second << 2) | 1);
 	else
 	{
-		if(serializeTraits)
-			traitsMap.insert(make_pair(type, traitsMap.size()));
+		traitsMap.insert(make_pair(type, traitsMap.size()));
 		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)

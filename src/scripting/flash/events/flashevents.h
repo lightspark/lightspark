@@ -33,13 +33,14 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME };
+	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE };
 
 class ABCContext;
 class DictionaryTag;
 class InteractiveObject;
 class PlaceObject2Tag;
 class MovieClip;
+class Responder;
 
 class Event: public ASObject
 {
@@ -399,6 +400,17 @@ class FlushInvalidationQueueEvent: public Event
 public:
 	FlushInvalidationQueueEvent():Event("FlushInvalidationQueueEvent"){};
 	EVENT_TYPE getEventType() const { return FLUSH_INVALIDATION_QUEUE; };
+};
+
+class ParseRPCMessageEvent: public Event
+{
+public:
+	_NR<ByteArray> message;
+	_NR<ASObject> client;
+	_NR<Responder> responder;
+	ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> client, _R<Responder> responder);
+	EVENT_TYPE getEventType() const { return PARSE_RPC_MESSAGE; };
+	void finalize();
 };
 
 class StatusEvent: public Event

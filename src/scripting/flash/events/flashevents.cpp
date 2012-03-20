@@ -803,6 +803,19 @@ BindClassEvent::BindClassEvent(_R<DictionaryTag> t, const tiny_string& c)
 {
 }
 
+ParseRPCMessageEvent::ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> c, _R<Responder> r):
+	Event("ParseRPCMessageEvent"),message(ba),client(c),responder(r)
+{
+}
+
+void ParseRPCMessageEvent::finalize()
+{
+	Event::finalize();
+	message.reset();
+	client.reset();
+	responder.reset();
+}
+
 void StatusEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

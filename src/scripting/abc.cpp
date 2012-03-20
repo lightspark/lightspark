@@ -1116,6 +1116,23 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				m_sys->flushInvalidationQueue();
 				break;
 			}
+			case PARSE_RPC_MESSAGE:
+			{
+				ParseRPCMessageEvent* ev=static_cast<ParseRPCMessageEvent*>(e.second.getPtr());
+				try
+				{
+					parseRPCMessage(ev->message, ev->client, ev->responder);
+				}
+				catch(ASObject* exception)
+				{
+					LOG(LOG_ERROR, "Exception while parsing RPC message");
+				}
+				catch(LightsparkException& e)
+				{
+					LOG(LOG_ERROR, "Internal exception while parsing RPC message");
+				}
+				break;
+			}
 			default:
 				assert(false);
 		}

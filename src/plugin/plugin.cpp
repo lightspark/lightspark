@@ -657,9 +657,11 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
-	setTLSSys(m_sys);
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
-	assert(dl);
+	if(!dl)
+		return NPERR_NO_ERROR;
+
+	setTLSSys(m_sys);
 	//Check if async destructin of this downloader has been requested
 	if(dl->state==NPDownloader::ASYNC_DESTROY)
 	{

@@ -285,8 +285,13 @@ tiny_string UInteger::toString(uint32_t val)
 
 TRISTATE UInteger::isLess(ASObject* o)
 {
-	if(o->getObjectType()==T_INTEGER ||
-	   o->getObjectType()==T_UINTEGER || 
+	if(o->getObjectType()==T_UINTEGER)
+	{
+		uint32_t val1=val;
+		uint32_t val2=o->toUInt();
+		return (val1<val2)?TTRUE:TFALSE;
+	}
+	else if(o->getObjectType()==T_INTEGER ||
 	   o->getObjectType()==T_BOOLEAN)
 	{
 		uint32_t val1=val;
@@ -298,9 +303,9 @@ TRISTATE UInteger::isLess(ASObject* o)
 	}
 	else if(o->getObjectType()==T_NUMBER)
 	{
-		Number* i=static_cast<Number*>(o);
-		if(std::isnan(i->toNumber())) return TUNDEFINED;
-		return (val < i->toUInt())?TTRUE:TFALSE;
+		number_t val2=o->toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (number_t(val) < val2)?TTRUE:TFALSE;
 	}
 	else if(o->getObjectType()==T_NULL)
 	{

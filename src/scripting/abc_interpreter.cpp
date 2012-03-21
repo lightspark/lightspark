@@ -1017,7 +1017,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//convert_u
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_i(convert_u(val)));
+				context->runtime_stack_push(abstract_ui(convert_u(val)));
 				break;
 			}
 			case 0x75:

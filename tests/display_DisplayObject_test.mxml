@@ -25,6 +25,26 @@ private function appComplete():void
 
 	Tests.assertEquals(square.localToGlobal(clickPoint).x, 200, "localToGlobal()");
 	Tests.assertEquals(square.localToGlobal(clickPoint).y, 400, "localToGlobal()");
+
+	var sprite1:Sprite = new Sprite();
+	sprite1.graphics.drawRect(0, 0, 100, 100);
+	var sprite2:Sprite = new Sprite();
+	sprite2.graphics.drawRect(0, 0, 100, 100);
+	sprite2.x = 100;
+	var sprite3:Sprite = new Sprite();
+	sprite3.graphics.drawRect(0, 0, 100, 100);
+	sprite3.x = 100;
+	sprite1.addChild(sprite2);
+	sprite2.addChild(sprite3);
+	var sprite4:Sprite = new Sprite();
+	sprite4.graphics.drawRect(0, 0, 100, 100);
+	sprite4.x=150;
+
+	Tests.assertEquals(0, sprite3.getBounds(sprite3).x, "getBounds against itself");
+	Tests.assertEquals(100, sprite3.getBounds(sprite2).x, "getBounds against parent");
+	Tests.assertEquals(200, sprite3.getBounds(sprite1).x, "getBounds against parent of parent");
+	Tests.assertEquals(50, sprite3.getBounds(sprite4).x, "getBounds against unrelated");
+
 	Tests.report(visual, name);
 }
 ]]>

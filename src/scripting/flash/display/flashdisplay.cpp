@@ -561,7 +561,7 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		number_t txmin,txmax,tymin,tymax;
-		if((*it)->getBounds(txmin,txmax,tymin,tymax))
+		if((*it)->getBounds(txmin,txmax,tymin,tymax,(*it)->getMatrix()))
 		{
 			if(ret==true)
 			{
@@ -609,7 +609,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return ret;
 }
 
-bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const
 {
 	if(!isConstructed())
 		return false;
@@ -617,9 +617,18 @@ bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	bool ret=boundsRect(xmin,xmax,ymin,ymax);
 	if(ret)
 	{
-		//TODO: take rotation into account
-		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
-		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
+		number_t tmpX[4];
+		number_t tmpY[4];
+		m.multiply2D(xmin,ymin,tmpX[0],tmpY[0]);
+		m.multiply2D(xmax,ymin,tmpX[1],tmpY[1]);
+		m.multiply2D(xmax,ymax,tmpX[2],tmpY[2]);
+		m.multiply2D(xmin,ymax,tmpX[3],tmpY[3]);
+		auto retX=minmax_element(tmpX,tmpX+4);
+		auto retY=minmax_element(tmpY,tmpY+4);
+		xmin=*retX.first;
+		xmax=*retX.second;
+		ymin=*retY.first;
+		ymax=*retY.second;
 	}
 	return ret;
 }
@@ -1691,11 +1700,21 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 ASFUNCTIONBODY(DisplayObject,_getBounds)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	assert_and_throw(argslen==1);
+	assert_and_throw(argslen==1 && args[0]->is<DisplayObject>());
+	DisplayObject* target=Class<DisplayObject>::cast(args[0]);
+	//Compute the transformation matrix
+	MATRIX m;
+	DisplayObject* cur=th;
+	while(cur!=NULL && cur!=target)
+	{
+		m = m.multiplyMatrix(cur->getMatrix());
+		cur=cur->parent.getPtr();
+	}
+	assert_and_throw(cur!=NULL);
 
 	Rectangle* ret=Class<Rectangle>::getInstanceS();
 	number_t x1,x2,y1,y2;
-	bool r=th->getBounds(x1,x2,y1,y2);
+	bool r=th->getBounds(x1,x2,y1,y2, m);
 	if(r)
 	{
 		//Bounds are in the form [XY]{min,max}
@@ -1879,7 +1898,7 @@ ASFUNCTIONBODY(DisplayObject,_getVisible)
 number_t DisplayObject::computeHeight()
 {
 	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2);
+	bool ret=getBounds(x1,x2,y1,y2,MATRIX());
 
 	return (ret)?(y2-y1):0;
 }
@@ -1887,7 +1906,7 @@ number_t DisplayObject::computeHeight()
 number_t DisplayObject::computeWidth()
 {
 	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2);
+	bool ret=getBounds(x1,x2,y1,y2,MATRIX());
 
 	return (ret)?(x2-x1):0;
 }

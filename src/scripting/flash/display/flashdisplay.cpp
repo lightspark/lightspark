@@ -3338,21 +3338,28 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 	tiny_string culling;
 	ARG_UNPACK (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
 
-	if (!indices.isNull())
-		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support indices");
 	if (culling != "none")
 		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support culling");
 
-	// Validate parameters
-	if (vertices->size() % 6 != 0)
+	// Validate the parameters
+	if ((indices.isNull() && (vertices->size() % 6 != 0)) || 
+	    (!indices.isNull() && (indices->size() % 3 != 0)))
+	{
 		throw Class<ArgumentError>::getInstanceS("Error #2004");
+	}
 
 	unsigned int numvertices=vertices->size()/2;
-	unsigned int numtriangles=numvertices/3;
+	unsigned int numtriangles;
 	bool has_uvt=false;
 	int uvtElemSize=2;
 	int texturewidth=0;
 	int textureheight=0;
+
+	if (indices.isNull())
+		numtriangles=numvertices/3;
+	else
+		numtriangles=indices->size()/3;
+
 	if (!uvtData.isNull())
 	{
 		if (uvtData->size()==2*numvertices)
@@ -3384,15 +3391,28 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 	// Construct the triangles
 	for (unsigned int i=0; i<numtriangles; i++)
 	{
-		double x1=vertices->at(6*i)->toNumber();
-		double y1=vertices->at(6*i+1)->toNumber();
-		double x2=vertices->at(6*i+2)->toNumber();
-		double y2=vertices->at(6*i+3)->toNumber();
-		double x3=vertices->at(6*i+4)->toNumber();
-		double y3=vertices->at(6*i+5)->toNumber();
-		Vector2 a(x1, y1);
-		Vector2 b(x2, y2);
-		Vector2 c(x3, y3);
+		double x[3], y[3], u[3]={0}, v[3]={0};
+		for (unsigned int j=0; j<3; j++)
+		{
+			unsigned int vertex;
+			if (indices.isNull())
+				vertex=3*i+j;
+			else
+				vertex=indices->at(3*i+j)->toInt();
+
+			x[j]=vertices->at(2*vertex)->toNumber();
+			y[j]=vertices->at(2*vertex+1)->toNumber();
+
+			if (has_uvt)
+			{
+				u[j]=uvtData->at(vertex*uvtElemSize)->toNumber()*texturewidth;
+				v[j]=uvtData->at(vertex*uvtElemSize+1)->toNumber()*textureheight;
+			}
+		}
+		
+		Vector2 a(x[0], y[0]);
+		Vector2 b(x[1], y[1]);
+		Vector2 c(x[2], y[2]);
 
 		th->owner->tokens.emplace_back(GeomToken(MOVE, a));
 		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, b));
@@ -3402,12 +3422,6 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 		if (has_uvt)
 		{
 			double t[6];
-			double u1=uvtData->at(3*i*uvtElemSize)->toNumber()*texturewidth;
-			double v1=uvtData->at(3*i*uvtElemSize+1)->toNumber()*textureheight;
-			double u2=uvtData->at((3*i+1)*uvtElemSize)->toNumber()*texturewidth;
-			double v2=uvtData->at((3*i+1)*uvtElemSize+1)->toNumber()*textureheight;
-			double u3=uvtData->at((3*i+2)*uvtElemSize)->toNumber()*texturewidth;
-			double v3=uvtData->at((3*i+2)*uvtElemSize+1)->toNumber()*textureheight;
 
 			// Use the known (x, y) and (u, v)
 			// correspondences to compute a transformation
@@ -3419,10 +3433,10 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 			// v = t[3] + t[4]*x + t[5]*y
 			//
 			// u and v parts can be solved separately.
-			th->solveVertexMapping(x1, y1, x2, y2, x3, y3,
-					       u1, u2, u3, t);
-			th->solveVertexMapping(x1, y1, x2, y2, x3, y3,
-					       v1, v2, v3, &t[3]);
+			th->solveVertexMapping(x[0], y[0], x[1], y[1], x[2], y[2],
+					       u[0], u[1], u[2], t);
+			th->solveVertexMapping(x[0], y[0], x[1], y[1], x[2], y[2],
+					       v[0], v[1], v[2], &t[3]);
 
 			MATRIX m(t[1], t[5], t[4], t[2], t[0], t[3]);
 			th->owner->tokens.emplace_back(GeomToken(FILL_TRANSFORM_TEXTURE, m));

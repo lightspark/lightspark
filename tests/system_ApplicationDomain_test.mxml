@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_system_ApplicationDomain_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import flash.system.ApplicationDomain;
+	private function appComplete():void
+	{
+		Tests.assertEquals(1024, ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH, "Value of MIN_DOMAIN_MEMORY_LENGTH");
+		Tests.report(visual, this.name);
+	}
+]]>
+</mx:Script>
+<mx:UIComponent id="rect"/>
+<mx:UIComponent id="visual"/>
+
+</mx:Application>
+

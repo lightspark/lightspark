@@ -3696,8 +3696,8 @@ void BitmapData::sinit(Class_base* c)
 
 ASFUNCTIONBODY(BitmapData,_constructor)
 {
-	int width;
-	int height;
+	uint32_t width;
+	uint32_t height;
 	bool transparent;
 	uint32_t fillColor;
 	BitmapData* th = obj->as<BitmapData>();
@@ -3714,7 +3714,7 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 		uint8_t *alpha=reinterpret_cast<uint8_t *>(&c);
 		*alpha=0xFF;
 	}
-	for(int i=0; i<width*height; i++)
+	for(uint32_t i=0; i<width*height; i++)
 		pixels[i]=c;
 	th->fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, true);
 

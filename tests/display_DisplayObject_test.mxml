@@ -45,6 +45,16 @@ private function appComplete():void
 	Tests.assertEquals(200, sprite3.getBounds(sprite1).x, "getBounds against parent of parent");
 	Tests.assertEquals(50, sprite3.getBounds(sprite4).x, "getBounds against unrelated");
 
+	var sprite5:Sprite = new Sprite();
+	sprite5.graphics.drawRect(0, 0, 100, 100);
+	sprite5.rotation = 90;
+	stage.addChild(sprite5);
+
+	Tests.assertEquals(-100, sprite5.getBounds(stage).x, "getBounds with rotation (X)");
+	Tests.assertEquals(0, sprite5.getBounds(stage).y, "getBounds with rotation (Y)");
+	Tests.assertEquals(100, sprite5.getBounds(stage).width, "getBounds with rotation (Width)");
+	Tests.assertEquals(100, sprite5.getBounds(stage).height, "getBounds with rotation (Height)");
+
 	Tests.report(visual, name);
 }
 ]]>

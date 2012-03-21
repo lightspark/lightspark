@@ -109,6 +109,7 @@ void ApplicationDomain::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Static
 	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(_getMinDomainMemoryLength),GETTER_METHOD,false);
 	//Instance
 	c->setDeclaredMethodByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition),NORMAL_METHOD,true);
@@ -130,6 +131,11 @@ void ApplicationDomain::finalize()
 ASFUNCTIONBODY(ApplicationDomain,_constructor)
 {
 	return NULL;
+}
+
+ASFUNCTIONBODY(ApplicationDomain,_getMinDomainMemoryLength)
+{
+	return abstract_ui(1024);
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)

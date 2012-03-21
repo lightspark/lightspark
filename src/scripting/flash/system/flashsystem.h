@@ -53,6 +53,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getCurrentDomain);
+	ASFUNCTION(_getMinDomainMemoryLength);
 	ASFUNCTION(hasDefinition);
 	ASFUNCTION(getDefinition);
 	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>, domainMemory);

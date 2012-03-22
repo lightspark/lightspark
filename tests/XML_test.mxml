@@ -75,6 +75,9 @@
 		Tests.assertEquals(3, xml12.elements().length(), "elements (no parameter)");
 		Tests.assertEquals(2, xml12.elements("a").length(), "elements with name");
 
+		var xml14:XML = new XML("<a>\n\t<child1/>\n\t</a>");
+		Tests.assertEquals(1, xml14.children().length(), "XML handling of white spaces")
+
 		Tests.report(visual, this.name);
 	}
 	]]>

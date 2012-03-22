@@ -100,6 +100,8 @@ void XML::RecoveryDomParser::parse_memory_raw(const unsigned char* contents, siz
 	initxmlDefaultSAXHandler(handler, 0);
 	context_->recovery=1;
 	context_->sax=(xmlSAXHandler*)handler;
+	context_->keepBlanks = 0;
+	handler->ignorableWhitespace = xmlSAX2IgnorableWhitespace;
 
 	//The following is based on the implementation of xmlParseFile(), in xmlSAXParseFileWithData():
 	//and the implementation of xmlParseMemory(), in xmlSaxParseMemoryWithData().

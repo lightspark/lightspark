@@ -113,6 +113,7 @@ void ASString::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toLocaleUpperCase","",Class<IFunction>::getFunction(toUpperCase),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLowerCase","",Class<IFunction>::getFunction(toLowerCase),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toUpperCase","",Class<IFunction>::getFunction(toUpperCase),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("fromCharCode","",Class<IFunction>::getFunction(fromCharCode),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }

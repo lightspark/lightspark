@@ -478,29 +478,34 @@ ASFUNCTIONBODY(XML,toXMLString)
 	return ret;
 }
 
-ASFUNCTIONBODY(XML,children)
+void XML::childrenImpl(std::vector<_R<XML> >& ret)
 {
-	XML* th=Class<XML>::cast(obj);
-	assert_and_throw(argslen==0);
-	assert(th->node);
-	const xmlpp::Node::NodeList& list=th->node->get_children();
+	assert(node);
+	const xmlpp::Node::NodeList& list=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
-	std::vector<_R<XML>> ret;
 
 	_NR<XML> rootXML=NullRef;
-	if(th->root.isNull())
+	if(root.isNull())
 	{
-		th->incRef();
-		rootXML=_MR(th);
+		this->incRef();
+		rootXML=_MR(this);
 	}
 	else
-		rootXML=th->root;
+		rootXML=root;
 
 	for(;it!=list.end();it++)
 	{
 		rootXML->incRef();
 		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
+}
+
+ASFUNCTIONBODY(XML,children)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==0);
+	std::vector<_R<XML>> ret;
+	th->childrenImpl(ret);
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
 }

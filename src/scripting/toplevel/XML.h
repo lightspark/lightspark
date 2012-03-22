@@ -70,6 +70,7 @@ private:
 	bool ignoreWhitespace;
 	uint32_t prettyIndent;
 	bool prettyPrinting;
+	void childrenImpl(std::vector<_R<XML> >& ret);
 public:
 	XML();
 	XML(const std::string& str);

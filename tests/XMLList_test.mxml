@@ -39,6 +39,15 @@
 		var xml4:XML = XML(list2);
 		Tests.assertEquals(xml4.toXMLString(), xml1.toXMLString(), "XML from XMLList with a single element");
 
+		var xml5:XML = XML("<a><child1/></a>");
+		var xml6:XML = XML("<b><child2/></b>");
+		var list3:XMLList = new XMLList();
+		list3[0] = xml5;
+		list3[1] = xml6;
+		Tests.assertEquals(2, list3.length(), "XMLList sanity check");
+		var list4:XMLList = list3.children();
+		Tests.assertEquals("<child1/>\n<child2/>", list4.toXMLString(), "XMLList::children");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

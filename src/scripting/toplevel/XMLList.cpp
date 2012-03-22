@@ -47,6 +47,7 @@ void XMLList::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
@@ -183,6 +184,21 @@ ASFUNCTIONBODY(XMLList,valueOf)
 	return obj;
 }
 
+ASFUNCTIONBODY(XMLList,child)
+{
+	XMLList* th = obj->as<XMLList>();
+	assert_and_throw(argslen==1);
+	const tiny_string& arg0=args[0]->toString();
+	std::vector<_R<XML>> ret;
+	std::vector<_R<XML> >::iterator it=th->nodes.begin();
+        for(; it!=th->nodes.end(); ++it)
+        {
+		(*it)->childrenImpl(ret, arg0);
+	}
+	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
+	return retObj;
+}
+
 ASFUNCTIONBODY(XMLList,children)
 {
 	XMLList* th = obj->as<XMLList>();
@@ -191,7 +207,7 @@ ASFUNCTIONBODY(XMLList,children)
 	std::vector<_R<XML> >::iterator it=th->nodes.begin();
         for(; it!=th->nodes.end(); ++it)
         {
-		(*it)->childrenImpl(ret);
+		(*it)->childrenImpl(ret, "*");
 	}
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;

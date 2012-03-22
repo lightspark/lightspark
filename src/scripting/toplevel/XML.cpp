@@ -69,6 +69,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(attribute),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),NORMAL_METHOD,true);
@@ -480,7 +481,7 @@ ASFUNCTIONBODY(XML,toXMLString)
 	return ret;
 }
 
-void XML::childrenImpl(std::vector<_R<XML> >& ret)
+void XML::childrenImpl(std::vector<_R<XML> >& ret, const tiny_string& name)
 {
 	assert(node);
 	const xmlpp::Node::NodeList& list=node->get_children();
@@ -497,9 +498,22 @@ void XML::childrenImpl(std::vector<_R<XML> >& ret)
 
 	for(;it!=list.end();it++)
 	{
+		if(name!="*" && (*it)->get_name() != name.raw_buf())
+			continue;
 		rootXML->incRef();
 		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
+}
+
+ASFUNCTIONBODY(XML,child)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==1);
+	const tiny_string& arg0=args[0]->toString();
+	std::vector<_R<XML>> ret;
+	th->childrenImpl(ret, arg0);
+	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
+	return retObj;
 }
 
 ASFUNCTIONBODY(XML,children)
@@ -507,7 +521,7 @@ ASFUNCTIONBODY(XML,children)
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==0);
 	std::vector<_R<XML>> ret;
-	th->childrenImpl(ret);
+	th->childrenImpl(ret, "*");
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
 }

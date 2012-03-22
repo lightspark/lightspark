@@ -70,7 +70,11 @@ private:
 	bool ignoreWhitespace;
 	uint32_t prettyIndent;
 	bool prettyPrinting;
-	void childrenImpl(std::vector<_R<XML> >& ret);
+	/*
+	 * @param name The name of the wanted children, "*" for all children
+	 *
+	 */
+	void childrenImpl(std::vector<_R<XML> >& ret, const tiny_string& name);
 public:
 	XML();
 	XML(const std::string& str);
@@ -81,6 +85,7 @@ public:
 	ASFUNCTION(_toString);
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(nodeKind);
+	ASFUNCTION(child);
 	ASFUNCTION(children);
 	ASFUNCTION(attributes);
 	ASFUNCTION(attribute);

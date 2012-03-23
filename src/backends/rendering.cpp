@@ -192,6 +192,11 @@ void RenderThread::handleUpload()
 	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[nextBuffer]);
 	uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+	if(!buf)
+	{
+		handleGLErrors();
+		return;
+	}
 	uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
 
 	u->upload(alignedBuf, w, h);

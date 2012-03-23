@@ -376,7 +376,8 @@ ASFUNCTIONBODY(Vector,setLength)
 	if(len <= th->vec.size())
 	{
 		for(size_t i=len; i< th->vec.size(); ++i)
-			th->vec[i]->decRef();
+			if(th->vec[i])
+				th->vec[i]->decRef();
 	}
 	th->vec.resize(len);
 	return NULL;

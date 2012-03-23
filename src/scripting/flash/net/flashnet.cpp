@@ -233,7 +233,7 @@ void URLRequestMethod::sinit(Class_base* c)
 	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"),DECLARED_TRAIT);
 }
 
-URLLoader::URLLoader():dataFormat("text"),data(),downloader(NULL)
+URLLoader::URLLoader():dataFormat("text"),data(),downloader(NULL),jobRunning(false)
 {
 }
 
@@ -278,9 +278,9 @@ ASFUNCTIONBODY(URLLoader,load)
 
 	th->url=urlRequest->getRequestURL();
 
-	if(th->downloader)
+	if(th->jobRunning)
 	{
-		/* the cbs player first constructs l = URLLoader(url) and then calls l.load(url) again */
+		// TODO: should terminate the old job and start a new one
 		LOG(LOG_NOT_IMPLEMENTED,"URLLoader::load called with download already running - ignored");
 		return NULL;
 	}
@@ -321,6 +321,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	//To be decreffed in jobFence
 	th->incRef();
 	getSys()->addJob(th);
+	th->jobRunning=true;
 	return NULL;
 }
 
@@ -332,6 +333,7 @@ ASFUNCTIONBODY(URLLoader,close)
 
 void URLLoader::jobFence()
 {
+	jobRunning=false;
 	decRef();
 }
 

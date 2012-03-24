@@ -29,24 +29,23 @@ class Date: public ASObject
 {
 CLASSBUILDABLE(Date);
 private:
+	int64_t milliseconds;
 	int extrayears;
-	int year;
-	int month;
-	int day;
-	int day_of_week;
-	int hour;
-	int minute;
-	int second;
 	bool nan;
 	Date();
 	virtual ~Date();
 	GDateTime *datetime;
 	GDateTime *datetimeUTC;
 	ASObject *msSinceEpoch();
+	tiny_string toString_priv(bool utc, const char* formatstr) const;
+	void MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime);
+	void MakeDateFromMilliseconds(int64_t ms);
+	static number_t parse(tiny_string str);
 public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(generator);
 	ASFUNCTION(UTC);
 	ASFUNCTION(getTimezoneOffset);
 	ASFUNCTION(getTime);
@@ -82,10 +81,15 @@ public:
 	ASFUNCTION(setUTCSeconds);
 	ASFUNCTION(setUTCMilliseconds);
 	ASFUNCTION(setTime);
-	ASFUNCTION(timezoneOffset);
 	ASFUNCTION(_toString);
+	ASFUNCTION(_parse);
+	ASFUNCTION(toUTCString);
+	ASFUNCTION(toDateString);
+	ASFUNCTION(toTimeString);
+	ASFUNCTION(toLocaleString);
+	ASFUNCTION(toLocaleDateString);
+	ASFUNCTION(toLocaleTimeString);
 	tiny_string toString();
-	tiny_string toString_priv() const;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

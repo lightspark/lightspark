@@ -3691,6 +3691,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setPixel","",Class<IFunction>::getFunction(setPixel),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setPixel32","",Class<IFunction>::getFunction(setPixel32),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(getRect),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("copyPixels","",Class<IFunction>::getFunction(copyPixels),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
 
@@ -3849,6 +3850,54 @@ ASFUNCTIONBODY(BitmapData,getRect)
 	rect->width=th->width;
 	rect->height=th->height;
 	return rect;
+}
+
+ASFUNCTIONBODY(BitmapData,copyPixels)
+{
+	BitmapData* th=obj->as<BitmapData>();
+	_NR<BitmapData> source;
+	_NR<Rectangle> sourceRect;
+	_NR<Point> destPoint;
+	_NR<BitmapData> alphaBitmapData;
+	_NR<Point> alphaPoint;
+	bool mergeAlpha;
+	ARG_UNPACK(source)(sourceRect)(destPoint)(alphaBitmapData, NullRef)(alphaPoint, NullRef)(mergeAlpha,false);
+
+	if(!alphaBitmapData.isNull())
+		LOG(LOG_NOT_IMPLEMENTED, "BitmapData.copyPixels doesn't support alpha bitmap");
+
+	int srcLeft=imax((int)sourceRect->x, 0);
+	int srcTop=imax((int)sourceRect->y, 0);
+	int srcRight=imin((int)(sourceRect->x+sourceRect->width), source->width);
+	int srcBottom=imin((int)(sourceRect->y+sourceRect->height), source->height);
+
+	int destLeft=(int)destPoint->getX();
+	int destTop=(int)destPoint->getY();
+	if(destLeft<0)
+	{
+		srcLeft+=-destLeft;
+		destLeft=0;
+	}
+	if(destTop<0)
+	{
+		srcTop+=-destTop;
+		destTop=0;
+	}
+
+	int copyWidth=imin(srcRight-srcLeft, th->width-destLeft);
+	int copyHeight=imin(srcBottom-srcTop, th->height-destTop);
+
+	if(copyWidth<=0 || copyHeight<=0)
+		return NULL;
+
+	for(int i=0; i<copyHeight; i++)
+	{
+		memmove(th->data + (destTop+i)*th->stride + 4*destLeft, 
+			source->data + (srcTop+i)*source->stride + 4*srcLeft,
+			4*copyWidth);
+	}
+
+	return NULL;
 }
 
 Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)

@@ -775,6 +775,7 @@ private:
 	uint8_t* getData() { return data; }
 	uint32_t getPixelPriv(uint32_t x, uint32_t y);
 	void setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha);
+	void copyFrom(BitmapData *source);
 public:
 	BitmapData() : stride(0), dataSize(0), data(NULL), width(0), height(0) {}
 	~BitmapData();

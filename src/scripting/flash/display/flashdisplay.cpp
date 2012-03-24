@@ -3732,35 +3732,48 @@ ASFUNCTIONBODY_GETTER(BitmapData, transparent);
 ASFUNCTIONBODY(BitmapData,draw)
 {
 	BitmapData* th = obj->as<BitmapData>();
-	_NR<ASObject> drawableO;
+	_NR<ASObject> drawable;
 	_NR<Matrix> matrix;
 	_NR<ColorTransform> ctransform;
 	_NR<ASString> blendMode;
 	_NR<Rectangle> clipRect;
 	bool smoothing;
-	ARG_UNPACK (drawableO) (matrix, NullRef) (ctransform, NullRef) (blendMode, NullRef)
+	ARG_UNPACK (drawable) (matrix, NullRef) (ctransform, NullRef) (blendMode, NullRef)
 					(clipRect, NullRef) (smoothing, false);
 
-	if(!drawableO->getClass() || !drawableO->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass()) )
+	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass()) )
 		throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
 
 	if(!matrix.isNull() || !ctransform.isNull() || !blendMode.isNull() || !clipRect.isNull() || smoothing)
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters");
 
-	if(drawableO->is<Loader>() && drawableO->as<Loader>()->getContent()->is<Bitmap>())
+	if(drawable->is<Loader>() && drawable->as<Loader>()->getContent()->is<Bitmap>())
 	{
-		Bitmap* bm = drawableO->as<Loader>()->getContent()->as<Bitmap>();
-		delete[] th->data;
-		th->dataSize = bm->bitmapData->dataSize;
-		th->data = new uint8_t[th->dataSize];
-		memcpy(th->data, bm->bitmapData->data, th->dataSize);
-		th->width = bm->bitmapData->width;
-		th->height = bm->bitmapData->height;
+		Bitmap* bm = drawable->as<Loader>()->getContent()->as<Bitmap>();
+		th->copyFrom(bm->bitmapData.getPtr());
 		return NULL;
 	}
+	else if(drawable->is<BitmapData>())
+	{
+		th->copyFrom(drawable->as<BitmapData>());
+		return NULL;
+	}
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
 
-	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawableO->toDebugString());
 	return NULL;
+}
+
+void BitmapData::copyFrom(BitmapData *source)
+{
+	if(data)
+		delete[] data;
+	dataSize = source->dataSize;
+	data = new uint8_t[dataSize];
+	memcpy(data, source->data, dataSize);
+	width = source->width;
+	height = source->height;
+	stride = source->stride;
 }
 
 uint32_t BitmapData::getPixelPriv(uint32_t x, uint32_t y)

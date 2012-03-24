@@ -3688,6 +3688,9 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(draw),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getPixel","",Class<IFunction>::getFunction(getPixel),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getPixel32","",Class<IFunction>::getFunction(getPixel32),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPixel","",Class<IFunction>::getFunction(setPixel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPixel32","",Class<IFunction>::getFunction(setPixel32),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(getRect),GETTER_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
 
@@ -3717,12 +3720,14 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 	for(uint32_t i=0; i<width*height; i++)
 		pixels[i]=c;
 	th->fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, true);
+	th->transparent=transparent;
 
 	return NULL;
 }
 
 ASFUNCTIONBODY_GETTER(BitmapData, width);
 ASFUNCTIONBODY_GETTER(BitmapData, height);
+ASFUNCTIONBODY_GETTER(BitmapData, transparent);
 
 ASFUNCTIONBODY(BitmapData,draw)
 {
@@ -3786,7 +3791,51 @@ ASFUNCTIONBODY(BitmapData,getPixel32)
 	uint32_t y;
 	ARG_UNPACK(x)(y);
 
-	return abstract_ui(th->getPixelPriv(x, y));
+	uint32_t pix=th->getPixelPriv(x, y);
+	return abstract_ui(pix);
+}
+
+void BitmapData::setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha)
+{
+	if ((int)x >= width || (int)y >= height)
+		return;
+
+	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
+	if(setAlpha)
+		*p=color;
+	else
+		*p=(*p & 0xff000000) | (color & 0x00ffffff);
+}
+
+ASFUNCTIONBODY(BitmapData,setPixel)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	uint32_t x;
+	uint32_t y;
+	uint32_t color;
+	ARG_UNPACK(x)(y)(color);
+	th->setPixelPriv(x, y, color, false);
+	return NULL;
+}
+
+ASFUNCTIONBODY(BitmapData,setPixel32)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	uint32_t x;
+	uint32_t y;
+	uint32_t color;
+	ARG_UNPACK(x)(y)(color);
+	th->setPixelPriv(x, y, color, th->transparent);
+	return NULL;
+}
+
+ASFUNCTIONBODY(BitmapData,getRect)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	Rectangle *rect=Class<Rectangle>::getInstanceS();
+	rect->width=th->width;
+	rect->height=th->height;
+	return rect;
 }
 
 Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
@@ -3836,10 +3885,33 @@ BitmapData::~BitmapData()
 
 void Bitmap::sinit(Class_base* c)
 {
-//	c->constructor=Class<IFunction>::getFunction(_constructor);
-	c->setConstructor(NULL);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<DisplayObject>::getRef());
 	REGISTER_GETTER_SETTER(c,bitmapData);
+}
+
+ASFUNCTIONBODY(Bitmap,_constructor)
+{
+	tiny_string _pixelSnapping;
+	bool _smoothing;
+	_NR<BitmapData> _bitmapData;
+	Bitmap* th = obj->as<Bitmap>();
+	ARG_UNPACK(_bitmapData, NullRef)(_pixelSnapping, "auto")(_smoothing, false);
+
+	DisplayObject::_constructor(obj,NULL,0);
+
+	if(_pixelSnapping!="auto")
+		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support pixelSnapping");
+	if(_smoothing)
+		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support smoothing");
+
+	if(!_bitmapData.isNull())
+	{
+		th->bitmapData=_bitmapData;
+		th->updatedData();
+	}
+
+	return NULL;
 }
 
 void Bitmap::onBitmapData(_NR<BitmapData>)

@@ -774,6 +774,7 @@ private:
 	static void sinit(Class_base* c);
 	uint8_t* getData() { return data; }
 	uint32_t getPixelPriv(uint32_t x, uint32_t y);
+	void setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha);
 public:
 	BitmapData() : stride(0), dataSize(0), data(NULL), width(0), height(0) {}
 	~BitmapData();
@@ -784,10 +785,14 @@ public:
 	uint8_t* data;
 	ASPROPERTY_GETTER(int32_t, width);
 	ASPROPERTY_GETTER(int32_t, height);
+	ASPROPERTY_GETTER(bool, transparent);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(draw);
 	ASFUNCTION(getPixel);
 	ASFUNCTION(getPixel32);
+	ASFUNCTION(setPixel);
+	ASFUNCTION(setPixel32);
+	ASFUNCTION(getRect);
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
 	bool fromJPEG(uint8_t* data, int len);
 	bool fromJPEG(std::istream& s);
@@ -810,6 +815,7 @@ public:
 	Bitmap(std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(_R<BitmapData> data);
 	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;

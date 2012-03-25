@@ -434,6 +434,11 @@ ASFUNCTIONBODY(Date,getTime)
 ASFUNCTIONBODY(Date,setFullYear)
 {
 	Date* th=static_cast<Date*>(obj);
+	if (argslen == 0)
+	{
+		th->nan = true;
+		return abstract_d(Number::NaN);
+	}
 	number_t y, m, d;
 	ARG_UNPACK (y) (m, 0) (d, 0);
 
@@ -742,95 +747,147 @@ static const char* months[] = { "Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug"
 number_t Date::parse(tiny_string str)
 {
 
-	char dw[4],mo[4],tzd[4];
-	int c,d=0,h=0,m=0,s=0,tz=-1,y=0,mon=-1;
-	char neg;
+	char mo[4],tzd[20];
+	int c,d=0,h=0,m=0,s=0,y=0,mon=-1;
 	bool bvalid = false;
 	number_t res = Number::NaN;
 
 	tzd[0] = 0;
 
 	// Day Mon DD YYYY HH:MM:SS TZD
-	c = sscanf(str.raw_buf(), "%3s %3s %2d %4d %2d:%2d:%2d %3s%c%4d",dw,mo, &d,&y, &h,&m,&s,tzd,&neg,&tz);
-	bvalid = (c == 10);
+	c = sscanf(str.raw_buf(), "%*3s %3s %2d %4d %2d:%2d:%2d %s",mo, &d,&y, &h,&m,&s,tzd);
+	bvalid = (c == 7);
 	if (!bvalid)
 	{
 		// Day Mon DD HH:MM:SS TZD YYYY
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %3s %2d %2d:%2d:%2d %3s%c%4d %4d",dw,mo, &d, &h,&m,&s,tzd,&neg,&tz,&y);
-		bvalid = (c == 10);
+		c = sscanf(str.raw_buf(), "%*3s %3s %2d %2d:%2d:%2d %s %4d",mo, &d, &h,&m,&s,tzd,&y);
+		bvalid = (c == 7);
 	}
 	if (!bvalid)
 	{
-		// MM/DD/YYYY HH:MM TZD
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		// DD YYYY Mon HH:MM:SS TZD
+		// YYYY DD Mon HH:MM:SS TZD
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%2d/%2d/%4d %2d:%2d %3s%c%4d",&mon, &d, &y,&h,&m,tzd,&neg,&tz);
+		c = sscanf(str.raw_buf(), "%4d %4d %3s %2d:%2d:%2d %s", &d,&y, mo ,&h,&m,&s,tzd);
 		bvalid = (c >= 3);
+		if (bvalid && d > y)
+		{
+			int tmp = d;
+			d = y;
+			y = tmp;
+		}
+	}
+	if (!bvalid)
+	{
+		// YYYY/MM/DD HH:MM TZD
+		// MM/DD/YYYY HH:MM TZD
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
+		tzd[0] = 0;
+		c = sscanf(str.raw_buf(), "%4d/%4d/%4d %2d:%2d %s",&y,&mon, &d,&h,&m,tzd);
+		bvalid = (c >= 3);
+		if (bvalid)
+		{
+			if (y < 70)
+			{
+				int tmp = y;
+				y = d;
+				d = mon;
+				mon = tmp;
+			}
+		}
 	}
 	if (!bvalid)
 	{
 		// MM/DD/YYYY HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		// YYYY/MM/DD HH:MM:SS TZD
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%2d/%2d/%4d %2d:%2d:%2d %3s%c%4d",&mon, &d, &y,&h,&m,&s,tzd,&neg,&tz);
+		c = sscanf(str.raw_buf(), "%4d/%4d/%4d %2d:%2d:%2d %s",&mon, &d, &y,&h,&m,&s,tzd);
 		bvalid = (c >= 3);
+		if (bvalid)
+		{
+			if (y < 70)
+			{
+				int tmp = y;
+				y = mon;
+				mon = d;
+				d = tmp;
+			}
+		}
 	}
 	if (!bvalid)
 	{
 		// HH:MM:SS TZD Day Mon/DD/YYYY 
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%2d:%2d:%2d %3s%c%4d %3s %3s/%2d/%4d",&h,&m,&s,tzd,&neg,&tz,dw,mo,&d,&y);
-		bvalid = (c == 10);
+		c = sscanf(str.raw_buf(), "%2d:%2d:%2d %s %*3s %3s/%2d/%4d",&h,&m,&s,tzd,mo,&d,&y);
+		bvalid = (c == 7);
+	}
+	if (!bvalid)
+	{
+		// Mon YYYY DD HH:MM:SS TZD
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
+		tzd[0] = 0;
+		c = sscanf(str.raw_buf(), "%3s %4d %2d %2d:%2d:%2d %s",mo, &y,&d, &h,&m,&s,tzd);
+		bvalid = (c >= 3);
 	}
 	if (!bvalid)
 	{
 		// Mon DD YYYY HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %2d %4d %2d:%2d:%2d %3s%c%4d",mo, &d, &y,&h,&m,&s,tzd,&neg,&tz);
+		c = sscanf(str.raw_buf(), "%3s %2d %4d %2d:%2d:%2d %s",mo, &d, &y,&h,&m,&s,tzd);
 		bvalid = (c >= 3);
 	}
 	if (!bvalid)
 	{
 		// Day Mon DD HH:MM:SS TZD YYYY
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %3s %2d %2d:%2d:%2d %3s%c%4d %4d",dw,mo,&d,&h,&m,&s,tzd,&neg,&tz,&y);
-		bvalid = (c == 10);
+		c = sscanf(str.raw_buf(), "%*3s %3s %2d %2d:%2d:%2d %s %4d",mo,&d,&h,&m,&s,tzd,&y);
+		bvalid = (c == 7);
 	}
 	if (!bvalid)
 	{
 		// Day DD Mon HH:MM:SS TZD YYYY
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %2d %3s %2d:%2d:%2d %3s%c%4d %4d",dw,&d,mo,&h,&m,&s,tzd,&neg,&tz,&y);
-		bvalid = (c == 10);
-	}
-	if (!bvalid)
-	{
-		// MM/DD/YYYY HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
-		c = sscanf(str.raw_buf(), "%2d/%2d/%4d %2d:%2d:%2d %3s%c%4d",&mon, &d, &y,&h,&m,&s,tzd,&neg,&tz);
-		bvalid = (c >= 3);
+		c = sscanf(str.raw_buf(), "%*3s %2d %3s %2d:%2d:%2d %s %4d",&d,mo,&h,&m,&s,tzd,&y);
+		bvalid = (c == 7);
 	}
 	if (!bvalid)
 	{
 		// YYYY/MM/DD HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d/%2d/%2d %2d:%2d:%2d %3s%c%4d", &y, &mon,&d,&h,&m,&s,tzd,&neg,&tz);
+		c = sscanf(str.raw_buf(), "%4d/%2d/%2d %2d:%2d:%2d %s", &y, &mon,&d,&h,&m,&s,tzd);
 		bvalid = (c >= 3);
 	}
 	if (!bvalid)
 	{
 		// Day Mon DD YYYY
-		d=0;h=0;m=0;s=0;tz=-1;y=0;mon=-1;
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %3s %2d %4d",dw,mo,&d,&y);
-		bvalid = (c == 4);
+		c = sscanf(str.raw_buf(), "%*3s %3s %2d %4d",mo,&d,&y);
+		bvalid = (c == 3);
+	}
+	if (!bvalid)
+	{
+		// DD Mon YYYY
+		// YYYY Mon DD
+		d=0;h=0;m=0;s=0;y=0;mon=-1;
+		tzd[0] = 0;
+		c = sscanf(str.raw_buf(), "%4d %3s %4d",&d,mo,&y);
+		bvalid = (c == 3);
+		if (bvalid && d > y)
+		{
+			int tmp = d;
+			d = y;
+			y = tmp;
+		}
 	}
 	if (bvalid)
 	{
@@ -864,12 +921,25 @@ number_t Date::parse(tiny_string str)
 		}
 		if (bvalid && mon > 0)
 		{
-			Date dt;
-			if (tz == -1)
-				dt.MakeDate(y, mon, d, h, m, s, 0,bIsLocalTime);
-			else
-				dt.MakeDate(y, mon, d, h+(neg == '-' ? 1 : -1)* (tz/100),m+(neg == '-' ? 1 : -1)* (tz%100), s, 0,false);
-			res =dt.nan ? Number::NaN : dt.milliseconds+dt.extrayears/400*MS_IN_400_YEARS;
+			// parse timezone string
+			char* p = tzd;
+			while (*p && isalpha(*p))
+				p++;
+			int tz = 0;
+			if (*p)
+				sscanf(p, "%d",&tz);
+				
+			if (y >=70 && y<100)
+				y += 1900;
+			if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && h >= 0 && h <= 23 && m >= 0 && m <= 59 && s >= 0 && s <= 59)
+			{
+				Date dt;
+				if (tz == 0)
+					dt.MakeDate(y, mon, d, h, m, s, 0,bIsLocalTime);
+				else
+					dt.MakeDate(y, mon, d, h-(tz/100),m-(tz%100), s, 0,false);
+				res =dt.nan ? Number::NaN : dt.milliseconds+dt.extrayears/400*MS_IN_400_YEARS;
+			}
 		}
 	}
 	

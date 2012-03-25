@@ -1700,7 +1700,12 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 ASFUNCTIONBODY(DisplayObject,_getBounds)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	assert_and_throw(argslen==1 && args[0]->is<DisplayObject>());
+	assert_and_throw(argslen==1);
+
+	if(args[0]->is<Undefined>())
+		return Class<Rectangle>::getInstanceS();
+
+	assert_and_throw(args[0]->is<DisplayObject>());
 	DisplayObject* target=Class<DisplayObject>::cast(args[0]);
 	//Compute the transformation matrix
 	MATRIX m;
@@ -1710,7 +1715,8 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 		m = m.multiplyMatrix(cur->getMatrix());
 		cur=cur->parent.getPtr();
 	}
-	assert_and_throw(cur!=NULL);
+	if(!cur)
+		return Class<Rectangle>::getInstanceS();
 
 	Rectangle* ret=Class<Rectangle>::getInstanceS();
 	number_t x1,x2,y1,y2;

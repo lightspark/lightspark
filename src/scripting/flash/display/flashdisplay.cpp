@@ -3590,6 +3590,9 @@ ASFUNCTIONBODY(Graphics,beginBitmapFill)
 	bool repeat, smooth;
 	ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
 
+	if(bitmap.isNull())
+		return NULL;
+
 	th->checkAndSetScaling();
 	FILLSTYLE style(-1);
 	if(repeat && smooth)
@@ -3985,10 +3988,14 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData);
 
 void Bitmap::updatedData()
 {
+	tokens.clear();
+
+	if(bitmapData.isNull())
+		return;
+
 	FILLSTYLE style(-1);
 	style.FillStyleType=CLIPPED_BITMAP;
 	style.bitmap=bitmapData.getPtr();
-	tokens.clear();
 	tokens.emplace_back(GeomToken(SET_FILL, style));
 	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, bitmapData->height)));
@@ -4009,7 +4016,10 @@ _NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t
 
 IntSize Bitmap::getBitmapSize() const
 {
-	return IntSize(bitmapData->width, bitmapData->height);
+	if(bitmapData.isNull())
+		return IntSize(0, 0);
+	else
+		return IntSize(bitmapData->width, bitmapData->height);
 }
 
 bool BitmapData::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)

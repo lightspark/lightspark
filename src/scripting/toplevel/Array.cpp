@@ -553,7 +553,7 @@ ASFUNCTIONBODY(Array,splice)
 	for(int i=0;i<totalSize- (startIndex+deleteCount);i++)
 	{
 		if (tmp[i].type != DATA_OBJECT || tmp[i].data != NULL)
-			th->data[startIndex+i] = tmp[i];
+			th->data[startIndex+i+(argslen > 2 ? argslen-2 : 0)] = tmp[i];
 	}
 	th->resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0));
 	return ret;
@@ -789,7 +789,7 @@ ASFUNCTIONBODY(Array,_push)
 	Array* th=static_cast<Array*>(obj);
 	for(unsigned int i=0;i<argslen;i++)
 	{
-		if (th->size() > UINT32_MAX)
+		if (th->size() >= UINT32_MAX)
 			throw Class<RangeError>::getInstanceS("");
 			
 		th->push(args[i]);

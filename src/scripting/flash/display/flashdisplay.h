@@ -798,8 +798,8 @@ public:
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
 	bool fromJPEG(uint8_t* data, int len);
 	bool fromJPEG(std::istream& s);
-	int getWidth() { return width; }
-	int getHeight() { return height; }
+	int getWidth() const { return width; }
+	int getHeight() const { return height; }
 };
 
 class Bitmap: public DisplayObject, public TokenContainer

@@ -152,6 +152,7 @@ private:
 	Spinlock downloaderLock;
 	Downloader* downloader;
 	_NR<Responder> responder;
+	uint32_t messageCount;
 	//IThreadJob interface
 	void execute();
 	void threadAbort();

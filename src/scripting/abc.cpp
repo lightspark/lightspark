@@ -1582,12 +1582,11 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Resp
 	tiny_string target;
 	if(!message->readUTF(target))
 		return;
-	//TODO: understand what's the use of response
 	tiny_string response;
 	if(!message->readUTF(response))
 		return;
 
-	assert_and_throw(target=="/1/onResult");
+	//TODO: Really use the response to map request/responses and detect errors
 	uint32_t objLen;
 	if(!message->readUnsignedInt(objLen))
 		return;

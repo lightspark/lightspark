@@ -476,7 +476,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
 };
 
-NetConnection::NetConnection():_connected(false),downloader(NULL)
+NetConnection::NetConnection():_connected(false),downloader(NULL),messageCount(0)
 {
 }
 
@@ -529,6 +529,8 @@ ASFUNCTIONBODY(NetConnection,call)
 	args[1]->incRef();
 	th->responder=_MR(args[1]->as<Responder>());
 
+	th->messageCount++;
+
 	if(!th->uri.isValid())
 		return NULL;
 
@@ -552,8 +554,11 @@ ASFUNCTIONBODY(NetConnection,call)
 	message->writeShort(1);
 	//Write the command
 	message->writeUTF(arg0->data);
-	//Write a "response URI". Amfphp uses "/1" as a default, let's do that as well
-	message->writeUTF("/1");
+	//Write a "response URI". Use an increasing index
+	//NOTE: this assumes that the tiny_string is constant and not modified
+	char responseBuf[20];
+	snprintf(responseBuf,20,"/%u", th->messageCount);
+	message->writeUTF(tiny_string(responseBuf));
 	uint32_t messageLenPosition=message->getPosition();
 	message->writeUnsignedInt(0x0);
 	//HACK: Write the escape code for AMF3 data, it's the only supported mode
@@ -564,6 +569,7 @@ ASFUNCTIONBODY(NetConnection,call)
 
 	uint32_t len=message->getLength();
 	uint8_t* buf=message->getBuffer(len, false);
+	th->messageData.clear();
 	th->messageData.insert(th->messageData.end(), buf, buf+len);
 
 	//To be decreffed in jobFence

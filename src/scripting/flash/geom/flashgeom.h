@@ -100,8 +100,8 @@ public:
 	ASFUNCTION(_toString);
 	
 	number_t len() const;
-	number_t getX() { return x; };
-	number_t getY() { return y; };
+	number_t getX() const { return x; };
+	number_t getY() const { return y; };
 };
 
 class ColorTransform: public ASObject

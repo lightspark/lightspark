@@ -911,7 +911,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 				exception_info exc=mi->body->exceptions[i];
 				multiname* name=mi->context->getMultiname(exc.exc_type, &cc);
 				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to);
-				if (pos > exc.from && pos <= exc.to && ABCContext::isinstance(excobj, name))
+				if (pos > exc.from && pos <= exc.to && mi->context->isinstance(excobj, name))
 				{
 					no_handler = false;
 					cc.exec_pos = (uint32_t)exc.target;
@@ -1370,7 +1370,8 @@ const Type* Type::getTypeFromMultiname(const multiname* mn)
 	else
 	{
 		ASObject* target;
-		typeObject=getGlobal()->getVariableAndTargetByMultiname(*mn,target);
+		typeObject=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->
+			getVariableAndTargetByMultiname(*mn,target);
 	}
 
 	if(!typeObject)
@@ -1641,7 +1642,8 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 		for(unsigned int i=0;i<interfaces.size();i++)
 		{
 			ASObject* target;
-			ASObject* interface_obj=getGlobal()->getVariableAndTargetByMultiname(interfaces[i], target);
+			ASObject* interface_obj=this->context->root->applicationDomain->
+				getVariableAndTargetByMultiname(interfaces[i], target);
 			assert_and_throw(interface_obj && interface_obj->getObjectType()==T_CLASS);
 			Class_base* inter=static_cast<Class_base*>(interface_obj);
 
@@ -2292,66 +2294,6 @@ _NR<ASObject> Global::getVariableByMultiname(const multiname& name, GET_VARIABLE
 	context->runScriptInit(scriptId, this);
 	return ASObject::getVariableByMultiname(name, opt);
 }
-
-void GlobalObject::registerGlobalScope(Global* scope)
-{
-	globalScopes.push_back(scope);
-}
-
-ASObject* GlobalObject::getVariableByString(const std::string& str, ASObject*& target)
-{
-	size_t index=str.rfind('.');
-	multiname name;
-	name.name_type=multiname::NAME_STRING;
-	if(index==str.npos) //No dot
-	{
-		name.name_s=str;
-		name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: use ns kind
-	}
-	else
-	{
-		name.name_s=str.substr(index+1);
-		name.ns.push_back(nsNameAndKind(str.substr(0,index),NAMESPACE));
-	}
-	return getVariableAndTargetByMultiname(name, target);
-}
-
-ASObject* GlobalObject::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
-{
-	for(uint32_t i=0;i<globalScopes.size();i++)
-	{
-		_NR<ASObject> o=globalScopes[i]->getVariableByMultiname(name);
-		if(!o.isNull())
-		{
-			target=globalScopes[i];
-			// No incRef, return a reference borrowed from globalScopes
-			return o.getPtr();
-		}
-	}
-	
-	return NULL;
-}
-
-GlobalObject::~GlobalObject()
-{
-	for(auto i = globalScopes.begin(); i != globalScopes.end(); ++i)
-		(*i)->decRef();
-}
-
-/*ASObject* GlobalObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
-{
-	ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride, base);
-	if(ret==NULL)
-	{
-		for(uint32_t i=0;i<globalScopes.size();i++)
-		{
-			ret=globalScopes[i]->getVariableByMultiname(name, skip_impl, enableOverride, base);
-			if(ret)
-				break;
-		}
-	}
-	return ret;
-}*/
 
 ASFUNCTIONBODY(lightspark,eval)
 {

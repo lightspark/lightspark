@@ -373,7 +373,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite),DECLARED_TRAIT);
 	builtin->setVariableByQName("isXMLName","",Class<IFunction>::getFunction(_isXMLName),DECLARED_TRAIT);
 
-	global->registerGlobalScope(builtin);
+	getSys()->applicationDomain->registerGlobalScope(builtin);
 }
 
 /* This function determines how many stack values are needed for
@@ -823,8 +823,6 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curren
 	int_manager=new Manager(15);
 	uint_manager=new Manager(15);
 	number_manager=new Manager(15);
-	global=new GlobalObject;
-	LOG(LOG_INFO,_("Global is ") << global);
 }
 
 void ABCVm::start()
@@ -865,7 +863,6 @@ ABCVm::~ABCVm()
 	delete int_manager;
 	delete uint_manager;
 	delete number_manager;
-	delete global;
 }
 
 int ABCVm::getEventQueueSize()
@@ -1170,11 +1167,11 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	return true;
 }
 
-Class_inherit* ABCVm::findClassInherit(const string& s)
+Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 {
 	LOG(LOG_CALLS,_("Setting class name to ") << s);
 	ASObject* target;
-	ASObject* derived_class=global->getVariableByString(s,target);
+	ASObject* derived_class=root->applicationDomain->getVariableByString(s,target);
 	if(derived_class==NULL)
 	{
 		LOG(LOG_ERROR,_("Class ") << s << _(" not found in global"));
@@ -1196,7 +1193,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s)
 
 void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 {
-	Class_inherit* derived_class_tmp = findClassInherit(s);
+	Class_inherit* derived_class_tmp = findClassInherit(s, base.getPtr());
 	if(!derived_class_tmp)
 		return;
 
@@ -1207,7 +1204,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 
 void ABCVm::buildClassAndBindTag(const string& s, _R<DictionaryTag> t)
 {
-	Class_inherit* derived_class_tmp = findClassInherit(s);
+	Class_inherit* derived_class_tmp = findClassInherit(s, t->loadedFrom);
 	if(!derived_class_tmp)
 		return;
 
@@ -1273,7 +1270,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 		return true;
 	
 	ASObject* target;
-	ASObject* ret=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+	ASObject* ret=root->applicationDomain->getVariableAndTargetByMultiname(*name, target);
 	if(!ret) //Could not retrieve type
 	{
 		LOG(LOG_ERROR,_("Cannot retrieve type"));
@@ -1353,7 +1350,7 @@ void ABCContext::exec(bool lazy)
 		global->initialized=true;
 #endif
 		//Register it as one of the global scopes
-		getGlobal()->registerGlobalScope(global);
+		root->applicationDomain->registerGlobalScope(global);
 	}
 	//The last script entry has to be run
 	LOG(LOG_CALLS, _("Last script (Entry Point)"));
@@ -1373,7 +1370,7 @@ void ABCContext::exec(bool lazy)
 		global->initialized=true;
 #endif
 	//Register it as one of the global scopes
-	getGlobal()->registerGlobalScope(global);
+	root->applicationDomain->registerGlobalScope(global);
 	//the script init of the last script is the main entry point
 	if(!lazy)
 		runScriptInit(i, global);
@@ -1612,6 +1609,11 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Resp
 		responder->incRef();
 		callback->as<IFunction>()->call(responder.getPtr(), callbackArgs, 1);
 	}
+}
+
+_R<ApplicationDomain> ABCVm::getCurrentApplicationDomain(call_context* th)
+{
+	return th->context->root->applicationDomain;
 }
 
 const tiny_string& ABCContext::getString(unsigned int s) const

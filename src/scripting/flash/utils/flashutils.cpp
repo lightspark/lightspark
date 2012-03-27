@@ -1364,7 +1364,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=getGlobal()->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->getVariableAndTargetByMultiname(name,target);
 
 	//TODO: should raise an exception, for now just return undefined	
 	if(o==NULL)

@@ -1070,7 +1070,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=asType(v1, name);
+				ASObject* ret=asType(context->context, v1, name);
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1337,7 +1337,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=abstract_b(isType(v1, name));
+				ASObject* ret=abstract_b(isType(context->context, v1, name));
 				context->runtime_stack_push(ret);
 				break;
 			}

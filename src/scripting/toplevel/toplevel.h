@@ -618,16 +618,6 @@ public:
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
-class GlobalObject
-{
-public:
-	void registerGlobalScope(Global* scope);
-	std::vector<Global*> globalScopes;
-	ASObject* getVariableByString(const std::string& name, ASObject*& target);
-	ASObject* getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
-	~GlobalObject();
-};
-
 ASObject* eval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);

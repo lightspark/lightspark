@@ -126,6 +126,8 @@ void ApplicationDomain::finalize()
 {
 	ASObject::finalize();
 	domainMemory.reset();
+	for(auto i = globalScopes.begin(); i != globalScopes.end(); ++i)
+		(*i)->decRef();
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_constructor)
@@ -158,7 +160,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=getGlobal()->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->getVariableAndTargetByMultiname(name,target);
 	if(o==NULL)
 		return abstract_b(false);
 	else
@@ -184,7 +186,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=getGlobal()->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->getVariableAndTargetByMultiname(name,target);
 	assert_and_throw(o);
 
 	//TODO: specs says that also namespaces and function may be returned
@@ -193,6 +195,44 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	o->incRef();
 	return o;
+}
+
+void ApplicationDomain::registerGlobalScope(Global* scope)
+{
+	globalScopes.push_back(scope);
+}
+
+ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObject*& target)
+{
+	size_t index=str.rfind('.');
+	multiname name;
+	name.name_type=multiname::NAME_STRING;
+	if(index==str.npos) //No dot
+	{
+		name.name_s=str;
+		name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: use ns kind
+	}
+	else
+	{
+		name.name_s=str.substr(index+1);
+		name.ns.push_back(nsNameAndKind(str.substr(0,index),NAMESPACE));
+	}
+	return getVariableAndTargetByMultiname(name, target);
+}
+
+ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
+{
+	for(uint32_t i=0;i<globalScopes.size();i++)
+	{
+		_NR<ASObject> o=globalScopes[i]->getVariableByMultiname(name);
+		if(!o.isNull())
+		{
+			target=globalScopes[i];
+			// No incRef, return a reference borrowed from globalScopes
+			return o.getPtr();
+		}
+	}
+	return NULL;
 }
 
 void SecurityDomain::sinit(Class_base* c)

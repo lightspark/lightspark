@@ -1311,7 +1311,7 @@ void ABCVm::getLex(call_context* th, int n)
 	if(o==NULL)
 	{
 		ASObject* target;
-		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+		o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
 		if(o==NULL)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found, pushing Undefined");
@@ -1365,7 +1365,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 	{
 		//try to find a global object where this is defined
 		ASObject* target;
-		ASObject* o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+		ASObject* o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
 		if(o)
 			ret=target;
 		else //else push the current global object
@@ -1399,7 +1399,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 	if(!found)
 	{
 		ASObject* target;
-		ASObject* o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+		ASObject* o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
 		if(o)
 			ret=target;
 		else
@@ -1486,9 +1486,9 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	LOG(LOG_CALLS,_("End of callSuper ") << *name);
 }
 
-bool ABCVm::isType(ASObject* obj, multiname* name)
+bool ABCVm::isType(ABCContext* context, ASObject* obj, multiname* name)
 {
-	bool ret = ABCContext::isinstance(obj, name);
+	bool ret = context->isinstance(obj, name);
 	obj->decRef();
 	return ret;
 }
@@ -1573,9 +1573,9 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	return real_ret;
 }
 
-ASObject* ABCVm::asType(ASObject* obj, multiname* name)
+ASObject* ABCVm::asType(ABCContext* context, ASObject* obj, multiname* name)
 {
-	bool ret = ABCContext::isinstance(obj, name);	
+	bool ret = context->isinstance(obj, name);
 	LOG(LOG_CALLS,_("asType"));
 	
 	if(ret)
@@ -1978,7 +1978,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 		//Make the class valid if needed
 		ASObject* target;
-		ASObject* obj=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+		ASObject* obj=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
 
 		//Named only interfaces seems to be allowed 
 		if(obj==NULL)

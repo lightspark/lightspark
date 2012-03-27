@@ -221,7 +221,7 @@ public:
 	ABCContext(RootMovieClip* r, std::istream& in) DLL_PUBLIC;
 	void exec(bool lazy);
 
-	static bool isinstance(ASObject* obj, multiname* name);
+	bool isinstance(ASObject* obj, multiname* name);
 
 #ifdef PROFILING_SUPPORT
 	void dumpProfilingData(std::ostream& f) const;
@@ -253,7 +253,7 @@ private:
 		ASObject* arg1=th->runtime_stack_pop();
 		uint32_t addr=arg1->toUInt();
 		arg1->decRef();
-		_R<ApplicationDomain> appDomain = getSys()->applicationDomain;
+		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		T ret=appDomain->readFromDomainMemory<T>(addr);
 		th->runtime_stack_push(abstract_ui(ret));
 	}
@@ -264,7 +264,7 @@ private:
 		ASObject* arg2=th->runtime_stack_pop();
 		uint32_t addr=arg1->toUInt();
 		uint32_t val=arg2->toUInt();
-		_R<ApplicationDomain> appDomain = getSys()->applicationDomain;
+		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
@@ -347,10 +347,10 @@ private:
 	static void pop();
 	static ASObject* typeOf(ASObject*);
 	static void _throw(call_context* th);
-	static ASObject* asType(ASObject* obj, multiname* name);
+	static ASObject* asType(ABCContext* context, ASObject* obj, multiname* name);
 	static ASObject* asTypelate(ASObject* type, ASObject* obj);
 	static bool isTypelate(ASObject* type, ASObject* obj);
-	static bool isType(ASObject* obj, multiname* name);
+	static bool isType(ABCContext* context, ASObject* obj, multiname* name);
 	static void swap();
 	static ASObject* add(ASObject*,ASObject*);
 	static int32_t add_i(ASObject*,ASObject*);
@@ -437,13 +437,12 @@ private:
 	void signalEventWaiters();
 	void buildClassAndBindTag(const std::string& s, _R<DictionaryTag> t);
 	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
-	Class_inherit* findClassInherit(const std::string& s);
+	Class_inherit* findClassInherit(const std::string& s, RootMovieClip* r);
 
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
 public:
 	call_context* currentCallContext;
-	GlobalObject* global;
 	Manager* int_manager;
 	Manager* uint_manager;
 	Manager* number_manager;
@@ -473,6 +472,7 @@ public:
 	static Global* getGlobalScope(call_context* th);
 	static bool strictEqualImpl(ASObject*, ASObject*);
 	static void publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event);
+	static _R<ApplicationDomain> getCurrentApplicationDomain(call_context* th);
 
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */
@@ -522,11 +522,6 @@ public:
 };
 
 ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-
-inline GlobalObject* getGlobal()
-{
-	return getSys()->currentVm->global;
-}
 
 inline ABCVm* getVm()
 {

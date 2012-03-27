@@ -70,8 +70,8 @@ ParseThread* lightspark::getParseThread()
 	return pt;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):parsingIsFailed(false),frameRate(0),
-	toBind(false),finishedLoading(false),applicationDomain(NullRef)
+RootMovieClip::RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, bool isSys):parsingIsFailed(false),frameRate(0),
+	toBind(false),finishedLoading(false),applicationDomain(appDomain)
 {
 	if(li)
 		li->incRef();
@@ -131,9 +131,9 @@ void RootMovieClip::setOnStage(bool staged)
 	MovieClip::setOnStage(staged);
 }
 
-RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li)
+RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain)
 {
-	RootMovieClip* ret=new RootMovieClip(li);
+	RootMovieClip* ret=new RootMovieClip(li, appDomain);
 	ret->setClass(Class<MovieClip>::getClass());
 	return ret;
 }
@@ -163,7 +163,7 @@ void SystemState::staticDeinit()
 }
 
 SystemState::SystemState(uint32_t fileSize):
-	RootMovieClip(NULL,true),terminated(0),renderRate(0),error(false),shutdown(false),
+	RootMovieClip(NULL,NullRef,true),terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -1146,8 +1146,19 @@ void ParseThread::execute()
 
 void ParseThread::parseSWF(UI8 ver)
 {
-	RootMovieClip* root=getRootMovie();
-	assert_and_throw(root);
+	objectSpinlock.lock();
+	RootMovieClip* root=NULL;
+	if(parsedObject.isNull())
+	{
+		LoaderInfo *li=loader?loader->getContentLoaderInfo().getPtr():NULL;
+		root=RootMovieClip::getInstance(li, applicationDomain);
+		parsedObject=_MNR(root);
+		if(!url.empty())
+			root->setOrigin(url, "");
+	}
+	else
+		root=getRootMovie();
+	objectSpinlock.unlock();
 
 	try
 	{
@@ -1307,34 +1318,20 @@ void ParseThread::setRootMovie(RootMovieClip *root)
 	applicationDomain=root->applicationDomain;
 }
 
-RootMovieClip *ParseThread::getRootMovie()
+RootMovieClip* ParseThread::getRootMovie() const
 {
-	objectSpinlock.lock();
-	RootMovieClip *root=dynamic_cast<RootMovieClip*>(parsedObject.getPtr());
-	objectSpinlock.unlock();
-	if(root)
-		return root;
-	else if(fileType==FT_SWF || fileType==FT_COMPRESSED_SWF)
-	{
-		LoaderInfo *li=loader?loader->getContentLoaderInfo().getPtr():NULL;
-		root=RootMovieClip::getInstance(li);
-		objectSpinlock.lock();
-		parsedObject=_MNR(root);
-		objectSpinlock.unlock();
-		if(!url.empty())
-			root->setOrigin(url, "");
-		return root;
-	}
-	else
-		return NULL;
+	return dynamic_cast<RootMovieClip*>(parsedObject.getPtr());
 }
 
 void ParseThread::threadAbort()
 {
-	//Tell the our RootMovieClip that the parsing is ending
-	RootMovieClip *root=getRootMovie();
-	if(root)
-		root->parsingFailed();
+	SpinlockLocker l(objectSpinlock);
+	if(parsedObject.isNull())
+		return;
+	RootMovieClip* root=getRootMovie();
+	if(root==NULL)
+		return;
+	root->parsingFailed();
 }
 
 bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

@@ -78,7 +78,7 @@ private:
 	void setOnStage(bool staged);
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
-	RootMovieClip(LoaderInfo* li, bool isSys=false);
+	RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, bool isSys=false);
 	void finalize();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;
@@ -103,7 +103,7 @@ public:
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
 	void setVariableByString(const std::string& s, ASObject* o);*/
-	static RootMovieClip* getInstance(LoaderInfo* li);
+	static RootMovieClip* getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain);
 	/*
 	 * The application domain for the main code
 	 */
@@ -363,7 +363,7 @@ public:
 	~ParseThread();
 	FILE_TYPE getFileType() const { return fileType; }
         _NR<DisplayObject> getParsedObject();
-	RootMovieClip *getRootMovie();
+	RootMovieClip* getRootMovie() const;
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
 	void execute();
 	_NR<ApplicationDomain> applicationDomain;

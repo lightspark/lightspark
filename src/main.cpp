@@ -254,11 +254,11 @@ int main(int argc, char* argv[])
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	cout.exceptions( ios::failbit | ios::badbit);
 	cerr.exceptions( ios::failbit | ios::badbit);
-	ParseThread* pt = new ParseThread(f);
 	SystemState::staticInit();
 	EngineData::startGTKMain();
 	//NOTE: see SystemState declaration
-	SystemState* sys =new SystemState(pt, fileSize);
+	SystemState* sys = new SystemState(fileSize);
+	ParseThread* pt = new ParseThread(f, sys);
 	setTLSSys(sys);
 	sys->setDownloadedPath(fileName);
 

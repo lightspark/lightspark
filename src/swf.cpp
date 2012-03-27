@@ -162,7 +162,7 @@ void SystemState::staticDeinit()
 #endif
 }
 
-SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
+SystemState::SystemState(uint32_t fileSize):
 	RootMovieClip(NULL,true),terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
@@ -176,9 +176,6 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	setTLSSys(this);
 
 	mainThread = Thread::self();
-	//Get starting time
-	if(parseThread) //ParseThread may be null in tightspark
-		parseThread->setRootMovie(this);
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 	pluginManager = new PluginManager;
@@ -193,6 +190,7 @@ SystemState::SystemState(ParseThread* parseThread, uint32_t fileSize):
 	mainApplicationDomain=_MR(Class<ApplicationDomain>::getInstanceS());
 	this->incRef();
 	stage->_addChildAt(_MR(this),0);
+	//Get starting time
 	startTime=compat_msectiming();
 	
 	setClass(Class<MovieClip>::getClass());

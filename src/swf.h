@@ -29,7 +29,6 @@
 #include "swftypes.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/net/flashnet.h"
-#include "scripting/flash/system/flashsystem.h"
 #include "timer.h"
 
 #include "platforms/engineutils.h"
@@ -51,6 +50,7 @@ class PluginManager;
 class RenderThread;
 class SecurityManager;
 class Tag;
+class ApplicationDomain;
 
 //RootMovieClip is used as a ThreadJob for timed rendering purpose
 class RootMovieClip: public MovieClip
@@ -79,6 +79,7 @@ private:
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
+	void finalize();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;
 	uint32_t fileLength;
@@ -103,6 +104,10 @@ public:
 	void setVariableByMultiname(multiname& name, ASObject* o);
 	void setVariableByString(const std::string& s, ASObject* o);*/
 	static RootMovieClip* getInstance(LoaderInfo* li);
+	/*
+	 * The application domain for the main code
+	 */
+	_NR<ApplicationDomain> applicationDomain;
 	//DisplayObject interface
 	_NR<RootMovieClip> getRoot();
 };
@@ -333,11 +338,6 @@ public:
 	void resizeCompleted() const;
 
 	/*
-	 * The application domain for the main code
-	 */
-	_NR<ApplicationDomain> mainApplicationDomain;
-
-	/*
 	 * Support for class aliases in AMF3 serialization
 	 */
 	std::map<tiny_string, _R<Class_base> > aliasMap;
@@ -366,6 +366,7 @@ public:
 	RootMovieClip *getRootMovie();
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
 	void execute();
+	_NR<ApplicationDomain> applicationDomain;
 private:
 	std::istream& f;
 	std::streambuf* zlibFilter;

@@ -71,7 +71,7 @@ ParseThread* lightspark::getParseThread()
 }
 
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):parsingIsFailed(false),frameRate(0),
-	toBind(false), finishedLoading(false)
+	toBind(false),finishedLoading(false),applicationDomain(NullRef)
 {
 	if(li)
 		li->incRef();
@@ -169,13 +169,14 @@ SystemState::SystemState(uint32_t fileSize):
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(false),downloadManager(NULL),
-	extScriptObject(NULL),scaleMode(SHOW_ALL),mainApplicationDomain(NullRef)
+	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName = NULL;
 
 	setTLSSys(this);
 
 	mainThread = Thread::self();
+	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS());
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 	pluginManager = new PluginManager;
@@ -187,7 +188,6 @@ SystemState::SystemState(uint32_t fileSize):
 	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
 	stage=Class<Stage>::getInstanceS();
-	mainApplicationDomain=_MR(Class<ApplicationDomain>::getInstanceS());
 	this->incRef();
 	stage->_addChildAt(_MR(this),0);
 	//Get starting time
@@ -376,7 +376,6 @@ void SystemState::finalize()
 	RootMovieClip::finalize();
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
-	mainApplicationDomain.reset();
 	parameters.reset();
 	frameListeners.clear();
 }
@@ -1597,4 +1596,10 @@ void RootMovieClip::constructionComplete()
 	MovieClip::constructionComplete();
 	if(this==getSys())
 		loaderInfo->sendInit();
+}
+
+void RootMovieClip::finalize()
+{
+	MovieClip::finalize();
+	applicationDomain.reset();
 }

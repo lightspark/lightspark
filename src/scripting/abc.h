@@ -47,6 +47,7 @@
 #include "swf.h"
 #include "abcutils.h"
 #include "abctypes.h"
+#include "scripting/flash/system/flashsystem.h"
 
 namespace lightspark
 {
@@ -250,7 +251,7 @@ private:
 		ASObject* arg1=th->runtime_stack_pop();
 		uint32_t addr=arg1->toUInt();
 		arg1->decRef();
-		_R<ApplicationDomain> appDomain = getSys()->mainApplicationDomain;
+		_R<ApplicationDomain> appDomain = getSys()->applicationDomain;
 		T ret=appDomain->readFromDomainMemory<T>(addr);
 		th->runtime_stack_push(abstract_ui(ret));
 	}
@@ -261,7 +262,7 @@ private:
 		ASObject* arg2=th->runtime_stack_pop();
 		uint32_t addr=arg1->toUInt();
 		uint32_t val=arg2->toUInt();
-		_R<ApplicationDomain> appDomain = getSys()->mainApplicationDomain;
+		_R<ApplicationDomain> appDomain = getSys()->applicationDomain;
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);

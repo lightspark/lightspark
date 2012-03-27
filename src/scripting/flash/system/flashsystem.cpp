@@ -140,7 +140,7 @@ ASFUNCTIONBODY(ApplicationDomain,_getMinDomainMemoryLength)
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 {
-	ApplicationDomain* ret=getSys()->mainApplicationDomain.getPtr();
+	ApplicationDomain* ret=getSys()->applicationDomain.getPtr();
 	ret->incRef();
 	return ret;
 }

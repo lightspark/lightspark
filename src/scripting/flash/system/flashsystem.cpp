@@ -149,7 +149,8 @@ ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 
 ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 {
-	assert(args && argslen==1);
+	ApplicationDomain* th = obj->as<ApplicationDomain>();
+	assert(argslen==1);
 	const tiny_string& tmp=args[0]->toString();
 
 	multiname name;
@@ -160,7 +161,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
 	if(o==NULL)
 		return abstract_b(false);
 	else
@@ -175,7 +176,8 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 {
-	assert(args && argslen==1);
+	ApplicationDomain* th = obj->as<ApplicationDomain>();
+	assert(argslen==1);
 	const tiny_string& tmp=args[0]->toString();
 
 	multiname name;
@@ -186,7 +188,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
 	assert_and_throw(o);
 
 	//TODO: specs says that also namespaces and function may be returned

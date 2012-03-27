@@ -768,7 +768,7 @@ public:
 class BitmapData: public ASObject, public IBitmapDrawable
 {
 CLASSBUILDABLE(BitmapData);
-private:
+protected:
 	size_t stride;
 	size_t dataSize;
 	static void sinit(Class_base* c);

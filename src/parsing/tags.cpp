@@ -1439,9 +1439,29 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 	int alphaSize=Header.getLength()-dataSize-6;
 	if(alphaSize>0) //If less that 0 the consistency check on tag size will stop later
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"DefineBitsJPEG3Tag does not use alpha yet");
-		alphaData=new(nothrow) uint8_t[alphaSize];
-		in.read((char*)alphaData,alphaSize);
+		//Create a zlib filter
+		string alphaData;
+		alphaData.resize(alphaSize);
+		in.read(&alphaData[0], alphaSize);
+		istringstream alphaStream(alphaData);
+		zlib_filter zf(alphaStream.rdbuf());
+		istream zfstream(&zf);
+		zfstream.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+
+		//Catch the exception if the stream ends
+		try
+		{
+			//Set alpha
+			for(int32_t i=0;i<height;i++)
+			{
+				for(int32_t j=0;j<width;j++)
+					data[i*stride + j*4 + 3]=zfstream.get();
+			}
+		}
+		catch(std::exception& e)
+		{
+			LOG(LOG_ERROR, "Exception while parsing Alpha data in DefineBitsJPEG3");
+		}
 	}
 }
 

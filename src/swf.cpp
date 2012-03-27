@@ -1033,8 +1033,8 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	}
 }
 
-ParseThread::ParseThread(istream& in, Loader *_loader, tiny_string srcurl)
-  : version(0),
+ParseThread::ParseThread(istream& in, _NR<ApplicationDomain> appDomain, Loader *_loader, tiny_string srcurl)
+  : version(0),applicationDomain(appDomain),
     f(in),zlibFilter(NULL),backend(NULL),loader(_loader),
     parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
@@ -1042,7 +1042,7 @@ ParseThread::ParseThread(istream& in, Loader *_loader, tiny_string srcurl)
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
-  : version(0),
+  : version(0),applicationDomain(NullRef), //The application domain is loaded from the root
     f(in),zlibFilter(NULL),backend(NULL),loader(NULL),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
@@ -1304,6 +1304,7 @@ void ParseThread::setRootMovie(RootMovieClip *root)
 	assert(root);
 	root->incRef();
 	parsedObject=_MNR(root);
+	applicationDomain=root->applicationDomain;
 }
 
 RootMovieClip *ParseThread::getRootMovie()

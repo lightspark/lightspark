@@ -378,7 +378,8 @@ void Loader::execute()
 		}
 		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
-		ParseThread local_pt(s,this,url.getParsedURL());
+		//TODO: support LoaderContext
+		ParseThread local_pt(s,getSys()->applicationDomain,this,url.getParsedURL());
 		local_pt.execute();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
@@ -418,7 +419,8 @@ void Loader::execute()
 			bytes_buf bb(bytes->bytes,bytes->len);
 			istream s(&bb);
 
-			ParseThread local_pt(s,this);
+			//TODO: Support loader context
+			ParseThread local_pt(s,getSys()->applicationDomain,this,"");
 			local_pt.execute();
 		}
 		// PNG files

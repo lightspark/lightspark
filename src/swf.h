@@ -356,7 +356,7 @@ public:
 	// Parse an object from stream. The type is detected
 	// automatically. After parsing the new object is available
 	// from getParsedObject().
-	ParseThread(std::istream& in, Loader *loader=NULL, tiny_string url="") DLL_PUBLIC;
+	ParseThread(std::istream& in, _NR<ApplicationDomain> appDomain, Loader *loader, tiny_string url) DLL_PUBLIC;
 	// Parse a clip from stream into root. The stream must be an
 	// SWF file.
 	ParseThread(std::istream& in, RootMovieClip *root) DLL_PUBLIC;

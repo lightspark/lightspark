@@ -363,7 +363,6 @@ public:
 	~ParseThread();
 	FILE_TYPE getFileType() const { return fileType; }
         _NR<DisplayObject> getParsedObject();
-	void setRootMovie(RootMovieClip *root);
 	RootMovieClip *getRootMovie();
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
 	void execute();
@@ -382,6 +381,7 @@ private:
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);
 	void parseSWF(UI8 ver);
 	void parseBitmap();
+	void setRootMovie(RootMovieClip *root);
 };
 
 /* Returns the thread-specific SystemState */

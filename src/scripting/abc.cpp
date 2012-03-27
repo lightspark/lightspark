@@ -76,7 +76,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	dest+=h.getLength();
 	LOG(LOG_CALLS,_("DoABCTag"));
 
-	context=new ABCContext(in);
+	context=new ABCContext(getParseThread()->getRootMovie(), in);
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -100,7 +100,7 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	in >> Flags >> Name;
 	LOG(LOG_CALLS,_("DoABCDefineTag Name: ") << Name);
 
-	context=new ABCContext(in);
+	context=new ABCContext(getParseThread()->getRootMovie(), in);
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -708,7 +708,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 	return ret;
 }
 
-ABCContext::ABCContext(istream& in)
+ABCContext::ABCContext(RootMovieClip* r, istream& in):root(r)
 {
 	in >> minor >> major;
 	LOG(LOG_CALLS,_("ABCVm version ") << major << '.' << minor);

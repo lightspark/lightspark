@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
 		ifstream f(fileNames[i]);
 		if(f.is_open())
 		{
-			ABCContext* context=new ABCContext(f);
+			ABCContext* context=new ABCContext(sys, f);
 			contexts.push_back(context);
 			f.close();
 			vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context,false)));

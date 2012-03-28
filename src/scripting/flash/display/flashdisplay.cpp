@@ -218,7 +218,8 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 
 ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 {
-	return Class<ApplicationDomain>::getInstanceS();
+	getSys()->applicationDomain->incRef();
+	return getSys()->applicationDomain.getPtr();
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getWidth)

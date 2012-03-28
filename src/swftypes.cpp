@@ -134,7 +134,7 @@ const tiny_string tiny_string::operator+(const tiny_string& r) const
 
 tiny_string& tiny_string::replace(uint32_t pos1, uint32_t n1, const tiny_string& o )
 {
-	assert(pos1 < numChars());
+	assert(pos1 <= numChars());
 	uint32_t bytestart = g_utf8_offset_to_pointer(buf,pos1)-buf;
 	if(pos1 + n1 > numChars())
 		n1 = numChars()-pos1;

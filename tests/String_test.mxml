@@ -173,6 +173,10 @@
 		var array:Array = ["primary", "secondary", "tertiary"]; 
 		Tests.assertEquals(String(array),"primary,secondary,tertiary","String(Array)",true);
 
+		var str1:String = "";
+		var str2:String = str1.replace("", "ins");
+		Tests.assertEquals("ins", str2, "replace on empty string");
+
 		Tests.report(visual, this.name);
 	}
 	private function func1():String

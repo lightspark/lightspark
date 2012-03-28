@@ -13,7 +13,8 @@
 		var xml1:XML=new XML("<test1></test1>");
 		var xml2:XML=new XML("<test2></test2>");
 		var xml3:XML=new XML("<test3></test3>");
-		xml1.appendChild(xml2);
+		var xml18:XML = xml1.appendChild(xml2);
+		Tests.assertEquals(xml1, xml18, "Object returned by appendChild");
 		xml2.appendChild(xml3);
 		Tests.assertEquals(xml1.toXMLString(),"<test1>\n  <test2>\n    <test3/>\n  </test2>\n</test1>","Appending XML nodes");
 		var xml4:XML=new XML("");
@@ -64,19 +65,35 @@
 
 		try
 		{
-			var xml11:XML = new XML("<?xml version='1.0' encoding='UTF-8'?><root><node/><?xml version='1.0' encoding='UTF-8'?><node/></root>");
+			var xml19:XML = new XML("<?xml version='1.0' encoding='UTF-8'?><root><node/><?xml version='1.0' encoding='UTF-8'?><node/></root>");
 		}
 		catch(e:Object)
 		{
 			Tests.assertDontReach("throws when XML declaration is not at the beginning");
 		}
 
-		var xml12:XML = new XML("<root><!-- comment --><?instruction ?>text<a><c/></a><a/><b/></root>");
-		Tests.assertEquals(3, xml12.elements().length(), "elements (no parameter)");
-		Tests.assertEquals(2, xml12.elements("a").length(), "elements with name");
+		var xml13:XML = new XML("<root><!-- comment --><?instruction ?>text<a><c/></a><a/><b/></root>");
+		Tests.assertEquals(3, xml13.elements().length(), "elements (no parameter)");
+		Tests.assertEquals(2, xml13.elements("a").length(), "elements with name");
 
 		var xml14:XML = new XML("<a>\n\t<child1/>\n\t</a>");
 		Tests.assertEquals(1, xml14.children().length(), "XML handling of white spaces")
+
+		var xml15:XML = new XML("<test/>");
+		xml15.appendChild(5);
+		var xmllist4:XMLList = xml15.children();
+		Tests.assertEquals(1, xmllist4.length(), "appendChild with integer argument");
+		Tests.assertEquals("text", xmllist4[0].nodeKind(), "nodeKind with XML from integer");
+
+		var xml16:XML = new XML("<a>text1<b/>text2</a>");
+		var xmllist3:XMLList = xml16.children();
+		Tests.assertEquals(3, xmllist3.length(), "Number of children with text");
+		Tests.assertEquals("text1", xmllist3[0].toXMLString(), "First child");
+		Tests.assertEquals("<b/>", xmllist3[1].toXMLString(), "Second child");
+		Tests.assertEquals("text2", xmllist3[2].toXMLString(), "Third child");
+
+		var xml17:XML = new XML(5);
+		Tests.assertEquals("text", xml17.nodeKind(), "XML from integer");
 
 		Tests.report(visual, this.name);
 	}

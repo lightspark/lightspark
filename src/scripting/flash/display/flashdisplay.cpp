@@ -3704,6 +3704,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setPixel32","",Class<IFunction>::getFunction(setPixel32),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(getRect),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("copyPixels","",Class<IFunction>::getFunction(copyPixels),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("fillRect","",Class<IFunction>::getFunction(fillRect),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
 
@@ -3862,6 +3863,45 @@ ASFUNCTIONBODY(BitmapData,getRect)
 	rect->width=th->width;
 	rect->height=th->height;
 	return rect;
+}
+
+ASFUNCTIONBODY(BitmapData,fillRect)
+{
+	BitmapData* th=obj->as<BitmapData>();
+	_NR<Rectangle> rect;
+	uint32_t color;
+	ARG_UNPACK(rect)(color);
+
+	//Clip rectangle
+	int32_t rectX=rect->x;
+	int32_t rectY=rect->y;
+	int32_t rectW=rect->width;
+	int32_t rectH=rect->height;
+	if(rectX<0)
+	{
+		rectW+=rectX;
+		rectX = 0;
+	}
+	if(rectY<0)
+	{
+		rectH+=rectY;
+		rectY = 0;
+	}
+	if(rectW > th->width)
+		rectW = th->width;
+	if(rectH > th->height)
+		rectH = th->height;
+
+	for(int32_t i=0;i<rectH;i++)
+	{
+		for(int32_t j=0;j<rectW;j++)
+		{
+			uint32_t offset=(i+rectY)*th->stride + (j+rectX)*4;
+			uint32_t* ptr=(uint32_t*)(th->data+offset);
+			*ptr=color;
+		}
+	}
+	return NULL;
 }
 
 ASFUNCTIONBODY(BitmapData,copyPixels)

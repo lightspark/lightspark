@@ -250,11 +250,6 @@ ASFUNCTIONBODY(XML,_constructor)
 	{
 		th->buildFromString("");
 	}
-	else if(args[0]->getObjectType()==T_STRING)
-	{
-		ASString* str=Class<ASString>::cast(args[0]);
-		th->buildFromString(std::string(str->data));
-	}
 	else if(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()))
 	{
 		//Official documentation says that generic Objects are not supported.
@@ -263,6 +258,15 @@ ASFUNCTIONBODY(XML,_constructor)
 		uint32_t len=ba->getLength();
 		const uint8_t* str=ba->getBuffer(len, false);
 		th->buildFromString(std::string((const char*)str,len));
+	}
+	else if(args[0]->getObjectType()==T_STRING ||
+		args[0]->getObjectType()==T_NUMBER ||
+		args[0]->getObjectType()==T_INTEGER ||
+		args[0]->getObjectType()==T_BOOLEAN)
+	{
+		//By specs, XML constructor will only convert to string Numbers or Booleans
+		//ints are not explicitly mentioned, but they seem to work
+		th->buildFromString(args[0]->toString());
 	}
 	else
 		throw Class<TypeError>::getInstanceS("Unsupported type in XML conversion");

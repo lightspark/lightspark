@@ -334,30 +334,28 @@ ASFUNCTIONBODY(XML,appendChild)
 {
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==1);
-	XML* arg=NULL;
+	_NR<XML> arg;
 	if(args[0]->getClass()==Class<XML>::getClass())
-		arg=Class<XML>::cast(args[0]);
-	else if(args[0]->getClass()==Class<XMLList>::getClass())
-		arg=Class<XMLList>::cast(args[0])->convertToXML().getPtr();
-
-	if(arg==NULL)
-		throw RunTimeException("Invalid argument for XML::appendChild");
-	//Change the root of the appended XML node
-	_NR<XML> rootXML=NullRef;
-	if(th->root.isNull())
 	{
-		th->incRef();
-		rootXML=_MR(th);
+		args[0]->incRef();
+		arg=_MR(Class<XML>::cast(args[0]));
+	}
+	else if(args[0]->getClass()==Class<XMLList>::getClass())
+	{
+		args[0]->incRef();
+		arg=_MR(Class<XMLList>::cast(args[0])->convertToXML().getPtr());
 	}
 	else
-		rootXML=th->root;
+	{
+		//The appendChild specs says that any other type is converted to string
+		//NOTE: this is explicitly different from XML constructor, that will only convert to
+		//string Numbers and Booleans
+		arg=_MR(Class<XML>::getInstanceS(args[0]->toString()));
+	}
 
-	arg->root=rootXML;
-	xmlUnlinkNode(arg->node->cobj());
-	xmlNodePtr ret=xmlAddChild(th->node->cobj(),arg->node->cobj());
-	assert_and_throw(ret);
-	arg->incRef();
-	return arg;
+	th->node->import_node(arg->node, true);
+	th->incRef();
+	return th;
 }
 
 /* returns the named attribute in an XMLList */

@@ -134,24 +134,26 @@ void XML::RecoveryDomParser::parse_memory_raw(const unsigned char* contents, siz
 
 void XML::buildFromString(const string& str)
 {
-	if(str.empty())
+	string buf = parserQuirks(str);
+	try
 	{
-		xmlpp::Element *el=parser.get_document()->create_root_node("");
-		node=el->add_child_text();
-		// TODO: node's parent (root) should be inaccessible from AS code
+		parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
 	}
-	else
+	catch(const exception& e)
 	{
-		string buf = parserQuirks(str);
-		try
-		{
-			parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
-		}
-		catch(const exception& e)
-		{
-			throw RunTimeException("Error while parsing XML");
-		}
-		node=parser.get_document()->get_root_node();
+	}
+	xmlpp::Document* doc=parser.get_document();
+	if(doc)
+		node=doc->get_root_node();
+
+	if(node==NULL)
+	{
+		LOG(LOG_ERROR, "XML parsing failed, creating text node");
+		//If everything fails, create a fake document and add a single text string child
+		buf="<a></a>";
+		parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
+		node=parser.get_document()->get_root_node()->add_child_text(str);
+		// TODO: node's parent (root) should be inaccessible from AS code
 	}
 }
 

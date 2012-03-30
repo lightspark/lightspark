@@ -1475,6 +1475,8 @@ void ABCVm::Run(ABCVm* th)
 		{
 			//handle event without lock
 			th->handleEvent(e);
+			//Flush the invalidation queue
+			th->m_sys->flushInvalidationQueue();
 			profile->accountTime(chronometer.checkpoint());
 		}
 		catch(LightsparkException& e)

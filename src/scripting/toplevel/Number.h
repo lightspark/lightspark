@@ -40,6 +40,7 @@ public:
 	double val;
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
+	ASFUNCTION(toFixed);
 	tiny_string toString();
 	static tiny_string toString(number_t val);
 	static bool isInteger(number_t val)

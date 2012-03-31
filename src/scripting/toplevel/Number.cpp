@@ -273,6 +273,8 @@ void Number::sinit(Class_base* c)
 	c->setVariableByQName("MIN_VALUE","",pmin,DECLARED_TRAIT);
 	c->setVariableByQName("NaN","",pnan,DECLARED_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed",AS3,Class<IFunction>::getFunction(Number::toFixed),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(Number,_constructor)
@@ -283,6 +285,45 @@ ASFUNCTIONBODY(Number,_constructor)
 	else
 		th->val=0;
 	return NULL;
+}
+
+ASFUNCTIONBODY(Number,toFixed)
+{
+	printf("tofixed:%d",argslen);
+	number_t val = obj->toNumber();
+	int fractiondigits=0;
+	ARG_UNPACK (fractiondigits,0);
+	if (fractiondigits < 0 || fractiondigits > 20)
+		throw Class<RangeError>::getInstanceS("Error #1002");
+	if(std::isnan(val))
+		return  Class<ASString>::getInstanceS("NaN");
+	number_t fractpart, intpart;
+	if (fractiondigits == 0)
+		val+=0.5;
+	fractpart = modf (val , &intpart);
+
+	tiny_string res("");
+	number_t v = fabs(intpart);
+	char buf[40];
+	snprintf(buf,40,"%ld",int64_t(v));
+	res += buf;
+	
+	if (fractiondigits > 0)
+	{
+		int x = fractiondigits;
+		res += ".";
+		while (fractiondigits) 
+		{
+			fractpart*=10.0;
+			fractiondigits--;
+		}
+		fractpart+=0.5;
+		snprintf(buf,40,"%0*ld",x,int64_t(fractpart));
+		res += buf;
+	}
+	if ( val < 0)
+		res = tiny_string::fromChar('-')+res;
+	return Class<ASString>::getInstanceS(res);
 }
 
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -180,7 +180,7 @@ ASFUNCTIONBODY(Number,_toString)
 	if(Class<Number>::getClass()->prototype == obj)
 		return Class<ASString>::getInstanceS("0");
 	if(!obj->is<Number>())
-		throw Class<TypeError>::getInstanceS("Number.toString is not generic");
+		throw Class<TypeError>::getInstanceS("Error #1004: Number.toString is not generic");
 	Number* th=static_cast<Number*>(obj);
 	int radix=10;
 	ARG_UNPACK (radix,10);
@@ -254,6 +254,7 @@ tiny_string Number::toString(number_t val)
 
 void Number::sinit(Class_base* c)
 {
+	c->isFinal = true;
 	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Must create and link the number the hard way

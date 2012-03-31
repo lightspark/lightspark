@@ -5,6 +5,7 @@ Version FUTURE:
 	* Fix YouTube support for several videos
 	* Support for custom serialization/deserialization
 	* Support RPC (NetConnection::call)
+	* Support for PNG images
 
 Version 0.5.5:
 	

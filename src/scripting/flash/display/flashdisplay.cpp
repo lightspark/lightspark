@@ -3975,8 +3975,10 @@ Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
 			bitmapData->fromJPEG(*s);
 			break;
 		case FT_PNG:
+			bitmapData->fromPNG(*s);
+			break;
 		case FT_GIF:
-			LOG(LOG_NOT_IMPLEMENTED, _("PNGs and GIFs are not yet supported"));
+			LOG(LOG_NOT_IMPLEMENTED, _("GIFs are not yet supported"));
 			break;
 		default:
 			LOG(LOG_ERROR,_("Unsupported image type"));
@@ -4108,6 +4110,15 @@ bool BitmapData::fromJPEG(std::istream &s)
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
 	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &w, &h);
+	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
+}
+bool BitmapData::fromPNG(std::istream &s)
+{
+	assert(!data);
+	/* flash uses signed values for width and height */
+	uint32_t w,h;
+	uint8_t *rgb=ImageDecoder::decodePNG(s, &w, &h);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
 }

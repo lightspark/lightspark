@@ -216,4 +216,114 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uin
 	return outData;
 }
 
+/* PNG handling */
+
+struct png_image_buffer
+{
+	uint8_t* data;
+	int curpos;
+};
+
+static void ReadPNGDataFromStream(png_structp pngPtr, png_bytep data, png_size_t length)
+{
+	png_voidp a = png_get_io_ptr(pngPtr);
+	((std::istream*)a)->read((char*)data, length);
+}
+static void ReadPNGDataFromBuffer(png_structp pngPtr, png_bytep data, png_size_t length)
+{
+	png_image_buffer* a = (png_image_buffer*)png_get_io_ptr(pngPtr);
+
+	memcpy(data,(void*)(a->data+a->curpos),length);
+	a->curpos+= length;
+}
+uint8_t* ImageDecoder::decodePNG(uint8_t* inData, int len, uint32_t* width, uint32_t* height)
+{
+	png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!pngPtr)
+	{
+		LOG(LOG_ERROR,"Couldn't initialize png read struct");
+		return NULL;
+	}
+	png_set_read_fn(pngPtr,(void*)inData, ReadPNGDataFromBuffer);
+
+	return decodePNGImpl(pngPtr, width, height);
+}
+
+uint8_t* ImageDecoder::decodePNG(std::istream& str, uint32_t* width, uint32_t* height)
+{
+	png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!pngPtr)
+	{
+		LOG(LOG_ERROR,"Couldn't initialize png read struct");
+		return NULL;
+	}
+	png_set_read_fn(pngPtr,(void*)&str, ReadPNGDataFromStream);
+
+	return decodePNGImpl(pngPtr, width, height);
+}
+
+uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32_t* height)
+{
+	png_bytep* rowPtrs = NULL;
+	uint8_t* outData = NULL;
+	png_infop infoPtr = png_create_info_struct(pngPtr);
+	if (!infoPtr)
+	{
+		LOG(LOG_ERROR,"Couldn't initialize png info struct");
+		png_destroy_read_struct(&pngPtr, (png_infopp)0, (png_infopp)0);
+		return NULL;
+	}
+
+	if (setjmp(png_jmpbuf(pngPtr)))
+	{
+		png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
+		if (rowPtrs != NULL) delete [] rowPtrs;
+		if (outData != NULL) delete outData;
+
+		LOG(LOG_ERROR,"error during reading of the png file");
+
+		return NULL;
+	}
+
+	png_read_info(pngPtr, infoPtr);
+
+	*width =  png_get_image_width(pngPtr, infoPtr);
+	*height = png_get_image_height(pngPtr, infoPtr);
+
+	//bits per CHANNEL! note: not per pixel!
+	png_uint_32 bitdepth = png_get_bit_depth(pngPtr, infoPtr);
+	//Number of channels
+	png_uint_32 channels = png_get_channels(pngPtr, infoPtr);
+	//Color type. (RGB, RGBA, Luminance, luminance alpha... palette... etc)
+	png_uint_32 color_type = png_get_color_type(pngPtr, infoPtr);
+
+	switch (color_type)
+	{
+		case PNG_COLOR_TYPE_PALETTE:
+			png_set_palette_to_rgb(pngPtr);
+			channels = 3;
+			break;
+		case PNG_COLOR_TYPE_GRAY:
+			if (bitdepth < 8)
+				png_set_gray_to_rgb(pngPtr);
+			bitdepth = 8;
+			break;
+	}
+
+	rowPtrs = new png_bytep[(*height)];
+
+	outData = new uint8_t[(*width) * (*height) * bitdepth * channels / 8];
+	const unsigned int stride = (*width) * bitdepth * channels / 8;
+
+	for (size_t i = 0; i < (*height); i++)
+	{
+		rowPtrs[i] = (png_bytep)outData + i* stride;
+	}
+
+	png_read_image(pngPtr, rowPtrs);
+	delete[] (png_bytep)rowPtrs;
+	png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
+
+	return outData;
+}
 }

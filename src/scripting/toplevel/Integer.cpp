@@ -164,6 +164,7 @@ tiny_string Integer::toString(int32_t val)
 
 void Integer::sinit(Class_base* c)
 {
+	c->isFinal = true;
 	c->setSuper(Class<ASObject>::getRef());
 	c->setVariableByQName("MAX_VALUE","",new Integer(numeric_limits<int32_t>::max()),DECLARED_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new Integer(numeric_limits<int32_t>::min()),DECLARED_TRAIT);

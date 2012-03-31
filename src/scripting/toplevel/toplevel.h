@@ -386,6 +386,14 @@ public:
 		ret->setClass(c);
 		return ret;
 	}
+	static Function* getFunction(Function::as_function v, int len)
+	{
+		Class<IFunction>* c=Class<IFunction>::getClass();
+		Function* ret=new Function(v);
+		ret->setClass(c);
+		ret->length = len;
+		return ret;
+	}
 	static SyntheticFunction* getSyntheticFunction(method_info* m)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();

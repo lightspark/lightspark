@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/toplevel/Array.h"
+#include "scripting/toplevel/Number.h"
 #include "compat.h"
 #include "asobject.h"
 #include "swf.h"

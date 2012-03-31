@@ -465,16 +465,16 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 
 	if(!obj && cls)
 	{
-		if(cls->isFinal)
-		{
-			tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
-			throw Class<ReferenceError>::getInstanceS(err);
-		}
 		//Look for borrowed traits before
 		//It's valid to override only a getter, so keep
 		//looking for a settable even if a super class sets
 		//has_getter to true.
 		obj=cls->findSettable(name,true,&has_getter);
+		if(obj && cls->isFinal)
+		{
+			tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
+			throw Class<ReferenceError>::getInstanceS(err);
+		}
 	}
 
 	if(!obj && cls)
@@ -487,6 +487,11 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 			
 			if(tmp)
 			{
+				if(cls->isFinal)
+				{
+					tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
+					throw Class<ReferenceError>::getInstanceS(err);
+				}
 				if (tmp->kind != DYNAMIC_TRAIT) // dynamic prototype properties can be overridden 
 					obj = tmp;
 				break;
@@ -494,7 +499,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 			proto = proto->getprop_prototype();
 		}
 	}
-
+	
 	if(!obj)
 	{
 		if(has_getter)

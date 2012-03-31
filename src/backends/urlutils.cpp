@@ -21,6 +21,7 @@
 #include "swf.h"
 #include "urlutils.h"
 #include "compat.h"
+#include "scripting/toplevel/Integer.h"
 #include <string>
 #include <algorithm>
 #include <ctype.h>

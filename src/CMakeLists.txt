@@ -77,8 +77,10 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Boolean.cpp
   scripting/toplevel/Date.cpp
   scripting/toplevel/Error.cpp
+  scripting/toplevel/Integer.cpp
   scripting/toplevel/Math.cpp
   scripting/toplevel/Number.cpp
+  scripting/toplevel/UInteger.cpp
   scripting/toplevel/Vector.cpp
   scripting/toplevel/XML.cpp
   scripting/toplevel/XMLList.cpp

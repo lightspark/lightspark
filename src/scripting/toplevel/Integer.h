@@ -1,0 +1,60 @@
+/**************************************************************************
+    Lightspark, a free flash player implementation
+
+    Copyright (C) 2009-2011  Alessandro Pignotti (a.pignotti@sssup.it)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**************************************************************************/
+
+#ifndef INTEGER_H
+#define INTEGER_H
+#include "compat.h"
+#include "asobject.h"
+
+namespace lightspark
+{
+
+class Integer : public ASObject
+{
+friend class Number;
+friend class Array;
+friend class ABCVm;
+friend class ABCContext;
+friend ASObject* abstract_i(int32_t i);
+CLASSBUILDABLE(Integer);
+private:
+	Integer(int32_t v=0):val(v){type=T_INTEGER;}
+public:
+	int32_t val;
+	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_toString);
+	tiny_string toString();
+	static tiny_string toString(int32_t val);
+	int32_t toInt()
+	{
+		return val;
+	}
+	TRISTATE isLess(ASObject* r);
+	bool isEqual(ASObject* o);
+	ASFUNCTION(generator);
+	std::string toDebugString() { return toString()+"i"; }
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap);
+};
+
+}
+#endif // INTEGER_H

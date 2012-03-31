@@ -474,64 +474,6 @@ public:
 	bool isEqual(ASObject* o);
 };
 
-class Integer : public ASObject
-{
-friend class Number;
-friend class Array;
-friend class ABCVm;
-friend class ABCContext;
-friend ASObject* abstract_i(int32_t i);
-CLASSBUILDABLE(Integer);
-private:
-	Integer(int32_t v=0):val(v){type=T_INTEGER;}
-public:
-	int32_t val;
-	static void buildTraits(ASObject* o){};
-	static void sinit(Class_base* c);
-	ASFUNCTION(_toString);
-	tiny_string toString();
-	static tiny_string toString(int32_t val);
-	int32_t toInt()
-	{
-		return val;
-	}
-	TRISTATE isLess(ASObject* r);
-	bool isEqual(ASObject* o);
-	ASFUNCTION(generator);
-	std::string toDebugString() { return toString()+"i"; }
-	//Serialization interface
-	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
-};
-
-class UInteger: public ASObject
-{
-friend ASObject* abstract_ui(uint32_t i);
-CLASSBUILDABLE(UInteger);
-private:
-public:
-	uint32_t val;
-	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
-
-	static void sinit(Class_base* c);
-	tiny_string toString();
-	static tiny_string toString(uint32_t val);
-	int32_t toInt()
-	{
-		return val;
-	}
-	uint32_t toUInt()
-	{
-		return val;
-	}
-	TRISTATE isLess(ASObject* r);
-	bool isEqual(ASObject* o);
-	ASFUNCTION(generator);
-	ASFUNCTION(_toString);
-	std::string toDebugString() { return toString()+"ui"; }
-	//CHECK: should this have a special serialization?
-};
 
 class RegExp: public ASObject
 {

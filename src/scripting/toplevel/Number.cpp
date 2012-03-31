@@ -290,7 +290,6 @@ ASFUNCTIONBODY(Number,_constructor)
 
 ASFUNCTIONBODY(Number,toFixed)
 {
-	printf("tofixed:%d",argslen);
 	number_t val = obj->toNumber();
 	int fractiondigits=0;
 	ARG_UNPACK (fractiondigits,0);

@@ -470,7 +470,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 		//looking for a settable even if a super class sets
 		//has_getter to true.
 		obj=cls->findSettable(name,true,&has_getter);
-		if(obj && cls->isFinal)
+		if(obj && cls->isFinal && !obj->setter)
 		{
 			tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
 			throw Class<ReferenceError>::getInstanceS(err);
@@ -487,7 +487,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 			
 			if(tmp)
 			{
-				if(cls->isFinal)
+				if(cls->isFinal && !tmp->setter)
 				{
 					tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
 					throw Class<ReferenceError>::getInstanceS(err);

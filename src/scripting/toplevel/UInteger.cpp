@@ -89,3 +89,45 @@ ASFUNCTIONBODY(UInteger,generator)
 {
 	return abstract_ui(args[0]->toUInt());
 }
+
+void UInteger::sinit(Class_base* c)
+{
+	c->setSuper(Class<ASObject>::getRef());
+	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),DECLARED_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),DECLARED_TRAIT);
+	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+}
+
+ASFUNCTIONBODY(UInteger,_toString)
+{
+	UInteger* th=static_cast<UInteger*>(obj);
+	uint32_t radix;
+	ARG_UNPACK (radix,10);
+
+	char buf[20];
+	assert_and_throw(radix==10 || radix==16);
+	if(radix==10)
+		snprintf(buf,20,"%u",th->val);
+	else if(radix==16)
+		snprintf(buf,20,"%x",th->val);
+
+	return Class<ASString>::getInstanceS(buf);
+}
+
+bool UInteger::isEqual(ASObject* o)
+{
+	switch(o->getObjectType())
+	{
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_STRING:
+		case T_BOOLEAN:
+			return val==o->toUInt();
+		case T_NULL:
+		case T_UNDEFINED:
+			return false;
+		default:
+			return o->isEqual(this);
+	}
+}

@@ -465,6 +465,11 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 
 	if(!obj && cls)
 	{
+		if(cls->isFinal)
+		{
+			tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
+			throw Class<ReferenceError>::getInstanceS(err);
+		}
 		//Look for borrowed traits before
 		//It's valid to override only a getter, so keep
 		//looking for a settable even if a super class sets

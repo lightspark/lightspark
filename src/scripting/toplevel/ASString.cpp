@@ -261,12 +261,14 @@ ASFUNCTIONBODY(ASString,split)
 {
 	tiny_string data = obj->toString();
 	Array* ret=Class<Array>::getInstanceS();
-	ASObject* delimiter=args[0];
-	if(argslen == 0 || delimiter->getObjectType()==T_UNDEFINED)
+	uint limit = 0x7fffffff;
+	if(argslen == 0 )
 	{
 		ret->push(Class<ASString>::getInstanceS(data));
 		return ret;
 	}
+	if (argslen > 1)
+		limit = args[1]->toUInt();
 
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
@@ -294,7 +296,6 @@ ASFUNCTIONBODY(ASString,split)
 		pcre* pcreRE=pcre_compile(re->source.raw_buf(), options, &error, &offset,NULL);
 		if(error)
 			return ret;
-		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
 		int capturingGroups;
 		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 		if(infoOk!=0)
@@ -302,15 +303,14 @@ ASFUNCTIONBODY(ASString,split)
 			pcre_free(pcreRE);
 			return ret;
 		}
-		assert_and_throw(capturingGroups<10);
-		int ovector[30];
+		int ovector[(capturingGroups+1)*3];
 		offset=0;
 		unsigned int end;
 		uint32_t lastMatch = 0;
 		do
 		{
 			//offset is a byte offset that must point to the beginning of an utf8 character
-			int rc=pcre_exec(pcreRE, NULL, data.raw_buf(), data.numBytes(), offset, 0, ovector, 30);
+			int rc=pcre_exec(pcreRE, NULL, data.raw_buf(), data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 			end=ovector[0];
 			if(rc<0)
 				break;
@@ -332,8 +332,8 @@ ASFUNCTIONBODY(ASString,split)
 				ret->push(s);
 			}
 		}
-		while(end<data.numBytes());
-		if(lastMatch != data.numBytes()+1)
+		while(end<data.numBytes() && ret->size() < limit);
+		if(ret->size() < limit && lastMatch != data.numBytes()+1)
 		{
 			ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(lastMatch,data.numBytes()-lastMatch));
 			ret->push(s);
@@ -346,8 +346,14 @@ ASFUNCTIONBODY(ASString,split)
 		if(del.empty())
 		{
 			//the string is empty, so split every character
+			uint j = 0;
 			for(auto i=data.begin();i!=data.end();++i)
+			{
+				if (j >= limit)
+					break;
+				j++;
 				ret->push( Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) );
+			}
 			return ret;
 		}
 		unsigned int start=0;
@@ -362,7 +368,7 @@ ASFUNCTIONBODY(ASString,split)
 			ret->push(s);
 			start=match+del.numChars();
 		}
-		while(start<data.numChars());
+		while(start<data.numChars() && ret->size() < limit);
 	}
 
 	return ret;

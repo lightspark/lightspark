@@ -153,7 +153,6 @@ ASObject *RegExp::match(const tiny_string& str)
 	pcre* pcreRE=pcre_compile(source.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 		return new Null;
-	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
 	int capturingGroups;
 	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 	if(infoOk!=0)
@@ -161,7 +160,6 @@ ASObject *RegExp::match(const tiny_string& str)
 		pcre_free(pcreRE);
 		return new Null;
 	}
-	assert_and_throw(capturingGroups<10);
 	//Get information about named capturing groups
 	int namedGroups;
 	infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_NAMECOUNT, &namedGroups);
@@ -191,9 +189,9 @@ ASObject *RegExp::match(const tiny_string& str)
 		return new Null;
 	}
 
-	int ovector[30];
+	int ovector[(capturingGroups+1)*3];
 	int offset=global?lastIndex:0;
-	int rc=pcre_exec(pcreRE, NULL, str.raw_buf(), str.numBytes(), offset, 0, ovector, 30);
+	int rc=pcre_exec(pcreRE, NULL, str.raw_buf(), str.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 	if(rc<0)
 	{
 		//No matches or error

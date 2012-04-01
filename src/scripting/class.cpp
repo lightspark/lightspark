@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
+#include "scripting/toplevel/ASString.h"
 #include "class.h"
 #include "parsing/tags.h"
 
@@ -105,4 +106,36 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 		f->incRef();
 		c->setDeclaredMethodByQName(name,interfaceNs,f,SETTER_METHOD,true);
 	}
+}
+
+ASObject* Class<ASObject>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+{
+	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass())
+	{
+		// Construction according to ECMA 15.2.2.1
+		switch(args[0]->getObjectType())
+		{
+		case T_BOOLEAN:
+			return abstract_b(Boolean_concrete(args[0]));
+		case T_NUMBER:
+			return abstract_d(args[0]->toNumber());
+		case T_INTEGER:
+			return abstract_i(args[0]->toInt());
+		case T_UINTEGER:
+			return abstract_ui(args[0]->toUInt());
+		case T_STRING:
+			return Class<ASString>::getInstanceS(args[0]->toString());
+		case T_FUNCTION:
+		case T_OBJECT:
+			args[0]->incRef();
+			return args[0];
+		default:
+			break;
+		}
+	}
+	ASObject* ret=new ASObject;
+	ret->setClass(this);
+	if(construct)
+		handleConstruction(ret,args,argslen,true);
+	return ret;
 }

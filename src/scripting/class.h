@@ -262,14 +262,7 @@ class Class<ASObject>: public Class_base
 private:
 	Class<ASObject>(const QName& name):Class_base(name){}
 	//This function is instantiated always because of inheritance
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
-	{
-		ASObject* ret=new ASObject;
-		ret->setClass(this);
-		if(construct)
-			handleConstruction(ret,args,argslen,true);
-		return ret;
-	}
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
 public:
 	static ASObject* getInstanceS()
 	{

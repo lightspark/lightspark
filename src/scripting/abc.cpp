@@ -40,6 +40,7 @@
 #include "toplevel/ASString.h"
 #include "toplevel/Date.h"
 #include "toplevel/Math.h"
+#include "toplevel/RegExp.h"
 #include "toplevel/Vector.h"
 #include "toplevel/XML.h"
 #include "toplevel/XMLList.h"

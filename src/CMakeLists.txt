@@ -80,6 +80,7 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Integer.cpp
   scripting/toplevel/Math.cpp
   scripting/toplevel/Number.cpp
+  scripting/toplevel/RegExp.cpp
   scripting/toplevel/UInteger.cpp
   scripting/toplevel/Vector.cpp
   scripting/toplevel/XML.cpp

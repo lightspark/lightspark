@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "argconv.h"
 #include "parsing/amf3_generator.h"
+#include "RegExp.h"
 
 using namespace std;
 using namespace lightspark;

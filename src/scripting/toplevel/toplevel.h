@@ -483,31 +483,6 @@ public:
 };
 
 
-class RegExp: public ASObject
-{
-CLASSBUILDABLE(RegExp);
-friend class ASString;
-private:
-	RegExp();
-	RegExp(const tiny_string& _re);
-public:
-	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
-	ASObject *match(const tiny_string& str);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
-	ASFUNCTION(exec);
-	ASFUNCTION(test);
-	ASFUNCTION(_toString);
-	ASPROPERTY_GETTER(bool, dotall);
-	ASPROPERTY_GETTER(bool, global);
-	ASPROPERTY_GETTER(bool, ignoreCase);
-	ASPROPERTY_GETTER(bool, extended);
-	ASPROPERTY_GETTER(bool, multiline);
-	ASPROPERTY_GETTER_SETTER(int, lastIndex);
-	ASPROPERTY_GETTER(tiny_string, source);
-};
-
 class Global : public ASObject
 {
 CLASSBUILDABLE(Global);

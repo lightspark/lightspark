@@ -10,9 +10,7 @@
 #
 i686/*
 x86_64
-fr.gmo
-pl.gmo
-zh_CN.gmo
+*.gmo
 
 #
 # CMAKE

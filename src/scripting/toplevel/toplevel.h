@@ -515,7 +515,7 @@ ASObject* _isXMLName(ASObject* obj,ASObject* const* args, const unsigned int arg
 
 inline void Manager::put(ASObject* o)
 {
-	if(available.size()>maxCache)
+	if(available.size()>=maxCache)
 		delete o;
 	else
 	{

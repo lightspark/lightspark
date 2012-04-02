@@ -10,6 +10,9 @@
 #
 i686/*
 x86_64
+fr.gmo
+pl.gmo
+zh_CN.gmo
 
 #
 # CMAKE
@@ -19,6 +22,9 @@ Makefile
 cmake_install.cmake
 CMakeCache.txt
 obj/
+CPackConfig.cmake
+CPackSourceConfig.cmake
+version.h
 
 # SWF files
 

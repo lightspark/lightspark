@@ -478,7 +478,18 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 		obj->incRef();
 	}
 	assert_and_throw(obj);
-	ret=val(obj,args,num_args);
+	try
+	{
+		ret=val(obj,args,num_args);
+	}
+	catch(ASObject* excobj)
+	{
+		//If an exception is thrown from native code, clean up and rethrow
+		for(uint32_t i=0;i<num_args;i++)
+			args[i]->decRef();
+		obj->decRef();
+		throw;
+	}
 
 	for(uint32_t i=0;i<num_args;i++)
 		args[i]->decRef();

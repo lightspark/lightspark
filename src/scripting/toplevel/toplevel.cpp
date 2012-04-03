@@ -809,7 +809,7 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 		RELEASE_WRITE(target->constructed,true);
 	}
 
-	//As constructors are not binded, we should change here the level
+	//TODO: is there any valid case for not having a constructor?
 	if(constructor)
 	{
 		target->incRef();
@@ -817,6 +817,12 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 		assert_and_throw(ret->is<Undefined>());
 		ret->decRef();
 	}
+	else
+	{
+		for(uint32_t i=0;i<argslen;i++)
+			args[i]->decRef();
+	}
+
 	if(buildAndLink)
 	{
 		//Tell the object that the construction is complete

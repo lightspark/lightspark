@@ -505,7 +505,6 @@ void XML::childrenImpl(std::vector<_R<XML> >& ret, const tiny_string& name)
 	{
 		if(name!="*" && (*it)->get_name() != name.raw_buf())
 			continue;
-		rootXML->incRef();
 		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
 }
@@ -601,10 +600,7 @@ ASFUNCTIONBODY(XML,elements)
 	{
 		xmlElementType nodetype=(*it)->cobj()->type;
 		if(nodetype==XML_ELEMENT_NODE && (name.empty() || name == (*it)->get_name()))
-		{
-			rootXML->incRef();
 			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
-		}
 	}
 	return Class<XMLList>::getInstanceS(ret);
 }

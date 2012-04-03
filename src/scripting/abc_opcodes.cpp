@@ -2074,7 +2074,6 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 	if(f->is<Function>())
 	{
 		IFunction* func=f->as<Function>();
-		func->incRef();
 		ASObject* ret=func->call(obj,args,m);
 		//call getMethodInfo only after the call, so it's updated
 		if(called_mi)

@@ -251,7 +251,7 @@ if(Boost_FOUND)
   INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 ENDIF(Boost_FOUND) 
 
-pkg_check_modules(CAIRO_LIBS REQUIRED cairo pangocairo)
+pkg_check_modules(CAIRO REQUIRED cairo pangocairo)
 
 IF(UNIX)
   pkg_check_modules(X11 REQUIRED x11)

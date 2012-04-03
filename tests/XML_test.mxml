@@ -32,14 +32,17 @@
 		var xmllist1:Object=new XMLList("<person age='22'><name>Alice</name></person>");
 		var simplexml:XML=new XML("<test>123</test>");
 
+		var flag:Boolean = false;
 		//Enable this when proper AS exception is thrown
-		/*try
+		try
 		{
 			var xml9:XML=new XML("<broken>data<");
 		}
-		catch(e)
+		catch(e:Error)
 		{
-		}*/
+			flag = true;
+		}
+		Tests.assertTrue(flag, "Exception thrown on error");
 
 		var ba1:ByteArray=new ByteArray();
 		ba1.writeUTFBytes("<test>123</test>");

@@ -1224,6 +1224,11 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 	}
 }
 
+Array::~Array()
+{
+	Array::finalize();
+}
+
 void Array::finalize()
 {
 	ASObject::finalize();

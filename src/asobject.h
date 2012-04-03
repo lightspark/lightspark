@@ -310,11 +310,12 @@ public:
 			o->decRef();
 	}
 	/*
-	   The finalize function should be implemented in all derived class.
+	   The finalize function should be implemented in all derived class that stores pointers.
 	   It should decRef all referenced objects. It's guaranteed that the only operations
 	   that will happen on the object after finalization are decRef and delete.
 	   Each class must call BaseClass::finalize in their finalize function. 
-	   The finalize method must be callable multiple time with the same effects (no double frees)*/
+	   The finalize method must be callable multiple time with the same effects (no double frees).
+	   Each class must also call his own ::finalize in the destructor!*/
 	virtual void finalize();
 
 	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};

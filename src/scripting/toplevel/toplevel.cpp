@@ -415,7 +415,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			for (unsigned int i=0;i<mi->body->exception_count;i++)
 			{
 				exception_info exc=mi->body->exceptions[i];
-				multiname* name=mi->context->getMultiname(exc.exc_type, &cc);
+				multiname* name=mi->context->getMultiname(exc.exc_type, NULL);
 				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to);
 				if (pos > exc.from && pos <= exc.to && mi->context->isinstance(excobj, name))
 				{

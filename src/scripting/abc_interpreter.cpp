@@ -1066,7 +1066,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//astype
 				u30 t;
 				code >> t;
-				multiname* name=context->context->getMultiname(t,context);
+				multiname* name=context->context->getMultiname(t,NULL);
 
 				ASObject* v1=context->runtime_stack_pop();
 
@@ -1333,7 +1333,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//istype
 				u30 t;
 				code >> t;
-				multiname* name=context->context->getMultiname(t,context);
+				multiname* name=context->context->getMultiname(t,NULL);
 
 				ASObject* v1=context->runtime_stack_pop();
 

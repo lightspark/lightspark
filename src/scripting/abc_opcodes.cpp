@@ -2145,7 +2145,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 {
 	ASObject* catchScope = Class<ASObject>::getInstanceS();
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exception_count);
-	multiname* name = th->context->getMultiname(th->mi->body->exceptions[n].var_name, th);
+	multiname* name = th->context->getMultiname(th->mi->body->exceptions[n].var_name, NULL);
 	catchScope->setVariableByMultiname(*name, new Undefined);
 	catchScope->initSlot(1, *name);
 	return catchScope;

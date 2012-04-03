@@ -705,6 +705,7 @@ struct multiname
 	tiny_string qualifiedString() const;
 	/* sets name_type, name_s/name_d based on the object n */
 	void setName(ASObject* n);
+	void resetNameIfObject();
 	bool isQName() const { return ns.size() == 1; }
 };
 

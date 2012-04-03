@@ -295,6 +295,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 	//We should skip the special implementation of get
 	_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+	name->resetNameIfObject();
 
 	if(!o.isNull())
 	{
@@ -1251,6 +1252,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
 	obj->setVariableByMultiname(*name,value,th->inClass->super.getPtr());
+	name->resetNameIfObject();
 	obj->decRef();
 }
 
@@ -1267,6 +1269,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
 	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super.getPtr());
+	name->resetNameIfObject();
 	if(ret.isNull())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->toDebugString());
@@ -1316,11 +1319,13 @@ void ABCVm::getLex(call_context* th, int n)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found, pushing Undefined");
 			th->runtime_stack_push(new Undefined);
+			name->resetNameIfObject();
 			return;
 		}
 		o->incRef();
 	}
 
+	name->resetNameIfObject();
 	th->runtime_stack_push(o);
 }
 
@@ -1472,6 +1477,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 	_NR<ASObject> f = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super.getPtr());
+	name->resetNameIfObject();
 	if(!f.isNull())
 	{
 		f->incRef();
@@ -1694,6 +1700,8 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 	name.name_o=val1;
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	bool ret=val2->hasPropertyByMultiname(name, true);
+	name.name_o=NULL;
+	val1->decRef();
 	val2->decRef();
 	return ret;
 }
@@ -1720,6 +1728,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	ASObject* obj=th->runtime_stack_pop();
 
 	_NR<ASObject> o=obj->getVariableByMultiname(*name);
+	name->resetNameIfObject();
 
 	if(o.isNull())
 	{

@@ -215,6 +215,7 @@ tiny_string multiname::normalizedName() const
 
 void multiname::setName(ASObject* n)
 {
+	assert(name_type!=NAME_OBJECT || name_o==NULL);
 	if(n->is<Integer>())
 	{
 		name_i=n->as<Integer>()->val;
@@ -247,6 +248,15 @@ void multiname::setName(ASObject* n)
 		n->incRef();
 		name_o=n;
 		name_type = NAME_OBJECT;
+	}
+}
+
+void multiname::resetNameIfObject()
+{
+	if(name_type==NAME_OBJECT && name_o)
+	{
+		name_o->decRef();
+		name_o=NULL;
 	}
 }
 

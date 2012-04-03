@@ -1424,10 +1424,8 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
+		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
-		//This is ugly, but at least we are sure that we own name_o
-		multiname* tmp=const_cast<multiname*>(&name);
-		tmp->name_o=NULL;
 
 		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
 		if(it!=data.end())
@@ -1452,10 +1450,8 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
+		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
-		//This is ugly, but at least we are sure that we own name_o
-		multiname* tmp=const_cast<multiname*>(&name);
-		tmp->name_o=NULL;
 
 		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
 		if(it != data.end())
@@ -1482,22 +1478,14 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 	{
 		if(name.name_type==multiname::NAME_OBJECT)
 		{
+			name.name_o->incRef();
 			_R<ASObject> name_o(name.name_o);
 
 			map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
 			if(it != data.end())
-			{
-				//This is ugly, but at least we are sure that we own name_o
-				multiname* tmp=const_cast<multiname*>(&name);
-				tmp->name_o=NULL;
 				return it->second;
-			}
 			else
-			{
-				//Make sure name_o gets not destroyed, it's still owned by name
-				name_o->incRef();
 				return NullRef;
-			}
 		}
 		else
 		{
@@ -1520,6 +1508,7 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
+		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
 
 		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);

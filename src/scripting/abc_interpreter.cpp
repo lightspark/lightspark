@@ -855,7 +855,9 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//findpropstrict
 				u30 t;
 				code >> t;
-				context->runtime_stack_push(findPropStrict(context,context->context->getMultiname(t,context)));
+				multiname* name=context->context->getMultiname(t,context);
+				context->runtime_stack_push(findPropStrict(context,name));
+				name->resetNameIfObject();
 				break;
 			}
 			case 0x5e:
@@ -863,7 +865,9 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//findproperty
 				u30 t;
 				code >> t;
-				context->runtime_stack_push(findProperty(context,context->context->getMultiname(t,context)));
+				multiname* name=context->context->getMultiname(t,context);
+				context->runtime_stack_push(findProperty(context,name));
+				name->resetNameIfObject();
 				break;
 			}
 			case 0x60:
@@ -886,6 +890,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				ASObject* obj=context->runtime_stack_pop();
 
 				setProperty(value,obj,name);
+				name->resetNameIfObject();
 				break;
 			}
 			case 0x62:
@@ -936,6 +941,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				ASObject* obj=context->runtime_stack_pop();
 
 				ASObject* ret=getProperty(obj,name);
+				name->resetNameIfObject();
 
 				context->runtime_stack_push(ret);
 				break;
@@ -949,6 +955,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			        multiname* name=context->context->getMultiname(t,context);
 			        ASObject* obj=context->runtime_stack_pop();
 				initProperty(obj,value,name);
+				name->resetNameIfObject();
 				break;
 			}
 			case 0x6a:
@@ -959,6 +966,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				multiname* name = context->context->getMultiname(t,context);
 				ASObject* obj=context->runtime_stack_pop();
 				bool ret = deleteProperty(obj,name);
+				name->resetNameIfObject();
 				context->runtime_stack_push(abstract_b(ret));
 				break;
 			}

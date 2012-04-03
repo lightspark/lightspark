@@ -141,7 +141,7 @@ ASFUNCTIONBODY(Vector,_constructor)
 	Vector* th=static_cast< Vector *>(obj);
 	assert(th->vec_type);
 	th->fixed = fixed;
-	th->vec.resize(len);
+	th->vec.resize(len, NULL);
 
 	return NULL;
 }
@@ -151,7 +151,7 @@ ASFUNCTIONBODY(Vector,_concat)
 	Vector* th=static_cast<Vector*>(obj);
 	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
 	// copy values into new Vector
-	ret->vec.resize(th->size());
+	ret->vec.resize(th->size(), NULL);
 	std::vector<ASObject*>::iterator it=th->vec.begin();
 	uint32_t index = 0;
 	for(;it != th->vec.end();++it)
@@ -166,7 +166,7 @@ ASFUNCTIONBODY(Vector,_concat)
 		if (args[i]->is<Vector>())
 		{
 			Vector* arg=static_cast<Vector*>(args[i]);
-			ret->vec.resize(index+arg->size());
+			ret->vec.resize(index+arg->size(), NULL);
 			std::vector<ASObject*>::iterator it=arg->vec.begin();
 			for(;it != arg->vec.end();++it)
 			{
@@ -379,7 +379,7 @@ ASFUNCTIONBODY(Vector,setLength)
 			if(th->vec[i])
 				th->vec[i]->decRef();
 	}
-	th->vec.resize(len);
+	th->vec.resize(len, NULL);
 	return NULL;
 }
 
@@ -441,7 +441,7 @@ ASFUNCTIONBODY(Vector, _reverse)
 	std::vector<ASObject*> tmp = std::vector<ASObject*>(th->vec);
 	uint32_t size = th->size();
 	th->vec.clear();
-	th->vec.resize(size);
+	th->vec.resize(size, NULL);
 	std::vector<ASObject*>::iterator it=tmp.begin();
 	uint32_t index = size-1;
 	for(;it != tmp.end();++it)
@@ -524,7 +524,7 @@ ASFUNCTIONBODY(Vector,shift)
 			th->vec[i-1] = NULL;
 		}
 	}
-	th->vec.resize(th->size()-1);
+	th->vec.resize(th->size()-1, NULL);
 	return ret;
 }
 
@@ -561,7 +561,7 @@ ASFUNCTIONBODY(Vector,slice)
 	startIndex=th->capIndex(startIndex);
 	endIndex=th->capIndex(endIndex);
 	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
-	ret->vec.resize(endIndex-startIndex);
+	ret->vec.resize(endIndex-startIndex, NULL);
 	int j = 0;
 	for(int i=startIndex; i<endIndex; i++) 
 	{
@@ -594,7 +594,7 @@ ASFUNCTIONBODY(Vector,splice)
 	if((startIndex+deleteCount)>totalSize)
 		deleteCount=totalSize-startIndex;
 
-	ret->vec.resize(deleteCount);
+	ret->vec.resize(deleteCount, NULL);
 	if(deleteCount)
 	{
 		// write deleted items to return array
@@ -614,7 +614,7 @@ ASFUNCTIONBODY(Vector,splice)
 	}
 	// remember items in current array that have to be moved to new position
 	vector<ASObject*> tmp = vector<ASObject*>(totalSize- (startIndex+deleteCount));
-	tmp.resize(totalSize- (startIndex+deleteCount));
+	tmp.resize(totalSize- (startIndex+deleteCount), NULL);
 	for (int i = startIndex+deleteCount; i < totalSize ; i++)
 	{
 		if (th->vec[i])
@@ -623,7 +623,7 @@ ASFUNCTIONBODY(Vector,splice)
 			th->vec[i] = NULL;
 		}
 	}
-	th->vec.resize(startIndex);
+	th->vec.resize(startIndex, NULL);
 
 	
 	//Insert requested values starting at startIndex
@@ -633,7 +633,7 @@ ASFUNCTIONBODY(Vector,splice)
 		th->vec.push_back(args[i]);
 	}
 	// move remembered items to new position
-	th->vec.resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0));
+	th->vec.resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0), NULL);
 	for(int i=0;i<totalSize- (startIndex+deleteCount);i++)
 	{
 		if (tmp[i])
@@ -728,7 +728,7 @@ ASFUNCTIONBODY(Vector,unshift)
 	Vector* th=static_cast<Vector*>(obj);
 	if (th->fixed)
 		throw Class<RangeError>::getInstanceS("Error #1126");
-	th->vec.resize(th->size()+argslen);
+	th->vec.resize(th->size()+argslen, NULL);
 	for(uint32_t i=th->size();i> 0;i--)
 	{
 		if (th->vec[i-1])

@@ -3780,11 +3780,9 @@ ASFUNCTIONBODY(BitmapData,draw)
 
 void BitmapData::copyFrom(BitmapData *source)
 {
-	if(data)
-		delete[] data;
+	data.clear();
 	dataSize = source->dataSize;
-	data = new uint8_t[dataSize];
-	memcpy(data, source->data, dataSize);
+	data = source->data;
 	width = source->width;
 	height = source->height;
 	stride = source->stride;
@@ -3897,7 +3895,7 @@ ASFUNCTIONBODY(BitmapData,fillRect)
 		for(int32_t j=0;j<rectW;j++)
 		{
 			uint32_t offset=(i+rectY)*th->stride + (j+rectX)*4;
-			uint32_t* ptr=(uint32_t*)(th->data+offset);
+			uint32_t* ptr=(uint32_t*)(th->getData()+offset);
 			*ptr=color;
 		}
 	}
@@ -3944,8 +3942,8 @@ ASFUNCTIONBODY(BitmapData,copyPixels)
 
 	for(int i=0; i<copyHeight; i++)
 	{
-		memmove(th->data + (destTop+i)*th->stride + 4*destLeft, 
-			source->data + (srcTop+i)*source->stride + 4*srcLeft,
+		memmove(th->getData() + (destTop+i)*th->stride + 4*destLeft, 
+			source->getData() + (srcTop+i)*source->stride + 4*srcLeft,
 			4*copyWidth);
 	}
 
@@ -3995,8 +3993,7 @@ Bitmap::Bitmap(_R<BitmapData> data) : TokenContainer(this)
 
 BitmapData::~BitmapData()
 {
-	if(data)
-		delete[] data;
+	data.clear();
 }
 
 void Bitmap::sinit(Class_base* c)
@@ -4081,11 +4078,11 @@ bool BitmapData::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)
 	width = w;
 	height = h;
 	if(hasAlpha)
-		data = CairoRenderer::convertBitmapWithAlphaToCairo(rgb, width, height, &dataSize, &stride);
+		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride);
 	else
-		data = CairoRenderer::convertBitmapToCairo(rgb, width, height, &dataSize, &stride);
+		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride);
 	delete[] rgb;
-	if(!data)
+	if(data.empty())
 	{
 		LOG(LOG_ERROR, "Error decoding image");
 		return false;
@@ -4096,7 +4093,7 @@ bool BitmapData::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)
 
 bool BitmapData::fromJPEG(uint8_t *inData, int len)
 {
-	assert(!data);
+	assert(data.empty());
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
 	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &w, &h);
@@ -4106,7 +4103,7 @@ bool BitmapData::fromJPEG(uint8_t *inData, int len)
 
 bool BitmapData::fromJPEG(std::istream &s)
 {
-	assert(!data);
+	assert(data.empty());
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
 	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &w, &h);
@@ -4115,7 +4112,7 @@ bool BitmapData::fromJPEG(std::istream &s)
 }
 bool BitmapData::fromPNG(std::istream &s)
 {
-	assert(!data);
+	assert(data.empty());
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
 	uint8_t *rgb=ImageDecoder::decodePNG(s, &w, &h);

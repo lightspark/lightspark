@@ -450,7 +450,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			if(style.bitmap==NULL)
 				throw RunTimeException("Invalid bitmap");
 
-			cairo_surface_t* surface = cairo_image_surface_create_for_data (style.bitmap->data,
+			cairo_surface_t* surface = cairo_image_surface_create_for_data (style.bitmap->getData(),
 										CAIRO_FORMAT_ARGB32, style.bitmap->width, style.bitmap->height,
 										cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, style.bitmap->width));
 
@@ -774,11 +774,13 @@ bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float sc
 	return pixelBytes[0]!=0x00;
 }
 
-uint8_t* CairoRenderer::convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t width, uint32_t height, size_t* dataSize, size_t* stride)
+void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t>& data, uint8_t* inData, uint32_t width,
+		uint32_t height, size_t* dataSize, size_t* stride)
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;
-	uint8_t* outData = new uint8_t[*dataSize];
+	data.resize(*dataSize);
+	uint8_t* outData=&data[0];
 	uint32_t* inData32 = (uint32_t*)inData;
 
 	for(uint32_t i = 0; i < height; i++)
@@ -789,14 +791,15 @@ uint8_t* CairoRenderer::convertBitmapWithAlphaToCairo(uint8_t* inData, uint32_t 
 			*outDataPos = GINT32_FROM_BE( *(inData32+(i*width+j)) );
 		}
 	}
-	return outData;
 }
 
-uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, uint32_t height, size_t* dataSize, size_t* stride)
+void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t>& data, uint8_t* inData, uint32_t width,
+		uint32_t height, size_t* dataSize, size_t* stride)
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;
-	uint8_t* outData = new uint8_t[*dataSize];
+	data.resize(*dataSize);
+	uint8_t* outData = &data[0];
 	for(uint32_t i = 0; i < height; i++)
 	{
 		for(uint32_t j = 0; j < width; j++)
@@ -811,7 +814,6 @@ uint8_t* CairoRenderer::convertBitmapToCairo(uint8_t* inData, uint32_t width, ui
 			*outDataPos = GINT32_FROM_BE(pdata);
 		}
 	}
-	return outData;
 }
 
 StaticMutex CairoPangoRenderer::pangoMutex = GLIBMM_STATIC_MUTEX_INIT;

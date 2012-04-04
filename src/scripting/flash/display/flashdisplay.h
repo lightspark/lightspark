@@ -772,18 +772,18 @@ protected:
 	size_t stride;
 	size_t dataSize;
 	static void sinit(Class_base* c);
-	uint8_t* getData() { return data; }
 	uint32_t getPixelPriv(uint32_t x, uint32_t y);
 	void setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha);
 	void copyFrom(BitmapData *source);
 public:
-	BitmapData() : stride(0), dataSize(0), data(NULL), width(0), height(0) {}
+	BitmapData() : stride(0), dataSize(0), width(0), height(0) {}
 	~BitmapData();
 	/* the bitmaps data in premultiplied, native-endian 32 bit
 	 * ARGB format. stride is the number of bytes per row, may be
 	 * larger than width. dataSize is the total allocated size of
 	 * data (=stride*height) */
-	uint8_t* data;
+	std::vector<uint8_t> data;
+	uint8_t* getData() { return &data[0]; }
 	ASPROPERTY_GETTER(int32_t, width);
 	ASPROPERTY_GETTER(int32_t, height);
 	ASPROPERTY_GETTER(bool, transparent);

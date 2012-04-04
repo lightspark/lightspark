@@ -130,8 +130,7 @@ _R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 	for(int32_t i=0;i<denseCount;i++)
 	{
 		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		value->incRef();
-		ret->push(value.getPtr());
+		ret->push(value);
 	}
 	return ret;
 }

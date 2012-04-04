@@ -203,9 +203,9 @@ ASObject *RegExp::match(const tiny_string& str)
 	for(int i=0;i<capturingGroups+1;i++)
 	{
 		if(ovector[i*2] != -1)
-			a->push(Class<ASString>::getInstanceS( str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) ));
+			a->push(_MR(Class<ASString>::getInstanceS( str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
 		else
-			a->push(new Undefined);
+			a->push(_MR(new Undefined));
 	}
 	a->setVariableByQName("input","",Class<ASString>::getInstanceS(str),DYNAMIC_TRAIT);
 
@@ -218,7 +218,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	{
 		nameEntry* entry=(nameEntry*)entries;
 		uint16_t num=GINT16_FROM_BE(entry->number);
-		ASObject* captured=a->at(num);
+		ASObject* captured=a->at(num).getPtr();
 		captured->incRef();
 		a->setVariableByQName(tiny_string(entry->name, true),"",captured,DYNAMIC_TRAIT);
 		entries+=namedSize;

@@ -93,7 +93,7 @@ ASFUNCTIONBODY(XMLNode,childNodes)
 	for(;it!=children.end();it++)
 	{
 		if((*it)->cobj()->type!=XML_TEXT_NODE) {
-			ret->push(Class<XMLNode>::getInstanceS(th->root, *it));
+			ret->push(_MR(Class<XMLNode>::getInstanceS(th->root, *it)));
 		}
 	}
 	return ret;

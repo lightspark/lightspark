@@ -265,7 +265,7 @@ ASFUNCTIONBODY(ASString,split)
 	uint limit = 0x7fffffff;
 	if(argslen == 0 )
 	{
-		ret->push(Class<ASString>::getInstanceS(data));
+		ret->push(_MR(Class<ASString>::getInstanceS(data)));
 		return ret;
 	}
 	if (argslen > 1)
@@ -279,7 +279,7 @@ ASFUNCTIONBODY(ASString,split)
 		{
 			//the RegExp is empty, so split every character
 			for(auto i=data.begin();i!=data.end();++i)
-				ret->push( Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) );
+				ret->push(_MR(Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) ));
 			return ret;
 		}
 
@@ -322,7 +322,7 @@ ASFUNCTIONBODY(ASString,split)
 			}
 			//Extract string from last match until the beginning of the current match
 			ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(lastMatch,end-lastMatch));
-			ret->push(s);
+			ret->push(_MR(s));
 			lastMatch=offset=ovector[1];
 
 			//Insert capturing groups
@@ -330,14 +330,14 @@ ASFUNCTIONBODY(ASString,split)
 			{
 				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
 				ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
-				ret->push(s);
+				ret->push(_MR(s));
 			}
 		}
 		while(end<data.numBytes() && ret->size() < limit);
 		if(ret->size() < limit && lastMatch != data.numBytes()+1)
 		{
 			ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(lastMatch,data.numBytes()-lastMatch));
-			ret->push(s);
+			ret->push(_MR(s));
 		}
 		pcre_free(pcreRE);
 	}
@@ -353,7 +353,7 @@ ASFUNCTIONBODY(ASString,split)
 				if (j >= limit)
 					break;
 				j++;
-				ret->push( Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) );
+				ret->push(_MR(Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) ));
 			}
 			return ret;
 		}
@@ -366,7 +366,7 @@ ASFUNCTIONBODY(ASString,split)
 			if(match==-1)
 				match=data.numChars();
 			ASString* s=Class<ASString>::getInstanceS(data.substr(start,(match-start)));
-			ret->push(s);
+			ret->push(_MR(s));
 			start=match+del.numChars();
 		}
 		while(start<data.numChars() && ret->size() < limit);

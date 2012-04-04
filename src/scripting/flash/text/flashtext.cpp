@@ -410,7 +410,7 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 	Array* ret=Class<Array>::getInstanceS();
 	map<tiny_string, _R<ASObject>>::const_iterator it=th->styles.begin();
 	for(;it!=th->styles.end();++it)
-		ret->push(Class<ASString>::getInstanceS(it->first));
+		ret->push(_MR(Class<ASString>::getInstanceS(it->first)));
 	return ret;
 }
 

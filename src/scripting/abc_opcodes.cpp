@@ -2166,7 +2166,7 @@ void ABCVm::newArray(call_context* th, int n)
 	Array* ret=Class<Array>::getInstanceS();
 	ret->resize(n);
 	for(int i=0;i<n;i++)
-		ret->set(n-i-1,th->runtime_stack_pop());
+		ret->set(n-i-1,_MR(th->runtime_stack_pop()));
 
 	th->runtime_stack_push(ret);
 }

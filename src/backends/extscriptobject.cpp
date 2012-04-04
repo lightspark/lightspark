@@ -300,7 +300,7 @@ ASObject* ExtVariant::getASObject() const
 				for(uint32_t i = 0; i < count; i++)
 				{
 					property = objValue->getProperty(i);
-					static_cast<Array*>(asobj)->set(i, property->getASObject());
+					static_cast<Array*>(asobj)->set(i, _MR(property->getASObject()));
 					delete property;
 				}
 			}

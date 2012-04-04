@@ -541,7 +541,7 @@ ASFUNCTIONBODY(NetConnection,call)
 	for(uint32_t i=2;i<argslen;i++)
 	{
 		args[i]->incRef();
-		rest->push(args[i]);
+		rest->push(_MR(args[i]));
 	}
 
 	_R<ByteArray> message=_MR(Class<ByteArray>::getInstanceS());
@@ -1415,14 +1415,13 @@ void URLVariables::decode(const tiny_string& s)
 				if(curValue->getObjectType()!=T_ARRAY)
 				{
 					arr=Class<Array>::getInstanceS();
-					curValue->incRef();
-					arr->push(curValue.getPtr());
+					arr->push(curValue);
 					setVariableByMultiname(propName,arr);
 				}
 				else
 					arr=Class<Array>::cast(curValue.getPtr());
 
-				arr->push(Class<ASString>::getInstanceS(value));
+				arr->push(_MR(Class<ASString>::getInstanceS(value)));
 			}
 			else
 				setVariableByMultiname(propName,Class<ASString>::getInstanceS(value));

@@ -157,7 +157,7 @@ ASFUNCTIONBODY(IFunction,apply)
 		newArgs=new ASObject*[newArgsLen];
 		for(int i=0;i<newArgsLen;i++)
 		{
-			newArgs[i]=array->at(i);
+			newArgs[i]=array->at(i).getPtr();
 			newArgs[i]->incRef();
 		}
 	}
@@ -307,7 +307,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		for(uint32_t j=0;j<numArgs;j++)
 		{
 			args[j]->incRef();
-			argumentsArray->set(j,args[j]);
+			argumentsArray->set(j,_MR(args[j]));
 		}
 		//Add ourself as the callee property
 		incRef();
@@ -374,8 +374,9 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	{
 		Array* rest=Class<Array>::getInstanceS();
 		rest->resize(passedToRest);
+		//Give the reference of the other args to an array
 		for(uint32_t j=0;j<passedToRest;j++)
-			rest->set(j,args[passedToLocals+j]);
+			rest->set(j,_MR(args[passedToLocals+j]));
 
 		assert_and_throw(cc.locals_size>args_len+1);
 		cc.locals[args_len+1]=rest;

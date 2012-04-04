@@ -104,14 +104,15 @@ public:
 	ASFUNCTION(every);
 	ASFUNCTION(some);
 
-	ASObject* at(unsigned int index) const;
-	void set(unsigned int index, ASObject* o)
+	_R<ASObject> at(unsigned int index) const;
+	void set(unsigned int index, _R<ASObject> o)
 	{
 		if(index<currentsize)
 		{
 			if(!data.count(index))
 				data[index]=data_slot();
-			data[index].data=o;
+			o->incRef();
+			data[index].data=o.getPtr();
 			data[index].type=DATA_OBJECT;
 		}
 		else
@@ -121,9 +122,10 @@ public:
 	{
 		return currentsize;
 	}
-	void push(ASObject* o)
+	void push(_R<ASObject> o)
 	{
-		data[currentsize] = data_slot(o,DATA_OBJECT);
+		o->incRef();
+		data[currentsize] = data_slot(o.getPtr(),DATA_OBJECT);
 		currentsize++;
 	}
 	void resize(uint64_t n)

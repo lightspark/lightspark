@@ -98,8 +98,8 @@ ASFUNCTIONBODY(Array,_constructor)
 		th->resize(argslen);
 		for(unsigned int i=0;i<argslen;i++)
 		{
-			th->set(i,args[i]);
 			args[i]->incRef();
+			th->set(i,_MR(args[i]));
 		}
 	}
 	return NULL;
@@ -122,8 +122,8 @@ ASFUNCTIONBODY(Array,generator)
 		th->resize(argslen);
 		for(unsigned int i=0;i<argslen;i++)
 		{
-			th->set(i,args[i]);
 			args[i]->incRef();
+			th->set(i,_MR(args[i]));
 		}
 	}
 	return th;
@@ -140,6 +140,8 @@ ASFUNCTIONBODY(Array,_concat)
 	for(;it != th->data.end();++it)
 	{
 		ret->data[it->first]=it->second;
+		if(ret->data[it->first].type==DATA_OBJECT && ret->data[it->first].data)
+			ret->data[it->first].data->incRef();
 	}
 	
 	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
@@ -148,7 +150,10 @@ ASFUNCTIONBODY(Array,_concat)
 		std::map<uint32_t, data_slot>::iterator ittmp=tmp->data.begin();
 		for(;ittmp != tmp->data.end();++ittmp)
 		{
-			ret->data[ret->size()+ittmp->first]=ittmp->second;
+			uint32_t newIndex=ret->size()+ittmp->first;
+			ret->data[newIndex]=ittmp->second;
+			if(ret->data[newIndex].type==DATA_OBJECT && ret->data[newIndex].data)
+				ret->data[newIndex].data->incRef();
 		}
 		ret->resize(th->size()+tmp->size());
 	}
@@ -156,15 +161,10 @@ ASFUNCTIONBODY(Array,_concat)
 	{
 		//Insert the arguments in the array
 		for(unsigned int i=0;i<argslen;i++)
-			ret->push(args[i]);
-	}
-
-	//All the elements in the new array should be increffed, as args will be deleted and
-	//this array could die too
-	for(unsigned int i=0;i<ret->size();i++)
-	{
-		if(ret->data.count(i) && ret->data[i].type==DATA_OBJECT && ret->data[i].data)
-			ret->data[i].data->incRef();
+		{
+			args[i]->incRef();
+			ret->push(_MR(args[i]));
+		}
 	}
 
 	return ret;
@@ -204,7 +204,7 @@ ASFUNCTIONBODY(Array,filter)
 			if(Boolean_concrete(funcRet))
 			{
 				th->data[i].data->incRef();
-				ret->push(th->data[i].data);
+				ret->push(_MR(th->data[i].data));
 			}
 			funcRet->decRef();
 		}
@@ -547,7 +547,7 @@ ASFUNCTIONBODY(Array,splice)
 	for(unsigned int i=2;i<argslen;i++)
 	{
 		args[i]->incRef();
-		th->push(args[i]);
+		th->push(_MR(args[i]));
 	}
 	// move remembered items to new position
 	for(int i=0;i<totalSize- (startIndex+deleteCount);i++)
@@ -792,8 +792,8 @@ ASFUNCTIONBODY(Array,_push)
 		if (th->size() >= UINT32_MAX)
 			throw Class<RangeError>::getInstanceS("");
 			
-		th->push(args[i]);
 		args[i]->incRef();
+		th->push(_MR(args[i]));
 	}
 	return abstract_i(th->size());
 }
@@ -828,7 +828,7 @@ ASFUNCTIONBODY(Array,_map)
 		funcArgs[2]->incRef();
 		ASObject* funcRet=func->call(new Null, funcArgs, 3);
 		assert_and_throw(funcRet);
-		arrayRet->push(funcRet);
+		arrayRet->push(_MR(funcRet));
 	}
 
 	return arrayRet;
@@ -1159,26 +1159,29 @@ _R<ASObject> Array::nextName(uint32_t index)
 	}
 }
 
-ASObject* Array::at(unsigned int index) const
+_R<ASObject> Array::at(unsigned int index) const
 {
 	if(size()<=index)
 		outofbounds();
 
 	if (!data.count(index))
-		return new Undefined;
+		return _MR(new Undefined);
 	switch(data.at(index).type)
 	{
 		case DATA_OBJECT:
 		{
 			if(data.at(index).data)
-				return data.at(index).data;
+			{
+				data.at(index).data->incRef();
+				return _MR(data.at(index).data);
+			}
 		}
 		case DATA_INT:
-			return abstract_i(data.at(index).data_i);
+			return _MR(abstract_i(data.at(index).data_i));
 	}
 
 	//We should be here only if data is an object and is NULL
-	return new Undefined;
+	return _MR(new Undefined);
 }
 
 void Array::outofbounds() const

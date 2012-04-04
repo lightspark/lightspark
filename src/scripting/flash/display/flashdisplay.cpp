@@ -858,7 +858,7 @@ ASFUNCTIONBODY(Scene,_getLabels)
 	ret->resize(th->labels.size());
 	for(size_t i=0; i<th->labels.size(); ++i)
 	{
-		ret->set(i, Class<FrameLabel>::getInstanceS(th->labels[i]));
+		ret->set(i, _MR(Class<FrameLabel>::getInstanceS(th->labels[i])));
 	}
 	return ret;
 }
@@ -1091,7 +1091,7 @@ ASFUNCTIONBODY(MovieClip,_getScenes)
 			numFrames = th->totalFrames_unreliable - th->scenes[i].startframe;
 		else
 			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
-		ret->set(i, Class<Scene>::getInstanceS(th->scenes[i],numFrames));
+		ret->set(i, _MR(Class<Scene>::getInstanceS(th->scenes[i],numFrames)));
 	}
 	return ret;
 }
@@ -1170,7 +1170,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
 	ret->resize(sc.labels.size());
 	for(size_t i=0; i<sc.labels.size(); ++i)
 	{
-		ret->set(i, Class<FrameLabel>::getInstanceS(sc.labels[i]));
+		ret->set(i, _MR(Class<FrameLabel>::getInstanceS(sc.labels[i])));
 	}
 	return ret;
 }

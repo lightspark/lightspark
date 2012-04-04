@@ -343,8 +343,9 @@ ASFUNCTIONBODY(XML,appendChild)
 	}
 	else if(args[0]->getClass()==Class<XMLList>::getClass())
 	{
-		args[0]->incRef();
-		arg=_MR(Class<XMLList>::cast(args[0])->convertToXML().getPtr());
+		XMLList* list=Class<XMLList>::cast(args[0]);
+		arg=list->convertToXML();
+		assert_and_throw(!arg.isNull());
 	}
 	else
 	{

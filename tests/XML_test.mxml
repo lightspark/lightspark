@@ -98,6 +98,12 @@
 		var xml17:XML = new XML(5);
 		Tests.assertEquals("text", xml17.nodeKind(), "XML from integer");
 
+		var xml20:XML = new XML("<a/>");
+		var xmllist5:XMLList = new XMLList();
+		xmllist5[0] = new XML("<b/>");
+		xml20.appendChild(xmllist5);
+		Tests.assertEquals("<a>\n  <b/>\n</a>", xml20.toXMLString(), "appendChild with XMLList argument");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

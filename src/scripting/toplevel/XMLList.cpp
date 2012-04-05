@@ -470,10 +470,7 @@ _R<ASObject> XMLList::nextName(uint32_t index)
 _R<ASObject> XMLList::nextValue(uint32_t index)
 {
 	if(index<=nodes.size())
-	{
-		nodes[index-1]->incRef();
 		return nodes[index-1];
-	}
 	else
 		throw RunTimeException("XMLList::nextValue out of bounds");
 }

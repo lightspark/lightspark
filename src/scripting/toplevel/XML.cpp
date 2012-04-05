@@ -646,10 +646,7 @@ void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const 
 {
 	//Check if this node is being requested. The empty string means ALL
 	if(name.empty() || name == node->get_name())
-	{
-		root->incRef();
 		ret.push_back(_MR(Class<XML>::getInstanceS(root, node)));
-	}
 	//NOTE: Creating a temporary list is quite a large overhead, but there is no way in libxml++ to access the first child
 	const xmlpp::Node::NodeList& list=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();

@@ -50,6 +50,7 @@ private:
 	std::vector<Global*> globalScopes;
 public:
 	ApplicationDomain(){}
+	ApplicationDomain(_NR<ApplicationDomain> p):parentDomain(p){}
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -62,6 +63,7 @@ public:
 	ASFUNCTION(hasDefinition);
 	ASFUNCTION(getDefinition);
 	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>, domainMemory);
+	ASPROPERTY_GETTER(_NR<ApplicationDomain>, parentDomain);
 	template<class T>
 	T readFromDomainMemory(uint32_t addr) const
 	{

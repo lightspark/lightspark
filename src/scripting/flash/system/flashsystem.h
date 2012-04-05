@@ -95,6 +95,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<ApplicationDomain>, applicationDomain);
+	void finalize();
 };
 
 class SecurityDomain: public ASObject

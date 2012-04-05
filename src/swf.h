@@ -105,7 +105,7 @@ public:
 	void setVariableByString(const std::string& s, ASObject* o);*/
 	static RootMovieClip* getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain);
 	/*
-	 * The application domain for the main code
+	 * The application domain for this clip
 	 */
 	_NR<ApplicationDomain> applicationDomain;
 	//DisplayObject interface
@@ -317,6 +317,11 @@ public:
 	   So don't create a smart reference
 	*/
 	LoaderInfo* getLoaderInfo() const { return loaderInfo.getPtr(); }
+
+	/*
+	 * The application domain for the system
+	 */
+	_NR<ApplicationDomain> systemDomain;
 
 	//Stuff to be done once for process and not for plugin instance
 	static void staticInit() DLL_PUBLIC;

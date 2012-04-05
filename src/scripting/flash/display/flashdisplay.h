@@ -43,6 +43,7 @@ class InteractiveObject;
 class Downloader;
 class AccessibilityProperties;
 class RenderContext;
+class ApplicationDomain;
 
 class IBitmapDrawable
 {
@@ -455,8 +456,8 @@ private:
 public:
 	ASPROPERTY_GETTER(_NR<ASObject>,parameters);
 	ASPROPERTY_GETTER(uint32_t,actionScriptVersion);
-	LoaderInfo():bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(NullRef),loadStatus(STARTED),actionScriptVersion(3) {}
-	LoaderInfo(_R<Loader> l):bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),loader(l),loadStatus(STARTED),actionScriptVersion(3) {}
+	LoaderInfo();
+	LoaderInfo(_R<Loader> l);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -467,6 +468,7 @@ public:
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getApplicationDomain);
+	_NR<ApplicationDomain> applicationDomain;
 	ASFUNCTION(_getLoader);
 	ASFUNCTION(_getContent);
 	ASFUNCTION(_getSharedEvents);

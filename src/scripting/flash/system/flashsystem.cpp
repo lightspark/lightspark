@@ -137,6 +137,13 @@ void ApplicationDomain::finalize()
 
 ASFUNCTIONBODY(ApplicationDomain,_constructor)
 {
+	ApplicationDomain* th = Class<ApplicationDomain>::cast(obj);
+	_NR<ApplicationDomain> parentDomain;
+	ARG_UNPACK (parentDomain, NullRef);
+	if(parentDomain.isNull())
+		th->parentDomain =  getSys()->systemDomain;
+	else
+		th->parentDomain = parentDomain;
 	return NULL;
 }
 
@@ -147,9 +154,9 @@ ASFUNCTIONBODY(ApplicationDomain,_getMinDomainMemoryLength)
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 {
-	ApplicationDomain* ret=getSys()->applicationDomain.getPtr();
+	_NR<ApplicationDomain> ret=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
 	ret->incRef();
-	return ret;
+	return ret.getPtr();
 }
 
 ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
@@ -229,6 +236,14 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 
 ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
 {
+	//Check in the parent first
+	if(!parentDomain.isNull())
+	{
+		ASObject* ret=parentDomain->getVariableAndTargetByMultiname(name, target);
+		if(ret)
+			return ret;
+	}
+
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
 		_NR<ASObject> o=globalScopes[i]->getVariableByMultiname(name);
@@ -246,6 +261,12 @@ void LoaderContext::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	REGISTER_GETTER_SETTER(c, applicationDomain);
+}
+
+void LoaderContext::finalize()
+{
+	ASObject::finalize();
+	applicationDomain.reset();
 }
 
 ASFUNCTIONBODY(LoaderContext,_constructor)

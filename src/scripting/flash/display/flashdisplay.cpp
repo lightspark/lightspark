@@ -85,6 +85,16 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 	return s;
 }
 
+LoaderInfo::LoaderInfo():bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
+	loader(NullRef),loadStatus(STARTED),actionScriptVersion(3),applicationDomain(NullRef)
+{
+}
+
+LoaderInfo::LoaderInfo(_R<Loader> l):bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
+	loader(l),loadStatus(STARTED),actionScriptVersion(3),applicationDomain(NullRef)
+{
+}
+
 void LoaderInfo::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -115,6 +125,7 @@ void LoaderInfo::finalize()
 	EventDispatcher::finalize();
 	sharedEvents.reset();
 	loader.reset();
+	applicationDomain.reset();
 }
 
 void LoaderInfo::resetState()
@@ -226,8 +237,9 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 
 ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 {
-	getSys()->applicationDomain->incRef();
-	return getSys()->applicationDomain.getPtr();
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	th->applicationDomain->incRef();
+	return th->applicationDomain.getPtr();
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getWidth)
@@ -386,14 +398,20 @@ ASFUNCTIONBODY(Loader,load)
 	Loader* th=static_cast<Loader*>(obj);
 
 	th->unload();
-
-	assert_and_throw(argslen > 0 && args[0] && argslen <= 2);
-	URLRequest* r=Class<URLRequest>::dyncast(args[0]);
-	if(r==NULL)
-		throw Class<ArgumentError>::getInstanceS("Wrong argument in Loader::load");
+	_NR<URLRequest> r;
+	_NR<LoaderContext> context;
+	ARG_UNPACK (r)(context, NullRef);
 	th->url=r->getRequestURL();
 	th->contentLoaderInfo->setURL(th->url.getParsedURL());
 	th->contentLoaderInfo->resetState();
+	//Support for LoaderContext
+	if(context.isNull())
+	{
+		_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
+		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+	}
+	else
+		th->contentLoaderInfo->applicationDomain = context->applicationDomain;
 
 	if(!th->url.isValid())
 	{
@@ -424,6 +442,11 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	assert_and_throw(argslen>=1);
 	assert_and_throw(args[0]->getClass() && 
 			args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
+
+	//TODO: support LoaderContext
+	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
+	th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+
 	ByteArray *ba=static_cast<ByteArray*>(args[0]);
 	if(ba->getLength()!=0)
 	{

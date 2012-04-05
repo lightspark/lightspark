@@ -179,7 +179,9 @@ SystemState::SystemState(uint32_t fileSize):
 
 	null=_MR(new Null);
 	undefined=_MR(new Undefined);
-	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS());
+	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());
+	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(systemDomain));
+
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 	pluginManager = new PluginManager;
@@ -188,6 +190,7 @@ SystemState::SystemState(uint32_t fileSize):
 	securityManager=new SecurityManager();
 
 	loaderInfo=_MR(Class<LoaderInfo>::getInstanceS());
+	loaderInfo->applicationDomain = applicationDomain;
 	//If the size is not known those will stay at zero
 	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
@@ -384,6 +387,7 @@ void SystemState::finalize()
 	frameListeners.clear();
 	null.reset();
 	undefined.reset();
+	systemDomain.reset();
 }
 
 SystemState::~SystemState()

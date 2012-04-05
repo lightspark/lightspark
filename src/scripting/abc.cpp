@@ -378,7 +378,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite),DECLARED_TRAIT);
 	builtin->setVariableByQName("isXMLName","",Class<IFunction>::getFunction(_isXMLName),DECLARED_TRAIT);
 
-	getSys()->applicationDomain->registerGlobalScope(builtin);
+	getSys()->systemDomain->registerGlobalScope(builtin);
 }
 
 /* This function determines how many stack values are needed for

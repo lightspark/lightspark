@@ -843,7 +843,7 @@ ASFUNCTIONBODY(Array,_toString)
 int32_t Array::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);
-	unsigned int index=0;
+	uint32_t index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname_i(name);
 
@@ -886,7 +886,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	if(name.ns[0].name!="")
 		return ASObject::getVariableByMultiname(name,opt);
 
-	unsigned int index=0;
+	uint32_t index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname(name,opt);
 	if(index<size())
@@ -894,20 +894,23 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 		ASObject* ret=NULL;
 		if (!data.count(index))
 			ret = new Undefined;
-		switch(data[index].type)
+		else
 		{
-			case DATA_OBJECT:
-				ret=data[index].data;
-				if(ret==NULL)
-				{
-					ret=new Undefined;
-					data[index].data=ret;
-				}
-				ret->incRef();
-				break;
-			case DATA_INT:
-				ret=abstract_i(data[index].data_i);
-				break;
+			switch(data[index].type)
+			{
+				case DATA_OBJECT:
+					ret=data[index].data;
+					if(ret==NULL)
+					{
+						ret=new Undefined;
+						data[index].data=ret;
+					}
+					ret->incRef();
+					break;
+				case DATA_INT:
+					ret=abstract_i(data[index].data_i);
+					break;
+			}
 		}
 		return _MNR(ret);
 	}
@@ -1235,10 +1238,11 @@ Array::~Array()
 void Array::finalize()
 {
 	ASObject::finalize();
-	for(unsigned int i=0;i<size();i++)
+	std::map<uint32_t,data_slot>::iterator it;
+	for ( it=data.begin() ; it != data.end(); it++ )
 	{
-		if(data.count(i) && data[i].type==DATA_OBJECT && data[i].data)
-			data[i].data->decRef();
+		if((*it).second.type==DATA_OBJECT && (*it).second.data)
+			(*it).second.data->decRef();
 	}
 	data.clear();
 }

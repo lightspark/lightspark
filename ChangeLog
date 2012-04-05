@@ -6,6 +6,7 @@ Version FUTURE:
 	* Support for custom serialization/deserialization
 	* Support RPC (NetConnection::call)
 	* Support for PNG images
+	* Experimental support for Google Street View
 
 Version 0.5.5:
 	

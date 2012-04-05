@@ -117,6 +117,14 @@ void LoaderInfo::finalize()
 	loader.reset();
 }
 
+void LoaderInfo::resetState()
+{
+	SpinlockLocker l(spinlock);
+	bytesLoaded=0;
+	bytesTotal=0;
+	loadStatus=STARTED;
+}
+
 void LoaderInfo::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
@@ -284,11 +292,24 @@ ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
 	return th->contentLoaderInfo.getPtr();
 }
 
+ASFUNCTIONBODY(Loader,close)
+{
+	Loader* th=static_cast<Loader*>(obj);
+	if(th->loading)
+		th->threadAbort();
+
+	return NULL;
+}
+
 ASFUNCTIONBODY(Loader,load)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	if(th->loading)
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "Loader.load called while loading");
 		return NULL;
+	}
+	th->unload();
 	th->loading=true;
 	assert_and_throw(argslen > 0 && args[0] && argslen <= 2);
 	URLRequest* r=Class<URLRequest>::dyncast(args[0]);
@@ -296,6 +317,7 @@ ASFUNCTIONBODY(Loader,load)
 		throw Class<ArgumentError>::getInstanceS("Wrong argument in Loader::load");
 	th->url=r->getRequestURL();
 	th->contentLoaderInfo->setURL(th->url.getParsedURL());
+	th->contentLoaderInfo->resetState();
 	r->getPostData(th->postData);
 	th->source=URL;
 	//To be decreffed in jobFence
@@ -308,7 +330,11 @@ ASFUNCTIONBODY(Loader,loadBytes)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	if(th->loading)
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "Loader.loadBytes called while loading");
 		return NULL;
+	}
+	th->unload();
 	//Find the actual ByteArray object
 	assert_and_throw(argslen>=1);
 	assert_and_throw(args[0]->getClass() && 
@@ -328,6 +354,37 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Loader,_unload)
+{
+	Loader* th=static_cast<Loader*>(obj);
+	th->unload();
+	return NULL;
+}
+
+void Loader::unload()
+{
+	if(loaded)
+	{
+		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("unload")));
+		loaded=false;
+	}
+
+	_NR<DisplayObject> content_copy = NullRef;
+	{
+		SpinlockLocker l(contentSpinlock);
+		content_copy=content;
+		content.reset();
+	}
+	
+	// removeChild may execute AS code, release the lock before
+	// calling
+	if(content_copy)
+		_removeChild(content_copy);
+
+	contentLoaderInfo->resetState();
+	bytes.reset();
+}
+
 void Loader::finalize()
 {
 	DisplayObjectContainer::finalize();
@@ -342,6 +399,8 @@ Loader::~Loader()
 
 void Loader::jobFence()
 {
+	loading=false;
+	threadAborting=false;
 	decRef();
 }
 
@@ -351,8 +410,10 @@ void Loader::sinit(Class_base* c)
 	c->setSuper(Class<DisplayObjectContainer>::getRef());
 	c->setDeclaredMethodByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unload","",Class<IFunction>::getFunction(_unload),NORMAL_METHOD,true);
 }
 
 void Loader::buildTraits(ASObject* o)
@@ -446,6 +507,10 @@ void Loader::execute()
 		}
 
 		bytes.reset();
+
+		if(threadAborting)
+			return;
+
 		//Add a complete event for this object
 		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));
 	}
@@ -461,6 +526,7 @@ void Loader::threadAbort()
 		if(downloader != NULL)
 			downloader->stop();
 	}
+	threadAborting=true;
 }
 
 void Loader::setContent(_R<DisplayObject> o)

@@ -481,6 +481,7 @@ public:
 	void setBytesLoaded(uint32_t b);
 	void setURL(const tiny_string& _url) { url=_url; }
 	void setLoaderURL(const tiny_string& _url) { loaderURL=_url; }
+	void resetState();
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer
@@ -501,6 +502,7 @@ private:
 	void execute();
 	void threadAbort();
 	void jobFence();
+	void unload();
 public:
 	Loader():content(NullRef),loading(false),loaded(false),bytes(NullRef),contentLoaderInfo(NullRef),downloader(NULL)
 	{
@@ -510,8 +512,10 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(close);
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
+	ASFUNCTION(_unload);
 	ASFUNCTION(_getContentLoaderInfo);
 	ASFUNCTION(_getContent);
 	int getDepth() const

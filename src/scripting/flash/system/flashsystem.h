@@ -86,6 +86,15 @@ public:
 	}
 };
 
+class LoaderContext: public ASObject
+{
+public:
+	LoaderContext(){};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(_NR<ApplicationDomain>, applicationDomain);
+};
+
 class SecurityDomain: public ASObject
 {
 public:

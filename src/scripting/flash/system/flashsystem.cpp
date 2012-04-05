@@ -34,9 +34,10 @@ using namespace lightspark;
 SET_NAMESPACE("flash.system");
 
 REGISTER_CLASS_NAME(ApplicationDomain);
-REGISTER_CLASS_NAME(SecurityDomain);
 REGISTER_CLASS_NAME(Capabilities);
+REGISTER_CLASS_NAME(LoaderContext);
 REGISTER_CLASS_NAME(Security);
+REGISTER_CLASS_NAME(SecurityDomain);
 
 
 #ifdef _WIN32
@@ -238,6 +239,26 @@ ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& na
 	}
 	return NULL;
 }
+
+void LoaderContext::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	REGISTER_GETTER_SETTER(c, applicationDomain);
+}
+
+ASFUNCTIONBODY(LoaderContext,_constructor)
+{
+	LoaderContext* th=Class<LoaderContext>::cast(obj);
+	bool checkPolicy;
+	_NR<ApplicationDomain> appDomain;
+	_NR<SecurityDomain> secDomain;
+	ARG_UNPACK (checkPolicy, false) (appDomain, NullRef) (secDomain, NullRef);
+	//TODO: Support checkPolicyFile and securityDomain
+	th->applicationDomain=appDomain;
+	return NULL;
+}
+
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, applicationDomain);
 
 void SecurityDomain::sinit(Class_base* c)
 {

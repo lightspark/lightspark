@@ -353,7 +353,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("Security","flash.system",Class<Security>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("SecurityDomain","flash.system",Class<SecurityDomain>::getRef(),DECLARED_TRAIT);
-	builtin->setVariableByQName("LoaderContext","flash.system",Class<ASObject>::getStubClass(QName("LoaderContext","flash.system")),DECLARED_TRAIT);
+	builtin->setVariableByQName("LoaderContext","flash.system",Class<LoaderContext>::getRef(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Video","flash.media",Class<Video>::getRef(),DECLARED_TRAIT);

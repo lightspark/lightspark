@@ -24,19 +24,32 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <vector>
+
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+#include <glibmm/threads.h>
+#else
 #include <glibmm/thread.h>
+#endif
 
 namespace lightspark
 {
 
 /* Be aware that on win32, both Mutex and RecMutex are recursive! */
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+using Glib::Threads::Mutex;
+using Glib::Threads::RecMutex;
+using Glib::Threads::Cond;
+using Glib::Threads::Thread;
+typedef Mutex StaticMutex; // GLib::Threads::Mutex can be static
+#else
 using Glib::Mutex;
 using Glib::RecMutex;
 using Glib::StaticMutex;
 using Glib::Cond;
 using Glib::Thread;
+#endif
 
-typedef Glib::Mutex::Lock Locker;
+typedef Mutex::Lock Locker;
 typedef Mutex Spinlock;
 typedef Mutex::Lock SpinlockLocker;
 
@@ -182,6 +195,25 @@ public:
 		return tmp;
 	}
 
+};
+
+// This class represents the end time when waiting on a conditional
+// variable. It encapsulates the differences between new and old
+// glibmm API.
+class CondTime {
+private:
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+	gint64 timepoint;
+#else
+        Glib::TimeVal timepoint;
+#endif
+public:
+	CondTime(long milliseconds);
+	bool operator<(CondTime& c) const;
+	bool operator>(CondTime& c) const;
+	bool isInTheFuture() const;
+	void addMilliseconds(long ms);
+	bool wait(Mutex& mutex, Cond& cond);
 };
 };
 

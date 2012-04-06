@@ -29,7 +29,7 @@ using namespace std;
 
 TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false),inExecution(NULL)
 {
-	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker), true);
+	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker));
 }
 
 void TimerThread::stop()
@@ -63,7 +63,7 @@ void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 {
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	//If there are no events pending, or this is earlier than the first, signal newEvent
-	if(pendingEvents.empty() || (*it)->timing > e->timing)
+	if(pendingEvents.empty() || (*it)->wakeUpTime > e->wakeUpTime)
 	{
 		pendingEvents.insert(it, e);
 		newEvent.signal();
@@ -73,7 +73,7 @@ void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 
 	for(;it!=pendingEvents.end();++it)
 	{
-		if((*it)->timing > e->timing)
+		if((*it)->wakeUpTime > e->wakeUpTime)
 		{
 			pendingEvents.insert(it, e);
 			return;
@@ -114,11 +114,11 @@ void TimerThread::worker()
 		}
 
 		/* Get expiration of first event */
-		Glib::TimeVal timing=pendingEvents.front()->timing;
+		CondTime timing=pendingEvents.front()->wakeUpTime;
 		/* Wait for the absolute time or a newEvent signal
 		 * this unlocks the mutex and relocks it before returing
 		 */
-		newEvent.timed_wait(mutex,timing);
+		timing.wait(mutex,newEvent);
 
 		if(stopped)
 			return;
@@ -130,9 +130,7 @@ void TimerThread::worker()
 
 		/* check if the top even is due now. It could be have been removed/inserted
 		 * while we slept */
-		Glib::TimeVal now;
-		now.assign_current_time();
-		if((now-timing).negative()) /* timing > now */
+		if(timing.isInTheFuture())
 			continue;
 
 		pendingEvents.pop_front();
@@ -146,7 +144,7 @@ void TimerThread::worker()
 		if(e->isTick)
 		{
 			/* re-enqueue*/
-			e->timing.add_milliseconds(e->tickTime);
+			e->wakeUpTime.addMilliseconds(e->tickTime);
 			insertNewEvent_nolock(e);
 		}
 
@@ -165,23 +163,13 @@ void TimerThread::worker()
 
 void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
 {
-	TimingEvent* e=new TimingEvent;
-	e->isTick=true;
-	e->job=job;
-	e->tickTime=tickTime;
-	e->timing.assign_current_time();
-	e->timing.add_milliseconds(tickTime);
+	TimingEvent* e=new TimingEvent(job, true, tickTime, 0);
 	insertNewEvent(e);
 }
 
 void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 {
-	TimingEvent* e=new TimingEvent;
-	e->isTick=false;
-	e->job=job;
-	e->tickTime=0;
-	e->timing.assign_current_time();
-	e->timing.add_milliseconds(waitTime);
+	TimingEvent* e=new TimingEvent(job, false, 0, waitTime);
 	insertNewEvent(e);
 }
 

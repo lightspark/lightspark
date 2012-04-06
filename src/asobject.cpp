@@ -1148,10 +1148,8 @@ bool ASObject::waitUntilConstructed(unsigned long maxwait_ms)
 	}
 	else
 	{
-		Glib::TimeVal waitEnd;
-		waitEnd.assign_current_time();
-		waitEnd.add_milliseconds(maxwait_ms);
-		return constructionSignal.timed_wait(constructionMutex, waitEnd);
+		CondTime wakeUp(maxwait_ms);
+		return wakeUp.wait(constructionMutex, constructionSignal);
 	}
 }
 

@@ -676,7 +676,11 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 	cairoPathFromTokens(cr, tokens, scaleFactor, false);
 }
 
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+StaticMutex CairoRenderer::cairoMutex;
+#else
 StaticMutex CairoRenderer::cairoMutex = GLIBMM_STATIC_MUTEX_INIT;
+#endif
 
 /* This implements IThreadJob::execute */
 void CairoRenderer::execute()
@@ -816,7 +820,11 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t>& data, uint8_t* in
 	}
 }
 
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+StaticMutex CairoPangoRenderer::pangoMutex;
+#else
 StaticMutex CairoPangoRenderer::pangoMutex = GLIBMM_STATIC_MUTEX_INIT;
+#endif
 
 void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData& tData)
 {

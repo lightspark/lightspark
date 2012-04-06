@@ -80,7 +80,7 @@ void RenderThread::start(EngineData* data)
 	engineData=data;
 	/* this function must be called in the gtk main thread */
 	engineData->setSizeChangeHandler(sigc::mem_fun(this,&RenderThread::requestResize));
-	t = Thread::create(sigc::mem_fun(this, &RenderThread::worker), true);
+	t = Thread::create(sigc::mem_fun(this, &RenderThread::worker));
 }
 
 void RenderThread::stop()

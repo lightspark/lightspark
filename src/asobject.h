@@ -247,8 +247,8 @@ private:
 	Manager* manager;
 	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
-	Glib::Mutex constructionMutex;
-	Glib::Cond constructionSignal;
+	Mutex constructionMutex;
+	Cond constructionSignal;
 public:
 #ifndef NDEBUG
 	//Stuff only used in debugging

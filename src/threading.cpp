@@ -63,3 +63,73 @@ void Semaphore::signal()
 	value++;
 	cond.signal();
 }
+
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+
+CondTime::CondTime(long milliseconds)
+{
+	timepoint=g_get_monotonic_time()+milliseconds*G_TIME_SPAN_MILLISECOND;
+}
+
+bool CondTime::operator<(CondTime& c) const
+{
+	return timepoint<c.timepoint;
+}
+
+bool CondTime::operator>(CondTime& c) const
+{
+	return timepoint>c.timepoint;
+}
+
+bool CondTime::isInTheFuture() const
+{
+	gint64 now=g_get_monotonic_time();
+	return timepoint>now;
+}
+
+void CondTime::addMilliseconds(long ms)
+{
+	timepoint+=(gint64)ms*G_TIME_SPAN_MILLISECOND;
+}
+
+bool CondTime::wait(Mutex& mutex, Cond& cond)
+{
+	return cond.wait_until(mutex,timepoint);
+}
+
+#else // HAVE_NEW_GLIBMM_THREAD_API
+
+CondTime::CondTime(long milliseconds)
+{
+	timepoint.assign_current_time();
+	timepoint.add_milliseconds(milliseconds);
+}
+
+bool CondTime::operator<(CondTime& c) const
+{
+	return timepoint<c.timepoint;
+}
+
+bool CondTime::operator>(CondTime& c) const
+{
+	return timepoint>c.timepoint;
+}
+
+bool CondTime::isInTheFuture() const
+{
+	Glib::TimeVal now;
+	now.assign_current_time();
+	return (now-timepoint).negative(); // timepoint > now
+}
+
+void CondTime::addMilliseconds(long ms)
+{
+	timepoint.add_milliseconds(ms);
+}
+
+bool CondTime::wait(Mutex& mutex, Cond& cond)
+{
+	return cond.timed_wait(mutex,timepoint);
+}
+
+#endif // HAVE_NEW_GLIBMM_THREAD_API

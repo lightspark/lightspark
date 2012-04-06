@@ -32,7 +32,7 @@ ThreadPool::ThreadPool(SystemState* s):num_jobs(0),stopFlag(false)
 	for(uint32_t i=0;i<NUM_THREADS;i++)
 	{
 		curJobs[i]=NULL;
-		threads[i] = Thread::create(sigc::bind(&job_worker,this,i), true);
+		threads[i] = Thread::create(sigc::bind(&job_worker,this,i));
 	}
 }
 

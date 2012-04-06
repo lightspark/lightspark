@@ -53,10 +53,11 @@ private:
 	class TimingEvent
 	{
 	public:
+		TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime) 
+			: isTick(_isTick),job(_job),wakeUpTime(_isTick ? _tickTime : _waitTime), tickTime(_tickTime) {};
 		bool isTick;
 		ITickJob* job;
-		//Timing are in milliseconds
-		Glib::TimeVal timing;
+		CondTime wakeUpTime;
 		uint32_t tickTime;
 	};
 	Mutex mutex;

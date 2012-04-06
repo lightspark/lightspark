@@ -23,6 +23,7 @@
 #include "lsopengl.h"
 #include "rendering_context.h"
 #include "timer.h"
+#include <glibmm/timeval.h>
 
 namespace lightspark
 {

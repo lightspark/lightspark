@@ -17,11 +17,9 @@ x86_64
 #
 CMakeFiles
 Makefile
-cmake_install.cmake
+*.cmake
 CMakeCache.txt
 obj/
-CPackConfig.cmake
-CPackSourceConfig.cmake
 version.h
 
 # SWF files

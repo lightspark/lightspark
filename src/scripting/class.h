@@ -409,7 +409,7 @@ public:
 		ret->setClass(this);
 		ret->setTypes(types);
 		if(construct)
-			handleConstruction(ret,args,argslen,true);
+			this->handleConstruction(ret,args,argslen,true);
 		return ret;
 	}
 

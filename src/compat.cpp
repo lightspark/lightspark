@@ -22,6 +22,7 @@
 #include <string>
 #include <stdlib.h>
 #include "logger.h"
+#include <unistd.h>
 
 using namespace std;
 
@@ -73,6 +74,7 @@ uint64_t timespecToUsecs(timespec t)
 uint64_t compat_get_thread_cputime_us()
 {
 	timespec tp;
+
 #ifndef _POSIX_THREAD_CPUTIME
 	#error no thread clock available
 #endif

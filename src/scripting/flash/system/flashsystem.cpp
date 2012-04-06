@@ -38,11 +38,13 @@ REGISTER_CLASS_NAME(SecurityDomain);
 REGISTER_CLASS_NAME(Capabilities);
 REGISTER_CLASS_NAME(Security);
 
+
 #ifdef _WIN32
-const char* Capabilities::EMULATED_VERSION = "WIN 11,1,0,"SHORTVERSION;
+const char* Capabilities::EMULATED_VERSION = "WIN 11,1,0," SHORTVERSION;
 #else
-const char* Capabilities::EMULATED_VERSION = "LNX 11,1,0,"SHORTVERSION;
+const char* Capabilities::EMULATED_VERSION = "LNX 11,1,0," SHORTVERSION;
 #endif
+
 
 void Capabilities::sinit(Class_base* c)
 {

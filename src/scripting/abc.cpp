@@ -829,7 +829,7 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curren
 void ABCVm::start()
 {
 	status=STARTED;
-	t = Thread::create(sigc::bind(&Run,this));
+	t = Thread::create(sigc::bind(&Run,this),true);
 }
 
 void ABCVm::shutdown()

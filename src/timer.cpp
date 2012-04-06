@@ -29,7 +29,7 @@ using namespace std;
 
 TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false),inExecution(NULL)
 {
-	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker));
+	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker),true);
 }
 
 void TimerThread::stop()

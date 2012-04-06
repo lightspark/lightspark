@@ -50,7 +50,7 @@ Thread* EngineData::gtkThread = NULL;
 void EngineData::startGTKMain()
 {
 	assert(!gtkThread);
-	gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner));
+	gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner),true);
 }
 
 void EngineData::quitGTKMain()

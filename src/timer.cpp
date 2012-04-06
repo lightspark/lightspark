@@ -128,9 +128,9 @@ void TimerThread::worker()
 
 		TimingEvent* e=pendingEvents.front();
 
-		/* check if the top even is due now. It could be have been removed/inserted
+		/* check if the top event is due now. It could be have been removed/inserted
 		 * while we slept */
-		if(timing.isInTheFuture())
+		if(e->wakeUpTime.isInTheFuture())
 			continue;
 
 		pendingEvents.pop_front();

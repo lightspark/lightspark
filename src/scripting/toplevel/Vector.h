@@ -43,6 +43,8 @@ class Vector: public ASObject
 	};
 public:
 	Vector() : vec_type(NULL) {}
+	~Vector();
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {};
 	static ASObject* generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen);

@@ -78,7 +78,21 @@ void Vector::sinit(Class_base* c)
 	c->prototype->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
+}
 
+Vector::~Vector()
+{
+	finalize();
+}
+
+void Vector::finalize()
+{
+	for(unsigned int i=0;i<size();i++)
+	{
+		if(vec[i])
+			vec[i]->decRef();
+	}
+	vec.clear();
 }
 
 void Vector::setTypes(const std::vector<Type*>& types)

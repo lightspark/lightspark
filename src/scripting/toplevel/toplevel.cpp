@@ -563,6 +563,16 @@ TRISTATE Null::isLess(ASObject* r)
 	}
 }
 
+int32_t Null::getVariableByMultiname_i(const multiname& name)
+{
+	throw Class<TypeError>::getInstanceS("Error #1009: null has no properties.");
+}
+
+_NR<ASObject> Null::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	throw Class<TypeError>::getInstanceS("Error #1009: null has no properties.");
+}
+
 int Null::toInt()
 {
 	return 0;

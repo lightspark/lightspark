@@ -429,6 +429,9 @@ public:
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	int32_t getVariableByMultiname_i(const multiname& name);
+
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

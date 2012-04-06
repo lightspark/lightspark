@@ -667,19 +667,7 @@ ASObject* Date::msSinceEpoch()
 tiny_string Date::toString()
 {
 	assert_and_throw(implEnable);
-	if(nan) 
-		return "Invalid Date";
-	gchar* fs1 = g_date_time_format(this->datetime, "%a %b %e");
-	gchar* fs2 = g_date_time_format(this->datetime, "%H:%M:%S %Z%z");
-	tiny_string res1(fs1);
-	tiny_string res2(fs2);
-	char buf[10];
-	snprintf(buf,10," %d ",(extrayears + g_date_time_get_year(this->datetime)));
-	tiny_string res = res1+ buf +res2;
-	g_free(fs1);
-	g_free(fs2);
-
-	return res;
+	return toString_priv(false, "%a %b %e %H:%M:%S GMT%z");
 }
 
 tiny_string Date::toString_priv(bool utc, const char* formatstr) const
@@ -707,7 +695,7 @@ ASFUNCTIONBODY(Date,_toString)
 ASFUNCTIONBODY(Date,toUTCString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(th->toString_priv(true,"%a %b %e %H:%M:%S %Z%z"));
+	return Class<ASString>::getInstanceS(th->toString_priv(true,"%a %b %e %H:%M:%S UTC"));
 }
 
 ASFUNCTIONBODY(Date,toDateString)
@@ -719,7 +707,7 @@ ASFUNCTIONBODY(Date,toDateString)
 ASFUNCTIONBODY(Date,toTimeString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(g_date_time_format(th->datetime, "%H:%M:%S %Z%z"));
+	return Class<ASString>::getInstanceS(g_date_time_format(th->datetime, "%H:%M:%S GMT%z"));
 }
 
 

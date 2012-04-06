@@ -10,15 +10,17 @@
 #
 i686/*
 x86_64
+*.gmo
 
 #
 # CMAKE
 #
 CMakeFiles
 Makefile
-cmake_install.cmake
+*.cmake
 CMakeCache.txt
 obj/
+version.h
 
 # SWF files
 

@@ -21,6 +21,7 @@
 #define REGEXP_H
 #include "compat.h"
 #include "asobject.h"
+#include <pcre.h>
 
 namespace lightspark
 {
@@ -33,6 +34,7 @@ private:
 	RegExp();
 	RegExp(const tiny_string& _re);
 public:
+	pcre* compile();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASObject *match(const tiny_string& str);

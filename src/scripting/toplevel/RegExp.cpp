@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <pcre.h>
 #include "argconv.h"
 #include "RegExp.h"
 
@@ -42,6 +41,8 @@ void RegExp::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(exec),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("test",AS3,Class<IFunction>::getFunction(test),DYNAMIC_TRAIT);
 	REGISTER_GETTER(c,dotall);
 	REGISTER_GETTER(c,global);
 	REGISTER_GETTER(c,ignoreCase);
@@ -98,7 +99,7 @@ ASFUNCTIONBODY(RegExp,_constructor)
 					th->dotall=true;
 					break;
 				default:
-					throw Class<SyntaxError>::getInstanceS("unknown flag in RegExp");
+					break;
 			}
 		}
 	}
@@ -139,20 +140,10 @@ ASFUNCTIONBODY(RegExp,exec)
 
 ASObject *RegExp::match(const tiny_string& str)
 {
-	const char* error;
-	int errorOffset;
-	int options=PCRE_UTF8;
-	if(ignoreCase)
-		options|=PCRE_CASELESS;
-	if(extended)
-		options|=PCRE_EXTENDED;
-	if(multiline)
-		options|=PCRE_MULTILINE;
-	if(dotall)
-		options|=PCRE_DOTALL;
-	pcre* pcreRE=pcre_compile(source.raw_buf(), options, &error, &errorOffset,NULL);
-	if(error)
+	pcre* pcreRE = compile();
+	if (!pcreRE)
 		return new Null;
+
 	int capturingGroups;
 	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 	if(infoOk!=0)
@@ -186,12 +177,15 @@ ASObject *RegExp::match(const tiny_string& str)
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
+		lastIndex=0;
 		return new Null;
 	}
-
+	pcre_extra extra;
+	extra.match_limit_recursion=200;
+	extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
 	int ovector[(capturingGroups+1)*3];
 	int offset=global?lastIndex:0;
-	int rc=pcre_exec(pcreRE, NULL, str.raw_buf(), str.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+	int rc=pcre_exec(pcreRE, &extra, str.raw_buf(), str.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 	if(rc<0)
 	{
 		//No matches or error
@@ -202,7 +196,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	//Push the whole result and the captured strings
 	for(int i=0;i<capturingGroups+1;i++)
 	{
-		if(ovector[i*2] != -1)
+		if(ovector[i*2] >= 0)
 			a->push(_MR(Class<ASString>::getInstanceS( str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
 		else
 			a->push(_MR(new Undefined));
@@ -230,29 +224,29 @@ ASObject *RegExp::match(const tiny_string& str)
 
 ASFUNCTIONBODY(RegExp,test)
 {
+	if (!obj->is<RegExp>())
+		return abstract_b(true);
 	RegExp* th=static_cast<RegExp*>(obj);
 
 	const tiny_string& arg0 = args[0]->toString();
-
-	int options = PCRE_UTF8;
-	if(th->ignoreCase)
-		options |= PCRE_CASELESS;
-	if(th->extended)
-		options |= PCRE_EXTENDED;
-	if(th->multiline)
-		options |= PCRE_MULTILINE;
-	if(th->dotall)
-		options|=PCRE_DOTALL;
-
-	const char * error;
-	int errorOffset;
-	pcre * pcreRE = pcre_compile(th->source.raw_buf(), options, &error, &errorOffset, NULL);
-	if(error)
+	pcre* pcreRE = th->compile();
+	if (!pcreRE)
 		return new Null;
 
-	int ovector[30];
+	int capturingGroups;
+	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+	if(infoOk!=0)
+	{
+		pcre_free(pcreRE);
+		return new Null;
+	}
+	int ovector[(capturingGroups+1)*3];
+	
 	int offset=(th->global)?th->lastIndex:0;
-	int rc = pcre_exec(pcreRE, NULL, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, 30);
+	pcre_extra extra;
+	extra.match_limit_recursion=200;
+	extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+	int rc = pcre_exec(pcreRE, &extra, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 	bool ret = (rc >= 0);
 	pcre_free(pcreRE);
 
@@ -278,4 +272,33 @@ ASFUNCTIONBODY(RegExp,_toString)
 	if(th->dotall)
 		ret += "s";
 	return Class<ASString>::getInstanceS(ret);
+}
+
+pcre* RegExp::compile()
+{
+	int options = PCRE_UTF8|PCRE_NEWLINE_ANY|PCRE_JAVASCRIPT_COMPAT;
+	if(ignoreCase)
+		options |= PCRE_CASELESS;
+	if(extended)
+		options |= PCRE_EXTENDED;
+	if(multiline)
+		options |= PCRE_MULTILINE;
+	if(dotall)
+		options|=PCRE_DOTALL;
+
+	const char * error;
+	int errorOffset;
+	int errorcode;
+	pcre* pcreRE=pcre_compile2(source.raw_buf(), options,&errorcode,  &error, &errorOffset,NULL);
+	if(error)
+	{
+		if (errorcode == 64) // invalid pattern in javascript compatibility mode (we try again in normal mode to match flash behaviour)
+		{
+			options &= ~PCRE_JAVASCRIPT_COMPAT;
+			pcreRE=pcre_compile2(source.raw_buf(), options,&errorcode,  &error, &errorOffset,NULL);
+		}
+		if (error)
+			return NULL;
+	}
+	return pcreRE;
 }

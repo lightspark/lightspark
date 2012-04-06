@@ -131,7 +131,7 @@ ASFUNCTIONBODY(ASString,search)
 	if(argslen == 0 || args[0]->getObjectType() == T_UNDEFINED)
 		return abstract_i(-1);
 
-	int options=PCRE_UTF8;
+	int options=PCRE_UTF8|PCRE_NEWLINE_ANY|PCRE_JAVASCRIPT_COMPAT;
 	tiny_string restr;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
@@ -156,7 +156,6 @@ ASFUNCTIONBODY(ASString,search)
 	pcre* pcreRE=pcre_compile(restr.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 		return abstract_i(ret);
-	//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
 	int capturingGroups;
 	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 	if(infoOk!=0)
@@ -164,11 +163,13 @@ ASFUNCTIONBODY(ASString,search)
 		pcre_free(pcreRE);
 		return abstract_i(ret);
 	}
-	assert_and_throw(capturingGroups<10);
-	int ovector[30];
+	pcre_extra extra;
+	extra.match_limit_recursion=200;
+	extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+	int ovector[(capturingGroups+1)*3];
 	int offset=0;
 	//Global is not used in search
-	int rc=pcre_exec(pcreRE, NULL, data.raw_buf(), data.numBytes(), offset, 0, ovector, 30);
+	int rc=pcre_exec(pcreRE, &extra, data.raw_buf(), data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 	if(rc<0)
 	{
 		//No matches or error
@@ -179,6 +180,7 @@ ASFUNCTIONBODY(ASString,search)
 	// pcre_exec returns byte position, so we have to convert it to character position 
 	tiny_string tmp = data.substr_bytes(0, ret);
 	ret = tmp.numChars();
+	pcre_free(pcreRE);
 	return abstract_i(ret);
 }
 
@@ -283,19 +285,8 @@ ASFUNCTIONBODY(ASString,split)
 			return ret;
 		}
 
-		const char* error;
-		int offset;
-		int options=PCRE_UTF8;
-		if(re->ignoreCase)
-			options|=PCRE_CASELESS;
-		if(re->extended)
-			options|=PCRE_EXTENDED;
-		if(re->multiline)
-			options|=PCRE_MULTILINE;
-		if(re->dotall)
-			options|=PCRE_DOTALL;
-		pcre* pcreRE=pcre_compile(re->source.raw_buf(), options, &error, &offset,NULL);
-		if(error)
+		pcre* pcreRE = re->compile();
+		if (!pcreRE)
 			return ret;
 		int capturingGroups;
 		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
@@ -304,14 +295,17 @@ ASFUNCTIONBODY(ASString,split)
 			pcre_free(pcreRE);
 			return ret;
 		}
+		pcre_extra extra;
+		extra.match_limit_recursion=200;
+		extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
 		int ovector[(capturingGroups+1)*3];
-		offset=0;
+		int offset=0;
 		unsigned int end;
 		uint32_t lastMatch = 0;
 		do
 		{
 			//offset is a byte offset that must point to the beginning of an utf8 character
-			int rc=pcre_exec(pcreRE, NULL, data.raw_buf(), data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+			int rc=pcre_exec(pcreRE, &extra, data.raw_buf(), data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 			end=ovector[0];
 			if(rc<0)
 				break;
@@ -676,21 +670,10 @@ ASFUNCTIONBODY(ASString,replace)
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
-		const char* error;
-		int errorOffset;
-		int options=PCRE_UTF8;
-		if(re->ignoreCase)
-			options|=PCRE_CASELESS;
-		if(re->extended)
-			options|=PCRE_EXTENDED;
-		if(re->multiline)
-			options|=PCRE_MULTILINE;
-		if(re->dotall)
-			options|=PCRE_DOTALL;
-		pcre* pcreRE=pcre_compile(re->source.raw_buf(), options, &error, &errorOffset,NULL);
-		if(error)
+		pcre* pcreRE = re->compile();
+		if (!pcreRE)
 			return ret;
-		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+
 		int capturingGroups;
 		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 		if(infoOk!=0)
@@ -698,13 +681,15 @@ ASFUNCTIONBODY(ASString,replace)
 			pcre_free(pcreRE);
 			return ret;
 		}
-		assert_and_throw(capturingGroups<20);
-		int ovector[60];
+		pcre_extra extra;
+		extra.match_limit_recursion=200;
+		extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+		int ovector[(capturingGroups+1)*3];
 		int offset=0;
 		int retDiff=0;
 		do
 		{
-			int rc=pcre_exec(pcreRE, NULL, ret->data.raw_buf(), ret->data.numBytes(), offset, 0, ovector, 60);
+			int rc=pcre_exec(pcreRE, &extra, ret->data.raw_buf(), ret->data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 			if(rc<0)
 			{
 				//No matches or error

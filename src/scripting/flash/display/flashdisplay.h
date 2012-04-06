@@ -800,6 +800,7 @@ public:
 	ASFUNCTION(getRect);
 	ASFUNCTION(copyPixels);
 	ASFUNCTION(fillRect);
+	ASFUNCTION(generateFilterRect);
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
 	bool fromJPEG(uint8_t* data, int len);
 	bool fromJPEG(std::istream& s);

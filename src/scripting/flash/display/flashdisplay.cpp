@@ -3771,6 +3771,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(getRect),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("copyPixels","",Class<IFunction>::getFunction(copyPixels),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fillRect","",Class<IFunction>::getFunction(fillRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("generateFilterRect","",Class<IFunction>::getFunction(generateFilterRect),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
 
@@ -4014,6 +4015,15 @@ ASFUNCTIONBODY(BitmapData,copyPixels)
 	}
 
 	return NULL;
+}
+ASFUNCTIONBODY(BitmapData,generateFilterRect)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData::generateFilterRect is just a stub");
+	BitmapData* th = obj->as<BitmapData>();
+	Rectangle *rect=Class<Rectangle>::getInstanceS();
+	rect->width=th->width;
+	rect->height=th->height;
+	return rect;
 }
 
 Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)

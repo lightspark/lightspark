@@ -349,7 +349,7 @@ ASFUNCTIONBODY(Array, _reverse)
 {
 	Array* th = static_cast<Array*>(obj);
 
-	std::map<uint32_t, data_slot> tmp = std::map<uint32_t, data_slot>(th->data);
+	std::map<uint32_t, data_slot> tmp(th->data.begin(),th->data.end());
 	uint32_t size = th->size();
 	th->data.clear();
 	std::map<uint32_t, data_slot>::iterator it=tmp.begin();

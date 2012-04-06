@@ -190,7 +190,8 @@ class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
-	std::map<_R<ASObject>,_R<ASObject> > data;
+	std::map<_R<ASObject>,_R<ASObject>,std::less<_R<ASObject>>,
+	       traceable_allocator<std::pair<const _R<ASObject>, _R<ASObject>>>> data;
 public:
 	Dictionary(){}
 	void finalize();

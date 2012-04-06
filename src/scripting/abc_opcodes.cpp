@@ -1285,7 +1285,7 @@ void ABCVm::getLex(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, _("getLex: ") << *name );
-	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
+	auto it=th->scope_stack.rbegin();
 	// o will be a reference owned by this function (or NULL). At
 	// the end the reference will be handed over to the runtime
 	// stack.
@@ -1353,7 +1353,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 {
 	LOG(LOG_CALLS, _("findProperty ") << *name );
 
-	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
+	auto it=th->scope_stack.rbegin();
 	bool found=false;
 	ASObject* ret=NULL;
 	for(;it!=th->scope_stack.rend();++it)
@@ -1388,7 +1388,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 {
 	LOG(LOG_CALLS, _("findPropStrict ") << *name );
 
-	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
+	auto it=th->scope_stack.rbegin();
 	bool found=false;
 	ASObject* ret=NULL;
 
@@ -1807,7 +1807,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 	ASObject* obj=th->runtime_stack_pop();
 	//The name must be a QName
 	assert_and_throw(name->name_type==multiname::NAME_STRING);
-	vector<_R<XML> > ret;
+	XML::XMLVector ret;
 	//TODO: support multiname and namespaces
 	if(obj->getClass()==Class<XML>::getClass())
 	{
@@ -1878,7 +1878,7 @@ void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 	if(c->super)
 		newClassRecursiveLink(target, c->super.getPtr());
 
-	const vector<Class_base*>& interfaces=c->getInterfaces();
+	const Class_base::interfacesVector& interfaces=c->getInterfaces();
 	for(unsigned int i=0;i<interfaces.size();i++)
 	{
 		LOG(LOG_CALLS,_("Linking with interface ") << interfaces[i]->class_name);
@@ -1935,7 +1935,8 @@ void ABCVm::newClass(call_context* th, int n)
 
 	ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 
-	ret->class_scope=th->scope_stack;
+	assert(ret->class_scope.empty());
+	ret->class_scope.insert(ret->class_scope.end(),th->scope_stack.begin(),th->scope_stack.end());
 
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
@@ -2128,7 +2129,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 
 	method_info* m=&th->context->methods[n];
 	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
-	f->func_scope=th->scope_stack;
+	f->acquireScope(th->scope_stack);
 
 	//Bind the function to null, as this is not a class method
 	f->bind(NullRef,-1);

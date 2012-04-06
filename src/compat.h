@@ -29,6 +29,7 @@
 #include <iostream>
 // TODO: This should be reworked to use CMake feature detection where possible
 
+#include "gc_support.h"
 /* gettext support */
 #include <locale.h>
 #include <libintl.h>

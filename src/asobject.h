@@ -156,7 +156,7 @@ struct variable
 class variables_map
 {
 public:
-	std::multimap<tiny_string,variable> Variables;
+	std::multimap<tiny_string,variable,std::less<tiny_string>,traceable_allocator<std::pair<const tiny_string, variable>>> Variables;
 	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
 	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
@@ -205,7 +205,7 @@ public:
 class Manager
 {
 private:
-	std::vector<ASObject*> available;
+	std::vector<ASObject*, traceable_allocator<ASObject*>> available;
 	uint32_t maxCache;
 public:
 	Manager(uint32_t m):maxCache(m){}
@@ -219,8 +219,7 @@ enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 
-
-class ASObject
+class ASObject: public gc
 {
 friend class Manager;
 friend class ABCVm;

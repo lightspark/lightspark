@@ -36,6 +36,11 @@ XMLList::XMLList(const std::string& str):constructed(true)
 	buildFromString(str);
 }
 
+XMLList::XMLList(const XML::XMLVector& r):
+	nodes(r.begin(),r.end()),constructed(true)
+{
+}
+
 void XMLList::finalize()
 {
 	nodes.clear();
@@ -154,7 +159,7 @@ ASFUNCTIONBODY(XMLList,generator)
 	}
 	else if(args[0]->getClass()==Class<XML>::getClass())
 	{
-		std::vector< _R<XML> > nodes;
+		XML::XMLVector nodes;
 		args[0]->incRef();
 		nodes.push_back(_MR(Class<XML>::cast(args[0])));
 		return Class<XMLList>::getInstanceS(nodes);
@@ -173,7 +178,7 @@ ASFUNCTIONBODY(XMLList,descendants)
 	XMLList* th=Class<XMLList>::cast(obj);
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0]->getObjectType()!=T_QNAME);
-	vector<_R<XML>> ret;
+	XML::XMLVector ret;
 	th->getDescendantsByQName(args[0]->toString(),"",ret);
 	return Class<XMLList>::getInstanceS(ret);
 }
@@ -189,8 +194,8 @@ ASFUNCTIONBODY(XMLList,child)
 	XMLList* th = obj->as<XMLList>();
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
-	std::vector<_R<XML>> ret;
-	std::vector<_R<XML> >::iterator it=th->nodes.begin();
+	XML::XMLVector ret;
+	auto it=th->nodes.begin();
         for(; it!=th->nodes.end(); ++it)
         {
 		(*it)->childrenImpl(ret, arg0);
@@ -203,8 +208,8 @@ ASFUNCTIONBODY(XMLList,children)
 {
 	XMLList* th = obj->as<XMLList>();
 	assert_and_throw(argslen==0);
-	std::vector<_R<XML>> ret;
-	std::vector<_R<XML> >::iterator it=th->nodes.begin();
+	XML::XMLVector ret;
+	auto it=th->nodes.begin();
         for(; it!=th->nodes.end(); ++it)
         {
 		(*it)->childrenImpl(ret, "*");
@@ -217,8 +222,8 @@ ASFUNCTIONBODY(XMLList,text)
 {
 	XMLList* th = obj->as<XMLList>();
 	ARG_UNPACK;
-	std::vector<_R<XML>> ret;
-	std::vector<_R<XML> >::iterator it=th->nodes.begin();
+	XML::XMLVector ret;
+	auto it=th->nodes.begin();
         for(; it!=th->nodes.end(); ++it)
         {
 		(*it)->getText(ret);
@@ -245,8 +250,8 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 	}
 	else
 	{
-		std::vector<_R<XML> > retnodes;
-		std::vector<_R<XML> >::iterator it=nodes.begin();
+		XML::XMLVector retnodes;
+		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
 			_NR<ASObject> o=(*it)->getVariableByMultiname(name,opt);
@@ -279,7 +284,7 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 	else
 	{
 		std::vector<_R<XML> > retnodes;
-		std::vector<_R<XML> >::iterator it=nodes.begin();
+		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
 			bool ret=(*it)->hasPropertyByMultiname(name, considerDynamic);
@@ -306,9 +311,9 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o)
 	nodes.push_back(_MR(newNode));
 }
 
-void XMLList::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret)
+void XMLList::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XML::XMLVector& ret)
 {
-	std::vector<_R<XML> >::iterator it=nodes.begin();
+	auto it=nodes.begin();
 	for(; it!=nodes.end(); ++it)
 	{
 		(*it)->getDescendantsByQName(name, ns, ret);
@@ -331,7 +336,7 @@ bool XMLList::hasSimpleContent() const
 		return nodes[0]->hasSimpleContent();
 	else
 	{
-		std::vector<_R<XML> >::const_iterator it=nodes.begin();
+		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
 			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
@@ -350,7 +355,7 @@ bool XMLList::hasComplexContent() const
 		return nodes[0]->hasComplexContent();
 	else
 	{
-		std::vector<_R<XML>>::const_iterator it=nodes.begin();
+		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
 			if((*it)->getNodeKind()==XML_ELEMENT_NODE)

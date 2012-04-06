@@ -184,7 +184,7 @@ public:
 	The base class for render jobs based on cairo
 	Stores an internal copy of the data to be rendered
 */
-class CairoRenderer: public ITextureUploadable, public IThreadJob
+class CairoRenderer: public ITextureUploadable, public IThreadJob, public gc_traceable
 {
 protected:
 	virtual ~CairoRenderer();

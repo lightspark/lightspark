@@ -29,7 +29,7 @@ namespace lightspark
 class XMLList: public ASObject
 {
 private:
-	std::vector<_R<XML> > nodes;
+	XML::XMLVector nodes;
 	bool constructed;
 	tiny_string toString_priv() const;
 	void buildFromString(const std::string& str);
@@ -40,7 +40,7 @@ public:
 	   Special constructor to build empty XMLList out of AS code
 	*/
 	XMLList(bool c):constructed(c){assert(c);}
-	XMLList(const std::vector<_R<XML> >& r):nodes(r),constructed(true){}
+	XMLList(const XML::XMLVector& r);
 	XMLList(const std::string& str);
 	void finalize();
 	static void buildTraits(ASObject* o){};
@@ -61,7 +61,7 @@ public:
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XML::XMLVector& ret);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;

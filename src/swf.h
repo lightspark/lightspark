@@ -63,7 +63,8 @@ private:
 	bool parsingIsFailed;
 	RGB Background;
 	Spinlock dictSpinlock;
-	std::list < _R<DictionaryTag> > dictionary;
+	std::list < _R<DictionaryTag>,
+	       traceable_allocator<_R<DictionaryTag>>> dictionary;
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
 	float frameRate;
@@ -205,7 +206,8 @@ private:
 	Spinlock profileDataSpinlock;
 
 	Mutex mutexFrameListeners;
-	std::set<_R<DisplayObject>> frameListeners;
+	std::set<_R<DisplayObject>, std::less<_R<DisplayObject>>,
+		traceable_allocator<_R<DisplayObject>>> frameListeners;
 	/*
 	   The head of the invalidate queue
 	*/
@@ -349,7 +351,7 @@ public:
 #endif
 };
 
-class ParseThread: public IThreadJob
+class ParseThread: public IThreadJob, public gc_traceable
 {
 public:
 	int version;

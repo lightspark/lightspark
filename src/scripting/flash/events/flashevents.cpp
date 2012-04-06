@@ -400,7 +400,7 @@ void EventDispatcher::buildTraits(ASObject* o)
 
 void EventDispatcher::dumpHandlers()
 {
-	std::map<tiny_string,list<listener> >::iterator it=handlers.begin();
+	std::map<tiny_string, listenerList >::iterator it=handlers.begin();
 	for(;it!=handlers.end();++it)
 		LOG(LOG_INFO, it->first);
 }
@@ -435,7 +435,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	{
 		Locker l(th->handlersMutex);
 		//Search if any listener is already registered for the event
-		list<listener>& listeners=th->handlers[eventName];
+		listenerList& listeners=th->handlers[eventName];
 		if(find(listeners.begin(),listeners.end(),make_pair(f,useCapture))!=listeners.end())
 		{
 			LOG(LOG_CALLS,_("Weird event reregistration"));
@@ -474,7 +474,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 
 	{
 		Locker l(th->handlersMutex);
-		map<tiny_string, list<listener> >::iterator h=th->handlers.find(eventName);
+		map<tiny_string, listenerList >::iterator h=th->handlers.find(eventName);
 		if(h==th->handlers.end())
 		{
 			LOG(LOG_CALLS,_("Event not found"));
@@ -554,7 +554,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	check();
 	e->check();
 	Locker l(handlersMutex);
-	map<tiny_string, list<listener> >::iterator h=handlers.find(e->type);
+	map<tiny_string, listenerList >::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
 		LOG(LOG_CALLS,_("Not handled event ") << e->type);
@@ -564,7 +564,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	LOG(LOG_CALLS, _("Handling event ") << h->first);
 
 	//Create a temporary copy of the listeners, as the list can be modified during the calls
-	vector<listener> tmpListener(h->second.begin(),h->second.end());
+	vector<listener, traceable_allocator<listener>> tmpListener(h->second.begin(), h->second.end());
 	l.release();
 	//TODO: check, ok we should also bind the level
 	for(unsigned int i=0;i<tmpListener.size();i++)

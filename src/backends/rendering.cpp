@@ -361,6 +361,11 @@ void RenderThread::init()
 
 void RenderThread::worker()
 {
+	GC_stack_base stackBase;
+	stackBase.mem_base = &stackBase;
+	int ret=GC_register_my_thread(&stackBase);
+	cerr << "RET " << ret << endl;
+	assert(ret==0);
 	setTLSSys(m_sys);
 	/* set TLS variable for getRenderThread() */
 	g_static_private_set(&renderThread, this, NULL);
@@ -452,6 +457,7 @@ void RenderThread::worker()
 		prevUploadJob->uploadFence();
 	for(auto i=uploadJobs.begin(); i != uploadJobs.end(); ++i)
 		(*i)->uploadFence();
+	GC_unregister_my_thread();
 }
 
 void RenderThread::deinit()

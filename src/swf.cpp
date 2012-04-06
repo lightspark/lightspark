@@ -138,6 +138,9 @@ RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li, _R<ApplicationDomain> 
 	return ret;
 }
 
+extern int GC_need_to_lock;
+extern int GC_print_stats;
+
 void SystemState::staticInit()
 {
 	//Do needed global initialization
@@ -148,6 +151,13 @@ void SystemState::staticInit()
 	avcodec_register_all();
 	av_register_all();
 #endif
+
+	GC_INIT();
+	GC_need_to_lock = 1;
+	//GC_print_stats = 2;
+	//GC_find_leak = 1;
+	//GC_disable();
+//GC_allow_register_threads();
 
 	// seed the random number generator
 	srand(time(NULL));

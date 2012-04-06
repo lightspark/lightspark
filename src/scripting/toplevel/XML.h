@@ -31,6 +31,8 @@ class XMLList;
 class XML: public ASObject
 {
 friend class XMLList;
+public:
+	typedef std::vector<_R<XML>, traceable_allocator<_R<XML>>> XMLVector;
 private:
 #ifdef XMLPP_2_35_1
 	//Create a utility derived class from xmlpp::DomParser since we want to use the recovery mode
@@ -55,13 +57,13 @@ private:
 	//The node this object represent
 	xmlpp::Node* node;
 	static void recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
-			std::vector<_R<XML>>& ret);
+			XMLVector& ret);
 	tiny_string toString_priv();
 	void buildFromString(const std::string& str);
 	bool constructed;
 	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
 	XMLList* getAllAttributes();
-	void getText(std::vector<_R<XML>> &ret);
+	void getText(XMLVector& ret);
 	std::string parserQuirks(const std::string& str);
 	std::string quirkCData(const std::string& str);
 	std::string quirkXMLDeclarationInMiddle(const std::string& str);
@@ -74,7 +76,7 @@ private:
 	 * @param name The name of the wanted children, "*" for all children
 	 *
 	 */
-	void childrenImpl(std::vector<_R<XML> >& ret, const tiny_string& name);
+	void childrenImpl(XMLVector& ret, const tiny_string& name);
 public:
 	XML();
 	XML(const std::string& str);
@@ -101,7 +103,7 @@ public:
 	ASFUNCTION(elements);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString();

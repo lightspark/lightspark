@@ -188,7 +188,7 @@ class ExternalCallEvent;
 /**
  * ExtCallback specialization for IFunctions
  */
-class DLL_PUBLIC ExtASCallback : public ExtCallback
+class DLL_PUBLIC ExtASCallback : public ExtCallback, public gc_traceable
 {
 public:
 	ExtASCallback(IFunction* _func) : func(_func), result(NULL), funcWasCalled(false) { func->incRef(); }

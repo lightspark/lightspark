@@ -100,6 +100,11 @@ void TimerThread::dumpJobs()
 
 void TimerThread::worker()
 {
+	GC_stack_base stackBase;
+	stackBase.mem_base = &stackBase;
+	int ret=GC_register_my_thread(&stackBase);
+	cerr << "RET " << ret << endl;
+	assert(ret==0);
 	setTLSSys(m_sys);
 
 	Mutex::Lock l(mutex);
@@ -110,7 +115,10 @@ void TimerThread::worker()
 		{
 			newEvent.wait(mutex);
 			if(stopped)
+			{
+				GC_unregister_my_thread();
 				return;
+			}
 		}
 
 		/* Get expiration of first event */
@@ -121,7 +129,7 @@ void TimerThread::worker()
 		newEvent.timed_wait(mutex,timing);
 
 		if(stopped)
-			return;
+			break;
 
 		if(pendingEvents.empty())
 			continue;
@@ -161,6 +169,7 @@ void TimerThread::worker()
 		if(!e->isTick)
 			delete e;
 	}
+	GC_unregister_my_thread();
 }
 
 void TimerThread::addTick(uint32_t tickTime, ITickJob* job)

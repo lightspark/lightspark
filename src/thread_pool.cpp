@@ -77,6 +77,10 @@ ThreadPool::~ThreadPool()
 
 void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 {
+	GC_stack_base stackBase;
+	stackBase.mem_base = &stackBase;
+	int ret=GC_register_my_thread(&stackBase);
+	assert(ret==0);
 	setTLSSys(th->m_sys);
 
 	ThreadProfile* profile=getSys()->allocateProfiler(RGB(200,200,0));
@@ -89,7 +93,7 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 	{
 		th->num_jobs.wait();
 		if(th->stopFlag)
-			return;
+			break;
 		Locker l(th->mutex);
 		IThreadJob* myJob=th->jobs.front();
 		th->jobs.pop_front();
@@ -119,6 +123,7 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 
 		l.release();
 	}
+	GC_unregister_my_thread();
 }
 
 void ThreadPool::addJob(IThreadJob* j)

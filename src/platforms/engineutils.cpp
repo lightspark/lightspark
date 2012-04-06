@@ -37,9 +37,15 @@ EngineData::~EngineData()
 /* gtk main loop handling */
 static void gtk_main_runner()
 {
+	GC_stack_base stackBase;
+	stackBase.mem_base = &stackBase;
+	int ret=GC_register_my_thread(&stackBase);
+	cerr << "RET " << ret << endl;
+	assert(ret==0);
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();
+	GC_unregister_my_thread();
 }
 
 Thread* EngineData::gtkThread = NULL;

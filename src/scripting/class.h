@@ -81,7 +81,7 @@ public:
 		return tag || bindedToRoot;
 	}
 	//Closure stack
-	std::vector<scope_entry> class_scope;
+	std::vector<scope_entry, traceable_allocator<scope_entry>> class_scope;
 };
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */

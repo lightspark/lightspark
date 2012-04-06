@@ -46,7 +46,8 @@ friend class ABCVm;
 CLASSBUILDABLE(Array);
 protected:
 	uint64_t currentsize;
-	std::map<uint32_t,data_slot> data;
+	std::map<uint32_t,data_slot,std::less<uint32_t>,
+		traceable_allocator<std::pair<const uint32_t, data_slot>>> data;
 	void outofbounds() const;
 	Array();
 	~Array();

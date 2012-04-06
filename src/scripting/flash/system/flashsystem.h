@@ -47,7 +47,7 @@ public:
 class ApplicationDomain: public ASObject
 {
 private:
-	std::vector<Global*> globalScopes;
+	std::vector<Global*, traceable_allocator<Global*> > globalScopes;
 public:
 	ApplicationDomain(){}
 	void finalize();

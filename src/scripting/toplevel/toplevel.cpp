@@ -833,19 +833,19 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 
 void Class_base::acquireObject(ASObject* ob)
 {
-	Locker l(referencedObjectsMutex);
+/*	Locker l(referencedObjectsMutex);
 	bool ret=referencedObjects.insert(ob).second;
-	assert_and_throw(ret);
+	assert_and_throw(ret);*/
 }
 
 void Class_base::abandonObject(ASObject* ob)
 {
-	Locker l(referencedObjectsMutex);
+/*	Locker l(referencedObjectsMutex);
 	set<ASObject>::size_type ret=referencedObjects.erase(ob);
 	if(ret!=1)
 	{
 		LOG(LOG_ERROR,_("Failure in reference counting in ") << class_name);
-	}
+	}*/
 }
 
 void Class_base::finalizeObjects() const
@@ -904,7 +904,7 @@ _R<Class_object> Class_object::getRef()
 	return _MR(ret);
 }
 
-const std::vector<Class_base*>& Class_base::getInterfaces() const
+const Class_base::interfacesVector& Class_base::getInterfaces() const
 {
 	if(!interfaces.empty())
 	{
@@ -1033,7 +1033,7 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 	c=this;
 	while(c && c->class_index>=0)
 	{
-		const std::vector<Class_base*>& interfaces=c->getInterfaces();
+		const interfacesVector& interfaces=c->getInterfaces();
 		auto it=interfaces.begin();
 		for(; it!=interfaces.end(); ++it)
 		{

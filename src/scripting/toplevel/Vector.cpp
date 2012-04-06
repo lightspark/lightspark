@@ -152,7 +152,7 @@ ASFUNCTIONBODY(Vector,_concat)
 	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
 	// copy values into new Vector
 	ret->vec.resize(th->size(), NULL);
-	std::vector<ASObject*>::iterator it=th->vec.begin();
+	auto it=th->vec.begin();
 	uint32_t index = 0;
 	for(;it != th->vec.end();++it)
 	{
@@ -167,7 +167,7 @@ ASFUNCTIONBODY(Vector,_concat)
 		{
 			Vector* arg=static_cast<Vector*>(args[i]);
 			ret->vec.resize(index+arg->size(), NULL);
-			std::vector<ASObject*>::iterator it=arg->vec.begin();
+			auto it=arg->vec.begin();
 			for(;it != arg->vec.end();++it)
 			{
 				if (*it)
@@ -438,7 +438,7 @@ ASFUNCTIONBODY(Vector, _reverse)
 {
 	Vector* th = static_cast<Vector*>(obj);
 
-	std::vector<ASObject*> tmp = std::vector<ASObject*>(th->vec);
+	std::vector<ASObject*> tmp(th->vec.begin(), th->vec.end());
 	uint32_t size = th->size();
 	th->vec.clear();
 	th->vec.resize(size, NULL);

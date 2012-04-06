@@ -1403,6 +1403,11 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 
 void ABCVm::Run(ABCVm* th)
 {
+	GC_stack_base stackBase;
+	stackBase.mem_base = &stackBase;
+	int ret=GC_register_my_thread(&stackBase);
+	cerr << "RET " << ret << endl;
+	assert(ret==0);
 	//Spin wait until the VM is aknowledged by the SystemState
 	setTLSSys(th->m_sys);
 	while(getVm()!=th);
@@ -1478,6 +1483,10 @@ void ABCVm::Run(ABCVm* th)
 			//Flush the invalidation queue
 			th->m_sys->flushInvalidationQueue();
 			profile->accountTime(chronometer.checkpoint());
+			Locker l(th->event_queue_mutex);
+			//GC_enable();
+			GC_gcollect();
+			//GC_disable();
 		}
 		catch(LightsparkException& e)
 		{
@@ -1507,6 +1516,7 @@ void ABCVm::Run(ABCVm* th)
 		th->ex->clearAllGlobalMappings();
 		delete th->module;
 	}
+	GC_unregister_my_thread();
 }
 
 /* This breaks the lock on all enqueued events to prevent deadlocking */

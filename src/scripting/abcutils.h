@@ -53,7 +53,7 @@ struct call_context
 	ABCContext* context;
 	uint32_t locals_size;
 	uint32_t max_stack;
-	std::vector<scope_entry> scope_stack;
+	std::vector<scope_entry, traceable_allocator<scope_entry>> scope_stack;
 	int initialScopeStack;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used

@@ -106,7 +106,8 @@ friend class ABCContext;
 template<class T> friend class Template;
 private:
 	mutable std::vector<multiname> interfaces;
-	mutable std::vector<Class_base*> interfaces_added;
+	typedef std::vector<Class_base*, traceable_allocator<Class_base*>> interfacesVector;
+	mutable interfacesVector interfaces_added;
 	bool use_protected;
 	nsNameAndKind protected_ns;
 	void recursiveBuild(ASObject* target);
@@ -138,7 +139,7 @@ public:
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
-	const std::vector<Class_base*>& getInterfaces() const;
+	const interfacesVector& getInterfaces() const;
 	void linkInterface(Class_base* c) const;
 	/*
 	 * Returns true when 'this' is a subclass of 'cls',
@@ -345,7 +346,7 @@ private:
 public:
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	void finalize();
-	std::vector<scope_entry> func_scope;
+	std::vector<scope_entry, traceable_allocator<scope_entry>> func_scope;
 	bool isEqual(ASObject* r)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
@@ -353,10 +354,10 @@ public:
 			return false;
 		return mi==sf->mi;
 	}
-	void acquireScope(const std::vector<scope_entry>& scope)
+	void acquireScope(const std::vector<scope_entry, traceable_allocator<scope_entry>>& scope)
 	{
 		assert_and_throw(func_scope.empty());
-		func_scope=scope;
+		func_scope = scope;
 	}
 	void addToScope(const scope_entry& s)
 	{

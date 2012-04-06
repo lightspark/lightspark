@@ -287,7 +287,8 @@ class EventDispatcher: public ASObject, public IEventDispatcher
 {
 private:
 	Mutex handlersMutex;
-	std::map<tiny_string,std::list<listener> > handlers;
+	typedef std::list<listener, traceable_allocator<listener>> listenerList;
+	std::map<tiny_string,listenerList> handlers;
 public:
 	EventDispatcher();
 	void finalize();

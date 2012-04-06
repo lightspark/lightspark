@@ -233,7 +233,7 @@ private:
 protected:
 	void requestInvalidation();
 	//This is shared between RenderThread and VM
-	std::list < _R<DisplayObject> > dynamicDisplayList;
+	std::list <_R<DisplayObject>, traceable_allocator<_R<DisplayObject>>> dynamicDisplayList;
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
@@ -628,7 +628,8 @@ protected:
 private:
 	Spinlock framesLoadedLock;
 	uint32_t framesLoaded;
-	std::map<uint32_t,_NR<IFunction> > frameScripts;
+	std::map<uint32_t,_NR<IFunction>, std::less<uint32_t>,
+	       traceable_allocator<std::pair<const uint32_t,_NR<IFunction>>>> frameScripts;
 	std::vector<Scene_data> scenes;
 public:
 	RunState state;

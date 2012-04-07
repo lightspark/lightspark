@@ -128,19 +128,7 @@ public:
 		data[currentsize] = data_slot(o.getPtr(),DATA_OBJECT);
 		currentsize++;
 	}
-	void resize(uint64_t n)
-	{
-		for (uint32_t i = n; i < currentsize; i++)
-		{
-			if(data.count(i))
-			{
-				if (data[i].type==DATA_OBJECT && data[i].data)
-					data[i].data->decRef();
-				data.erase(i);
-			}
-		}
-		currentsize = n;
-	}
+	void resize(uint64_t n);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o);

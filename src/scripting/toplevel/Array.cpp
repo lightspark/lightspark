@@ -179,14 +179,13 @@ ASFUNCTIONBODY(Array,filter)
 	Array* ret=Class<Array>::getInstanceS();
 	ASObject *funcRet;
 
-	for(unsigned int i=0;i<th->size();i++)
+	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	for(;it != th->data.end();++it)
 	{
-		if (!th->data.count(i))
-			continue;
-		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		params[0] = th->data[i].data;
-		th->data[i].data->incRef();
-		params[1] = abstract_i(i);
+		assert_and_throw(it->second.type==DATA_OBJECT);
+		params[0] = it->second.data;
+		it->second.data->incRef();
+		params[1] = abstract_i(it->first);
 		params[2] = th;
 		th->incRef();
 
@@ -203,8 +202,8 @@ ASFUNCTIONBODY(Array,filter)
 		{
 			if(Boolean_concrete(funcRet))
 			{
-				th->data[i].data->incRef();
-				ret->push(_MR(th->data[i].data));
+				it->second.data->incRef();
+				ret->push(_MR(it->second.data));
 			}
 			funcRet->decRef();
 		}
@@ -220,14 +219,13 @@ ASFUNCTIONBODY(Array, some)
 	ASObject* params[3];
 	ASObject *funcRet;
 
-	for(unsigned int i=0; i < th->size(); i++)
+	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	for(;it != th->data.end();++it)
 	{
-		if (!th->data.count(i))
-			continue;
-		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		params[0] = th->data[i].data;
-		th->data[i].data->incRef();
-		params[1] = abstract_i(i);
+		assert_and_throw(it->second.type==DATA_OBJECT);
+		params[0] = it->second.data;
+		it->second.data->incRef();
+		params[1] = abstract_i(it->first);
 		params[2] = th;
 		th->incRef();
 
@@ -260,14 +258,13 @@ ASFUNCTIONBODY(Array, every)
 	ASObject* params[3];
 	ASObject *funcRet;
 
-	for(unsigned int i=0; i < th->size(); i++)
+	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	for(;it != th->data.end();++it)
 	{
-		if (!th->data.count(i))
-			continue;
-		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		params[0] = th->data[i].data;
-		th->data[i].data->incRef();
-		params[1] = abstract_i(i);
+		assert_and_throw(it->second.type==DATA_OBJECT);
+		params[0] = it->second.data;
+		it->second.data->incRef();
+		params[1] = abstract_i(it->first);
 		params[2] = th;
 		th->incRef();
 
@@ -317,14 +314,13 @@ ASFUNCTIONBODY(Array,forEach)
 	IFunction* f = static_cast<IFunction*>(args[0]);
 	ASObject* params[3];
 
-	for(unsigned int i=0; i < th->size(); i++)
+	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	for(;it != th->data.end();++it)
 	{
-		if (!th->data.count(i))
-			continue;
-		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		params[0] = th->data[i].data;
-		th->data[i].data->incRef();
-		params[1] = abstract_i(i);
+		assert_and_throw(it->second.type==DATA_OBJECT);
+		params[0] = it->second.data;
+		it->second.data->incRef();
+		params[1] = abstract_i(it->first);
 		params[2] = th;
 		th->incRef();
 
@@ -579,27 +575,26 @@ ASFUNCTIONBODY(Array,join)
 ASFUNCTIONBODY(Array,indexOf)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1 || argslen==2);
 	int ret=-1;
-	ASObject* arg0=args[0];
+	int32_t index=0;
+	ASObject* arg0 = args[0];
+	if (argslen > 1) 
+		index = args[1]->toInt();
 
-	int unsigned i = 0;
-	if(argslen == 2)
-	{
-		i = args[1]->toInt();
-	}
 
 	DATA_TYPE dtype;
-	for(;i<th->size();i++)
+	std::map<uint32_t,data_slot>::iterator it;
+	for ( it=th->data.begin() ; it != th->data.end(); it++ )
 	{
-		if (!th->data.count(i))
+		if (it->first < (uint32_t)index)
 			continue;
-		dtype = th->data[i].type;
+		data_slot sl = it->second;
+		dtype = sl.type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
-			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
+		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(sl.data,arg0)) ||
+			(dtype == DATA_INT && arg0->toInt() == sl.data_i))
 		{
-			ret=i;
+			ret=it->first;
 			break;
 		}
 	}
@@ -614,6 +609,7 @@ ASFUNCTIONBODY(Array,_pop)
 	if (size == 0)
 		return new Undefined;
 	ASObject* ret;
+	
 	if (th->data.count(size-1))
 	{
 		if(th->data[size-1].type==DATA_OBJECT)
@@ -805,25 +801,21 @@ ASFUNCTIONBODY(Array,_map)
 	IFunction* func=static_cast<IFunction*>(args[0]);
 	Array* arrayRet=Class<Array>::getInstanceS();
 
-	for(uint32_t i=0;i<th->size();i++)
+	std::map<uint32_t,data_slot>::iterator it;
+	for ( it=th->data.begin() ; it != th->data.end(); it++ )
 	{
 		ASObject* funcArgs[3];
-		if (!th->data.count(i))
-			funcArgs[0]=new Null;
-		else
+		const data_slot& slot=it->second;
+		if(slot.type==DATA_INT)
+			funcArgs[0]=abstract_i(slot.data_i);
+		else if(slot.type==DATA_OBJECT && slot.data)
 		{
-			const data_slot& slot=th->data[i];
-			if(slot.type==DATA_INT)
-				funcArgs[0]=abstract_i(slot.data_i);
-			else if(slot.type==DATA_OBJECT && slot.data)
-			{
-				funcArgs[0]=slot.data;
-				funcArgs[0]->incRef();
-			}
-			else
-				funcArgs[0]=new Undefined;
+			funcArgs[0]=slot.data;
+			funcArgs[0]->incRef();
 		}
-		funcArgs[1]=abstract_i(i);
+		else
+			funcArgs[0]=new Undefined;
+		funcArgs[1]=abstract_i(it->first);
 		funcArgs[2]=th;
 		funcArgs[2]->incRef();
 		ASObject* funcRet=func->call(new Null, funcArgs, 3);
@@ -851,26 +843,27 @@ int32_t Array::getVariableByMultiname_i(const multiname& name)
 	{
 		if (!data.count(index))
 			return 0;
-		switch(data[index].type)
+		data_slot sl = data[index];
+		switch(sl.type)
 		{
 			case DATA_OBJECT:
 			{
-				assert(data[index].data!=NULL);
-				if(data[index].data->getObjectType()==T_INTEGER)
+				assert(sl.data!=NULL);
+				if(sl.data->getObjectType()==T_INTEGER)
 				{
-					Integer* i=static_cast<Integer*>(data[index].data);
+					Integer* i=static_cast<Integer*>(sl.data);
 					return i->toInt();
 				}
-				else if(data[index].data->getObjectType()==T_NUMBER)
+				else if(sl.data->getObjectType()==T_NUMBER)
 				{
-					Number* i=static_cast<Number*>(data[index].data);
+					Number* i=static_cast<Number*>(sl.data);
 					return i->toInt();
 				}
 				else
 					throw UnsupportedException("Array::getVariableByMultiname_i not completely implemented");
 			}
 			case DATA_INT:
-				return data[index].data_i;
+				return sl.data_i;
 		}
 	}
 
@@ -896,19 +889,20 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 			ret = new Undefined;
 		else
 		{
-			switch(data[index].type)
+			data_slot sl = data[index];
+			switch(sl.type)
 			{
 				case DATA_OBJECT:
-					ret=data[index].data;
+					ret=sl.data;
 					if(ret==NULL)
 					{
 						ret=new Undefined;
-						data[index].data=ret;
+						sl.data=ret;
 					}
 					ret->incRef();
 					break;
 				case DATA_INT:
-					ret=abstract_i(data[index].data_i);
+					ret=abstract_i(sl.data_i);
 					break;
 			}
 		}
@@ -1074,15 +1068,16 @@ tiny_string Array::toString_priv() const
 	{
 		if (data.count(i))
 		{
-			if(data.at(i).type==DATA_OBJECT)
+			data_slot sl = data.at(i);
+			if(sl.type==DATA_OBJECT)
 			{
-				if(data.at(i).data)
-					ret+=data.at(i).data->toString().raw_buf();
+				if(sl.data)
+					ret+=sl.data->toString().raw_buf();
 			}
-			else if(data.at(i).type==DATA_INT)
+			else if(sl.type==DATA_INT)
 			{
 				char buf[20];
-				snprintf(buf,20,"%i",data.at(i).data_i);
+				snprintf(buf,20,"%i",sl.data_i);
 				ret+=buf;
 			}
 			else
@@ -1102,18 +1097,19 @@ _R<ASObject> Array::nextValue(uint32_t index)
 		index--;
 		if(!data.count(index))
 			return _MR(new Undefined);
-		if(data[index].type==DATA_OBJECT)
+		data_slot sl = data[index];
+		if(sl.type==DATA_OBJECT)
 		{
-			if(data[index].data==NULL)
+			if(sl.data==NULL)
 				return _MR(new Undefined);
 			else
 			{
-				data[index].data->incRef();
-				return _MR(data[index].data);
+				sl.data->incRef();
+				return _MR(sl.data);
 			}
 		}
-		else if(data[index].type==DATA_INT)
-			return _MR(abstract_i(data[index].data_i));
+		else if(sl.type==DATA_INT)
+			return _MR(abstract_i(sl.data_i));
 		else
 			throw UnsupportedException("Unexpected data type");
 	}
@@ -1169,18 +1165,19 @@ _R<ASObject> Array::at(unsigned int index) const
 
 	if (!data.count(index))
 		return _MR(new Undefined);
-	switch(data.at(index).type)
+	data_slot sl = data.at(index);
+	switch(sl.type)
 	{
 		case DATA_OBJECT:
 		{
-			if(data.at(index).data)
+			if(sl.data)
 			{
-				data.at(index).data->incRef();
-				return _MR(data.at(index).data);
+				sl.data->incRef();
+				return _MR(sl.data);
 			}
 		}
 		case DATA_INT:
-			return _MR(abstract_i(data.at(index).data_i));
+			return _MR(abstract_i(sl.data_i));
 	}
 
 	//We should be here only if data is an object and is NULL
@@ -1190,6 +1187,25 @@ _R<ASObject> Array::at(unsigned int index) const
 void Array::outofbounds() const
 {
 	throw ParseException("Array access out of bounds");
+}
+
+void Array::resize(uint64_t n)
+{
+	std::map<uint32_t,data_slot>::reverse_iterator it;
+	std::map<uint32_t,data_slot>::iterator itstart = data.end();
+	for ( it=data.rbegin() ; it != data.rend(); it++ )
+	{
+		if (it->first < n)
+		{
+			itstart = it.base();
+			break;
+		}
+		if (it->second.type==DATA_OBJECT && it->second.data)
+			it->second.data->decRef();
+	}
+	if (itstart != data.end())
+		data.erase(itstart,data.end());
+	currentsize = n;
 }
 
 void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1241,8 +1257,8 @@ void Array::finalize()
 	std::map<uint32_t,data_slot>::iterator it;
 	for ( it=data.begin() ; it != data.end(); it++ )
 	{
-		if((*it).second.type==DATA_OBJECT && (*it).second.data)
-			(*it).second.data->decRef();
+		if(it->second.type==DATA_OBJECT && it->second.data)
+			it->second.data->decRef();
 	}
 	data.clear();
 }

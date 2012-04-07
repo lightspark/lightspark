@@ -21,6 +21,8 @@
 #include "abc.h"
 #include "argconv.h"
 #include "parsing/amf3_generator.h"
+#include "Vector.h"
+#include "flash/utils/flashutils.h"
 
 using namespace std;
 using namespace lightspark;
@@ -60,7 +62,7 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("join",AS3,Class<IFunction>::getFunction(join),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("map",AS3,Class<IFunction>::getFunction(_map),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("pop",AS3,Class<IFunction>::getFunction(_pop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(_push),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(_push_as3),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
@@ -74,6 +76,10 @@ void Array::sinit(Class_base* c)
 
 	// workaround, pop was encountered not in the AS3 namespace before, need to investigate it further
 	c->setDeclaredMethodByQName("pop","",Class<IFunction>::getFunction(_pop),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("push","",Class<IFunction>::getFunction(_push),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("shift","",Class<IFunction>::getFunction(shift),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("unshift","",Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
 }
 
 void Array::buildTraits(ASObject* o)
@@ -410,6 +416,26 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 
 ASFUNCTIONBODY(Array,shift)
 {
+	if (!obj->is<Array>())
+	{
+		// this seems to be how Flash handles the generic shift calls
+		if (obj->is<Vector>())
+			return Vector::shift(obj,args,argslen);
+		if (obj->is<ByteArray>())
+			return ByteArray::shift(obj,args,argslen);
+		// for other objects we just decrease the length property
+		multiname lengthName;
+		lengthName.name_type=multiname::NAME_STRING;
+		lengthName.name_s="length";
+		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.isAttribute = true;
+		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o->toUInt();
+		if (res > 0)
+			obj->setVariableByMultiname(lengthName,abstract_ui(res-1));
+		return new Undefined;
+	}
 	Array* th=static_cast<Array*>(obj);
 	if(!th->size())
 		return new Undefined;
@@ -422,20 +448,17 @@ ASFUNCTIONBODY(Array,shift)
 			ret=th->data[0].data;
 		else
 			ret = abstract_i(th->data[0].data_i);
-		th->data.erase(0);
 	}
-	for(uint32_t i= 1;i< th->size();i++)
+	std::map<uint32_t,data_slot> tmp;
+	std::map<uint32_t,data_slot>::iterator it;
+	for ( it=th->data.begin(); it != th->data.end(); it++ )
 	{
-		if (th->data.count(i))
+		if(it->first)
 		{
-			th->data[i-1]=th->data[i];
-		}
-		else if (th->data.count(i-1))
-		{
-			th->data.erase(i-1);
+			tmp[it->first-1]=it->second;
 		}
 	}
-	th->data.erase(th->size()-1);// erase here to avoid decref
+	th->data = tmp;
 	th->resize(th->size()-1);
 	return ret;
 }
@@ -604,6 +627,26 @@ ASFUNCTIONBODY(Array,indexOf)
 
 ASFUNCTIONBODY(Array,_pop)
 {
+	if (!obj->is<Array>())
+	{
+		// this seems to be how Flash handles the generic pop calls
+		if (obj->is<Vector>())
+			return Vector::_pop(obj,args,argslen);
+		if (obj->is<ByteArray>())
+			return ByteArray::pop(obj,args,argslen);
+		// for other objects we just decrease the length property
+		multiname lengthName;
+		lengthName.name_type=multiname::NAME_STRING;
+		lengthName.name_s="length";
+		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.isAttribute = true;
+		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o->toUInt();
+		if (res > 0)
+			obj->setVariableByMultiname(lengthName,abstract_ui(res-1));
+		return new Undefined;
+	}
 	Array* th=static_cast<Array*>(obj);
 	uint32_t size =th->size();
 	if (size == 0)
@@ -760,34 +803,102 @@ ASFUNCTIONBODY(Array,sortOn)
 
 ASFUNCTIONBODY(Array,unshift)
 {
-	Array* th=static_cast<Array*>(obj);
-	th->resize(th->size()+argslen);
-	for(uint32_t i=th->size();i> 0;i--)
+	if (!obj->is<Array>())
 	{
-		if (th->data.count(i-1))
+		// this seems to be how Flash handles the generic unshift calls
+		if (obj->is<Vector>())
+			return Vector::unshift(obj,args,argslen);
+		if (obj->is<ByteArray>())
+			return ByteArray::unshift(obj,args,argslen);
+		// for other objects we just increase the length property
+		multiname lengthName;
+		lengthName.name_type=multiname::NAME_STRING;
+		lengthName.name_s="length";
+		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.isAttribute = true;
+		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o->toUInt();
+		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
+		return new Undefined;
+	}
+	Array* th=static_cast<Array*>(obj);
+	if (argslen > 0)
+	{
+		th->resize(th->size()+argslen);
+		std::map<uint32_t,data_slot> tmp;
+		std::map<uint32_t,data_slot>::reverse_iterator it;
+		for ( it=th->data.rbegin(); it != th->data.rend(); it++ )
 		{
-			th->data[(i-1)+argslen]=th->data[i-1];
-			th->data.erase(i-1);
+			tmp[it->first+argslen]=it->second;
 		}
 		
-	}
-
-	for(uint32_t i=0;i<argslen;i++)
-	{
-		th->data[i] = data_slot(args[i],DATA_OBJECT);
-		args[i]->incRef();
+		for(uint32_t i=0;i<argslen;i++)
+		{
+			tmp[i] = data_slot(args[i],DATA_OBJECT);
+			args[i]->incRef();
+		}
+		th->data = tmp;
 	}
 	return abstract_i(th->size());
 }
 
 ASFUNCTIONBODY(Array,_push)
 {
+	if (!obj->is<Array>())
+	{
+		// this seems to be how Flash handles the generic push calls
+		if (obj->is<Vector>())
+			return Vector::push(obj,args,argslen);
+		if (obj->is<ByteArray>())
+			return ByteArray::push(obj,args,argslen);
+		// for other objects we just increase the length property
+		multiname lengthName;
+		lengthName.name_type=multiname::NAME_STRING;
+		lengthName.name_s="length";
+		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.isAttribute = true;
+		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o->toUInt();
+		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
+		return new Undefined;
+	}
+	Array* th=static_cast<Array*>(obj);
+	for(unsigned int i=0;i<argslen;i++)
+	{
+		args[i]->incRef();
+		th->push(_MR(args[i]));
+	}
+	return abstract_i(th->size());
+}
+// AS3 handles push on uint.MAX_VALUE differently than ECMA, so we need to push methods
+ASFUNCTIONBODY(Array,_push_as3)
+{
+	if (!obj->is<Array>())
+	{
+		// this seems to be how Flash handles the generic push calls
+		if (obj->is<Vector>())
+			return Vector::push(obj,args,argslen);
+		if (obj->is<ByteArray>())
+			return ByteArray::push(obj,args,argslen);
+		// for other objects we just increase the length property
+		multiname lengthName;
+		lengthName.name_type=multiname::NAME_STRING;
+		lengthName.name_s="length";
+		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.isAttribute = true;
+		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o->toUInt();
+		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
+		return new Undefined;
+	}
 	Array* th=static_cast<Array*>(obj);
 	for(unsigned int i=0;i<argslen;i++)
 	{
 		if (th->size() >= UINT32_MAX)
-			throw Class<RangeError>::getInstanceS("");
-			
+			break;
 		args[i]->incRef();
 		th->push(_MR(args[i]));
 	}
@@ -1192,7 +1303,7 @@ void Array::outofbounds() const
 void Array::resize(uint64_t n)
 {
 	std::map<uint32_t,data_slot>::reverse_iterator it;
-	std::map<uint32_t,data_slot>::iterator itstart = data.end();
+	std::map<uint32_t,data_slot>::iterator itstart = n ? data.end() : data.begin();
 	for ( it=data.rbegin() ; it != data.rend(); it++ )
 	{
 		if (it->first < n)

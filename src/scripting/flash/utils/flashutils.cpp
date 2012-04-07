@@ -1184,6 +1184,58 @@ void Timer::tick()
 	}
 }
 
+// this seems to be how AS3 handles generic pop calls in Array class
+ASFUNCTIONBODY(ByteArray,pop)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	uint8_t res = 0;
+	if (th->readByte(res))
+	{
+		memmove(th->bytes,(th->bytes+1),th->getLength()-1);
+		th->len--;
+	}
+	return abstract_ui(res);
+	
+}
+
+// this seems to be how AS3 handles generic push calls in Array class
+ASFUNCTIONBODY(ByteArray,push)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->getBuffer(th->len+argslen,true);
+	for (unsigned int i = 0; i < argslen; i++)
+	{
+		th->bytes[th->len+i] = (uint8_t)args[i]->toInt();
+	}
+	return abstract_ui(th->getLength());
+}
+
+// this seems to be how AS3 handles generic shift calls in Array class
+ASFUNCTIONBODY(ByteArray,shift)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	uint8_t res = 0;
+	if (th->readByte(res))
+	{
+		memmove(th->bytes,(th->bytes+1),th->getLength()-1);
+		th->len--;
+	}
+	return abstract_ui(res);
+}
+
+// this seems to be how AS3 handles generic unshift calls in Array class
+ASFUNCTIONBODY(ByteArray,unshift)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->getBuffer(th->len+argslen,true);
+	for (unsigned int i = 0; i < argslen; i++)
+	{
+		memmove((th->bytes+argslen),(th->bytes),th->len);
+		th->bytes[i] = (uint8_t)args[i]->toInt();
+	}
+	return abstract_ui(th->getLength());
+}
+
 void Timer::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

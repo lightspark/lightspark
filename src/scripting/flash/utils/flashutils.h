@@ -91,6 +91,7 @@ public:
 	void writeU29(uint32_t val);
 	uint32_t getPosition() const;
 	void setPosition(uint32_t p);
+
 	ASFUNCTION(_getBytesAvailable);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(_setLength);
@@ -135,6 +136,11 @@ public:
 	ASFUNCTION(writeUTFBytes);
 	ASFUNCTION(_toString);
 
+	// these are internal methods used if the generic Array-Methods are called on a ByteArray
+	ASFUNCTION(pop);
+	ASFUNCTION(push);
+	ASFUNCTION(shift);
+	ASFUNCTION(unshift);
 	/**
 		Get ownership over the passed buffer
 		@param buf Pointer to the buffer to acquire, ownership and delete authority is acquired

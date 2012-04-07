@@ -83,6 +83,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
 	ASFUNCTION(_push);
+	ASFUNCTION(_push_as3);
 	ASFUNCTION(_concat);
 	ASFUNCTION(_pop);
 	ASFUNCTION(join);

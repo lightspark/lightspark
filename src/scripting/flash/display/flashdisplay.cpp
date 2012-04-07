@@ -31,7 +31,6 @@
 #include "backends/rendering.h"
 #include "backends/geometry.h"
 #include "backends/image.h"
-#include "compat.h"
 #include "flash/accessibility/flashaccessibility.h"
 #include "argconv.h"
 #include "toplevel/Vector.h"

@@ -177,7 +177,7 @@ class ABCContext
 friend class ABCVm;
 friend class method_info;
 public:
-	RootMovieClip* root;
+	_R<RootMovieClip> root;
 
 	method_info* get_method(unsigned int m);
 	const tiny_string& getString(unsigned int s) const;
@@ -218,7 +218,7 @@ public:
 	multiname* getMultiname(unsigned int m, call_context* th);
 	multiname* getMultinameImpl(ASObject* rt1, ASObject* rt2, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);
-	ABCContext(RootMovieClip* r, std::istream& in) DLL_PUBLIC;
+	ABCContext(_R<RootMovieClip> r, std::istream& in) DLL_PUBLIC;
 	void exec(bool lazy);
 
 	bool isinstance(ASObject* obj, multiname* name);

@@ -50,7 +50,11 @@ Thread* EngineData::gtkThread = NULL;
 void EngineData::startGTKMain()
 {
 	assert(!gtkThread);
-	gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner),true);
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+		gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner));
+#else
+		gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner),true);
+#endif
 }
 
 void EngineData::quitGTKMain()

@@ -833,7 +833,11 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curren
 void ABCVm::start()
 {
 	status=STARTED;
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+	t = Thread::create(sigc::bind(&Run,this));
+#else
 	t = Thread::create(sigc::bind(&Run,this),true);
+#endif
 }
 
 void ABCVm::shutdown()

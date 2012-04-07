@@ -29,7 +29,11 @@ using namespace std;
 
 TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false),inExecution(NULL)
 {
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker));
+#else
 	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker),true);
+#endif
 }
 
 void TimerThread::stop()

@@ -270,6 +270,7 @@ void LoaderThread::execute()
 {
 	assert(source==URL || source==BYTES);
 
+	streambuf *sbuf;
 	if(source==URL)
 	{
 		const char contenttype[]="Content-Type: application/x-www-form-urlencoded";
@@ -285,80 +286,53 @@ void LoaderThread::execute()
 			return;
 		}
 		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("open")));
-		istream s(downloader);
-		//TODO: support LoaderContext
-		ParseThread local_pt(s,getSys()->applicationDomain,loader.getPtr(),url.getParsedURL());
-		local_pt.execute();
-		{
-			//Acquire the lock to ensure consistency in threadAbort
-			SpinlockLocker l(downloaderLock);
-			getSys()->downloadManager->destroy(downloader);
-			downloader=NULL;
-		}
-
-		_NR<DisplayObject> obj=local_pt.getParsedObject();
-		if(obj.isNull())
-		{
-			// The stream did not contain RootMovieClip or Bitmap
-			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
-			return;
-		}
-
-		// Wait until the object is constructed before adding
-		// to the Loader. Check threadAborting once per
-		// second.
-		while(!obj->waitUntilConstructed(1000) && !threadAborting)
-			/* do nothing */;
-
-		if(threadAborting)
-			return;
-
-		loader->setContent(obj);
-		loaderInfo->sendInit();
+		sbuf=downloader;
 	}
 	else if(source==BYTES)
 	{
-		//TODO: set bytesLoaded and bytesTotal
 		assert_and_throw(bytes->bytes);
 
-		//We only support swf files now
-		if(bytes->len > 3 && (memcmp(bytes->bytes,"CWS",3)==0 || memcmp(bytes->bytes,"FWS",3)==0))
-		{
-			bytes_buf bb(bytes->bytes,bytes->len);
-			istream s(&bb);
+		loaderInfo->setBytesTotal(bytes->getLength());
+		loaderInfo->setBytesLoaded(bytes->getLength());
 
-			//TODO: Support loader context
-			ParseThread local_pt(s,getSys()->applicationDomain,loader.getPtr(),"");
-			local_pt.execute();
-		}
-		// PNG files
-		else if(bytes->len > 8 && memcmp(bytes->bytes,"\x89PNG\r\n\x1a\n", 8) == 0)
-		{
-			LOG(LOG_NOT_IMPLEMENTED, "PNG files are not supported yet in Loader.loadBytes.");
-		}
-		// JPEG files
-		else if(bytes->len > 2 && memcmp(bytes->bytes,"\xff\xd8", 2) == 0)
-		{
-			LOG(LOG_NOT_IMPLEMENTED, "JPEG files are not supported yet in Loader.loadBytes.");
-		}
-		// GIF files
-		else if(bytes->len > 6 && (memcmp(bytes->bytes,"GIF89a", 6) == 0 || memcmp(bytes->bytes,"GIF87a", 6) == 0))
-		{
-			LOG(LOG_NOT_IMPLEMENTED, "GIF files are not supported yet in Loader.loadBytes.");
-		}
-		// Unknown filetype
-		else
-		{
-			LOG(LOG_ERROR, "Tried to load file of unknown type with Loader.loadBytes.");
-		}
-
-		bytes.reset();
-		if(threadAborting)
-			return;
-
-		//Add a complete event for this object
-		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("complete")));
+		bytes_buf bb(bytes->bytes,bytes->getLength());
+		sbuf=&bb;
 	}
+
+	//TODO: support LoaderContext
+	istream s(sbuf);
+	ParseThread local_pt(s,getSys()->applicationDomain,loader.getPtr(),url.getParsedURL());
+	local_pt.execute();
+
+	{
+		//Acquire the lock to ensure consistency in threadAbort
+		SpinlockLocker l(downloaderLock);
+		if(downloader)
+			getSys()->downloadManager->destroy(downloader);
+		downloader=NULL;
+	}
+	bytes.reset();
+
+	_NR<DisplayObject> obj=local_pt.getParsedObject();
+	if(obj.isNull())
+	{
+		// The stream did not contain RootMovieClip or Bitmap
+		if(!threadAborting)
+			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+		return;
+	}
+
+	// Wait until the object is constructed before adding
+	// to the Loader. Check threadAborting once per
+	// second.
+	while(!obj->waitUntilConstructed(1000) && !threadAborting)
+		/* do nothing */;
+
+	if(threadAborting)
+		return;
+
+	loader->setContent(obj);
+	loaderInfo->sendInit();
 }
 
 ASFUNCTIONBODY(Loader,_constructor)

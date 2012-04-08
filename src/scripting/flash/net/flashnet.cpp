@@ -242,7 +242,7 @@ void URLLoaderThread::execute()
 {
 	assert(!downloader);
 
-	//TODO: support httpStatus, progress, open events
+	//TODO: support httpStatus, progress events
 
 	const char contenttype[]="Content-Type: application/x-www-form-urlencoded";
 	if(!createDownloader(false, contenttype, loader))
@@ -252,6 +252,7 @@ void URLLoaderThread::execute()
 	bool success=false;
 	if(!downloader->hasFailed())
 	{
+		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("open")));
 		downloader->waitForTermination();
 		if(!downloader->hasFailed() && !threadAborting)
 		{

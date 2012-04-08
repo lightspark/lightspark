@@ -484,31 +484,39 @@ public:
 	void resetState();
 };
 
-class Loader: public IThreadJob, public DisplayObjectContainer
+class URLRequest;
+
+class LoaderThread : public DownloaderThreadBase
 {
 private:
 	enum SOURCE { URL, BYTES };
-	mutable Spinlock contentSpinlock;
-	_NR<DisplayObject> content;
-	bool loading;
-	bool loaded;
-	SOURCE source;
-	URLInfo url;
-	std::vector<uint8_t> postData;
 	_NR<ByteArray> bytes;
-	_NR<LoaderInfo> contentLoaderInfo;
-	Spinlock downloaderLock;
-	Downloader* downloader;
+	_R<Loader> loader;
+	_NR<LoaderInfo> loaderInfo;
+	SOURCE source;
 	void execute();
-	void threadAbort();
-	void jobFence();
+public:
+	LoaderThread(_R<URLRequest> request, _R<Loader> loader);
+	LoaderThread(_R<ByteArray> bytes, _R<Loader> loader);
+};
+
+class Loader: public DisplayObjectContainer, public IDownloaderThreadListener
+{
+private:
+	mutable Spinlock spinlock;
+	_NR<DisplayObject> content;
+	IThreadJob *job;
+	bool loaded;
+	URLInfo url;
+	_NR<LoaderInfo> contentLoaderInfo;
 	void unload();
 public:
-	Loader():content(NullRef),loading(false),loaded(false),bytes(NullRef),contentLoaderInfo(NullRef),downloader(NULL)
+	Loader():content(NullRef),job(NULL),loaded(false),contentLoaderInfo(NullRef)
 	{
 	}
 	~Loader();
 	void finalize();
+	void threadFinished(IThreadJob* job);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

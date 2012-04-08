@@ -134,6 +134,8 @@ public:
 	}
 	EVALUATIONRESULT evaluateURLStatic(const URLInfo& url, int allowedSandboxesRemote, 
 			int allowedSandboxesLocal, bool restrictLocalDirectory=true);
+        static void checkURLStaticAndThrow(const URLInfo& url, int allowedSandboxesRemote, 
+                        int allowedSandboxesLocal, bool restrictLocalDirectory=true);
 	
 	//Evaluates an URL by checking if the type of URL (local/remote) matches the allowed sandboxes
 	EVALUATIONRESULT evaluateSandboxURL(const URLInfo& url,

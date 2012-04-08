@@ -36,6 +36,58 @@ SET_NAMESPACE("flash.net");
 
 REGISTER_CLASS_NAME(URLStream);
 
+URLStreamThread::URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes)
+  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), data(bytes)
+{
+}
+
+void URLStreamThread::execute()
+{
+	assert(!downloader);
+
+	//TODO: support httpStatus, progress, open events
+
+	const char contenttype[]="Content-Type: application/x-www-form-urlencoded";
+	if(!createDownloader(false, contenttype, loader))
+		return;
+
+	bool success=false;
+	if(!downloader->hasFailed())
+	{
+		downloader->waitForTermination();
+		if(!downloader->hasFailed() && !threadAborting)
+		{
+			istream s(downloader);
+			uint8_t* buf=new uint8_t[downloader->getLength()];
+			//TODO: avoid this useless copy
+			s.read((char*)buf,downloader->getLength());
+			//TODO: test binary data format
+			data->acquireBuffer(buf,downloader->getLength());
+			//The buffers must not be deleted, it's now handled by the ByteArray instance
+			success=true;
+		}
+	}
+
+	// Don't send any events if the thread is aborting
+	if(success && !threadAborting)
+	{
+		//Send a complete event for this object
+		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("complete")));
+	}
+	else if(!success && !threadAborting)
+	{
+		//Notify an error during loading
+		getVm()->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS()));
+	}
+
+	{
+		//Acquire the lock to ensure consistency in threadAbort
+		SpinlockLocker l(downloaderLock);
+		getSys()->downloadManager->destroy(downloader);
+		downloader = NULL;
+	}
+}
+
 void URLStream::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -71,6 +123,19 @@ void URLStream::buildTraits(ASObject* o)
 {
 }
 
+void URLStream::threadFinished(IThreadJob* finishedJob)
+{
+	// If this is the current job, we are done. If these are not
+	// equal, finishedJob is a job that was cancelled when load()
+	// was called again, and we have to still wait for the correct
+	// job.
+	SpinlockLocker l(spinlock);
+	if(finishedJob==job)
+		job=NULL;
+
+	delete finishedJob;
+}
+
 ASFUNCTIONBODY(URLStream,_constructor)
 {
 	EventDispatcher::_constructor(obj,NULL,0);
@@ -83,14 +148,13 @@ ASFUNCTIONBODY(URLStream,load)
 	_NR<URLRequest> urlRequest;
 	ARG_UNPACK (urlRequest);
 
-	th->url=urlRequest->getRequestURL();
-
-	if(th->downloader)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"URLStream::load called with download already running - ignored");
-		return NULL;
+		SpinlockLocker l(th->spinlock);
+		if(th->job)
+			th->job->threadAbort();
 	}
 
+	th->url=urlRequest->getRequestURL();
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading
@@ -101,120 +165,24 @@ ASFUNCTIONBODY(URLStream,load)
 
 	//TODO: support the right events (like SecurityErrorEvent)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
-	SecurityManager::EVALUATIONRESULT evaluationResult =
-		getSys()->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
-			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
-	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
-	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
-		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
-				"connect to network");
-	//Local-with-filesystem sandbox can't access network
-	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
-		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
-				"connect to local file");
-	else if(evaluationResult == SecurityManager::NA_PORT)
-		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
-				"connect to restricted port");
-	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
-		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
-				"not allowed to navigate up for local files");
+	SecurityManager::checkURLStaticAndThrow(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
+		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
 
-	urlRequest->getPostData(th->postData);
-
-	//To be decreffed in jobFence
 	th->incRef();
-	getSys()->addJob(th);
+	URLStreamThread *job=new URLStreamThread(urlRequest, _MR(th), th->data);
+	getSys()->addJob(job);
+	th->job=job;
 	return NULL;
 }
 
 ASFUNCTIONBODY(URLStream,close)
 {
-	obj->as<URLStream>()->threadAbort();
+	URLStream* th=static_cast<URLStream*>(obj);
+ 	SpinlockLocker l(th->spinlock);
+	if(th->job)
+		th->job->threadAbort();
+
 	return NULL;
-}
-
-void URLStream::jobFence()
-{
-	decRef();
-}
-
-void URLStream::execute()
-{
-	//TODO: support httpStatus, progress, open events
-
-	//Check for URL policies and send SecurityErrorEvent if needed
-	SecurityManager::EVALUATIONRESULT evaluationResult = getSys()->securityManager->evaluatePoliciesURL(url, true);
-	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
-	{
-		this->incRef();
-		getVm()->addEvent(_MR(this),_MR(Class<SecurityErrorEvent>::getInstanceS("SecurityError: URLStream::load: "
-					"connection to domain not allowed by securityManager")));
-		return;
-	}
-
-	{
-		SpinlockLocker l(downloaderLock);
-		//All the checks passed, create the downloader
-		if(postData.empty())
-		{
-			//This is a GET request
-			//Don't cache our downloaded files
-			downloader=getSys()->downloadManager->download(url, false, NULL);
-		}
-		else
-		{
-			downloader=getSys()->downloadManager->downloadWithData(url, postData,
-					"application/x-www-form-urlencoded", NULL);
-			//Clean up the postData for the next load
-			postData.clear();
-		}
-	}
-
-	if(!downloader->hasFailed())
-	{
-		downloader->waitForTermination();
-		//HACK: the downloader may have been cleared in the mean time
-		assert(downloader);
-		if(!downloader->hasFailed())
-		{
-			istream s(downloader);
-			uint8_t* buf=new uint8_t[downloader->getLength()];
-			//TODO: avoid this useless copy
-			s.read((char*)buf,downloader->getLength());
-			//TODO: test binary data format
-			data->acquireBuffer(buf,downloader->getLength());
-			//The buffers must not be deleted, it's now handled by the ByteArray instance
-			//Send a complete event for this object
-			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
-		}
-		else
-		{
-			//Notify an error during loading
-			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
-		}
-	}
-	else
-	{
-		//Notify an error during loading
-		this->incRef();
-		getVm()->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS()));
-	}
-
-	{
-		//Acquire the lock to ensure consistency in threadAbort
-		SpinlockLocker l(downloaderLock);
-		getSys()->downloadManager->destroy(downloader);
-		downloader = NULL;
-	}
-}
-
-void URLStream::threadAbort()
-{
-	SpinlockLocker l(downloaderLock);
-	if(downloader != NULL)
-		downloader->stop();
 }
 
 void URLStream::finalize()

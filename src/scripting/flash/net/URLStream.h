@@ -29,19 +29,27 @@
 namespace lightspark
 {
 
-class URLStream: public EventDispatcher, public IThreadJob, public IDataInput
+class URLStream;
+
+class URLStreamThread : public DownloaderThreadBase
+{
+private:
+	_R<URLStream> loader;
+	_R<ByteArray> data;
+	void execute();
+public:
+	URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes);
+};
+
+class URLStream: public EventDispatcher, public IDataInput, public IDownloaderThreadListener
 {
 CLASSBUILDABLE(URLStream);
 private:
 	URLInfo url;
 	_NR<ByteArray> data;
-	Spinlock downloaderLock;
-	Downloader* downloader;
-	std::vector<uint8_t> postData;
-	URLStream() : data(_MNR(Class<ByteArray>::getInstanceS())), downloader(NULL) {}
-	void execute();
-	void threadAbort();
-	void jobFence();
+	URLStreamThread *job;
+	Spinlock spinlock;
+	URLStream() : data(_MNR(Class<ByteArray>::getInstanceS())) {}
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -67,6 +75,8 @@ private:
 	ASFUNCTION(readUnsignedShort);
 	ASFUNCTION(readUTF);
 	ASFUNCTION(readUTFBytes);
+public:
+	void threadFinished(IThreadJob *job);
 };
 
 }

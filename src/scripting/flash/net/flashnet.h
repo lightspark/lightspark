@@ -98,24 +98,32 @@ public:
 	static void sinit(Class_base*);
 };
 
-class URLLoader: public EventDispatcher, public IThreadJob
+class URLLoader;
+
+class URLLoaderThread : public DownloaderThreadBase
+{
+private:
+	_R<URLLoader> loader;
+	tiny_string dataFormat;
+	void execute();
+public:
+	URLLoaderThread(_R<URLRequest> _request, _R<URLLoader> _loader, tiny_string dataFormat);
+};
+
+class URLLoader: public EventDispatcher, public IDownloaderThreadListener
 {
 private:
 	tiny_string dataFormat;
-	URLInfo url;
 	_NR<ASObject> data;
-	Spinlock downloaderLock;
-	Downloader* downloader;
-	bool jobRunning;
-	std::vector<uint8_t> postData;
-	void execute();
-	void threadAbort();
-	void jobFence();
+	Spinlock spinlock;
+	URLLoaderThread *job;
 public:
 	URLLoader();
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+	void threadFinished(IThreadJob *job);
+	void setData(_NR<ASObject> data);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(close);

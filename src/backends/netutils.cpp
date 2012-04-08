@@ -18,11 +18,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "abc.h"
 #include "swf.h"
 #include "config.h"
 #include "netutils.h"
 #include "rtmputils.h"
 #include "compat.h"
+#include "security.h"
 #include <string>
 #include <algorithm>
 #include <ctype.h>
@@ -1300,4 +1302,72 @@ void LocalDownloader::execute()
 	}
 	//Notify the downloader no more data should be expected
 	setFinished();
+}
+
+DownloaderThreadBase::DownloaderThreadBase(_NR<URLRequest> request, IDownloaderThreadListener* _listener): listener(_listener), downloader(NULL)
+{
+	assert(listener);
+	if(!request.isNull())
+	{
+		url=request->getRequestURL();
+		request->getPostData(postData);
+	}
+}
+
+bool DownloaderThreadBase::createDownloader(bool cached,
+					    const char* contentType,
+					    _NR<EventDispatcher> dispatcher,
+					    ILoadable* owner,
+					    bool checkPolicyFile)
+{
+	if(checkPolicyFile)
+	{
+		SecurityManager::EVALUATIONRESULT evaluationResult = \
+			getSys()->securityManager->evaluatePoliciesURL(url, true);
+		if(threadAborting)
+			return false;
+		if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
+		{
+			getVm()->addEvent(dispatcher,_MR(Class<SecurityErrorEvent>::getInstanceS("SecurityError: "
+												 "connection to domain not allowed by securityManager")));
+			return false;
+		}
+	}
+
+	if(threadAborting)
+		return false;
+
+	//All the checks passed, create the downloader
+	if(postData.empty())
+	{
+		//This is a GET request
+		downloader=getSys()->downloadManager->download(url, cached, owner);
+	}
+	else
+	{
+		downloader=getSys()->downloadManager->downloadWithData(url, postData, contentType, owner);
+	}
+
+	return true;
+}
+
+void DownloaderThreadBase::jobFence()
+{
+	SpinlockLocker l(downloaderLock);
+	if(downloader) {
+		getSys()->downloadManager->destroy(downloader);
+		downloader=NULL;
+	}
+	l.release();
+
+	listener->threadFinished(this);
+}
+
+void DownloaderThreadBase::threadAbort()
+{
+	//We have to stop the downloader
+	SpinlockLocker l(downloaderLock);
+	if(downloader != NULL)
+		downloader->stop();
+	threadAborting=true;
 }

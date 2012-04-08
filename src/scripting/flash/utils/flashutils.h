@@ -61,7 +61,7 @@ public:
 
 class ByteArray: public ASObject, public IDataInput, public IDataOutput
 {
-friend class Loader;
+friend class LoaderThread;
 friend class URLLoader;
 protected:
 	uint8_t* bytes;

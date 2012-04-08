@@ -29,6 +29,7 @@
 #include "swftypes.h"
 #include "thread_pool.h"
 #include "backends/urlutils.h"
+#include "smartrefs.h"
 
 namespace lightspark
 {
@@ -280,6 +281,40 @@ private:
 	static const size_t bufSize = 8192;
 public:
 	LocalDownloader(const tiny_string& _url, bool _cached, ILoadable* o);
+};
+
+class IDownloaderThreadListener
+{
+protected:
+	virtual ~IDownloaderThreadListener() {}
+public:
+	virtual void threadFinished(IThreadJob*)=0;
+};
+
+class URLRequest;
+class EventDispatcher;
+
+// Common functionality for the resource loading classes (Loader,
+// URLStream, etc)
+class DownloaderThreadBase : public IThreadJob
+{
+private:
+	IDownloaderThreadListener* listener;
+protected:
+	URLInfo url;
+	std::vector<uint8_t> postData;
+	Spinlock downloaderLock;
+	Downloader* downloader;
+	bool createDownloader(bool cached,
+			      const char* contentType=NULL,
+			      _NR<EventDispatcher> dispatcher=NullRef,
+			      ILoadable* owner=NULL,
+			      bool checkPolicyFile=true);
+	void jobFence();
+public:
+	DownloaderThreadBase(_NR<URLRequest> request, IDownloaderThreadListener* listener);
+	void execute()=0;
+	void threadAbort();
 };
 
 };

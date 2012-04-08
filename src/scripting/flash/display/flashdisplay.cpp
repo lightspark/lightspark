@@ -34,6 +34,7 @@
 #include "flash/accessibility/flashaccessibility.h"
 #include "argconv.h"
 #include "toplevel/Vector.h"
+#include "backends/security.h"
 
 #include <fstream>
 #include <limits>
@@ -255,192 +256,38 @@ ASFUNCTIONBODY(LoaderInfo,_getHeight)
 	return abstract_d(o->getNominalHeight());
 }
 
-ASFUNCTIONBODY(Loader,_constructor)
-{
-	Loader* th=static_cast<Loader*>(obj);
-	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->incRef();
-	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(th)));
-	//TODO: the parameters should only be set if the loaded clip uses AS3. See specs.
-	_NR<ASObject> p=getSys()->getParameters();
-	if(!p.isNull())
-	{
-		p->incRef();
-		th->contentLoaderInfo->setVariableByQName("parameters","",p.getPtr(),DECLARED_TRAIT);
-	}
-	th->contentLoaderInfo->setLoaderURL(getSys()->getOrigin().getParsedURL());
-	return NULL;
-}
-
-ASFUNCTIONBODY(Loader,_getContent)
-{
-	Loader* th=static_cast<Loader*>(obj);
-	SpinlockLocker l(th->contentSpinlock);
-	_NR<ASObject> ret=th->content;
-	if(ret.isNull())
-		ret=_MR(new Undefined);
-
-	ret->incRef();
-	return ret.getPtr();
-}
-
-ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
-{
-	Loader* th=static_cast<Loader*>(obj);
-	th->contentLoaderInfo->incRef();
-	return th->contentLoaderInfo.getPtr();
-}
-
-ASFUNCTIONBODY(Loader,close)
-{
-	Loader* th=static_cast<Loader*>(obj);
-	if(th->loading)
-		th->threadAbort();
-
-	return NULL;
-}
-
-ASFUNCTIONBODY(Loader,load)
-{
-	Loader* th=static_cast<Loader*>(obj);
-	if(th->loading)
-	{
-		LOG(LOG_NOT_IMPLEMENTED, "Loader.load called while loading");
-		return NULL;
-	}
-	th->unload();
-	th->loading=true;
-	assert_and_throw(argslen > 0 && args[0] && argslen <= 2);
-	URLRequest* r=Class<URLRequest>::dyncast(args[0]);
-	if(r==NULL)
-		throw Class<ArgumentError>::getInstanceS("Wrong argument in Loader::load");
-	th->url=r->getRequestURL();
-	th->contentLoaderInfo->setURL(th->url.getParsedURL());
-	th->contentLoaderInfo->resetState();
-	r->getPostData(th->postData);
-	th->source=URL;
-	//To be decreffed in jobFence
-	th->incRef();
-	getSys()->addJob(th);
-	return NULL;
-}
-
-ASFUNCTIONBODY(Loader,loadBytes)
-{
-	Loader* th=static_cast<Loader*>(obj);
-	if(th->loading)
-	{
-		LOG(LOG_NOT_IMPLEMENTED, "Loader.loadBytes called while loading");
-		return NULL;
-	}
-	th->unload();
-	//Find the actual ByteArray object
-	assert_and_throw(argslen>=1);
-	assert_and_throw(args[0]->getClass() && 
-			args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
-	args[0]->incRef();
-	th->bytes=_MR(static_cast<ByteArray*>(args[0]));
-	if(th->bytes->bytes)
-	{
-		th->loading=true;
-		th->source=BYTES;
-		//To be decreffed in jobFence
-		th->incRef();
-		getSys()->addJob(th);
-	}
-	else
-		LOG(LOG_INFO, "Empty ByteArray passed to Loader.loadBytes");
-	return NULL;
-}
-
-ASFUNCTIONBODY(Loader,_unload)
-{
-	Loader* th=static_cast<Loader*>(obj);
-	th->unload();
-	return NULL;
-}
-
-void Loader::unload()
-{
-	if(loaded)
-	{
-		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("unload")));
-		loaded=false;
-	}
-
-	_NR<DisplayObject> content_copy = NullRef;
-	{
-		SpinlockLocker l(contentSpinlock);
-		content_copy=content;
-		content.reset();
-	}
-	
-	// removeChild may execute AS code, release the lock before
-	// calling
-	if(content_copy)
-		_removeChild(content_copy);
-
-	contentLoaderInfo->resetState();
-	bytes.reset();
-}
-
-void Loader::finalize()
-{
-	DisplayObjectContainer::finalize();
-	content.reset();
-	contentLoaderInfo.reset();
-	bytes.reset();
-}
-
-Loader::~Loader()
+LoaderThread::LoaderThread(_R<URLRequest> request, _R<Loader> ldr)
+  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), loaderInfo(ldr->getContentLoaderInfo()), source(URL)
 {
 }
 
-void Loader::jobFence()
-{
-	loading=false;
-	threadAborting=false;
-	decRef();
-}
-
-void Loader::sinit(Class_base* c)
-{
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<DisplayObjectContainer>::getRef());
-	c->setDeclaredMethodByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unload","",Class<IFunction>::getFunction(_unload),NORMAL_METHOD,true);
-}
-
-void Loader::buildTraits(ASObject* o)
+LoaderThread::LoaderThread(_R<ByteArray> _bytes, _R<Loader> ldr)
+  : DownloaderThreadBase(NullRef, ldr.getPtr()), bytes(_bytes), loader(ldr), loaderInfo(ldr->getContentLoaderInfo()), source(BYTES)
 {
 }
 
-void Loader::execute()
+void LoaderThread::execute()
 {
 	assert(source==URL || source==BYTES);
 
 	if(source==URL)
 	{
-		//TODO: add security checks
-		LOG(LOG_CALLS,_("Loader async execution ") << url);
-		assert_and_throw(postData.empty());
-		downloader=getSys()->downloadManager->download(url, false, contentLoaderInfo.getPtr());
+		const char contenttype[]="Content-Type: application/x-www-form-urlencoded";
+		if(!createDownloader(false, contenttype, loaderInfo, loaderInfo.getPtr(), false))
+			return;
+
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
 		if(downloader->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
-			getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
 			getSys()->downloadManager->destroy(downloader);
 			return;
 		}
-		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("open")));
+		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		istream s(downloader);
 		//TODO: support LoaderContext
-		ParseThread local_pt(s,getSys()->applicationDomain,this,url.getParsedURL());
+		ParseThread local_pt(s,getSys()->applicationDomain,loader.getPtr(),url.getParsedURL());
 		local_pt.execute();
 		{
 			//Acquire the lock to ensure consistency in threadAbort
@@ -453,7 +300,7 @@ void Loader::execute()
 		if(obj.isNull())
 		{
 			// The stream did not contain RootMovieClip or Bitmap
-			getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
 			return;
 		}
 
@@ -466,8 +313,8 @@ void Loader::execute()
 		if(threadAborting)
 			return;
 
-		setContent(obj);
-		contentLoaderInfo->sendInit();
+		loader->setContent(obj);
+		loaderInfo->sendInit();
 	}
 	else if(source==BYTES)
 	{
@@ -481,7 +328,7 @@ void Loader::execute()
 			istream s(&bb);
 
 			//TODO: Support loader context
-			ParseThread local_pt(s,getSys()->applicationDomain,this,"");
+			ParseThread local_pt(s,getSys()->applicationDomain,loader.getPtr(),"");
 			local_pt.execute();
 		}
 		// PNG files
@@ -506,26 +353,188 @@ void Loader::execute()
 		}
 
 		bytes.reset();
-
 		if(threadAborting)
 			return;
 
 		//Add a complete event for this object
-		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("complete")));
+		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("complete")));
 	}
-	loaded=true;
 }
 
-void Loader::threadAbort()
+ASFUNCTIONBODY(Loader,_constructor)
 {
-	if(source==URL)
+	Loader* th=static_cast<Loader*>(obj);
+	DisplayObjectContainer::_constructor(obj,NULL,0);
+	th->incRef();
+	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(th)));
+	//TODO: the parameters should only be set if the loaded clip uses AS3. See specs.
+	_NR<ASObject> p=getSys()->getParameters();
+	if(!p.isNull())
 	{
-		//We have to stop the downloader
-		SpinlockLocker l(downloaderLock);
-		if(downloader != NULL)
-			downloader->stop();
+		p->incRef();
+		th->contentLoaderInfo->setVariableByQName("parameters","",p.getPtr(),DECLARED_TRAIT);
 	}
-	threadAborting=true;
+	th->contentLoaderInfo->setLoaderURL(getSys()->getOrigin().getParsedURL());
+	return NULL;
+}
+
+ASFUNCTIONBODY(Loader,_getContent)
+{
+	Loader* th=static_cast<Loader*>(obj);
+	SpinlockLocker l(th->spinlock);
+	_NR<ASObject> ret=th->content;
+	if(ret.isNull())
+		ret=_MR(new Undefined);
+
+	ret->incRef();
+	return ret.getPtr();
+}
+
+ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
+{
+	Loader* th=static_cast<Loader*>(obj);
+	th->contentLoaderInfo->incRef();
+	return th->contentLoaderInfo.getPtr();
+}
+
+ASFUNCTIONBODY(Loader,close)
+{
+	Loader* th=static_cast<Loader*>(obj);
+ 	SpinlockLocker l(th->spinlock);
+	if(th->job)
+		th->job->threadAbort();
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Loader,load)
+{
+	Loader* th=static_cast<Loader*>(obj);
+
+	th->unload();
+
+	assert_and_throw(argslen > 0 && args[0] && argslen <= 2);
+	URLRequest* r=Class<URLRequest>::dyncast(args[0]);
+	if(r==NULL)
+		throw Class<ArgumentError>::getInstanceS("Wrong argument in Loader::load");
+	th->url=r->getRequestURL();
+	th->contentLoaderInfo->setURL(th->url.getParsedURL());
+	th->contentLoaderInfo->resetState();
+
+	if(!th->url.isValid())
+	{
+		//Notify an error during loading
+		th->incRef();
+		getSys()->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
+		return NULL;
+	}
+
+	SecurityManager::checkURLStaticAndThrow(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
+		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
+
+	th->incRef();
+	r->incRef();
+	LoaderThread *thread=new LoaderThread(_MR(r), _MR(th));
+	getSys()->addJob(thread);
+	th->job=thread;
+	return NULL;
+}
+
+ASFUNCTIONBODY(Loader,loadBytes)
+{
+	Loader* th=static_cast<Loader*>(obj);
+
+	th->unload();
+
+	//Find the actual ByteArray object
+	assert_and_throw(argslen>=1);
+	assert_and_throw(args[0]->getClass() && 
+			args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
+	ByteArray *ba=static_cast<ByteArray*>(args[0]);
+	if(ba->getLength()!=0)
+	{
+		th->incRef();
+		ba->incRef();
+		LoaderThread *thread=new LoaderThread(_MR(ba), _MR(th));
+		getSys()->addJob(thread);
+		th->job=thread;
+	}
+	else
+		LOG(LOG_INFO, "Empty ByteArray passed to Loader.loadBytes");
+	return NULL;
+}
+
+ASFUNCTIONBODY(Loader,_unload)
+{
+	Loader* th=static_cast<Loader*>(obj);
+	th->unload();
+	return NULL;
+}
+
+void Loader::unload()
+{
+	_NR<DisplayObject> content_copy = NullRef;
+	{
+		SpinlockLocker l(spinlock);
+		if(job)
+			job->threadAbort();
+
+		content_copy=content;
+		content.reset();
+	}
+	
+	if(loaded)
+	{
+		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("unload")));
+		loaded=false;
+	}
+
+	// removeChild may execute AS code, release the lock before
+	// calling
+	if(content_copy)
+		_removeChild(content_copy);
+
+	contentLoaderInfo->resetState();
+}
+
+void Loader::finalize()
+{
+	DisplayObjectContainer::finalize();
+	content.reset();
+	contentLoaderInfo.reset();
+}
+
+Loader::~Loader()
+{
+}
+
+void Loader::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<DisplayObjectContainer>::getRef());
+	c->setDeclaredMethodByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unload","",Class<IFunction>::getFunction(_unload),NORMAL_METHOD,true);
+}
+
+void Loader::threadFinished(IThreadJob* finishedJob)
+{
+	// If this is the current job, we are done. If these are not
+	// equal, finishedJob is a job that was cancelled when load()
+	// was called again, and we have to still wait for the correct
+	// job.
+	SpinlockLocker l(spinlock);
+	if(finishedJob==job)
+		job=NULL;
+
+	delete finishedJob;
+}
+
+void Loader::buildTraits(ASObject* o)
+{
 }
 
 void Loader::setContent(_R<DisplayObject> o)
@@ -536,8 +545,9 @@ void Loader::setContent(_R<DisplayObject> o)
 	}
 
 	{
-		SpinlockLocker l(contentSpinlock);
+		SpinlockLocker l(spinlock);
 		content=o;
+		loaded=true;
 	}
 
 	// _addChild may cause AS code to run, release locks beforehand.

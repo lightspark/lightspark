@@ -22,6 +22,8 @@
 
 #include "swf.h"
 #include "compat.h"
+#include "class.h"
+#include "toplevel/Error.h"
 #include <sstream>
 #include <string>
 #include <algorithm>
@@ -325,6 +327,33 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURLStatic(const URLIn
 
 	//All checks passed, so we allow the URL connection
 	return ALLOWED;
+}
+
+/**
+ * \brief Throw SecurityError if URL doesn't satisfy security constrains.
+ */
+void SecurityManager::checkURLStaticAndThrow(const URLInfo& url,
+					     int allowedSandboxesRemote, 
+					     int allowedSandboxesLocal,
+					     bool restrictLocalDirectory)
+{
+	SecurityManager::EVALUATIONRESULT evaluationResult = 
+		getSys()->securityManager->evaluateURLStatic(url, ~(SecurityManager::LOCAL_WITH_FILE),
+			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
+	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
+	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
+		throw Class<SecurityError>::getInstanceS("SecurityError: "
+				"connect to network");
+	//Local-with-filesystem sandbox can't access network
+	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
+		throw Class<SecurityError>::getInstanceS("SecurityError: "
+				"connect to local file");
+	else if(evaluationResult == SecurityManager::NA_PORT)
+		throw Class<SecurityError>::getInstanceS("SecurityError: "
+				"connect to restricted port");
+	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
+		throw Class<SecurityError>::getInstanceS("SecurityError: "
+				"not allowed to navigate up for local files");
 }
 
 /**

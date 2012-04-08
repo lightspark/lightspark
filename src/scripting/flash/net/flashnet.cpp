@@ -616,7 +616,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 
 	bool isNull = false;
 	bool isRTMP = false;
-	bool isRPC = false;
+	//bool isRPC = false;
 
 	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
 	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
@@ -646,7 +646,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 		else if(th->uri.getProtocol() == "http" ||
 		     th->uri.getProtocol() == "https")
 		{
-			isRPC = true;
+			//isRPC = true;
 		}
 		else
 		{

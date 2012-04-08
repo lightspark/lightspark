@@ -625,7 +625,8 @@ ASFUNCTIONBODY(ByteArray,writeDouble)
 	assert_and_throw(argslen==1);
 
 	double value = args[0]->toNumber();
-	uint64_t value2=th->endianIn(*reinterpret_cast<uint64_t*>(&value));
+	uint64_t *intptr=reinterpret_cast<uint64_t*>(&value);
+	uint64_t value2=th->endianIn(*intptr);
 
 	th->getBuffer(th->position+8,true);
 	memcpy(th->bytes+th->position,&value2,8);
@@ -640,7 +641,8 @@ ASFUNCTIONBODY(ByteArray,writeFloat)
 	assert_and_throw(argslen==1);
 
 	float value = args[0]->toNumber();
-	uint32_t value2=th->endianIn(*reinterpret_cast<uint32_t*>(&value));
+	uint32_t *intptr=reinterpret_cast<uint32_t*>(&value);
+	uint32_t value2=th->endianIn(*intptr);
 
 	th->getBuffer(th->position+4,true);
 	memcpy(th->bytes+th->position,&value2,4);
@@ -746,7 +748,8 @@ ASFUNCTIONBODY(ByteArray,readDouble)
 	th->position+=8;
 	ret = th->endianOut(ret);
 
-	return abstract_d(*reinterpret_cast<double*>(&ret));
+	double *doubleptr=reinterpret_cast<double*>(&ret);
+	return abstract_d(*doubleptr);
 }
 
 ASFUNCTIONBODY(ByteArray,readFloat)
@@ -764,7 +767,8 @@ ASFUNCTIONBODY(ByteArray,readFloat)
 	th->position+=4;
 	ret = th->endianOut(ret);
 
-	return abstract_d(*reinterpret_cast<float*>(&ret));
+	float *floatptr=reinterpret_cast<float*>(&ret);
+	return abstract_d(*floatptr);
 }
 
 ASFUNCTIONBODY(ByteArray,readInt)

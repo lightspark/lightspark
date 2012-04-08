@@ -853,6 +853,8 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 			alignment = PANGO_ALIGN_CENTER;
 			break;
 		}
+		default:
+			assert(false);
 	}
 	pango_layout_set_alignment(layout,alignment);
 

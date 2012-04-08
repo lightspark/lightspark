@@ -2201,7 +2201,14 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 
 	if(type->is<IFunction>())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"instanceOf opcodes probably does the wrong thing");
+		IFunction* t=static_cast<IFunction*>(type);
+		ASObject* proto = value->getClass()->prototype.getPtr();
+		while(proto)
+		{
+			if (proto == t->prototype.getPtr())
+				return true;
+			proto = proto->getprop_prototype();
+		}
 		return false;
 	}
 

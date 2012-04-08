@@ -62,7 +62,7 @@ TRISTATE Integer::isLess(ASObject* o)
 		case T_UINTEGER:
 			{
 				UInteger* i=static_cast<UInteger*>(o);
-				return (val < i->toInt())?TTRUE:TFALSE;
+				return (val < 0 || ((uint32_t)val)  < i->val)?TTRUE:TFALSE;
 			}
 			break;
 		

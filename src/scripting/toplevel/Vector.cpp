@@ -171,7 +171,10 @@ ASFUNCTIONBODY(Vector,_concat)
 	for(;it != th->vec.end();++it)
 	{
 		if (*it)
+		{
 			ret->vec[index]=*it;
+			ret->vec[index]->incRef();
+		}
 		index++;
 	}
 	//Insert the arguments in the vector
@@ -189,6 +192,7 @@ ASFUNCTIONBODY(Vector,_concat)
 					// force Class_base to ensure that a TypeError is thrown 
 					// if the object type does not match the base vector type
 					ret->vec[index]=((Class_base*)th->vec_type)->Class_base::coerce(*it);
+					ret->vec[index]->incRef();
 				}
 				index++;
 			}
@@ -196,18 +200,10 @@ ASFUNCTIONBODY(Vector,_concat)
 		else
 		{
 			ret->vec[index] = th->vec_type->coerce(args[i]);
+			ret->vec[index]->incRef();
 			index++;
 		}
 	}	
-
-	//All the elements in the new vector should be increffed, as args will be deleted and
-	//this vector could die too
-	for(unsigned int i=0;i<ret->size();i++)
-	{
-		if(ret->vec[i])
-			ret->vec[i]->incRef();
-	}
-
 	return ret;
 }
 

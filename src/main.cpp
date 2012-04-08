@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
 	bool useJit=false;
-	bool exitOnError=false;
+	SystemState::ERROR_TYPE exitOnError=SystemState::ERROR_PARSING;
 	LOG_LEVEL log_level=LOG_INFO;
 
 	setlocale(LC_ALL, "");
@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
 		}
 		else if(strcmp(argv[i],"--exit-on-error")==0)
 		{
-			exitOnError = true;
+			exitOnError = SystemState::ERROR_ANY;
 		}
 		else if(strcmp(argv[i],"--HTTP-cookies")==0)
 		{

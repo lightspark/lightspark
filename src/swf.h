@@ -233,8 +233,13 @@ public:
 	bool showProfilingData;
 	bool standalone;
 	
+	// Error types used to decide when to exit, extend as a bitmap
+	enum ERROR_TYPE { ERROR_NONE    = 0x0000,
+			  ERROR_PARSING = 0x0001,
+			  ERROR_OTHER   = 0x8000,
+			  ERROR_ANY     = 0xFFFF };
 	std::string errorCause;
-	void setError(const std::string& c);
+	void setError(const std::string& c, ERROR_TYPE type=ERROR_OTHER);
 	bool hasError() { return error; }
 	std::string& getErrorCause() { return errorCause; }
 	bool shouldTerminate() const;
@@ -280,7 +285,7 @@ public:
 	//Flags for command line options
 	bool useInterpreter;
 	bool useJit;
-	bool exitOnError;
+	ERROR_TYPE exitOnError;
 
 	//Parameters/FlashVars
 	void parseParametersFromFile(const char* f) DLL_PUBLIC;

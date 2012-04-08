@@ -168,7 +168,7 @@ SystemState::SystemState(uint32_t fileSize):
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
-	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(false),downloadManager(NULL),
+	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName = NULL;
@@ -499,10 +499,11 @@ bool SystemState::shouldTerminate() const
 	return shutdown || error;
 }
 
-void SystemState::setError(const string& c)
+void SystemState::setError(const string& c, ERROR_TYPE type)
 {
-	if(exitOnError)
+	if((exitOnError & type) != 0)
 		exit(1);
+
 	//We record only the first error for easier fix and reporting
 	if(!error)
 	{
@@ -1127,7 +1128,7 @@ void ParseThread::execute()
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
-		getSys()->setError(e.cause);
+		getSys()->setError(e.cause, SystemState::ERROR_PARSING);
 	}
 	catch(std::exception& e)
 	{

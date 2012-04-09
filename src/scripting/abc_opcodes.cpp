@@ -24,6 +24,7 @@
 #include "compat.h"
 #include "abcutils.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/RegExp.h"
 #include "toplevel/XML.h"
 #include "toplevel/XMLList.h"
 
@@ -2092,6 +2093,14 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 		Class_base* c=f->as<Class_base>();
 		ASObject* ret=c->generator(args,m);
 		assert_and_throw(ret);
+		if(keepReturn)
+			th->runtime_stack_push(ret);
+		else
+			ret->decRef();
+	}
+	else if(f->is<RegExp>())
+	{
+		ASObject* ret=RegExp::exec(f,&obj,1);
 		if(keepReturn)
 			th->runtime_stack_push(ret);
 		else

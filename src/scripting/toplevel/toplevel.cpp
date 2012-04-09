@@ -372,6 +372,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	assert_and_throw(mi->needsArgs()==false || mi->needsRest()==false);
 	if(mi->needsRest()) //TODO
 	{
+		assert_and_throw(argumentsArray==NULL);
 		Array* rest=Class<Array>::getInstanceS();
 		rest->resize(passedToRest);
 		//Give the reference of the other args to an array

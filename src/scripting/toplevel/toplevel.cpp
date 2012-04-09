@@ -716,13 +716,8 @@ void Class_base::copyBorrowedTraitsFromSuper()
 
 ASObject* Class_base::coerce(ASObject* o) const
 {
-	if(o->is<Null>())
+	if(o->is<Null>() || o->is<Undefined>())
 		return o;
-	if(o->is<Undefined>())
-	{
-		o->decRef();
-		return new Null;
-	}
 	if(o->is<Class_base>())
 	{ /* classes can be cast to the type 'Object' or 'Class' */
 	       if(this == Class<ASObject>::getClass()

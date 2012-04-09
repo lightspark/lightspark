@@ -929,6 +929,14 @@ void Transform::buildTraits(ASObject* o)
 {
 }
 
+Matrix::Matrix():a(0),b(0),c(0),d(0),tx(0),ty(0)
+{
+}
+
+Matrix::Matrix(const MATRIX& m):a(m.ScaleX),b(m.RotateSkew1),c(m.ScaleY),d(m.RotateSkew0),tx(m.TranslateX),ty(m.TranslateY)
+{
+}
+
 void Matrix::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

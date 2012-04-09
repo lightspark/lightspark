@@ -1349,10 +1349,11 @@ ASFUNCTIONBODY(DisplayObject,_getTransform)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 
 	if(th->transform.isNull())
-		th->transform = _MNR(Class<Transform>::getInstanceS());
+		th->transform = _MR(Class<Transform>::getInstanceS());
 
 	LOG(LOG_NOT_IMPLEMENTED, "DisplayObject::transform is a stub and does not reflect the real display state");
 
+	th->transform->matrix=_MR(Class<lightspark::Matrix>::getInstanceS(th->getMatrix()));
 	th->transform->incRef();
 	return th->transform.getPtr();
 }

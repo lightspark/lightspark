@@ -141,6 +141,8 @@ public:
 class Matrix: public ASObject
 {
 public:
+	Matrix();
+	Matrix(const MATRIX& m);
 	number_t a, b, c, d, tx, ty;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

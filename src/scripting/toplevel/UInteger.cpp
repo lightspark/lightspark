@@ -87,6 +87,8 @@ TRISTATE UInteger::isLess(ASObject* o)
 
 ASFUNCTIONBODY(UInteger,generator)
 {
+	if (argslen == 0)
+		return abstract_ui(0);
 	return abstract_ui(args[0]->toUInt());
 }
 

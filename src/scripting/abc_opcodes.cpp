@@ -612,7 +612,9 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	ret->setVariableByQName("constructor","",sf,DYNAMIC_TRAIT);
 
 	ret->incRef();
-	assert_and_throw(!sf->closure_this);
+	if (sf->closure_this)
+		throw Class<TypeError>::getInstanceS("Error #1064: Cannot call method as constructor");
+
 	sf->incRef();
 	ASObject* ret2=sf->call(ret,args,argslen);
 	sf->decRef();

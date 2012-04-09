@@ -104,7 +104,10 @@ ASFUNCTIONBODY(ExternalInterface,call)
 	// Convert given arguments to ExtVariants
 	const ExtVariant** callArgs = g_newa(const ExtVariant*,argslen-1);
 	for(uint32_t i = 0; i < argslen-1; i++)
-		callArgs[i] = new ExtVariant(args[i+1]);
+	{
+		args[i+1]->incRef();
+		callArgs[i] = new ExtVariant(_MR(args[i+1]));
+	}
 
 	ASObject* asobjResult = NULL;
 	// Let the external script object call the external method

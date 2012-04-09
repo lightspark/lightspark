@@ -1074,8 +1074,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				{
 					ASObject* result = ev->f->call(new Null,objArgs,ev->numArgs);
 					// We should report the function result
-					*(ev->result) = new ExtVariant(result);
-					result->decRef();
+					*(ev->result) = new ExtVariant(_MR(result));
 				}
 				catch(ASObject* exception)
 				{

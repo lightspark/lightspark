@@ -183,7 +183,7 @@ ExtVariant::ExtVariant(const ExtVariant& other)
 {
 	*this=other;
 }
-ExtVariant::ExtVariant(ASObject* other) :
+ExtVariant::ExtVariant(_R<ASObject> other) :
 	strValue(""), intValue(0), doubleValue(0), booleanValue(false)
 {
 	switch(other->getObjectType())
@@ -201,7 +201,7 @@ ExtVariant::ExtVariant(ASObject* other) :
 		type = EV_DOUBLE;
 		break;
 	case T_BOOLEAN:
-		booleanValue = Boolean_concrete(other);
+		booleanValue = Boolean_concrete(other.getPtr());
 		type = EV_BOOLEAN;
 		break;
 	case T_ARRAY:
@@ -215,11 +215,10 @@ ExtVariant::ExtVariant(ASObject* other) :
 				_R<ASObject> nextName=other->nextName(index);
 				_R<ASObject> nextValue=other->nextValue(index);
 
-				nextValue->incRef();
 				if(nextName->getObjectType() == T_INTEGER)
-					objectValue.setProperty(nextName->toInt(), nextValue.getPtr());
+					objectValue.setProperty(nextName->toInt(), nextValue);
 				else
-					objectValue.setProperty(nextName->toString().raw_buf(), nextValue.getPtr());
+					objectValue.setProperty(nextName->toString().raw_buf(), nextValue);
 			}
 		}
 		break;
@@ -393,8 +392,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 
 			/* TODO: shouldn't we pass some global object instead of Null? */
 			ASObject* asObjResult = func->call(new Null, objArgs, argc);
-			result = new ExtVariant(asObjResult);
-			asObjResult->decRef();
+			result = new ExtVariant(_MR(asObjResult));
 		}
 		// Catch AS exceptions and pass them on
 		catch(ASObject* _exception)

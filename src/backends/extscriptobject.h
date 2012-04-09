@@ -125,7 +125,7 @@ public:
 	ExtVariant(double value);
 	ExtVariant(bool value);
 	ExtVariant(const ExtVariant& other);
-	ExtVariant(ASObject* other);
+	ExtVariant(_R<ASObject> other);
 
 	// Since this class is used as value in property maps
 	// it must implement a proper copy operator that must

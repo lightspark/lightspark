@@ -233,8 +233,8 @@ void URLRequestMethod::sinit(Class_base* c)
 	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"),DECLARED_TRAIT);
 }
 
-URLLoaderThread::URLLoaderThread(_R<URLRequest> request, _R<URLLoader> ldr, tiny_string format)
-  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), dataFormat(format)
+URLLoaderThread::URLLoaderThread(_R<URLRequest> request, _R<URLLoader> ldr)
+  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr)
 {
 }
 
@@ -261,6 +261,7 @@ void URLLoaderThread::execute()
 			//TODO: avoid this useless copy
 			s.read((char*)buf,downloader->getLength());
 			//TODO: test binary data format
+			tiny_string dataFormat=loader->getDataFormat();
 			if(dataFormat=="binary")
 			{
 				_R<ByteArray> byteArray=_MR(Class<ByteArray>::getInstanceS());
@@ -391,7 +392,7 @@ ASFUNCTIONBODY(URLLoader,load)
 
 	th->incRef();
 	urlRequest->incRef();
-	URLLoaderThread *job=new URLLoaderThread(_MR(urlRequest), _MR(th), th->dataFormat);
+	URLLoaderThread *job=new URLLoaderThread(_MR(urlRequest), _MR(th));
 	getSys()->addJob(job);
 	th->job=job;
 	return NULL;
@@ -407,10 +408,22 @@ ASFUNCTIONBODY(URLLoader,close)
 	return NULL;
 }
 
+tiny_string URLLoader::getDataFormat()
+{
+	SpinlockLocker l(spinlock);
+	return dataFormat;
+}
+
+void URLLoader::setDataFormat(const tiny_string& newFormat)
+{
+	SpinlockLocker l(spinlock);
+	dataFormat=newFormat;
+}
+
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj);
-	return Class<ASString>::getInstanceS(th->dataFormat);
+	return Class<ASString>::getInstanceS(th->getDataFormat());
 }
 
 ASFUNCTIONBODY(URLLoader,_getData)
@@ -428,7 +441,7 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj);
 	assert_and_throw(args[0]);
-	th->dataFormat=args[0]->toString();
+	th->setDataFormat(args[0]->toString());
 	return NULL;
 }
 

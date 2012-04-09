@@ -104,10 +104,9 @@ class URLLoaderThread : public DownloaderThreadBase
 {
 private:
 	_R<URLLoader> loader;
-	tiny_string dataFormat;
 	void execute();
 public:
-	URLLoaderThread(_R<URLRequest> _request, _R<URLLoader> _loader, tiny_string dataFormat);
+	URLLoaderThread(_R<URLRequest> _request, _R<URLLoader> _loader);
 };
 
 class URLLoader: public EventDispatcher, public IDownloaderThreadListener
@@ -124,6 +123,8 @@ public:
 	static void buildTraits(ASObject* o);
 	void threadFinished(IThreadJob *job);
 	void setData(_NR<ASObject> data);
+	tiny_string getDataFormat();
+	void setDataFormat(const tiny_string& newFormat);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(close);

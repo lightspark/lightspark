@@ -187,6 +187,7 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 		throw Class<ASError>::getInstanceS("Error #1000: out of memory.");
 	// The first allocation is exactly the size we need,
 	// the subsequent reallocations happen in increments of BA_CHUNK_SIZE bytes
+	uint32_t prevLen = len;
 	if(bytes==NULL)
 	{
 		len=size;
@@ -211,6 +212,11 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	else if(len<size)
 	{
 		len=size;
+	}
+	if(prevLen<size)
+	{
+		//Extend
+		memset(bytes+prevLen,0,size-prevLen);
 	}
 	return bytes;
 }
@@ -349,8 +355,6 @@ ASFUNCTIONBODY(ByteArray,_setLength)
 	uint32_t newLen=args[0]->toInt();
 	if(newLen==th->len) //Nothing to do
 		return NULL;
-	uint32_t prevLen = th->len;
-	
 	if (newLen > 0)
 	{
 		th->getBuffer(newLen,true);
@@ -363,11 +367,8 @@ ASFUNCTIONBODY(ByteArray,_setLength)
 		th->len = newLen;
 		th->real_len = newLen;
 	}
-	if(prevLen<newLen)
-	{
-		//Extend
-		memset(th->bytes+prevLen,0,newLen-prevLen);
-	}
+	if (th->position > th->len)
+		th->position = (th->len > 0 ? th->len-1 : 0);
 	return NULL;
 }
 

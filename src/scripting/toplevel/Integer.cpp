@@ -45,6 +45,8 @@ ASFUNCTIONBODY(Integer,_toString)
 
 ASFUNCTIONBODY(Integer,generator)
 {
+	if (argslen == 0)
+		return abstract_i(0);
 	return abstract_i(args[0]->toInt());
 }
 

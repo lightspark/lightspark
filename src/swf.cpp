@@ -1549,6 +1549,10 @@ void SystemState::tick()
 		advFrame->done.wait();
 }
 
+void SystemState::tickFence()
+{
+}
+
 void SystemState::resizeCompleted() const
 {
 	if(currentVm && scaleMode==NO_SCALE)

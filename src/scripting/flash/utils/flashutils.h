@@ -172,6 +172,7 @@ class Timer: public EventDispatcher, public ITickJob
 {
 private:
 	void tick();
+	void tickFence();
 protected:
 	uint32_t delay;
 	uint32_t repeatCount;
@@ -276,6 +277,7 @@ public:
 			const unsigned int _argslen, _R<ASObject> _obj, const uint32_t _interval);
 	~IntervalRunner();
 	void tick();
+	void tickFence();
 	INTERVALTYPE getType() { return type; }
 };
 

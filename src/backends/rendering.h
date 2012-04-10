@@ -96,6 +96,7 @@ private:
 	bool loadShaderPrograms();
 	bool tempBufferAcquired;
 	void tick();
+	void tickFence();
 	int frameCount;
 	int secsCount;
 	Mutex mutexUploadJobs;

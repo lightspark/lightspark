@@ -1028,6 +1028,10 @@ void RenderThread::tick()
 	draw(false);
 }
 
+void RenderThread::tickFence()
+{
+}
+
 void RenderThread::releaseTexture(const TextureChunk& chunk)
 {
 	uint32_t blocksW=(chunk.width+CHUNKSIZE-1)/CHUNKSIZE;

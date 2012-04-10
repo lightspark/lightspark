@@ -1196,6 +1196,11 @@ void Timer::tick()
 	}
 }
 
+void Timer::tickFence()
+{
+	this->decRef();
+}
+
 // this seems to be how AS3 handles generic pop calls in Array class
 ASFUNCTIONBODY(ByteArray,pop)
 {
@@ -1334,6 +1339,7 @@ ASFUNCTIONBODY(Timer,start)
 		return NULL;
 	th->running=true;
 	th->stopMe=false;
+	//To be decReffed in tickFence
 	th->incRef();
 	if(th->repeatCount==1)
 		getSys()->addWait(th->delay,th);
@@ -1956,6 +1962,10 @@ void IntervalRunner::tick()
 		getSys()->intervalManager->clearInterval(id, TIMEOUT, false);
 		//No actions may be performed after this point
 	}
+}
+
+void IntervalRunner::tickFence()
+{
 }
 
 IntervalManager::IntervalManager() : currentID(1)

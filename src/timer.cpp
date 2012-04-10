@@ -141,6 +141,7 @@ void TimerThread::worker()
 
 		if(e->job->stopMe)
 		{
+			e->job->tickFence();
 			delete e;
 			continue;
 		}
@@ -161,7 +162,10 @@ void TimerThread::worker()
 
 		/* Cleanup */
 		if(!e->isTick)
+		{
+			e->job->tickFence();
 			delete e;
+		}
 	}
 }
 

@@ -45,6 +45,8 @@ public:
 	virtual void tick()=0;
 	ITickJob():stopMe(false){}
 	virtual ~ITickJob(){};
+	//Last method to be called when no more ticks will be sent
+	virtual void tickFence() = 0;
 };
 
 class TimerThread

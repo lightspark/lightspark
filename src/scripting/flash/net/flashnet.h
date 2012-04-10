@@ -205,6 +205,7 @@ private:
 	void jobFence();
 	//ITickJob interface to frame advance
 	void tick();
+	void tickFence();
 	bool isReady() const;
 
 	//Indicates whether the NetStream is paused

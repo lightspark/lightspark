@@ -247,6 +247,7 @@ public:
 	bool isOnError() const;
 	void setShutdownFlag() DLL_PUBLIC;
 	void tick();
+	void tickFence();
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;

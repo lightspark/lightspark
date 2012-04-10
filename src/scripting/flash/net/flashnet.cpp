@@ -1054,6 +1054,10 @@ void NetStream::tick()
 	getSys()->getRenderThread()->addUploadJob(videoDecoder);
 }
 
+void NetStream::tickFence()
+{
+}
+
 bool NetStream::isReady() const
 {
 	if(videoDecoder==NULL || audioDecoder==NULL)

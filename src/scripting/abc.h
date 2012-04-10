@@ -263,7 +263,9 @@ private:
 		ASObject* arg1=th->runtime_stack_pop();
 		ASObject* arg2=th->runtime_stack_pop();
 		uint32_t addr=arg1->toUInt();
+		arg1->decRef();
 		uint32_t val=arg2->toUInt();
+		arg2->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}

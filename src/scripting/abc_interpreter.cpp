@@ -640,36 +640,42 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x35:
 			{
 				//li8
+				LOG(LOG_CALLS, "li8");
 				loadIntN<uint8_t>(context);
 				break;
 			}
 			case 0x36:
 			{
 				//li16
+				LOG(LOG_CALLS, "li16");
 				loadIntN<uint16_t>(context);
 				break;
 			}
 			case 0x37:
 			{
 				//li32
+				LOG(LOG_CALLS, "li32");
 				loadIntN<uint32_t>(context);
 				break;
 			}
 			case 0x3a:
 			{
 				//si8
+				LOG(LOG_CALLS, "si8");
 				storeIntN<uint8_t>(context);
 				break;
 			}
 			case 0x3b:
 			{
 				//si16
+				LOG(LOG_CALLS, "si16");
 				storeIntN<uint16_t>(context);
 				break;
 			}
 			case 0x3c:
 			{
 				//si32
+				LOG(LOG_CALLS, "si32");
 				storeIntN<uint32_t>(context);
 				break;
 			}

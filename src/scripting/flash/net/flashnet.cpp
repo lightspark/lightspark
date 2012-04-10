@@ -1620,7 +1620,8 @@ ASFUNCTIONBODY(Responder, onResult)
 	Responder* th=Class<Responder>::cast(obj);
 	assert_and_throw(argslen==1);
 	args[0]->incRef();
-	th->result->call(new Null, args, argslen);
+	ASObject* ret=th->result->call(new Null, args, argslen);
+	ret->decRef();
 	return NULL;
 }
 

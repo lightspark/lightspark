@@ -920,7 +920,7 @@ _R<ASObject> Vector::nextValue(uint32_t index)
 {
 	if(index<=vec.size())
 	{
-		if (vec[index])
+		if (vec[index-1])
 		{
 			vec[index-1]->incRef();
 			return _MR(vec[index-1]);

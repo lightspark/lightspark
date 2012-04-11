@@ -687,6 +687,7 @@ struct nsNameAndKind
 
 struct multiname
 {
+	multiname():name_type(NAME_OBJECT),name_o(NULL){}
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type;
 	tiny_string name_s;

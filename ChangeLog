@@ -1,6 +1,6 @@
 lightspark: An open source flash player implementation
 
-Version FUTURE:
+Version 0.5.6:
 
 	* Fix YouTube support for several videos
 	* Support for custom serialization/deserialization

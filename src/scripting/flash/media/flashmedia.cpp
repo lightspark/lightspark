@@ -316,6 +316,7 @@ void Sound::execute()
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
+#ifdef ENABLE_LIBAVCODEC
 		streamDecoder=new FFMpegStreamDecoder(s);
 		if(!streamDecoder->isValid())
 			threadAbort();
@@ -336,6 +337,7 @@ void Sound::execute()
 			if(threadAborting)
 				throw JobTerminationException();
 		}
+#endif //ENABLE_LIBAVCODEC
 	}
 	catch(LightsparkException& e)
 	{

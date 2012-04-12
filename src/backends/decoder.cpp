@@ -587,6 +587,7 @@ StreamDecoder::~StreamDecoder()
 	delete videoDecoder;
 }
 
+#ifdef ENABLE_LIBAVCODEC
 FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NULL),audioFound(false),videoFound(false),avioContext(NULL)
 {
 	valid=false;
@@ -713,3 +714,4 @@ int FFMpegStreamDecoder::avioReadPacket(void* t, uint8_t* buf, int buf_size)
 	int ret=th->stream.gcount();
 	return ret;
 }
+#endif //ENABLE_LIBAVCODEC

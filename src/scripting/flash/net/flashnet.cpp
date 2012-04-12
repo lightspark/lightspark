@@ -1110,6 +1110,7 @@ void NetStream::execute()
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
+#ifdef ENABLE_LIBAVCODEC
 		Chronometer chronometer;
 		streamDecoder=new FFMpegStreamDecoder(s);
 		if(!streamDecoder->isValid())
@@ -1200,7 +1201,7 @@ void NetStream::execute()
 			if(threadAborting)
 				throw JobTerminationException();
 		}
-
+#endif //ENABLE_LIBAVCODEC
 	}
 	catch(LightsparkException& e)
 	{

@@ -399,7 +399,7 @@ ASFUNCTIONBODY(StyleSheet,getStyle)
 		return it->second.getPtr();
 	}
 	else
-		return new Null;
+		return getSys()->getNullRef();
 	return NULL;
 }
 

@@ -207,7 +207,7 @@ ASFUNCTIONBODY(URLRequest,_getData)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj);
 	if(th->data.isNull())
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 
 	th->data->incRef();
 	return th->data.getPtr();
@@ -431,7 +431,7 @@ ASFUNCTIONBODY(URLLoader,_getData)
 	URLLoader* th=static_cast<URLLoader*>(obj);
 	SpinlockLocker l(th->spinlock);
 	if(th->data.isNull())
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	
 	th->data->incRef();
 	return th->data.getPtr();
@@ -804,7 +804,7 @@ ASFUNCTIONBODY(NetStream,_getClient)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
 	if(th->client.isNull())
-		return new Undefined();
+		return getSys()->getUndefinedRef();
 
 	th->client->incRef();
 	return th->client.getPtr();
@@ -1620,7 +1620,7 @@ ASFUNCTIONBODY(Responder, onResult)
 	Responder* th=Class<Responder>::cast(obj);
 	assert_and_throw(argslen==1);
 	args[0]->incRef();
-	ASObject* ret=th->result->call(new Null, args, argslen);
+	ASObject* ret=th->result->call(getSys()->getNullRef(), args, argslen);
 	ret->decRef();
 	return NULL;
 }

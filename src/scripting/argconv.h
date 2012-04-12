@@ -98,7 +98,7 @@ public:
 	static ASObject* toAbstract(const NullableRef<T>& val)
 	{
 		if(val.isNull())
-			return new Null();
+			return getSys()->getNullRef();
 		val->incRef();
 		return val.getPtr();
 	}
@@ -120,7 +120,7 @@ public:
 	static ASObject* toAbstract(const NullableRef<ASObject>& val)
 	{
 		if(val.isNull())
-			return new Null();
+			return getSys()->getNullRef();
 		val->incRef();
 		return val.getPtr();
 	}

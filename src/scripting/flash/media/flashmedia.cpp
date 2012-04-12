@@ -302,7 +302,7 @@ ASFUNCTIONBODY(Sound,play)
 		getSys()->addJob(th);
 	}
 
-	return new Undefined;
+	return getSys()->getUndefinedRef();
 }
 
 void Sound::execute()

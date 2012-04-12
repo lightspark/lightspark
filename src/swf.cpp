@@ -176,6 +176,9 @@ SystemState::SystemState(uint32_t fileSize):
 	setTLSSys(this);
 
 	mainThread = Thread::self();
+
+	null=_MR(new Null);
+	undefined=_MR(new Undefined);
 	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS());
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
@@ -183,6 +186,7 @@ SystemState::SystemState(uint32_t fileSize):
 	audioManager=new AudioManager(pluginManager);
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
+
 	loaderInfo=_MR(Class<LoaderInfo>::getInstanceS());
 	//If the size is not known those will stay at zero
 	loaderInfo->setBytesLoaded(fileSize);
@@ -378,6 +382,8 @@ void SystemState::finalize()
 	invalidateQueueTail.reset();
 	parameters.reset();
 	frameListeners.clear();
+	null.reset();
+	undefined.reset();
 }
 
 SystemState::~SystemState()
@@ -1560,6 +1566,20 @@ void SystemState::resizeCompleted() const
 		stage->incRef();
 		currentVm->addEvent(_MR(stage),_MR(Class<Event>::getInstanceS("resize",false)));
 	}
+}
+
+Null* SystemState::getNullRef() const
+{
+	Null* ret=null.getPtr();
+	ret->incRef();
+	return ret;
+}
+
+Undefined* SystemState::getUndefinedRef() const
+{
+	Undefined* ret=undefined.getPtr();
+	ret->incRef();
+	return ret;
 }
 
 /* This is run in vm's thread context */

@@ -102,7 +102,7 @@ int Undefined::toInt()
 
 ASObject *Undefined::describeType() const
 {
-	return new Undefined;
+	return getSys()->getUndefinedRef();
 }
 
 void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -365,7 +365,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			cc.locals[i+1]=mi->paramTypes[i]->coerce(mi->getOptional(iOptional));
 		else {
 			assert(mi->paramTypes[i] == Type::anyType);
-			cc.locals[i+1]=new Undefined();
+			cc.locals[i+1]=getSys()->getUndefinedRef();
 		}
 	}
 
@@ -452,7 +452,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	obj->decRef();
 
 	if(ret==NULL)
-		ret=new Undefined;
+		ret=getSys()->getUndefinedRef();
 
 	return mi->returnType->coerce(ret);
 }
@@ -497,7 +497,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 		args[i]->decRef();
 	obj->decRef();
 	if(ret==NULL)
-		ret=new Undefined;
+		ret=getSys()->getUndefinedRef();
 	return ret;
 }
 
@@ -1253,7 +1253,7 @@ ASFUNCTIONBODY(ASQName,_getURI)
 {
 	ASQName* th=static_cast<ASQName*>(obj);
 	if(th->uri_is_null)
-		return new Null;
+		return getSys()->getNullRef();
 	else
 		return Class<ASString>::getInstanceS(th->uri);
 }
@@ -1430,7 +1430,7 @@ ASFUNCTIONBODY(Namespace,_getPrefix)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
 	if(th->prefix_is_undefined)
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	else
 		return Class<ASString>::getInstanceS(th->prefix);
 }
@@ -1470,7 +1470,7 @@ bool Namespace::isEqual(ASObject* o)
 
 ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 {
-	return new Undefined;
+	return getSys()->getUndefinedRef();
 }
 
 ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)

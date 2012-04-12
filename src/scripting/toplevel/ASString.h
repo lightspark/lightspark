@@ -84,7 +84,7 @@ inline ASObject* Class<ASString>::coerce(ASObject* o) const
 	if(o->is<Undefined>())
 	{
 		o->decRef();
-		return new Null;
+		return getSys()->getNullRef();
 	}
 	tiny_string n = o->toString();
 	o->decRef();

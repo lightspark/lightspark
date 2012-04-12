@@ -303,7 +303,7 @@ ASFUNCTIONBODY(XML,localName)
 	assert(th->node);
 	xmlElementType nodetype=th->node->cobj()->type;
 	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
-		return new Null;
+		return getSys()->getNullRef();
 	else
 		return Class<ASString>::getInstanceS(th->node->get_name());
 }
@@ -316,7 +316,7 @@ ASFUNCTIONBODY(XML,name)
 	xmlElementType nodetype=th->node->cobj()->type;
 	//TODO: add namespace
 	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
-		return new Null;
+		return getSys()->getNullRef();
 	else
 		return Class<ASString>::getInstanceS(th->node->get_name());
 }

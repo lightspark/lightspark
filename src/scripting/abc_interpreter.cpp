@@ -121,7 +121,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t;
 				assert_and_throw(context->locals[t]);
 				context->locals[t]->decRef();
-				context->locals[t]=new Undefined;
+				context->locals[t]=getSys()->getUndefinedRef();
 				break;
 			}
 			case 0x09:

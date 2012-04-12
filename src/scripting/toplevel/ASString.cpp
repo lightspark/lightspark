@@ -188,7 +188,7 @@ ASFUNCTIONBODY(ASString,match)
 {
 	tiny_string data = obj->toString();
 	if(argslen == 0 || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
-		return new Null;
+		return getSys()->getNullRef();
 	ASObject* ret=NULL;
 	RegExp* re;
 
@@ -232,7 +232,7 @@ ASFUNCTIONBODY(ASString,match)
 		if (resarr->size() == 0)
 		{
 			resarr->decRef();
-			ret = new Null;
+			ret = getSys()->getNullRef();
 		}
 		else
 			ret = resarr;
@@ -708,7 +708,7 @@ ASFUNCTIONBODY(ASString,replace)
 				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
 				
 				subargs[capturingGroups+2]=Class<ASString>::getInstanceS(data);
-				ASObject* ret=f->call(new Null, subargs, 3+capturingGroups);
+				ASObject* ret=f->call(getSys()->getNullRef(), subargs, 3+capturingGroups);
 				replaceWith=ret->toString().raw_buf();
 				ret->decRef();
 			} else {

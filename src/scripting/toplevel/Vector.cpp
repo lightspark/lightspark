@@ -232,7 +232,7 @@ ASFUNCTIONBODY(Vector,filter)
 
 		if(argslen==1)
 		{
-			funcRet=f->call(new Null, params, 3);
+			funcRet=f->call(getSys()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -275,7 +275,7 @@ ASFUNCTIONBODY(Vector, some)
 
 		if(argslen==1)
 		{
-			funcRet=f->call(new Null, params, 3);
+			funcRet=f->call(getSys()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -313,14 +313,14 @@ ASFUNCTIONBODY(Vector, every)
 			th->vec[i]->incRef();
 		}
 		else
-			params[0] = new Null;
+			params[0] = getSys()->getNullRef();
 		params[1] = abstract_i(i);
 		params[2] = th;
 		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f->call(new Null, params, 3);
+			funcRet=f->call(getSys()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -363,10 +363,10 @@ ASFUNCTIONBODY(Vector,_pop)
 		throw Class<RangeError>::getInstanceS("Error #1126");
 	uint32_t size =th->size();
 	if (size == 0)
-        return th->vec_type->coerce(new Null);
+        return th->vec_type->coerce(getSys()->getNullRef());
 	ASObject* ret = th->vec[size-1];
 	if (!ret)
-		ret = th->vec_type->coerce(new Null);
+		ret = th->vec_type->coerce(getSys()->getNullRef());
 	th->vec.pop_back();
 	return ret;
 }
@@ -430,7 +430,7 @@ ASFUNCTIONBODY(Vector,forEach)
 		ASObject *funcret;
 		if( argslen == 1 )
 		{
-			funcret=f->call(new Null, params, 3);
+			funcret=f->call(getSys()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -517,12 +517,12 @@ ASFUNCTIONBODY(Vector,shift)
 	if (th->fixed)
 		throw Class<RangeError>::getInstanceS("Error #1126");
 	if(!th->size())
-		return th->vec_type->coerce(new Null);
+		return th->vec_type->coerce(getSys()->getNullRef());
 	ASObject* ret;
 	if(th->vec[0])
 		ret=th->vec[0];
 	else
-		ret=th->vec_type->coerce(new Null);
+		ret=th->vec_type->coerce(getSys()->getNullRef());
 	for(uint32_t i= 1;i< th->size();i++)
 	{
 		if (th->vec[i])
@@ -704,17 +704,17 @@ bool Vector::sortComparatorWrapper::operator()(ASObject* d1, ASObject* d2)
 		objs[0]->incRef();
 	}
 	else
-		objs[0] = vec_type->coerce(new Null);
+		objs[0] = vec_type->coerce(getSys()->getNullRef());
 	if (d2)
 	{
 		objs[1] = d2;
 		objs[1]->incRef();
 	}
 	else
-		objs[1] = vec_type->coerce(new Null);
+		objs[1] = vec_type->coerce(getSys()->getNullRef());
 
 	assert(comparator);
-	_NR<ASObject> ret=_MNR(comparator->call(new Null, objs, 2));
+	_NR<ASObject> ret=_MNR(comparator->call(getSys()->getNullRef(), objs, 2));
 	assert_and_throw(ret);
 	return (ret->toNumber()<0); //Less
 }
@@ -768,7 +768,7 @@ ASFUNCTIONBODY(Vector,_map)
 	{
 		ASObject* funcArgs[3];
 		if (!th->vec[i])
-			funcArgs[0]=new Null;
+			funcArgs[0]=getSys()->getNullRef();
 		else
 		{
 			if(th->vec[i])
@@ -777,12 +777,12 @@ ASFUNCTIONBODY(Vector,_map)
 				funcArgs[0]->incRef();
 			}
 			else
-				funcArgs[0]=new Undefined;
+				funcArgs[0]=getSys()->getUndefinedRef();
 		}
 		funcArgs[1]=abstract_i(i);
 		funcArgs[2]=th;
 		funcArgs[2]->incRef();
-		ASObject* funcRet=func->call(new Null, funcArgs, 3);
+		ASObject* funcRet=func->call(getSys()->getNullRef(), funcArgs, 3);
 		assert_and_throw(funcRet);
 		ret->vec.push_back(funcRet);
 	}
@@ -800,7 +800,7 @@ ASFUNCTIONBODY(Vector,_toString)
 			ret += th->vec[i]->toString();
 		else
 			// use the type's default value
-			ret += th->vec_type->coerce( new Null )->toString();
+			ret += th->vec_type->coerce( getSys()->getNullRef() )->toString();
 
 		if(i!=th->vec.size()-1)
 			ret += ',';
@@ -847,7 +847,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 			return _MNR(vec[index]);
 		}
 		else
-			return _MNR(vec_type->coerce( new Null ));
+			return _MNR(vec_type->coerce( getSys()->getNullRef() ));
 	}
 	else
 	{
@@ -895,7 +895,7 @@ tiny_string Vector::toString(bool debugMsg)
 		if (vec[i]) 
 			t += vec[i]->toString();
 		else
-			t += vec_type->coerce( new Null )->toString();
+			t += vec_type->coerce( getSys()->getNullRef() )->toString();
 	}
 	return t;
 }
@@ -925,7 +925,7 @@ _R<ASObject> Vector::nextValue(uint32_t index)
 			vec[index-1]->incRef();
 			return _MR(vec[index-1]);
 		}
-		return _MR(vec_type->coerce( new Null ));
+		return _MR(vec_type->coerce( getSys()->getNullRef() ));
 	}
 	else
 		throw RunTimeException("Vector::nextValue out of bounds");

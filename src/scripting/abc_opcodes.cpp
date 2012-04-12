@@ -124,13 +124,13 @@ void ABCVm::lookupswitch()
 ASObject* ABCVm::pushUndefined()
 {
 	LOG(LOG_CALLS, _("pushUndefined") );
-	return new Undefined;
+	return getSys()->getUndefinedRef();
 }
 
 ASObject* ABCVm::pushNull()
 {
 	LOG(LOG_CALLS, _("pushNull") );
-	return new Null;
+	return getSys()->getNullRef();
 }
 
 void ABCVm::coerce_a()
@@ -211,7 +211,7 @@ void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
 {
 	LOG(LOG_CALLS,"setSlot " << n);
 	if(value==NULL)
-		value=new Undefined;
+		value=getSys()->getUndefinedRef();
 	obj->setSlot(n,value);
 	obj->decRef();
 }
@@ -349,7 +349,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 		LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
 		if(keepReturn)
-			th->runtime_stack_push(new Undefined);
+			th->runtime_stack_push(getSys()->getUndefinedRef());
 
 		obj->decRef();
 		for(int i=0;i<m;i++)
@@ -379,7 +379,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	if(prop.isNull())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
-		ret = new Undefined;
+		ret = getSys()->getUndefinedRef();
 	}
 	else
 	{
@@ -704,7 +704,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "constructGenericType of " << obj->getObjectType());
 		obj->decRef();
-		obj = new Undefined();
+		obj = getSys()->getUndefinedRef();
 		th->runtime_stack_push(obj);
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
@@ -1169,7 +1169,7 @@ ASObject* ABCVm::pushNaN()
 {
 	LOG(LOG_CALLS, _("pushNaN") );
 	//Not completely correct, but mostly ok
-	return new Undefined;
+	return getSys()->getUndefinedRef();
 }
 
 bool ABCVm::ifGT(ASObject* obj2, ASObject* obj1)
@@ -1276,7 +1276,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	if(ret.isNull())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->toDebugString());
-		ret = _MNR(new Undefined);
+		ret = _MNR(getSys()->getUndefinedRef());
 	}
 
 	obj->decRef();
@@ -1321,7 +1321,7 @@ void ABCVm::getLex(call_context* th, int n)
 		if(o==NULL)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found, pushing Undefined");
-			th->runtime_stack_push(new Undefined);
+			th->runtime_stack_push(getSys()->getUndefinedRef());
 			name->resetNameIfObject();
 			return;
 		}
@@ -1414,7 +1414,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found, pushing Undefined");
-			return new Undefined;
+			return getSys()->getUndefinedRef();
 		}
 	}
 
@@ -1491,7 +1491,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	{
 		LOG(LOG_ERROR,_("Calling an undefined function ") << name->name_s);
 		if(keepReturn)
-			th->runtime_stack_push(new Undefined);
+			th->runtime_stack_push(getSys()->getUndefinedRef());
 	}
 	LOG(LOG_CALLS,_("End of callSuper ") << *name);
 }
@@ -1593,7 +1593,7 @@ ASObject* ABCVm::asType(ABCContext* context, ASObject* obj, multiname* name)
 	else
 	{
 		obj->decRef();
-		return new Null;
+		return getSys()->getNullRef();
 	}
 }
 
@@ -1627,7 +1627,7 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 		else
 		{
 			obj->decRef();
-			return new Null;
+			return getSys()->getNullRef();
 		}
 	}
 
@@ -1644,13 +1644,13 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 		}
 		obj->decRef();
 		type->decRef();
-		return new Null;
+		return getSys()->getNullRef();
 	}
 	else
 	{
 		obj->decRef();
 		type->decRef();
-		return new Null;
+		return getSys()->getNullRef();
 	}
 
 	bool real_ret=objc->isSubClass(c);
@@ -1662,7 +1662,7 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	else
 	{
 		obj->decRef();
-		return new Null;
+		return getSys()->getNullRef();
 	}
 }
 
@@ -1777,7 +1777,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 	if(newIndex==0)
 	{
 		th->locals[n]->decRef();
-		th->locals[n]=new Null;
+		th->locals[n]=getSys()->getNullRef();
 		return false;
 	}
 	return true;
@@ -2116,7 +2116,7 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 		if(f->is<Undefined>())
 		{
 			if(keepReturn)
-				th->runtime_stack_push(new Undefined);
+				th->runtime_stack_push(getSys()->getUndefinedRef());
 		}
 		else
 			throw Class<TypeError>::getInstanceS("Error #1006: Tried to call something that is not a function");
@@ -2166,7 +2166,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 	ASObject* catchScope = Class<ASObject>::getInstanceS();
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exception_count);
 	multiname* name = th->context->getMultiname(th->mi->body->exceptions[n].var_name, NULL);
-	catchScope->setVariableByMultiname(*name, new Undefined);
+	catchScope->setVariableByMultiname(*name, getSys()->getUndefinedRef());
 	catchScope->initSlot(1, *name);
 	return catchScope;
 }

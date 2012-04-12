@@ -189,6 +189,10 @@ private:
 	GPid childPid;
 #endif
 
+	//shared null and undefined instances
+	_NR<Null> null;
+	_NR<Undefined> undefined;
+
 	//Parameters/FlashVars
 	_NR<ASObject> parameters;
 	void setParameters(_R<ASObject> p);
@@ -270,6 +274,9 @@ public:
 	ThreadProfile* allocateProfiler(const RGB& color);
 	std::list<ThreadProfile*> profilingData;
 	
+	Null* getNullRef() const;
+	Undefined* getUndefinedRef() const;
+
 	Stage* stage;
 	ABCVm* currentVm;
 

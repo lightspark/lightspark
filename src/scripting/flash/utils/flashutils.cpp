@@ -920,7 +920,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	if(ret.isNull())
 	{
 		LOG(LOG_ERROR,"No objects in the AMF3 data. Returning Undefined");
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	}
 	ret->incRef();
 	return ret.getPtr();
@@ -958,7 +958,7 @@ _NR<ASObject> ByteArray::getVariableByMultiname(const multiname& name, GET_VARIA
 		return _MNR(abstract_ui(static_cast<uint32_t>(value)));
 	}
 	else
-		return _MNR(new Undefined);
+		return _MNR(getSys()->getUndefinedRef());
 }
 
 int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
@@ -974,7 +974,7 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 		return static_cast<uint32_t>(value);
 	}
 	else
-		return _MNR(new Undefined);
+		return _MNR(getSys()->getUndefinedRef());
 }
 
 void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
@@ -1440,7 +1440,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	if(o==NULL)
 	{
 		LOG(LOG_ERROR,_("Definition for '") << name << _("' not found."));
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	}
 
 	assert_and_throw(o->getObjectType()==T_CLASS);
@@ -1889,7 +1889,8 @@ ASFUNCTIONBODY(lightspark,setInterval)
 	args[0]->incRef();
 	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add interval through manager
-	uint32_t id = getSys()->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
+	uint32_t id = getSys()->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2,
+			_MR(getSys()->getNullRef()), args[1]->toInt());
 	return abstract_i(id);
 }
 
@@ -1911,7 +1912,8 @@ ASFUNCTIONBODY(lightspark,setTimeout)
 	args[0]->incRef();
 	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add timeout through manager
-	uint32_t id = getSys()->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2, _MR(new Null), args[1]->toInt());
+	uint32_t id = getSys()->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2,
+			_MR(getSys()->getNullRef()), args[1]->toInt());
 	return abstract_i(id);
 }
 

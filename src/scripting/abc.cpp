@@ -179,7 +179,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("String","",Class<ASString>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Array","",Class<Array>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Function","",Class<IFunction>::getRef(),DECLARED_TRAIT);
-	builtin->setVariableByQName("undefined","",new Undefined,DECLARED_TRAIT);
+	builtin->setVariableByQName("undefined","",getSys()->getUndefinedRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Math","",Class<Math>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Namespace","",Class<Namespace>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("AS3","",Class<Namespace>::getInstanceS(AS3),DECLARED_TRAIT);
@@ -1072,7 +1072,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 
 				try
 				{
-					ASObject* result = ev->f->call(new Null,objArgs,ev->numArgs);
+					ASObject* result = ev->f->call(getSys()->getNullRef(),objArgs,ev->numArgs);
 					// We should report the function result
 					*(ev->result) = new ExtVariant(_MR(result));
 				}
@@ -1746,7 +1746,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	switch(kind)
 	{
 		case 0x00: //Undefined
-			return new Undefined;
+			return getSys()->getUndefinedRef();
 		case 0x01: //String
 			return Class<ASString>::getInstanceS(constant_pool.strings[index]);
 		case 0x03: //Int
@@ -1761,7 +1761,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		case 0x0b: //True
 			return abstract_b(true);
 		case 0x0c: //Null
-			return new Null;
+			return getSys()->getNullRef();
 		default:
 		{
 			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
@@ -1856,7 +1856,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret = ci;
 			}
 			else
-				ret=new Undefined;
+				ret=getSys()->getUndefinedRef();
 
 			obj->setVariableByQName(mname->name_s,mname->ns[0],ret,DECLARED_TRAIT);
 
@@ -1926,7 +1926,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			if(t->vindex)
 				ret=getConstant(t->vkind,t->vindex);
 			else
-				ret=new Undefined;
+				ret=getSys()->getUndefinedRef();
 
 			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *getMultiname(t->type_name,NULL));
 			obj->setVariableByQName(mname->name_s,mname->ns[0],ret,DECLARED_TRAIT);
@@ -1952,7 +1952,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			{
 				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname);
 				//The Undefined is coerced to the right type by the initializeVar..
-				ret = new Undefined;
+				ret = getSys()->getUndefinedRef();
 			}
 
 			obj->initializeVariableByMultiname(*mname, ret, tname);
@@ -1964,7 +1964,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		}
 		default:
 			LOG(LOG_ERROR,_("Trait not supported ") << *mname << _(" ") << t->kind);
-			obj->setVariableByMultiname(*mname, new Undefined);
+			obj->setVariableByMultiname(*mname, getSys()->getUndefinedRef());
 	}
 }
 

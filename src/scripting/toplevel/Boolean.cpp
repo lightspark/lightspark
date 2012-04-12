@@ -81,7 +81,7 @@ ASFUNCTIONBODY(Boolean,_constructor)
 {
 	Boolean* th=static_cast<Boolean*>(obj);
 	_NR<ASObject> o;
-	ARG_UNPACK (o,_MNR(new Undefined));
+	ARG_UNPACK (o,_MNR(getSys()->getUndefinedRef()));
 	th->val=Boolean_concrete(o.getPtr());
 	return NULL;
 }

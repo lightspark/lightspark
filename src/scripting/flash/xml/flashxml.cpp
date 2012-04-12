@@ -70,11 +70,11 @@ ASFUNCTIONBODY(XMLNode,firstChild)
 	XMLNode* th=Class<XMLNode>::cast(obj);
 	assert_and_throw(argslen==0);
 	if(th->node==NULL) //We assume NULL node is like empty node
-		return new Null;
+		return getSys()->getNullRef();
 	assert_and_throw(th->node->cobj()->type!=XML_TEXT_NODE);
 	const xmlpp::Node::NodeList& children=th->node->get_children();
 	if(children.empty())
-		return new Null;
+		return getSys()->getNullRef();
 	xmlpp::Node* newNode=children.front();
 	assert_and_throw(!th->root.isNull());
 	return Class<XMLNode>::getInstanceS(th->root,newNode);
@@ -144,7 +144,7 @@ ASFUNCTIONBODY(XMLNode,_getNodeValue)
 	if(textnode)
 		return Class<ASString>::getInstanceS(textnode->get_content());
 	else
-		return new Null;
+		return getSys()->getNullRef();
 }
 
 void XMLDocument::sinit(Class_base* c)

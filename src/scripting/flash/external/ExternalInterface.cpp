@@ -122,7 +122,7 @@ ASFUNCTIONBODY(ExternalInterface,call)
 		assert(asobjResult==NULL);
 		LOG(LOG_INFO, "External function failed, returning null: " << arg0);
 		// If the call fails, return null
-		asobjResult = new Null;
+		asobjResult = getSys()->getNullRef();
 	}
 
 	return asobjResult;

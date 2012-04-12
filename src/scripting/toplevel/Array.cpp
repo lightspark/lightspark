@@ -197,7 +197,7 @@ ASFUNCTIONBODY(Array,filter)
 
 		if(argslen==1)
 		{
-			funcRet=f->call(new Null, params, 3);
+			funcRet=f->call(getSys()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -237,7 +237,7 @@ ASFUNCTIONBODY(Array, some)
 
 		if(argslen==1)
 		{
-			funcRet=f->call(new Null, params, 3);
+			funcRet=f->call(getSys()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -276,7 +276,7 @@ ASFUNCTIONBODY(Array, every)
 
 		if(argslen==1)
 		{
-			funcRet=f->call(new Null, params, 3);
+			funcRet=f->call(getSys()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -333,7 +333,7 @@ ASFUNCTIONBODY(Array,forEach)
 		ASObject *funcret;
 		if( argslen == 1 )
 		{
-			funcret=f->call(new Null, params, 3);
+			funcret=f->call(getSys()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -434,14 +434,14 @@ ASFUNCTIONBODY(Array,shift)
 		uint32_t res = o->toUInt();
 		if (res > 0)
 			obj->setVariableByMultiname(lengthName,abstract_ui(res-1));
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	if(!th->size())
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	ASObject* ret;
 	if(!th->data.count(0))
-		ret = new Undefined;
+		ret = getSys()->getUndefinedRef();
 	else
 	{
 		if(th->data[0].type==DATA_OBJECT)
@@ -645,12 +645,12 @@ ASFUNCTIONBODY(Array,_pop)
 		uint32_t res = o->toUInt();
 		if (res > 0)
 			obj->setVariableByMultiname(lengthName,abstract_ui(res-1));
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	uint32_t size =th->size();
 	if (size == 0)
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	ASObject* ret;
 	
 	if (th->data.count(size-1))
@@ -662,7 +662,7 @@ ASFUNCTIONBODY(Array,_pop)
 		th->data.erase(size-1);
 	}
 	else
-		ret = new Undefined;
+		ret = getSys()->getUndefinedRef();
 
 	th->currentsize--;
 	return ret;
@@ -725,7 +725,7 @@ bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_sl
 		objs[0]->incRef();
 	}
 	else
-		objs[0]=new Undefined;
+		objs[0]=getSys()->getUndefinedRef();
 
 	if(d2.type==DATA_INT)
 		objs[1]=abstract_i(d2.data_i);
@@ -735,10 +735,10 @@ bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_sl
 		objs[1]->incRef();
 	}
 	else
-		objs[1]=new Undefined;
+		objs[1]=getSys()->getUndefinedRef();
 
 	assert(comparator);
-	_NR<ASObject> ret=_MNR(comparator->call(new Null, objs, 2));
+	_NR<ASObject> ret=_MNR(comparator->call(getSys()->getNullRef(), objs, 2));
 	assert_and_throw(ret);
 	return (ret->toInt()<0); //Less
 }
@@ -820,7 +820,7 @@ ASFUNCTIONBODY(Array,unshift)
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
 		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	if (argslen > 0)
@@ -862,7 +862,7 @@ ASFUNCTIONBODY(Array,_push)
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
 		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	for(unsigned int i=0;i<argslen;i++)
@@ -892,7 +892,7 @@ ASFUNCTIONBODY(Array,_push_as3)
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
 		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	for(unsigned int i=0;i<argslen;i++)
@@ -925,11 +925,11 @@ ASFUNCTIONBODY(Array,_map)
 			funcArgs[0]->incRef();
 		}
 		else
-			funcArgs[0]=new Undefined;
+			funcArgs[0]=getSys()->getUndefinedRef();
 		funcArgs[1]=abstract_i(it->first);
 		funcArgs[2]=th;
 		funcArgs[2]->incRef();
-		ASObject* funcRet=func->call(new Null, funcArgs, 3);
+		ASObject* funcRet=func->call(getSys()->getNullRef(), funcArgs, 3);
 		assert_and_throw(funcRet);
 		arrayRet->push(_MR(funcRet));
 	}
@@ -997,7 +997,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	{
 		ASObject* ret=NULL;
 		if (!data.count(index))
-			ret = new Undefined;
+			ret = getSys()->getUndefinedRef();
 		else
 		{
 			data_slot sl = data[index];
@@ -1007,7 +1007,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 					ret=sl.data;
 					if(ret==NULL)
 					{
-						ret=new Undefined;
+						ret=getSys()->getUndefinedRef();
 						sl.data=ret;
 					}
 					ret->incRef();
@@ -1207,12 +1207,12 @@ _R<ASObject> Array::nextValue(uint32_t index)
 	{
 		index--;
 		if(!data.count(index))
-			return _MR(new Undefined);
+			return _MR(getSys()->getUndefinedRef());
 		data_slot sl = data[index];
 		if(sl.type==DATA_OBJECT)
 		{
 			if(sl.data==NULL)
-				return _MR(new Undefined);
+				return _MR(getSys()->getUndefinedRef());
 			else
 			{
 				sl.data->incRef();
@@ -1275,7 +1275,7 @@ _R<ASObject> Array::at(unsigned int index) const
 		outofbounds();
 
 	if (!data.count(index))
-		return _MR(new Undefined);
+		return _MR(getSys()->getUndefinedRef());
 	data_slot sl = data.at(index);
 	switch(sl.type)
 	{
@@ -1292,7 +1292,7 @@ _R<ASObject> Array::at(unsigned int index) const
 	}
 
 	//We should be here only if data is an object and is NULL
-	return _MR(new Undefined);
+	return _MR(getSys()->getUndefinedRef());
 }
 
 void Array::outofbounds() const

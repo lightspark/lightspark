@@ -182,7 +182,7 @@ ASFUNCTIONBODY(LoaderInfo,_getContent)
 	//Use Loader::getContent
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	if(th->loader.isNull())
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	else
 		return Loader::_getContent(th->loader.getPtr(),NULL,0);
 }
@@ -191,7 +191,7 @@ ASFUNCTIONBODY(LoaderInfo,_getLoader)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	if(th->loader.isNull())
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	else
 	{
 		th->loader->incRef();
@@ -358,7 +358,7 @@ ASFUNCTIONBODY(Loader,_getContent)
 	SpinlockLocker l(th->spinlock);
 	_NR<ASObject> ret=th->content;
 	if(ret.isNull())
-		ret=_MR(new Undefined);
+		ret=_MR(getSys()->getUndefinedRef());
 
 	ret->incRef();
 	return ret.getPtr();
@@ -1184,7 +1184,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
 			if(th->scenes[i].labels[j].frame == th->state.FP)
 				return Class<ASString>::getInstanceS(th->scenes[i].labels[j].name);
 	}
-	return new Null();
+	return getSys()->getNullRef();
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
@@ -1205,7 +1205,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 	}
 
 	if(label.empty())
-		return new Null();
+		return getSys()->getNullRef();
 	else
 		return Class<ASString>::getInstanceS(label);
 }
@@ -1617,7 +1617,7 @@ ASFUNCTIONBODY(DisplayObject,_getMask)
 {
 	DisplayObject* th=Class<DisplayObject>::cast(obj);
 	if(th->mask.isNull())
-		return new Null;
+		return getSys()->getNullRef();
 
 	th->mask->incRef();
 	return th->mask.getPtr();
@@ -1810,7 +1810,7 @@ ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 	 * the main class should have non-null loaderInfo. */
 	_NR<RootMovieClip> r=th->getRoot();
 	if(r.isNull() || r->loaderInfo.isNull())
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 	
 	r->loaderInfo->incRef();
 	return r->loaderInfo.getPtr();
@@ -1821,7 +1821,7 @@ ASFUNCTIONBODY(DisplayObject,_getStage)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	_NR<Stage> ret=th->getStage();
 	if(ret.isNull())
-		return new Null;
+		return getSys()->getNullRef();
 
 	ret->incRef();
 	return ret.getPtr();
@@ -1830,13 +1830,13 @@ ASFUNCTIONBODY(DisplayObject,_getStage)
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
 {
 	//DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return new Undefined;
+	return getSys()->getUndefinedRef();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getBlendMode)
 {
 	//DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return new Undefined;
+	return getSys()->getUndefinedRef();
 }
 
 ASFUNCTIONBODY(DisplayObject,localToGlobal)
@@ -1911,7 +1911,7 @@ ASFUNCTIONBODY(DisplayObject,_getParent)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->parent.isNull())
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 
 	th->parent->incRef();
 	return th->parent.getPtr();
@@ -1922,7 +1922,7 @@ ASFUNCTIONBODY(DisplayObject,_getRoot)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	_NR<RootMovieClip> ret=th->getRoot();
 	if(ret.isNull())
-		return new Undefined;
+		return getSys()->getUndefinedRef();
 
 	ret->incRef();
 	return ret.getPtr();
@@ -2411,7 +2411,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	assert_and_throw(argslen==2);
 	if(args[0]->getObjectType() == T_CLASS)
 	{
-		return new Null;
+		return getSys()->getNullRef();
 	}
 	//Validate object type
 	assert_and_throw(args[0]->getClass() &&
@@ -2439,7 +2439,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	assert_and_throw(argslen==1);
 	if(args[0]->getObjectType() == T_CLASS)
 	{
-		return new Null;
+		return getSys()->getNullRef();
 	}
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getClass() && 
@@ -2466,7 +2466,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 	   args[0]->getObjectType() == T_UNDEFINED ||
 	   args[0]->getObjectType() == T_NULL)
 	{
-		return new Null;
+		return getSys()->getNullRef();
 	}
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getClass() && 
@@ -2595,7 +2595,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildByName)
 	if(ret)
 		ret->incRef();
 	else
-		ret=new Undefined;
+		ret=getSys()->getUndefinedRef();
 	return ret;
 }
 
@@ -4325,7 +4325,7 @@ ASFUNCTIONBODY(SimpleButton,_getUpState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	if(!th->upState)
-		return new Null;
+		return getSys()->getNullRef();
 
 	th->upState->incRef();
 	return th->upState.getPtr();
@@ -4345,7 +4345,7 @@ ASFUNCTIONBODY(SimpleButton,_getHitTestState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	if(!th->hitTestState)
-		return new Null;
+		return getSys()->getNullRef();
 
 	th->hitTestState->incRef();
 	return th->hitTestState.getPtr();
@@ -4364,7 +4364,7 @@ ASFUNCTIONBODY(SimpleButton,_getOverState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	if(!th->overState)
-		return new Null;
+		return getSys()->getNullRef();
 
 	th->overState->incRef();
 	return th->overState.getPtr();
@@ -4384,7 +4384,7 @@ ASFUNCTIONBODY(SimpleButton,_getDownState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	if(!th->downState)
-		return new Null;
+		return getSys()->getNullRef();
 
 	th->downState->incRef();
 	return th->downState.getPtr();

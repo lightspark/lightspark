@@ -248,9 +248,9 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 	switch(marker)
 	{
 		case null_marker:
-			return _MR(new Null);
+			return _MR(getSys()->getNullRef());
 		case undefined_marker:
-			return _MR(new Undefined);
+			return _MR(getSys()->getUndefinedRef());
 		case false_marker:
 			return _MR(abstract_b(false));
 		case true_marker:

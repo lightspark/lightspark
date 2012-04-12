@@ -637,7 +637,7 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 	else
 	{
 		//Uninitialized info
-		info=new Null;
+		info=getSys()->getNullRef();
 	}
 	obj->setVariableByQName("info","",info,DECLARED_TRAIT);
 	return NULL;

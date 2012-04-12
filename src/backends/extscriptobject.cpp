@@ -345,11 +345,11 @@ ASObject* ExtVariant::getASObject() const
 		}
 		break;
 	case EV_NULL:
-		asobj = new Null;
+		asobj = getSys()->getNullRef();
 		break;
 	case EV_VOID:
 	default:
-		asobj = new Undefined;
+		asobj = getSys()->getUndefinedRef();
 		break;
 	}
 	return asobj;
@@ -391,7 +391,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 			}
 
 			/* TODO: shouldn't we pass some global object instead of Null? */
-			ASObject* asObjResult = func->call(new Null, objArgs, argc);
+			ASObject* asObjResult = func->call(getSys()->getNullRef(), objArgs, argc);
 			result = new ExtVariant(_MR(asObjResult));
 		}
 		// Catch AS exceptions and pass them on

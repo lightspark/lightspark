@@ -668,7 +668,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			//Casting undefined to an object (of unknown class)
 			//results in Null
 			obj->decRef();
-			obj = new Null;
+			obj = getSys()->getNullRef();
 		}
 	}
 	else

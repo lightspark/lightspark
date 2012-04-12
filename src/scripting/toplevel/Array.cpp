@@ -22,6 +22,7 @@
 #include "argconv.h"
 #include "parsing/amf3_generator.h"
 #include "Vector.h"
+#include "RegExp.h"
 #include "flash/utils/flashutils.h"
 
 using namespace std;
@@ -53,23 +54,23 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_setLength),SETTER_METHOD,true);
 
 	// public functions
-	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(_concat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(_concat,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("every",AS3,Class<IFunction>::getFunction(every),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("filter",AS3,Class<IFunction>::getFunction(filter),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("forEach",AS3,Class<IFunction>::getFunction(forEach),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("join",AS3,Class<IFunction>::getFunction(join),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("map",AS3,Class<IFunction>::getFunction(_map),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("join",AS3,Class<IFunction>::getFunction(join,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("map",AS3,Class<IFunction>::getFunction(_map,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("pop",AS3,Class<IFunction>::getFunction(_pop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(_push_as3),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
 	//c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),NORMAL_METHOD,true);
@@ -80,6 +81,13 @@ void Array::sinit(Class_base* c)
 	c->prototype->setVariableByQName("push","",Class<IFunction>::getFunction(_push),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("shift","",Class<IFunction>::getFunction(shift),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("unshift","",Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(_concat,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("slice","",Class<IFunction>::getFunction(slice,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("splice","",Class<IFunction>::getFunction(splice,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("reverse","",Class<IFunction>::getFunction(_reverse),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("join","",Class<IFunction>::getFunction(join,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("map",AS3,Class<IFunction>::getFunction(_map,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("sort","",Class<IFunction>::getFunction(_sort),DYNAMIC_TRAIT);
 }
 
 void Array::buildTraits(ASObject* o)
@@ -588,7 +596,9 @@ ASFUNCTIONBODY(Array,join)
 	string ret;
 	for(uint32_t i=0;i<th->size();i++)
 	{
-		ret+=th->at(i)->toString().raw_buf();
+		_R<ASObject> o = th->at(i);
+		if (!o->is<Undefined>() && !o->is<Null>())
+			ret+= o->toString().raw_buf();
 		if(i!=th->size()-1)
 			ret+=del.raw_buf();
 	}
@@ -908,28 +918,48 @@ ASFUNCTIONBODY(Array,_push_as3)
 ASFUNCTIONBODY(Array,_map)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_FUNCTION);
-	IFunction* func=static_cast<IFunction*>(args[0]);
+
+	if(argslen < 1)
+		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+	IFunction* func= NULL;
+	if (!args[0]->is<RegExp>())
+	{
+		assert_and_throw(args[0]->getObjectType()==T_FUNCTION);
+		func=static_cast<IFunction*>(args[0]);
+	}
 	Array* arrayRet=Class<Array>::getInstanceS();
 
-	std::map<uint32_t,data_slot>::iterator it;
-	for ( it=th->data.begin() ; it != th->data.end(); it++ )
+	uint32_t s = th->size();
+	for (uint32_t i=0; i < s; i++ )
 	{
 		ASObject* funcArgs[3];
-		const data_slot& slot=it->second;
-		if(slot.type==DATA_INT)
-			funcArgs[0]=abstract_i(slot.data_i);
-		else if(slot.type==DATA_OBJECT && slot.data)
+		if (th->data.count(i))
 		{
-			funcArgs[0]=slot.data;
-			funcArgs[0]->incRef();
+			const data_slot& slot=th->data[i];
+			if(slot.type==DATA_INT)
+				funcArgs[0]=abstract_i(slot.data_i);
+			else if(slot.type==DATA_OBJECT && slot.data)
+			{
+				funcArgs[0]=slot.data;
+				funcArgs[0]->incRef();
+			}
+			else
+				funcArgs[0]=new Undefined;
 		}
 		else
 			funcArgs[0]=getSys()->getUndefinedRef();
-		funcArgs[1]=abstract_i(it->first);
+		funcArgs[1]=abstract_i(i);
 		funcArgs[2]=th;
 		funcArgs[2]->incRef();
-		ASObject* funcRet=func->call(getSys()->getNullRef(), funcArgs, 3);
+		ASObject* funcRet= NULL;
+		if (func)
+		{
+			if (argslen > 1)
+				args[1]->incRef();
+			funcRet = func->call(argslen > 1? args[1] : getSys()->getNullRef(), funcArgs, 3);
+		}
+		else
+			funcRet = RegExp::exec(args[0],funcArgs,1);
 		assert_and_throw(funcRet);
 		arrayRet->push(_MR(funcRet));
 	}
@@ -1182,7 +1212,7 @@ tiny_string Array::toString_priv() const
 			data_slot sl = data.at(i);
 			if(sl.type==DATA_OBJECT)
 			{
-				if(sl.data)
+				if(sl.data && !sl.data->is<Undefined>() && !sl.data->is<Null>())
 					ret+=sl.data->toString().raw_buf();
 			}
 			else if(sl.type==DATA_INT)

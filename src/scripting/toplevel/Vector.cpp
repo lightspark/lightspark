@@ -751,8 +751,8 @@ ASFUNCTIONBODY(Vector,unshift)
 
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		th->vec[i] = th->vec_type->coerce(args[i]);
 		args[i]->incRef();
+		th->vec[i] = th->vec_type->coerce(args[i]);
 	}
 	return abstract_i(th->size());
 }

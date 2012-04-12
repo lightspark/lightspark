@@ -1047,25 +1047,6 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 	return NULL;
 }
 
-ASFUNCTIONBODY(MovieClip,createEmptyMovieClip)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("createEmptyMovieClip"));
-	return new Undefined;
-/*	MovieClip* th=static_cast<MovieClip*>(obj);
-	if(th==NULL)
-		LOG(ERROR,_("Not a valid MovieClip"));
-
-	LOG(CALLS,_("Called createEmptyMovieClip: ") << args->args[0]->toString() << _(" ") << args->args[1]->toString());
-	MovieClip* ret=new MovieClip();
-
-	DisplayObject* t=new ASObjectWrapper(ret,args->args[1]->toInt());
-	list<DisplayObject*>::iterator it=lower_bound(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),t->getDepth(),list_orderer);
-	th->dynamicDisplayList.insert(it,t);
-
-	th->setVariableByName(args->args[0]->toString(),ret);
-	return ret;*/
-}
-
 ASFUNCTIONBODY(MovieClip,swapDepths)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("Called swapDepths"));

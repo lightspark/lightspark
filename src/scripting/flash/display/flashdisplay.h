@@ -660,7 +660,6 @@ public:
 	virtual bool hasFinishedLoading() { return true; }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(swapDepths);
-	ASFUNCTION(createEmptyMovieClip);
 	ASFUNCTION(addFrameScript);
 	ASFUNCTION(stop);
 	ASFUNCTION(gotoAndStop);

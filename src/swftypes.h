@@ -31,6 +31,7 @@
 #include <string.h>
 #include <assert.h>
 #include "exceptions.h"
+#include "smartrefs.h"
 
 #ifdef BIG_ENDIAN
 #include <algorithm>
@@ -1173,15 +1174,16 @@ enum FILL_STYLE_TYPE { SOLID_FILL=0x00, LINEAR_GRADIENT=0x10, RADIAL_GRADIENT=0x
 class FILLSTYLE
 {
 public:
-	FILLSTYLE(int v):version(v),Gradient(v){}
+	FILLSTYLE(int v);
+	FILLSTYLE(const FILLSTYLE& r);
+	virtual ~FILLSTYLE();
 	int version;
 	FILL_STYLE_TYPE FillStyleType;
 	RGBA Color;
 	MATRIX Matrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
-	BitmapData* bitmap;
-	virtual ~FILLSTYLE(){}
+	_NR<BitmapData> bitmap;
 };
 
 class MORPHFILLSTYLE:public FILLSTYLE

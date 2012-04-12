@@ -24,6 +24,7 @@
 #include "logger.h"
 #include "geometry.h"
 #include "compat.h"
+#include "flash/display/flashdisplay.h"
 
 using namespace std;
 using namespace lightspark;
@@ -184,7 +185,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, vector< Geo
 			assert(stylesIt!=styles.end());
 		}
 		//Set the fill style
-		tokens.push_back(GeomToken(SET_FILL,*stylesIt));
+		tokens.emplace_back(GeomToken(SET_FILL,*stylesIt));
 		vector<vector<ShapePathSegment> >& outlinesForColor=it->second;
 		for(unsigned int i=0;i<outlinesForColor.size();i++)
 		{

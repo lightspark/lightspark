@@ -447,7 +447,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 		case REPEATING_BITMAP:
 		case CLIPPED_BITMAP:
 		{
-			if(style.bitmap==NULL)
+			if(style.bitmap.isNull())
 				throw RunTimeException("Invalid bitmap");
 
 			cairo_surface_t* surface = cairo_image_surface_create_for_data (style.bitmap->getData(),

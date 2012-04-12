@@ -787,7 +787,8 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 					LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
 					throw ParseException("Invalid ID for bitmap");
 				}
-				v.bitmap = b;
+				b->incRef();
+				v.bitmap = _MR(b);
 			}
 			catch(RunTimeException& e)
 			{
@@ -1308,4 +1309,17 @@ tiny_string QName::getQualifiedName() const
 	}
 	ret+=name;
 	return ret;
+}
+
+FILLSTYLE::FILLSTYLE(int v):version(v),Gradient(v)
+{
+}
+
+FILLSTYLE::FILLSTYLE(const FILLSTYLE& r):version(r.version),FillStyleType(r.FillStyleType),Color(r.Color),
+	Matrix(r.Matrix),Gradient(r.Gradient),FocalGradient(r.FocalGradient),bitmap(r.bitmap)
+{
+}
+
+FILLSTYLE::~FILLSTYLE()
+{
 }

@@ -678,8 +678,7 @@ void ABCVm::construct(call_context* th, int m)
 
 		default:
 		{
-			LOG(LOG_ERROR,_("Object type ") << obj->getObjectType() << _(" not supported in construct"));
-			throw UnsupportedException("This object is not supported in construct");
+			throw Class<EvalError>::getInstanceS("Error #1007: Instantiation attempted on a non-constructor");
 			break;
 		}
 	}

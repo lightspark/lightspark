@@ -112,6 +112,12 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 	out->writeByte(undefined_marker);
 }
 
+void Undefined::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Ignoring set on Undefined " << name);
+	o->decRef();
+}
+
 IFunction::IFunction():inClass(NULL),length(0)
 {
 	type=T_FUNCTION;
@@ -593,6 +599,11 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 	out->writeByte(null_marker);
 }
 
+void Null::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	o->decRef();
+	throw Class<TypeError>::getInstanceS("Cannot set on null");
+}
 
 ASObject* Void::coerce(ASObject* o) const
 {

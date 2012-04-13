@@ -264,7 +264,7 @@ ASFUNCTIONBODY(ASString,split)
 {
 	tiny_string data = obj->toString();
 	Array* ret=Class<Array>::getInstanceS();
-	uint limit = 0x7fffffff;
+	uint32_t limit = 0x7fffffff;
 	if(argslen == 0 )
 	{
 		ret->push(_MR(Class<ASString>::getInstanceS(data)));
@@ -341,7 +341,7 @@ ASFUNCTIONBODY(ASString,split)
 		if(del.empty())
 		{
 			//the string is empty, so split every character
-			uint j = 0;
+			uint32_t j = 0;
 			for(auto i=data.begin();i!=data.end();++i)
 			{
 				if (j >= limit)

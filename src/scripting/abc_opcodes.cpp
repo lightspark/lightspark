@@ -2099,7 +2099,7 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 	}
 	else if(f->is<RegExp>())
 	{
-		ASObject* ret=RegExp::exec(f,&obj,1);
+		ASObject* ret=RegExp::exec(f,args,m);
 		if(keepReturn)
 			th->runtime_stack_push(ret);
 		else

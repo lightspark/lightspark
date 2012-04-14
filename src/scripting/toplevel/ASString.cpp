@@ -664,8 +664,10 @@ ASFUNCTIONBODY(ASString,replace)
 		replaceWith=args[1]->toString();
 	}
 	else
+	{
+		replaceWith=args[1]->toString();
 		type = FUNC;
-
+	}
 	if(args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
@@ -687,8 +689,10 @@ ASFUNCTIONBODY(ASString,replace)
 		int ovector[(capturingGroups+1)*3];
 		int offset=0;
 		int retDiff=0;
+		tiny_string prevsubstring = "";
 		do
 		{
+			tiny_string replaceWithTmp = replaceWith;
 			int rc=pcre_exec(pcreRE, &extra, ret->data.raw_buf(), ret->data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 			if(rc<0)
 			{
@@ -696,6 +700,7 @@ ASFUNCTIONBODY(ASString,replace)
 				pcre_free(pcreRE);
 				return ret;
 			}
+			prevsubstring += ret->data.substr_bytes(offset,ovector[0]-offset);
 			if(type==FUNC)
 			{
 				//Get the replace for this match
@@ -709,13 +714,13 @@ ASFUNCTIONBODY(ASString,replace)
 				
 				subargs[capturingGroups+2]=Class<ASString>::getInstanceS(data);
 				ASObject* ret=f->call(getSys()->getNullRef(), subargs, 3+capturingGroups);
-				replaceWith=ret->toString().raw_buf();
+				replaceWithTmp=ret->toString().raw_buf();
 				ret->decRef();
 			} else {
 					size_t pos, ipos = 0;
 					tiny_string group;
 					int i, j;
-					while((pos = replaceWith.find("$", ipos)) != tiny_string::npos) {
+					while((pos = replaceWithTmp.find("$", ipos)) != tiny_string::npos) {
 						i = 0;
 						ipos = pos;
 						/* docu is not clear what to do if the $nn value is higher 
@@ -724,21 +729,39 @@ ASFUNCTIONBODY(ASString,replace)
 						 * that we should take it as an $n value
 						 */
 						   
-						while (++ipos < replaceWith.numChars() && i<10) {
-						j = replaceWith.charAt(ipos)-'0';
+						while (++ipos < replaceWithTmp.numChars() && i<10) {
+						j = replaceWithTmp.charAt(ipos)-'0';
 							if (j <0 || j> 9 || rc < 10*i + j)
 								break;
 							i = 10*i + j;
 						}
 						if (i == 0)
+						{
+							switch (replaceWithTmp.charAt(ipos))
+							{
+								case '$':
+									replaceWithTmp.replace(ipos,1,"");
+									break;
+								case '&':
+									replaceWithTmp.replace(ipos-1,2,ret->data.substr_bytes(ovector[0], ovector[1]-ovector[0]));
+									break;
+								case '`':
+									replaceWithTmp.replace(ipos-1,2,prevsubstring);
+									break;
+								case '\'':
+									replaceWithTmp.replace(ipos-1,2,ret->data.substr_bytes(ovector[1],ret->data.numBytes()-ovector[1]));
+									break;
+							}
 							continue;
+						}
 						group = (i >= rc) ? "" : ret->data.substr_bytes(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
-						replaceWith.replace(pos, ipos-pos, group);
+						replaceWithTmp.replace(pos, ipos-pos, group);
 					}
 			}
-			ret->data.replace_bytes(ovector[0],ovector[1]-ovector[0],replaceWith);
-			offset=ovector[0]+replaceWith.numBytes();
-			retDiff+=replaceWith.numBytes()-(ovector[1]-ovector[0]);
+			prevsubstring += ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0]);
+			ret->data.replace_bytes(ovector[0],ovector[1]-ovector[0],replaceWithTmp);
+			offset=ovector[0]+replaceWithTmp.numBytes();
+			retDiff+=replaceWithTmp.numBytes()-(ovector[1]-ovector[0]);
 		}
 		while(re->global);
 
@@ -750,7 +773,6 @@ ASFUNCTIONBODY(ASString,replace)
 		int index=ret->data.find(s,0);
 		if(index==-1) //No result
 			return ret;
-		assert_and_throw(type==STRING);
 		ret->data.replace(index,s.numChars(),replaceWith);
 	}
 

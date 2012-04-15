@@ -250,7 +250,8 @@ _R<ASObject> ASObject::call_valueOf()
 	assert_and_throw(hasPropertyByMultiname(valueOfName, true));
 
 	_NR<ASObject> o=getVariableByMultiname(valueOfName,SKIP_IMPL);
-	assert_and_throw(o->is<IFunction>());
+	if (!o->is<IFunction>())
+		throw Class<TypeError>::getInstanceS("Error #1006: Call attempted on an object that is not a function.");
 	IFunction* f=o->as<IFunction>();
 
 	incRef();
@@ -463,6 +464,12 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 	bool has_getter=false;
 	variable* obj=findSettable(name, false, &has_getter);
 
+	if (obj && (obj->kind == CONSTANT_TRAIT))
+	{
+		tiny_string err=tiny_string("Error #1074: Illegal write to read-only property ")+name.normalizedName();
+		err+=tiny_string(" on type ")+this->as<Class_base>()->getQualifiedClassName();
+		throw Class<ReferenceError>::getInstanceS(err);
+	}
 	if(!obj && cls)
 	{
 		//Look for borrowed traits before
@@ -638,7 +645,6 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
-
 	if(createKind == DYNAMIC_TRAIT)
 	{
 		if(mname.ns.begin()->name != "")
@@ -676,7 +682,6 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 		type = Type::getTypeFromMultiname(typemname);
 		obj = type->coerce(obj);
 	}
-
 	Variables.insert(make_pair(name, variable(mname.ns[0], DECLARED_TRAIT, obj, typemname, type)));
 }
 
@@ -943,6 +948,7 @@ void variables_map::dumpVariables()
 		switch(it->second.kind)
 		{
 			case DECLARED_TRAIT:
+			case CONSTANT_TRAIT:
 				kind="Declared: ";
 				break;
 			case BORROWED_TRAIT:

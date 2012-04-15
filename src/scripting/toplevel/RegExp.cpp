@@ -143,7 +143,6 @@ ASObject *RegExp::match(const tiny_string& str)
 	pcre* pcreRE = compile();
 	if (!pcreRE)
 		return getSys()->getNullRef();
-
 	int capturingGroups;
 	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 	if(infoOk!=0)
@@ -185,7 +184,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
 	int ovector[(capturingGroups+1)*3];
 	int offset=global?lastIndex:0;
-	int rc=pcre_exec(pcreRE, &extra, str.raw_buf(), str.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+	int rc=pcre_exec(pcreRE,capturingGroups > 200 ? &extra : NULL, str.raw_buf(), str.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 	if(rc<0)
 	{
 		//No matches or error

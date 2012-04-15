@@ -30,6 +30,9 @@ class Math: public ASObject
 public:
 	static void sinit(Class_base* c);
 
+	ASFUNCTION(_constructor);
+	ASFUNCTION(generator);
+
 	ASFUNCTION(abs);
 	ASFUNCTION(acos);
 	ASFUNCTION(asin);

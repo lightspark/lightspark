@@ -96,8 +96,8 @@ void UInteger::sinit(Class_base* c)
 {
 	c->isFinal = true;
 	c->setSuper(Class<ASObject>::getRef());
-	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),DECLARED_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),DECLARED_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),CONSTANT_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 

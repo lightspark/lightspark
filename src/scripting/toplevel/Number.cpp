@@ -268,11 +268,11 @@ void Number::sinit(Class_base* c)
 	pmax->setClass(c);
 	pmin->setClass(c);
 	pnan->setClass(c);
-	c->setVariableByQName("NEGATIVE_INFINITY","",ninf,DECLARED_TRAIT);
-	c->setVariableByQName("POSITIVE_INFINITY","",pinf,DECLARED_TRAIT);
-	c->setVariableByQName("MAX_VALUE","",pmax,DECLARED_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",pmin,DECLARED_TRAIT);
-	c->setVariableByQName("NaN","",pnan,DECLARED_TRAIT);
+	c->setVariableByQName("NEGATIVE_INFINITY","",ninf,CONSTANT_TRAIT);
+	c->setVariableByQName("POSITIVE_INFINITY","",pinf,CONSTANT_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",pmax,CONSTANT_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",pmin,CONSTANT_TRAIT);
+	c->setVariableByQName("NaN","",pnan,CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toFixed",AS3,Class<IFunction>::getFunction(Number::toFixed),DYNAMIC_TRAIT);

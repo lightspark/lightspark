@@ -29,35 +29,48 @@ REGISTER_CLASS_NAME(Math);
 
 void Math::sinit(Class_base* c)
 {
+	c->isFinal=true;
+	c->setSuper(Class<ASObject>::getRef());
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	// public constants
-	c->setVariableByQName("E","",abstract_d(2.71828182845905),DECLARED_TRAIT);
-	c->setVariableByQName("LN10","",abstract_d(2.302585092994046),DECLARED_TRAIT);
-	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453),DECLARED_TRAIT);
-	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518),DECLARED_TRAIT);
-	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387),DECLARED_TRAIT);
-	c->setVariableByQName("PI","",abstract_d(3.141592653589793),DECLARED_TRAIT);
-	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476),DECLARED_TRAIT);
-	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951),DECLARED_TRAIT);
+	c->setVariableByQName("E","",abstract_d(2.71828182845905),CONSTANT_TRAIT);
+	c->setVariableByQName("LN10","",abstract_d(2.302585092994046),CONSTANT_TRAIT);
+	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453),CONSTANT_TRAIT);
+	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518),CONSTANT_TRAIT);
+	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387),CONSTANT_TRAIT);
+	c->setVariableByQName("PI","",abstract_d(3.141592653589793),CONSTANT_TRAIT);
+	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476),CONSTANT_TRAIT);
+	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951),CONSTANT_TRAIT);
 
 	// public methods
-	c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(abs),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(acos),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(asin),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(atan),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(atan2),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(ceil),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(cos),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(exp),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(floor),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(log),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(_max),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(_min),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(pow),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(abs,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(acos,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(asin,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(atan,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(atan2,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(ceil,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(cos,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(exp,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(floor,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(log,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(_max,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(_min,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(pow,2),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(random),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(round),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(sin),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(sqrt),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(tan),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(round,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(sin,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(sqrt,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(tan,1),NORMAL_METHOD,false);
+}
+
+ASFUNCTIONBODY(Math,_constructor)
+{
+	throw Class<TypeError>::getInstanceS("Error #1076: Math is not a constructor");
+}
+
+ASFUNCTIONBODY(Math,generator)
+{
+	throw Class<TypeError>::getInstanceS("Error #1075: Math is not a function");
 }
 
 ASFUNCTIONBODY(Math,atan2)
@@ -195,6 +208,8 @@ ASFUNCTIONBODY(Math,round)
 {
 	number_t n;
 	ARG_UNPACK (n);
+	if (n < 0 && n >= -0.5)
+		return abstract_d(0);
 	return abstract_d(::round(n));
 }
 
@@ -209,6 +224,8 @@ ASFUNCTIONBODY(Math,pow)
 {
 	number_t x, y;
 	ARG_UNPACK (x) (y);
+	if (::fabs(x) == 1 && (std::isnan(y) || std::isinf(y)) )
+		return abstract_d(Number::NaN);
 	return abstract_d(::pow(x,y));
 }
 

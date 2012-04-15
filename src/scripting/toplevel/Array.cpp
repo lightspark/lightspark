@@ -43,11 +43,11 @@ void Array::sinit(Class_base* c)
 	// public constants
 	c->setSuper(Class<ASObject>::getRef());
 
-	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE),DECLARED_TRAIT);
-	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING),DECLARED_TRAIT);
-	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC),DECLARED_TRAIT);
-	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY),DECLARED_TRAIT);
-	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT),DECLARED_TRAIT);
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE),CONSTANT_TRAIT);
+	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING),CONSTANT_TRAIT);
+	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC),CONSTANT_TRAIT);
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY),CONSTANT_TRAIT);
+	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT),CONSTANT_TRAIT);
 
 	// properties
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);

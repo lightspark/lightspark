@@ -893,6 +893,8 @@ void Class_base::finalize()
 	finalizeObjects();
 
 	ASObject::finalize();
+	super.reset();
+	prototype.reset();
 	if(constructor)
 	{
 		constructor->decRef();

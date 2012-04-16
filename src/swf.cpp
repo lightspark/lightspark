@@ -1040,7 +1040,7 @@ ParseThread::ParseThread(istream& in, _NR<ApplicationDomain> appDomain, Loader *
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
-  : version(0),applicationDomain(NullRef), //The application domain is loaded from the root
+  : version(0),applicationDomain(NullRef), //The application domain is not really needed since the root is already loaded
     f(in),zlibFilter(NULL),backend(NULL),loader(NULL),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
@@ -1313,7 +1313,6 @@ void ParseThread::setRootMovie(RootMovieClip *root)
 	assert(root);
 	root->incRef();
 	parsedObject=_MNR(root);
-	applicationDomain=root->applicationDomain;
 }
 
 RootMovieClip* ParseThread::getRootMovie() const

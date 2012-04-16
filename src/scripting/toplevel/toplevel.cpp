@@ -237,6 +237,11 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 		length = mi->numArgs();
 }
 
+SyntheticFunction::~SyntheticFunction()
+{
+	finalize();
+}
+
 void SyntheticFunction::finalize()
 {
 	IFunction::finalize();

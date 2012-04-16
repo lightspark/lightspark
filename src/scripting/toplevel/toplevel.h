@@ -343,6 +343,7 @@ private:
 	}
 	method_info* getMethodInfo() const { return mi; }
 public:
+	~SyntheticFunction();
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	void finalize();
 	std::vector<scope_entry> func_scope;

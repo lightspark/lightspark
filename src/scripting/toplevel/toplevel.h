@@ -127,7 +127,7 @@ public:
 	_NR<Class_base> super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
-	QName class_name;
+	const QName class_name;
 	int class_index;
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);

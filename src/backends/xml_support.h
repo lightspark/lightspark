@@ -1,0 +1,65 @@
+/**************************************************************************
+    Lightspark, a free flash player implementation
+
+    Copyright (C) 2012  Alessandro Pignotti (a.pignotti@sssup.it)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**************************************************************************/
+
+#ifndef _XML_SUPPORT_H
+#define _XML_SUPPORT_H
+
+#include <libxml/tree.h>
+#include <libxml++/parsers/domparser.h>
+#include <libxml++/exceptions/internal_error.h>
+#include <libxml/parserInternals.h>//For xmlCreateFileParserCtxt().
+
+namespace lightspark
+{
+
+#ifdef XMLPP_2_35_1
+//Create a utility derived class from xmlpp::DomParser since we want to use the recovery mode
+class RecoveryDomParser:public xmlpp::DomParser
+{
+public:
+	void parse_memory_raw(const unsigned char* contents, size_type bytes_count);
+};
+//Also create a utility derived class from xmlpp::Document to access the protected constructor
+class RecoveryDocument: public xmlpp::Document
+{
+public:
+	RecoveryDocument(_xmlDoc* d);
+};
+typedef RecoveryDomParser LSDomParser;
+#else
+typedef xmlpp::DomParser LSDomParser;
+#endif
+
+/*
+ * Base class for both XML adn XMLNode
+ */
+class XMLBase
+{
+protected:
+	//The parser will destroy the document and all the childs on destruction
+	LSDomParser parser;
+	xmlpp::Node* buildFromString(const std::string& str);
+	static std::string parserQuirks(const std::string& str);
+	static std::string quirkCData(const std::string& str);
+	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
+};
+
+};
+
+#endif

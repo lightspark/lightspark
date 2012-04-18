@@ -166,15 +166,6 @@ ASFUNCTIONBODY(XMLDocument,_constructor)
 	return NULL;
 }
 
-void XMLDocument::clear()
-{
-	if(ownsDocument)
-	{
-		delete document;
-		ownsDocument=false;
-	}
-}
-
 void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
@@ -182,22 +173,17 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 	throw UnsupportedException("XMLDocument::serialize not implemented");
 }
 
+void XMLDocument::parseXMLImpl(const string& str)
+{
+	rootNode=buildFromString(str);
+}
+
 ASFUNCTIONBODY(XMLDocument,parseXML)
 {
 	XMLDocument* th=Class<XMLDocument>::cast(obj);
 	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
-	th->clear();
 	ASString* str=Class<ASString>::cast(args[0]);
-	try
-	{
-		th->parser.parse_memory_raw((const unsigned char*)str->data.raw_buf(), str->data.numBytes());
-	}
-	catch(const exception& e)
-	{
-		//libxml++ throwed an exception
-		throw RunTimeException("Error while parsing XML");
-	}
-	th->document=th->parser.get_document();
+	th->parseXMLImpl(str->data);
 	return NULL;
 }
 
@@ -206,7 +192,7 @@ ASFUNCTIONBODY(XMLDocument,firstChild)
 	XMLDocument* th=Class<XMLDocument>::cast(obj);
 	assert_and_throw(argslen==0);
 	assert(th->node==NULL);
-	xmlpp::Node* newNode=th->document->get_root_node();
+	xmlpp::Node* newNode=th->rootNode;
 	th->incRef();
 	return Class<XMLNode>::getInstanceS(_MR(th),newNode);
 }

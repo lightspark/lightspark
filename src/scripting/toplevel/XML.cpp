@@ -39,7 +39,7 @@ XML::XML():node(NULL),constructed(false),ignoreComments(true)
 
 XML::XML(const string& str):node(NULL),constructed(true)
 {
-	buildFromString(str);
+	node=buildFromString(str);
 }
 
 XML::XML(_R<XML> _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
@@ -81,124 +81,6 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("elements",AS3,Class<IFunction>::getFunction(elements),NORMAL_METHOD,true);
-}
-
-#ifdef XMLPP_2_35_1
-XML::RecoveryDocument::RecoveryDocument(_xmlDoc* d):xmlpp::Document(d)
-{
-}
-
-void XML::RecoveryDomParser::parse_memory_raw(const unsigned char* contents, size_type bytes_count)
-{
-	release_underlying(); //Free any existing document.
-
-	//The following is based on the implementation of xmlParseFile(), in xmlSAXParseFileWithData():
-	context_ = xmlCreateMemoryParserCtxt((const char*)contents, bytes_count);
-	if(!context_)
-		throw xmlpp::internal_error("Couldn't create parsing context");
-
-	xmlSAXHandlerV1* handler=(xmlSAXHandlerV1*)calloc(1,sizeof(xmlSAXHandlerV1));
-	initxmlDefaultSAXHandler(handler, 0);
-	context_->recovery=1;
-	free(context_->sax);
-	context_->sax=(xmlSAXHandler*)handler;
-	context_->keepBlanks = 0;
-	handler->ignorableWhitespace = xmlSAX2IgnorableWhitespace;
-
-	//The following is based on the implementation of xmlParseFile(), in xmlSAXParseFileWithData():
-	//and the implementation of xmlParseMemory(), in xmlSaxParseMemoryWithData().
-	initialize_context();
-
-	if(!context_)
-		throw xmlpp::internal_error("Context not initialized");
-
-	xmlParseDocument(context_);
-
-	check_for_exception();
-
-	if(!context_->wellFormed)
-		LOG(LOG_ERROR, "XML data not well formed!");
-
-	doc_ = new RecoveryDocument(context_->myDoc);
-	// This is to indicate to release_underlying that we took the
-	// ownership on the doc.
-	context_->myDoc = 0;
-
-	//Free the parse context, but keep the document alive so people can navigate the DOM tree:
-	//TODO: Why not keep the context alive too?
-	Parser::release_underlying();
-
-	check_for_exception();
-}
-
-#endif
-
-void XML::buildFromString(const string& str)
-{
-	string buf = parserQuirks(str);
-	try
-	{
-		parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
-	}
-	catch(const exception& e)
-	{
-	}
-	xmlpp::Document* doc=parser.get_document();
-	if(doc)
-		node=doc->get_root_node();
-
-	if(node==NULL)
-	{
-		LOG(LOG_ERROR, "XML parsing failed, creating text node");
-		//If everything fails, create a fake document and add a single text string child
-		buf="<a></a>";
-		parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
-		node=parser.get_document()->get_root_node()->add_child_text(str);
-		// TODO: node's parent (root) should be inaccessible from AS code
-	}
-}
-
-// Adobe player's XML parser accepts many strings which are not valid
-// XML according to the specs. This function attempts to massage
-// invalid-but-accepted-by-Adobe strings into valid XML so that
-// libxml++ parser doesn't throw an error.
-string XML::parserQuirks(const string& str)
-{
-	string buf = quirkCData(str);
-	buf = quirkXMLDeclarationInMiddle(buf);
-	return buf;
-}
-
-string XML::quirkCData(const string& str) {
-	//if this is a CDATA node replace CDATA tags to make it look like a text-node
-	//for compatibility with the Adobe player
-	if (str.compare(0, 9, "<![CDATA[") == 0) {
-		return "<a>"+str.substr(9, str.size()-12)+"</a>";
-	}
-	else
-		return str;
-}
-
-string XML::quirkXMLDeclarationInMiddle(const string& str) {
-	string buf(str);
-
-	// Adobe player ignores XML declarations in the middle of a
-	// string.
-	while (true)
-	{
-		size_t start = buf.find("<?xml ", 1);
-		if (start == buf.npos)
-			break;
-		
-		size_t end = buf.find("?>", start+5);
-		if (end == buf.npos)
-			break;
-		end += 2;
-		
-		buf.erase(start, end-start);
-	}
-
-	return buf;
 }
 
 ASFUNCTIONBODY(XML,generator)
@@ -249,7 +131,7 @@ ASFUNCTIONBODY(XML,_constructor)
 	   args[0]->getObjectType()==T_NULL || 
 	   args[0]->getObjectType()==T_UNDEFINED)
 	{
-		th->buildFromString("");
+		th->node=th->buildFromString("");
 	}
 	else if(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()))
 	{
@@ -258,7 +140,7 @@ ASFUNCTIONBODY(XML,_constructor)
 		ByteArray* ba=Class<ByteArray>::cast(args[0]);
 		uint32_t len=ba->getLength();
 		const uint8_t* str=ba->getBuffer(len, false);
-		th->buildFromString(std::string((const char*)str,len));
+		th->node=th->buildFromString(std::string((const char*)str,len));
 	}
 	else if(args[0]->getObjectType()==T_STRING ||
 		args[0]->getObjectType()==T_NUMBER ||
@@ -267,7 +149,7 @@ ASFUNCTIONBODY(XML,_constructor)
 	{
 		//By specs, XML constructor will only convert to string Numbers or Booleans
 		//ints are not explicitly mentioned, but they seem to work
-		th->buildFromString(args[0]->toString());
+		th->node=th->buildFromString(args[0]->toString());
 	}
 	else
 		throw Class<TypeError>::getInstanceS("Unsupported type in XML conversion");

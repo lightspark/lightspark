@@ -23,7 +23,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "smartrefs.h"
-#include <libxml++/parsers/domparser.h>
+#include "backends/xml_support.h"
 
 namespace lightspark
 {
@@ -51,16 +51,13 @@ public:
 	ASFUNCTION(_getNodeValue);
 };
 
-class XMLDocument: public XMLNode
+class XMLDocument: public XMLNode, public XMLBase
 {
 private:
-	//The parser will destroy the document and all the childs on destruction
-	xmlpp::DomParser parser;
-	bool ownsDocument;
-	xmlpp::Document* document;
-	void clear();
+	xmlpp::Node* rootNode;
 public:
-	XMLDocument():ownsDocument(false),document(NULL){}
+	XMLDocument():rootNode(NULL){}
+	void parseXMLImpl(const std::string& str);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

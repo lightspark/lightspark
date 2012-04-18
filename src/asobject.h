@@ -120,9 +120,6 @@
 		REGISTER_GETTER(c,name); \
 		REGISTER_SETTER(c,name)
 
-#define CLASSBUILDABLE(className) \
-	friend class Class<className>; 
-
 namespace lightspark
 {
 
@@ -229,15 +226,14 @@ friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
 friend void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 friend class IFunction; //Needed for clone
-CLASSBUILDABLE(ASObject);
 protected:
-	ASObject();
 	ASObject(const ASObject& o);
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const;
+	void setClass(Class_base* c);
 private:
 	//maps variable name to namespace and var
 	variables_map Variables;
@@ -251,13 +247,13 @@ private:
 	Mutex constructionMutex;
 	Cond constructionSignal;
 public:
+	ASObject(Class_base* c);
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	bool initialized;
 	int getRefCount(){ return ref_count; }
 #endif
 	bool implEnable;
-	void setClass(Class_base* c);
 	Class_base* getClass() const { return classdef; }
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 	bool waitUntilConstructed(unsigned long maxwait_ms=0);

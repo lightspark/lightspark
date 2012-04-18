@@ -100,11 +100,13 @@ void IDataOutput::linkTraits(Class_base* c)
 	lookupAndLink(c,"writeUTFBytes","flash.utils:IDataOutput");
 }
 
-ByteArray::ByteArray(uint8_t* b, uint32_t l):bytes(b),real_len(l),len(l),position(0),littleEndian(false),objectEncoding(ObjectEncoding::AMF3)
+ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),bytes(b),real_len(l),len(l),position(0),
+	littleEndian(false),objectEncoding(ObjectEncoding::AMF3)
 {
 }
 
-ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),position(b.position),littleEndian(b.littleEndian),objectEncoding(b.objectEncoding)
+ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),position(b.position),
+	littleEndian(b.littleEndian),objectEncoding(b.objectEncoding)
 {
 	assert_and_throw(position==0);
 	bytes = (uint8_t*) malloc(len);
@@ -1464,6 +1466,10 @@ ASFUNCTIONBODY(lightspark,getTimer)
 	return abstract_i(ret);
 }
 
+Dictionary::Dictionary(Class_base* c):ASObject(c)
+{
+}
+
 void Dictionary::finalize()
 {
 	ASObject::finalize();
@@ -1935,7 +1941,7 @@ ASFUNCTIONBODY(lightspark,clearTimeout)
 
 IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, _R<IFunction> _callback, ASObject** _args,
 		const unsigned int _argslen, _R<ASObject> _obj, uint32_t _interval):
-	type(_type), id(_id), callback(_callback),argslen(_argslen),obj(_obj),interval(_interval)
+	EventDispatcher(NULL),type(_type), id(_id), callback(_callback),argslen(_argslen),obj(_obj),interval(_interval)
 {
 	args = new ASObject*[argslen];
 	for(uint32_t i=0; i<argslen; i++)

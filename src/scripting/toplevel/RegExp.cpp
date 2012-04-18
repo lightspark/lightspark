@@ -26,11 +26,13 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(RegExp);
 
-RegExp::RegExp():dotall(false),global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0)
+RegExp::RegExp(Class_base* c):ASObject(c),dotall(false),global(false),ignoreCase(false),
+	extended(false),multiline(false),lastIndex(0)
 {
 }
 
-RegExp::RegExp(const tiny_string& _re):dotall(false),global(false),ignoreCase(false),extended(false),multiline(false),lastIndex(0),source(_re)
+RegExp::RegExp(Class_base* c, const tiny_string& _re):ASObject(c),dotall(false),global(false),ignoreCase(false),
+	extended(false),multiline(false),lastIndex(0),source(_re)
 {
 }
 

@@ -45,7 +45,7 @@ REGISTER_CLASS_NAME(NetConnection);
 REGISTER_CLASS_NAME(NetStream);
 REGISTER_CLASS_NAME(Responder);
 
-URLRequest::URLRequest():method(GET),contentType("application/x-www-form-urlencoded")
+URLRequest::URLRequest(Class_base* c):ASObject(c),method(GET),contentType("application/x-www-form-urlencoded")
 {
 }
 
@@ -305,7 +305,7 @@ void URLLoaderThread::execute()
 	}
 }
 
-URLLoader::URLLoader():dataFormat("text"),data(),job(NULL)
+URLLoader::URLLoader(Class_base* c):EventDispatcher(c),dataFormat("text"),data(),job(NULL)
 {
 }
 
@@ -466,7 +466,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
 };
 
-NetConnection::NetConnection():_connected(false),downloader(NULL),messageCount(0)
+NetConnection::NetConnection(Class_base* c):EventDispatcher(c),_connected(false),downloader(NULL),messageCount(0)
 {
 }
 
@@ -749,7 +749,7 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 
 ASFUNCTIONBODY_GETTER_SETTER(NetConnection, client);
 
-NetStream::NetStream():frameRate(0),tickStarted(false),connection(),downloader(NULL),
+NetStream::NetStream(Class_base* c):EventDispatcher(c),frameRate(0),tickStarted(false),connection(),downloader(NULL),
 	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),
 	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false),
 	oldVolume(-1.0)
@@ -1442,7 +1442,7 @@ void URLVariables::buildTraits(ASObject* o)
 {
 }
 
-URLVariables::URLVariables(const tiny_string& s)
+URLVariables::URLVariables(Class_base* c, const tiny_string& s):ASObject(c)
 {
 	decode(s);
 }

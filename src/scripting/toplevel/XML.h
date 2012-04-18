@@ -51,10 +51,10 @@ private:
 	 */
 	void childrenImpl(std::vector<_R<XML> >& ret, const tiny_string& name);
 public:
-	XML();
-	XML(const std::string& str);
-	XML(_R<XML> _r, xmlpp::Node* _n);
-	XML(xmlpp::Node* _n);
+	XML(Class_base* c);
+	XML(Class_base* c,const std::string& str);
+	XML(Class_base* c,_R<XML> _r, xmlpp::Node* _n);
+	XML(Class_base* c,xmlpp::Node* _n);
 	void finalize();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);

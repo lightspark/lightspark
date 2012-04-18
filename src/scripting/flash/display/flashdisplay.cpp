@@ -85,12 +85,12 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 	return s;
 }
 
-LoaderInfo::LoaderInfo():bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
+LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(NullRef),loadStatus(STARTED),actionScriptVersion(3),applicationDomain(NullRef)
 {
 }
 
-LoaderInfo::LoaderInfo(_R<Loader> l):bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
+LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(l),loadStatus(STARTED),actionScriptVersion(3),applicationDomain(NullRef)
 {
 }
@@ -500,6 +500,10 @@ void Loader::finalize()
 	contentLoaderInfo.reset();
 }
 
+Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),job(NULL),loaded(false),contentLoaderInfo(NullRef)
+{
+}
+
 Loader::~Loader()
 {
 }
@@ -550,7 +554,7 @@ void Loader::setContent(_R<DisplayObject> o)
 	_addChildAt(o, 0);
 }
 
-Sprite::Sprite():TokenContainer(this),graphics()
+Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef)
 {
 }
 
@@ -600,7 +604,7 @@ ASFUNCTIONBODY(Sprite,_startDrag)
 	{
 		Rectangle* rect = Class<Rectangle>::cast(args[1]);
 		if(!rect)
-			throw ArgumentError("Wrong type");
+			throw Class<ArgumentError>::getInstanceS("Wrong type");
 		bounds = new RECT(rect->getRect());
 	}
 
@@ -864,6 +868,14 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 	return th->graphics.getPtr();
 }
 
+FrameLabel::FrameLabel(Class_base* c):ASObject(c)
+{
+}
+
+FrameLabel::FrameLabel(Class_base* c, const FrameLabel_data& data):ASObject(c),FrameLabel_data(data)
+{
+}
+
 void FrameLabel::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
@@ -911,6 +923,14 @@ void Scene_data::addFrameLabel(uint32_t frame, const tiny_string& label)
 	}
 
 	labels.push_back(FrameLabel_data(frame,label));
+}
+
+Scene::Scene(Class_base* c):ASObject(c)
+{
+}
+
+Scene::Scene(Class_base* c, const Scene_data& data, uint32_t _numFrames):ASObject(c),Scene_data(data),numFrames(_numFrames)
+{
 }
 
 void Scene::sinit(Class_base* c)
@@ -976,13 +996,13 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip():totalFrames_unreliable(1),framesLoaded(0)
+MovieClip::MovieClip(Class_base* c):Sprite(c),totalFrames_unreliable(1),framesLoaded(0)
 {
 	frames.emplace_back(Frame());
 	scenes.resize(1);
 }
 
-MovieClip::MovieClip(const MovieClip& r):frames(r.frames),
+MovieClip::MovieClip(const MovieClip& r):Sprite(r.getClass()),frames(r.frames),
 	totalFrames_unreliable(r.totalFrames_unreliable),framesLoaded(r.framesLoaded),
 	frameScripts(r.frameScripts),scenes(r.scenes),
 	state(r.state)
@@ -1269,13 +1289,15 @@ void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
 	scenes.back().addFrameLabel(frame,label);
 }
 
-DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),alpha(1.0),maskOf(),parent(),mask(),onStage(false),
+DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),useMatrix(true),tx(0),ty(0),rotation(0),
+	sx(1),sy(1),alpha(1.0),maskOf(),parent(),mask(),onStage(false),
 	loaderInfo(),visible(true),invalidateQueueNext()
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 
-DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),alpha(d.alpha),maskOf(),
+DisplayObject::DisplayObject(const DisplayObject& d):EventDispatcher(d.getClass()),useMatrix(true),tx(d.tx),ty(d.ty),
+	rotation(d.rotation),sx(d.sx),sy(d.sy),alpha(d.alpha),maskOf(),
 	parent(),mask(),onStage(false),loaderInfo(),visible(d.visible),name(d.name),invalidateQueueNext()
 {
 	assert(!d.isConstructed());
@@ -2095,7 +2117,7 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 {
 }
 
-DisplayObjectContainer::DisplayObjectContainer():mouseChildren(true)
+DisplayObjectContainer::DisplayObjectContainer(Class_base* c):InteractiveObject(c),mouseChildren(true)
 {
 }
 
@@ -2186,7 +2208,7 @@ void DisplayObjectContainer::finalize()
 	dynamicDisplayList.clear();
 }
 
-InteractiveObject::InteractiveObject():mouseEnabled(true),doubleClickEnabled(false)
+InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false)
 {
 }
 
@@ -2653,6 +2675,15 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getChildIndex)
 	return abstract_i(th->getChildIndex(d));
 }
 
+Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this),graphics(NullRef)
+{
+}
+
+Shape::Shape(Class_base* c, const std::vector<GeomToken>& tokens, float scaling):
+	DisplayObject(c),TokenContainer(this, tokens, scaling),graphics(NullRef)
+{
+}
+
 void Shape::finalize()
 {
 	DisplayObject::finalize();
@@ -2850,7 +2881,7 @@ void Stage::buildTraits(ASObject* o)
 {
 }
 
-Stage::Stage()
+Stage::Stage(Class_base* c):DisplayObjectContainer(c)
 {
 	onStage = true;
 }
@@ -3753,7 +3784,7 @@ void IBitmapDrawable::linkTraits(Class_base* c)
 	/* Does not implement any AS3 visible methods */
 }
 
-BitmapData::BitmapData() : stride(0), dataSize(0), disposed(false), width(0), height(0)
+BitmapData::BitmapData(Class_base* c):ASObject(c), stride(0), dataSize(0), disposed(false), width(0), height(0)
 {
 }
 
@@ -4058,7 +4089,7 @@ ASFUNCTIONBODY(BitmapData,generateFilterRect)
 	return rect;
 }
 
-Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
+Bitmap::Bitmap(Class_base* c, std::istream *s, FILE_TYPE type) : DisplayObject(c),TokenContainer(this)
 {
 	bitmapData = _MR(Class<BitmapData>::getInstanceS());
 	if(!s)
@@ -4093,7 +4124,7 @@ Bitmap::Bitmap(std::istream *s, FILE_TYPE type) : TokenContainer(this)
 	Bitmap::updatedData();
 }
 
-Bitmap::Bitmap(_R<BitmapData> data) : TokenContainer(this)
+Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this)
 {
 	bitmapData = data;
 	Bitmap::updatedData();
@@ -4298,9 +4329,9 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 	}
 }
 
-SimpleButton::SimpleButton(DisplayObject *dS, DisplayObject *hTS,
-						   DisplayObject *oS, DisplayObject *uS)
-	: downState(dS), hitTestState(hTS), overState(oS), upState(uS),
+SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
+				DisplayObject *oS, DisplayObject *uS)
+	: DisplayObjectContainer(c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
 	  currentState(UP)
 {
 	/* When called from DefineButton2Tag::instance, they are not constructed yet

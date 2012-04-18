@@ -42,7 +42,7 @@ private:
 	tiny_string validatedContentType() const;
 	ASPROPERTY_GETTER_SETTER(tiny_string,contentType);
 public:
-	URLRequest();
+	URLRequest(Class_base* c);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -60,6 +60,7 @@ public:
 class URLRequestMethod: public ASObject
 {
 public:
+	URLRequestMethod(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
 };
 
@@ -69,8 +70,8 @@ private:
 	void decode(const tiny_string& s);
 	tiny_string toString_priv();
 public:
-	URLVariables(){}
-	URLVariables(const tiny_string& s);
+	URLVariables(Class_base* c):ASObject(c){}
+	URLVariables(Class_base* c,const tiny_string& s);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -82,18 +83,21 @@ public:
 class URLLoaderDataFormat: public ASObject
 {
 public:
+	URLLoaderDataFormat(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
 };
 
 class SharedObject: public EventDispatcher
 {
 public:
+	SharedObject(Class_base* c):EventDispatcher(c){}
 	static void sinit(Class_base*);
 };
 
 class ObjectEncoding: public ASObject
 {
 public:
+	ObjectEncoding(Class_base* c):ASObject(c){}
 	enum ENCODING { AMF0=0, AMF3=3, DEFAULT=3 };
 	static void sinit(Class_base*);
 };
@@ -117,7 +121,7 @@ private:
 	Spinlock spinlock;
 	URLLoaderThread *job;
 public:
-	URLLoader();
+	URLLoader(Class_base* c);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -139,6 +143,7 @@ private:
 	_NR<IFunction> result;
 	_NR<IFunction> status;
 public:
+	Responder(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
 	void finalize();
 	ASFUNCTION(_constructor);
@@ -167,7 +172,7 @@ private:
 	void threadAbort();
 	void jobFence();
 public:
-	NetConnection();
+	NetConnection(Class_base* c);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -223,7 +228,7 @@ private:
 	number_t oldVolume;
 	ASPROPERTY_GETTER_SETTER(NullableRef<SoundTransform>,soundTransform);
 public:
-	NetStream();
+	NetStream(Class_base* c);
 	~NetStream();
 	void finalize();
 	static void sinit(Class_base*);

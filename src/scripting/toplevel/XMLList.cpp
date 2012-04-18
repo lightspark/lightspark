@@ -31,9 +31,14 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(XMLList);
 
-XMLList::XMLList(const std::string& str):constructed(true)
+XMLList::XMLList(Class_base* c, const std::string& str):ASObject(c),constructed(true)
 {
 	buildFromString(str);
+}
+
+XMLList::XMLList(Class_base* c,const vector<_R<XML>>& r):
+	ASObject(c),nodes(r),constructed(true)
+{
 }
 
 void XMLList::finalize()

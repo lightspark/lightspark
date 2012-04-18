@@ -34,12 +34,10 @@ bool Boolean_concrete(const ASObject* obj);
 
 class Boolean: public ASObject
 {
-CLASSBUILDABLE(Boolean);
-private:
-	Boolean() {type=T_BOOLEAN;}
-	static void buildTraits(ASObject* o){};
-	static void sinit(Class_base*);
 public:
+	Boolean(Class_base* c):ASObject(c) {type=T_BOOLEAN;}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o){};
 	bool val;
 	int32_t toInt()
 	{

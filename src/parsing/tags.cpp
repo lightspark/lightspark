@@ -305,16 +305,17 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 	LOG(LOG_NOT_IMPLEMENTED, "DefineEditTextTag does not parse many attributes");
 }
 
-ASObject* DefineEditTextTag::instance() const
+ASObject* DefineEditTextTag::instance(Class_base* c) const
 {
-	TextField* ret=new TextField(textData);
+	if(c==NULL)
+		c=Class<TextField>::getClass();
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
-	ret->setClass(Class<TextField>::getClass());
+	TextField* ret=new TextField(c, textData);
 	return ret;
 }
 
-DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),MovieClip(Class<MovieClip>::getClass())
 {
 	in >> SpriteID >> FrameCount;
 
@@ -375,18 +376,18 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	LOG(LOG_TRACE,_("EndDefineSprite ID: ") << SpriteID);
 }
 
-ASObject* DefineSpriteTag::instance() const
+ASObject* DefineSpriteTag::instance(Class_base* c) const
 {
-	DefineSpriteTag* ret=new DefineSpriteTag(*this);
-	//TODO: check
-	if(bindedTo)
-	{
-		//A class is binded to this tag
-		ret->setClass(bindedTo);
-	}
+	Class_base* retClass=NULL;
+	if(c)
+		retClass=c;
+	else if(bindedTo)
+		retClass=bindedTo;
 	else
-		ret->setClass(Class<MovieClip>::getClass());
+		retClass=Class<MovieClip>::getClass();
 
+	DefineSpriteTag* ret=new DefineSpriteTag(*this);
+	ret->setClass(retClass);
 	return ret;
 }
 
@@ -616,7 +617,8 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 	ignore(in,dest-in.tellg());
 }
 
-DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version):DictionaryTag(h)
+DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version):
+	DictionaryTag(h),BitmapData(Class<BitmapData>::getClass())
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -657,24 +659,25 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 	fromRGB(inData, BitmapWidth, BitmapHeight, true);
 }
 
-ASObject* DefineBitsLosslessTag::instance() const
+ASObject* DefineBitsLosslessTag::instance(Class_base* c) const
 {
-	DefineBitsLosslessTag* ret=new DefineBitsLosslessTag(*this);
+	Class_base* realClass=(c)?c:bindedTo;
 	//Flex imports bitmaps using BitmapAsset as the base class, which is derived from bitmap
 	//Also BitmapData is used in the wild though, so support both cases
-	if(bindedTo && bindedTo->isSubClass(Class<Bitmap>::getClass()))
+	bool returnBitmap = false;
+	Class_base* classRet = Class<BitmapData>::getClass();
+	if(realClass && realClass->isSubClass(Class<Bitmap>::getClass()))
+		returnBitmap = true;
+	else if(realClass && realClass->isSubClass(Class<BitmapData>::getClass()))
+		classRet = bindedTo;
+
+	DefineBitsLosslessTag* ret=new DefineBitsLosslessTag(*this);
+	ret->setClass(classRet);
+	if(returnBitmap)
 	{
-		ret->setClass(Class<BitmapData>::getClass());
-		Bitmap* bitmapRet=new Bitmap(_MR((BitmapData*)ret));
-		bitmapRet->setClass(bindedTo);
+		Bitmap* bitmapRet=new Bitmap(realClass,_MR((BitmapData*)ret));
 		return bitmapRet;
 	}
-	else if(bindedTo && bindedTo->isSubClass(Class<BitmapData>::getClass()))
-	{
-		ret->setClass(bindedTo);
-	}
-	else
-		ret->setClass(Class<BitmapData>::getClass());
 	return ret;
 }
 
@@ -697,7 +700,7 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, int v):DictionaryTag(h
 	}
 }
 
-ASObject* DefineTextTag::instance() const
+ASObject* DefineTextTag::instance(Class_base* c) const
 {
 	/* we cannot call computeCached in the constructor
 	 * because loadedFrom is not available there for dictionary lookups
@@ -705,8 +708,10 @@ ASObject* DefineTextTag::instance() const
 	if(tokens.empty())
 		computeCached();
 
-	StaticText* ret=new StaticText(tokens);
-	ret->setClass(Class<StaticText>::getClass());
+	if(c==NULL)
+		c=Class<StaticText>::getClass();
+
+	StaticText* ret=new StaticText(c, tokens);
 	return ret;
 }
 
@@ -798,7 +803,7 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3T
 	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
-DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),MorphShape(Class<MorphShape>::getClass())
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -807,11 +812,13 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):Dicti
 		ignore(in,dest-in.tellg());
 }
 
-ASObject* DefineMorphShapeTag::instance() const
+ASObject* DefineMorphShapeTag::instance(Class_base* c) const
 {
-	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
 	assert_and_throw(bindedTo==NULL);
-	ret->setClass(Class<MorphShape>::getClass());
+	if(c==NULL)
+		c=Class<MorphShape>::getClass();
+	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
+	ret->setClass(c);
 	return ret;
 }
 
@@ -1187,7 +1194,7 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 		LOG(LOG_NOT_IMPLEMENTED,"DefineButton2Tag: Actions are not supported");
 }
 
-ASObject* DefineButton2Tag::instance() const
+ASObject* DefineButton2Tag::instance(Class_base* c) const
 {
 	DisplayObject* states[4] = {NULL, NULL, NULL, NULL};
 	bool isSprite[4] = {false, false, false, false};
@@ -1241,8 +1248,9 @@ ASObject* DefineButton2Tag::instance() const
 		}
 	}
 
-	SimpleButton* ret=new SimpleButton(states[0], states[1], states[2], states[3]);
-	ret->setClass(Class<SimpleButton>::getClass());
+	if(c==NULL)
+		c=Class<SimpleButton>::getClass();
+	SimpleButton* ret=new SimpleButton(c, states[0], states[1], states[2], states[3]);
 	return ret;
 }
 
@@ -1257,16 +1265,17 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):Dic
 	in >> CodecID;
 }
 
-ASObject* DefineVideoStreamTag::instance() const
+ASObject* DefineVideoStreamTag::instance(Class_base* c) const
 {
-	Video* ret=new Video(Width, Height);
-	if(bindedTo)
-	{
-		//A class is binded to this tag
-		ret->setClass(bindedTo);
-	}
+	Class_base* classRet = NULL;
+	if(c)
+		classRet=c;
+	else if(bindedTo)
+		classRet=bindedTo;
 	else
-		ret->setClass(Class<Video>::getClass());
+		classRet=Class<Video>::getClass();
+
+	Video* ret=new Video(classRet, Width, Height);
 	return ret;
 }
 
@@ -1309,10 +1318,10 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 	ignore(in,h.getLength()-7);
 }
 
-ASObject* DefineSoundTag::instance() const
+ASObject* DefineSoundTag::instance(Class_base* c) const
 {
 	//TODO: use the tag sound data
-	return Class<Sound>::getInstanceS();
+	return Class<Sound>::getInstanceS(c);
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -1384,7 +1393,7 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 	}
 }
 
-DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),BitmapData(Class<BitmapData>::getClass())
 {
 	LOG(LOG_TRACE,_("DefineBitsTag Tag"));
 	in >> CharacterId;
@@ -1399,7 +1408,7 @@ DefineBitsTag::~DefineBitsTag()
 	delete[] data;
 }
 
-DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),BitmapData(Class<BitmapData>::getClass())
 {
 	LOG(LOG_TRACE,_("DefineBitsJPEG2Tag Tag"));
 	in >> CharacterId;
@@ -1412,17 +1421,23 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Diction
 	delete[] inData;
 }
 
-ASObject* DefineBitsJPEG2Tag::instance() const
+ASObject* DefineBitsJPEG2Tag::instance(Class_base* c) const
 {
-	DefineBitsJPEG2Tag* ret=new DefineBitsJPEG2Tag(*this);
-	if(bindedTo)
-		ret->setClass(bindedTo);
+	Class_base* classRet = NULL;
+	if(c)
+		classRet=c;
+	else if(bindedTo)
+		classRet=bindedTo;
 	else
-		ret->setClass(Class<BitmapData>::getClass());
+		classRet=Class<BitmapData>::getClass();
+
+	DefineBitsJPEG2Tag* ret=new DefineBitsJPEG2Tag(*this);
+	ret->setClass(classRet);
 	return ret;
 }
 
-DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),alphaData(NULL)
+DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),BitmapData(Class<BitmapData>::getClass()),
+	alphaData(NULL)
 {
 	LOG(LOG_TRACE,_("DefineBitsJPEG3Tag Tag"));
 	UI32_SWF dataSize;
@@ -1465,13 +1480,18 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 	}
 }
 
-ASObject* DefineBitsJPEG3Tag::instance() const
+ASObject* DefineBitsJPEG3Tag::instance(Class_base* c) const
 {
-	DefineBitsJPEG3Tag* ret=new DefineBitsJPEG3Tag(*this);
-	if(bindedTo)
-		ret->setClass(bindedTo);
+	Class_base* classRet = NULL;
+	if(c)
+		classRet=c;
+	else if(bindedTo)
+		classRet=bindedTo;
 	else
-		ret->setClass(Class<BitmapData>::getClass());
+		classRet=Class<BitmapData>::getClass();
+
+	DefineBitsJPEG3Tag* ret=new DefineBitsJPEG3Tag(*this);
+	ret->setClass(classRet);
 	return ret;
 }
 

@@ -770,9 +770,14 @@ ASFUNCTIONBODY(Point,_toString)
 	return Class<ASString>::getInstanceS(buf);
 }
 
-number_t Point::len() const
+number_t Point::lenImpl(number_t x, number_t y)
 {
 	return sqrt(x*x + y*y);
+}
+
+number_t Point::len() const
+{
+	return lenImpl(x, y);
 }
 
 ASFUNCTIONBODY(Point,_constructor)
@@ -838,8 +843,8 @@ ASFUNCTIONBODY(Point,distance)
 	assert_and_throw(argslen==2);
 	Point* pt1=static_cast<Point*>(args[0]);
 	Point* pt2=static_cast<Point*>(args[1]);
-	Point temp(pt2->x - pt1->x, pt2->y - pt1->y);
-	return abstract_d(temp.len());
+	number_t ret=lenImpl(pt2->x - pt1->x, pt2->y - pt1->y);
+	return abstract_d(ret);
 }
 
 ASFUNCTIONBODY(Point,add)
@@ -929,11 +934,12 @@ void Transform::buildTraits(ASObject* o)
 {
 }
 
-Matrix::Matrix():a(0),b(0),c(0),d(0),tx(0),ty(0)
+Matrix::Matrix(Class_base* c):ASObject(c),a(0),b(0),c(0),d(0),tx(0),ty(0)
 {
 }
 
-Matrix::Matrix(const MATRIX& m):a(m.ScaleX),b(m.RotateSkew1),c(m.ScaleY),d(m.RotateSkew0),tx(m.TranslateX),ty(m.TranslateY)
+Matrix::Matrix(Class_base* c, const MATRIX& m):ASObject(c),a(m.ScaleX),b(m.RotateSkew1),c(m.ScaleY),
+	d(m.RotateSkew0),tx(m.TranslateX),ty(m.TranslateY)
 {
 }
 
@@ -1359,19 +1365,16 @@ void Vector3D::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 
 	// constants
-	Vector3D* tx = new Vector3D();
+	Vector3D* tx = new Vector3D(c);
 	tx->x = 1;
-	tx->setClass(c);
 	c->setVariableByQName("X_AXIS","", tx, DECLARED_TRAIT);
 
-	Vector3D* ty = new Vector3D();
+	Vector3D* ty = new Vector3D(c);
 	ty->y = 1;
-	ty->setClass(c);
 	c->setVariableByQName("Y_AXIS","", ty, DECLARED_TRAIT);
 
-	Vector3D* tz = new Vector3D();
+	Vector3D* tz = new Vector3D(c);
 	tz->z = 1;
-	tz->setClass(c);
 	c->setVariableByQName("Z_AXIS","", tz, DECLARED_TRAIT);
 
 	// properties

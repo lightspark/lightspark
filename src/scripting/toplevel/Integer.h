@@ -32,10 +32,8 @@ friend class Array;
 friend class ABCVm;
 friend class ABCContext;
 friend ASObject* abstract_i(int32_t i);
-CLASSBUILDABLE(Integer);
-private:
-	Integer(int32_t v=0):val(v){type=T_INTEGER;}
 public:
+	Integer(Class_base* c,int32_t v=0):ASObject(c),val(v){type=T_INTEGER;}
 	int32_t val;
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);

@@ -70,16 +70,14 @@ ParseThread* lightspark::getParseThread()
 	return pt;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, bool isSys):parsingIsFailed(false),frameRate(0),
+RootMovieClip::RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, bool isSys):
+	MovieClip((isSys)?NULL:Class<MovieClip>::getClass()), //We set the protoype to a generic MovieClip
+	parsingIsFailed(false),frameRate(0),
 	toBind(false),finishedLoading(false),applicationDomain(appDomain)
 {
 	if(li)
 		li->incRef();
 	loaderInfo=_MNR(li);
-
-	//We set the protoype to a generic MovieClip
-	if(!isSys)
-		setClass(Class<MovieClip>::getClass());
 }
 
 
@@ -133,8 +131,8 @@ void RootMovieClip::setOnStage(bool staged)
 
 RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain)
 {
+	Class_base* movieClipClass = Class<MovieClip>::getClass();
 	RootMovieClip* ret=new RootMovieClip(li, appDomain);
-	ret->setClass(Class<MovieClip>::getClass());
 	return ret;
 }
 

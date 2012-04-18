@@ -33,21 +33,21 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(XML);
 
-XML::XML():node(NULL),constructed(false),ignoreComments(true)
+XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false),ignoreComments(true)
 {
 }
 
-XML::XML(const string& str):node(NULL),constructed(true)
+XML::XML(Class_base* c,const string& str):ASObject(c),node(NULL),constructed(true)
 {
 	node=buildFromString(str);
 }
 
-XML::XML(_R<XML> _r, xmlpp::Node* _n):root(_r),node(_n),constructed(true)
+XML::XML(Class_base* c,_R<XML> _r, xmlpp::Node* _n):ASObject(c),root(_r),node(_n),constructed(true)
 {
 	assert(node);
 }
 
-XML::XML(xmlpp::Node* _n):constructed(true)
+XML::XML(Class_base* c,xmlpp::Node* _n):ASObject(c),constructed(true)
 {
 	assert(_n);
 	node=parser.get_document()->create_root_node_by_import(_n);

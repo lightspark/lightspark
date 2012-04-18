@@ -53,7 +53,7 @@ public:
 class Class_inherit:public Class_base
 {
 private:
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 	DictionaryTag const* tag;
 	bool bindedToRoot;
 public:
@@ -87,72 +87,113 @@ public:
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */
 ASObject* new_asobject();
 
+	template<class T,std::size_t N>
+	struct newWithOptionalClass
+	{
+		template<class F, typename... Args>
+		static T* doNew(Class_base* c, const F& f, Args&&... args)
+		{
+			return newWithOptionalClass<T, N-1>::doNew(c, std::forward<Args>(args)..., f);
+		}
+	};
+	template<class T>
+	struct newWithOptionalClass<T, 1>
+	{
+		template<class F, typename... Args>
+		static T* doNew(Class_base* c, const F& f, Args&&... args)
+		{
+			//Last parameter is not a class pointer
+			return new T(c, std::forward<Args>(args)..., f);
+		}
+		template<typename... Args>
+		static T* doNew(Class_base* c, Class_base* f, Args&&... args)
+		{
+			//Last parameter is a class pointer
+			return new T(f, std::forward<Args>(args)...);
+		}
+	};
+	template<class T>
+	struct newWithOptionalClass<T, 0>
+	{
+		static T* doNew(Class_base* c)
+		{
+			//Last parameter is not a class pointer
+			return new T(c);
+		}
+	};
 template< class T>
 class Class: public Class_base
 {
 protected:
 	Class(const QName& name):Class_base(name){}
 	//This function is instantiated always because of inheritance
-	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)
 	{
-		T* ret=new T;
-		ret->setClass(this);
+		if(realClass==NULL)
+			realClass=this;
+		T* ret=new T(realClass);
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 		return ret;
 	}
 public:
 #ifdef _MSC_VER
-	static T* getInstanceS()
+	static T* getInstanceS(Class_base* realClass=NULL)
 	{
 		Class<T>* c=Class<T>::getClass();
-		T* ret = new T();
-		ret->setClass(c);
+		if(realClass==NULL)
+			realClass=c;
+		T* ret = new T(realClass);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
 	template<typename Arg1>
-	static T* getInstanceS(Arg1&& arg1)
+	static T* getInstanceS(Arg1&& arg1, Class_base* realClass=NULL)
 	{
 		Class<T>* c=Class<T>::getClass();
-		T* ret = new T(arg1);
-		ret->setClass(c);
+		if(realClass==NULL)
+			realClass=c;
+		T* ret = new T(realClass, arg1);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
 	template<typename Arg1, typename Arg2>
-	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2)
+	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Class_base* realClass=NULL)
 	{
 		Class<T>* c=Class<T>::getClass();
-		T* ret = new T(arg1, arg2);
-		ret->setClass(c);
+		if(realClass==NULL)
+			realClass=c;
+		T* ret = new T(realClass, arg1, arg2);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
 	template<typename Arg1, typename Arg2, typename Arg3>
-	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3)
+	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Class_base* realClass=NULL)
 	{
 		Class<T>* c=Class<T>::getClass();
-		T* ret = new T(arg1, arg2, arg3);
-		ret->setClass(c);
+		if(realClass==NULL)
+			realClass=c;
+		T* ret = new T(realClass, arg1, arg2, arg3);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
 	template<typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4)
+	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4, Class_base* realClass=NULL)
 	{
 		Class<T>* c=Class<T>::getClass();
-		T* ret = new T(arg1, arg2, arg3, arg4);
-		ret->setClass(c);
+		if(realClass==NULL)
+			realClass=c;
+		T* ret = new T(realClass, arg1, arg2, arg3, arg4);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
 	template<typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4, Arg5&& arg5)
+	static T* getInstanceS(Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4, Arg5&& arg5, Class_base* realClass=NULL)
 	{
 		Class<T>* c=Class<T>::getClass();
-		T* ret = new T(arg1, arg2, arg3, arg4, arg5);
-		ret->setClass(c);
+		if(realClass==NULL)
+			realClass=c;
+		T* ret = new T(realClass, arg1, arg2, arg3, arg4, arg5);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -161,8 +202,7 @@ public:
 	static T* getInstanceS(Args&&... args)
 	{
 		Class<T>* c=Class<T>::getClass();
-		T* ret = new T(args...);
-		ret->setClass(c);
+		T* ret=newWithOptionalClass<T, sizeof...(Args)>::doNew(c, std::forward<Args>(args)...);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -222,7 +262,7 @@ public:
 };
 
 template<>
-Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
+Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 
 template<>
 inline ASObject* Class<Number>::coerce(ASObject* o) const
@@ -262,7 +302,7 @@ class Class<ASObject>: public Class_base
 private:
 	Class<ASObject>(const QName& name):Class_base(name){}
 	//This function is instantiated always because of inheritance
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL);
 public:
 	static ASObject* getInstanceS()
 	{
@@ -354,7 +394,7 @@ class InterfaceClass: public Class_base
 {
 	virtual ~InterfaceClass() {}
 	void buildInstanceTraits(ASObject*) const {}
-	ASObject* getInstance(bool, ASObject* const*, unsigned int)
+	ASObject* getInstance(bool, ASObject* const*, unsigned int, Class_base* realClass)
 	{
 		assert(false);
 		return NULL;
@@ -403,10 +443,11 @@ public:
 	{
 	}
 
-	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)
 	{
-		T* ret=new T;
-		ret->setClass(this);
+		if(realClass==NULL)
+			realClass=this;
+		T* ret=new T(realClass);
 		ret->setTypes(types);
 		if(construct)
 			this->handleConstruction(ret,args,argslen,true);

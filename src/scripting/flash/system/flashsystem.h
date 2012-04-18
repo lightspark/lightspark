@@ -31,7 +31,7 @@ class Capabilities: public ASObject
 {
 public:
 	DLL_PUBLIC static const char* EMULATED_VERSION;
-	Capabilities(){};
+	Capabilities(Class_base* c):ASObject(c){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_getLanguage);
 	ASFUNCTION(_getPlayerType);
@@ -49,8 +49,7 @@ class ApplicationDomain: public ASObject
 private:
 	std::vector<Global*> globalScopes;
 public:
-	ApplicationDomain(){}
-	ApplicationDomain(_NR<ApplicationDomain> p):parentDomain(p){}
+	ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -91,7 +90,7 @@ public:
 class LoaderContext: public ASObject
 {
 public:
-	LoaderContext(){};
+	LoaderContext(Class_base* c):ASObject(c){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<ApplicationDomain>, applicationDomain);
@@ -101,7 +100,7 @@ public:
 class SecurityDomain: public ASObject
 {
 public:
-	SecurityDomain(){}
+	SecurityDomain(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -111,6 +110,7 @@ public:
 class Security: public ASObject
 {
 public:
+	Security(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_getExactSettings);
 	ASFUNCTION(_setExactSettings);

@@ -35,13 +35,13 @@ private:
 	void buildFromString(const std::string& str);
 	void toXMLString_priv(xmlBufferPtr buf) const;
 public:
-	XMLList():constructed(false){}
+	XMLList(Class_base* c):ASObject(c),constructed(false){}
 	/*
 	   Special constructor to build empty XMLList out of AS code
 	*/
-	XMLList(bool c):constructed(c){assert(c);}
-	XMLList(const std::vector<_R<XML> >& r):nodes(r),constructed(true){}
-	XMLList(const std::string& str);
+	XMLList(Class_base* cb,bool c):ASObject(cb),constructed(c){assert(c);}
+	XMLList(Class_base* c,const std::vector<_R<XML>>& r);
+	XMLList(Class_base* c,const std::string& str);
 	void finalize();
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);

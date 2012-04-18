@@ -84,6 +84,11 @@ void Video::finalize()
 	netStream.reset();
 }
 
+Video::Video(Class_base* c, uint32_t w, uint32_t h)
+	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),initialized(false),netStream(NullRef)
+{
+}
+
 Video::~Video()
 {
 }
@@ -215,7 +220,7 @@ _NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t 
 		return NullRef;
 }
 
-Sound::Sound():downloader(NULL),stopped(false),audioDecoder(NULL),audioStream(NULL),
+Sound::Sound(Class_base* c):EventDispatcher(c),downloader(NULL),stopped(false),audioDecoder(NULL),audioStream(NULL),
 	bytesLoaded(0),bytesTotal(0),length(60*1000)
 {
 }

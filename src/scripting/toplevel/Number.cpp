@@ -258,16 +258,11 @@ void Number::sinit(Class_base* c)
 	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Must create and link the number the hard way
-	Number* ninf=new Number(-numeric_limits<double>::infinity());
-	Number* pinf=new Number(numeric_limits<double>::infinity());
-	Number* pmax=new Number(numeric_limits<double>::max());
-	Number* pmin=new Number(numeric_limits<double>::min());
-	Number* pnan=new Number(numeric_limits<double>::quiet_NaN());
-	ninf->setClass(c);
-	pinf->setClass(c);
-	pmax->setClass(c);
-	pmin->setClass(c);
-	pnan->setClass(c);
+	Number* ninf=new Number(c, -numeric_limits<double>::infinity());
+	Number* pinf=new Number(c, numeric_limits<double>::infinity());
+	Number* pmax=new Number(c, numeric_limits<double>::max());
+	Number* pmin=new Number(c, numeric_limits<double>::min());
+	Number* pnan=new Number(c, numeric_limits<double>::quiet_NaN());
 	c->setVariableByQName("NEGATIVE_INFINITY","",ninf,CONSTANT_TRAIT);
 	c->setVariableByQName("POSITIVE_INFINITY","",pinf,CONSTANT_TRAIT);
 	c->setVariableByQName("MAX_VALUE","",pmax,CONSTANT_TRAIT);

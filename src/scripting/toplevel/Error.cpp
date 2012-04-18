@@ -41,6 +41,11 @@ REGISTER_CLASS_NAME(URIError);
 REGISTER_CLASS_NAME(VerifyError);
 REGISTER_CLASS_NAME(UninitializedError);
 
+ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name):
+	ASObject(c),message(error_message), errorID(id), name(error_name)
+{
+}
+
 ASFUNCTIONBODY(ASError,getStackTrace)
 {
 	ASError* th=static_cast<ASError*>(obj);

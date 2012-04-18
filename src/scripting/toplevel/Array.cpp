@@ -31,7 +31,7 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(Array);
 
-Array::Array()
+Array::Array(Class_base* c):ASObject(c)
 {
 	currentsize=0;
 	type=T_ARRAY;

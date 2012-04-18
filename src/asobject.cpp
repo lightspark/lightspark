@@ -987,17 +987,18 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject():type(T_OBJECT),ref_count(1),manager(NULL),classdef(NULL),constructed(false),
-		implEnable(true)
+ASObject::ASObject(Class_base* c):type(T_OBJECT),ref_count(1),
+	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
 {
+	setClass(c);
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),classdef(o.classdef),
-		constructed(false),implEnable(true)
+ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),
+	manager(NULL),classdef(o.classdef),constructed(false),implEnable(true)
 {
 	if(classdef)
 	{

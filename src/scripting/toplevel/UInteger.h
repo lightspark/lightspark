@@ -28,11 +28,9 @@ namespace lightspark
 class UInteger: public ASObject
 {
 friend ASObject* abstract_ui(uint32_t i);
-CLASSBUILDABLE(UInteger);
-private:
 public:
 	uint32_t val;
-	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
+	UInteger(Class_base* c,uint32_t v=0):ASObject(c),val(v){type=T_UINTEGER;}
 
 	static void sinit(Class_base* c);
 	tiny_string toString();

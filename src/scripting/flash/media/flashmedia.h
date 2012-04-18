@@ -52,7 +52,7 @@ private:
 	void setBytesTotal(uint32_t b);
 	void setBytesLoaded(uint32_t b);
 public:
-	Sound();
+	Sound(Class_base* c);
 	~Sound();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -69,6 +69,7 @@ public:
 class SoundTransform: public ASObject
 {
 public:
+	SoundTransform(Class_base* c):ASObject(c){}
 	ASPROPERTY_GETTER_SETTER(number_t,volume);
 	ASPROPERTY_GETTER_SETTER(number_t,pan);
 	static void sinit(Class_base*);
@@ -84,10 +85,7 @@ private:
 	bool initialized;
 	_NR<NetStream> netStream;
 public:
-	Video(uint32_t w=320, uint32_t h=240)
-		: width(w),height(h),videoWidth(0),videoHeight(0),initialized(false),netStream()
-	{
-	}
+	Video(Class_base* c, uint32_t w=320, uint32_t h=240);
 	void finalize();
 	~Video();
 	static void sinit(Class_base*);
@@ -111,6 +109,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(number_t,bufferTime);
 	ASPROPERTY_GETTER_SETTER(bool,checkPolicyFile);
 public:
+	SoundLoaderContext(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 };

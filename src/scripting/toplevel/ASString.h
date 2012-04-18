@@ -32,16 +32,15 @@ namespace lightspark
  */
 class ASString: public ASObject
 {
-CLASSBUILDABLE(ASString);
 private:
 	tiny_string toString_priv() const;
-	ASString();
-	ASString(const std::string& s);
-	ASString(const tiny_string& s);
-	ASString(const Glib::ustring& s);
-	ASString(const char* s);
-	ASString(const char* s, uint32_t len);
 public:
+	ASString(Class_base* c);
+	ASString(Class_base* c, const std::string& s);
+	ASString(Class_base* c, const tiny_string& s);
+	ASString(Class_base* c, const Glib::ustring& s);
+	ASString(Class_base* c, const char* s);
+	ASString(Class_base* c, const char* s, uint32_t len);
 	tiny_string data;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

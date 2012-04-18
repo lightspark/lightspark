@@ -37,8 +37,8 @@ protected:
 	_NR<XMLDocument> root;
 	xmlpp::Node* node;
 public:
-	XMLNode():root(NullRef),node(NULL){}
-	XMLNode(_R<XMLDocument> _r, xmlpp::Node* _n);
+	XMLNode(Class_base* c):ASObject(c),root(NullRef),node(NULL){}
+	XMLNode(Class_base* c, _R<XMLDocument> _r, xmlpp::Node* _n);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -57,7 +57,7 @@ friend class XMLNode;
 private:
 	xmlpp::Node* rootNode;
 public:
-	XMLDocument():rootNode(NULL){}
+	XMLDocument(Class_base* c):XMLNode(c),rootNode(NULL){}
 	void parseXMLImpl(const std::string& str);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

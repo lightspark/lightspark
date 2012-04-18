@@ -37,7 +37,7 @@ class Endian : public ASObject
 public:
 	static const char* bigEndian;
 	static const char* littleEndian;
-	Endian(){};
+	Endian(Class_base* c):ASObject(c){};
 	static void sinit(Class_base* c);
 };
 
@@ -74,7 +74,7 @@ protected:
 	void compress_zlib();
 	void uncompress_zlib();
 public:
-	ByteArray(uint8_t* b = NULL, uint32_t l = 0);
+	ByteArray(Class_base* c, uint8_t* b = NULL, uint32_t l = 0);
 	~ByteArray();
 	//Helper interface for serialization
 	bool readByte(uint8_t& b);
@@ -179,7 +179,7 @@ protected:
 	uint32_t currentCount;
 	bool running;
 public:
-	Timer():delay(0),repeatCount(0),currentCount(0),running(false){};
+	Timer(Class_base* c):EventDispatcher(c),delay(0),repeatCount(0),currentCount(0),running(false){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getCurrentCount);
@@ -199,7 +199,7 @@ friend class ABCVm;
 private:
 	std::map<_R<ASObject>,_R<ASObject> > data;
 public:
-	Dictionary(){}
+	Dictionary(Class_base* c);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -224,6 +224,7 @@ class Proxy: public ASObject
 {
 friend class ABCVm;
 public:
+	Proxy(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);

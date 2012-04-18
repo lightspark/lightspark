@@ -30,6 +30,7 @@ class AccessibilityProperties : public ASObject
 private:
 	ASPROPERTY_GETTER_SETTER(tiny_string,name);
 public:
+	AccessibilityProperties(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 };
@@ -37,6 +38,7 @@ public:
 class AccessibilityImplementation : public ASObject
 {
 public:
+	AccessibilityImplementation(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 };

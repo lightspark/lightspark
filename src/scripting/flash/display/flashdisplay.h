@@ -128,7 +128,7 @@ public:
 	   Used to link DisplayObjects the invalidation queue
 	*/
 	_NR<DisplayObject> invalidateQueueNext;
-	DisplayObject();
+	DisplayObject(Class_base* c);
 	void finalize();
 	MATRIX getMatrix() const;
 	virtual void invalidate();
@@ -215,7 +215,7 @@ protected:
 	}
 	~InteractiveObject();
 public:
-	InteractiveObject();
+	InteractiveObject(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_setMouseEnabled);
 	ASFUNCTION(_getMouseEnabled);
@@ -247,7 +247,7 @@ public:
 	void dumpDisplayList();
 	bool _removeChild(_R<DisplayObject> child);
 	int getChildIndex(_R<DisplayObject> child);
-	DisplayObjectContainer();
+	DisplayObjectContainer(Class_base* c);
 	void finalize();
 	bool hasLegacyChildAt(uint32_t depth);
 	void deleteLegacyChildAt(uint32_t depth);
@@ -302,7 +302,7 @@ private:
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e);
 public:
-	SimpleButton(DisplayObject *dS = NULL, DisplayObject *hTS = NULL,
+	SimpleButton(Class_base* c, DisplayObject *dS = NULL, DisplayObject *hTS = NULL,
 				 DisplayObject *oS = NULL, DisplayObject *uS = NULL);
 	void finalize();
 	static void sinit(Class_base* c);
@@ -378,12 +378,12 @@ private:
 				       double u1, double u2, double u3,
 				       double c[3]);
 public:
-	Graphics():owner(NULL)
+	Graphics(Class_base* c):ASObject(c),owner(NULL)
 	{
 		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
-	Graphics(TokenContainer* _o)
-		: curX(0),curY(0),owner(_o) {}
+	Graphics(Class_base* c, TokenContainer* _o)
+		: ASObject(c),curX(0),curY(0),owner(_o) {}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -415,9 +415,8 @@ protected:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
-	Shape():TokenContainer(this), graphics() {}
-	Shape(const std::vector<GeomToken>& tokens, float scaling)
-		: TokenContainer(this, tokens, scaling), graphics() {}
+	Shape(Class_base* c);
+	Shape(Class_base* c, const std::vector<GeomToken>& tokens, float scaling);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -434,6 +433,7 @@ protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 public:
+	MorphShape(Class_base* c):DisplayObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -456,8 +456,8 @@ private:
 public:
 	ASPROPERTY_GETTER(_NR<ASObject>,parameters);
 	ASPROPERTY_GETTER(uint32_t,actionScriptVersion);
-	LoaderInfo();
-	LoaderInfo(_R<Loader> l);
+	LoaderInfo(Class_base* c);
+	LoaderInfo(Class_base* c, _R<Loader> l);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -513,9 +513,7 @@ private:
 	_NR<LoaderInfo> contentLoaderInfo;
 	void unload();
 public:
-	Loader():content(NullRef),job(NULL),loaded(false),contentLoaderInfo(NullRef)
-	{
-	}
+	Loader(Class_base* c);
 	~Loader();
 	void finalize();
 	void threadFinished(IThreadJob* job);
@@ -547,7 +545,7 @@ protected:
 	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
-	Sprite();
+	Sprite(Class_base* c);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -575,8 +573,8 @@ struct FrameLabel_data
 class FrameLabel: public ASObject, public FrameLabel_data
 {
 public:
-	FrameLabel() {}
-	FrameLabel(const FrameLabel_data& data) : FrameLabel_data(data) {}
+	FrameLabel(Class_base* c);
+	FrameLabel(Class_base* c, const FrameLabel_data& data);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_getFrame);
@@ -597,8 +595,8 @@ class Scene: public ASObject, public Scene_data
 {
 	uint32_t numFrames;
 public:
-	Scene() {}
-	Scene(const Scene_data& data, uint32_t _numFrames) : Scene_data(data), numFrames(_numFrames) {}
+	Scene(Class_base* c);
+	Scene(Class_base* c, const Scene_data& data, uint32_t _numFrames);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLabels);
@@ -646,7 +644,7 @@ private:
 	std::vector<Scene_data> scenes;
 public:
 	RunState state;
-	MovieClip();
+	MovieClip(Class_base* c);
 	MovieClip(const MovieClip& r);
 	void finalize();
 	ASObject* gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop);
@@ -698,7 +696,7 @@ private:
 public:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}
-	Stage();
+	Stage(Class_base* c);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	_NR<Stage> getStage();
@@ -714,6 +712,7 @@ public:
 class StageScaleMode: public ASObject
 {
 public:
+	StageScaleMode(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o)
 	{
@@ -723,6 +722,7 @@ public:
 class StageAlign: public ASObject
 {
 public:
+	StageAlign(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o)
 	{
@@ -732,42 +732,49 @@ public:
 class StageQuality: public ASObject
 {
 public:
+	StageQuality(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
 class StageDisplayState: public ASObject
 {
 public:
+	StageDisplayState(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
 class LineScaleMode: public ASObject
 {
 public:
+	LineScaleMode(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
 class BlendMode: public ASObject
 {
 public:
+	BlendMode(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
 class GradientType: public ASObject
 {
 public:
+	GradientType(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
 class InterpolationMethod: public ASObject
 {
 public:
+	InterpolationMethod(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
 class SpreadMethod: public ASObject
 {
 public:
+	SpreadMethod(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
@@ -781,17 +788,16 @@ public:
 
 class BitmapData: public ASObject, public IBitmapDrawable
 {
-CLASSBUILDABLE(BitmapData);
 protected:
 	size_t stride;
 	size_t dataSize;
 	bool disposed;
-	static void sinit(Class_base* c);
 	uint32_t getPixelPriv(uint32_t x, uint32_t y);
 	void setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha);
 	void copyFrom(BitmapData *source);
 public:
-	BitmapData();
+	BitmapData(Class_base* c);
+	static void sinit(Class_base* c);
 	~BitmapData();
 	/* the bitmaps data in premultiplied, native-endian 32 bit
 	 * ARGB format. stride is the number of bytes per row, may be
@@ -833,8 +839,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
-	Bitmap(std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
-	Bitmap(_R<BitmapData> data);
+	Bitmap(Class_base* c, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
+	Bitmap(Class_base* c, _R<BitmapData> data);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
@@ -847,6 +853,7 @@ public:
 class AVM1Movie: public DisplayObject
 {
 public:
+	AVM1Movie(Class_base* c):DisplayObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -855,6 +862,7 @@ public:
 class Shader : public ASObject
 {
 public:
+	Shader(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 };

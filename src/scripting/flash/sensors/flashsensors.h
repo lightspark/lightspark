@@ -32,7 +32,7 @@ namespace lightspark
 {
 class Accelerometer: public ASObject {
 	public:
-		Accelerometer();
+		Accelerometer(Class_base* c);
 		static void sinit(Class_base* c);
 		static void buildTraits(ASObject* o);
 		ASFUNCTION(_isSupported);

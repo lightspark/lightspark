@@ -31,6 +31,7 @@ class BitmapFilter: public ASObject
 private:
 	virtual BitmapFilter* cloneImpl() const;
 public:
+	BitmapFilter(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
 	ASFUNCTION(clone);
@@ -41,6 +42,7 @@ class GlowFilter: public BitmapFilter
 private:
 	virtual GlowFilter* cloneImpl() const;
 public:
+	GlowFilter(Class_base* c):BitmapFilter(c){}
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
 };
@@ -50,6 +52,7 @@ class DropShadowFilter: public BitmapFilter
 private:
 	virtual DropShadowFilter* cloneImpl() const;
 public:
+	DropShadowFilter(Class_base* c):BitmapFilter(c){}
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
 };

@@ -30,32 +30,32 @@ using namespace lightspark;
 
 REGISTER_CLASS_NAME2(ASString, "String", "");
 
-ASString::ASString()
+ASString::ASString(Class_base* c):ASObject(c)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(const string& s): data(s)
+ASString::ASString(Class_base* c,const string& s) : ASObject(c),data(s)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(const tiny_string& s) : data(s)
+ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c),data(s)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(const Glib::ustring& s) : data(s)
+ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c),data(s)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(const char* s) : data(s, /*copy:*/true)
+ASString::ASString(Class_base* c,const char* s) : ASObject(c),data(s, /*copy:*/true)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(const char* s, uint32_t len)
+ASString::ASString(Class_base* c,const char* s, uint32_t len) : ASObject(c)
 {
 	data = std::string(s,len);
 	type=T_STRING;

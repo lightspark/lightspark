@@ -50,9 +50,7 @@ private:
 	 */
 	virtual Event* cloneImpl() const;
 public:
-	Event(const tiny_string& t = "Event", bool b=false, bool c=false)
-		: type(t),target(),currentTarget(),bubbles(b),cancelable(c),
-		  eventPhase(0),defaultPrevented(false) {}
+	Event(Class_base* cb, const tiny_string& t = "Event", bool b=false, bool c=false);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -79,13 +77,14 @@ class WaitableEvent : public Event
 {
 public:
 	WaitableEvent(const tiny_string& t = "Event", bool b=false, bool c=false)
-		: Event(t,b,c), done(0) {}
+		: Event(NULL,t,b,c), done(0) {}
 	Semaphore done;
 };
 
 class EventPhase: public ASObject
 {
 public:
+	EventPhase(Class_base* c):ASObject(c){}
 	enum
 	{
 		CAPTURING_PHASE = 1,
@@ -99,7 +98,7 @@ public:
 class KeyboardEvent: public Event
 {
 public:
-	KeyboardEvent();
+	KeyboardEvent(Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -110,7 +109,7 @@ public:
 class FocusEvent: public Event
 {
 public:
-	FocusEvent();
+	FocusEvent(Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -121,7 +120,7 @@ public:
 class FullScreenEvent: public Event
 {
 public:
-	FullScreenEvent();
+	FullScreenEvent(Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -135,8 +134,8 @@ private:
 	tiny_string level;
 	tiny_string code;
 public:
-	NetStatusEvent():Event("netStatus"){}
-	NetStatusEvent(const tiny_string& l, const tiny_string& c);
+	NetStatusEvent(Class_base* c):Event(c, "netStatus"){}
+	NetStatusEvent(Class_base* cb, const tiny_string& l, const tiny_string& c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -147,6 +146,7 @@ public:
 class HTTPStatusEvent: public Event
 {
 public:
+	HTTPStatusEvent(Class_base* c):Event(c){}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -156,7 +156,7 @@ public:
 class TextEvent: public Event
 {
 public:
-	TextEvent(const tiny_string& t = "textEvent");
+	TextEvent(Class_base* c, const tiny_string& t = "textEvent");
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -169,7 +169,7 @@ class ErrorEvent: public TextEvent
 private:
 	std::string errorMsg;
 public:
-	ErrorEvent(const tiny_string& t = "error", const std::string& e = "");
+	ErrorEvent(Class_base* c, const tiny_string& t = "error", const std::string& e = "");
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -180,7 +180,7 @@ public:
 class IOErrorEvent: public ErrorEvent
 {
 public:
-	IOErrorEvent();
+	IOErrorEvent(Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -190,7 +190,7 @@ public:
 class SecurityErrorEvent: public ErrorEvent
 {
 public:
-	SecurityErrorEvent(const std::string& e = "");
+	SecurityErrorEvent(Class_base* c, const std::string& e = "");
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -201,7 +201,7 @@ public:
 class AsyncErrorEvent: public ErrorEvent
 {
 public:
-	AsyncErrorEvent();
+	AsyncErrorEvent(Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -216,8 +216,8 @@ private:
 	ASPROPERTY_GETTER_SETTER(number_t,bytesTotal);
 	Event* cloneImpl() const;
 public:
-	ProgressEvent();
-	ProgressEvent(uint32_t loaded, uint32_t total);
+	ProgressEvent(Class_base* c);
+	ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -226,8 +226,8 @@ public:
 class TimerEvent: public Event
 {
 public:
-	TimerEvent():Event("DEPRECATED"){}
-	TimerEvent(const tiny_string& t):Event(t,true){};
+	TimerEvent(Class_base* c):Event(c, "DEPRECATED"){}
+	TimerEvent(Class_base* c,const tiny_string& t):Event(c,t,true){};
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -237,8 +237,8 @@ public:
 class MouseEvent: public Event
 {
 public:
-	MouseEvent();
-	MouseEvent(const tiny_string& t, number_t lx, number_t ly, bool b=true, _NR<InteractiveObject> relObj = NullRef);
+	MouseEvent(Class_base* c);
+	MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly, bool b=true, _NR<InteractiveObject> relObj = NullRef);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void setTarget(_NR<ASObject> t);
@@ -289,7 +289,7 @@ private:
 	Mutex handlersMutex;
 	std::map<tiny_string,std::list<listener> > handlers;
 public:
-	EventDispatcher();
+	EventDispatcher(Class_base* c);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -302,6 +302,22 @@ public:
 	ASFUNCTION(removeEventListener);
 	ASFUNCTION(dispatchEvent);
 	ASFUNCTION(_hasEventListener);
+};
+
+class StatusEvent: public Event
+{
+public:
+	StatusEvent(Class_base* c) : Event(c, "StatusEvent") {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
+};
+
+class DataEvent: public Event
+{
+public:
+	DataEvent(Class_base* c) : Event(c, "DataEvent") {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
 };
 
 class RootMovieClip;
@@ -383,7 +399,7 @@ friend class ABCVm;
 private:
 	_NR<MovieClip> clip;
 public:
-	InitFrameEvent(_NR<MovieClip> m=NullRef) : Event("InitFrameEvent"),clip(m) {}
+	InitFrameEvent(_NR<MovieClip> m=NullRef) : Event(NULL, "InitFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const { return INIT_FRAME; }
 };
 
@@ -398,7 +414,7 @@ public:
 class FlushInvalidationQueueEvent: public Event
 {
 public:
-	FlushInvalidationQueueEvent():Event("FlushInvalidationQueueEvent"){};
+	FlushInvalidationQueueEvent():Event(NULL, "FlushInvalidationQueueEvent"){};
 	EVENT_TYPE getEventType() const { return FLUSH_INVALIDATION_QUEUE; };
 };
 
@@ -411,22 +427,6 @@ public:
 	ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> client, _R<Responder> responder);
 	EVENT_TYPE getEventType() const { return PARSE_RPC_MESSAGE; };
 	void finalize();
-};
-
-class StatusEvent: public Event
-{
-public:
-	StatusEvent() : Event("StatusEvent") {}
-	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
-};
-
-class DataEvent: public Event
-{
-public:
-	DataEvent() : Event("DataEvent") {}
-	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 };
 
 };

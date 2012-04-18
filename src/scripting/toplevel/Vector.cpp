@@ -80,6 +80,10 @@ void Vector::sinit(Class_base* c)
 	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
 }
 
+Vector::Vector(Class_base* c):ASObject(c),vec_type(NULL)
+{
+}
+
 Vector::~Vector()
 {
 	finalize();
@@ -140,7 +144,7 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 	}
 	else
 	{
-		throw ArgumentError("global Vector() function takes Array or Vector");
+		throw Class<ArgumentError>::getInstanceS("global Vector() function takes Array or Vector");
 	}
 }
 

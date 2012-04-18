@@ -28,12 +28,9 @@ namespace lightspark
 
 class RegExp: public ASObject
 {
-CLASSBUILDABLE(RegExp);
-friend class ASString;
-private:
-	RegExp();
-	RegExp(const tiny_string& _re);
 public:
+	RegExp(Class_base* c);
+	RegExp(Class_base* c, const tiny_string& _re);
 	pcre* compile();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

@@ -27,13 +27,11 @@ namespace lightspark
 
 class Date: public ASObject
 {
-CLASSBUILDABLE(Date);
 private:
 	int64_t milliseconds;
 	int extrayears;
 	bool nan;
-	Date();
-	virtual ~Date();
+	~Date();
 	GDateTime *datetime;
 	GDateTime *datetimeUTC;
 	ASObject *msSinceEpoch();
@@ -42,6 +40,7 @@ private:
 	void MakeDateFromMilliseconds(int64_t ms);
 	static number_t parse(tiny_string str);
 public:
+	Date(Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

@@ -30,6 +30,7 @@ namespace lightspark
 class Font: public ASObject
 {
 public:
+	Font(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
 	ASFUNCTION(enumerateFonts);
@@ -47,8 +48,8 @@ private:
 	//Computes and changes (text)width and (text)height using Pango
 	void updateSizes();
 public:
-	TextField() {};
-	TextField(const TextData& textData) : TextData(textData) {};
+	TextField(Class_base* c):InteractiveObject(c) {};
+	TextField(Class_base* c,const TextData& textData):InteractiveObject(c),TextData(textData) {};
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(appendText);
@@ -71,6 +72,7 @@ public:
 class TextFormat: public ASObject
 {
 public:
+	TextFormat(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,color);
@@ -79,18 +81,21 @@ public:
 class TextFieldType: public ASObject
 {
 public:
+	TextFieldType(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
 class TextFormatAlign: public ASObject
 {
 public:
+	TextFormatAlign(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
 class TextFieldAutoSize: public ASObject
 {
 public:
+	TextFieldAutoSize(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
@@ -99,7 +104,7 @@ class StyleSheet: public EventDispatcher
 private:
 	std::map<tiny_string, _R<ASObject> > styles;
 public:
-	StyleSheet(){}
+	StyleSheet(Class_base* c):EventDispatcher(c){}
 	void finalize();
 	ASFUNCTION(getStyle);
 	ASFUNCTION(setStyle);
@@ -120,8 +125,9 @@ protected:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last, x, y, type); }
 public:
-	StaticText() : TokenContainer(this) {};
-	StaticText(const std::vector<GeomToken>& tokens) : TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {};
+	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this) {};
+	StaticText(Class_base* c,const std::vector<GeomToken>& tokens):
+		DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {};
 	static void sinit(Class_base* c);
 	void requestInvalidation() { TokenContainer::requestInvalidation(); }
 	void invalidate() { TokenContainer::invalidate(); }

@@ -57,6 +57,11 @@ void IEventDispatcher::linkTraits(Class_base* c)
 	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
 }
 
+Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c):
+	ASObject(cb),type(t),target(),currentTarget(),bubbles(b),cancelable(c),eventPhase(0),defaultPrevented(false)
+{
+}
+
 void Event::finalize()
 {
 	ASObject::finalize();
@@ -186,7 +191,7 @@ void EventPhase::sinit(Class_base* c)
 	c->setVariableByQName("AT_TARGET","",abstract_i(AT_TARGET),DECLARED_TRAIT);
 }
 
-FocusEvent::FocusEvent():Event("focusEvent")
+FocusEvent::FocusEvent(Class_base* c):Event(c, "focusEvent")
 {
 }
 
@@ -206,20 +211,20 @@ ASFUNCTIONBODY(FocusEvent,_constructor)
 	return NULL;
 }
 
-MouseEvent::MouseEvent():Event("mouseEvent"), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
+MouseEvent::MouseEvent(Class_base* c):Event(c, "mouseEvent"), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
 {
 }
 
-MouseEvent::MouseEvent(const tiny_string& t, number_t lx, number_t ly, bool b, _NR<InteractiveObject> relObj):Event(t,b),
+MouseEvent::MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly, bool b, _NR<InteractiveObject> relObj):Event(c,t,b),
 	 localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
 {
 }
 
-ProgressEvent::ProgressEvent():Event("progress",false),bytesLoaded(0),bytesTotal(0)
+ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false),bytesLoaded(0),bytesTotal(0)
 {
 }
 
-ProgressEvent::ProgressEvent(uint32_t loaded, uint32_t total):Event("progress",false),bytesLoaded(loaded),bytesTotal(total)
+ProgressEvent::ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total):Event(c, "progress",false),bytesLoaded(loaded),bytesTotal(total)
 {
 }
 
@@ -301,7 +306,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_localX)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
 	if(argslen != 1) 
-		throw ArgumentError("Wrong number of arguments in setter"); 
+		throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); 
 	number_t val=args[0]->toNumber();
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
@@ -318,7 +323,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_localY)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
 	if(argslen != 1) 
-		throw ArgumentError("Wrong number of arguments in setter"); 
+		throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); 
 	number_t val=args[0]->toNumber();
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
@@ -358,7 +363,7 @@ void MouseEvent::setTarget(_NR<ASObject> t)
 	}
 }
 
-IOErrorEvent::IOErrorEvent() : ErrorEvent("ioError")
+IOErrorEvent::IOErrorEvent(Class_base* c) : ErrorEvent(c, "ioError")
 {
 }
 
@@ -370,7 +375,7 @@ void IOErrorEvent::sinit(Class_base* c)
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),DECLARED_TRAIT);
 }
 
-EventDispatcher::EventDispatcher()
+EventDispatcher::EventDispatcher(Class_base* c):ASObject(c)
 {
 }
 
@@ -598,7 +603,7 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 		return true;
 }
 
-NetStatusEvent::NetStatusEvent(const tiny_string& l, const tiny_string& c):Event("netStatus"),level(l),code(c)
+NetStatusEvent::NetStatusEvent(Class_base* cb, const tiny_string& l, const tiny_string& c):Event(cb, "netStatus"),level(l),code(c)
 {
 	//The object has been initialized internally
 	ASObject* info=Class<ASObject>::getInstanceS();
@@ -643,7 +648,7 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 	return NULL;
 }
 
-FullScreenEvent::FullScreenEvent():Event("fullScreenEvent")
+FullScreenEvent::FullScreenEvent(Class_base* c):Event(c, "fullScreenEvent")
 {
 }
 
@@ -660,7 +665,7 @@ ASFUNCTIONBODY(FullScreenEvent,_constructor)
 	return NULL;
 }
 
-KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
+KeyboardEvent::KeyboardEvent(Class_base* c):Event(c, "keyboardEvent")
 {
 }
 
@@ -678,7 +683,7 @@ ASFUNCTIONBODY(KeyboardEvent,_constructor)
 	return NULL;
 }
 
-TextEvent::TextEvent(const tiny_string& t):Event(t)
+TextEvent::TextEvent(Class_base* c,const tiny_string& t):Event(c,t)
 {
 }
 
@@ -696,7 +701,7 @@ ASFUNCTIONBODY(TextEvent,_constructor)
 	return NULL;
 }
 
-ErrorEvent::ErrorEvent(const tiny_string& t, const std::string& e): TextEvent(t), errorMsg(e)
+ErrorEvent::ErrorEvent(Class_base* c, const tiny_string& t, const std::string& e): TextEvent(c,t), errorMsg(e)
 {
 }
 
@@ -714,7 +719,7 @@ ASFUNCTIONBODY(ErrorEvent,_constructor)
 	return NULL;
 }
 
-SecurityErrorEvent::SecurityErrorEvent(const std::string& e):ErrorEvent("securityError",e)
+SecurityErrorEvent::SecurityErrorEvent(Class_base* c, const std::string& e):ErrorEvent(c, "securityError",e)
 {
 }
 
@@ -732,7 +737,7 @@ ASFUNCTIONBODY(SecurityErrorEvent,_constructor)
 	return NULL;
 }
 
-AsyncErrorEvent::AsyncErrorEvent():ErrorEvent("asyncError")
+AsyncErrorEvent::AsyncErrorEvent(Class_base* c):ErrorEvent(c, "asyncError")
 {
 }
 
@@ -750,11 +755,11 @@ ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
 	return NULL;
 }
 
-ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event("ABCContextInitEvent"),context(c),lazy(l)
+ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event(NULL, "ABCContextInitEvent"),context(c),lazy(l)
 {
 }
 
-ShutdownEvent::ShutdownEvent():Event("shutdownEvent")
+ShutdownEvent::ShutdownEvent():Event(NULL, "shutdownEvent")
 {
 }
 
@@ -795,16 +800,16 @@ ExternalCallEvent::~ExternalCallEvent()
 }
 
 BindClassEvent::BindClassEvent(_R<RootMovieClip> b, const tiny_string& c)
-	: Event("bindClass"),base(b),class_name(c)
+	: Event(NULL, "bindClass"),base(b),class_name(c)
 {
 }
 BindClassEvent::BindClassEvent(_R<DictionaryTag> t, const tiny_string& c)
-	: Event("bindClass"),tag(t),class_name(c)
+	: Event(NULL, "bindClass"),tag(t),class_name(c)
 {
 }
 
 ParseRPCMessageEvent::ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> c, _R<Responder> r):
-	Event("ParseRPCMessageEvent"),message(ba),client(c),responder(r)
+	Event(NULL, "ParseRPCMessageEvent"),message(ba),client(c),responder(r)
 {
 }
 

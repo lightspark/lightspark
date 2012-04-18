@@ -42,7 +42,7 @@ class Vector: public ASObject
 		bool operator()(ASObject* d1, ASObject* d2);
 	};
 public:
-	Vector() : vec_type(NULL) {}
+	Vector(Class_base* c);
 	~Vector();
 	void finalize();
 	static void sinit(Class_base* c);

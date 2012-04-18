@@ -28,9 +28,9 @@ namespace lightspark
 
 class IOError: public ASError
 {
-CLASSBUILDABLE(IOError);
 public:
-	IOError(const tiny_string& error_message = "", int id = 0, tiny_string name = "IOError") : ASError(error_message, id, name){}
+	IOError(Class_base* c,const tiny_string& error_message = "", int id = 0, tiny_string name = "IOError"):
+		ASError(c, error_message, id, name){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -38,9 +38,8 @@ public:
 
 class EOFError: public IOError
 {
-CLASSBUILDABLE(EOFError);
 public:
-	EOFError(const tiny_string& error_message = "", int id = 0) : IOError(error_message, id, "EOFError"){}
+	EOFError(Class_base* c, const tiny_string& error_message = "", int id = 0) : IOError(c, error_message, id, "EOFError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -48,9 +47,9 @@ public:
 
 class IllegalOperationError: public ASError
 {
-CLASSBUILDABLE(IllegalOperationError);
 public:
-	IllegalOperationError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "IllegalOperationError"){}
+	IllegalOperationError(Class_base* c, const tiny_string& error_message = "", int id = 0):
+		ASError(c, error_message, id, "IllegalOperationError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -58,9 +57,8 @@ public:
 
 class InvalidSWFError: public ASError
 {
-CLASSBUILDABLE(InvalidSWFError);
 public:
-	InvalidSWFError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "InvalidSWFError"){}
+	InvalidSWFError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "InvalidSWFError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -68,9 +66,8 @@ public:
 
 class MemoryError: public ASError
 {
-CLASSBUILDABLE(MemoryError);
 public:
-	MemoryError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "MemoryError"){}
+	MemoryError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "MemoryError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -78,9 +75,9 @@ public:
 
 class ScriptTimeoutError: public ASError
 {
-CLASSBUILDABLE(ScriptTimeoutError);
 public:
-	ScriptTimeoutError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "ScriptTimeoutError"){}
+	ScriptTimeoutError(Class_base* c, const tiny_string& error_message = "", int id = 0):
+		ASError(c, error_message, id, "ScriptTimeoutError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -88,9 +85,9 @@ public:
 
 class StackOverflowError: public ASError
 {
-CLASSBUILDABLE(StackOverflowError);
 public:
-	StackOverflowError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "StackOverflowError"){}
+	StackOverflowError(Class_base* c, const tiny_string& error_message = "", int id = 0):
+		ASError(c, error_message, id, "StackOverflowError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

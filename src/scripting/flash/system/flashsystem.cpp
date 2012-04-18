@@ -107,6 +107,10 @@ ASFUNCTIONBODY(Capabilities,_getServerString)
 	return Class<ASString>::getInstanceS("");
 }
 
+ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c),parentDomain(p)
+{
+}
+
 void ApplicationDomain::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

@@ -29,7 +29,7 @@ namespace lightspark
 class Rectangle: public ASObject
 {
 public:
-	Rectangle():x(0),y(0),width(0),height(0){}
+	Rectangle(Class_base* c):ASObject(c),x(0),y(0),width(0),height(0){}
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -78,8 +78,9 @@ class Point: public ASObject
 {
 private:
 	number_t x,y;
+	static number_t lenImpl(number_t x, number_t y);
 public:
-	Point(number_t _x = 0, number_t _y = 0):x(_x),y(_y){}
+	Point(Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(c),x(_x),y(_y){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -110,6 +111,7 @@ private:
 	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 public:
+	ColorTransform(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -141,8 +143,8 @@ public:
 class Matrix: public ASObject
 {
 public:
-	Matrix();
-	Matrix(const MATRIX& m);
+	Matrix(Class_base* c);
+	Matrix(Class_base* c,const MATRIX& m);
 	number_t a, b, c, d, tx, ty;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -183,6 +185,7 @@ public:
 class Transform: public ASObject
 {
 public:
+	Transform(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix>, matrix);
@@ -191,6 +194,7 @@ public:
 class Vector3D: public ASObject
 {
 public:
+	Vector3D(Class_base* c):ASObject(c){}
 	number_t w, x, y, z;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

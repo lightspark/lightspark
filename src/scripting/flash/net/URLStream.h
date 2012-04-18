@@ -43,16 +43,12 @@ public:
 
 class URLStream: public EventDispatcher, public IDataInput, public IDownloaderThreadListener
 {
-CLASSBUILDABLE(URLStream);
 private:
 	URLInfo url;
 	_NR<ByteArray> data;
 	URLStreamThread *job;
 	Spinlock spinlock;
-	URLStream() : data(_MNR(Class<ByteArray>::getInstanceS())) {}
 	void finalize();
-	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getEndian);
 	ASFUNCTION(_setEndian);
@@ -76,6 +72,9 @@ private:
 	ASFUNCTION(readUTF);
 	ASFUNCTION(readUTFBytes);
 public:
+	URLStream(Class_base* c):EventDispatcher(c),data(_MNR(Class<ByteArray>::getInstanceS())) {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	void threadFinished(IThreadJob *job);
 };
 

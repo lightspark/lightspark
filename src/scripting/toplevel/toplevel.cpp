@@ -59,7 +59,12 @@ REGISTER_CLASS_NAME(Namespace);
 Any* const Type::anyType = new Any();
 Void* const Type::voidType = new Void();
 
-Undefined::Undefined()
+Null::Null():ASObject(NULL)
+{
+	type=T_NULL;
+}
+
+Undefined::Undefined():ASObject(NULL)
 {
 	type=T_UNDEFINED;
 }
@@ -118,7 +123,7 @@ void Undefined::setVariableByMultiname(const multiname& name, ASObject* o)
 	o->decRef();
 }
 
-IFunction::IFunction():inClass(NULL),length(0)
+IFunction::IFunction(Class_base* c):ASObject(c),inClass(NULL),length(0)
 {
 	type=T_FUNCTION;
 	prototype = _MR(new_asobject());
@@ -231,7 +236,7 @@ ASObject *IFunction::describeType() const
 	return Class<XML>::getInstanceS(root);
 }
 
-SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL)
+SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),hit_count(0),mi(m),val(NULL)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -682,7 +687,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 	return typeObject->as<Type>();
 }
 
-Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),
+Class_base::Class_base(const QName& name):ASObject(NULL),use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),
 	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1)
 {
 	type=T_CLASS;
@@ -906,7 +911,7 @@ void Class_base::finalize()
 	}
 }
 
-Template_base::Template_base(QName name) : template_name(name)
+Template_base::Template_base(QName name) : ASObject(NULL),template_name(name)
 {
 	type = T_TEMPLATE;
 }
@@ -1183,6 +1188,11 @@ void Class_base::describeTraits(xmlpp::Element* root,
 	}
 }
 
+ASQName::ASQName(Class_base* c):ASObject(c)
+{
+	type=T_QNAME; uri_is_null=false;
+}
+
 void ASQName::sinit(Class_base* c)
 {
 	c->setSuper(Class<ASObject>::getRef());
@@ -1309,6 +1319,18 @@ tiny_string ASQName::toString()
 		s = uri + "::";
 
 	return s + local_name;
+}
+
+Namespace::Namespace(Class_base* c):ASObject(c)
+{
+	type=T_NAMESPACE;
+	prefix_is_undefined=false;
+}
+
+Namespace::Namespace(Class_base* c, const tiny_string& _uri):ASObject(c),uri(_uri)
+{
+	type=T_NAMESPACE;
+	prefix_is_undefined=false;
 }
 
 void Namespace::sinit(Class_base* c)
@@ -1490,7 +1512,7 @@ ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen
 	return getSys()->getUndefinedRef();
 }
 
-ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 {
 	if(argslen)
 		LOG(LOG_NOT_IMPLEMENTED,"new Function() with argslen > 0");
@@ -1533,6 +1555,11 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret=static_cast<Class<IFunction>*>(it->second);
 
 	return ret;
+}
+
+
+Global::Global(Class_base* cb, ABCContext* c, int s):ASObject(cb),context(c),scriptId(s)
+{
 }
 
 void Global::sinit(Class_base* c)

@@ -27,7 +27,7 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(Date);
 
-Date::Date():extrayears(0), nan(false), datetime(NULL),datetimeUTC(NULL)
+Date::Date(Class_base* c):ASObject(c),extrayears(0), nan(false), datetime(NULL),datetimeUTC(NULL)
 {
 }
 
@@ -257,14 +257,14 @@ ASFUNCTIONBODY(Date,UTC)
 			return abstract_d(Number::NaN);
 		}
 	}
-	Date dt;
 	number_t year, month, day, hour, minute, second, millisecond;
 	ARG_UNPACK (year) (month) (day, 1) (hour, 0) (minute, 0) (second, 0) (millisecond, 0);
-	dt.MakeDate(year, month+1, day, hour, minute,second, millisecond,false);
-	if(dt.nan) {
+	_R<Date> dt=_MR(Class<Date>::getInstanceS());
+	dt->MakeDate(year, month+1, day, hour, minute,second, millisecond,false);
+	if(dt->nan) {
 		return abstract_d(Number::NaN);
 	}
-	return dt.msSinceEpoch();
+	return dt->msSinceEpoch();
 }
 
 ASFUNCTIONBODY(Date,getTimezoneOffset)
@@ -922,12 +922,12 @@ number_t Date::parse(tiny_string str)
 				y += 1900;
 			if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && h >= 0 && h <= 23 && m >= 0 && m <= 59 && s >= 0 && s <= 59)
 			{
-				Date dt;
+				_R<Date> dt=_MR(Class<Date>::getInstanceS());
 				if (tz == 0)
-					dt.MakeDate(y, mon, d, h, m, s, 0,bIsLocalTime);
+					dt->MakeDate(y, mon, d, h, m, s, 0,bIsLocalTime);
 				else
-					dt.MakeDate(y, mon, d, h-(tz/100),m-(tz%100), s, 0,false);
-				res =dt.nan ? Number::NaN : dt.milliseconds+dt.extrayears/400*MS_IN_400_YEARS;
+					dt->MakeDate(y, mon, d, h-(tz/100),m-(tz%100), s, 0,false);
+				res =dt->nan ? Number::NaN : dt->milliseconds+dt->extrayears/400*MS_IN_400_YEARS;
 			}
 		}
 	}

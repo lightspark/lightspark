@@ -134,7 +134,7 @@ public:
 	Class_base(const QName& name);
 	~Class_base();
 	void finalize();
-	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
+	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)=0;
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
@@ -183,7 +183,7 @@ class Class_object: public Class_base
 {
 private:
 	Class_object():Class_base(QName("Class","")){}
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 	{
 		throw RunTimeException("Class_object::getInstance");
 		return NULL;
@@ -207,7 +207,7 @@ public:
 class Class_function: public Class_base
 {
 private:
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 	{
 		throw RunTimeException("Class_function::getInstance");
 		return NULL;
@@ -244,9 +244,8 @@ public:
 
 class IFunction: public ASObject
 {
-CLASSBUILDABLE(IFunction);
 protected:
-	IFunction();
+	IFunction(Class_base *c);
 	virtual IFunction* clone()=0;
 	_NR<ASObject> closure_this;
 public:
@@ -308,8 +307,7 @@ public:
 	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
 private:
 	as_function val;
-	Function(){}
-	Function(as_function v):val(v){}
+	Function(Class_base* c, as_function v=NULL):IFunction(c),val(v){}
 	Function* clone()
 	{
 		return new Function(*this);
@@ -336,7 +334,7 @@ private:
 	int hit_count;
 	method_info* mi;
 	synt_function val;
-	SyntheticFunction(method_info* m);
+	SyntheticFunction(Class_base* c,method_info* m);
 	SyntheticFunction* clone()
 	{
 		return new SyntheticFunction(*this);
@@ -371,7 +369,7 @@ class Class<IFunction>: public Class_base
 {
 private:
 	Class<IFunction>():Class_base(QName("Function","")){}
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 public:
 	static Class<IFunction>* getClass();
 	static _R<Class<IFunction>> getRef()
@@ -383,23 +381,20 @@ public:
 	static Function* getFunction(Function::as_function v)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
-		Function* ret=new Function(v);
-		ret->setClass(c);
+		Function* ret=new Function(c, v);
 		return ret;
 	}
 	static Function* getFunction(Function::as_function v, int len)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
-		Function* ret=new Function(v);
-		ret->setClass(c);
+		Function* ret=new Function(c, v);
 		ret->length = len;
 		return ret;
 	}
 	static SyntheticFunction* getSyntheticFunction(method_info* m)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
-		SyntheticFunction* ret=new SyntheticFunction(m);
-		ret->setClass(c);
+		SyntheticFunction* ret=new SyntheticFunction(c, m);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -427,7 +422,7 @@ public:
 class Null: public ASObject
 {
 public:
-	Null(){type=T_NULL;}
+	Null();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
@@ -445,13 +440,12 @@ class ASQName: public ASObject
 {
 friend class multiname;
 friend class Namespace;
-CLASSBUILDABLE(ASQName);
 private:
 	bool uri_is_null;
 	tiny_string uri;
 	tiny_string local_name;
-	ASQName(){type=T_QNAME; uri_is_null=false;}
 public:
+	ASQName(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getURI);
@@ -467,14 +461,13 @@ class Namespace: public ASObject
 {
 friend class ASQName;
 friend class ABCContext;
-CLASSBUILDABLE(Namespace);
 private:
 	bool prefix_is_undefined;
 	tiny_string uri;
 	tiny_string prefix;
-	Namespace(){type=T_NAMESPACE; prefix_is_undefined=false;}
-	Namespace(const tiny_string& _uri):uri(_uri){type=T_NAMESPACE; prefix_is_undefined=false;}
 public:
+	Namespace(Class_base* c);
+	Namespace(Class_base* c, const tiny_string& _uri);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -491,14 +484,13 @@ public:
 
 class Global : public ASObject
 {
-CLASSBUILDABLE(Global);
 private:
-	Global(ABCContext* c, int s): context(c), scriptId(s) {}
-	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o) {};
 	ABCContext* context;
 	int scriptId;
 public:
+	Global(Class_base* cb, ABCContext* c, int s);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o) {};
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 

@@ -27,7 +27,6 @@ namespace lightspark
 
 class ASError: public ASObject
 {
-CLASSBUILDABLE(ASError);
 protected:
 	ASPROPERTY_GETTER_SETTER(tiny_string, message);
 	void setErrorID(int32_t id) { errorID=id; }
@@ -35,7 +34,7 @@ private:
 	ASPROPERTY_GETTER(int32_t, errorID);
 	ASPROPERTY_GETTER_SETTER(tiny_string, name);
 public:
-	ASError(const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error") : message(error_message), errorID(id), name(error_name){};
+	ASError(Class_base* c, const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error");
 	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
 	ASFUNCTION(getStackTrace);
@@ -47,9 +46,8 @@ public:
 
 class SecurityError: public ASError
 {
-CLASSBUILDABLE(SecurityError);
 public:
-	SecurityError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "SecurityError"){}
+	SecurityError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "SecurityError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -57,9 +55,8 @@ public:
 
 class ArgumentError: public ASError
 {
-CLASSBUILDABLE(ArgumentError);
 public:
-	ArgumentError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "ArgumentError"){}
+	ArgumentError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "ArgumentError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -67,9 +64,8 @@ public:
 
 class DefinitionError: public ASError
 {
-CLASSBUILDABLE(DefinitionError);
 public:
-	DefinitionError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "DefinitionError"){}
+	DefinitionError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "DefinitionError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -77,9 +73,8 @@ public:
 
 class EvalError: public ASError
 {
-CLASSBUILDABLE(EvalError);
 public:
-	EvalError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "EvalError"){}
+	EvalError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "EvalError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -87,9 +82,8 @@ public:
 
 class RangeError: public ASError
 {
-CLASSBUILDABLE(RangeError);
 public:
-	RangeError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "RangeError"){}
+	RangeError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "RangeError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -97,9 +91,8 @@ public:
 
 class ReferenceError: public ASError
 {
-CLASSBUILDABLE(ReferenceError);
 public:
-	ReferenceError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "ReferenceError"){}
+	ReferenceError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "ReferenceError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -107,9 +100,8 @@ public:
 
 class SyntaxError: public ASError
 {
-CLASSBUILDABLE(SyntaxError);
 public:
-	SyntaxError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "SyntaxError"){}
+	SyntaxError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "SyntaxError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -117,9 +109,8 @@ public:
 
 class TypeError: public ASError
 {
-CLASSBUILDABLE(TypeError);
 public:
-	TypeError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "TypeError"){}
+	TypeError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "TypeError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -127,9 +118,8 @@ public:
 
 class URIError: public ASError
 {
-CLASSBUILDABLE(URIError);
 public:
-	URIError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "URIError"){}
+	URIError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "URIError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -137,9 +127,8 @@ public:
 
 class VerifyError: public ASError
 {
-CLASSBUILDABLE(VerifyError);
 public:
-	VerifyError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "VerifyError"){}
+	VerifyError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "VerifyError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -148,8 +137,8 @@ public:
 /* Not found in the spec but used by testcases */
 class UninitializedError: public ASError
 {
-CLASSBUILDABLE(UninitializedError);
-	UninitializedError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "UninitializedError"){}
+public:
+	UninitializedError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "UninitializedError"){}
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

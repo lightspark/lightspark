@@ -309,6 +309,8 @@ ASFUNCTIONBODY(ByteArray,_setEndian)
 		th->littleEndian = true;
 	else if(args[0]->toString() == Endian::bigEndian)
 		th->littleEndian = false;
+	else
+		throw Class<ArgumentError>::getInstanceS("Error #2008: Parameter type must be one of the accepted values.");
 	return NULL;
 }
 

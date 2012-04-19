@@ -474,6 +474,10 @@ ASFUNCTIONBODY(ByteArray,readUTFBytes)
 void ByteArray::writeUTF(const tiny_string& str)
 {
 	getBuffer(position+str.numBytes()+2,true);
+	if(str.numBytes() > 65535)
+	{
+		throw Class<RangeError>::getInstanceS("Error #2006: The supplied index is out of bounds.");
+	}
 	uint16_t numBytes=endianIn((uint16_t)str.numBytes());
 	memcpy(bytes+position,&numBytes,2);
 	memcpy(bytes+position+2,str.raw_buf(),str.numBytes());

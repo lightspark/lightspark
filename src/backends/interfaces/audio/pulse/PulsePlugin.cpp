@@ -202,7 +202,7 @@ AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 		pa_stream_set_state_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamStatusCB, audioStream );
 		pa_stream_set_write_callback ( audioStream->stream, ( pa_stream_request_cb_t ) streamWriteCB, audioStream );
 		pa_stream_set_underflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamUnderflowCB, NULL );
-		pa_stream_set_overflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamUnderflowCB, NULL );
+		pa_stream_set_overflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamOverflowCB, NULL );
 		pa_stream_set_started_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamStartedCB, NULL );
 		pa_stream_flags flags = (pa_stream_flags) PA_STREAM_START_CORKED;
 		if(muteAllStreams)

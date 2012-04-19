@@ -400,23 +400,19 @@ ASFUNCTIONBODY(ByteArray,readBoolean)
 ASFUNCTIONBODY(ByteArray,readBytes)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	//Validate parameters
-	assert_and_throw(argslen>=1 && argslen<=3);
-	assert_and_throw(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
-
-	ByteArray* out=Class<ByteArray>::cast(args[0]);
-	uint32_t offset=0;
-	uint32_t length=0;
-	if(argslen>=2)
-		offset=args[1]->toInt();
-	if(argslen==3)
-		length=args[2]->toInt();
-
+	_NR<ByteArray> out;
+	uint32_t offset;
+	uint32_t length;
+	ARG_UNPACK(out)(offset, 0)(length, 0);
+	
 	if(length == 0)
-		length = th->len;
+	{
+		assert(th->len >= th->position);
+		length = th->len - th->position;
+	}
 
 	//Error checks
-	if(length > th->len)
+	if(th->position+length > th->len)
 	{
 		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
 	}

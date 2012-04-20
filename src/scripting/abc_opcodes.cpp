@@ -1911,6 +1911,10 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	Class_inherit* ret=new Class_inherit(className);
+
+	//Add the class to the ones being currently defined in this context
+	th->context->classesBeingDefined.insert(make_pair(mname, ret));
+
 	ret->isFinal = th->context->instances[n].isFinal();
 	ret->isSealed = th->context->instances[n].isSealed();
 
@@ -2017,6 +2021,9 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG(LOG_CALLS,_("End of Class init ") << ret);
 	th->runtime_stack_push(ret);
 	cinit->decRef();
+
+	//Remove the class to the ones being currently defined in this context
+	th->context->classesBeingDefined.erase(mname);
 }
 
 void ABCVm::swap()

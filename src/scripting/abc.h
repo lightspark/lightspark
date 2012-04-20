@@ -223,6 +223,8 @@ public:
 
 	bool isinstance(ASObject* obj, multiname* name);
 
+	std::map<const multiname*, Class_base*> classesBeingDefined;
+
 #ifdef PROFILING_SUPPORT
 	void dumpProfilingData(std::ostream& f) const;
 #endif

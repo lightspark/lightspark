@@ -655,21 +655,20 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 
 	ASObject* typeObject;
 	/*
-	 * During the newClass opcode, the class is added to sys->classes.
+	 * During the newClass opcode, the class is added to context->classesBeingDefined.
 	 * The class variable in the global scope is only set a bit later.
 	 * When the class has to be resolved in between (for example, the
 	 * class has traits of the class's type), then we'll find it in
-	 * sys->classes, but getGlobal()->getVariableAndTargetByMultiname()
+	 * classesBeingDefined, but context->root->getVariableAndTargetByMultiname()
 	 * would still return "Undefined".
 	 */
-	auto i = getSys()->classes.find(QName(mn->name_s, mn->ns[0].name));
-	if(i != getSys()->classes.end())
+	auto i = context->classesBeingDefined.find(mn);
+	if(i != context->classesBeingDefined.end())
 		typeObject = i->second;
 	else
 	{
 		ASObject* target;
-		typeObject=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->
-			getVariableAndTargetByMultiname(*mn,target);
+		typeObject=context->root->applicationDomain->getVariableAndTargetByMultiname(*mn,target);
 	}
 
 	if(!typeObject)

@@ -168,7 +168,7 @@ SystemState::SystemState(uint32_t fileSize):
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
-	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL)
+	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),stringMemory(NULL)
 {
 	cookiesFileName = NULL;
 
@@ -177,6 +177,8 @@ SystemState::SystemState(uint32_t fileSize):
 	mainThread = Thread::self();
 
 	unaccountedMemory = allocateMemoryAccount("Unaccounted");
+	stringMemory = allocateMemoryAccount("Tiny_string");
+
 	null=_MR(new (unaccountedMemory) Null);
 	undefined=_MR(new (unaccountedMemory) Undefined);
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());

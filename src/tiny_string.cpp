@@ -168,3 +168,10 @@ tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const
 	uint32_t byteend = end.buf_ptr - buf;
 	return substr_bytes(bytestart, byteend-bytestart);
 }
+
+#ifdef MEMORY_USAGE_PROFILING
+void tiny_string::reportMemoryChange(int32_t change) const
+{
+	getSys()->stringMemory->addBytes(change);
+}
+#endif

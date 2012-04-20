@@ -95,6 +95,13 @@ private:
 	*/
 	uint32_t stringSize;
 	TYPE type;
+#ifdef MEMORY_USAGE_PROFILING
+	//Implemented in memory_support.cpp
+	DLL_PUBLIC void reportMemoryChange(int32_t change) const;
+#else
+	//NOP
+	void reportMemoryChange(int32_t change) const {}
+#endif
 	//TODO: use static buffer again if reassigning to short string
 	void makePrivateCopy(const char* s)
 	{
@@ -107,12 +114,14 @@ private:
 	void createBuffer(uint32_t s)
 	{
 		type=DYNAMIC;
+		reportMemoryChange(s);
 		buf=new char[s];
 	}
 	void resizeBuffer(uint32_t s)
 	{
 		assert(type==DYNAMIC);
 		char* oldBuf=buf;
+		reportMemoryChange(s-stringSize);
 		buf=new char[s];
 		assert(s >= stringSize);
 		memcpy(buf,oldBuf,stringSize);
@@ -121,7 +130,10 @@ private:
 	void resetToStatic()
 	{
 		if(type==DYNAMIC)
+		{
+			reportMemoryChange(-stringSize);
 			delete[] buf;
+		}
 		stringSize=1;
 		buf=_buf_static;
 		buf[0] = '\0';

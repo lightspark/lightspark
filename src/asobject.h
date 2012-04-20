@@ -155,11 +155,13 @@ struct variable
 class variables_map
 {
 public:
-	std::multimap<tiny_string,variable> Variables;
+	typedef std::multimap<tiny_string,variable,std::less<tiny_string>,reporter_allocator<std::pair<const tiny_string, variable>>>
+		mapType;
+	mapType Variables;
 	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
 	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
-public:
+	variables_map(MemoryAccount* m);
 	/**
 	   Find a variable in the map
 

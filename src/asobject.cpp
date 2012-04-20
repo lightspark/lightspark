@@ -308,6 +308,11 @@ bool ASObject::isPrimitive() const
 		type==T_UINTEGER;
 }
 
+variables_map::variables_map(MemoryAccount* m):
+	Variables(std::less<mapType::key_type>(), reporter_allocator<mapType::value_type>(m))
+{
+}
+
 variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
 	pair<var_iterator, var_iterator> var_range=Variables.equal_range(n);
@@ -993,7 +998,7 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject(MemoryAccount* m):type(T_OBJECT),ref_count(1),
+ASObject::ASObject(MemoryAccount* m):type(T_OBJECT),Variables(m),ref_count(1),
 	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
 {
 #ifndef NDEBUG
@@ -1002,7 +1007,7 @@ ASObject::ASObject(MemoryAccount* m):type(T_OBJECT),ref_count(1),
 #endif
 }
 
-ASObject::ASObject(Class_base* c):type(T_OBJECT),ref_count(1),
+ASObject::ASObject(Class_base* c):type(T_OBJECT),Variables((c)?c->memoryAccount:NULL),ref_count(1),
 	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
 {
 	setClass(c);
@@ -1012,7 +1017,7 @@ ASObject::ASObject(Class_base* c):type(T_OBJECT),ref_count(1),
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),
+ASObject::ASObject(const ASObject& o):type(o.type),Variables((o.classdef)?o.classdef->memoryAccount:NULL),ref_count(1),
 	manager(NULL),classdef(o.classdef),constructed(false),implEnable(true)
 {
 	if(classdef)

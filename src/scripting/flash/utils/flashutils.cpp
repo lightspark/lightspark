@@ -110,6 +110,7 @@ ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),
 {
 	assert_and_throw(position==0);
 	bytes = (uint8_t*) malloc(len);
+	getClass()->memoryAccount->addBytes(len);
 	assert_and_throw(bytes);
 	memcpy(bytes,b.bytes,len);
 }
@@ -117,7 +118,10 @@ ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),
 ByteArray::~ByteArray()
 {
 	if(bytes)
+	{
+		getClass()->memoryAccount->removeBytes(real_len);
 		free(bytes);
+	}
 }
 
 void ByteArray::sinit(Class_base* c)
@@ -195,6 +199,7 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 		len=size;
 		real_len=len;
 		bytes = (uint8_t*) malloc(len);
+		getClass()->memoryAccount->addBytes(len);
 	}
 	else if(enableResize==false)
 	{
@@ -202,10 +207,12 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	}
 	else if(real_len<size) // && enableResize==true
 	{
+		uint32_t prev_real_len = real_len;
 		while(real_len < size)
 			real_len += BA_CHUNK_SIZE;
 		// Reallocate the buffer, in chunks of BA_CHUNK_SIZE bytes
 		uint8_t* bytes2 = (uint8_t*) realloc(bytes, real_len);
+		getClass()->memoryAccount->addBytes(real_len-prev_real_len);
 		assert_and_throw(bytes2);
 		bytes = bytes2;
 		len=size;
@@ -366,7 +373,10 @@ ASFUNCTIONBODY(ByteArray,_setLength)
 	else
 	{
 		if (th->bytes)
+		{
+			th->getClass()->memoryAccount->removeBytes(th->real_len);
 			free(th->bytes);
+		}
 		th->bytes = NULL;
 		th->len = newLen;
 		th->real_len = newLen;
@@ -1011,10 +1021,14 @@ void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 {
 	if(bytes)
+	{
+		getClass()->memoryAccount->removeBytes(real_len);
 		free(bytes);
+	}
 	bytes=buf;
 	real_len=bufLen;
 	len=bufLen;
+	getClass()->memoryAccount->addBytes(real_len);
 	position=0;
 }
 
@@ -1126,6 +1140,7 @@ void ByteArray::uncompress_zlib()
 	inflateEnd(&strm);
 
 	len=strm.total_out;
+	getClass()->memoryAccount->addBytes(len-real_len);
 	real_len = len;
 	uint8_t* bytes2=(uint8_t*) realloc(bytes, len);
 	assert_and_throw(bytes2);
@@ -1172,7 +1187,10 @@ ASFUNCTIONBODY(ByteArray,clear)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	if(th->bytes)
+	{
+		th->getClass()->memoryAccount->removeBytes(th->real_len);
 		free(th->bytes);
+	}
 	th->bytes = NULL;
 	th->len=0;
 	th->real_len=0;

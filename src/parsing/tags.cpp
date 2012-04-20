@@ -1303,6 +1303,7 @@ ASObject* DefineBinaryDataTag::instance(Class_base* c) const
 	else
 		classRet=Class<ByteArray>::getClass();
 
+	classRet->memoryAccount->addBytes(len);
 	ByteArray* ret=new (classRet->memoryAccount) ByteArray(classRet, b, len);
 	return ret;
 }

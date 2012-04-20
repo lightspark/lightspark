@@ -78,7 +78,7 @@ private:
 	void setOnStage(bool staged);
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
-	RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, bool isSys=false);
+	RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, Class_base* c);
 	void finalize();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;

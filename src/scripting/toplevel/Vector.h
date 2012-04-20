@@ -30,7 +30,7 @@ class Vector: public ASObject
 {
 	Type* vec_type;
 	bool fixed;
-	std::vector<ASObject*> vec;
+	std::vector<ASObject*, reporter_allocator<ASObject*>> vec;
 	int capIndex(int i) const;
 	class sortComparatorWrapper
 	{

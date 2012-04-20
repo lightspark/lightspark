@@ -274,13 +274,13 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		mi->paramTypes.reserve(mi->numArgs());
 		for(size_t i=0;i < mi->numArgs();++i)
 		{
-			const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i));
+			const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i), mi->context);
 			mi->paramTypes.push_back(t);
 			if(t != Type::anyType)
 				mi->hasExplicitTypes = true;
 		}
 
-		const Type* t = Type::getTypeFromMultiname(mi->returnTypeName());
+		const Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context);
 		mi->returnType = t;
 	}
 
@@ -640,7 +640,7 @@ bool Type::isTypeResolvable(const multiname* mn)
  * by running ABCContext::exec() for all ABCContexts.
  * Therefore, all classes are at least declared.
  */
-const Type* Type::getTypeFromMultiname(const multiname* mn)
+const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* context)
 {
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;

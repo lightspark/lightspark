@@ -1955,7 +1955,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret = getSys()->getUndefinedRef();
 			}
 
-			obj->initializeVariableByMultiname(*mname, ret, tname);
+			obj->initializeVariableByMultiname(*mname, ret, tname, this);
 
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);

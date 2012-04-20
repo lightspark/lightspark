@@ -133,6 +133,7 @@ template<class T> class Class;
 class Class_base;
 class ByteArray;
 class Type;
+class ABCContext;
 
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, BORROWED_TRAIT=4,CONSTANT_TRAIT=9 /* constants are also declared traits */ };
 
@@ -171,7 +172,7 @@ public:
 	variable* findObjVar(const tiny_string& name, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
 	variable* findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname);
+	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
@@ -343,7 +344,7 @@ public:
 	 * If no property is found, an instance variable is created.
 	 */
 	void setVariableByMultiname(const multiname& name, ASObject* o, Class_base* cls);
-	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname);
+	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname, ABCContext* context);
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, _R<ASObject> o, TRAIT_KIND traitKind)
 	{

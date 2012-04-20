@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/abc.h"
 #include "asobject.h"
 #include "scripting/class.h"
 #include <algorithm>
@@ -553,7 +554,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& 
 	obj->setVar(o);
 }
 
-void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname)
+void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname, ABCContext* context)
 {
 	check();
 
@@ -567,14 +568,14 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 		return;
 	}
 
-	Variables.initializeVar(name, o, typemname);
+	Variables.initializeVar(name, o, typemname, context);
 }
 
 void variable::setVar(ASObject* v)
 {
 	//Resolve the typename if we have one
 	if(!type && typemname)
-		type = Type::getTypeFromMultiname(typemname);
+		type = Type::getTypeFromMultiname(typemname, getVm()->currentCallContext->context);
 
 	if(type)
 		v = type->coerce(v);
@@ -658,7 +659,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	return &inserted->second;
 }
 
-void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname)
+void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context)
 {
 	tiny_string name=mname.normalizedName();
 
@@ -679,7 +680,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	}
 	else
 	{
-		type = Type::getTypeFromMultiname(typemname);
+		type = Type::getTypeFromMultiname(typemname, context);
 		obj = type->coerce(obj);
 	}
 	Variables.insert(make_pair(name, variable(mname.ns[0], DECLARED_TRAIT, obj, typemname, type)));

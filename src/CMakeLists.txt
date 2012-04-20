@@ -28,6 +28,7 @@ SET(LIBSPARK_SOURCES
   thread_pool.cpp
   threading.cpp
   timer.cpp
+  tiny_string.cpp
   backends/audio.cpp
   backends/builtindecoder.cpp
   backends/config.cpp

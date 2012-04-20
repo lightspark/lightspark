@@ -31,7 +31,8 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(Array);
 
-Array::Array(Class_base* c):ASObject(c)
+Array::Array(Class_base* c):ASObject(c),
+	data(std::less<arrayType::key_type>(), reporter_allocator<arrayType::value_type>(c->memoryAccount))
 {
 	currentsize=0;
 	type=T_ARRAY;
@@ -359,7 +360,7 @@ ASFUNCTIONBODY(Array, _reverse)
 {
 	Array* th = static_cast<Array*>(obj);
 
-	std::map<uint32_t, data_slot> tmp = std::map<uint32_t, data_slot>(th->data);
+	std::map<uint32_t, data_slot> tmp = std::map<uint32_t, data_slot>(th->data.begin(),th->data.end());
 	uint32_t size = th->size();
 	th->data.clear();
 	std::map<uint32_t, data_slot>::iterator it=tmp.begin();
@@ -466,7 +467,8 @@ ASFUNCTIONBODY(Array,shift)
 			tmp[it->first-1]=it->second;
 		}
 	}
-	th->data = tmp;
+	th->data.clear();
+	th->data.insert(tmp.begin(),tmp.end());
 	th->resize(th->size()-1);
 	return ret;
 }
@@ -848,7 +850,8 @@ ASFUNCTIONBODY(Array,unshift)
 			tmp[i] = data_slot(args[i],DATA_OBJECT);
 			args[i]->incRef();
 		}
-		th->data = tmp;
+		th->data.clear();
+		th->data.insert(tmp.begin(),tmp.end());
 	}
 	return abstract_i(th->size());
 }

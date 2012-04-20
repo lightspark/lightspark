@@ -45,7 +45,9 @@ class Array: public ASObject
 friend class ABCVm;
 protected:
 	uint64_t currentsize;
-	std::map<uint32_t,data_slot> data;
+	typedef std::map<uint32_t,data_slot,std::less<uint32_t>,
+		reporter_allocator<std::pair<const uint32_t, data_slot>>> arrayType;
+	arrayType data;
 	void outofbounds() const;
 	~Array();
 private:

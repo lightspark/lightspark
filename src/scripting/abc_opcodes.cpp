@@ -1919,7 +1919,8 @@ void ABCVm::newClass(call_context* th, int n)
 		return;
 	}
 
-	Class_inherit* ret=new (getSys()->unaccountedMemory) Class_inherit(className);
+	MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
+	Class_inherit* ret=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
 
 	//Add the class to the ones being currently defined in this context
 	th->context->classesBeingDefined.insert(make_pair(mname, ret));

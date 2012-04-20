@@ -227,6 +227,7 @@ friend class Class_base; //Needed for forced cleanup
 friend void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 friend class IFunction; //Needed for clone
 protected:
+	ASObject(MemoryAccount* m);
 	ASObject(const ASObject& o);
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;

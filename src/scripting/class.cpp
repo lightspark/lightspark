@@ -29,6 +29,16 @@ ASObject* lightspark::new_asobject()
 	return Class<ASObject>::getInstanceS();
 }
 
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(name, m),tag(NULL),bindedToRoot(false)
+{
+	this->incRef(); //create on reference for the classes map
+#ifndef NDEBUG
+	bool ret=
+#endif
+	getSys()->customClasses.insert(this).second;
+	assert(ret);
+}
+
 void Class_inherit::finalize()
 {
 	Class_base::finalize();

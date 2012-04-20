@@ -57,15 +57,7 @@ private:
 	DictionaryTag const* tag;
 	bool bindedToRoot;
 public:
-	Class_inherit(const QName& name):Class_base(name),tag(NULL),bindedToRoot(false)
-	{
-		this->incRef(); //create on reference for the classes map
-#ifndef NDEBUG
-		bool ret=
-#endif
-		getSys()->customClasses.insert(this).second;
-		assert(ret);
-	}
+	Class_inherit(const QName& name, MemoryAccount* m);
 	void finalize();
 	void buildInstanceTraits(ASObject* o) const;
 	void bindToTag(DictionaryTag const* t)
@@ -125,7 +117,7 @@ template< class T>
 class Class: public Class_base
 {
 protected:
-	Class(const QName& name):Class_base(name){}
+	Class(const QName& name, MemoryAccount* m):Class_base(name, m){}
 	//This function is instantiated always because of inheritance
 	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)
 	{
@@ -214,7 +206,8 @@ public:
 		Class<T>* ret=NULL;
 		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
-			ret=new (getSys()->unaccountedMemory) Class<T>(name);
+			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
+			ret=new (getSys()->unaccountedMemory) Class<T>(name, memoryAccount);
 			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
@@ -300,7 +293,7 @@ template<>
 class Class<ASObject>: public Class_base
 {
 private:
-	Class<ASObject>(const QName& name):Class_base(name){}
+	Class<ASObject>(const QName& name, MemoryAccount* m):Class_base(name, m){}
 	//This function is instantiated always because of inheritance
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL);
 public:
@@ -314,7 +307,8 @@ public:
 	 */
 	static _R<Class<ASObject>> getStubClass(const QName& name)
 	{
-		Class<ASObject>* ret = new (getSys()->unaccountedMemory) Class<ASObject>(name);
+		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
+		Class<ASObject>* ret = new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
 
 		ret->setSuper(Class<ASObject>::getRef());
 		ret->prototype = _MNR(new_asobject());
@@ -335,7 +329,8 @@ public:
 		Class<ASObject>* ret=NULL;
 		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
-			ret=new (getSys()->unaccountedMemory) Class<ASObject>(name);
+			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
+			ret=new (getSys()->unaccountedMemory) Class<ASObject>(name,memoryAccount);
 			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
 			ASObject::sinit(ret);
@@ -404,7 +399,7 @@ class InterfaceClass: public Class_base
 		assert(argslen == 1);
 		return args[0];
 	}
-	InterfaceClass(const QName& name):Class_base(name) {}
+	InterfaceClass(const QName& name, MemoryAccount* m):Class_base(name, m) {}
 public:
 	static InterfaceClass<T>* getClass()
 	{
@@ -414,7 +409,8 @@ public:
 		if(it==getSys()->builtinClasses.end())
 		{
 			//This class is not yet in the map, create it
-			ret=new (getSys()->unaccountedMemory) InterfaceClass<T>(name);
+			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
+			ret=new (getSys()->unaccountedMemory) InterfaceClass<T>(name, memoryAccount);
 			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 		}
 		else
@@ -439,8 +435,8 @@ private:
 	const Template_base* templ;
 	std::vector<Type*> types;
 public:
-	TemplatedClass(const QName& name, const std::vector<Type*>& _types, Template_base* _templ)
-		: Class<T>(name), templ(_templ), types(_types)
+	TemplatedClass(const QName& name, const std::vector<Type*>& _types, Template_base* _templ, MemoryAccount* m)
+		: Class<T>(name, m), templ(_templ), types(_types)
 	{
 	}
 
@@ -505,7 +501,8 @@ public:
 		Class<T>* ret=NULL;
 		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
-			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this);
+			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(instantiatedQName.name);
+			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,memoryAccount);
 			getSys()->builtinClasses.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);

@@ -134,7 +134,7 @@ public:
 	MemoryAccount* memoryAccount;
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
-	Class_base(const QName& name);
+	Class_base(const QName& name, MemoryAccount* m);
 	~Class_base();
 	void finalize();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)=0;
@@ -185,7 +185,7 @@ public:
 class Class_object: public Class_base
 {
 private:
-	Class_object():Class_base(QName("Class","")){}
+	Class_object():Class_base(QName("Class",""),NULL){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 	{
 		throw RunTimeException("Class_object::getInstance");
@@ -221,7 +221,7 @@ private:
 	}
 public:
 	//Name is 'Object' because trace(new f()) gives "[object Object]"
-	Class_function() : Class_base(QName("Object","")) {}
+	Class_function() : Class_base(QName("Object",""),NULL) {}
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
 		return NullRef;
@@ -371,7 +371,7 @@ template<>
 class Class<IFunction>: public Class_base
 {
 private:
-	Class<IFunction>():Class_base(QName("Function","")){}
+	Class<IFunction>(MemoryAccount* m):Class_base(QName("Function",""),m){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 public:
 	static Class<IFunction>* getClass();

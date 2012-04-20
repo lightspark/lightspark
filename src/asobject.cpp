@@ -993,6 +993,15 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
+ASObject::ASObject(MemoryAccount* m):type(T_OBJECT),ref_count(1),
+	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
+{
+#ifndef NDEBUG
+	//Stuff only used in debugging
+	initialized=false;
+#endif
+}
+
 ASObject::ASObject(Class_base* c):type(T_OBJECT),ref_count(1),
 	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
 {

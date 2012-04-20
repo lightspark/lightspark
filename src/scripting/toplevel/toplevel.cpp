@@ -59,12 +59,12 @@ REGISTER_CLASS_NAME(Namespace);
 Any* const Type::anyType = new Any();
 Void* const Type::voidType = new Void();
 
-Null::Null():ASObject(NULL)
+Null::Null():ASObject((Class_base*)(NULL))
 {
 	type=T_NULL;
 }
 
-Undefined::Undefined():ASObject(NULL)
+Undefined::Undefined():ASObject((Class_base*)(NULL))
 {
 	type=T_UNDEFINED;
 }
@@ -687,11 +687,10 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 	return typeObject->as<Type>();
 }
 
-Class_base::Class_base(const QName& name):ASObject(NULL),use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),
-	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1),memoryAccount(NULL)
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(m),use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),
+	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1),memoryAccount(m)
 {
 	type=T_CLASS;
-	memoryAccount = getSys()->allocateMemoryAccount(class_name.name.raw_buf());
 }
 
 /*
@@ -912,7 +911,7 @@ void Class_base::finalize()
 	}
 }
 
-Template_base::Template_base(QName name) : ASObject(NULL),template_name(name)
+Template_base::Template_base(QName name) : ASObject((Class_base*)(NULL)),template_name(name)
 {
 	type = T_TEMPLATE;
 }
@@ -1526,7 +1525,8 @@ Class<IFunction>* Class<IFunction>::getClass()
 	Class<IFunction>* ret=NULL;
 	if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 	{
-		ret=new (getSys()->unaccountedMemory) Class<IFunction>;
+		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(ClassName<IFunction>::name);
+		ret=new (getSys()->unaccountedMemory) Class<IFunction>(memoryAccount);
 		ret->prototype = _MNR(new_asobject());
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any

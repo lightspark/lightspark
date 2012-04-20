@@ -311,9 +311,8 @@ void LoaderThread::execute()
 		sbuf=&bb;
 	}
 
-	//TODO: support LoaderContext
 	istream s(sbuf);
-	ParseThread local_pt(s,getSys()->applicationDomain,loader.getPtr(),url.getParsedURL());
+	ParseThread local_pt(s,loaderInfo->applicationDomain,loader.getPtr(),url.getParsedURL());
 	local_pt.execute();
 
 	{

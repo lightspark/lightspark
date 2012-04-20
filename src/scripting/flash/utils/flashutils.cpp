@@ -1484,7 +1484,8 @@ ASFUNCTIONBODY(lightspark,getTimer)
 	return abstract_i(ret);
 }
 
-Dictionary::Dictionary(Class_base* c):ASObject(c)
+Dictionary::Dictionary(Class_base* c):ASObject(c),
+	data(std::less<dictType::key_type>(), reporter_allocator<dictType::value_type>(c->memoryAccount))
 {
 }
 

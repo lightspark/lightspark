@@ -197,7 +197,9 @@ class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
-	std::map<_R<ASObject>,_R<ASObject> > data;
+	typedef std::map<_R<ASObject>,_R<ASObject>,std::less<_R<ASObject>>,
+	       reporter_allocator<std::pair<const _R<ASObject>, _R<ASObject>>>> dictType;
+	dictType data;
 public:
 	Dictionary(Class_base* c);
 	void finalize();

@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <libxml++/nodes/textnode.h>
 #include "backends/xml_support.h"
 #include "logger.h"
 

@@ -803,7 +803,7 @@ public:
 	 * ARGB format. stride is the number of bytes per row, may be
 	 * larger than width. dataSize is the total allocated size of
 	 * data (=stride*height) */
-	std::vector<uint8_t> data;
+	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
 	uint8_t* getData() { return &data[0]; }
 	ASPROPERTY_GETTER(int32_t, width);
 	ASPROPERTY_GETTER(int32_t, height);

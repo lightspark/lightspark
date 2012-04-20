@@ -3784,7 +3784,8 @@ void IBitmapDrawable::linkTraits(Class_base* c)
 	/* Does not implement any AS3 visible methods */
 }
 
-BitmapData::BitmapData(Class_base* c):ASObject(c), stride(0), dataSize(0), disposed(false), width(0), height(0)
+BitmapData::BitmapData(Class_base* c):ASObject(c), stride(0), dataSize(0), disposed(false),
+	data(reporter_allocator<uint8_t>(c->memoryAccount)), width(0), height(0)
 {
 }
 

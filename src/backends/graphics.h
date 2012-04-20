@@ -30,6 +30,7 @@
 #include <cairo.h>
 #include <pango/pango.h>
 #include "backends/geometry.h"
+#include "memory_support.h"
 
 namespace lightspark
 {
@@ -250,12 +251,12 @@ public:
 	/*
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 */
-	static void convertBitmapToCairo(std::vector<uint8_t>& data, uint8_t* inData, uint32_t width,
+	static void convertBitmapToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
 			uint32_t height, size_t* dataSize, size_t* stride);
 	/*
 	 * Converts data (which is in ARGB format) to the format internally used by cairo.
 	 */
-	static void convertBitmapWithAlphaToCairo(std::vector<uint8_t>& data, uint8_t* inData, uint32_t width,
+	static void convertBitmapWithAlphaToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
 			uint32_t height, size_t* dataSize, size_t* stride);
 };
 

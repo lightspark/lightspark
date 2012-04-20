@@ -778,12 +778,12 @@ bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float sc
 	return pixelBytes[0]!=0x00;
 }
 
-void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t>& data, uint8_t* inData, uint32_t width,
+void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
 		uint32_t height, size_t* dataSize, size_t* stride)
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;
-	data.resize(*dataSize);
+	data.resize(*dataSize, 0);
 	uint8_t* outData=&data[0];
 	uint32_t* inData32 = (uint32_t*)inData;
 
@@ -797,12 +797,12 @@ void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t>& data, ui
 	}
 }
 
-void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t>& data, uint8_t* inData, uint32_t width,
+void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
 		uint32_t height, size_t* dataSize, size_t* stride)
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;
-	data.resize(*dataSize);
+	data.resize(*dataSize, 0);
 	uint8_t* outData = &data[0];
 	for(uint32_t i = 0; i < height; i++)
 	{

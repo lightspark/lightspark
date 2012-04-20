@@ -2139,7 +2139,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 	{
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
-		multiname objName;
+		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s=obj->name;
 		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -2163,7 +2163,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 	if(!obj->name.empty())
 	{
 		obj->incRef();
-		multiname objName;
+		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s=obj->name;
 		objName.ns.push_back(nsNameAndKind("",NAMESPACE));

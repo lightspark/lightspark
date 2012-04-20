@@ -1145,7 +1145,7 @@ void NetStream::execute()
 
 			if(!tickStarted && isReady())
 			{
-				multiname onMetaDataName;
+				multiname onMetaDataName(NULL);
 				onMetaDataName.name_type=multiname::NAME_STRING;
 				onMetaDataName.name_s="onMetaData";
 				onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -1399,7 +1399,7 @@ void URLVariables::decode(const tiny_string& s)
 			valueStart=NULL;
 			valueEnd=NULL;
 			//Check if the variable already exists
-			multiname propName;
+			multiname propName(NULL);
 			propName.name_type=multiname::NAME_STRING;
 			propName.name_s=name;
 			propName.ns.push_back(nsNameAndKind("",NAMESPACE));

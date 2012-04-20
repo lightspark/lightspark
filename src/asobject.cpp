@@ -234,7 +234,7 @@ _R<ASObject> ASObject::toPrimitive(TP_HINT hint)
 
 bool ASObject::has_valueOf()
 {
-	multiname valueOfName;
+	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s="valueOf";
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -248,7 +248,7 @@ bool ASObject::has_valueOf()
  */
 _R<ASObject> ASObject::call_valueOf()
 {
-	multiname valueOfName;
+	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s="valueOf";
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -268,7 +268,7 @@ _R<ASObject> ASObject::call_valueOf()
 
 bool ASObject::has_toString()
 {
-	multiname toStringName;
+	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s="toString";
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -282,7 +282,7 @@ bool ASObject::has_toString()
  */
 _R<ASObject> ASObject::call_toString()
 {
-	multiname toStringName;
+	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s="toString";
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -734,7 +734,7 @@ ASFUNCTIONBODY(ASObject,_toString)
 ASFUNCTIONBODY(ASObject,hasOwnProperty)
 {
 	assert_and_throw(argslen==1);
-	multiname name;
+	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s=args[0]->toString();
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -779,7 +779,7 @@ ASFUNCTIONBODY(ASObject,isPrototypeOf)
 ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 {
 	assert_and_throw(argslen==1);
-	multiname name;
+	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s=args[0]->toString();
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -1249,7 +1249,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		out->writeStringVR(stringMap, alias);
 
 		//Invoke writeExternal
-		multiname writeExternalName;
+		multiname writeExternalName(NULL);
 		writeExternalName.name_type=multiname::NAME_STRING;
 		writeExternalName.name_s="writeExternal";
 		writeExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -1334,7 +1334,7 @@ ASObject *ASObject::describeType() const
 
 bool ASObject::hasprop_prototype()
 {
-	multiname prototypeName;
+	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s="prototype";
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -1344,7 +1344,7 @@ bool ASObject::hasprop_prototype()
 
 ASObject* ASObject::getprop_prototype()
 {
-	multiname prototypeName;
+	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s="prototype";
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -1363,7 +1363,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	ASObject* obj = o.getPtr();
 	obj->incRef();
 
-	multiname prototypeName;
+	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s="prototype";
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));

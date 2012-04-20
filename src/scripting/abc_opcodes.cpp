@@ -309,7 +309,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		if(obj->classdef && obj->classdef->isSubClass(Class<Proxy>::getClass()))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-			multiname callPropertyName;
+			multiname callPropertyName(NULL);
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s="callProperty";
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
@@ -1704,7 +1704,7 @@ bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::in(ASObject* val2, ASObject* val1)
 {
 	LOG(LOG_CALLS, _("in") );
-	multiname name;
+	multiname name(NULL);
 	name.name_type=multiname::NAME_OBJECT;
 	//Acquire the reference
 	name.name_o=val1;
@@ -1794,7 +1794,7 @@ void ABCVm::newObject(call_context* th, int n)
 	LOG(LOG_CALLS,_("newObject ") << n);
 	ASObject* ret=Class<ASObject>::getInstanceS();
 	//Duplicated keys overwrite the previous value
-	multiname propertyName;
+	multiname propertyName(NULL);
 	propertyName.name_type=multiname::NAME_STRING;
 	propertyName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	for(int i=0;i<n;i++)

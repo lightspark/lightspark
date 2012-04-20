@@ -304,7 +304,7 @@ struct nsNameAndKind
 
 struct multiname: public memory_reporter
 {
-	multiname():name_type(NAME_OBJECT),name_o(NULL){}
+	multiname(MemoryAccount* m);
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type;
 	tiny_string name_s;
@@ -314,7 +314,7 @@ struct multiname: public memory_reporter
 		number_t name_d;
 		ASObject* name_o;
 	};
-	std::vector<nsNameAndKind> ns;
+	std::vector<nsNameAndKind, reporter_allocator<nsNameAndKind>> ns;
 	bool isAttribute;
 	/*
 		Returns a string name whatever is the name type
@@ -330,7 +330,7 @@ struct multiname: public memory_reporter
 
 inline QName::operator multiname() const
 {
-	multiname ret;
+	multiname ret(NULL);
 	ret.name_type = multiname::NAME_STRING;
 	ret.name_s = name;
 	ret.ns.push_back( nsNameAndKind(ns, PACKAGE_NAMESPACE) );

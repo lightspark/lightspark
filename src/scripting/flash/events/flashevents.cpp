@@ -158,7 +158,7 @@ ASFUNCTIONBODY(Event,formatToString)
 		msg += prop;
 		msg += "=";
 
-		multiname propName;
+		multiname propName(NULL);
 		propName.name_type=multiname::NAME_STRING;
 		propName.name_s=prop;
 		propName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
@@ -539,7 +539,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	if(!e->target.isNull())
 	{
 		//Object must be cloned, closing is implemented with the clone AS method
-		multiname cloneName;
+		multiname cloneName(NULL);
 		cloneName.name_type=multiname::NAME_STRING;
 		cloneName.name_s="clone";
 		cloneName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));

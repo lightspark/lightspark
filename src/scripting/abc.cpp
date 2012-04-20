@@ -421,7 +421,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 	multiname_info* m=&th->context->constant_pool.multinames[n];
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm()->vmDataMemory) multiname;
+		m->cached=new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
 		ret=m->cached;
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
@@ -474,7 +474,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 	multiname_info* m=&th->context->constant_pool.multinames[n];
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm()->vmDataMemory) multiname;
+		m->cached=new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
 		ret=m->cached;
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
@@ -565,7 +565,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 	/* If this multiname is not cached, resolve its static parts */
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm()->vmDataMemory) multiname;
+		m->cached=new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
 		ret=m->cached;
 		if(midx==0)
 		{
@@ -1564,7 +1564,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Resp
 		//Read the header name
 		//header names are method that must be
 		//invoked on the client object
-		multiname headerName;
+		multiname headerName(NULL);
 		headerName.name_type=multiname::NAME_STRING;
 		headerName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		if(!message->readUTF(headerName.name_s))
@@ -1626,7 +1626,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Resp
 	assert_and_throw(marker==0x11);
 	_R<ASObject> ret=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
 
-	multiname onResultName;
+	multiname onResultName(NULL);
 	onResultName.name_type=multiname::NAME_STRING;
 	onResultName.name_s="onResult";
 	onResultName.ns.push_back(nsNameAndKind("",NAMESPACE));

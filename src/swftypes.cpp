@@ -33,6 +33,9 @@
 using namespace std;
 using namespace lightspark;
 
+multiname::multiname(MemoryAccount* m):name_type(NAME_OBJECT),name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m))
+{
+}
 
 tiny_string multiname::qualifiedString() const
 {

@@ -173,7 +173,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 	assert(argslen==1);
 	const tiny_string& tmp=args[0]->toString();
 
-	multiname name;
+	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
@@ -200,7 +200,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	assert(argslen==1);
 	const tiny_string& tmp=args[0]->toString();
 
-	multiname name;
+	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
@@ -227,7 +227,7 @@ void ApplicationDomain::registerGlobalScope(Global* scope)
 ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObject*& target)
 {
 	size_t index=str.rfind('.');
-	multiname name;
+	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	if(index==str.npos) //No dot
 	{

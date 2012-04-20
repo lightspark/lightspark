@@ -165,7 +165,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 
 		_R<ASObject> ret=_MR(type->getInstance(true, NULL, 0));
 		//Invoke readExternal
-		multiname readExternalName;
+		multiname readExternalName(NULL);
 		readExternalName.name_type=multiname::NAME_STRING;
 		readExternalName.name_s="readExternal";
 		readExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -214,7 +214,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
 		value->incRef();
 
-		multiname name;
+		multiname name(NULL);
 		name.name_type=multiname::NAME_STRING;
 		name.name_s=traits.traitsNames[i];
 		name.ns.push_back(nsNameAndKind("",NAMESPACE));

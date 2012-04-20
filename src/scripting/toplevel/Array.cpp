@@ -433,7 +433,7 @@ ASFUNCTIONBODY(Array,shift)
 		if (obj->is<ByteArray>())
 			return ByteArray::shift(obj,args,argslen);
 		// for other objects we just decrease the length property
-		multiname lengthName;
+		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s="length";
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -647,7 +647,7 @@ ASFUNCTIONBODY(Array,_pop)
 		if (obj->is<ByteArray>())
 			return ByteArray::pop(obj,args,argslen);
 		// for other objects we just decrease the length property
-		multiname lengthName;
+		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s="length";
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -823,7 +823,7 @@ ASFUNCTIONBODY(Array,unshift)
 		if (obj->is<ByteArray>())
 			return ByteArray::unshift(obj,args,argslen);
 		// for other objects we just increase the length property
-		multiname lengthName;
+		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s="length";
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -866,7 +866,7 @@ ASFUNCTIONBODY(Array,_push)
 		if (obj->is<ByteArray>())
 			return ByteArray::push(obj,args,argslen);
 		// for other objects we just increase the length property
-		multiname lengthName;
+		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s="length";
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
@@ -896,7 +896,7 @@ ASFUNCTIONBODY(Array,_push_as3)
 		if (obj->is<ByteArray>())
 			return ByteArray::push(obj,args,argslen);
 		// for other objects we just increase the length property
-		multiname lengthName;
+		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s="length";
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));

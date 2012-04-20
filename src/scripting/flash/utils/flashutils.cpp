@@ -1466,7 +1466,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 {
 	assert_and_throw(args && argslen==1);
 	const tiny_string& tmp=args[0]->toString();
-	multiname name;
+	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
@@ -1730,7 +1730,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 
 	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
-	multiname setPropertyName;
+	multiname setPropertyName(NULL);
 	setPropertyName.name_type=multiname::NAME_STRING;
 	setPropertyName.name_s="setProperty";
 	setPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
@@ -1767,7 +1767,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 		return ASObject::getVariableByMultiname(name,opt);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
-	multiname getPropertyName;
+	multiname getPropertyName(NULL);
 	getPropertyName.name_type=multiname::NAME_STRING;
 	getPropertyName.name_s="getProperty";
 	getPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
@@ -1800,7 +1800,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	}
 
 	//Check if there is a custom deleter defined, skipping implementation to avoid recursive calls
-	multiname hasPropertyName;
+	multiname hasPropertyName(NULL);
 	hasPropertyName.name_type=multiname::NAME_STRING;
 	hasPropertyName.name_s="hasProperty";
 	hasPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
@@ -1835,7 +1835,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 	}
 
 	//Check if there is a custom deleter defined, skipping implementation to avoid recursive calls
-	multiname deletePropertyName;
+	multiname deletePropertyName(NULL);
 	deletePropertyName.name_type=multiname::NAME_STRING;
 	deletePropertyName.name_s="deleteProperty";
 	deletePropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
@@ -1867,7 +1867,7 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	assert_and_throw(implEnable);
 	LOG(LOG_CALLS,"Proxy::nextNameIndex");
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
-	multiname nextNameIndexName;
+	multiname nextNameIndexName(NULL);
 	nextNameIndexName.name_type=multiname::NAME_STRING;
 	nextNameIndexName.name_s="nextNameIndex";
 	nextNameIndexName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
@@ -1887,7 +1887,7 @@ _R<ASObject> Proxy::nextName(uint32_t index)
 	assert_and_throw(implEnable);
 	LOG(LOG_CALLS, _("Proxy::nextName"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
-	multiname nextNameName;
+	multiname nextNameName(NULL);
 	nextNameName.name_type=multiname::NAME_STRING;
 	nextNameName.name_s="nextName";
 	nextNameName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
@@ -1904,7 +1904,7 @@ _R<ASObject> Proxy::nextValue(uint32_t index)
 	assert_and_throw(implEnable);
 	LOG(LOG_CALLS, _("Proxy::nextValue"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
-	multiname nextValueName;
+	multiname nextValueName(NULL);
 	nextValueName.name_type=multiname::NAME_STRING;
 	nextValueName.name_s="nextValue";
 	nextValueName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));

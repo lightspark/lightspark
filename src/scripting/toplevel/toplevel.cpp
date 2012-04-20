@@ -631,8 +631,8 @@ bool Type::isTypeResolvable(const multiname* mn)
 		return true;
 
 	//Check if the class has already been defined
-	auto i = getSys()->classes.find(QName(mn->name_s, mn->ns[0].name));
-	return i != getSys()->classes.end();
+	auto i = getSys()->builtinClasses.find(QName(mn->name_s, mn->ns[0].name));
+	return i != getSys()->builtinClasses.end();
 }
 
 /*
@@ -915,12 +915,12 @@ Class_object* Class_object::getClass()
 {
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<QName, Class_base*>::iterator it=getSys()->classes.find(QName("Class",""));
+	std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(QName("Class",""));
 	Class_object* ret=NULL;
-	if(it==getSys()->classes.end()) //This class is not yet in the map, create it
+	if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class_object();
-		getSys()->classes.insert(std::make_pair(QName("Class",""),ret));
+		getSys()->builtinClasses.insert(std::make_pair(QName("Class",""),ret));
 	}
 	else
 		ret=static_cast<Class_object*>(it->second);
@@ -1499,9 +1499,9 @@ ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, c
 
 Class<IFunction>* Class<IFunction>::getClass()
 {
-	std::map<QName, Class_base*>::iterator it=getSys()->classes.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
+	std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
 	Class<IFunction>* ret=NULL;
-	if(it==getSys()->classes.end()) //This class is not yet in the map, create it
+	if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
 		ret->prototype = _MNR(new_asobject());
@@ -1513,7 +1513,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 
 		ret->prototype->setprop_prototype(ret->super->prototype);
 
-		getSys()->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
+		getSys()->builtinClasses.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 
 		//we cannot use sinit, as we need to setup 'this_class' before calling
 		//addPrototypeGetter and setDeclaredMethodByQName.

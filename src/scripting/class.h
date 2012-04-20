@@ -63,7 +63,7 @@ public:
 #ifndef NDEBUG
 		bool ret=
 #endif
-		getSys()->classes.insert(std::make_pair(name,this)).second;
+		getSys()->customClasses.insert(this).second;
 		assert(ret);
 	}
 	void finalize();
@@ -170,12 +170,12 @@ public:
 	static Class<T>* getClass()
 	{
 		QName name(ClassName<T>::name,ClassName<T>::ns);
-		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(name);
+		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(name);
 		Class<T>* ret=NULL;
-		if(it==getSys()->classes.end()) //This class is not yet in the map, create it
+		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
 			ret=new Class<T>(name);
-			getSys()->classes.insert(std::make_pair(name,ret));
+			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
@@ -284,19 +284,19 @@ public:
 		ret->addPrototypeGetter();
 
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-		getSys()->classes.insert(std::make_pair(name,ret));
+		getSys()->builtinClasses.insert(std::make_pair(name,ret));
 		ret->incRef();
 		return _MR(ret);
 	}
 	static Class<ASObject>* getClass()
 	{
 		QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
-		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(name);
+		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(name);
 		Class<ASObject>* ret=NULL;
-		if(it==getSys()->classes.end()) //This class is not yet in the map, create it
+		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
 			ret=new Class<ASObject>(name);
-			getSys()->classes.insert(std::make_pair(name,ret));
+			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
 			ASObject::sinit(ret);
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
@@ -369,12 +369,12 @@ public:
 	static InterfaceClass<T>* getClass()
 	{
 		QName name(ClassName<T>::name,ClassName<T>::ns);
-		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(name);
+		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(name);
 		InterfaceClass<T>* ret=NULL;
-		if(it==getSys()->classes.end())
+		if(it==getSys()->builtinClasses.end())
 		{	//This class is not yet in the map, create it
 			ret=new InterfaceClass<T>(name);
-			getSys()->classes.insert(std::make_pair(name,ret));
+			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 		}
 		else
 			ret=static_cast<InterfaceClass<T>*>(it->second);
@@ -459,12 +459,12 @@ public:
 	{
 		QName instantiatedQName = getQName(types);
 
-		std::map<QName, Class_base*>::iterator it=getSys()->classes.find(instantiatedQName);
+		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(instantiatedQName);
 		Class<T>* ret=NULL;
-		if(it==getSys()->classes.end()) //This class is not yet in the map, create it
+		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
 			ret=new TemplatedClass<T>(instantiatedQName,types,this);
-			getSys()->classes.insert(std::make_pair(instantiatedQName,ret));
+			getSys()->builtinClasses.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
 			if(ret->super)

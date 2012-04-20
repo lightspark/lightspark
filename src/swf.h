@@ -286,8 +286,9 @@ public:
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
-	//Class/Template map. They own one reference to each class/template
-	std::map<QName, Class_base*> classes;
+	//Classes set. They own one reference to each class/template
+	std::set<Class_base*> customClasses;
+	std::map<QName, Class_base*> builtinClasses;
 	std::map<QName, Template_base*> templates;
 
 	//Flags for command line options

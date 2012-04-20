@@ -1805,13 +1805,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			{
 				QName className(mname->name_s,mname->ns[0].name);
 
-				// Should the new definition overwrite the old one?
-				if(getSys()->classes.find(className)!=getSys()->classes.end())
-				{
-					LOG(LOG_TRACE, "Trying to re-define interface " << className.getQualifiedName());
-					break;
-				}
-
 				Class_inherit* ci=new Class_inherit(className);
 				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 				LOG(LOG_CALLS,_("Building class traits"));

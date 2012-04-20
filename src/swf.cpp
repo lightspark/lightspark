@@ -456,8 +456,11 @@ void SystemState::destroy()
 	 * 'classes' and 'templates' maps.
 	 */
 
-	std::map<QName, Class_base*>::iterator it=classes.begin();
-	for(;it!=classes.end();++it)
+	for(auto it = builtinClasses.begin(); it != builtinClasses.end(); ++it)
+		it->second->finalize();
+	for(auto it = customClasses.begin(); it != customClasses.end(); ++it)
+		(*it)->finalize();
+	for(auto it = templates.begin(); it != templates.end(); ++it)
 		it->second->finalize();
 
 	//Here we clean the events queue
@@ -465,8 +468,10 @@ void SystemState::destroy()
 		currentVm->finalize();
 
 	//Free classes by decRef'ing them
-	for(auto i = classes.begin(); i != classes.end(); ++i)
+	for(auto i = builtinClasses.begin(); i != builtinClasses.end(); ++i)
 		i->second->decRef();
+	for(auto i = customClasses.begin(); i != customClasses.end(); ++i)
+		(*i)->decRef();
 
 	//Free templates by decRef'ing them
 	for(auto i = templates.begin(); i != templates.end(); ++i)

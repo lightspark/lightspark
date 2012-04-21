@@ -508,11 +508,11 @@ void NPScriptObject::destroy()
 	mutex.lock();
 	// Prevents new external calls from continuing
 	shuttingDown = true;
-	mutex.unlock();
 
 	// If an external call is running, wake it up
 	if(callStatusses.size() > 0)
 		callStatusses.top()->signal();
+	mutex.unlock();
 	// Wait for all external calls to finish
 	Mutex::Lock l(externalCall);
 }
@@ -705,6 +705,7 @@ void NPScriptObject::doHostCall(NPScriptObject::HOST_CALL_TYPE type,
 	if(shuttingDown)
 	{
 		mutex.unlock();
+		return;
 	}
 
 	// If we are the first external call, then indicate that an external call is running

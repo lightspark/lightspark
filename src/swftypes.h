@@ -709,6 +709,7 @@ struct multiname
 	void setName(ASObject* n);
 	void resetNameIfObject();
 	bool isQName() const { return ns.size() == 1; }
+	bool toUInt(uint32_t& out) const;
 };
 
 inline QName::operator multiname() const

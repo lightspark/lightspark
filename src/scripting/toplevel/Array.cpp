@@ -1094,40 +1094,7 @@ bool Array::isValidMultiname(const multiname& name, uint32_t& index)
 	if(name.ns[0].name!="")
 		return false;
 
-	index=0;
-	switch(name.name_type)
-	{
-		//We try to convert this to an index, otherwise bail out
-		case multiname::NAME_STRING:
-			if(name.name_s.empty())
-				return false;
-			for(auto i=name.name_s.begin(); i!=name.name_s.end(); ++i)
-			{
-				if(!i.isdigit())
-					return false;
-
-				index*=10;
-				index+=i.digit_value();
-			}
-			break;
-		//This is already an int, so its good enough
-		case multiname::NAME_INT:
-			if(name.name_i < 0)
-				return false;
-			index=name.name_i;
-			break;
-		case multiname::NAME_NUMBER:
-			if(!Number::isInteger(name.name_d))
-				return false;
-			index = name.name_d;
-			break;
-		case multiname::NAME_OBJECT:
-			//TODO: should be use toPrimitive here?
-			return false;
-		default:
-			throw UnsupportedException("Array::isValidMultiname not completely implemented");
-	}
-	return true;
+	return name.toUInt(index);
 }
 
 void Array::setVariableByMultiname(const multiname& name, ASObject* o)

@@ -260,6 +260,52 @@ void multiname::resetNameIfObject()
 	}
 }
 
+bool multiname::toUInt(uint32_t& index) const
+{
+	switch(name_type)
+	{
+		//We try to convert this to an index, otherwise bail out
+		case multiname::NAME_STRING:
+		case multiname::NAME_OBJECT:
+		{
+			tiny_string str;
+			if(name_type==multiname::NAME_STRING)
+				str=name_s;
+			else
+				str=name_o->toString();
+
+			if(str.empty())
+				return false;
+			index=0;
+			for(auto i=str.begin(); i!=str.end(); ++i)
+			{
+				if(!i.isdigit())
+					return false;
+
+				index*=10;
+				index+=i.digit_value();
+			}
+			break;
+		}
+		//This is already an int, so its good enough
+		case multiname::NAME_INT:
+			if(name_i < 0)
+				return false;
+			index=name_i;
+			break;
+		case multiname::NAME_NUMBER:
+			if(!Number::isInteger(name_d) || name_d < 0)
+				return false;
+			index=name_d;
+			break;
+		default:
+			// Not reached
+			assert(false);
+	}
+
+	return true;
+}
+
 std::ostream& lightspark::operator<<(std::ostream& s, const QName& r)
 {
 	s << r.ns << ':' << r.name;

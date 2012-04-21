@@ -939,38 +939,8 @@ bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
 	if(name.ns[0].name!="")
 		return false;
 
-	index=0;
-	switch(name.name_type)
-	{
-		//We try to convert this to an index, otherwise bail out
-		case multiname::NAME_STRING:
-        {
-			if(name.name_s.empty())
-                return false;
-            ASString* s = Class<ASString>::getInstanceS(name.name_s);
-            number_t n = s->toNumber();
-            delete s;
-            if(!Number::isInteger(n) || n<0)
-                return false;
-            index = n;
-            break;
-        }
-		//This is already an int, so its good enough
-		case multiname::NAME_INT:
-			if(name.name_i < 0)
-				throw Class<RangeError>::getInstanceS("Error #1125");
-			index=name.name_i;
-			break;
-		case multiname::NAME_NUMBER:
-			if(!Number::isInteger(name.name_d) || name.name_d < 0)
-				throw Class<RangeError>::getInstanceS("Error #1125");
-			index = name.name_d;
-			break;
-		case multiname::NAME_OBJECT:
-			//TODO: should be use toPrimitive here?
-			return false;
-		default:
-			throw UnsupportedException("Vector::isValidMultiname not completely implemented");
-	}
+	if(!name.toUInt(index))
+		throw Class<RangeError>::getInstanceS("Error #1125");
+
 	return true;
 }

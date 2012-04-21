@@ -466,6 +466,9 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initd
 		status=VALID;
 	else
 		status=INIT;
+#if HAVE_AVCODEC_DECODE_AUDIO4
+	frameIn=avcodec_alloc_frame();
+#endif
 }
 
 FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):codecContext(_c)
@@ -479,6 +482,9 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):codecContext(_c)
 
 	if(fillDataAndCheckValidity())
 		status=VALID;
+#if HAVE_AVCODEC_DECODE_AUDIO4
+	frameIn=avcodec_alloc_frame();
+#endif
 }
 
 FFMpegAudioDecoder::~FFMpegAudioDecoder()
@@ -486,6 +492,9 @@ FFMpegAudioDecoder::~FFMpegAudioDecoder()
 	avcodec_close(codecContext);
 	if(ownedContext)
 		av_free(codecContext);
+#if HAVE_AVCODEC_DECODE_AUDIO4
+	av_free(frameIn);
+#endif
 }
 
 bool FFMpegAudioDecoder::fillDataAndCheckValidity()
@@ -521,14 +530,29 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_
 {
 	FrameSamples& curTail=samplesBuffer.acquireLast();
 	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
-#if HAVE_AVCODEC_DECODE_AUDIO3
+#if HAVE_AVCODEC_DECODE_AUDIO3 || HAVE_AVCODEC_DECODE_AUDIO4
 	AVPacket pkt;
 	av_init_packet(&pkt);
 	pkt.data=data;
 	pkt.size=datalen;
-	uint32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
+#if HAVE_AVCODEC_DECODE_AUDIO4
+	avcodec_get_frame_defaults(frameIn);
+	int frameOk=0;
+	int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
+	if(frameOk==0)
+		ret=-1;
+	else
+	{
+		//This is suboptimal but equivalent to what libavcodec
+		//does for the compatibility version of avcodec_decode_audio3
+		memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
+		maxLen=frameIn->linesize[0];
+	}
 #else
-	uint32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
+	int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
+#endif
+#else
+	int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
 #endif
 	assert_and_throw(ret==datalen);
 
@@ -549,7 +573,20 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	FrameSamples& curTail=samplesBuffer.acquireLast();
 	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
-#if HAVE_AVCODEC_DECODE_AUDIO3
+#if HAVE_AVCODEC_DECODE_AUDIO4
+	avcodec_get_frame_defaults(frameIn);
+	int frameOk=0;
+	int ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, pkt);
+	if(frameOk==0)
+		ret=-1;
+	else
+	{
+		//This is suboptimal but equivalent to what libavcodec
+		//does for the compatibility version of avcodec_decode_audio3
+		memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
+		maxLen=frameIn->linesize[0];
+	}
+#elif HAVE_AVCODEC_DECODE_AUDIO3
 	int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
 #else
 	int ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, pkt->data, pkt->size);

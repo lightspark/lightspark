@@ -282,6 +282,9 @@ private:
 	AVCodecContext* codecContext;
 	bool ownedContext;
 	bool fillDataAndCheckValidity();
+#if HAVE_AVCODEC_DECODE_AUDIO4
+	AVFrame* frameIn;
+#endif
 public:
 	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
 	/*

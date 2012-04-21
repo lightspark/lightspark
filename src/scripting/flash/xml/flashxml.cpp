@@ -60,8 +60,19 @@ void XMLNode::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(XMLNode,_constructor)
 {
-//	XMLNode* th=Class<XMLNode>::cast(obj);
-	assert_and_throw(argslen==0);
+	if(argslen==0)
+		return NULL;
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	uint32_t type;
+	tiny_string value;
+	ARG_UNPACK(type)(value);
+	assert_and_throw(type==1);
+	th->root=_MR(Class<XMLDocument>::getInstanceS());
+	if(type==1)
+	{
+		th->root->parseXMLImpl(value);
+		th->node=th->root->rootNode;
+	}
 	return NULL;
 }
 

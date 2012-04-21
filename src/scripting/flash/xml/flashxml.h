@@ -53,6 +53,7 @@ public:
 
 class XMLDocument: public XMLNode, public XMLBase
 {
+friend class XMLNode;
 private:
 	xmlpp::Node* rootNode;
 public:

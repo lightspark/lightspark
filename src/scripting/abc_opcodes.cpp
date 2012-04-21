@@ -1534,9 +1534,16 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	//Special case numeric types
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
-		obj->decRef();
-		real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
+		if(c==Class<Number>::getClass() || c==Class<ASObject>::getClass())
+			real_ret=true;
+		else if(c==Class<Integer>::getClass())
+			real_ret=(obj->toNumber()==obj->toInt());
+		else if(c==Class<UInteger>::getClass())
+			real_ret=(obj->toNumber()==obj->toUInt());
+		else
+			real_ret=false;
 		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"":_("not ")) << _("subclass of ") << c->class_name);
+		obj->decRef();
 		type->decRef();
 		return real_ret;
 	}

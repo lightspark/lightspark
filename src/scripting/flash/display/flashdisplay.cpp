@@ -404,7 +404,7 @@ ASFUNCTIONBODY(Loader,load)
 	th->contentLoaderInfo->setURL(th->url.getParsedURL());
 	th->contentLoaderInfo->resetState();
 	//Support for LoaderContext
-	if(context.isNull())
+	if(context.isNull() || context->applicationDomain.isNull())
 	{
 		_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
 		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));

@@ -2115,11 +2115,13 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 	DisplayObject* obj = depthToLegacyChild.left.at(depth);
 	if(!obj->name.empty())
 	{
+		//The variable is not deleted, but just set to null
+		//This is a tested behavior
 		multiname objName;
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s=obj->name;
 		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		deleteVariableByMultiname(objName);
+		setVariableByMultiname(objName,getSys()->getNullRef());
 	}
 
 	obj->incRef();
@@ -2143,6 +2145,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s=obj->name;
 		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		//TODO: discuss the following comment with aajanki
 		// If this function is called by PlaceObject tag
 		// before the properties are initialized, we need to
 		// initialize the property here to make sure that it

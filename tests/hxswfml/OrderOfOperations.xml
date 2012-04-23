@@ -1,0 +1,18 @@
+<swf frameCount="1" fps="1" width="900" height="300" >
+	<FileAttributes actionscript3="true" useNetwork="false" useDirectBlit="false" useGPU="false" hasMetaData="false" />
+	<SetBackgroundColor color="0xFFFFFF" />
+	
+	<DefineBitsJpeg id="1" file="test.jpg" />
+	<DefineShape id="2" bitmapId="1" />
+	
+	<DefineABC file="OrderOfOperations.abc.swf" />
+	<!-- Bind class to the root movie -->
+	<SymbolClass id="0" class="OrderOfOperations" />
+
+	<ShowFrame /> <!-- 1 -->
+	<PlaceObject id="2" depth="1" />
+	<ShowFrame /> <!-- 2 -->
+	<ShowFrame /> <!-- 3 -->
+	<RemoveObject depth="1" />
+	<ShowFrame /> <!-- 4 -->
+</swf>

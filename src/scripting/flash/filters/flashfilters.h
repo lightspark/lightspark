@@ -28,13 +28,18 @@ namespace lightspark
 
 class BitmapFilter: public ASObject
 {
+private:
+	virtual BitmapFilter* cloneImpl() const;
 public:
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
+	ASFUNCTION(clone);
 };
 
 class GlowFilter: public BitmapFilter
 {
+private:
+	virtual GlowFilter* cloneImpl() const;
 public:
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
@@ -42,6 +47,8 @@ public:
 
 class DropShadowFilter: public BitmapFilter
 {
+private:
+	virtual DropShadowFilter* cloneImpl() const;
 public:
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);

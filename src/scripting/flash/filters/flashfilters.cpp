@@ -31,8 +31,20 @@ REGISTER_CLASS_NAME(DropShadowFilter);
 
 void BitmapFilter::sinit(Class_base* c)
 {
-//	c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
+}
+
+BitmapFilter* BitmapFilter::cloneImpl() const
+{
+	return Class<BitmapFilter>::getInstanceS();
+}
+
+ASFUNCTIONBODY(BitmapFilter,clone)
+{
+	BitmapFilter* th=static_cast<BitmapFilter*>(obj);
+	return th->cloneImpl();
 }
 
 void GlowFilter::sinit(Class_base* c)
@@ -41,9 +53,18 @@ void GlowFilter::sinit(Class_base* c)
 	c->setSuper(Class<BitmapFilter>::getRef());
 }
 
+GlowFilter* GlowFilter::cloneImpl() const
+{
+	return Class<GlowFilter>::getInstanceS();
+}
+
 void DropShadowFilter::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
 	c->setSuper(Class<BitmapFilter>::getRef());
 }
 
+DropShadowFilter* DropShadowFilter::cloneImpl() const
+{
+	return Class<DropShadowFilter>::getInstanceS();
+}

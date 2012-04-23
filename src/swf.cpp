@@ -916,7 +916,7 @@ void SystemState::flushInvalidationQueue()
 	invalidateQueueTail=NullRef;
 }
 
-_NR<Stage> SystemState::getStage() const
+_NR<Stage> SystemState::getStage()
 {
 	stage->incRef();
 	return _MR(stage);

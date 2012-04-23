@@ -152,7 +152,7 @@ public:
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
 	virtual _NR<RootMovieClip> getRoot();
-	virtual _NR<Stage> getStage() const;
+	virtual _NR<Stage> getStage();
 	void setMatrix(const MATRIX& m);
 	virtual void advanceFrame() {}
 	virtual void initFrame();
@@ -701,6 +701,7 @@ public:
 	Stage();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	_NR<Stage> getStage();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getStageWidth);
 	ASFUNCTION(_getStageHeight);

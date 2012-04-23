@@ -1981,7 +1981,7 @@ _NR<RootMovieClip> DisplayObject::getRoot()
 	return parent->getRoot();
 }
 
-_NR<Stage> DisplayObject::getStage() const
+_NR<Stage> DisplayObject::getStage()
 {
 	if(parent.isNull())
 		return NullRef;
@@ -2853,6 +2853,12 @@ void Stage::buildTraits(ASObject* o)
 Stage::Stage()
 {
 	onStage = true;
+}
+
+_NR<Stage> Stage::getStage()
+{
+	this->incRef();
+	return _MR(this);
 }
 
 ASFUNCTIONBODY(Stage,_constructor)

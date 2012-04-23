@@ -3747,12 +3747,17 @@ void IBitmapDrawable::linkTraits(Class_base* c)
 	/* Does not implement any AS3 visible methods */
 }
 
+BitmapData::BitmapData() : stride(0), dataSize(0), disposed(false), width(0), height(0)
+{
+}
+
 void BitmapData::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
 	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(draw),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(dispose),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getPixel","",Class<IFunction>::getFunction(getPixel),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getPixel32","",Class<IFunction>::getFunction(getPixel32),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setPixel","",Class<IFunction>::getFunction(setPixel),NORMAL_METHOD,true);
@@ -3774,6 +3779,8 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 	bool transparent;
 	uint32_t fillColor;
 	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	ARG_UNPACK(width, 0)(height, 0)(transparent, true)(fillColor, 0xFFFFFFFF);
 
 	ASObject::_constructor(obj,NULL,0);
@@ -3799,9 +3806,22 @@ ASFUNCTIONBODY_GETTER(BitmapData, width);
 ASFUNCTIONBODY_GETTER(BitmapData, height);
 ASFUNCTIONBODY_GETTER(BitmapData, transparent);
 
+ASFUNCTIONBODY(BitmapData,dispose)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	th->width = 0;
+	th->height = 0;
+	th->data.clear();
+	th->data.shrink_to_fit();
+	th->disposed = true;
+}
+
 ASFUNCTIONBODY(BitmapData,draw)
 {
 	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+
 	_NR<ASObject> drawable;
 	_NR<Matrix> matrix;
 	_NR<ColorTransform> ctransform;
@@ -3857,6 +3877,8 @@ uint32_t BitmapData::getPixelPriv(uint32_t x, uint32_t y)
 ASFUNCTIONBODY(BitmapData,getPixel)
 {
 	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	uint32_t x;
 	uint32_t y;
 	ARG_UNPACK(x)(y);
@@ -3868,6 +3890,8 @@ ASFUNCTIONBODY(BitmapData,getPixel)
 ASFUNCTIONBODY(BitmapData,getPixel32)
 {
 	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	uint32_t x;
 	uint32_t y;
 	ARG_UNPACK(x)(y);
@@ -3891,6 +3915,8 @@ void BitmapData::setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAl
 ASFUNCTIONBODY(BitmapData,setPixel)
 {
 	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	uint32_t x;
 	uint32_t y;
 	uint32_t color;
@@ -3902,6 +3928,8 @@ ASFUNCTIONBODY(BitmapData,setPixel)
 ASFUNCTIONBODY(BitmapData,setPixel32)
 {
 	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	uint32_t x;
 	uint32_t y;
 	uint32_t color;
@@ -3913,6 +3941,8 @@ ASFUNCTIONBODY(BitmapData,setPixel32)
 ASFUNCTIONBODY(BitmapData,getRect)
 {
 	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	Rectangle *rect=Class<Rectangle>::getInstanceS();
 	rect->width=th->width;
 	rect->height=th->height;
@@ -3922,6 +3952,8 @@ ASFUNCTIONBODY(BitmapData,getRect)
 ASFUNCTIONBODY(BitmapData,fillRect)
 {
 	BitmapData* th=obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	_NR<Rectangle> rect;
 	uint32_t color;
 	ARG_UNPACK(rect)(color);
@@ -3961,6 +3993,8 @@ ASFUNCTIONBODY(BitmapData,fillRect)
 ASFUNCTIONBODY(BitmapData,copyPixels)
 {
 	BitmapData* th=obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	_NR<BitmapData> source;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
@@ -4009,6 +4043,8 @@ ASFUNCTIONBODY(BitmapData,generateFilterRect)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData::generateFilterRect is just a stub");
 	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
 	Rectangle *rect=Class<Rectangle>::getInstanceS();
 	rect->width=th->width;
 	rect->height=th->height;

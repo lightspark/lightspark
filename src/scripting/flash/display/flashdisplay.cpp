@@ -2150,7 +2150,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		if(hasPropertyByMultiname(objName,true))
 			setVariableByMultiname(objName,obj);
 		else
-			setVariableByQName(objName.name_s,objName.ns[0],obj,DECLARED_TRAIT);
+			setVariableByQName(objName.name_s,objName.ns[0],obj,DYNAMIC_TRAIT);
 	}
 
 	depthToLegacyChild.insert(boost::bimap<uint32_t,DisplayObject*>::value_type(depth,obj));

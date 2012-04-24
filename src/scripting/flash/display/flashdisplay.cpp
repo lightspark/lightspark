@@ -3820,6 +3820,7 @@ ASFUNCTIONBODY(BitmapData,dispose)
 	th->data.clear();
 	th->data.shrink_to_fit();
 	th->disposed = true;
+	return NULL;
 }
 
 ASFUNCTIONBODY(BitmapData,draw)

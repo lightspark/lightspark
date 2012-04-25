@@ -681,7 +681,8 @@ ASObject* DefineBitsLosslessTag::instance(Class_base* c) const
 	return ret;
 }
 
-DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, int v):DictionaryTag(h),version(v)
+DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, int v):DictionaryTag(h),
+	tokens(reporter_allocator<GeomToken>(getSys()->tagsMemory)),version(v)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
 	assert(v==1 || v==2);
@@ -769,7 +770,13 @@ void DefineTextTag::computeCached() const
 	}
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),Shapes(1)
+DefineShapeTag::DefineShapeTag(RECORDHEADER h,int v):DictionaryTag(h),Shapes(v),
+	tokens(reporter_allocator<GeomToken>(getSys()->tagsMemory))
+{
+}
+
+DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),Shapes(1),
+	tokens(reporter_allocator<GeomToken>(getSys()->tagsMemory))
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;

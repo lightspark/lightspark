@@ -86,6 +86,8 @@ public:
 	GeomToken(GEOM_TOKEN_TYPE _t, const MATRIX _m):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(-1),lineStyle(-1),textureTransform(_m){}
 };
 
+typedef std::vector<GeomToken, reporter_allocator<GeomToken>> tokensVector;
+
 enum SHAPE_PATH_SEGMENT_TYPE { PATH_START=0, PATH_STRAIGHT, PATH_CURVE_QUADRATIC };
 
 class ShapePathSegment {
@@ -116,7 +118,7 @@ public:
 		@param styles This list is supposed to survive until as long as the returned tokens array
 		@param tokens A vector that will be filled with tokens
 	*/
-	void outputTokens(const std::list<FILLSTYLE>& styles, std::vector<GeomToken>& tokens);
+	void outputTokens(const std::list<FILLSTYLE>& styles, tokensVector& tokens);
 	void clear();
 };
 

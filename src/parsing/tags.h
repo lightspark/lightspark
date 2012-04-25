@@ -123,8 +123,8 @@ protected:
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;
 	/* tokens are computed from Shapes */
-	std::vector<GeomToken> tokens;
-	DefineShapeTag(RECORDHEADER h,int v):DictionaryTag(h),Shapes(v) {}
+	tokensVector tokens;
+	DefineShapeTag(RECORDHEADER h,int v);
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
@@ -497,7 +497,7 @@ private:
 	UI8 GlyphBits;
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
-	mutable std::vector<GeomToken> tokens;
+	mutable tokensVector tokens;
 	void computeCached() const;
 public:
 	int version;

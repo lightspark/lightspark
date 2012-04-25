@@ -167,7 +167,7 @@ const Vector2& ShapesBuilder::getVertex(unsigned int index)
 	::abort();
 }
 
-void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, vector< GeomToken >& tokens)
+void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, tokensVector& tokens)
 {
 	joinOutlines();
 	//Try to greedily condense as much as possible the output

@@ -372,6 +372,7 @@ public:
 #endif
 	MemoryAccount* allocateMemoryAccount(const tiny_string& name) DLL_PUBLIC;
 	MemoryAccount* unaccountedMemory;
+	MemoryAccount* tagsMemory;
 	MemoryAccount* stringMemory;
 #ifdef MEMORY_USAGE_PROFILING
 	void saveMemoryUsageInformation(std::ofstream& out, int snapshotCount) const;

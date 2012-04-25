@@ -2679,7 +2679,7 @@ Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this),graphics(NullR
 {
 }
 
-Shape::Shape(Class_base* c, const std::vector<GeomToken>& tokens, float scaling):
+Shape::Shape(Class_base* c, const tokensVector& tokens, float scaling):
 	DisplayObject(c),TokenContainer(this, tokens, scaling),graphics(NullRef)
 {
 }
@@ -2727,6 +2727,16 @@ bool DisplayObjectContainer::isOpaque(number_t x, number_t y) const
 	return false;
 }
 
+TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f)
+{
+}
+
+TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) :
+	owner(_o), scaling(_scaling),
+	tokens(_tokens.begin(),_tokens.end())
+{
+}
+
 void TokenContainer::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
 	//if(!owner->isSimple())
@@ -2743,9 +2753,9 @@ void TokenContainer::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t 
 * * \param shapes a vector to be populated with the shapes */
 
 void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
-													  std::vector<GeomToken>& tokens,
-													  const std::list<FILLSTYLE>& fillStyles,
-													  const Vector2& offset, int scaling)
+								  tokensVector& tokens,
+								  const std::list<FILLSTYLE>& fillStyles,
+								  const Vector2& offset, int scaling)
 {
 	int startX=offset.x;
 	int startY=offset.y;

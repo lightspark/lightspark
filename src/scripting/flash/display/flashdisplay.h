@@ -339,13 +339,12 @@ public:
 	float scaling;
 	std::vector<GeomToken> tokens;
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
-					 std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles,
+					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
 					 const Vector2& offset = Vector2(), int scaling = 1);
 	void getTextureSize(int *width, int *height) const;
 protected:
-	TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f) {}
-	TokenContainer(DisplayObject* _o, const std::vector<GeomToken>& _tokens, float _scaling)
-		: owner(_o), scaling(_scaling), tokens(_tokens) {}
+	TokenContainer(DisplayObject* _o);
+	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);
 
 	void invalidate();
 	void requestInvalidation();
@@ -416,7 +415,7 @@ protected:
 		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
 	Shape(Class_base* c);
-	Shape(Class_base* c, const std::vector<GeomToken>& tokens, float scaling);
+	Shape(Class_base* c, const tokensVector& tokens, float scaling);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

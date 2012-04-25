@@ -140,7 +140,11 @@ ASFUNCTIONBODY(ApplicationDomain,_constructor)
 	ApplicationDomain* th = Class<ApplicationDomain>::cast(obj);
 	_NR<ApplicationDomain> parentDomain;
 	ARG_UNPACK (parentDomain, NullRef);
-	if(parentDomain.isNull())
+	if(!th->parentDomain.isNull())
+		// Don't override parentDomain if it was set in the
+		// C++ constructor
+		return NULL;
+	else if(parentDomain.isNull())
 		th->parentDomain =  getSys()->systemDomain;
 	else
 		th->parentDomain = parentDomain;

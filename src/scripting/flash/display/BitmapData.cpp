@@ -64,6 +64,22 @@ void BitmapData::sinit(Class_base* c)
 	IBitmapDrawable::linkTraits(c);
 }
 
+void BitmapData::addUser(Bitmap* b)
+{
+	users.insert(b);
+}
+
+void BitmapData::removeUser(Bitmap* b)
+{
+	users.erase(b);
+}
+
+void BitmapData::notifyUsers() const
+{
+	for(auto it=users.begin();it!=users.end();it++)
+		(*it)->updatedData();
+}
+
 ASFUNCTIONBODY(BitmapData,_constructor)
 {
 	uint32_t width;

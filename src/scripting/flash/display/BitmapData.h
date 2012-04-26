@@ -26,6 +26,8 @@
 namespace lightspark
 {
 
+class Bitmap;
+
 class BitmapData: public ASObject, public IBitmapDrawable
 {
 protected:
@@ -35,6 +37,10 @@ protected:
 	uint32_t getPixelPriv(uint32_t x, uint32_t y);
 	void setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha);
 	void copyFrom(BitmapData *source);
+	//Avoid cycles by not using automatic references
+	//Bitmap will take care of removing itself when needed
+	std::set<Bitmap*> users;
+	void notifyUsers() const;
 public:
 	BitmapData(Class_base* c);
 	static void sinit(Class_base* c);
@@ -45,6 +51,8 @@ public:
 	 * data (=stride*height) */
 	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
 	uint8_t* getData() { return &data[0]; }
+	void addUser(Bitmap* b);
+	void removeUser(Bitmap* b);
 	ASPROPERTY_GETTER(int32_t, width);
 	ASPROPERTY_GETTER(int32_t, height);
 	ASPROPERTY_GETTER(bool, transparent);

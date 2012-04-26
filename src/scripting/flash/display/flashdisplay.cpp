@@ -2616,6 +2616,7 @@ void StageDisplayState::sinit(Class_base* c)
 Bitmap::Bitmap(Class_base* c, std::istream *s, FILE_TYPE type) : DisplayObject(c),TokenContainer(this)
 {
 	bitmapData = _MR(Class<BitmapData>::getInstanceS());
+	bitmapData->addUser(this);
 	if(!s)
 		return;
 
@@ -2651,7 +2652,20 @@ Bitmap::Bitmap(Class_base* c, std::istream *s, FILE_TYPE type) : DisplayObject(c
 Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this)
 {
 	bitmapData = data;
+	bitmapData->addUser(this);
 	Bitmap::updatedData();
+}
+
+Bitmap::~Bitmap()
+{
+	finalize();
+}
+
+void Bitmap::finalize()
+{
+	if(!bitmapData.isNull())
+		bitmapData->removeUser(this);
+	bitmapData.reset();
 }
 
 void Bitmap::sinit(Class_base* c)
@@ -2679,14 +2693,19 @@ ASFUNCTIONBODY(Bitmap,_constructor)
 	if(!_bitmapData.isNull())
 	{
 		th->bitmapData=_bitmapData;
+		th->bitmapData->addUser(th);
 		th->updatedData();
 	}
 
 	return NULL;
 }
 
-void Bitmap::onBitmapData(_NR<BitmapData>)
+void Bitmap::onBitmapData(_NR<BitmapData> old)
 {
+	if(!old.isNull())
+		old->removeUser(this);
+	if(!bitmapData.isNull())
+		bitmapData->addUser(this);
 	Bitmap::updatedData();
 }
 

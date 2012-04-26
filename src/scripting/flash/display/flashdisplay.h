@@ -41,6 +41,7 @@ class InteractiveObject;
 class Downloader;
 class RenderContext;
 class ApplicationDomain;
+class Bitmap;
 
 class InteractiveObject: public DisplayObject
 {
@@ -608,6 +609,8 @@ public:
 	void updatedData();
 	Bitmap(Class_base* c, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(Class_base* c, _R<BitmapData> data);
+	~Bitmap();
+	void finalize();
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;

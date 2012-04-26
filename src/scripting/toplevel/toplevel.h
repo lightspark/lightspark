@@ -115,7 +115,7 @@ private:
 	void describeTraits(xmlpp::Element* root, std::vector<traits_info>& traits) const;
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
-	std::set<ASObject*> referencedObjects;
+	std::set<ASObject*, std::less<ASObject*>, reporter_allocator<ASObject*>> referencedObjects;
 	void finalizeObjects() const;
 protected:
 	void copyBorrowedTraitsFromSuper();

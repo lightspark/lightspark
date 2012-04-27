@@ -1453,6 +1453,14 @@ void ABCVm::Run(ABCVm* th)
 	profile->setTag("VM");
 	//When aborting execution remaining events should be handled
 	bool firstMissingEvents=true;
+
+#ifdef MEMORY_USAGE_PROFILING
+	string memoryProfileFile="lightspark.massif.";
+	memoryProfileFile+=th->m_sys->getOrigin().getPathFile().raw_buf();
+	ofstream memoryProfile(memoryProfileFile, ios_base::out | ios_base::trunc);
+	int snapshotCount = 0;
+	memoryProfile << "desc: (none) \ncmd: lightspark\ntime_unit: i" << endl;
+#endif
 	while(true)
 	{
 		th->event_queue_mutex.lock();
@@ -1485,6 +1493,11 @@ void ABCVm::Run(ABCVm* th)
 			//Flush the invalidation queue
 			th->m_sys->flushInvalidationQueue();
 			profile->accountTime(chronometer.checkpoint());
+#ifdef MEMORY_USAGE_PROFILING
+			if((snapshotCount%100)==0)
+				th->m_sys->saveMemoryUsageInformation(memoryProfile, snapshotCount);
+			snapshotCount++;
+#endif
 		}
 		catch(LightsparkException& e)
 		{

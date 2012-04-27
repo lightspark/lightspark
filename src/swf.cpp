@@ -389,6 +389,34 @@ MemoryAccount* SystemState::allocateMemoryAccount(const tiny_string& name)
 #endif
 }
 
+#ifdef MEMORY_USAGE_PROFILING
+void SystemState::saveMemoryUsageInformation(ofstream& out, int snapshotCount) const
+{
+	out << "#-----------\nsnapshot=" << snapshotCount << "\n#-----------\ntime=" << snapshotCount << endl;
+	uint32_t totalMem=0;
+	uint32_t totalCount=0;
+	Locker l(memoryAccountsMutex);
+	auto it=memoryAccounts.begin();
+	for(;it!=memoryAccounts.end();++it)
+	{
+		if(it->bytes>0)
+		{
+			totalMem+=it->bytes;
+			totalCount++;
+		}
+	}
+
+	out << "mem_heap_B=" << totalMem << "\nmem_heap_extra_B=0\nmem_stacks_B=0\nheap_tree=detailed" << endl;
+	out << "n" << totalCount << ": " << totalMem << " ActionScript_objects" << endl;
+	it=memoryAccounts.begin();
+	for(;it!=memoryAccounts.end();++it)
+	{
+		if(it->bytes>0)
+			out << " n0: " << it->bytes << " " << it->name << endl;
+	}
+}
+#endif
+
 void SystemState::finalize()
 {
 	RootMovieClip::finalize();

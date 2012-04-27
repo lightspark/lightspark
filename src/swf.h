@@ -30,7 +30,7 @@
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/net/flashnet.h"
 #include "timer.h"
-
+#include "memory_support.h"
 #include "platforms/engineutils.h"
 
 namespace lightspark
@@ -228,6 +228,10 @@ private:
 	*/
 	tiny_string profOut;
 #endif
+#ifdef MEMORY_USAGE_PROFILING
+	Mutex memoryAccountsMutex;
+	std::list<MemoryAccount> memoryAccounts;
+#endif
 protected:
 	~SystemState();
 public:
@@ -365,6 +369,10 @@ public:
 	const tiny_string& getProfilingOutput() const;
 	std::vector<ABCContext*> contextes;
 	void saveProfilingInformation();
+#endif
+#ifdef MEMORY_USAGE_PROFILING
+	MemoryAccount* allocateMemoryAccount(const char* name);
+	MemoryAccount* unaccountedMemory;
 #endif
 };
 

@@ -200,6 +200,7 @@ SET(ENABLE_GLES2 FALSE CACHE BOOL "Build with OpenGLES 2.0 support instead of Op
 SET(ENABLE_LIBAVCODEC TRUE CACHE BOOL "Enable libavcodec and dependent functionality?")
 SET(ENABLE_RTMP FALSE CACHE BOOL "Enable librtmp and dependent functionality?")
 SET(ENABLE_PROFILING FALSE CACHE BOOL "Enable profiling support? (Causes performance issues)")
+SET(ENABLE_MEMORY_USAGE_PROFILING FALSE CACHE BOOL "Enable profiling of memory usage? (Causes performance issues)")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
 
 IF(ENABLE_DEBIAN_ALTERNATIVES OR WIN32)
@@ -366,6 +367,10 @@ ENDIF(ENABLE_RTMP)
 IF(ENABLE_PROFILING)
   ADD_DEFINITIONS(-DPROFILING_SUPPORT)
 ENDIF(ENABLE_PROFILING)
+
+IF(ENABLE_MEMORY_USAGE_PROFILING)
+	ADD_DEFINITIONS(-DMEMORY_USAGE_PROFILING)
+ENDIF(ENABLE_MEMORY_USAGE_PROFILING)
 
 # Compiler defaults flags for different profiles
 IF(CMAKE_COMPILER_IS_GNUCC)

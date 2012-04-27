@@ -34,6 +34,7 @@
 #include "backends/security.h"
 #include "backends/image.h"
 #include "backends/extscriptobject.h"
+#include "memory_support.h"
 
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
@@ -168,6 +169,9 @@ SystemState::SystemState(uint32_t fileSize):
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL)
+#ifdef MEMORY_USAGE_PROFILING
+	,unaccountedMemory(NULL)
+#endif
 {
 	cookiesFileName = NULL;
 
@@ -175,6 +179,9 @@ SystemState::SystemState(uint32_t fileSize):
 
 	mainThread = Thread::self();
 
+#ifdef MEMORY_USAGE_PROFILING
+	unaccountedMemory = allocateMemoryAccount("Unaccounted");
+#endif
 	null=_MR(new Null);
 	undefined=_MR(new Undefined);
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());
@@ -373,6 +380,15 @@ void SystemState::saveProfilingInformation()
 			contextes[i]->dumpProfilingData(f);
 		f.close();
 	}
+}
+#endif
+
+#ifdef MEMORY_USAGE_PROFILING
+MemoryAccount* SystemState::allocateMemoryAccount(const char* name)
+{
+	Locker l(memoryAccountsMutex);
+	memoryAccounts.emplace_back(name);
+	return &memoryAccounts.back();
 }
 #endif
 

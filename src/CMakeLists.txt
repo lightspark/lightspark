@@ -23,6 +23,7 @@ SET(LIBSPARK_SOURCES
   asobject.cpp
   compat.cpp
   logger.cpp
+  memory_support.cpp
   swf.cpp
   swftypes.cpp
   thread_pool.cpp

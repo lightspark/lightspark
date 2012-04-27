@@ -73,7 +73,7 @@ _NR<Tag> TagFactory::readTag()
 	//	case 4:
 	//		ret=new PlaceObjectTag(h,f);
 		case 6:
-			ret=new DefineBitsTag(h,f);
+			ret=new (getSys()->unaccountedMemory) DefineBitsTag(h,f);
 			break;
 		case 9:
 			ret=new SetBackgroundColorTag(h,f);
@@ -100,10 +100,10 @@ _NR<Tag> TagFactory::readTag()
 			ret=new SoundStreamBlockTag(h,f);
 			break;
 		case 20:
-			ret=new DefineBitsLosslessTag(h,f,1);
+			ret=new (getSys()->unaccountedMemory) DefineBitsLosslessTag(h,f,1);
 			break;
 		case 21:
-			ret=new DefineBitsJPEG2Tag(h,f);
+			ret=new (getSys()->unaccountedMemory) DefineBitsJPEG2Tag(h,f);
 			break;
 		case 22:
 			ret=new DefineShape2Tag(h,f);
@@ -127,16 +127,16 @@ _NR<Tag> TagFactory::readTag()
 			ret=new DefineButton2Tag(h,f);
 			break;
 		case 35:
-			ret=new DefineBitsJPEG3Tag(h,f);
+			ret=new (getSys()->unaccountedMemory) DefineBitsJPEG3Tag(h,f);
 			break;
 		case 36:
-			ret=new DefineBitsLosslessTag(h,f,2);
+			ret=new (getSys()->unaccountedMemory) DefineBitsLosslessTag(h,f,2);
 			break;
 		case 37:
 			ret=new DefineEditTextTag(h,f);
 			break;
 		case 39:
-			ret=new DefineSpriteTag(h,f);
+			ret=new (getSys()->unaccountedMemory) DefineSpriteTag(h,f);
 			break;
 		case 41:
 			ret=new ProductInfoTag(h,f);
@@ -148,7 +148,7 @@ _NR<Tag> TagFactory::readTag()
 			ret=new SoundStreamHead2Tag(h,f);
 			break;
 		case 46:
-			ret=new DefineMorphShapeTag(h,f);
+			ret=new (getSys()->unaccountedMemory) DefineMorphShapeTag(h,f);
 			break;
 		case 48:
 			ret=new DefineFont2Tag(h,f);
@@ -311,7 +311,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c) const
 		c=Class<TextField>::getClass();
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
-	TextField* ret=new TextField(c, textData);
+	TextField* ret=new (c->memoryAccount) TextField(c, textData);
 	return ret;
 }
 
@@ -386,7 +386,7 @@ ASObject* DefineSpriteTag::instance(Class_base* c) const
 	else
 		retClass=Class<MovieClip>::getClass();
 
-	DefineSpriteTag* ret=new DefineSpriteTag(*this);
+	DefineSpriteTag* ret=new (retClass->memoryAccount) DefineSpriteTag(*this);
 	ret->setClass(retClass);
 	return ret;
 }
@@ -669,13 +669,13 @@ ASObject* DefineBitsLosslessTag::instance(Class_base* c) const
 	if(realClass && realClass->isSubClass(Class<Bitmap>::getClass()))
 		returnBitmap = true;
 	else if(realClass && realClass->isSubClass(Class<BitmapData>::getClass()))
-		classRet = bindedTo;
+		classRet = realClass;
 
-	DefineBitsLosslessTag* ret=new DefineBitsLosslessTag(*this);
+	DefineBitsLosslessTag* ret=new (classRet->memoryAccount) DefineBitsLosslessTag(*this);
 	ret->setClass(classRet);
 	if(returnBitmap)
 	{
-		Bitmap* bitmapRet=new Bitmap(realClass,_MR((BitmapData*)ret));
+		Bitmap* bitmapRet=new (realClass->memoryAccount) Bitmap(realClass,_MR((BitmapData*)ret));
 		return bitmapRet;
 	}
 	return ret;
@@ -711,7 +711,7 @@ ASObject* DefineTextTag::instance(Class_base* c) const
 	if(c==NULL)
 		c=Class<StaticText>::getClass();
 
-	StaticText* ret=new StaticText(c, tokens);
+	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens);
 	return ret;
 }
 
@@ -817,7 +817,7 @@ ASObject* DefineMorphShapeTag::instance(Class_base* c) const
 	assert_and_throw(bindedTo==NULL);
 	if(c==NULL)
 		c=Class<MorphShape>::getClass();
-	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
+	DefineMorphShapeTag* ret=new (c->memoryAccount) DefineMorphShapeTag(*this);
 	ret->setClass(c);
 	return ret;
 }
@@ -1250,7 +1250,7 @@ ASObject* DefineButton2Tag::instance(Class_base* c) const
 
 	if(c==NULL)
 		c=Class<SimpleButton>::getClass();
-	SimpleButton* ret=new SimpleButton(c, states[0], states[1], states[2], states[3]);
+	SimpleButton* ret=new (c->memoryAccount) SimpleButton(c, states[0], states[1], states[2], states[3]);
 	return ret;
 }
 
@@ -1275,7 +1275,7 @@ ASObject* DefineVideoStreamTag::instance(Class_base* c) const
 	else
 		classRet=Class<Video>::getClass();
 
-	Video* ret=new Video(classRet, Width, Height);
+	Video* ret=new (classRet->memoryAccount) Video(classRet, Width, Height);
 	return ret;
 }
 
@@ -1448,7 +1448,7 @@ ASObject* DefineBitsJPEG2Tag::instance(Class_base* c) const
 	else
 		classRet=Class<BitmapData>::getClass();
 
-	DefineBitsJPEG2Tag* ret=new DefineBitsJPEG2Tag(*this);
+	DefineBitsJPEG2Tag* ret=new (classRet->memoryAccount) DefineBitsJPEG2Tag(*this);
 	ret->setClass(classRet);
 	return ret;
 }
@@ -1507,7 +1507,7 @@ ASObject* DefineBitsJPEG3Tag::instance(Class_base* c) const
 	else
 		classRet=Class<BitmapData>::getClass();
 
-	DefineBitsJPEG3Tag* ret=new DefineBitsJPEG3Tag(*this);
+	DefineBitsJPEG3Tag* ret=new (classRet->memoryAccount) DefineBitsJPEG3Tag(*this);
 	ret->setClass(classRet);
 	return ret;
 }

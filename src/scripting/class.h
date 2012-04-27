@@ -103,13 +103,13 @@ ASObject* new_asobject();
 		static T* doNew(Class_base* c, const F& f, Args&&... args)
 		{
 			//Last parameter is not a class pointer
-			return new T(c, std::forward<Args>(args)..., f);
+			return new (c->memoryAccount) T(c, std::forward<Args>(args)..., f);
 		}
 		template<typename... Args>
 		static T* doNew(Class_base* c, Class_base* f, Args&&... args)
 		{
 			//Last parameter is a class pointer
-			return new T(f, std::forward<Args>(args)...);
+			return new (f->memoryAccount) T(f, std::forward<Args>(args)...);
 		}
 	};
 	template<class T>
@@ -118,7 +118,7 @@ ASObject* new_asobject();
 		static T* doNew(Class_base* c)
 		{
 			//Last parameter is not a class pointer
-			return new T(c);
+			return new (c->memoryAccount) T(c);
 		}
 	};
 template< class T>
@@ -131,7 +131,7 @@ protected:
 	{
 		if(realClass==NULL)
 			realClass=this;
-		T* ret=new T(realClass);
+		T* ret=new (realClass->memoryAccount) T(realClass);
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 		return ret;
@@ -143,7 +143,7 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		if(realClass==NULL)
 			realClass=c;
-		T* ret = new T(realClass);
+		T* ret = new (realClass->memoryAccount) T(realClass);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -153,7 +153,7 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		if(realClass==NULL)
 			realClass=c;
-		T* ret = new T(realClass, arg1);
+		T* ret = new (realClass->memoryAccount) T(realClass, arg1);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -163,7 +163,7 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		if(realClass==NULL)
 			realClass=c;
-		T* ret = new T(realClass, arg1, arg2);
+		T* ret = new (realClass->memoryAccount) T(realClass, arg1, arg2);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -173,7 +173,7 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		if(realClass==NULL)
 			realClass=c;
-		T* ret = new T(realClass, arg1, arg2, arg3);
+		T* ret = new (realClass->memoryAccount) T(realClass, arg1, arg2, arg3);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -183,7 +183,7 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		if(realClass==NULL)
 			realClass=c;
-		T* ret = new T(realClass, arg1, arg2, arg3, arg4);
+		T* ret = new (realClass->memoryAccount) T(realClass, arg1, arg2, arg3, arg4);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -193,7 +193,7 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		if(realClass==NULL)
 			realClass=c;
-		T* ret = new T(realClass, arg1, arg2, arg3, arg4, arg5);
+		T* ret = new (realClass->memoryAccount) T(realClass, arg1, arg2, arg3, arg4, arg5);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -214,7 +214,7 @@ public:
 		Class<T>* ret=NULL;
 		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
-			ret=new Class<T>(name);
+			ret=new (getSys()->unaccountedMemory) Class<T>(name);
 			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
@@ -314,7 +314,7 @@ public:
 	 */
 	static _R<Class<ASObject>> getStubClass(const QName& name)
 	{
-		Class<ASObject>* ret = new Class<ASObject>(name);
+		Class<ASObject>* ret = new (getSys()->unaccountedMemory) Class<ASObject>(name);
 
 		ret->setSuper(Class<ASObject>::getRef());
 		ret->prototype = _MNR(new_asobject());
@@ -335,7 +335,7 @@ public:
 		Class<ASObject>* ret=NULL;
 		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
-			ret=new Class<ASObject>(name);
+			ret=new (getSys()->unaccountedMemory) Class<ASObject>(name);
 			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 			ret->prototype = _MNR(new_asobject());
 			ASObject::sinit(ret);
@@ -412,8 +412,9 @@ public:
 		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(name);
 		InterfaceClass<T>* ret=NULL;
 		if(it==getSys()->builtinClasses.end())
-		{	//This class is not yet in the map, create it
-			ret=new InterfaceClass<T>(name);
+		{
+			//This class is not yet in the map, create it
+			ret=new (getSys()->unaccountedMemory) InterfaceClass<T>(name);
 			getSys()->builtinClasses.insert(std::make_pair(name,ret));
 		}
 		else
@@ -447,7 +448,7 @@ public:
 	{
 		if(realClass==NULL)
 			realClass=this;
-		T* ret=new T(realClass);
+		T* ret=new (realClass->memoryAccount) T(realClass);
 		ret->setTypes(types);
 		if(construct)
 			this->handleConstruction(ret,args,argslen,true);
@@ -504,7 +505,7 @@ public:
 		Class<T>* ret=NULL;
 		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 		{
-			ret=new TemplatedClass<T>(instantiatedQName,types,this);
+			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this);
 			getSys()->builtinClasses.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_asobject());
 			T::sinit(ret);
@@ -531,7 +532,7 @@ public:
 		Template<T>* ret=NULL;
 		if(it==getSys()->templates.end()) //This class is not yet in the map, create it
 		{
-			ret=new Template<T>(name);
+			ret=new (getSys()->unaccountedMemory) Template<T>(name);
 			getSys()->templates.insert(std::make_pair(name,ret));
 		}
 		else

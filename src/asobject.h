@@ -24,6 +24,7 @@
 #include "swftypes.h"
 #include "smartrefs.h"
 #include "threading.h"
+#include "memory_support.h"
 #include <map>
 
 #define ASFUNCTION(name) \
@@ -217,8 +218,7 @@ enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 
-
-class ASObject
+class ASObject: public memory_reporter
 {
 friend class Manager;
 friend class ABCVm;

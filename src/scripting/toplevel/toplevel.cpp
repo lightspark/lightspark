@@ -688,9 +688,10 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 }
 
 Class_base::Class_base(const QName& name):ASObject(NULL),use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),
-	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1)
+	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1),memoryAccount(NULL)
 {
 	type=T_CLASS;
+	memoryAccount = getSys()->allocateMemoryAccount(class_name.name.raw_buf());
 }
 
 /*
@@ -924,7 +925,7 @@ Class_object* Class_object::getClass()
 	Class_object* ret=NULL;
 	if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 	{
-		ret=new Class_object();
+		ret=new (getSys()->unaccountedMemory) Class_object();
 		getSys()->builtinClasses.insert(std::make_pair(QName("Class",""),ret));
 	}
 	else
@@ -1525,7 +1526,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 	Class<IFunction>* ret=NULL;
 	if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
 	{
-		ret=new Class<IFunction>;
+		ret=new (getSys()->unaccountedMemory) Class<IFunction>;
 		ret->prototype = _MNR(new_asobject());
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any

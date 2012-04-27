@@ -257,7 +257,12 @@ int main(int argc, char* argv[])
 	SystemState::staticInit();
 	EngineData::startGTKMain();
 	//NOTE: see SystemState declaration
-	SystemState* sys = new SystemState(fileSize);
+#ifdef MEMORY_USAGE_PROFILING
+	MemoryAccount sysAccount("sysAccount");
+	SystemState* sys = new (&sysAccount) SystemState(fileSize);
+#else
+	SystemState* sys = new ((MemoryAccount*)NULL) SystemState(fileSize);
+#endif
 	ParseThread* pt = new ParseThread(f, sys);
 	setTLSSys(sys);
 	sys->setDownloadedPath(fileName);

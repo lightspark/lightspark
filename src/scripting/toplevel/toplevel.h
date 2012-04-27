@@ -29,6 +29,7 @@
 #include "Boolean.h"
 #include "Error.h"
 #include "XML.h"
+#include "memory_support.h"
 
 namespace lightspark
 {
@@ -129,6 +130,8 @@ public:
 	ABCContext* context;
 	const QName class_name;
 	int class_index;
+	//Memory reporter to keep track of used bytes
+	MemoryAccount* memoryAccount;
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	Class_base(const QName& name);
@@ -310,7 +313,7 @@ private:
 	Function(Class_base* c, as_function v=NULL):IFunction(c),val(v){}
 	Function* clone()
 	{
-		return new Function(*this);
+		return new (getClass()->memoryAccount) Function(*this);
 	}
 	method_info* getMethodInfo() const { return NULL; }
 public:
@@ -337,7 +340,7 @@ private:
 	SyntheticFunction(Class_base* c,method_info* m);
 	SyntheticFunction* clone()
 	{
-		return new SyntheticFunction(*this);
+		return new (getClass()->memoryAccount) SyntheticFunction(*this);
 	}
 	method_info* getMethodInfo() const { return mi; }
 public:
@@ -381,20 +384,20 @@ public:
 	static Function* getFunction(Function::as_function v)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
-		Function* ret=new Function(c, v);
+		Function* ret=new (c->memoryAccount) Function(c, v);
 		return ret;
 	}
 	static Function* getFunction(Function::as_function v, int len)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
-		Function* ret=new Function(c, v);
+		Function* ret=new (c->memoryAccount) Function(c, v);
 		ret->length = len;
 		return ret;
 	}
 	static SyntheticFunction* getSyntheticFunction(method_info* m)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
-		SyntheticFunction* ret=new SyntheticFunction(c, m);
+		SyntheticFunction* ret=new (c->memoryAccount) SyntheticFunction(c, m);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}

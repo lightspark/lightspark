@@ -81,7 +81,12 @@ int main(int argc, char* argv[])
 	Log::setLogLevel(log_level);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration
-	SystemState* sys=new SystemState(0);
+#ifdef MEMORY_USAGE_PROFILING
+	MemoryAccount sysAccount("sysAccount");
+	SystemState* sys=new (&sysAccount) SystemState(0);
+#else
+	SystemState* sys=new ((MemoryAccount*)NULL) SystemState(0);
+#endif
 	setTLSSys(sys);
 
 	//Set a bit of SystemState using parameters
@@ -116,7 +121,7 @@ int main(int argc, char* argv[])
 			ABCContext* context=new ABCContext(_MR(sys), f);
 			contexts.push_back(context);
 			f.close();
-			vm->addEvent(NullRef,_MR(new ABCContextInitEvent(context,false)));
+			vm->addEvent(NullRef,_MR(new (sys->unaccountedMemory) ABCContextInitEvent(context,false)));
 		}
 		else
 		{

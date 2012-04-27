@@ -1963,7 +1963,7 @@ void IntervalRunner::tick()
 	{
 		args[i]->incRef();
 	}
-	_R<FunctionEvent> event(new FunctionEvent(callback, obj, args, argslen));
+	_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
 	getVm()->addEvent(NullRef,event);
 	if(type == TIMEOUT)
 	{
@@ -1999,7 +1999,8 @@ uint32_t IntervalManager::setInterval(_R<IFunction> callback, ASObject** args, c
 	Mutex::Lock l(mutex);
 
 	uint32_t id = getFreeID();
-	IntervalRunner* runner = new IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj, interval);
+	IntervalRunner* runner = new (getSys()->unaccountedMemory)
+		IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj, interval);
 
 	//Add runner as tickjob
 	getSys()->addTick(interval, runner);
@@ -2015,7 +2016,8 @@ uint32_t IntervalManager::setTimeout(_R<IFunction> callback, ASObject** args, co
 	Mutex::Lock l(mutex);
 
 	uint32_t id = getFreeID();
-	IntervalRunner* runner = new IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj, interval);
+	IntervalRunner* runner = new (getSys()->unaccountedMemory)
+		IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj, interval);
 
 	//Add runner as waitjob
 	getSys()->addWait(interval, runner);

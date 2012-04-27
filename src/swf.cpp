@@ -133,7 +133,7 @@ void RootMovieClip::setOnStage(bool staged)
 RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass();
-	RootMovieClip* ret=new RootMovieClip(li, appDomain, movieClipClass);
+	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(li, appDomain, movieClipClass);
 	return ret;
 }
 
@@ -177,8 +177,8 @@ SystemState::SystemState(uint32_t fileSize):
 	mainThread = Thread::self();
 
 	unaccountedMemory = allocateMemoryAccount("Unaccounted");
-	null=_MR(new Null);
-	undefined=_MR(new Undefined);
+	null=_MR(new (unaccountedMemory) Null);
+	undefined=_MR(new (unaccountedMemory) Undefined);
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());
 	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(systemDomain));
 
@@ -547,7 +547,7 @@ void SystemState::setShutdownFlag()
 	Locker l(mutex);
 	if(currentVm)
 	{
-		_R<ShutdownEvent> e(new ShutdownEvent);
+		_R<ShutdownEvent> e(new (unaccountedMemory) ShutdownEvent);
 		currentVm->addEvent(NullRef,e);
 	}
 	shutdown=true;
@@ -1400,7 +1400,7 @@ void RootMovieClip::commitFrame(bool another)
 		else
 		{
 			this->incRef();
-			sys->currentVm->addEvent(NullRef, _MR(new InitFrameEvent(_MNR(this))));
+			sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) InitFrameEvent(_MNR(this))));
 		}
 	}
 }
@@ -1541,7 +1541,7 @@ void SystemState::tick()
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
 	 * run their constructors (bottom-up)
 	 * and their frameScripts (Step 5) (bottom-up) */
-	getSys()->currentVm->addEvent(NullRef, _MR(new InitFrameEvent()));
+	getSys()->currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent()));
 
 	/* Step 4: dispatch frameConstructed events */
 	/* (TODO: should be run between step 3 and 5 */
@@ -1569,7 +1569,7 @@ void SystemState::tick()
 	/* TODO: Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 
 	/* Step 0: Set current frame number to the next frame */
-	_R<AdvanceFrameEvent> advFrame = _MR(new AdvanceFrameEvent());
+	_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
 	if(getSys()->currentVm->addEvent(NullRef, advFrame))
 		advFrame->done.wait();
 }

@@ -130,7 +130,9 @@ public:
 	virtual int getId(){ return ShapeId; }
 	ASObject* instance(Class_base* c=NULL) const
 	{
-		Shape* ret=new Shape(Class<Shape>::getClass(), tokens, 1.0f/20.0f);
+		if(c==NULL)
+			c=Class<Shape>::getClass();
+		Shape* ret=new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f);
 		return ret;
 	}
 };

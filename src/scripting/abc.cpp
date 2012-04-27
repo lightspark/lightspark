@@ -93,7 +93,7 @@ void DoABCTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
 	/* currentVM will free the context*/
-	getVm()->addEvent(NullRef,_MR(new ABCContextInitEvent(context,false)));
+	getVm()->addEvent(NullRef,_MR(new (getSys()->unaccountedMemory) ABCContextInitEvent(context,false)));
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -119,7 +119,7 @@ void DoABCDefineTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	/* currentVM will free the context*/
-	getVm()->addEvent(NullRef,_MR(new ABCContextInitEvent(context,((int32_t)Flags)&1)));
+	getVm()->addEvent(NullRef,_MR(new (getSys()->unaccountedMemory) ABCContextInitEvent(context,((int32_t)Flags)&1)));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -148,13 +148,13 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			//This will be done later
 			root->bindToName(className);
 			root->incRef();
-			getVm()->addEvent(NullRef, _MR(new BindClassEvent(_MR(root),className)));
+			getVm()->addEvent(NullRef, _MR(new (getSys()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 
 		}
 		else
 		{
 			_R<DictionaryTag> t=root->dictionaryLookup(Tags[i]);
-			_R<BindClassEvent> e(new BindClassEvent(t,className));
+			_R<BindClassEvent> e(new (getSys()->unaccountedMemory) BindClassEvent(t,className));
 			getVm()->addEvent(NullRef,e);
 		}
 	}
@@ -1805,7 +1805,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			{
 				QName className(mname->name_s,mname->ns[0].name);
 
-				Class_inherit* ci=new Class_inherit(className);
+				Class_inherit* ci=new (getSys()->unaccountedMemory) Class_inherit(className);
 				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 				LOG(LOG_CALLS,_("Building class traits"));
 				for(unsigned int i=0;i<classes[t->classi].trait_count;i++)

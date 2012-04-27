@@ -137,7 +137,7 @@ ASObject* Class<ASObject>::getInstance(bool construct, ASObject* const* args, co
 	}
 	if(realClass==NULL)
 		realClass=this;
-	ASObject* ret=new ASObject(realClass);
+	ASObject* ret=new (realClass->memoryAccount) ASObject(realClass);
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
 	return ret;

@@ -298,6 +298,10 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 	setTLSSys( NULL );
 }
 
+#ifdef MEMORY_USAGE_PROFILING
+static MemoryAccount sysAccount("sysAccount");
+#endif
+
 ////////////////////////////////////////
 //
 // nsPluginInstance class implementation
@@ -308,7 +312,11 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 {
 	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2012 Alessandro Pignotti and others");
 	setTLSSys( NULL );
-	m_sys=new lightspark::SystemState(0);
+#ifdef MEMORY_USAGE_PROFILING
+	m_sys=new (&sysAccount) lightspark::SystemState(0);
+#else
+	m_sys=new ((MemoryAccount*)NULL) lightspark::SystemState(0);
+#endif
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 	//Find flashvars argument

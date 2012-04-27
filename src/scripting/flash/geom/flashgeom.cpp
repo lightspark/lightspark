@@ -1365,15 +1365,15 @@ void Vector3D::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 
 	// constants
-	Vector3D* tx = new Vector3D(c);
+	Vector3D* tx = new (c->memoryAccount) Vector3D(c);
 	tx->x = 1;
 	c->setVariableByQName("X_AXIS","", tx, DECLARED_TRAIT);
 
-	Vector3D* ty = new Vector3D(c);
+	Vector3D* ty = new (c->memoryAccount) Vector3D(c);
 	ty->y = 1;
 	c->setVariableByQName("Y_AXIS","", ty, DECLARED_TRAIT);
 
-	Vector3D* tz = new Vector3D(c);
+	Vector3D* tz = new (c->memoryAccount) Vector3D(c);
 	tz->z = 1;
 	c->setVariableByQName("Z_AXIS","", tz, DECLARED_TRAIT);
 

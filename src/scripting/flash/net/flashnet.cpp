@@ -594,7 +594,7 @@ void NetConnection::execute()
 		getSys()->downloadManager->destroy(downloader);
 		downloader = NULL;
 	}
-	_R<ParseRPCMessageEvent> event=_MR(new ParseRPCMessageEvent(message, client, responder));
+	_R<ParseRPCMessageEvent> event=_MR(new (getSys()->unaccountedMemory) ParseRPCMessageEvent(message, client, responder));
 	getVm()->addEvent(NullRef,event);
 	responder.reset();
 }
@@ -1181,7 +1181,8 @@ void NetStream::execute()
 					metadata->incRef();
 					callbackArgs[0] = metadata;
 					callback->incRef();
-					_R<FunctionEvent> event(new FunctionEvent(_MR(static_cast<IFunction*>(callback.getPtr())),
+					_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(_MR(
+							static_cast<IFunction*>(callback.getPtr())),
 							_MR(client), callbackArgs, 1));
 					getVm()->addEvent(NullRef,event);
 				}

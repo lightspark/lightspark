@@ -602,7 +602,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	ret->initialized=true;
 #endif
 	//Now add our classdef
-	Class_function *cf=new Class_function();
+	Class_function *cf=new (getSys()->unaccountedMemory) Class_function();
 	ret->setClass(cf);
 	//setClass created a new reference, we can release the local
 	//reference
@@ -1919,7 +1919,7 @@ void ABCVm::newClass(call_context* th, int n)
 		return;
 	}
 
-	Class_inherit* ret=new Class_inherit(className);
+	Class_inherit* ret=new (getSys()->unaccountedMemory) Class_inherit(className);
 
 	//Add the class to the ones being currently defined in this context
 	th->context->classesBeingDefined.insert(make_pair(mname, ret));

@@ -374,14 +374,7 @@ public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
 	~DefineBinaryDataTag() { delete[] bytes; }
 	virtual int getId(){return Tag;} 
-
-	ASObject* instance(Class_base* c=NULL) const
-	{
-		uint8_t* b = new uint8_t[len];
-		memcpy(b,bytes,len);
-		ByteArray* ret=new ByteArray(Class<ByteArray>::getClass(), b, len);
-		return ret;
-	}
+	ASObject* instance(Class_base* c=NULL) const;
 };
 
 class FontTag: public DictionaryTag

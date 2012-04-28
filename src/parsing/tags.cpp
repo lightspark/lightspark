@@ -1290,6 +1290,23 @@ DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):Diction
 	s.read((char*)bytes,size);
 }
 
+ASObject* DefineBinaryDataTag::instance(Class_base* c) const
+{
+	uint8_t* b = new uint8_t[len];
+	memcpy(b,bytes,len);
+
+	Class_base* classRet = NULL;
+	if(c)
+		classRet=c;
+	else if(bindedTo)
+		classRet=bindedTo;
+	else
+		classRet=Class<ByteArray>::getClass();
+
+	ByteArray* ret=new ByteArray(classRet, b, len);
+	return ret;
+}
+
 FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,_("FileAttributesTag Tag"));

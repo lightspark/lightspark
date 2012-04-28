@@ -266,6 +266,9 @@ class IntervalRunner : public ITickJob, public EventDispatcher
 public:
 	enum INTERVALTYPE { INTERVAL, TIMEOUT };
 private:
+	// IntervalRunner will delete itself in tickFence, others
+	// should not call the destructor.
+	~IntervalRunner();
 	INTERVALTYPE type;
 	uint32_t id;
 	_R<IFunction> callback;
@@ -276,7 +279,6 @@ private:
 public:
 	IntervalRunner(INTERVALTYPE _type, uint32_t _id, _R<IFunction> _callback, ASObject** _args,
 			const unsigned int _argslen, _R<ASObject> _obj, const uint32_t _interval);
-	~IntervalRunner();
 	void tick();
 	void tickFence();
 	INTERVALTYPE getType() { return type; }

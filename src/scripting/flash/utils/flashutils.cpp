@@ -1976,6 +1976,7 @@ void IntervalRunner::tick()
 
 void IntervalRunner::tickFence()
 {
+	delete this;
 }
 
 IntervalManager::IntervalManager() : currentID(1)
@@ -1989,7 +1990,6 @@ IntervalManager::~IntervalManager()
 	while(it != runners.end())
 	{
 		getSys()->removeJob((*it).second);
-		delete((*it).second);
 		runners.erase(it++);
 	}
 }
@@ -2048,7 +2048,6 @@ void IntervalManager::clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE ty
 		{
 			getSys()->removeJob((*it).second);
 		}
-		delete (*it).second;
 		runners.erase(it);
 	}
 }

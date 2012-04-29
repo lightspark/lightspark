@@ -969,7 +969,15 @@ ASFUNCTIONBODY(Array,_map)
 
 ASFUNCTIONBODY(Array,_toString)
 {
-	Array* th=static_cast<Array*>(obj);
+	if(Class<Number>::getClass()->prototype == obj)
+		return Class<ASString>::getInstanceS("");
+	if(!obj->is<Array>())
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toString");
+		return Class<ASString>::getInstanceS("");
+	}
+	
+	Array* th=obj->as<Array>();
 	return Class<ASString>::getInstanceS(th->toString_priv());
 }
 

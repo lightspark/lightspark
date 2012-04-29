@@ -38,7 +38,20 @@ ASFUNCTIONBODY(Integer,_toString)
 	if(radix==10)
 		snprintf(buf,20,"%i",th->val);
 	else if(radix==16)
-		snprintf(buf,20,"%x",th->val);
+	{
+		unsigned int v;
+		const char* sign="";
+		if (th->val<0)
+		{
+			v=-th->val;
+			sign="-";
+		}
+		else
+		{
+			v=th->val;
+		}
+		snprintf(buf,20,"%s%x",sign,v);
+	}
 
 	return Class<ASString>::getInstanceS(buf);
 }

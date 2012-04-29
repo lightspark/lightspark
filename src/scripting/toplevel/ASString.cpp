@@ -640,7 +640,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	ASString* ret=Class<ASString>::getInstanceS();
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		ret->data += tiny_string::fromChar(args[i]->toUInt());
+		ret->data += tiny_string::fromChar(args[i]->toUInt16());
 	}
 	return ret;
 }

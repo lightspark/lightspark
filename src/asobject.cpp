@@ -178,6 +178,12 @@ unsigned int ASObject::toUInt()
 	return toInt();
 }
 
+uint16_t ASObject::toUInt16()
+{
+	unsigned int val32=toUInt();
+	return val32 & 0xFFFF;
+}
+
 int ASObject::toInt()
 {
 	return 0;

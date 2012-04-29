@@ -376,6 +376,7 @@ public:
 	tiny_string toString();
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
+	uint16_t toUInt16();
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
 	number_t toNumber();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */

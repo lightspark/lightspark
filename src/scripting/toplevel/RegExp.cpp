@@ -111,7 +111,11 @@ ASFUNCTIONBODY(RegExp,_constructor)
 
 ASFUNCTIONBODY(RegExp,generator)
 {
-	if(args[0]->is<RegExp>())
+	if(argslen == 0)
+	{
+		return Class<RegExp>::getInstanceS("");
+	}
+	else if(args[0]->is<RegExp>())
 	{
 		args[0]->incRef();
 		return args[0];

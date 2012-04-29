@@ -82,19 +82,25 @@ ASFUNCTIONBODY(ASError,_constructor)
 	}
 	return NULL;
 }
+
 ASFUNCTIONBODY(ASError,generator)
 {
 	ASError* th=Class<ASError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
+}
+
+void ASError::errorGenerator(ASError* obj, ASObject* const* args, const unsigned int argslen)
+{
 	assert_and_throw(argslen <= 2);
 	if(argslen >= 1)
 	{
-		th->message = args[0]->toString();
+		obj->message = args[0]->toString();
 	}
 	if(argslen == 2)
 	{
-		th->setErrorID(static_cast<Integer*>(args[1])->toInt());
+		obj->errorID = static_cast<Integer*>(args[1])->toInt();
 	}
-	return th;
 }
 
 void ASError::sinit(Class_base* c)
@@ -127,6 +133,13 @@ ASFUNCTIONBODY(SecurityError,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(SecurityError,generator)
+{
+	ASError* th=Class<SecurityError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
+}
+
 void SecurityError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -146,6 +159,13 @@ ASFUNCTIONBODY(ArgumentError,_constructor)
 		th->message = args[0]->toString();
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(ArgumentError,generator)
+{
+	ASError* th=Class<ArgumentError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
 }
 
 void ArgumentError::sinit(Class_base* c)
@@ -169,6 +189,13 @@ ASFUNCTIONBODY(DefinitionError,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(DefinitionError,generator)
+{
+	ASError* th=Class<DefinitionError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
+}
+
 void DefinitionError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -188,6 +215,13 @@ ASFUNCTIONBODY(EvalError,_constructor)
 		th->message = args[0]->toString();
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(EvalError,generator)
+{
+	ASError* th=Class<EvalError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
 }
 
 void EvalError::sinit(Class_base* c)
@@ -211,6 +245,13 @@ ASFUNCTIONBODY(RangeError,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(RangeError,generator)
+{
+	ASError* th=Class<RangeError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
+}
+
 void RangeError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -230,6 +271,13 @@ ASFUNCTIONBODY(ReferenceError,_constructor)
 		th->message = args[0]->toString();
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(ReferenceError,generator)
+{
+	ASError* th=Class<ReferenceError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
 }
 
 void ReferenceError::sinit(Class_base* c)
@@ -253,6 +301,13 @@ ASFUNCTIONBODY(SyntaxError,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(SyntaxError,generator)
+{
+	ASError* th=Class<SyntaxError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
+}
+
 void SyntaxError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -272,6 +327,13 @@ ASFUNCTIONBODY(TypeError,_constructor)
 		th->message = args[0]->toString();
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(TypeError,generator)
+{
+	ASError* th=Class<TypeError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
 }
 
 void TypeError::sinit(Class_base* c)
@@ -295,6 +357,13 @@ ASFUNCTIONBODY(URIError,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(URIError,generator)
+{
+	ASError* th=Class<URIError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
+}
+
 void URIError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -314,6 +383,13 @@ ASFUNCTIONBODY(VerifyError,_constructor)
 		th->message = args[0]->toString();
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(VerifyError,generator)
+{
+	ASError* th=Class<VerifyError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
 }
 
 void VerifyError::sinit(Class_base* c)
@@ -336,6 +412,14 @@ ASFUNCTIONBODY(UninitializedError,_constructor)
 	}
 	return NULL;
 }
+
+ASFUNCTIONBODY(UninitializedError,generator)
+{
+	ASError* th=Class<UninitializedError>::getInstanceS();
+	errorGenerator(th, args, argslen);
+	return th;
+}
+
 void UninitializedError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

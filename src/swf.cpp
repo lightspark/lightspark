@@ -168,10 +168,7 @@ SystemState::SystemState(uint32_t fileSize):
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
-	extScriptObject(NULL),scaleMode(SHOW_ALL)
-#ifdef MEMORY_USAGE_PROFILING
-	,unaccountedMemory(NULL)
-#endif
+	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL)
 {
 	cookiesFileName = NULL;
 
@@ -179,9 +176,7 @@ SystemState::SystemState(uint32_t fileSize):
 
 	mainThread = Thread::self();
 
-#ifdef MEMORY_USAGE_PROFILING
 	unaccountedMemory = allocateMemoryAccount("Unaccounted");
-#endif
 	null=_MR(new Null);
 	undefined=_MR(new Undefined);
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());
@@ -383,14 +378,16 @@ void SystemState::saveProfilingInformation()
 }
 #endif
 
-#ifdef MEMORY_USAGE_PROFILING
 MemoryAccount* SystemState::allocateMemoryAccount(const char* name)
 {
+#ifdef MEMORY_USAGE_PROFILING
 	Locker l(memoryAccountsMutex);
 	memoryAccounts.emplace_back(name);
 	return &memoryAccounts.back();
-}
+#else
+	return NULL;
 #endif
+}
 
 void SystemState::finalize()
 {

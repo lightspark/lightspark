@@ -370,10 +370,8 @@ public:
 	std::vector<ABCContext*> contextes;
 	void saveProfilingInformation();
 #endif
-#ifdef MEMORY_USAGE_PROFILING
 	MemoryAccount* allocateMemoryAccount(const char* name);
 	MemoryAccount* unaccountedMemory;
-#endif
 };
 
 class ParseThread: public IThreadJob

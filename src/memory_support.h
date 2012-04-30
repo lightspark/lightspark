@@ -163,13 +163,35 @@ bool operator!=(const reporter_allocator<T>& a,
 
 #else //MEMORY_USAGE_PROFILING
 
+class MemoryAccount;
+
 class memory_reporter
 {
+public:
+	//Placement new and delete
+	inline void* operator new( size_t size, void *p )
+	{
+		return p;
+	}
+	inline void operator delete( void*, void* )
+	{
+	}
+	//Regular allocator
+	inline void* operator new( size_t size, MemoryAccount* m)
+	{
+		return malloc(size);
+	}
+	inline void operator delete( void* obj )
+	{
+		free(obj);
+	}
 };
 
 template<class T>
 class reporter_allocator: public std::allocator<T>
 {
+public:
+	reporter_allocator(MemoryAccount* m) {}
 };
 #endif //MEMORY_USAGE_PROFILING
 

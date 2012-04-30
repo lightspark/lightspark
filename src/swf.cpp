@@ -378,7 +378,7 @@ void SystemState::saveProfilingInformation()
 }
 #endif
 
-MemoryAccount* SystemState::allocateMemoryAccount(const char* name)
+MemoryAccount* SystemState::allocateMemoryAccount(const tiny_string& name)
 {
 #ifdef MEMORY_USAGE_PROFILING
 	Locker l(memoryAccountsMutex);

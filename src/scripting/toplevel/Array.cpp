@@ -944,7 +944,7 @@ ASFUNCTIONBODY(Array,_map)
 				funcArgs[0]->incRef();
 			}
 			else
-				funcArgs[0]=new Undefined;
+				funcArgs[0]=getSys()->getUndefinedRef();
 		}
 		else
 			funcArgs[0]=getSys()->getUndefinedRef();

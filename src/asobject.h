@@ -160,7 +160,7 @@ public:
 	mapType Variables;
 	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
 	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
-	std::vector<var_iterator> slots_vars;
+	std::vector<var_iterator, reporter_allocator<var_iterator>> slots_vars;
 	variables_map(MemoryAccount* m);
 	/**
 	   Find a variable in the map

@@ -309,7 +309,7 @@ bool ASObject::isPrimitive() const
 }
 
 variables_map::variables_map(MemoryAccount* m):
-	Variables(std::less<mapType::key_type>(), reporter_allocator<mapType::value_type>(m))
+	Variables(std::less<mapType::key_type>(), reporter_allocator<mapType::value_type>(m)),slots_vars(m)
 {
 }
 

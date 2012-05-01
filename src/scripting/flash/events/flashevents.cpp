@@ -208,6 +208,8 @@ void FocusEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(FocusEvent,_constructor)
 {
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
 	return NULL;
 }
 
@@ -265,7 +267,7 @@ ASFUNCTIONBODY(ProgressEvent,_constructor)
 
 void TimerEvent::sinit(Class_base* c)
 {
-//	c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<Event>::getRef());
 
 	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS("timer"),DECLARED_TRAIT);
@@ -274,7 +276,7 @@ void TimerEvent::sinit(Class_base* c)
 
 void MouseEvent::sinit(Class_base* c)
 {
-//	c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<Event>::getRef());
 
 	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click"),DECLARED_TRAIT);
@@ -294,6 +296,20 @@ void MouseEvent::sinit(Class_base* c)
 	REGISTER_GETTER(c,stageY);
 	REGISTER_GETTER_SETTER(c,localX);
 	REGISTER_GETTER_SETTER(c,localY);
+}
+
+ASFUNCTIONBODY(MouseEvent,_constructor)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+	if(argslen>=4)
+		th->localX=args[3]->toNumber();
+	if(argslen>=5)
+		th->localY=args[4]->toNumber();
+	if(argslen>=6)
+		th->relatedObject=ArgumentConversion< _NR<InteractiveObject> >::toConcrete(args[5]);
+	return NULL;
 }
 
 ASFUNCTIONBODY_GETTER(MouseEvent,relatedObject);
@@ -369,7 +385,7 @@ IOErrorEvent::IOErrorEvent(Class_base* c) : ErrorEvent(c, "ioError")
 
 void IOErrorEvent::sinit(Class_base* c)
 {
-//	c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ErrorEvent>::getRef());
 
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),DECLARED_TRAIT);
@@ -662,6 +678,8 @@ void FullScreenEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(FullScreenEvent,_constructor)
 {
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
 	return NULL;
 }
 
@@ -680,6 +698,8 @@ void KeyboardEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(KeyboardEvent,_constructor)
 {
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
 	return NULL;
 }
 
@@ -723,7 +743,7 @@ void ErrorEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ErrorEvent,_constructor)
 {
-	TextEvent::_constructor(obj,NULL,0);
+	TextEvent::_constructor(obj,args,argslen);
 	return NULL;
 }
 
@@ -737,12 +757,6 @@ void SecurityErrorEvent::sinit(Class_base* c)
 	c->setSuper(Class<ErrorEvent>::getRef());
 
 	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS("securityError"),DECLARED_TRAIT);
-}
-
-ASFUNCTIONBODY(SecurityErrorEvent,_constructor)
-{
-	ErrorEvent::_constructor(obj,NULL,0);
-	return NULL;
 }
 
 AsyncErrorEvent::AsyncErrorEvent(Class_base* c):ErrorEvent(c, "asyncError")
@@ -759,7 +773,8 @@ void AsyncErrorEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
 {
-	ErrorEvent::_constructor(obj,NULL,0);
+	uint32_t baseClassArgs=imin(argslen,4);
+	ErrorEvent::_constructor(obj,args,baseClassArgs);
 	return NULL;
 }
 
@@ -773,10 +788,17 @@ ShutdownEvent::ShutdownEvent():Event(NULL, "shutdownEvent")
 
 void HTTPStatusEvent::sinit(Class_base* c)
 {
-//	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<Event>::getRef());
 
 	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"),DECLARED_TRAIT);
+}
+
+ASFUNCTIONBODY(HTTPStatusEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+	return NULL;
 }
 
 FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _args, uint32_t _numArgs):

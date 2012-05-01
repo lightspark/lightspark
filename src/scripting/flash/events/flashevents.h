@@ -151,6 +151,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
+	ASFUNCTION(_constructor);
 };
 
 class TextEvent: public Event
@@ -187,7 +188,6 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
 };
 
 class SecurityErrorEvent: public ErrorEvent
@@ -198,7 +198,6 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
 };
 
 class AsyncErrorEvent: public ErrorEvent
@@ -246,6 +245,7 @@ public:
 	static void buildTraits(ASObject* o);
 	void setTarget(_NR<ASObject> t);
 	EVENT_TYPE getEventType() const { return MOUSE_EVENT;}
+	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t,localX);
 	ASPROPERTY_GETTER_SETTER(number_t,localY);
 	ASPROPERTY_GETTER(number_t,stageX);

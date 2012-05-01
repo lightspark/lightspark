@@ -370,7 +370,7 @@ IOErrorEvent::IOErrorEvent(Class_base* c) : ErrorEvent(c, "ioError")
 void IOErrorEvent::sinit(Class_base* c)
 {
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
-	c->setSuper(Class<Event>::getRef());
+	c->setSuper(Class<ErrorEvent>::getRef());
 
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),DECLARED_TRAIT);
 }

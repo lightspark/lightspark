@@ -23,6 +23,7 @@
 #include "smartrefs.h"
 #include "IBitmapDrawable.h"
 #include "asobject.h"
+#include "scripting/flash/events/flashevents.h"
 
 namespace lightspark
 {

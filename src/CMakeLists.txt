@@ -64,6 +64,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/DisplayObject.cpp
   scripting/flash/display/IBitmapDrawable.cpp
   scripting/flash/display/flashdisplay.cpp
+  scripting/flash/display/TokenContainer.cpp
   scripting/flash/events/flashevents.cpp
   scripting/flash/external/ExternalInterface.cpp
   scripting/flash/filters/flashfilters.cpp

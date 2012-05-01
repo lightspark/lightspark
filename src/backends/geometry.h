@@ -20,8 +20,8 @@
 #define GEOMETRY_H
 
 #include "compat.h"
+#include "swftypes.h"
 #include <list>
-#include <iostream>
 #include <vector>
 #include <map>
 

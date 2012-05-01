@@ -27,10 +27,10 @@
 #include "flash/events/flashevents.h"
 #include "thread_pool.h"
 #include "flash/utils/flashutils.h"
-#include "backends/geometry.h"
 #include "backends/graphics.h"
 #include "backends/netutils.h"
 #include "DisplayObject.h"
+#include "TokenContainer.h"
 
 namespace lightspark
 {
@@ -160,39 +160,6 @@ public:
 	ASFUNCTION(_setEnabled);
 	ASFUNCTION(_getUseHandCursor);
 	ASFUNCTION(_setUseHandCursor);
-};
-
-class TokenContainer
-{
-	friend class Graphics;
-public:
-	DisplayObject* owner;
-	/* multiply shapes' coordinates by this
-	 * value to get pixel.
-	 * DefineShapeTags set a scaling of 1/20,
-	 * DefineTextTags set a scaling of 1/1024/20.
-	 * If any drawing function is called and
-	 * scaling is not 1.0f,
-	 * the tokens are cleared and scaling is set
-	 * to 1.0f.
-	 */
-	float scaling;
-	std::vector<GeomToken> tokens;
-	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
-					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
-					 const Vector2& offset = Vector2(), int scaling = 1);
-	void getTextureSize(int *width, int *height) const;
-protected:
-	TokenContainer(DisplayObject* _o);
-	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);
-
-	void invalidate();
-	void requestInvalidation(InvalidateQueue* q);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
-	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
-	bool tokensEmpty() const { return tokens.empty(); }
-	bool isOpaqueImpl(number_t x, number_t y) const;
 };
 
 /* This objects paints to its owners tokens */

@@ -61,6 +61,8 @@ SET(LIBSPARK_SOURCES
   scripting/abc_opcodes.cpp
   scripting/abctypes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp
+  scripting/flash/display/DisplayObject.cpp
+  scripting/flash/display/IBitmapDrawable.cpp
   scripting/flash/display/flashdisplay.cpp
   scripting/flash/events/flashevents.cpp
   scripting/flash/external/ExternalInterface.cpp

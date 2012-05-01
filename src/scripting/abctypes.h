@@ -21,6 +21,7 @@
 #define _ABCTYPES_H
 
 #include "swftypes.h"
+#include "memory_support.h"
 
 namespace lightspark
 {
@@ -119,20 +120,21 @@ struct multiname_info
 
 struct cpool_info
 {
+	cpool_info(MemoryAccount* m);
 	u30 int_count;
-	std::vector<s32> integer;
+	std::vector<s32, reporter_allocator<s32>> integer;
 	u30 uint_count;
-	std::vector<u32> uinteger;
+	std::vector<u32, reporter_allocator<u32>> uinteger;
 	u30 double_count;
-	std::vector<d64> doubles;
+	std::vector<d64, reporter_allocator<d64>> doubles;
 	u30 string_count;
-	std::vector<string_info> strings;
+	std::vector<string_info, reporter_allocator<string_info>> strings;
 	u30 namespace_count;
-	std::vector<namespace_info> namespaces;
+	std::vector<namespace_info, reporter_allocator<namespace_info>> namespaces;
 	u30 ns_set_count;
-	std::vector<ns_set_info> ns_sets;
+	std::vector<ns_set_info, reporter_allocator<ns_set_info>> ns_sets;
 	u30 multiname_count;
-	std::vector<multiname_info> multinames;
+	std::vector<multiname_info, reporter_allocator<multiname_info>> multinames;
 };
 
 struct option_detail

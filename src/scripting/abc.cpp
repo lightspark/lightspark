@@ -79,7 +79,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
 	root->incRef();
-	context=new ABCContext(_MR(root), in);
+	context=new ABCContext(_MR(root), in, getVm()->vmDataMemory);
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -105,7 +105,7 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
 	root->incRef();
-	context=new ABCContext(_MR(root), in);
+	context=new ABCContext(_MR(root), in, getVm()->vmDataMemory);
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -713,7 +713,13 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 	return ret;
 }
 
-ABCContext::ABCContext(_R<RootMovieClip> r, istream& in):root(r)
+ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, MemoryAccount* m):root(r),constant_pool(m),
+	methods(reporter_allocator<method_info>(m)),
+	metadata(reporter_allocator<metadata_info>(m)),
+	instances(reporter_allocator<instance_info>(m)),
+	classes(reporter_allocator<class_info>(m)),
+	scripts(reporter_allocator<script_info>(m)),
+	method_body(reporter_allocator<method_body_info>(m))
 {
 	in >> minor >> major;
 	LOG(LOG_CALLS,_("ABCVm version ") << major << '.' << minor);
@@ -820,7 +826,7 @@ void ABCContext::dumpProfilingData(ostream& f) const
 #endif
 
 ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),currentCallContext(NULL),
-	cur_recursion(0)
+	vmDataMemory(NULL),cur_recursion(0)
 {
 	limits.max_recursion = 256;
 	limits.script_timeout = 20;
@@ -828,6 +834,7 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),curren
 	int_manager=new Manager(15);
 	uint_manager=new Manager(15);
 	number_manager=new Manager(15);
+	vmDataMemory=m_sys->allocateMemoryAccount("VM_Data");
 }
 
 void ABCVm::start()

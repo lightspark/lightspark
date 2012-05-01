@@ -190,16 +190,16 @@ public:
 	u16 major;
 	cpool_info constant_pool;
 	u30 method_count;
-	std::vector<method_info> methods;
+	std::vector<method_info, reporter_allocator<method_info>> methods;
 	u30 metadata_count;
-	std::vector<metadata_info> metadata;
+	std::vector<metadata_info, reporter_allocator<metadata_info>> metadata;
 	u30 class_count;
-	std::vector<instance_info> instances;
-	std::vector<class_info> classes;
+	std::vector<instance_info, reporter_allocator<instance_info>> instances;
+	std::vector<class_info, reporter_allocator<class_info>> classes;
 	u30 script_count;
-	std::vector<script_info> scripts;
+	std::vector<script_info, reporter_allocator<script_info>> scripts;
 	u30 method_body_count;
-	std::vector<method_body_info> method_body;
+	std::vector<method_body_info, reporter_allocator<method_body_info>> method_body;
 
 	std::vector<bool> hasRunScriptInit;
 	/**
@@ -218,7 +218,7 @@ public:
 	multiname* getMultiname(unsigned int m, call_context* th);
 	multiname* getMultinameImpl(ASObject* rt1, ASObject* rt2, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);
-	ABCContext(_R<RootMovieClip> r, std::istream& in) DLL_PUBLIC;
+	ABCContext(_R<RootMovieClip> r, std::istream& in, MemoryAccount* m) DLL_PUBLIC;
 	void exec(bool lazy);
 
 	bool isinstance(ASObject* obj, multiname* name);
@@ -450,6 +450,8 @@ public:
 	Manager* int_manager;
 	Manager* uint_manager;
 	Manager* number_manager;
+
+	MemoryAccount* vmDataMemory;
 
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;

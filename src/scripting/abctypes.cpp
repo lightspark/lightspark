@@ -20,6 +20,8 @@
 #include "abctypes.h"
 
 using namespace std;
+using namespace lightspark;
+
 istream& lightspark::operator>>(istream& in, s32& v)
 {
 	int i=0;
@@ -378,4 +380,15 @@ istream& lightspark::operator>>(istream& in, cpool_info& v)
 		in >> v.multinames[i];
 
 	return in;
+}
+
+cpool_info::cpool_info(MemoryAccount* m):
+	integer(reporter_allocator<s32>(m)),
+	uinteger(reporter_allocator<u32>(m)),
+	doubles(reporter_allocator<d64>(m)),
+	strings(reporter_allocator<string_info>(m)),
+	namespaces(reporter_allocator<namespace_info>(m)),
+	ns_sets(reporter_allocator<ns_set_info>(m)),
+	multinames(reporter_allocator<multiname_info>(m))
+{
 }

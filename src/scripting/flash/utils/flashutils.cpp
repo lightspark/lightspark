@@ -110,7 +110,9 @@ ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),
 {
 	assert_and_throw(position==0);
 	bytes = (uint8_t*) malloc(len);
+#ifdef MEMORY_USAGE_PROFILING
 	getClass()->memoryAccount->addBytes(len);
+#endif
 	assert_and_throw(bytes);
 	memcpy(bytes,b.bytes,len);
 }
@@ -119,7 +121,9 @@ ByteArray::~ByteArray()
 {
 	if(bytes)
 	{
+#ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->removeBytes(real_len);
+#endif
 		free(bytes);
 	}
 }
@@ -199,7 +203,9 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 		len=size;
 		real_len=len;
 		bytes = (uint8_t*) malloc(len);
+#ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->addBytes(len);
+#endif
 	}
 	else if(enableResize==false)
 	{
@@ -212,7 +218,9 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 			real_len += BA_CHUNK_SIZE;
 		// Reallocate the buffer, in chunks of BA_CHUNK_SIZE bytes
 		uint8_t* bytes2 = (uint8_t*) realloc(bytes, real_len);
+#ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->addBytes(real_len-prev_real_len);
+#endif
 		assert_and_throw(bytes2);
 		bytes = bytes2;
 		len=size;
@@ -374,7 +382,9 @@ ASFUNCTIONBODY(ByteArray,_setLength)
 	{
 		if (th->bytes)
 		{
+#ifdef MEMORY_USAGE_PROFILING
 			th->getClass()->memoryAccount->removeBytes(th->real_len);
+#endif
 			free(th->bytes);
 		}
 		th->bytes = NULL;
@@ -1022,13 +1032,17 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 {
 	if(bytes)
 	{
+#ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->removeBytes(real_len);
+#endif
 		free(bytes);
 	}
 	bytes=buf;
 	real_len=bufLen;
 	len=bufLen;
+#ifdef MEMORY_USAGE_PROFILING
 	getClass()->memoryAccount->addBytes(real_len);
+#endif
 	position=0;
 }
 
@@ -1140,7 +1154,9 @@ void ByteArray::uncompress_zlib()
 	inflateEnd(&strm);
 
 	len=strm.total_out;
+#ifdef MEMORY_USAGE_PROFILING
 	getClass()->memoryAccount->addBytes(len-real_len);
+#endif
 	real_len = len;
 	uint8_t* bytes2=(uint8_t*) realloc(bytes, len);
 	assert_and_throw(bytes2);
@@ -1188,7 +1204,9 @@ ASFUNCTIONBODY(ByteArray,clear)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	if(th->bytes)
 	{
+#ifdef MEMORY_USAGE_PROFILING
 		th->getClass()->memoryAccount->removeBytes(th->real_len);
+#endif
 		free(th->bytes);
 	}
 	th->bytes = NULL;

@@ -132,7 +132,7 @@ public:
 	void finalize();
 	MATRIX getMatrix() const;
 	virtual void invalidate();
-	virtual void requestInvalidation();
+	virtual void requestInvalidation(InvalidateQueue* q);
 	MATRIX getConcatenatedMatrix() const;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
@@ -232,7 +232,7 @@ private:
 	bool _contains(_R<DisplayObject> child);
 	bool mouseChildren;
 protected:
-	void requestInvalidation();
+	void requestInvalidation(InvalidateQueue* q);
 	//This is shared between RenderThread and VM
 	std::list < _R<DisplayObject> > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
@@ -347,7 +347,7 @@ protected:
 	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);
 
 	void invalidate();
-	void requestInvalidation();
+	void requestInvalidation(InvalidateQueue* q);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
 	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
@@ -422,7 +422,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
 	bool isOpaque(number_t x, number_t y) const;
-	void requestInvalidation() { TokenContainer::requestInvalidation(); }
+	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	void invalidate() { TokenContainer::invalidate(); }
 };
 
@@ -557,7 +557,7 @@ public:
 		return 0;
 	}
 	void invalidate() { TokenContainer::invalidate(); }
-	void requestInvalidation();
+	void requestInvalidation(InvalidateQueue* q);
 	bool isOpaque(number_t x, number_t y) const;
 };
 
@@ -845,7 +845,7 @@ public:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
-	void requestInvalidation() { TokenContainer::requestInvalidation(); }
+	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	void invalidate() { TokenContainer::invalidate(); }
 };
 

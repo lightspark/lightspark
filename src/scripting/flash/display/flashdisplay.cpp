@@ -745,10 +745,10 @@ number_t DisplayObject::getNominalHeight()
 	return ret?(ymax-ymin):0;
 }
 
-void Sprite::requestInvalidation()
+void Sprite::requestInvalidation(InvalidateQueue* q)
 {
-	DisplayObjectContainer::requestInvalidation();
-	TokenContainer::requestInvalidation();
+	DisplayObjectContainer::requestInvalidation(q);
+	TokenContainer::requestInvalidation(q);
 }
 
 void DisplayObject::renderPrologue(RenderContext& ctxt) const
@@ -1412,7 +1412,7 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 			}
 		}
 		if(mustInvalidate && onStage)
-			requestInvalidation();
+			requestInvalidation(getSys());
 	}
 }
 
@@ -1440,7 +1440,7 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	}
 
 	if(mustInvalidate && onStage)
-		requestInvalidation();
+		requestInvalidation(getSys());
 }
 
 MATRIX DisplayObject::getConcatenatedMatrix() const
@@ -1571,11 +1571,11 @@ void DisplayObject::invalidate()
 	throw RunTimeException("DisplayObject::invalidate");
 }
 
-void DisplayObject::requestInvalidation()
+void DisplayObject::requestInvalidation(InvalidateQueue* q)
 {
 	//Let's invalidate also the mask
 	if(!mask.isNull())
-		mask->requestInvalidation();
+		mask->requestInvalidation(q);
 }
 //TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
 //this way they have less pb with precision.
@@ -1599,7 +1599,7 @@ void DisplayObject::setOnStage(bool staged)
 		//Our stage condition changed, send event
 		onStage=staged;
 		if(staged==true)
-			requestInvalidation();
+			requestInvalidation(getSys());
 		if(getVm()==NULL)
 			return;
 		/*NOTE: By tests we can assert that added/addedToStage is dispatched
@@ -1639,7 +1639,7 @@ ASFUNCTIONBODY(DisplayObject,_setAlpha)
 	 * stored value even if it is outside the [0, 1] range. */
 	th->alpha=val;
 	if(th->onStage)
-		th->requestInvalidation();
+		th->requestInvalidation(getSys());
 	return NULL;
 }
 
@@ -1697,7 +1697,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleX)
 	}
 	th->sx=val;
 	if(th->onStage)
-		th->requestInvalidation();
+		th->requestInvalidation(getSys());
 	return NULL;
 }
 
@@ -1722,7 +1722,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 	}
 	th->sy=val;
 	if(th->onStage)
-		th->requestInvalidation();
+		th->requestInvalidation(getSys());
 	return NULL;
 }
 
@@ -1744,7 +1744,7 @@ void DisplayObject::setX(number_t val)
 	}
 	tx=val;
 	if(onStage)
-		requestInvalidation();
+		requestInvalidation(getSys());
 }
 
 void DisplayObject::setY(number_t val)
@@ -1756,7 +1756,7 @@ void DisplayObject::setY(number_t val)
 	}
 	ty=val;
 	if(onStage)
-		requestInvalidation();
+		requestInvalidation(getSys());
 }
 
 ASFUNCTIONBODY(DisplayObject,_setX)
@@ -1915,7 +1915,7 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 	}
 	th->rotation=val;
 	if(th->onStage)
-		th->requestInvalidation();
+		th->requestInvalidation(getSys());
 	return NULL;
 }
 
@@ -1939,7 +1939,7 @@ void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
 	{
 		parent=p;
 		if(onStage)
-			requestInvalidation();
+			requestInvalidation(getSys());
 	}
 }
 
@@ -2050,7 +2050,7 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 		}
 		th->sx = newwidth/width;
 		if(th->onStage)
-			th->requestInvalidation();
+			th->requestInvalidation(getSys());
 	}
 	return NULL;
 }
@@ -2083,7 +2083,7 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 		}
 		th->sy=newheight/height;
 		if(th->onStage)
-			th->requestInvalidation();
+			th->requestInvalidation(getSys());
 	}
 	return NULL;
 }
@@ -2347,13 +2347,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,_setMouseChildren)
 	return NULL;
 }
 
-void DisplayObjectContainer::requestInvalidation()
+void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q)
 {
-	DisplayObject::requestInvalidation();
+	DisplayObject::requestInvalidation(q);
 	Locker l(mutexDisplayList);
 	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();it++)
-		(*it)->requestInvalidation();
+		(*it)->requestInvalidation(q);
 }
 
 void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int index)
@@ -3003,12 +3003,12 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 	return NULL;
 }
 
-void TokenContainer::requestInvalidation()
+void TokenContainer::requestInvalidation(InvalidateQueue* q)
 {
 	if(tokens.empty())
 		return;
 	owner->incRef();
-	getSys()->addToInvalidateQueue(_MR(owner));
+	q->addToInvalidateQueue(_MR(owner));
 }
 
 void TokenContainer::invalidate()
@@ -3185,7 +3185,7 @@ ASFUNCTIONBODY(Graphics,clear)
 	Graphics* th=static_cast<Graphics*>(obj);
 	th->checkAndSetScaling();
 	th->owner->tokens.clear();
-	th->owner->owner->requestInvalidation();
+	th->owner->owner->requestInvalidation(getSys());
 	return NULL;
 }
 
@@ -3212,7 +3212,7 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int y=args[1]->toInt();
 
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
-	th->owner->owner->requestInvalidation();
+	th->owner->owner->requestInvalidation(getSys());
 
 	th->curX=x;
 	th->curY=y;
@@ -3234,7 +3234,7 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	th->owner->tokens.emplace_back(GeomToken(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
 	                        Vector2(anchorX, anchorY)));
-	th->owner->owner->requestInvalidation();
+	th->owner->owner->requestInvalidation(getSys());
 
 	th->curX=anchorX;
 	th->curY=anchorY;
@@ -3260,7 +3260,7 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 	                        Vector2(control1X, control1Y),
 	                        Vector2(control2X, control2Y),
 	                        Vector2(anchorX, anchorY)));
-	th->owner->owner->requestInvalidation();
+	th->owner->owner->requestInvalidation(getSys());
 
 	th->curX=anchorX;
 	th->curY=anchorY;
@@ -3351,7 +3351,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	// C -> D
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+width, y+height-ellipseHeight)));
 
-	th->owner->owner->requestInvalidation();
+	th->owner->owner->requestInvalidation(getSys());
 	
 	return NULL;
 }
@@ -3395,7 +3395,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	                        Vector2(x+radius, y-kappa ),
 	                        Vector2(x+radius, y       )));
 
-	th->owner->owner->requestInvalidation();
+	th->owner->owner->requestInvalidation(getSys());
 	
 	return NULL;
 }
@@ -3421,7 +3421,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
-	th->owner->owner->requestInvalidation();
+	th->owner->owner->requestInvalidation(getSys());
 	
 	return NULL;
 }
@@ -3579,7 +3579,7 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 		}
 	}
 	
-	th->owner->owner->requestInvalidation();
+	th->owner->owner->requestInvalidation(getSys());
 
 	return NULL;
 }
@@ -4205,7 +4205,7 @@ void Bitmap::updatedData()
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->width, bitmapData->height)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->width, 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
-	requestInvalidation();
+	requestInvalidation(getSys());
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {

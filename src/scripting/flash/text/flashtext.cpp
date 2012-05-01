@@ -110,7 +110,7 @@ ASFUNCTIONBODY(TextField,_setWordWrap)
 	assert_and_throw(argslen==1);
 	th->wordWrap=Boolean_concrete(args[0]);
 	if(th->onStage)
-		th->requestInvalidation();
+		th->requestInvalidation(getSys());
 	return NULL;
 }
 
@@ -147,7 +147,7 @@ ASFUNCTIONBODY(TextField,_setAutoSize)
 	else
 		throw Class<ArgumentError>::getInstanceS("Wrong argument in TextField.autoSize");
 	if(th->onStage)
-		th->requestInvalidation();//TODO:check if there was any change
+		th->requestInvalidation(getSys());//TODO:check if there was any change
 	return NULL;
 }
 
@@ -166,7 +166,7 @@ ASFUNCTIONBODY(TextField,_setWidth)
 	{
 		th->width=args[0]->toInt();
 		if(th->onStage)
-			th->requestInvalidation();
+			th->requestInvalidation(getSys());
 		else
 			th->updateSizes();
 	}
@@ -187,7 +187,7 @@ ASFUNCTIONBODY(TextField,_setHeight)
 	{
 		th->height=args[0]->toInt();
 		if(th->onStage)
-			th->requestInvalidation();
+			th->requestInvalidation(getSys());
 		else
 			th->updateSizes();
 	}
@@ -264,18 +264,17 @@ void TextField::updateSizes()
 void TextField::updateText(const tiny_string& new_text)
 {
 	text = new_text;
-	requestInvalidation();
 	if(onStage)
-		requestInvalidation();
+		requestInvalidation(getSys());
 	else
 		updateSizes();
 }
 
-void TextField::requestInvalidation()
+void TextField::requestInvalidation(InvalidateQueue* q)
 {
 	incRef();
 	updateSizes();
-	getSys()->addToInvalidateQueue(_MR(this));
+	q->addToInvalidateQueue(_MR(this));
 }
 
 void TextField::invalidate()

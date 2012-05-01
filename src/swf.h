@@ -138,7 +138,7 @@ public:
 	void plot(uint32_t max, cairo_t *cr);
 };
 
-class SystemState: public RootMovieClip, public ITickJob
+class SystemState: public RootMovieClip, public ITickJob, public InvalidateQueue
 {
 private:
 	class EngineCreator: public IThreadJob

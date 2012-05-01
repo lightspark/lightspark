@@ -36,6 +36,7 @@ namespace lightspark
 {
 
 class DisplayObject;
+class InvalidateQueue;
 
 class TextureBuffer
 {
@@ -352,6 +353,15 @@ public:
 		@param w,h,tw,th are the (text)width and (text)height of the textData.
 	*/
 	static bool getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th);
+};
+
+class InvalidateQueue
+{
+protected:
+	~InvalidateQueue(){};
+public:
+	//Invalidation queue management
+	virtual void addToInvalidateQueue(_R<DisplayObject> d) = 0;
 };
 
 };

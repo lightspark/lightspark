@@ -137,8 +137,9 @@ void RenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t
 	uint32_t curChunk=0;
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
-	GLfloat *vertex_coords = new GLfloat[chunk.getNumberOfChunks()*12];
-	GLfloat *texture_coords = new GLfloat[chunk.getNumberOfChunks()*12];
+	//Allocate the data on the stack to reduce heap fragmentation
+	GLfloat *vertex_coords = g_newa(GLfloat,chunk.getNumberOfChunks()*12);
+	GLfloat *texture_coords = g_newa(GLfloat,chunk.getNumberOfChunks()*12);
 	for(uint32_t i=0, k=0;i<chunk.height;i+=CHUNKSIZE)
 	{
 		startY=h*i/chunk.height;
@@ -212,8 +213,6 @@ void RenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t
 	glDrawArrays(GL_TRIANGLES, 0, curChunk*6);
 	glDisableVertexAttribArray(VERTEX_ATTRIB);
 	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
-	delete[] vertex_coords;
-	delete[] texture_coords;
 	handleGLErrors();
 }
 

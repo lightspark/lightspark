@@ -32,6 +32,7 @@
 #include "exceptions.h"
 #include "smartrefs.h"
 #include "tiny_string.h"
+#include "memory_support.h"
 
 #ifdef BIG_ENDIAN
 #include <algorithm>
@@ -301,7 +302,7 @@ struct nsNameAndKind
 	}
 };
 
-struct multiname
+struct multiname: public memory_reporter
 {
 	multiname():name_type(NAME_OBJECT),name_o(NULL){}
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};

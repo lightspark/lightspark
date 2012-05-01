@@ -155,6 +155,8 @@ public:
 
 class TextEvent: public Event
 {
+private:
+	ASPROPERTY_GETTER_SETTER(tiny_string,text);
 public:
 	TextEvent(Class_base* c, const tiny_string& t = "textEvent");
 	static void sinit(Class_base*);
@@ -185,6 +187,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
+	ASFUNCTION(_constructor);
 };
 
 class SecurityErrorEvent: public ErrorEvent

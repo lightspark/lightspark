@@ -693,11 +693,19 @@ void TextEvent::sinit(Class_base* c)
 	c->setSuper(Class<Event>::getRef());
 
 	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS("textInput"),DECLARED_TRAIT);
+
+	REGISTER_GETTER_SETTER(c,text);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(TextEvent,text);
 
 ASFUNCTIONBODY(TextEvent,_constructor)
 {
-	Event::_constructor(obj,NULL,0);
+	TextEvent* th=static_cast<TextEvent*>(obj);
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+	if(argslen>=4)
+		th->text=args[3]->toString();
 	return NULL;
 }
 

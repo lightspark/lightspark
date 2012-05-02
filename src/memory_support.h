@@ -117,7 +117,7 @@ public:
 	{
 	}
 	template<class U>
-	reporter_allocator(const reporter_allocator<U>& o):memoryAccount(o.memoryAccount)
+	reporter_allocator(const reporter_allocator<U>& o):std::allocator<T>(o), memoryAccount(o.memoryAccount)
 	{
 	}
 	pointer allocate(size_type n, std::allocator<void>::const_pointer hint=0)
@@ -191,8 +191,20 @@ template<class T>
 class reporter_allocator: public std::allocator<T>
 {
 public:
-	reporter_allocator(MemoryAccount* m) {}
+	template<class U>
+	struct rebind
+	{
+		typedef reporter_allocator<U> other;
+	};
+	reporter_allocator(MemoryAccount* m)
+	{
+	}
+	template<class U>
+	reporter_allocator(const reporter_allocator<U>& o):std::allocator<T>(o)
+	{
+	}
 };
+
 #endif //MEMORY_USAGE_PROFILING
 
 };

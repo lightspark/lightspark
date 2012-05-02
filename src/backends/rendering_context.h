@@ -36,28 +36,6 @@ enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 class RenderContext
 {
 protected:
-	GLuint fboId;
-
-	/* Modelview matrix manipulation */
-	static const GLfloat lsIdentityMatrix[16];
-	GLfloat lsMVPMatrix[16];
-	std::stack<GLfloat*> lsglMatrixStack;
-	GLint projectionMatrixUniform;
-	GLint modelviewMatrixUniform;
-
-	/* Textures */
-	Mutex mutexLargeTexture;
-	uint32_t largeTextureSize;
-	class LargeTexture
-	{
-	public:
-		GLuint id;
-		uint8_t* bitmap;
-		LargeTexture(uint8_t* b):id(-1),bitmap(b){}
-		~LargeTexture(){/*delete[] bitmap;*/}
-	};
-	std::vector<LargeTexture> largeTextures;
-
 	/* Masks */
 	class MaskData
 	{
@@ -67,31 +45,15 @@ protected:
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
 	std::vector<MaskData> maskStack;
-public:
-	RenderContext() : largeTextureSize(0)
-	{
-		lsglLoadIdentity();
-	}
 	/* Modelview matrix manipulation */
-	void lsglLoadMatrixf(const GLfloat *m);
-	void lsglLoadIdentity();
-	void lsglPushMatrix();
-	void lsglPopMatrix();
-	void lsglMultMatrixf(const GLfloat *m);
-	void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
-	void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
-	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
-	/*
-	 * Uploads the current matrix as the specified type.
-	 */
-	void setMatrixUniform(LSGL_MATRIX m) const;
-
-	/* Textures */
-	/**
-		Render a quad of given size using the given chunk
-	*/
-	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h);
-
+	static const GLfloat lsIdentityMatrix[16];
+	GLfloat lsMVPMatrix[16];
+	std::stack<GLfloat*> lsglMatrixStack;
+	~RenderContext(){}
+public:
+	enum CONTEXT_TYPE { SOFTWARE=0, GL };
+	RenderContext(CONTEXT_TYPE t);
+	CONTEXT_TYPE contextType;
 	/* Masks */
 	/**
 		Add a mask to the stack mask
@@ -114,15 +76,80 @@ public:
 	{
 		return !maskStack.empty();
 	}
-	void renderMaskToTmpBuffer();
 
-	/* Misc uniforms TODO: create setters for them */
+	/* Modelview matrix manipulation */
+	void lsglLoadIdentity();
+	void lsglPushMatrix();
+	void lsglPopMatrix();
+	void lsglLoadMatrixf(const GLfloat *m);
+	void lsglMultMatrixf(const GLfloat *m);
+	void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
+	void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
+
+	/*
+	 * Uploads the current matrix as the specified type.
+	 */
+	virtual void setMatrixUniform(LSGL_MATRIX m) const=0;
+
+	virtual void setYUVtoRGBConversion(bool b)=0;
+
+	virtual void setMask(bool b)=0;
+	virtual void setAlpha(float a)=0;
+
+	/* Textures */
+	/**
+		Render a quad of given size using the given chunk
+	*/
+	virtual void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h)=0;
+};
+
+class GLRenderContext: public RenderContext
+{
+protected:
+	GLuint fboId;
+
+	GLint projectionMatrixUniform;
+	GLint modelviewMatrixUniform;
+
 	GLint yuvUniform;
 	GLint maskUniform;
 	GLint alphaUniform;
 
+	bool useMask;
+
+	/* Textures */
+	Mutex mutexLargeTexture;
+	uint32_t largeTextureSize;
+	class LargeTexture
+	{
+	public:
+		GLuint id;
+		uint8_t* bitmap;
+		LargeTexture(uint8_t* b):id(-1),bitmap(b){}
+		~LargeTexture(){/*delete[] bitmap;*/}
+	};
+	std::vector<LargeTexture> largeTextures;
+
+	void renderMaskToTmpBuffer();
+	~GLRenderContext(){}
+public:
+	GLRenderContext() : RenderContext(GL), useMask(false), largeTextureSize(0)
+	{
+	}
+	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+	/*
+	 * Uploads the current matrix as the specified type.
+	 */
+	void setMatrixUniform(LSGL_MATRIX m) const;
+
+	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h);
+
 	/* Utility */
 	static bool handleGLErrors();
+
+	void setYUVtoRGBConversion(bool b);
+	void setMask(bool b);
+	void setAlpha(float a);
 };
 
 }

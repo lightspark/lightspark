@@ -105,7 +105,7 @@ void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)
 	
 	glBindTexture(GL_TEXTURE_2D,0);
 	
-	if(RenderThread::handleGLErrors())
+	if(GLRenderContext::handleGLErrors())
 	{
 		LOG(LOG_ERROR,_("OpenGL error in TextureBuffer::init"));
 		throw RunTimeException("OpenGL error in TextureBuffer::init");
@@ -122,7 +122,7 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 			LOG(LOG_CALLS,_("Reallocating texture to size ") << w << 'x' << h);
 			setAllocSize(w,h);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-			if(RenderThread::handleGLErrors())
+			if(GLRenderContext::handleGLErrors())
 			{
 				LOG(LOG_ERROR,_("OpenGL error in TextureBuffer::resize"));
 				throw RunTimeException("OpenGL error in TextureBuffer::resize");

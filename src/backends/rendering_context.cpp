@@ -47,6 +47,11 @@ const GLfloat RenderContext::lsIdentityMatrix[16] = {
 								0, 0, 0, 1
 								};
 
+RenderContext::RenderContext(CONTEXT_TYPE t):contextType(t)
+{
+	lsglLoadIdentity();
+}
+
 void RenderContext::lsglLoadMatrixf(const GLfloat *m)
 {
 	memcpy(lsMVPMatrix, m, LSGL_MATRIX_SIZE);
@@ -112,7 +117,7 @@ void RenderContext::lsglTranslatef(GLfloat translateX, GLfloat translateY, GLflo
 	lsglMultMatrixf(trans);
 }
 
-void RenderContext::lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+void GLRenderContext::lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
 {
 	GLfloat ortho[16];
 	memset(ortho, 0, sizeof(ortho));
@@ -127,8 +132,14 @@ void RenderContext::lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloa
 	lsglMultMatrixf(ortho);
 }
 
-void RenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h)
+void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h)
 {
+	if(useMask)
+	{
+		glPushMatrix();
+		renderMaskToTmpBuffer();
+		glPopMatrix();
+	}
 	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t startX, startY, endX, endY;
@@ -216,7 +227,7 @@ void RenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t
 	handleGLErrors();
 }
 
-bool RenderContext::handleGLErrors()
+bool GLRenderContext::handleGLErrors()
 {
 	int errorCount = 0;
 	GLenum err;
@@ -239,14 +250,14 @@ bool RenderContext::handleGLErrors()
 	return errorCount;
 }
 
-void RenderContext::setMatrixUniform(LSGL_MATRIX m) const
+void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 {
 	GLint uni = (m == LSGL_MODELVIEW) ? modelviewMatrixUniform:projectionMatrixUniform;
 
 	glUniformMatrix4fv(uni, 1, GL_FALSE, lsMVPMatrix);
 }
 
-void RenderContext::renderMaskToTmpBuffer()
+void GLRenderContext::renderMaskToTmpBuffer()
 {
 	assert(!maskStack.empty());
 	//Clear the tmp buffer
@@ -264,4 +275,20 @@ void RenderContext::renderMaskToTmpBuffer()
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
+}
+
+void GLRenderContext::setYUVtoRGBConversion(bool b)
+{
+	glUniform1f(yuvUniform, (b)?1:0);
+}
+
+void GLRenderContext::setMask(bool b)
+{
+	useMask=b;
+	glUniform1f(maskUniform, (b)?1.0f:0.0f);
+}
+
+void GLRenderContext::setAlpha(float a)
+{
+	glUniform1f(alphaUniform, a);
 }

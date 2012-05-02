@@ -28,7 +28,7 @@
 namespace lightspark
 {
 
-class RenderThread: public ITickJob, public RenderContext
+class RenderThread: public ITickJob, public GLRenderContext
 {
 friend class DisplayObject;
 private:

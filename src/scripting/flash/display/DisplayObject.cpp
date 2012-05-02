@@ -356,19 +356,17 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 	if(!cachedSurface.tex.isValid())
 		return;
 
-	float enableMaskLookup=0.0f;
+	bool enableMaskLookup=false;
 	//If the maskEnabled is already set we are the mask!
 	if(!maskEnabled && ctxt.isMaskPresent())
-	{
-		ctxt.renderMaskToTmpBuffer();
-		enableMaskLookup=1.0f;
-	}
+		enableMaskLookup=true;
+
 	ctxt.lsglPushMatrix();
 	ctxt.lsglLoadIdentity();
 	ctxt.setMatrixUniform(LSGL_MODELVIEW);
-	glUniform1f(ctxt.maskUniform, enableMaskLookup);
-	glUniform1f(ctxt.yuvUniform, 0);
-	glUniform1f(ctxt.alphaUniform, cachedSurface.alpha);
+	ctxt.setMask(enableMaskLookup);
+	ctxt.setYUVtoRGBConversion(false);
+	ctxt.setAlpha(cachedSurface.alpha);
 	ctxt.renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	ctxt.lsglPopMatrix();
 	ctxt.setMatrixUniform(LSGL_MODELVIEW);

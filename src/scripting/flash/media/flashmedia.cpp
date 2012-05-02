@@ -99,6 +99,14 @@ void Video::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number
 	if(skipRender(maskEnabled))
 		return;
 
+	//Video is especially optimized for GL rendering
+	//It needs special treatment for SOFTWARE contextes
+	if(ctxt.contextType != RenderContext::GL)
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "Video::renderImpl on SOFTWARE context is not yet supported");
+		return;
+	}
+
 	if(!netStream.isNull() && netStream->lockIfReady())
 	{
 		//All operations here should be non blocking
@@ -108,10 +116,10 @@ void Video::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number
 
 		MatrixApplier ma(getConcatenatedMatrix());
 
-		//Enable texture lookup and YUV to RGB conversion
-		glUniform1f(ctxt.maskUniform, 0);
-		glUniform1f(ctxt.yuvUniform, 1);
-		glUniform1f(ctxt.alphaUniform, clippedAlpha());
+		//Enable YUV to RGB conversion
+		ctxt.setYUVtoRGBConversion(true);
+		ctxt.setMask(0);
+		ctxt.setAlpha(clippedAlpha());
 		//width and height will not change now (the Video mutex is acquired)
 		ctxt.renderTextured(netStream->getTexture(), 0, 0, width, height);
 		

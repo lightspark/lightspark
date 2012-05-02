@@ -156,7 +156,7 @@ public:
 
 class TextEvent: public Event
 {
-private:
+protected:
 	ASPROPERTY_GETTER_SETTER(tiny_string,text);
 public:
 	TextEvent(Class_base* c, const tiny_string& t = "textEvent");
@@ -171,6 +171,7 @@ class ErrorEvent: public TextEvent
 {
 private:
 	std::string errorMsg;
+	Event* cloneImpl() const;
 public:
 	ErrorEvent(Class_base* c, const tiny_string& t = "error", const std::string& e = "");
 	static void sinit(Class_base*);

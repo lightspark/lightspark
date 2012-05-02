@@ -741,6 +741,11 @@ void ErrorEvent::sinit(Class_base* c)
 	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS("error"),DECLARED_TRAIT);
 }
 
+Event* ErrorEvent::cloneImpl() const
+{
+	return Class<ErrorEvent>::getInstanceS(text, errorMsg);
+}
+
 ASFUNCTIONBODY(ErrorEvent,_constructor)
 {
 	TextEvent::_constructor(obj,args,argslen);

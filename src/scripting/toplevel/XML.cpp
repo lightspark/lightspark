@@ -208,7 +208,7 @@ ASFUNCTIONBODY(XML,descendants)
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0]->getObjectType()!=T_QNAME);
-	vector<_R<XML>> ret;
+	XMLVector ret;
 	th->getDescendantsByQName(args[0]->toString(),"",ret);
 	return Class<XMLList>::getInstanceS(ret);
 }
@@ -270,7 +270,7 @@ ASFUNCTIONBODY(XML,attribute)
 	else
 		rootXML=th->root;
 
-	std::vector<_R<XML>> ret;
+	XMLVector ret;
 	ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, attribute)));
 	return Class<XMLList>::getInstanceS(ret);
 }
@@ -290,7 +290,7 @@ XMLList* XML::getAllAttributes()
 		return Class<XMLList>::getInstanceS();
 	const xmlpp::Element::AttributeList& list=elem->get_attributes();
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
-	std::vector<_R<XML>> ret;
+	XMLVector ret;
 	_NR<XML> rootXML=NullRef;
 	if(root.isNull())
 	{
@@ -369,7 +369,7 @@ ASFUNCTIONBODY(XML,toXMLString)
 	return ret;
 }
 
-void XML::childrenImpl(std::vector<_R<XML> >& ret, const tiny_string& name)
+void XML::childrenImpl(XMLVector& ret, const tiny_string& name)
 {
 	assert(node);
 	const xmlpp::Node::NodeList& list=node->get_children();
@@ -397,7 +397,7 @@ ASFUNCTIONBODY(XML,child)
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
-	std::vector<_R<XML>> ret;
+	XMLVector ret;
 	th->childrenImpl(ret, arg0);
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
@@ -407,7 +407,7 @@ ASFUNCTIONBODY(XML,children)
 {
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==0);
-	std::vector<_R<XML>> ret;
+	XMLVector ret;
 	th->childrenImpl(ret, "*");
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
@@ -431,7 +431,7 @@ ASFUNCTIONBODY(XML,valueOf)
 	return obj;
 }
 
-void XML::getText(vector<_R<XML>> &ret)
+void XML::getText(XMLVector& ret)
 {
 	xmlpp::Node::NodeList nl = node->get_children();
 	xmlpp::Node::NodeList::iterator i;
@@ -454,14 +454,14 @@ ASFUNCTIONBODY(XML,text)
 {
 	XML *th = obj->as<XML>();
 	ARG_UNPACK;
-	vector<_R<XML>> ret;
+	XMLVector ret;
 	th->getText(ret);
 	return Class<XMLList>::getInstanceS(ret);
 }
 
 ASFUNCTIONBODY(XML,elements)
 {
-	vector<_R<XML>> ret;
+	XMLVector ret;
 	XML *th = obj->as<XML>();
 	tiny_string name;
 	ARG_UNPACK (name, "");
@@ -524,7 +524,7 @@ xmlElementType XML::getNodeKind() const
 }
 
 void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns,
-		std::vector<_R<XML>>& ret)
+		XMLVector& ret)
 {
 	//Check if this node is being requested. The empty string means ALL
 	if(name.empty() || name == node->get_name())
@@ -536,7 +536,7 @@ void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const 
 		recursiveGetDescendantsByQName(root, *it, name, ns, ret);
 }
 
-void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret)
+void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret)
 {
 	assert(node);
 	assert_and_throw(ns=="");
@@ -599,7 +599,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		else
 			rootXML=root;
 
-		std::vector<_R<XML> > retnode;
+		XMLVector retnode;
 		retnode.push_back(_MR(Class<XML>::getInstanceS(rootXML, attr)));
 		return _MNR(Class<XMLList>::getInstanceS(retnode));
 	}
@@ -613,7 +613,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		const xmlpp::Node::NodeList& children=node->get_children(buf);
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
 
-		std::vector<_R<XML>> ret;
+		XMLVector ret;
 
 		_NR<XML> rootXML=NullRef;
 		if(root.isNull())

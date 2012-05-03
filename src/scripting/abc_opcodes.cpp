@@ -1816,7 +1816,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 	ASObject* obj=th->runtime_stack_pop();
 	//The name must be a QName
 	assert_and_throw(name->name_type==multiname::NAME_STRING);
-	vector<_R<XML> > ret;
+	XML::XMLVector ret;
 	//TODO: support multiname and namespaces
 	if(obj->getClass()==Class<XML>::getClass())
 	{

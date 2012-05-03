@@ -40,7 +40,7 @@ public:
 	   Special constructor to build empty XMLList out of AS code
 	*/
 	XMLList(Class_base* cb,bool c):ASObject(cb),constructed(c){assert(c);}
-	XMLList(Class_base* c,const std::vector<_R<XML>>& r);
+	XMLList(Class_base* c,const XML::XMLVector& r);
 	XMLList(Class_base* c,const std::string& str);
 	void finalize();
 	static void buildTraits(ASObject* o){};
@@ -61,7 +61,7 @@ public:
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XML::XMLVector& ret);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;

@@ -28,18 +28,20 @@ class XMLList;
 class XML: public ASObject, public XMLBase
 {
 friend class XMLList;
+public:
+	typedef std::vector<_R<XML>> XMLVector;
 private:
 	//Pointer to the root XML element, the one that owns the parser that created this node
 	_NR<XML> root;
 	//The node this object represent
 	xmlpp::Node* node;
 	static void recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
-			std::vector<_R<XML>>& ret);
+			XMLVector& ret);
 	tiny_string toString_priv();
 	bool constructed;
 	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
 	XMLList* getAllAttributes();
-	void getText(std::vector<_R<XML>> &ret);
+	void getText(XMLVector& ret);
 	bool ignoreComments;
 	bool ignoreProcessingInstructions;
 	bool ignoreWhitespace;
@@ -49,7 +51,7 @@ private:
 	 * @param name The name of the wanted children, "*" for all children
 	 *
 	 */
-	void childrenImpl(std::vector<_R<XML> >& ret, const tiny_string& name);
+	void childrenImpl(XMLVector& ret, const tiny_string& name);
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
@@ -76,7 +78,7 @@ public:
 	ASFUNCTION(elements);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, std::vector<_R<XML> >& ret);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	tiny_string toString();

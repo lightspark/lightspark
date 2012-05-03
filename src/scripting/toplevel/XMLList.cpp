@@ -31,13 +31,22 @@ using namespace lightspark;
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(XMLList);
 
-XMLList::XMLList(Class_base* c, const std::string& str):ASObject(c),constructed(true)
+XMLList::XMLList(Class_base* c):ASObject(c),nodes(c->memoryAccount),constructed(false)
+{
+}
+
+XMLList::XMLList(Class_base* cb,bool c):ASObject(cb),nodes(cb->memoryAccount),constructed(c)
+{
+	assert(c);
+}
+
+XMLList::XMLList(Class_base* c, const std::string& str):ASObject(c),nodes(c->memoryAccount),constructed(true)
 {
 	buildFromString(str);
 }
 
 XMLList::XMLList(Class_base* c,const XML::XMLVector& r):
-	ASObject(c),nodes(r),constructed(true)
+	ASObject(c),nodes(r.begin(),r.end(),c->memoryAccount),constructed(true)
 {
 }
 
@@ -313,7 +322,7 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o)
 
 void XMLList::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XML::XMLVector& ret)
 {
-	std::vector<_R<XML> >::iterator it=nodes.begin();
+	auto it=nodes.begin();
 	for(; it!=nodes.end(); ++it)
 	{
 		(*it)->getDescendantsByQName(name, ns, ret);
@@ -336,7 +345,7 @@ bool XMLList::hasSimpleContent() const
 		return nodes[0]->hasSimpleContent();
 	else
 	{
-		std::vector<_R<XML> >::const_iterator it=nodes.begin();
+		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
 			if((*it)->getNodeKind()==XML_ELEMENT_NODE)
@@ -355,7 +364,7 @@ bool XMLList::hasComplexContent() const
 		return nodes[0]->hasComplexContent();
 	else
 	{
-		std::vector<_R<XML>>::const_iterator it=nodes.begin();
+		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
 			if((*it)->getNodeKind()==XML_ELEMENT_NODE)

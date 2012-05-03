@@ -29,17 +29,17 @@ namespace lightspark
 class XMLList: public ASObject
 {
 private:
-	std::vector<_R<XML> > nodes;
+	std::vector<_R<XML>, reporter_allocator<_R<XML>>> nodes;
 	bool constructed;
 	tiny_string toString_priv() const;
 	void buildFromString(const std::string& str);
 	void toXMLString_priv(xmlBufferPtr buf) const;
 public:
-	XMLList(Class_base* c):ASObject(c),constructed(false){}
+	XMLList(Class_base* c);
 	/*
 	   Special constructor to build empty XMLList out of AS code
 	*/
-	XMLList(Class_base* cb,bool c):ASObject(cb),constructed(c){assert(c);}
+	XMLList(Class_base* cb,bool c);
 	XMLList(Class_base* c,const XML::XMLVector& r);
 	XMLList(Class_base* c,const std::string& str);
 	void finalize();

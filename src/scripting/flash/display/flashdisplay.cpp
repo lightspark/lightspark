@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include <list>
-//#include <algorithm>
 
 #include "abc.h"
 #include "flashdisplay.h"
@@ -47,7 +46,6 @@ SET_NAMESPACE("flash.display");
 
 REGISTER_CLASS_NAME(LoaderInfo);
 REGISTER_CLASS_NAME(MovieClip);
-REGISTER_CLASS_NAME(DisplayObject);
 REGISTER_CLASS_NAME(InteractiveObject);
 REGISTER_CLASS_NAME(DisplayObjectContainer);
 REGISTER_CLASS_NAME(Sprite);

@@ -30,6 +30,9 @@
 using namespace lightspark;
 using namespace std;
 
+SET_NAMESPACE("flash.display");
+
+REGISTER_CLASS_NAME(DisplayObject);
 ATOMIC_INT32(DisplayObject::instanceCount);
 
 Vector2f DisplayObject::getXY()

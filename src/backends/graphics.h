@@ -118,21 +118,6 @@ public:
 	uint32_t getAllocHeight() const { return allocHeight;}
 };
 
-class MatrixApplier
-{
-private:
-	struct packedMatrix
-	{
-		float data[4][4];
-	};
-	std::vector<packedMatrix> savedStack;
-public:
-	MatrixApplier();
-	MatrixApplier(const MATRIX& m);
-	void concat(const MATRIX& m);
-	void unapply();
-};
-
 class TextureChunk
 {
 friend class GLRenderContext;

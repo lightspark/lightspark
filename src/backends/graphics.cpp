@@ -172,41 +172,6 @@ TextureBuffer::~TextureBuffer()
 	shutdown();
 }
 
-
-MatrixApplier::MatrixApplier()
-{
-	//First of all try to preserve current matrix
-	getRenderThread()->lsglPushMatrix();
-
-	//TODO: implement smart stack flush
-	//Save all the current stack, compute using SSE the final matrix and push that one
-	//Maybe mulps, shuffle and parallel add
-	//On unapply the stack will be reset as before
-}
-
-MatrixApplier::MatrixApplier(const MATRIX& m)
-{
-	//First of all try to preserve current matrix
-	getRenderThread()->lsglPushMatrix();
-
-	float matrix[16];
-	m.get4DMatrix(matrix);
-	getRenderThread()->lsglMultMatrixf(matrix);
-}
-
-void MatrixApplier::concat(const MATRIX& m)
-{
-	float matrix[16];
-	m.get4DMatrix(matrix);
-	getRenderThread()->lsglMultMatrixf(matrix);
-}
-
-void MatrixApplier::unapply()
-{
-	getRenderThread()->lsglPopMatrix();
-}
-
-
 TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 {
 	width=w;

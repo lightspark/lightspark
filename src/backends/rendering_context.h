@@ -42,6 +42,7 @@ protected:
 	GLfloat lsMVPMatrix[16];
 	std::stack<GLfloat*> lsglMatrixStack;
 	~RenderContext(){}
+	void lsglMultMatrixf(const GLfloat *m);
 public:
 	enum CONTEXT_TYPE { SOFTWARE=0, GL };
 	RenderContext(CONTEXT_TYPE t);
@@ -70,10 +71,7 @@ public:
 
 	/* Modelview matrix manipulation */
 	void lsglLoadIdentity();
-	void lsglPushMatrix();
-	void lsglPopMatrix();
 	void lsglLoadMatrixf(const GLfloat *m);
-	void lsglMultMatrixf(const GLfloat *m);
 	void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
 	void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
 

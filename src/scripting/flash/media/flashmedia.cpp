@@ -114,7 +114,10 @@ void Video::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
 
-		MatrixApplier ma(getConcatenatedMatrix());
+		const MATRIX totalMatrix=getConcatenatedMatrix();
+		float m[16];
+		totalMatrix.get4DMatrix(m);
+		ctxt.lsglLoadMatrixf(m);
 
 		//Enable YUV to RGB conversion
 		//width and height will not change now (the Video mutex is acquired)
@@ -122,7 +125,6 @@ void Video::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number
 			clippedAlpha(), RenderContext::YUV_MODE,
 			RenderContext::NO_MASK);
 		
-		ma.unapply();
 		netStream->unlock();
 	}
 }

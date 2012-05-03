@@ -62,21 +62,6 @@ void RenderContext::lsglLoadIdentity()
 	lsglLoadMatrixf(lsIdentityMatrix);
 }
 
-void RenderContext::lsglPushMatrix()
-{
-	GLfloat *top = new GLfloat[16];
-	memcpy(top, lsMVPMatrix, LSGL_MATRIX_SIZE);
-	lsglMatrixStack.push(top);
-}
-
-void RenderContext::lsglPopMatrix()
-{
-	assert(lsglMatrixStack.size() > 0);
-	memcpy(lsMVPMatrix, lsglMatrixStack.top(), LSGL_MATRIX_SIZE);
-	delete[] lsglMatrixStack.top();
-	lsglMatrixStack.pop();
-}
-
 void RenderContext::lsglMultMatrixf(const GLfloat *m)
 {
 	GLfloat tmp[16];

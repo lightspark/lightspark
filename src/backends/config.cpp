@@ -169,6 +169,7 @@ Config::Config():
 				LOG(LOG_INFO,"Found gnash at " << (gnash_exec_path / "sdl-gnash.exe"));
 				gnashPath = (gnash_exec_path / "sdl-gnash.exe").string();
 			}
+			else
 				LOG(LOG_ERROR, "Could not find gnash in " << gnash_exec_path);
 		}
 	}

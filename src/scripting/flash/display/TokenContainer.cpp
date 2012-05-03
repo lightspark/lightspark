@@ -123,7 +123,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q)
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-void TokenContainer::invalidate()
+IDrawable* TokenContainer::invalidate()
 {
 	int32_t x,y;
 	uint32_t width,height;
@@ -131,16 +131,15 @@ void TokenContainer::invalidate()
 	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
 	{
 		//No contents, nothing to do
-		return;
+		return NULL;
 	}
 
 	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
-		return;
-	CairoRenderer* r=new CairoTokenRenderer(owner, owner->cachedSurface, tokens,
+		return NULL;
+	return new CairoTokenRenderer(tokens,
 				owner->getConcatenatedMatrix(), x, y, width, height, scaling,
 				owner->getConcatenatedAlpha());
-	getSys()->addJob(r);
 }
 
 bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const

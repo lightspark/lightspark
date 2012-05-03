@@ -277,7 +277,7 @@ void TextField::requestInvalidation(InvalidateQueue* q)
 	q->addToInvalidateQueue(_MR(this));
 }
 
-void TextField::invalidate()
+IDrawable* TextField::invalidate()
 {
 	int32_t x,y;
 	uint32_t width,height;
@@ -285,12 +285,12 @@ void TextField::invalidate()
 	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
 	{
 		//No contents, nothing to do
-		return;
+		return NULL;
 	}
 
 	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
 	if(width==0 || height==0)
-		return;
+		return NULL;
 	MATRIX mat = getConcatenatedMatrix();
 	if(mat.ScaleX != 1 || mat.ScaleY != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented");
@@ -299,10 +299,9 @@ void TextField::invalidate()
 		Width changes do not change the font size, and do nothing when autosize is on and wordwrap off.
 		Currently, the TextField is stretched in case of scaling.
 	*/
-	CairoPangoRenderer* r=new CairoPangoRenderer(this, cachedSurface, *this,
+	return new CairoPangoRenderer(*this,
 				getConcatenatedMatrix(), x, y, width, height, 1.0f,
 				getConcatenatedAlpha());
-	getSys()->addJob(r);
 }
 
 void TextField::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const

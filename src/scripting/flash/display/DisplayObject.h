@@ -76,8 +76,6 @@ protected:
 	bool skipRender(bool maskEnabled) const;
 	float clippedAlpha() const;
 	bool visible;
-	/* cachedSurface may only be read/written from within the render thread */
-	CachedSurface cachedSurface;
 
 	void defaultRender(RenderContext& ctxt, bool maskEnabled) const;
 	DisplayObject(const DisplayObject& d);
@@ -104,6 +102,10 @@ public:
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
+	/* cachedSurface may only be read/written from within the render thread
+	 * It is the cached version of the object for fast draw on the Stage
+	 */
+	CachedSurface cachedSurface;
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
 	void setParent(_NR<DisplayObjectContainer> p);
 	/*
@@ -113,7 +115,7 @@ public:
 	DisplayObject(Class_base* c);
 	void finalize();
 	MATRIX getMatrix() const;
-	virtual void invalidate();
+	virtual IDrawable* invalidate();
 	virtual void requestInvalidation(InvalidateQueue* q);
 	MATRIX getConcatenatedMatrix() const;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;

@@ -403,7 +403,7 @@ void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, num
 	outHeight=ceil(maxy-miny);
 }
 
-void DisplayObject::invalidate()
+IDrawable* DisplayObject::invalidate()
 {
 	//Not supposed to be called
 	throw RunTimeException("DisplayObject::invalidate");

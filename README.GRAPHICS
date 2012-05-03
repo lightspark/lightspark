@@ -1,0 +1,30 @@
+Overview of graphics pipeline
+-----------------------------
+Lightspark tries to be efficient on the rendering side using both caching and
+multi threaded rasterization.
+
+Most of the graphic assets come in vectorial form. Cairo is used to transform
+vectorial data in raster (bitmap format). PangoCairo is used for dynamic text.
+Rendered data is then transferred onto OpenGL textures using Pixel Buffer
+Objects (that hopefully are implemented using DMA). Textures are only loaded
+when an object changes, so static objects are always cached in VRAM.
+
+Pipeline for Stage:
+1) When an object changes and needs to be redrawn it will call its
+DisplayObject::requestInvalidation method. The method needs an InvalidateQueue
+parameter and will add the object to such queue.
+2) Invalidation requests are gathered together in the queue, but not executed
+until the currently handled event ends, to make sure we are rendering a
+consistent state.
+3) At the end of the event all objects in the queue will have their ::invalidate
+method called. This method returns an instance of IDrawable or NULL is rendering
+is not necessary. It's important that the IDrawable instance contains a copy of
+all the needed object state since the object may change while the rendering
+happens. In the future Copy On Write could be useful to save the copy of data in
+some cases.
+4) The returned IDrawable and a reference to the object itself will then be
+stored inside an AsyncDrawJob. The reference to the objects is necessary to make
+sure the CachedSurface of the object, which stores information about the OpenGL
+texture where the data must end, survives until the end of the rendering.
+5) The AsyncDrawJob in added to the Thread Pool, to be executed. It will use
+IDrawable::getPixelBuffer to get the raw pixels and upload them to the GPU.

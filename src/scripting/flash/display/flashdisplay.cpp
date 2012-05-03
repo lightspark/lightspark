@@ -29,15 +29,10 @@
 #include "class.h"
 #include "backends/rendering.h"
 #include "backends/geometry.h"
-#include "backends/image.h"
 #include "flash/accessibility/flashaccessibility.h"
 #include "argconv.h"
 #include "toplevel/Vector.h"
 #include "backends/security.h"
-
-//#include <fstream>
-//#include <limits>
-//#include <cmath>
 
 using namespace std;
 using namespace lightspark;

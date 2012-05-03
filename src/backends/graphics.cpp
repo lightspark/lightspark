@@ -27,8 +27,6 @@
 #include "backends/config.h"
 #include "compat.h"
 #include "scripting/flash/text/flashtext.h"
-
-#include <iostream>
 #include "flash/display/BitmapData.h"
 
 using namespace lightspark;

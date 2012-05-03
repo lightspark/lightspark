@@ -379,11 +379,17 @@ public:
 
 class InvalidateQueue
 {
-protected:
-	~InvalidateQueue(){};
 public:
+	virtual ~InvalidateQueue(){};
 	//Invalidation queue management
 	virtual void addToInvalidateQueue(_R<DisplayObject> d) = 0;
+};
+
+class SoftwareInvalidateQueue: public InvalidateQueue
+{
+public:
+	std::list<_R<DisplayObject>> queue;
+	void addToInvalidateQueue(_R<DisplayObject> d);
 };
 
 };

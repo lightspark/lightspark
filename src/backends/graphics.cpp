@@ -942,3 +942,8 @@ void AsyncDrawJob::uploadFence()
 {
 	delete this;
 }
+
+void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)
+{
+	queue.emplace_back(d);
+}

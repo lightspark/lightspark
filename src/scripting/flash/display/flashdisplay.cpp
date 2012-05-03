@@ -403,14 +403,26 @@ ASFUNCTIONBODY(Loader,load)
 	th->url=r->getRequestURL();
 	th->contentLoaderInfo->setURL(th->url.getParsedURL());
 	th->contentLoaderInfo->resetState();
-	//Support for LoaderContext
-	if(context.isNull() || context->applicationDomain.isNull())
+	//Default is to create a child ApplicationDomain if the file is in the same security context
+	//otherwise create a child of the system domain. If the security domain is different
+	//the passed applicationDomain is ignored
+	_R<RootMovieClip> currentRoot=getVm()->currentCallContext->context->root;
+	if(currentRoot->getOrigin().getHostname()==th->url.getHostname())
 	{
-		_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
-		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+		//Same domain
+		_NR<ApplicationDomain> parentDomain = currentRoot->applicationDomain;
+		//Support for LoaderContext
+		if(context.isNull() || context->applicationDomain.isNull())
+			th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+		else
+			th->contentLoaderInfo->applicationDomain = context->applicationDomain;
 	}
 	else
-		th->contentLoaderInfo->applicationDomain = context->applicationDomain;
+	{
+		//Different domain
+		_NR<ApplicationDomain> parentDomain =  getSys()->systemDomain;
+		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+	}
 
 	if(!th->url.isValid())
 	{

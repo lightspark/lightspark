@@ -341,6 +341,7 @@ public:
 	SCALE_MODE scaleMode;
 	
 	//Static AS class properties
+	//TODO: Those should be different for each security domain
 	//NAMING: static$CLASSNAME$$PROPERTYNAME$
 	//	NetConnection
 	ObjectEncoding::ENCODING staticNetConnectionDefaultObjectEncoding;

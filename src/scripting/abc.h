@@ -436,7 +436,8 @@ private:
 
 	//Event handling
 	volatile bool shuttingdown;
-	std::deque<std::pair<_NR<EventDispatcher>,_R<Event> > > events_queue;
+	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
+	std::deque<eventType, reporter_allocator<eventType>> events_queue;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
 	void signalEventWaiters();
 	void buildClassAndBindTag(const std::string& s, _R<DictionaryTag> t);
@@ -457,7 +458,7 @@ public:
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;
 
-	ABCVm(SystemState* s) DLL_PUBLIC;
+	ABCVm(SystemState* s, MemoryAccount* m) DLL_PUBLIC;
 	/**
 		Destroys the VM
 

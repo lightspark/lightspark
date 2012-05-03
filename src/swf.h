@@ -370,7 +370,7 @@ public:
 	std::vector<ABCContext*> contextes;
 	void saveProfilingInformation();
 #endif
-	MemoryAccount* allocateMemoryAccount(const tiny_string& name);
+	MemoryAccount* allocateMemoryAccount(const tiny_string& name) DLL_PUBLIC;
 	MemoryAccount* unaccountedMemory;
 	MemoryAccount* stringMemory;
 #ifdef MEMORY_USAGE_PROFILING

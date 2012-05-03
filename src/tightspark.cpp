@@ -109,7 +109,8 @@ int main(int argc, char* argv[])
 	//setrlimit(RLIMIT_AS,&rl);
 #endif
 
-	ABCVm* vm=new ABCVm(sys);
+	MemoryAccount* vmDataMemory=sys->allocateMemoryAccount("VM_Data");
+	ABCVm* vm=new ABCVm(sys, vmDataMemory);
 	sys->currentVm=vm;
 	vector<ABCContext*> contexts;
 	for(unsigned int i=0;i<fileNames.size();i++)

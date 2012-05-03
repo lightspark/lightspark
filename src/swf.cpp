@@ -870,7 +870,8 @@ void SystemState::needsAVM2(bool avm2)
 		assert(!currentVm);
 		vmVersion=AVM2;
 		LOG(LOG_INFO,_("Creating VM"));
-		currentVm=new ABCVm(this);
+		MemoryAccount* vmDataMemory=this->allocateMemoryAccount("VM_Data");
+		currentVm=new ABCVm(this, vmDataMemory);
 	}
 	else
 		vmVersion=AVM1;

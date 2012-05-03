@@ -825,8 +825,8 @@ void ABCContext::dumpProfilingData(ostream& f) const
 }
 #endif
 
-ABCVm::ABCVm(SystemState* s):m_sys(s),status(CREATED),shuttingdown(false),currentCallContext(NULL),
-	vmDataMemory(NULL),cur_recursion(0)
+ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),shuttingdown(false),
+	events_queue(reporter_allocator<eventType>(m)),currentCallContext(NULL),vmDataMemory(m),cur_recursion(0)
 {
 	limits.max_recursion = 256;
 	limits.script_timeout = 20;

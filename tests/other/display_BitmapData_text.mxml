@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_display_BitmapData_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+import flash.display.BitmapData;
+
+private function appComplete():void
+{
+	var b1:BitmapData = new BitmapData(100,100);
+	var c:DisplayObjectContainer = new Sprite();
+	c.x = 100;
+	c.y = 50;
+	var s:Shape = new Shape();
+	s.graphics.beginFill(0xFFCC00);
+	s.graphics.drawRect(0, 0, 100, 100);
+	b1.draw(s);
+	var b2:Bitmap = new Bitmap(b1);
+	b2.x = 100;
+	b2.y = 50;
+	c.addChild(b2);
+	visual.addChild(c);
+}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

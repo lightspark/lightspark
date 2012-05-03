@@ -25,6 +25,7 @@
 #include "geometry.h"
 #include "compat.h"
 #include "flash/display/flashdisplay.h"
+#include "flash/display/BitmapData.h"
 
 using namespace std;
 using namespace lightspark;

@@ -21,6 +21,7 @@
 #include "TokenContainer.h"
 #include "swf.h"
 #include "backends/input.h"
+#include "BitmapData.h"
 
 using namespace lightspark;
 using namespace std;

@@ -29,6 +29,7 @@
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "scripting/flash/media/flashmedia.h"
+#include "scripting/flash/display/BitmapData.h"
 #include "scripting/class.h"
 
 namespace lightspark

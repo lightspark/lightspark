@@ -592,47 +592,6 @@ public:
 	IntSize(uint32_t w, uint32_t h):width(h),height(h){}
 };
 
-class BitmapData: public ASObject, public IBitmapDrawable
-{
-protected:
-	size_t stride;
-	size_t dataSize;
-	bool disposed;
-	uint32_t getPixelPriv(uint32_t x, uint32_t y);
-	void setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha);
-	void copyFrom(BitmapData *source);
-public:
-	BitmapData(Class_base* c);
-	static void sinit(Class_base* c);
-	~BitmapData();
-	/* the bitmaps data in premultiplied, native-endian 32 bit
-	 * ARGB format. stride is the number of bytes per row, may be
-	 * larger than width. dataSize is the total allocated size of
-	 * data (=stride*height) */
-	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
-	uint8_t* getData() { return &data[0]; }
-	ASPROPERTY_GETTER(int32_t, width);
-	ASPROPERTY_GETTER(int32_t, height);
-	ASPROPERTY_GETTER(bool, transparent);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(dispose);
-	ASFUNCTION(draw);
-	ASFUNCTION(getPixel);
-	ASFUNCTION(getPixel32);
-	ASFUNCTION(setPixel);
-	ASFUNCTION(setPixel32);
-	ASFUNCTION(getRect);
-	ASFUNCTION(copyPixels);
-	ASFUNCTION(fillRect);
-	ASFUNCTION(generateFilterRect);
-	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
-	bool fromJPEG(uint8_t* data, int len);
-	bool fromJPEG(std::istream& s);
-	bool fromPNG(std::istream& s);
-	int getWidth() const { return width; }
-	int getHeight() const { return height; }
-};
-
 class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;

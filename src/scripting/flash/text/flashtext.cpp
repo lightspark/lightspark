@@ -288,11 +288,11 @@ IDrawable* TextField::invalidate()
 		return NULL;
 	}
 
-	computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
+	const MATRIX& totalMatrix = getConcatenatedMatrix();
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;
-	MATRIX mat = getConcatenatedMatrix();
-	if(mat.ScaleX != 1 || mat.ScaleY != 1)
+	if(totalMatrix.ScaleX != 1 || totalMatrix.ScaleY != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented");
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
 		on the font size. In some cases, it can change the width (if autosize is on and wordwrap off).
@@ -300,7 +300,7 @@ IDrawable* TextField::invalidate()
 		Currently, the TextField is stretched in case of scaling.
 	*/
 	return new CairoPangoRenderer(*this,
-				getConcatenatedMatrix(), x, y, width, height, 1.0f,
+				totalMatrix, x, y, width, height, 1.0f,
 				getConcatenatedAlpha());
 }
 

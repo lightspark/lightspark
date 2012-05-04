@@ -367,15 +367,16 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 			(enableMaskLookup)?RenderContext::ENABLE_MASK:RenderContext::NO_MASK);
 }
 
-void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
-		int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const
+void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
+		int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight,
+		const MATRIX& m) const
 {
 	//As the transformation is arbitrary we have to check all the four vertices
 	number_t coords[8];
-	localToGlobal(xmin,ymin,coords[0],coords[1]);
-	localToGlobal(xmin,ymax,coords[2],coords[3]);
-	localToGlobal(xmax,ymax,coords[4],coords[5]);
-	localToGlobal(xmax,ymin,coords[6],coords[7]);
+	m.multiply2D(xmin,ymin,coords[0],coords[1]);
+	m.multiply2D(xmin,ymax,coords[2],coords[3]);
+	m.multiply2D(xmax,ymax,coords[4],coords[5]);
+	m.multiply2D(xmax,ymin,coords[6],coords[7]);
 	//Now find out the minimum and maximum that represent the complete bounding rect
 	number_t minx=coords[6];
 	number_t maxx=coords[6];

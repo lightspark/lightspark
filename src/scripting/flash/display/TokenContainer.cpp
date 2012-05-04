@@ -135,11 +135,12 @@ IDrawable* TokenContainer::invalidate()
 		return NULL;
 	}
 
-	owner->computeDeviceBoundsForRect(bxmin,bxmax,bymin,bymax,x,y,width,height);
+	const MATRIX& totalMatrix=owner->getConcatenatedMatrix();
+	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;
 	return new CairoTokenRenderer(tokens,
-				owner->getConcatenatedMatrix(), x, y, width, height, scaling,
+				totalMatrix, x, y, width, height, scaling,
 				owner->getConcatenatedAlpha());
 }
 

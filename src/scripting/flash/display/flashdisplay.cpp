@@ -4382,27 +4382,20 @@ ASFUNCTIONBODY(SimpleButton,_constructor)
 	 */
 	InteractiveObject::_constructor(obj,NULL,0);
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	_NR<DisplayObject> upState;
+	_NR<DisplayObject> overState;
+	_NR<DisplayObject> downState;
+	_NR<DisplayObject> hitTestState;
+	ARG_UNPACK(upState, NullRef)(overState, NullRef)(downState, NullRef)(hitTestState, NullRef);
 
-	if (argslen >= 1)
-	{
-		th->upState = _MNR(static_cast<DisplayObject*>(args[0]));
-		th->upState->incRef();
-	}
-	if (argslen >= 2)
-	{
-		th->overState = _MNR(static_cast<DisplayObject*>(args[1]));
-		th->overState->incRef();
-	}
-	if (argslen >= 3)
-	{
-		th->downState = _MNR(static_cast<DisplayObject*>(args[2]));
-		th->downState->incRef();
-	}
-	if (argslen == 4)
-	{
-		th->hitTestState = _MNR(static_cast<DisplayObject*>(args[3]));
-		th->hitTestState->incRef();
-	}
+	if (!upState.isNull())
+		th->upState = upState;
+	if (!overState.isNull())
+		th->overState = overState;
+	if (!downState.isNull())
+		th->downState = downState;
+	if (!hitTestState.isNull())
+		th->hitTestState = hitTestState;
 
 	th->reflectState();
 

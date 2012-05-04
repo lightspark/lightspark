@@ -121,8 +121,15 @@ public:
 class TextureChunk
 {
 friend class GLRenderContext;
+friend class CairoRenderContext;
 friend class RenderThread;
 private:
+	/*
+	 * For GLRenderContext texId is an OpenGL texture id and chunks is an array of used
+	 * chunks inside such texture.
+	 * For CairoRenderContext texId is an arbitrary id for the texture and chunks is
+	 * not used.
+	 */
 	uint32_t texId;
 	uint32_t* chunks;
 	TextureChunk(uint32_t w, uint32_t h);

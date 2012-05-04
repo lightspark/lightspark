@@ -274,3 +274,61 @@ void GLRenderContext::renderMaskToTmpBuffer()
 	glDrawBuffer(GL_BACK);
 }
 
+CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height):RenderContext(CAIRO)
+{
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	assert(cairoWidthStride==width*4);
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
+	cr=cairo_create(cairoSurface);
+	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
+}
+
+CairoRenderContext::~CairoRenderContext()
+{
+	for(auto it=customSurfaces.begin();it!=customSurfaces.end();it++)
+	{
+		//Delete and reset here the buffer memory stored in chunks
+		delete[] it->second.tex.chunks;
+		it->second.tex.chunks=NULL;
+	}
+	cairo_destroy(cr);
+}
+
+void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
+			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
+{
+	//TODO: support alpha, colorMode, and maskMode
+	uint8_t* buf=(uint8_t*)chunk.chunks;
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, chunk.width);
+	assert(cairoWidthStride==chunk.width*4);
+	cairo_surface_t* chunkSurface = cairo_image_surface_create_for_data (buf, CAIRO_FORMAT_ARGB32,
+			chunk.width, chunk.height, cairoWidthStride);
+	cairo_pattern_t* chunkPattern = cairo_pattern_create_for_surface(chunkSurface);
+	cairo_surface_destroy(chunkSurface);
+	cairo_pattern_set_filter(chunkPattern, CAIRO_FILTER_BILINEAR);
+	cairo_pattern_set_extend(chunkPattern, CAIRO_EXTEND_PAD);
+	cairo_matrix_t matrix;
+	//TODO: Support scaling
+	cairo_matrix_init_translate(&matrix, -x, -y);
+	cairo_pattern_set_matrix(chunkPattern, &matrix);
+	cairo_set_source(cr, chunkPattern);
+	cairo_pattern_destroy(chunkPattern);
+	cairo_rectangle(cr, x, y, w, h);
+	cairo_fill(cr);
+}
+
+const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d) const
+{
+	auto ret=customSurfaces.find(d);
+	assert(ret!=customSurfaces.end());
+	return ret->second;
+}
+
+CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf)
+{
+	auto ret=customSurfaces.insert(make_pair(d, CachedSurface()));
+	assert(ret.second);
+	CachedSurface& surface=ret.first->second;
+	surface.tex.chunks=(uint32_t*)texBuf;
+	return surface;
+}

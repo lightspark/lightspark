@@ -44,7 +44,7 @@ protected:
 	~RenderContext(){}
 	void lsglMultMatrixf(const GLfloat *m);
 public:
-	enum CONTEXT_TYPE { SOFTWARE=0, GL };
+	enum CONTEXT_TYPE { CAIRO=0, GL };
 	RenderContext(CONTEXT_TYPE t);
 	CONTEXT_TYPE contextType;
 	/* Masks */
@@ -138,6 +138,29 @@ public:
 
 	/* Utility */
 	static bool handleGLErrors();
+};
+
+class CairoRenderContext: public RenderContext
+{
+private:
+	std::map<const DisplayObject*, CachedSurface> customSurfaces;
+	cairo_t* cr;
+public:
+	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height);
+	virtual ~CairoRenderContext();
+	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
+			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode);
+	/**
+	 * Get the right CachedSurface from an object
+	 * In the Cairo case we get the right CachedSurface out of the map
+	 */
+	const CachedSurface& getCachedSurface(const DisplayObject* obj) const;
+
+	/**
+	 * The CairoRenderContext acquires the ownership of the buffer
+	 * it will be freed on destruction
+	 */
+	CachedSurface& allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf);
 };
 
 }

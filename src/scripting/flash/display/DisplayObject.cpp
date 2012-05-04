@@ -349,9 +349,10 @@ bool DisplayObject::skipRender(bool maskEnabled) const
 
 void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 {
-	/* cachedSurface is only modified from within the render thread
+	const CachedSurface& surface=ctxt.getCachedSurface(this);
+	/* surface is only modified from within the render thread
 	 * so we need no locking here */
-	if(!cachedSurface.tex.isValid())
+	if(!surface.tex.isValid())
 		return;
 
 	bool enableMaskLookup=false;
@@ -360,9 +361,9 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 		enableMaskLookup=true;
 
 	ctxt.lsglLoadIdentity();
-	ctxt.renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset,
-			cachedSurface.tex.width, cachedSurface.tex.height,
-			cachedSurface.alpha, RenderContext::RGB_MODE,
+	ctxt.renderTextured(surface.tex, surface.xOffset, surface.yOffset,
+			surface.tex.width, surface.tex.height,
+			surface.alpha, RenderContext::RGB_MODE,
 			(enableMaskLookup)?RenderContext::ENABLE_MASK:RenderContext::NO_MASK);
 }
 

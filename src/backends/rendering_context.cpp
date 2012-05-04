@@ -117,6 +117,11 @@ void GLRenderContext::lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfl
 	lsglMultMatrixf(ortho);
 }
 
+const CachedSurface& GLRenderContext::getCachedSurface(const DisplayObject* d) const
+{
+	return d->cachedSurface;
+}
+
 void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
 {

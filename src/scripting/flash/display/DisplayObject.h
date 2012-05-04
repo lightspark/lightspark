@@ -38,6 +38,8 @@ class Transform;
 class DisplayObject: public EventDispatcher, public IBitmapDrawable
 {
 friend class TokenContainer;
+friend class GLRenderContext;
+friend class AsyncDrawJob;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
 	enum HIT_TYPE { GENERIC_HIT, DOUBLE_CLICK };
@@ -58,6 +60,10 @@ private:
 	void setMask(_NR<DisplayObject> m);
 	_NR<DisplayObjectContainer> parent;
 	_NR<Transform> transform;
+	/* cachedSurface may only be read/written from within the render thread
+	 * It is the cached version of the object for fast draw on the Stage
+	 */
+	CachedSurface cachedSurface;
 protected:
 	~DisplayObject();
 	/**
@@ -102,10 +108,6 @@ public:
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
-	/* cachedSurface may only be read/written from within the render thread
-	 * It is the cached version of the object for fast draw on the Stage
-	 */
-	CachedSurface cachedSurface;
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
 	void setParent(_NR<DisplayObjectContainer> p);
 	/*

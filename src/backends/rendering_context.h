@@ -83,6 +83,10 @@ public:
 	*/
 	virtual void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)=0;
+	/**
+	 * Get the right CachedSurface from an object
+	 */
+	virtual const CachedSurface& getCachedSurface(const DisplayObject* obj) const=0;
 };
 
 class GLRenderContext: public RenderContext
@@ -126,6 +130,11 @@ public:
 
 	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode);
+	/**
+	 * Get the right CachedSurface from an object
+	 * In the OpenGL case we just get the CachedSurface inside the object itself
+	 */
+	const CachedSurface& getCachedSurface(const DisplayObject* obj) const;
 
 	/* Utility */
 	static bool handleGLErrors();

@@ -79,18 +79,18 @@ void ASString::sinit(Class_base* c)
 	c->isFinal = true;
 	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(split),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("substring",AS3,Class<IFunction>::getFunction(substring),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(split,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("substring",AS3,Class<IFunction>::getFunction(substring,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("replace",AS3,Class<IFunction>::getFunction(replace),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(concat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("match",AS3,Class<IFunction>::getFunction(match),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("search",AS3,Class<IFunction>::getFunction(search),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("charAt",AS3,Class<IFunction>::getFunction(charAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("charAt",AS3,Class<IFunction>::getFunction(charAt,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLocaleLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLocaleUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase),NORMAL_METHOD,true);
@@ -100,22 +100,22 @@ void ASString::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 
-	c->prototype->setVariableByQName("split","",Class<IFunction>::getFunction(split),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("substring","",Class<IFunction>::getFunction(substring),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("split","",Class<IFunction>::getFunction(split,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("substr","",Class<IFunction>::getFunction(substr,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("substring","",Class<IFunction>::getFunction(substring,2),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("replace","",Class<IFunction>::getFunction(replace),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(concat),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("match","",Class<IFunction>::getFunction(match),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("search","",Class<IFunction>::getFunction(search),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("indexOf","",Class<IFunction>::getFunction(indexOf),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("lastIndexOf","",Class<IFunction>::getFunction(lastIndexOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("indexOf","",Class<IFunction>::getFunction(indexOf,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("lastIndexOf","",Class<IFunction>::getFunction(lastIndexOf,2),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("charCodeAt","",Class<IFunction>::getFunction(charCodeAt),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("charAt","",Class<IFunction>::getFunction(charAt),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("slice","",Class<IFunction>::getFunction(slice),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("charAt","",Class<IFunction>::getFunction(charAt,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("slice","",Class<IFunction>::getFunction(slice,2),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleLowerCase","",Class<IFunction>::getFunction(toLowerCase),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleUpperCase","",Class<IFunction>::getFunction(toUpperCase),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLowerCase","",Class<IFunction>::getFunction(toLowerCase),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toUpperCase","",Class<IFunction>::getFunction(toUpperCase),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("fromCharCode","",Class<IFunction>::getFunction(fromCharCode),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
@@ -270,9 +270,10 @@ ASFUNCTIONBODY(ASString,split)
 		ret->push(_MR(Class<ASString>::getInstanceS(data)));
 		return ret;
 	}
-	if (argslen > 1)
+	if (argslen > 1 && !args[1]->is<Undefined>())
 		limit = args[1]->toUInt();
-
+	if (limit == 0)
+		return ret;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
@@ -281,7 +282,11 @@ ASFUNCTIONBODY(ASString,split)
 		{
 			//the RegExp is empty, so split every character
 			for(auto i=data.begin();i!=data.end();++i)
+			{
+				if (ret->size() >= limit)
+					break;
 				ret->push(_MR(Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) ));
+			}
 			return ret;
 		}
 
@@ -316,12 +321,16 @@ ASFUNCTIONBODY(ASString,split)
 			}
 			//Extract string from last match until the beginning of the current match
 			ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(lastMatch,end-lastMatch));
+			if (ret->size() >= limit)
+				break;
 			ret->push(_MR(s));
 			lastMatch=offset=ovector[1];
 
 			//Insert capturing groups
 			for(int i=1;i<rc;i++)
 			{
+				if (ret->size() >= limit)
+					break;
 				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
 				ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
 				ret->push(_MR(s));
@@ -341,6 +350,11 @@ ASFUNCTIONBODY(ASString,split)
 		if(del.empty())
 		{
 			//the string is empty, so split every character
+
+			if (data.numChars() == 0)
+			{
+				ret->push(_MR(Class<ASString>::getInstanceS("")));
+			}
 			uint32_t j = 0;
 			for(auto i=data.begin();i!=data.end();++i)
 			{
@@ -360,8 +374,12 @@ ASFUNCTIONBODY(ASString,split)
 			if(match==-1)
 				match=data.numChars();
 			ASString* s=Class<ASString>::getInstanceS(data.substr(start,(match-start)));
+			if (ret->size() >= limit)
+				break;
 			ret->push(_MR(s));
 			start=match+del.numChars();
+			if (start == data.numChars())
+				ret->push(_MR(Class<ASString>::getInstanceS("")));
 		}
 		while(start<data.numChars() && ret->size() < limit);
 	}
@@ -374,7 +392,12 @@ ASFUNCTIONBODY(ASString,substr)
 	tiny_string data = obj->toString();
 	int start=0;
 	if(argslen>=1)
-		start=args[0]->toInt();
+	{
+		if (!std::isnan(args[0]->toNumber()))
+			start=args[0]->toInt();
+		if (start >= 0  && std::isinf(args[0]->toNumber()))
+			return Class<ASString>::getInstanceS("");
+	}
 	if(start<0) {
 		start=data.numChars()+start;
 		if(start<0)
@@ -384,33 +407,37 @@ ASFUNCTIONBODY(ASString,substr)
 		start=data.numChars();
 
 	int len=0x7fffffff;
-	if(argslen==2)
-		len=args[1]->toInt();
-
+	if (argslen==2 && !args[1]->is<Undefined>())
+	{
+		if (std::isinf(args[1]->toNumber()))
+		{
+			if (args[1]->toInt() < 0)
+				len = 0;
+		}
+		else
+			len=args[1]->toInt();
+	}
 	return Class<ASString>::getInstanceS(data.substr(start,len));
 }
 
 ASFUNCTIONBODY(ASString,substring)
 {
 	tiny_string data = obj->toString();
-	int start=0;
-	if (argslen>=1)
-		start=args[0]->toInt();
-	if(start<0)
+
+	number_t start, end;
+	ARG_UNPACK (start,0) (end,0x7fffffff);
+	if(start<0 || std::isnan(start))
 		start=0;
-	if(start>(int)data.numChars())
+	if(start>(int)data.numChars() || std::isinf(start))
 		start=data.numChars();
 
-	int end=0x7fffffff;
-	if(argslen>=2)
-		end=args[1]->toInt();
-	if(end<0)
+	if(end<0 || std::isnan(end))
 		end=0;
-	if(end>(int)data.numChars())
+	if(end>(int)data.numChars() || std::isinf(end))
 		end=data.numChars();
 
 	if(start>end) {
-		int tmp=start;
+		number_t tmp=start;
 		start=end;
 		end=tmp;
 	}
@@ -562,27 +589,27 @@ ASFUNCTIONBODY(ASString,slice)
 ASFUNCTIONBODY(ASString,charAt)
 {
 	tiny_string data = obj->toString();
-	int index;
+	number_t index;
 	ARG_UNPACK (index, 0);
 
 	int maxIndex=data.numChars();
-	if(index<0 || index>=maxIndex)
-		return Class<ASString>::getInstanceS();
+	if(index<0 || index>=maxIndex || std::isinf(index))
+		return Class<ASString>::getInstanceS("");
 	return Class<ASString>::getInstanceS( tiny_string::fromChar(data.charAt(index)) );
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	tiny_string data = obj->toString();
-	unsigned int index;
+	number_t index;
 	ARG_UNPACK (index, 0);
-	if(index<data.numChars())
+	if(index<0 || index>=data.numChars() || std::isinf(index) || std::isnan(index))
+		return abstract_d(Number::NaN);
+	else
 	{
 		//Character codes are expected to be positive
 		return abstract_i(data.charAt(index));
 	}
-	else
-		return abstract_d(Number::NaN);
 }
 
 ASFUNCTIONBODY(ASString,indexOf)
@@ -608,7 +635,7 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 	tiny_string data = obj->toString();
 	tiny_string val=args[0]->toString();
 	size_t startIndex=data.npos;
-	if(argslen > 1 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
+	if(argslen > 1 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()) && !(args[1]->toNumber() > 0 && std::isinf(args[1]->toNumber())))
 	{
 		int32_t i = args[1]->toInt();
 		if(i<0)

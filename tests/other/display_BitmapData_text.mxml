@@ -11,19 +11,24 @@ import flash.display.BitmapData;
 
 private function appComplete():void
 {
-	var b1:BitmapData = new BitmapData(100,100);
+	var b1:BitmapData = new BitmapData(400,400);
 	var c:DisplayObjectContainer = new Sprite();
 	c.x = 100;
 	c.y = 50;
 	var s:Shape = new Shape();
 	s.graphics.beginFill(0xFFCC00);
 	s.graphics.drawRect(0, 0, 100, 100);
-	b1.draw(s);
+	c.addChild(s);
+	//Add another Sprite at the top of the hierarchy to test
+	//proper support for transformations
+	var c2:DisplayObjectContainer = new Sprite();
+	c2.x = 50;
+	c2.y = 100;
+	c2.addChild(c);
+
+	b1.draw(c);
 	var b2:Bitmap = new Bitmap(b1);
-	b2.x = 100;
-	b2.y = 50;
-	c.addChild(b2);
-	visual.addChild(c);
+	visual.addChild(b2);
 }
 ]]>
 </mx:Script>

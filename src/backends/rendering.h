@@ -28,6 +28,8 @@
 namespace lightspark
 {
 
+#define STAGE3D_COUNT 2
+
 class RenderThread: public ITickJob, public RenderContext
 {
 friend class DisplayObject;
@@ -113,6 +115,13 @@ private:
 	Semaphore initialized;
 
 	static void SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data);
+
+	//Stage3D state
+	int32_t currentStage3D;
+	GLuint stage3Dfbo;
+	TextureBuffer* stage3DTextures[STAGE3D_COUNT*2];
+	uint8_t stage3DTextureFlip[STAGE3D_COUNT];
+	void renderStage3Ds();
 public:
 	RenderThread(SystemState* s);
 	~RenderThread();

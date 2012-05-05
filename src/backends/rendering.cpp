@@ -61,7 +61,7 @@ RenderThread::RenderThread(SystemState* s):
 	m_sys(s),status(CREATED),currentPixelBuffer(0),currentPixelBufferOffset(0),
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
-	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),
+	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),currentStage3D(-1),stage3Dfbo(0),
 	tempTex(false),hasNPOTTextures(false),cairoTextureContext(NULL)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
@@ -71,6 +71,9 @@ RenderThread::RenderThread(SystemState* s):
 	fontPath = "Serif";
 #endif
 	time_s.assign_current_time();
+
+	memset(stage3DTextures, 0, sizeof(TextureChunk*)*STAGE3D_COUNT*2);
+	memset(stage3DTextureFlip, 0, STAGE3D_COUNT);
 }
 
 /* this is called in the context of the gtk main thread */
@@ -601,6 +604,19 @@ void RenderThread::commonGLDeinit()
 	}
 	glDeleteBuffers(2,pixelBuffers);
 	glDeleteTextures(1, &cairoTextureID);
+
+	if(stage3Dfbo)
+	{
+		glDeleteFramebuffers(1,&stage3Dfbo);
+		for(int32_t i=0;i<STAGE3D_COUNT*2;i++)
+		{
+			if(stage3DTextures[i])
+			{
+				stage3DTextures[i]->shutdown();
+				delete stage3DTextures[i];
+			}
+		}
+	}
 }
 
 void RenderThread::commonGLInit(int width, int height)

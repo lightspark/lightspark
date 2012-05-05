@@ -34,7 +34,7 @@ using namespace lightspark;
 
 void TextureBuffer::setAllocSize(uint32_t w, uint32_t h)
 {
-	if(getRenderThread()->hasNPOTTextures)
+	if(getSys()->getRenderThread()->hasNPOTTextures)
 	{
 		allocWidth=w;
 		allocHeight=h;

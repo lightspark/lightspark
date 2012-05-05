@@ -444,10 +444,12 @@ void SystemState::destroy()
 	terminated.wait();
 	//Acquire the mutex to sure that the engines are not being started right now
 	Locker l(mutex);
-	renderThread->wait();
-	inputThread->wait();
+	//The VM must be destroyed before the rendering thread to make sure Stage3D
+	//does not fail
 	if(currentVm)
 		currentVm->shutdown();
+	renderThread->wait();
+	inputThread->wait();
 
 	l.release();
 

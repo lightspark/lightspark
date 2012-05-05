@@ -1,0 +1,18 @@
+Stage3D support architectural overview
+--------------------------------------
+Flash supports several Stage3D surfaces, that are
+blitted on the back on the regular stage.
+
+Since the Stage3D uses immediate commands instead of the
+usual display list used by the Stage it makes sense to forge GL
+commands directly on the VM thread. Basically when a Stage3D context
+is requested the right GL context is activated for the VM thread
+(see glXMakeCurrent) From now on it's possible to call GL functions
+from the VM thread. All the rendering happens on a texture backed
+frame buffer object. Two different textures are allocated for each
+context, at every time one is being used as a render target by the
+VM thread while the other is being rendered by the render thread.
+Context3D.present() flips the role of the textures. 
+
+NOTE: Currently only a single Stage3D is supported because the context
+is managed by the VM thread, it should be moved in the render thread.

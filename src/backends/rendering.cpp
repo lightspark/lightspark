@@ -1020,6 +1020,8 @@ void RenderThread::coreRendering()
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
+	renderStage3Ds();
+
 	m_sys->getStage()->Render(*this, false);
 	assert(maskStack.empty());
 

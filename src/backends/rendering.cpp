@@ -383,6 +383,41 @@ void RenderThread::freeContext(GLXContext ctxt)
 	XUnlockDisplay(mDisplay);
 }
 
+void RenderThread::activateStage3DWithIndex(int32_t index)
+{
+	assert(index<STAGE3D_COUNT);
+	if(index!=currentStage3D)
+	{
+		//Create the Fbo if needed
+		if(stage3Dfbo==0)
+		{
+			//It's assumed that the caller won't change the framebuffer
+			glGenFramebuffers(1, &stage3Dfbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, stage3Dfbo);
+		}
+		if(stage3DTextures[index*2]==NULL)
+		{
+			stage3DTextures[index*2]=new TextureBuffer(true, windowWidth, windowHeight);
+			stage3DTextures[index*2+1]=new TextureBuffer(true, windowWidth, windowHeight);
+		}
+		//Bind the front and back textures as targets for the FBO
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+				stage3DTextures[index*2]->getId(), 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+				stage3DTextures[index*2+1]->getId(), 0);
+
+		glDrawBuffer((stage3DTextureFlip[index]==0)?GL_COLOR_ATTACHMENT0:GL_COLOR_ATTACHMENT1);
+		currentStage3D=index;
+	}
+}
+
+void RenderThread::flipStage3DWithIndex(int32_t index)
+{
+	assert(index==currentStage3D);
+	stage3DTextureFlip[index]=1-stage3DTextureFlip[index];
+	glDrawBuffer((stage3DTextureFlip[index]==0)?GL_COLOR_ATTACHMENT0:GL_COLOR_ATTACHMENT1);
+}
+
 void RenderThread::worker()
 {
 	setTLSSys(m_sys);
@@ -945,6 +980,33 @@ void RenderThread::plotProfilingData()
 	cairo_paint(cr);
 	cairo_restore(cr);
 
+}
+
+void RenderThread::renderStage3Ds()
+{
+	for(int32_t i=0;i<STAGE3D_COUNT;i++)
+	{
+		if(stage3DTextures[i*2]==NULL)
+			continue;
+		TextureBuffer* currentTexture=stage3DTextures[i*2+stage3DTextureFlip[i]];
+		glBindTexture(GL_TEXTURE_2D, currentTexture->getId());
+
+		//Set the uniforms to reasonable values
+		glUniform1f(maskUniform, 0);
+		glUniform1f(yuvUniform, 0);
+		glUniform1f(alphaUniform, 1);
+
+		GLfloat vertex_coords[] = {0,0, GLfloat(windowWidth),0, 0,GLfloat(windowHeight),
+			GLfloat(windowWidth),GLfloat(windowHeight)};
+		GLfloat texture_coords[] = {0,0, 1,0, 0,1, 1,1};
+		glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
+		glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
+		glEnableVertexAttribArray(VERTEX_ATTRIB);
+		glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glDisableVertexAttribArray(VERTEX_ATTRIB);
+		glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+	}
 }
 
 void RenderThread::coreRendering()

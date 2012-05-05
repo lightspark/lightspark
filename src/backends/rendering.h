@@ -169,6 +169,8 @@ public:
 	enum CONTEXT_TYPE { NORMAL=0, SHARED };
 	GLXContext createContext(CONTEXT_TYPE type);
 	void freeContext(GLXContext ctxt);
+	void activateStage3DWithIndex(int32_t index);
+	void flipStage3DWithIndex(int32_t index);
 
 	//OpenGL programs
 	int gpu_program;

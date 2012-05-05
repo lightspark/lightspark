@@ -1022,7 +1022,7 @@ void RenderThread::coreRendering()
 
 	renderStage3Ds();
 
-	m_sys->getStage()->Render(*this, false);
+	//m_sys->getStage()->Render(*this, false);
 	assert(maskStack.empty());
 
 	if(m_sys->showProfilingData)

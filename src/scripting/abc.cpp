@@ -1471,6 +1471,11 @@ void ABCVm::Run(ABCVm* th)
 #endif
 
 	GLXContext stage3DContext = getSys()->getRenderThread()->createContext(RenderThread::SHARED);
+	getSys()->getRenderThread()->activateStage3DWithIndex(0);
+
+	glClearColor(0,1,0,1);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glFinish();
 
 	while(true)
 	{

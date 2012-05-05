@@ -28,7 +28,7 @@
 namespace lightspark
 {
 
-#define STAGE3D_COUNT 2
+#define STAGE3D_COUNT 1
 
 class RenderThread: public ITickJob, public RenderContext
 {

@@ -61,6 +61,7 @@
 #include "class.h"
 #include "exceptions.h"
 #include "compat.h"
+#include "backends/rendering.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1468,6 +1469,9 @@ void ABCVm::Run(ABCVm* th)
 	int snapshotCount = 0;
 	memoryProfile << "desc: (none) \ncmd: lightspark\ntime_unit: i" << endl;
 #endif
+
+	GLXContext stage3DContext = getSys()->getRenderThread()->createContext(RenderThread::SHARED);
+
 	while(true)
 	{
 		th->event_queue_mutex.lock();
@@ -1529,6 +1533,7 @@ void ABCVm::Run(ABCVm* th)
 			break;
 		}
 	}
+	getSys()->getRenderThread()->freeContext(stage3DContext);
 	if(th->m_sys->useJit)
 	{
 		th->ex->clearAllGlobalMappings();

@@ -302,8 +302,7 @@ void RenderThread::init()
 	mFBConfig=fb[i];
 	LOG(LOG_INFO, "Chosen config " << hex << fb[i] << dec);
 	XFree(fb);
-		mContext = glXCreateNewContext(mDisplay, mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	glXMakeCurrent(mDisplay, engineData->window, mContext);
+	mContext = createContext(NORMAL);
 	if(!glXIsDirect(mDisplay, mContext))
 		LOG(LOG_INFO, "Indirect!!");
 #else //egl
@@ -364,6 +363,24 @@ void RenderThread::init()
 
 	commonGLInit(windowWidth, windowHeight);
 	commonGLResize();
+}
+
+GLXContext RenderThread::createContext(CONTEXT_TYPE type)
+{
+	XLockDisplay(mDisplay);
+	GLXContext shared=(type==NORMAL)?NULL:mContext;
+	GLXContext ret = glXCreateNewContext(mDisplay, mFBConfig,GLX_RGBA_TYPE,shared,1);
+	glXMakeCurrent(mDisplay, engineData->window, ret);
+	XUnlockDisplay(mDisplay);
+	return ret;
+}
+
+void RenderThread::freeContext(GLXContext ctxt)
+{
+	XLockDisplay(mDisplay);
+	glXMakeCurrent(mDisplay, None, NULL);
+	glXDestroyContext(mDisplay, ctxt);
+	XUnlockDisplay(mDisplay);
 }
 
 void RenderThread::worker()
@@ -471,8 +488,7 @@ void RenderThread::deinit()
 	wglDeleteContext(mRC);
 	/* Do not ReleaseDC(e->window,hDC); as our window does not have CS_OWNDC */
 #elif !defined(ENABLE_GLES2)
-	glXMakeCurrent(mDisplay, None, NULL);
-	glXDestroyContext(mDisplay, mContext);
+	freeContext(mContext);
 	XCloseDisplay(mDisplay);
 #else
 	eglMakeCurrent(mEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);

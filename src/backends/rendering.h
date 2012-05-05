@@ -166,6 +166,9 @@ public:
 	{
 		initialized.signal();
 	}
+	enum CONTEXT_TYPE { NORMAL=0, SHARED };
+	GLXContext createContext(CONTEXT_TYPE type);
+	void freeContext(GLXContext ctxt);
 
 	//OpenGL programs
 	int gpu_program;

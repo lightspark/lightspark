@@ -879,7 +879,6 @@ void RenderThread::renderText(cairo_t *cr, const char *text, int x, int y)
 //Send the texture drawn by Cairo to the GPU
 void RenderThread::mapCairoTexture(int w, int h)
 {
-	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, cairoTextureID);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

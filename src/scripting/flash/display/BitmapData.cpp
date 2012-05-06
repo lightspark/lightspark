@@ -23,6 +23,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "backends/image.h"
+#include "backends/rendering_context.h"
 
 using namespace lightspark;
 using namespace std;
@@ -138,6 +139,35 @@ ASFUNCTIONBODY(BitmapData,draw)
 	{
 		th->copyFrom(drawable->as<BitmapData>());
 		return NULL;
+	}
+	else if(drawable->is<DisplayObject>())
+	{
+		//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
+		SoftwareInvalidateQueue queue;
+		DisplayObject* d=drawable->as<DisplayObject>();
+		d->requestInvalidation(&queue);
+		CairoRenderContext ctxt(&th->data[0], th->width, th->height);
+		for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
+		{
+			DisplayObject* target=(*it).getPtr();
+			//Get the drawable from each of the added objects
+			IDrawable* drawable=target->invalidate(d);
+			if(drawable==NULL)
+				continue;
+
+			//Compute the matrix for this object
+			uint8_t* buf=drawable->getPixelBuffer();
+			if(buf==NULL)
+				continue;
+			//Construct a CachedSurface using the data
+			CachedSurface& surface=ctxt.allocateCustomSurface(target,buf);
+			surface.tex.width=drawable->getWidth();
+			surface.tex.height=drawable->getHeight();
+			surface.xOffset=drawable->getXOffset();
+			surface.yOffset=drawable->getYOffset();
+			delete drawable;
+		}
+		d->Render(ctxt, false);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());

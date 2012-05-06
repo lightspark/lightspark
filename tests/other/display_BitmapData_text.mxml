@@ -27,6 +27,7 @@ private function appComplete():void
 	c2.addChild(c);
 
 	b1.draw(c);
+	b1.draw(c,new Matrix(1,0,0,1,100,100));
 	var b2:Bitmap = new Bitmap(b1);
 	visual.addChild(b2);
 }

@@ -54,7 +54,7 @@ public:
 protected:
 	TokenContainer(DisplayObject* _o);
 	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);
-	IDrawable* invalidate(DisplayObject* target);
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix);
 	void requestInvalidation(InvalidateQueue* q);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;

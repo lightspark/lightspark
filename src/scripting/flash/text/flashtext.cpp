@@ -277,7 +277,7 @@ void TextField::requestInvalidation(InvalidateQueue* q)
 	q->addToInvalidateQueue(_MR(this));
 }
 
-IDrawable* TextField::invalidate(DisplayObject* target)
+IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix)
 {
 	int32_t x,y;
 	uint32_t width,height;
@@ -288,7 +288,7 @@ IDrawable* TextField::invalidate(DisplayObject* target)
 		return NULL;
 	}
 
-	MATRIX totalMatrix;
+	MATRIX totalMatrix(initialMatrix);
 	DisplayObject* cur=this;
 	while(cur!=target)
 	{

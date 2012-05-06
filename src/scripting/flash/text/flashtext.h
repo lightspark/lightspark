@@ -42,7 +42,7 @@ private:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	IDrawable* invalidate(DisplayObject* target);
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix);
 	void requestInvalidation(InvalidateQueue* q);
 	void updateText(const tiny_string& new_text);
 	//Computes and changes (text)width and (text)height using Pango
@@ -130,7 +130,8 @@ public:
 		DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {};
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate(DisplayObject* target) { return TokenContainer::invalidate(target); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
+	{ return TokenContainer::invalidate(target, initialMatrix); }
 };
 };
 

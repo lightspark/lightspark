@@ -151,7 +151,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 		{
 			DisplayObject* target=(*it).getPtr();
 			//Get the drawable from each of the added objects
-			IDrawable* drawable=target->invalidate(d);
+			IDrawable* drawable=target->invalidate(d, MATRIX());
 			if(drawable==NULL)
 				continue;
 

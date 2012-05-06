@@ -124,7 +124,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q)
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-IDrawable* TokenContainer::invalidate(DisplayObject* target)
+IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix)
 {
 	int32_t x,y;
 	uint32_t width,height;
@@ -142,6 +142,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target)
 		totalMatrix=cur->getMatrix().multiplyMatrix(totalMatrix);
 		cur=cur->getParent().getPtr();
 	}
+	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;

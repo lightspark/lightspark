@@ -399,7 +399,7 @@ void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax
 	outHeight=ceil(maxy-miny);
 }
 
-IDrawable* DisplayObject::invalidate()
+IDrawable* DisplayObject::invalidate(DisplayObject* target)
 {
 	//Not supposed to be called
 	throw RunTimeException("DisplayObject::invalidate");

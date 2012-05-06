@@ -277,7 +277,7 @@ void TextField::requestInvalidation(InvalidateQueue* q)
 	q->addToInvalidateQueue(_MR(this));
 }
 
-IDrawable* TextField::invalidate()
+IDrawable* TextField::invalidate(DisplayObject* target)
 {
 	int32_t x,y;
 	uint32_t width,height;
@@ -288,7 +288,13 @@ IDrawable* TextField::invalidate()
 		return NULL;
 	}
 
-	const MATRIX& totalMatrix = getConcatenatedMatrix();
+	MATRIX totalMatrix;
+	DisplayObject* cur=this;
+	while(cur!=target)
+	{
+		totalMatrix=cur->getMatrix().multiplyMatrix(totalMatrix);
+		cur=cur->getParent().getPtr();
+	}
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;

@@ -230,7 +230,7 @@ public:
 	ASFUNCTION(_getGraphics);
 	bool isOpaque(number_t x, number_t y) const;
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate() { return TokenContainer::invalidate(); }
+	IDrawable* invalidate(DisplayObject* target) { return TokenContainer::invalidate(target); }
 };
 
 class MorphShape: public DisplayObject
@@ -363,7 +363,7 @@ public:
 	{
 		return 0;
 	}
-	IDrawable* invalidate() { return TokenContainer::invalidate(); }
+	IDrawable* invalidate(DisplayObject* target) { return TokenContainer::invalidate(target); }
 	void requestInvalidation(InvalidateQueue* q);
 	bool isOpaque(number_t x, number_t y) const;
 };
@@ -612,7 +612,7 @@ public:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate() { return TokenContainer::invalidate(); }
+	IDrawable* invalidate(DisplayObject* target) { return TokenContainer::invalidate(target); }
 };
 
 class AVM1Movie: public DisplayObject

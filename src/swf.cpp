@@ -950,12 +950,13 @@ void SystemState::flushInvalidationQueue()
 	_NR<DisplayObject> cur=invalidateQueueHead;
 	while(!cur.isNull())
 	{
-		IDrawable* d=cur->invalidate();
-		//Check if the drawable is valid and forge a new job to
-		//render it and upload it to GPU
-		if(d)
+		if(cur->isOnStage())
 		{
-			addJob(new AsyncDrawJob(d,cur));
+			IDrawable* d=cur->invalidate(stage);
+			//Check if the drawable is valid and forge a new job to
+			//render it and upload it to GPU
+			if(d)
+				addJob(new AsyncDrawJob(d,cur));
 		}
 		_NR<DisplayObject> next=cur->invalidateQueueNext;
 		cur->invalidateQueueNext=NullRef;

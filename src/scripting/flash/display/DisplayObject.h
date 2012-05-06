@@ -118,7 +118,12 @@ public:
 	DisplayObject(Class_base* c);
 	void finalize();
 	MATRIX getMatrix() const;
-	virtual IDrawable* invalidate();
+	/**
+	 * Generate a new IDrawable instance for this object
+	 * @param target The topmost object in the hierarchy that is being drawn. Such object
+	 * _must_ be on the parent chain of this
+	 */
+	virtual IDrawable* invalidate(DisplayObject* target);
 	virtual void requestInvalidation(InvalidateQueue* q);
 	MATRIX getConcatenatedMatrix() const;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;

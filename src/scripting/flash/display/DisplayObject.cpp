@@ -205,6 +205,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(_getBounds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getRect","",Class<IFunction>::getFunction(_getBounds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);

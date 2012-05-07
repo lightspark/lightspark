@@ -20,10 +20,18 @@
 		s1.graphics.beginGradientFill("linear",[0x000000,0x008800],[1,1],[0,255]);
 		s1.graphics.drawRect(0,105,200,100);
 		s1.graphics.endFill();
+
+		s2.x=50;
+		s2.y=50;
+		s2.graphics.beginFill(0x00ff00);
+		s2.graphics.drawRect(0,0,100,100);
+		s2.graphics.endFill();
+		s1.mask=s2;
 	}
 	]]>
 </mx:Script>
 
 <mx:UIComponent id="s1" />
+<mx:UIComponent id="s2" />
 
 </mx:Application>

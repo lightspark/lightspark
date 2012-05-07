@@ -98,57 +98,6 @@ RenderThread::~RenderThread()
 	LOG(LOG_INFO,_("~RenderThread this=") << this);
 }
 
-/*void RenderThread::acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
-{
-	::abort();
-	GLfloat vertex_coords[8];
-	static GLfloat color_coords[16];
-	assert(tempBufferAcquired==false);
-	tempBufferAcquired=true;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	
-	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
-	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
-	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
-	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
-
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
-	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
-	glEnableVertexAttribArray(VERTEX_ATTRIB);
-	glEnableVertexAttribArray(COLOR_ATTRIB);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDisableVertexAttribArray(VERTEX_ATTRIB);
-	glDisableVertexAttribArray(COLOR_ATTRIB);
-}
-
-void RenderThread::blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
-{
-	assert(tempBufferAcquired==true);
-	GLfloat vertex_coords[8];
-	tempBufferAcquired=false;
-
-	//Use the blittler program to blit only the used buffer
-	glUseProgram(blitter_program);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_BACK);
-
-	rt->tempTex.bind();
-
-	vertex_coords[0] = xmin;vertex_coords[1] = ymin;
-	vertex_coords[2] = xmax;vertex_coords[3] = ymin;
-	vertex_coords[4] = xmin;vertex_coords[5] = ymax;
-	vertex_coords[6] = xmax;vertex_coords[7] = ymax;
-
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
-	glEnableVertexAttribArray(VERTEX_ATTRIB);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDisableVertexAttribArray(VERTEX_ATTRIB);
-
-	glUseProgram(gpu_program);
-}*/
-
 void RenderThread::handleNewTexture()
 {
 	//Find if any largeTexture is not initialized
@@ -552,39 +501,6 @@ bool RenderThread::loadShaderPrograms()
 		return ret;
 	}
 	
-	//Create the blitter shader
-	GLuint v = glCreateShader(GL_VERTEX_SHADER);
-
-	fs = dataFileRead("lightspark-blitter.vert");
-	if(fs==NULL)
-	{
-		LOG(LOG_ERROR,_("Shader lightspark-blitter.vert not found"));
-		throw RunTimeException("Vertex shader code not found");
-	}
-	glShaderSource(v, 1, &fs,NULL);
-	free((void*)fs);
-
-	glGetShaderInfoLog(v,1024,&a,str);
-	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
-
-	glCompileShader(v);
-	glGetShaderiv(v, GL_COMPILE_STATUS, &stat);
-	if (!stat)
-	{
-		throw RunTimeException("Could not compile vertex blitter shader");
-	}
-
-	blitter_program = glCreateProgram();
-	glAttachShader(blitter_program,v);
-	
-	glLinkProgram(blitter_program);
-	glGetProgramiv(blitter_program,GL_LINK_STATUS,&a);
-	if(a==GL_FALSE)
-	{
-		ret=false;
-		return ret;
-	}
-
 	assert(ret);
 	return true;
 }
@@ -654,10 +570,6 @@ void RenderThread::commonGLInit(int width, int height)
 	glGenBuffers(2,pixelBuffers);
 
 	//Set uniforms
-	glUseProgram(blitter_program);
-	int texScale=glGetUniformLocation(blitter_program,"texScale");
-	tempTex.setTexScale(texScale);
-
 	glUseProgram(gpu_program);
 	int tex=glGetUniformLocation(gpu_program,"g_tex1");
 	if(tex!=-1)

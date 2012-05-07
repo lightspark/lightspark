@@ -2751,13 +2751,7 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 
 void TokenContainer::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
 {
-	//if(!owner->isSimple())
-	//	rt->acquireTempBuffer(t1,t2,t3,t4);
-
 	owner->defaultRender(ctxt, maskEnabled);
-
-	//if(!owner->isSimple())
-	//	rt->blitTempBuffer(t1,t2,t3,t4);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list

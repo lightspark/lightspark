@@ -127,10 +127,6 @@ public:
 	void wait();
 	void draw(bool force);
 
-	//The calling context MUST call this function with the transformation matrix ready
-	//void acquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
-	//void blitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
-
 	/**
 		Allocates a chunk from the shared texture
 	*/
@@ -160,7 +156,6 @@ public:
 
 	//OpenGL programs
 	int gpu_program;
-	int blitter_program;
 	TextureBuffer tempTex;
 	uint32_t windowWidth;
 	uint32_t windowHeight;

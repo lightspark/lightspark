@@ -780,7 +780,6 @@ void DisplayObjectContainer::renderImpl(RenderContext& ctxt, bool maskEnabled, n
 void Sprite::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
 {
 	//Draw the dynamically added graphics, if any
-	//Should clean only the bounds of the graphics
 	if(!tokensEmpty())
 		defaultRender(ctxt, maskEnabled);
 

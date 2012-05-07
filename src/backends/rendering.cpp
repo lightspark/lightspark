@@ -592,7 +592,7 @@ void RenderThread::commonGLInit(int width, int height)
 
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
 	if(fragmentTexScaleUniform!=-1)
-		glUniform2f(fragmentTexScaleUniform,1.0f/width,1.0f/height);
+		tempTex.setTexScale(fragmentTexScaleUniform);
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	glEnable(GL_TEXTURE_2D);

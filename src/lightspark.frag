@@ -15,8 +15,10 @@ const mat3 YUVtoRGB = mat3(1, 1, 1, //First coloumn
 
 void main()
 {
-	if(mask==1.0 && texture2D(g_tex2,ls_TexCoords[1].xy).a==0.0)
-		discard;
+	float maskMultiplier = 1.0;
+	if(mask==1.0)
+		maskMultiplier=texture2D(g_tex2,ls_TexCoords[1].xy).a;
+	//TODO: check if discarding for maskMultiplier==0.0 is efficient
 
 	//Tranform the value from YUV to RGB
 	vec4 vbase = texture2D(g_tex1,ls_TexCoords[0].xy);
@@ -33,4 +35,5 @@ void main()
 	} else {
 		gl_FragColor=(vbase*(1.0-yuv))+(val*yuv);
 	}
+	gl_FragColor *= maskMultiplier;
 }

@@ -161,8 +161,6 @@ ASFUNCTIONBODY(BitmapData,draw)
 
 			//Compute the matrix for this object
 			uint8_t* buf=drawable->getPixelBuffer();
-			if(buf==NULL)
-				continue;
 			//Construct a CachedSurface using the data
 			CachedSurface& surface=ctxt.allocateCustomSurface(target,buf);
 			surface.tex.width=drawable->getWidth();

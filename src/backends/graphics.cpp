@@ -600,6 +600,8 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	if(xOffset >= windowWidth || yOffset >= windowHeight
 		|| xOffset + width <= 0 || yOffset + height <= 0)
 	{
+		width=0;
+		height=0;
 		return NULL;
 	}
 

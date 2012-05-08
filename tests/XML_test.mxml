@@ -104,6 +104,12 @@
 		xml20.appendChild(xmllist5);
 		Tests.assertEquals("<a>\n  <b/>\n</a>", xml20.toXMLString(), "appendChild with XMLList argument");
 
+		var xml21:XML = new XML("<a/>");
+		Tests.assertEquals("a", xml21.name(), "::name() before setting [\"name\"]");
+		xml21["name"] = "bar";
+		Tests.assertEquals("a", xml21.name(), "::name() after setting [\"name\"]");
+		Tests.assertEquals("<a>\n  <name>bar</name>\n</a>", xml21.toString(), "::toString after setting name");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

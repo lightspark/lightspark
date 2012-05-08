@@ -564,7 +564,11 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	}
 
 	bool isAttr=name.isAttribute;
+	//Normalize the name to the string form
 	const tiny_string normalizedName=name.normalizedName();
+	//TODO: support namespaces
+	assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
+
 	const char *buf=normalizedName.raw_buf();
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
 	{
@@ -574,13 +578,9 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	if(isAttr)
 	{
 		//Lookup attribute
-		//TODO: support namespaces
-		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
-
 		if(normalizedName.empty())
 			return _MR(getAllAttributes());
 
-		//Normalize the name to the string form
 		assert(node);
 		//To have attributes we must be an Element
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
@@ -606,9 +606,6 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	else
 	{
 		//Lookup children
-		//TODO: support namespaces
-		assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
-		//Normalize the name to the string form
 		assert(node);
 		const xmlpp::Node::NodeList& children=node->get_children(buf);
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
@@ -631,6 +628,34 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 			return NullRef;
 
 		return _MNR(Class<XMLList>::getInstanceS(ret));
+	}
+}
+
+void XML::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	bool isAttr=name.isAttribute;
+	//Normalize the name to the string form
+	const tiny_string normalizedName=name.normalizedName();
+	//TODO: support namespaces
+	assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
+
+	const char *buf=normalizedName.raw_buf();
+	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
+	{
+		isAttr=true;
+		buf+=1;
+	}
+	if(isAttr)
+	{
+		//To have attributes we must be an Element
+		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
+		assert_and_throw(element);
+		element->set_attribute(name.name_s, o->toString());
+	}
+	else
+	{
+		xmlpp::Element* child=node->add_child(name.name_s);
+		child->add_child_text(o->toString());
 	}
 }
 

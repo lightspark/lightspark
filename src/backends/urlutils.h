@@ -93,6 +93,7 @@ public:
 	const tiny_string& getQuery() const { return query; };
 	const tiny_string& getFragment() const { return fragment; };
 
+	bool isRTMP() const;
 	//Accessors to the RTMP requested stream
 	const tiny_string& getStream() const { return stream; }
 	void setStream(const tiny_string& s) { stream=s; }

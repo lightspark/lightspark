@@ -650,9 +650,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 			throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
 		}
 		
-		if(th->uri.getProtocol() == "rtmp" ||
-		     th->uri.getProtocol() == "rtmpe" ||
-		     th->uri.getProtocol() == "rtmps")
+		if(th->uri.isRTMP())
 		{
 			isRTMP = true;
 		}

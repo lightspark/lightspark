@@ -446,3 +446,9 @@ std::string URLInfo::decode(const std::string& u, ENCODING type)
 	}
 	return str;
 }
+
+bool URLInfo::isRTMP() const
+{
+	return protocol == "rtmp" || protocol == "rtmpe" || protocol == "rtmps" ||
+	       protocol == "rtmpt" || protocol == "rtmpte" || protocol == "rtmpts";
+}

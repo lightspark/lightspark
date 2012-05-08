@@ -440,9 +440,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 
 	//Streaming from RTMP is always allowed (see
 	//http://forums.adobe.com/thread/422391)
-	if(url.getProtocol() == "rtmp" ||
-	   url.getProtocol() == "rtmpe" ||
-	   url.getProtocol() == "rtmps")
+	if(url.isRTMP())
 		return ALLOWED;
 
 	LOG(LOG_INFO, _("SECURITY: Evaluating URL for cross domain policies:"));

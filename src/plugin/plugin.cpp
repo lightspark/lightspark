@@ -63,9 +63,7 @@ NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner)
 {
 	// Handle RTMP requests internally, not through NPAPI
-	if(url.getProtocol()=="rtmp" ||
-	   url.getProtocol()=="rtmpe" ||
-	   url.getProtocol()=="rtmps")
+	if(url.isRTMP())
 	{
 		return StandaloneDownloadManager::download(url, cached, owner);
 	}
@@ -90,9 +88,7 @@ lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::UR
 		const char* contentType, lightspark::ILoadable* owner)
 {
 	// Handle RTMP requests internally, not through NPAPI
-	if(url.getProtocol()=="rtmp" ||
-	   url.getProtocol()=="rtmpe" ||
-	   url.getProtocol()=="rtmps")
+	if(url.isRTMP())
 	{
 		return StandaloneDownloadManager::downloadWithData(url, data, contentType, owner);
 	}

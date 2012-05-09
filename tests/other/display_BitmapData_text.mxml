@@ -30,6 +30,20 @@ private function appComplete():void
 	b1.draw(c,new Matrix(1,0,0,1,100,100));
 	var b2:Bitmap = new Bitmap(b1);
 	visual.addChild(b2);
+
+	var b3:BitmapData = new BitmapData(100,200,true,0xff800000);
+	var s2:Sprite = new Sprite();
+	s2.graphics.beginFill(0x008000, 1);
+	s2.graphics.drawRect(0,0,100,100);
+	s2.graphics.drawRect(20,20,60,60);
+	s2.graphics.endFill();
+	var b4:BitmapData = new BitmapData(100,100,true,0x0);
+	b4.draw(s2);
+	b3.copyPixels(b4, new Rectangle(0,0,100,100), new Point(0, 0),null,null,false);
+	b3.copyPixels(b4, new Rectangle(0,0,100,100), new Point(0, 100),null,null,true);
+	var b5:Bitmap = new Bitmap(b3);
+	b5.x=200;
+	visual.addChild(b5);
 }
 ]]>
 </mx:Script>

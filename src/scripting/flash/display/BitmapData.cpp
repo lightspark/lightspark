@@ -59,6 +59,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("generateFilterRect","",Class<IFunction>::getFunction(generateFilterRect),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
+	REGISTER_GETTER(c,transparent);
 
 	IBitmapDrawable::linkTraits(c);
 }

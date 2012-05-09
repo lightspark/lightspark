@@ -145,6 +145,7 @@ class CairoRenderContext: public RenderContext
 private:
 	std::map<const DisplayObject*, CachedSurface> customSurfaces;
 	cairo_t* cr;
+	static cairo_surface_t* getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height);
 public:
 	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height);
 	virtual ~CairoRenderContext();

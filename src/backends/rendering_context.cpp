@@ -276,9 +276,7 @@ void GLRenderContext::renderMaskToTmpBuffer()
 
 CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height):RenderContext(CAIRO)
 {
-	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
-	assert(cairoWidthStride==width*4);
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
+	cairo_surface_t* cairoSurface=getCairoSurfaceForData(buf, width, height);
 	cr=cairo_create(cairoSurface);
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
 }
@@ -294,15 +292,19 @@ CairoRenderContext::~CairoRenderContext()
 	cairo_destroy(cr);
 }
 
+cairo_surface_t* CairoRenderContext::getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height)
+{
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	assert(cairoWidthStride==width*4);
+	return cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
+}
+
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
 {
 	//TODO: support alpha, colorMode, and maskMode
 	uint8_t* buf=(uint8_t*)chunk.chunks;
-	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, chunk.width);
-	assert(cairoWidthStride==chunk.width*4);
-	cairo_surface_t* chunkSurface = cairo_image_surface_create_for_data (buf, CAIRO_FORMAT_ARGB32,
-			chunk.width, chunk.height, cairoWidthStride);
+	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_pattern_t* chunkPattern = cairo_pattern_create_for_surface(chunkSurface);
 	cairo_surface_destroy(chunkSurface);
 	cairo_pattern_set_filter(chunkPattern, CAIRO_FILTER_BILINEAR);

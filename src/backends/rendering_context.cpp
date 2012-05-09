@@ -299,6 +299,23 @@ cairo_surface_t* CairoRenderContext::getCairoSurfaceForData(uint8_t* buf, uint32
 	return cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
 }
 
+void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
+		int32_t sourceX, int32_t sourceY, uint32_t sourceWidth, uint32_t sourceHeight)
+{
+	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight);
+	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
+	cairo_surface_destroy(sourceSurface);
+	cairo_pattern_set_filter(sourcePattern, CAIRO_FILTER_NEAREST);
+	cairo_pattern_set_extend(sourcePattern, CAIRO_EXTEND_NONE);
+	cairo_matrix_t matrix;
+	cairo_matrix_init_translate(&matrix, sourceX-destX, sourceY-destY);
+	cairo_pattern_set_matrix(sourcePattern, &matrix);
+	cairo_set_source(cr, sourcePattern);
+	cairo_pattern_destroy(sourcePattern);
+	cairo_rectangle(cr, destX, destY, sourceWidth, sourceHeight);
+	cairo_fill(cr);
+}
+
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
 {
@@ -308,7 +325,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 	cairo_pattern_t* chunkPattern = cairo_pattern_create_for_surface(chunkSurface);
 	cairo_surface_destroy(chunkSurface);
 	cairo_pattern_set_filter(chunkPattern, CAIRO_FILTER_BILINEAR);
-	cairo_pattern_set_extend(chunkPattern, CAIRO_EXTEND_PAD);
+	cairo_pattern_set_extend(chunkPattern, CAIRO_EXTEND_NONE);
 	cairo_matrix_t matrix;
 	//TODO: Support scaling
 	cairo_matrix_init_translate(&matrix, -x, -y);

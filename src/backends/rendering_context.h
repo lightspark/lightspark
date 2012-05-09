@@ -162,6 +162,11 @@ public:
 	 * it will be freed on destruction
 	 */
 	CachedSurface& allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf);
+	/**
+	 * Do a fast non filtered, non scaled blit of ARGB data
+	 */
+	void simpleBlit(int32_t destX, int32_t destY, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
+			int32_t sourceX, int32_t sourceY, uint32_t sourceWidth, uint32_t sourceHeight);
 };
 
 }

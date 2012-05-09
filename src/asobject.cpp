@@ -1018,12 +1018,10 @@ ASObject::ASObject(Class_base* c):type(T_OBJECT),Variables((c)?c->memoryAccount:
 }
 
 ASObject::ASObject(const ASObject& o):type(o.type),Variables((o.classdef)?o.classdef->memoryAccount:NULL),ref_count(1),
-	manager(NULL),classdef(o.classdef),constructed(false),implEnable(true)
+	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
 {
-	if(classdef)
-	{
-		classdef->incRef();
-	}
+	if(o.classdef)
+		setClass(o.classdef);
 
 #ifndef NDEBUG
 	//Stuff only used in debugging

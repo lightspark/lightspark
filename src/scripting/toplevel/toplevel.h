@@ -286,7 +286,6 @@ public:
 			{
 				//Generate a copy
 				ret=clone();
-				ret->classdef=NULL; //Drop the classdef and set it ex novo
 				ret->setClass(getClass());
 			}
 			ret->closure_this=c;

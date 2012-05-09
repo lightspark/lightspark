@@ -155,7 +155,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 		SoftwareInvalidateQueue queue;
 		DisplayObject* d=drawable->as<DisplayObject>();
 		d->requestInvalidation(&queue);
-		CairoRenderContext ctxt(&th->data[0], th->width, th->height);
+		CairoRenderContext ctxt(th->getData(), th->width, th->height);
 		//Compute the initial matrix, if any
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
@@ -362,11 +362,22 @@ ASFUNCTIONBODY(BitmapData,copyPixels)
 	if(copyWidth<=0 || copyHeight<=0)
 		return NULL;
 
-	for(int i=0; i<copyHeight; i++)
+	if(mergeAlpha==false)
 	{
-		memmove(th->getData() + (destTop+i)*th->stride + 4*destLeft, 
-			source->getData() + (srcTop+i)*source->stride + 4*srcLeft,
-			4*copyWidth);
+		//Fast path using memmove
+		for(int i=0; i<copyHeight; i++)
+		{
+			memmove(th->getData() + (destTop+i)*th->stride + 4*destLeft,
+				source->getData() + (srcTop+i)*source->stride + 4*srcLeft,
+				4*copyWidth);
+		}
+	}
+	else
+	{
+		//Slow path using Cairo
+		CairoRenderContext ctxt(th->getData(), th->width, th->height);
+		ctxt.simpleBlit(destLeft, destTop, source->getData(), source->width, source->height,
+				srcLeft, srcTop, copyWidth, copyHeight);
 	}
 
 	return NULL;

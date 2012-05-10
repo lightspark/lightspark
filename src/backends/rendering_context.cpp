@@ -132,14 +132,25 @@ void GLRenderContext::lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfl
 	lsglMultMatrixf(ortho);
 }
 
-void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h)
+void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
+			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
 {
-	if(useMask)
+	if(maskMode==ENABLE_MASK)
 	{
 		glPushMatrix();
 		renderMaskToTmpBuffer();
 		glPopMatrix();
 	}
+
+	//Set color mode
+	glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);
+	//Set mask mode
+	glUniform1f(maskUniform, (maskMode==ENABLE_MASK)?1.0f:0.0f);
+	//Set alpha
+	glUniform1f(alphaUniform, alpha);
+	//Set matrix
+	setMatrixUniform(LSGL_MODELVIEW);
+
 	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t startX, startY, endX, endY;
@@ -273,18 +284,3 @@ void GLRenderContext::renderMaskToTmpBuffer()
 	glDrawBuffer(GL_BACK);
 }
 
-void GLRenderContext::setYUVtoRGBConversion(bool b)
-{
-	glUniform1f(yuvUniform, (b)?1:0);
-}
-
-void GLRenderContext::setMask(bool b)
-{
-	useMask=b;
-	glUniform1f(maskUniform, (b)?1.0f:0.0f);
-}
-
-void GLRenderContext::setAlpha(float a)
-{
-	glUniform1f(alphaUniform, a);
-}

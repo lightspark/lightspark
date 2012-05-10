@@ -192,7 +192,6 @@ MatrixApplier::MatrixApplier(const MATRIX& m)
 	float matrix[16];
 	m.get4DMatrix(matrix);
 	getRenderThread()->lsglMultMatrixf(matrix);
-	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 void MatrixApplier::concat(const MATRIX& m)
@@ -200,13 +199,11 @@ void MatrixApplier::concat(const MATRIX& m)
 	float matrix[16];
 	m.get4DMatrix(matrix);
 	getRenderThread()->lsglMultMatrixf(matrix);
-	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 void MatrixApplier::unapply()
 {
 	getRenderThread()->lsglPopMatrix();
-	getRenderThread()->setMatrixUniform(LSGL_MODELVIEW);
 }
 
 

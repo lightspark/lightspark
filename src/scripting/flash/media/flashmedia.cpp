@@ -117,11 +117,10 @@ void Video::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number
 		MatrixApplier ma(getConcatenatedMatrix());
 
 		//Enable YUV to RGB conversion
-		ctxt.setYUVtoRGBConversion(true);
-		ctxt.setMask(0);
-		ctxt.setAlpha(clippedAlpha());
 		//width and height will not change now (the Video mutex is acquired)
-		ctxt.renderTextured(netStream->getTexture(), 0, 0, width, height);
+		ctxt.renderTextured(netStream->getTexture(), 0, 0, width, height,
+			clippedAlpha(), RenderContext::YUV_MODE,
+			RenderContext::NO_MASK);
 		
 		ma.unapply();
 		netStream->unlock();

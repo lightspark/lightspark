@@ -361,13 +361,11 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 
 	ctxt.lsglPushMatrix();
 	ctxt.lsglLoadIdentity();
-	ctxt.setMatrixUniform(LSGL_MODELVIEW);
-	ctxt.setMask(enableMaskLookup);
-	ctxt.setYUVtoRGBConversion(false);
-	ctxt.setAlpha(cachedSurface.alpha);
-	ctxt.renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
+	ctxt.renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset,
+			cachedSurface.tex.width, cachedSurface.tex.height,
+			cachedSurface.alpha, RenderContext::RGB_MODE,
+			(enableMaskLookup)?RenderContext::ENABLE_MASK:RenderContext::NO_MASK);
 	ctxt.lsglPopMatrix();
-	ctxt.setMatrixUniform(LSGL_MODELVIEW);
 }
 
 void DisplayObject::computeDeviceBoundsForRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,

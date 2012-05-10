@@ -28,7 +28,6 @@ namespace lightspark
 {
 
 enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
-enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 
 /*
  * The RenderContext contains all (public) functions that are needed by DisplayObjects to draw themselves.
@@ -78,21 +77,14 @@ public:
 	void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
 	void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
 
-	/*
-	 * Uploads the current matrix as the specified type.
-	 */
-	virtual void setMatrixUniform(LSGL_MATRIX m) const=0;
-
-	virtual void setYUVtoRGBConversion(bool b)=0;
-
-	virtual void setMask(bool b)=0;
-	virtual void setAlpha(float a)=0;
-
+	enum COLOR_MODE { RGB_MODE=0, YUV_MODE };
+	enum MASK_MODE { NO_MASK = 0, ENABLE_MASK };
 	/* Textures */
 	/**
 		Render a quad of given size using the given chunk
 	*/
-	virtual void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h)=0;
+	virtual void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
+			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)=0;
 };
 
 class GLRenderContext: public RenderContext
@@ -106,8 +98,6 @@ protected:
 	GLint yuvUniform;
 	GLint maskUniform;
 	GLint alphaUniform;
-
-	bool useMask;
 
 	/* Textures */
 	Mutex mutexLargeTexture;
@@ -124,24 +114,23 @@ protected:
 
 	void renderMaskToTmpBuffer();
 	~GLRenderContext(){}
-public:
-	GLRenderContext() : RenderContext(GL), useMask(false), largeTextureSize(0)
-	{
-	}
-	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+
+	enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 	/*
 	 * Uploads the current matrix as the specified type.
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
+public:
+	GLRenderContext() : RenderContext(GL), largeTextureSize(0)
+	{
+	}
+	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
 
-	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h);
+	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
+			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode);
 
 	/* Utility */
 	static bool handleGLErrors();
-
-	void setYUVtoRGBConversion(bool b);
-	void setMask(bool b);
-	void setAlpha(float a);
 };
 
 }

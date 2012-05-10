@@ -231,7 +231,7 @@ public:
 	}
 	static T* cast(ASObject* o)
 	{
-		return static_cast<T*>(o);
+		return dynamic_cast<T*>(o);
 	}
 	static T* dyncast(ASObject* o)
 	{

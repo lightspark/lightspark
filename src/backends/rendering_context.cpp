@@ -267,11 +267,7 @@ void GLRenderContext::renderMaskToTmpBuffer()
 	glClear(GL_COLOR_BUFFER_BIT);
 	for(uint32_t i=0;i<maskStack.size();i++)
 	{
-		float matrix[16];
-		maskStack[i].m.get4DMatrix(matrix);
-		lsglLoadMatrixf(matrix);
-		setMatrixUniform(LSGL_MODELVIEW);
-		maskStack[i].d->Render(*this, true);
+		maskStack[i]->Render(*this, true);
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);

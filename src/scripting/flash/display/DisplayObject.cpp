@@ -100,12 +100,7 @@ number_t DisplayObject::getNominalHeight()
 void DisplayObject::renderPrologue(RenderContext& ctxt) const
 {
 	if(!mask.isNull())
-	{
-		if(mask->parent.isNull())
-			ctxt.pushMask(mask.getPtr(),MATRIX());
-		else
-			ctxt.pushMask(mask.getPtr(),mask->parent->getConcatenatedMatrix());
-	}
+		ctxt.pushMask(mask.getPtr());
 }
 
 void DisplayObject::renderEpilogue(RenderContext& ctxt) const

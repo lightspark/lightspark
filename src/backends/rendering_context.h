@@ -37,14 +37,7 @@ class RenderContext
 {
 protected:
 	/* Masks */
-	class MaskData
-	{
-	public:
-		DisplayObject* d;
-		MATRIX m;
-		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
-	};
-	std::vector<MaskData> maskStack;
+	std::vector<DisplayObject*> maskStack;
 	/* Modelview matrix manipulation */
 	static const GLfloat lsIdentityMatrix[16];
 	GLfloat lsMVPMatrix[16];
@@ -58,12 +51,11 @@ public:
 	/**
 		Add a mask to the stack mask
 		@param d The DisplayObject used as a mask
-		@param m The total matrix from the parent of the object to stage
 		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
 	*/
-	void pushMask(DisplayObject* d, const MATRIX& m)
+	void pushMask(DisplayObject* d)
 	{
-		maskStack.push_back(MaskData(d,m));
+		maskStack.push_back(d);
 	}
 	/**
 		Remove the last pushed mask

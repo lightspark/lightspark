@@ -1559,7 +1559,8 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		assert_and_throw(type->getObjectType()==T_CLASS);
 
 		//Special case for Class
-		if(c->class_name.name=="Class" && c->class_name.ns=="")
+		if(c->class_name.ns=="" &&
+			(c->class_name.name=="Class" || c->class_name.name=="Object"))
 		{
 			type->decRef();
 			obj->decRef();
@@ -1643,7 +1644,8 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	else if(obj->getObjectType()==T_CLASS)
 	{
 		//Special case for Class
-		if(c->class_name.name=="Class" && c->class_name.ns=="")
+		if(c->class_name.ns=="" &&
+			(c->class_name.name=="Class" || c->class_name.name=="Object"))
 		{
 			type->decRef();
 			return obj;

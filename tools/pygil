@@ -22,7 +22,7 @@ rstupclass = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)",
 #the line may start with anything but a comment character
 rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *GETTER_METHOD, *([^ ]*)')
 rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *SETTER_METHOD, *([^ ]*)')
-rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *NORMAL_METHOD, *([^ ]*)')
+rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,(\w\),)* *NORMAL_METHOD, *([^ ]*)')
 rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')

@@ -130,13 +130,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 	if(!ctransform.isNull() || !blendMode.isNull() || !clipRect.isNull() || smoothing)
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters");
 
-	if(drawable->is<Loader>() && drawable->as<Loader>()->getContent()->is<Bitmap>())
-	{
-		Bitmap* bm = drawable->as<Loader>()->getContent()->as<Bitmap>();
-		th->copyFrom(bm->bitmapData.getPtr());
-		return NULL;
-	}
-	else if(drawable->is<BitmapData>())
+	if(drawable->is<BitmapData>())
 	{
 		BitmapData* data=drawable->as<BitmapData>();
 		//Compute the initial matrix, if any

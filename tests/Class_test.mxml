@@ -16,6 +16,10 @@
 		Tests.assertEquals(MouseEvent["ENTER_FRAME"],undefined,"Accessing property of parent class from derived class");
 		Tests.assertEquals(Event["ENTER_FRAME"],"enterFrame","Accessing property of parent class");
 
+		var c:Class = DisplayObject;
+		Tests.assertEquals(c, c as Object, "Class object as Object");
+		Tests.assertEquals(true, c is Object, "Class object is Object");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

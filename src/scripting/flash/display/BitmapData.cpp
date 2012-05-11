@@ -126,7 +126,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass()) )
 		throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
 
-	if(!matrix.isNull() || !ctransform.isNull() || !blendMode.isNull() || !clipRect.isNull() || smoothing)
+	if(!ctransform.isNull() || !blendMode.isNull() || !clipRect.isNull() || smoothing)
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters");
 
 	if(drawable->is<Loader>() && drawable->as<Loader>()->getContent()->is<Bitmap>())
@@ -147,11 +147,15 @@ ASFUNCTIONBODY(BitmapData,draw)
 		DisplayObject* d=drawable->as<DisplayObject>();
 		d->requestInvalidation(&queue);
 		CairoRenderContext ctxt(&th->data[0], th->width, th->height);
+		//Compute the initial matrix, if any
+		MATRIX initialMatrix;
+		if(!matrix.isNull())
+			initialMatrix=matrix->getMATRIX();
 		for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 		{
 			DisplayObject* target=(*it).getPtr();
 			//Get the drawable from each of the added objects
-			IDrawable* drawable=target->invalidate(d, MATRIX());
+			IDrawable* drawable=target->invalidate(d, initialMatrix);
 			if(drawable==NULL)
 				continue;
 

@@ -316,6 +316,23 @@ void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourc
 	cairo_fill(cr);
 }
 
+void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
+		FILTER_MODE filterMode)
+{
+	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight);
+	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
+	cairo_surface_destroy(sourceSurface);
+	cairo_pattern_set_filter(sourcePattern, (filterMode==FILTER_SMOOTH)?CAIRO_FILTER_BILINEAR:CAIRO_FILTER_NEAREST);
+	cairo_pattern_set_extend(sourcePattern, CAIRO_EXTEND_NONE);
+	cairo_matrix_t matrix;
+	m.getCairoMatrix(&matrix);
+	cairo_set_matrix(cr, &matrix);
+	cairo_set_source(cr, sourcePattern);
+	cairo_pattern_destroy(sourcePattern);
+	cairo_rectangle(cr, 0, 0, sourceTotalWidth, sourceTotalHeight);
+	cairo_fill(cr);
+}
+
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
 {

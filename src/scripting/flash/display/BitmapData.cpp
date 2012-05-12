@@ -137,8 +137,16 @@ ASFUNCTIONBODY(BitmapData,draw)
 	}
 	else if(drawable->is<BitmapData>())
 	{
-		th->copyFrom(drawable->as<BitmapData>());
-		return NULL;
+		BitmapData* data=drawable->as<BitmapData>();
+		//Compute the initial matrix, if any
+		MATRIX initialMatrix;
+		if(!matrix.isNull())
+			initialMatrix=matrix->getMATRIX();
+		CairoRenderContext ctxt(th->getData(), th->width, th->height);
+		//Blit the data while transforming it
+		ctxt.transformedBlit(initialMatrix, data->getData(),
+				data->getWidth(), data->getHeight(),
+				CairoRenderContext::FILTER_NONE);
 	}
 	else if(drawable->is<DisplayObject>())
 	{

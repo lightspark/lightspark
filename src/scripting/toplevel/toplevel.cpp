@@ -1515,8 +1515,8 @@ ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen
 
 ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 {
-	if(argslen)
-		LOG(LOG_NOT_IMPLEMENTED,"new Function() with argslen > 0");
+	if (argslen > 0)
+		throw Class<EvalError>::getInstanceS("Error #1066: Function('function body') is not supported");
 	return Class<IFunction>::getFunction(ASNop);
 }
 

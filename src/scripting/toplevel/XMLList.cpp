@@ -84,13 +84,34 @@ ASFUNCTIONBODY(XMLList,_constructor)
 		return NULL;
 	}
 	if(argslen==0 ||
-	   args[0]->getObjectType()==T_NULL || 
-	   args[0]->getObjectType()==T_UNDEFINED)
+	   args[0]->is<Null>() || 
+	   args[0]->is<Undefined>())
+	{
 		return NULL;
+	}
+	else if(args[0]->is<XML>())
+	{
+		args[0]->incRef();
+		th->append(_MR(args[0]->as<XML>()));
+	}
+	else if(args[0]->is<XMLList>())
+	{
+		args[0]->incRef();
+		th->append(_MR(args[0]->as<XMLList>()));
+	}
+	else if(args[0]->is<ASString>() ||
+		args[0]->is<Number>() ||
+		args[0]->is<Integer>() ||
+		args[0]->is<UInteger>() ||
+		args[0]->is<Boolean>())
+	{
+		th->buildFromString(args[0]->toString());
+	}
+	else
+	{
+		throw RunTimeException("Type not supported in XMLList()");
+	}
 
-	assert_and_throw(args[0]->getObjectType()==T_STRING);
-	ASString* str=Class<ASString>::cast(args[0]);
-	th->buildFromString(std::string(str->data));
 	return NULL;
 }
 
@@ -155,18 +176,24 @@ ASFUNCTIONBODY(XMLList,_hasComplexContent)
 ASFUNCTIONBODY(XMLList,generator)
 {
 	assert(obj==NULL);
-	assert_and_throw(argslen==1);
-	if(args[0]->getObjectType()==T_STRING)
+	if(argslen==0)
 	{
-		ASString* str=Class<ASString>::cast(args[0]);
-		return Class<XMLList>::getInstanceS(std::string(str->data));
+		return Class<XMLList>::getInstanceS("");
 	}
-	else if(args[0]->getClass()==Class<XMLList>::getClass())
+	else if(args[0]->is<ASString>() ||
+		args[0]->is<Number>() ||
+		args[0]->is<Integer>() ||
+		args[0]->is<UInteger>() ||
+		args[0]->is<Boolean>())
+	{
+		return Class<XMLList>::getInstanceS(args[0]->toString());
+	}
+	else if(args[0]->is<XMLList>())
 	{
 		args[0]->incRef();
 		return args[0];
 	}
-	else if(args[0]->getClass()==Class<XML>::getClass())
+	else if(args[0]->is<XML>())
 	{
 		XML::XMLVector nodes;
 		args[0]->incRef();

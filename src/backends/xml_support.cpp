@@ -95,6 +95,19 @@ xmlpp::Node* XMLBase::buildFromString(const string& str)
 	// TODO: node's parent (root) should be inaccessible from AS code
 }
 
+xmlpp::Node* XMLBase::buildCopy(const xmlpp::Node* src)
+{
+	const xmlpp::TextNode* textnode=dynamic_cast<const xmlpp::TextNode*>(src);
+	if(textnode)
+	{
+		return buildFromString(textnode->get_content());
+	}
+	else
+	{
+		return parser.get_document()->create_root_node_by_import(src);
+	}
+}
+
 // Adobe player's XML parser accepts many strings which are not valid
 // XML according to the specs. This function attempts to massage
 // invalid-but-accepted-by-Adobe strings into valid XML so that

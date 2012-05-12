@@ -50,7 +50,8 @@ XML::XML(Class_base* c,_R<XML> _r, xmlpp::Node* _n):ASObject(c),root(_r),node(_n
 XML::XML(Class_base* c,xmlpp::Node* _n):ASObject(c),constructed(true)
 {
 	assert(_n);
-	node=parser.get_document()->create_root_node_by_import(_n);
+	node=buildCopy(_n);
+	assert(node);
 }
 
 void XML::finalize()
@@ -87,26 +88,26 @@ ASFUNCTIONBODY(XML,generator)
 {
 	assert(obj==NULL);
 	assert_and_throw(argslen<=1);
-	if (argslen == 0)
+	if (argslen == 0 ||
+	    args[0]->is<Null>() ||
+	    args[0]->is<Undefined>())
 	{
 		return Class<XML>::getInstanceS("");
 	}
-	if(args[0]->getObjectType()==T_STRING)
+	else if(args[0]->is<ASString>() ||
+		args[0]->is<Number>() ||
+		args[0]->is<Integer>() ||
+		args[0]->is<UInteger>() ||
+		args[0]->is<Boolean>())
 	{
-		ASString* str=Class<ASString>::cast(args[0]);
-		return Class<XML>::getInstanceS(std::string(str->data));
+		return Class<XML>::getInstanceS(args[0]->toString());
 	}
-	else if(args[0]->getObjectType()==T_NULL ||
-		args[0]->getObjectType()==T_UNDEFINED)
-	{
-		return Class<XML>::getInstanceS("");
-	}
-	else if(args[0]->getClass()==Class<XML>::getClass())
+	else if(args[0]->is<XML>())
 	{
 		args[0]->incRef();
 		return args[0];
 	}
-	else if(args[0]->getClass()==Class<XMLList>::getClass())
+	else if(args[0]->is<XMLList>())
 	{
 		_R<XML> ret=args[0]->as<XMLList>()->reduceToXML();
 		ret->incRef();
@@ -128,8 +129,8 @@ ASFUNCTIONBODY(XML,_constructor)
 		return NULL;
 
 	if(argslen==0 ||
-	   args[0]->getObjectType()==T_NULL || 
-	   args[0]->getObjectType()==T_UNDEFINED)
+	   args[0]->is<Null>() || 
+	   args[0]->is<Undefined>())
 	{
 		th->node=th->buildFromString("");
 	}
@@ -142,14 +143,25 @@ ASFUNCTIONBODY(XML,_constructor)
 		const uint8_t* str=ba->getBuffer(len, false);
 		th->node=th->buildFromString(std::string((const char*)str,len));
 	}
-	else if(args[0]->getObjectType()==T_STRING ||
-		args[0]->getObjectType()==T_NUMBER ||
-		args[0]->getObjectType()==T_INTEGER ||
-		args[0]->getObjectType()==T_BOOLEAN)
+	else if(args[0]->is<ASString>() ||
+		args[0]->is<Number>() ||
+		args[0]->is<Integer>() ||
+		args[0]->is<UInteger>() ||
+		args[0]->is<Boolean>())
 	{
 		//By specs, XML constructor will only convert to string Numbers or Booleans
 		//ints are not explicitly mentioned, but they seem to work
 		th->node=th->buildFromString(args[0]->toString());
+	}
+	else if(args[0]->is<XML>())
+	{
+		th->node=th->buildCopy(args[0]->as<XML>()->node);
+	}
+	else if(args[0]->is<XMLList>())
+	{
+		XMLList *list=args[0]->as<XMLList>();
+		_R<XML> reduced=list->reduceToXML();
+		th->node=th->buildCopy(reduced->node);
 	}
 	else
 		throw Class<TypeError>::getInstanceS("Unsupported type in XML conversion");

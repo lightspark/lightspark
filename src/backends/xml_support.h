@@ -47,7 +47,7 @@ typedef xmlpp::DomParser LSDomParser;
 #endif
 
 /*
- * Base class for both XML adn XMLNode
+ * Base class for both XML and XMLNode
  */
 class XMLBase
 {
@@ -55,6 +55,9 @@ protected:
 	//The parser will destroy the document and all the childs on destruction
 	LSDomParser parser;
 	xmlpp::Node* buildFromString(const std::string& str);
+	// Set the root to be a copy of src. If src is a text node,
+	// create a new element node with the same content.
+	xmlpp::Node* buildCopy(const xmlpp::Node* node);
 	static std::string parserQuirks(const std::string& str);
 	static std::string quirkCData(const std::string& str);
 	static std::string quirkXMLDeclarationInMiddle(const std::string& str);

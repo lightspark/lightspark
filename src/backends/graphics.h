@@ -255,7 +255,6 @@ protected:
 	 *       will serialize the thread pool when all thread pool workers are executing CairoRenderers!
 	 */
 	static StaticMutex cairoMutex;
-	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
 	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface(uint8_t*& buf);
 	virtual void executeDraw(cairo_t* cr)=0;

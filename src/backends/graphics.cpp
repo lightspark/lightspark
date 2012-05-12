@@ -257,18 +257,6 @@ CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _
 {
 }
 
-cairo_matrix_t CairoRenderer::MATRIXToCairo(const MATRIX& matrix)
-{
-	cairo_matrix_t ret;
-
-	cairo_matrix_init(&ret,
-	                  matrix.ScaleX, matrix.RotateSkew0,
-	                  matrix.RotateSkew1, matrix.ScaleY,
-	                  matrix.TranslateX, matrix.TranslateY);
-
-	return ret;
-}
-
 void CairoTokenRenderer::quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y)
 {
 	double start_x, start_y;
@@ -364,7 +352,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			pattern = cairo_pattern_create_for_surface(surface);
 			cairo_surface_destroy(surface);
 
-			cairo_matrix_t mat = MATRIXToCairo(style.Matrix);
+			cairo_matrix_t mat;
+			style.Matrix.getCairoMatrix(&mat);
 			cairo_status_t st = cairo_matrix_invert(&mat);
 			assert(st == CAIRO_STATUS_SUCCESS);
 			mat.x0 /= scaleCorrection;
@@ -525,7 +514,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<Geom
 				pattern=cairo_get_source(cr);
 				cairo_pattern_get_matrix(pattern, &origmat);
 
-				cairo_matrix_t mat = MATRIXToCairo(tokens[i].textureTransform);
+				cairo_matrix_t mat;
+				tokens[i].textureTransform.getCairoMatrix(&mat);
 				cairo_pattern_set_matrix(pattern, &mat);
 
 				cairo_fill(cr);
@@ -635,7 +625,8 @@ uint8_t* CairoRenderer::getPixelBuffer()
 		matrix.TranslateX-=xOffset;
 	if(yOffset >= 0)
 		matrix.TranslateY-=yOffset;
-	const cairo_matrix_t& mat=MATRIXToCairo(matrix);
+	cairo_matrix_t mat;
+	matrix.getCairoMatrix(&mat);
 	cairo_transform(cr, &mat);
 
 	executeDraw(cr);

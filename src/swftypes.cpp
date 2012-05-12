@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <cmath>
+#include <cairo.h>
 
 #include "exceptions.h"
 #include "compat.h"
@@ -294,6 +295,13 @@ void MATRIX::get4DMatrix(float matrix[16]) const
 	matrix[12]=TranslateX;
 	matrix[13]=TranslateY;
 	matrix[15]=1;
+}
+
+void MATRIX::getCairoMatrix(cairo_matrix_t* m) const
+{
+	cairo_matrix_init(m, ScaleX, RotateSkew0,
+			RotateSkew1, ScaleY,
+			TranslateX, TranslateY);
 }
 
 Vector2f MATRIX::multiply2D(const Vector2f& in) const

@@ -576,6 +576,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	}
 
 	bool isAttr=name.isAttribute;
+	unsigned int index=0;
 	//Normalize the name to the string form
 	const tiny_string normalizedName=name.normalizedName();
 	//TODO: support namespaces
@@ -614,6 +615,18 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		XMLVector retnode;
 		retnode.push_back(_MR(Class<XML>::getInstanceS(rootXML, attr)));
 		return _MNR(Class<XMLList>::getInstanceS(retnode));
+	}
+	else if(Array::isValidMultiname(name,index))
+	{
+		// If the multiname is a valid array property, the XML
+		// object is treated as a single-item XMLList.
+		if(index==0)
+		{
+			incRef();
+			return _MNR(this);
+		}
+		else
+			return NullRef;
 	}
 	else
 	{

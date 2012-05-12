@@ -31,7 +31,7 @@ private function appComplete():void
 	var b2:Bitmap = new Bitmap(b1);
 	visual.addChild(b2);
 
-	var b3:BitmapData = new BitmapData(100,200,true,0xff800000);
+	var b3:BitmapData = new BitmapData(200,200,true,0xff800000);
 	var s2:Sprite = new Sprite();
 	s2.graphics.beginFill(0x008000, 1);
 	s2.graphics.drawRect(0,0,100,100);
@@ -41,6 +41,7 @@ private function appComplete():void
 	b4.draw(s2);
 	b3.copyPixels(b4, new Rectangle(0,0,100,100), new Point(0, 0),null,null,false);
 	b3.copyPixels(b4, new Rectangle(0,0,100,100), new Point(0, 100),null,null,true);
+	b3.draw(b4, new Matrix(1,0,0,2,100,0));
 	var b5:Bitmap = new Bitmap(b3);
 	b5.x=200;
 	visual.addChild(b5);

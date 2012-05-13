@@ -52,6 +52,7 @@ private:
 	 *
 	 */
 	void childrenImpl(XMLVector& ret, const tiny_string& name);
+	void childrenImpl(XMLVector& ret, uint32_t index);
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);

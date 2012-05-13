@@ -404,13 +404,55 @@ void XML::childrenImpl(XMLVector& ret, const tiny_string& name)
 	}
 }
 
+void XML::childrenImpl(XMLVector& ret, uint32_t index)
+{
+	assert(node);
+	_NR<XML> rootXML=NullRef;
+	if(root.isNull())
+	{
+		this->incRef();
+		rootXML=_MR(this);
+	}
+	else
+		rootXML=root;
+
+	uint32_t i=0;
+	const xmlpp::Node::NodeList& list=node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=list.begin();
+	while(it!=list.end())
+	{
+		xmlpp::TextNode* nodeText = dynamic_cast<xmlpp::TextNode*>(*it);
+		if(!(nodeText && nodeText->is_white_space()))
+		{
+			if(i==index)
+			{
+				ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+				break;
+			}
+
+			i++;
+		}
+
+		it++;
+	}
+}
+
 ASFUNCTIONBODY(XML,child)
 {
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
 	XMLVector ret;
-	th->childrenImpl(ret, arg0);
+	uint32_t index=0;
+	multiname mname(NULL);
+	mname.name_s=arg0;
+	mname.name_type=multiname::NAME_STRING;
+	mname.ns.push_back(nsNameAndKind("",NAMESPACE));
+	mname.isAttribute=false;
+	if(Array::isValidMultiname(mname, index))
+		th->childrenImpl(ret, index);
+	else
+		th->childrenImpl(ret, arg0);
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
 }

@@ -68,6 +68,7 @@ public:
 	ASFUNCTION(attributes);
 	ASFUNCTION(attribute);
 	ASFUNCTION(appendChild);
+	ASFUNCTION(length);
 	ASFUNCTION(localName);
 	ASFUNCTION(name);
 	ASFUNCTION(descendants);

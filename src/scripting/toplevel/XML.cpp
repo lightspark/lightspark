@@ -74,6 +74,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(attribute),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("length",AS3,Class<IFunction>::getFunction(length),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("name",AS3,Class<IFunction>::getFunction(name),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
@@ -192,6 +193,11 @@ ASFUNCTIONBODY(XML,nodeKind)
 			throw UnsupportedException("Unsupported XML node type");
 		}
 	}
+}
+
+ASFUNCTIONBODY(XML,length)
+{
+	return abstract_i(1);
 }
 
 ASFUNCTIONBODY(XML,localName)

@@ -182,6 +182,10 @@ ASFUNCTIONBODY(XML,nodeKind)
 			return Class<ASString>::getInstanceS("element");
 		case XML_TEXT_NODE:
 			return Class<ASString>::getInstanceS("text");
+		case XML_COMMENT_NODE:
+			return Class<ASString>::getInstanceS("comment");
+		case XML_PI_NODE:
+			return Class<ASString>::getInstanceS("processing-instruction");
 		default:
 		{
 			LOG(LOG_ERROR,"Unsupported XML type " << libXml2Node->type);

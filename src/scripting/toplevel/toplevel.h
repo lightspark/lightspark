@@ -448,8 +448,10 @@ private:
 	tiny_string local_name;
 public:
 	ASQName(Class_base* c);
+	void setByNode(xmlpp::Node* node);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(generator);
 	ASFUNCTION(_getURI);
 	ASFUNCTION(_getLocalName);
 	ASFUNCTION(_toString);
@@ -473,6 +475,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(generator);
 	ASFUNCTION(_getURI);
 	ASFUNCTION(_setURI);
 	ASFUNCTION(_getPrefix);

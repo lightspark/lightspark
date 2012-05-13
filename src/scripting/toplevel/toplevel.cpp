@@ -1193,13 +1193,19 @@ ASQName::ASQName(Class_base* c):ASObject(c)
 {
 	type=T_QNAME; uri_is_null=false;
 }
+void ASQName::setByNode(xmlpp::Node* node)
+{
+	uri_is_null=false;
+	local_name = node->get_name();
+	uri=node->get_namespace_uri();
+}
 
 void ASQName::sinit(Class_base* c)
 {
 	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("local_name","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("localName","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
@@ -1271,10 +1277,96 @@ ASFUNCTIONBODY(ASQName,_constructor)
 	}
 	else
 	{
-		th->uri=namespaceval->toString();
+		if(namespaceval->getObjectType()==T_QNAME && 
+		   !(static_cast<ASQName*>(namespaceval)->uri_is_null))
+		{
+			ASQName* q=static_cast<ASQName*>(namespaceval);
+			th->uri=q->uri;
+		}
+		else
+			th->uri=namespaceval->toString();
 	}
 
 	return NULL;
+}
+ASFUNCTIONBODY(ASQName,generator)
+{
+	ASQName* th=Class<ASQName>::getInstanceS();
+	assert_and_throw(argslen<3);
+
+	ASObject *nameval;
+	ASObject *namespaceval;
+
+	if(argslen==0)
+	{
+		th->local_name="";
+		th->uri_is_null=false;
+		th->uri="";
+		// Should set th->uri to the default namespace
+		LOG(LOG_NOT_IMPLEMENTED, "QName constructor not completely implemented");
+		return th;
+	}
+	if(argslen==1)
+	{
+		nameval=args[0];
+		namespaceval=NULL;
+	}
+	else if(argslen==2)
+	{
+		namespaceval=args[0];
+		nameval=args[1];
+	}
+
+	// Set local_name
+	if(nameval->getObjectType()==T_QNAME)
+	{
+		ASQName *q=static_cast<ASQName*>(nameval);
+		th->local_name=q->local_name;
+		if(!namespaceval)
+		{
+			th->uri_is_null=q->uri_is_null;
+			th->uri=q->uri;
+			return th;
+		}
+	}
+	else if(nameval->getObjectType()==T_UNDEFINED)
+		th->local_name="";
+	else
+		th->local_name=nameval->toString();
+
+	// Set uri
+	th->uri_is_null=false;
+	if(!namespaceval || namespaceval->getObjectType()==T_UNDEFINED)
+	{
+		if(th->local_name=="*")
+		{
+			th->uri_is_null=true;
+			th->uri="";
+		}
+		else
+		{
+			// Should set th->uri to the default namespace
+			LOG(LOG_NOT_IMPLEMENTED, "QName constructor not completely implemented");
+			th->uri="";
+		}
+	}
+	else if(namespaceval->getObjectType()==T_NULL)
+	{
+		th->uri_is_null=true;
+		th->uri="";
+	}
+	else
+	{
+		if(namespaceval->getObjectType()==T_QNAME && 
+		   !(static_cast<ASQName*>(namespaceval)->uri_is_null))
+		{
+			ASQName* q=static_cast<ASQName*>(namespaceval);
+			th->uri=q->uri;
+		}
+		else
+			th->uri=namespaceval->toString();
+	}
+	return th;
 }
 
 ASFUNCTIONBODY(ASQName,_getURI)
@@ -1308,7 +1400,7 @@ bool ASQName::isEqual(ASObject* o)
 		return uri_is_null==q->uri_is_null && uri==q->uri && local_name==q->local_name;
 	}
 
-	return false;
+	return ASObject::isEqual(o);
 }
 
 tiny_string ASQName::toString()
@@ -1384,6 +1476,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 			Namespace* n=static_cast<Namespace*>(urival);
 			th->uri=n->uri;
 			th->prefix=n->prefix;
+			th->prefix_is_undefined=n->prefix_is_undefined;
 		}
 		else if(urival->getObjectType()==T_QNAME && 
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
@@ -1435,6 +1528,93 @@ ASFUNCTIONBODY(Namespace,_constructor)
 	}
 
 	return NULL;
+}
+ASFUNCTIONBODY(Namespace,generator)
+{
+	Namespace* th=Class<Namespace>::getInstanceS();
+	ASObject *urival;
+	ASObject *prefixval;
+	assert_and_throw(argslen<3);
+
+	if (argslen == 0)
+	{
+		th->prefix_is_undefined=false;
+		th->prefix = "";
+		th->uri = "";
+		return th;
+	}
+	else if (argslen == 1)
+	{
+		urival = args[0];
+		prefixval = NULL;
+	}
+	else
+	{
+		prefixval = args[0];
+		urival = args[1];
+	}
+	th->prefix_is_undefined=false;
+	th->prefix = "";
+	th->uri = "";
+
+	if(!prefixval)
+	{
+		if(urival->getObjectType()==T_NAMESPACE)
+		{
+			Namespace* n=static_cast<Namespace*>(urival);
+			th->uri=n->uri;
+			th->prefix=n->prefix;
+			th->prefix_is_undefined=n->prefix_is_undefined;
+		}
+		else if(urival->getObjectType()==T_QNAME && 
+		   !(static_cast<ASQName*>(urival)->uri_is_null))
+		{
+			ASQName* q=static_cast<ASQName*>(urival);
+			th->uri=q->uri;
+		}
+		else
+		{
+			th->uri=urival->toString();
+			if(th->uri!="")
+			{
+				th->prefix_is_undefined=true;
+				th->prefix="";
+			}
+		}
+	}
+	else // has both urival and prefixval
+	{
+		if(urival->getObjectType()==T_QNAME &&
+		   !(static_cast<ASQName*>(urival)->uri_is_null))
+		{
+			ASQName* q=static_cast<ASQName*>(urival);
+			th->uri=q->uri;
+		}
+		else
+		{
+			th->uri=urival->toString();
+		}
+
+		if(th->uri=="")
+		{
+			if(prefixval->getObjectType()==T_UNDEFINED ||
+			   prefixval->toString()=="")
+				th->prefix="";
+			else
+				throw Class<TypeError>::getInstanceS("Namespace prefix for empty uri not allowed");
+		}
+		else if(prefixval->getObjectType()==T_UNDEFINED ||
+			!isXMLName(prefixval))
+		{
+			th->prefix_is_undefined=true;
+			th->prefix="";
+		}
+		else
+		{
+			th->prefix=prefixval->toString();
+		}
+	}
+	return th;
 }
 
 ASFUNCTIONBODY(Namespace,_setURI)
@@ -1504,7 +1684,7 @@ bool Namespace::isEqual(ASObject* o)
 		return uri==n->uri;
 	}
 
-	return false;
+	return ASObject::isEqual(o);
 }
 
 

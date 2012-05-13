@@ -222,7 +222,11 @@ ASFUNCTIONBODY(XML,name)
 	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
 		return getSys()->getNullRef();
 	else
-		return Class<ASString>::getInstanceS(th->node->get_name());
+	{
+		ASQName* ret = Class<ASQName>::getInstanceS();
+		ret->setByNode(th->node);
+		return ret;
+	}
 }
 
 ASFUNCTIONBODY(XML,descendants)

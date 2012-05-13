@@ -361,7 +361,15 @@ void XML::toXMLString_priv(xmlBufferPtr buf)
 		cNode->nsDef=&localNamespaces.front();
 	}
 
-	int retVal=xmlNodeDump(buf, xmlDoc, cNode, 0, 0);
+	int retVal;
+	if(cNode->type==XML_ATTRIBUTE_NODE)
+	{
+		retVal=xmlNodeBufGetContent(buf, cNode);
+	}
+	else
+	{
+		retVal=xmlNodeDump(buf, xmlDoc, cNode, 0, 0);
+	}
 	//Restore the previously defined namespaces
 	cNode->nsDef=oldNsDef;
 	if(retVal==-1)

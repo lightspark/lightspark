@@ -947,7 +947,10 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		}
 		else
 		{//Convert both to numbers and add
-			number_t result = val2p->toNumber() + val1p->toNumber();
+			number_t num1=val1p->toNumber();
+			number_t num2=val2p->toNumber();
+			LOG(LOG_CALLS,"addN " << num1 << '+' << num2);
+			number_t result = num1 + num2;
 			return abstract_d(result);
 		}
 	}

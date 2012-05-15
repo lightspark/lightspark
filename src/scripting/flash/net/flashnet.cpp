@@ -665,13 +665,16 @@ ASFUNCTIONBODY(NetConnection,connect)
 			throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
 		}
 		
+		//By spec NetConnection::connect is true for RTMP and remoting and false otherwise
 		if(th->uri.isRTMP())
 		{
 			isRTMP = true;
+			th->_connected = true;
 		}
 		else if(th->uri.getProtocol() == "http" ||
 		     th->uri.getProtocol() == "https")
 		{
+			th->_connected = true;
 			//isRPC = true;
 		}
 		else

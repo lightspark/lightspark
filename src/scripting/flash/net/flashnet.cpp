@@ -456,7 +456,14 @@ void URLLoaderDataFormat::sinit(Class_base* c)
 void SharedObject::sinit(Class_base* c)
 {
 	c->setSuper(Class<EventDispatcher>::getRef());
+	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(getLocal),NORMAL_METHOD,false);
 };
+
+ASFUNCTIONBODY(SharedObject,getLocal)
+{
+	//TODO: Implement this
+	return Class<SharedObject>::getInstanceS();
+}
 
 void ObjectEncoding::sinit(Class_base* c)
 {

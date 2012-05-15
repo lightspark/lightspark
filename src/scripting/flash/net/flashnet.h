@@ -92,6 +92,7 @@ class SharedObject: public EventDispatcher
 public:
 	SharedObject(Class_base* c):EventDispatcher(c){}
 	static void sinit(Class_base*);
+	ASFUNCTION(getLocal);
 };
 
 class ObjectEncoding: public ASObject

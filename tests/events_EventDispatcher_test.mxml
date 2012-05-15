@@ -8,24 +8,26 @@
 <mx:Script>
 	<![CDATA[
 	import Tests;
-	import TestEvent;
-	private function handler3(e:Event):void
+	import TestDispatcher;
+	private var listener:TestDispatcher;
+	private var received:int = 0;
+	private function handler(e:Event):void
 	{
-		trace(e.target);
+		Tests.assertTrue(e.target is TestDispatcher, "Custom target for implementations of IEventDispatcher");
+		received++;
+		reportIfNeeded();
 	}
-	private function handler2(e:Event):void
+	private function reportIfNeeded():void
 	{
-		trace(e.target);
-		var listener:EventDispatcher = new EventDispatcher();
-		listener.addEventListener("foo", handler3);
-		listener.dispatchEvent(e);
+		if(received==1)
+			Tests.report(visual, this.name);
 	}
 	private function appComplete():void
 	{
-		addEventListener("foo", handler2);
-		dispatchEvent(new Event("foo"));
+		listener = new TestDispatcher();
+		listener.addEventListener("foo", handler);
 
-		Tests.report(visual, this.name);
+		listener.dispatchEvent(new Event("foo"));
 	}
  ]]>
 </mx:Script>

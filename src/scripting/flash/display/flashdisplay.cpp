@@ -80,7 +80,7 @@ LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),bytesLoaded(0),bytesTot
 }
 
 LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),loadStatus(STARTED),actionScriptVersion(3),applicationDomain(NullRef)
+	loader(l),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true),applicationDomain(NullRef)
 {
 }
 
@@ -100,10 +100,12 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
 	REGISTER_GETTER(c,parameters);
 	REGISTER_GETTER(c,actionScriptVersion);
+	REGISTER_GETTER(c,childAllowsParent);
 }
 
 ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
 ASFUNCTIONBODY_GETTER(LoaderInfo,actionScriptVersion);
+ASFUNCTIONBODY_GETTER(LoaderInfo,childAllowsParent);
 
 void LoaderInfo::buildTraits(ASObject* o)
 {

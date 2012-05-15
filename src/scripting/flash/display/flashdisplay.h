@@ -264,6 +264,7 @@ private:
 public:
 	ASPROPERTY_GETTER(_NR<ASObject>,parameters);
 	ASPROPERTY_GETTER(uint32_t,actionScriptVersion);
+	ASPROPERTY_GETTER(bool, childAllowsParent);
 	LoaderInfo(Class_base* c);
 	LoaderInfo(Class_base* c, _R<Loader> l);
 	void finalize();

@@ -90,9 +90,10 @@ public:
 class SharedObject: public EventDispatcher
 {
 public:
-	SharedObject(Class_base* c):EventDispatcher(c){}
+	SharedObject(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION(getLocal);
+	ASPROPERTY_GETTER(_NR<ASObject>,data);
 };
 
 class ObjectEncoding: public ASObject

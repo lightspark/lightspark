@@ -453,11 +453,19 @@ void URLLoaderDataFormat::sinit(Class_base* c)
 	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"),DECLARED_TRAIT);
 }
 
+SharedObject::SharedObject(Class_base* c):EventDispatcher(c)
+{
+	data=_MR(new_asobject());
+}
+
 void SharedObject::sinit(Class_base* c)
 {
 	c->setSuper(Class<EventDispatcher>::getRef());
 	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(getLocal),NORMAL_METHOD,false);
+	REGISTER_GETTER(c,data);
 };
+
+ASFUNCTIONBODY_GETTER(SharedObject,data);
 
 ASFUNCTIONBODY(SharedObject,getLocal)
 {

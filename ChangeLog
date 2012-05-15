@@ -1,5 +1,13 @@
 lightspark: An open source flash player implementation
 
+Version 0.5.7:
+
+	* Fixed a few memory leaks
+	* Improved support for BitmapData::draw
+	* Support for BitmapData::copyPixels
+	* Support for soft masking
+	* Support for memory usage profiling (massif compatible)
+
 Version 0.5.6:
 
 	* Fix YouTube support for several videos

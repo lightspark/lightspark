@@ -1279,7 +1279,15 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
+			{
+				assert_and_throw(varIt->second.ns.size() == 1)
+				if(varIt->second.ns.begin()->name!="")
+				{
+					//Skip variable with a namespace, like protected ones
+					continue;
+				}
 				traitsCount++;
+			}
 		}
 		uint32_t dynamicFlag=(type->isSealed)?0:(1 << 3);
 		out->writeU29((traitsCount << 4) | dynamicFlag | 0x03);
@@ -1288,8 +1296,12 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				assert_and_throw(varIt->second.ns.size() == 1)
-				assert_and_throw(varIt->second.ns.begin()->name=="");
+				assert(varIt->second.ns.size() == 1);
+				if(varIt->second.ns.begin()->name!="")
+				{
+					//Skip variable with a namespace, like protected ones
+					continue;
+				}
 				out->writeStringVR(stringMap, varIt->first);
 			}
 		}
@@ -1297,7 +1309,15 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 	{
 		if(varIt->second.kind==DECLARED_TRAIT)
+		{
+			assert(varIt->second.ns.size() == 1);
+			if(varIt->second.ns.begin()->name!="")
+			{
+				//Skip variable with a namespace, like protected ones
+				continue;
+			}
 			varIt->second.var->serialize(out, stringMap, objMap, traitsMap);
+		}
 	}
 	if(!type->isSealed)
 		serializeDynamicProperties(out, stringMap, objMap, traitsMap);

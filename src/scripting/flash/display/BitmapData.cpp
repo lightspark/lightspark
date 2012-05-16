@@ -221,9 +221,11 @@ ASFUNCTIONBODY(BitmapData,getPixel)
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
 		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
-	uint32_t x;
-	uint32_t y;
+	int32_t x;
+	int32_t y;
 	ARG_UNPACK(x)(y);
+	if(x<0 || x>th->width || y<0 || y>th->width)
+		return abstract_ui(0);
 
 	uint32_t pix=th->getPixelPriv(x, y);
 	return abstract_ui(pix & 0xffffff);
@@ -234,9 +236,11 @@ ASFUNCTIONBODY(BitmapData,getPixel32)
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
 		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
-	uint32_t x;
-	uint32_t y;
+	int32_t x;
+	int32_t y;
 	ARG_UNPACK(x)(y);
+	if(x<0 || x>th->width || y<0 || y>th->width)
+		return abstract_ui(0);
 
 	uint32_t pix=th->getPixelPriv(x, y);
 	return abstract_ui(pix);

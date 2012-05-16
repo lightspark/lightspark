@@ -889,8 +889,9 @@ int ABCVm::getEventQueueSize()
 void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 {
 	std::deque<_R<DisplayObject>> parents;
-	assert_and_throw(!event->target);
-	event->setTarget(dispatcher);
+	//Only set the default target is it's not overridden
+	if(event->target.isNull())
+		event->setTarget(dispatcher);
 	/** rollOver/Out are special: according to spec 
 	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?  		
 	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver 

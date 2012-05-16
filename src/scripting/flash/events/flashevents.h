@@ -292,6 +292,10 @@ class EventDispatcher: public ASObject, public IEventDispatcher
 private:
 	Mutex handlersMutex;
 	std::map<tiny_string,std::list<listener> > handlers;
+	/*
+	 * This will be used when a target is passed to EventDispatcher constructor
+	 */
+	_NR<ASObject> forcedTarget;
 public:
 	EventDispatcher(Class_base* c);
 	void finalize();

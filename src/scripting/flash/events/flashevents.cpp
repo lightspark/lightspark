@@ -399,6 +399,7 @@ void EventDispatcher::finalize()
 {
 	ASObject::finalize();
 	handlers.clear();
+	forcedTarget.reset();
 }
 
 void EventDispatcher::sinit(Class_base* c)
@@ -560,6 +561,8 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		}
 		e=_MR(newEvent);
 	}
+	if(!th->forcedTarget.isNull())
+		e->setTarget(th->forcedTarget);
 	th->incRef();
 	ABCVm::publicHandleEvent(_MR(th), e);
 	return abstract_b(true);
@@ -567,6 +570,17 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 
 ASFUNCTIONBODY(EventDispatcher,_constructor)
 {
+	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
+	_NR<ASObject> forcedTarget;
+	ARG_UNPACK(forcedTarget, NullRef);
+	if(!forcedTarget.isNull())
+	{
+		if(forcedTarget->getObjectType()==T_NULL || forcedTarget->getObjectType()==T_UNDEFINED)
+			forcedTarget=NullRef;
+		else if(!forcedTarget->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass()))
+			throw Class<ArgumentError>::getInstanceS("Wrong argument for EventDispatcher");
+	}
+	th->forcedTarget=forcedTarget;
 	return NULL;
 }
 
@@ -587,7 +601,6 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	//Create a temporary copy of the listeners, as the list can be modified during the calls
 	vector<listener> tmpListener(h->second.begin(),h->second.end());
 	l.release();
-	//TODO: check, ok we should also bind the level
 	for(unsigned int i=0;i<tmpListener.size();i++)
 	{
 		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)

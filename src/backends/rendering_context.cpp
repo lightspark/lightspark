@@ -126,11 +126,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
 {
 	if(maskMode==ENABLE_MASK)
-	{
-		glPushMatrix();
 		renderMaskToTmpBuffer();
-		glPopMatrix();
-	}
 
 	//Set color mode
 	glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);

@@ -11,6 +11,7 @@
 	import flash.utils.Endian;
 	import SerializableClass;
 	import CustomSerializableClass;
+	import SerializableClassWithNs;
 	private function appComplete():void
 	{
 		var ba:ByteArray = new ByteArray();
@@ -168,6 +169,22 @@
 		ba13.position=0;
 		var tmp5:Object = ba13.readObject();
 		Tests.assertEquals(true, tmp5.ok, "Custom serialization");
+
+		var scns:SerializableClassWithNs = new SerializableClassWithNs(1,2,3);
+		var ba14:ByteArray = new ByteArray();
+		ba14.writeObject(scns);
+		ba14.position=0;
+		var tmp6:Object = ba14.readObject();
+		Tests.assertTrue(tmp6.a==1 && tmp6.b==2 && tmp6.c==undefined, "Serialize class with namespaces");
+
+		registerClassAlias("aliaswithns", SerializableClassWithNs);
+		var scns2:SerializableClassWithNs = new SerializableClassWithNs(1,2,3);
+		var ba15:ByteArray = new ByteArray();
+		ba15.writeObject(scns2);
+		ba15.position=0;
+		var tmp7:Object = ba15.readObject();
+		var tmp8:SerializableClassWithNs = tmp7 as SerializableClassWithNs;
+		Tests.assertTrue(tmp8.a==1 && tmp8.b==2 && tmp6.c==undefined, "Serialize class with namespaces and register alias");
 
 		Tests.report(visual, this.name);
 	}

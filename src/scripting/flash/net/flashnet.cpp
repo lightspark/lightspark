@@ -1161,47 +1161,7 @@ void NetStream::execute()
 
 			if(!tickStarted && isReady())
 			{
-				multiname onMetaDataName(NULL);
-				onMetaDataName.name_type=multiname::NAME_STRING;
-				onMetaDataName.name_s="onMetaData";
-				onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
-				_NR<ASObject> callback = client->getVariableByMultiname(onMetaDataName);
-				if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
-				{
-					ASObject* callbackArgs[1];
-					ASObject* metadata = Class<ASObject>::getInstanceS();
-					double d;
-					uint32_t i;
-					if(streamDecoder->getMetadataDouble("width",d))
-						metadata->setVariableByQName("width", "",abstract_d(d),DYNAMIC_TRAIT);
-					else
-						metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()),DYNAMIC_TRAIT);
-					if(streamDecoder->getMetadataDouble("height",d))
-						metadata->setVariableByQName("height", "",abstract_d(d),DYNAMIC_TRAIT);
-					else
-						metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()),DYNAMIC_TRAIT);
-					if(streamDecoder->getMetadataDouble("framerate",d))
-						metadata->setVariableByQName("framerate", "",abstract_d(d),DYNAMIC_TRAIT);
-					if(streamDecoder->getMetadataDouble("duration",d))
-						metadata->setVariableByQName("duration", "",abstract_d(d),DYNAMIC_TRAIT);
-					if(streamDecoder->getMetadataInteger("canseekontime",i))
-						metadata->setVariableByQName("canSeekToEnd", "",abstract_b(i == 1),DYNAMIC_TRAIT);
-					if(streamDecoder->getMetadataDouble("audiodatarate",d))
-						metadata->setVariableByQName("audiodatarate", "",abstract_d(d),DYNAMIC_TRAIT);
-					if(streamDecoder->getMetadataDouble("videodatarate",d))
-						metadata->setVariableByQName("videodatarate", "",abstract_d(d),DYNAMIC_TRAIT);
-
-					//TODO: missing: audiocodecid (Number), cuePoints (Object[]),
-					//videocodecid (Number), custommetadata's
-					client->incRef();
-					metadata->incRef();
-					callbackArgs[0] = metadata;
-					callback->incRef();
-					_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(_MR(
-							static_cast<IFunction*>(callback.getPtr())),
-							_MR(client), callbackArgs, 1));
-					getVm()->addEvent(NullRef,event);
-				}
+				sendClientNotification("onMetaData", createMetaDataObject(streamDecoder));
 
 				tickStarted=true;
 				if(frameRate==0)
@@ -1251,6 +1211,7 @@ void NetStream::execute()
 		getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop")));
 		this->incRef();
 		getVm()->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Flush")));
+		sendClientNotification("onPlayStatus", createPlayStatusObject("NetStream.Play.Complete"));
 	}
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	getSys()->removeJob(this);
@@ -1289,6 +1250,72 @@ void NetStream::threadAbort()
 		//Clear everything we have in buffers, discard all frames
 		audioDecoder->setFlushing();
 		audioDecoder->skipAll();
+	}
+}
+
+ASObject *NetStream::createMetaDataObject(StreamDecoder* streamDecoder)
+{
+	if(!streamDecoder)
+		return NULL;
+
+	ASObject* metadata = Class<ASObject>::getInstanceS();
+	double d;
+	uint32_t i;
+	if(streamDecoder->getMetadataDouble("width",d))
+		metadata->setVariableByQName("width", "",abstract_d(d),DYNAMIC_TRAIT);
+	else
+		metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()),DYNAMIC_TRAIT);
+	if(streamDecoder->getMetadataDouble("height",d))
+		metadata->setVariableByQName("height", "",abstract_d(d),DYNAMIC_TRAIT);
+	else
+		metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()),DYNAMIC_TRAIT);
+	if(streamDecoder->getMetadataDouble("framerate",d))
+		metadata->setVariableByQName("framerate", "",abstract_d(d),DYNAMIC_TRAIT);
+	if(streamDecoder->getMetadataDouble("duration",d))
+		metadata->setVariableByQName("duration", "",abstract_d(d),DYNAMIC_TRAIT);
+	if(streamDecoder->getMetadataInteger("canseekontime",i))
+		metadata->setVariableByQName("canSeekToEnd", "",abstract_b(i == 1),DYNAMIC_TRAIT);
+	if(streamDecoder->getMetadataDouble("audiodatarate",d))
+		metadata->setVariableByQName("audiodatarate", "",abstract_d(d),DYNAMIC_TRAIT);
+	if(streamDecoder->getMetadataDouble("videodatarate",d))
+		metadata->setVariableByQName("videodatarate", "",abstract_d(d),DYNAMIC_TRAIT);
+
+	//TODO: missing: audiocodecid (Number), cuePoints (Object[]),
+	//videocodecid (Number), custommetadata's
+
+	return metadata;
+}
+
+ASObject *NetStream::createPlayStatusObject(const tiny_string& code)
+{
+	ASObject* info=Class<ASObject>::getInstanceS();
+	info->setVariableByQName("level", "",Class<ASString>::getInstanceS("status"),DYNAMIC_TRAIT);
+	info->setVariableByQName("code", "",Class<ASString>::getInstanceS(code),DYNAMIC_TRAIT);
+	return info;
+}
+
+void NetStream::sendClientNotification(const tiny_string& name, ASObject *arg)
+{
+	if (client.isNull() || !arg)
+		return;
+
+	multiname callbackName(NULL);
+	callbackName.name_type=multiname::NAME_STRING;
+	callbackName.name_s=name;
+	callbackName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	_NR<ASObject> callback = client->getVariableByMultiname(callbackName);
+	if(!callback.isNull() && callback->is<Function>())
+	{
+		ASObject* callbackArgs[1];
+
+		client->incRef();
+		arg->incRef();
+		callbackArgs[0] = arg;
+		callback->incRef();
+		_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(_MR(
+				static_cast<IFunction*>(callback.getPtr())),
+				_MR(client), callbackArgs, 1));
+		getVm()->addEvent(NullRef,event);
 	}
 }
 

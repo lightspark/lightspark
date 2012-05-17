@@ -229,6 +229,10 @@ private:
 	bool rawAccessAllowed;
 	number_t oldVolume;
 	ASPROPERTY_GETTER_SETTER(NullableRef<SoundTransform>,soundTransform);
+
+	ASObject *createMetaDataObject(StreamDecoder* streamDecoder);
+	ASObject *createPlayStatusObject(const tiny_string& code);
+	void sendClientNotification(const tiny_string& name, ASObject *args);
 public:
 	NetStream(Class_base* c);
 	~NetStream();

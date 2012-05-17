@@ -722,22 +722,13 @@ public:
 template<class T> class Vector2Tmpl;
 typedef Vector2Tmpl<double> Vector2f;
 
-class MATRIX
+class MATRIX: public cairo_matrix_t
 {
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
 	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
 public:
-	number_t ScaleX;
-	number_t ScaleY;
-	number_t RotateSkew0;
-	number_t RotateSkew1;
-	number_t TranslateX;
-	number_t TranslateY;
-public:
-	MATRIX(number_t sx=1, number_t sy=1, number_t sk0=0, number_t sk1=0, number_t tx=0, number_t ty=0):
-		ScaleX(sx),ScaleY(sy),RotateSkew0(sk0),RotateSkew1(sk1),TranslateX(tx),TranslateY(ty){}
+	MATRIX(number_t sx=1, number_t sy=1, number_t sk0=0, number_t sk1=0, number_t tx=0, number_t ty=0);
 	void get4DMatrix(float matrix[16]) const;
-	void getCairoMatrix(cairo_matrix_t* m) const;
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	Vector2f multiply2D(const Vector2f& in) const;
 	MATRIX multiplyMatrix(const MATRIX& r) const;
@@ -746,31 +737,31 @@ public:
 	bool isInvertible() const;
 	number_t getTranslateX() const
 	{
-		return TranslateX;
+		return x0;
 	}
 	number_t getTranslateY() const
 	{
-		return TranslateY;
+		return y0;
 	}
 	number_t getScaleX() const
 	{
-		number_t ret=sqrt(ScaleX*ScaleX+RotateSkew1*RotateSkew1);
-		if(ScaleX>0)
+		number_t ret=sqrt(xx*xx+xy*xy);
+		if(xx>0)
 			return ret;
 		else
 			return -ret;
 	}
 	number_t getScaleY() const
 	{
-		number_t ret=sqrt(ScaleY*ScaleY+RotateSkew0*RotateSkew0);
-		if(ScaleY>0)
+		number_t ret=sqrt(yy*yy+yx*yx);
+		if(yy>0)
 			return ret;
 		else
 			return -ret;
 	}
 	number_t getRotation() const
 	{
-		return atan(RotateSkew0/ScaleY)*180/M_PI;
+		return atan(yx/yy)*180/M_PI;
 	}
 };
 

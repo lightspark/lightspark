@@ -40,6 +40,7 @@ class DisplayObject: public EventDispatcher, public IBitmapDrawable
 friend class TokenContainer;
 friend class GLRenderContext;
 friend class AsyncDrawJob;
+friend class Transform;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
 	enum HIT_TYPE { GENERIC_HIT, DOUBLE_CLICK };
@@ -47,7 +48,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);
 	MATRIX Matrix;
-	bool useMatrix;
+	bool useLegacyMatrix;
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;
@@ -146,7 +147,7 @@ public:
 	bool isOnStage() const { return onStage; }
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage();
-	void setMatrix(const MATRIX& m);
+	void setLegacyMatrix(const MATRIX& m);
 	virtual void advanceFrame() {}
 	virtual void initFrame();
 	Vector2f getLocalMousePos();

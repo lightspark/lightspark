@@ -142,10 +142,11 @@ public:
 
 class Matrix: public ASObject
 {
+private:
+	MATRIX matrix;
 public:
 	Matrix(Class_base* c);
 	Matrix(Class_base* c,const MATRIX& m);
-	number_t a, b, c, d, tx, ty;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void _createBox(number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y);

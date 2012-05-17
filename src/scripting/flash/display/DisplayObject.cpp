@@ -38,16 +38,8 @@ ATOMIC_INT32(DisplayObject::instanceCount);
 Vector2f DisplayObject::getXY()
 {
 	Vector2f ret;
-	if(useMatrix)
-	{
-		ret.x = getMatrix().TranslateX;
-		ret.y = getMatrix().TranslateY;
-	}
-	else
-	{
-		ret.x = tx;
-		ret.y = ty;
-	}
+	ret.x = getMatrix().getTranslateX();
+	ret.y = getMatrix().getTranslateY();
 	return ret;
 }
 
@@ -138,14 +130,14 @@ void DisplayObject::hitTestEpilogue() const
 		getSys()->getInputThread()->popMask();
 }
 
-DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),useMatrix(true),tx(0),ty(0),rotation(0),
+DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),useLegacyMatrix(true),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),maskOf(),parent(),mask(),onStage(false),
 	loaderInfo(),visible(true),invalidateQueueNext()
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 
-DisplayObject::DisplayObject(const DisplayObject& d):EventDispatcher(d.getClass()),useMatrix(true),tx(d.tx),ty(d.ty),
+DisplayObject::DisplayObject(const DisplayObject& d):EventDispatcher(d.getClass()),useLegacyMatrix(true),tx(d.tx),ty(d.ty),
 	rotation(d.rotation),sx(d.sx),sy(d.sy),alpha(d.alpha),maskOf(),
 	parent(),mask(),onStage(false),loaderInfo(),visible(d.visible),name(d.name),invalidateQueueNext()
 {
@@ -237,9 +229,9 @@ void DisplayObject::buildTraits(ASObject* o)
 {
 }
 
-void DisplayObject::setMatrix(const lightspark::MATRIX& m)
+void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 {
-	if(useMatrix)
+	if(useLegacyMatrix)
 	{
 		bool mustInvalidate=false;
 		{
@@ -307,34 +299,19 @@ float DisplayObject::getConcatenatedAlpha() const
 
 MATRIX DisplayObject::getMatrix() const
 {
-	MATRIX ret;
-	if(useMatrix)
-	{
-		SpinlockLocker locker(spinlock);
-		ret=Matrix;
-	}
-	else
-	{
-		ret.TranslateX=tx;
-		ret.TranslateY=ty;
-		ret.ScaleX=sx*cos(rotation*M_PI/180);
-		ret.RotateSkew1=-sx*sin(rotation*M_PI/180);
-		ret.RotateSkew0=sy*sin(rotation*M_PI/180);
-		ret.ScaleY=sy*cos(rotation*M_PI/180);
-	}
-	return ret;
+	SpinlockLocker locker(spinlock);
+	return Matrix;
 }
 
 void DisplayObject::valFromMatrix()
 {
-	assert(useMatrix);
+	assert(useLegacyMatrix);
 	SpinlockLocker locker(spinlock);
-	tx=Matrix.TranslateX;
-	ty=Matrix.TranslateY;
-	sx=Matrix.ScaleX;
-	sy=Matrix.ScaleY;
-	if(Matrix.RotateSkew0 || Matrix.RotateSkew1)
-		LOG(LOG_ERROR,"valFromMatrix may has dropped rotation!");
+	tx=Matrix.getTranslateX();
+	ty=Matrix.getTranslateY();
+	sx=Matrix.getScaleX();
+	sy=Matrix.getScaleY();
+	rotation=Matrix.getRotation();
 }
 
 bool DisplayObject::isSimple() const
@@ -514,10 +491,7 @@ ASFUNCTIONBODY(DisplayObject,_setMask)
 ASFUNCTIONBODY(DisplayObject,_getScaleX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->useMatrix)
-		return abstract_d(th->Matrix.ScaleX);
-	else
-		return abstract_d(th->sx);
+	return abstract_d(th->Matrix.getScaleX());
 }
 
 ASFUNCTIONBODY(DisplayObject,_setScaleX)
@@ -525,10 +499,10 @@ ASFUNCTIONBODY(DisplayObject,_setScaleX)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert_and_throw(argslen==1);
 	number_t val=args[0]->toNumber();
-	if(th->useMatrix)
+	if(th->useLegacyMatrix)
 	{
 		th->valFromMatrix();
-		th->useMatrix=false;
+		th->useLegacyMatrix=false;
 	}
 	th->sx=val;
 	if(th->onStage)
@@ -539,10 +513,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleX)
 ASFUNCTIONBODY(DisplayObject,_getScaleY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->useMatrix)
-		return abstract_d(th->Matrix.ScaleY);
-	else
-		return abstract_d(th->sy);
+	return abstract_d(th->Matrix.getScaleY());
 }
 
 ASFUNCTIONBODY(DisplayObject,_setScaleY)
@@ -550,10 +521,10 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert_and_throw(argslen==1);
 	number_t val=args[0]->toNumber();
-	if(th->useMatrix)
+	if(th->useLegacyMatrix)
 	{
 		th->valFromMatrix();
-		th->useMatrix=false;
+		th->useLegacyMatrix=false;
 	}
 	th->sx=val;
 	if(th->onStage)
@@ -564,18 +535,15 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 ASFUNCTIONBODY(DisplayObject,_getX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->useMatrix)
-		return abstract_d(th->Matrix.TranslateX);
-	else
-		return abstract_d(th->tx);
+	return abstract_d(th->Matrix.getTranslateX());
 }
 
 void DisplayObject::setX(number_t val)
 {
-	if(useMatrix)
+	if(useLegacyMatrix)
 	{
 		valFromMatrix();
-		useMatrix=false;
+		useLegacyMatrix=false;
 	}
 	tx=val;
 	if(onStage)
@@ -584,10 +552,10 @@ void DisplayObject::setX(number_t val)
 
 void DisplayObject::setY(number_t val)
 {
-	if(useMatrix)
+	if(useLegacyMatrix)
 	{
 		valFromMatrix();
-		useMatrix=false;
+		useLegacyMatrix=false;
 	}
 	ty=val;
 	if(onStage)
@@ -606,10 +574,7 @@ ASFUNCTIONBODY(DisplayObject,_setX)
 ASFUNCTIONBODY(DisplayObject,_getY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	if(th->useMatrix)
-		return abstract_d(th->Matrix.TranslateY);
-	else
-		return abstract_d(th->ty);
+	return abstract_d(th->Matrix.getTranslateY());
 }
 
 ASFUNCTIONBODY(DisplayObject,_setY)
@@ -743,10 +708,10 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert_and_throw(argslen==1);
 	number_t val=args[0]->toNumber();
-	if(th->useMatrix)
+	if(th->useLegacyMatrix)
 	{
 		th->valFromMatrix();
-		th->useMatrix=false;
+		th->useLegacyMatrix=false;
 	}
 	th->rotation=val;
 	if(th->onStage)
@@ -803,10 +768,10 @@ ASFUNCTIONBODY(DisplayObject,_getRotation)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	//There is no easy way to get rotation from matrix, let's ignore the matrix
-	if(th->useMatrix)
+	if(th->useLegacyMatrix)
 	{
 		th->valFromMatrix();
-		th->useMatrix=false;
+		th->useLegacyMatrix=false;
 	}
 	return abstract_d(th->rotation);
 }
@@ -878,10 +843,10 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 	
 	if(width*th->sx!=newwidth) //If the width is changing, calculate new scale
 	{
-		if(th->useMatrix)
+		if(th->useLegacyMatrix)
 		{
 			th->valFromMatrix();
-			th->useMatrix=false;
+			th->useLegacyMatrix=false;
 		}
 		th->sx = newwidth/width;
 		if(th->onStage)
@@ -911,10 +876,10 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 	
 	if(height*th->sy!=newheight) //If the height is changing, calculate new scale
 	{
-		if(th->useMatrix)
+		if(th->useLegacyMatrix)
 		{
 			th->valFromMatrix();
-			th->useMatrix=false;
+			th->useLegacyMatrix=false;
 		}
 		th->sy=newheight/height;
 		if(th->onStage)

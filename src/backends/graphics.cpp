@@ -298,8 +298,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			}
 
 			MATRIX tmp=style.Matrix;
-			tmp.TranslateX/=scaleCorrection;
-			tmp.TranslateY/=scaleCorrection;
+			tmp.x0/=scaleCorrection;
+			tmp.y0/=scaleCorrection;
 			// The dimensions of the pattern space are specified in SWF specs
 			// as a 32768x32768 box centered at (0,0)
 			if (style.FillStyleType == LINEAR_GRADIENT)
@@ -352,8 +352,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			pattern = cairo_pattern_create_for_surface(surface);
 			cairo_surface_destroy(surface);
 
-			cairo_matrix_t mat;
-			style.Matrix.getCairoMatrix(&mat);
+			//Make a copy to invert it
+			cairo_matrix_t mat=style.Matrix;
 			cairo_status_t st = cairo_matrix_invert(&mat);
 			assert(st == CAIRO_STATUS_SUCCESS);
 			mat.x0 /= scaleCorrection;
@@ -514,9 +514,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<Geom
 				pattern=cairo_get_source(cr);
 				cairo_pattern_get_matrix(pattern, &origmat);
 
-				cairo_matrix_t mat;
-				tokens[i].textureTransform.getCairoMatrix(&mat);
-				cairo_pattern_set_matrix(pattern, &mat);
+				cairo_pattern_set_matrix(pattern, &tokens[i].textureTransform);
 
 				cairo_fill(cr);
 
@@ -622,12 +620,10 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	//This also guarantees that all the shape fills in width/height pixels
 	//We don't translate for negative offsets as we don't want to see what's in negative coords
 	if(xOffset >= 0)
-		matrix.TranslateX-=xOffset;
+		matrix.x0-=xOffset;
 	if(yOffset >= 0)
-		matrix.TranslateY-=yOffset;
-	cairo_matrix_t mat;
-	matrix.getCairoMatrix(&mat);
-	cairo_transform(cr, &mat);
+		matrix.y0-=yOffset;
+	cairo_transform(cr, &matrix);
 
 	executeDraw(cr);
 

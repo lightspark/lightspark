@@ -259,49 +259,55 @@ std::ostream& lightspark::operator<<(std::ostream& s, const RGB& r)
 	return s;
 }
 
+MATRIX::MATRIX(number_t sx, number_t sy, number_t sk0, number_t sk1, number_t tx, number_t ty)
+{
+	xx=sx;
+	yy=sy;
+	yx=sk0;
+	xy=sk1;
+	x0=tx;
+	y0=ty;
+}
+
 MATRIX MATRIX::getInverted() const
 {
-	MATRIX ret;
-	number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
-	/* regularize so we can work with singular matrices */
-	if(fabs(den) < 1e-6)
-		den = copysign(1e-6,den);
-	ret.ScaleX=ScaleY/den;
-	ret.RotateSkew1=-RotateSkew1/den;
-	ret.RotateSkew0=-RotateSkew0/den;
-	ret.ScaleY=ScaleX/den;
-	ret.TranslateX=(RotateSkew1*TranslateY-ScaleY*TranslateX)/den;
-	ret.TranslateY=(RotateSkew0*TranslateX-ScaleX*TranslateY)/den;
+	MATRIX ret(*this);
+	cairo_status_t status=cairo_matrix_invert(&ret);
+	if(status==CAIRO_STATUS_INVALID_MATRIX)
+	{
+		//Flash does not fail for non invertible matrices
+		//but the result contains a few NaN and Infinite.
+		//Just fill the result with NaN
+		ret.xx=numeric_limits<double>::quiet_NaN();
+		ret.yx=numeric_limits<double>::quiet_NaN();
+		ret.xy=numeric_limits<double>::quiet_NaN();
+		ret.yy=numeric_limits<double>::quiet_NaN();
+		ret.x0=numeric_limits<double>::quiet_NaN();
+		ret.y0=numeric_limits<double>::quiet_NaN();
+	}
 	return ret;
 }
 
 bool MATRIX::isInvertible() const
 {
-	const number_t den=ScaleX*ScaleY-RotateSkew0*RotateSkew1;
+	const number_t den=xx*yy-yx*xy;
 	return (fabs(den) > 1e-6);
 }
 
 void MATRIX::get4DMatrix(float matrix[16]) const
 {
 	memset(matrix,0,sizeof(float)*16);
-	matrix[0]=ScaleX;
-	matrix[1]=RotateSkew0;
+	matrix[0]=xx;
+	matrix[1]=yx;
 
-	matrix[4]=RotateSkew1;
-	matrix[5]=ScaleY;
+	matrix[4]=xy;
+	matrix[5]=yy;
 
 	matrix[10]=1;
 
-	matrix[12]=TranslateX;
-	matrix[13]=TranslateY;
+	matrix[12]=x0;
+	matrix[13]=y0;
 	matrix[15]=1;
-}
-
-void MATRIX::getCairoMatrix(cairo_matrix_t* m) const
-{
-	cairo_matrix_init(m, ScaleX, RotateSkew0,
-			RotateSkew1, ScaleY,
-			TranslateX, TranslateY);
 }
 
 Vector2f MATRIX::multiply2D(const Vector2f& in) const
@@ -313,37 +319,29 @@ Vector2f MATRIX::multiply2D(const Vector2f& in) const
 
 void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
-	xout=xin*ScaleX + yin*RotateSkew1 + TranslateX;
-	yout=xin*RotateSkew0 + yin*ScaleY + TranslateY;
+	xout=xin;
+	yout=yin;
+	cairo_matrix_transform_point(this, &xout, &yout);
 }
 
 MATRIX MATRIX::multiplyMatrix(const MATRIX& r) const
 {
 	MATRIX ret;
-	ret.ScaleX=ScaleX*r.ScaleX + RotateSkew1*r.RotateSkew0;
-	ret.RotateSkew1=ScaleX*r.RotateSkew1 + RotateSkew1*r.ScaleY;
-	ret.RotateSkew0=RotateSkew0*r.ScaleX + ScaleY*r.RotateSkew0;
-	ret.ScaleY=RotateSkew0*r.RotateSkew1 + ScaleY*r.ScaleY;
-	ret.TranslateX=ScaleX*r.TranslateX + RotateSkew1*r.TranslateY + TranslateX;
-	ret.TranslateY=RotateSkew0*r.TranslateX + ScaleY*r.TranslateY + TranslateY;
+	cairo_matrix_multiply(&ret,this,&r);
 	return ret;
 }
 
 bool MATRIX::operator!=(const MATRIX& r) const
 {
-	return ScaleX!=r.ScaleX ||
-		RotateSkew1!=r.RotateSkew1 ||
-		RotateSkew0!=r.RotateSkew0 ||
-		ScaleY!=r.ScaleY ||
-		TranslateX!=r.TranslateX ||
-		TranslateY!=r.TranslateY;
+	return xx!=r.xx || yx!=r.yx || xy!=r.xy || yy!=yy ||
+		x0!=r.x0 || y0!=r.y0;
 }
 
 std::ostream& lightspark::operator<<(std::ostream& s, const MATRIX& r)
 {
-	s << "| " << r.ScaleX << ' ' << r.RotateSkew0 << " |" << std::endl;
-	s << "| " << r.RotateSkew1 << ' ' << r.ScaleY << " |" << std::endl;
-	s << "| " << (int)r.TranslateX << ' ' << (int)r.TranslateY << " |" << std::endl;
+	s << "| " << r.xx << ' ' << r.yx << " |" << std::endl;
+	s << "| " << r.xy << ' ' << r.yy << " |" << std::endl;
+	s << "| " << (int)r.x0 << ' ' << (int)r.y0 << " |" << std::endl;
 	return s;
 }
 
@@ -873,19 +871,19 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 	if(HasScale)
 	{
 		int NScaleBits=UB(5,bs);
-		v.ScaleX=FB(NScaleBits,bs);
-		v.ScaleY=FB(NScaleBits,bs);
+		v.xx=FB(NScaleBits,bs);
+		v.yy=FB(NScaleBits,bs);
 	}
 	int HasRotate=UB(1,bs);
 	if(HasRotate)
 	{
 		int NRotateBits=UB(5,bs);
-		v.RotateSkew0=FB(NRotateBits,bs);
-		v.RotateSkew1=FB(NRotateBits,bs);
+		v.yx=FB(NRotateBits,bs);
+		v.xy=FB(NRotateBits,bs);
 	}
 	int NTranslateBits=UB(5,bs);
-	v.TranslateX=SB(NTranslateBits,bs)/20;
-	v.TranslateY=SB(NTranslateBits,bs)/20;
+	v.x0=SB(NTranslateBits,bs)/20;
+	v.y0=SB(NTranslateBits,bs)/20;
 	return stream;
 }
 

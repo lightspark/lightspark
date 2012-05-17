@@ -1277,7 +1277,7 @@ void DisplayObjectContainer::transformLegacyChildAt(uint32_t depth, const MATRIX
 		LOG(LOG_ERROR,"transformLegacyChildAt: no child at that depth");
 		return;
 	}
-	depthToLegacyChild.left.at(depth)->setMatrix(mat);
+	depthToLegacyChild.left.at(depth)->setLegacyMatrix(mat);
 }
 
 void DisplayObjectContainer::purgeLegacyChildren()
@@ -2486,16 +2486,11 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	{
 		style.Matrix = static_cast<Matrix*>(args[4])->getMATRIX();
 		//Conversion from twips to pixels
-		style.Matrix.ScaleX /= 20.0;
-		style.Matrix.RotateSkew0 /= 20.0;
-		style.Matrix.RotateSkew1 /= 20.0;
-		style.Matrix.ScaleY /= 20.0;
-		//Traslations are ok, that is applied already in the pixel space
+		cairo_matrix_scale(&style.Matrix, 1.0f/20.0f, 1.0f/20.0f);
 	}
 	else
 	{
-		style.Matrix.ScaleX = 100.0/16384.0;
-		style.Matrix.ScaleY = 100.0/16384.0;
+		cairo_matrix_scale(&style.Matrix, 100.0/16384.0, 100.0/16384.0);
 	}
 
 	if(argslen > 5)

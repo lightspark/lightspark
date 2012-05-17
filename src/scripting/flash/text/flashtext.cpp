@@ -298,7 +298,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;
-	if(totalMatrix.ScaleX != 1 || totalMatrix.ScaleY != 1)
+	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented");
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
 		on the font size. In some cases, it can change the width (if autosize is on and wordwrap off).

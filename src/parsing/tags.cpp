@@ -1024,7 +1024,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 
 		assert_and_throw(toAdd);
 		//The matrix must be set before invoking the constructor
-		toAdd->setMatrix(Matrix);
+		toAdd->setLegacyMatrix(Matrix);
 
 		setProperties(toAdd, parent);
 
@@ -1231,7 +1231,7 @@ ASObject* DefineButton2Tag::instance(Class_base* c) const
 			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());
 			assert_and_throw(state);
 			//The matrix must be set before invoking the constructor
-			state->setMatrix(i->PlaceMatrix);
+			state->setLegacyMatrix(i->PlaceMatrix);
 			/*
 			 * TODO: BlendMode, filerList, PlaceDepth, ColorTransfrom
 			 */

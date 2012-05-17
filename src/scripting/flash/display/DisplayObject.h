@@ -47,7 +47,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);
 	MATRIX Matrix;
-	ACQUIRE_RELEASE_FLAG(useMatrix);
+	bool useMatrix;
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;

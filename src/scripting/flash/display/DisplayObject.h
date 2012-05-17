@@ -75,6 +75,9 @@ protected:
 	void computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight,
 			const MATRIX& m) const;
+	/*
+	 * Assume the lock is held and the matrix will not change
+	 */
 	void valFromMatrix();
 	bool onStage;
 	_NR<LoaderInfo> loaderInfo;
@@ -154,6 +157,8 @@ public:
 	Vector2f getXY();
 	void setX(number_t x);
 	void setY(number_t y);
+	void setScaleX(number_t val);
+	void setScaleY(number_t val);
 	// Nominal width and heigt are the size before scaling and rotation
 	number_t getNominalWidth();
 	number_t getNominalHeight();

@@ -1794,12 +1794,11 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 {
 	//If a variable named like this already exist, use that
-	if(ASObject::hasPropertyByMultiname(name, considerDynamic) || !implEnable)
-	{
-		return ASObject::deleteVariableByMultiname(name);
-	}
+	bool asobject_has_property=ASObject::hasPropertyByMultiname(name, considerDynamic);
+	if(asobject_has_property || !implEnable)
+		return asobject_has_property;
 
-	//Check if there is a custom deleter defined, skipping implementation to avoid recursive calls
+	//Check if there is a custom hasProperty defined, skipping implementation to avoid recursive calls
 	multiname hasPropertyName(NULL);
 	hasPropertyName.name_type=multiname::NAME_STRING;
 	hasPropertyName.name_s="hasProperty";

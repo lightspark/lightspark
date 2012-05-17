@@ -731,10 +731,11 @@ public:
 	number_t ScaleY;
 	number_t RotateSkew0;
 	number_t RotateSkew1;
-	int TranslateX;
-	int TranslateY;
+	number_t TranslateX;
+	number_t TranslateY;
 public:
-	MATRIX(number_t sx=1, number_t sy=1, number_t sk0=0, number_t sk1=0, int tx=0, int ty=0):ScaleX(sx),ScaleY(sy),RotateSkew0(sk0),RotateSkew1(sk1),TranslateX(tx),TranslateY(ty){}
+	MATRIX(number_t sx=1, number_t sy=1, number_t sk0=0, number_t sk1=0, number_t tx=0, number_t ty=0):
+		ScaleX(sx),ScaleY(sy),RotateSkew0(sk0),RotateSkew1(sk1),TranslateX(tx),TranslateY(ty){}
 	void get4DMatrix(float matrix[16]) const;
 	void getCairoMatrix(cairo_matrix_t* m) const;
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
@@ -743,6 +744,34 @@ public:
 	bool operator!=(const MATRIX& r) const;
 	MATRIX getInverted() const;
 	bool isInvertible() const;
+	number_t getTranslateX() const
+	{
+		return TranslateX;
+	}
+	number_t getTranslateY() const
+	{
+		return TranslateY;
+	}
+	number_t getScaleX() const
+	{
+		number_t ret=sqrt(ScaleX*ScaleX+RotateSkew1*RotateSkew1);
+		if(ScaleX>0)
+			return ret;
+		else
+			return -ret;
+	}
+	number_t getScaleY() const
+	{
+		number_t ret=sqrt(ScaleY*ScaleY+RotateSkew0*RotateSkew0);
+		if(ScaleY>0)
+			return ret;
+		else
+			return -ret;
+	}
+	number_t getRotation() const
+	{
+		return atan(RotateSkew0/ScaleY)*180/M_PI;
+	}
 };
 
 class GRADRECORD

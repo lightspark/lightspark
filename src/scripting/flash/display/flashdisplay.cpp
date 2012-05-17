@@ -1788,6 +1788,9 @@ bool DisplayObjectContainer::isOpaque(number_t x, number_t y) const
 	number_t lx, ly;
 	for(;it!=dynamicDisplayList.end();++it)
 	{
+		if(!((*it)->getMatrix()).isInvertible())
+			continue; /* The object is shrunk to zero size */
+
 		//x y are local coordinates of the container, should be local coord of *it
 		((*it)->getMatrix()).getInverted().multiply2D(x,y,lx,ly);
 		if(((*it)->isOpaque(lx,ly)))
@@ -2774,10 +2777,13 @@ _NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, nu
 	_NR<InteractiveObject> ret = NullRef;
 	if(hitTestState)
 	{
-		number_t localX, localY;
-		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		this->incRef();
-		ret = hitTestState->hitTest(_MR(this), localX, localY, type);
+		if(hitTestState->getMatrix().isInvertible())
+		{
+			number_t localX, localY;
+			hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
+			this->incRef();
+			ret = hitTestState->hitTest(_MR(this), localX, localY, type);
+		}
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been

@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_geom_Transform_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+import flash.display.DisplayObject;
+import Tests;
+
+private function appComplete():void
+{
+	var s:Sprite = new Sprite();
+	s.x=10;
+	var t:Transform = s.transform;
+	var m3:Matrix = t.matrix;
+	var m4:Matrix = t.matrix;
+	Tests.assertFalse(m3===m4,"Different objects when accessing Transform::matrix");
+	t.matrix = null;
+	Tests.assertEquals(null, t.matrix, "Null assigned to ::matrix");
+	Tests.assertEquals(10, s.x, "Unmodified transform after matrix=null, X");
+	Tests.assertEquals(0, s.y, "Unmodified transform after matrix=null, Y");
+	var t2:Transform = s.transform;
+	Tests.assertFalse(t===t2, "Different objects when accessing DisplayObject::transform", true);
+	Tests.assertEquals(null, t2.matrix, "Null assigned to ::matrix even on different object");
+	//Create a weird matrix
+	var m:Matrix = new Matrix(0,2,3,0,1,2);
+	t.matrix = m;
+	var computedX:Number = s.x;
+	var computedY:Number = s.y;
+	Tests.assertEquals(1, computedX, "X computed from matrix");
+	Tests.assertEquals(2, computedY, "Y computed from matrix");
+	var computedScaleX:Number = s.scaleX;
+	var computedScaleY:Number = s.scaleY;
+	Tests.assertEquals(2, computedScaleX, "scaleX computed from matrix");
+	Tests.assertEquals(-3, computedScaleY, "scaleY computed from matrix");
+	var computedRotation:Number = s.rotation;
+	Tests.assertEquals(90, computedRotation, "rotation computed from matrix");
+	s.rotation=45;
+	Tests.assertEquals(1, s.x, "X after changing ::rotation");
+	Tests.assertEquals(2, s.y, "Y after changing ::rotation");
+	Tests.assertEquals(2, s.scaleX, "scaleX after changing ::rotation");
+	Tests.assertEquals(-3, s.scaleY, "scaleY after changing ::rotation");
+	Tests.assertEquals(45, s.rotation, "rotation after changing ::rotation");
+	Tests.assertEqualsDelta(1.414215087890625,s.transform.matrix.a,0.00001,"Whole matrix (a)");
+	Tests.assertEqualsDelta(1.414215087890625,s.transform.matrix.b,0.00001,"Whole matrix (b)");
+	Tests.assertEqualsDelta(2.1213226318359375,s.transform.matrix.c,0.00001,"Whole matrix (c)");
+	Tests.assertEqualsDelta(-2.1213226318359375,s.transform.matrix.d,0.00001,"Whole matrix (d)");
+	Tests.assertEquals(1,s.transform.matrix.tx,"Whole matrix (tx)");
+	Tests.assertEquals(2,s.transform.matrix.ty,"Whole matrix (ty)");
+
+	var m2:Matrix = new Matrix();
+	m2.scale(computedScaleX, computedScaleY);
+	m2.rotate(45*2*(Math.PI/360));
+	m2.translate(computedX, computedY);
+	Tests.assertEqualsDelta(s.transform.matrix.a,m2.a,0.00001,"Synthetic matrix (a)");
+	Tests.assertEqualsDelta(s.transform.matrix.b,m2.b,0.00001,"Synthetic matrix (b)");
+	Tests.assertEqualsDelta(s.transform.matrix.c,m2.c,0.00001,"Synthetic matrix (c)");
+	Tests.assertEqualsDelta(s.transform.matrix.d,m2.d,0.00001,"Synthetic matrix (d)");
+	Tests.assertEquals(s.transform.matrix.tx,m2.tx,"Synthetic matrix (tx)");
+	Tests.assertEquals(s.transform.matrix.ty,m2.ty,"Synthetic matrix (ty)");
+
+	Tests.report(visual, name);
+}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

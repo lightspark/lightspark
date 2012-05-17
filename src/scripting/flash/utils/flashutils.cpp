@@ -1748,7 +1748,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* args[2];
-	args[0]=Class<ASString>::getInstanceS(name.name_s);
+	args[0]=Class<ASString>::getInstanceS(name.normalizedName());
 	args[1]=o;
 	//We now suppress special handling
 	implEnable=false;
@@ -1781,7 +1781,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	IFunction* f=static_cast<IFunction*>(o.getPtr());
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
+	ASObject* arg=Class<ASString>::getInstanceS(name.normalizedName());
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::getProperty");
@@ -1816,7 +1816,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	IFunction* f=static_cast<IFunction*>(proxyHasProperty.getPtr());
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
+	ASObject* arg=Class<ASString>::getInstanceS(name.normalizedName());
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,_("Proxy::hasProperty"));
@@ -1851,7 +1851,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 	IFunction* f=static_cast<IFunction*>(proxyDeleter.getPtr());
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
+	ASObject* arg=Class<ASString>::getInstanceS(name.normalizedName());
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,_("Proxy::deleteProperty"));

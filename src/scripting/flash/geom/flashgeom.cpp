@@ -931,13 +931,37 @@ void Transform::finalize()
 
 void Transform::sinit(Class_base* c)
 {
-	//c->constructor=Class<IFunction>::getFunction(_constructor);
-	c->setConstructor(NULL);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
-	REGISTER_GETTER_SETTER(c,matrix);
+	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_getMatrix),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_setMatrix),SETTER_METHOD,true);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(Transform, matrix);
+ASFUNCTIONBODY(Transform,_constructor)
+{
+	assert_and_throw(argslen==0);
+	return NULL;
+}
+
+ASFUNCTIONBODY(Transform,_getMatrix)
+{
+	Transform* th=Class<Transform>::cast(obj);
+	assert_and_throw(argslen==0);
+	const MATRIX& ret=th->owner->getMatrix();
+	return Class<Matrix>::getInstanceS(ret);
+}
+
+ASFUNCTIONBODY(Transform,_setMatrix)
+{
+	Transform* th=Class<Transform>::cast(obj);
+	_NR<Matrix> m;
+	ARG_UNPACK(m);
+	if(m.isNull())
+		return NULL;
+
+	th->owner->setMatrix(m->getMATRIX());
+	return NULL;
+}
 
 void Transform::buildTraits(ASObject* o)
 {

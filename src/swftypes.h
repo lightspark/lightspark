@@ -745,7 +745,7 @@ public:
 	}
 	number_t getScaleX() const
 	{
-		number_t ret=sqrt(xx*xx+xy*xy);
+		number_t ret=sqrt(xx*xx + yx*yx);
 		if(xx>0)
 			return ret;
 		else
@@ -753,7 +753,7 @@ public:
 	}
 	number_t getScaleY() const
 	{
-		number_t ret=sqrt(yy*yy+yx*yx);
+		number_t ret=sqrt(yy*yy + xy*xy);
 		if(yy>0)
 			return ret;
 		else
@@ -762,6 +762,27 @@ public:
 	number_t getRotation() const
 	{
 		return atan(yx/yy)*180/M_PI;
+	}
+	/*
+	 * Implement flash style premultiply matrix operators
+	 */
+	void rotate(number_t angle)
+	{
+		cairo_matrix_t tmp;
+		cairo_matrix_init_rotate(&tmp,angle);
+		cairo_matrix_multiply(this,this,&tmp);
+	}
+	void scale(number_t sx, number_t sy)
+	{
+		cairo_matrix_t tmp;
+		cairo_matrix_init_scale(&tmp,sx,sy);
+		cairo_matrix_multiply(this,this,&tmp);
+	}
+	void translate(number_t dx, number_t dy)
+	{
+		cairo_matrix_t tmp;
+		cairo_matrix_init_translate(&tmp,dx,dy);
+		cairo_matrix_multiply(this,this,&tmp);
 	}
 };
 

@@ -5,7 +5,7 @@
 	<DefineBitsJpeg id="1" file="test.jpg" />
 	<DefineShape id="2" bitmapId="1" />
 	<DefineSprite id="3" frameCount="10">
-		<PlaceObject id="2" depth="1" x="10" y="10" rotate0="1" rotate1="0"/>
+		<PlaceObject id="2" depth="1" x="20" y="20" rotate0="1" rotate1="0"/>
 		<ShowFrame/>
 		<PlaceObject move="true" depth="1" x="20" y="20" rotate0="1" rotate1="0"/>
 		<ShowFrame/>

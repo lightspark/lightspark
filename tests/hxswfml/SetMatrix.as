@@ -1,5 +1,6 @@
 package {
 	import Tests;
+	import flash.display.DisplayObject;
 	import flash.display.MovieClip;
 	import flash.display.Shape;
 	import flash.geom.Matrix;
@@ -7,17 +8,15 @@ package {
 	public class SetMatrix extends MovieClip {
 		private function onFrame(e:Event):void
 		{
-			if(this.currentFrame%2==1)
+			if(this.currentFrame==1)
 				return;
+			var child:DisplayObject=this.getChildAt(0);
 			trace("FRAME "+this.currentFrame);
-			trace(this.getChildAt(0).transform.matrix);
-			trace(this.getChildAt(0).rotation);
-			this.getChildAt(0).rotation+=10;
-			trace("frame");
+			trace(child.transform.matrix);
+			child.rotation+=10;
 		}
 		function SetMatrix()
 		{
-			trace("test");
 			addEventListener("enterFrame",onFrame);
 		}
 	}

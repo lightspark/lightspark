@@ -413,7 +413,7 @@ ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 #Install icons and desktop file
 if(UNIX)
-  FOREACH(i 16 20 22 24 32 36 48 64 72 96 128 192 256 )
+  FOREACH(i 16 22 24 32 36 48 64 72 96 128 192 256 )
     INSTALL(FILES media/lightspark-ico-${i}x${i}.png
             DESTINATION ${DATADIR}/icons/hicolor/${i}x${i}/apps
             RENAME lightspark.png

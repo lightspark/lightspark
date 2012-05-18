@@ -225,23 +225,26 @@ void DisplayObject::buildTraits(ASObject* o)
 {
 }
 
+void DisplayObject::setMatrix(const lightspark::MATRIX& m)
+{
+	bool mustInvalidate=false;
+	{
+		SpinlockLocker locker(spinlock);
+		if(Matrix!=m)
+		{
+			Matrix=m;
+			extractValuesFromMatrix();
+			mustInvalidate=true;
+		}
+	}
+	if(mustInvalidate && onStage)
+		requestInvalidation(getSys());
+}
+
 void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 {
 	if(useLegacyMatrix)
-	{
-		bool mustInvalidate=false;
-		{
-			SpinlockLocker locker(spinlock);
-			if(Matrix!=m)
-			{
-				Matrix=m;
-				valFromMatrix();
-				mustInvalidate=true;
-			}
-		}
-		if(mustInvalidate && onStage)
-			requestInvalidation(getSys());
-	}
+		setMatrix(m);
 }
 
 void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
@@ -297,16 +300,29 @@ float DisplayObject::getConcatenatedAlpha() const
 MATRIX DisplayObject::getMatrix() const
 {
 	SpinlockLocker locker(spinlock);
-	return Matrix;
+	//Start from the residual matrix and construct the whole one
+	MATRIX ret=Matrix;
+	ret.scale(sx,sy);
+	ret.rotate(rotation*M_PI/180);
+	ret.translate(tx,ty);
+	return ret;
 }
 
-void DisplayObject::valFromMatrix()
+void DisplayObject::extractValuesFromMatrix()
 {
+	//Extract the base components from the matrix and leave in
+	//it only the residual components
 	tx=Matrix.getTranslateX();
 	ty=Matrix.getTranslateY();
 	sx=Matrix.getScaleX();
 	sy=Matrix.getScaleY();
 	rotation=Matrix.getRotation();
+	//Deapply translation
+	Matrix.translate(-tx,-ty);
+	//Deapply rotation
+	Matrix.rotate(-rotation*M_PI/180);
+	//Deapply scaling
+	Matrix.scale(1.0/sx,1.0/sy);
 }
 
 bool DisplayObject::isSimple() const
@@ -494,8 +510,6 @@ void DisplayObject::setScaleX(number_t val)
 	//Apply the difference
 	if(sx!=val)
 	{
-		number_t diff=val/sx;
-		cairo_matrix_scale(&Matrix, diff, 1);
 		sx=val;
 		if(onStage)
 			requestInvalidation(getSys());
@@ -525,8 +539,6 @@ void DisplayObject::setScaleY(number_t val)
 	//Apply the difference
 	if(sy!=val)
 	{
-		number_t diff=val/sy;
-		cairo_matrix_scale(&Matrix, 1, diff);
 		sy=val;
 		if(onStage)
 			requestInvalidation(getSys());
@@ -559,7 +571,6 @@ void DisplayObject::setX(number_t val)
 	//Apply translation, it's trivial
 	if(tx!=val)
 	{
-		Matrix.x0=val;
 		tx=val;
 		if(onStage)
 			requestInvalidation(getSys());
@@ -574,7 +585,6 @@ void DisplayObject::setY(number_t val)
 	//Apply translation, it's trivial
 	if(ty!=val)
 	{
-		Matrix.y0=val;
 		ty=val;
 		if(onStage)
 			requestInvalidation(getSys());
@@ -733,8 +743,6 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 	//Apply the difference
 	if(th->rotation!=val)
 	{
-		number_t diff=val-th->rotation;
-		cairo_matrix_rotate(&th->Matrix, diff*M_PI/180);
 		th->rotation=val;
 		if(th->onStage)
 			th->requestInvalidation(getSys());

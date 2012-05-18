@@ -64,6 +64,11 @@ private:
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
 	CachedSurface cachedSurface;
+	/*
+	 * Utility function to set internal MATRIX
+	 * Also used by Transform
+	 */
+	void setMatrix(const MATRIX& m);
 protected:
 	~DisplayObject();
 	/**
@@ -77,7 +82,7 @@ protected:
 	/*
 	 * Assume the lock is held and the matrix will not change
 	 */
-	void valFromMatrix();
+	void extractValuesFromMatrix();
 	bool onStage;
 	_NR<LoaderInfo> loaderInfo;
 	number_t computeWidth();

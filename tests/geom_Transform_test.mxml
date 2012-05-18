@@ -26,7 +26,10 @@ private function appComplete():void
 	Tests.assertFalse(t===t2, "Different objects when accessing DisplayObject::transform", true);
 	Tests.assertEquals(null, t2.matrix, "Null assigned to ::matrix even on different object");
 	//Create a weird matrix
-	var m:Matrix = new Matrix(0,2,3,0,1,2);
+	var m:Matrix = new Matrix();
+	m.scale(2, -3);
+	m.rotate(45*Math.PI/180);
+	m.translate(1,2);
 	t.matrix = m;
 	var computedX:Number = s.x;
 	var computedY:Number = s.y;
@@ -34,31 +37,33 @@ private function appComplete():void
 	Tests.assertEquals(2, computedY, "Y computed from matrix");
 	var computedScaleX:Number = s.scaleX;
 	var computedScaleY:Number = s.scaleY;
-	Tests.assertEquals(2, computedScaleX, "scaleX computed from matrix");
-	Tests.assertEquals(-3, computedScaleY, "scaleY computed from matrix");
+	Tests.assertEqualsDelta(2, computedScaleX, 0.00001, "scaleX computed from matrix");
+	Tests.assertEqualsDelta(-3, computedScaleY, 0.00001, "scaleY computed from matrix");
 	var computedRotation:Number = s.rotation;
-	Tests.assertEquals(90, computedRotation, "rotation computed from matrix");
-	s.rotation=45;
+	Tests.assertEqualsDelta(45, computedRotation, 0.00001, "rotation computed from matrix");
+	s.rotation=0;
 	Tests.assertEquals(1, s.x, "X after changing ::rotation");
 	Tests.assertEquals(2, s.y, "Y after changing ::rotation");
-	Tests.assertEquals(2, s.scaleX, "scaleX after changing ::rotation");
-	Tests.assertEquals(-3, s.scaleY, "scaleY after changing ::rotation");
-	Tests.assertEquals(45, s.rotation, "rotation after changing ::rotation");
-	Tests.assertEqualsDelta(1.414215087890625,s.transform.matrix.a,0.00001,"Whole matrix (a)");
-	Tests.assertEqualsDelta(1.414215087890625,s.transform.matrix.b,0.00001,"Whole matrix (b)");
-	Tests.assertEqualsDelta(2.1213226318359375,s.transform.matrix.c,0.00001,"Whole matrix (c)");
-	Tests.assertEqualsDelta(-2.1213226318359375,s.transform.matrix.d,0.00001,"Whole matrix (d)");
+	Tests.assertEqualsDelta(2, s.scaleX, 0.00001, "scaleX after changing ::rotation");
+	Tests.assertEqualsDelta(-3, s.scaleY, 0.00001, "scaleY after changing ::rotation");
+	Tests.assertEqualsDelta(0, s.rotation, 0.00001, "rotation after changing ::rotation");
+	Tests.assertEqualsDelta(2,s.transform.matrix.a,0.0001,"Whole matrix (a)");
+	Tests.assertEqualsDelta(0,s.transform.matrix.b,0.00001,"Whole matrix (b)");
+	Tests.assertEqualsDelta(0,s.transform.matrix.c,0.00001,"Whole matrix (c)");
+	Tests.assertEqualsDelta(-3,s.transform.matrix.d,0.0001,"Whole matrix (d)");
 	Tests.assertEquals(1,s.transform.matrix.tx,"Whole matrix (tx)");
 	Tests.assertEquals(2,s.transform.matrix.ty,"Whole matrix (ty)");
 
+	//TODO: Improve support for non canonical matrices
+	//e.g. var m:Matrix = new Matrix(0,2,3,0,1,2);
+
 	var m2:Matrix = new Matrix();
 	m2.scale(computedScaleX, computedScaleY);
-	m2.rotate(45*2*(Math.PI/360));
 	m2.translate(computedX, computedY);
-	Tests.assertEqualsDelta(s.transform.matrix.a,m2.a,0.00001,"Synthetic matrix (a)");
+	Tests.assertEqualsDelta(s.transform.matrix.a,m2.a,0.0001,"Synthetic matrix (a)");
 	Tests.assertEqualsDelta(s.transform.matrix.b,m2.b,0.00001,"Synthetic matrix (b)");
 	Tests.assertEqualsDelta(s.transform.matrix.c,m2.c,0.00001,"Synthetic matrix (c)");
-	Tests.assertEqualsDelta(s.transform.matrix.d,m2.d,0.00001,"Synthetic matrix (d)");
+	Tests.assertEqualsDelta(s.transform.matrix.d,m2.d,0.0001,"Synthetic matrix (d)");
 	Tests.assertEquals(s.transform.matrix.tx,m2.tx,"Synthetic matrix (tx)");
 	Tests.assertEquals(s.transform.matrix.ty,m2.ty,"Synthetic matrix (ty)");
 

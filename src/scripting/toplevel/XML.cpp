@@ -232,11 +232,11 @@ ASFUNCTIONBODY(XML,name)
 ASFUNCTIONBODY(XML,descendants)
 {
 	XML* th=Class<XML>::cast(obj);
-	assert_and_throw(argslen==1);
-	assert_and_throw(args[0]->getObjectType()!=T_QNAME);
-	XMLVector ret;
-	th->getDescendantsByQName(args[0]->toString(),"",ret);
-	return Class<XMLList>::getInstanceS(ret);
+	tiny_string name;
+	ARG_UNPACK(name,"*");
+ 	XMLVector ret;
+	th->getDescendantsByQName(name,"",ret);
+ 	return Class<XMLList>::getInstanceS(ret);
 }
 
 ASFUNCTIONBODY(XML,appendChild)

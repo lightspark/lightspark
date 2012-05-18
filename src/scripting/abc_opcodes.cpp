@@ -678,7 +678,7 @@ void ABCVm::construct(call_context* th, int m)
 
 		default:
 		{
-			throw Class<EvalError>::getInstanceS("Error #1007: Instantiation attempted on a non-constructor");
+			throw Class<TypeError>::getInstanceS("Error #1007: Instantiation attempted on a non-constructor");
 			break;
 		}
 	}

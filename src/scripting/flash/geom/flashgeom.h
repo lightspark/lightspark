@@ -185,11 +185,15 @@ public:
 
 class Transform: public ASObject
 {
+private:
+	_NR<DisplayObject> owner;
 public:
-	Transform(Class_base* c):ASObject(c){}
+	Transform(Class_base* c):ASObject(c){};
+	Transform(Class_base* c, _R<DisplayObject> o);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix>, matrix);
+	void finalize();
 };
 
 class Vector3D: public ASObject

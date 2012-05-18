@@ -920,6 +920,15 @@ ASFUNCTIONBODY(Point,polar)
 	return ret;
 }
 
+Transform::Transform(Class_base* c, _R<DisplayObject> o):ASObject(c),owner(o)
+{
+}
+
+void Transform::finalize()
+{
+	owner.reset();
+}
+
 void Transform::sinit(Class_base* c)
 {
 	//c->constructor=Class<IFunction>::getFunction(_constructor);

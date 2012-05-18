@@ -155,7 +155,6 @@ void DisplayObject::finalize()
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
-	transform.reset();
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -214,15 +213,12 @@ ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 ASFUNCTIONBODY(DisplayObject,_getTransform)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-
-	if(th->transform.isNull())
-		th->transform = _MR(Class<Transform>::getInstanceS());
+	//The tested behaviour is that every time ::transform is accessed
+	//a new object is generated
 
 	LOG(LOG_NOT_IMPLEMENTED, "DisplayObject::transform is a stub and does not reflect the real display state");
-
-	th->transform->matrix=_MR(Class<lightspark::Matrix>::getInstanceS(th->getMatrix()));
-	th->transform->incRef();
-	return th->transform.getPtr();
+	th->incRef();
+	return Class<Transform>::getInstanceS(_MR(th));
 }
 
 void DisplayObject::buildTraits(ASObject* o)

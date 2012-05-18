@@ -757,7 +757,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	}
 	else
 	{
-		LOG(LOG_ERROR,_("Not supported fill style 0x") << hex << (int)v.FillStyleType << _("... Aborting"));
+		LOG(LOG_ERROR,_("Not supported fill style 0x") << hex << (int)v.FillStyleType << dec << _("... Aborting"));
 	}
 	return s;
 }

@@ -832,6 +832,8 @@ public:
 	RGBA EndColor;
 	MATRIX StartGradientMatrix;
 	MATRIX EndGradientMatrix;
+	MATRIX StartBitmapMatrix;
+	MATRIX EndBitmapMatrix;
 	UI8 NumGradients;
 	std::vector<UI8> StartRatios;
 	std::vector<UI8> EndRatios;

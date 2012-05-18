@@ -327,7 +327,8 @@ void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yo
 MATRIX MATRIX::multiplyMatrix(const MATRIX& r) const
 {
 	MATRIX ret;
-	cairo_matrix_multiply(&ret,this,&r);
+	//Do post multiplication
+	cairo_matrix_multiply(&ret,&r,this);
 	return ret;
 }
 

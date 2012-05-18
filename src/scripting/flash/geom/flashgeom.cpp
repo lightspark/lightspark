@@ -1023,7 +1023,6 @@ ASFUNCTIONBODY(Matrix,_constructor)
 	//d -> yy
 	//tx -> x0
 	//ty -> y0
-	cairo_matrix_init_identity(&th->matrix);
 	
 	if (argslen >= 1)
 		th->matrix.xx = args[0]->toNumber();
@@ -1159,6 +1158,7 @@ ASFUNCTIONBODY(Matrix,concat)
 	Matrix* th=static_cast<Matrix*>(obj);
 	Matrix* m=static_cast<Matrix*>(args[0]);
 
+	//Premultiply, which is flash convention
 	cairo_matrix_multiply(&th->matrix,&th->matrix,&m->matrix);
 	return NULL;
 }
@@ -1186,7 +1186,8 @@ ASFUNCTIONBODY(Matrix,translate)
 	Matrix* th=static_cast<Matrix*>(obj);
 	number_t dx = args[0]->toNumber();
 	number_t dy = args[1]->toNumber();
-	cairo_matrix_translate(&th->matrix,dx,dy);
+
+	th->matrix.translate(dx,dy);
 	return NULL;
 }
 
@@ -1195,8 +1196,8 @@ ASFUNCTIONBODY(Matrix,rotate)
 	assert_and_throw(argslen==1);
 	Matrix* th=static_cast<Matrix*>(obj);
 	number_t angle = args[0]->toNumber();
-	cairo_matrix_rotate(&th->matrix,angle);
 
+	th->matrix.rotate(angle);
 	return NULL;
 }
 
@@ -1206,7 +1207,8 @@ ASFUNCTIONBODY(Matrix,scale)
 	Matrix* th=static_cast<Matrix*>(obj);
 	number_t sx = args[0]->toNumber();
 	number_t sy = args[1]->toNumber();
-	cairo_matrix_scale(&th->matrix,sx,sy);
+
+	th->matrix.scale(sx, sy);
 	return NULL;
 }
 
@@ -1218,10 +1220,12 @@ void Matrix::_createBox (number_t scaleX, number_t scaleY, number_t angle, numbe
 	 *      scale(scaleX, scaleY);
 	 *      translate(x, y);
 	 */
-	cairo_matrix_init_identity(&matrix);
-	cairo_matrix_rotate(&matrix,angle);
-	cairo_matrix_scale(&matrix,scaleX,scaleY);
-	cairo_matrix_translate(&matrix,x,y);
+
+	//Initialize using rotation
+	cairo_matrix_init_rotate(&matrix,angle);
+
+	matrix.scale(scaleX,scaleY);
+	matrix.translate(x,y);
 }
 
 ASFUNCTIONBODY(Matrix,createBox)

@@ -727,11 +727,11 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	UI8 tmp;
 	s >> tmp;
 	v.FillStyleType=(FILL_STYLE_TYPE)(int)tmp;
-	if(v.FillStyleType==0x00)
+	if(v.FillStyleType==SOLID_FILL)
 	{
 		s >> v.StartColor >> v.EndColor;
 	}
-	else if(v.FillStyleType==0x10 || v.FillStyleType==0x12)
+	else if(v.FillStyleType==LINEAR_GRADIENT || v.FillStyleType==RADIAL_GRADIENT)
 	{
 		s >> v.StartGradientMatrix >> v.EndGradientMatrix;
 		s >> v.NumGradients;
@@ -747,9 +747,17 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 			v.EndColors.push_back(t2);
 		}
 	}
+	else if(v.FillStyleType==REPEATING_BITMAP
+		|| v.FillStyleType==CLIPPED_BITMAP
+		|| v.FillStyleType==NON_SMOOTHED_REPEATING_BITMAP
+		|| v.FillStyleType==NON_SMOOTHED_CLIPPED_BITMAP)
+	{
+		UI16_SWF bitmapId;
+		s >> bitmapId >> v.StartBitmapMatrix >> v.EndBitmapMatrix;
+	}
 	else
 	{
-		LOG(LOG_ERROR,_("Not supported fill style ") << (int)v.FillStyleType << _("... Aborting"));
+		LOG(LOG_ERROR,_("Not supported fill style 0x") << hex << (int)v.FillStyleType << _("... Aborting"));
 	}
 	return s;
 }

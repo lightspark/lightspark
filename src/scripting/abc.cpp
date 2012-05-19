@@ -268,6 +268,9 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("BlurFilter","flash.filters",
 			Class<ASObject>::getStubClass(QName("BlurFilter","flash.filters")),DECLARED_TRAIT);
 
+	builtin->setVariableByQName("FileStream","flash.filesystem",
+			Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")),DECLARED_TRAIT);
+
 	builtin->setVariableByQName("Font","flash.text",Class<Font>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("TextField","flash.text",Class<TextField>::getRef(),DECLARED_TRAIT);

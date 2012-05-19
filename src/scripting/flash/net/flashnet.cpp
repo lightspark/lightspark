@@ -955,8 +955,9 @@ ASFUNCTIONBODY(NetStream,play)
 	}
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
-		//Cache our downloaded files
-		th->downloader=getSys()->downloadManager->download(th->url, true, NULL);
+		//Cahe the download only if it is not RTMP based
+		bool cached=!th->url.isRTMP();
+		th->downloader=getSys()->downloadManager->download(th->url, cached, NULL);
 		th->streamTime=0;
 		//To be decreffed in jobFence
 		th->incRef();

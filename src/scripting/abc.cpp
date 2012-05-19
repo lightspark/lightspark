@@ -45,6 +45,7 @@
 #include "toplevel/XML.h"
 #include "toplevel/XMLList.h"
 #include "flash/accessibility/flashaccessibility.h"
+#include "flash/desktop/flashdesktop.h"
 #include "flash/display/flashdisplay.h"
 #include "flash/events/flashevents.h"
 #include "flash/filters/flashfilters.h"
@@ -224,6 +225,8 @@ void ABCVm::registerClasses()
 			Class<AccessibilityProperties>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("AccessibilityImplementation","flash.accessibility",
 			Class<AccessibilityImplementation>::getRef(),DECLARED_TRAIT);
+
+	builtin->setVariableByQName("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getRef(),DECLARED_TRAIT);

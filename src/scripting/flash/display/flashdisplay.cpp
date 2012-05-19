@@ -285,7 +285,7 @@ void LoaderThread::execute()
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
 			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
-			getSys()->downloadManager->destroy(downloader);
+			// downloader will be deleted in jobFence
 			return;
 		}
 		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("open")));

@@ -67,6 +67,7 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_setAutoSize),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_getAutoSize),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTextFormat","",Class<IFunction>::getFunction(_getTextFormat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(_setTextFormat),NORMAL_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c,textColor);
@@ -227,6 +228,18 @@ ASFUNCTIONBODY(TextField, appendText)
 	assert_and_throw(argslen==1);
 	th->updateText(th->text + args[0]->toString());
 	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_getTextFormat)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	TextFormat *format=Class<TextFormat>::getInstanceS();
+
+	format->color=_MNR(abstract_ui(th->textColor.toUInt()));
+
+	LOG(LOG_NOT_IMPLEMENTED, "getTextFormat is not fully implemeted");
+
+	return format;
 }
 
 ASFUNCTIONBODY(TextField,_setTextFormat)

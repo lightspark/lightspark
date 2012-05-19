@@ -65,6 +65,7 @@ public:
 	ASFUNCTION(_getWordWrap);
 	ASFUNCTION(_getTextWidth);
 	ASFUNCTION(_getTextHeight);
+	ASFUNCTION(_getTextFormat);
 	ASFUNCTION(_setTextFormat);
 	ASFUNCTION_GETTER_SETTER(textColor);
 };

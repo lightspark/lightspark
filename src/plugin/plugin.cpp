@@ -135,7 +135,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* downloader)
  * \param[in] _url The URL for the Downloader.
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner):
-	Downloader(_url, false, owner),instance(NULL),state(INIT)
+	Downloader(_url, false, owner),instance(NULL),cleanupInDestroyStream(true),state(INIT)
 {
 }
 
@@ -148,7 +148,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoa
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cached, owner),instance(_instance),state(INIT)
+	Downloader(_url, _cached, owner),instance(_instance),cleanupInDestroyStream(false),state(INIT)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
@@ -163,7 +163,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NP
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data,
 		const char* contentType, NPP _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _data, contentType, owner),instance(_instance),state(INIT)
+	Downloader(_url, _data, contentType, owner),instance(_instance),cleanupInDestroyStream(false),state(INIT)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
@@ -549,9 +549,9 @@ string nsPluginInstance::getPageURL() const
 	return ret;
 }
 
-void nsPluginInstance::asyncDownloaderDestruction(NPStream* stream, NPDownloader* dl) const
+void nsPluginInstance::asyncDownloaderDestruction(const char *url, NPDownloader* dl) const
 {
-	LOG(LOG_INFO,_("Async destructin for ") << stream->url);
+	LOG(LOG_INFO,_("Async destruction for ") << url);
 	m_sys->downloadManager->destroy(dl);
 }
 
@@ -659,19 +659,16 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 		return len; //Drop everything (this is a second stream for the same SWF instance)
 }
 
-NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
+void nsPluginInstance::downloaderFinished(NPDownloader* dl, const char *url, NPReason reason) const
 {
-	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
-	if(!dl)
-		return NPERR_NO_ERROR;
-
 	setTLSSys(m_sys);
-	//Check if async destructin of this downloader has been requested
+	//Check if async destruction of this downloader has been requested
 	if(dl->state==NPDownloader::ASYNC_DESTROY)
 	{
 		dl->setFailed();
-		asyncDownloaderDestruction(stream, dl);
-		return NPERR_NO_ERROR;
+		asyncDownloaderDestruction(url, dl);
+		setTLSSys(NULL);
+		return;
 	}
 	dl->state=NPDownloader::STREAM_DESTROYED;
 
@@ -679,28 +676,46 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 	switch(reason)
 	{
 		case NPRES_DONE:
-			LOG(LOG_INFO,_("Download complete ") << stream->url);
+			LOG(LOG_INFO,_("Download complete ") << url);
 			dl->setFinished();
 			break;
 		case NPRES_USER_BREAK:
-			LOG(LOG_ERROR,_("Download stopped ") << stream->url);
+			LOG(LOG_ERROR,_("Download stopped ") << url);
 			dl->setFailed();
 			break;
 		case NPRES_NETWORK_ERR:
-			LOG(LOG_ERROR,_("Download error ") << stream->url);
+			LOG(LOG_ERROR,_("Download error ") << url);
 			dl->setFailed();
 			break;
 	}
 	setTLSSys(NULL);
+	return;
+}
+
+NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
+{
+	NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
+	if(!dl)
+		return NPERR_NO_ERROR;
+
+	/* Normally we cleanup in URLNotify, which is called after
+	 * destroyStream and is called even if the stream fails before
+	 * newStream/destroyStream. URLNotify won't be called for the
+	 * main SWF stream and therefore we need to cleanup here.
+	 */
+	if(dl->cleanupInDestroyStream)
+		downloaderFinished(dl, stream->url, reason);
+
 	return NPERR_NO_ERROR;
 }
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
-	/* This is called after DestroyStream, which may have already deleted the
-	 * NPDownloader (by calling asyncDownloaderDestruction), which 'notifyData' points to.
-	 * Therefore, we cannot do anything here.
-	 */
+	NPDownloader* dl=static_cast<NPDownloader*>(notifyData);
+	if(!dl)
+		return;
+
+	downloaderFinished(dl, url, reason);
 }
 
 void PluginEngineData::stopMainDownload()

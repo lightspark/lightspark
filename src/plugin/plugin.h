@@ -56,6 +56,7 @@ class NPDownloader: public lightspark::Downloader
 	friend class nsPluginInstance;
 private:
 	NPP instance;
+	bool cleanupInDestroyStream;
 	static void dlStartCallback(void* th);
 public:
 	enum STATE { INIT=0, STREAM_DESTROYED, ASYNC_DESTROY };
@@ -116,7 +117,8 @@ public:
 	lightspark::SystemState* m_sys;
 private:
 	std::string getPageURL() const;
-	void asyncDownloaderDestruction(NPStream* stream, NPDownloader* dl) const;
+	void asyncDownloaderDestruction(const char *url, NPDownloader* dl) const;
+	void downloaderFinished(NPDownloader* dl, const char *url, NPReason reason) const;
 
 	NPP mInstance;
 	NPBool mInitialized;

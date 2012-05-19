@@ -1217,16 +1217,18 @@ void NetStream::execute()
 	getSys()->removeJob(this);
 	tickStarted=false;
 
-	Mutex::Lock l(mutex);
-	//Change the state to invalid to avoid locking
-	videoDecoder=NULL;
-	audioDecoder=NULL;
-	//Clean up everything for a possible re-run
-	getSys()->downloadManager->destroy(downloader);
-	//This transition is critical, so the mutex is needed
-	downloader=NULL;
-	delete audioStream;
-	audioStream=NULL;
+	{
+		Mutex::Lock l(mutex);
+		//Change the state to invalid to avoid locking
+		videoDecoder=NULL;
+		audioDecoder=NULL;
+		//Clean up everything for a possible re-run
+		getSys()->downloadManager->destroy(downloader);
+		//This transition is critical, so the mutex is needed
+		downloader=NULL;
+		delete audioStream;
+		audioStream=NULL;
+	}
 	delete streamDecoder;
 }
 

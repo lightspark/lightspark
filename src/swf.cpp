@@ -161,12 +161,12 @@ void SystemState::staticDeinit()
 #endif
 }
 
-SystemState::SystemState(uint32_t fileSize):
+SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	RootMovieClip(NULL,NullRef,NULL),terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
-	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),
+	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),flashMode(mode),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
 {

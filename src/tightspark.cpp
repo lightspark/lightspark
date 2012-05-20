@@ -83,9 +83,9 @@ int main(int argc, char* argv[])
 	//NOTE: see SystemState declaration
 #ifdef MEMORY_USAGE_PROFILING
 	MemoryAccount sysAccount("sysAccount");
-	SystemState* sys=new (&sysAccount) SystemState(0);
+	SystemState* sys=new (&sysAccount) SystemState(0, SystemState::FLASH);
 #else
-	SystemState* sys=new ((MemoryAccount*)NULL) SystemState(0);
+	SystemState* sys=new ((MemoryAccount*)NULL) SystemState(0, SystemState::FLASH);
 #endif
 	setTLSSys(sys);
 

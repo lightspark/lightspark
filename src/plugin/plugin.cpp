@@ -311,7 +311,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 #ifdef MEMORY_USAGE_PROFILING
 	m_sys=new (&sysAccount) lightspark::SystemState(0);
 #else
-	m_sys=new ((MemoryAccount*)NULL) lightspark::SystemState(0);
+	m_sys=new ((MemoryAccount*)NULL) lightspark::SystemState(0, lightspark::SystemState::FLASH);
 #endif
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);

@@ -240,6 +240,9 @@ public:
 	//Interative analysis flags
 	bool showProfilingData;
 	bool standalone;
+	//Flash for execution mode
+	enum FLASH_MODE { FLASH=0, AIR };
+	const FLASH_MODE flashMode;
 	
 	// Error types used to decide when to exit, extend as a bitmap
 	enum ERROR_TYPE { ERROR_NONE    = 0x0000,
@@ -264,9 +267,13 @@ public:
 	//DisplayObject interface
 	_NR<Stage> getStage();
 
-	//Be careful, SystemState constructor does some global initialization that must be done
-	//before any other thread gets started
-	SystemState(uint32_t fileSize) DLL_PUBLIC;
+	/**
+	 * Be careful, SystemState constructor does some global initialization that must be done
+	 * before any other thread gets started
+	 * \param fileSize The size of the SWF being parsed, if known
+	 * \param mode FLASH or AIR
+	 */
+	SystemState(uint32_t fileSize, FLASH_MODE mode) DLL_PUBLIC;
 	void finalize();
 	/* Stop engines, threads and free classes and objects.
 	 * This call will decRef this object in the end,

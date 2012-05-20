@@ -226,8 +226,6 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("AccessibilityImplementation","flash.accessibility",
 			Class<AccessibilityImplementation>::getRef(),DECLARED_TRAIT);
 
-	builtin->setVariableByQName("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(),DECLARED_TRAIT);
-
 	builtin->setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("Loader","flash.display",Class<Loader>::getRef(),DECLARED_TRAIT);
@@ -270,9 +268,6 @@ void ABCVm::registerClasses()
 			Class<ASObject>::getStubClass(QName("ColorMatrixFilter","flash.filters")),DECLARED_TRAIT);
 	builtin->setVariableByQName("BlurFilter","flash.filters",
 			Class<ASObject>::getStubClass(QName("BlurFilter","flash.filters")),DECLARED_TRAIT);
-
-	builtin->setVariableByQName("FileStream","flash.filesystem",
-			Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("Font","flash.text",Class<Font>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getRef(),DECLARED_TRAIT);
@@ -383,6 +378,15 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("isNaN","",Class<IFunction>::getFunction(isNaN),DECLARED_TRAIT);
 	builtin->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite),DECLARED_TRAIT);
 	builtin->setVariableByQName("isXMLName","",Class<IFunction>::getFunction(_isXMLName),DECLARED_TRAIT);
+
+	//If needed add AIR definitions
+	if(getSys()->flashMode==SystemState::AIR)
+	{
+		builtin->setVariableByQName("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(),DECLARED_TRAIT);
+
+		builtin->setVariableByQName("FileStream","flash.filesystem",
+				Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")),DECLARED_TRAIT);
+	}
 
 	getSys()->systemDomain->registerGlobalScope(builtin);
 }

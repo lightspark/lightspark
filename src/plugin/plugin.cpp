@@ -309,7 +309,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2012 Alessandro Pignotti and others");
 	setTLSSys( NULL );
 #ifdef MEMORY_USAGE_PROFILING
-	m_sys=new (&sysAccount) lightspark::SystemState(0, lightspark::FLASH);
+	m_sys=new (&sysAccount) lightspark::SystemState(0, lightspark::SystemState::FLASH);
 #else
 	m_sys=new ((MemoryAccount*)NULL) lightspark::SystemState(0, lightspark::SystemState::FLASH);
 #endif

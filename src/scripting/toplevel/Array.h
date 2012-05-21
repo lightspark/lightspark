@@ -133,7 +133,7 @@ public:
 	void resize(uint64_t n);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);

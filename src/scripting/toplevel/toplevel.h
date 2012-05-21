@@ -235,7 +235,7 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname_i");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o)
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
@@ -418,7 +418,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
-	void setVariableByMultiname(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 };
 
 class Null: public ASObject
@@ -430,7 +430,7 @@ public:
 	int32_t toInt();
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

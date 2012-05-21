@@ -53,7 +53,7 @@ public:
 
 	//Overloads
 	tiny_string toString(bool debugMsg=false);
-	void setVariableByMultiname(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	static bool isValidMultiname(const multiname& name, uint32_t& index);

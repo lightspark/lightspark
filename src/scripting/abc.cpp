@@ -2009,7 +2009,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		}
 		default:
 			LOG(LOG_ERROR,_("Trait not supported ") << *mname << _(" ") << t->kind);
-			obj->setVariableByMultiname(*mname, getSys()->getUndefinedRef());
+			obj->setVariableByMultiname(*mname, getSys()->getUndefinedRef(), ASObject::CONST_NOT_ALLOWED);
 	}
 }
 

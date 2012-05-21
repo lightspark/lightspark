@@ -54,8 +54,8 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 {
 	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj);
 
-	//We have to reset the level before finding a variable
-	obj->setVariableByMultiname(*name,value);
+	//Do not allow to set contant traits
+	obj->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED);
 	obj->decRef();
 }
 
@@ -1258,7 +1258,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
-	obj->setVariableByMultiname(*name,value,th->inClass->super.getPtr());
+	obj->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED,th->inClass->super.getPtr());
 	name->resetNameIfObject();
 	obj->decRef();
 }
@@ -1464,7 +1464,8 @@ void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 {
 	LOG(LOG_CALLS, _("initProperty ") << *name << ' ' << obj);
 
-	obj->setVariableByMultiname(*name,value);
+	//Allow to set contant traits
+	obj->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
 
 	obj->decRef();
 }
@@ -1810,7 +1811,7 @@ void ABCVm::newObject(call_context* th, int n)
 		ASObject* name=th->runtime_stack_pop();
 		propertyName.name_s=name->toString();
 		name->decRef();
-		ret->setVariableByMultiname(propertyName, value);
+		ret->setVariableByMultiname(propertyName, value, ASObject::CONST_NOT_ALLOWED);
 	}
 
 	th->runtime_stack_push(ret);
@@ -2189,7 +2190,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 	ASObject* catchScope = Class<ASObject>::getInstanceS();
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exception_count);
 	multiname* name = th->context->getMultiname(th->mi->body->exceptions[n].var_name, NULL);
-	catchScope->setVariableByMultiname(*name, getSys()->getUndefinedRef());
+	catchScope->setVariableByMultiname(*name, getSys()->getUndefinedRef(),ASObject::CONST_NOT_ALLOWED);
 	catchScope->initSlot(1, *name);
 	return catchScope;
 }

@@ -1458,7 +1458,7 @@ void URLVariables::decode(const tiny_string& s)
 				{
 					arr=Class<Array>::getInstanceS();
 					arr->push(curValue);
-					setVariableByMultiname(propName,arr);
+					setVariableByMultiname(propName,arr,ASObject::CONST_NOT_ALLOWED);
 				}
 				else
 					arr=Class<Array>::cast(curValue.getPtr());
@@ -1466,7 +1466,7 @@ void URLVariables::decode(const tiny_string& s)
 				arr->push(_MR(Class<ASString>::getInstanceS(value)));
 			}
 			else
-				setVariableByMultiname(propName,Class<ASString>::getInstanceS(value));
+				setVariableByMultiname(propName,Class<ASString>::getInstanceS(value),ASObject::CONST_NOT_ALLOWED);
 
 			g_free(name);
 			g_free(value);

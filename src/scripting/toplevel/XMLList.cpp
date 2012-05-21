@@ -332,16 +332,16 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 	return ASObject::hasPropertyByMultiname(name, considerDynamic);
 }
 
-void XMLList::setVariableByMultiname(const multiname& name, ASObject* o)
+void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o);
+		return ASObject::setVariableByMultiname(name,o,allowConst);
 
 	XML* newNode=dynamic_cast<XML*>(o);
 	if(newNode==NULL)
-		return ASObject::setVariableByMultiname(name,o);
+		return ASObject::setVariableByMultiname(name,o,allowConst);
 
 	//Nodes are always added at the end. The requested index are ignored. This is a tested behaviour.
 	nodes.push_back(_MR(newNode));

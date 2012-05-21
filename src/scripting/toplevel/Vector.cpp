@@ -859,15 +859,15 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 	}
 }
 
-void Vector::setVariableByMultiname(const multiname& name, ASObject* o)
+void Vector::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::setVariableByMultiname(name, o);
+		return ASObject::setVariableByMultiname(name, o, allowConst);
 
 	unsigned int index=0;
 	if(!Vector::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name, o);
+		return ASObject::setVariableByMultiname(name, o, allowConst);
 	ASObject* o2 = this->vec_type->coerce(o);
 	  
 	if(index < vec.size())

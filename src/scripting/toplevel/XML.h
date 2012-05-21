@@ -83,7 +83,7 @@ public:
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
-	void setVariableByMultiname(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	tiny_string toString();
 	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;

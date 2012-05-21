@@ -720,7 +720,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	}
 }
 
-void XML::setVariableByMultiname(const multiname& name, ASObject* o)
+void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	bool isAttr=name.isAttribute;
 	//Normalize the name to the string form

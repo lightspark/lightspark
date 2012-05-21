@@ -332,17 +332,19 @@ public:
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
 	virtual int32_t getVariableByMultiname_i(const multiname& name);
 	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
-	virtual void setVariableByMultiname(const multiname& name, ASObject* o)
+	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
+	virtual void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 	{
-		setVariableByMultiname(name,o,classdef);
+		setVariableByMultiname(name,o,allowConst,classdef);
 	}
 	/*
 	 * Sets  variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a setter, it is called with the given 'o'.
 	 * If no property is found, an instance variable is created.
+	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
-	void setVariableByMultiname(const multiname& name, ASObject* o, Class_base* cls);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst, Class_base* cls);
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname, ABCContext* context);
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, _R<ASObject> o, TRAIT_KIND traitKind)

@@ -163,7 +163,7 @@ public:
 	static void buildTraits(ASObject* o);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
 };
@@ -212,7 +212,7 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Dictionary");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool deleteVariableByMultiname(const multiname& name);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
@@ -236,10 +236,10 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Proxy");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultiname_i(const multiname& name, int32_t value)
 	{
-		setVariableByMultiname(name,abstract_i(value));
+		setVariableByMultiname(name,abstract_i(value),CONST_NOT_ALLOWED);
 	}
 	
 	bool deleteVariableByMultiname(const multiname& name);

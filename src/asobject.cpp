@@ -447,7 +447,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 void ASObject::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	check();
-	setVariableByMultiname(name,abstract_i(value));
+	setVariableByMultiname(name,abstract_i(value),CONST_NOT_ALLOWED);
 }
 
 variable* ASObject::findSettable(const multiname& name, bool borrowedMode, bool* has_getter)
@@ -468,7 +468,7 @@ variable* ASObject::findSettable(const multiname& name, bool borrowedMode, bool*
 }
 
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_base* cls)
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -476,7 +476,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, Class_
 	bool has_getter=false;
 	variable* obj=findSettable(name, false, &has_getter);
 
-	if (obj && (obj->kind == CONSTANT_TRAIT))
+	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
 		tiny_string err=tiny_string("Error #1074: Illegal write to read-only property ")+name.normalizedName();
 		err+=tiny_string(" on type ")+this->as<Class_base>()->getQualifiedClassName();

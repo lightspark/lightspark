@@ -220,7 +220,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		name.ns.push_back(nsNameAndKind("",NAMESPACE));
 		name.isAttribute=false;
 
-		ret->setVariableByMultiname(name,value.getPtr(),traits.type);
+		ret->setVariableByMultiname(name,value.getPtr(),ASObject::CONST_ALLOWED,traits.type);
 	}
 
 	//Read dynamic name, value pairs

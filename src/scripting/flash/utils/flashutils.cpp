@@ -1001,12 +1001,12 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 		return _MNR(getSys()->getUndefinedRef());
 }
 
-void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
+void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o);
+		return ASObject::setVariableByMultiname(name,o,allowConst);
 
 	if(index>=len)
 	{
@@ -1025,7 +1025,7 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
-	setVariableByMultiname(name, abstract_i(value));
+	setVariableByMultiname(name, abstract_i(value),ASObject::CONST_NOT_ALLOWED);
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
@@ -1531,10 +1531,10 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 void Dictionary::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
-	Dictionary::setVariableByMultiname(name,abstract_i(value));
+	Dictionary::setVariableByMultiname(name,abstract_i(value),CONST_NOT_ALLOWED);
 }
 
-void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
+void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
@@ -1555,7 +1555,7 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 		assert(name.name_type==multiname::NAME_STRING ||
 			name.name_type==multiname::NAME_INT ||
 			name.name_type==multiname::NAME_NUMBER);
-		ASObject::setVariableByMultiname(name, o);
+		ASObject::setVariableByMultiname(name, o, allowConst);
 	}
 }
 
@@ -1720,12 +1720,12 @@ void Proxy::buildTraits(ASObject* o)
 {
 }
 
-void Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
+void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	//If a variable named like this already exist, use that
 	if(ASObject::hasPropertyByMultiname(name, true) || !implEnable)
 	{
-		ASObject::setVariableByMultiname(name,o);
+		ASObject::setVariableByMultiname(name,o,allowConst);
 		return;
 	}
 
@@ -1738,7 +1738,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
 
 	if(proxySetter.isNull())
 	{
-		ASObject::setVariableByMultiname(name,o);
+		ASObject::setVariableByMultiname(name,o,allowConst);
 		return;
 	}
 

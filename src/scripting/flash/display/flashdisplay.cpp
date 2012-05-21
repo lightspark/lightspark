@@ -1232,7 +1232,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s=obj->name;
 		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		setVariableByMultiname(objName,getSys()->getNullRef());
+		setVariableByMultiname(objName,getSys()->getNullRef(), ASObject::CONST_NOT_ALLOWED);
 	}
 
 	obj->incRef();
@@ -1262,7 +1262,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		// initialize the property here to make sure that it
 		// will be a declared property and not a dynamic one.
 		if(hasPropertyByMultiname(objName,true))
-			setVariableByMultiname(objName,obj);
+			setVariableByMultiname(objName,obj,ASObject::CONST_NOT_ALLOWED);
 		else
 			setVariableByQName(objName.name_s,objName.ns[0],obj,DYNAMIC_TRAIT);
 	}

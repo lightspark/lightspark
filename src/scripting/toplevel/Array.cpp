@@ -442,7 +442,7 @@ ASFUNCTIONBODY(Array,shift)
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
 		if (res > 0)
-			obj->setVariableByMultiname(lengthName,abstract_ui(res-1));
+			obj->setVariableByMultiname(lengthName,abstract_ui(res-1),CONST_NOT_ALLOWED);
 		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
@@ -656,7 +656,7 @@ ASFUNCTIONBODY(Array,_pop)
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
 		if (res > 0)
-			obj->setVariableByMultiname(lengthName,abstract_ui(res-1));
+			obj->setVariableByMultiname(lengthName,abstract_ui(res-1),CONST_NOT_ALLOWED);
 		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
@@ -831,7 +831,7 @@ ASFUNCTIONBODY(Array,unshift)
 		lengthName.isAttribute = true;
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
+		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen),CONST_NOT_ALLOWED);
 		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
@@ -874,7 +874,7 @@ ASFUNCTIONBODY(Array,_push)
 		lengthName.isAttribute = true;
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
+		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen),CONST_NOT_ALLOWED);
 		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
@@ -904,7 +904,7 @@ ASFUNCTIONBODY(Array,_push_as3)
 		lengthName.isAttribute = true;
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen));
+		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen),CONST_NOT_ALLOWED);
 		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
@@ -1108,12 +1108,12 @@ bool Array::isValidMultiname(const multiname& name, uint32_t& index)
 	return name.toUInt(index);
 }
 
-void Array::setVariableByMultiname(const multiname& name, ASObject* o)
+void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o);
+		return ASObject::setVariableByMultiname(name,o,allowConst);
 
 	if(index>=size())
 		resize((uint64_t)index+1);

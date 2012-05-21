@@ -1758,17 +1758,28 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	LOG(LOG_CALLS,_("Constructing"));
 	ASObject* ret;
-	if(o->getObjectType()==T_CLASS)
+	try
 	{
-		Class_base* o_class=static_cast<Class_base*>(o.getPtr());
-		ret=o_class->getInstance(true,args,m);
+		if(o->getObjectType()==T_CLASS)
+		{
+			Class_base* o_class=static_cast<Class_base*>(o.getPtr());
+			ret=o_class->getInstance(true,args,m);
+		}
+		else if(o->getObjectType()==T_FUNCTION)
+		{
+			ret = constructFunction(th, o->as<IFunction>(), args, m);
+		}
+		else
+			throw Class<TypeError>::getInstanceS("Error #1007: Cannot construct such an object in constructProp");
 	}
-	else if(o->getObjectType()==T_FUNCTION)
+	catch(ASObject* exc)
 	{
-		ret = constructFunction(th, o->as<IFunction>(), args, m);
+		LOG(LOG_CALLS,_("Exception during object construction. Returning Undefined"));
+		//Handle eventual exceptions from the constructor, to fix the stack
+		th->runtime_stack_push(getSys()->getUndefinedRef());
+		obj->decRef();
+		throw exc;
 	}
-	else
-		throw Class<TypeError>::getInstanceS("Error #1007: Cannot construct such an object in constructProp");
 
 	th->runtime_stack_push(ret);
 	obj->decRef();
@@ -2033,7 +2044,22 @@ void ABCVm::newClass(call_context* th, int n)
 	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(m);
 	//cinit must inherit the current scope
 	cinit->acquireScope(th->scope_stack);
-	ASObject* ret2=cinit->call(ret,NULL,0);
+	ASObject* ret2=NULL;
+	try
+	{
+		ret2=cinit->call(ret,NULL,0);
+	}
+	catch(ASObject* exc)
+	{
+		LOG(LOG_CALLS,_("Exception during class initialization. Returning Undefined"));
+		//Handle eventual exceptions from the constructor, to fix the stack
+		th->runtime_stack_push(getSys()->getUndefinedRef());
+		cinit->decRef();
+
+		//Remove the class to the ones being currently defined in this context
+		th->context->classesBeingDefined.erase(mname);
+		throw exc;
+	}
 	assert_and_throw(ret2->is<Undefined>());
 	ret2->decRef();
 	LOG(LOG_CALLS,_("End of Class init ") << ret);

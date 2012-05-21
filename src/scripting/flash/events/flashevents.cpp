@@ -48,6 +48,7 @@ REGISTER_CLASS_NAME(SecurityErrorEvent);
 REGISTER_CLASS_NAME(AsyncErrorEvent);
 REGISTER_CLASS_NAME(StatusEvent);
 REGISTER_CLASS_NAME(DataEvent);
+REGISTER_CLASS_NAME(InvokeEvent);
 
 void IEventDispatcher::linkTraits(Class_base* c)
 {
@@ -888,4 +889,19 @@ void DataEvent::sinit(Class_base* c)
 	c->setVariableByQName("DATA","",Class<ASString>::getInstanceS("data"),DECLARED_TRAIT);
 	/* TODO: dispatch this event */
 	c->setVariableByQName("UPLOAD_COMPLETE_DATA","",Class<ASString>::getInstanceS("uploadCompleteData"),DECLARED_TRAIT);
+}
+
+void InvokeEvent::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<Event>::getRef());
+
+	c->setVariableByQName("INVOKE","",Class<ASString>::getInstanceS("invoke"),DECLARED_TRAIT);
+}
+
+ASFUNCTIONBODY(InvokeEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+	return NULL;
 }

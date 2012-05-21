@@ -254,6 +254,15 @@ public:
 	ASPROPERTY_GETTER(_NR<InteractiveObject>,relatedObject);	
 };
 
+class InvokeEvent: public Event
+{
+public:
+	InvokeEvent(Class_base* c) : Event(c, "invoke"){}
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o){}
+	ASFUNCTION(_constructor);
+};
+
 class listener
 {
 friend class EventDispatcher;

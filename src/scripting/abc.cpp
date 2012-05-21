@@ -1963,6 +1963,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			if(!tmpo.isNull())
 				return;
 
+			multiname* tname=getMultiname(t->type_name,NULL);
 			ASObject* ret;
 			//If the index is valid we set the constant
 			if(t->vindex)
@@ -1970,8 +1971,10 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else
 				ret=getSys()->getUndefinedRef();
 
-			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *getMultiname(t->type_name,NULL));
-			obj->setVariableByQName(mname->name_s,mname->ns[0],ret,DECLARED_TRAIT);
+			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret->toDebugString());
+
+			obj->initializeVariableByMultiname(*mname, ret, tname, this);
+
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);
 			break;

@@ -27,6 +27,11 @@
 #include <assert.h>
 #include <cstdint>
 #include <iostream>
+#include <math.h>
+
+#ifndef M_PI
+#	define M_PI 3.14159265358979323846
+#endif
 // TODO: This should be reworked to use CMake feature detection where possible
 
 /* gettext support */
@@ -43,9 +48,7 @@
 #define NOMINMAX
 #endif
 #define WIN32_LEAN_AND_MEAN
-//#include <winsock2.h>
 #include <windows.h>
-#include <math.h>
 #include <io.h>
 #undef DOUBLE_CLICK
 #undef RGB

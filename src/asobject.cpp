@@ -479,7 +479,8 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
 		tiny_string err=tiny_string("Error #1074: Illegal write to read-only property ")+name.normalizedName();
-		err+=tiny_string(" on type ")+this->as<Class_base>()->getQualifiedClassName();
+		if(classdef)
+			err+=tiny_string(" on type ")+classdef->as<Class_base>()->getQualifiedClassName();
 		throw Class<ReferenceError>::getInstanceS(err);
 	}
 	if(!obj && cls)

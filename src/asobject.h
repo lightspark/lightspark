@@ -172,7 +172,7 @@ public:
 	variable* findObjVar(const tiny_string& name, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
 	variable* findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context);
+	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
@@ -345,7 +345,15 @@ public:
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst, Class_base* cls);
-	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname, ABCContext* context);
+	/*
+	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
+	 */
+	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
+			ABCContext* context, TRAIT_KIND traitKind);
+	/*
+	 * Called by ABCVm::initProperty (implementation of ABC instruction), it is allowed to set CONSTANT_TRAIT
+	 */
+	void initializeVariableByMultiname(const multiname& name, ASObject* o);
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, _R<ASObject> o, TRAIT_KIND traitKind)
 	{

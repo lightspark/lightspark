@@ -1973,7 +1973,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret->toDebugString());
 
-			obj->initializeVariableByMultiname(*mname, ret, tname, this);
+			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT);
 
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);
@@ -2000,7 +2000,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret = getSys()->getUndefinedRef();
 			}
 
-			obj->initializeVariableByMultiname(*mname, ret, tname, this);
+			obj->initializeVariableByMultiname(*mname, ret, tname, this, DECLARED_TRAIT);
 
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);

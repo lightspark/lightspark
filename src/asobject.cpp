@@ -566,7 +566,8 @@ void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& 
 	obj->setVar(o);
 }
 
-void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname, ABCContext* context)
+void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
+		ABCContext* context, TRAIT_KIND traitKind)
 {
 	check();
 
@@ -580,7 +581,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 		return;
 	}
 
-	Variables.initializeVar(name, o, typemname, context);
+	Variables.initializeVar(name, o, typemname, context, traitKind);
 }
 
 void variable::setVar(ASObject* v)
@@ -671,7 +672,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	return &inserted->second;
 }
 
-void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context)
+void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind)
 {
 	tiny_string name=mname.normalizedName();
 
@@ -695,7 +696,8 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 		type = Type::getTypeFromMultiname(typemname, context);
 		obj = type->coerce(obj);
 	}
-	Variables.insert(make_pair(name, variable(mname.ns[0], DECLARED_TRAIT, obj, typemname, type)));
+	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT);
+	Variables.insert(make_pair(name, variable(mname.ns[0], traitKind, obj, typemname, type)));
 }
 
 ASFUNCTIONBODY(ASObject,generator)

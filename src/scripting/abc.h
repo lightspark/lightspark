@@ -23,7 +23,7 @@
 #ifdef LLVM_28
 #define alignof alignOf
 #endif
-#ifdef LLVM_3
+#ifdef LLVM_30
 #define LLVMTYPE llvm::Type*
 #define LLVMMAKEARRAYREF(T) makeArrayRef(T)
 #else

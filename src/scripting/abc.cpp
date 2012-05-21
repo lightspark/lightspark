@@ -23,7 +23,7 @@
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Target/TargetData.h>
-#ifdef LLVM_3
+#ifdef LLVM_30
 #include <llvm/Support/TargetSelect.h>
 #else
 #include <llvm/Target/TargetSelect.h>
@@ -1442,14 +1442,26 @@ void ABCVm::Run(ABCVm* th)
 
 	if(th->m_sys->useJit)
 	{
+#ifdef LLVM_31
+		llvm::TargetOptions Opts;
+		Opts.JITExceptionHandling = true;
+#else
 		llvm::JITExceptionHandling = true;
+#endif
 #ifndef NDEBUG
+#ifdef LLVM_31
+		Opts.JITEmitDebugInfo = true;
+#else
 		llvm::JITEmitDebugInfo = true;
+#endif
 #endif
 		llvm::InitializeNativeTarget();
 		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
 		llvm::EngineBuilder eb(th->module);
 		eb.setEngineKind(llvm::EngineKind::JIT);
+#ifdef LLVM_31
+		eb.setTargetOptions(Opts);
+#endif
 		eb.setOptLevel(llvm::CodeGenOpt::Default);
 		th->ex=eb.create();
 		assert_and_throw(th->ex);

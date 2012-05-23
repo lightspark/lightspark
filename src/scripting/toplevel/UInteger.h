@@ -45,6 +45,7 @@ public:
 	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
 	ASFUNCTION(_toString);
 	std::string toDebugString() { return toString()+"ui"; }

@@ -577,18 +577,38 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 		//Initializing an already existing variable
 		LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << "already initialized");
 		o->decRef();
-		assert_and_throw(obj->typemname->qualifiedString()==typemname->qualifiedString());
 		return;
 	}
 
 	Variables.initializeVar(name, o, typemname, context, traitKind);
 }
 
+variable::variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
+		: var(_v),traitTypemname(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE)
+{
+	ns.insert(_ns);
+	if(_type)
+	{
+		//The type is known, use it instead of the typemname
+		type=_type;
+		traitState=TYPE_RESOLVED;
+	}
+	else
+	{
+		traitTypemname=_t;
+	}
+}
+
 void variable::setVar(ASObject* v)
 {
 	//Resolve the typename if we have one
-	if(!type && typemname)
-		type = Type::getTypeFromMultiname(typemname, getVm()->currentCallContext->context);
+	if(!(traitState&TYPE_RESOLVED) && traitTypemname)
+	{
+		type = Type::getTypeFromMultiname(traitTypemname, getVm()->currentCallContext->context);
+		assert(type);
+		if(type)
+			traitState=TYPE_RESOLVED;
+	}
 
 	if(type)
 		v = type->coerce(v);

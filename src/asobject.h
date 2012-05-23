@@ -134,21 +134,22 @@ class Type;
 class ABCContext;
 
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, BORROWED_TRAIT=4,CONSTANT_TRAIT=9 /* constants are also declared traits */ };
+enum TRAIT_STATE { NO_STATE=0, HAS_GETTER_SETTER=1, TYPE_RESOLVED=2 };
 
 struct variable
 {
 	std::set<nsNameAndKind> ns;
 	ASObject* var;
-	multiname* typemname;
+	multiname* traitTypemname;
 	const Type* type;
 	IFunction* setter;
 	IFunction* getter;
 	TRAIT_KIND kind;
+	TRAIT_STATE traitState;
 	//obj_var(ASObject* _v, Class_base* _t):var(_v),type(_t),{}
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k)
-		: var(NULL),typemname(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k) { ns.insert(_ns); }
-	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type)
-		: var(_v),typemname(_t),type(type),setter(NULL),getter(NULL),kind(_k) { ns.insert(_ns); }
+		: var(NULL),traitTypemname(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) { ns.insert(_ns); }
+	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type);
 	void setVar(ASObject* v);
 };
 

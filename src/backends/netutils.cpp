@@ -1353,12 +1353,17 @@ bool DownloaderThreadBase::createDownloader(bool cached,
 
 void DownloaderThreadBase::jobFence()
 {
-	SpinlockLocker l(downloaderLock);
-	if(downloader) {
-		getSys()->downloadManager->destroy(downloader);
+	//Get a copy of the downloader, do hold the lock less time.
+	//It's safe to set this->downloader to NULL, this is the last function that will
+	//be called over this thread job
+	Downloader* d=NULL;
+	{
+		SpinlockLocker l(downloaderLock);
+		d=downloader;
 		downloader=NULL;
 	}
-	l.release();
+	if(d)
+		getSys()->downloadManager->destroy(d);
 
 	listener->threadFinished(this);
 }

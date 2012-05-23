@@ -119,10 +119,10 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 
 		l.acquire();
 		th->curJobs[index]=NULL;
-
-		myJob->jobFence();
-
 		l.release();
+
+		//jobFencing is allowed to happen outside the mutex
+		myJob->jobFence();
 	}
 }
 

@@ -313,8 +313,9 @@ variables_map::variables_map(MemoryAccount* m):
 {
 }
 
-variable* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
+variable* variables_map::findObjVar(const tiny_string& name_s, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
+	uint32_t n=getSys()->getUniqueStringId(name_s);
 	pair<var_iterator, var_iterator> var_range=Variables.equal_range(n);
 	var_iterator ret=var_range.first;
 	for(;ret!=var_range.second;++ret)
@@ -642,7 +643,8 @@ bool is_disjoint(const Set1 &set1, const Set2 &set2)
 
 void variables_map::killObjVar(const multiname& mname)
 {
-	tiny_string name=mname.normalizedName();
+	tiny_string name_s=mname.normalizedName();
+	uint32_t name=getSys()->getUniqueStringId(name_s);
 	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	assert_and_throw(ret.first!=ret.second);
 
@@ -662,7 +664,8 @@ void variables_map::killObjVar(const multiname& mname)
 
 variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	tiny_string name=mname.normalizedName();
+	tiny_string name_s=mname.normalizedName();
+	uint32_t name=getSys()->getUniqueStringId(name_s);
 	pair<var_iterator, var_iterator> var_range=Variables.equal_range(name);
 	assert(!mname.ns.empty());
 	var_iterator ret=var_range.first;
@@ -694,7 +697,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 
 void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind)
 {
-	tiny_string name=mname.normalizedName();
+	const tiny_string& name_s=mname.normalizedName();
 
 	const Type* type = NULL;
 	 /* If typename is resolvable right now, we coerce obj.
@@ -717,6 +720,8 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 		obj = type->coerce(obj);
 	}
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT);
+
+	uint32_t name=getSys()->getUniqueStringId(name_s);
 	Variables.insert(make_pair(name, variable(mname.ns[0], traitKind, obj, typemname, type)));
 }
 
@@ -1084,11 +1089,13 @@ ASObject::~ASObject()
 	}
 }
 
-void variables_map::initSlot(unsigned int n, const tiny_string& name, const nsNameAndKind& ns)
+//TODO: initSlot should use multiname
+void variables_map::initSlot(unsigned int n, const tiny_string& name_s, const nsNameAndKind& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
+	uint32_t name=getSys()->getUniqueStringId(name_s);
 	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	var_iterator start=ret.first;
 	for(;start!=ret.second;++start)
@@ -1164,7 +1171,7 @@ tiny_string variables_map::getNameAt(unsigned int index) const
 		for(unsigned int i=0;i<index;i++)
 			++it;
 
-		return it->first;
+		return getSys()->getStringFromUniqueId(it->first);
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");
@@ -1221,7 +1228,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 			continue;
 		assert_and_throw(it->second.ns.size() == 1)
 		assert_and_throw(it->second.ns.begin()->name=="");
-		out->writeStringVR(stringMap,it->first);
+		out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first));
 		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
 	//The empty string closes the object
@@ -1325,7 +1332,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 					//Skip variable with a namespace, like protected ones
 					continue;
 				}
-				out->writeStringVR(stringMap, varIt->first);
+				out->writeStringVR(stringMap, getSys()->getStringFromUniqueId(varIt->first));
 			}
 		}
 	}

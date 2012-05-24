@@ -159,11 +159,13 @@ struct variable
 class variables_map
 {
 public:
-	typedef std::multimap<tiny_string,variable,std::less<tiny_string>,reporter_allocator<std::pair<const tiny_string, variable>>>
+	//Names are represented by strings in the string pools
+	//Values are something like contextBase+contextOffset
+	typedef std::multimap<uint32_t,variable,std::less<uint32_t>,reporter_allocator<std::pair<const uint32_t, variable>>>
 		mapType;
 	mapType Variables;
-	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
-	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
+	typedef std::multimap<uint32_t,variable>::iterator var_iterator;
+	typedef std::multimap<uint32_t,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator, reporter_allocator<var_iterator>> slots_vars;
 	variables_map(MemoryAccount* m);
 	/**

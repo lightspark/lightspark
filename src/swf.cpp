@@ -166,7 +166,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
-	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),showProfilingData(false),flashMode(mode),
+	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),showProfilingData(false),flashMode(mode),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
 {
@@ -1638,6 +1638,24 @@ Undefined* SystemState::getUndefinedRef() const
 	Undefined* ret=undefined.getPtr();
 	ret->incRef();
 	return ret;
+}
+
+const tiny_string& SystemState::getStringFromUniqueId(uint32_t id)
+{
+	auto it=uniqueStringMap.right.find(id);
+	assert(it!=uniqueStringMap.right.end());
+	return it->second;
+}
+
+uint32_t SystemState::getUniqueStringId(const tiny_string& s)
+{
+	auto it=uniqueStringMap.left.find(s);
+	if(it==uniqueStringMap.left.end())
+	{
+		it=uniqueStringMap.left.insert(make_pair(s,lastUsedStringId)).first;
+		lastUsedStringId++;
+	}
+	return it->second;
 }
 
 /* This is run in vm's thread context */

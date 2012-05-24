@@ -25,6 +25,7 @@
 #include <list>
 #include <queue>
 #include <map>
+#include <boost/bimap.hpp>
 #include <string>
 #include "swftypes.h"
 #include "scripting/flash/display/flashdisplay.h"
@@ -232,6 +233,11 @@ private:
 	mutable Mutex memoryAccountsMutex;
 	std::list<MemoryAccount> memoryAccounts;
 #endif
+	/*
+	 * Pooling support
+	 */
+	boost::bimap<tiny_string, uint32_t> uniqueStringMap;
+	uint32_t lastUsedStringId;
 protected:
 	~SystemState();
 public:
@@ -385,6 +391,11 @@ public:
 #ifdef MEMORY_USAGE_PROFILING
 	void saveMemoryUsageInformation(std::ofstream& out, int snapshotCount) const;
 #endif
+	/*
+	 * Pooling support
+	 */
+	uint32_t getUniqueStringId(const tiny_string& s);
+	const tiny_string& getStringFromUniqueId(uint32_t id);
 };
 
 class ParseThread: public IThreadJob

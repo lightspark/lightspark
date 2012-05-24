@@ -711,7 +711,7 @@ void Class_base::copyBorrowedTraitsFromSuper()
 	variables_map::var_iterator i = super->Variables.Variables.begin();
 	for(;i != super->Variables.Variables.end(); ++i)
 	{
-		const tiny_string& name = i->first;
+		uint32_t name = i->first;
 		variable& v = i->second;
 		//copy only static and instance methods
 		if(v.kind != BORROWED_TRAIT)

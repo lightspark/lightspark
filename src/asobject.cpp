@@ -584,7 +584,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 }
 
 variable::variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
-		: var(_v),traitTypemname(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE)
+		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE)
 {
 	ns.insert(_ns);
 	if(_type)

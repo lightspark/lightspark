@@ -140,15 +140,18 @@ struct variable
 {
 	std::set<nsNameAndKind> ns;
 	ASObject* var;
-	multiname* traitTypemname;
-	const Type* type;
+	union
+	{
+		multiname* traitTypemname;
+		const Type* type;
+		void* typeUnion;
+	};
 	IFunction* setter;
 	IFunction* getter;
 	TRAIT_KIND kind;
 	TRAIT_STATE traitState;
-	//obj_var(ASObject* _v, Class_base* _t):var(_v),type(_t),{}
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k)
-		: var(NULL),traitTypemname(NULL),type(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) { ns.insert(_ns); }
+		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) { ns.insert(_ns); }
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type);
 	void setVar(ASObject* v);
 };

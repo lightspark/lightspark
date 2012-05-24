@@ -50,15 +50,28 @@ public:
 	{
 		return (unsigned int)(val);
 	}
+	/* ECMA-262 9.5 ToInt32 */
 	int32_t toInt()
 	{
-		if(val<0)
-			return int(val);
-		else
-		{
-			uint32_t ret=val;
-			return ret;
+		double posInt;
+
+		/* step 2 */
+		if(std::isnan(val) || std::isinf(val) || val == 0)
+			return 0;
+		/* step 3 */
+		posInt = floor(fabs(val));
+		/* step 4 */
+		if (posInt > 4294967295.0)
+			posInt = fmod(posInt, 4294967296.0);
+		/* step 5 */
+		if (posInt >= 2147483648.0) {
+			// follow tamarin
+			if(val < 0.0)
+				return 0x80000000 - (int32_t)(posInt - 2147483648.0);
+			else
+				return 0x80000000 + (int32_t)(posInt - 2147483648.0);
 		}
+		return (int32_t)copysign(posInt, val);
 	}
 	TRISTATE isLess(ASObject* o);
 	bool isEqual(ASObject* o);

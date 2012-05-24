@@ -85,6 +85,16 @@ TRISTATE UInteger::isLess(ASObject* o)
 	}
 }
 
+ASFUNCTIONBODY(UInteger,_constructor)
+{
+	UInteger* th=static_cast<UInteger*>(obj);
+	if(args && argslen==1)
+		th->val=args[0]->toUInt();
+	else
+		th->val=0;
+	return NULL;
+}
+
 ASFUNCTIONBODY(UInteger,generator)
 {
 	if (argslen == 0)
@@ -96,6 +106,7 @@ void UInteger::sinit(Class_base* c)
 {
 	c->isFinal = true;
 	c->setSuper(Class<ASObject>::getRef());
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);

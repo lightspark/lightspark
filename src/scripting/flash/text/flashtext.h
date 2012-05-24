@@ -27,6 +27,13 @@
 namespace lightspark
 {
 
+class AntiAliasType : public ASObject
+{
+public:
+	AntiAliasType(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
 class Font: public ASObject
 {
 public:

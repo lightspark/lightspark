@@ -31,20 +31,20 @@
 using namespace std;
 using namespace lightspark;
 
-uint32_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
+int32_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
 {
-	uint32_t i1=val1->toUInt();
-	uint32_t i2=val2->toUInt();
+	int32_t i1=val1->toInt();
+	int32_t i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("bitAnd_oo ") << hex << i1 << '&' << i2 << dec);
 	return i1&i2;
 }
 
-uint32_t ABCVm::bitAnd_oi(ASObject* val1, int32_t val2)
+int32_t ABCVm::bitAnd_oi(ASObject* val1, int32_t val2)
 {
-	uint32_t i1=val1->toUInt();
-	uint32_t i2=val2;
+	int32_t i1=val1->toInt();
+	int32_t i2=val2;
 	val1->decRef();
 	LOG(LOG_CALLS,_("bitAnd_oi ") << hex << i1 << '&' << i2 << dec);
 	return i1&i2;
@@ -244,37 +244,37 @@ int32_t ABCVm::negate_i(ASObject* o)
 	return -n;
 }
 
-uint32_t ABCVm::bitNot(ASObject* val)
+int32_t ABCVm::bitNot(ASObject* val)
 {
-	uint32_t i1=val->toUInt();
+	int32_t i1=val->toInt();
 	val->decRef();
 	LOG(LOG_CALLS,_("bitNot ") << hex << i1 << dec);
 	return ~i1;
 }
 
-uint32_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
+int32_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 {
-	int i1=val1->toUInt();
-	int i2=val2->toUInt();
+	int32_t i1=val1->toInt();
+	int32_t i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("bitXor ") << hex << i1 << '^' << i2 << dec);
 	return i1^i2;
 }
 
-uint32_t ABCVm::bitOr_oi(ASObject* val2, uint32_t val1)
+int32_t ABCVm::bitOr_oi(ASObject* val2, int32_t val1)
 {
-	int i1=val1;
-	int i2=val2->toUInt();
+	int32_t i1=val1;
+	int32_t i2=val2->toInt();
 	val2->decRef();
 	LOG(LOG_CALLS,_("bitOr ") << hex << i1 << '|' << i2 << dec);
 	return i1|i2;
 }
 
-uint32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
+int32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 {
-	int i1=val1->toUInt();
-	int i2=val2->toUInt();
+	int32_t i1=val1->toInt();
+	int32_t i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("bitOr ") << hex << i1 << '|' << i2 << dec);
@@ -1045,33 +1045,33 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 
 }
 
-uint32_t ABCVm::lShift(ASObject* val1, ASObject* val2)
+int32_t ABCVm::lShift(ASObject* val1, ASObject* val2)
 {
-	uint32_t i2=val2->toInt();
-	int32_t i1=val1->toInt()&0x1f;
+	int32_t i2=val2->toInt();
+	uint32_t i1=val1->toUInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("lShift ")<<hex<<i2<<_("<<")<<i1<<dec);
 	//Left shift are supposed to always work in 32bit
-	uint32_t ret=i2<<i1;
+	int32_t ret=i2<<i1;
 	return ret;
 }
 
-uint32_t ABCVm::lShift_io(uint32_t val1, ASObject* val2)
+int32_t ABCVm::lShift_io(uint32_t val1, ASObject* val2)
 {
-	uint32_t i2=val2->toInt();
-	int32_t i1=val1&0x1f;
+	int32_t i2=val2->toInt();
+	uint32_t i1=val1&0x1f;
 	val2->decRef();
 	LOG(LOG_CALLS,_("lShift ")<<hex<<i2<<_("<<")<<i1<<dec);
 	//Left shift are supposed to always work in 32bit
-	uint32_t ret=i2<<i1;
+	int32_t ret=i2<<i1;
 	return ret;
 }
 
-uint32_t ABCVm::rShift(ASObject* val1, ASObject* val2)
+int32_t ABCVm::rShift(ASObject* val1, ASObject* val2)
 {
 	int32_t i2=val2->toInt();
-	int32_t i1=val1->toInt()&0x1f;
+	uint32_t i1=val1->toUInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("rShift ")<<hex<<i2<<_(">>")<<i1<<dec);
@@ -1080,8 +1080,8 @@ uint32_t ABCVm::rShift(ASObject* val1, ASObject* val2)
 
 uint32_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 {
-	uint32_t i2=val2->toInt();
-	int32_t i1=val1->toInt()&0x1f;
+	uint32_t i2=val2->toUInt();
+	uint32_t i1=val1->toUInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,_("urShift ")<<hex<<i2<<_(">>")<<i1<<dec);
@@ -1090,8 +1090,8 @@ uint32_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 
 uint32_t ABCVm::urShift_io(uint32_t val1, ASObject* val2)
 {
-	uint32_t i2=val2->toInt();
-	int32_t i1=val1&0x1f;
+	uint32_t i2=val2->toUInt();
+	uint32_t i1=val1&0x1f;
 	val2->decRef();
 	LOG(LOG_CALLS,_("urShift ")<<hex<<i2<<_(">>")<<i1<<dec);
 	return i2>>i1;

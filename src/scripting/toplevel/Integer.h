@@ -46,6 +46,7 @@ public:
 	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
 	std::string toDebugString() { return toString()+"i"; }
 	//Serialization interface

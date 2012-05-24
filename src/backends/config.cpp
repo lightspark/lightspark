@@ -129,7 +129,7 @@ Config::Config():
 		{
 			create_directories(cacheDirectoryP);
 		}
-		catch(const basic_filesystem_error<path>& e)
+		catch(const filesystem_error& e)
 		{
 			LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
 					defaultCacheDirectory);

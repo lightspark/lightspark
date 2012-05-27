@@ -22,13 +22,11 @@
 
 #ifdef LLVM_28
 #define alignof alignOf
-#endif
-#ifdef LLVM_30
-#define LLVMTYPE llvm::Type*
-#define LLVMMAKEARRAYREF(T) makeArrayRef(T)
-#else
 #define LLVMTYPE const llvm::Type*
 #define LLVMMAKEARRAYREF(T) T
+#else
+#define LLVMTYPE llvm::Type*
+#define LLVMMAKEARRAYREF(T) makeArrayRef(T)
 #endif
 
 #include "compat.h"

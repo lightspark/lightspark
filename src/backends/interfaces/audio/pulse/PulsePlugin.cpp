@@ -89,7 +89,7 @@ void PulsePlugin::captureListCB ( pa_context* context, const pa_source_info* lis
 	string deviceName ( list->name );
 	if ( !eol && list )   //Device found
 	{
-		oPlugin->addDeviceToList ( &oPlugin->captureDevicesList, &deviceName );
+		oPlugin->captureDevicesList.push_back( new string (deviceName));
 	}
 }
 
@@ -99,16 +99,7 @@ void PulsePlugin::playbackListCB ( pa_context* context, const pa_sink_info* list
 	string deviceName ( list->name );
 	if ( !eol && list )   //Device found
 	{
-		oPlugin->addDeviceToList ( &oPlugin->playbackDevicesList, &deviceName );
-	}
-}
-
-void PulsePlugin::addDeviceToList ( vector< string* >* devicesList, string *deviceName )
-{
-	uint32_t index = devicesList->size(); //we want to add the plugin to the end of the list
-	if ( devicesList->size() == ( uint32_t ) ( index ) )
-	{
-		devicesList->push_back ( new string ( *deviceName ) );
+		oPlugin->playbackDevicesList.push_back( new string (deviceName) );
 	}
 }
 

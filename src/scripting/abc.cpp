@@ -23,10 +23,10 @@
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Target/TargetData.h>
-#ifdef LLVM_30
-#include <llvm/Support/TargetSelect.h>
-#else
+#ifdef LLVM_28
 #include <llvm/Target/TargetSelect.h>
+#else
+#include <llvm/Support/TargetSelect.h>
 #endif
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Analysis/Verifier.h>

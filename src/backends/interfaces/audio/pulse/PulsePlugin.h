@@ -40,7 +40,6 @@ private:
 	void stop();
 	static void playbackListCB ( pa_context *context, const pa_sink_info *list, int eol, void *th );
 	static void captureListCB ( pa_context *context, const pa_source_info *list, int eol, void *th );
-	void addDeviceToList ( std::vector<std::string *> *devicesList, std::string *deviceName );
 	//To populate the devices lists, devicesType must be playback or capture
 	void generateDevicesList ( std::vector<std::string *> *devicesList, DEVICE_TYPES desiredType );
 	static void streamStatusCB ( pa_stream *stream, PulseAudioStream *th );
@@ -78,12 +77,14 @@ public:
 	bool isValid();
 	void pause();
 	void resume();
+	static void sinkInfoForSettingVolumeCB(pa_context* context, const pa_sink_info* i, int eol, PulseAudioStream* stream);
 	~PulseAudioStream();
 private:
 	bool paused;
 	pa_stream *stream;
 	PulsePlugin *manager;
 	volatile STREAM_STATUS streamStatus;
+	double streamVolume;
 
 	void mute();
 	void unmute();

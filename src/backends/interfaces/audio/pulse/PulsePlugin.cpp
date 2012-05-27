@@ -310,7 +310,8 @@ void PulsePlugin::unmuteAll()
 Stream's functions
 ****************************/
 PulseAudioStream::PulseAudioStream ( PulsePlugin* m )  :
-	AudioStream(NULL), paused(false), stream ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING )
+	AudioStream(NULL), paused(false), stream ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING ),
+	streamVolume(0.0)
 {
 
 }
@@ -411,18 +412,37 @@ void PulseAudioStream::unmute()
 			);
 }
 
-void PulseAudioStream::setVolume(double vol)
+void PulseAudioStream::sinkInfoForSettingVolumeCB(pa_context* context, const pa_sink_info* i, int eol, PulseAudioStream* stream)
 {
+	if(eol)
+	{
+		//The callback is called multiple times even if querying a single device
+		return;
+	}
 	struct pa_cvolume volume;
-	pa_cvolume_set(&volume, pa_stream_get_sample_spec(stream)->channels,
-					vol*PA_VOLUME_NORM);
+	pa_sw_cvolume_multiply_scalar(&volume, &i->volume, stream->streamVolume*PA_VOLUME_NORM);
+
 	pa_context_set_sink_input_volume(
-			pa_stream_get_context(stream),
-			pa_stream_get_index(stream),
+			context,
+			pa_stream_get_index(stream->stream),
 			&volume,
 			NULL,
 			NULL
 			);
+}
+
+void PulseAudioStream::setVolume(double vol)
+{
+	if(vol==streamVolume)
+		return;
+	streamVolume=vol;
+	uint32_t deviceIndex = pa_stream_get_device_index(stream);
+	pa_operation* op=pa_context_get_sink_info_by_index(
+			pa_stream_get_context(stream),
+			deviceIndex,
+			(pa_sink_info_cb_t)sinkInfoForSettingVolumeCB,
+			this);
+	pa_operation_unref(op);
 }
 
 // Plugin factory function

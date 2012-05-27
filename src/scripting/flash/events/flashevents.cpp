@@ -93,6 +93,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS("resize"),DECLARED_TRAIT);
 	c->setVariableByQName("MOUSE_LEAVE","",Class<ASString>::getInstanceS("mouseLeave"),DECLARED_TRAIT);
 	c->setVariableByQName("SELECT","",Class<ASString>::getInstanceS("select"),DECLARED_TRAIT);
+	c->setVariableByQName("SOUND_COMPLETE","",Class<ASString>::getInstanceS("soundComplete"),DECLARED_TRAIT);
 	c->setVariableByQName("FULLSCREEN","",Class<ASString>::getInstanceS("fullScreen"),DECLARED_TRAIT);
 	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange"),DECLARED_TRAIT);
 	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"),DECLARED_TRAIT);

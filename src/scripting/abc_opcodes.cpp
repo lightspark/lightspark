@@ -591,13 +591,16 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	SyntheticFunction* sf=f->as<SyntheticFunction>();
 
 	ASObject* ret=Class<ASObject>::getInstanceS();
-	assert(sf->mi->body);
 #ifndef NDEBUG
 	ret->initialized=false;
 #endif
-	LOG(LOG_CALLS,_("Building method traits"));
-	for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-		th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+	if (sf->isConstructed())
+	{
+		LOG(LOG_CALLS,_("Building method traits"));
+		assert(sf->mi->body);
+		for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
+			th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+	}
 #ifndef NDEBUG
 	ret->initialized=true;
 #endif
@@ -1846,6 +1849,47 @@ void ABCVm::getDescendants(call_context* th, int n)
 	{
 		XMLList* xmlObj=Class<XMLList>::cast(obj);
 		xmlObj->getDescendantsByQName(name->name_s, "", ret);
+	}
+	else if(obj->getClass()->isSubClass(Class<Proxy>::getClass()))
+	{
+		_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+		if(!o.isNull())
+		{
+			o->incRef();
+			multiname callPropertyName(NULL);
+			callPropertyName.name_type=multiname::NAME_STRING;
+			callPropertyName.name_s="callProperty";
+			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+			_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
+
+			if(!o.isNull())
+			{
+				assert_and_throw(o->getObjectType()==T_FUNCTION);
+
+				IFunction* f=static_cast<IFunction*>(o.getPtr());
+				//Create a new array
+				ASObject** proxyArgs=g_newa(ASObject*, 1);
+				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
+				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
+
+				//We now suppress special handling
+				LOG(LOG_CALLS,_("Proxy::callProperty"));
+				f->incRef();
+				obj->incRef();
+				ASObject* ret=f->call(obj,proxyArgs,1);
+				f->decRef();
+				th->runtime_stack_push(ret);
+
+				obj->decRef();
+				LOG(LOG_CALLS,_("End of calling ") << *name);
+				return;
+			}
+			else
+			{
+				obj->decRef();
+				throw Class<TypeError>::getInstanceS("Only XML and XMLList objects have descendants");
+			}
+		}
 	}
 	else
 	{

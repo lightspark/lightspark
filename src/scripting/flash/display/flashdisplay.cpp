@@ -229,6 +229,9 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	if(th->applicationDomain.isNull())
+		return getSys()->getNullRef();
+
 	th->applicationDomain->incRef();
 	return th->applicationDomain.getPtr();
 }

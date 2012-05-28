@@ -34,13 +34,20 @@ public:
 	static void sinit(Class_base* c);
 };
 
-class Font: public ASObject
+class ASFont: public ASObject
 {
+private:
+	static std::vector<ASObject*>* getFontList();
 public:
-	Font(Class_base* c):ASObject(c){}
+	ASFont(Class_base* c):ASObject(c),fontType("device"){}
+	void SetFont(tiny_string& fontname,bool is_bold,bool is_italic, bool is_Embedded, bool is_EmbeddedCFF);
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
 	ASFUNCTION(enumerateFonts);
+	ASFUNCTION(registerFont);
+	ASPROPERTY_GETTER(tiny_string, fontName);
+	ASPROPERTY_GETTER(tiny_string, fontStyle);
+	ASPROPERTY_GETTER(tiny_string, fontType);
 };
 
 class TextField: public InteractiveObject, public TextData
@@ -74,6 +81,9 @@ public:
 	ASFUNCTION(_getTextHeight);
 	ASFUNCTION(_getTextFormat);
 	ASFUNCTION(_setTextFormat);
+	ASFUNCTION(_getDefaultTextFormat);
+	ASFUNCTION(_setDefaultTextFormat);
+	
 	ASFUNCTION_GETTER_SETTER(textColor);
 };
 
@@ -83,7 +93,10 @@ public:
 	TextFormat(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,color);
+	ASPROPERTY_GETTER_SETTER(tiny_string,font);
+	ASPROPERTY_GETTER_SETTER(int32_t,size);
 };
 
 class TextFieldType: public ASObject

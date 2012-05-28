@@ -424,6 +424,22 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h, 20)
 		GlyphShapeTable.push_back(t);
 	}
 }
+ASObject* DefineFontTag::instance(Class_base* c) const
+{ 
+	tiny_string fontname("");
+	Class_base* retClass=NULL;
+	if(c)
+		retClass=c;
+	else if(bindedTo)
+		retClass=bindedTo;
+	else
+		retClass=Class<ASFont>::getClass();
+
+	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
+	LOG(LOG_NOT_IMPLEMENTED,"DefineFontTag::instance doesn't handle all font properties");
+	ret->SetFont(fontname,false,false,true,false);
+	return ret;
+}
 
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h, 20)
 {
@@ -513,6 +529,22 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h, 20)
 	//TODO: implmented Kerning support
 	ignore(in,KerningCount*4);
 }
+ASObject* DefineFont2Tag::instance(Class_base* c) const
+{ 
+	tiny_string fontname((const char*)FontName.data(),true);
+	Class_base* retClass=NULL;
+	if(c)
+		retClass=c;
+	else if(bindedTo)
+		retClass=bindedTo;
+	else
+		retClass=Class<ASFont>::getClass();
+
+	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
+	LOG(LOG_NOT_IMPLEMENTED,"DefineFont2Tag::instance doesn't handle all font properties");
+	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
+	return ret;
+}
 
 DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h, 1)
 {
@@ -597,6 +629,22 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h, 1)
 	//TODO: implment Kerning support
 	ignore(in,KerningCount*4);
 }
+ASObject* DefineFont3Tag::instance(Class_base* c) const
+{ 
+	tiny_string fontname((const char*)FontName.data(),true);
+	Class_base* retClass=NULL;
+	if(c)
+		retClass=c;
+	else if(bindedTo)
+		retClass=bindedTo;
+	else
+		retClass=Class<ASFont>::getClass();
+
+	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
+	LOG(LOG_NOT_IMPLEMENTED,"DefineFont3Tag::instance doesn't handle all font properties");
+	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
+	return ret;
+}
 
 DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
@@ -615,6 +663,22 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 	if(FontFlagsHasFontData)
 		LOG(LOG_NOT_IMPLEMENTED,"DefineFont4Tag with FontData");
 	ignore(in,dest-in.tellg());
+}
+ASObject* DefineFont4Tag::instance(Class_base* c) const
+{ 
+	tiny_string fontname = FontName;
+	Class_base* retClass=NULL;
+	if(c)
+		retClass=c;
+	else if(bindedTo)
+		retClass=bindedTo;
+	else
+		retClass=Class<ASFont>::getClass();
+
+	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
+	LOG(LOG_NOT_IMPLEMENTED,"DefineFont4Tag::instance doesn't handle all font properties");
+	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,FontFlagsHasFontData,false);
+	return ret;
 }
 
 DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version):

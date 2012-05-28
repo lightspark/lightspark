@@ -406,6 +406,7 @@ protected:
 	std::vector<uint16_t> OffsetTable;
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
+	ASObject* instance(Class_base* c=NULL) const;
 };
 
 class DefineFontInfoTag: public Tag
@@ -443,6 +444,7 @@ private:
 
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
+	ASObject* instance(Class_base* c=NULL) const;
 };
 
 class DefineFont3Tag: public FontTag
@@ -473,6 +475,7 @@ private:
 
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in);
+	ASObject* instance(Class_base* c=NULL) const;
 };
 
 class DefineFont4Tag : public DictionaryTag
@@ -486,6 +489,7 @@ private:
 public:
 	DefineFont4Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId() { return FontID; }
+	ASObject* instance(Class_base* c=NULL) const;
 };
 
 class DefineTextTag: public DictionaryTag

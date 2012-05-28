@@ -275,7 +275,7 @@ void ABCVm::registerClasses()
 			Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")),DECLARED_TRAIT);
 
 	builtin->setVariableByQName("AntiAliasType","flash.text",Class<AntiAliasType>::getRef(),DECLARED_TRAIT);
-	builtin->setVariableByQName("Font","flash.text",Class<Font>::getRef(),DECLARED_TRAIT);
+	builtin->setVariableByQName("Font","flash.text",Class<ASFont>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("TextField","flash.text",Class<TextField>::getRef(),DECLARED_TRAIT);
 	builtin->setVariableByQName("TextFieldType","flash.text",Class<TextFieldType>::getRef(),DECLARED_TRAIT);

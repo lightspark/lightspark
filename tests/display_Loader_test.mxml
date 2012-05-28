@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_display_Loader_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+
+	private function appComplete():void
+	{
+		var l:Loader=new Loader();
+		Tests.assertNotNull(l.contentLoaderInfo, "::contentLoaderInfo is always valid");
+		Tests.assertNull(l.contentLoaderInfo.applicationDomain, "::contentLoaderInfo.applicationDomain is null on start");
+
+		Tests.report(visual, name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

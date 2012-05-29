@@ -238,6 +238,8 @@ private:
 	 */
 	boost::bimap<tiny_string, uint32_t> uniqueStringMap;
 	uint32_t lastUsedStringId;
+	boost::bimap<nsNameAndKindImpl, uint32_t> uniqueNamespaceMap;
+	uint32_t lastUsedNamespaceId;
 protected:
 	~SystemState();
 public:
@@ -396,6 +398,8 @@ public:
 	 */
 	uint32_t getUniqueStringId(const tiny_string& s);
 	const tiny_string& getStringFromUniqueId(uint32_t id);
+	uint32_t getUniqueNamespaceId(const nsNameAndKindImpl& s);
+	const nsNameAndKindImpl& getNamespaceFromUniqueId(uint32_t id);
 };
 
 class ParseThread: public IThreadJob

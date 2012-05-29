@@ -42,11 +42,11 @@ tiny_string multiname::qualifiedString() const
 {
 	assert_and_throw(ns.size()==1);
 	assert_and_throw(name_type==NAME_STRING);
-	if(ns[0].name.empty())
+	if(ns[0].getImpl().name.empty())
 		return name_s;
 	else
 	{
-		tiny_string ret=ns[0].name;
+		tiny_string ret=ns[0].getImpl().name;
 		ret+="::";
 		ret+=name_s;
 		return ret;
@@ -181,7 +181,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)
 std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
 {
 	string prefix;
-	switch(r.kind)
+	switch(r.getImpl().kind)
 	{
 		case 0x08:
 			prefix="ns:";
@@ -205,7 +205,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
 			prefix="privns:";
 			break;
 	}
-	s << prefix << r.name;
+	s << prefix << r.getImpl().name;
 	return s;
 }
 
@@ -1241,4 +1241,21 @@ FILLSTYLE::FILLSTYLE(const FILLSTYLE& r):version(r.version),FillStyleType(r.Fill
 
 FILLSTYLE::~FILLSTYLE()
 {
+}
+
+nsNameAndKind::nsNameAndKind(const tiny_string& _name, NS_KIND _kind):nsId(-1)
+{
+	nsNameAndKindImpl tmp(_name, _kind);
+	nsId=getSys()->getUniqueNamespaceId(tmp);
+}
+
+nsNameAndKind::nsNameAndKind(const char* _name, NS_KIND _kind):nsId(-1)
+{
+	nsNameAndKindImpl tmp(_name, _kind);
+	nsId=getSys()->getUniqueNamespaceId(tmp);
+}
+
+const nsNameAndKindImpl& nsNameAndKind::getImpl() const
+{
+	return getSys()->getNamespaceFromUniqueId(nsId);
 }

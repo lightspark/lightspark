@@ -1468,9 +1468,10 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	const tiny_string& tmp=args[0]->toString();
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
-	stringToQName(tmp,name.name_s,name.ns[0].name);
+	tiny_string nsName;
+	stringToQName(tmp,name.name_s,nsName);
+	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
@@ -1763,7 +1764,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="" || ASObject::hasPropertyByMultiname(name, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
+	if(name.ns[0].getImpl().name!="" || ASObject::hasPropertyByMultiname(name, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
 		return ASObject::getVariableByMultiname(name,opt);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls

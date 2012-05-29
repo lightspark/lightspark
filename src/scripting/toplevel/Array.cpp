@@ -1028,7 +1028,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 		return ASObject::getVariableByMultiname(name,opt);
 
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="")
+	if(name.ns[0].getImpl().name!="")
 		return ASObject::getVariableByMultiname(name,opt);
 
 	uint32_t index=0;
@@ -1102,7 +1102,7 @@ bool Array::isValidMultiname(const multiname& name, uint32_t& index)
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
 	assert_and_throw(name.ns.size()!=0);
-	if(name.ns[0].name!="")
+	if(name.ns[0].getImpl().name!="")
 		return false;
 
 	return name.toUInt(index);

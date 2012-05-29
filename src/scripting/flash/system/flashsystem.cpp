@@ -175,9 +175,10 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
-	stringToQName(tmp,name.name_s,name.ns[0].name);
+	tiny_string nsName;
+	stringToQName(tmp,name.name_s,nsName);
+	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
@@ -202,9 +203,10 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
-	stringToQName(tmp,name.name_s,name.ns[0].name);
+	tiny_string nsName;
+	stringToQName(tmp,name.name_s,nsName);
+	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;

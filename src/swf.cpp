@@ -166,7 +166,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
-	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),showProfilingData(false),flashMode(mode),
+	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0),
+	showProfilingData(false),flashMode(mode),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
 {
@@ -1654,6 +1655,32 @@ uint32_t SystemState::getUniqueStringId(const tiny_string& s)
 	{
 		it=uniqueStringMap.left.insert(make_pair(s,lastUsedStringId)).first;
 		lastUsedStringId++;
+	}
+	return it->second;
+}
+
+const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id)
+{
+	auto it=uniqueNamespaceMap.right.find(id);
+	assert(it!=uniqueNamespaceMap.right.end());
+	return it->second;
+}
+
+uint32_t SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s)
+{
+	/*std::cerr << "Looking for " << s.name << " KIND " << s.kind << std::endl;
+	{
+		auto it=uniqueNamespaceMap.left.begin();
+		for(;it!=uniqueNamespaceMap.left.end();it++)
+		{
+			std::cerr << "HAVE " << it->first.name << " KIND " << it->first.kind << std::endl;
+		}
+	}*/
+	auto it=uniqueNamespaceMap.left.find(s);
+	if(it==uniqueNamespaceMap.left.end())
+	{
+		it=uniqueNamespaceMap.left.insert(make_pair(s,lastUsedNamespaceId)).first;
+		lastUsedNamespaceId++;
 	}
 	return it->second;
 }

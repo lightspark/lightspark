@@ -273,7 +273,7 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 		return ASObject::getVariableByMultiname(name,opt);
 
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="")
+	if(name.ns[0].getImpl().name!="")
 		return ASObject::getVariableByMultiname(name,opt);
 
 	unsigned int index=0;
@@ -311,7 +311,7 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="")
+	if(name.ns[0].getImpl().name!="")
 		return ASObject::hasPropertyByMultiname(name, considerDynamic);
 
 	unsigned int index=0;

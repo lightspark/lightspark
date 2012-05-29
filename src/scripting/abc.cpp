@@ -1844,7 +1844,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			//check if this class has the 'interface' flag, i.e. it is an interface
 			if((instances[t->classi].flags)&0x04)
 			{
-				QName className(mname->name_s,mname->ns[0].name);
+				QName className(mname->name_s,mname->ns[0].getImpl().name);
 
 				MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
 				Class_inherit* ci=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);

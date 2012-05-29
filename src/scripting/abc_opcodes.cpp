@@ -1968,7 +1968,7 @@ void ABCVm::newClass(call_context* th, int n)
 	ASObject* baseClass=th->runtime_stack_pop();
 
 	assert_and_throw(mname->ns.size()==1);
-	QName className(mname->name_s,mname->ns[0].name);
+	QName className(mname->name_s,mname->ns[0].getImpl().name);
 	//Check if this class has been already defined
 	_NR<ApplicationDomain> domain = getCurrentApplicationDomain(th);
 	ASObject* target;

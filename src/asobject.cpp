@@ -684,10 +684,9 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 		return NULL;
 	if(createKind == DYNAMIC_TRAIT)
 	{
-		if(mname.ns.begin()->name != "")
+		if(mname.ns.begin()->getImpl().name != "")
 			throw Class<ReferenceError>::getInstanceS("Error #1056: Trying to create a dynamic variable with namespace != \"\"");
-		var_iterator inserted=Variables.insert(ret,make_pair(name,
-					variable(nsNameAndKind("",NAMESPACE), createKind)));
+		var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0], createKind)));
 		return &inserted->second;
 	}
 	assert(mname.ns.size() == 1);
@@ -1227,7 +1226,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		if(it->second.kind!=DYNAMIC_TRAIT)
 			continue;
 		assert_and_throw(it->second.ns.size() == 1)
-		assert_and_throw(it->second.ns.begin()->name=="");
+		assert_and_throw(it->second.ns.begin()->getImpl().name=="");
 		out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first));
 		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
@@ -1311,7 +1310,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
 				assert_and_throw(varIt->second.ns.size() == 1)
-				if(varIt->second.ns.begin()->name!="")
+				if(varIt->second.ns.begin()->getImpl().name!="")
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
@@ -1327,7 +1326,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
 				assert(varIt->second.ns.size() == 1);
-				if(varIt->second.ns.begin()->name!="")
+				if(varIt->second.ns.begin()->getImpl().name!="")
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
@@ -1341,7 +1340,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		if(varIt->second.kind==DECLARED_TRAIT)
 		{
 			assert(varIt->second.ns.size() == 1);
-			if(varIt->second.ns.begin()->name!="")
+			if(varIt->second.ns.begin()->getImpl().name!="")
 			{
 				//Skip variable with a namespace, like protected ones
 				continue;

@@ -282,24 +282,46 @@ public:
 enum NS_KIND { NAMESPACE=0x08, PACKAGE_NAMESPACE=0x16, PACKAGE_INTERNAL_NAMESPACE=0x17, PROTECTED_NAMESPACE=0x18, 
 			EXPLICIT_NAMESPACE=0x19, STATIC_PROTECTED_NAMESPACE=0x1A, PRIVATE_NAMESPACE=0x05 };
 
-struct nsNameAndKind
+struct nsNameAndKindImpl
 {
 	tiny_string name;
 	NS_KIND kind;
-	nsNameAndKind(const tiny_string& _name, NS_KIND _kind):name(_name),kind(_kind){}
-	nsNameAndKind(const char* _name, NS_KIND _kind):name(_name),kind(_kind){}
+	nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind):name(_name),kind(_kind){}
+	nsNameAndKindImpl(const char* _name, NS_KIND _kind):name(_name),kind(_kind){}
+	bool operator<(const nsNameAndKindImpl& r) const
+	{
+		if(kind==r.kind)
+			return name < r.name;
+		else
+			return kind < r.kind;
+	}
+	bool operator>(const nsNameAndKindImpl& r) const
+	{
+		if(kind==r.kind)
+			return name > r.name;
+		else
+			return kind > r.kind;
+	}
+};
+
+struct nsNameAndKind
+{
+	uint32_t nsId;
+	nsNameAndKind(const tiny_string& _name, NS_KIND _kind);//:name(_name),kind(_kind){}
+	nsNameAndKind(const char* _name, NS_KIND _kind);//:name(_name),kind(_kind){}
 	bool operator<(const nsNameAndKind& r) const
 	{
-		return name < r.name;
+		return nsId < r.nsId;
 	}
 	bool operator>(const nsNameAndKind& r) const
 	{
-		return name > r.name;
+		return nsId > r.nsId;
 	}
 	bool operator==(const nsNameAndKind& r) const
 	{
-		return /*kind==r.kind &&*/ name==r.name;
+		return nsId==r.nsId;
 	}
+	const nsNameAndKindImpl& getImpl() const;
 };
 
 struct multiname: public memory_reporter

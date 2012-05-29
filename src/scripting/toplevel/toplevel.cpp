@@ -622,14 +622,14 @@ bool Type::isTypeResolvable(const multiname* mn)
 	if(mn == 0)
 		return true; //any
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
-		&& mn->ns[0].name == "")
+		&& mn->ns[0].getImpl().name == "")
 		return true;
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
-		&& mn->ns[0].name == "")
+		&& mn->ns[0].getImpl().name == "")
 		return true;
 
 	//Check if the class has already been defined
-	auto i = getSys()->builtinClasses.find(QName(mn->name_s, mn->ns[0].name));
+	auto i = getSys()->builtinClasses.find(QName(mn->name_s, mn->ns[0].getImpl().name));
 	return i != getSys()->builtinClasses.end();
 }
 
@@ -644,11 +644,11 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 		return Type::anyType;
 
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
-		&& mn->ns.size() == 1 && mn->ns[0].name == "")
+		&& mn->ns.size() == 1 && mn->ns[0].getImpl().name == "")
 		return Type::anyType;
 
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
-		&& mn->ns.size() == 1 && mn->ns[0].name == "")
+		&& mn->ns.size() == 1 && mn->ns[0].getImpl().name == "")
 		return Type::voidType;
 
 	ASObject* typeObject;
@@ -719,11 +719,11 @@ void Class_base::copyBorrowedTraitsFromSuper()
 		variables_map::var_iterator inserted=Variables.Variables.insert(ret_end,make_pair(name,v));
 
 		//Overwrite protected ns
-		if(super->use_protected && v.ns.count(nsNameAndKind(super->protected_ns.name,PROTECTED_NAMESPACE)))
+		if(super->use_protected && v.ns.count(nsNameAndKind(super->protected_ns.getImpl().name,PROTECTED_NAMESPACE)))
 		{
 			assert(use_protected);
 			//add this classes protected ns
-			inserted->second.ns.insert(nsNameAndKind(protected_ns.name,PROTECTED_NAMESPACE));
+			inserted->second.ns.insert(nsNameAndKind(protected_ns.getImpl().name,PROTECTED_NAMESPACE));
 		}
 	}
 }
@@ -1091,7 +1091,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 		int kind=t.kind&0xf;
 		multiname* mname=context->getMultiname(t.name,NULL);
 		if (mname->name_type!=multiname::NAME_STRING ||
-		    (mname->ns.size()==1 && mname->ns[0].name!="") ||
+		    (mname->ns.size()==1 && mname->ns[0].getImpl().name!="") ||
 		    mname->ns.size() > 1)
 			continue;
 		

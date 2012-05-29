@@ -44,6 +44,8 @@ private function appComplete():void
 	Tests.assertEquals(100, sprite3.getBounds(sprite2).x, "getBounds against parent");
 	Tests.assertEquals(200, sprite3.getBounds(sprite1).x, "getBounds against parent of parent");
 	Tests.assertEquals(50, sprite3.getBounds(sprite4).x, "getBounds against unrelated");
+	sprite4.scaleX=0;
+	Tests.assertEquals(200, sprite3.getBounds(sprite4).x, "getBounds against collapsed unrelated");
 
 	var sprite5:Sprite = new Sprite();
 	sprite5.graphics.drawRect(0, 0, 100, 100);

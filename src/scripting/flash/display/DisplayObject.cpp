@@ -633,8 +633,15 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 		m = m.multiplyMatrix(cur->getMatrix());
 		cur=cur->parent.getPtr();
 	}
-	if(!cur)
-		return Class<Rectangle>::getInstanceS();
+	if(cur==NULL)
+	{
+		//We crawled all the parent chain without finding the target
+		//The target is unrelated, compute it's transformation matrix
+		const MATRIX& targetMatrix=target->getConcatenatedMatrix();
+		//If it's not invertible just use the previous computed one
+		if(targetMatrix.isInvertible())
+			m = targetMatrix.getInverted().multiplyMatrix(m);
+	}
 
 	Rectangle* ret=Class<Rectangle>::getInstanceS();
 	number_t x1,x2,y1,y2;

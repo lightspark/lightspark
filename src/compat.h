@@ -20,7 +20,12 @@
 #ifndef COMPAT_H
 #define COMPAT_H
 
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 104600
 #define BOOST_FILESYSTEM_VERSION 3
+#else
+#define BOOST_FILESYSTEM_VERSION 2
+#endif
 
 #include <stddef.h>
 #include <assert.h>

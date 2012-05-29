@@ -76,11 +76,19 @@ void PluginManager::findPlugins()
 		{
 			if ( is_regular_file ( *itr ) )   //Is it a real file? This will remove symlink
 			{
+#if BOOST_VERSION >= 104600
 				string leaf_name = itr->path().filename().string();
+#else
+				string leaf_name = itr->path().filename();
+#endif
 				int rc=pcre_exec(file_pattern, NULL, leaf_name.c_str(), leaf_name.length(), 0, 0, patternOvector, 3);
 				if ( rc > 0 )   // Does it answer to the desired pattern?
 				{
+#if BOOST_VERSION >= 104600
 					path fullpath = plugins_folder.string();
+#else
+					path fullpath = plugins_folder.directory_string();
+#endif
 					fullpath /= leaf_name;
 					//Try to load the file and see if it's an audio plugin
 					if ( GModule* h_plugin = g_module_open( fullpath.string().c_str(), G_MODULE_BIND_LAZY) )

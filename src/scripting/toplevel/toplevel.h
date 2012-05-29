@@ -497,6 +497,10 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {};
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	/*
+	 * Utility method to register builtin methods and classes
+	 */
+	void registerBuiltin(const char* name, const char* ns, _R<ASObject> o);
 };
 
 ASObject* eval(ASObject* obj,ASObject* const* args, const unsigned int argslen);

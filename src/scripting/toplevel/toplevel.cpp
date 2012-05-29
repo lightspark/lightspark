@@ -1763,6 +1763,12 @@ _NR<ASObject> Global::getVariableByMultiname(const multiname& name, GET_VARIABLE
 	return ASObject::getVariableByMultiname(name, opt);
 }
 
+void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)
+{
+	o->incRef();
+	setVariableByQName(name,nsNameAndKind(ns,NAMESPACE),o.getPtr(),DECLARED_TRAIT);
+}
+
 ASFUNCTIONBODY(lightspark,eval)
 {
     // eval is not allowed in AS3, but an exception should be thrown

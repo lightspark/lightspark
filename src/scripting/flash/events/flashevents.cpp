@@ -161,7 +161,7 @@ ASFUNCTIONBODY(Event,formatToString)
 		multiname propName(NULL);
 		propName.name_type=multiname::NAME_STRING;
 		propName.name_s=prop;
-		propName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
+		propName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		_NR<ASObject> value=th->getVariableByMultiname(propName);
 		if (!value.isNull())
 			msg += value->toString();
@@ -543,7 +543,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		multiname cloneName(NULL);
 		cloneName.name_type=multiname::NAME_STRING;
 		cloneName.name_s="clone";
-		cloneName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
+		cloneName.ns.push_back(nsNameAndKind("",NAMESPACE));
 
 		_NR<ASObject> clone=e->getVariableByMultiname(cloneName);
 		//Clone always exists since it's implemented in Event itself

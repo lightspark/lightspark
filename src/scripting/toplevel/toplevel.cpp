@@ -687,7 +687,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 	return typeObject->as<Type>();
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(m),use_protected(false),protected_ns("",PACKAGE_NAMESPACE),constructor(NULL),
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(m),use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),
 	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(m)),
 	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1),memoryAccount(m)
 {

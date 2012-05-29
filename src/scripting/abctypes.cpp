@@ -129,6 +129,9 @@ istream& lightspark::operator>>(istream& in, namespace_info& v)
 	in >> v.kind >> v.name;
 	if(v.kind!=0x05 && v.kind!=0x08 && v.kind!=0x16 && v.kind!=0x17 && v.kind!=0x18 && v.kind!=0x19 && v.kind!=0x1a)
 		throw UnsupportedException("Unexpected namespace kind");
+	//Collapse PACKAGE_NAMESPACE on NAMESPACE
+	if(v.kind==PACKAGE_NAMESPACE)
+		v.kind=(int)NAMESPACE;
 
 	return in;
 }

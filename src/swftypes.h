@@ -333,7 +333,7 @@ inline QName::operator multiname() const
 	multiname ret(NULL);
 	ret.name_type = multiname::NAME_STRING;
 	ret.name_s = name;
-	ret.ns.push_back( nsNameAndKind(ns, PACKAGE_NAMESPACE) );
+	ret.ns.push_back( nsNameAndKind(ns, NAMESPACE) );
 	ret.isAttribute = false;
 	return ret;
 }

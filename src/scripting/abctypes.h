@@ -33,6 +33,11 @@ private:
 	uint32_t val;
 public:
 	operator uint32_t() const{return val;}
+	u8& operator=(uint32_t v)
+	{
+		val=v;
+		return *this;
+	}
 };
 
 class u16

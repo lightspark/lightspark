@@ -587,13 +587,6 @@ int32_t Null::getVariableByMultiname_i(const multiname& name)
 
 _NR<ASObject> Null::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	if((opt & SKIP_IMPL)!=0 || !implEnable)
-		return ASObject::getVariableByMultiname(name,opt);
-
-	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,opt);
-
 	throw Class<TypeError>::getInstanceS("Error #1009: null has no properties.");
 }
 

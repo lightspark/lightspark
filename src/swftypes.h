@@ -286,8 +286,9 @@ struct nsNameAndKindImpl
 {
 	tiny_string name;
 	NS_KIND kind;
-	nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind):name(_name),kind(_kind){}
-	nsNameAndKindImpl(const char* _name, NS_KIND _kind):name(_name),kind(_kind){}
+	uint32_t baseId;
+	nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind, uint32_t b=-1):name(_name),kind(_kind),baseId(b){}
+	nsNameAndKindImpl(const char* _name, NS_KIND _kind, uint32_t b=-1):name(_name),kind(_kind),baseId(b){}
 	bool operator<(const nsNameAndKindImpl& r) const
 	{
 		if(kind==r.kind)
@@ -307,8 +308,14 @@ struct nsNameAndKindImpl
 struct nsNameAndKind
 {
 	uint32_t nsId;
-	nsNameAndKind(const tiny_string& _name, NS_KIND _kind);//:name(_name),kind(_kind){}
-	nsNameAndKind(const char* _name, NS_KIND _kind);//:name(_name),kind(_kind){}
+	uint32_t nsRealId;
+	nsNameAndKind(const tiny_string& _name, NS_KIND _kind);
+	nsNameAndKind(const char* _name, NS_KIND _kind);
+	/*
+	 * Special constructor for protected namespace, which have
+	 * different representationId
+	 */
+	nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND _kind);
 	bool operator<(const nsNameAndKind& r) const
 	{
 		return nsId < r.nsId;

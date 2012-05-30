@@ -42,11 +42,12 @@ tiny_string multiname::qualifiedString() const
 {
 	assert_and_throw(ns.size()==1);
 	assert_and_throw(name_type==NAME_STRING);
-	if(ns[0].getImpl().name.empty())
+	const tiny_string nsName=ns[0].getImpl().name;
+	if(nsName.empty())
 		return name_s;
 	else
 	{
-		tiny_string ret=ns[0].getImpl().name;
+		tiny_string ret=nsName;
 		ret+="::";
 		ret+=name_s;
 		return ret;
@@ -1246,16 +1247,36 @@ FILLSTYLE::~FILLSTYLE()
 nsNameAndKind::nsNameAndKind(const tiny_string& _name, NS_KIND _kind):nsId(-1)
 {
 	nsNameAndKindImpl tmp(_name, _kind);
-	nsId=getSys()->getUniqueNamespaceId(tmp);
+	nsRealId=getSys()->getUniqueNamespaceId(tmp);
+	//HACK: fix this
+	const nsNameAndKindImpl& tmp2=getSys()->getNamespaceFromUniqueId(nsRealId);
+	if(tmp2.baseId!=(uint32_t)-1)
+		nsId=tmp2.baseId;
+	else
+		nsId=nsRealId;
 }
 
 nsNameAndKind::nsNameAndKind(const char* _name, NS_KIND _kind):nsId(-1)
 {
 	nsNameAndKindImpl tmp(_name, _kind);
-	nsId=getSys()->getUniqueNamespaceId(tmp);
+	nsRealId=getSys()->getUniqueNamespaceId(tmp);
+	//HACK: fix this
+	const nsNameAndKindImpl& tmp2=getSys()->getNamespaceFromUniqueId(nsRealId);
+	if(tmp2.baseId!=(uint32_t)-1)
+		nsId=tmp2.baseId;
+	else
+		nsId=nsRealId;
+}
+
+nsNameAndKind::nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND _kind)
+{
+	assert(_kind==PROTECTED_NAMESPACE);
+	nsId=_baseId;
+	nsNameAndKindImpl tmp(_name, _kind, nsId);
+	nsRealId=getSys()->getUniqueNamespaceId(tmp);
 }
 
 const nsNameAndKindImpl& nsNameAndKind::getImpl() const
 {
-	return getSys()->getNamespaceFromUniqueId(nsId);
+	return getSys()->getNamespaceFromUniqueId(nsRealId);
 }

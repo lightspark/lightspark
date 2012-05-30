@@ -42,6 +42,7 @@ class ASString;
 class method_info;
 struct call_context;
 struct traits_info;
+class namespace_info;
 class Any;
 class Void;
 /* This abstract class represents a type, i.e. something that a value can be coerced to.
@@ -108,8 +109,10 @@ template<class T> friend class Template;
 private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
+	//TODO: move in Class_inherit
 	bool use_protected;
 	nsNameAndKind protected_ns;
+	void initializeProtectedNamespace(const tiny_string& name, const namespace_info& ns);
 	void recursiveBuild(ASObject* target);
 	IFunction* constructor;
 	void describeTraits(xmlpp::Element* root, std::vector<traits_info>& traits) const;

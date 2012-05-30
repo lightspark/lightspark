@@ -323,7 +323,7 @@ variable* variables_map::findObjVar(const tiny_string& name_s, const nsNameAndKi
 		if(!(ret->second.kind & traitKinds))
 			continue;
 
-		if(ret->second.ns.count(ns))
+		if(ret->second.ns==ns)
 			return &ret->second;
 	}
 
@@ -585,9 +585,8 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 }
 
 variable::variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
-		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE)
+		: ns(_ns),var(_v),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE)
 {
-	ns.insert(_ns);
 	if(_type)
 	{
 		//The type is known, use it instead of the typemname
@@ -619,28 +618,6 @@ void variable::setVar(ASObject* v)
 	var=v;
 }
 
-template<class Set1, class Set2>
-bool is_disjoint(const Set1 &set1, const Set2 &set2)
-{
-	if(set1.empty() || set2.empty()) return true;
-
-	typename Set1::const_iterator
-		it1 = set1.begin(),
-		it1End = set1.end();
-	typename Set2::const_iterator
-		it2 = set2.begin(),
-		it2End = set2.end();
-	if(*it1 > *set2.rbegin() || *it2 > *set1.rbegin()) return true;
-
-	while(it1 != it1End && it2 != it2End)
-	{
-		if(*it1 == *it2) return false;
-		if(*it1 < *it2) { it1++; }
-		else { it2++; }
-	}
-	return true;
-}
-
 void variables_map::killObjVar(const multiname& mname)
 {
 	tiny_string name_s=mname.normalizedName();
@@ -652,7 +629,7 @@ void variables_map::killObjVar(const multiname& mname)
 	var_iterator start=ret.first;
 	for(;start!=ret.second;++start)
 	{
-		if(!is_disjoint(mname.ns,start->second.ns))
+		if(binary_search(mname.ns.begin(),mname.ns.end(),start->second.ns))
 		{
 			Variables.erase(start);
 			return;
@@ -675,7 +652,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 			continue;
 		//Check if one the namespace is already present
 		//We can use binary search, as the namespace are ordered
-		if(!is_disjoint(mname.ns,ret->second.ns))
+		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.ns))
 			return &ret->second;
 	}
 
@@ -1099,7 +1076,7 @@ void variables_map::initSlot(unsigned int n, const tiny_string& name_s, const ns
 	var_iterator start=ret.first;
 	for(;start!=ret.second;++start)
 	{
-		if(start->second.ns.count(ns))
+		if(start->second.ns==ns)
 		{
 			slots_vars[n-1]=start;
 			return;
@@ -1225,8 +1202,8 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 	{
 		if(it->second.kind!=DYNAMIC_TRAIT)
 			continue;
-		assert_and_throw(it->second.ns.size() == 1)
-		assert_and_throw(it->second.ns.begin()->getImpl().name=="");
+		//Dynamic traits always have empty namespace
+		assert(it->second.ns.getImpl().name=="");
 		out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first));
 		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
@@ -1309,8 +1286,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				assert_and_throw(varIt->second.ns.size() == 1)
-				if(varIt->second.ns.begin()->getImpl().name!="")
+				if(varIt->second.ns.getImpl().name!="")
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
@@ -1325,8 +1301,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				assert(varIt->second.ns.size() == 1);
-				if(varIt->second.ns.begin()->getImpl().name!="")
+				if(varIt->second.ns.getImpl().name!="")
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
@@ -1339,8 +1314,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	{
 		if(varIt->second.kind==DECLARED_TRAIT)
 		{
-			assert(varIt->second.ns.size() == 1);
-			if(varIt->second.ns.begin()->getImpl().name!="")
+			if(varIt->second.ns.getImpl().name!="")
 			{
 				//Skip variable with a namespace, like protected ones
 				continue;

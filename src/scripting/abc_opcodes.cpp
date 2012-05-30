@@ -1994,15 +1994,6 @@ void ABCVm::newClass(call_context* th, int n)
 	assert_and_throw(th->context);
 	ret->context=th->context;
 
-	//Add protected namespace if needed
-	if(th->context->instances[n].isProtectedNs())
-	{
-		ret->use_protected=true;
-		int ns=th->context->instances[n].protectedNs;
-		const namespace_info& ns_info=th->context->constant_pool.namespaces[ns];
-		ret->protected_ns=nsNameAndKind(th->context->getString(ns_info.name),(NS_KIND)(int)ns_info.kind);
-	}
-
 	//Null is a "valid" base class
 	if(baseClass->getObjectType()!=T_NULL)
 	{
@@ -2010,6 +2001,15 @@ void ABCVm::newClass(call_context* th, int n)
 		Class_base* base = baseClass->as<Class_base>();
 		assert(!base->isFinal);
 		ret->setSuper(_MR(base));
+	}
+
+	//Add protected namespace if needed
+	if(th->context->instances[n].isProtectedNs())
+	{
+		ret->use_protected=true;
+		int ns=th->context->instances[n].protectedNs;
+		const namespace_info& ns_info=th->context->constant_pool.namespaces[ns];
+		ret->initializeProtectedNamespace(th->context->getString(ns_info.name),ns_info);
 	}
 
 	ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);

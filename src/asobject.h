@@ -138,7 +138,7 @@ enum TRAIT_STATE { NO_STATE=0, HAS_GETTER_SETTER=1, TYPE_RESOLVED=2 };
 
 struct variable
 {
-	std::set<nsNameAndKind> ns;
+	nsNameAndKind ns;
 	ASObject* var;
 	union
 	{
@@ -151,7 +151,7 @@ struct variable
 	TRAIT_KIND kind;
 	TRAIT_STATE traitState;
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k)
-		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) { ns.insert(_ns); }
+		: ns(_ns),var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) {}
 	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type);
 	void setVar(ASObject* v);
 };

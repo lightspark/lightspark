@@ -1858,7 +1858,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 					ci->use_protected=true;
 					int ns=instances[t->classi].protectedNs;
 					const namespace_info& ns_info=constant_pool.namespaces[ns];
-					ci->protected_ns=nsNameAndKind(getString(ns_info.name),(NS_KIND)(int)ns_info.kind);
+					ci->initializeProtectedNamespace(getString(ns_info.name),ns_info);
 				}
 				LOG(LOG_CALLS,_("Adding immutable object traits to class"));
 				//Class objects also contains all the methods/getters/setters declared for instances

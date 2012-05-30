@@ -715,16 +715,8 @@ void Class_base::copyBorrowedTraitsFromSuper()
 			v.getter->incRef();
 		if(v.setter)
 			v.setter->incRef();
-		const variables_map::var_iterator ret_end=Variables.Variables.upper_bound(name);
-		variables_map::var_iterator inserted=Variables.Variables.insert(ret_end,make_pair(name,v));
 
-		//Overwrite protected ns
-		if(super->use_protected && v.ns.count(nsNameAndKind(super->protected_ns.getImpl().name,PROTECTED_NAMESPACE)))
-		{
-			assert(use_protected);
-			//add this classes protected ns
-			inserted->second.ns.insert(nsNameAndKind(protected_ns.getImpl().name,PROTECTED_NAMESPACE));
-		}
+		Variables.Variables.insert(make_pair(name,v));
 	}
 }
 
@@ -1180,6 +1172,25 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
 		}
 	}
+}
+
+void Class_base::initializeProtectedNamespace(const tiny_string& name, const namespace_info& ns)
+{
+	Class_inherit* cur=dynamic_cast<Class_inherit*>(super.getPtr());
+	nsNameAndKind* baseNs=NULL;
+	while(cur)
+	{
+		if(cur->use_protected)
+		{
+			baseNs=&cur->protected_ns;
+			break;
+		}
+		cur=dynamic_cast<Class_inherit*>(cur->super.getPtr());
+	}
+	if(baseNs==NULL)
+		protected_ns=nsNameAndKind(name,(NS_KIND)(int)ns.kind);
+	else
+		protected_ns=nsNameAndKind(name,baseNs->nsId,(NS_KIND)(int)ns.kind);
 }
 
 ASQName::ASQName(Class_base* c):ASObject(c)

@@ -698,7 +698,10 @@ bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_sl
 
 		if(std::isnan(a) || std::isnan(b))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
-		return a<b;
+		if(isDescending)
+			return b>a;
+		else
+			return a<b;
 	}
 	else
 	{
@@ -718,11 +721,22 @@ bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_sl
 		else
 			s2="undefined";
 
-		//TODO: unicode support
-		if(isCaseInsensitive)
-			return s1.strcasecmp(s2)<0;
+		if(isDescending)
+		{
+			//TODO: unicode support
+			if(isCaseInsensitive)
+				return s1.strcasecmp(s2)>0;
+			else
+				return s1>s2;
+		}
 		else
-			return s1<s2;
+		{
+			//TODO: unicode support
+			if(isCaseInsensitive)
+				return s1.strcasecmp(s2)<0;
+			else
+				return s1<s2;
+		}
 	}
 }
 
@@ -761,6 +775,7 @@ ASFUNCTIONBODY(Array,_sort)
 	IFunction* comp=NULL;
 	bool isNumeric=false;
 	bool isCaseInsensitive=false;
+	bool isDescending=false;
 	for(uint32_t i=0;i<argslen;i++)
 	{
 		if(args[i]->getObjectType()==T_FUNCTION) //Comparison func
@@ -775,7 +790,9 @@ ASFUNCTIONBODY(Array,_sort)
 				isNumeric=true;
 			if(options&CASEINSENSITIVE)
 				isCaseInsensitive=true;
-			if(options&(~(NUMERIC|CASEINSENSITIVE)))
+			if(options&DESCENDING)
+				isDescending=true;
+			if(options&(~(NUMERIC|CASEINSENSITIVE|DESCENDING)))
 				throw UnsupportedException("Array::sort not completely implemented");
 		}
 	}
@@ -790,7 +807,7 @@ ASFUNCTIONBODY(Array,_sort)
 	if(comp)
 		sort(tmp.begin(),tmp.end(),sortComparatorWrapper(comp));
 	else
-		sort(tmp.begin(),tmp.end(),sortComparatorDefault(isNumeric,isCaseInsensitive));
+		sort(tmp.begin(),tmp.end(),sortComparatorDefault(isNumeric,isCaseInsensitive,isDescending));
 
 	th->data.clear();
 	std::vector<data_slot>::iterator ittmp=tmp.begin();

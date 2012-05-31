@@ -57,8 +57,9 @@ private:
 	private:
 		bool isNumeric;
 		bool isCaseInsensitive;
+		bool isDescending;
 	public:
-		sortComparatorDefault(bool n, bool ci):isNumeric(n),isCaseInsensitive(ci){}
+		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
 		bool operator()(const data_slot& d1, const data_slot& d2);
 	};
 	class sortComparatorWrapper

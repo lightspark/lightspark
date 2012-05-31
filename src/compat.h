@@ -126,8 +126,8 @@ long lrint(double f);
 #	define ATOMIC_INT32(x) __declspec(align(4)) volatile long x
 #	define ATOMIC_INCREMENT(x) InterlockedIncrement(&x)
 #	define ATOMIC_DECREMENT(x) InterlockedDecrement(&x)
-#	define ATOMIC_ADD(x, v) InterlockedExchangeAdd(&x, v)
-#	define ATOMIC_SUB(x, v) InterlockedExchangeAdd(&x, -v)
+#	define ATOMIC_ADD(x, v) (InterlockedExchangeAdd(&x, v)+v)
+#	define ATOMIC_SUB(x, v) (InterlockedExchangeAdd(&x, -v)-v)
 #	define ACQUIRE_RELEASE_FLAG(x) ATOMIC_INT32(x)
 #	define ACQUIRE_READ(x) InterlockedCompareExchange(const_cast<long*>(&x),1,1)
 #	define RELEASE_WRITE(x, v) InterlockedExchange(&x,v)
@@ -144,9 +144,9 @@ long lrint(double f);
 #	endif
 
 #	define ATOMIC_INT32(x) std::atomic<int32_t> x
-#	define ATOMIC_INCREMENT(x) x.fetch_add(1)
+#	define ATOMIC_INCREMENT(x) (x.fetch_add(1)+1)
 #	define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
-#	define ATOMIC_ADD(x, v) x.fetch_add(v)
+#	define ATOMIC_ADD(x, v) (x.fetch_add(v)+v)
 #	define ATOMIC_SUB(x, v) (x.fetch_sub(v)-v)
 
 //Boolean type with acquire release barrier semantics

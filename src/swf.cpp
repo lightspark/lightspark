@@ -166,11 +166,18 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
-	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0),
+	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
 	showProfilingData(false),flashMode(mode),
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
 {
+	//Forge the empty namespace and make sure it gets id 0
+	nsNameAndKindImpl emptyNs("", NAMESPACE);
+	uint32_t nsId;
+	uint32_t baseId;
+	getUniqueNamespaceId(emptyNs, 0, nsId, baseId);
+	assert(nsId==0 && baseId==0);
+
 	cookiesFileName = NULL;
 
 	setTLSSys(this);
@@ -1666,23 +1673,20 @@ const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id)
 	return it->second;
 }
 
-uint32_t SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s)
+void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t& nsId, uint32_t& baseId)
 {
-	/*std::cerr << "Looking for " << s.name << " KIND " << s.kind << std::endl;
-	{
-		auto it=uniqueNamespaceMap.left.begin();
-		for(;it!=uniqueNamespaceMap.left.end();it++)
-		{
-			std::cerr << "HAVE " << it->first.name << " KIND " << it->first.kind << std::endl;
-		}
-	}*/
+	lastUsedNamespaceId--;
+	getUniqueNamespaceId(s, lastUsedNamespaceId, nsId, baseId);
+}
+
+void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t hintedId, uint32_t& nsId, uint32_t& baseId)
+{
 	auto it=uniqueNamespaceMap.left.find(s);
 	if(it==uniqueNamespaceMap.left.end())
-	{
-		it=uniqueNamespaceMap.left.insert(make_pair(s,lastUsedNamespaceId)).first;
-		lastUsedNamespaceId++;
-	}
-	return it->second;
+		it=uniqueNamespaceMap.left.insert(make_pair(s,hintedId)).first;
+
+	nsId=it->second;
+	baseId=(it->first.baseId==0xffffffff)?nsId:it->first.baseId;
 }
 
 /* This is run in vm's thread context */

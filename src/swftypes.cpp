@@ -1247,25 +1247,13 @@ FILLSTYLE::~FILLSTYLE()
 nsNameAndKind::nsNameAndKind(const tiny_string& _name, NS_KIND _kind):nsId(-1)
 {
 	nsNameAndKindImpl tmp(_name, _kind);
-	nsRealId=getSys()->getUniqueNamespaceId(tmp);
-	//HACK: fix this
-	const nsNameAndKindImpl& tmp2=getSys()->getNamespaceFromUniqueId(nsRealId);
-	if(tmp2.baseId!=(uint32_t)-1)
-		nsId=tmp2.baseId;
-	else
-		nsId=nsRealId;
+	getSys()->getUniqueNamespaceId(tmp, nsRealId, nsId);
 }
 
 nsNameAndKind::nsNameAndKind(const char* _name, NS_KIND _kind):nsId(-1)
 {
 	nsNameAndKindImpl tmp(_name, _kind);
-	nsRealId=getSys()->getUniqueNamespaceId(tmp);
-	//HACK: fix this
-	const nsNameAndKindImpl& tmp2=getSys()->getNamespaceFromUniqueId(nsRealId);
-	if(tmp2.baseId!=(uint32_t)-1)
-		nsId=tmp2.baseId;
-	else
-		nsId=nsRealId;
+	getSys()->getUniqueNamespaceId(tmp, nsRealId, nsId);
 }
 
 nsNameAndKind::nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND _kind)
@@ -1273,19 +1261,17 @@ nsNameAndKind::nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND
 	assert(_kind==PROTECTED_NAMESPACE);
 	nsId=_baseId;
 	nsNameAndKindImpl tmp(_name, _kind, nsId);
-	nsRealId=getSys()->getUniqueNamespaceId(tmp);
+	uint32_t tmpId;
+	getSys()->getUniqueNamespaceId(tmp, nsRealId, tmpId);
+	assert(tmpId==_baseId);
 }
 
-nsNameAndKind::nsNameAndKind(ABCContext* c, const namespace_info& ns)
+nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 {
+	const namespace_info& ns=c->constant_pool.namespaces[nsContextIndex];
 	nsNameAndKindImpl tmp(c->getString(ns.name), (NS_KIND)(int)ns.kind);
-	nsRealId=getSys()->getUniqueNamespaceId(tmp);
-	//HACK: fix this
-	const nsNameAndKindImpl& tmp2=getSys()->getNamespaceFromUniqueId(nsRealId);
-	if(tmp2.baseId!=(uint32_t)-1)
-		nsId=tmp2.baseId;
-	else
-		nsId=nsRealId;
+	//Give an id hint, in case the namespace is created in the map
+	getSys()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
 }
 
 const nsNameAndKindImpl& nsNameAndKind::getImpl() const

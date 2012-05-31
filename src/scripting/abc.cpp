@@ -440,8 +440,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(th->context, *n));
+					ret->ns.push_back(nsNameAndKind(th->context, s->ns[i]));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_d=rtd;
@@ -493,8 +492,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(th->context, *n));
+					ret->ns.push_back(nsNameAndKind(th->context, s->ns[i]));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_i=rti;
@@ -589,8 +587,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			case 0x07: //QName
 			case 0x0D: //QNameA
 			{
-				const namespace_info* n=&constant_pool.namespaces[m->ns];
-				ret->ns.push_back(nsNameAndKind(this, *n));
+				ret->ns.push_back(nsNameAndKind(this, m->ns));
 
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
@@ -603,8 +600,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(this, *n));
+					ret->ns.push_back(nsNameAndKind(this, s->ns[i]));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
@@ -619,8 +615,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(this, *n));
+					ret->ns.push_back(nsNameAndKind(this, s->ns[i]));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				break;
@@ -650,8 +645,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 					name += "$";
 					name += getString(p->name);
 				}
-				const namespace_info* n=&constant_pool.namespaces[td->ns];
-				ret->ns.push_back(nsNameAndKind(this, *n));
+				ret->ns.push_back(nsNameAndKind(this, td->ns));
 				ret->name_s=name;
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -832,8 +826,11 @@ void ABCContext::dumpProfilingData(ostream& f) const
 }
 #endif
 
+/*
+ * nextNamespaceBase is set to 1 since 0 is the empty namespace
+ */
 ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),shuttingdown(false),
-	events_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(0),currentCallContext(NULL),
+	events_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(1),currentCallContext(NULL),
 	vmDataMemory(m),cur_recursion(0)
 {
 	limits.max_recursion = 256;

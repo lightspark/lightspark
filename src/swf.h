@@ -398,7 +398,18 @@ public:
 	 */
 	uint32_t getUniqueStringId(const tiny_string& s);
 	const tiny_string& getStringFromUniqueId(uint32_t id);
-	uint32_t getUniqueNamespaceId(const nsNameAndKindImpl& s);
+	/*
+	 * Looks for the given nsNameAndKindImpl in the map.
+	 * If not present it will be created with hintedId as it's id.
+	 * The namespace id and the baseId are returned by reference.
+	 */
+	void getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t hintedId, uint32_t& nsId, uint32_t& baseId);
+	/*
+	 * Looks for the given nsNameAndKindImpl in the map.
+	 * If not present it will be create with an id chosen internally.
+	 * The namespace id and the baseId are returned by reference.
+	 */
+	void getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t& nsId, uint32_t& baseId);
 	const nsNameAndKindImpl& getNamespaceFromUniqueId(uint32_t id);
 };
 

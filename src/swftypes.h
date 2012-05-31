@@ -81,6 +81,8 @@ typedef double number_t;
 
 class ASObject;
 class BitmapData;
+class ABCContext;
+class namespace_info;
 
 struct multiname;
 class QName
@@ -311,6 +313,7 @@ struct nsNameAndKind
 	uint32_t nsRealId;
 	nsNameAndKind(const tiny_string& _name, NS_KIND _kind);
 	nsNameAndKind(const char* _name, NS_KIND _kind);
+	nsNameAndKind(ABCContext * c, const namespace_info& ns);
 	/*
 	 * Special constructor for protected namespace, which have
 	 * different representationId

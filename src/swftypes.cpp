@@ -1276,6 +1276,18 @@ nsNameAndKind::nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND
 	nsRealId=getSys()->getUniqueNamespaceId(tmp);
 }
 
+nsNameAndKind::nsNameAndKind(ABCContext* c, const namespace_info& ns)
+{
+	nsNameAndKindImpl tmp(c->getString(ns.name), (NS_KIND)(int)ns.kind);
+	nsRealId=getSys()->getUniqueNamespaceId(tmp);
+	//HACK: fix this
+	const nsNameAndKindImpl& tmp2=getSys()->getNamespaceFromUniqueId(nsRealId);
+	if(tmp2.baseId!=(uint32_t)-1)
+		nsId=tmp2.baseId;
+	else
+		nsId=nsRealId;
+}
+
 const nsNameAndKindImpl& nsNameAndKind::getImpl() const
 {
 	return getSys()->getNamespaceFromUniqueId(nsRealId);

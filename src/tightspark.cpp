@@ -119,11 +119,7 @@ int main(int argc, char* argv[])
 		if(f.is_open())
 		{
 			sys->incRef();
-#ifdef MEMORY_USAGE_PROFILING
-			ABCContext* context=new ABCContext(_MR(sys), f, &sysAccount);
-#else
-			ABCContext* context=new ABCContext(_MR(sys), f, NULL);
-#endif
+			ABCContext* context=new ABCContext(_MR(sys), f, vm);
 			contexts.push_back(context);
 			f.close();
 			vm->addEvent(NullRef,_MR(new (sys->unaccountedMemory) ABCContextInitEvent(context,false)));

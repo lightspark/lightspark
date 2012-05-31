@@ -198,6 +198,8 @@ public:
 	std::vector<script_info, reporter_allocator<script_info>> scripts;
 	u30 method_body_count;
 	std::vector<method_body_info, reporter_allocator<method_body_info>> method_body;
+	//Base for namespaces in this context
+	uint32_t namespaceBaseId;
 
 	std::vector<bool> hasRunScriptInit;
 	/**
@@ -216,7 +218,7 @@ public:
 	multiname* getMultiname(unsigned int m, call_context* th);
 	multiname* getMultinameImpl(ASObject* rt1, ASObject* rt2, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);
-	ABCContext(_R<RootMovieClip> r, std::istream& in, MemoryAccount* m) DLL_PUBLIC;
+	ABCContext(_R<RootMovieClip> r, std::istream& in, ABCVm* vm) DLL_PUBLIC;
 	void exec(bool lazy);
 
 	bool isinstance(ASObject* obj, multiname* name);
@@ -444,6 +446,8 @@ private:
 
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
+	// The base to assign to the next loaded context
+	ATOMIC_INT32(nextNamespaceBase);
 public:
 	call_context* currentCallContext;
 	Manager* int_manager;
@@ -489,6 +493,8 @@ public:
 		/* maxmium number of seconds for script execution. See ScriptLimitsTag */
 		uint32_t script_timeout;
 	} limits;
+
+	uint32_t getAndIncreaseNamespaceBase(uint32_t nsNum);
 
 };
 

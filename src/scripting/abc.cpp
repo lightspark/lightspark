@@ -80,7 +80,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
 	root->incRef();
-	context=new ABCContext(_MR(root), in, getVm()->vmDataMemory);
+	context=new ABCContext(_MR(root), in, getVm());
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -106,7 +106,7 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
 	root->incRef();
-	context=new ABCContext(_MR(root), in, getVm()->vmDataMemory);
+	context=new ABCContext(_MR(root), in, getVm());
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -441,7 +441,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),(NS_KIND)(int)n->kind));
+					ret->ns.push_back(nsNameAndKind(th->context, *n));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_d=rtd;
@@ -494,7 +494,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),(NS_KIND)(int)n->kind));
+					ret->ns.push_back(nsNameAndKind(th->context, *n));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_i=rti;
@@ -590,10 +590,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			case 0x0D: //QNameA
 			{
 				const namespace_info* n=&constant_pool.namespaces[m->ns];
-				if(n->name)
-					ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
-				else
-					ret->ns.push_back(nsNameAndKind("",(NS_KIND)(int)n->kind));
+				ret->ns.push_back(nsNameAndKind(this, *n));
 
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
@@ -607,7 +604,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
+					ret->ns.push_back(nsNameAndKind(this, *n));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
@@ -623,7 +620,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
+					ret->ns.push_back(nsNameAndKind(this, *n));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				break;
@@ -654,7 +651,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 					name += getString(p->name);
 				}
 				const namespace_info* n=&constant_pool.namespaces[td->ns];
-				ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
+				ret->ns.push_back(nsNameAndKind(this, *n));
 				ret->name_s=name;
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -721,17 +718,19 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 	return ret;
 }
 
-ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, MemoryAccount* m):root(r),constant_pool(m),
-	methods(reporter_allocator<method_info>(m)),
-	metadata(reporter_allocator<metadata_info>(m)),
-	instances(reporter_allocator<instance_info>(m)),
-	classes(reporter_allocator<class_info>(m)),
-	scripts(reporter_allocator<script_info>(m)),
-	method_body(reporter_allocator<method_body_info>(m))
+ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),constant_pool(vm->vmDataMemory),
+	methods(reporter_allocator<method_info>(vm->vmDataMemory)),
+	metadata(reporter_allocator<metadata_info>(vm->vmDataMemory)),
+	instances(reporter_allocator<instance_info>(vm->vmDataMemory)),
+	classes(reporter_allocator<class_info>(vm->vmDataMemory)),
+	scripts(reporter_allocator<script_info>(vm->vmDataMemory)),
+	method_body(reporter_allocator<method_body_info>(vm->vmDataMemory))
 {
 	in >> minor >> major;
 	LOG(LOG_CALLS,_("ABCVm version ") << major << '.' << minor);
 	in >> constant_pool;
+
+	namespaceBaseId=vm->getAndIncreaseNamespaceBase(constant_pool.namespaces.size());
 
 	in >> method_count;
 	methods.resize(method_count);
@@ -834,7 +833,8 @@ void ABCContext::dumpProfilingData(ostream& f) const
 #endif
 
 ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),shuttingdown(false),
-	events_queue(reporter_allocator<eventType>(m)),currentCallContext(NULL),vmDataMemory(m),cur_recursion(0)
+	events_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(0),currentCallContext(NULL),
+	vmDataMemory(m),cur_recursion(0)
 {
 	limits.max_recursion = 256;
 	limits.script_timeout = 20;
@@ -1664,6 +1664,11 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Resp
 _R<ApplicationDomain> ABCVm::getCurrentApplicationDomain(call_context* th)
 {
 	return th->context->root->applicationDomain;
+}
+
+uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)
+{
+	return ATOMIC_ADD(nextNamespaceBase,nsNum);
 }
 
 const tiny_string& ABCContext::getString(unsigned int s) const

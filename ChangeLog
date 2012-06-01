@@ -11,7 +11,7 @@ Version NEXT:
 	* Improved support for fonts
 	* Support LLVM 3.1
 	* Fix full volume issue when PulseAudio flat volumes are enabled
-	* Intial support for AIR desktop applications
+	* Initial support for AIR desktop applications
 
 Version 0.5.7:
 

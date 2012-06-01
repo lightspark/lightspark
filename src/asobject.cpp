@@ -313,10 +313,9 @@ variables_map::variables_map(MemoryAccount* m):
 {
 }
 
-variable* variables_map::findObjVar(const tiny_string& name_s, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
+variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	uint32_t n=getSys()->getUniqueStringId(name_s);
-	pair<var_iterator, var_iterator> var_range=Variables.equal_range(n);
+	pair<var_iterator, var_iterator> var_range=Variables.equal_range(nameId);
 	var_iterator ret=var_range.first;
 	for(;ret!=var_range.second;++ret)
 	{
@@ -331,7 +330,7 @@ variable* variables_map::findObjVar(const tiny_string& name_s, const nsNameAndKi
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
 
-	var_iterator inserted=Variables.insert(var_range.first,make_pair(n, variable(ns, createKind)) );
+	var_iterator inserted=Variables.insert(var_range.first,make_pair(nameId, variable(ns, createKind)) );
 	return &inserted->second;
 }
 
@@ -371,6 +370,11 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_stri
 
 void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
 {
+	setDeclaredMethodByQName(getSys()->getUniqueStringId(name), ns, o, type, isBorrowed);
+}
+
+void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
+{
 	check();
 #ifndef NDEBUG
 	assert(!initialized);
@@ -389,7 +393,7 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 	if(isBorrowed && o->inClass == NULL)
 		o->inClass = this->as<Class_base>();
 
-	variable* obj=Variables.findObjVar(name,ns, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
+	variable* obj=Variables.findObjVar(nameId,ns,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
 	switch(type)
 	{
 		case NORMAL_METHOD:
@@ -562,8 +566,13 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
 {
-	assert_and_throw(Variables.findObjVar(name,ns,NO_CREATE_TRAIT,traitKind)==NULL);
-	variable* obj=Variables.findObjVar(name,ns,traitKind,traitKind);
+	setVariableByQName(getSys()->getUniqueStringId(name), ns, o, traitKind);
+}
+
+void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
+{
+	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
+	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
 	obj->setVar(o);
 }
 
@@ -620,8 +629,7 @@ void variable::setVar(ASObject* v)
 
 void variables_map::killObjVar(const multiname& mname)
 {
-	tiny_string name_s=mname.normalizedName();
-	uint32_t name=getSys()->getUniqueStringId(name_s);
+	uint32_t name=mname.normalizedNameId();
 	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	assert_and_throw(ret.first!=ret.second);
 
@@ -641,8 +649,7 @@ void variables_map::killObjVar(const multiname& mname)
 
 variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	tiny_string name_s=mname.normalizedName();
-	uint32_t name=getSys()->getUniqueStringId(name_s);
+	uint32_t name=mname.normalizedNameId();
 	pair<var_iterator, var_iterator> var_range=Variables.equal_range(name);
 	assert(!mname.ns.empty());
 	var_iterator ret=var_range.first;
@@ -673,8 +680,6 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 
 void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind)
 {
-	const tiny_string& name_s=mname.normalizedName();
-
 	const Type* type = NULL;
 	 /* If typename is resolvable right now, we coerce obj.
 	  * It it's not resolvable, then it must be a user defined class,
@@ -697,7 +702,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	}
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT);
 
-	uint32_t name=getSys()->getUniqueStringId(name_s);
+	uint32_t name=mname.normalizedNameId();
 	Variables.insert(make_pair(name, variable(mname.ns[0], traitKind, obj, typemname, type)));
 }
 

@@ -357,6 +357,10 @@ struct multiname: public memory_reporter
 		Returns a string name whatever is the name type
 	*/
 	tiny_string normalizedName() const;
+	/*
+	 * 	Return a string id whatever is the name type
+	 */
+	uint32_t normalizedNameId() const;
 	tiny_string qualifiedString() const;
 	/* sets name_type, name_s/name_d based on the object n */
 	void setName(ASObject* n);

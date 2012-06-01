@@ -1698,7 +1698,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 	//Should be a Qname
 	assert_and_throw(mname.ns.size()==1 && mname.name_type==multiname::NAME_STRING);
 
-	const tiny_string& name=getSys()->getStringFromUniqueId(mname.name_s_id);
+	uint32_t nameId=mname.name_s_id;
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 	switch(t->kind&0xf)
@@ -1712,14 +1712,14 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var = c->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+			var = c->Variables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 			if(var && var->var)
 			{
 				assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
 
 				IFunction* f=static_cast<IFunction*>(var->var);
 				f->incRef();
-				c->setDeclaredMethodByQName(name,mname.ns[0],f,NORMAL_METHOD,true);
+				c->setDeclaredMethodByQName(nameId,mname.ns[0],f,NORMAL_METHOD,true);
 			}
 			else
 			{
@@ -1737,13 +1737,13 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var=c->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+			var=c->Variables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 			if(var && var->getter)
 			{
 				assert_and_throw(var->getter);
 
 				var->getter->incRef();
-				c->setDeclaredMethodByQName(name,mname.ns[0],var->getter,GETTER_METHOD,true);
+				c->setDeclaredMethodByQName(nameId,mname.ns[0],var->getter,GETTER_METHOD,true);
 			}
 			else
 			{
@@ -1761,13 +1761,13 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var=c->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+			var=c->Variables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 			if(var && var->setter)
 			{
 				assert_and_throw(var->setter);
 
 				var->setter->incRef();
-				c->setDeclaredMethodByQName(name,mname.ns[0],var->setter,SETTER_METHOD,true);
+				c->setDeclaredMethodByQName(nameId,mname.ns[0],var->setter,SETTER_METHOD,true);
 			}
 			else
 			{
@@ -1897,7 +1897,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else
 				ret=getSys()->getUndefinedRef();
 
-			obj->setVariableByQName(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0],ret,DECLARED_TRAIT);
+			obj->setVariableByQName(mname->name_s_id,mname->ns[0],ret,DECLARED_TRAIT);
 
 			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << *mname << _(" id ") << t->classi);
 			if(t->slot_id)
@@ -1947,11 +1947,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 			//TODO: Avoid string lookup
 			if(kind == traits_info::Getter)
-				obj->setDeclaredMethodByQName(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0],f,GETTER_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,GETTER_METHOD,isBorrowed);
 			else if(kind == traits_info::Setter)
-				obj->setDeclaredMethodByQName(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0],f,SETTER_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,SETTER_METHOD,isBorrowed);
 			else if(kind == traits_info::Method)
-				obj->setDeclaredMethodByQName(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0],f,NORMAL_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,NORMAL_METHOD,isBorrowed);
 			break;
 		}
 		case traits_info::Const:

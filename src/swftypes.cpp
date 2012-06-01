@@ -74,6 +74,23 @@ tiny_string multiname::normalizedName() const
 	}
 }
 
+uint32_t multiname::normalizedNameId() const
+{
+	switch(name_type)
+	{
+		case multiname::NAME_STRING:
+			return name_s_id;
+		case multiname::NAME_INT:
+		case multiname::NAME_NUMBER:
+		case multiname::NAME_OBJECT:
+			return getSys()->getUniqueStringId(normalizedName());
+		default:
+			assert("Unexpected name kind" && false);
+			//Should never reach this
+			return -1;
+	}
+}
+
 void multiname::setName(ASObject* n)
 {
 	assert(name_type!=NAME_OBJECT || name_o==NULL);

@@ -91,7 +91,7 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 	//Find the origin
 	while(cur)
 	{
-		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+		var=cur->Variables.findObjVar(getSys()->getUniqueStringId(name),nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
 		if(var)
 			break;
 		cur=cur->super.getPtr();

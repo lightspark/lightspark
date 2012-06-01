@@ -160,7 +160,7 @@ ASFUNCTIONBODY(Event,formatToString)
 
 		multiname propName(NULL);
 		propName.name_type=multiname::NAME_STRING;
-		propName.name_s=prop;
+		propName.name_s_id=getSys()->getUniqueStringId(prop);
 		propName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		_NR<ASObject> value=th->getVariableByMultiname(propName);
 		if (!value.isNull())
@@ -542,7 +542,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		//Object must be cloned, closing is implemented with the clone AS method
 		multiname cloneName(NULL);
 		cloneName.name_type=multiname::NAME_STRING;
-		cloneName.name_s="clone";
+		cloneName.name_s_id=getSys()->getUniqueStringId("clone");
 		cloneName.ns.push_back(nsNameAndKind("",NAMESPACE));
 
 		_NR<ASObject> clone=e->getVariableByMultiname(cloneName);

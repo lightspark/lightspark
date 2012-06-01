@@ -311,7 +311,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
 			multiname callPropertyName(NULL);
 			callPropertyName.name_type=multiname::NAME_STRING;
-			callPropertyName.name_s="callProperty";
+			callPropertyName.name_s_id=getSys()->getUniqueStringId("callProperty");
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 			_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 
@@ -323,7 +323,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 				//Create a new array
 				ASObject** proxyArgs=g_newa(ASObject*, m+1);
 				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
+				proxyArgs[0]=Class<ASString>::getInstanceS(getSys()->getStringFromUniqueId(name->name_s_id));
 				for(int i=0;i<m;i++)
 					proxyArgs[i+1]=args[i];
 
@@ -1497,7 +1497,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	}
 	else
 	{
-		LOG(LOG_ERROR,_("Calling an undefined function ") << name->name_s);
+		LOG(LOG_ERROR,_("Calling an undefined function ") << getSys()->getStringFromUniqueId(name->name_s_id));
 		if(keepReturn)
 			th->runtime_stack_push(getSys()->getUndefinedRef());
 	}
@@ -1823,7 +1823,7 @@ void ABCVm::newObject(call_context* th, int n)
 	{
 		ASObject* value=th->runtime_stack_pop();
 		ASObject* name=th->runtime_stack_pop();
-		propertyName.name_s=name->toString();
+		propertyName.name_s_id=getSys()->getUniqueStringId(name->toString());
 		name->decRef();
 		ret->setVariableByMultiname(propertyName, value, ASObject::CONST_NOT_ALLOWED);
 	}
@@ -1843,12 +1843,12 @@ void ABCVm::getDescendants(call_context* th, int n)
 	if(obj->getClass()==Class<XML>::getClass())
 	{
 		XML* xmlObj=Class<XML>::cast(obj);
-		xmlObj->getDescendantsByQName(name->name_s, "", ret);
+		xmlObj->getDescendantsByQName(getSys()->getStringFromUniqueId(name->name_s_id), "", ret);
 	}
 	else if(obj->getClass()==Class<XMLList>::getClass())
 	{
 		XMLList* xmlObj=Class<XMLList>::cast(obj);
-		xmlObj->getDescendantsByQName(name->name_s, "", ret);
+		xmlObj->getDescendantsByQName(getSys()->getStringFromUniqueId(name->name_s_id), "", ret);
 	}
 	else if(obj->getClass()->isSubClass(Class<Proxy>::getClass()))
 	{
@@ -1858,7 +1858,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 			o->incRef();
 			multiname callPropertyName(NULL);
 			callPropertyName.name_type=multiname::NAME_STRING;
-			callPropertyName.name_s="callProperty";
+			callPropertyName.name_s_id=getSys()->getUniqueStringId("callProperty");
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 			_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 
@@ -1870,7 +1870,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 				//Create a new array
 				ASObject** proxyArgs=g_newa(ASObject*, 1);
 				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
+				proxyArgs[0]=Class<ASString>::getInstanceS(getSys()->getStringFromUniqueId(name->name_s_id));
 
 				//We now suppress special handling
 				LOG(LOG_CALLS,_("Proxy::callProperty"));
@@ -1968,7 +1968,7 @@ void ABCVm::newClass(call_context* th, int n)
 	ASObject* baseClass=th->runtime_stack_pop();
 
 	assert_and_throw(mname->ns.size()==1);
-	QName className(mname->name_s,mname->ns[0].getImpl().name);
+	QName className(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl().name);
 	//Check if this class has been already defined
 	_NR<ApplicationDomain> domain = getCurrentApplicationDomain(th);
 	ASObject* target;

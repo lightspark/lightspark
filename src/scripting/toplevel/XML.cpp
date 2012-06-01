@@ -467,7 +467,7 @@ ASFUNCTIONBODY(XML,child)
 	XMLVector ret;
 	uint32_t index=0;
 	multiname mname(NULL);
-	mname.name_s=arg0;
+	mname.name_s_id=getSys()->getUniqueStringId(arg0);
 	mname.name_type=multiname::NAME_STRING;
 	mname.ns.push_back(nsNameAndKind("",NAMESPACE));
 	mname.isAttribute=false;
@@ -739,11 +739,11 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 		//To have attributes we must be an Element
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		assert_and_throw(element);
-		element->set_attribute(name.name_s, o->toString());
+		element->set_attribute(getSys()->getStringFromUniqueId(name.name_s_id), o->toString());
 	}
 	else
 	{
-		xmlpp::Element* child=node->add_child(name.name_s);
+		xmlpp::Element* child=node->add_child(getSys()->getStringFromUniqueId(name.name_s_id));
 		child->add_child_text(o->toString());
 	}
 }

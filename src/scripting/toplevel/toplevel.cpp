@@ -621,15 +621,15 @@ bool Type::isTypeResolvable(const multiname* mn)
 	assert(mn->name_type == multiname::NAME_STRING);
 	if(mn == 0)
 		return true; //any
-	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
+	if(mn->name_type == multiname::NAME_STRING && getSys()->getStringFromUniqueId(mn->name_s_id)=="any"
 		&& mn->ns[0].hasEmptyName())
 		return true;
-	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
+	if(mn->name_type == multiname::NAME_STRING && getSys()->getStringFromUniqueId(mn->name_s_id)=="void"
 		&& mn->ns[0].hasEmptyName())
 		return true;
 
 	//Check if the class has already been defined
-	auto i = getSys()->builtinClasses.find(QName(mn->name_s, mn->ns[0].getImpl().name));
+	auto i = getSys()->builtinClasses.find(QName(getSys()->getStringFromUniqueId(mn->name_s_id), mn->ns[0].getImpl().name));
 	return i != getSys()->builtinClasses.end();
 }
 
@@ -643,11 +643,11 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
 
-	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
+	if(mn->name_type == multiname::NAME_STRING && getSys()->getStringFromUniqueId(mn->name_s_id)=="any"
 		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
 		return Type::anyType;
 
-	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
+	if(mn->name_type == multiname::NAME_STRING && getSys()->getStringFromUniqueId(mn->name_s_id)=="void"
 		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
 		return Type::voidType;
 
@@ -1094,19 +1094,19 @@ void Class_base::describeTraits(xmlpp::Element* root,
 
 			const char *nodename=kind==traits_info::Const?"constant":"variable";
 			xmlpp::Element* node=root->add_child(nodename);
-			node->set_attribute("name", mname->name_s.raw_buf());
-			node->set_attribute("type", type->name_s.raw_buf());
+			node->set_attribute("name", getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+			node->set_attribute("type", getSys()->getStringFromUniqueId(type->name_s_id).raw_buf());
 		}
 		else if (kind==traits_info::Method)
 		{
 			xmlpp::Element* node=root->add_child("method");
-			node->set_attribute("name", mname->name_s.raw_buf());
+			node->set_attribute("name", getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
 			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
 
 			method_info& method=context->methods[t.method];
 			const multiname* rtname=method.returnTypeName();
 			assert(rtname->name_type==multiname::NAME_STRING);
-			node->set_attribute("returnType", rtname->name_s.raw_buf());
+			node->set_attribute("returnType", getSys()->getStringFromUniqueId(rtname->name_s_id).raw_buf());
 
 			assert(method.numArgs() >= method.numOptions());
 			uint32_t firstOpt=method.numArgs() - method.numOptions();
@@ -1114,7 +1114,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			{
 				xmlpp::Element* param=node->add_child("parameter");
 				param->set_attribute("index", UInteger::toString(j+1).raw_buf());
-				param->set_attribute("type", method.paramTypeName(j)->name_s.raw_buf());
+				param->set_attribute("type", getSys()->getStringFromUniqueId(method.paramTypeName(j)->name_s_id).raw_buf());
 				param->set_attribute("optional", j>=firstOpt?"true":"false");
 			}
 		}
@@ -1135,7 +1135,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			else
 				node=existing->second;
 
-			node->set_attribute("name", mname->name_s.raw_buf());
+			node->set_attribute("name", getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
 
 			const char* access=NULL;
 			tiny_string oldAccess;
@@ -1160,11 +1160,11 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			{
 				const multiname* rtname=method.returnTypeName();
 				assert(rtname->name_type==multiname::NAME_STRING);
-				type=rtname->name_s.raw_buf();
+				type=getSys()->getStringFromUniqueId(rtname->name_s_id).raw_buf();
 			}
 			else if(method.numArgs()>0) // setter
 			{
-				type=method.paramTypeName(0)->name_s.raw_buf();
+				type=getSys()->getStringFromUniqueId(method.paramTypeName(0)->name_s_id).raw_buf();
 			}
 			if(type)
 				node->set_attribute("type", type);

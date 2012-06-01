@@ -1470,7 +1470,9 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
-	stringToQName(tmp,name.name_s,nsName);
+	tiny_string tmpName;
+	stringToQName(tmp,tmpName,nsName);
+	name.name_s_id=getSys()->getUniqueStringId(tmpName);
 	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
@@ -1733,7 +1735,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
 	multiname setPropertyName(NULL);
 	setPropertyName.name_type=multiname::NAME_STRING;
-	setPropertyName.name_s="setProperty";
+	setPropertyName.name_s_id=getSys()->getUniqueStringId("setProperty");
 	setPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 	_NR<ASObject> proxySetter=getVariableByMultiname(setPropertyName,ASObject::SKIP_IMPL);
 
@@ -1770,7 +1772,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
 	multiname getPropertyName(NULL);
 	getPropertyName.name_type=multiname::NAME_STRING;
-	getPropertyName.name_s="getProperty";
+	getPropertyName.name_s_id=getSys()->getUniqueStringId("getProperty");
 	getPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 	_NR<ASObject> o=getVariableByMultiname(getPropertyName,ASObject::SKIP_IMPL);
 
@@ -1802,7 +1804,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	//Check if there is a custom hasProperty defined, skipping implementation to avoid recursive calls
 	multiname hasPropertyName(NULL);
 	hasPropertyName.name_type=multiname::NAME_STRING;
-	hasPropertyName.name_s="hasProperty";
+	hasPropertyName.name_s_id=getSys()->getUniqueStringId("hasProperty");
 	hasPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 	_NR<ASObject> proxyHasProperty=getVariableByMultiname(hasPropertyName,ASObject::SKIP_IMPL);
 
@@ -1837,7 +1839,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 	//Check if there is a custom deleter defined, skipping implementation to avoid recursive calls
 	multiname deletePropertyName(NULL);
 	deletePropertyName.name_type=multiname::NAME_STRING;
-	deletePropertyName.name_s="deleteProperty";
+	deletePropertyName.name_s_id=getSys()->getUniqueStringId("deleteProperty");
 	deletePropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 	_NR<ASObject> proxyDeleter=getVariableByMultiname(deletePropertyName,ASObject::SKIP_IMPL);
 
@@ -1869,7 +1871,7 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	multiname nextNameIndexName(NULL);
 	nextNameIndexName.name_type=multiname::NAME_STRING;
-	nextNameIndexName.name_s="nextNameIndex";
+	nextNameIndexName.name_s_id=getSys()->getUniqueStringId("nextNameIndex");
 	nextNameIndexName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 	_NR<ASObject> o=getVariableByMultiname(nextNameIndexName,ASObject::SKIP_IMPL);
 	assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
@@ -1889,7 +1891,7 @@ _R<ASObject> Proxy::nextName(uint32_t index)
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	multiname nextNameName(NULL);
 	nextNameName.name_type=multiname::NAME_STRING;
-	nextNameName.name_s="nextName";
+	nextNameName.name_s_id=getSys()->getUniqueStringId("nextName");
 	nextNameName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 	_NR<ASObject> o=getVariableByMultiname(nextNameName,ASObject::SKIP_IMPL);
 	assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
@@ -1906,7 +1908,7 @@ _R<ASObject> Proxy::nextValue(uint32_t index)
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	multiname nextValueName(NULL);
 	nextValueName.name_type=multiname::NAME_STRING;
-	nextValueName.name_s="nextValue";
+	nextValueName.name_s_id=getSys()->getUniqueStringId("nextValue");
 	nextValueName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 	_NR<ASObject> o=getVariableByMultiname(nextValueName,ASObject::SKIP_IMPL);
 	assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);

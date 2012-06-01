@@ -435,7 +435,7 @@ ASFUNCTIONBODY(Array,shift)
 		// for other objects we just decrease the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s="length";
+		lengthName.name_s_id=getSys()->getUniqueStringId("length");
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -649,7 +649,7 @@ ASFUNCTIONBODY(Array,_pop)
 		// for other objects we just decrease the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s="length";
+		lengthName.name_s_id=getSys()->getUniqueStringId("length");
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -842,7 +842,7 @@ ASFUNCTIONBODY(Array,unshift)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s="length";
+		lengthName.name_s_id=getSys()->getUniqueStringId("length");
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -885,7 +885,7 @@ ASFUNCTIONBODY(Array,_push)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s="length";
+		lengthName.name_s_id=getSys()->getUniqueStringId("length");
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -915,7 +915,7 @@ ASFUNCTIONBODY(Array,_push_as3)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s="length";
+		lengthName.name_s_id=getSys()->getUniqueStringId("length");
 		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 		lengthName.isAttribute = true;

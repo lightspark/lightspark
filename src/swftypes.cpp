@@ -43,13 +43,14 @@ tiny_string multiname::qualifiedString() const
 	assert_and_throw(ns.size()==1);
 	assert_and_throw(name_type==NAME_STRING);
 	const tiny_string nsName=ns[0].getImpl().name;
+	const tiny_string& name=getSys()->getStringFromUniqueId(name_s_id);
 	if(nsName.empty())
-		return name_s;
+		return name;
 	else
 	{
 		tiny_string ret=nsName;
 		ret+="::";
-		ret+=name_s;
+		ret+=name;
 		return ret;
 	}
 }
@@ -63,7 +64,7 @@ tiny_string multiname::normalizedName() const
 		case multiname::NAME_NUMBER:
 			return Number::toString(name_d);
 		case multiname::NAME_STRING:
-			return name_s;
+			return getSys()->getStringFromUniqueId(name_s_id);
 		case multiname::NAME_OBJECT:
 			return name_o->toString();
 		default:
@@ -94,13 +95,13 @@ void multiname::setName(ASObject* n)
 	else if(n->getObjectType()==T_QNAME)
 	{
 		ASQName* qname=static_cast<ASQName*>(n);
-		name_s=qname->local_name;
+		name_s_id=getSys()->getUniqueStringId(qname->local_name);
 		name_type = NAME_STRING;
 	}
 	else if(n->getObjectType()==T_STRING)
 	{
 		ASString* o=static_cast<ASString*>(n);
-		name_s=o->data;
+		name_s_id=getSys()->getUniqueStringId(o->data);
 		name_type = NAME_STRING;
 	}
 	else
@@ -130,7 +131,7 @@ bool multiname::toUInt(uint32_t& index) const
 		{
 			tiny_string str;
 			if(name_type==multiname::NAME_STRING)
-				str=name_s;
+				str=getSys()->getStringFromUniqueId(name_s_id);
 			else
 				str=name_o->toString();
 
@@ -221,7 +222,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 	else if(r.name_type==multiname::NAME_NUMBER)
 		s << r.name_d;
 	else if(r.name_type==multiname::NAME_STRING)
-		s << r.name_s;
+		s << getSys()->getStringFromUniqueId(r.name_s_id);
 	else
 		s << r.name_o; //We print the hexadecimal value
 	return s;
@@ -1228,6 +1229,16 @@ tiny_string QName::getQualifiedName() const
 		ret+="::";
 	}
 	ret+=name;
+	return ret;
+}
+
+QName::operator multiname() const
+{
+	multiname ret(NULL);
+	ret.name_type = multiname::NAME_STRING;
+	ret.name_s_id = getSys()->getUniqueStringId(name);
+	ret.ns.push_back( nsNameAndKind(ns, NAMESPACE) );
+	ret.isAttribute = false;
 	return ret;
 }
 

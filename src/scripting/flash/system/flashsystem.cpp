@@ -177,7 +177,9 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
-	stringToQName(tmp,name.name_s,nsName);
+	tiny_string tmpName;
+	stringToQName(tmp,tmpName,nsName);
+	name.name_s_id=getSys()->getUniqueStringId(tmpName);
 	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
@@ -205,7 +207,9 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
-	stringToQName(tmp,name.name_s,nsName);
+	tiny_string tmpName;
+	stringToQName(tmp,tmpName,nsName);
+	name.name_s_id=getSys()->getUniqueStringId(tmpName);
 	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
@@ -233,12 +237,12 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 	name.name_type=multiname::NAME_STRING;
 	if(index==str.npos) //No dot
 	{
-		name.name_s=str;
+		name.name_s_id=getSys()->getUniqueStringId(str);
 		name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: use ns kind
 	}
 	else
 	{
-		name.name_s=str.substr(index+1);
+		name.name_s_id=getSys()->getUniqueStringId(str.substr(index+1));
 		name.ns.push_back(nsNameAndKind(str.substr(0,index),NAMESPACE));
 	}
 	return getVariableAndTargetByMultiname(name, target);

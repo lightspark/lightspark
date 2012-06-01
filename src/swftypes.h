@@ -344,9 +344,9 @@ struct multiname: public memory_reporter
 	multiname(MemoryAccount* m);
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type;
-	tiny_string name_s;
 	union
 	{
+		uint32_t name_s_id;
 		int32_t name_i;
 		number_t name_d;
 		ASObject* name_o;
@@ -364,16 +364,6 @@ struct multiname: public memory_reporter
 	bool isQName() const { return ns.size() == 1; }
 	bool toUInt(uint32_t& out) const;
 };
-
-inline QName::operator multiname() const
-{
-	multiname ret(NULL);
-	ret.name_type = multiname::NAME_STRING;
-	ret.name_s = name;
-	ret.ns.push_back( nsNameAndKind(ns, NAMESPACE) );
-	ret.isAttribute = false;
-	return ret;
-}
 
 class FLOAT 
 {

@@ -1304,7 +1304,7 @@ void NetStream::sendClientNotification(const tiny_string& name, ASObject *arg)
 
 	multiname callbackName(NULL);
 	callbackName.name_type=multiname::NAME_STRING;
-	callbackName.name_s=name;
+	callbackName.name_s_id=getSys()->getUniqueStringId(name);
 	callbackName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	_NR<ASObject> callback = client->getVariableByMultiname(callbackName);
 	if(!callback.isNull() && callback->is<Function>())
@@ -1447,7 +1447,7 @@ void URLVariables::decode(const tiny_string& s)
 			//Check if the variable already exists
 			multiname propName(NULL);
 			propName.name_type=multiname::NAME_STRING;
-			propName.name_s=name;
+			propName.name_s_id=getSys()->getUniqueStringId(tiny_string(name,true));
 			propName.ns.push_back(nsNameAndKind("",NAMESPACE));
 			_NR<ASObject> curValue=getVariableByMultiname(propName);
 			if(!curValue.isNull())

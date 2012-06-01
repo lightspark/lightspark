@@ -186,7 +186,7 @@ public:
 		return slots_vars[n-1]->second.var;
 	}
 	void setSlot(unsigned int n,ASObject* o);
-	void initSlot(unsigned int n,const tiny_string& name, const nsNameAndKind& ns);
+	void initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns);
 	int size() const
 	{
 		return Variables.size();

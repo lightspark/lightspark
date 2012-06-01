@@ -575,7 +575,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		ret=m->cached;
 		if(midx==0)
 		{
-			ret->name_s="any";
+			ret->name_s_id=getSys()->getUniqueStringId("any");
 			ret->name_type=multiname::NAME_STRING;
 			ret->ns.emplace_back(nsNameAndKind("",NAMESPACE));
 			ret->isAttribute=false;
@@ -589,7 +589,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			{
 				ret->ns.push_back(nsNameAndKind(this, m->ns));
 
-				ret->name_s=getString(m->name);
+				ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
@@ -604,7 +604,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
-				ret->name_s=getString(m->name);
+				ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
@@ -624,7 +624,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			case 0x10: //RTQNameA
 			{
 				ret->name_type=multiname::NAME_STRING;
-				ret->name_s=getString(m->name);
+				ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
 				break;
 			}
 			case 0x11: //RTQNameL
@@ -646,7 +646,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 					name += getString(p->name);
 				}
 				ret->ns.push_back(nsNameAndKind(this, td->ns));
-				ret->name_s=name;
+				ret->name_s_id=getSys()->getUniqueStringId(name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
@@ -1585,8 +1585,10 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Resp
 		multiname headerName(NULL);
 		headerName.name_type=multiname::NAME_STRING;
 		headerName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		if(!message->readUTF(headerName.name_s))
+		tiny_string headerNameString;
+		if(!message->readUTF(headerNameString))
 			return;
+		headerName.name_s_id=getSys()->getUniqueStringId(headerNameString);
 		//Read the must understand flag
 		uint8_t mustUnderstand;
 		if(!message->readByte(mustUnderstand))
@@ -1646,7 +1648,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Resp
 
 	multiname onResultName(NULL);
 	onResultName.name_type=multiname::NAME_STRING;
-	onResultName.name_s="onResult";
+	onResultName.name_s_id=getSys()->getUniqueStringId("onResult");
 	onResultName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
 	if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
@@ -1696,7 +1698,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 	//Should be a Qname
 	assert_and_throw(mname.ns.size()==1 && mname.name_type==multiname::NAME_STRING);
 
-	const tiny_string& name=mname.name_s;
+	const tiny_string& name=getSys()->getStringFromUniqueId(mname.name_s_id);
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 	switch(t->kind&0xf)
@@ -1846,7 +1848,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			//check if this class has the 'interface' flag, i.e. it is an interface
 			if((instances[t->classi].flags)&0x04)
 			{
-				QName className(mname->name_s,mname->ns[0].getImpl().name);
+				QName className(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl().name);
 
 				MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
 				Class_inherit* ci=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
@@ -1895,7 +1897,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else
 				ret=getSys()->getUndefinedRef();
 
-			obj->setVariableByQName(mname->name_s,mname->ns[0],ret,DECLARED_TRAIT);
+			obj->setVariableByQName(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0],ret,DECLARED_TRAIT);
 
 			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << *mname << _(" id ") << t->classi);
 			if(t->slot_id)
@@ -1943,12 +1945,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				obj->incRef();
 				f->addToScope(scope_entry(_MR(obj),false));
 			}
+			//TODO: Avoid string lookup
 			if(kind == traits_info::Getter)
-				obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,GETTER_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0],f,GETTER_METHOD,isBorrowed);
 			else if(kind == traits_info::Setter)
-				obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,SETTER_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0],f,SETTER_METHOD,isBorrowed);
 			else if(kind == traits_info::Method)
-				obj->setDeclaredMethodByQName(mname->name_s,mname->ns[0],f,NORMAL_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0],f,NORMAL_METHOD,isBorrowed);
 			break;
 		}
 		case traits_info::Const:

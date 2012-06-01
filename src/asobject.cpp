@@ -236,7 +236,7 @@ bool ASObject::has_valueOf()
 {
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
-	valueOfName.name_s="valueOf";
+	valueOfName.name_s_id=getSys()->getUniqueStringId("valueOf");
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	valueOfName.isAttribute = false;
@@ -250,7 +250,7 @@ _R<ASObject> ASObject::call_valueOf()
 {
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
-	valueOfName.name_s="valueOf";
+	valueOfName.name_s_id=getSys()->getUniqueStringId("valueOf");
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	valueOfName.isAttribute = false;
@@ -270,7 +270,7 @@ bool ASObject::has_toString()
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s="toString";
+	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	toStringName.isAttribute = false;
@@ -284,7 +284,7 @@ _R<ASObject> ASObject::call_toString()
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s="toString";
+	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	toStringName.isAttribute = false;
@@ -740,7 +740,7 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	assert_and_throw(argslen==1);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s=args[0]->toString();
+	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	name.isAttribute=false;
 	if(obj->getClass())
@@ -785,7 +785,7 @@ ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 	assert_and_throw(argslen==1);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s=args[0]->toString();
+	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	name.isAttribute=false;
 	unsigned int index = 0;
@@ -815,7 +815,7 @@ ASFUNCTIONBODY(ASObject,_constructor)
 
 void ASObject::initSlot(unsigned int n, const multiname& name)
 {
-	Variables.initSlot(n,name.name_s,name.ns[0]);
+	Variables.initSlot(n,name.name_s_id,name.ns[0]);
 }
 
 int32_t ASObject::getVariableByMultiname_i(const multiname& name)
@@ -1065,14 +1065,12 @@ ASObject::~ASObject()
 	}
 }
 
-//TODO: initSlot should use multiname
-void variables_map::initSlot(unsigned int n, const tiny_string& name_s, const nsNameAndKind& ns)
+void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
-	uint32_t name=getSys()->getUniqueStringId(name_s);
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameId);
 	var_iterator start=ret.first;
 	for(;start!=ret.second;++start)
 	{
@@ -1255,7 +1253,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		//Invoke writeExternal
 		multiname writeExternalName(NULL);
 		writeExternalName.name_type=multiname::NAME_STRING;
-		writeExternalName.name_s="writeExternal";
+		writeExternalName.name_s_id=getSys()->getUniqueStringId("writeExternal");
 		writeExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		writeExternalName.isAttribute = false;
 
@@ -1357,7 +1355,7 @@ bool ASObject::hasprop_prototype()
 {
 	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
-	prototypeName.name_s="prototype";
+	prototypeName.name_s_id=getSys()->getUniqueStringId("prototype");
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	prototypeName.isAttribute = false;
 	return findGettable(prototypeName, false) != NULL;
@@ -1367,7 +1365,7 @@ ASObject* ASObject::getprop_prototype()
 {
 	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
-	prototypeName.name_s="prototype";
+	prototypeName.name_s_id=getSys()->getUniqueStringId("prototype");
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	prototypeName.isAttribute = false;
 	variable* var = findGettable(prototypeName, false);
@@ -1386,7 +1384,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 
 	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
-	prototypeName.name_s="prototype";
+	prototypeName.name_s_id=getSys()->getUniqueStringId("prototype");
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	bool has_getter = false;
 	variable* ret=findSettable(prototypeName,false, &has_getter);

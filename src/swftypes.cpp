@@ -1269,9 +1269,13 @@ nsNameAndKind::nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND
 nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 {
 	const namespace_info& ns=c->constant_pool.namespaces[nsContextIndex];
-	nsNameAndKindImpl tmp(c->getString(ns.name), (NS_KIND)(int)ns.kind);
+	const tiny_string& nsName=c->getString(ns.name);
+	nsNameAndKindImpl tmp(nsName, (NS_KIND)(int)ns.kind);
 	//Give an id hint, in case the namespace is created in the map
 	getSys()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
+	//Special handling for private namespaces, they are always compared by id
+	if(ns.kind==PRIVATE_NAMESPACE)
+		nsId=c->namespaceBaseId+nsContextIndex;
 }
 
 const nsNameAndKindImpl& nsNameAndKind::getImpl() const

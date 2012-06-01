@@ -267,6 +267,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("BlurFilter","flash.filters",
 			Class<ASObject>::getStubClass(QName("BlurFilter","flash.filters")));
 
+	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef());
 	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef());
 	builtin->registerBuiltin("StyleSheet","flash.text",Class<StyleSheet>::getRef());
 	builtin->registerBuiltin("TextField","flash.text",Class<TextField>::getRef());

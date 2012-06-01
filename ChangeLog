@@ -6,6 +6,12 @@ Version NEXT:
 	* Fixed support for IEventDispatcher implementation pattern
 	* Improved serialization robustness
 	* Improved matrix handling
+	* Implement string and namespace pooling to reduce memory consumption
+	* Proper support for private namespaces
+	* Improved support for fonts
+	* Support LLVM 3.1
+	* Fix full volume issue when PulseAudio flat volumes are enabled
+	* Intial support for AIR desktop applications
 
 Version 0.5.7:
 

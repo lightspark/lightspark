@@ -1764,7 +1764,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].getImpl().name!="" || ASObject::hasPropertyByMultiname(name, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
+	if(!name.ns[0].hasEmptyName() || ASObject::hasPropertyByMultiname(name, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
 		return ASObject::getVariableByMultiname(name,opt);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls

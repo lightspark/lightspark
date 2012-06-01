@@ -181,7 +181,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)
 
 std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
 {
-	string prefix;
+	const char* prefix;
 	switch(r.getImpl().kind)
 	{
 		case 0x08:
@@ -1244,16 +1244,18 @@ FILLSTYLE::~FILLSTYLE()
 {
 }
 
-nsNameAndKind::nsNameAndKind(const tiny_string& _name, NS_KIND _kind):nsId(-1)
+nsNameAndKind::nsNameAndKind(const tiny_string& _name, NS_KIND _kind)
 {
 	nsNameAndKindImpl tmp(_name, _kind);
 	getSys()->getUniqueNamespaceId(tmp, nsRealId, nsId);
+	nameIsEmpty=_name.empty();
 }
 
-nsNameAndKind::nsNameAndKind(const char* _name, NS_KIND _kind):nsId(-1)
+nsNameAndKind::nsNameAndKind(const char* _name, NS_KIND _kind)
 {
 	nsNameAndKindImpl tmp(_name, _kind);
 	getSys()->getUniqueNamespaceId(tmp, nsRealId, nsId);
+	nameIsEmpty=(_name[0]=='\0');
 }
 
 nsNameAndKind::nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND _kind)
@@ -1264,6 +1266,7 @@ nsNameAndKind::nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND
 	uint32_t tmpId;
 	getSys()->getUniqueNamespaceId(tmp, nsRealId, tmpId);
 	assert(tmpId==_baseId);
+	nameIsEmpty=_name.empty();
 }
 
 nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
@@ -1276,6 +1279,7 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 	//Special handling for private namespaces, they are always compared by id
 	if(ns.kind==PRIVATE_NAMESPACE)
 		nsId=c->namespaceBaseId+nsContextIndex;
+	nameIsEmpty=nsName.empty();
 }
 
 const nsNameAndKindImpl& nsNameAndKind::getImpl() const

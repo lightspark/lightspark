@@ -311,6 +311,7 @@ struct nsNameAndKind
 {
 	uint32_t nsId;
 	uint32_t nsRealId;
+	bool nameIsEmpty;
 	nsNameAndKind(const tiny_string& _name, NS_KIND _kind);
 	nsNameAndKind(const char* _name, NS_KIND _kind);
 	nsNameAndKind(ABCContext * c, uint32_t nsContextIndex);
@@ -332,6 +333,10 @@ struct nsNameAndKind
 		return nsId==r.nsId;
 	}
 	const nsNameAndKindImpl& getImpl() const;
+	bool hasEmptyName() const
+	{
+		return nameIsEmpty;
+	}
 };
 
 struct multiname: public memory_reporter

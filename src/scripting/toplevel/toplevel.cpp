@@ -622,10 +622,10 @@ bool Type::isTypeResolvable(const multiname* mn)
 	if(mn == 0)
 		return true; //any
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
-		&& mn->ns[0].getImpl().name == "")
+		&& mn->ns[0].hasEmptyName())
 		return true;
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
-		&& mn->ns[0].getImpl().name == "")
+		&& mn->ns[0].hasEmptyName())
 		return true;
 
 	//Check if the class has already been defined
@@ -644,11 +644,11 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 		return Type::anyType;
 
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="any"
-		&& mn->ns.size() == 1 && mn->ns[0].getImpl().name == "")
+		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
 		return Type::anyType;
 
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s=="void"
-		&& mn->ns.size() == 1 && mn->ns[0].getImpl().name == "")
+		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
 		return Type::voidType;
 
 	ASObject* typeObject;
@@ -1083,7 +1083,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 		int kind=t.kind&0xf;
 		multiname* mname=context->getMultiname(t.name,NULL);
 		if (mname->name_type!=multiname::NAME_STRING ||
-		    (mname->ns.size()==1 && mname->ns[0].getImpl().name!="") ||
+		    (mname->ns.size()==1 && !mname->ns[0].hasEmptyName()) ||
 		    mname->ns.size() > 1)
 			continue;
 		

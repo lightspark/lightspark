@@ -661,7 +661,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 		return NULL;
 	if(createKind == DYNAMIC_TRAIT)
 	{
-		if(mname.ns.begin()->getImpl().name != "")
+		if(!mname.ns.begin()->hasEmptyName())
 			throw Class<ReferenceError>::getInstanceS("Error #1056: Trying to create a dynamic variable with namespace != \"\"");
 		var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0], createKind)));
 		return &inserted->second;
@@ -1203,7 +1203,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		if(it->second.kind!=DYNAMIC_TRAIT)
 			continue;
 		//Dynamic traits always have empty namespace
-		assert(it->second.ns.getImpl().name=="");
+		assert(it->second.ns.hasEmptyName());
 		out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first));
 		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
@@ -1286,7 +1286,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				if(varIt->second.ns.getImpl().name!="")
+				if(!varIt->second.ns.hasEmptyName())
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
@@ -1301,7 +1301,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				if(varIt->second.ns.getImpl().name!="")
+				if(!varIt->second.ns.hasEmptyName())
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
@@ -1314,7 +1314,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	{
 		if(varIt->second.kind==DECLARED_TRAIT)
 		{
-			if(varIt->second.ns.getImpl().name!="")
+			if(!varIt->second.ns.hasEmptyName())
 			{
 				//Skip variable with a namespace, like protected ones
 				continue;

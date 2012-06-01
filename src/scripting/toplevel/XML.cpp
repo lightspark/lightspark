@@ -644,7 +644,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	//Normalize the name to the string form
 	const tiny_string normalizedName=name.normalizedName();
 	//TODO: support namespaces
-	assert_and_throw(name.ns.size()>0 && name.ns[0].getImpl().name=="");
+	assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
 
 	const char *buf=normalizedName.raw_buf();
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
@@ -726,7 +726,7 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 	//Normalize the name to the string form
 	const tiny_string normalizedName=name.normalizedName();
 	//TODO: support namespaces
-	assert_and_throw(name.ns.size()>0 && name.ns[0].getImpl().name=="");
+	assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
 
 	const char *buf=normalizedName.raw_buf();
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
@@ -765,7 +765,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	{
 		//Lookup attribute
 		//TODO: support namespaces
-		assert_and_throw(name.ns.size()>0 && name.ns[0].getImpl().name=="");
+		assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
 		//Normalize the name to the string form
 		assert(node);
 		//To have attributes we must be an Element
@@ -781,7 +781,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	{
 		//Lookup children
 		//TODO: support namespaces
-		assert_and_throw(name.ns.size()>0 && name.ns[0].getImpl().name=="");
+		assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
 		//Normalize the name to the string form
 		assert(node);
 		const xmlpp::Node::NodeList& children=node->get_children(buf);

@@ -14,11 +14,11 @@ import pickle
 #These regexp are used for finding important pieces in the source
 sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
 rconstructor = re.compile('[^/]*->setConstructor\(Class<IFunction>::getFunction\([^)]*\)\).*')
-#looks like builtin->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getRef(),DECLARED_TRAIT);
-rclass          = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(\),.*_TRAIT\)')
-rinterfaceclass = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(\),.*_TRAIT\)')
-#looks like builtin->setVariableByQName("System","flash.system",Class<ASObject>::getStubClass(QName("System","flash.system")),DECLARED_TRAIT);
-rstupclass = re.compile('.*builtin->setVariableByQName\( *"([^"]*)", *"([^"]*)", *Class<ASObject>::getStubClass\(QName.*')
+#looks like builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef());
+rclass          = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(\)\)')
+rinterfaceclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(\)\)')
+#looks like builtin->registerBuiltin("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")));
+rstupclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<ASObject>::getStubClass\(QName.*')
 #the line may start with anything but a comment character
 rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *GETTER_METHOD, *([^ ]*)')
 rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *SETTER_METHOD, *([^ ]*)')
@@ -27,7 +27,7 @@ rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
 #Constant names do not contain lower-case letters
-rconst = re.compile('[^/]*->setVariableByQName\("([^"]*)",.*_TRAIT');
+rconst = re.compile('[^/]*->setVariableByQName\("([A-Z_]*)",.*_TRAIT');
 
 def getFullname(cls,name):
 	if cls != "":

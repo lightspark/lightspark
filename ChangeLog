@@ -12,6 +12,7 @@ Version NEXT:
 	* Support LLVM 3.1
 	* Fix full volume issue when PulseAudio flat volumes are enabled
 	* Initial support for AIR desktop applications
+	* Support for www.bbc.co.uk video player
 
 Version 0.5.7:
 

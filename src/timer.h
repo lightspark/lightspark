@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include <list>
-#include <time.h>
+#include <ctime>
 #include "threading.h"
 
 namespace lightspark

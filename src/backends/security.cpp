@@ -27,7 +27,7 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
-#include <ctype.h>
+#include <cctype>
 
 #include "security.h"
 

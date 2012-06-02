@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #include "compat.h"
-#include <assert.h>
+#include <cassert>
 
 #include "decoder.h"
 #include "platforms/fastpaths.h"

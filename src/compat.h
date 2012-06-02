@@ -27,11 +27,11 @@
 #define BOOST_FILESYSTEM_VERSION 2
 #endif
 
-#include <stddef.h>
-#include <assert.h>
+#include <cstddef>
+#include <cassert>
 #include <cstdint>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 #ifndef M_PI
 #	define M_PI 3.14159265358979323846

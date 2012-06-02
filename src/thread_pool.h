@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include <deque>
-#include <stdlib.h>
+#include <cstdlib>
 #include "threading.h"
 
 namespace lightspark

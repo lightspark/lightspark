@@ -27,7 +27,7 @@
 #include "security.h"
 #include <string>
 #include <algorithm>
-#include <ctype.h>
+#include <cctype>
 #include <iostream>
 #include <fstream>
 #ifdef ENABLE_CURL

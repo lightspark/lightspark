@@ -20,8 +20,8 @@
 #ifndef TINY_STRING_H
 #define TINY_STRING_H
 
-#include <string.h>
-#include <stdint.h>
+#include <cstring>
+#include <cstdint>
 #include <ostream>
 /* for utf8 handling */
 #include <glib.h>

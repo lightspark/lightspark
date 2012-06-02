@@ -25,7 +25,7 @@
 #include <string>
 #include <list>
 #include <map>
-#include <inttypes.h>
+#include <cinttypes>
 #include "swftypes.h"
 
 namespace lightspark

@@ -18,7 +18,7 @@
  **************************************************************************/
 
 #include "fastpaths.h"
-#include <inttypes.h>
+#include <cinttypes>
 
 extern "C"
 {

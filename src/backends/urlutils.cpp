@@ -24,7 +24,7 @@
 #include "scripting/toplevel/Integer.h"
 #include <string>
 #include <algorithm>
-#include <ctype.h>
+#include <cctype>
 #include <sstream>
 #include <iostream>
 #include <fstream>

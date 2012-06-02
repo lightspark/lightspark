@@ -24,8 +24,8 @@
 //
 #include "compat.h"
 #include "npplat.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 extern NPNetscapeFuncs NPNFuncs;
 

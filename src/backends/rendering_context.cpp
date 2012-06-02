@@ -28,8 +28,8 @@
 //- the projection of modelview matrix uniforms sent to the shader - only when
 //explicitly calling setMatrixUniform.
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <stack>
 #include "rendering_context.h"
 #include "../logger.h"

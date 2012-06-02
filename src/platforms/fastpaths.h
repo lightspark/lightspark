@@ -21,7 +21,7 @@
 #define _FAST_PATHS_H
 
 #include "compat.h"
-#include <inttypes.h>
+#include <cinttypes>
 
 namespace lightspark
 {

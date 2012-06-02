@@ -20,7 +20,7 @@
 
 #include "compat.h"
 #include <string>
-#include <stdlib.h>
+#include <cstdlib>
 #include "logger.h"
 #include <unistd.h>
 

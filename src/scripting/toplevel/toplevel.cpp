@@ -19,7 +19,7 @@
 
 #include <list>
 #include <algorithm>
-#include <string.h>
+#include <cstring>
 #include <sstream>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -29,8 +29,8 @@
 #include <limits>
 #include <cstdio>
 #include <cstdlib>
-#include <ctype.h>
-#include <errno.h>
+#include <cctype>
+#include <cerrno>
 
 #include <glib.h>
 

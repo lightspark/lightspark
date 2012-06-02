@@ -21,8 +21,8 @@
 #define _THREADING_H
 
 #include "compat.h"
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 #include <vector>
 
 #ifdef HAVE_NEW_GLIBMM_THREAD_API

@@ -870,6 +870,42 @@ void Frame::execute(_R<DisplayObjectContainer> displayList)
 		(*it)->execute(displayList.getPtr());
 }
 
+FrameContainer::FrameContainer():framesLoaded(0)
+{
+	frames.emplace_back(Frame());
+	scenes.resize(1);
+}
+
+FrameContainer::FrameContainer(const FrameContainer& f):framesLoaded((int)f.framesLoaded),frames(f.frames),scenes(f.scenes)
+{
+}
+
+/* This runs in parser thread context,
+ * but no locking is needed here as it only accesses the last frame.
+ * See comment on the 'frames' member. */
+void FrameContainer::addToFrame(_R<DisplayListTag> t)
+{
+	frames.back().blueprint.push_back(t);
+}
+
+/**
+ * Find the scene to which the given frame belongs and
+ * adds the frame label to that scene.
+ * The labels of the scene will stay sorted by frame.
+ */
+void FrameContainer::addFrameLabel(uint32_t frame, const tiny_string& label)
+{
+	for(size_t i=0; i<scenes.size();++i)
+	{
+		if(frame < scenes[i].startframe)
+		{
+			scenes[i-1].addFrameLabel(frame,label);
+			return;
+		}
+	}
+	scenes.back().addFrameLabel(frame,label);
+}
+
 void MovieClip::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -893,15 +929,13 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),totalFrames_unreliable(1),framesLoaded(0)
+MovieClip::MovieClip(Class_base* c):Sprite(c),totalFrames_unreliable(1)
 {
-	frames.emplace_back(Frame());
-	scenes.resize(1);
 }
 
-MovieClip::MovieClip(const MovieClip& r):Sprite(r.getClass()),frames(r.frames),
-	totalFrames_unreliable(r.totalFrames_unreliable),framesLoaded(r.framesLoaded),
-	frameScripts(r.frameScripts),scenes(r.scenes),
+MovieClip::MovieClip(const MovieClip& r):Sprite(r.getClass()),FrameContainer(r),
+	totalFrames_unreliable(r.totalFrames_unreliable),
+	frameScripts(r.frameScripts),
 	state(r.state)
 {
 }
@@ -920,14 +954,6 @@ void MovieClip::setTotalFrames(uint32_t t)
 	//For the root movie, this is called before the parsing
 	//with the frame count from the header
 	totalFrames_unreliable=t;
-}
-
-/* This runs in vm's thread context,
- * but no locking is needed here as it only accesses the last frame.
- * See comment on the 'frames' member. */
-void MovieClip::addToFrame(_R<DisplayListTag> t)
-{
-	frames.back().blueprint.push_back(t);
 }
 
 uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const
@@ -1166,24 +1192,6 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
 		scenes[sceneNo].name = name;
 		scenes[sceneNo].startframe = startframe;
 	}
-}
-
-/**
- * Find the scene to which the given frame belongs and
- * adds the frame label to that scene.
- * The labels of the scene will stay sorted by frame.
- */
-void MovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
-{
-	for(size_t i=0; i<scenes.size();++i)
-	{
-		if(frame < scenes[i].startframe)
-		{
-			scenes[i-1].addFrameLabel(frame,label);
-			return;
-		}
-	}
-	scenes.back().addFrameLabel(frame,label);
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)
@@ -3074,7 +3082,7 @@ void MovieClip::initFrame()
 	if((int)state.FP < state.last_FP)
 		purgeLegacyChildren();
 
-	if(framesLoaded)
+	if(getFramesLoaded())
 	{
 		std::list<Frame>::iterator iter=frames.begin();
 		for(uint32_t i=0;i<=state.FP;i++)

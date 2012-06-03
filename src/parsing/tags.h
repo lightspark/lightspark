@@ -301,10 +301,10 @@ protected:
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
 	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
-
+	_NR<DictionaryTag> placedTag;
 public:
 	STRING Name;
-	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
+	PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	void execute(DisplayObjectContainer* parent);
 };
 
@@ -322,7 +322,7 @@ private:
 	UI8 BitmapCache;
 
 public:
-	PlaceObject3Tag(RECORDHEADER h, std::istream& in);
+	PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 };
 
 class FrameLabelTag: public Tag
@@ -523,7 +523,7 @@ private:
 	UI16_SWF SpriteID;
 	UI16_SWF FrameCount;
 public:
-	DefineSpriteTag(RECORDHEADER h, std::istream& in);
+	DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	virtual int getId(){ return SpriteID; }
 	virtual ASObject* instance(Class_base* c=NULL) const;
 };
@@ -728,7 +728,11 @@ private:
 	bool topLevel;
 public:
 	TagFactory(std::istream& in, bool t):f(in),firstTag(true),topLevel(t){}
-	_NR<Tag> readTag();
+	/**
+	 * The RootMovieClip that is the owner of the content.
+	 * It is needed to solve references to other tags during construction
+	 */
+	_NR<Tag> readTag(RootMovieClip* root);
 };
 
 };

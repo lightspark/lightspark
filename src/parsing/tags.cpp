@@ -38,7 +38,7 @@
 using namespace std;
 using namespace lightspark;
 
-_NR<Tag> TagFactory::readTag()
+_NR<Tag> TagFactory::readTag(RootMovieClip* root)
 {
 	RECORDHEADER h;
 
@@ -112,7 +112,7 @@ _NR<Tag> TagFactory::readTag()
 			ret=new ProtectTag(h,f);
 			break;
 		case 26:
-			ret=new PlaceObject2Tag(h,f);
+			ret=new PlaceObject2Tag(h,f,root);
 			break;
 		case 28:
 			ret=new RemoveObject2Tag(h,f);
@@ -136,7 +136,7 @@ _NR<Tag> TagFactory::readTag()
 			ret=new DefineEditTextTag(h,f);
 			break;
 		case 39:
-			ret=new (getSys()->unaccountedMemory) DefineSpriteTag(h,f);
+			ret=new (getSys()->unaccountedMemory) DefineSpriteTag(h,f,root);
 			break;
 		case 41:
 			ret=new ProductInfoTag(h,f);
@@ -175,7 +175,7 @@ _NR<Tag> TagFactory::readTag()
 			ret=new FileAttributesTag(h,f);
 			break;
 		case 70:
-			ret=new PlaceObject3Tag(h,f);
+			ret=new PlaceObject3Tag(h,f,root);
 			break;
 		case 72:
 			ret=new DoABCTag(h,f);
@@ -315,7 +315,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c) const
 	return ret;
 }
 
-DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),MovieClip(Class<MovieClip>::getClass())
+DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h),MovieClip(Class<MovieClip>::getClass())
 {
 	in >> SpriteID >> FrameCount;
 
@@ -327,7 +327,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	bool empty=true;
 	do
 	{
-		tag=factory.readTag();
+		tag=factory.readTag(root);
 		/* We need no locking here, because the vm can only
 		 * access this object after construction
 		 */
@@ -1074,17 +1074,11 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		//A new character must be placed
 		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
 
-		RootMovieClip* localRoot=NULL;
-		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
-		//TODO: clean up this nonsense. Of course the parent is a dictionary tag!
-		if(parentDict)
-			localRoot=parentDict->loadedFrom;
-		else
-			localRoot=parent->getRoot().getPtr();
-		_R<DictionaryTag> dict=localRoot->dictionaryLookup(CharacterId);
+		if(placedTag.isNull())
+			throw RunTimeException("No tag to place");
 
 		//We can create the object right away
-		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(dict->instance());
+		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(placedTag->instance());
 
 		assert_and_throw(toAdd);
 		//The matrix must be set before invoking the constructor
@@ -1115,7 +1109,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 	}
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h)
 {
 	LOG(LOG_TRACE,_("PlaceObject2"));
 
@@ -1150,10 +1144,13 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasClipAction)
 		in >> ClipActions;
 
-	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0))
+	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0));
+
+	if(PlaceFlagHasCharacter)
+		placedTag=root->dictionaryLookup(CharacterId);
 }
 
-PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in):PlaceObject2Tag(h)
+PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):PlaceObject2Tag(h)
 {
 	LOG(LOG_TRACE,_("PlaceObject3"));
 
@@ -1208,6 +1205,9 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in):PlaceObject2T
 		in >> ClipActions;
 
 	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0))
+
+	if(PlaceFlagHasCharacter)
+		placedTag=root->dictionaryLookup(CharacterId);
 }
 
 void SetBackgroundColorTag::execute(RootMovieClip* root)

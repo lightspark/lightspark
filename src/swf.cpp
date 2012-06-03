@@ -1237,7 +1237,7 @@ void ParseThread::parseSWF(UI8 ver)
 		}
 
 		TagFactory factory(f, true);
-		_NR<Tag> tag=factory.readTag();
+		_NR<Tag> tag=factory.readTag(root);
 
 		FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag.getPtr());
 		if(!fat)
@@ -1263,7 +1263,7 @@ void ParseThread::parseSWF(UI8 ver)
 		bool empty=true;
 		while(!done)
 		{
-			tag=factory.readTag();
+			tag=factory.readTag(root);
 			switch(tag->getType())
 			{
 				case END_TAG:

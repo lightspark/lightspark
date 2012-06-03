@@ -633,10 +633,21 @@ ASFUNCTIONBODY(Date,setUTCMilliseconds)
 
 ASFUNCTIONBODY(Date,setTime)
 {
-	assert_and_throw(obj->is<Date>());
-	Date* th=static_cast<Date*>(obj);
 	number_t ms;
 	ARG_UNPACK (ms, Number::NaN);
+	if (!obj->is<Date>())
+	{
+		multiname name(NULL);
+		name.name_type=multiname::NAME_STRING;
+		name.name_s_id=getSys()->getUniqueStringId("value");
+		name.ns.push_back(nsNameAndKind("",NAMESPACE));
+		name.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		name.isAttribute = true;
+		obj->setVariableByMultiname(name,abstract_d(ms),CONST_NOT_ALLOWED);
+		return abstract_d(ms);
+	}
+	assert_and_throw(obj->is<Date>());
+	Date* th=static_cast<Date*>(obj);
 	
 	if (std::isnan(ms))
 	{

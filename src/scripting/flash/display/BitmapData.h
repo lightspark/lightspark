@@ -28,11 +28,25 @@ namespace lightspark
 
 class Bitmap;
 
-class BitmapData: public ASObject, public IBitmapDrawable
+class BitmapContainer
 {
 protected:
 	size_t stride;
 	size_t dataSize;
+	int32_t width;
+	int32_t height;
+public:
+	BitmapContainer(MemoryAccount* m);
+	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
+	uint8_t* getData() { return &data[0]; }
+	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
+	bool fromJPEG(uint8_t* data, int len);
+	bool fromJPEG(std::istream& s);
+	bool fromPNG(std::istream& s);
+};
+
+class BitmapData: public ASObject, public BitmapContainer, public IBitmapDrawable
+{
 	bool disposed;
 	uint32_t getPixelPriv(uint32_t x, uint32_t y);
 	void setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha);
@@ -43,18 +57,15 @@ protected:
 	void notifyUsers() const;
 public:
 	BitmapData(Class_base* c);
+	BitmapData(Class_base* c, const BitmapContainer& b);
 	static void sinit(Class_base* c);
 	~BitmapData();
 	/* the bitmaps data in premultiplied, native-endian 32 bit
 	 * ARGB format. stride is the number of bytes per row, may be
 	 * larger than width. dataSize is the total allocated size of
 	 * data (=stride*height) */
-	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
-	uint8_t* getData() { return &data[0]; }
 	void addUser(Bitmap* b);
 	void removeUser(Bitmap* b);
-	ASPROPERTY_GETTER(int32_t, width);
-	ASPROPERTY_GETTER(int32_t, height);
 	ASPROPERTY_GETTER(bool, transparent);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(dispose);
@@ -67,10 +78,8 @@ public:
 	ASFUNCTION(copyPixels);
 	ASFUNCTION(fillRect);
 	ASFUNCTION(generateFilterRect);
-	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
-	bool fromJPEG(uint8_t* data, int len);
-	bool fromJPEG(std::istream& s);
-	bool fromPNG(std::istream& s);
+	ASFUNCTION(_getter_width);
+	ASFUNCTION(_getter_height);
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 };

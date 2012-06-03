@@ -2734,9 +2734,9 @@ void Bitmap::updatedData()
 	style.bitmap=bitmapData;
 	tokens.emplace_back(GeomToken(SET_FILL, style));
 	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, bitmapData->height)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->width, bitmapData->height)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->width, 0)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, bitmapData->getHeight())));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->getWidth(), bitmapData->getHeight())));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->getWidth(), 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
 	requestInvalidation(getSys());
 }
@@ -2755,7 +2755,7 @@ IntSize Bitmap::getBitmapSize() const
 	if(bitmapData.isNull())
 		return IntSize(0, 0);
 	else
-		return IntSize(bitmapData->width, bitmapData->height);
+		return IntSize(bitmapData->getWidth(), bitmapData->getHeight());
 }
 
 void SimpleButton::sinit(Class_base* c)

@@ -51,8 +51,8 @@ void ASFont::sinit(Class_base* c)
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
 	//c->setConstructor(NULL);
 	c->setSuper(Class<ASObject>::getRef());
-	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("registerFont","",Class<IFunction>::getFunction(registerFont),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("registerFont","",Class<IFunction>::getFunction(registerFont),NORMAL_METHOD,false);
 
 	REGISTER_GETTER(c,fontName);
 	REGISTER_GETTER(c,fontStyle);

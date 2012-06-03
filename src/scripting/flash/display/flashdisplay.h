@@ -466,7 +466,7 @@ private:
 public:
 	RunState state;
 	MovieClip(Class_base* c);
-	MovieClip(const MovieClip& r);
+	MovieClip(Class_base* c, const FrameContainer& f);
 	void finalize();
 	ASObject* gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);

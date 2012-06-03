@@ -933,10 +933,7 @@ MovieClip::MovieClip(Class_base* c):Sprite(c),totalFrames_unreliable(1)
 {
 }
 
-MovieClip::MovieClip(const MovieClip& r):Sprite(r.getClass()),FrameContainer(r),
-	totalFrames_unreliable(r.totalFrames_unreliable),
-	frameScripts(r.frameScripts),
-	state(r.state)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f):Sprite(c),FrameContainer(f),totalFrames_unreliable(1)
 {
 }
 

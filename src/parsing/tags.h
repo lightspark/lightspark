@@ -517,7 +517,7 @@ public:
 	DefineText2Tag(RECORDHEADER h, std::istream& in) : DefineTextTag(h,in,2) {}
 };
 
-class DefineSpriteTag: public DictionaryTag, public MovieClip
+class DefineSpriteTag: public DictionaryTag, public FrameContainer
 {
 private:
 	UI16_SWF SpriteID;

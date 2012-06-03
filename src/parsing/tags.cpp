@@ -136,7 +136,7 @@ _NR<Tag> TagFactory::readTag(RootMovieClip* root)
 			ret=new DefineEditTextTag(h,f);
 			break;
 		case 39:
-			ret=new (getSys()->unaccountedMemory) DefineSpriteTag(h,f,root);
+			ret=new DefineSpriteTag(h,f,root);
 			break;
 		case 41:
 			ret=new ProductInfoTag(h,f);
@@ -315,7 +315,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c) const
 	return ret;
 }
 
-DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h),MovieClip(Class<MovieClip>::getClass())
+DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h)
 {
 	in >> SpriteID >> FrameCount;
 
@@ -386,9 +386,7 @@ ASObject* DefineSpriteTag::instance(Class_base* c) const
 	else
 		retClass=Class<MovieClip>::getClass();
 
-	DefineSpriteTag* ret=new (retClass->memoryAccount) DefineSpriteTag(*this);
-	ret->setClass(retClass);
-	return ret;
+	return new (retClass->memoryAccount) MovieClip(retClass, *this);
 }
 
 void lightspark::ignore(istream& i, int count)

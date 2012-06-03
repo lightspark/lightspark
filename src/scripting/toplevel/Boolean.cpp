@@ -71,6 +71,7 @@ ASFUNCTIONBODY(Boolean,generator)
 
 void Boolean::sinit(Class_base* c)
 {
+	c->isFinal=true;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);

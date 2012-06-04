@@ -1383,22 +1383,15 @@ ASObject *ASObject::describeType() const
 
 bool ASObject::hasprop_prototype()
 {
-	multiname prototypeName(getSys()->unaccountedMemory);
-	prototypeName.name_type=multiname::NAME_STRING;
-	prototypeName.name_s_id=BUILTIN_STRINGS::PROTOTYPE;
-	prototypeName.ns.push_back(nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS));
-	prototypeName.isAttribute = false;
-	return findGettable(prototypeName, false) != NULL;
+	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	return (var && var->var);
 }
 
 ASObject* ASObject::getprop_prototype()
 {
-	multiname prototypeName(getSys()->unaccountedMemory);
-	prototypeName.name_type=multiname::NAME_STRING;
-	prototypeName.name_s_id=BUILTIN_STRINGS::PROTOTYPE;
-	prototypeName.ns.push_back(nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS));
-	prototypeName.isAttribute = false;
-	variable* var = findGettable(prototypeName, false);
+	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	return var ? var->var : NULL;
 }
 

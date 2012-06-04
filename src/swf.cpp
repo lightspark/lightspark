@@ -1225,6 +1225,7 @@ void ParseThread::parseSWF(UI8 ver)
 		root=getRootMovie();
 	objectSpinlock.unlock();
 
+	std::queue<const ControlTag*> symbolClassTags;
 	try
 	{
 		parseSWFHeader(root, ver);

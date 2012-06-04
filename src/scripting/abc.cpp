@@ -155,7 +155,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		}
 		else
 		{
-			_R<DictionaryTag> t=root->dictionaryLookup(Tags[i]);
+			DictionaryTag* t=root->dictionaryLookup(Tags[i]);
 			_R<BindClassEvent> e(new (getSys()->unaccountedMemory) BindClassEvent(t,className));
 			getVm()->addEvent(NullRef,e);
 		}

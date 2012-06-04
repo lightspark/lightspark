@@ -148,7 +148,7 @@ _NR<Tag> TagFactory::readTag(RootMovieClip* root)
 			ret=new SoundStreamHead2Tag(h,f);
 			break;
 		case 46:
-			ret=new (getSys()->unaccountedMemory) DefineMorphShapeTag(h,f);
+			ret=new DefineMorphShapeTag(h,f);
 			break;
 		case 48:
 			ret=new DefineFont2Tag(h,f);
@@ -874,7 +874,7 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3T
 	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
-DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),MorphShape(Class<MorphShape>::getClass())
+DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -888,47 +888,7 @@ ASObject* DefineMorphShapeTag::instance(Class_base* c) const
 	assert_and_throw(bindedTo==NULL);
 	if(c==NULL)
 		c=Class<MorphShape>::getClass();
-	DefineMorphShapeTag* ret=new (c->memoryAccount) DefineMorphShapeTag(*this);
-	ret->setClass(c);
-	return ret;
-}
-
-void DefineMorphShapeTag::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
-{
-	if(clippedAlpha()==0)
-		return;
-	if(!visible)
-		return;
-	//TODO: implement morph shape support
-/*	std::vector < GeomShape > shapes;
-	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
-
-	FromShaperecordListToShapeVector(cur,shapes);
-
-//	for(unsigned int i=0;i<shapes.size();i++)
-//		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
-
-	float matrix[16];
-	Matrix.get4DMatrix(matrix);
-	lsglPushMatrix();
-	lsglMultMatrixf(matrix);
-	setMatrixUniform(LSGL_MODELVIEW);
-
-	rt->acquireFramebuffer();
-
-	std::vector < GeomShape >::iterator it=shapes.begin();
-	for(;it!=shapes.end();++it)
-		it->Render();
-
-	rt->blitFramebuffer();
-	if(rt->acquireIdBuffer())
-	{
-		std::vector < GeomShape >::iterator it=shapes.begin();
-		for(;it!=shapes.end();++it)
-			it->Render();
-		rt->releaseIdBuffer();
-	}
-	lsglPopMatrix();*/
+	return Class<MorphShape>::getInstanceS(c);
 }
 
 //void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

@@ -167,7 +167,7 @@ public:
 	virtual int getId(){ return ShapeId; }
 };
 
-class DefineMorphShapeTag: public DictionaryTag, public MorphShape
+class DefineMorphShapeTag: public DictionaryTag
 {
 private:
 	UI16_SWF CharacterId;
@@ -181,7 +181,6 @@ private:
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }
-	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const;
 	virtual ASObject* instance(Class_base* c=NULL) const;
 };
 

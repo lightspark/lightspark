@@ -64,7 +64,7 @@ private:
 	bool parsingIsFailed;
 	RGB Background;
 	Spinlock dictSpinlock;
-	std::list < _R<DictionaryTag> > dictionary;
+	std::list < DictionaryTag* > dictionary;
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
 	float frameRate;
@@ -90,8 +90,8 @@ public:
 	RECT getFrameSize() const;
 	float getFrameRate() const;
 	void setFrameRate(float f);
-	void addToDictionary(_R<DictionaryTag> r);
-	_R<DictionaryTag> dictionaryLookup(int id);
+	void addToDictionary(DictionaryTag* r);
+	DictionaryTag* dictionaryLookup(int id);
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();

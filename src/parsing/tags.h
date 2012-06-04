@@ -41,8 +41,6 @@ void ignore(std::istream& i, int count);
 
 class Tag
 {
-private:
-	ATOMIC_INT32(ref_count);
 protected:
 	RECORDHEADER Header;
 	void skip(std::istream& in) const
@@ -50,24 +48,9 @@ protected:
 		ignore(in,Header.getLength());
 	}
 public:
-	Tag(RECORDHEADER h):ref_count(1),Header(h) {}
+	Tag(RECORDHEADER h):Header(h) {}
 	virtual TAGTYPE getType() const{ return TAG; }
 	virtual ~Tag(){}
-	void incRef()
-	{
-		ATOMIC_INCREMENT(ref_count);
-		assert(ref_count>0);
-	}
-	void decRef()
-	{
-		assert(ref_count>0);
-		uint32_t t=ATOMIC_DECREMENT(ref_count);
-		if(t==0)
-		{
-			ref_count=-1024;
-			delete this;
-		}
-	}
 };
 
 class EndTag:public Tag
@@ -298,7 +281,7 @@ protected:
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
 	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
-	_NR<DictionaryTag> placedTag;
+	const DictionaryTag* placedTag;
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
@@ -733,7 +716,7 @@ public:
 	 * The RootMovieClip that is the owner of the content.
 	 * It is needed to solve references to other tags during construction
 	 */
-	_NR<Tag> readTag(RootMovieClip* root);
+	Tag* readTag(RootMovieClip* root);
 };
 
 };

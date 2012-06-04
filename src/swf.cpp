@@ -1237,9 +1237,9 @@ void ParseThread::parseSWF(UI8 ver)
 		}
 
 		TagFactory factory(f, true);
-		_NR<Tag> tag=factory.readTag(root);
+		Tag* tag=factory.readTag(root);
 
-		FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag.getPtr());
+		FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag);
 		if(!fat)
 		{
 			LOG(LOG_ERROR,"Invalid SWF - First tag must be a FileAttributesTag!");
@@ -1287,12 +1287,12 @@ void ParseThread::parseSWF(UI8 ver)
 				}
 				case DICT_TAG:
 				{
-					_R<DictionaryTag> d=tag.cast<DictionaryTag>();
+					DictionaryTag* d=static_cast<DictionaryTag*>(tag);
 					root->addToDictionary(d);
 					break;
 				}
 				case DISPLAY_LIST_TAG:
-					root->addToFrame(tag.cast<DisplayListTag>());
+					root->addToFrame(static_cast<const DisplayListTag*>(tag));
 					empty=false;
 					break;
 				case SHOW_TAG:
@@ -1313,7 +1313,7 @@ void ParseThread::parseSWF(UI8 ver)
 					// frame has been parsed. This is to handle invalid SWF files that define ID's
 					// used in the SymbolClass tag only after the tag, which would otherwise result
 					// in "undefined dictionary ID" errors.
-					_R<ControlTag> stag = tag.cast<ControlTag>();
+					const ControlTag* stag = static_cast<const ControlTag*>(tag);
 					symbolClassTags.push(stag);
 					break;
 				}
@@ -1330,7 +1330,7 @@ void ParseThread::parseSWF(UI8 ver)
 					//fall through
 				case ABC_TAG:
 				{
-					_R<ControlTag> ctag = tag.cast<ControlTag>();
+					const ControlTag* ctag = static_cast<const ControlTag*>(tag);
 					ctag->execute(root);
 					break;
 				}
@@ -1338,7 +1338,7 @@ void ParseThread::parseSWF(UI8 ver)
 					/* No locking required, as the last frames is not
 					 * commited to the vm yet.
 					 */
-					root->addFrameLabel(root->frames.size()-1,static_cast<FrameLabelTag*>(tag.getPtr())->Name);
+					root->addFrameLabel(root->frames.size()-1,static_cast<const FrameLabelTag*>(tag)->Name);
 					empty=false;
 					break;
 				case TAG:
@@ -1469,14 +1469,14 @@ void RootMovieClip::setBackground(const RGB& bg)
 }
 
 /* called in parser's thread context */
-void RootMovieClip::addToDictionary(_R<DictionaryTag> r)
+void RootMovieClip::addToDictionary(DictionaryTag* r)
 {
 	SpinlockLocker l(dictSpinlock);
 	dictionary.push_back(r);
 }
 
 /* called in vm's thread context */
-_R<DictionaryTag> RootMovieClip::dictionaryLookup(int id)
+DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
 	SpinlockLocker l(dictSpinlock);
 	auto it = dictionary.begin();

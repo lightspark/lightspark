@@ -851,7 +851,8 @@ BindClassEvent::BindClassEvent(_R<RootMovieClip> b, const tiny_string& c)
 	: Event(NULL, "bindClass"),base(b),class_name(c)
 {
 }
-BindClassEvent::BindClassEvent(_R<DictionaryTag> t, const tiny_string& c)
+
+BindClassEvent::BindClassEvent(DictionaryTag* t, const tiny_string& c)
 	: Event(NULL, "bindClass"),tag(t),class_name(c)
 {
 }

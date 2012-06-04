@@ -440,7 +440,7 @@ private:
 	std::deque<eventType, reporter_allocator<eventType>> events_queue;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
 	void signalEventWaiters();
-	void buildClassAndBindTag(const std::string& s, _R<DictionaryTag> t);
+	void buildClassAndBindTag(const std::string& s, DictionaryTag* t);
 	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
 	Class_inherit* findClassInherit(const std::string& s, RootMovieClip* r);
 

@@ -1225,7 +1225,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 	derived_class_tmp->bindToRoot();
 }
 
-void ABCVm::buildClassAndBindTag(const string& s, _R<DictionaryTag> t)
+void ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
 {
 	Class_inherit* derived_class_tmp = findClassInherit(s, t->loadedFrom);
 	if(!derived_class_tmp)
@@ -1238,7 +1238,7 @@ void ABCVm::buildClassAndBindTag(const string& s, _R<DictionaryTag> t)
 	if(t->bindedTo==NULL)
 		t->bindedTo=derived_class_tmp;
 
-	derived_class_tmp->bindToTag(t.getPtr());
+	derived_class_tmp->bindToTag(t);
 }
 
 inline method_info* ABCContext::get_method(unsigned int m)

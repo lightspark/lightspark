@@ -417,7 +417,7 @@ public:
 class Frame
 {
 public:
-	std::list<_R<DisplayListTag>> blueprint;
+	std::list<const DisplayListTag*> blueprint;
 	void execute(_R<DisplayObjectContainer> displayList);
 };
 
@@ -443,7 +443,7 @@ protected:
 	 */
 	std::list<Frame> frames;
 	std::vector<Scene_data> scenes;
-	void addToFrame(_R<DisplayListTag> r);
+	void addToFrame(const DisplayListTag* r);
 	uint32_t getFramesLoaded() { return framesLoaded; }
 	void setFramesLoaded(uint32_t fl) { framesLoaded = fl; }
 	FrameContainer();

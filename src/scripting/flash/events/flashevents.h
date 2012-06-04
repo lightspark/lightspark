@@ -335,11 +335,11 @@ class BindClassEvent: public Event
 friend class ABCVm;
 private:
 	_NR<RootMovieClip> base;
-	_NR<DictionaryTag> tag;
+	DictionaryTag* tag;
 	tiny_string class_name;
 public:
 	BindClassEvent(_R<RootMovieClip> b, const tiny_string& c);
-	BindClassEvent(_R<DictionaryTag> t, const tiny_string& c);
+	BindClassEvent(DictionaryTag* t, const tiny_string& c);
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return BIND_CLASS;}
 };

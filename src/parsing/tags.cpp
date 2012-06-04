@@ -39,7 +39,7 @@
 using namespace std;
 using namespace lightspark;
 
-_NR<Tag> TagFactory::readTag(RootMovieClip* root)
+Tag* TagFactory::readTag(RootMovieClip* root)
 {
 	RECORDHEADER h;
 
@@ -53,7 +53,7 @@ _NR<Tag> TagFactory::readTag(RootMovieClip* root)
 			throw e;
 		f.clear();
 		LOG(LOG_INFO,"Simulating EndTag at EOF @ " << f.tellg());
-		return _MR(new EndTag(h,f));
+		return new EndTag(h,f);
 	}
 
 	unsigned int expectedLen=h.getLength();
@@ -239,7 +239,7 @@ _NR<Tag> TagFactory::readTag(RootMovieClip* root)
 		throw ParseException("Malformed SWF file");
 	}
 	
-	return _MNR(ret);
+	return ret;
 }
 
 RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
@@ -323,7 +323,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 	LOG(LOG_TRACE,_("DefineSprite ID: ") << SpriteID);
 	//Create a non top level TagFactory
 	TagFactory factory(in, false);
-	_NR<Tag> tag;
+	Tag* tag;
 	bool done=false;
 	bool empty=true;
 	do
@@ -337,7 +337,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 			case DICT_TAG:
 				throw ParseException("Dictionary tag inside a sprite. Should not happen.");
 			case DISPLAY_LIST_TAG:
-				addToFrame(tag.cast<DisplayListTag>());
+				addToFrame(static_cast<DisplayListTag*>(tag));
 				empty=false;
 				break;
 			case SHOW_TAG:
@@ -351,7 +351,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 			case CONTROL_TAG:
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case FRAMELABEL_TAG:
-				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag.getPtr())->Name);
+				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
 				empty=false;
 				break;
 			case TAG:
@@ -786,7 +786,7 @@ void DefineTextTag::computeCached() const
 	if(!tokens.empty())
 		return;
 
-	FontTag* curFont = NULL;
+	const FontTag* curFont = NULL;
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
 	FILLSTYLE fs(1);
@@ -798,8 +798,8 @@ void DefineTextTag::computeCached() const
 	{
 		if(TextRecords[i].StyleFlagsHasFont)
 		{
-			_R<DictionaryTag> it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
-			curFont=dynamic_cast<FontTag*>(it3.getPtr());
+			const DictionaryTag* it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
+			curFont=dynamic_cast<const FontTag*>(it3);
 			assert_and_throw(curFont);
 		}
 		assert_and_throw(curFont);
@@ -1035,7 +1035,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent) const
 		//A new character must be placed
 		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
 
-		if(placedTag.isNull())
+		if(placedTag==NULL)
 			throw RunTimeException("No tag to place");
 
 		//We can create the object right away
@@ -1250,7 +1250,7 @@ ASObject* DefineButton2Tag::instance(Class_base* c) const
 				continue;
 			if(j==3 && !i->ButtonStateUp)
 				continue;
-			_R<DictionaryTag> dict=loadedFrom->dictionaryLookup(i->CharacterID);
+			const DictionaryTag* dict=loadedFrom->dictionaryLookup(i->CharacterID);
 
 			//We can create the object right away
 			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());

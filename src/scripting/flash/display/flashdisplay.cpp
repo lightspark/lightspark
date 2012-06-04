@@ -884,7 +884,7 @@ FrameContainer::FrameContainer(const FrameContainer& f):framesLoaded((int)f.fram
 /* This runs in parser thread context,
  * but no locking is needed here as it only accesses the last frame.
  * See comment on the 'frames' member. */
-void FrameContainer::addToFrame(_R<DisplayListTag> t)
+void FrameContainer::addToFrame(const DisplayListTag* t)
 {
 	frames.back().blueprint.push_back(t);
 }

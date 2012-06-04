@@ -621,10 +621,10 @@ bool Type::isTypeResolvable(const multiname* mn)
 	assert(mn->name_type == multiname::NAME_STRING);
 	if(mn == 0)
 		return true; //any
-	if(mn->name_type == multiname::NAME_STRING && getSys()->getStringFromUniqueId(mn->name_s_id)=="any"
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::ANY
 		&& mn->ns[0].hasEmptyName())
 		return true;
-	if(mn->name_type == multiname::NAME_STRING && getSys()->getStringFromUniqueId(mn->name_s_id)=="void"
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::VOID
 		&& mn->ns[0].hasEmptyName())
 		return true;
 
@@ -643,11 +643,11 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
 
-	if(mn->name_type == multiname::NAME_STRING && getSys()->getStringFromUniqueId(mn->name_s_id)=="any"
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::ANY
 		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
 		return Type::anyType;
 
-	if(mn->name_type == multiname::NAME_STRING && getSys()->getStringFromUniqueId(mn->name_s_id)=="void"
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::VOID
 		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
 		return Type::voidType;
 

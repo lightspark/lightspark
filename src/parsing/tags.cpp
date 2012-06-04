@@ -1070,7 +1070,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent) const
 	}
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h),placedTag(NULL)
 {
 	LOG(LOG_TRACE,_("PlaceObject2"));
 

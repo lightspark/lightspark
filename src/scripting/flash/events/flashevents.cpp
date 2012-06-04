@@ -848,7 +848,7 @@ ExternalCallEvent::~ExternalCallEvent()
 }
 
 BindClassEvent::BindClassEvent(_R<RootMovieClip> b, const tiny_string& c)
-	: Event(NULL, "bindClass"),base(b),class_name(c)
+	: Event(NULL, "bindClass"),base(b),tag(NULL),class_name(c)
 {
 }
 

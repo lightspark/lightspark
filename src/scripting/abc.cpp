@@ -47,6 +47,7 @@
 #include "flash/accessibility/flashaccessibility.h"
 #include "flash/desktop/flashdesktop.h"
 #include "flash/display/flashdisplay.h"
+#include "flash/display/BitmapData.h"
 #include "flash/events/flashevents.h"
 #include "flash/filters/flashfilters.h"
 #include "flash/net/flashnet.h"

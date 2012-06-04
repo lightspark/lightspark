@@ -30,6 +30,7 @@
 #include "exceptions.h"
 #include "compat.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/flash/display/BitmapData.h"
 
 using namespace std;
 using namespace lightspark;

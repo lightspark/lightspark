@@ -22,7 +22,6 @@
 #include "argconv.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/geom/flashgeom.h"
-#include "backends/image.h"
 #include "backends/rendering_context.h"
 
 using namespace lightspark;
@@ -31,62 +30,6 @@ using namespace std;
 SET_NAMESPACE("flash.display");
 
 REGISTER_CLASS_NAME(BitmapData);
-
-BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),dataSize(0),width(0),height(0),
-	data(reporter_allocator<uint8_t>(m))
-{
-}
-
-bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)
-{
-	if(!rgb)
-		return false;
-
-	width = w;
-	height = h;
-	if(hasAlpha)
-		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride);
-	else
-		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride);
-	delete[] rgb;
-	if(data.empty())
-	{
-		LOG(LOG_ERROR, "Error decoding image");
-		return false;
-	}
-
-	return true;
-}
-
-bool BitmapContainer::fromJPEG(uint8_t *inData, int len)
-{
-	assert(data.empty());
-	/* flash uses signed values for width and height */
-	uint32_t w,h;
-	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &w, &h);
-	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
-}
-
-bool BitmapContainer::fromJPEG(std::istream &s)
-{
-	assert(data.empty());
-	/* flash uses signed values for width and height */
-	uint32_t w,h;
-	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &w, &h);
-	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
-}
-
-bool BitmapContainer::fromPNG(std::istream &s)
-{
-	assert(data.empty());
-	/* flash uses signed values for width and height */
-	uint32_t w,h;
-	uint8_t *rgb=ImageDecoder::decodePNG(s, &w, &h);
-	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
-}
 
 BitmapData::BitmapData(Class_base* c):ASObject(c),BitmapContainer(c->memoryAccount),disposed(false)
 {

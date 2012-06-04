@@ -41,7 +41,7 @@ class InteractiveObject;
 class Downloader;
 class RenderContext;
 class ApplicationDomain;
-class Bitmap;
+class BitmapData;
 
 class InteractiveObject: public DisplayObject
 {

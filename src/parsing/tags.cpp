@@ -32,6 +32,7 @@
 #include "logger.h"
 #include "compat.h"
 #include "streams.h"
+#include "scripting/flash/display/BitmapData.h"
 
 #undef RGB
 

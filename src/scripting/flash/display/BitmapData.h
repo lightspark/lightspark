@@ -22,28 +22,12 @@
 
 #include "IBitmapDrawable.h"
 #include "asobject.h"
+#include "scripting/flash/display/BitmapContainer.h"
 
 namespace lightspark
 {
 
 class Bitmap;
-
-class BitmapContainer
-{
-protected:
-	size_t stride;
-	size_t dataSize;
-	int32_t width;
-	int32_t height;
-public:
-	BitmapContainer(MemoryAccount* m);
-	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
-	uint8_t* getData() { return &data[0]; }
-	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, bool hasAlpha);
-	bool fromJPEG(uint8_t* data, int len);
-	bool fromJPEG(std::istream& s);
-	bool fromPNG(std::istream& s);
-};
 
 class BitmapData: public ASObject, public BitmapContainer, public IBitmapDrawable
 {
@@ -80,8 +64,6 @@ public:
 	ASFUNCTION(generateFilterRect);
 	ASFUNCTION(_getter_width);
 	ASFUNCTION(_getter_height);
-	int getWidth() const { return width; }
-	int getHeight() const { return height; }
 };
 
 };

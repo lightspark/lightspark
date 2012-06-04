@@ -30,6 +30,7 @@
 #include "backends/rendering.h"
 #include "backends/geometry.h"
 #include "flash/accessibility/flashaccessibility.h"
+#include "flash/display/BitmapData.h"
 #include "argconv.h"
 #include "toplevel/Vector.h"
 #include "backends/security.h"

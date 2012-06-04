@@ -19,7 +19,7 @@
 
 #ifndef NUMBER_H
 #define NUMBER_H
-#include <math.h>
+#include <cmath>
 #include "compat.h"
 #include "asobject.h"
 

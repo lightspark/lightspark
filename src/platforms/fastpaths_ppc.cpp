@@ -18,7 +18,7 @@
  **************************************************************************/
 
 #include "fastpaths.h"
-#include <inttypes.h>
+#include <cinttypes>
 #include <altivec.h>
 
 void lightspark::fastYUV420ChannelsToYUV0Buffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)

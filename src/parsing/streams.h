@@ -23,7 +23,7 @@
 #include "compat.h"
 #include <streambuf>
 #include <fstream>
-#include <inttypes.h>
+#include <cinttypes>
 #include "zlib.h"
 
 class zlib_filter: public std::streambuf

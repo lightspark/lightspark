@@ -27,8 +27,8 @@
 #include <cairo.h>
 
 #include "logger.h"
-#include <stdlib.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 #include "exceptions.h"
 #include "smartrefs.h"
 #include "tiny_string.h"

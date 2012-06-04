@@ -23,7 +23,7 @@
 #include "../../../../compat.h"
 #include "../../../decoder.h"
 
-#include <locale.h>
+#include <clocale>
 #include <libintl.h>
 #define _(STRING) gettext(STRING)
 

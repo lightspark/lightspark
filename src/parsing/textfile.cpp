@@ -21,10 +21,10 @@ Credits:
 **************************************************************************/
 
 #include "textfile.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <climits>
 #include "compat.h"
 
 char *textFileRead(const char *fn)

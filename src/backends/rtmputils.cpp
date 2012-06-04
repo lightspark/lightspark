@@ -50,9 +50,10 @@ void RTMPDownloader::execute()
 	tiny_string rtmpUrl=url;
 	rtmpUrl+=" playpath=";
 	rtmpUrl+=stream;
-	rtmpUrl+=" swfUrl=";
+	rtmpUrl+=" swfVfy=";
 	rtmpUrl+=getSys()->getOrigin().getURL();
-	rtmpUrl+=" swfVfy=1";
+	rtmpUrl+=" tcUrl=";
+	rtmpUrl+=url;
 	//Setup url needs a char*, not a const char*...
 	int urlLen=rtmpUrl.numBytes();
 	char* urlBuf=new char[urlLen+1];

@@ -81,6 +81,11 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, C
 	loaderInfo=_MNR(li);
 }
 
+RootMovieClip::~RootMovieClip()
+{
+	for(DictionaryTag* it: dictionary)
+		delete it;
+}
 
 void RootMovieClip::parsingFailed()
 {
@@ -1282,7 +1287,9 @@ void ParseThread::parseSWF(UI8 ver)
 					// in the order in which they appeared in the file.
 					while(!symbolClassTags.empty())
 					{
-						symbolClassTags.front()->execute(root);
+						const ControlTag* t=symbolClassTags.front();
+						t->execute(root);
+						delete t;
 						symbolClassTags.pop();
 					}
 
@@ -1293,6 +1300,7 @@ void ParseThread::parseSWF(UI8 ver)
 					RELEASE_WRITE(root->finishedLoading,true);
 					done=true;
 					root->check();
+					delete tag;
 					break;
 				}
 				case DICT_TAG:
@@ -1310,12 +1318,15 @@ void ParseThread::parseSWF(UI8 ver)
 					// in the order in which they appeared in the file.
 					while(!symbolClassTags.empty())
 					{
-						symbolClassTags.front()->execute(root);
+						const ControlTag* t=symbolClassTags.front();
+						t->execute(root);
+						delete t;
 						symbolClassTags.pop();
 					}
 
 					root->commitFrame(true);
 					empty=true;
+					delete tag;
 					break;
 				case SYMBOL_CLASS_TAG:
 				{
@@ -1342,6 +1353,7 @@ void ParseThread::parseSWF(UI8 ver)
 				{
 					const ControlTag* ctag = static_cast<const ControlTag*>(tag);
 					ctag->execute(root);
+					delete tag;
 					break;
 				}
 				case FRAMELABEL_TAG:
@@ -1350,9 +1362,11 @@ void ParseThread::parseSWF(UI8 ver)
 					 */
 					root->addFrameLabel(root->frames.size()-1,static_cast<const FrameLabelTag*>(tag)->Name);
 					empty=false;
+					delete tag;
 					break;
 				case TAG:
 					//Not yet implemented tag, ignore it
+					delete tag;
 					break;
 			}
 			if(getSys()->shouldTerminate() || threadAborting)

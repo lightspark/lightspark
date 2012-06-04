@@ -712,14 +712,13 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 			try
 			{
 				_R<DictionaryTag> dict=getParseThread()->getRootMovie()->dictionaryLookup(bitmapId);
-				BitmapData* b = dynamic_cast<BitmapData*>(dict.getPtr());
+				const BitmapTag* b = dynamic_cast<const BitmapTag*>(dict.getPtr());
 				if(!b)
 				{
 					LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
 					throw ParseException("Invalid ID for bitmap");
 				}
-				b->incRef();
-				v.bitmap = _MR(b);
+				v.bitmap = *b;
 			}
 			catch(RunTimeException& e)
 			{
@@ -1260,7 +1259,7 @@ QName::operator multiname() const
 	return ret;
 }
 
-FILLSTYLE::FILLSTYLE(int v):version(v),Gradient(v)
+FILLSTYLE::FILLSTYLE(int v):version(v),Gradient(v),bitmap(getSys()->unaccountedMemory)
 {
 }
 

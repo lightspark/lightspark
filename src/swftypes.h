@@ -33,6 +33,7 @@
 #include "smartrefs.h"
 #include "tiny_string.h"
 #include "memory_support.h"
+#include "scripting/flash/display/BitmapContainer.h"
 
 #ifdef BIG_ENDIAN
 #include <algorithm>
@@ -80,7 +81,6 @@ enum FILE_TYPE { FT_UNKNOWN=0, FT_SWF, FT_COMPRESSED_SWF, FT_PNG, FT_JPEG, FT_GI
 typedef double number_t;
 
 class ASObject;
-class BitmapData;
 class ABCContext;
 class namespace_info;
 
@@ -873,7 +873,7 @@ public:
 	MATRIX Matrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
-	_NR<BitmapData> bitmap;
+	BitmapContainer bitmap;
 };
 
 class MORPHFILLSTYLE:public FILLSTYLE

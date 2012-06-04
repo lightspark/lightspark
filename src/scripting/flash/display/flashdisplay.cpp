@@ -2552,7 +2552,7 @@ ASFUNCTIONBODY(Graphics,beginBitmapFill)
 	if(!matrix.isNull())
 		style.Matrix = matrix->getMATRIX();
 
-	style.bitmap = bitmap;
+	style.bitmap = *static_cast<BitmapContainer*>((bitmap.getPtr()));
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 	return NULL;
 }
@@ -2729,7 +2729,7 @@ void Bitmap::updatedData()
 
 	FILLSTYLE style(-1);
 	style.FillStyleType=CLIPPED_BITMAP;
-	style.bitmap=bitmapData;
+	style.bitmap=*static_cast<BitmapContainer*>(bitmapData.getPtr());
 	tokens.emplace_back(GeomToken(SET_FILL, style));
 	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, bitmapData->getHeight())));

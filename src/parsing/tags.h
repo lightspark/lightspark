@@ -535,7 +535,14 @@ public:
 	void execute(RootMovieClip* root){};
 };
 
-class DefineBitsLosslessTag: public DictionaryTag, public BitmapData
+class BitmapTag: public DictionaryTag, public BitmapContainer
+{
+public:
+	BitmapTag(RECORDHEADER h);
+	ASObject* instance(Class_base* c=NULL) const;
+};
+
+class DefineBitsLosslessTag: public BitmapTag
 {
 private:
 	UI16_SWF CharacterId;
@@ -547,10 +554,9 @@ private:
 public:
 	DefineBitsLosslessTag(RECORDHEADER h, std::istream& in, int version);
 	int getId(){ return CharacterId; }
-	ASObject* instance(Class_base* c=NULL) const;
 };
 
-class DefineBitsTag: public DictionaryTag, public BitmapData
+class DefineBitsTag: public BitmapTag
 {
 private:
 	UI16_SWF CharacterId;
@@ -561,17 +567,16 @@ public:
 	int getId(){ return CharacterId; }
 };
 
-class DefineBitsJPEG2Tag: public DictionaryTag, public BitmapData
+class DefineBitsJPEG2Tag: public BitmapTag
 {
 private:
 	UI16_SWF CharacterId;
 public:
 	DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in);
 	int getId(){ return CharacterId; }
-	ASObject* instance(Class_base* c=NULL) const;
 };
 
-class DefineBitsJPEG3Tag: public DictionaryTag, public BitmapData
+class DefineBitsJPEG3Tag: public BitmapTag
 {
 private:
 	UI16_SWF CharacterId;
@@ -580,7 +585,6 @@ public:
 	DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in);
 	~DefineBitsJPEG3Tag();
 	int getId(){ return CharacterId; }
-	ASObject* instance(Class_base* c=NULL) const;
 };
 
 class DefineScalingGridTag: public Tag

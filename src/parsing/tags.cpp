@@ -73,7 +73,7 @@ _NR<Tag> TagFactory::readTag(RootMovieClip* root)
 	//	case 4:
 	//		ret=new PlaceObjectTag(h,f);
 		case 6:
-			ret=new (getSys()->unaccountedMemory) DefineBitsTag(h,f);
+			ret=new DefineBitsTag(h,f);
 			break;
 		case 9:
 			ret=new SetBackgroundColorTag(h,f);
@@ -100,10 +100,10 @@ _NR<Tag> TagFactory::readTag(RootMovieClip* root)
 			ret=new SoundStreamBlockTag(h,f);
 			break;
 		case 20:
-			ret=new (getSys()->unaccountedMemory) DefineBitsLosslessTag(h,f,1);
+			ret=new DefineBitsLosslessTag(h,f,1);
 			break;
 		case 21:
-			ret=new (getSys()->unaccountedMemory) DefineBitsJPEG2Tag(h,f);
+			ret=new DefineBitsJPEG2Tag(h,f);
 			break;
 		case 22:
 			ret=new DefineShape2Tag(h,f);
@@ -127,10 +127,10 @@ _NR<Tag> TagFactory::readTag(RootMovieClip* root)
 			ret=new DefineButton2Tag(h,f);
 			break;
 		case 35:
-			ret=new (getSys()->unaccountedMemory) DefineBitsJPEG3Tag(h,f);
+			ret=new DefineBitsJPEG3Tag(h,f);
 			break;
 		case 36:
-			ret=new (getSys()->unaccountedMemory) DefineBitsLosslessTag(h,f,2);
+			ret=new DefineBitsLosslessTag(h,f,2);
 			break;
 		case 37:
 			ret=new DefineEditTextTag(h,f);
@@ -679,8 +679,11 @@ ASObject* DefineFont4Tag::instance(Class_base* c) const
 	return ret;
 }
 
-DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version):
-	DictionaryTag(h),BitmapData(Class<BitmapData>::getClass())
+BitmapTag::BitmapTag(RECORDHEADER h):DictionaryTag(h),BitmapContainer(getSys()->tagsMemory)
+{
+}
+
+DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version):BitmapTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -721,7 +724,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 	fromRGB(inData, BitmapWidth, BitmapHeight, true);
 }
 
-ASObject* DefineBitsLosslessTag::instance(Class_base* c) const
+ASObject* BitmapTag::instance(Class_base* c) const
 {
 	Class_base* realClass=(c)?c:bindedTo;
 	//Flex imports bitmaps using BitmapAsset as the base class, which is derived from bitmap
@@ -733,11 +736,10 @@ ASObject* DefineBitsLosslessTag::instance(Class_base* c) const
 	else if(realClass && realClass->isSubClass(Class<BitmapData>::getClass()))
 		classRet = realClass;
 
-	DefineBitsLosslessTag* ret=new (classRet->memoryAccount) DefineBitsLosslessTag(*this);
-	ret->setClass(classRet);
+	BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, *this);
 	if(returnBitmap)
 	{
-		Bitmap* bitmapRet=new (realClass->memoryAccount) Bitmap(realClass,_MR((BitmapData*)ret));
+		Bitmap* bitmapRet=new (realClass->memoryAccount) Bitmap(realClass,_MR(ret));
 		return bitmapRet;
 	}
 	return ret;
@@ -1482,7 +1484,7 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 	}
 }
 
-DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in):DictionaryTag(h),BitmapData(Class<BitmapData>::getClass())
+DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in):BitmapTag(h)
 {
 	LOG(LOG_TRACE,_("DefineBitsTag Tag"));
 	in >> CharacterId;
@@ -1497,7 +1499,7 @@ DefineBitsTag::~DefineBitsTag()
 	delete[] data;
 }
 
-DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),BitmapData(Class<BitmapData>::getClass())
+DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):BitmapTag(h)
 {
 	LOG(LOG_TRACE,_("DefineBitsJPEG2Tag Tag"));
 	in >> CharacterId;
@@ -1510,23 +1512,7 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Diction
 	delete[] inData;
 }
 
-ASObject* DefineBitsJPEG2Tag::instance(Class_base* c) const
-{
-	Class_base* classRet = NULL;
-	if(c)
-		classRet=c;
-	else if(bindedTo)
-		classRet=bindedTo;
-	else
-		classRet=Class<BitmapData>::getClass();
-
-	DefineBitsJPEG2Tag* ret=new (classRet->memoryAccount) DefineBitsJPEG2Tag(*this);
-	ret->setClass(classRet);
-	return ret;
-}
-
-DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),BitmapData(Class<BitmapData>::getClass()),
-	alphaData(NULL)
+DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):BitmapTag(h),alphaData(NULL)
 {
 	LOG(LOG_TRACE,_("DefineBitsJPEG3Tag Tag"));
 	UI32_SWF dataSize;
@@ -1567,21 +1553,6 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in):Diction
 			LOG(LOG_ERROR, "Exception while parsing Alpha data in DefineBitsJPEG3");
 		}
 	}
-}
-
-ASObject* DefineBitsJPEG3Tag::instance(Class_base* c) const
-{
-	Class_base* classRet = NULL;
-	if(c)
-		classRet=c;
-	else if(bindedTo)
-		classRet=bindedTo;
-	else
-		classRet=Class<BitmapData>::getClass();
-
-	DefineBitsJPEG3Tag* ret=new (classRet->memoryAccount) DefineBitsJPEG3Tag(*this);
-	ret->setClass(classRet);
-	return ret;
 }
 
 DefineBitsJPEG3Tag::~DefineBitsJPEG3Tag()

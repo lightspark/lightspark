@@ -137,13 +137,6 @@ DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),useLegacyMatrix(t
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 
-DisplayObject::DisplayObject(const DisplayObject& d):EventDispatcher(d.getClass()),useLegacyMatrix(true),tx(d.tx),ty(d.ty),
-	rotation(d.rotation),sx(d.sx),sy(d.sy),alpha(d.alpha),maskOf(),
-	parent(),mask(),onStage(false),loaderInfo(),visible(d.visible),name(d.name),invalidateQueueNext()
-{
-	assert(!d.isConstructed());
-}
-
 DisplayObject::~DisplayObject() {}
 
 void DisplayObject::finalize()

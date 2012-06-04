@@ -50,7 +50,6 @@ protected:
 		ignore(in,Header.getLength());
 	}
 public:
-	Tag(const Tag& t):ref_count(1),Header(t.Header) {}
 	Tag(RECORDHEADER h):ref_count(1),Header(h) {}
 	virtual TAGTYPE getType() const{ return TAG; }
 	virtual ~Tag(){}

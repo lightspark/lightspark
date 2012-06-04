@@ -93,7 +93,6 @@ protected:
 	bool visible;
 
 	void defaultRender(RenderContext& ctxt, bool maskEnabled) const;
-	DisplayObject(const DisplayObject& d);
 	void renderPrologue(RenderContext& ctxt) const;
 	void renderEpilogue(RenderContext& ctxt) const;
 	void hitTestPrologue() const;

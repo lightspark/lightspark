@@ -70,7 +70,6 @@ protected:
 	uint32_t position;
 	bool littleEndian;
 	uint32_t objectEncoding;
-	ByteArray(const ByteArray& b);
 	void compress_zlib();
 	void uncompress_zlib();
 public:

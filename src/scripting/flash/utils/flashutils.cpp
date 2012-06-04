@@ -103,18 +103,9 @@ void IDataOutput::linkTraits(Class_base* c)
 ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),bytes(b),real_len(l),len(l),position(0),
 	littleEndian(false),objectEncoding(ObjectEncoding::AMF3)
 {
-}
-
-ByteArray::ByteArray(const ByteArray& b):ASObject(b),real_len(b.len),len(b.len),position(b.position),
-	littleEndian(b.littleEndian),objectEncoding(b.objectEncoding)
-{
-	assert_and_throw(position==0);
-	bytes = (uint8_t*) malloc(len);
 #ifdef MEMORY_USAGE_PROFILING
-	getClass()->memoryAccount->addBytes(len);
+	c->memoryAccount->addBytes(l);
 #endif
-	assert_and_throw(bytes);
-	memcpy(bytes,b.bytes,len);
 }
 
 ByteArray::~ByteArray()

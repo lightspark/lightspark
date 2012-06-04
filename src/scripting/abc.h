@@ -505,7 +505,7 @@ private:
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const{ return ABC_TAG; }
-	void execute(RootMovieClip* root);
+	void execute(RootMovieClip* root) const;
 };
 
 class DoABCDefineTag: public ControlTag
@@ -517,7 +517,7 @@ private:
 public:
 	DoABCDefineTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const{ return ABC_TAG; }
-	void execute(RootMovieClip* root);
+	void execute(RootMovieClip* root) const;
 };
 
 class SymbolClassTag: public ControlTag
@@ -529,7 +529,7 @@ private:
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const{ return SYMBOL_CLASS_TAG; }
-	void execute(RootMovieClip* root);
+	void execute(RootMovieClip* root) const;
 };
 
 ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned int argslen);

@@ -90,7 +90,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	}
 }
 
-void DoABCTag::execute(RootMovieClip*)
+void DoABCTag::execute(RootMovieClip*) const
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
 	/* currentVM will free the context*/
@@ -116,7 +116,7 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	}
 }
 
-void DoABCDefineTag::execute(RootMovieClip*)
+void DoABCDefineTag::execute(RootMovieClip*) const
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	/* currentVM will free the context*/
@@ -135,7 +135,7 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
 		in >> Tags[i] >> Names[i];
 }
 
-void SymbolClassTag::execute(RootMovieClip* root)
+void SymbolClassTag::execute(RootMovieClip* root) const
 {
 	LOG(LOG_TRACE,_("SymbolClassTag Exec"));
 
@@ -161,7 +161,7 @@ void SymbolClassTag::execute(RootMovieClip* root)
 	}
 }
 
-void ScriptLimitsTag::execute(RootMovieClip* root)
+void ScriptLimitsTag::execute(RootMovieClip* root) const
 {
 	getVm()->limits.max_recursion = MaxRecursionDepth;
 	getVm()->limits.script_timeout = ScriptTimeoutSeconds;

@@ -247,7 +247,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 	LOG(LOG_TRACE,_("RemoveObject2 Depth: ") << Depth);
 }
 
-void RemoveObject2Tag::execute(DisplayObjectContainer* parent)
+void RemoveObject2Tag::execute(DisplayObjectContainer* parent) const
 {
 	parent->deleteLegacyChildAt(Depth);
 }
@@ -1014,7 +1014,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	}
 }
 
-void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
+void PlaceObject2Tag::execute(DisplayObjectContainer* parent) const
 {
 	//TODO: support clipping
 	if(ClipDepth!=0)
@@ -1170,7 +1170,7 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		placedTag=root->dictionaryLookup(CharacterId);
 }
 
-void SetBackgroundColorTag::execute(RootMovieClip* root)
+void SetBackgroundColorTag::execute(RootMovieClip* root) const
 {
 	root->setBackground(BackgroundColor);
 }
@@ -1536,7 +1536,7 @@ DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h,
 	}
 }
 
-void DefineSceneAndFrameLabelDataTag::execute(RootMovieClip* root)
+void DefineSceneAndFrameLabelDataTag::execute(RootMovieClip* root) const
 {
 	for(size_t i=0;i<SceneCount;++i)
 	{

@@ -320,6 +320,13 @@ struct nsNameAndKind
 	 * different representationId
 	 */
 	nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND _kind);
+	/*
+	 * Special version to create the empty bultin namespace
+	 */
+	nsNameAndKind(uint32_t id):nsId(id),nsRealId(id),nameIsEmpty(true)
+	{
+		assert(nsId==0);
+	}
 	bool operator<(const nsNameAndKind& r) const
 	{
 		return nsId < r.nsId;

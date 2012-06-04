@@ -161,6 +161,9 @@ void SystemState::staticDeinit()
 #endif
 }
 
+//See BUILTIN_STRINGS enum
+static const char* builtinStrings[] = {"", "any", "void", "prototype" };
+
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	RootMovieClip(NULL,NullRef,NULL),terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
@@ -171,6 +174,12 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	currentVm(NULL),useInterpreter(true),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
 	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
 {
+	//Forge the builtin strings
+	for(uint32_t i=0;i<LAST_BUILTIN_STRING;i++)
+	{
+		uint32_t tmp=getUniqueStringId(builtinStrings[i]);
+		assert(tmp==i);
+	}
 	//Forge the empty namespace and make sure it gets id 0
 	nsNameAndKindImpl emptyNs("", NAMESPACE);
 	uint32_t nsId;

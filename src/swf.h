@@ -139,6 +139,9 @@ public:
 	void plot(uint32_t max, cairo_t *cr);
 };
 
+enum BUILTIN_STRINGS { EMPTY=0, ANY, VOID, PROTOTYPE, LAST_BUILTIN_STRING };
+enum BUILTIN_NAMESPACES { EMPTY_NS=0 };
+
 class SystemState: public RootMovieClip, public ITickJob, public InvalidateQueue
 {
 private:

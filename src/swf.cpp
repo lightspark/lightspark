@@ -1288,7 +1288,6 @@ void ParseThread::parseSWF(UI8 ver)
 				case DICT_TAG:
 				{
 					_R<DictionaryTag> d=tag.cast<DictionaryTag>();
-					d->setLoadedFrom(root);
 					root->addToDictionary(d);
 					break;
 				}

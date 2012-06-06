@@ -205,6 +205,9 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 		case 83:
 			ret=new DefineShape4Tag(h,f,root);
 			break;
+		case 84:
+			ret=new DefineMorphShape2Tag(h,f,root);
+			break;
 		case 86:
 			ret=new DefineSceneAndFrameLabelDataTag(h,f);
 			break;
@@ -890,6 +893,18 @@ ASObject* DefineMorphShapeTag::instance(Class_base* c) const
 		c=Class<MorphShape>::getClass();
 	LOG(LOG_NOT_IMPLEMENTED, _("MorphShape not really supported"));
 	return Class<MorphShape>::getInstanceS(c);
+}
+
+DefineMorphShape2Tag::DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DefineMorphShapeTag(h, root, 2)
+{
+	LOG(LOG_TRACE,"DefineMorphShape2Tag");
+	UI32_SWF Offset;
+	in >> CharacterId >> StartBounds >> EndBounds >> StartEdgeBounds >> EndEdgeBounds;
+	BitStream bs(in);
+	UB(6,bs);
+	UsesNonScalingStrokes=UB(1,bs);
+	UsesScalingStrokes=UB(1,bs);
+	in >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
 }
 
 //void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

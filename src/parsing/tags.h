@@ -150,7 +150,7 @@ public:
 
 class DefineMorphShapeTag: public DictionaryTag
 {
-private:
+protected:
 	UI16_SWF CharacterId;
 	RECT StartBounds;
 	RECT EndBounds;
@@ -158,12 +158,23 @@ private:
 	MORPHLINESTYLEARRAY MorphLineStyles;
 	SHAPE StartEdges;
 	SHAPE EndEdges;
+	DefineMorphShapeTag(RECORDHEADER h, RootMovieClip* root, int version):DictionaryTag(h,root),MorphLineStyles(version){}
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	int getId() const { return CharacterId; }
 	virtual ASObject* instance(Class_base* c=NULL) const;
 };
 
+class DefineMorphShape2Tag: public DefineMorphShapeTag
+{
+private:
+	RECT StartEdgeBounds;
+	RECT EndEdgeBounds;
+	UB UsesNonScalingStrokes;
+	UB UsesScalingStrokes;
+public:
+	DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
+};
 
 class DefineEditTextTag: public DictionaryTag
 {

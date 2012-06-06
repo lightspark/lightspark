@@ -36,6 +36,7 @@ REGISTER_CLASS_NAME(SoundTransform);
 REGISTER_CLASS_NAME(Video);
 REGISTER_CLASS_NAME(Sound);
 REGISTER_CLASS_NAME(SoundLoaderContext);
+REGISTER_CLASS_NAME(SoundChannel);
 
 void SoundTransform::sinit(Class_base* c)
 {
@@ -447,3 +448,18 @@ ASFUNCTIONBODY(SoundLoaderContext,_constructor)
 
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
+
+void SoundChannel::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<EventDispatcher>::getRef());
+}
+
+void SoundChannel::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(SoundChannel, _constructor)
+{
+	return NULL;
+}

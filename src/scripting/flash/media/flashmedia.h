@@ -76,6 +76,16 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class SoundChannel : public EventDispatcher
+{
+public:
+	SoundChannel(Class_base* c) : EventDispatcher(c) {}
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(addEventListener);
+};
+
 class Video: public DisplayObject
 {
 private:

@@ -1669,7 +1669,7 @@ _R<ApplicationDomain> ABCVm::getCurrentApplicationDomain(call_context* th)
 
 uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)
 {
-	return ATOMIC_ADD(nextNamespaceBase,nsNum);
+	return ATOMIC_ADD(nextNamespaceBase,nsNum)-nsNum;
 }
 
 const tiny_string& ABCContext::getString(unsigned int s) const

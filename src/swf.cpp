@@ -1706,7 +1706,11 @@ void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t hint
 {
 	auto it=uniqueNamespaceMap.left.find(s);
 	if(it==uniqueNamespaceMap.left.end())
-		it=uniqueNamespaceMap.left.insert(make_pair(s,hintedId)).first;
+	{
+		auto ret=uniqueNamespaceMap.left.insert(make_pair(s,hintedId));
+		assert(ret.second);
+		it=ret.first;
+	}
 
 	nsId=it->second;
 	baseId=(it->first.baseId==0xffffffff)?nsId:it->first.baseId;

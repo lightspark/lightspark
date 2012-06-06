@@ -938,6 +938,21 @@ public:
 	RGBA EndColor;
 };
 
+class MORPHLINESTYLE2: public MORPHLINESTYLE
+{
+public:
+	UB StartCapStyle;
+	UB JoinStyle;
+	UB HasFillFlag;
+	UB NoHScaleFlag;
+	UB NoVScaleFlag;
+	UB PixelHintingFlag;
+	UB NoClose;
+	UB EndCapStyle;
+	UI16_SWF MiterLimitFactor;
+	MORPHFILLSTYLE FillType;
+};
+
 class LINESTYLEARRAY
 {
 public:
@@ -952,8 +967,11 @@ public:
 class MORPHLINESTYLEARRAY
 {
 public:
+	MORPHLINESTYLEARRAY(int v):version(v){}
+	const int version;
 	UI8 LineStyleCount;
-	MORPHLINESTYLE* LineStyles;
+	std::list<MORPHLINESTYLE> LineStyles;
+	std::list<MORPHLINESTYLE2> LineStyles2;
 };
 
 class FILLSTYLEARRAY
@@ -970,7 +988,7 @@ class MORPHFILLSTYLEARRAY
 {
 public:
 	UI8 FillStyleCount;
-	MORPHFILLSTYLE* FillStyles;
+	std::list<MORPHFILLSTYLE> FillStyles;
 };
 
 class SHAPE;
@@ -1306,6 +1324,7 @@ std::istream& operator>>(std::istream& stream, MORPHLINESTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLE& v);
 std::istream& operator>>(std::istream& stream, LINESTYLE2& v);
 std::istream& operator>>(std::istream& stream, MORPHLINESTYLE& v);
+std::istream& operator>>(std::istream& stream, MORPHLINESTYLE2& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLE& v);
 std::istream& operator>>(std::istream& stream, MORPHFILLSTYLE& v);
 std::istream& operator>>(std::istream& stream, SHAPERECORD& v);

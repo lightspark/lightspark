@@ -857,14 +857,14 @@ DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in,RootMovieClip*
 
 DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShape2Tag(h,3,root)
 {
-	LOG(LOG_TRACE,_("DefineShape3Tag"));
+	LOG(LOG_TRACE,"DefineShape3Tag");
 	in >> ShapeId >> ShapeBounds >> Shapes;
 	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
 DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DefineShape3Tag(h,4,root)
 {
-	LOG(LOG_TRACE,_("DefineShape4Tag"));
+	LOG(LOG_TRACE,"DefineShape4Tag");
 	in >> ShapeId >> ShapeBounds >> EdgeBounds;
 	BitStream bs(in);
 	UB(5,bs);
@@ -875,13 +875,12 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
 }
 
-DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h, root)
+DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h, root),
+	MorphLineStyles(1)
 {
-	int dest=in.tellg();
-	dest+=h.getLength();
+	LOG(LOG_TRACE,"DefineMorphShapeTag");
+	UI32_SWF Offset;
 	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
-	if(in.tellg()<dest)
-		ignore(in,dest-in.tellg());
 }
 
 ASObject* DefineMorphShapeTag::instance(Class_base* c) const
@@ -889,6 +888,7 @@ ASObject* DefineMorphShapeTag::instance(Class_base* c) const
 	assert_and_throw(bindedTo==NULL);
 	if(c==NULL)
 		c=Class<MorphShape>::getClass();
+	LOG(LOG_NOT_IMPLEMENTED, _("MorphShape not really supported"));
 	return Class<MorphShape>::getInstanceS(c);
 }
 

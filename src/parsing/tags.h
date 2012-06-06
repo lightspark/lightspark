@@ -154,7 +154,6 @@ private:
 	UI16_SWF CharacterId;
 	RECT StartBounds;
 	RECT EndBounds;
-	UI32_SWF Offset;
 	MORPHFILLSTYLEARRAY MorphFillStyles;
 	MORPHLINESTYLEARRAY MorphLineStyles;
 	SHAPE StartEdges;

@@ -449,10 +449,24 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
 		LOG(LOG_ERROR,_("Line array extended not supported"));
-	v.LineStyles=new MORPHLINESTYLE[v.LineStyleCount];
-	for(int i=0;i<v.LineStyleCount;i++)
+	assert(v.version==1 || v.version==2);
+	if(v.version==1)
 	{
-		s >> v.LineStyles[i];
+		for(int i=0;i<v.LineStyleCount;i++)
+		{
+			MORPHLINESTYLE t;
+			s >> t;
+			v.LineStyles.emplace_back(t);
+		}
+	}
+	else
+	{
+		for(int i=0;i<v.LineStyleCount;i++)
+		{
+			MORPHLINESTYLE2 t;
+			s >> t;
+			v.LineStyles2.emplace_back(t);
+		}
 	}
 	return s;
 }
@@ -487,10 +501,11 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
 		LOG(LOG_ERROR,_("Fill array extended not supported"));
-	v.FillStyles=new MORPHFILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
-		s >> v.FillStyles[i];
+		MORPHFILLSTYLE t;
+		s >> t;
+		v.FillStyles.emplace_back(t);
 	}
 	return s;
 }
@@ -568,6 +583,28 @@ istream& lightspark::operator>>(istream& s, LINESTYLE& v)
 istream& lightspark::operator>>(istream& s, MORPHLINESTYLE& v)
 {
 	s >> v.StartWidth >> v.EndWidth >> v.StartColor >> v.EndColor;
+	return s;
+}
+
+istream& lightspark::operator>>(istream& s, MORPHLINESTYLE2& v)
+{
+	s >> v.StartWidth >> v.EndWidth;
+	BitStream bs(s);
+	v.StartCapStyle = UB(2,bs);
+	v.JoinStyle = UB(2,bs);
+	v.HasFillFlag = UB(1,bs);
+	v.NoHScaleFlag = UB(1,bs);
+	v.NoVScaleFlag = UB(1,bs);
+	v.PixelHintingFlag = UB(1,bs);
+	UB(5,bs);
+	v.NoClose = UB(1,bs);
+	v.EndCapStyle = UB(2,bs);
+	if(v.JoinStyle==2)
+		s >> v.MiterLimitFactor;
+	if(v.HasFillFlag==0)
+		s >> v.StartColor >> v.EndColor;
+	else
+		s >> v.FillType;
 	return s;
 }
 

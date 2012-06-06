@@ -628,8 +628,11 @@ StreamDecoder::~StreamDecoder()
 FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NULL),audioFound(false),videoFound(false),avioContext(NULL)
 {
 	valid=false;
-	//NOTE: this will become avio_alloc_context in FFMpeg 0.7
+#ifdef HAVE_AVIO_ALLOC_CONTEXT
+	avioContext=avio_alloc_context(avioBuffer,4096,0,this,avioReadPacket,NULL,NULL);
+#else
 	avioContext=av_alloc_put_byte(avioBuffer,4096,0,this,avioReadPacket,NULL,NULL);
+#endif
 	if(avioContext==NULL)
 		return;
 
@@ -658,7 +661,13 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 	if(fmt==NULL)
 		return;
 
+#ifdef HAVE_AVIO_ALLOC_CONTEXT
+	formatCtx=avformat_alloc_context();
+	formatCtx->pb = avioContext;
+	int ret=avformat_open_input(&formatCtx, "lightspark_stream", fmt, NULL);
+#else
 	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, NULL);
+#endif
 	if(ret<0)
 		return;
 	
@@ -706,7 +715,13 @@ FFMpegStreamDecoder::~FFMpegStreamDecoder()
 	audioDecoder=NULL;
 	videoDecoder=NULL;
 	if(formatCtx)
+	{
+#ifdef HAVE_AVIO_ALLOC_CONTEXT
+		av_close_input_file(formatCtx);
+#else
 		av_close_input_stream(formatCtx);
+#endif
+	}
 	if(avioContext)
 		av_free(avioContext);
 }

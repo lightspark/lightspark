@@ -1457,9 +1457,8 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 
 bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 {
-	if(!child->getParent())
+	if(!child->getParent() || child->getParent()!=this)
 		return false;
-	assert_and_throw(child->getParent()==this);
 
 	{
 		Locker l(mutexDisplayList);

@@ -1511,7 +1511,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	}
 	if(it==dictionary.end())
 	{
-		LOG(LOG_ERROR,_("No such Id on dictionary ") << id);
+		LOG(LOG_ERROR,_("No such Id on dictionary ") << id << " for " << origin);
 		throw RunTimeException("Could not find an object on the dictionary");
 	}
 	return *it;

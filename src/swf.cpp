@@ -1671,8 +1671,9 @@ Undefined* SystemState::getUndefinedRef() const
 	return ret;
 }
 
-const tiny_string& SystemState::getStringFromUniqueId(uint32_t id)
+const tiny_string& SystemState::getStringFromUniqueId(uint32_t id) const
 {
+	Locker l(poolMutex);
 	auto it=uniqueStringMap.right.find(id);
 	assert(it!=uniqueStringMap.right.end());
 	return it->second;
@@ -1680,17 +1681,21 @@ const tiny_string& SystemState::getStringFromUniqueId(uint32_t id)
 
 uint32_t SystemState::getUniqueStringId(const tiny_string& s)
 {
+	Locker l(poolMutex);
 	auto it=uniqueStringMap.left.find(s);
 	if(it==uniqueStringMap.left.end())
 	{
-		it=uniqueStringMap.left.insert(make_pair(s,lastUsedStringId)).first;
+		auto ret=uniqueStringMap.left.insert(make_pair(s,lastUsedStringId));
+		assert(ret.second);
+		it=ret.first;
 		lastUsedStringId++;
 	}
 	return it->second;
 }
 
-const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id)
+const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id) const
 {
+	Locker l(poolMutex);
 	auto it=uniqueNamespaceMap.right.find(id);
 	assert(it!=uniqueNamespaceMap.right.end());
 	return it->second;
@@ -1698,12 +1703,13 @@ const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id)
 
 void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t& nsId, uint32_t& baseId)
 {
-	lastUsedNamespaceId--;
+	ATOMIC_DECREMENT(lastUsedNamespaceId);
 	getUniqueNamespaceId(s, lastUsedNamespaceId, nsId, baseId);
 }
 
 void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t hintedId, uint32_t& nsId, uint32_t& baseId)
 {
+	Locker l(poolMutex);
 	auto it=uniqueNamespaceMap.left.find(s);
 	if(it==uniqueNamespaceMap.left.end())
 	{

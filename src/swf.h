@@ -239,10 +239,12 @@ private:
 	/*
 	 * Pooling support
 	 */
+	mutable Mutex poolMutex;
 	boost::bimap<tiny_string, uint32_t> uniqueStringMap;
 	uint32_t lastUsedStringId;
 	boost::bimap<nsNameAndKindImpl, uint32_t> uniqueNamespaceMap;
-	uint32_t lastUsedNamespaceId;
+	//This needs to be atomic because it's decremented without the mutex held
+	ATOMIC_INT32(lastUsedNamespaceId);
 protected:
 	~SystemState();
 public:
@@ -400,7 +402,7 @@ public:
 	 * Pooling support
 	 */
 	uint32_t getUniqueStringId(const tiny_string& s);
-	const tiny_string& getStringFromUniqueId(uint32_t id);
+	const tiny_string& getStringFromUniqueId(uint32_t id) const;
 	/*
 	 * Looks for the given nsNameAndKindImpl in the map.
 	 * If not present it will be created with hintedId as it's id.
@@ -413,7 +415,7 @@ public:
 	 * The namespace id and the baseId are returned by reference.
 	 */
 	void getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t& nsId, uint32_t& baseId);
-	const nsNameAndKindImpl& getNamespaceFromUniqueId(uint32_t id);
+	const nsNameAndKindImpl& getNamespaceFromUniqueId(uint32_t id) const;
 };
 
 class ParseThread: public IThreadJob

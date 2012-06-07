@@ -950,11 +950,7 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 
 void Class_base::linkInterface(Class_base* c) const
 {
-	if(class_index==-1)
-	{
-		//LOG(LOG_NOT_IMPLEMENTED,_("Linking of builtin interface ") << class_name << _(" not supported"));
-		return;
-	}
+	assert(class_index!=-1);
 	//Recursively link interfaces implemented by this interface
 	for(unsigned int i=0;i<getInterfaces().size();i++)
 		getInterfaces()[i]->linkInterface(c);

@@ -145,7 +145,7 @@ public:
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
 	const std::vector<Class_base*>& getInterfaces() const;
-	void linkInterface(Class_base* c) const;
+	virtual void linkInterface(Class_base* c) const;
 	/*
 	 * Returns true when 'this' is a subclass of 'cls',
 	 * i.e. this == cls or cls equals some super of this.

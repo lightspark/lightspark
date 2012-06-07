@@ -424,6 +424,10 @@ public:
 		ret->incRef();
 		return _MR(ret);
 	}
+	void linkInterface(Class_base* c) const
+	{
+		T::linkTraits(c);
+	}
 };
 
 /* This is a class which was instantiated from a Template<T> */

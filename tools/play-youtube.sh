@@ -19,7 +19,7 @@
 #**************************************************************************
 
 
-PATH=$(pwd)/$(dirname $0)/../$(arch)/$(sed -n 's/CMAKE_BUILD_TYPE:STRING=\(.*\)/\1/ p' CMakeCache.txt)/bin:$PATH
+PATH=$(pwd)/$(dirname $0)/../$(uname -m)/$(sed -n 's/CMAKE_BUILD_TYPE:STRING=\(.*\)/\1/ p' CMakeCache.txt)/bin:$PATH
 
 if test "x$LIGHTSPARK" = "x"; then
     LIGHTSPARK="lightspark"

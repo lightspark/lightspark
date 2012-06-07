@@ -76,12 +76,14 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 }
 
 LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(NullRef),loadStatus(STARTED),actionScriptVersion(3),applicationDomain(NullRef)
+	loader(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true),
+	contentType("application/x-shockwave-flash"),applicationDomain(NullRef)
 {
 }
 
 LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true),applicationDomain(NullRef)
+	loader(l),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true),
+	contentType("application/x-shockwave-flash"),applicationDomain(NullRef)
 {
 }
 
@@ -102,11 +104,13 @@ void LoaderInfo::sinit(Class_base* c)
 	REGISTER_GETTER(c,parameters);
 	REGISTER_GETTER(c,actionScriptVersion);
 	REGISTER_GETTER(c,childAllowsParent);
+	REGISTER_GETTER(c,contentType);
 }
 
 ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
 ASFUNCTIONBODY_GETTER(LoaderInfo,actionScriptVersion);
 ASFUNCTIONBODY_GETTER(LoaderInfo,childAllowsParent);
+ASFUNCTIONBODY_GETTER(LoaderInfo,contentType);
 
 void LoaderInfo::buildTraits(ASObject* o)
 {

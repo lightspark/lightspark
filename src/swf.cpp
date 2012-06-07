@@ -465,7 +465,7 @@ void SystemState::destroy()
 #endif
 	terminated.wait();
 	//Acquire the mutex to sure that the engines are not being started right now
-	Locker l(mutex);
+	Locker l(rootMutex);
 	renderThread->wait();
 	inputThread->wait();
 	if(currentVm)
@@ -597,7 +597,7 @@ void SystemState::setError(const string& c, ERROR_TYPE type)
 
 void SystemState::setShutdownFlag()
 {
-	Locker l(mutex);
+	Locker l(rootMutex);
 	if(currentVm)
 	{
 		_R<ShutdownEvent> e(new (unaccountedMemory) ShutdownEvent);
@@ -679,7 +679,7 @@ void SystemState::delayedStopping()
 
 void SystemState::createEngines()
 {
-	Locker l(mutex);
+	Locker l(rootMutex);
 	if(shutdown)
 	{
 		//A shutdown request has arrived before the creation of engines
@@ -721,7 +721,7 @@ void SystemState::createEngines()
 
 void SystemState::launchGnash()
 {
-	Locker l(mutex);
+	Locker l(rootMutex);
 	if(Config::getConfig()->getGnashPath().empty())
 	{
 		LOG(LOG_INFO, "Unsupported flash file (AVM1), and no gnash found");
@@ -874,7 +874,7 @@ void SystemState::launchGnash()
 
 void SystemState::needsAVM2(bool avm2)
 {
-	Locker l(mutex);
+	Locker l(rootMutex);
 
 	/* Check if we already loaded another swf. If not, then
 	 * vmVersion is VMNONE.
@@ -905,7 +905,7 @@ void SystemState::needsAVM2(bool avm2)
 
 void SystemState::setParamsAndEngine(EngineData* e, bool s)
 {
-	Locker l(mutex);
+	Locker l(rootMutex);
 	engineData=e;
 	standalone=s;
 	if(vmVersion)
@@ -914,7 +914,7 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 
 void SystemState::setRenderRate(float rate)
 {
-	Locker l(mutex);
+	Locker l(rootMutex);
 	if(renderRate>=rate)
 		return;
 	

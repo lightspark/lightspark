@@ -53,12 +53,11 @@ class SecurityManager;
 class Tag;
 class ApplicationDomain;
 
-//RootMovieClip is used as a ThreadJob for timed rendering purpose
 class RootMovieClip: public MovieClip
 {
 friend class ParseThread;
 protected:
-	Mutex mutex;
+	Mutex rootMutex;
 	URLInfo origin;
 private:
 	bool parsingIsFailed;

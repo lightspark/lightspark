@@ -883,7 +883,15 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootM
 {
 	LOG(LOG_TRACE,"DefineMorphShapeTag");
 	UI32_SWF Offset;
-	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
+	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles;
+	try
+	{
+		in >> StartEdges >> EndEdges;
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,_("Invalid data for morph shape"));
+	}
 }
 
 ASObject* DefineMorphShapeTag::instance(Class_base* c) const
@@ -904,7 +912,15 @@ DefineMorphShape2Tag::DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, Roo
 	UB(6,bs);
 	UsesNonScalingStrokes=UB(1,bs);
 	UsesScalingStrokes=UB(1,bs);
-	in >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
+	in >> Offset >> MorphFillStyles >> MorphLineStyles;
+	try
+	{
+		in >> StartEdges >> EndEdges;
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,_("Invalid data for morph shape"));
+	}
 }
 
 //void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

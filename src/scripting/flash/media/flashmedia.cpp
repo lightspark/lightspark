@@ -301,9 +301,11 @@ ASFUNCTIONBODY(Sound,load)
 ASFUNCTIONBODY(Sound,play)
 {
 	Sound* th=Class<Sound>::cast(obj);
-	assert_and_throw(argslen==1);
-	//number_t startTime=args[0]->toNumber();
+	number_t startTime;
+	ARG_UNPACK(startTime, 0);
 	//TODO: use startTime
+	if(startTime!=0)
+		LOG(LOG_NOT_IMPLEMENTED,"startTime not supported in Sound::play");
 
 	if(th->downloader && !th->downloader->hasFailed())
 	{

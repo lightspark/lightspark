@@ -239,6 +239,8 @@ public:
 
 class MouseEvent: public Event
 {
+private:
+	Event* cloneImpl() const;
 public:
 	MouseEvent(Class_base* c);
 	MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly, bool b=true, _NR<InteractiveObject> relObj = NullRef);

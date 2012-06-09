@@ -224,6 +224,11 @@ MouseEvent::MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_
 {
 }
 
+Event* MouseEvent::cloneImpl() const
+{
+	return Class<MouseEvent>::getInstanceS(type,localX,localY,bubbles,relatedObject);
+}
+
 ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false),bytesLoaded(0),bytesTotal(0)
 {
 }

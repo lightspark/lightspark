@@ -1703,8 +1703,8 @@ const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id) cons
 
 void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t& nsId, uint32_t& baseId)
 {
-	ATOMIC_DECREMENT(lastUsedNamespaceId);
-	getUniqueNamespaceId(s, lastUsedNamespaceId, nsId, baseId);
+	int32_t hintedId=ATOMIC_DECREMENT(lastUsedNamespaceId);
+	getUniqueNamespaceId(s, hintedId, nsId, baseId);
 }
 
 void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t hintedId, uint32_t& nsId, uint32_t& baseId)

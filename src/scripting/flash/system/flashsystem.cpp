@@ -319,7 +319,9 @@ ASFUNCTIONBODY(SecurityDomain,_constructor)
 
 ASFUNCTIONBODY(SecurityDomain,_getCurrentDomain)
 {
-	return Class<SecurityDomain>::getInstanceS();
+	_NR<SecurityDomain> ret=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
+	ret->incRef();
+	return ret.getPtr();
 }
 
 void Security::sinit(Class_base* c)

@@ -676,7 +676,13 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 		return Type::anyType;
 	}
 
-	assert_and_throw(typeObject->is<Type>());
+	if(!typeObject->is<Type>())
+	{
+		//It actually happens in the wild that the class for a member might be a private class
+		//that is defined later in the same script. We have no way to solve the dependency, so return any
+		LOG(LOG_NOT_IMPLEMENTED,"Not resolvable type " << *mn << ", using AnyType");
+		return Type::anyType;
+	}
 	return typeObject->as<Type>();
 }
 

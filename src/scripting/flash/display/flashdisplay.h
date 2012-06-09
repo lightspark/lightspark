@@ -41,6 +41,7 @@ class InteractiveObject;
 class Downloader;
 class RenderContext;
 class ApplicationDomain;
+class SecurityDomain;
 class BitmapData;
 
 class InteractiveObject: public DisplayObject
@@ -279,6 +280,7 @@ public:
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getApplicationDomain);
 	_NR<ApplicationDomain> applicationDomain;
+	_NR<SecurityDomain> securityDomain;
 	ASFUNCTION(_getLoader);
 	ASFUNCTION(_getContent);
 	ASFUNCTION(_getSharedEvents);

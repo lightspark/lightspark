@@ -482,6 +482,7 @@ public:
 	static bool strictEqualImpl(ASObject*, ASObject*);
 	static void publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event);
 	static _R<ApplicationDomain> getCurrentApplicationDomain(call_context* th);
+	static _R<SecurityDomain> getCurrentSecurityDomain(call_context* th);
 
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */

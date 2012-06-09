@@ -77,13 +77,13 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 
 LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true),
-	contentType("application/x-shockwave-flash"),applicationDomain(NullRef)
+	contentType("application/x-shockwave-flash"),applicationDomain(NullRef),securityDomain(NullRef)
 {
 }
 
 LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(l),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true),
-	contentType("application/x-shockwave-flash"),applicationDomain(NullRef)
+	contentType("application/x-shockwave-flash"),applicationDomain(NullRef),securityDomain(NullRef)
 {
 }
 
@@ -122,6 +122,7 @@ void LoaderInfo::finalize()
 	sharedEvents.reset();
 	loader.reset();
 	applicationDomain.reset();
+	securityDomain.reset();
 }
 
 void LoaderInfo::resetState()
@@ -311,7 +312,7 @@ void LoaderThread::execute()
 	}
 
 	istream s(sbuf);
-	ParseThread local_pt(s,loaderInfo->applicationDomain,loader.getPtr(),url.getParsedURL());
+	ParseThread local_pt(s,loaderInfo->applicationDomain,loaderInfo->securityDomain,loader.getPtr(),url.getParsedURL());
 	local_pt.execute();
 
 	{
@@ -402,11 +403,21 @@ ASFUNCTIONBODY(Loader,load)
 	th->url=r->getRequestURL();
 	th->contentLoaderInfo->setURL(th->url.getParsedURL());
 	th->contentLoaderInfo->resetState();
+	//Check if a security domain has been manually set
+	_NR<SecurityDomain> secDomain;
+	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
+	if(!context.isNull() && !context->securityDomain.isNull())
+	{
+		//The passed domain must be the current one. See Loader::load specs.
+		if(context->securityDomain!=curSecDomain)
+			throw Class<SecurityError>::getInstanceS("SecurityError: securityDomain must be current one");
+		secDomain=curSecDomain;
+	}
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
 	_R<RootMovieClip> currentRoot=getVm()->currentCallContext->context->root;
-	if(currentRoot->getOrigin().getHostname()==th->url.getHostname())
+	if(currentRoot->getOrigin().getHostname()==th->url.getHostname() || !secDomain.isNull())
 	{
 		//Same domain
 		_NR<ApplicationDomain> parentDomain = currentRoot->applicationDomain;
@@ -415,12 +426,14 @@ ASFUNCTIONBODY(Loader,load)
 			th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
 		else
 			th->contentLoaderInfo->applicationDomain = context->applicationDomain;
+		th->contentLoaderInfo->securityDomain = curSecDomain;
 	}
 	else
 	{
 		//Different domain
 		_NR<ApplicationDomain> parentDomain =  getSys()->systemDomain;
 		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+		th->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS());
 	}
 
 	if(!th->url.isValid())

@@ -52,6 +52,7 @@ class RenderThread;
 class SecurityManager;
 class Tag;
 class ApplicationDomain;
+class SecurityDomain;
 
 class RootMovieClip: public MovieClip
 {
@@ -78,7 +79,7 @@ private:
 	void setOnStage(bool staged);
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
-	RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, Class_base* c);
+	RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
 	void finalize();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
@@ -104,11 +105,15 @@ public:
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
 	void setVariableByString(const std::string& s, ASObject* o);*/
-	static RootMovieClip* getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain);
+	static RootMovieClip* getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
 	/*
 	 * The application domain for this clip
 	 */
 	_NR<ApplicationDomain> applicationDomain;
+	/*
+	 * The security domain for this clip
+	 */
+	_NR<SecurityDomain> securityDomain;
 	//DisplayObject interface
 	_NR<RootMovieClip> getRoot();
 };
@@ -425,7 +430,7 @@ public:
 	// Parse an object from stream. The type is detected
 	// automatically. After parsing the new object is available
 	// from getParsedObject().
-	ParseThread(std::istream& in, _NR<ApplicationDomain> appDomain, Loader *loader, tiny_string url) DLL_PUBLIC;
+	ParseThread(std::istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *loader, tiny_string url) DLL_PUBLIC;
 	// Parse a clip from stream into root. The stream must be an
 	// SWF file.
 	ParseThread(std::istream& in, RootMovieClip *root) DLL_PUBLIC;
@@ -436,6 +441,7 @@ public:
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
 	void execute();
 	_NR<ApplicationDomain> applicationDomain;
+	_NR<SecurityDomain> securityDomain;
 private:
 	std::istream& f;
 	std::streambuf* zlibFilter;

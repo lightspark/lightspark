@@ -1667,6 +1667,11 @@ _R<ApplicationDomain> ABCVm::getCurrentApplicationDomain(call_context* th)
 	return th->context->root->applicationDomain;
 }
 
+_R<SecurityDomain> ABCVm::getCurrentSecurityDomain(call_context* th)
+{
+	return th->context->root->securityDomain;
+}
+
 uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)
 {
 	return ATOMIC_ADD(nextNamespaceBase,nsNum)-nsNum;

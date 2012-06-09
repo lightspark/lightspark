@@ -71,10 +71,10 @@ ParseThread* lightspark::getParseThread()
 	return pt;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, Class_base* c):
+RootMovieClip::RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(c),
 	parsingIsFailed(false),frameRate(0),
-	toBind(false),finishedLoading(false),applicationDomain(appDomain)
+	toBind(false),finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
 	if(li)
 		li->incRef();
@@ -135,10 +135,10 @@ void RootMovieClip::setOnStage(bool staged)
 	MovieClip::setOnStage(staged);
 }
 
-RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain)
+RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass();
-	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(li, appDomain, movieClipClass);
+	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(li, appDomain, secDomain, movieClipClass);
 	return ret;
 }
 
@@ -170,7 +170,7 @@ void SystemState::staticDeinit()
 static const char* builtinStrings[] = {"", "any", "void", "prototype" };
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
-	RootMovieClip(NULL,NullRef,NULL),terminated(0),renderRate(0),error(false),shutdown(false),
+	RootMovieClip(NULL,NullRef,NullRef,NULL),terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -206,6 +206,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	undefined=_MR(new (unaccountedMemory) Undefined);
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());
 	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(systemDomain));
+	securityDomain = _MR(Class<SecurityDomain>::getInstanceS());
 
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
@@ -1112,8 +1113,8 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	}
 }
 
-ParseThread::ParseThread(istream& in, _NR<ApplicationDomain> appDomain, Loader *_loader, tiny_string srcurl)
-  : version(0),applicationDomain(appDomain),
+ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *_loader, tiny_string srcurl)
+  : version(0),applicationDomain(appDomain),securityDomain(secDomain),
     f(in),zlibFilter(NULL),backend(NULL),loader(_loader),
     parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
@@ -1121,7 +1122,7 @@ ParseThread::ParseThread(istream& in, _NR<ApplicationDomain> appDomain, Loader *
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
-  : version(0),applicationDomain(NullRef), //The application domain is not really needed since the root is already loaded
+  : version(0),applicationDomain(NullRef),securityDomain(NullRef), //The domains are not needed since the system state create them itself
     f(in),zlibFilter(NULL),backend(NULL),loader(NULL),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
@@ -1230,7 +1231,7 @@ void ParseThread::parseSWF(UI8 ver)
 	if(parsedObject.isNull())
 	{
 		LoaderInfo *li=loader?loader->getContentLoaderInfo().getPtr():NULL;
-		root=RootMovieClip::getInstance(li, applicationDomain);
+		root=RootMovieClip::getInstance(li, applicationDomain, securityDomain);
 		parsedObject=_MNR(root);
 		if(!url.empty())
 			root->setOrigin(url, "");
@@ -1756,4 +1757,5 @@ void RootMovieClip::finalize()
 {
 	MovieClip::finalize();
 	applicationDomain.reset();
+	securityDomain.reset();
 }

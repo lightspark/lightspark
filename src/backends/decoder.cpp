@@ -108,7 +108,12 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 	curBuffer(0),curBufferOffset(0),codecContext(NULL),ownedContext(true)
 {
 	//The tag is the header, initialize decoding
-	
+#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
+	codecContext=avcodec_alloc_context3(NULL);
+#else
+	codecContext=avcodec_alloc_context();
+#endif //HAVE_AVCODEC_ALLOC_CONTEXT3
+
 	AVCodec* codec=NULL;
 	videoCodec=codecId;
 	if(codecId==H264)
@@ -141,15 +146,19 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 		assert(frameRateHint!=0.0);
 		frameRate=frameRateHint;
 	}
-	codecContext=avcodec_alloc_context3(codec);
+
+	
 	
 	if (initdata)
 	{
 		codecContext->extradata=initdata;
 		codecContext->extradata_size=datalen;
 	}
-
-	if(avcodec_open2(codecContext, codec,NULL)<0)
+#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
+	if(avcodec_open2(codecContext, codec, NULL)<0)
+#else
+	if(avcodec_open(codecContext, codec)<0)
+#endif //HAVE_AVCODEC_ALLOC_CONTEXT3
 		throw RunTimeException("Cannot open decoder");
 
 	if(fillDataAndCheckValidity())
@@ -180,7 +189,11 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 			return;
 	}
 	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
-	if(avcodec_open2(codecContext, codec,NULL)<0)
+#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
+	if(avcodec_open2(codecContext, codec, NULL)<0)
+#else
+	if(avcodec_open(codecContext, codec)<0)
+#endif //HAVE_AVCODEC_ALLOC_CONTEXT3
 		return;
 
 	frameRate=frameRateHint;
@@ -461,7 +474,11 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initd
 		codecContext->extradata_size=datalen;
 	}
 
+#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
 	if(avcodec_open2(codecContext, codec, NULL)<0)
+#else
+	if(avcodec_open(codecContext, codec)<0)
+#endif //HAVE_AVCODEC_ALLOC_CONTEXT3
 		throw RunTimeException("Cannot open decoder");
 
 	if(fillDataAndCheckValidity())
@@ -479,7 +496,11 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):codecContext(_c)
 	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
 	assert(codec);
 
+#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
 	if(avcodec_open2(codecContext, codec, NULL)<0)
+#else
+	if(avcodec_open(codecContext, codec)<0)
+#endif //HAVE_AVCODEC_ALLOC_CONTEXT3
 		return;
 
 	if(fillDataAndCheckValidity())
@@ -719,7 +740,11 @@ FFMpegStreamDecoder::~FFMpegStreamDecoder()
 	if(formatCtx)
 	{
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
+#ifdef HAVE_AVFORMAT_CLOSE_INPUT
 		avformat_close_input(&formatCtx);
+#else
+		av_close_input_file(formatCtx);
+#endif
 #else
 		av_close_input_stream(formatCtx);
 #endif

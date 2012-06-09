@@ -275,12 +275,14 @@ void LoaderContext::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	REGISTER_GETTER_SETTER(c, applicationDomain);
+	REGISTER_GETTER_SETTER(c, securityDomain);
 }
 
 void LoaderContext::finalize()
 {
 	ASObject::finalize();
 	applicationDomain.reset();
+	securityDomain.reset();
 }
 
 ASFUNCTIONBODY(LoaderContext,_constructor)
@@ -290,12 +292,14 @@ ASFUNCTIONBODY(LoaderContext,_constructor)
 	_NR<ApplicationDomain> appDomain;
 	_NR<SecurityDomain> secDomain;
 	ARG_UNPACK (checkPolicy, false) (appDomain, NullRef) (secDomain, NullRef);
-	//TODO: Support checkPolicyFile and securityDomain
+	//TODO: Support checkPolicyFile
 	th->applicationDomain=appDomain;
+	th->securityDomain=secDomain;
 	return NULL;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, applicationDomain);
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, securityDomain);
 
 void SecurityDomain::sinit(Class_base* c)
 {

@@ -27,6 +27,8 @@
 namespace lightspark
 {
 
+class SecurityDomain;
+
 class Capabilities: public ASObject
 {
 public:
@@ -94,6 +96,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<ApplicationDomain>, applicationDomain);
+	ASPROPERTY_GETTER_SETTER(_NR<SecurityDomain>, securityDomain);
 	void finalize();
 };
 

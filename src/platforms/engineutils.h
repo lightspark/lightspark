@@ -50,7 +50,7 @@ protected:
 	RecMutex mutex;
 	sigc::slot<bool,GdkEvent*> inputHandler;
 	gulong inputHandlerId;
-	sigc::slot<void,int32_t,int32_t> sizeHandler;
+	sigc::slot<void,int32_t,int32_t,bool> sizeHandler;
 	gulong sizeHandlerId;
 	/* This function must be called from the gtk main thread
 	 * and within gdk_threads_enter/leave */
@@ -140,10 +140,10 @@ public:
 	{
 		RecMutex::Lock l(e->mutex);
 		if(!e->sizeHandler.empty() && widget)
-			e->sizeHandler(allocation->width, allocation->height);
+			e->sizeHandler(allocation->width, allocation->height, false);
 	}
 	/* This function must be called from the gtk_main() thread */
-	void setSizeChangeHandler(const sigc::slot<void,int32_t,int32_t>& sc)
+	void setSizeChangeHandler(const sigc::slot<void,int32_t,int32_t,bool>& sc)
 	{
 		RecMutex::Lock l(mutex);
 		if(!widget)
@@ -159,7 +159,7 @@ public:
 		if(!sizeHandler.empty() && widget)
 		{
 			g_signal_handler_disconnect(widget, sizeHandlerId);
-			sizeHandler = sigc::slot<void,int32_t,int32_t>();
+			sizeHandler = sigc::slot<void,int32_t,int32_t,bool>();
 		}
 	}
 

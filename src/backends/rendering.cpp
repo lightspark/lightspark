@@ -707,8 +707,10 @@ void RenderThread::commonGLResize()
 	tempTex.resize(windowWidth, windowHeight);
 }
 
-void RenderThread::requestResize(uint32_t w, uint32_t h)
+void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 {
+	if(!force && windowWidth==w && windowHeight==h)
+		return;
 	newWidth=w;
 	newHeight=h;
 	resizeNeeded=true;

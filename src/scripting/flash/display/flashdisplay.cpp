@@ -1984,7 +1984,7 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 		getSys()->scaleMode=SystemState::NO_SCALE;
 
 	RenderThread* rt=getSys()->getRenderThread();
-	rt->requestResize(rt->windowWidth, rt->windowHeight);
+	rt->requestResize(rt->windowWidth, rt->windowHeight, true);
 	return NULL;
 }
 

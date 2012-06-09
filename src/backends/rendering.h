@@ -144,7 +144,7 @@ public:
 	*/
 	void addUploadJob(ITextureUploadable* u);
 
-	void requestResize(uint32_t w, uint32_t h);
+	void requestResize(uint32_t w, uint32_t h, bool force);
 	void waitForInitialization()
 	{
 		initialized.wait();

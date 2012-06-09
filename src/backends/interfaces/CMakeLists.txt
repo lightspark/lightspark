@@ -1,7 +1,7 @@
 #**************************************************************************
 #    Lightspark, a free flash player implementation
 #
-#    Copyright (C) 2010-2011  Alessandro Pignotti <a.pignotti@sssup.it>
+#    Copyright (C) 2010-2012  Alessandro Pignotti <a.pignotti@sssup.it>
 #    Copyright (C) 2010  Giacomo Spigler <g.spigler@sssup.it>
 #    Copyright (C) 2010  Alexandre Demers <papouta@hotmail.com>
 #

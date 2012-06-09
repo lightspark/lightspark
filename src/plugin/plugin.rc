@@ -23,7 +23,7 @@ VS_VERSION_INFO VERSIONINFO
 	VALUE "FileOpenName", "Flash"
 	VALUE "FileVersion", "12, 1, 0, 1"
 	VALUE "InternalName", "nplightsparkplugin"
-	VALUE "LegalCopyright", "Copyright © 2011 by the Lightspark team"
+	VALUE "LegalCopyright", "Copyright © 2009-2012 by the Lightspark team"
 	VALUE "MIMEType", "application/x-shockwave-flash"
 	VALUE "OriginalFilename", "nplightsparkplugin.dll"
 	VALUE "ProductName", "Shockwave Flash"

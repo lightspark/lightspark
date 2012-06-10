@@ -119,7 +119,11 @@ Ref<T> _MR(T* a)
 	return Ref<T>(a);
 }
 
-#define NullRef (nullptr)
+class NullRef_t
+{
+};
+
+extern NullRef_t NullRef;
 
 template<class T>
 class NullableRef
@@ -129,7 +133,7 @@ private:
 public:
 	NullableRef(): m(NULL) {}
 	explicit NullableRef(T* o):m(o){}
-	NullableRef(std::nullptr_t):m(NULL){}
+	NullableRef(NullRef_t):m(NULL){}
 	NullableRef(const NullableRef& r):m(r.m)
 	{
 		if(m)
@@ -187,6 +191,10 @@ public:
 	{
 		return m==r;
 	}
+	bool operator==(NullRef_t) const
+	{
+		return m==NULL;
+	}
 	template<class D> bool operator!=(const NullableRef<D>& r) const
 	{
 		return m!=r.getPtr();
@@ -198,6 +206,10 @@ public:
 	bool operator!=(T* r) const
 	{
 		return m!=r;
+	}
+	bool operator!=(NullRef_t) const
+	{
+		return m!=NULL;
 	}
 	/*explicit*/ operator bool() const
 	{

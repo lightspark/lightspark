@@ -56,6 +56,7 @@
 #include <io.h>
 #undef DOUBLE_CLICK
 #undef RGB
+#undef VOID
 #ifndef PATH_MAX
 #define PATH_MAX 260
 #endif

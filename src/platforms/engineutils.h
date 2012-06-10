@@ -22,7 +22,9 @@
 
 #include <gtk/gtk.h>
 #ifdef _WIN32
+#	define VOID void
 #	include <gdk/gdkwin32.h>
+#	undef VOID
 #else
 #	include <sys/resource.h>
 #	include <gdk/gdkx.h>

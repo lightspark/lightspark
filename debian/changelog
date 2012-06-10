@@ -1,3 +1,9 @@
+lightspark (0.6.0.1-0ubuntu1~ppa1) precise; urgency=low
+
+  * New release
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Sun, 10 Jun 2012 11:29:30 +0200
+
 lightspark (0.5.7-0ubuntu1~ppa2) precise; urgency=low
 
   * Fix email

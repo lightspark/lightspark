@@ -45,6 +45,7 @@ public:
 	bool fromPNG(std::istream& s);
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
+	void reset();
 };
 
 };

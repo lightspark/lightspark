@@ -80,3 +80,12 @@ bool BitmapContainer::fromPNG(std::istream &s)
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
 }
 
+void BitmapContainer::reset()
+{
+	data.clear();
+	data.shrink_to_fit();
+	stride=0;
+	dataSize=0;
+	width=0;
+	height=0;
+}

@@ -170,7 +170,7 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 
 void ABCVm::registerClasses()
 {
-	Global* builtin=Class<Global>::getInstanceS((ABCContext*)0, 0);
+	Global* builtin=Class<Global>::getInstanceS(nullptr, 0);
 	//Register predefined types, ASObject are enough for not implemented classes
 	builtin->registerBuiltin("Object","",Class<ASObject>::getRef());
 	builtin->registerBuiltin("Class","",Class_object::getRef());

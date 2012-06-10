@@ -83,8 +83,8 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, _
 
 RootMovieClip::~RootMovieClip()
 {
-	for(DictionaryTag* it: dictionary)
-		delete it;
+	for(auto it=dictionary.begin();it!=dictionary.end();++it)
+		delete *it;
 }
 
 void RootMovieClip::parsingFailed()

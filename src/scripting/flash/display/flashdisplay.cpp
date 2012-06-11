@@ -469,6 +469,9 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	//TODO: support LoaderContext
 	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
 	th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+	//Always loaded in the current security domain
+	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
+	th->contentLoaderInfo->securityDomain = curSecDomain;
 
 	ByteArray *ba=static_cast<ByteArray*>(args[0]);
 	if(ba->getLength()!=0)

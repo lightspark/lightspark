@@ -200,17 +200,6 @@ ASFUNCTIONBODY(BitmapData,draw)
 	return NULL;
 }
 
-void BitmapData::copyFrom(BitmapData *source)
-{
-	data.clear();
-	dataSize = source->dataSize;
-	data = source->data;
-	width = source->width;
-	height = source->height;
-	stride = source->stride;
-	notifyUsers();
-}
-
 uint32_t BitmapData::getPixelPriv(uint32_t x, uint32_t y)
 {
 	if ((int)x >= width || (int)y >= height)

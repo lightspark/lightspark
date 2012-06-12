@@ -67,8 +67,8 @@ private:
 	void handleUpload();
 	Semaphore event;
 	std::string fontPath;
-	uint32_t newWidth;
-	uint32_t newHeight;
+	volatile uint32_t newWidth;
+	volatile uint32_t newHeight;
 	float scaleX;
 	float scaleY;
 	int offsetX;
@@ -157,8 +157,8 @@ public:
 	//OpenGL programs
 	int gpu_program;
 	TextureBuffer tempTex;
-	uint32_t windowWidth;
-	uint32_t windowHeight;
+	volatile uint32_t windowWidth;
+	volatile uint32_t windowHeight;
 	bool hasNPOTTextures;
 	GLint fragmentTexScaleUniform;
 	GLint directUniform;

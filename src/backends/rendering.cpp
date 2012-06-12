@@ -339,11 +339,13 @@ void RenderThread::worker()
 
 			if(resizeNeeded)
 			{
+				//Order of the operations here matters for requestResize
 				windowWidth=newWidth;
 				windowHeight=newHeight;
+				resizeNeeded=false;
 				newWidth=0;
 				newHeight=0;
-				resizeNeeded=false;
+				//End of order critical part
 				LOG(LOG_INFO,_("Window resized to ") << windowWidth << 'x' << windowHeight);
 				commonGLResize();
 				m_sys->resizeCompleted();
@@ -709,8 +711,18 @@ void RenderThread::commonGLResize()
 
 void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 {
-	if(!force && windowWidth==w && windowHeight==h)
+	//We can skip the resize if the current size is correct
+	//and there is no pending resize or if there is already a
+	//pending resize with the correct size
+
+	//This test is correct only if the order of operation where
+	//the resize is handled does not change!
+	if(!force &&
+		((windowWidth==w && windowHeight==h && resizeNeeded==false) ||
+		 (newWidth==w && newHeight==h)))
+	{
 		return;
+	}
 	newWidth=w;
 	newHeight=h;
 	resizeNeeded=true;

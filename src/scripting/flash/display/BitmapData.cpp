@@ -124,6 +124,7 @@ ASFUNCTIONBODY(BitmapData,dispose)
 	th->data.clear();
 	th->data.shrink_to_fit();
 	th->disposed = true;
+	th->notifyUsers();
 	return NULL;
 }
 
@@ -195,6 +196,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
 
+	th->notifyUsers();
 	return NULL;
 }
 
@@ -206,6 +208,7 @@ void BitmapData::copyFrom(BitmapData *source)
 	width = source->width;
 	height = source->height;
 	stride = source->stride;
+	notifyUsers();
 }
 
 uint32_t BitmapData::getPixelPriv(uint32_t x, uint32_t y)
@@ -258,6 +261,7 @@ void BitmapData::setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAl
 		*p=color;
 	else
 		*p=(*p & 0xff000000) | (color & 0x00ffffff);
+	notifyUsers();
 }
 
 ASFUNCTIONBODY(BitmapData,setPixel)

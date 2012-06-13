@@ -154,7 +154,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 		codecContext->extradata=initdata;
 		codecContext->extradata_size=datalen;
 	}
-#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
+#ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
@@ -189,7 +189,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 			return;
 	}
 	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
-#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
+#ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
@@ -474,7 +474,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initd
 		codecContext->extradata_size=datalen;
 	}
 
-#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
+#ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
@@ -496,7 +496,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):codecContext(_c)
 	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
 	assert(codec);
 
-#ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
+#ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)

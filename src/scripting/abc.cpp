@@ -360,6 +360,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Video","flash.media",Class<Video>::getRef());
 	builtin->registerBuiltin("Sound","flash.media",Class<Sound>::getRef());
 	builtin->registerBuiltin("SoundLoaderContext","flash.media",Class<SoundLoaderContext>::getRef());
+	builtin->registerBuiltin("SoundChannel","flash.media",Class<SoundChannel>::getRef());
 
 	builtin->registerBuiltin("Keyboard","flash.ui",Class<ASObject>::getStubClass(QName("Keyboard","flash.ui")));
 	builtin->registerBuiltin("ContextMenu","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenu","flash.ui")));
@@ -383,6 +384,8 @@ void ABCVm::registerClasses()
 	if(getSys()->flashMode==SystemState::AIR)
 	{
 		builtin->registerBuiltin("NativeApplication","flash.desktop",Class<NativeApplication>::getRef());
+
+		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef());
 
 		builtin->registerBuiltin("FileStream","flash.filesystem",
 				Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")));

@@ -9,7 +9,7 @@
 # Linux make
 #
 i686/*
-x86_64
+x86_64/*
 *.gmo
 
 #
@@ -18,6 +18,9 @@ x86_64
 CMakeFiles
 Makefile
 *.cmake
+# exception for files beyond conf/
+!conf/*
+
 CMakeCache.txt
 obj/
 version.h

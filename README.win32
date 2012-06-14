@@ -11,7 +11,7 @@ I assume that your currently one level above the directory
   1. git clone -b master https://github.com/mxe/mxe.git
   2. cd mxe
   3. Apply the patch from below to src/curl.mk
-  4. make gcc llvm glibmm gtk2 ffmpeg cairo pango boost libxml++ glew freetype curl
+  4. make gcc llvm glibmm gtk2 ffmpeg cairo pango boost libxml++ glew freetype curl librtmp
      Note: You may want to add e.g. '-j4' to build four packages in parallel, or e.g. JOBS=3 to use three cpus per package.
      Note: This may ask you to install additional packages. Do so using the package manager of your distribution.
            For Ubuntu (oneiric), use 'apt-get install libtool yasm scons flex unzip wget')

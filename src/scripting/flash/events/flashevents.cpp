@@ -117,12 +117,12 @@ void Event::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Event,_constructor)
 {
+	// Event constructor is called with zero arguments internally
+	if(argslen==0)
+		return NULL;
+
 	Event* th=static_cast<Event*>(obj);
-	if(argslen>=1)
-	{
-		assert_and_throw(args[0]->getObjectType()==T_STRING);
-		th->type=args[0]->toString();
-	}
+	ARG_UNPACK(th->type)(th->bubbles, false)(th->cancelable, false);
 	return NULL;
 }
 

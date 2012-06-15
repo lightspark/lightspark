@@ -693,8 +693,11 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NU
 #endif
 	if(ret<0)
 		return;
-	
+#ifdef HAVE_AVFORMAT_FIND_STREAM_INFO
 	ret=avformat_find_stream_info(formatCtx,NULL);
+#else
+	ret=av_find_stream_info(formatCtx);
+#endif
 	if(ret<0)
 		return;
 

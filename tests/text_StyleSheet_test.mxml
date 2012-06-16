@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_text_StyleSheet_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import flash.text.*;
+	private function appComplete():void
+	{
+		var styleSheet:StyleSheet = new StyleSheet();
+
+		var nonExistingStyle:Object = styleSheet.getStyle("doesNotExist");
+		Tests.assertNotNull(nonExistingStyle, "non-existing style is not Null");
+
+		styleSheet.setStyle("test", {"foo": "bar"});
+		var retrievedStyle:Object = styleSheet.getStyle("test");
+
+		Tests.assertEquals("bar", retrievedStyle["foo"], "stored style");
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

@@ -512,7 +512,11 @@ ASFUNCTIONBODY(StyleSheet,getStyle)
 		return it->second.getPtr();
 	}
 	else
-		return getSys()->getNullRef();
+	{
+		// Tested behaviour is to return an empty ASObject
+		// instead of Null as is said in the documentation
+		return Class<ASObject>::getInstanceS();
+	}
 	return NULL;
 }
 

@@ -1300,6 +1300,8 @@ ASObject* abstract_d(number_t i);
 
 void stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns);
 
+inline double twipsToPixels(double twips) { return twips/20.0; }
+
 std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);

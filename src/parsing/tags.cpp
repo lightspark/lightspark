@@ -289,7 +289,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 		if(HasFontClass)
 			in >> FontClass;
 		in >> FontHeight;
-		textData.fontSize = FontHeight;
+		textData.fontSize = twipsToPixels(FontHeight);
 	}
 	if(HasTextColor)
 		in >> TextColor;

@@ -56,6 +56,7 @@ public:
 	ASFUNCTION(toXMLString);
 	ASFUNCTION(generator);
 	ASFUNCTION(descendants);
+	ASFUNCTION(elements);
 	ASFUNCTION(valueOf);
 	ASFUNCTION(text);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);

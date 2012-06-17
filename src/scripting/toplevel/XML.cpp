@@ -548,24 +548,29 @@ ASFUNCTIONBODY(XML,elements)
 	if (name=="*")
 		name="";
 
+	th->getElementNodes(name, ret);
+	return Class<XMLList>::getInstanceS(ret);
+}
+
+void XML::getElementNodes(const tiny_string& name, XMLVector& foundElements)
+{
 	_NR<XML> rootXML=NullRef;
-	if(th->root.isNull())
+	if(root.isNull())
 	{
-		th->incRef();
-		rootXML=_MR(th);
+		incRef();
+		rootXML=_MR(this);
 	}
 	else
-		rootXML=th->root;
+		rootXML=root;
 
-	const xmlpp::Node::NodeList& children=th->node->get_children();
+	const xmlpp::Node::NodeList& children=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=children.begin();
 	for(;it!=children.end();++it)
 	{
 		xmlElementType nodetype=(*it)->cobj()->type;
 		if(nodetype==XML_ELEMENT_NODE && (name.empty() || name == (*it)->get_name()))
-			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+			foundElements.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
-	return Class<XMLList>::getInstanceS(ret);
 }
 
 bool XML::hasSimpleContent() const

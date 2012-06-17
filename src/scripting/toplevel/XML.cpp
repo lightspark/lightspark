@@ -642,7 +642,9 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	bool isAttr=name.isAttribute;
 	unsigned int index=0;
 	//Normalize the name to the string form
-	const tiny_string normalizedName=name.normalizedName();
+	tiny_string normalizedName=name.normalizedName();
+	if(normalizedName=="*")
+		normalizedName="";
 	//TODO: support namespaces
 	assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
 

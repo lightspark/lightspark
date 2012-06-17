@@ -119,7 +119,9 @@ ASFUNCTIONBODY(XML,generator)
 		return Class<XML>::getInstanceS(args[0]->as<XMLNode>()->node);
 	}
 	else
-		throw RunTimeException("Type not supported in XML()");
+	{
+		return Class<XML>::getInstanceS(args[0]->toString());
+	}
 }
 
 ASFUNCTIONBODY(XML,_constructor)
@@ -165,7 +167,9 @@ ASFUNCTIONBODY(XML,_constructor)
 		th->node=th->buildCopy(reduced->node);
 	}
 	else
-		throw Class<TypeError>::getInstanceS("Unsupported type in XML conversion");
+	{
+		th->node=th->buildFromString(args[0]->toString());
+	}
 	return NULL;
 }
 

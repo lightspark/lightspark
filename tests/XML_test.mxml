@@ -110,6 +110,16 @@
 		Tests.assertEquals("a", xml21.name(), "::name() after setting [\"name\"]");
 		Tests.assertEquals("<a>\n  <name>bar</name>\n</a>", xml21.toString(), "::toString after setting name");
 
+		// According to the documentation this should throw
+		// TypeError but testing shows it doesn't
+		var exception:String = "";
+		try {
+			var xml22:XML = new XML(new Sprite());
+		} catch (err:Object) {
+			exception = err.toString();
+		}
+		Tests.assertEquals("", exception, "No exception when constructor is applied to a general object");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

@@ -34,6 +34,14 @@ tiny_string::tiny_string(const Glib::ustring& r):buf(_buf_static),stringSize(r.b
 	memcpy(buf,r.c_str(),stringSize);
 }
 
+tiny_string::tiny_string(std::istream& in, int len):buf(_buf_static),stringSize(len+1),type(STATIC)
+{
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	in.read(buf,len);
+	buf[len]='\0';
+}
+
 tiny_string& tiny_string::operator=(const Glib::ustring& r)
 {
 	resetToStatic();

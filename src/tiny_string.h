@@ -183,6 +183,7 @@ public:
 		memcpy(buf,r.c_str(),stringSize);
 	}
 	tiny_string(const Glib::ustring& r);
+	tiny_string(std::istream& in, int len);
 	~tiny_string()
 	{
 		resetToStatic();

@@ -111,16 +111,9 @@ istream& lightspark::operator>>(istream& in, d64& v)
 
 istream& lightspark::operator>>(istream& in, string_info& v)
 {
-	in >> v.size;
-	uint8_t t;
-	string tmp;
-	tmp.reserve(v.size);
-	for(unsigned int i=0;i<v.size;i++)
-	{
-		in.read((char*)&t,1);
-		tmp.push_back(t);
-	}
-	v.val=tmp;
+	u30 size;
+	in >> size;
+	v.val=tiny_string(in,size);
 	return in;
 }
 

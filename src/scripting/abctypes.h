@@ -91,7 +91,6 @@ class string_info
 {
 friend std::istream& operator>>(std::istream& in, string_info& v);
 private:
-	u30 size;
 	tiny_string val;
 public:
 	operator const tiny_string&() const{return val;}

@@ -1098,6 +1098,8 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			xmlpp::Element* node=root->add_child(nodename);
 			node->set_attribute("name", getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
 			node->set_attribute("type", getSys()->getStringFromUniqueId(type->name_s_id).raw_buf());
+
+			describeMetadata(node, t);
 		}
 		else if (kind==traits_info::Method)
 		{
@@ -1119,6 +1121,8 @@ void Class_base::describeTraits(xmlpp::Element* root,
 				param->set_attribute("type", getSys()->getStringFromUniqueId(method.paramTypeName(j)->name_s_id).raw_buf());
 				param->set_attribute("optional", j>=firstOpt?"true":"false");
 			}
+
+			describeMetadata(node, t);
 		}
 		else if (kind==traits_info::Getter || kind==traits_info::Setter)
 		{
@@ -1172,6 +1176,28 @@ void Class_base::describeTraits(xmlpp::Element* root,
 				node->set_attribute("type", type);
 
 			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
+
+			describeMetadata(node, t);
+		}
+	}
+}
+
+void Class_base::describeMetadata(xmlpp::Element* root, const traits_info& trait) const
+{
+	if((trait.kind&traits_info::Metadata) == 0)
+		return;
+
+	for(unsigned int i=0;i<trait.metadata_count;i++)
+	{
+		xmlpp::Element *metadata_node=root->add_child("metadata");
+		metadata_info& minfo = context->metadata[trait.metadata[i]];
+		metadata_node->set_attribute("name", context->getString(minfo.name));
+
+		for(unsigned int j=0;j<minfo.item_count;++j)
+		{
+			xmlpp::Element *arg_node=metadata_node->add_child("arg");
+			arg_node->set_attribute("key", context->getString(minfo.items[j].key));
+			arg_node->set_attribute("value", context->getString(minfo.items[j].value));
 		}
 	}
 }

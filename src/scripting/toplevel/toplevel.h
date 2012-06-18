@@ -116,6 +116,7 @@ private:
 	void recursiveBuild(ASObject* target);
 	IFunction* constructor;
 	void describeTraits(xmlpp::Element* root, std::vector<traits_info>& traits) const;
+	void describeMetadata(xmlpp::Element* node, const traits_info& trait) const;
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
 	std::set<ASObject*, std::less<ASObject*>, reporter_allocator<ASObject*>> referencedObjects;

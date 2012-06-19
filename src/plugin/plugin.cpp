@@ -209,8 +209,10 @@ NPError NS_PluginInitialize()
 
 	/* setup glib/gtk, this is already done on firefox/linux, but needs to be done
 	 * on firefox/windows (because there we statically link to gtk) */
+#ifdef HAVE_G_THREAD_INIT
 	if(!g_thread_supported())
 		g_thread_init(NULL);
+#endif
 #ifdef _WIN32
 	//Calling gdk_threads_init multiple times (once by firefox, once by us)
 	//will break in various different ways (hangs, segfaults, etc.)

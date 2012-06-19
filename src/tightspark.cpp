@@ -76,8 +76,9 @@ int main(int argc, char* argv[])
 		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] <file.abc> [<file2.abc>]");
 		exit(-1);
 	}
-
+#ifdef HAVE_G_THREAD_INIT
 	g_thread_init(NULL);
+#endif
 	Log::setLogLevel(log_level);
 	SystemState::staticInit();
 	//NOTE: see SystemState declaration

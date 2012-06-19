@@ -113,7 +113,9 @@ int main(int argc, char* argv[])
 	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2012 Alessandro Pignotti and others");
 
 	//Make GTK thread enabled
+#ifdef HAVE_G_THREAD_INIT
 	g_thread_init(NULL);
+#endif
 	gdk_threads_init();
 	//Give GTK a chance to parse its own options
 	gtk_init (&argc, &argv);

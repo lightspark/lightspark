@@ -1731,11 +1731,19 @@ ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen
 	return getSys()->getUndefinedRef();
 }
 
+IFunction* Class<IFunction>::getNopFunction()
+{
+	IFunction* ret=new (this->memoryAccount) Function(this, ASNop);
+	//Similarly to newFunction, we must create a prototype object
+	ret->prototype = _MR(new_asobject());
+	return ret;
+}
+
 ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 {
 	if (argslen > 0)
 		throw Class<EvalError>::getInstanceS("Error #1066: Function('function body') is not supported");
-	return Class<IFunction>::getFunction(ASNop);
+	return getNopFunction();
 }
 
 Class<IFunction>* Class<IFunction>::getClass()
@@ -1746,7 +1754,8 @@ Class<IFunction>* Class<IFunction>::getClass()
 	{
 		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(ClassName<IFunction>::name);
 		ret=new (getSys()->unaccountedMemory) Class<IFunction>(memoryAccount);
-		ret->prototype = _MNR(new_asobject());
+		//The prototype for Function seems to be a function object. Use the nop.
+		ret->prototype = _MNR(ret->getNopFunction());
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any
 		//declared methods yet! Therefore, set super will not copy

@@ -349,6 +349,7 @@ class Class<IFunction>: public Class_base
 private:
 	Class<IFunction>(MemoryAccount* m):Class_base(QName("Function",""),m){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
+	IFunction* getNopFunction();
 public:
 	static Class<IFunction>* getClass();
 	static _R<Class<IFunction>> getRef()

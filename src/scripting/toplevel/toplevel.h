@@ -206,48 +206,19 @@ public:
 	static _R<Class_object> getRef();
 };
 
-/* Adaptor from fuction to class, it does not seems to be a good idea to
- * derive IFunction from Class_base, because it's too heavyweight
- * This is the class of an object created by (new f()) where f is a function.
- * Its prototype points to f->prototype which is defined in IFunction.
- *
- * Class_function uses prototype based inheritance only.
+/* Special object returned when new func() syntax is used.
+ * This object looks for properties on the prototype object that is passed in the constructor
  */
-class Class_function: public Class_base
+class Function_object: public ASObject
 {
 private:
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
-	{
-		throw RunTimeException("Class_function::getInstance");
-		return NULL;
-	}
-	void buildInstanceTraits(ASObject* o) const
-	{
-		throw RunTimeException("Class_function::buildInstanceTraits");
-	}
+	_NR<ASObject> funcPrototype;
 public:
-	//Name is 'Object' because trace(new f()) gives "[object Object]"
-	Class_function() : Class_base(QName("Object",""),NULL) {}
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
-	{
-		return NullRef;
-	}
+	Function_object(Class_base* c, _R<ASObject> p);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name)
 	{
 		throw UnsupportedException("Class_function::getVariableByMultiname_i");
-		return 0;
-	}
-	void setVariableByMultiname_i(const multiname& name, int32_t value)
-	{
-		throw UnsupportedException("Class_function::setVariableByMultiname_i");
-	}
-	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
-	{
-		throw UnsupportedException("Class_function::setVariableByMultiname");
-	}
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic)
-	{
-		return false;
 	}
 };
 

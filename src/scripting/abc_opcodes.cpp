@@ -590,7 +590,9 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	assert(f->is<SyntheticFunction>());
 	SyntheticFunction* sf=f->as<SyntheticFunction>();
 
-	ASObject* ret=Class<ASObject>::getInstanceS();
+	//Create a Function_object, the class should be ASObject
+	Class_base* c=Class<ASObject>::getClass();
+	ASObject* ret=new (c->memoryAccount) Function_object(c, sf->prototype);
 #ifndef NDEBUG
 	ret->initialized=false;
 #endif
@@ -604,13 +606,6 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 #ifndef NDEBUG
 	ret->initialized=true;
 #endif
-	//Now add our classdef
-	Class_function *cf=new (getSys()->unaccountedMemory) Class_function();
-	ret->setClass(cf);
-	//setClass created a new reference, we can release the local
-	//reference
-	cf->decRef();
-	ret->getClass()->prototype = sf->prototype;
 
 	sf->incRef();
 	ret->setVariableByQName("constructor","",sf,DYNAMIC_TRAIT);
@@ -2245,6 +2240,8 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 
 	//Bind the function to null, as this is not a class method
 	f->bind(NullRef,-1);
+	//Create the prototype object
+	f->prototype = _MR(new_asobject());
 	return f;
 }
 

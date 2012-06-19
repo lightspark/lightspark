@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_prototype_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import packageNewFunc;
+	private function appComplete():void
+	{
+		var newFunc:Function = function():void{this["test"] = "foobar";};
+		Tests.assertNotNull(newFunc.prototype, "Function object prototype");
+		newFunc.prototype["protTest"]="foobar2";
+
+		Tests.assertNull(packageNewFunc.prototype, "Function object in package prototype");
+
+		var f2:Object = new newFunc();
+		Tests.assertTrue(f2.hasOwnProperty("test"), "Variable for function based constructors");
+		Tests.assertFalse(f2.hasOwnProperty("protTest"), "hasOwnProperty of prototype variable");
+		Tests.assertEquals("foobar2",f2["protTest"], "Access to prototype variable");
+		Tests.assertNull(f2.prototype, "(new newFunc).prototype");
+		Tests.assertEquals("foobar", f2["test"], "Prototype does not override instance variables");
+		newFunc.prototype["test"]="foobar4";
+		Tests.assertEquals("foobar", f2["test"], "Prototype does not override instance variables");
+		newFunc.prototype = new Object();
+		newFunc.prototype["protTest"]="foobar3";
+		Tests.assertEquals("foobar2",f2["protTest"], "Access to prototype variable, after change of prototype");
+		Tests.assertFalse(f2.hasOwnProperty("protTest"),"hasOwnProperty ignores prototype on Function_object");
+
+		var f:Function = new Function();
+		Tests.assertNotNull(f.prototype, "(new Function).prototype");
+
+		Tests.assertNull(trace.prototype, "Builtin methods have no prototype");
+
+		var o:Object = new Object();
+		Tests.assertNull(o.prototype, "Instance have no prototype");
+
+		Tests.assertTrue(Object.prototype is Object, "Object prototype is object");
+		Tests.assertFalse(DisplayObject.prototype is DisplayObject, "DisplayObject prototype is object");
+
+		Object.prototype["test"]="foo";
+		Tests.assertNotNull(Function.prototype, "Function.prototype");
+		Tests.assertNotNull(Object.prototype, "Object.prototype");
+		Tests.assertNotNull(Function.prototype.prototype, "Function.prototype.prototype");
+		Tests.assertEquals("foo",Object.prototype["test"], "Object.Prototype is modifiable");
+
+		DisplayObject.prototype["test2"]="bar";
+		Tests.assertEquals("bar",this["test2"],"Access prototype variable from instance");
+		Tests.assertFalse(this.hasOwnProperty("test2"),"hasOwnProperty ignores prototype in instance");
+		Tests.assertNotNull(DisplayObject.prototype, "DisplayObject.prototype");
+		Tests.assertNotNull(DisplayObjectContainer.prototype, "DisplayObjectContainer.prototype");
+		Tests.assertEquals("bar",DisplayObject.prototype["test2"], "DisplayObject.prototype is modifiable");
+		Tests.assertNull(DisplayObjectContainer.prototype.prototype, "DisplayObjectContainer.prototype.prototype is not DisplayObject.prototype");
+
+		Tests.assertNull(DisplayObject.prototype.prototype, "DisplayObject.prototype.prototype is not Object.prototype");
+
+		Tests.assertTrue(Function.prototype is Function, "Function.prototype is a function");
+		Tests.assertNotNull(Function.prototype.prototype, "Function.prototype.prototype is valid");
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

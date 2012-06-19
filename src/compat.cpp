@@ -131,7 +131,7 @@ BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	RUNDLLMAIN(gio);
 	RUNDLLMAIN(glib);
-	RUNDLLMAIN(cairo);
+	//RUNDLLMAIN(cairo); //taken care of by patches from mxe
 	RUNDLLMAIN(atk);
 	RUNDLLMAIN(pango);
 	RUNDLLMAIN(gdk);

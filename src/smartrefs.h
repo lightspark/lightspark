@@ -123,7 +123,7 @@ class NullRef_t
 {
 };
 
-extern NullRef_t NullRef;
+static NullRef_t NullRef;
 
 template<class T>
 class NullableRef

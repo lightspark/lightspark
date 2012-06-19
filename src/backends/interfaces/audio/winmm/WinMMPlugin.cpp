@@ -81,8 +81,11 @@ WinMMStream::WinMMStream( AudioDecoder* d, WinMMPlugin* m )  :
 		aligned_malloc((void**)&buffer[i].lpData, wfx.nBlockAlign, bufferSize);
 		buffer[i].dwBufferLength = bufferSize;
 	}
-
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+	workerThread = Thread::create(sigc::mem_fun(this,&WinMMStream::worker));
+#else
 	workerThread = Thread::create(sigc::mem_fun(this,&WinMMStream::worker), true);
+#endif
 }
 
 WinMMStream::~WinMMStream()

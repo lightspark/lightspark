@@ -355,6 +355,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("ApplicationDomain","flash.system",Class<ApplicationDomain>::getRef());
 	builtin->registerBuiltin("SecurityDomain","flash.system",Class<SecurityDomain>::getRef());
 	builtin->registerBuiltin("LoaderContext","flash.system",Class<LoaderContext>::getRef());
+	builtin->registerBuiltin("System","flash.system",Class<System>::getRef());
 
 	builtin->registerBuiltin("SoundTransform","flash.media",Class<SoundTransform>::getRef());
 	builtin->registerBuiltin("Video","flash.media",Class<Video>::getRef());

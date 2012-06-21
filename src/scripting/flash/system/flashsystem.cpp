@@ -28,6 +28,7 @@
 #include "backends/security.h"
 
 #include <istream>
+#include <gdk/gdk.h>
 
 using namespace lightspark;
 
@@ -38,6 +39,7 @@ REGISTER_CLASS_NAME(Capabilities);
 REGISTER_CLASS_NAME(LoaderContext);
 REGISTER_CLASS_NAME(Security);
 REGISTER_CLASS_NAME(SecurityDomain);
+REGISTER_CLASS_NAME(System);
 
 
 #ifdef _WIN32
@@ -58,6 +60,8 @@ void Capabilities::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("localFileReadDisable","",Class<IFunction>::getFunction(_getLocalFileReadDisable),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("os","",Class<IFunction>::getFunction(_getOS),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("serverString","",Class<IFunction>::getFunction(_getServerString),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("screenResolutionX","",Class<IFunction>::getFunction(_getScreenResolutionX),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("screenResolutionY","",Class<IFunction>::getFunction(_getScreenResolutionY),GETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY(Capabilities,_getPlayerType)
@@ -105,6 +109,18 @@ ASFUNCTIONBODY(Capabilities,_getServerString)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Capabilities.serverString is not implemented");
 	return Class<ASString>::getInstanceS("");
+}
+ASFUNCTIONBODY(Capabilities,_getScreenResolutionX)
+{
+	GdkScreen*  screen = gdk_screen_get_default();
+	gint width = gdk_screen_get_width (screen);
+	return abstract_d(width);
+}
+ASFUNCTIONBODY(Capabilities,_getScreenResolutionY)
+{
+	GdkScreen*  screen = gdk_screen_get_default();
+	gint height = gdk_screen_get_height (screen);
+	return abstract_d(height);
 }
 
 ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c),parentDomain(p)
@@ -413,4 +429,17 @@ ASFUNCTIONBODY(lightspark, fscommand)
 		getSys()->setShutdownFlag();
 	}
 	return NULL;
+}
+
+
+void System::sinit(Class_base* c)
+{
+	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(totalMemory),GETTER_METHOD,false);
+}
+
+
+ASFUNCTIONBODY(System,totalMemory)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
+	return abstract_d(0);
 }

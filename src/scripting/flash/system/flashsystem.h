@@ -44,6 +44,8 @@ public:
 	ASFUNCTION(_getOS);
 	ASFUNCTION(_getVersion);
 	ASFUNCTION(_getServerString);
+	ASFUNCTION(_getScreenResolutionX);
+	ASFUNCTION(_getScreenResolutionY);
 };
 
 class ApplicationDomain: public ASObject
@@ -125,6 +127,14 @@ public:
 };
 
 ASObject* fscommand(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+
+class System: public ASObject
+{
+public:
+	System(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+	ASFUNCTION(totalMemory);
+};
 
 };
 #endif

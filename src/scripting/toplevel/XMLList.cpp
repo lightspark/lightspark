@@ -126,7 +126,14 @@ void XMLList::buildFromString(const std::string& str)
 	}
 	catch(const exception& e)
 	{
-		throw RunTimeException("Error while parsing XML");
+		try
+		{
+			parser.parse_memory(str);
+		}
+		catch(const exception& e)
+		{
+			throw RunTimeException("Error while parsing XML");
+		}
 	}
 	const xmlpp::Node::NodeList& children=\
 	  parser.get_document()->get_root_node()->get_children();

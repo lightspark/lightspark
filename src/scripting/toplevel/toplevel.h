@@ -128,7 +128,9 @@ public:
 	bool isFinal:1;
 	bool isSealed:1;
 	void addPrototypeGetter();
+	void addLengthGetter();
 	ASPROPERTY_GETTER(_NR<ASObject>,prototype);
+	ASPROPERTY_GETTER(int32_t,length);
 	_NR<Class_base> super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;

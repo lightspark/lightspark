@@ -217,6 +217,7 @@ public:
 			if(ret->super)
 				ret->prototype->setprop_prototype(ret->super->prototype);
 			ret->addPrototypeGetter();
+			ret->addLengthGetter();
 		}
 		else
 			ret=static_cast<Class<T>*>(it->second);
@@ -316,6 +317,7 @@ public:
 		ret->incRef();
 		ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 		ret->addPrototypeGetter();
+		ret->addLengthGetter();
 
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 		getSys()->builtinClasses.insert(std::make_pair(name,ret));
@@ -339,6 +341,7 @@ public:
 			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 
 			ret->addPrototypeGetter();
+			ret->addLengthGetter();
 		}
 		else
 			ret=static_cast<Class<ASObject>*>(it->second);

@@ -688,7 +688,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(m),use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),
 	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(m)),
-	isFinal(false),isSealed(false),context(NULL),class_name(name),class_index(-1),memoryAccount(m)
+	isFinal(false),isSealed(false),length(1),context(NULL),class_name(name),class_index(-1),memoryAccount(m)
 {
 	type=T_CLASS;
 }
@@ -761,6 +761,11 @@ void Class_base::addPrototypeGetter()
 	setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(_getter_prototype),GETTER_METHOD,false);
 }
 
+void Class_base::addLengthGetter()
+{
+	setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getter_length),GETTER_METHOD,false);
+}
+
 Class_base::~Class_base()
 {
 	if(!referencedObjects.empty())
@@ -768,6 +773,7 @@ Class_base::~Class_base()
 }
 
 ASFUNCTIONBODY_GETTER(Class_base, prototype);
+ASFUNCTIONBODY_GETTER(Class_base, length);
 
 ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
 {

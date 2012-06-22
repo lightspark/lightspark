@@ -247,7 +247,6 @@ struct method_body_info
 	u30 local_count;
 	u30 init_scope_depth;
 	u30 max_scope_depth;
-	u30 code_length;
 	//This is a string to use it in a stringstream
 	std::string code;
 	u30 exception_count;

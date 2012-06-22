@@ -161,10 +161,10 @@ istream& lightspark::operator>>(istream& in, method_info_simple& v)
 
 istream& lightspark::operator>>(istream& in, method_body_info& v)
 {
-	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> v.code_length;
-	v.code.resize(v.code_length);
-	for(unsigned int i=0;i<v.code_length;i++)
-		in.read(&v.code[i],1);
+	u30 code_length;
+	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> code_length;
+	v.code.resize(code_length);
+	in.read(&v.code[0],code_length);
 
 	in >> v.exception_count;
 	v.exceptions.resize(v.exception_count);

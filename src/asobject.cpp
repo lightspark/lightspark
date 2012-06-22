@@ -527,29 +527,8 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		}
 	}
 
-	if(!obj && cls)
-	{
-		//Look in prototype chain
-		ASObject* proto = cls->prototype.getPtr();
-		while(proto)
-		{
-			variable* tmp = proto->findSettable(name, false, NULL /*prototypes never have getters/setters*/);
-			
-			if(tmp)
-			{
-				if(cls->isFinal && !tmp->setter)
-				{
-					tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
-					throw Class<ReferenceError>::getInstanceS(err);
-				}
-				if (tmp->kind != DYNAMIC_TRAIT) // dynamic prototype properties can be overridden 
-					obj = tmp;
-				break;
-			}
-			proto = proto->getprop_prototype();
-		}
-	}
-	
+	//Do not lookup in the prototype chain. This is tested behaviour
+
 	if(!obj)
 	{
 		if(has_getter)

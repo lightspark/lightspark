@@ -15,6 +15,11 @@
 		Tests.assertNotNull(newFunc.prototype, "Function object prototype");
 		newFunc.prototype["protTest"]="foobar2";
 
+		Function.prototype["FunctionProtTest"]="foobar5";
+
+		Tests.assertEquals("foobar5",newFunc["FunctionProtTest"], "Access Function.prototype from function object");
+		Tests.assertNull(newFunc.prototype["FunctionProtTest"], "Access Function.prototype from function prototype");
+
 		Tests.assertNull(packageNewFunc.prototype, "Function object in package prototype");
 
 		var f2:Object = new newFunc();
@@ -48,7 +53,8 @@
 		Tests.assertEquals("foo",Object.prototype["test"], "Object.Prototype is modifiable");
 
 		DisplayObject.prototype["test2"]="bar";
-		Tests.assertEquals("bar",this["test2"],"Access prototype variable from instance");
+		Tests.assertEquals("bar",this["test2"],"Access prototype variable from instance [1/2]");
+		Tests.assertEquals("bar",DisplayObjectContainer.prototype["test2"],"Access prototype variable from instance [2/2]");
 		Tests.assertFalse(this.hasOwnProperty("test2"),"hasOwnProperty ignores prototype in instance");
 		Tests.assertNotNull(DisplayObject.prototype, "DisplayObject.prototype");
 		Tests.assertNotNull(DisplayObjectContainer.prototype, "DisplayObjectContainer.prototype");
@@ -59,6 +65,17 @@
 
 		Tests.assertTrue(Function.prototype is Function, "Function.prototype is a function");
 		Tests.assertNotNull(Function.prototype.prototype, "Function.prototype.prototype is valid");
+
+		Tests.assertEquals(Function,Function.prototype["constructor"], "constructor in prototype [1/2]");
+		Tests.assertEquals(DisplayObject,DisplayObject.prototype["constructor"], "constructor in prototype [2/2]");
+		Tests.assertFalse(this.hasOwnProperty("constructor"), "no constructor in regular instance");
+
+		//Setting prototype test
+		var o2:Object = new Object();
+		Object.prototype["settable"]=1;
+		Tests.assertEquals(1,Object.prototype["settable"],"Prototype var is not modifiable from instances [1/2]");
+		o2["settable"]=2;
+		Tests.assertEquals(1,Object.prototype["settable"],"Prototype var is not modifiable from instances [2/2]");
 
 		Tests.report(visual, this.name);
 	}

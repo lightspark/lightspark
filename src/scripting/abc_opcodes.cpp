@@ -590,9 +590,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	assert(f->is<SyntheticFunction>());
 	SyntheticFunction* sf=f->as<SyntheticFunction>();
 
-	//Create a Function_object, the class should be ASObject
-	Class_base* c=Class<ASObject>::getClass();
-	ASObject* ret=new (c->memoryAccount) Function_object(c, sf->prototype);
+	ASObject* ret=new_functionObject(sf->prototype);
 #ifndef NDEBUG
 	ret->initialized=false;
 #endif

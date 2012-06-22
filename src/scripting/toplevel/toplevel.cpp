@@ -2173,15 +2173,21 @@ ASFUNCTIONBODY(lightspark,_isXMLName)
 	return abstract_b(isXMLName(args[0]));
 }
 
-Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c), funcPrototype(p)
+Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c), functionPrototype(p)
 {
+}
+
+void Function_object::finalize()
+{
+	functionPrototype.reset();
 }
 
 _NR<ASObject> Function_object::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	_NR<ASObject> ret=ASObject::getVariableByMultiname(name, opt);
+	assert(!functionPrototype.isNull());
 	if(!ret.isNull())
 		return ret;
 
-	return funcPrototype->getVariableByMultiname(name, opt);
+	return functionPrototype->getVariableByMultiname(name, opt);
 }

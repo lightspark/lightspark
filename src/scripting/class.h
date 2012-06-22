@@ -78,6 +78,7 @@ public:
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */
 ASObject* new_asobject();
+Function_object* new_functionObject(_NR<ASObject> p);
 
 	template<class T,std::size_t N>
 	struct newWithOptionalClass

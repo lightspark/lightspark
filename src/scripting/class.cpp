@@ -29,6 +29,12 @@ ASObject* lightspark::new_asobject()
 	return Class<ASObject>::getInstanceS();
 }
 
+Function_object* lightspark::new_functionObject(_NR<ASObject> p)
+{
+	Class_base* c=Class<ASObject>::getClass();
+	return new (c->memoryAccount) Function_object(c, p);
+}
+
 Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(name, m),tag(NULL),bindedToRoot(false)
 {
 	this->incRef(); //create on reference for the classes map

@@ -206,20 +206,40 @@ public:
 	static _R<Class_object> getRef();
 };
 
+class Prototype
+{
+public:
+	virtual ~Prototype() {};
+	_NR<Prototype> prevPrototype;
+	virtual void incRef() = 0;
+	virtual void decRef() = 0;
+	virtual ASObject* getObj() = 0;
+};
+
+/* Special object used as prototype for classes
+ * It keeps a link to the upper level in the prototype chain
+ */
+class ObjectPrototype: public ASObject, public Prototype
+{
+public:
+	ObjectPrototype(Class_base* c);
+	void finalize();
+	void incRef() { ASObject::incRef(); }
+	void decRef() { ASObject::decRef(); }
+	ASObject* getObj() { return this; }
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+};
+
 /* Special object returned when new func() syntax is used.
  * This object looks for properties on the prototype object that is passed in the constructor
  */
 class Function_object: public ASObject
 {
-private:
-	_NR<ASObject> funcPrototype;
 public:
 	Function_object(Class_base* c, _R<ASObject> p);
+	_NR<ASObject> functionPrototype;
+	void finalize();
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	int32_t getVariableByMultiname_i(const multiname& name)
-	{
-		throw UnsupportedException("Class_function::getVariableByMultiname_i");
-	}
 };
 
 class IFunction: public ASObject

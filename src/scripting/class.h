@@ -80,40 +80,42 @@ public:
 ASObject* new_asobject();
 Function_object* new_functionObject(_NR<ASObject> p);
 
-	template<class T,std::size_t N>
-	struct newWithOptionalClass
+template<class T,std::size_t N>
+struct newWithOptionalClass
+{
+	template<class F, typename... Args>
+	static T* doNew(Class_base* c, const F& f, Args&&... args)
 	{
-		template<class F, typename... Args>
-		static T* doNew(Class_base* c, const F& f, Args&&... args)
-		{
-			return newWithOptionalClass<T, N-1>::doNew(c, std::forward<Args>(args)..., f);
-		}
-	};
-	template<class T>
-	struct newWithOptionalClass<T, 1>
+		return newWithOptionalClass<T, N-1>::doNew(c, std::forward<Args>(args)..., f);
+	}
+};
+template<class T>
+struct newWithOptionalClass<T, 1>
+{
+	template<class F, typename... Args>
+	static T* doNew(Class_base* c, const F& f, Args&&... args)
 	{
-		template<class F, typename... Args>
-		static T* doNew(Class_base* c, const F& f, Args&&... args)
-		{
-			//Last parameter is not a class pointer
-			return new (c->memoryAccount) T(c, std::forward<Args>(args)..., f);
-		}
-		template<typename... Args>
-		static T* doNew(Class_base* c, Class_base* f, Args&&... args)
-		{
-			//Last parameter is a class pointer
-			return new (f->memoryAccount) T(f, std::forward<Args>(args)...);
-		}
-	};
-	template<class T>
-	struct newWithOptionalClass<T, 0>
+		//Last parameter is not a class pointer
+		return new (c->memoryAccount) T(c, std::forward<Args>(args)..., f);
+	}
+	template<typename... Args>
+	static T* doNew(Class_base* c, Class_base* f, Args&&... args)
 	{
-		static T* doNew(Class_base* c)
-		{
-			//Last parameter is not a class pointer
-			return new (c->memoryAccount) T(c);
-		}
-	};
+		//Last parameter is a class pointer
+		return new (f->memoryAccount) T(f, std::forward<Args>(args)...);
+	}
+};
+
+template<class T>
+struct newWithOptionalClass<T, 0>
+{
+	static T* doNew(Class_base* c)
+	{
+		//Last parameter is not a class pointer
+		return new (c->memoryAccount) T(c);
+	}
+};
+
 template< class T>
 class Class: public Class_base
 {

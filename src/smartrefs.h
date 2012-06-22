@@ -187,7 +187,8 @@ public:
 	{
 		return m==r.getPtr();
 	}
-	bool operator==(T* r) const
+	template<class D>
+	bool operator==(const D* r) const
 	{
 		return m==r;
 	}
@@ -203,7 +204,8 @@ public:
 	{
 		return m!=r.getPtr();
 	}
-	bool operator!=(T* r) const
+	template<class D>
+	bool operator!=(const D* r) const
 	{
 		return m!=r;
 	}

@@ -89,7 +89,7 @@ ASFUNCTIONBODY(Boolean,_constructor)
 
 ASFUNCTIONBODY(Boolean,_toString)
 {
-	if(Class<Boolean>::getClass()->prototype == obj) //See ECMA 15.6.4
+	if(Class<Boolean>::getClass()->prototype->getObj() == obj) //See ECMA 15.6.4
 		return Class<ASString>::getInstanceS("false");
 
 	if(!obj->is<Boolean>())
@@ -101,7 +101,7 @@ ASFUNCTIONBODY(Boolean,_toString)
 
 ASFUNCTIONBODY(Boolean,_valueOf)
 {
-	if(Class<Boolean>::getClass()->prototype == obj)
+	if(Class<Boolean>::getClass()->prototype->getObj() == obj)
 		return abstract_b(false);
 
 	if(!obj->is<Boolean>())

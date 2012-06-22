@@ -989,7 +989,7 @@ ASFUNCTIONBODY(Array,_map)
 
 ASFUNCTIONBODY(Array,_toString)
 {
-	if(Class<Number>::getClass()->prototype == obj)
+	if(Class<Number>::getClass()->prototype->getObj() == obj)
 		return Class<ASString>::getInstanceS("");
 	if(!obj->is<Array>())
 	{

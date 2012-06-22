@@ -126,8 +126,6 @@ void Undefined::setVariableByMultiname(const multiname& name, ASObject* o, CONST
 IFunction::IFunction(Class_base* c):ASObject(c),inClass(NULL),length(0)
 {
 	type=T_FUNCTION;
-	prototype = _MR(new_asobject());
-	prototype->setprop_prototype(Class<ASObject>::getClass()->prototype);
 }
 
 void IFunction::finalize()
@@ -772,7 +770,17 @@ Class_base::~Class_base()
 		LOG(LOG_ERROR,_("Class destroyed without cleanUp called"));
 }
 
-ASFUNCTIONBODY_GETTER(Class_base, prototype);
+ASObject* Class_base::_getter_prototype(ASObject* obj, ASObject* const* args, const unsigned int argslen)
+{
+	if(!obj->is<Class_base>())
+		throw Class<ArgumentError>::getInstanceS("Function applied to wrong object");
+	Class_base* th = obj->as<Class_base>();
+	if(argslen != 0)
+		throw Class<ArgumentError>::getInstanceS("Arguments provided in getter");
+	ASObject* ret=th->prototype->getObj();
+	ret->incRef();
+	return ret;
+}
 ASFUNCTIONBODY_GETTER(Class_base, length);
 
 ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
@@ -1754,15 +1762,15 @@ Class<IFunction>* Class<IFunction>::getClass()
 	{
 		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(ClassName<IFunction>::name);
 		ret=new (getSys()->unaccountedMemory) Class<IFunction>(memoryAccount);
-		//The prototype for Function seems to be a function object. Use the nop.
-		ret->prototype = _MNR(ret->getNopFunction());
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any
 		//declared methods yet! Therefore, set super will not copy
 		//up any borrowed traits from there. We do that by ourself.
 		ret->setSuper(Class<ASObject>::getRef());
-
-		ret->prototype->setprop_prototype(ret->super->prototype);
+		//The prototype for Function seems to be a function object. Use the special FunctionPrototype
+		ret->prototype = _MNR(new_functionPrototype(ret, ret->super->prototype));
+		ret->incRef();
+		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 
 		getSys()->builtinClasses.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 
@@ -2171,6 +2179,45 @@ ASFUNCTIONBODY(lightspark,_isXMLName)
 		return abstract_b(false);
 
 	return abstract_b(isXMLName(args[0]));
+}
+
+ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
+{
+}
+
+void ObjectPrototype::finalize()
+{
+	prevPrototype.reset();
+}
+
+_NR<ASObject> ObjectPrototype::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	_NR<ASObject> ret=ASObject::getVariableByMultiname(name, opt);
+	if(!ret.isNull() || prevPrototype.isNull())
+		return ret;
+
+	return prevPrototype->getObj()->getVariableByMultiname(name, opt);
+}
+
+FunctionPrototype::FunctionPrototype(Class_base* c, _NR<Prototype> p) : Function(c, ASNop)
+{
+	prevPrototype=p;
+	//Add the prototype to the Nop function
+	this->prototype = _MR(new_asobject());
+}
+
+void FunctionPrototype::finalize()
+{
+	prevPrototype.reset();
+}
+
+_NR<ASObject> FunctionPrototype::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	_NR<ASObject> ret=Function::getVariableByMultiname(name, opt);
+	if(!ret.isNull() || prevPrototype.isNull())
+		return ret;
+
+	return prevPrototype->getObj()->getVariableByMultiname(name, opt);
 }
 
 Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c), functionPrototype(p)

@@ -101,6 +101,8 @@ public:
 	tiny_string getName() const { return "void"; }
 };
 
+class Prototype;
+
 class Class_base: public ASObject, public Type
 {
 friend class ABCVm;
@@ -129,7 +131,7 @@ public:
 	bool isSealed:1;
 	void addPrototypeGetter();
 	void addLengthGetter();
-	ASPROPERTY_GETTER(_NR<ASObject>,prototype);
+	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	ASPROPERTY_GETTER(int32_t,length);
 	_NR<Class_base> super;
 	//We need to know what is the context we are referring to
@@ -214,6 +216,13 @@ public:
 	virtual void incRef() = 0;
 	virtual void decRef() = 0;
 	virtual ASObject* getObj() = 0;
+	/*
+	 * This method is actually forwarded to the object. It's here as a shorthand.
+	 */
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind)
+	{
+		getObj()->setVariableByQName(name,ns,o,traitKind);
+	}
 };
 
 /* Special object used as prototype for classes
@@ -304,7 +313,7 @@ class Function : public IFunction
 friend class Class<IFunction>;
 public:
 	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
-private:
+protected:
 	as_function val;
 	Function(Class_base* c, as_function v=NULL):IFunction(c),val(v){}
 	Function* clone()
@@ -321,6 +330,20 @@ public:
 			return false;
 		return val==f->val;
 	}
+};
+
+/* Special object used as prototype for the Function class
+ * It keeps a link to the upper level in the prototype chain
+ */
+class FunctionPrototype: public Function, public Prototype
+{
+public:
+	FunctionPrototype(Class_base* c, _NR<Prototype> p);
+	void finalize();
+	void incRef() { ASObject::incRef(); }
+	void decRef() { ASObject::decRef(); }
+	ASObject* getObj() { return this; }
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
 class SyntheticFunction : public IFunction

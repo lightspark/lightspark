@@ -177,7 +177,7 @@ void Number::purgeTrailingZeroes(char* buf)
 
 ASFUNCTIONBODY(Number,_toString)
 {
-	if(Class<Number>::getClass()->prototype == obj)
+	if(Class<Number>::getClass()->prototype->getObj() == obj)
 		return Class<ASString>::getInstanceS("0");
 	if(!obj->is<Number>())
 		throw Class<TypeError>::getInstanceS("Error #1004: Number.toString is not generic");

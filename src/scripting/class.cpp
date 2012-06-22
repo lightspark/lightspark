@@ -29,6 +29,19 @@ ASObject* lightspark::new_asobject()
 	return Class<ASObject>::getInstanceS();
 }
 
+Prototype* lightspark::new_objectPrototype()
+{
+	//Create a Prototype object, the class should be ASObject
+	Class_base* c=Class<ASObject>::getClass();
+	return new (c->memoryAccount) ObjectPrototype(c);
+}
+
+Prototype* lightspark::new_functionPrototype(Class_base* functionClass, _NR<Prototype> p)
+{
+	//Create a Prototype object, the class should be ASObject
+	return new (functionClass->memoryAccount) FunctionPrototype(functionClass, p);
+}
+
 Function_object* lightspark::new_functionObject(_NR<ASObject> p)
 {
 	Class_base* c=Class<ASObject>::getClass();

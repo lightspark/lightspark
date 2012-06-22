@@ -78,6 +78,8 @@ public:
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */
 ASObject* new_asobject();
+Prototype* new_objectPrototype();
+Prototype* new_functionPrototype(Class_base* functionClass, _NR<Prototype> p);
 Function_object* new_functionObject(_NR<ASObject> p);
 
 template<class T,std::size_t N>
@@ -212,13 +214,14 @@ public:
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 			ret=new (getSys()->unaccountedMemory) Class<T>(name, memoryAccount);
 			getSys()->builtinClasses.insert(std::make_pair(name,ret));
-			ret->prototype = _MNR(new_asobject());
+			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
+
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
 			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 			if(ret->super)
-				ret->prototype->setprop_prototype(ret->super->prototype);
+				ret->prototype->prevPrototype=ret->super->prototype;
 			ret->addPrototypeGetter();
 			ret->addLengthGetter();
 		}
@@ -315,8 +318,8 @@ public:
 		Class<ASObject>* ret = new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
 
 		ret->setSuper(Class<ASObject>::getRef());
-		ret->prototype = _MNR(new_asobject());
-		ret->prototype->setprop_prototype(ret->super->prototype);
+		ret->prototype = _MNR(new_objectPrototype());
+		ret->prototype->prevPrototype=ret->super->prototype;
 		ret->incRef();
 		ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 		ret->addPrototypeGetter();
@@ -337,7 +340,7 @@ public:
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 			ret=new (getSys()->unaccountedMemory) Class<ASObject>(name,memoryAccount);
 			getSys()->builtinClasses.insert(std::make_pair(name,ret));
-			ret->prototype = _MNR(new_asobject());
+			ret->prototype = _MNR(new_objectPrototype());
 			ASObject::sinit(ret);
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
@@ -514,10 +517,10 @@ public:
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(instantiatedQName.name);
 			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,memoryAccount);
 			getSys()->builtinClasses.insert(std::make_pair(instantiatedQName,ret));
-			ret->prototype = _MNR(new_asobject());
+			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
 			if(ret->super)
-				ret->prototype->setprop_prototype(ret->super->prototype);
+				ret->prototype->prevPrototype=ret->super->prototype;
 			ret->addPrototypeGetter();
 		}
 		else

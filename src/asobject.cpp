@@ -375,12 +375,12 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	//Check prototype inheritance chain
 	if(getClass() && considerPrototype)
 	{
-		ASObject* proto = getClass()->prototype.getPtr();
+		Prototype* proto = getClass()->prototype.getPtr();
 		while(proto)
 		{
-			if(proto->findGettable(name, false) != NULL)
+			if(proto->getObj()->findGettable(name, false) != NULL)
 				return true;
-			proto = proto->getprop_prototype();
+			proto=proto->prevPrototype.getPtr();
 		}
 	}
 
@@ -770,12 +770,12 @@ ASFUNCTIONBODY(ASObject,isPrototypeOf)
 	
 	while (cls != NULL)
 	{
-		if (cls->prototype.getPtr() == obj)
+		if (cls->prototype->getObj() == obj)
 		{
 			ret = true;
 			break;
 		}
-		Class_base* clsparent = cls->prototype.getPtr()->getClass();
+		Class_base* clsparent = cls->prototype->getObj()->getClass();
 		if (clsparent == cls)
 			break;
 		cls = clsparent;
@@ -853,16 +853,16 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	if(!obj && cls)
 	{
 		//Check prototype chain
-		ASObject* proto = cls->prototype.getPtr();
+		Prototype* proto = cls->prototype.getPtr();
 		while(proto)
 		{
-			obj = proto->findGettable(name, false);
+			obj = proto->getObj()->findGettable(name, false);
 			if(obj)
 			{
 				obj->var->incRef();
 				return _MNR(obj->var);
 			}
-			proto = proto->getprop_prototype();
+			proto = proto->prevPrototype.getPtr();
 		}
 	}
 

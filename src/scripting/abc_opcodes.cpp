@@ -2052,12 +2052,12 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->class_index=n;
 
 	//Add prototype variable
-	ret->prototype = _MNR(new_asobject());
+	ret->prototype = _MNR(new_objectPrototype());
 	//Add the constructor variable to the class prototype
 	ret->incRef();
 	ret->prototype->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
 	if(ret->super)
-		ret->prototype->setprop_prototype(ret->super->prototype);
+		ret->prototype->prevPrototype=ret->super->prototype;
 	ret->addPrototypeGetter();
 
 	//add implemented interfaces
@@ -2310,12 +2310,15 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 	if(type->is<IFunction>())
 	{
 		IFunction* t=static_cast<IFunction*>(type);
-		ASObject* proto = value->getClass()->prototype.getPtr();
-		while(proto)
+		ASObject* functionProto=t->prototype.getPtr();
+		//Only Function_object instances may come from functions
+		Function_object* funcObj=dynamic_cast<Function_object*>(value);
+		while(funcObj)
 		{
-			if (proto == t->prototype.getPtr())
+			ASObject* proto=funcObj->functionPrototype.getPtr();
+			if(proto==functionProto)
 				return true;
-			proto = proto->getprop_prototype();
+			funcObj=dynamic_cast<Function_object*>(proto);
 		}
 		return false;
 	}

@@ -948,14 +948,14 @@ ASFUNCTIONBODY(ByteArray,_toString)
 	return Class<ASString>::getInstanceS((char*)th->bytes,th->len);
 }
 
-bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	if(considerDynamic==false)
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	return index<len;
 }
@@ -1610,10 +1610,10 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 	return ASObject::getVariableByMultiname(name, opt);
 }
 
-bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	if(considerDynamic==false)
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
@@ -1630,7 +1630,7 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 		assert(name.name_type==multiname::NAME_STRING ||
 			name.name_type==multiname::NAME_INT ||
 			name.name_type==multiname::NAME_NUMBER);
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 	}
 }
 
@@ -1717,7 +1717,7 @@ void Proxy::buildTraits(ASObject* o)
 void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	//If a variable named like this already exist, use that
-	if(ASObject::hasPropertyByMultiname(name, true) || !implEnable)
+	if(ASObject::hasPropertyByMultiname(name, true, false) || !implEnable)
 	{
 		ASObject::setVariableByMultiname(name,o,allowConst);
 		return;
@@ -1757,7 +1757,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
-	if(!name.ns[0].hasEmptyName() || ASObject::hasPropertyByMultiname(name, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
+	if(!name.ns[0].hasEmptyName() || ASObject::hasPropertyByMultiname(name, true, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
 		return ASObject::getVariableByMultiname(name,opt);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
@@ -1785,10 +1785,10 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	return ret;
 }
 
-bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	//If a variable named like this already exist, use that
-	bool asobject_has_property=ASObject::hasPropertyByMultiname(name, considerDynamic);
+	bool asobject_has_property=ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 	if(asobject_has_property || !implEnable)
 		return asobject_has_property;
 
@@ -1822,7 +1822,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 bool Proxy::deleteVariableByMultiname(const multiname& name)
 {
 	//If a variable named like this already exist, use that
-	if(ASObject::hasPropertyByMultiname(name, true) || !implEnable)
+	if(ASObject::hasPropertyByMultiname(name, true, false) || !implEnable)
 	{
 		return ASObject::deleteVariableByMultiname(name);
 	}

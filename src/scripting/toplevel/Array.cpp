@@ -1102,14 +1102,14 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 }
 
 
-bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	if(considerDynamic==false)
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	uint32_t index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	return (index<size()) && (data.count(index));
 }

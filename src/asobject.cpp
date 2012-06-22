@@ -265,7 +265,7 @@ bool ASObject::has_valueOf()
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	valueOfName.isAttribute = false;
-	return hasPropertyByMultiname(valueOfName, true);
+	return hasPropertyByMultiname(valueOfName, true, true);
 }
 
 /* calls the valueOf function on this object
@@ -279,7 +279,7 @@ _R<ASObject> ASObject::call_valueOf()
 	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	valueOfName.isAttribute = false;
-	assert_and_throw(hasPropertyByMultiname(valueOfName, true));
+	assert_and_throw(hasPropertyByMultiname(valueOfName, true, true));
 
 	_NR<ASObject> o=getVariableByMultiname(valueOfName,SKIP_IMPL);
 	if (!o->is<IFunction>())
@@ -299,7 +299,7 @@ bool ASObject::has_toString()
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	toStringName.isAttribute = false;
-	return hasPropertyByMultiname(toStringName, true);
+	return hasPropertyByMultiname(toStringName, true, true);
 }
 
 /* calls the toString function on this object
@@ -313,7 +313,7 @@ _R<ASObject> ASObject::call_toString()
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	toStringName.isAttribute = false;
-	assert_and_throw(hasPropertyByMultiname(toStringName, true));
+	assert_and_throw(hasPropertyByMultiname(toStringName, true, true));
 
 	_NR<ASObject> o=getVariableByMultiname(toStringName,SKIP_IMPL);
 	assert_and_throw(o->is<IFunction>());
@@ -359,7 +359,7 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 	return &inserted->second;
 }
 
-bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	//We look in all the object's levels
 	uint32_t validTraits=DECLARED_TRAIT;
@@ -373,7 +373,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 		return true;
 
 	//Check prototype inheritance chain
-	if(getClass())
+	if(getClass() && considerPrototype)
 	{
 		ASObject* proto = getClass()->prototype.getPtr();
 		while(proto)
@@ -455,7 +455,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 			return false;
 
 		// fixed properties cannot be deleted
-		if (hasPropertyByMultiname(name,true))
+		if (hasPropertyByMultiname(name,true,true))
 			return false;
 		//unknown variables must return true
 		return true;
@@ -773,13 +773,7 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	name.isAttribute=false;
-	if(obj->getClass())
-	{
-		ASObject* proto = obj->getClass()->prototype.getPtr();
-		if  (proto != obj && proto->hasPropertyByMultiname(name, true))
-			return abstract_b(false);
-	}
-	bool ret=obj->hasPropertyByMultiname(name, true);
+	bool ret=obj->hasPropertyByMultiname(name, true, false);
 	return abstract_b(ret);
 }
 
@@ -827,13 +821,7 @@ ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 			return abstract_b(index < (unsigned int)a->size());
 		}
 	}
-	if(obj->getClass())
-	{
-		ASObject* proto = obj->getClass()->prototype.getPtr();
-		if  (proto->hasPropertyByMultiname(name, true))
-			return abstract_b(false);
-	}
-	if (obj->hasPropertyByMultiname(name,true))
+	if (obj->hasPropertyByMultiname(name,true,false))
 		return abstract_b(true);
 	return abstract_b(false);
 }

@@ -369,7 +369,7 @@ public:
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
 	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
-	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
+	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	ASObject* getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);

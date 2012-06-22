@@ -325,7 +325,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 				f << varName << endl << varValue << endl;
 
 			/* That does occur in the wild */
-			if(params->hasPropertyByMultiname(QName(varName,""), true))
+			if(params->hasPropertyByMultiname(QName(varName,""), true, true))
 				LOG(LOG_ERROR,"Flash parameters has duplicate key '" << varName << "' - ignoring");
 			else
 				params->setVariableByQName(varName,"",

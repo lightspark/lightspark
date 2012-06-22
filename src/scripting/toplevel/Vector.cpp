@@ -811,17 +811,17 @@ ASFUNCTIONBODY(Vector,_toString)
 	}
 	return Class<ASString>::getInstanceS(ret);
 }
-bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	if(!considerDynamic)
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	if(!name.ns[0].hasEmptyName())
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	unsigned int index=0;
 	if(!Vector::isValidMultiname(name,index))
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	if(index < vec.size())
 		return true;

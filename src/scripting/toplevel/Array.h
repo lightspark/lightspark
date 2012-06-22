@@ -137,7 +137,7 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	tiny_string toString();
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);

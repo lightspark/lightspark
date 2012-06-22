@@ -328,14 +328,14 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 	}
 }
 
-bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	if(considerDynamic==false)
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	assert_and_throw(name.ns.size()>0);
 	if(!name.ns[0].hasEmptyName())
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	unsigned int index=0;
 	if(Array::isValidMultiname(name,index))
@@ -346,13 +346,13 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
-			bool ret=(*it)->hasPropertyByMultiname(name, considerDynamic);
+			bool ret=(*it)->hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 			if(ret)
 				return ret;
 		}
 	}
 
-	return ASObject::hasPropertyByMultiname(name, considerDynamic);
+	return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 }
 
 void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)

@@ -61,7 +61,7 @@ public:
 	ASFUNCTION(text);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic);
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XML::XMLVector& ret);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;

@@ -326,7 +326,7 @@ ASObject* ExtVariant::getASObject() const
 						{
 							conv.str("");
 							conv << ids[i]->getInt();
-							if(asobj->hasPropertyByMultiname(QName(conv.str(),""),true))
+							if(asobj->hasPropertyByMultiname(QName(conv.str(),""),true,true))
 							{
 								LOG(LOG_NOT_IMPLEMENTED,"ExtVariant::getASObject: duplicate property " << conv.str());
 								continue;

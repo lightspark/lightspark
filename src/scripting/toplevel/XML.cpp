@@ -759,10 +759,10 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 	}
 }
 
-bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
+bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	if(node==NULL || considerDynamic == false)
-		return ASObject::hasPropertyByMultiname(name, considerDynamic);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	bool isAttr=name.isAttribute;
 	const tiny_string normalizedName=name.normalizedName();
@@ -801,7 +801,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic)
 	}
 
 	//Try the normal path as the last resource
-	return ASObject::hasPropertyByMultiname(name, considerDynamic);
+	return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 }
 
 ASFUNCTIONBODY(XML,_toString)

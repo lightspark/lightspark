@@ -1290,7 +1290,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		// before the properties are initialized, we need to
 		// initialize the property here to make sure that it
 		// will be a declared property and not a dynamic one.
-		if(hasPropertyByMultiname(objName,true))
+		if(hasPropertyByMultiname(objName,true,false))
 			setVariableByMultiname(objName,obj,ASObject::CONST_NOT_ALLOWED);
 		else
 			setVariableByQName(objName.name_s_id,objName.ns[0],obj,DYNAMIC_TRAIT);

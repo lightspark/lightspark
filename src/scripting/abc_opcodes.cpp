@@ -1363,7 +1363,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 	ASObject* ret=NULL;
 	for(;it!=th->scope_stack.rend();++it)
 	{
-		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic);
+		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic, true);
 
 		if(found)
 		{
@@ -1399,7 +1399,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 
 	for(;it!=th->scope_stack.rend();++it)
 	{
-		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic);
+		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic, true);
 		if(found)
 		{
 			//We have to return the object, not the property
@@ -1723,7 +1723,7 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 	//Acquire the reference
 	name.name_o=val1;
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
-	bool ret=val2->hasPropertyByMultiname(name, true);
+	bool ret=val2->hasPropertyByMultiname(name, true, true);
 	name.name_o=NULL;
 	val1->decRef();
 	val2->decRef();

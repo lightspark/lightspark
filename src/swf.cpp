@@ -1115,7 +1115,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 
 ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *_loader, tiny_string srcurl)
   : version(0),applicationDomain(appDomain),securityDomain(secDomain),
-    f(in),zlibFilter(NULL),backend(NULL),loader(_loader),
+    f(in),uncompressingFilter(NULL),backend(NULL),loader(_loader),
     parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
@@ -1123,7 +1123,7 @@ ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<Securi
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
   : version(0),applicationDomain(NullRef),securityDomain(NullRef), //The domains are not needed since the system state create them itself
-    f(in),zlibFilter(NULL),backend(NULL),loader(NULL),
+    f(in),uncompressingFilter(NULL),backend(NULL),loader(NULL),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
@@ -1132,11 +1132,11 @@ ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
 
 ParseThread::~ParseThread()
 {
-	if(zlibFilter)
+	if(uncompressingFilter)
 	{
 		//Restore the istream
 		f.rdbuf(backend);
-		delete zlibFilter;
+		delete uncompressingFilter;
 	}
 	parsedObject.reset();
 }
@@ -1147,6 +1147,8 @@ FILE_TYPE ParseThread::recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t
 		return FT_SWF;
 	else if(c1=='C' && c2=='W' && c3=='S')
 		return FT_COMPRESSED_SWF;
+	else if(c1=='Z' && c2=='W' && c3=='S')
+		return FT_LZMA_COMPRESSED_SWF;
 	else if((c1&0x80) && c2=='P' && c3=='N' && c4=='G')
 		return FT_PNG;
 	else if(c1==0xff && c2==0xd8 && c3==0xff)
@@ -1170,13 +1172,26 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 	//Enable decompression if needed
 	if(fileType==FT_SWF)
 		LOG(LOG_INFO, _("Uncompressed SWF file: Version ") << (int)version);
-	else if(fileType==FT_COMPRESSED_SWF)
+	else
 	{
-		LOG(LOG_INFO, _("Compressed SWF file: Version ") << (int)version);
 		//The file is compressed, create a filtering streambuf
 		backend=f.rdbuf();
-		zlibFilter = new zlib_filter(backend);
-		f.rdbuf(zlibFilter);
+		if(fileType==FT_COMPRESSED_SWF)
+		{
+			LOG(LOG_INFO, _("zlib compressed SWF file: Version ") << (int)version);
+			uncompressingFilter = new zlib_filter(backend);
+		}
+		else if(fileType==FT_LZMA_COMPRESSED_SWF)
+		{
+			LOG(LOG_INFO, _("lzma compressed SWF file: Version ") << (int)version);
+			uncompressingFilter = new liblzma_filter(backend);
+		}
+		else
+		{
+			// not reached
+			assert(false);
+		}
+		f.rdbuf(uncompressingFilter);
 	}
 
 	f >> FrameSize >> FrameRate >> FrameCount;

@@ -76,7 +76,7 @@ inline std::ostream& operator<<(std::ostream& s, const STACK_TYPE& st)
 
 enum TRISTATE { TFALSE=0, TTRUE, TUNDEFINED };
 
-enum FILE_TYPE { FT_UNKNOWN=0, FT_SWF, FT_COMPRESSED_SWF, FT_PNG, FT_JPEG, FT_GIF };
+enum FILE_TYPE { FT_UNKNOWN=0, FT_SWF, FT_COMPRESSED_SWF, FT_LZMA_COMPRESSED_SWF, FT_PNG, FT_JPEG, FT_GIF };
 
 typedef double number_t;
 

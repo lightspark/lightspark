@@ -25,24 +25,58 @@
 #include <fstream>
 #include <cinttypes>
 #include "zlib.h"
+#include "lzma.h"
 
-class zlib_filter: public std::streambuf
+class uncompressing_filter: public std::streambuf
+{
+protected:
+	static const unsigned int BUFFER_LENGTH = 4096;
+
+	// The compressed input data stream
+	std::streambuf* backend;
+	// Current uncompressed bytes (accessible input sequence in
+	// std::streambuf terminology)
+	char buffer[BUFFER_LENGTH];
+	// Total number of uncompressed read bytes not including the
+	// bytes read from the current buffer.
+	int consumed;
+	bool eof;
+	virtual int underflow();
+	virtual std::streampos seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
+	// Abstract function that fills buffer by uncompressing bytes
+	// from backend. buffer is empty when this is called. Returns
+	// number of bytes written to buffer.
+	virtual int fillBuffer()=0;
+public:
+	uncompressing_filter(std::streambuf* b);
+};
+
+
+class zlib_filter: public uncompressing_filter
 {
 private:
-	std::streambuf* backend;
-	int consumed;
 	z_stream strm;
-	char buffer[4096];
-	bool eof;
+	// Temporary buffer for data before it is uncompressed
+	char compressed_buffer[BUFFER_LENGTH];
 protected:
-	char in_buf[4096];
-	virtual int_type underflow();
-	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
+	virtual int fillBuffer();
 public:
 	zlib_filter(std::streambuf* b);
 	~zlib_filter();
 };
 
+class liblzma_filter: public uncompressing_filter
+{
+private:
+	lzma_stream strm;
+	// Temporary buffer for data before it is uncompressed
+	uint8_t compressed_buffer[BUFFER_LENGTH];
+protected:
+	virtual int fillBuffer();
+public:
+	liblzma_filter(std::streambuf* b);
+	~liblzma_filter();
+};
 
 class bytes_buf:public std::streambuf
 {

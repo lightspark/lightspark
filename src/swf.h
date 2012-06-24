@@ -34,6 +34,8 @@
 #include "memory_support.h"
 #include "platforms/engineutils.h"
 
+class uncompressing_filter;
+
 namespace lightspark
 {
 
@@ -444,7 +446,7 @@ public:
 	_NR<SecurityDomain> securityDomain;
 private:
 	std::istream& f;
-	std::streambuf* zlibFilter;
+	uncompressing_filter* uncompressingFilter;
 	std::streambuf* backend;
 	Loader *loader;
 	_NR<DisplayObject> parsedObject;

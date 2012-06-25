@@ -138,7 +138,6 @@ enum TRAIT_STATE { NO_STATE=0, HAS_GETTER_SETTER=1, TYPE_RESOLVED=2 };
 
 struct variable
 {
-	nsNameAndKind ns;
 	ASObject* var;
 	union
 	{
@@ -150,22 +149,39 @@ struct variable
 	IFunction* getter;
 	TRAIT_KIND kind;
 	TRAIT_STATE traitState;
-	variable(const nsNameAndKind& _ns, TRAIT_KIND _k)
-		: ns(_ns),var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) {}
-	variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type);
+	variable(TRAIT_KIND _k)
+		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) {}
+	variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type);
 	void setVar(ASObject* v);
+};
+
+struct varName
+{
+	uint32_t nameId;
+	nsNameAndKind ns;
+	varName(uint32_t name, const nsNameAndKind& _ns):nameId(name),ns(_ns){}
+	bool operator<(const varName& r) const
+	{
+		//Sort by name first
+		if(nameId==r.nameId)
+		{
+			//Then by namespace
+			return ns<r.ns;
+		}
+		else
+			return nameId<r.nameId;
+	}
 };
 
 class variables_map
 {
 public:
-	//Names are represented by strings in the string pools
-	//Values are something like contextBase+contextOffset
-	typedef std::multimap<uint32_t,variable,std::less<uint32_t>,reporter_allocator<std::pair<const uint32_t, variable>>>
+	//Names are represented by strings in the string and namespace pools
+	typedef std::map<varName,variable,std::less<varName>,reporter_allocator<std::pair<const varName, variable>>>
 		mapType;
 	mapType Variables;
-	typedef std::multimap<uint32_t,variable>::iterator var_iterator;
-	typedef std::multimap<uint32_t,variable>::const_iterator const_var_iterator;
+	typedef std::map<varName,variable>::iterator var_iterator;
+	typedef std::map<varName,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator, reporter_allocator<var_iterator>> slots_vars;
 	variables_map(MemoryAccount* m);
 	/**

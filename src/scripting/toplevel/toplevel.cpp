@@ -708,7 +708,7 @@ void Class_base::copyBorrowedTraitsFromSuper()
 	variables_map::var_iterator i = super->borrowedVariables.Variables.begin();
 	for(;i != super->borrowedVariables.Variables.end(); ++i)
 	{
-		uint32_t name = i->first;
+		const varName& name = i->first;
 		variable& v = i->second;
 		if(v.var)
 			v.var->incRef();

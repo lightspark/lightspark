@@ -340,22 +340,22 @@ variables_map::variables_map(MemoryAccount* m):
 
 variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	pair<var_iterator, var_iterator> var_range=Variables.equal_range(nameId);
-	var_iterator ret=var_range.first;
-	for(;ret!=var_range.second;++ret)
+	var_iterator ret=Variables.find(varName(nameId,ns));
+	if(ret!=Variables.end())
 	{
 		if(!(ret->second.kind & traitKinds))
-			continue;
-
-		if(ret->second.ns==ns)
-			return &ret->second;
+		{
+			assert(createKind==NO_CREATE_TRAIT);
+			return NULL;
+		}
+		return &ret->second;
 	}
 
 	//Name not present, insert it if we have to create it
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
 
-	var_iterator inserted=Variables.insert(var_range.first,make_pair(nameId, variable(ns, createKind)) );
+	var_iterator inserted=Variables.insert(make_pair(varName(nameId, ns), variable(createKind)) ).first;
 	return &inserted->second;
 }
 
@@ -606,8 +606,8 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 	Variables.initializeVar(name, o, typemname, context, traitKind);
 }
 
-variable::variable(const nsNameAndKind& _ns, TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
-		: ns(_ns),var(_v),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE)
+variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
+		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE)
 {
 	if(_type)
 	{
@@ -643,37 +643,59 @@ void variable::setVar(ASObject* v)
 void variables_map::killObjVar(const multiname& mname)
 {
 	uint32_t name=mname.normalizedNameId();
-	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
-	assert_and_throw(ret.first!=ret.second);
+	//The namespaces in the multiname are ordered. So it's possible to use lower_bound
+	//to find the first candidate one and move from it
+	assert(!mname.ns.empty());
+	var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
+	auto nsIt=mname.ns.begin();
 
 	//Find the namespace
-	var_iterator start=ret.first;
-	for(;start!=ret.second;++start)
+	while(ret!=Variables.end() && ret->first.nameId==name)
 	{
-		if(binary_search(mname.ns.begin(),mname.ns.end(),start->second.ns))
+		//breaks when the namespace is not found
+		const nsNameAndKind& ns=ret->first.ns;
+		if(ns==*nsIt)
+			Variables.erase(ret);
+		else if(*nsIt<ns)
 		{
-			Variables.erase(start);
-			return;
+			++nsIt;
+			if(nsIt==mname.ns.end())
+				break;
 		}
+		else if(ns<*nsIt)
+			++ret;
 	}
-
 	throw RunTimeException("Variable to kill not found");
 }
 
 variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
 	uint32_t name=mname.normalizedNameId();
-	pair<var_iterator, var_iterator> var_range=Variables.equal_range(name);
 	assert(!mname.ns.empty());
-	var_iterator ret=var_range.first;
-	for(;ret!=var_range.second;++ret)
+
+	var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
+	auto nsIt=mname.ns.begin();
+
+	//Find the namespace
+	while(ret!=Variables.end() && ret->first.nameId==name)
 	{
-		if(!(ret->second.kind & traitKinds))
-			continue;
-		//Check if one the namespace is already present
-		//We can use binary search, as the namespace are ordered
-		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.ns))
-			return &ret->second;
+		//breaks when the namespace is not found
+		const nsNameAndKind& ns=ret->first.ns;
+		if(ns==*nsIt)
+		{
+			if(ret->second.kind & traitKinds)
+				return &ret->second;
+			else
+				return NULL;
+		}
+		else if(*nsIt<ns)
+		{
+			++nsIt;
+			if(nsIt==mname.ns.end())
+				break;
+		}
+		else if(ns<*nsIt)
+			++ret;
 	}
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
@@ -683,11 +705,13 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	{
 		if(!mname.ns.begin()->hasEmptyName())
 			throw Class<ReferenceError>::getInstanceS("Error #1056: Trying to create a dynamic variable with namespace != \"\"");
-		var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0], createKind)));
+		var_iterator inserted=Variables.insert(
+			make_pair(varName(name,mname.ns[0]),variable(createKind))).first;
 		return &inserted->second;
 	}
 	assert(mname.ns.size() == 1);
-	var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0], createKind)));
+	var_iterator inserted=Variables.insert(
+		make_pair(varName(name,mname.ns[0]),variable(createKind))).first;
 	return &inserted->second;
 }
 
@@ -716,7 +740,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT);
 
 	uint32_t name=mname.normalizedNameId();
-	Variables.insert(make_pair(name, variable(mname.ns[0], traitKind, obj, typemname, type)));
+	Variables.insert(make_pair(varName(name, mname.ns[0]), variable(traitKind, obj, typemname, type)));
 }
 
 ASFUNCTIONBODY(ASObject,generator)
@@ -982,10 +1006,10 @@ void variables_map::dumpVariables()
 				kind="Dynamic: ";
 				break;
 			case NO_CREATE_TRAIT:
-				kind="NoCreate: ";
 				assert(false);
 		}
-		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< it->first << ' ' <<
+		LOG(LOG_INFO, kind <<  '[' << it->first.ns << "] "<<
+			getSys()->getStringFromUniqueId(it->first.nameId) << ' ' <<
 			it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
 	}
 }
@@ -1078,19 +1102,15 @@ void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKin
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameId);
-	var_iterator start=ret.first;
-	for(;start!=ret.second;++start)
+	var_iterator ret=Variables.find(varName(nameId,ns));
+
+	if(ret==Variables.end())
 	{
-		if(start->second.ns==ns)
-		{
-			slots_vars[n-1]=start;
-			return;
-		}
+		//Name not present, no good
+		throw RunTimeException("initSlot on missing variable");
 	}
 
-	//Name not present, no good
-	throw RunTimeException("initSlot on missing variable");
+	slots_vars[n-1]=ret;
 }
 
 void variables_map::setSlot(unsigned int n,ASObject* o)
@@ -1153,7 +1173,7 @@ tiny_string variables_map::getNameAt(unsigned int index) const
 		for(unsigned int i=0;i<index;i++)
 			++it;
 
-		return getSys()->getStringFromUniqueId(it->first);
+		return getSys()->getStringFromUniqueId(it->first.nameId);
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");
@@ -1209,8 +1229,8 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		if(it->second.kind!=DYNAMIC_TRAIT)
 			continue;
 		//Dynamic traits always have empty namespace
-		assert(it->second.ns.hasEmptyName());
-		out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first));
+		assert(it->first.ns.hasEmptyName());
+		out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first.nameId));
 		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
 	//The empty string closes the object
@@ -1292,7 +1312,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				if(!varIt->second.ns.hasEmptyName())
+				if(!varIt->first.ns.hasEmptyName())
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
@@ -1307,12 +1327,12 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				if(!varIt->second.ns.hasEmptyName())
+				if(!varIt->first.ns.hasEmptyName())
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
 				}
-				out->writeStringVR(stringMap, getSys()->getStringFromUniqueId(varIt->first));
+				out->writeStringVR(stringMap, getSys()->getStringFromUniqueId(varIt->first.nameId));
 			}
 		}
 	}
@@ -1320,7 +1340,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	{
 		if(varIt->second.kind==DECLARED_TRAIT)
 		{
-			if(!varIt->second.ns.hasEmptyName())
+			if(!varIt->first.ns.hasEmptyName())
 			{
 				//Skip variable with a namespace, like protected ones
 				continue;

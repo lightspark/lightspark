@@ -1,7 +1,7 @@
 INSTALLATION:
 To compile this software you need to install development packages for llvm (version 2.8, 3.0 or 3.1),
 opengl, curl, zlib, libavcodec, libglew, pcre, librtmp, cairo, libboost-filesystem,
-libxml++, gtk-2, libjpeg, libavformat, pango
+libxml++, gtk-2, libjpeg, libavformat, pango, liblzma
 
 If sound is enabled (on by default), you will also need the development package
 for pulseaudio-libs and/or libsdl.

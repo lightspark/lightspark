@@ -369,7 +369,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(Variables.findObjVar(name, NO_CREATE_TRAIT, validTraits)!=NULL)
 		return true;
 
-	if(classdef && classdef->Variables.findObjVar(name, NO_CREATE_TRAIT, BORROWED_TRAIT)!=NULL)
+	if(classdef && classdef->borrowedVariables.findObjVar(name, NO_CREATE_TRAIT, DECLARED_TRAIT)!=NULL)
 		return true;
 
 	//Check prototype inheritance chain
@@ -378,7 +378,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 		Prototype* proto = getClass()->prototype.getPtr();
 		while(proto)
 		{
-			if(proto->getObj()->findGettable(name, false) != NULL)
+			if(proto->getObj()->findGettable(name) != NULL)
 				return true;
 			proto=proto->prevPrototype.getPtr();
 		}
@@ -418,7 +418,11 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	if(isBorrowed && o->inClass == NULL)
 		o->inClass = this->as<Class_base>();
 
-	variable* obj=Variables.findObjVar(nameId,ns,(isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT, (isBorrowed)?BORROWED_TRAIT:DECLARED_TRAIT);
+	variable* obj=NULL;
+	if(isBorrowed)
+		obj=o->inClass->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+	else
+		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
 	switch(type)
 	{
 		case NORMAL_METHOD:
@@ -480,9 +484,9 @@ void ASObject::setVariableByMultiname_i(const multiname& name, int32_t value)
 	setVariableByMultiname(name,abstract_i(value),CONST_NOT_ALLOWED);
 }
 
-variable* ASObject::findSettable(const multiname& name, bool borrowedMode, bool* has_getter)
+variable* ASObject::findSettableImpl(variables_map& map, const multiname& name, bool* has_getter)
 {
-	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	variable* ret=map.findObjVar(name,NO_CREATE_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
@@ -497,6 +501,11 @@ variable* ASObject::findSettable(const multiname& name, bool borrowedMode, bool*
 	return ret;
 }
 
+variable* ASObject::findSettable(const multiname& name, bool* has_getter)
+{
+	return findSettableImpl(Variables, name, has_getter);
+}
+
 
 void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
 {
@@ -504,7 +513,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	assert(!cls || classdef->isSubClass(cls));
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualClass)
 	bool has_getter=false;
-	variable* obj=findSettable(name, false, &has_getter);
+	variable* obj=findSettable(name, &has_getter);
 
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
@@ -519,7 +528,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		//It's valid to override only a getter, so keep
 		//looking for a settable even if a super class sets
 		//has_getter to true.
-		obj=cls->findSettable(name,true,&has_getter);
+		obj=cls->findBorrowedSettable(name,&has_getter);
 		if(obj && cls->isFinal && !obj->setter)
 		{
 			tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
@@ -585,7 +594,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 {
 	check();
 
-	variable* obj=findSettable(name, false);
+	variable* obj=findSettable(name);
 	if(obj)
 	{
 		//Initializing an already existing variable
@@ -824,9 +833,9 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-variable* ASObject::findGettable(const multiname& name, bool borrowedMode)
+variable* ASObject::findGettableImpl(variables_map& map, const multiname& name)
 {
-	variable* ret=Variables.findObjVar(name,NO_CREATE_TRAIT,(borrowedMode)?BORROWED_TRAIT:(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	variable* ret=map.findObjVar(name,NO_CREATE_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -837,17 +846,22 @@ variable* ASObject::findGettable(const multiname& name, bool borrowedMode)
 	return ret;
 }
 
+variable* ASObject::findGettable(const multiname& name)
+{
+	return findGettableImpl(Variables,name);
+}
+
 _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
 	//Get from the current object without considering borrowed properties
-	variable* obj=findGettable(name, false);
+	variable* obj=findGettable(name);
 
 	if(!obj && cls)
 	{
 		//Look for borrowed traits before
-		obj=cls->findGettable(name,true);
+		obj=cls->findBorrowedGettable(name);
 	}
 
 	if(!obj && cls)
@@ -856,7 +870,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		Prototype* proto = cls->prototype.getPtr();
 		while(proto)
 		{
-			obj = proto->getObj()->findGettable(name, false);
+			obj = proto->getObj()->findGettable(name);
 			if(obj)
 			{
 				obj->var->incRef();
@@ -963,9 +977,6 @@ void variables_map::dumpVariables()
 			case DECLARED_TRAIT:
 			case CONSTANT_TRAIT:
 				kind="Declared: ";
-				break;
-			case BORROWED_TRAIT:
-				kind="Borrowed: ";
 				break;
 			case DYNAMIC_TRAIT:
 				kind="Dynamic: ";
@@ -1377,7 +1388,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	prototypeName.name_s_id=getSys()->getUniqueStringId("prototype");
 	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	bool has_getter = false;
-	variable* ret=findSettable(prototypeName,false, &has_getter);
+	variable* ret=findSettable(prototypeName,&has_getter);
 	if(!ret && has_getter)
 		throw Class<ReferenceError>::getInstanceS("Error #1074: Illegal write to read-only property prototype");
 	if(!ret)

@@ -685,7 +685,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 }
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(m),use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),
-	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(m)),
+	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(m)),borrowedVariables(m),
 	isFinal(false),isSealed(false),length(1),context(NULL),class_name(name),class_index(-1),memoryAccount(m)
 {
 	type=T_CLASS;
@@ -704,15 +704,12 @@ Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(m),use_prot
  */
 void Class_base::copyBorrowedTraitsFromSuper()
 {
-	assert(Variables.Variables.empty());
-	variables_map::var_iterator i = super->Variables.Variables.begin();
-	for(;i != super->Variables.Variables.end(); ++i)
+	assert(borrowedVariables.Variables.empty());
+	variables_map::var_iterator i = super->borrowedVariables.Variables.begin();
+	for(;i != super->borrowedVariables.Variables.end(); ++i)
 	{
 		uint32_t name = i->first;
 		variable& v = i->second;
-		//copy only static and instance methods
-		if(v.kind != BORROWED_TRAIT)
-			continue;
 		if(v.var)
 			v.var->incRef();
 		if(v.getter)
@@ -720,7 +717,7 @@ void Class_base::copyBorrowedTraitsFromSuper()
 		if(v.setter)
 			v.setter->incRef();
 
-		Variables.Variables.insert(make_pair(name,v));
+		borrowedVariables.Variables.insert(make_pair(name,v));
 	}
 }
 
@@ -1233,6 +1230,16 @@ void Class_base::initializeProtectedNamespace(const tiny_string& name, const nam
 		protected_ns=nsNameAndKind(name,(NS_KIND)(int)ns.kind);
 	else
 		protected_ns=nsNameAndKind(name,baseNs->nsId,(NS_KIND)(int)ns.kind);
+}
+
+variable* Class_base::findBorrowedGettable(const multiname& name)
+{
+	return ASObject::findGettableImpl(borrowedVariables,name);
+}
+
+variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)
+{
+	return ASObject::findSettableImpl(borrowedVariables,name,has_getter);
 }
 
 ASQName::ASQName(Class_base* c):ASObject(c)

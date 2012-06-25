@@ -1723,7 +1723,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var = c->Variables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+			var = c->borrowedVariables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && var->var)
 			{
 				assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
@@ -1748,7 +1748,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var=c->Variables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && var->getter)
 			{
 				assert_and_throw(var->getter);
@@ -1772,7 +1772,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var=c->Variables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,BORROWED_TRAIT);
+			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && var->setter)
 			{
 				assert_and_throw(var->setter);

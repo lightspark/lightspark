@@ -133,7 +133,7 @@ class ByteArray;
 class Type;
 class ABCContext;
 
-enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, BORROWED_TRAIT=4,CONSTANT_TRAIT=9 /* constants are also declared traits */ };
+enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
 enum TRAIT_STATE { NO_STATE=0, HAS_GETTER_SETTER=1, TYPE_RESOLVED=2 };
 
 struct variable
@@ -244,11 +244,13 @@ protected:
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const;
 	void setClass(Class_base* c);
+	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
+	static variable* findGettableImpl(variables_map& map, const multiname& name);
 private:
 	//maps variable name to namespace and var
 	variables_map Variables;
-	variable* findGettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
-	variable* findSettable(const multiname& name, bool borrowedMode, bool* has_getter=NULL) DLL_LOCAL;
+	variable* findGettable(const multiname& name) DLL_LOCAL;
+	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 
 	ATOMIC_INT32(ref_count);
 	Manager* manager;

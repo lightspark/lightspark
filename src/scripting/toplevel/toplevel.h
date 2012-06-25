@@ -127,6 +127,7 @@ protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
 public:
+	variables_map borrowedVariables;
 	bool isFinal:1;
 	bool isSealed:1;
 	void addPrototypeGetter();
@@ -179,6 +180,8 @@ public:
 		super = super_;
 		copyBorrowedTraitsFromSuper();
 	}
+	variable* findBorrowedGettable(const multiname& name) DLL_LOCAL;
+	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 };
 
 class Template_base : public ASObject

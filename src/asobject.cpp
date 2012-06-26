@@ -655,7 +655,10 @@ void variables_map::killObjVar(const multiname& mname)
 		//breaks when the namespace is not found
 		const nsNameAndKind& ns=ret->first.ns;
 		if(ns==*nsIt)
+		{
 			Variables.erase(ret);
+			return;
+		}
 		else if(*nsIt<ns)
 		{
 			++nsIt;

@@ -947,7 +947,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 void ASObject::check() const
 {
 	//Put here a bunch of safety check on the object
-	assert_and_throw(ref_count>0);
+	assert(ref_count>0);
 	Variables.check();
 }
 

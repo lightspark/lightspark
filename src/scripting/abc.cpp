@@ -845,7 +845,6 @@ ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),shutting
 	int_manager=new Manager(15);
 	uint_manager=new Manager(15);
 	number_manager=new Manager(15);
-	vmDataMemory=m_sys->allocateMemoryAccount("VM_Data");
 }
 
 void ABCVm::start()

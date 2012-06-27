@@ -82,6 +82,7 @@
 
 		var xml14:XML = new XML("<a>\n\t<child1/>\n\t</a>");
 		Tests.assertEquals(1, xml14.children().length(), "XML handling of white spaces")
+		Tests.assertEquals(true, xml14.hasOwnProperty('child1'), "XML handling of hasOwnProperty");
 
 		var xml15:XML = new XML("<test/>");
 		xml15.appendChild(5);

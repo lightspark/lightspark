@@ -795,9 +795,15 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 		assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
 		//Normalize the name to the string form
 		assert(node);
-		const xmlpp::Node::NodeList& children=node->get_children(buf);
-		if(!children.empty())
-			return true;
+		//Use low level libxml2 access to optimize the code
+		const xmlNode* cNode=node->cobj();
+		for(const xmlNode* cur=cNode->children;cur!=NULL;cur=cur->next)
+		{
+			//NOTE: xmlStrEqual returns 1 when the strings are equal.
+			if(xmlStrEqual(cur->name,(const xmlChar*)buf))
+				return true;
+		}
+		return false;
 	}
 
 	//Try the normal path as the last resource

@@ -420,7 +420,10 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 
 	variable* obj=NULL;
 	if(isBorrowed)
-		obj=o->inClass->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+	{
+		assert(this->is<Class_base>());
+		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+	}
 	else
 		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
 	switch(type)

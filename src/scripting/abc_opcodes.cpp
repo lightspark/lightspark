@@ -1286,8 +1286,10 @@ void ABCVm::getSuper(call_context* th, int n)
 
 void ABCVm::getLex(call_context* th, int n)
 {
-	multiname* name=th->context->getMultiname(n,th);
-	LOG(LOG_CALLS, _("getLex: ") << *name );
+	//getlex is specified not to allow runtime multinames
+	assert_and_throw(th->context->getMultinameRTData(n)==0);
+	multiname* name=th->context->getMultiname(n,NULL);
+	LOG(LOG_CALLS, "getLex: " << *name );
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
 	// o will be a reference owned by this function (or NULL). At
 	// the end the reference will be handed over to the runtime

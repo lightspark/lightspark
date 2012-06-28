@@ -299,7 +299,7 @@ bool ASObject::has_toString()
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	toStringName.isAttribute = false;
-	return hasPropertyByMultiname(toStringName, true, true);
+	return ASObject::hasPropertyByMultiname(toStringName, true, true);
 }
 
 /* calls the toString function on this object
@@ -313,7 +313,7 @@ _R<ASObject> ASObject::call_toString()
 	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	toStringName.isAttribute = false;
-	assert_and_throw(hasPropertyByMultiname(toStringName, true, true));
+	assert(ASObject::hasPropertyByMultiname(toStringName, true, true));
 
 	_NR<ASObject> o=getVariableByMultiname(toStringName,SKIP_IMPL);
 	assert_and_throw(o->is<IFunction>());

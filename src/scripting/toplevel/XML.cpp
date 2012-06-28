@@ -803,7 +803,6 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 			if(xmlStrEqual(cur->name,(const xmlChar*)buf))
 				return true;
 		}
-		return false;
 	}
 
 	//Try the normal path as the last resource

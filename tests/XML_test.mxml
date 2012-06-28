@@ -105,6 +105,8 @@
 		xmllist5[0] = new XML("<b/>");
 		xml20.appendChild(xmllist5);
 		Tests.assertEquals("<a>\n  <b/>\n</a>", xml20.toXMLString(), "appendChild with XMLList argument");
+		Tests.assertEquals("<a>\n  <b/>\n</a>", xml20.toString(), "XML.toString");
+		Tests.assertEquals("<a>\n  <b/>\n</a>", String(xml20), "String() on XML object");
 
 		var xml21:XML = new XML("<a/>");
 		Tests.assertEquals("a", xml21.name(), "::name() before setting [\"name\"]");

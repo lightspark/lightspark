@@ -229,13 +229,10 @@ ASFUNCTIONBODY(ASString,match)
 			resarr->push(match->as<Array>()->at(0));
 		}
 
-		if (resarr->size() == 0)
-		{
-			resarr->decRef();
-			ret = getSys()->getNullRef();
-		}
-		else
-			ret = resarr;
+		// According to ECMA we should return Null if resarr
+		// is empty, but the tested behavior is to return the
+		// empty array.
+		ret = resarr;
 	}
 	else
 	{

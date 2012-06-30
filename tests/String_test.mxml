@@ -32,6 +32,9 @@
 		ret = str.match(re);
 		Tests.assertArrayEquals(["mat", "able", "mat"], ret, "match(): global regexp match", true);
 
+		re = new RegExp("nomatch", "g");
+		ret = str.match(re);
+		Tests.assertEquals(0, ret.length, "match(): no match");
 
 		//Replace tests
 		str = new String("replaceable");

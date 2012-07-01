@@ -330,6 +330,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("KeyboardEvent","flash.events",Class<KeyboardEvent>::getRef());
 	builtin->registerBuiltin("StatusEvent","flash.events",Class<StatusEvent>::getRef());
 	builtin->registerBuiltin("DataEvent","flash.events",Class<DataEvent>::getRef());
+	builtin->registerBuiltin("DRMErrorEvent","flash.events",Class<DRMErrorEvent>::getRef());
+	builtin->registerBuiltin("DRMStatusEvent","flash.events",Class<DRMStatusEvent>::getRef());
 
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")));

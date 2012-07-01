@@ -49,6 +49,8 @@ REGISTER_CLASS_NAME(AsyncErrorEvent);
 REGISTER_CLASS_NAME(StatusEvent);
 REGISTER_CLASS_NAME(DataEvent);
 REGISTER_CLASS_NAME(InvokeEvent);
+REGISTER_CLASS_NAME(DRMErrorEvent);
+REGISTER_CLASS_NAME(DRMStatusEvent);
 
 void IEventDispatcher::linkTraits(Class_base* c)
 {
@@ -910,5 +912,48 @@ ASFUNCTIONBODY(InvokeEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(obj,args,baseClassArgs);
+	return NULL;
+}
+
+DRMErrorEvent::DRMErrorEvent(Class_base* c) : ErrorEvent(c, "drmAuthenticate")
+{
+}
+
+void DRMErrorEvent::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<ErrorEvent>::getRef());
+
+	c->setVariableByQName("DRM_ERROR","",Class<ASString>::getInstanceS("drmError"),DECLARED_TRAIT);
+	c->setVariableByQName("DRM_LOAD_DEVICEID_ERROR","",Class<ASString>::getInstanceS("drmLoadDeviceIdError"),DECLARED_TRAIT);
+}
+
+ASFUNCTIONBODY(DRMErrorEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	ErrorEvent::_constructor(obj,args,baseClassArgs);
+	if(argslen > 3)
+		LOG(LOG_NOT_IMPLEMENTED, "DRMErrorEvent constructor doesn't support all parameters");
+	return NULL;
+}
+
+DRMStatusEvent::DRMStatusEvent(Class_base* c) : Event(c, "drmAuthenticate")
+{
+}
+
+void DRMStatusEvent::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<Event>::getRef());
+
+	c->setVariableByQName("DRM_STATUS","",Class<ASString>::getInstanceS("drmStatus"),DECLARED_TRAIT);
+}
+
+ASFUNCTIONBODY(DRMStatusEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+	if(argslen > 3)
+		LOG(LOG_NOT_IMPLEMENTED, "DRMStatusEvent constructor doesn't support all parameters");
 	return NULL;
 }

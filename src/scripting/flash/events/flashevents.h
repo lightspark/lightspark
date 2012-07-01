@@ -448,5 +448,27 @@ public:
 	void finalize();
 };
 
+class DRMErrorEvent: public ErrorEvent
+{
+public:
+	DRMErrorEvent(Class_base* c);
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+	ASFUNCTION(_constructor);
+};
+
+class DRMStatusEvent: public Event
+{
+public:
+	DRMStatusEvent(Class_base* c);
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+	ASFUNCTION(_constructor);
+};
+
 };
 #endif

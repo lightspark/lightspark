@@ -72,7 +72,7 @@ private:
 	ASFUNCTION(readUTF);
 	ASFUNCTION(readUTFBytes);
 public:
-	URLStream(Class_base* c):EventDispatcher(c),data(_MNR(Class<ByteArray>::getInstanceS())) {}
+	URLStream(Class_base* c):EventDispatcher(c),data(_MNR(Class<ByteArray>::getInstanceS())),job(NULL) {}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void threadFinished(IThreadJob *job);

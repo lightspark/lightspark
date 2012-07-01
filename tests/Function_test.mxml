@@ -42,6 +42,12 @@
 		Tests.assertNull(constructed.prototype, "Objects from Function have no implicit prototype");
 
 		Tests.assertFalse(null instanceof testFunc, "instanceof with null object");
+
+		var instance1:FunctionEqualityTest = new FunctionEqualityTest();
+		var instance2:FunctionEqualityTest = new FunctionEqualityTest();
+		Tests.assertTrue(instance1.testFunction == instance1.testFunction, "Function equality, same scope");
+		Tests.assertFalse(instance1.testFunction == instance2.testFunction, "Function equality, different scope");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

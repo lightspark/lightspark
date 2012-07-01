@@ -331,7 +331,7 @@ public:
 		Function* f=dynamic_cast<Function*>(r);
 		if(f==NULL)
 			return false;
-		return val==f->val;
+		return (val==f->val) && (closure_this==f->closure_this);
 	}
 };
 
@@ -375,7 +375,7 @@ public:
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
 		if(sf==NULL)
 			return false;
-		return mi==sf->mi;
+		return (mi==sf->mi) && (closure_this==sf->closure_this);
 	}
 	void acquireScope(const std::vector<scope_entry>& scope)
 	{

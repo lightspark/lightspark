@@ -864,22 +864,19 @@ number_t ABCVm::subtract(ASObject* val2, ASObject* val1)
 	return num1-num2;
 }
 
-void ABCVm::pushUInt(call_context* th, int n)
+void ABCVm::pushUInt(call_context* th, uint32_t i)
 {
-	u32 i=th->context->constant_pool.uinteger[n];
-	LOG(LOG_CALLS, _("pushUInt [") << dec << n << _("] ") << i);
+	LOG(LOG_CALLS, "pushUInt " << i);
 }
 
-void ABCVm::pushInt(call_context* th, int n)
+void ABCVm::pushInt(call_context* th, int32_t i)
 {
-	s32 i=th->context->constant_pool.integer[n];
-	LOG(LOG_CALLS, _("pushInt [") << dec << n << _("] ") << i);
+	LOG(LOG_CALLS, "pushInt " << i);
 }
 
-void ABCVm::pushDouble(call_context* th, int n)
+void ABCVm::pushDouble(call_context* th, double d)
 {
-	d64 d=th->context->constant_pool.doubles[n];
-	LOG(LOG_CALLS, _("pushDouble [") << dec << n << _("] ") << d);
+	LOG(LOG_CALLS, "pushDouble " << d);
 }
 
 void ABCVm::kill(int n)

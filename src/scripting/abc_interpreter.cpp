@@ -583,9 +583,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//pushint
 				u30 t;
 				code >> t;
-				pushInt(context, t);
+				s32 val=context->context->constant_pool.integer[t];
+				pushInt(context, val);
 
-				ASObject* i=abstract_i(context->context->constant_pool.integer[t]);
+				ASObject* i=abstract_i(val);
 				context->runtime_stack_push(i);
 				break;
 			}
@@ -594,9 +595,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//pushuint
 				u30 t;
 				code >> t;
-				pushUInt(context, t);
+				u32 val=context->context->constant_pool.uinteger[t];
+				pushUInt(context, val);
 
-				ASObject* i=abstract_ui(context->context->constant_pool.uinteger[t]);
+				ASObject* i=abstract_ui(val);
 				context->runtime_stack_push(i);
 				break;
 			}
@@ -605,9 +607,10 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//pushdouble
 				u30 t;
 				code >> t;
-				pushDouble(context, t);
+				d64 val=context->context->constant_pool.doubles[t];
+				pushDouble(context, val);
 
-				ASObject* d=abstract_d(context->context->constant_pool.doubles[t]);
+				ASObject* d=abstract_d(val);
 				context->runtime_stack_push(d);
 				break;
 			}

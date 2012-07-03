@@ -358,9 +358,9 @@ private:
 	static ASObject* findProperty(call_context* th, multiname* name);
 	static int32_t pushByte(intptr_t n);
 	static int32_t pushShort(intptr_t n);
-	static void pushInt(call_context* th, int n);
-	static void pushUInt(call_context* th, int n);
-	static void pushDouble(call_context* th, int n);
+	static void pushInt(call_context* th, int32_t val);
+	static void pushUInt(call_context* th, uint32_t val);
+	static void pushDouble(call_context* th, double val);
 	static void incLocal_i(call_context* th, int n);
 	static void incLocal(call_context* th, int n);
 	static void decLocal_i(call_context* th, int n);

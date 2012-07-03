@@ -753,6 +753,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//constructprop
 				uint32_t t=data->uints[0];
 				uint32_t t2=data->uints[1];
+				instructionPointer+=8;
 				constructProp(context,t,t2);
 				break;
 			}

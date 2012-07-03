@@ -540,10 +540,12 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			}
 			case 0x45:
 			case 0x46:
+			case 0x4a:
 			case 0x4c: //callproplex seems to be exactly like callproperty
 			{
 				//callsuper
 				//callproperty
+				//constructprop
 				u30 t,t2;
 				code >> t;
 				code >> t2;
@@ -581,11 +583,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				curBlock->popStack(t+1);
 				break;
 			}
-			case 0x4a:
 			case 0x4e:
 			case 0x4f:
 			{
-				//constructprop
 				//callsupervoid
 				//callpropvoid
 				u30 t,t2;

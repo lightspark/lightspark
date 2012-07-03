@@ -585,7 +585,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				pushUInt(context, t);
 
-				ASObject* i=abstract_i(t);
+				ASObject* i=abstract_ui(t);
 				context->runtime_stack_push(i);
 				break;
 			}

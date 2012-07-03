@@ -596,7 +596,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				code >> t;
 				pushUInt(context, t);
 
-				ASObject* i=abstract_i(context->context->constant_pool.uinteger[t]);
+				ASObject* i=abstract_ui(context->context->constant_pool.uinteger[t]);
 				context->runtime_stack_push(i);
 				break;
 			}

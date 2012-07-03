@@ -104,6 +104,7 @@ private:
 public:
 	typedef typename std::allocator<T>::size_type size_type;
 	typedef typename std::allocator<T>::value_type value_type;
+	typedef typename std::allocator<T>::difference_type difference_type;
 	typedef typename std::allocator<T>::pointer pointer;
 	typedef typename std::allocator<T>::const_pointer const_pointer;
 	typedef typename std::allocator<T>::reference reference;

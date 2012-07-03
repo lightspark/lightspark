@@ -256,7 +256,8 @@ void SyntheticFunction::finalize()
  */
 ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs)
 {
-	const int hit_threshold=10;
+	const int opt_hit_threshold=10;
+	const int jit_hit_threshold=20;
 	assert_and_throw(mi->body);
 
 	uint32_t& cur_recursion = getVm()->cur_recursion;
@@ -295,8 +296,15 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			throw Class<ArgumentError>::getInstanceS("Error #1063: Not enough arguments provided");
 	}
 
+	//For sufficiently hot methods, optimize them to the internal bytecode
+	if(hit_count==opt_hit_threshold && getSys()->useFastInterpreter)
+	{
+		std::cerr << "OPTIMIZING!" << std::endl;
+		ABCVm::optimizeFunction(this);
+	}
+
 	//Temporarily disable JITting
-	if(!mi->body->exception_count && getSys()->useJit && (hit_count==hit_threshold || getSys()->useInterpreter==false))
+	if(!mi->body->exception_count && getSys()->useJit && (hit_count==jit_hit_threshold || getSys()->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();
@@ -413,8 +421,16 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		{
 			if(mi->body->exception_count || (val==NULL && getSys()->useInterpreter))
 			{
-				//This is not a hot function, execute it using the interpreter
-				ret=ABCVm::executeFunction(this,&cc);
+				if(hit_count>=opt_hit_threshold && getSys()->useFastInterpreter)
+				{
+					//This is a mildy hot function, execute it using the fast interpreter
+					ret=ABCVm::executeFunctionFast(this,&cc);
+				}
+				else
+				{
+					//This is not a hot function, execute it using the interpreter
+					ret=ABCVm::executeFunction(this,&cc);
+				}
 			}
 			else
 				ret=val(&cc);

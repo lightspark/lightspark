@@ -57,7 +57,9 @@ SET(LIBSPARK_SOURCES
   parsing/textfile.cpp
   scripting/abc.cpp
   scripting/abc_codesynt.cpp
+  scripting/abc_fast_interpreter.cpp
   scripting/abc_interpreter.cpp
+  scripting/abc_optimizer.cpp
   scripting/abc_opcodes.cpp
   scripting/abctypes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp

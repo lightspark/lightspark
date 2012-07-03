@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
 	char *HTTPcookie=NULL;
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
-	bool useFastInterpreter=true;
+	bool useFastInterpreter=false;
 	bool useJit=false;
 	SystemState::ERROR_TYPE exitOnError=SystemState::ERROR_PARSING;
 	LOG_LEVEL log_level=LOG_INFO;
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
 		else if(strcmp(argv[i],"-ni")==0 || strcmp(argv[i],"--disable-interpreter")==0)
 			useInterpreter=false;
 		else if(strcmp(argv[i],"-fi")==0 || strcmp(argv[i],"--enable-fast-interpreter")==0)
-			useFastInterpreter=false;
+			useFastInterpreter=true;
 		else if(strcmp(argv[i],"-j")==0 || strcmp(argv[i],"--enable-jit")==0)
 			useJit=true;
 		else if(strcmp(argv[i],"-l")==0 || strcmp(argv[i],"--log-level")==0)

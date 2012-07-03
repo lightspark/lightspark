@@ -230,6 +230,48 @@ public:
 #endif
 };
 
+struct BasicBlock
+{
+	BasicBlock(BasicBlock* pred)
+	{
+		//Any predecessor block is fine. Consistency for all predecessors
+		//will be verified at the end of the optimization
+		if(pred)
+		{
+			stackTypes=pred->stackTypes;
+			scopeStackTypes=pred->scopeStackTypes;
+		}
+	}
+	std::vector<const Type*> stackTypes;
+	std::vector<const Type*> scopeStackTypes;
+	std::vector<uint32_t> pred;
+	const Type* peekStack() const
+	{
+		return stackTypes.back();
+	}
+	void popStack(uint32_t n)
+	{
+		if(stackTypes.size()<n)
+			throw ParseException("Invalid code in optimizer");
+		for(uint32_t i=0;i<n;i++)
+			stackTypes.pop_back();
+	}
+	void pushStack(const Type* t)
+	{
+		stackTypes.push_back(t);
+	}
+	void popScopeStack()
+	{
+		if(scopeStackTypes.empty())
+			throw ParseException("Invalid code in optimizer");
+		scopeStackTypes.pop_back();
+	}
+	void pushScopeStack(const Type* t)
+	{
+		scopeStackTypes.push_back(t);
+	}
+};
+
 class ABCVm
 {
 friend class ABCContext;
@@ -310,7 +352,7 @@ private:
 	static ASObject* getScopeObject(call_context* th, int n); 
 	static bool deleteProperty(ASObject* obj, multiname* name);
 	static void initProperty(ASObject* obj, ASObject* val, multiname* name);
-	static void newClass(call_context* th, int n); 
+	static void newClass(call_context* th, int n);
 	static void newArray(call_context* th, int n); 
 	static ASObject* findPropStrict(call_context* th, multiname* name);
 	static ASObject* findProperty(call_context* th, multiname* name);
@@ -474,6 +516,13 @@ public:
 	void finalize();
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(const SyntheticFunction* function, call_context* context);
+	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context);
+	static void optimizeFunction(SyntheticFunction* function);
+	static void verifyBranch(std::map<uint32_t,BasicBlock> basicBlocks, int oldStart, int here,
+				 int offset, int code_len);
+	static void writeInt32(std::ostream& out, int32_t val);
+	static void writeDouble(std::ostream& out, double val);
+	static void writePtr(std::ostream& out, ASObject* val);
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();

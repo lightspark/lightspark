@@ -58,8 +58,9 @@ void ABCVm::verifyBranch(std::map<uint32_t,BasicBlock> basicBlocks, int oldStart
 	else//if(t>0)
 	{
 		//Forward branch
+		//Look for the current block we are in
 		auto it=basicBlocks.find(oldStart);
-		if(it!=basicBlocks.end())
+		if(it==basicBlocks.end())
 			throw ParseException("Bad code in optmizer");
 		BasicBlock* predBlock=&(it->second);
 		BasicBlock* nextBlock=&(basicBlocks.insert(

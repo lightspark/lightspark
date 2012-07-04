@@ -78,6 +78,7 @@ void Event::sinit(Class_base* c)
 	c->setSuper(Class<ASObject>::getRef());
 
 	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS("enterFrame"),DECLARED_TRAIT);
+	c->setVariableByQName("EXIT_FRAME","",Class<ASString>::getInstanceS("exitFrame"),DECLARED_TRAIT);
 	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS("render"),DECLARED_TRAIT);
 	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS("addedToStage"),DECLARED_TRAIT);
 	c->setVariableByQName("REMOVED_FROM_STAGE","",Class<ASString>::getInstanceS("removedFromStage"),DECLARED_TRAIT);

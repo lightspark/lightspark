@@ -74,7 +74,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 	method_info* mi=function->mi;
 
 	istringstream code(mi->body->code);
-	const int code_len=code.str().length();
+	const int code_len=mi->body->code.size();
 	ostringstream out;
 
 	u8 opcode;

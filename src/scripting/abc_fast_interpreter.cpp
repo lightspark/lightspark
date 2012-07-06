@@ -46,7 +46,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 	assert_and_throw(context->exec_pos==0);
 	//code.seekg(context->exec_pos);
 
-	const int code_len=mi->body->code.size();
+	const uint32_t code_len=mi->body->code.size();
 	uint32_t instructionPointer=0;
 
 #ifdef PROFILING_SUPPORT

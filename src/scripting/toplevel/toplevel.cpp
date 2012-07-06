@@ -232,7 +232,7 @@ ASObject *IFunction::describeType() const
 	return Class<XML>::getInstanceS(root);
 }
 
-SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),hit_count(0),mi(m),val(NULL)
+SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),mi(m),val(NULL)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -256,9 +256,10 @@ void SyntheticFunction::finalize()
  */
 ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs)
 {
-	const int opt_hit_threshold=10;
-	const int jit_hit_threshold=20;
+	const uint32_t opt_hit_threshold=0;
+	const uint32_t jit_hit_threshold=20;
 	assert_and_throw(mi->body);
+	const uint32_t hit_count = mi->body->hit_count;
 
 	uint32_t& cur_recursion = getVm()->cur_recursion;
 	if(cur_recursion == getVm()->limits.max_recursion)
@@ -474,7 +475,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	Log::calls_indent--;
 	getVm()->currentCallContext = saved_cc;
 
-	hit_count++;
+	mi->body->hit_count++;
 
 	this->decRef(); //free local ref
 	obj->decRef();

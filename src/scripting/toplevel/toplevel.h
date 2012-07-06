@@ -356,7 +356,6 @@ friend class Class<IFunction>;
 public:
 	typedef ASObject* (*synt_function)(call_context* cc);
 private:
-	int hit_count;
 	method_info* mi;
 	synt_function val;
 	SyntheticFunction(Class_base* c,method_info* m);

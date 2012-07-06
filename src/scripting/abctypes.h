@@ -242,6 +242,7 @@ struct method_info_simple
 
 struct method_body_info
 {
+	method_body_info():hit_count(0){}
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
@@ -253,6 +254,8 @@ struct method_body_info
 	std::vector<exception_info> exceptions;
 	u30 trait_count;
 	std::vector<traits_info> traits;
+	//The hit_count belongs here, since it is used to manipulate the code
+	int hit_count;
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

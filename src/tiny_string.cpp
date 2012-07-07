@@ -177,6 +177,31 @@ tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const
 	return substr_bytes(bytestart, byteend-bytestart);
 }
 
+std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
+{
+	std::list<tiny_string> res;
+	uint32_t pos, end;
+	tiny_string delimiterstring = tiny_string::fromChar(delimiter);
+
+	pos = 0;
+	while (pos < numChars())
+	{
+		end = find(delimiterstring, pos);
+		if (end == tiny_string::npos)
+		{
+			res.push_back(substr(pos, numChars()-pos));
+			break;
+		}
+		else
+		{
+			res.push_back(substr(pos, end-pos));
+			pos = end+1;
+		}
+	}
+
+	return res;
+}
+
 #ifdef MEMORY_USAGE_PROFILING
 void tiny_string::reportMemoryChange(int32_t change) const
 {

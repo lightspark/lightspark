@@ -23,6 +23,7 @@
 #include <cstring>
 #include <cstdint>
 #include <ostream>
+#include <list>
 /* for utf8 handling */
 #include <glib.h>
 #include "compat.h"
@@ -404,6 +405,8 @@ public:
 		g_free(str2);
 		return ret;
 	}
+	/* split string at each occurrence of delimiter character */
+	std::list<tiny_string> split(uint32_t delimiter) const;
 	/* iterate over utf8 characters */
 	CharIterator begin()
 	{

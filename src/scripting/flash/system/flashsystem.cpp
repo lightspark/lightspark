@@ -44,8 +44,10 @@ REGISTER_CLASS_NAME(System);
 
 #ifdef _WIN32
 const char* Capabilities::EMULATED_VERSION = "WIN 11,1,0," SHORTVERSION;
+const char* Capabilities::MANUFACTURER = "Adobe Windows";
 #else
 const char* Capabilities::EMULATED_VERSION = "LNX 11,1,0," SHORTVERSION;
+const char* Capabilities::MANUFACTURER = "Adobe Linux";
 #endif
 
 
@@ -58,6 +60,7 @@ void Capabilities::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("isDebugger","",Class<IFunction>::getFunction(_getIsDebugger),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("isEmbeddedInAcrobat","",Class<IFunction>::getFunction(_getIsEmbeddedInAcrobat),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("localFileReadDisable","",Class<IFunction>::getFunction(_getLocalFileReadDisable),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("manufacturer","",Class<IFunction>::getFunction(_getManufacturer),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("os","",Class<IFunction>::getFunction(_getOS),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("serverString","",Class<IFunction>::getFunction(_getServerString),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("screenResolutionX","",Class<IFunction>::getFunction(_getScreenResolutionX),GETTER_METHOD,false);
@@ -93,6 +96,11 @@ ASFUNCTIONBODY(Capabilities,_getIsEmbeddedInAcrobat)
 ASFUNCTIONBODY(Capabilities,_getLocalFileReadDisable)
 {
 	return abstract_b(true);
+}
+
+ASFUNCTIONBODY(Capabilities,_getManufacturer)
+{
+	return Class<ASString>::getInstanceS(MANUFACTURER);
 }
 
 ASFUNCTIONBODY(Capabilities,_getOS)

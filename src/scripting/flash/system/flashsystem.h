@@ -33,6 +33,7 @@ class Capabilities: public ASObject
 {
 public:
 	DLL_PUBLIC static const char* EMULATED_VERSION;
+	static const char* MANUFACTURER;
 	Capabilities(Class_base* c):ASObject(c){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_getLanguage);
@@ -41,6 +42,7 @@ public:
 	ASFUNCTION(_getIsDebugger);
 	ASFUNCTION(_getIsEmbeddedInAcrobat);
 	ASFUNCTION(_getLocalFileReadDisable);
+	ASFUNCTION(_getManufacturer);
 	ASFUNCTION(_getOS);
 	ASFUNCTION(_getVersion);
 	ASFUNCTION(_getServerString);

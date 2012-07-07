@@ -1205,8 +1205,8 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
 	}
 	else
 	{
-		assert(scenes.size() == sceneNo-1);
-		scenes.resize(sceneNo);
+		assert(scenes.size() == sceneNo);
+		scenes.resize(sceneNo+1);
 		scenes[sceneNo].name = name;
 		scenes[sceneNo].startframe = startframe;
 	}

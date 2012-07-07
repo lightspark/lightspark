@@ -372,13 +372,14 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		return NULL;
 	}
 
-	MATRIX totalMatrix(initialMatrix);
+	MATRIX totalMatrix;
 	DisplayObject* cur=this;
 	while(cur!=target)
 	{
 		totalMatrix=cur->getMatrix().multiplyMatrix(totalMatrix);
 		cur=cur->getParent().getPtr();
 	}
+	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;

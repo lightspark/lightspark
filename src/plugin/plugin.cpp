@@ -591,6 +591,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	{
 		//This is the main file
 		m_sys->setOrigin(stream->url);
+		m_sys->parseParametersFromURL(m_sys->getOrigin());
 		*stype=NP_ASFILE;
 		//Let's get the cookies now, they might be useful
 		uint32_t len = 0;

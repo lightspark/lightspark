@@ -452,3 +452,22 @@ bool URLInfo::isRTMP() const
 	return protocol == "rtmp" || protocol == "rtmpe" || protocol == "rtmps" ||
 	       protocol == "rtmpt" || protocol == "rtmpte" || protocol == "rtmpts";
 }
+
+std::list< std::pair<tiny_string, tiny_string> > URLInfo::getQueryKeyValue() const
+{
+	std::list< std::pair<tiny_string, tiny_string> > keyvalues;
+	std::list<tiny_string> queries = query.split('&');
+	std::list<tiny_string>::iterator it;
+	for(it=queries.begin(); it!=queries.end(); ++it)
+	{
+		uint32_t eqpos = it->find("=");
+		if(eqpos!=tiny_string::npos && (eqpos+1<it->numChars()))
+		{
+			tiny_string key=decode(it->substr(0, eqpos), ENCODE_ESCAPE);
+			tiny_string value=decode(it->substr(eqpos+1, it->numChars()-eqpos-1), ENCODE_ESCAPE);
+			keyvalues.push_back(std::make_pair(key, value));
+		}
+	}
+
+	return keyvalues;
+}

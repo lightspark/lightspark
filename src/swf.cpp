@@ -268,7 +268,9 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 	//Save a copy of the string
 	rawParameters=v;
 
-	_R<ASObject> params=_MR(Class<ASObject>::getInstanceS());
+	_NR<ASObject> params=getParameters();
+	if(params.isNull())
+		params=_MNR(Class<ASObject>::getInstanceS());
 	//Add arguments to SystemState
 	string vars(v);
 	uint32_t cur=0;
@@ -355,6 +357,26 @@ void SystemState::parseParametersFromFile(const char* f)
 	}
 	setParameters(ret);
 	i.close();
+}
+
+void SystemState::parseParametersFromURL(const URLInfo& url)
+{
+	_NR<ASObject> params=getParameters();
+	if(params.isNull())
+		params=_MNR(Class<ASObject>::getInstanceS());
+
+	std::list< std::pair<tiny_string, tiny_string> > queries=url.getQueryKeyValue();
+	std::list< std::pair<tiny_string, tiny_string> >::iterator it;
+	for (it=queries.begin(); it!=queries.end(); ++it)
+	{
+		if(params->hasPropertyByMultiname(QName(it->first,""), true, true))
+			LOG(LOG_ERROR,"URL query parameters has duplicate key '" << it->first << "' - ignoring");
+		else
+			params->setVariableByQName(it->first,"",
+			   lightspark::Class<lightspark::ASString>::getInstanceS(it->second),DYNAMIC_TRAIT);
+	}
+
+	setParameters(params);
 }
 
 void SystemState::setParameters(_R<ASObject> p)

@@ -277,6 +277,7 @@ int main(int argc, char* argv[])
 	if(url)
 	{
 		sys->setOrigin(url, fileName);
+		sys->parseParametersFromURL(sys->getOrigin());
 		sandboxType = SecurityManager::REMOTE;
 	}
 #ifndef _WIN32

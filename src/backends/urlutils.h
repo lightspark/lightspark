@@ -24,6 +24,8 @@
 #include "compat.h"
 #include <iostream>
 #include <string>
+#include <list>
+#include <utility>
 #include "swftypes.h"
 
 namespace lightspark
@@ -92,6 +94,7 @@ public:
 	const tiny_string& getPathFile() const { return pathFile; };
 	const tiny_string& getQuery() const { return query; };
 	const tiny_string& getFragment() const { return fragment; };
+	std::list< std::pair<tiny_string, tiny_string> > getQueryKeyValue() const;
 
 	bool isRTMP() const;
 	//Accessors to the RTMP requested stream

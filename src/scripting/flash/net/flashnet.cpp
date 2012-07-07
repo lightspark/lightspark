@@ -279,6 +279,10 @@ void URLLoaderThread::execute()
 				data=_MR(Class<URLVariables>::getInstanceS((char*)buf));
 				delete[] buf;
 			}
+			else
+			{
+				assert(false && "invalid dataFormat");
+			}
 
 			success=true;
 		}
@@ -417,7 +421,7 @@ tiny_string URLLoader::getDataFormat()
 void URLLoader::setDataFormat(const tiny_string& newFormat)
 {
 	SpinlockLocker l(spinlock);
-	dataFormat=newFormat;
+	dataFormat=newFormat.lowercase();
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)

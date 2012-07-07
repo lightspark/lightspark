@@ -543,6 +543,12 @@ ASFUNCTIONBODY(NetConnection,call)
 	if(!th->uri.isValid())
 		return NULL;
 
+	if(th->uri.isRTMP())
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "RTMP not yet supported in NetConnection.call()");
+		return NULL;
+	}
+
 	//This function is supposed to be passed a array for the rest
 	//of the arguments. Since that is not supported for native methods
 	//just create it here

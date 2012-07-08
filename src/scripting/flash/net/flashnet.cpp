@@ -780,6 +780,7 @@ NetStream::NetStream(Class_base* c):EventDispatcher(c),frameRate(0),tickStarted(
 	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false),
 	oldVolume(-1.0)
 {
+	soundTransform = _MNR(Class<SoundTransform>::getInstanceS());
 }
 
 void NetStream::finalize()

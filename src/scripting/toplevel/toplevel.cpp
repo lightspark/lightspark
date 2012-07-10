@@ -311,6 +311,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		val=mi->synt_method();
 		assert_and_throw(val);
 	}
+	mi->body->hit_count++;
 
 	//Prepare arguments
 	uint32_t args_len=mi->numArgs();
@@ -451,7 +452,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 				if (pos > exc.from && pos <= exc.to && mi->context->isinstance(excobj, name))
 				{
 					no_handler = false;
-					cc.exec_pos = (uint32_t)exc.target;
+					cc.exec_pos = exc.target;
 					cc.runtime_stack_clear();
 					cc.runtime_stack_push(excobj);
 					cc.scope_stack.clear();
@@ -474,8 +475,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cur_recursion--; //decrement current recursion depth
 	Log::calls_indent--;
 	getVm()->currentCallContext = saved_cc;
-
-	mi->body->hit_count++;
 
 	this->decRef(); //free local ref
 	obj->decRef();

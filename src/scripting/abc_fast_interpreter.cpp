@@ -43,11 +43,9 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 
 	const char* const code=&(mi->body->code[0]);
 	//This may be non-zero and point to the position of an exception handler
-	assert_and_throw(context->exec_pos==0);
-	//code.seekg(context->exec_pos);
 
 	const uint32_t code_len=mi->body->code.size();
-	uint32_t instructionPointer=0;
+	uint32_t instructionPointer=context->exec_pos;
 
 #ifdef PROFILING_SUPPORT
 	if(mi->profTime.empty())
@@ -63,6 +61,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(1)
 	{
+		assert(instructionPointer<code_len);
 		uint8_t opcode=code[instructionPointer];
 		instructionPointer++;
 		const OpcodeData* data=reinterpret_cast<const OpcodeData*>(code+instructionPointer);
@@ -120,340 +119,254 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				context->locals[t]=getSys()->getUndefinedRef();
 				break;
 			}
-			/*case 0x0c:
+			case 0x0c:
 			{
 				//ifnlt
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNLT(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x0d:
 			{
 				//ifnle
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNLE(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x0e:
 			{
 				//ifngt
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNGT(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x0f:
 			{
 				//ifnge
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNGE(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x10:
 			{
 				//jump
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
-				int here=code.tellg();
-				int dest=here+t;
-
-				//Now 'jump' to the destination, validate on the length
-				if(dest >= code_len)
-					throw ParseException("Jump out of bounds in interpreter");
-				code.seekg(dest);
+				assert(dest < code_len);
+				instructionPointer=dest;
 				break;
 			}
 			case 0x11:
 			{
 				//iftrue
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				bool cond=ifTrue(v1);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x12:
 			{
 				//iffalse
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				bool cond=ifFalse(v1);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x13:
 			{
 				//ifeq
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifEq(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x14:
 			{
 				//ifne
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNE(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x15:
 			{
 				//iflt
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifLT(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x16:
 			{
 				//ifle
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifLE(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x17:
 			{
 				//ifgt
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifGT(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x18:
 			{
 				//ifge
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifGE(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x19:
 			{
 				//ifstricteq
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifStrictEq(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x1a:
 			{
 				//ifstrictne
-				s24 t;
-				code >> t;
+				uint32_t dest=data->uints[0];
+				instructionPointer+=4;
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifStrictNE(v1, v2);
 				if(cond)
 				{
-					int here=code.tellg();
-					int dest=here+t;
-
-					//Now 'jump' to the destination, validate on the length
-					if(dest >= code_len)
-						throw ParseException("Jump out of bounds in interpreter");
-					code.seekg(dest);
+					assert(dest < code_len);
+					instructionPointer=dest;
 				}
 				break;
 			}
 			case 0x1b:
 			{
 				//lookupswitch
-				int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
-				s24 t;
-				code >> t;
-				int defaultdest=here+t;
+				uint32_t defaultdest=data->uints[0];
 				LOG(LOG_CALLS,_("Switch default dest ") << defaultdest);
-				u30 count;
-				code >> count;
-				s24* offsets=g_newa(s24, count+1);
-				for(unsigned int i=0;i<count+1;i++)
-				{
-					code >> offsets[i];
-					LOG(LOG_CALLS,_("Switch dest ") << i << ' ' << offsets[i]);
-				}
+				uint32_t count=data->uints[1];
 
 				ASObject* index_obj=context->runtime_stack_pop();
 				assert_and_throw(index_obj->getObjectType()==T_INTEGER);
 				unsigned int index=index_obj->toUInt();
 				index_obj->decRef();
 
-				int dest=defaultdest;
+				uint32_t dest=defaultdest;
 				if(index<=count)
-					dest=here+offsets[index];
+					dest=data->uints[2+index];
 
-				if(dest >= code_len)
-					throw ParseException("Jump out of bounds in interpreter");
-				code.seekg(dest);
+				assert(dest < code_len);
+				instructionPointer=dest;
 				break;
-			}*/
+			}
 			case 0x1c:
 			{
 				//pushwith
@@ -691,7 +604,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x42:
 			{
 				//construct
-				construct(context,data->uints[4]);
+				construct(context,data->uints[0]);
 				instructionPointer+=4;
 				break;
 			}

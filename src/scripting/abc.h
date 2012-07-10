@@ -232,7 +232,7 @@ public:
 
 struct BasicBlock
 {
-	BasicBlock(BasicBlock* pred)
+	BasicBlock(BasicBlock* pred):realStart(0)
 	{
 		//Any predecessor block is fine. Consistency for all predecessors
 		//will be verified at the end of the optimization
@@ -244,7 +244,12 @@ struct BasicBlock
 	}
 	std::vector<const Type*> stackTypes;
 	std::vector<const Type*> scopeStackTypes;
-	std::vector<uint32_t> pred;
+	std::vector<BasicBlock*> pred;
+	/*
+	 * Pointers that must be set the actual offset of this block in optmized code
+	 */
+	std::vector<uint32_t> fixups;
+	uint32_t realStart;
 	const Type* peekStack() const
 	{
 		return stackTypes.back();
@@ -518,8 +523,9 @@ public:
 	static ASObject* executeFunction(const SyntheticFunction* function, call_context* context);
 	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context);
 	static void optimizeFunction(SyntheticFunction* function);
-	static void verifyBranch(std::map<uint32_t,BasicBlock> basicBlocks, int oldStart, int here,
+	static void verifyBranch(std::map<uint32_t,BasicBlock>& basicBlocks, int oldStart, int here,
 				 int offset, int code_len);
+	static void writeBranchAddress(std::map<uint32_t,BasicBlock>& basicBlocks, int here, int offset, std::ostream& out);
 	static void writeInt32(std::ostream& out, int32_t val);
 	static void writeDouble(std::ostream& out, double val);
 	static void writePtr(std::ostream& out, ASObject* val);

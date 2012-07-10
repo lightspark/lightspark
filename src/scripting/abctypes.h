@@ -214,9 +214,9 @@ struct script_info
 
 struct exception_info
 {
-	u30 from;
-	u30 to;
-	u30 target;
+	uint32_t from;
+	uint32_t to;
+	uint32_t target;
 	u30 exc_type;
 	u30 var_name;
 };

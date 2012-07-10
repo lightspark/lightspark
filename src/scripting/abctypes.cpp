@@ -310,7 +310,11 @@ istream& lightspark::operator>>(istream& in, traits_info& v)
 
 istream& lightspark::operator >>(istream& in, exception_info& v)
 {
-	in >> v.from >> v.to >> v.target >> v.exc_type >> v.var_name;
+	u30 from, to, target;
+	in >> from >> to >> target >> v.exc_type >> v.var_name;
+	v.from = from;
+	v.to = to;
+	v.target = target;
 	return in;
 }
 

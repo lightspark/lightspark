@@ -38,7 +38,7 @@ void ABCVm::writeDouble(std::ostream& o, double val)
 	o.write((char*)&val, 8);
 }
 
-void ABCVm::verifyBranch(std::map<uint32_t,BasicBlock> basicBlocks, int oldStart,
+void ABCVm::verifyBranch(std::map<uint32_t,BasicBlock>& basicBlocks, int oldStart,
 			 int here, int offset, int code_len)
 {
 	//Compute the destination block
@@ -52,8 +52,14 @@ void ABCVm::verifyBranch(std::map<uint32_t,BasicBlock> basicBlocks, int oldStart
 	else if(offset<0)
 	{
 		//Backward branch
-		if(basicBlocks.find(dest)==basicBlocks.end())
+		auto it=basicBlocks.find(dest);
+		if(it==basicBlocks.end())
 			throw ParseException("Bad jump in optmizer");
+		//Look for the current block we are in
+		auto pred=basicBlocks.find(oldStart);
+		if(pred==basicBlocks.end())
+			throw ParseException("Bad code in optmizer");
+		it->second.pred.push_back(&pred->second);
 	}
 	else//if(t>0)
 	{
@@ -65,7 +71,25 @@ void ABCVm::verifyBranch(std::map<uint32_t,BasicBlock> basicBlocks, int oldStart
 		BasicBlock* predBlock=&(it->second);
 		BasicBlock* nextBlock=&(basicBlocks.insert(
 			make_pair(dest,BasicBlock(predBlock))).first->second);
-		nextBlock->pred.push_back(oldStart);
+		nextBlock->pred.push_back(predBlock);
+	}
+}
+
+void ABCVm::writeBranchAddress(std::map<uint32_t,BasicBlock>& basicBlocks, int here, int offset, std::ostream& out)
+{
+	int dest=here+offset;
+	auto it=basicBlocks.find(dest);
+	assert(it!=basicBlocks.end());
+	if(offset<0)
+	{
+		//If the branch is backward we already know the right address
+		writeInt32(out, it->second.realStart);
+	}
+	else
+	{
+		//We need to add a fixup for this integer
+		it->second.fixups.push_back(out.tellp());
+		writeInt32(out, 0xffffffff);
 	}
 }
 
@@ -84,14 +108,34 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 	uint32_t curStart=0;
 	BasicBlock* curBlock=&(basicBlocks.insert(
 			make_pair(0,BasicBlock(NULL))).first->second);
+	curBlock->realStart=0;
+
+	std::multimap<uint32_t, uint32_t*> exceptionFixups;
+	//Create a map of addresses to fixups to rewrite the exception data: from, to and target
+	for(uint32_t i=0;i<mi->body->exceptions.size();i++)
+	{
+		exception_info& ei=mi->body->exceptions[i];
+		exceptionFixups.insert(make_pair(ei.from,&ei.from));
+		exceptionFixups.insert(make_pair(ei.to,&ei.to));
+		exceptionFixups.insert(make_pair(ei.target,&ei.target));
+	}
 
 	//Rewrite optimized code for faster execution, the new format is
 	//uint8 opcode, [uint32 operand]* | [ASObject* pre resolved object]
 	//Analize validity of basic blocks
 	//Understand types of the values on the local scope stack
 	//Optimize away getLex
+	//Translate exception ranges to new values
 	while(1)
 	{
+		const int here=code.tellg();
+		//Apply exception fixups
+		while(!exceptionFixups.empty() && exceptionFixups.begin()->first <= here)
+		{
+			auto it=exceptionFixups.begin();
+			*(it->second)=out.tellp();
+			exceptionFixups.erase(it);
+		}
 		code >> opcode;
 		if(code.eof())
 		{
@@ -104,17 +148,49 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		if(curBlock==NULL)
 		{
 			//Try to find the block for this instruction
-			int here=code.tellg();
-			auto it=basicBlocks.find(here-1);
+			auto it=basicBlocks.find(here);
 			if(it!=basicBlocks.end())
 			{
 				curBlock=&(it->second);
+				curBlock->realStart=out.tellp();
 				curStart=it->first;
+			}
+			else if(opcode==0x09)
+			{
+				//The opcode is a label, so a new block starts
+				//Nothin to do
 			}
 			else
 			{
-				LOG(LOG_ERROR,"Unreachable code");
+				LOG(LOG_ERROR,"Unreachable code @" << hex << here << dec);
+				//Jump to the next known block
+				auto it=basicBlocks.lower_bound(here);
+				if(it==basicBlocks.end())
+				{
+					//There is no more code
+					break;
+				}
+				code.seekg(it->first);
+				curStart=it->first;
+				curBlock=&it->second;
+				curBlock->realStart=out.tellp();
 				continue;
+			}
+		}
+		else
+		{
+			//Also check if the block must change because we are entering into a new one
+			auto it=basicBlocks.upper_bound(here);
+			it--;
+			assert(it->first>=curStart);
+			if(it!=basicBlocks.end() && it->first>curStart)
+			{
+				//std::cerr << "Changing block @" << it->first << " for here " << here << std::endl;
+				BasicBlock* oldBlock=curBlock;
+				curBlock=&(it->second);
+				curBlock->realStart=out.tellp();
+				curBlock->pred.push_back(oldBlock);
+				curStart=it->first;
 			}
 		}
 
@@ -186,11 +262,12 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//label
 				//Create a new basic block
 				BasicBlock* oldBlock=curBlock;
-				uint32_t oldStart=curStart;
 				int here=code.tellg();
 				curStart=here-1;
 				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(oldBlock))).first->second);
-				curBlock->pred.push_back(oldStart);
+				curBlock->realStart=out.tellp();
+				if(oldBlock)
+					curBlock->pred.push_back(oldBlock);
 				break;
 			}
 			case 0x0c:
@@ -221,17 +298,18 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				s24 t;
 				code >> t;
 				curBlock->popStack(2);
-				out << (uint8_t)opcode;
-				writeInt32(out, t);
 				
 				BasicBlock* oldBlock=curBlock;
 				uint32_t oldStart=curStart;
 				//The new block starts after this function
 				int here=code.tellg();
+				verifyBranch(basicBlocks,oldStart,here,t,code_len);
+				out << (uint8_t)opcode;
+				writeBranchAddress(basicBlocks, here, t, out);
 				curStart=here;
 				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(oldBlock))).first->second);
-				curBlock->pred.push_back(oldStart);
-				verifyBranch(basicBlocks,curStart,here,t,code_len);
+				curBlock->pred.push_back(oldBlock);
+				curBlock->realStart=out.tellp();
 				break;
 			}
 			case 0x10:
@@ -239,13 +317,12 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//jump
 				s24 t;
 				code >> t;
-				out << (uint8_t)opcode;
-				writeInt32(out, t);
 
 				//The new block starts after this function
 				int here=code.tellg();
-				curStart=here;
 				verifyBranch(basicBlocks,curStart,here,t,code_len);
+				out << (uint8_t)opcode;
+				writeBranchAddress(basicBlocks, here, t, out);
 				//Reset the block to NULL
 				curBlock=NULL;
 				break;
@@ -258,17 +335,18 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				s24 t;
 				code >> t;
 				curBlock->popStack(1);
-				out << (uint8_t)opcode;
-				writeInt32(out, t);
 
 				BasicBlock* oldBlock=curBlock;
 				uint32_t oldStart=curStart;
 				//The new block starts after this function
 				int here=code.tellg();
+				verifyBranch(basicBlocks,oldStart,here,t,code_len);
+				out << (uint8_t)opcode;
+				writeBranchAddress(basicBlocks, here, t, out);
 				curStart=here;
 				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(oldBlock))).first->second);
-				curBlock->pred.push_back(oldStart);
-				verifyBranch(basicBlocks,curStart,here,t,code_len);
+				curBlock->pred.push_back(oldBlock);
+				curBlock->realStart=out.tellp();
 				break;
 			}
 			case 0x1b:
@@ -283,15 +361,16 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				for(unsigned int i=0;i<count+1;i++)
 					code >> offsets[i];
 				curBlock->popStack(1);
-				out << (uint8_t)opcode;
-				writeInt32(out, t);
-				writeInt32(out, count);
-				for(int i=0;i<(count+1);i++)
-					writeInt32(out, (int32_t)offsets[i]);
-
+				//Verify default branch and output it's translation
 				verifyBranch(basicBlocks,curStart,here,t,code_len);
+				out << (uint8_t)opcode;
+				writeBranchAddress(basicBlocks, here, t, out);
+				//Verify other branches and output their translations
 				for(int i=0;i<(count+1);i++)
 					verifyBranch(basicBlocks,curStart,here,offsets[i],code_len);
+				writeInt32(out, count);
+				for(int i=0;i<(count+1);i++)
+					writeBranchAddress(basicBlocks, here, (int)offsets[i], out);
 				curBlock=NULL;
 				break;
 			}
@@ -1142,6 +1221,31 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				LOG(LOG_ERROR,_("Not optimizable instruction @") << code.tellg());
 				LOG(LOG_ERROR,_("dump ") << hex << (unsigned int)opcode << dec);
 				throw ParseException("Not implemented instruction in optimizer");
+		}
+	}
+	//Loop over the basic blocks to do
+	//1) branch fixups
+	//3) consistency checks
+	for(auto it=basicBlocks.begin();it!=basicBlocks.end();++it)
+	{
+		//Fixups
+		const BasicBlock& bb=it->second;
+		for(uint32_t i=0;i<bb.fixups.size();i++)
+		{
+			uint32_t strOffset=bb.fixups[i];
+			out.seekp(strOffset);
+			writeInt32(out, bb.realStart);
+		}
+		if(bb.pred.size()==0)
+		{
+			assert(bb.realStart==0);
+			continue;
+		}
+		const vector<const Type*>& predStackTypes=bb.pred[0]->stackTypes;
+		const vector<const Type*>& predScopeStackTypes=bb.pred[0]->scopeStackTypes;
+		for(uint32_t i=0;i<bb.pred.size();i++)
+		{
+			//TODO: should check
 		}
 	}
 	//Overwrite the old code

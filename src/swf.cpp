@@ -184,6 +184,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	{
 		uint32_t tmp=getUniqueStringId(builtinStrings[i]);
 		assert(tmp==i);
+		(void)tmp; // silence warning about unused variable
 	}
 	//Forge the empty namespace and make sure it gets id 0
 	nsNameAndKindImpl emptyNs("", NAMESPACE);

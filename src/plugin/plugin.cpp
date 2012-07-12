@@ -648,6 +648,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 		{
 			//NPN_DestroyStream will call NPP_DestroyStream
 			NPError e=NPN_DestroyStream(mInstance, stream, NPRES_USER_BREAK);
+			(void)e; // silence warning about unused variable
 			assert(e==NPERR_NO_ERROR);
 			return -1;
 		}

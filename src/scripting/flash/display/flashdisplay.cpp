@@ -282,7 +282,7 @@ void LoaderThread::execute()
 {
 	assert(source==URL || source==BYTES);
 
-	streambuf *sbuf;
+	streambuf *sbuf = 0;
 	if(source==URL)
 	{
 		const char contenttype[]="Content-Type: application/x-www-form-urlencoded";

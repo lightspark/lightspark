@@ -300,7 +300,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	//For sufficiently hot methods, optimize them to the internal bytecode
 	if(hit_count==opt_hit_threshold && getSys()->useFastInterpreter)
 	{
-		std::cerr << "OPTIMIZING!" << std::endl;
 		ABCVm::optimizeFunction(this);
 	}
 

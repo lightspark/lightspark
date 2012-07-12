@@ -47,8 +47,6 @@ void ABCVm::verifyBranch(std::map<uint32_t,BasicBlock>& basicBlocks, int oldStar
 	int dest=here+offset;
 	if(dest >= code_len)
 		throw ParseException("Jump out of bounds in optimizer");
-	if(offset==0)
-		throw ParseException("Bad jump in optmizer");
 	else if(offset<0)
 	{
 		//Backward branch
@@ -61,7 +59,7 @@ void ABCVm::verifyBranch(std::map<uint32_t,BasicBlock>& basicBlocks, int oldStar
 			throw ParseException("Bad code in optmizer");
 		it->second.pred.push_back(&pred->second);
 	}
-	else//if(t>0)
+	else//if(t>=0)
 	{
 		//Forward branch
 		//Look for the current block we are in
@@ -118,6 +116,14 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		exceptionFixups.insert(make_pair(ei.from,&ei.from));
 		exceptionFixups.insert(make_pair(ei.to,&ei.to));
 		exceptionFixups.insert(make_pair(ei.target,&ei.target));
+		//Also create a new basic block at the exception target address,
+		//otherwise that code might be considered unreachable and lost
+		if(basicBlocks.find(ei.target)==basicBlocks.end())
+		{
+			BasicBlock* expBlock=&(basicBlocks.insert(make_pair(ei.target,BasicBlock(NULL))).first->second);
+			//Those blocks starts with the exception on the stack
+			expBlock->pushStack(Type::anyType);
+		}
 	}
 
 	//Rewrite optimized code for faster execution, the new format is
@@ -1238,7 +1244,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		}
 		if(bb.pred.size()==0)
 		{
-			assert(bb.realStart==0);
+			//It may be the starting block or an exception handling block
 			continue;
 		}
 		const vector<const Type*>& predStackTypes=bb.pred[0]->stackTypes;

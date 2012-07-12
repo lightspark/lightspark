@@ -47,7 +47,7 @@ private:
 	void commonGLDeinit();
 	GLuint pixelBuffers[2];
 	uint32_t currentPixelBuffer;
-	uint32_t currentPixelBufferOffset;
+	intptr_t currentPixelBufferOffset;
 	uint32_t pixelBufferWidth;
 	uint32_t pixelBufferHeight;
 	void resizePixelBuffers(uint32_t w, uint32_t h);

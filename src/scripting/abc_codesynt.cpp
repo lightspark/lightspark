@@ -731,7 +731,7 @@ inline llvm::Value* getMultiname(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& Bu
 				ABCContext* abccontext, int multinameIndex)
 {
 	int rtdata=abccontext->getMultinameRTData(multinameIndex);
-	llvm::Value* name;
+	llvm::Value* name = 0;
 	if(rtdata==0)
 	{
 		//Multinames without runtime date persist

@@ -752,6 +752,7 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 		}
 		default:
 			assert(false);
+			return; // silence warning about uninitialised alignment
 	}
 	pango_layout_set_alignment(layout,alignment);
 

@@ -242,6 +242,7 @@ void Sound::sinit(Class_base* c)
 	c->setSuper(Class<EventDispatcher>::getRef());
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,bytesLoaded);
 	REGISTER_GETTER(c,bytesTotal);
 	REGISTER_GETTER(c,length);
@@ -254,6 +255,10 @@ void Sound::buildTraits(ASObject* o)
 ASFUNCTIONBODY(Sound,_constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
+
+	if (argslen>0)
+		Sound::load(obj, args, argslen);
+
 	return NULL;
 }
 
@@ -315,6 +320,15 @@ ASFUNCTIONBODY(Sound,play)
 	}
 
 	return getSys()->getUndefinedRef();
+}
+
+ASFUNCTIONBODY(Sound,close)
+{
+	Sound* th=Class<Sound>::cast(obj);
+	if(!ACQUIRE_READ(th->stopped))
+		th->threadAbort();
+
+	return NULL;
 }
 
 void Sound::execute()

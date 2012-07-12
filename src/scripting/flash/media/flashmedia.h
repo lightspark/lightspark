@@ -59,6 +59,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(play);
+	ASFUNCTION(close);
 
 	//IThreadJob interface
 	void execute();

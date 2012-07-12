@@ -549,7 +549,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 	return true;
 }
 
-uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
+uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t time)
 {
 	FrameSamples& curTail=samplesBuffer.acquireLast();
 	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;

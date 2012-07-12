@@ -225,7 +225,7 @@ public:
 	void operator delete(void*);
 	AudioDecoder():sampleRate(0),channelCount(0),initialTime(-1){}
 	virtual ~AudioDecoder(){};
-	virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
+	virtual uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time)=0;
 	bool hasDecodedFrames() const
 	{
 		return !samplesBuffer.isEmpty();
@@ -272,7 +272,7 @@ public:
 		sampleRate=44100;
 		channelCount=2;
 	}
-	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return 0;}
+	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time){return 0;}
 };
 
 #ifdef ENABLE_LIBAVCODEC
@@ -296,7 +296,7 @@ public:
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
 	uint32_t decodePacket(AVPacket* pkt, uint32_t time);
-	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
+	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time);
 };
 #endif
 

@@ -51,7 +51,7 @@ public:
 	NPIdentifierObject(int32_t value);
 	NPIdentifierObject(const ExtIdentifier& value);
 	NPIdentifierObject(const NPIdentifierObject& id);
-	NPIdentifierObject(const NPIdentifier& id);
+	NPIdentifierObject(const NPIdentifier& id, bool convertToInt=false);
 
 	~NPIdentifierObject() {}
 
@@ -68,6 +68,10 @@ public:
 	int32_t getInt() const { return getInt(identifier); }
 	static int32_t getInt(const NPIdentifier& identifier);
 	NPIdentifier getNPIdentifier() const;
+
+	// Returns true, if identifier is an interger or an all-digit
+	// string.
+	bool isNumeric() const;
 private:
 	NPIdentifier identifier;
 
@@ -99,6 +103,8 @@ public:
 	static NPObject* getNPObject(NPP instance, const lightspark::ExtObject& obj);
 private:
 	NPP instance;
+
+	bool isArray(NPObject* obj) const;
 };
 
 /**

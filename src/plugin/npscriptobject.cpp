@@ -62,10 +62,17 @@ NPIdentifierObject::NPIdentifierObject(const NPIdentifierObject& id)
 {
 	id.copy(identifier);
 }
-NPIdentifierObject::NPIdentifierObject(const NPIdentifier& id)
+NPIdentifierObject::NPIdentifierObject(const NPIdentifier& id, bool convertToInt)
 	: ExtIdentifier()
 {
-	copy(id, identifier);
+	if (convertToInt && NPN_IdentifierIsString(id))
+	{
+		NPUTF8* str = NPN_UTF8FromIdentifier(id);
+		stringToInt(std::string((const char*)str));
+		NPN_MemFree(str);
+	}
+	else
+		copy(id, identifier);
 }
 
 // Convert integer string identifiers to integer identifiers
@@ -147,6 +154,21 @@ NPIdentifier NPIdentifierObject::getNPIdentifier() const
 		return NPN_GetIntIdentifier(getInt());
 }
 
+bool NPIdentifierObject::isNumeric() const
+{
+	if(getType() == EI_STRING)
+	{
+		std::string s = getString();
+		for(unsigned i=0; i<s.size(); ++i)
+		{
+			if (!isdigit(s[i]))
+				return false;
+		}
+	}
+
+	return true;
+}
+
 /* -- NPObjectObject -- */
 // Constructors
 NPObjectObject::NPObjectObject() : instance(NULL)
@@ -167,11 +189,10 @@ NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) :
 	NPVariant property;
 	uint32_t count;
 
-	// Used to determine if the object we are converting is an array.
-	bool allIntIds = true;
-
 	if(instance == NULL || obj == NULL)
 		return;
+
+	bool is_array = isArray(obj);
 
 	// Get all identifiers this NPObject has
 	if(NPN_Enumerate(instance, obj, &ids, &count))
@@ -180,25 +201,65 @@ NPObjectObject::NPObjectObject(NPP _instance, NPObject* obj) :
 		{
 			if(NPN_GetProperty(instance, obj, ids[i], &property))
 			{
-				if(NPN_IdentifierIsString(ids[i]))
-					allIntIds = false;
-
-				setProperty(NPIdentifierObject(ids[i]), NPVariantObject(instance, property));
+				// For arrays, force identifiers into
+				// integers because Lightspark's Array
+				// class requires integer indexes.
+				setProperty(NPIdentifierObject(ids[i], is_array), NPVariantObject(instance, property));
 				NPN_ReleaseVariantValue(&property);
 			}
 		}
 
-		// Arrays don't enumerate the length property. So if we only got integer ids and there exists
-		// an un-enumerated length property of type integer, we actually got passed an array.
-		if(allIntIds && NPN_GetProperty(instance, obj, NPN_GetStringIdentifier("length"), &property))
-		{
-			if(NPVariantObject::getType(property) == NPVariantObject::EV_INT32)
-				setType(EO_ARRAY);
-
-			NPN_ReleaseVariantValue(&property);
-		}
 		NPN_MemFree(ids);
 	}
+
+	if(is_array)
+		setType(EO_ARRAY);
+}
+
+bool NPObjectObject::isArray(NPObject* obj) const
+{
+	// This object is an array if
+	// 1) it has an un-enumerated length propoerty and
+	// 2) the enumerated propoerties are numeric
+
+	if(instance == NULL || obj == NULL)
+		return false;
+
+	// Check the existence of length property
+	NPVariant property;
+	bool hasLength = false;
+	if(NPN_GetProperty(instance, obj, NPN_GetStringIdentifier("length"), &property))
+	{
+		// I've seen EV_DOUBLE lengths being sent by Chromium
+		NPVariantObject::EV_TYPE type = NPVariantObject::getType(property);
+		if(type == NPVariantObject::EV_INT32 || type == NPVariantObject::EV_DOUBLE)
+			hasLength = true;
+		
+		NPN_ReleaseVariantValue(&property);
+	}
+
+	if(!hasLength)
+		return false;
+
+	// Check that all properties are integers or strings of digits
+	NPIdentifier* ids = NULL;
+	uint32_t count;
+	bool allIntIds = true;
+	if(NPN_Enumerate(instance, obj, &ids, &count))
+	{
+		for(uint32_t i = 0; i < count; i++)
+		{
+			if(!NPIdentifierObject(ids[i]).isNumeric())
+			{
+				allIntIds = false;
+				break;
+			}
+		}
+
+		NPN_MemFree(ids);
+	}
+
+	return allIntIds;
 }
 
 // Conversion to NPObject

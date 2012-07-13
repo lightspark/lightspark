@@ -232,7 +232,7 @@ public:
 
 struct BasicBlock
 {
-	BasicBlock(BasicBlock* pred):realStart(0)
+	BasicBlock(BasicBlock* pred):realStart(0xffffffff)
 	{
 		//Any predecessor block is fine. Consistency for all predecessors
 		//will be verified at the end of the optimization
@@ -523,8 +523,8 @@ public:
 	static ASObject* executeFunction(const SyntheticFunction* function, call_context* context);
 	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context);
 	static void optimizeFunction(SyntheticFunction* function);
-	static void verifyBranch(std::map<uint32_t,BasicBlock>& basicBlocks, int oldStart, int here,
-				 int offset, int code_len);
+	static void verifyBranch(std::set<uint32_t>& pendingBlock,std::map<uint32_t,BasicBlock>& basicBlocks,
+			int oldStart, int here, int offset, int code_len);
 	static void writeBranchAddress(std::map<uint32_t,BasicBlock>& basicBlocks, int here, int offset, std::ostream& out);
 	static void writeInt32(std::ostream& out, int32_t val);
 	static void writeDouble(std::ostream& out, double val);

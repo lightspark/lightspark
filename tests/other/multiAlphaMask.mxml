@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<!--
+NOTE: name attribute should be:
+lightspark_CLASSNAME_test or lightspark_FUNCTIONNAME_test for toplevel tests
+lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test for non-toplevel tests
+(e.g.: lightspark_net_NetStream_test or lightspark_Array_test)
+-->
+<mx:Application name="lightspark_NAME_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	private function appComplete():void
+	{
+		//Alpha masking only works if
+		//1) mask has cacheAsBitmap=true
+		//2) obj has cacheAsBitmap=true
+		//3) mask is directly on obj, not on parent
+		//4) The mask is on the stage
+
+		var testText:TextField = new TextField();
+		testText.text = "Test 1";
+		testText.scaleX = 2;
+		testText.scaleY = 2;
+		visual.addChild(testText);
+		var testContainer:Sprite = new Sprite();
+		testContainer.y = 40;
+		var mask1:Sprite = new Sprite();
+		mask1.graphics.beginFill(0x00ff00,0.0);
+		mask1.graphics.drawRect(50,0,100,100);
+		mask1.graphics.endFill();
+		mask1.cacheAsBitmap = true;
+		var mask2:Sprite = new Sprite();
+		mask2.graphics.beginFill(0x0000ff,0.5);
+		mask2.graphics.drawRect(0,50,100,100);
+		mask2.graphics.endFill();
+		mask2.cacheAsBitmap = true;
+		var obj:Sprite = new Sprite();
+		obj.graphics.beginFill(0xff0000);
+		obj.graphics.drawRect(0,0,200,200);
+		obj.graphics.endFill();
+		obj.cacheAsBitmap = true;
+		testContainer.addChild(mask2);
+		testContainer.addChild(mask1);
+		testContainer.addChild(obj);
+		testContainer.mask = mask1;
+		visual.addChild(testContainer);
+		obj.mask = mask2;
+
+		var test2Text:TextField = new TextField();
+		test2Text.x=100;
+		test2Text.text = "Test 2";
+		test2Text.scaleX = 2;
+		test2Text.scaleY = 2;
+		visual.addChild(test2Text);
+		var test2Container:Sprite = new Sprite();
+		test2Container.x=100;
+		test2Container.y = 40;
+		var mask3:Sprite = new Sprite();
+		mask3.graphics.beginFill(0x00ff00,0.0);
+		mask3.graphics.drawRect(50,0,100,100);
+		mask3.graphics.endFill();
+		mask3.cacheAsBitmap = true;
+		var mask4:Sprite = new Sprite();
+		mask4.graphics.beginFill(0x0000ff,0.5);
+		mask4.graphics.drawRect(0,50,100,100);
+		mask4.graphics.endFill();
+		mask4.cacheAsBitmap = true;
+		var obj2:Sprite = new Sprite();
+		obj2.graphics.beginFill(0xff0000);
+		obj2.graphics.drawRect(0,0,200,200);
+		obj2.graphics.endFill();
+		obj2.cacheAsBitmap = true;
+		mask4.y = 40;
+		mask4.x = 100;
+		test2Container.addChild(mask3);
+		test2Container.addChild(obj2);
+		test2Container.mask = mask3;
+		visual.addChild(test2Container);
+		obj2.mask = mask4;
+
+		var controlText:TextField = new TextField();
+		controlText.x=200;
+		controlText.text = "Control";
+		controlText.scaleX = 2;
+		controlText.scaleY = 2;
+		visual.addChild(controlText);
+		var controlContainer:Sprite = new Sprite();
+		controlContainer.x = 200;
+		controlContainer.y = 40;
+		var control:Sprite = new Sprite();
+		control.graphics.beginFill(0xff0000,0.5);
+		control.graphics.drawRect(50,50,50,50);
+		control.graphics.endFill();
+		controlContainer.addChild(control);
+		visual.addChild(controlContainer);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

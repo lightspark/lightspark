@@ -245,7 +245,7 @@ void URLLoaderThread::execute()
 	//TODO: support httpStatus, progress events
 
 	const char contenttype[]="Content-Type: application/x-www-form-urlencoded";
-	if(!createDownloader(false, contenttype, loader))
+	if(!createDownloader(false, contenttype, loader, loader.getPtr()))
 		return;
 
 	_NR<ASObject> data;
@@ -328,7 +328,12 @@ void URLLoader::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c,bytesLoaded);
+	REGISTER_GETTER_SETTER(c,bytesTotal);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(URLLoader, bytesLoaded);
+ASFUNCTIONBODY_GETTER_SETTER(URLLoader, bytesTotal);
 
 void URLLoader::buildTraits(ASObject* o)
 {
@@ -351,6 +356,16 @@ void URLLoader::setData(_NR<ASObject> newData)
 {
 	SpinlockLocker l(spinlock);
 	data=newData;
+}
+
+void URLLoader::setBytesTotal(uint32_t b)
+{
+	bytesTotal = b;
+}
+
+void URLLoader::setBytesLoaded(uint32_t b)
+{
+	bytesLoaded = b;
 }
 
 ASFUNCTIONBODY(URLLoader,_constructor)

@@ -115,7 +115,7 @@ public:
 	URLLoaderThread(_R<URLRequest> _request, _R<URLLoader> _loader);
 };
 
-class URLLoader: public EventDispatcher, public IDownloaderThreadListener
+class URLLoader: public EventDispatcher, public IDownloaderThreadListener, public ILoadable
 {
 private:
 	tiny_string dataFormat;
@@ -131,12 +131,16 @@ public:
 	void setData(_NR<ASObject> data);
 	tiny_string getDataFormat();
 	void setDataFormat(const tiny_string& newFormat);
+	void setBytesTotal(uint32_t b);
+	void setBytesLoaded(uint32_t b);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(close);
 	ASFUNCTION(_getDataFormat);
 	ASFUNCTION(_getData);
 	ASFUNCTION(_setDataFormat);
+	ASPROPERTY_GETTER_SETTER(uint32_t, bytesLoaded);
+	ASPROPERTY_GETTER_SETTER(uint32_t, bytesTotal);
 };
 
 class Responder: public ASObject

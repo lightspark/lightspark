@@ -60,6 +60,8 @@
 #include "flash/media/flashmedia.h"
 #include "flash/xml/flashxml.h"
 #include "flash/errors/flasherrors.h"
+#include "flash/text/flashtext.h"
+#include "flash/text/flashtextengine.h"
 #include "class.h"
 #include "exceptions.h"
 #include "compat.h"
@@ -277,6 +279,14 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextFormat","flash.text",Class<TextFormat>::getRef());
 	builtin->registerBuiltin("TextFormatAlign","flash.text",Class<TextFormatAlign>::getRef());
 	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef());
+
+	builtin->registerBuiltin("ContentElement","flash.text.engine",Class<ContentElement>::getRef());
+	builtin->registerBuiltin("ElementFormat","flash.text.engine",Class<ElementFormat>::getRef());
+	builtin->registerBuiltin("FontDescription","flash.text.engine",Class<FontDescription>::getRef());
+	builtin->registerBuiltin("FontWeight","flash.text.engine",Class<FontWeight>::getRef());
+	builtin->registerBuiltin("TextBlock","flash.text.engine",Class<TextBlock>::getRef());
+	builtin->registerBuiltin("TextElement","flash.text.engine",Class<TextElement>::getRef());
+	builtin->registerBuiltin("TextLine","flash.text.engine",Class<TextLine>::getRef());
 
 	builtin->registerBuiltin("XMLDocument","flash.xml",Class<XMLDocument>::getRef());
 	builtin->registerBuiltin("XMLNode","flash.xml",Class<XMLNode>::getRef());

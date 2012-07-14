@@ -79,6 +79,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/sensors/flashsensors.cpp
   scripting/flash/system/flashsystem.cpp
   scripting/flash/text/flashtext.cpp
+  scripting/flash/text/flashtextengine.cpp
   scripting/flash/utils/flashutils.cpp
   scripting/flash/xml/flashxml.cpp
   scripting/toplevel/Array.cpp

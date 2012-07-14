@@ -158,25 +158,27 @@ ASFUNCTIONBODY(Array,_concat)
 		if(ret->data[it->first].type==DATA_OBJECT && ret->data[it->first].data)
 			ret->data[it->first].data->incRef();
 	}
-	
-	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
+
+	for(unsigned int i=0;i<argslen;i++)
 	{
-		Array* tmp=Class<Array>::cast(args[0]);
-		std::map<uint32_t, data_slot>::iterator ittmp=tmp->data.begin();
-		for(;ittmp != tmp->data.end();++ittmp)
+		if (args[i]->is<Array>())
 		{
-			uint32_t newIndex=ret->size()+ittmp->first;
-			ret->data[newIndex]=ittmp->second;
-			if(ret->data[newIndex].type==DATA_OBJECT && ret->data[newIndex].data)
-				ret->data[newIndex].data->incRef();
+			// Insert the contents of the array argument
+			uint64_t oldSize=ret->size();
+			Array* otherArray=args[i]->as<Array>();
+			std::map<uint32_t, data_slot>::iterator itother=otherArray->data.begin();
+			for(;itother!=otherArray->data.end(); ++itother)
+			{
+				uint32_t newIndex=ret->size()+itother->first;
+				ret->data[newIndex]=itother->second;
+				if(ret->data[newIndex].type==DATA_OBJECT && ret->data[newIndex].data)
+					ret->data[newIndex].data->incRef();
+			}
+			ret->resize(oldSize+otherArray->size());
 		}
-		ret->resize(th->size()+tmp->size());
-	}
-	else
-	{
-		//Insert the arguments in the array
-		for(unsigned int i=0;i<argslen;i++)
+		else
 		{
+			//Insert the argument
 			args[i]->incRef();
 			ret->push(_MR(args[i]));
 		}

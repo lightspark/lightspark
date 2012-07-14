@@ -311,6 +311,13 @@ bool URLInfo::matchesDomain(const tiny_string& expression, const tiny_string& su
 	return false;
 }
 
+bool URLInfo::sameHost(const URLInfo& other) const
+{
+	return protocol == other.protocol && 
+		hostname == other.hostname &&
+		port == other.port;
+}
+
 tiny_string URLInfo::encode(const tiny_string& u, ENCODING type)
 {
 	tiny_string str;

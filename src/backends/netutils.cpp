@@ -1114,7 +1114,8 @@ void CurlDownloader::execute()
 		// renamed to CURLOPT_ACCEPT_ENCODING in newer CURL,
 		// we use the old name to support the old versions.)
 		curl_easy_setopt(curl, CURLOPT_ENCODING, "");
-		if (!getSys()->getCookies().empty())
+		if (URLInfo(url).sameHost(getSys()->getOrigin()) && 
+		    !getSys()->getCookies().empty())
 			curl_easy_setopt(curl, CURLOPT_COOKIE, getSys()->getCookies().c_str());
 
 		struct curl_slist *slist=NULL;

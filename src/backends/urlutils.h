@@ -76,6 +76,8 @@ public:
 	static bool isSubDomainOf(const tiny_string& parent, const tiny_string& child);
 	//Check if a given domain a matches a given domain expression (can be used with wildcard domains)
 	static bool matchesDomain(const tiny_string& expression, const tiny_string& subject);
+	//Check if the given url has same protocol, hostname and port
+	bool sameHost(const URLInfo& other) const;
 
 	bool operator==(const std::string& subject) const
 	{ return getParsedURL() == tiny_string(subject); }

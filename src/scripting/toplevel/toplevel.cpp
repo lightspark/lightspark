@@ -161,9 +161,8 @@ ASFUNCTIONBODY(IFunction,apply)
 	if(argslen == 2 && args[1]->getObjectType()==T_ARRAY)
 	{
 		Array* array=Class<Array>::cast(args[1]);
-
 		newArgsLen=array->size();
-		newArgs=new ASObject*[newArgsLen];
+		newArgs=g_newa(ASObject*, newArgsLen);
 		for(int i=0;i<newArgsLen;i++)
 		{
 			newArgs[i]=array->at(i).getPtr();
@@ -172,7 +171,6 @@ ASFUNCTIONBODY(IFunction,apply)
 	}
 
 	ASObject* ret=th->call(newObj,newArgs,newArgsLen);
-	delete[] newArgs;
 	return ret;
 }
 
@@ -197,7 +195,7 @@ ASFUNCTIONBODY(IFunction,_call)
 	if(argslen > 1)
 	{
 		newArgsLen=argslen-1;
-		newArgs=new ASObject*[newArgsLen];
+		newArgs=g_newa(ASObject*, newArgsLen);
 		for(unsigned int i=0;i<newArgsLen;i++)
 		{
 			newArgs[i]=args[i+1];
@@ -205,7 +203,6 @@ ASFUNCTIONBODY(IFunction,_call)
 		}
 	}
 	ASObject* ret=th->call(newObj,newArgs,newArgsLen);
-	delete[] newArgs;
 	return ret;
 }
 

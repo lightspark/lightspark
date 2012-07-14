@@ -350,8 +350,6 @@ ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->incRef();
-	th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(th)));
 	//TODO: the parameters should only be set if the loaded clip uses AS3. See specs.
 	_NR<ASObject> p=getSys()->getParameters();
 	if(!p.isNull())
@@ -529,6 +527,8 @@ void Loader::finalize()
 
 Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),job(NULL),loaded(false),contentLoaderInfo(NullRef)
 {
+	incRef();
+	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(this)));
 }
 
 Loader::~Loader()

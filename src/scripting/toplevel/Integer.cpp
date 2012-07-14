@@ -31,29 +31,20 @@ ASFUNCTIONBODY(Integer,_toString)
 {
 	Integer* th=static_cast<Integer*>(obj);
 	int radix=10;
-	char buf[20];
 	if(argslen==1)
 		radix=args[0]->toUInt();
-	assert_and_throw(radix==10 || radix==16);
-	if(radix==10)
-		snprintf(buf,20,"%i",th->val);
-	else if(radix==16)
-	{
-		unsigned int v;
-		const char* sign="";
-		if (th->val<0)
-		{
-			v=-th->val;
-			sign="-";
-		}
-		else
-		{
-			v=th->val;
-		}
-		snprintf(buf,20,"%s%x",sign,v);
-	}
 
-	return Class<ASString>::getInstanceS(buf);
+	if(radix==10)
+	{
+		char buf[20];
+		snprintf(buf,20,"%i",th->val);
+		return Class<ASString>::getInstanceS(buf);
+	}
+	else
+	{
+		tiny_string s=Number::toStringRadix((number_t)th->val, radix);
+		return Class<ASString>::getInstanceS(s);
+	}
 }
 
 ASFUNCTIONBODY(Integer,_constructor)

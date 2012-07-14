@@ -184,8 +184,6 @@ ASFUNCTIONBODY(Number,_toString)
 	Number* th=static_cast<Number*>(obj);
 	int radix=10;
 	ARG_UNPACK (radix,10);
-	if (radix < 2 || radix > 36)
-		throw Class<RangeError>::getInstanceS("Error #1003");
 
 	if(radix==10 || std::isnan(th->val) || std::isinf(th->val))
 	{
@@ -194,24 +192,8 @@ ASFUNCTIONBODY(Number,_toString)
 	}
 	else
 	{
-		tiny_string res = "";
-		static char digits[] ="0123456789abcdefghijklmnopqrstuvwxyz";
-		number_t v = th->val;
-		number_t r = (number_t)radix;
-		bool negative = v<0;
-		if (negative) 
-			v = -v;
-		do 
-		{
-			res = tiny_string::fromChar(digits[(int)(v-(floor(v/r)*radix))])+res;
-			v = v/r;
-		} 
-		while (v >= 1.0);
-		if (negative) 
-			res = tiny_string::fromChar('-')+res;
-		return Class<ASString>::getInstanceS(res);
+		return Class<ASString>::getInstanceS(Number::toStringRadix(th->val, radix));
 	}
-
 }
 
 ASFUNCTIONBODY(Number,generator)
@@ -250,6 +232,32 @@ tiny_string Number::toString(number_t val)
 		snprintf(buf,40,"%.15f",val);
 	purgeTrailingZeroes(buf);
 	return tiny_string(buf,true);
+}
+
+tiny_string Number::toStringRadix(number_t val, int radix)
+{
+	if(radix < 2 || radix > 36)
+		throw Class<RangeError>::getInstanceS("Error #1003");
+
+	if(std::isnan(val) || std::isinf(val))
+		return Number::toString(val);
+
+	tiny_string res = "";
+	static char digits[] ="0123456789abcdefghijklmnopqrstuvwxyz";
+	number_t v = val;
+	const number_t r = (number_t)radix;
+	bool negative = v<0;
+	if (negative) 
+		v = -v;
+	do 
+	{
+		res = tiny_string::fromChar(digits[(int)(v-(floor(v/r)*r))])+res;
+		v = v/r;
+	} 
+	while (v >= 1.0);
+	if (negative)
+		res = tiny_string::fromChar('-')+res;
+	return res;
 }
 
 void Number::sinit(Class_base* c)

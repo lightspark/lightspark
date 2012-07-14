@@ -42,6 +42,7 @@ public:
 	ASFUNCTION(toFixed);
 	tiny_string toString();
 	static tiny_string toString(number_t val);
+	static tiny_string toStringRadix(number_t val, int radix);
 	static bool isInteger(number_t val)
 	{
 		return floor(val) == val;

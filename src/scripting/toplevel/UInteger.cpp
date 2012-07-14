@@ -118,14 +118,17 @@ ASFUNCTIONBODY(UInteger,_toString)
 	uint32_t radix;
 	ARG_UNPACK (radix,10);
 
-	char buf[20];
-	assert_and_throw(radix==10 || radix==16);
-	if(radix==10)
+	if (radix == 10)
+	{
+		char buf[20];
 		snprintf(buf,20,"%u",th->val);
-	else if(radix==16)
-		snprintf(buf,20,"%x",th->val);
-
-	return Class<ASString>::getInstanceS(buf);
+		return Class<ASString>::getInstanceS(buf);
+	}
+	else
+	{
+		tiny_string s=Number::toStringRadix((number_t)th->val, radix);
+		return Class<ASString>::getInstanceS(s);
+	}
 }
 
 bool UInteger::isEqual(ASObject* o)

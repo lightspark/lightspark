@@ -204,7 +204,9 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	}
 	else if(real_len<size) // && enableResize==true
 	{
+#ifdef MEMORY_USAGE_PROFILING
 		uint32_t prev_real_len = real_len;
+#endif
 		while(real_len < size)
 			real_len += BA_CHUNK_SIZE;
 		// Reallocate the buffer, in chunks of BA_CHUNK_SIZE bytes

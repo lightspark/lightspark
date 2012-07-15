@@ -355,6 +355,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			cairo_matrix_t mat=style.Matrix;
 			cairo_status_t st = cairo_matrix_invert(&mat);
 			assert(st == CAIRO_STATUS_SUCCESS);
+			(void)st; // silence warning about unused variable
 			mat.x0 /= scaleCorrection;
 			mat.y0 /= scaleCorrection;
 
@@ -751,6 +752,7 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 		}
 		default:
 			assert(false);
+			return; // silence warning about uninitialised alignment
 	}
 	pango_layout_set_alignment(layout,alignment);
 

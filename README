@@ -19,8 +19,8 @@ c8e34c3de03c2b41e825e392247efc1ea8698fbf
 To build the software please follow these steps.
 
 1) cd lightspark
-2) mkdir objs
-3) cd objs
+2) mkdir obj
+3) cd obj
 4) cmake -DCMAKE_BUILD_TYPE=Release ..
 5) make
 6) sudo make install

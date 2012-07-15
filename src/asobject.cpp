@@ -1013,7 +1013,7 @@ void variables_map::check() const
 	for(;it!=Variables.end();++it)
 	{
 		variables_map::const_var_iterator next=it;
-		next++;
+		++next;
 		if(next==Variables.end())
 			break;
 

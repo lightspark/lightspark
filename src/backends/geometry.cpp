@@ -44,7 +44,7 @@ void ShapesBuilder::clear()
 void ShapesBuilder::joinOutlines()
 {
 	map< unsigned int, vector< vector <ShapePathSegment> > >::iterator it=filledShapesMap.begin();
-	for(;it!=filledShapesMap.end();it++)
+	for(;it!=filledShapesMap.end();++it)
 	{
 		vector< vector<ShapePathSegment> >& outlinesForColor=it->second;
 		//Repack outlines of the same color, avoiding excessive copying
@@ -160,7 +160,7 @@ const Vector2& ShapesBuilder::getVertex(unsigned int index)
 {
 	//Linear lookup
 	map<Vector2, unsigned int>::const_iterator it=verticesMap.begin();
-	for(;it!=verticesMap.end();it++)
+	for(;it!=verticesMap.end();++it)
 	{
 		if(it->second==index)
 			return it->first;
@@ -174,7 +174,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, tokensVecto
 	//Try to greedily condense as much as possible the output
 	map< unsigned int, vector< vector<ShapePathSegment> > >::iterator it=filledShapesMap.begin();
 	//For each color
-	for(;it!=filledShapesMap.end();it++)
+	for(;it!=filledShapesMap.end();++it)
 	{
 		assert(!it->second.empty());
 		//Find the style given the index
@@ -182,7 +182,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, tokensVecto
 		assert(it->first);
 		for(unsigned int i=0;i<it->first-1;i++)
 		{
-			stylesIt++;
+			++stylesIt;
 			assert(stylesIt!=styles.end());
 		}
 		//Set the fill style

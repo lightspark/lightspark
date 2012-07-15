@@ -918,7 +918,7 @@ void Class_base::finalizeObjects() const
 		tmp->incRef();
 		tmp->finalize();
 		//Advance the iterator before decReffing the current object (decReffing may destroy the object right now
-		it++;
+		++it;
 		tmp->decRef();
 	}
 }

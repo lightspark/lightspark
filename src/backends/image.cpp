@@ -82,7 +82,7 @@ static boolean fill_input_buffer_istream(j_decompress_ptr cinfo) {
 	{
 		src->input.read(src->data, src->capacity);
 	}
-	catch(std::ios_base::failure exc)
+	catch(std::ios_base::failure& exc)
 	{
 		if(!src->input.eof())
 			throw;
@@ -117,7 +117,7 @@ static void skip_input_data_istream(j_decompress_ptr cinfo, long num_bytes) {
 		{
 			src->input.seekg(num_bytes-src->bytes_in_buffer, std::ios_base::cur);
 		}
-		catch(std::ios_base::failure exc)
+		catch(std::ios_base::failure& exc)
 		{
 			if(!src->input.eof())
 				throw;

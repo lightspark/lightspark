@@ -48,7 +48,7 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 	{
 		f >> h;
 	}
-	catch (ifstream::failure e) {
+	catch (ifstream::failure& e) {
 		if(!f.eof()) //Only handle eof
 			throw e;
 		f.clear();

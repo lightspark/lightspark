@@ -127,7 +127,7 @@ CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
 					return INVALID;
 			}
 		}
-	} catch (xmlpp::parse_error) {
+	} catch (xmlpp::parse_error&) {
 		// Invalid XML
 		return INVALID;
 	}

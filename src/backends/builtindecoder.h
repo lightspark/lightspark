@@ -42,6 +42,7 @@ private:
 	STREAM_TYPE classifyStream(std::istream& s);
 public:
 	BuiltinStreamDecoder(std::istream& _s);
+	virtual ~BuiltinStreamDecoder() {}
 	bool decodeNextFrame();
 	bool getMetadataInteger(const char* name, uint32_t& ret) const;
 	bool getMetadataDouble(const char* name, double& ret) const;

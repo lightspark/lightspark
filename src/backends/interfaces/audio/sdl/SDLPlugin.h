@@ -47,7 +47,7 @@ public:
 	void unmuteAll();
 
 	bool isTimingAvailable() const;
-	~SDLPlugin();
+	virtual ~SDLPlugin();
 };
 
 class SDLAudioStream: public AudioStream
@@ -72,6 +72,6 @@ public:
 	void pause() { SetPause(true); }
 	void resume() { SetPause(false); }
 	void setVolume(double volume);
-	~SDLAudioStream();
+	virtual ~SDLAudioStream();
 };
 #endif /* BACKENDS_INTERFACES_AUDIO_SDL_SDLPLUGIN_H */

@@ -261,7 +261,7 @@ private:
 	std::list<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
 protected:
 	URLPolicyFile(const URLInfo& _url);
-	~URLPolicyFile();
+	virtual ~URLPolicyFile();
 	//Load and parse the policy file
 	bool isIgnoredByMaster();
 	bool retrievePolicyFile(std::vector<unsigned char>& policy);

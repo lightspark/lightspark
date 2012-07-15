@@ -62,7 +62,7 @@ protected:
 	virtual int fillBuffer();
 public:
 	zlib_filter(std::streambuf* b);
-	~zlib_filter();
+	virtual ~zlib_filter();
 };
 
 class liblzma_filter: public uncompressing_filter
@@ -75,7 +75,7 @@ protected:
 	virtual int fillBuffer();
 public:
 	liblzma_filter(std::streambuf* b);
-	~liblzma_filter();
+	virtual ~liblzma_filter();
 };
 
 class bytes_buf:public std::streambuf

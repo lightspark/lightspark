@@ -525,6 +525,7 @@ private:
 	ABCContext* context;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
+	virtual ~DoABCTag() {}
 	TAGTYPE getType() const{ return ABC_TAG; }
 	void execute(RootMovieClip* root) const;
 };
@@ -537,6 +538,7 @@ private:
 	ABCContext* context;
 public:
 	DoABCDefineTag(RECORDHEADER h, std::istream& in);
+	virtual ~DoABCDefineTag() {}
 	TAGTYPE getType() const{ return ABC_TAG; }
 	void execute(RootMovieClip* root) const;
 };
@@ -549,6 +551,7 @@ private:
 	std::vector<STRING> Names;
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
+	virtual ~SymbolClassTag() {}
 	TAGTYPE getType() const{ return SYMBOL_CLASS_TAG; }
 	void execute(RootMovieClip* root) const;
 };

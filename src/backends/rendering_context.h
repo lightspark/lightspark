@@ -115,7 +115,7 @@ protected:
 	std::vector<LargeTexture> largeTextures;
 
 	void renderMaskToTmpBuffer();
-	~GLRenderContext(){}
+	virtual ~GLRenderContext(){}
 
 	enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 	/*

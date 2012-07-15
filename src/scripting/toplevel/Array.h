@@ -49,7 +49,7 @@ protected:
 		reporter_allocator<std::pair<const uint32_t, data_slot>>> arrayType;
 	arrayType data;
 	void outofbounds() const;
-	~Array();
+	virtual ~Array();
 private:
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	class sortComparatorDefault

@@ -115,7 +115,7 @@ private:
 	static void SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data);
 public:
 	RenderThread(SystemState* s);
-	~RenderThread();
+	virtual ~RenderThread();
 	/**
 	   The EngineData object must survive for the whole life of this RenderThread
 	*/

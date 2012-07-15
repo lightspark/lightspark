@@ -45,7 +45,7 @@ public:
 	void set_device( std::string desiredDevice, DEVICE_TYPES desiredType );
 	AudioStream *createStream( lightspark::AudioDecoder *decoder );
 	bool isTimingAvailable() const { return true; };
-	~WinMMPlugin();
+	virtual ~WinMMPlugin();
 };
 
 class WinMMStream: public AudioStream
@@ -75,7 +75,7 @@ public:
 	void mute();
 	void unmute();
 	void setVolume(double);
-	~WinMMStream();
+	virtual ~WinMMStream();
 };
 
 }

@@ -58,6 +58,7 @@ private:
 	bool bindedToRoot;
 public:
 	Class_inherit(const QName& name, MemoryAccount* m);
+	virtual ~Class_inherit() {}
 	void finalize();
 	void buildInstanceTraits(ASObject* o) const;
 	void bindToTag(DictionaryTag const* t)
@@ -123,6 +124,7 @@ class Class: public Class_base
 {
 protected:
 	Class(const QName& name, MemoryAccount* m):Class_base(name, m){}
+	virtual ~Class() {}
 	//This function is instantiated always because of inheritance
 	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)
 	{
@@ -301,6 +303,7 @@ class Class<ASObject>: public Class_base
 {
 private:
 	Class<ASObject>(const QName& name, MemoryAccount* m):Class_base(name, m){}
+	virtual ~Class() {}
 	//This function is instantiated always because of inheritance
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL);
 public:
@@ -492,6 +495,7 @@ class Template : public Template_base
 {
 public:
 	Template(QName name) : Template_base(name) {};
+	virtual ~Template() {}
 
 	QName getQName(const std::vector<Type*>& types)
 	{

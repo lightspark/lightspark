@@ -47,7 +47,7 @@ public:
 		gtk_widget_destroy(widget);
 		gdk_threads_leave();
 	}
-	~StandaloneEngineData()
+	virtual ~StandaloneEngineData()
 	{
 		if(widget)
 		{

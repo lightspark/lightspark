@@ -31,7 +31,7 @@ private:
 	int64_t milliseconds;
 	int extrayears;
 	bool nan;
-	~Date();
+	virtual ~Date();
 	GDateTime *datetime;
 	GDateTime *datetimeUTC;
 	ASObject *msSinceEpoch();

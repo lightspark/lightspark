@@ -70,7 +70,7 @@ private:
 	 */
 	void setMatrix(const MATRIX& m);
 protected:
-	~DisplayObject();
+	virtual ~DisplayObject();
 	/**
 	  	The object that masks us, if any
 	*/

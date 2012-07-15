@@ -63,7 +63,7 @@ public:
 	void muteAll();
 	void unmuteAll();
 
-	~PulsePlugin();
+	virtual ~PulsePlugin();
 };
 
 class PulseAudioStream: public AudioStream
@@ -78,7 +78,7 @@ public:
 	void pause();
 	void resume();
 	static void sinkInfoForSettingVolumeCB(pa_context* context, const pa_sink_info* i, int eol, PulseAudioStream* stream);
-	~PulseAudioStream();
+	virtual ~PulseAudioStream();
 private:
 	bool paused;
 	pa_stream *stream;

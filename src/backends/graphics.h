@@ -219,7 +219,7 @@ public:
 	 * owned by this instance
 	 */
 	AsyncDrawJob(IDrawable* d, _R<DisplayObject> o);
-	~AsyncDrawJob();
+	virtual ~AsyncDrawJob();
 	//IThreadJob interface
 	void execute();
 	void threadAbort();
@@ -302,6 +302,7 @@ public:
 	CairoTokenRenderer(const std::vector<GeomToken>& _g, const MATRIX& _m,
 					   int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
 		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a), tokens(_g) {}
+	virtual ~CairoTokenRenderer(){}
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -360,6 +361,7 @@ public:
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
 		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a), textData(_textData) {}
+	virtual ~CairoPangoRenderer() {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested

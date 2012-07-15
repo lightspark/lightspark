@@ -81,7 +81,7 @@ public:
 	/* The widget must not be gtk_widget_destroy'ed in the destructor. This is done
 	 * by firefox.
 	 */
-	~PluginEngineData() {}
+	virtual ~PluginEngineData() {}
 
 	void stopMainDownload();
 	bool isSizable() const { return false; }

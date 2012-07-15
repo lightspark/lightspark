@@ -71,7 +71,7 @@ class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 {
 public:
 	StandaloneDownloadManager();
-	~StandaloneDownloadManager();
+	virtual ~StandaloneDownloadManager();
 	Downloader* download(const URLInfo& url, bool cached, ILoadable* owner);
 	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data,
 			const char* contentType, ILoadable* owner);

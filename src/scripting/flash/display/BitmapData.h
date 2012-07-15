@@ -42,7 +42,7 @@ public:
 	BitmapData(Class_base* c);
 	BitmapData(Class_base* c, const BitmapContainer& b);
 	static void sinit(Class_base* c);
-	~BitmapData();
+	virtual ~BitmapData();
 	/* the bitmaps data in premultiplied, native-endian 32 bit
 	 * ARGB format. stride is the number of bytes per row, may be
 	 * larger than width. dataSize is the total allocated size of

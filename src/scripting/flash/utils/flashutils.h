@@ -74,7 +74,7 @@ protected:
 	void uncompress_zlib();
 public:
 	ByteArray(Class_base* c, uint8_t* b = NULL, uint32_t l = 0);
-	~ByteArray();
+	virtual ~ByteArray();
 	//Helper interface for serialization
 	bool readByte(uint8_t& b);
 	bool readShort(uint16_t& ret);
@@ -270,7 +270,7 @@ public:
 private:
 	// IntervalRunner will delete itself in tickFence, others
 	// should not call the destructor.
-	~IntervalRunner();
+	virtual ~IntervalRunner();
 	INTERVALTYPE type;
 	uint32_t id;
 	_R<IFunction> callback;

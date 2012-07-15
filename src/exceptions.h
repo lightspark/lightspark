@@ -43,7 +43,7 @@ public:
 	LightsparkException(const std::string& c):cause(c)
 	{
 	}
-	~LightsparkException() throw(){}
+	virtual ~LightsparkException() throw(){}
 };
 
 class RunTimeException: public LightsparkException

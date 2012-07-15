@@ -113,6 +113,7 @@ private:
 	void execute();
 public:
 	URLLoaderThread(_R<URLRequest> _request, _R<URLLoader> _loader);
+	virtual ~URLLoaderThread(){}
 };
 
 class URLLoader: public EventDispatcher, public IDownloaderThreadListener, public ILoadable
@@ -240,7 +241,7 @@ private:
 	void sendClientNotification(const tiny_string& name, ASObject *args);
 public:
 	NetStream(Class_base* c);
-	~NetStream();
+	virtual ~NetStream();
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

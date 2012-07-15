@@ -39,6 +39,7 @@ private:
 	void execute();
 public:
 	URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes);
+	virtual ~URLStreamThread() {}
 };
 
 class URLStream: public EventDispatcher, public IDataInput, public IDownloaderThreadListener

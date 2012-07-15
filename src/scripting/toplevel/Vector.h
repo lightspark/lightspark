@@ -43,7 +43,7 @@ class Vector: public ASObject
 	};
 public:
 	Vector(Class_base* c);
-	~Vector();
+	virtual ~Vector();
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {};

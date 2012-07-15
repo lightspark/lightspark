@@ -1688,7 +1688,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			{
 				set<block_info*>::iterator pred=cur.preds.begin();
 				new_start=(*pred)->locals;
-				pred++;
+				++pred;
 				for(;pred!=cur.preds.end();++pred)
 				{
 					for(unsigned int j=0;j<(*pred)->locals.size();j++)

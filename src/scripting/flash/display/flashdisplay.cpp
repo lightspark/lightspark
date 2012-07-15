@@ -1441,7 +1441,7 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q)
 	DisplayObject::requestInvalidation(q);
 	Locker l(mutexDisplayList);
 	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();it++)
+	for(;it!=dynamicDisplayList.end();++it)
 		(*it)->requestInvalidation(q);
 }
 
@@ -3147,7 +3147,7 @@ void MovieClip::initFrame()
 void DisplayObjectContainer::advanceFrame()
 {
 	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();it++)
+	for(;it!=dynamicDisplayList.end();++it)
 		(*it)->advanceFrame();
 }
 

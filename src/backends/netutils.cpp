@@ -60,7 +60,7 @@ void DownloadManager::stopAll()
 	Mutex::Lock l(mutex);
 
 	std::list<Downloader*>::iterator it=downloaders.begin();
-	for(;it!=downloaders.end();it++)
+	for(;it!=downloaders.end();++it)
 		(*it)->stop();
 }
 

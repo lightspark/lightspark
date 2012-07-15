@@ -834,7 +834,7 @@ void RenderThread::plotProfilingData()
 	glDisableVertexAttribArray(COLOR_ATTRIB);
  
 	list<ThreadProfile*>::iterator it=m_sys->profilingData.begin();
-	for(;it!=m_sys->profilingData.end();it++)
+	for(;it!=m_sys->profilingData.end();++it)
 		(*it)->plot(1000000/m_sys->getFrameRate(),cr);
 	glUniform1f(directUniform, 0);
 

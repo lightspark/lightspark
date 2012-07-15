@@ -42,6 +42,7 @@ private:
 	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
 	XMLList* getAllAttributes();
 	void getText(XMLVector& ret);
+	_NR<XML> getRootNode();
 	bool ignoreComments;
 	bool ignoreProcessingInstructions;
 	bool ignoreWhitespace;

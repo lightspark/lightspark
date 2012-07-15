@@ -291,17 +291,9 @@ ASFUNCTIONBODY(XML,attribute)
 		LOG(LOG_ERROR,"attribute " << attrname << " not found");
 		return Class<XMLList>::getInstanceS();
 	}
-	_NR<XML> rootXML=NullRef;
-	if(th->root.isNull())
-	{
-		th->incRef();
-		rootXML=_MR(th);
-	}
-	else
-		rootXML=th->root;
 
 	XMLVector ret;
-	ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, attribute)));
+	ret.push_back(_MR(Class<XML>::getInstanceS(th->getRootNode(), attribute)));
 	return Class<XMLList>::getInstanceS(ret);
 }
 
@@ -321,14 +313,7 @@ XMLList* XML::getAllAttributes()
 	const xmlpp::Element::AttributeList& list=elem->get_attributes();
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
 	XMLVector ret;
-	_NR<XML> rootXML=NullRef;
-	if(root.isNull())
-	{
-		this->incRef();
-		rootXML=_MR(this);
-	}
-	else
-		rootXML=this->root;
+	_NR<XML> rootXML=getRootNode();
 
 	for(;it!=list.end();it++)
 		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
@@ -340,16 +325,7 @@ XMLList* XML::getAllAttributes()
 void XML::toXMLString_priv(xmlBufferPtr buf)
 {
 	//NOTE: this function is not thread-safe, as it can modify the xmlNode
-	_NR<XML> rootXML=NullRef;
-	if(root.isNull())
-	{
-		this->incRef();
-		rootXML=_MR(this);
-	}
-	else
-		rootXML=root;
-
-	xmlDocPtr xmlDoc=rootXML->parser.get_document()->cobj();
+	xmlDocPtr xmlDoc=getRootNode()->parser.get_document()->cobj();
 	assert(xmlDoc);
 	xmlNodePtr cNode=node->cobj();
 	//As libxml2 does not automatically add the needed namespaces to the dump
@@ -412,16 +388,7 @@ void XML::childrenImpl(XMLVector& ret, const tiny_string& name)
 	assert(node);
 	const xmlpp::Node::NodeList& list=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
-
-	_NR<XML> rootXML=NullRef;
-	if(root.isNull())
-	{
-		this->incRef();
-		rootXML=_MR(this);
-	}
-	else
-		rootXML=root;
-
+	_NR<XML> rootXML=getRootNode();
 	for(;it!=list.end();it++)
 	{
 		if(name!="*" && (*it)->get_name() != name.raw_buf())
@@ -433,15 +400,7 @@ void XML::childrenImpl(XMLVector& ret, const tiny_string& name)
 void XML::childrenImpl(XMLVector& ret, uint32_t index)
 {
 	assert(node);
-	_NR<XML> rootXML=NullRef;
-	if(root.isNull())
-	{
-		this->incRef();
-		rootXML=_MR(this);
-	}
-	else
-		rootXML=root;
-
+	_NR<XML> rootXML=getRootNode();
 	uint32_t i=0;
 	const xmlpp::Node::NodeList& list=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
@@ -554,15 +513,7 @@ ASFUNCTIONBODY(XML,elements)
 
 void XML::getElementNodes(const tiny_string& name, XMLVector& foundElements)
 {
-	_NR<XML> rootXML=NullRef;
-	if(root.isNull())
-	{
-		incRef();
-		rootXML=_MR(this);
-	}
-	else
-		rootXML=root;
-
+	_NR<XML> rootXML=getRootNode();
 	const xmlpp::Node::NodeList& children=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=children.begin();
 	for(;it!=children.end();++it)
@@ -625,16 +576,7 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 {
 	assert(node);
 	assert_and_throw(ns=="");
-	_NR<XML> rootXML=NullRef;
-	if(root.isNull())
-	{
-		this->incRef();
-		rootXML=_MR(this);
-	}
-	else
-		rootXML=root;
-
-	recursiveGetDescendantsByQName(rootXML, node, name, ns, ret);
+	recursiveGetDescendantsByQName(getRootNode(), node, name, ns, ret);
 }
 
 _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
@@ -678,17 +620,8 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		if(attr==NULL)
 			return _MNR(Class<XMLList>::getInstanceS());
 
-		_NR<XML> rootXML=NullRef;
-		if(root.isNull())
-		{
-			this->incRef();
-			rootXML=_MR(this);
-		}
-		else
-			rootXML=root;
-
 		XMLVector retnode;
-		retnode.push_back(_MR(Class<XML>::getInstanceS(rootXML, attr)));
+		retnode.push_back(_MR(Class<XML>::getInstanceS(getRootNode(), attr)));
 		return _MNR(Class<XMLList>::getInstanceS(retnode));
 	}
 	else if(Array::isValidMultiname(name,index))
@@ -712,17 +645,8 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 
 		XMLVector ret;
 
-		_NR<XML> rootXML=NullRef;
-		if(root.isNull())
-		{
-			this->incRef();
-			rootXML=_MR(this);
-		}
-		else
-			rootXML=root;
-
 		for(;it!=children.end();it++)
-			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+			ret.push_back(_MR(Class<XML>::getInstanceS(getRootNode(), *it)));
 
 		if(ret.size()==0 && (opt & XML_STRICT)!=0)
 			return NullRef;
@@ -968,4 +892,15 @@ void XML::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
 	throw UnsupportedException("XML::serialize not implemented");
+}
+
+_NR<XML> XML::getRootNode()
+{
+	if(root.isNull())
+	{
+		incRef();
+		return _MR(this);
+	}
+	else
+		return root;
 }

@@ -92,8 +92,8 @@ static boolean fill_input_buffer_istream(j_decompress_ptr cinfo) {
 	if(src->bytes_in_buffer==0)
 	{
 		// EOI marker
-		src->data[0]=0xff;
-		src->data[1]=0xd9;
+		src->data[0]=(char)0xff;
+		src->data[1]=(char)0xd9;
 		src->bytes_in_buffer=2;
 	}
 

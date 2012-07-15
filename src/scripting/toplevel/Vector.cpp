@@ -504,7 +504,7 @@ ASFUNCTIONBODY(Vector,lastIndexOf)
 	{
 		if (!th->vec[i])
 		    continue;
-		if (ABCVm::strictEqualImpl(th->vec[i],arg0))
+		if (th->vec[i]->isEqualStrict(arg0))
 		{
 			ret=i;
 			break;
@@ -691,7 +691,7 @@ ASFUNCTIONBODY(Vector,indexOf)
 	{
 		if (!th->vec[i])
 			continue;
-		if(ABCVm::strictEqualImpl(th->vec[i],arg0))
+		if(th->vec[i]->isEqualStrict(arg0))
 		{
 			ret=i;
 			break;

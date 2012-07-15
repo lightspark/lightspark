@@ -199,6 +199,7 @@ private:
 	typedef std::map<_R<ASObject>,_R<ASObject>,std::less<_R<ASObject>>,
 	       reporter_allocator<std::pair<const _R<ASObject>, _R<ASObject>>>> dictType;
 	dictType data;
+	dictType::iterator findKey(ASObject *);
 public:
 	Dictionary(Class_base* c);
 	void finalize();

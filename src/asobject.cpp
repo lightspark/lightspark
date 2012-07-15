@@ -198,6 +198,11 @@ bool ASObject::isEqual(ASObject* r)
 	return false;
 }
 
+bool ASObject::isEqualStrict(ASObject* r)
+{
+	return ABCVm::strictEqualImpl(this, r);
+}
+
 unsigned int ASObject::toUInt()
 {
 	return toInt();

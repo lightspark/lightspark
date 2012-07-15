@@ -1524,6 +1524,18 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 	return NULL;
 }
 
+Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)
+{
+	Dictionary::dictType::iterator it = data.begin();
+	for(; it!=data.end(); ++it)
+	{
+		if (it->first->isEqualStrict(o))
+			return it;
+	}
+
+	return data.end();
+}
+
 void Dictionary::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
@@ -1538,7 +1550,7 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, CONS
 		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
 
-		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
+		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 		if(it!=data.end())
 			it->second=_MR(o);
 		else
@@ -1564,7 +1576,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
 
-		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
+		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 		if(it != data.end())
 		{
 			data.erase(it);
@@ -1592,7 +1604,7 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 			name.name_o->incRef();
 			_R<ASObject> name_o(name.name_o);
 
-			map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
+			Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 			if(it != data.end())
 				return it->second;
 			else
@@ -1622,7 +1634,7 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
 
-		map<_R<ASObject>, _R<ASObject> >::iterator it=data.find(name_o);
+		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 		return it != data.end();
 	}
 	else

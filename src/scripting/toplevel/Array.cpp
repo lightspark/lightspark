@@ -413,7 +413,7 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 		    continue;
 		DATA_TYPE dtype = th->data[i].type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
+		if((dtype == DATA_OBJECT && th->data[i].data->isEqualStrict(arg0)) ||
 			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
 		{
 			ret=i;
@@ -628,7 +628,7 @@ ASFUNCTIONBODY(Array,indexOf)
 		data_slot sl = it->second;
 		dtype = sl.type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(sl.data,arg0)) ||
+		if((dtype == DATA_OBJECT && sl.data->isEqualStrict(arg0)) ||
 			(dtype == DATA_INT && arg0->toInt() == sl.data_i))
 		{
 			ret=it->first;

@@ -435,6 +435,7 @@ public:
 
 	//Comparison operators
 	virtual bool isEqual(ASObject* r);
+	virtual bool isEqualStrict(ASObject* r);
 	virtual TRISTATE isLess(ASObject* r);
 
 	static void sinit(Class_base* c);

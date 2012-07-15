@@ -63,6 +63,7 @@ void XMLList::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains",AS3,Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("elements",AS3,Class<IFunction>::getFunction(elements),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
@@ -310,6 +311,24 @@ ASFUNCTIONBODY(XMLList,text)
 		(*it)->getText(ret);
 	}
 	return Class<XMLList>::getInstanceS(ret);
+}
+
+ASFUNCTIONBODY(XMLList,contains)
+{
+	XMLList* th = obj->as<XMLList>();
+	_NR<ASObject> value;
+	ARG_UNPACK (value);
+	if(!value->is<XML>())
+		return abstract_b(false);
+
+	auto it=th->nodes.begin();
+        for(; it!=th->nodes.end(); ++it)
+        {
+		if((*it)->isEqual(value.getPtr()))
+			return abstract_b(true);
+	}
+
+	return abstract_b(false);
 }
 
 _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)

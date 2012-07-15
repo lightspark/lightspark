@@ -72,6 +72,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains",AS3,Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(attribute),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("length",AS3,Class<IFunction>::getFunction(length),NORMAL_METHOD,true);
@@ -538,6 +539,17 @@ ASFUNCTIONBODY(XML,parent)
 {
 	XML *th = obj->as<XML>();
 	return th->getParentNode();
+}
+
+ASFUNCTIONBODY(XML,contains)
+{
+	XML *th = obj->as<XML>();
+	_NR<ASObject> value;
+	ARG_UNPACK(value);
+	if(!value->is<XML>())
+		return abstract_b(false);
+
+	return abstract_b(th->isEqual(value.getPtr()));
 }
 
 bool XML::hasSimpleContent() const

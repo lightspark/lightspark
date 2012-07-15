@@ -66,6 +66,7 @@ public:
 	ASFUNCTION(nodeKind);
 	ASFUNCTION(child);
 	ASFUNCTION(children);
+	ASFUNCTION(contains);
 	ASFUNCTION(attributes);
 	ASFUNCTION(attribute);
 	ASFUNCTION(appendChild);

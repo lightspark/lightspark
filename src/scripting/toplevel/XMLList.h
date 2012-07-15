@@ -50,6 +50,7 @@ public:
 	ASFUNCTION(appendChild);
 	ASFUNCTION(child);
 	ASFUNCTION(children);
+	ASFUNCTION(contains);
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
 	ASFUNCTION(_toString);

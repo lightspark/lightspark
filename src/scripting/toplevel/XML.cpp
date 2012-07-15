@@ -79,6 +79,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("name",AS3,Class<IFunction>::getFunction(name),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
@@ -522,6 +523,21 @@ void XML::getElementNodes(const tiny_string& name, XMLVector& foundElements)
 		if(nodetype==XML_ELEMENT_NODE && (name.empty() || name == (*it)->get_name()))
 			foundElements.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
+}
+
+ASObject *XML::getParentNode()
+{
+	xmlpp::Node *parent=node->get_parent();
+	if (parent)
+		return Class<XML>::getInstanceS(getRootNode(), parent);
+	else
+		return getSys()->getUndefinedRef();
+}
+
+ASFUNCTIONBODY(XML,parent)
+{
+	XML *th = obj->as<XML>();
+	return th->getParentNode();
 }
 
 bool XML::hasSimpleContent() const

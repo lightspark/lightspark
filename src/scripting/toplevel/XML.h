@@ -79,6 +79,7 @@ public:
 	ASFUNCTION(valueOf);
 	ASFUNCTION(text);
 	ASFUNCTION(elements);
+	ASFUNCTION(parent);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);
@@ -91,6 +92,7 @@ public:
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
         xmlElementType getNodeKind() const;
+	ASObject *getParentNode();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);

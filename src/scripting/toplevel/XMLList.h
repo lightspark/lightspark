@@ -57,6 +57,7 @@ public:
 	ASFUNCTION(generator);
 	ASFUNCTION(descendants);
 	ASFUNCTION(elements);
+	ASFUNCTION(parent);
 	ASFUNCTION(valueOf);
 	ASFUNCTION(text);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);

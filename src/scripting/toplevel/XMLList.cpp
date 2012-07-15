@@ -65,6 +65,7 @@ void XMLList::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("elements",AS3,Class<IFunction>::getFunction(elements),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
@@ -240,6 +241,27 @@ ASFUNCTIONBODY(XMLList,elements)
 		(*it)->getElementNodes(name, elems);
 	}
 	return Class<XMLList>::getInstanceS(elems);
+}
+
+ASFUNCTIONBODY(XMLList,parent)
+{
+	XMLList* th=Class<XMLList>::cast(obj);
+
+	if(th->nodes.size()==0)
+		return getSys()->getUndefinedRef();
+
+	auto it=th->nodes.begin();
+	ASObject *parent=(*it)->getParentNode();
+	++it;
+
+        for(; it!=th->nodes.end(); ++it)
+        {
+		ASObject *otherParent=(*it)->getParentNode();
+		if(!parent->isEqual(otherParent))
+			return getSys()->getUndefinedRef();
+	}
+
+	return parent;
 }
 
 ASFUNCTIONBODY(XMLList,valueOf)

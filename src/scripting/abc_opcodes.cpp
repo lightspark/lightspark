@@ -1747,7 +1747,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		//Handle eventual exceptions from the constructor, to fix the stack
 		th->runtime_stack_push(getSys()->getUndefinedRef());
 		obj->decRef();
-		throw exc;
+		throw;
 	}
 
 	th->runtime_stack_push(ret);
@@ -2068,7 +2068,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 		//Remove the class to the ones being currently defined in this context
 		th->context->classesBeingDefined.erase(mname);
-		throw exc;
+		throw;
 	}
 	assert_and_throw(ret2->is<Undefined>());
 	ret2->decRef();

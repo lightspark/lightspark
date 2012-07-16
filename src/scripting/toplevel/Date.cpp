@@ -907,14 +907,14 @@ number_t Date::parse(tiny_string str)
 	tzd[0] = 0;
 
 	// Day Mon DD YYYY HH:MM:SS TZD
-	c = sscanf(str.raw_buf(), "%*3s %3s %2d %4d %2d:%2d:%2d %s",mo, &d,&y, &h,&m,&s,tzd);
+	c = sscanf(str.raw_buf(), "%*3s %3s %2d %4d %2d:%2d:%2d %19s",mo, &d,&y, &h,&m,&s,tzd);
 	bvalid = (c == 7);
 	if (!bvalid)
 	{
 		// Day Mon DD HH:MM:SS TZD YYYY
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%*3s %3s %2d %2d:%2d:%2d %s %4d",mo, &d, &h,&m,&s,tzd,&y);
+		c = sscanf(str.raw_buf(), "%*3s %3s %2d %2d:%2d:%2d %19s %4d",mo, &d, &h,&m,&s,tzd,&y);
 		bvalid = (c == 7);
 	}
 	if (!bvalid)
@@ -923,7 +923,7 @@ number_t Date::parse(tiny_string str)
 		// YYYY DD Mon HH:MM:SS TZD
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d %4d %3s %2d:%2d:%2d %s", &d,&y, mo ,&h,&m,&s,tzd);
+		c = sscanf(str.raw_buf(), "%4d %4d %3s %2d:%2d:%2d %19s", &d,&y, mo ,&h,&m,&s,tzd);
 		bvalid = (c >= 3);
 		if (bvalid && d > y)
 		{
@@ -938,7 +938,7 @@ number_t Date::parse(tiny_string str)
 		// MM/DD/YYYY HH:MM TZD
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d/%4d/%4d %2d:%2d %s",&y,&mon, &d,&h,&m,tzd);
+		c = sscanf(str.raw_buf(), "%4d/%4d/%4d %2d:%2d %19s",&y,&mon, &d,&h,&m,tzd);
 		bvalid = (c >= 3);
 		if (bvalid)
 		{
@@ -957,7 +957,7 @@ number_t Date::parse(tiny_string str)
 		// YYYY/MM/DD HH:MM:SS TZD
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d/%4d/%4d %2d:%2d:%2d %s",&mon, &d, &y,&h,&m,&s,tzd);
+		c = sscanf(str.raw_buf(), "%4d/%4d/%4d %2d:%2d:%2d %19s",&mon, &d, &y,&h,&m,&s,tzd);
 		bvalid = (c >= 3);
 		if (bvalid)
 		{
@@ -983,7 +983,7 @@ number_t Date::parse(tiny_string str)
 		// Mon YYYY DD HH:MM:SS TZD
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %4d %2d %2d:%2d:%2d %s",mo, &y,&d, &h,&m,&s,tzd);
+		c = sscanf(str.raw_buf(), "%3s %4d %2d %2d:%2d:%2d %19s",mo, &y,&d, &h,&m,&s,tzd);
 		bvalid = (c >= 3);
 	}
 	if (!bvalid)
@@ -991,7 +991,7 @@ number_t Date::parse(tiny_string str)
 		// Mon DD YYYY HH:MM:SS TZD
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %2d %4d %2d:%2d:%2d %s",mo, &d, &y,&h,&m,&s,tzd);
+		c = sscanf(str.raw_buf(), "%3s %2d %4d %2d:%2d:%2d %19s",mo, &d, &y,&h,&m,&s,tzd);
 		bvalid = (c >= 3);
 	}
 	if (!bvalid)
@@ -999,7 +999,7 @@ number_t Date::parse(tiny_string str)
 		// Day Mon DD HH:MM:SS TZD YYYY
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%*3s %3s %2d %2d:%2d:%2d %s %4d",mo,&d,&h,&m,&s,tzd,&y);
+		c = sscanf(str.raw_buf(), "%*3s %3s %2d %2d:%2d:%2d %19s %4d",mo,&d,&h,&m,&s,tzd,&y);
 		bvalid = (c == 7);
 	}
 	if (!bvalid)
@@ -1007,7 +1007,7 @@ number_t Date::parse(tiny_string str)
 		// Day DD Mon HH:MM:SS TZD YYYY
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%*3s %2d %3s %2d:%2d:%2d %s %4d",&d,mo,&h,&m,&s,tzd,&y);
+		c = sscanf(str.raw_buf(), "%*3s %2d %3s %2d:%2d:%2d %19s %4d",&d,mo,&h,&m,&s,tzd,&y);
 		bvalid = (c == 7);
 	}
 	if (!bvalid)
@@ -1015,7 +1015,7 @@ number_t Date::parse(tiny_string str)
 		// YYYY/MM/DD HH:MM:SS TZD
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d/%2d/%2d %2d:%2d:%2d %s", &y, &mon,&d,&h,&m,&s,tzd);
+		c = sscanf(str.raw_buf(), "%4d/%2d/%2d %2d:%2d:%2d %19s", &y, &mon,&d,&h,&m,&s,tzd);
 		bvalid = (c >= 3);
 	}
 	if (!bvalid)
@@ -1079,7 +1079,7 @@ number_t Date::parse(tiny_string str)
 				p++;
 			int tz = 0;
 			if (*p)
-				sscanf(p, "%d",&tz);
+				sscanf(p, "%19d",&tz);
 				
 			if (y >=70 && y<100)
 				y += 1900;

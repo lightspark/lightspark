@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef RENDERING_H
-#define RENDERING_H
+#ifndef BACKENDS_RENDERING_H
+#define BACKENDS_RENDERING_H 1
 
 #include "lsopengl.h"
 #include "rendering_context.h"
@@ -177,4 +177,4 @@ public:
 RenderThread* getRenderThread();
 
 };
-#endif
+#endif /* BACKENDS_RENDERING_H */

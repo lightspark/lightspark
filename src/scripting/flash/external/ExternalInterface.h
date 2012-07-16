@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_EXTERNAL_H
-#define _FLASH_EXTERNAL_H
+#ifndef SCRIPTING_FLASH_EXTERNAL_EXTERNALINTERFACE_H
+#define SCRIPTING_FLASH_EXTERNAL_EXTERNALINTERFACE_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -40,4 +40,4 @@ public:
 };
 
 };
-#endif
+#endif /* SCRIPTING_FLASH_EXTERNAL_EXTERNALINTERFACE_H */

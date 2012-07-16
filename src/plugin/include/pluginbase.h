@@ -35,8 +35,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __PLUGININSTANCEBASE_H__
-#define __PLUGININSTANCEBASE_H__
+#ifndef PLUGIN_INCLUDE_PLUGINBASE_H
+#define PLUGIN_INCLUDE_PLUGINBASE_H 1
 
 #include "npplat.h"
 
@@ -94,4 +94,4 @@ void NS_PluginShutdown();
 NPError NS_PluginGetValue(NPPVariable aVariable, void *aValue);
 #endif
 
-#endif // __PLUGININSTANCEBASE_H__
+#endif /* PLUGIN_INCLUDE_PLUGINBASE_H */

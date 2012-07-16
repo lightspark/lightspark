@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef TOPLEVEL_DATE_H
-#define TOPLEVEL_DATE_H
+#ifndef SCRIPTING_TOPLEVEL_DATE_H
+#define SCRIPTING_TOPLEVEL_DATE_H 1
 
 #include "asobject.h"
 
@@ -110,4 +110,4 @@ public:
 				std::map<const Class_base*, uint32_t>& traitsMap);
 };
 }
-#endif
+#endif /* SCRIPTING_TOPLEVEL_DATE_H */

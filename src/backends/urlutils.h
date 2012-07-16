@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _URL_UTILS_H
-#define _URL_UTILS_H
+#ifndef BACKENDS_URLUTILS_H
+#define BACKENDS_URLUTILS_H 1
 
 #include "compat.h"
 #include <iostream>
@@ -117,4 +117,4 @@ public:
 };
 
 };
-#endif
+#endif /* BACKENDS_URLUTILS_H */

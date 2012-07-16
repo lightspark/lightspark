@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _BITMAP_DATA_H
-#define _BITMAP_DATA_H
+#ifndef SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H
+#define SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H 1
 
 #include "IBitmapDrawable.h"
 #include "asobject.h"
@@ -67,4 +67,4 @@ public:
 };
 
 };
-#endif
+#endif /* SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H */

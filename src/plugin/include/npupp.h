@@ -42,8 +42,8 @@
  */
 
 
-#ifndef _NPUPP_H_
-#define _NPUPP_H_
+#ifndef PLUGIN_INCLUDE_NPUPP_H
+#define PLUGIN_INCLUDE_NPUPP_H 1
 
 #if defined(__OS2__)
 #pragma pack(1)
@@ -1698,4 +1698,4 @@ NPError NP_GetValue(void *future, NPPVariable aVariable, void *aValue);
 
 #endif /* XP_UNIX */
 
-#endif /* _NPUPP_H_ */
+#endif /* PLUGIN_INCLUDE_NPUPP_H */

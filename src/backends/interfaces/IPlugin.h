@@ -19,8 +19,8 @@
 **************************************************************************/
 
 
-#ifndef IPLUGIN_H
-#define IPLUGIN_H
+#ifndef BACKENDS_INTERFACES_IPLUGIN_H
+#define BACKENDS_INTERFACES_IPLUGIN_H 1
 
 #include <iostream>
 #include "../../compat.h"
@@ -52,4 +52,4 @@ Plugin cleanup function
 extern "C" void release(IPlugin* p_plugin);
 ***************************/
 
-#endif
+#endif /* BACKENDS_INTERFACES_IPLUGIN_H */

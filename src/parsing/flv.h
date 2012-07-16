@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef FLV_H
-#define FLV_H
+#ifndef PARSING_FLV_H
+#define PARSING_FLV_H 1
 
 #include "compat.h"
 #include <istream>
@@ -128,4 +128,4 @@ public:
 
 };
 
-#endif
+#endif /* PARSING_FLV_H */

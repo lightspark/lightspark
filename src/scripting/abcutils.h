@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _ABCUTILS_H
-#define _ABCUTILS_H
+#ifndef SCRIPTING_ABCUTILS_H
+#define SCRIPTING_ABCUTILS_H 1
 
 #include "smartrefs.h"
 
@@ -92,4 +92,4 @@ struct call_context
 };
 
 };
-#endif
+#endif /* SCRIPTING_ABCUTILS_H */

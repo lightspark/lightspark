@@ -17,8 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef NUMBER_H
-#define NUMBER_H
+#ifndef SCRIPTING_TOPLEVEL_NUMBER_H
+#define SCRIPTING_TOPLEVEL_NUMBER_H 1
+
 #include <cmath>
 #include "compat.h"
 #include "asobject.h"
@@ -89,4 +90,4 @@ public:
 
 };
 
-#endif // NUMBER_H
+#endif /* SCRIPTING_TOPLEVEL_NUMBER_H */

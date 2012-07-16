@@ -16,8 +16,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
-#ifndef GEOMETRY_H
-#define GEOMETRY_H
+#ifndef BACKENDS_GEOMETRY_H
+#define BACKENDS_GEOMETRY_H 1
 
 #include "compat.h"
 #include "swftypes.h"
@@ -126,4 +126,4 @@ std::ostream& operator<<(std::ostream& s, const Vector2& p);
 
 };
 
-#endif
+#endif /* BACKENDS_GEOMETRY_H */

@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_NET_H
-#define _FLASH_NET_H
+#ifndef SCRIPTING_FLASH_NET_FLASHNET_H
+#define SCRIPTING_FLASH_NET_FLASHNET_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -329,4 +329,4 @@ ASObject* getClassByAlias(ASObject* obj,ASObject* const* args, const unsigned in
 
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_NET_FLASHNET_H */

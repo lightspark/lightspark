@@ -18,7 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _AMF3_GENERATOR_H
+#ifndef PARSING_AMF3_GENERATOR_H
+#define PARSING_AMF3_GENERATOR_H 1
 
 #include <string>
 #include <vector>
@@ -80,4 +81,4 @@ public:
 };
 
 };
-#endif
+#endif /* PARSING_AMF3_GENERATOR_H */

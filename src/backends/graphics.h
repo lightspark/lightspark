@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _GRAPHICS_H
-#define _GRAPHICS_H
+#ifndef BACKENDS_GRAPHICS_H
+#define BACKENDS_GRAPHICS_H 1
 
 #define CHUNKSIZE 128
 
@@ -384,4 +384,4 @@ public:
 };
 
 };
-#endif
+#endif /* BACKENDS_GRAPHICS_H */

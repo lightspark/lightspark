@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef MEMORY_SUPPORT_H
-#define MEMORY_SUPPORT_H
+#define MEMORY_SUPPORT_H 1
 
 #include "compat.h"
 #include "tiny_string.h"
@@ -209,4 +209,4 @@ public:
 #endif //MEMORY_USAGE_PROFILING
 
 };
-#endif
+#endif /* MEMORY_SUPPORT_H */

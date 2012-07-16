@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_SENSORS_H
-#define _FLASH_SENSORS_H
+#ifndef SCRIPTING_FLASH_SENSORS_FLASHSENSORS_H
+#define SCRIPTING_FLASH_SENSORS_FLASHSENSORS_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -38,4 +38,4 @@ class Accelerometer: public ASObject {
 		ASFUNCTION(_isSupported);
 };
 }
-#endif
+#endif /* SCRIPTING_FLASH_SENSORS_FLASHSENSORS_H */

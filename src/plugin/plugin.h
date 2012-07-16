@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef __PLUGIN_H__
-#define __PLUGIN_H__
+#ifndef PLUGIN_PLUGIN_H
+#define PLUGIN_PLUGIN_H 1
 
 #include "swf.h"
 #include <iostream>
@@ -137,4 +137,4 @@ private:
 };
 
 }
-#endif // __PLUGIN_H__
+#endif /* PLUGIN_PLUGIN_H */

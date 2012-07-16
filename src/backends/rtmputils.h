@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _RTMP_UTILS_H
-#define _RTMP_UTILS_H
+#ifndef BACKENDS_RTMPUTILS_H
+#define BACKENDS_RTMPUTILS_H 1
 
 #include "netutils.h"
 
@@ -38,4 +38,4 @@ public:
 };
 
 };
-#endif
+#endif /* BACKENDS_RTMPUTILS_H */

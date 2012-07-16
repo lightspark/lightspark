@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _CROSSDOMAINPOLICY_H
-#define _CROSSDOMAINPOLICY_H
+#ifndef PARSING_CROSSDOMAINPOLICY_H
+#define PARSING_CROSSDOMAINPOLICY_H 1
 
 #include <libxml++/libxml++.h>
 #include <libxml++/parsers/textreader.h>
@@ -76,4 +76,4 @@ namespace lightspark
 	};
 }
 
-#endif
+#endif /* PARSING_CROSSDOMAINPOLICY_H */

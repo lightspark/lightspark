@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef XMLLIST_H
-#define XMLLIST_H
+#ifndef SCRIPTING_TOPLEVEL_XMLLIST_H
+#define SCRIPTING_TOPLEVEL_XMLLIST_H 1
 #include "asobject.h"
 #include "XML.h"
 #include <libxml/tree.h>
@@ -86,4 +86,4 @@ public:
 	_R<XML> reduceToXML() const;
 };
 }
-#endif
+#endif /* SCRIPTING_TOPLEVEL_XMLLIST_H */

@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _XML_SUPPORT_H
-#define _XML_SUPPORT_H
+#ifndef BACKENDS_XML_SUPPORT_H
+#define BACKENDS_XML_SUPPORT_H 1
 
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
@@ -65,4 +65,4 @@ protected:
 
 };
 
-#endif
+#endif /* BACKENDS_XML_SUPPORT_H */

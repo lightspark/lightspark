@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef LOGGER_H
-#define LOGGER_H
+#define LOGGER_H 1
 
 #include "compat.h"
 #include <iostream>
@@ -87,4 +87,4 @@ std::ostream& operator<<(std::ostream& os, const std::set<T>& v)
 }
 }
 
-#endif
+#endif /* LOGGER_H */

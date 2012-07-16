@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_TEXT_H
-#define _FLASH_TEXT_H
+#ifndef SCRIPTING_FLASH_TEXT_FLASHTEXT_H
+#define SCRIPTING_FLASH_TEXT_FLASHTEXT_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -156,4 +156,4 @@ public:
 };
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_TEXT_FLASHTEXT_H */

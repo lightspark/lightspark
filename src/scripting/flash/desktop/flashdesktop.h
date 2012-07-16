@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_DESKTOP_H
-#define _FLASH_DESKTOP_H
+#ifndef SCRIPTING_FLASH_DESKTOP_FLASHDESKTOP_H
+#define SCRIPTING_FLASH_DESKTOP_FLASHDESKTOP_H 1
 
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
@@ -39,4 +39,4 @@ public:
 
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_DESKTOP_FLASHDESKTOP_H */

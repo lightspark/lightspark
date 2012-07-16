@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _DISPLAY_OBJECT_H
-#define _DISPLAY_OBJECT_H
+#ifndef SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H
+#define SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H 1
 
 #include "smartrefs.h"
 #include "IBitmapDrawable.h"
@@ -204,4 +204,4 @@ public:
 	ASFUNCTION(globalToLocal);
 };
 };
-#endif
+#endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

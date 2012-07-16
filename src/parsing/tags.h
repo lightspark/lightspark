@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef TAGS_H
-#define TAGS_H
+#ifndef PARSING_TAGS_H
+#define PARSING_TAGS_H 1
 
 #include "compat.h"
 #include <vector>
@@ -731,4 +731,4 @@ public:
 
 };
 
-#endif
+#endif /* PARSING_TAGS_H */

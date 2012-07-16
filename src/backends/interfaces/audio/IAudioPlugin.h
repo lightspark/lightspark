@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef IAUDIOPLUGIN_H
-#define IAUDIOPLUGIN_H
+#ifndef BACKENDS_INTERFACES_AUDIO_IAUDIOPLUGIN_H
+#define BACKENDS_INTERFACES_AUDIO_IAUDIOPLUGIN_H 1
 
 #include "../../../compat.h"
 #include "../../decoder.h"
@@ -78,5 +78,5 @@ public:
 	virtual ~IAudioPlugin();
 };
 
-#endif
+#endif /* BACKENDS_INTERFACES_AUDIO_IAUDIOPLUGIN */
 

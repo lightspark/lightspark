@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef LSOPENGL_H
-#define LSOPENGL_H
+#ifndef BACKENDS_LSOPENGL_H
+#define BACKENDS_LSOPENGL_H 1
 
 #ifdef ENABLE_GLES2
 	#define SUPPORT_X11 1 //Needed for SGX/OMAP GL stack
@@ -46,4 +46,4 @@
 	#undef None // conflicts with libxml++ headers
 #endif
 
-#endif
+#endif /* BACKENDS_LSOPENGL_H */

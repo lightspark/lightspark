@@ -21,7 +21,7 @@
 #define BACKENDS_INPUT_H 1
 
 #include "compat.h"
-#include "geometry.h"
+#include "backends/geometry.h"
 #include "threading.h"
 #include "platforms/engineutils.h"
 #include "swftypes.h"

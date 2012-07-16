@@ -22,10 +22,10 @@
 #include <algorithm>
 #include "swftypes.h"
 #include "logger.h"
-#include "geometry.h"
+#include "backends/geometry.h"
 #include "compat.h"
-#include "flash/display/flashdisplay.h"
-#include "flash/display/BitmapData.h"
+#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/BitmapData.h"
 
 using namespace std;
 using namespace lightspark;

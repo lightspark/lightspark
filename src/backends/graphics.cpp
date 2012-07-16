@@ -20,14 +20,14 @@
 #include <cassert>
 
 #include "swf.h"
-#include "graphics.h"
+#include "backends/graphics.h"
 #include "logger.h"
 #include "exceptions.h"
 #include "backends/rendering.h"
 #include "backends/config.h"
 #include "compat.h"
 #include "scripting/flash/text/flashtext.h"
-#include "flash/display/BitmapData.h"
+#include "scripting/flash/display/BitmapData.h"
 
 using namespace lightspark;
 

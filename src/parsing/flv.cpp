@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "flv.h"
+#include "parsing/flv.h"
 #include "swftypes.h"
 #include "compat.h"
 

@@ -27,8 +27,8 @@
 #include <map>
 #include <stack>
 
-#include "npapi.h"
-#include "npruntime.h"
+#include "plugin/include/npapi/npapi.h"
+#include "plugin/include/npapi/npruntime.h"
 
 #include "swf.h"
 #include "asobject.h"

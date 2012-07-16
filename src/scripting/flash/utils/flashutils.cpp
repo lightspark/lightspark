@@ -17,14 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
-#include "flashutils.h"
+#include "scripting/abc.h"
+#include "scripting/flash/utils/flashutils.h"
 #include "asobject.h"
-#include "class.h"
+#include "scripting/class.h"
 #include "compat.h"
 #include "parsing/amf3_generator.h"
-#include "argconv.h"
-#include "flash/errors/flasherrors.h"
+#include "scripting/argconv.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include <sstream>
 #include <zlib.h>
 #include <glib.h>

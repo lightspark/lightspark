@@ -28,7 +28,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASString.h"
 
-#include "extscriptobject.h"
+#include "backends/extscriptobject.h"
 
 using namespace lightspark;
 using namespace std;

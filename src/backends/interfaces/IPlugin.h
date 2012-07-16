@@ -23,7 +23,7 @@
 #define BACKENDS_INTERFACES_IPLUGIN_H 1
 
 #include <iostream>
-#include "../../compat.h"
+#include "compat.h"
 
 enum PLUGIN_TYPES { UNDEFINED = 0, AUDIO, VIDEO, DECODER, ENCODER };
 

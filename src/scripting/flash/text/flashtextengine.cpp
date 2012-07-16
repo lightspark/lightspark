@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "flashtextengine.h"
-#include "class.h"
+#include "scripting/flash/text/flashtextengine.h"
+#include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "swf.h"
 

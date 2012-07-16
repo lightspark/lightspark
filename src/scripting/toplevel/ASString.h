@@ -20,7 +20,7 @@
 #ifndef SCRIPTING_TOPLEVEL_ASSTRING_H
 #define SCRIPTING_TOPLEVEL_ASSTRING_H 1
 
-#include "class.h"
+#include "scripting/class.h"
 
 namespace Glib { class ustring; }
 

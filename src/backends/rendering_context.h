@@ -21,8 +21,8 @@
 #define BACKENDS_RENDERING_CONTEXT_H 1
 
 #include <stack>
-#include "lsopengl.h"
-#include "graphics.h"
+#include "backends/lsopengl.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {

@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "argconv.h"
-#include "RegExp.h"
+#include "scripting/argconv.h"
+#include "scripting/toplevel/RegExp.h"
 
 using namespace std;
 using namespace lightspark;

@@ -21,9 +21,9 @@
 #ifndef BACKENDS_INTERFACES_AUDIO_IAUDIOPLUGIN_H
 #define BACKENDS_INTERFACES_AUDIO_IAUDIOPLUGIN_H 1
 
-#include "../../../compat.h"
-#include "../../decoder.h"
-#include "../IPlugin.h"
+#include "compat.h"
+#include "backends/decoder.h"
+#include "backends/interfaces/IPlugin.h"
 #include <iostream>
 
 class AudioStream

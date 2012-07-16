@@ -27,8 +27,9 @@
 #include "exceptions.h"
 #include "threading.h"
 #include "scripting/abcutils.h"
-#include "Boolean.h"
-#include "Error.h"
+#include "scripting/toplevel/Boolean.h"
+#include "scripting/toplevel/Error.h"
+//#include "scripting/toplevel/XML.h"
 #include "memory_support.h"
 #include <libxml++/parsers/domparser.h>
 

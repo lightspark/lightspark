@@ -25,13 +25,13 @@
 #include <algorithm>
 #include <sstream>
 #include "scripting/abc.h"
-#include "tags.h"
+#include "parsing/tags.h"
 #include "backends/geometry.h"
 #include "backends/security.h"
 #include "swftypes.h"
 #include "logger.h"
 #include "compat.h"
-#include "streams.h"
+#include "parsing/streams.h"
 #include "scripting/flash/display/BitmapData.h"
 
 #undef RGB

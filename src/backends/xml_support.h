@@ -23,7 +23,8 @@
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include <libxml++/exceptions/internal_error.h>
-#include <libxml/parserInternals.h>//For xmlCreateFileParserCtxt().
+//For xmlCreateFileParserCtxt().
+#include <libxml/parserInternals.h>
 
 namespace lightspark
 {

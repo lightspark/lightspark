@@ -23,7 +23,7 @@
 #define CHUNKSIZE 128
 
 #include "compat.h"
-#include "lsopengl.h"
+#include "backends/lsopengl.h"
 #include <vector>
 #include "swftypes.h"
 #include "threading.h"

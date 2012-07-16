@@ -20,7 +20,7 @@
 #ifndef SCRIPTING_TOPLEVEL_XMLLIST_H
 #define SCRIPTING_TOPLEVEL_XMLLIST_H 1
 #include "asobject.h"
-#include "XML.h"
+#include "scripting/toplevel/XML.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 

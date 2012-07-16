@@ -17,12 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "XML.h"
-#include "XMLList.h"
-#include "flash/xml/flashxml.h"
-#include "class.h"
+#include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/XMLList.h"
+#include "scripting/flash/xml/flashxml.h"
+#include "scripting/class.h"
 #include "compat.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include <libxml++/nodes/textnode.h>

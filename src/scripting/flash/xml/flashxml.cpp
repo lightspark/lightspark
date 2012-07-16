@@ -19,10 +19,10 @@
 #include <libxml/tree.h>
 #include <libxml++/nodes/textnode.h>
 
-#include "flashxml.h"
+#include "scripting/flash/xml/flashxml.h"
 #include "swf.h"
 #include "compat.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 
 using namespace std;
 using namespace lightspark;

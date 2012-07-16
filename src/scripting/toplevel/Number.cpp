@@ -18,8 +18,8 @@
 **************************************************************************/
 
 #include "parsing/amf3_generator.h"
-#include "argconv.h"
-#include "Number.h"
+#include "scripting/argconv.h"
+#include "scripting/toplevel/Number.h"
 
 using namespace std;
 using namespace lightspark;

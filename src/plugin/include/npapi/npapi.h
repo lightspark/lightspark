@@ -42,7 +42,7 @@
 #pragma pack(1)
 #endif
 
-#include "nptypes.h"
+#include "plugin/include/npapi/nptypes.h"
 
 #if defined(__OS2__) || defined(OS2)
 #ifndef XP_OS2

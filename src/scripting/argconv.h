@@ -20,9 +20,9 @@
 #ifndef SCRIPTING_ARGCONV_H
 #define SCRIPTING_ARGCONV_H 1
 
-#include "toplevel/toplevel.h"
-#include "toplevel/ASString.h"
-#include "toplevel/Boolean.h"
+#include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Boolean.h"
 
 /* Usage of ARG_UNPACK:
  * You have to use it within a ASFUNCTIONBODY() { }, because it uses the implicit arguments 'args' and 'argslen'.

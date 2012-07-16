@@ -19,9 +19,9 @@
 **************************************************************************/
 
 #include "logger.h"
-#include "plugin.h"
+#include "plugin/plugin.h"
 
-#include "npscriptobject.h"
+#include "plugin/npscriptobject.h"
 #include "scripting/flash/system/flashsystem.h"
 
 using namespace std;

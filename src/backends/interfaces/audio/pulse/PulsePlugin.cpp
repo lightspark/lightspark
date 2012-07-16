@@ -19,9 +19,9 @@
 **************************************************************************/
 
 #include <iostream>
-#include "PulsePlugin.h"
-#include "../../../../compat.h"
-#include "../../../decoder.h"
+#include "backends/interfaces/audio/pulse/PulsePlugin.h"
+#include "compat.h"
+#include "backends/decoder.h"
 
 #include <clocale>
 #include <libintl.h>

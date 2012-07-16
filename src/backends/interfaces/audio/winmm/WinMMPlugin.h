@@ -24,10 +24,10 @@
 #include <iostream>
 #include <windows.h>
 #include <mmsystem.h>
-#include "../IAudioPlugin.h"
-#include "../../../decoder.h"
-#include "../../../../compat.h"
-#include "../../../../threading.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
+#include "backends/decoder.h"
+#include "compat.h"
+#include "threading.h"
 
 namespace lightspark
 {

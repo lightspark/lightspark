@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "toplevel/toplevel.h"
+#include "scripting/toplevel/toplevel.h"
 #include "backends/extscriptobject.h"
 #include <string>
 

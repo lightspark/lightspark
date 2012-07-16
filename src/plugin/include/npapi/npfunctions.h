@@ -45,8 +45,8 @@
 #define NP_LOADDS
 #endif
 
-#include "npapi.h"
-#include "npruntime.h"
+#include "plugin/include/npapi/npapi.h"
+#include "plugin/include/npapi/npruntime.h"
 
 typedef NPError      (* NP_LOADDS NPP_NewProcPtr)(NPMIMEType pluginType, NPP instance, uint16_t mode, int16_t argc, char* argn[], char* argv[], NPSavedData* saved);
 typedef NPError      (* NP_LOADDS NPP_DestroyProcPtr)(NPP instance, NPSavedData** save);

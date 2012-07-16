@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "SDLPlugin.h"
+#include "backends/interfaces/audio/sdl/SDLPlugin.h"
 #include <SDL.h>
 #include <SDL_audio.h>
 

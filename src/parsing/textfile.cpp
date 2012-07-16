@@ -20,7 +20,7 @@ Credits:
 	www.lighthouse3d.com
 **************************************************************************/
 
-#include "textfile.h"
+#include "parsing/textfile.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

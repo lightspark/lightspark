@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "amf3_generator.h"
+#include "parsing/amf3_generator.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASString.h"

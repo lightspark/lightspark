@@ -26,11 +26,11 @@
 #include <sstream>
 
 #include "compat.h"
-#include "pluginbase.h"
+#include "plugin/include/pluginbase.h"
 #include "parsing/streams.h"
 #include "backends/netutils.h"
 #include "backends/urlutils.h"
-#include "npscriptobject.h"
+#include "plugin/npscriptobject.h"
 
 namespace lightspark
 {

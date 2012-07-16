@@ -18,9 +18,9 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
-#include "audio.h"
-#include "input.h"
-#include "rendering.h"
+#include "backends/audio.h"
+#include "backends/input.h"
+#include "backends/rendering.h"
 #include "compat.h"
 
 #if GTK_CHECK_VERSION (2,21,8)

@@ -20,7 +20,7 @@
 #ifndef SCRIPTING_FLASH_ERRORS_FLASHERRORS_H
 #define SCRIPTING_FLASH_ERRORS_FLASHERRORS_H 1
 
-#include "toplevel/Error.h"
+#include "scripting/toplevel/Error.h"
 #include "swftypes.h"
 
 namespace lightspark

@@ -22,12 +22,12 @@
 #include "logger.h"
 
 extern "C" {
-#include "jpeglib.h"
-#include "jerror.h"
+#include <jpeglib.h>
+#include <jerror.h>
 }
 
 #include <csetjmp>
-#include "image.h"
+#include "backends/image.h"
 
 namespace lightspark
 {

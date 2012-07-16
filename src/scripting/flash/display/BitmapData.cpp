@@ -17,9 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "BitmapData.h"
-#include "class.h"
-#include "argconv.h"
+#include "scripting/flash/display/BitmapData.h"
+#include "scripting/class.h"
+#include "scripting/argconv.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "backends/rendering_context.h"

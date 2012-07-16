@@ -17,16 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
+#include "scripting/abc.h"
 #include <limits>
-#include "class.h"
+#include "scripting/class.h"
 #include "exceptions.h"
 #include "compat.h"
-#include "abcutils.h"
+#include "scripting/abcutils.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/RegExp.h"
-#include "toplevel/XML.h"
-#include "toplevel/XMLList.h"
+#include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/XMLList.h"
 
 using namespace std;
 using namespace lightspark;

@@ -37,7 +37,7 @@
 extern "C" {
 #endif
 
-#include "nptypes.h"
+#include "plugin/include/npapi/nptypes.h"
 
 /*
     This API is used to facilitate binding code written in C to script

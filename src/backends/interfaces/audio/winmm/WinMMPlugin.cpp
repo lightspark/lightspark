@@ -19,9 +19,9 @@
 **************************************************************************/
 
 #include <iostream>
-#include "WinMMPlugin.h"
-#include "../../../../compat.h"
-#include "../../../decoder.h"
+#include "backends/interfaces/audio/winmm/WinMMPlugin.h"
+#include "compat.h"
+#include "backends/decoder.h"
 
 using namespace lightspark;
 using namespace std;

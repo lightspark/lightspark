@@ -19,20 +19,20 @@
 
 #include <list>
 
-#include "abc.h"
-#include "flashdisplay.h"
+#include "scripting/abc.h"
+#include "scripting/flash/display/flashdisplay.h"
 #include "swf.h"
-#include "flash/geom/flashgeom.h"
-#include "flash/system/flashsystem.h"
+#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "parsing/streams.h"
 #include "compat.h"
-#include "class.h"
+#include "scripting/class.h"
 #include "backends/rendering.h"
 #include "backends/geometry.h"
-#include "flash/accessibility/flashaccessibility.h"
-#include "flash/display/BitmapData.h"
-#include "argconv.h"
-#include "toplevel/Vector.h"
+#include "scripting/flash/accessibility/flashaccessibility.h"
+#include "scripting/flash/display/BitmapData.h"
+#include "scripting/argconv.h"
+#include "scripting/toplevel/Vector.h"
 #include "backends/security.h"
 
 using namespace std;

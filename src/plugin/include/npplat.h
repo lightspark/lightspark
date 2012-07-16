@@ -38,8 +38,8 @@
 #ifndef PLUGIN_INCLUDE_NPPLAT_H
 #define PLUGIN_INCLUDE_NPPLAT_H 1
 
-#include "npapi.h"
-#include "npupp.h"
+#include "plugin/include/npapi/npapi.h"
+#include "plugin/include/npupp.h"
 
 /**************************************************/
 /*                                                */
@@ -47,7 +47,7 @@
 /*                                                */
 /**************************************************/
 #ifdef XP_WIN
-#include "windows.h"
+#include <windows.h>
 #endif //XP_WIN
 
 /**************************************************/

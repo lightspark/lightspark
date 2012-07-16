@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include "threading.h"
-#include "graphics.h"
+#include "backends/graphics.h"
 #ifdef ENABLE_LIBAVCODEC
 extern "C"
 {

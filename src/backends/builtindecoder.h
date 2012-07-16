@@ -20,7 +20,7 @@
 #ifndef BACKENDS_BUILTINDECODER_H
 #define BACKENDS_BUILTINDECODER_H 1
 
-#include "decoder.h"
+#include "backends/decoder.h"
 #include "parsing/flv.h"
 
 namespace lightspark

@@ -17,9 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "flasherrors.h"
-#include "argconv.h"
-#include "class.h"
+#include "scripting/flash/errors/flasherrors.h"
+#include "scripting/argconv.h"
+#include "scripting/class.h"
 
 using namespace lightspark;
 

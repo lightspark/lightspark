@@ -20,7 +20,7 @@
 #ifndef BACKENDS_RTMPUTILS_H
 #define BACKENDS_RTMPUTILS_H 1
 
-#include "netutils.h"
+#include "backends/netutils.h"
 
 namespace lightspark
 {

@@ -19,7 +19,7 @@
 
 #include "scripting/abc.h"
 #include "parsing/textfile.h"
-#include "rendering.h"
+#include "backends/rendering.h"
 #include "compat.h"
 #include <sstream>
 

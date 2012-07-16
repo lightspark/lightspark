@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "IPlugin.h"
+#include "backends/interfaces/IPlugin.h"
 
 IPlugin::IPlugin ( PLUGIN_TYPES plugin_type, std::string plugin_name, std::string backend_name ) :
 		pluginType ( plugin_type ), pluginName ( plugin_name ), backendName ( backend_name )

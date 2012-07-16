@@ -24,13 +24,13 @@
 #include "compat.h"
 
 #include "swftypes.h"
-#include "flash/events/flashevents.h"
+#include "scripting/flash/events/flashevents.h"
 #include "thread_pool.h"
-#include "flash/utils/flashutils.h"
+#include "scripting/flash/utils/flashutils.h"
 #include "backends/graphics.h"
 #include "backends/netutils.h"
-#include "DisplayObject.h"
-#include "TokenContainer.h"
+#include "scripting/flash/display/DisplayObject.h"
+#include "scripting/flash/display/TokenContainer.h"
 
 namespace lightspark
 {

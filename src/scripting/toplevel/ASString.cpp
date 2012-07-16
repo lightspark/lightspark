@@ -19,11 +19,11 @@
 
 #include <pcre.h>
 
-#include "ASString.h"
+#include "scripting/toplevel/ASString.h"
 #include "compat.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 #include "parsing/amf3_generator.h"
-#include "RegExp.h"
+#include "scripting/toplevel/RegExp.h"
 
 using namespace std;
 using namespace lightspark;

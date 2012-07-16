@@ -23,7 +23,7 @@
 #include <vector>
 #include "backends/geometry.h"
 #include "backends/graphics.h"
-#include "DisplayObject.h"
+#include "scripting/flash/display/DisplayObject.h"
 
 namespace lightspark
 {

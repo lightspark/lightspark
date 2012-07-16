@@ -22,11 +22,11 @@
 
 
 #include "compat.h"
-#include "decoder.h"
+#include "backends/decoder.h"
 #include <iostream>
 
-#include "pluginmanager.h"
-#include "interfaces/audio/IAudioPlugin.h"
+#include "backends/pluginmanager.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
 
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries

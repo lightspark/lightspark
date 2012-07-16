@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abctypes.h"
+#include "scripting/abctypes.h"
 
 using namespace std;
 using namespace lightspark;

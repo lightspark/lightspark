@@ -20,7 +20,7 @@
 #include "compat.h"
 #include <cassert>
 
-#include "decoder.h"
+#include "backends/decoder.h"
 #include "platforms/fastpaths.h"
 #include "swf.h"
 #include "backends/rendering.h"

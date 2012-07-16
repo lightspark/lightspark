@@ -18,13 +18,13 @@
 **************************************************************************/
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
-#include "pluginmanager.h"
+#include "backends/pluginmanager.h"
 #include <iostream>
 #include <list>
 #include <boost/filesystem.hpp>
 #include <pcre.h>
-#include "../logger.h"
-#include "../exceptions.h"
+#include "logger.h"
+#include "exceptions.h"
 
 #include <gmodule.h>
 

@@ -18,10 +18,10 @@
 **************************************************************************/
 
 #include "swf.h"
-#include "audio.h"
-#include "config.h"
+#include "backends/audio.h"
+#include "backends/config.h"
 #include <iostream>
-#include "../logger.h"
+#include "logger.h"
 
 //Needed or not with compat.h and compat.cpp?
 #if defined WIN32

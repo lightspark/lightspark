@@ -17,10 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "ExternalInterface.h"
-#include "class.h"
+#include "scripting/flash/external/ExternalInterface.h"
+#include "scripting/class.h"
 #include "backends/extscriptobject.h"
-#include "toplevel/ASString.h"
+#include "scripting/toplevel/ASString.h"
 
 using namespace lightspark;
 

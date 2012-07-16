@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "IAudioPlugin.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
 #include <iostream>
 
 using namespace std;

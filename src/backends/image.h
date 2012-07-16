@@ -23,9 +23,9 @@
 #include <istream>
 
 extern "C" {
-#include "jpeglib.h"
+#include <jpeglib.h>
 #define PNG_SKIP_SETJMP_CHECK
-#include "png.h"
+#include <png.h>
 }
 
 namespace lightspark

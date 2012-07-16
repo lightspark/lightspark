@@ -23,7 +23,7 @@
 #include <string>
 #include <boost/filesystem.hpp>
 
-#include "config.h"
+#include "backends/config.h"
 
 using namespace lightspark;
 using namespace std;

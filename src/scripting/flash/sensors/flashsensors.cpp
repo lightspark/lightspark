@@ -18,10 +18,10 @@
 **************************************************************************/
 
 #include <map>
-#include "abc.h"
-#include "flashsensors.h"
-#include "class.h"
-#include "flash/system/flashsystem.h"
+#include "scripting/abc.h"
+#include "scripting/flash/sensors/flashsensors.h"
+#include "scripting/class.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "compat.h"
 #include "backends/audio.h"
 #include "backends/security.h"

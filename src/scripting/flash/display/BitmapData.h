@@ -20,7 +20,7 @@
 #ifndef SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H
 #define SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H 1
 
-#include "IBitmapDrawable.h"
+#include "scripting/flash/display/IBitmapDrawable.h"
 #include "asobject.h"
 #include "scripting/flash/display/BitmapContainer.h"
 

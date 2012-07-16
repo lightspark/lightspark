@@ -17,10 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "Boolean.h"
-#include "toplevel.h"
-#include "class.h"
-#include "argconv.h"
+#include "scripting/toplevel/Boolean.h"
+#include "scripting/toplevel/toplevel.h"
+#include "scripting/class.h"
+#include "scripting/argconv.h"
 #include "parsing/amf3_generator.h"
 
 using namespace lightspark;

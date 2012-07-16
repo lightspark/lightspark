@@ -19,7 +19,7 @@
 **************************************************************************/
 
 #include "version.h"
-#include "plugin.h"
+#include "plugin/plugin.h"
 #include "logger.h"
 #include "compat.h"
 #include <string>
@@ -27,7 +27,7 @@
 #include "backends/urlutils.h"
 #include "backends/security.h"
 
-#include "npscriptobject.h"
+#include "plugin/npscriptobject.h"
 
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"

@@ -43,8 +43,8 @@
 #include <map>
 #include <set>
 #include "swf.h"
-#include "abcutils.h"
-#include "abctypes.h"
+#include "scripting/abcutils.h"
+#include "scripting/abctypes.h"
 #include "scripting/flash/system/flashsystem.h"
 
 namespace lightspark

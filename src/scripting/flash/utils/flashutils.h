@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include "swftypes.h"
-#include "flash/events/flashevents.h"
+#include "scripting/flash/events/flashevents.h"
 #include "thread_pool.h"
 #include "timer.h"
 

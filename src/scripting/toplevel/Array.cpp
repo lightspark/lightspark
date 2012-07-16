@@ -17,13 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "Array.h"
-#include "abc.h"
-#include "argconv.h"
+#include "scripting/toplevel/Array.h"
+#include "scripting/abc.h"
+#include "scripting/argconv.h"
 #include "parsing/amf3_generator.h"
-#include "Vector.h"
-#include "RegExp.h"
-#include "flash/utils/flashutils.h"
+#include "scripting/toplevel/Vector.h"
+#include "scripting/toplevel/RegExp.h"
+#include "scripting/flash/utils/flashutils.h"
 
 using namespace std;
 using namespace lightspark;

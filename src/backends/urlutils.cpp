@@ -19,7 +19,7 @@
 **************************************************************************/
 
 #include "swf.h"
-#include "urlutils.h"
+#include "backends/urlutils.h"
 #include "compat.h"
 #include "scripting/toplevel/Integer.h"
 #include <string>

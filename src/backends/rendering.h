@@ -20,8 +20,8 @@
 #ifndef BACKENDS_RENDERING_H
 #define BACKENDS_RENDERING_H 1
 
-#include "lsopengl.h"
-#include "rendering_context.h"
+#include "backends/lsopengl.h"
+#include "backends/rendering_context.h"
 #include "timer.h"
 #include <glibmm/timeval.h>
 

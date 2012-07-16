@@ -17,9 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "Date.h"
-#include "class.h"
-#include "argconv.h"
+#include "scripting/toplevel/Date.h"
+#include "scripting/class.h"
+#include "scripting/argconv.h"
 #include "compat.h"
 
 using namespace std;

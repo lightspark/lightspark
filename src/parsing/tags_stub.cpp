@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #include <istream>
-#include "tags.h"
+#include "parsing/tags.h"
 #include "logger.h"
 #include "compat.h"
 

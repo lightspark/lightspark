@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "../utils/flashutils.h"
+#include "scripting/flash/utils/flashutils.h"
 
 namespace lightspark
 {

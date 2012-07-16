@@ -24,8 +24,8 @@
 #include <streambuf>
 #include <fstream>
 #include <cinttypes>
-#include "zlib.h"
-#include "lzma.h"
+#include <zlib.h>
+#include <lzma.h>
 
 class uncompressing_filter: public std::streambuf
 {

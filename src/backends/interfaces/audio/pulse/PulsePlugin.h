@@ -22,9 +22,9 @@
 #define BACKENDS_INTERFACES_AUDIO_PULSEPLUGIN_H 1
 
 #include <pulse/pulseaudio.h>
-#include "../IAudioPlugin.h"
-#include "../../../decoder.h"
-#include "../../../../compat.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
+#include "backends/decoder.h"
+#include "compat.h"
 #include <iostream>
 
 class PulseAudioStream;  //Early declaration

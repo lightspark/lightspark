@@ -38,7 +38,7 @@
 #ifndef PLUGIN_INCLUDE_PLUGINBASE_H
 #define PLUGIN_INCLUDE_PLUGINBASE_H 1
 
-#include "npplat.h"
+#include "plugin/include/npplat.h"
 
 struct nsPluginCreateData
 {

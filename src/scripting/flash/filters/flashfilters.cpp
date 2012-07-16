@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "flashfilters.h"
-#include "class.h"
+#include "scripting/flash/filters/flashfilters.h"
+#include "scripting/class.h"
 
 using namespace std;
 using namespace lightspark;

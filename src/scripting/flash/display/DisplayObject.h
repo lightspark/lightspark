@@ -21,7 +21,7 @@
 #define SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H 1
 
 #include "smartrefs.h"
-#include "IBitmapDrawable.h"
+#include "scripting/flash/display/IBitmapDrawable.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
 

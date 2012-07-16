@@ -24,7 +24,7 @@
 #include <iostream>
 #include <vector>
 
-#include "interfaces/IPlugin.h"
+#include "backends/interfaces/IPlugin.h"
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
 typedef IPlugin * ( *PLUGIN_FACTORY ) ();

@@ -50,7 +50,7 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 	}
 	catch (ifstream::failure& e) {
 		if(!f.eof()) //Only handle eof
-			throw e;
+			throw;
 		f.clear();
 		LOG(LOG_INFO,"Simulating EndTag at EOF @ " << f.tellg());
 		return new EndTag(h,f);

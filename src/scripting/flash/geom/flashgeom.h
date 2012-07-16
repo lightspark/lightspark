@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_GEOM_H
-#define _FLASH_GEOM_H
+#ifndef SCRIPTING_FLASH_FLASHGEOM_H
+#define SCRIPTING_FLASH_FLASHGEOM_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -241,4 +241,4 @@ public:
 };
 
 };
-#endif
+#endif /* SCRIPTING_FLASH_FLASHGEOM_H */

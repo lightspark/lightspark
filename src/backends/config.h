@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef BACKENDS_CONFIG_H
+#define BACKENDS_CONFIG_H 1
 
 #include "parsing/config.h"
 #include "compat.h"
@@ -75,4 +75,4 @@ namespace lightspark
 	};
 }
 
-#endif
+#endif /* BACKENDS_CONFIG_H */

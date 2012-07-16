@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _ABC_H
-#define _ABC_H
+#ifndef SCRIPTING_ABC_H
+#define SCRIPTING_ABC_H 1
 
 #ifdef LLVM_28
 #define alignof alignOf
@@ -564,4 +564,4 @@ std::istream& operator>>(std::istream& in, method_info& v);
 
 };
 
-#endif
+#endif /* SCRIPTING_ABC_H */

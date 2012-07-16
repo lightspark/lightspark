@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _BUILTIN_DECODER_H
-#define _BUILTIN_DECODER_H
+#ifndef BACKENDS_BUILTINDECODER_H
+#define BACKENDS_BUILTINDECODER_H 1
 
 #include "decoder.h"
 #include "parsing/flv.h"
@@ -49,4 +49,4 @@ public:
 
 };
 
-#endif
+#endif /* BACKENDS_BUILTINDECODER_H */

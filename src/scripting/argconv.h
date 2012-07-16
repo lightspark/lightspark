@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef ARGCONV_H_
-#define ARGCONV_H_
+#ifndef SCRIPTING_ARGCONV_H
+#define SCRIPTING_ARGCONV_H 1
 
 #include "toplevel/toplevel.h"
 #include "toplevel/ASString.h"
@@ -253,4 +253,4 @@ public:
 };
 
 }
-#endif /* ARGCONV_H_ */
+#endif /* SCRIPTING_ARGCONV_H */

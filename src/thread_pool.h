@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _THREAD_POOL_H
-#define _THREAD_POOL_H
+#ifndef THREAD_POOL_H
+#define THREAD_POOL_H 1
 
 #include "compat.h"
 #include <deque>
@@ -52,4 +52,4 @@ public:
 
 };
 
-#endif
+#endif /* THREAD_POOL_H */

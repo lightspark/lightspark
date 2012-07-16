@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef PULSEPLUGIN_H
-#define PULSEPLUGIN_H
+#ifndef BACKENDS_INTERFACES_AUDIO_PULSEPLUGIN_H
+#define BACKENDS_INTERFACES_AUDIO_PULSEPLUGIN_H 1
 
 #include <pulse/pulseaudio.h>
 #include "../IAudioPlugin.h"
@@ -92,4 +92,4 @@ private:
 	void fillStream(size_t frameSize);
 };
 
-#endif
+#endif /* BACKENDS_INTERFACES_AUDIO_PULSEPLUGIN_H */

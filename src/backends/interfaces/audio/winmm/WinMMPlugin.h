@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef WINMMPLUGIN_H
-#define WINMMPLUGIN_H
+#ifndef BACKENDS_INTERFACES_AUDIO_WINMM_WINMMPLUGIN_H
+#define BACKENDS_INTERFACES_AUDIO_WINMM_WINMMPLUGIN_H 1
 
 #include <iostream>
 #include <windows.h>
@@ -79,4 +79,4 @@ public:
 };
 
 }
-#endif
+#endif /* BACKENDS_INTERFACES_AUDIO_WINMM_WINMMPLUGIN_H */

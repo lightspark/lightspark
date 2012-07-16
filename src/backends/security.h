@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _SECURITY_H
-#define _SECURITY_H
+#ifndef BACKENDS_SECURITY_H
+#define BACKENDS_SECURITY_H 1
 
 #include "compat.h"
 #include <string>
@@ -403,4 +403,4 @@ public:
 
 }
 
-#endif
+#endif /* BACKENDS_SECURITY_H */

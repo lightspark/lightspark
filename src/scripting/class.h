@@ -25,8 +25,8 @@
 #include "asobject.h"
 #include "swf.h"
 
-#ifndef CLASS_H
-#define CLASS_H
+#ifndef SCRIPTING_CLASS_H
+#define SCRIPTING_CLASS_H 1
 
 namespace lightspark
 {
@@ -559,4 +559,4 @@ public:
 };
 
 };
-#endif
+#endif /* SCRIPTING_CLASS_H */

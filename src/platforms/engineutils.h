@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef ENGINEUTILS_H
-#define ENGINEUTILS_H
+#ifndef PLATFORMS_ENGINEUTILS_H
+#define PLATFORMS_ENGINEUTILS_H 1
 
 #include <gtk/gtk.h>
 #ifdef _WIN32
@@ -170,4 +170,4 @@ public:
 };
 
 };
-#endif
+#endif /* PLATFORMS_ENGINEUTILS_H */

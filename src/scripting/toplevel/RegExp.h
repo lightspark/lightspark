@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef REGEXP_H
-#define REGEXP_H
+#ifndef SCRIPTING_TOPLEVEL_REGEXP_H
+#define SCRIPTING_TOPLEVEL_REGEXP_H 1
 #include "compat.h"
 #include "asobject.h"
 #include <pcre.h>
@@ -50,4 +50,4 @@ public:
 };
 
 }
-#endif // REGEXP_H
+#endif /* SCRIPTING_TOPLEVEL_REGEXP_H */

@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _TIMER_H
-#define _TIMER_H
+#ifndef TIMER_H
+#define TIMER_H 1
 
 #include "compat.h"
 #include <list>
@@ -103,4 +103,4 @@ public:
 };
 	
 };
-#endif
+#endif /* TIMER_H */

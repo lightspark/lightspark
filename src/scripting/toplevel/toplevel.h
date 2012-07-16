@@ -17,8 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef TOPLEVEL_H
-#define TOPLEVEL_H
+#ifndef SCRIPTING_TOPLEVEL_TOPLEVEL_H
+#define SCRIPTING_TOPLEVEL_TOPLEVEL_H 1
+
 #include "compat.h"
 #include <vector>
 #include <set>
@@ -631,4 +632,4 @@ inline Manager::~Manager()
 
 };
 
-#endif
+#endif /* SCRIPTING_TOPLEVEL_TOPLEVEL_H */

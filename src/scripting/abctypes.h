@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _ABCTYPES_H
-#define _ABCTYPES_H
+#ifndef SCRIPTING_ABCTYPES_H
+#define SCRIPTING_ABCTYPES_H 1
 
 #include "swftypes.h"
 #include "memory_support.h"
@@ -279,4 +279,4 @@ std::istream& operator>>(std::istream& in, class_info& v);
 
 };
 
-#endif
+#endif /* SCRIPTING_ABCTYPES_H */

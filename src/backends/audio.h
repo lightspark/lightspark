@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef AUDIO_H
-#define AUDIO_H
+#ifndef BACKENDS_AUDIO_H
+#define BACKENDS_AUDIO_H 1
 
 
 #include "compat.h"
@@ -65,4 +65,4 @@ public:
 
 };
 
-#endif
+#endif /* BACKENDS_AUDIO_H */

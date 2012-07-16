@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef TOPLEVEL_ARRAY_H
-#define TOPLEVEL_ARRAY_H
+#ifndef SCRIPTING_TOPLEVEL_ARRAY_H
+#define SCRIPTING_TOPLEVEL_ARRAY_H 1
 
 #include "asobject.h"
 
@@ -150,4 +150,4 @@ public:
 
 
 }
-#endif
+#endif /* SCRIPTING_TOPLEVEL_ARRAY_H */

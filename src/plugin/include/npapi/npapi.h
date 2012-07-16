@@ -35,8 +35,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef npapi_h_
-#define npapi_h_
+#ifndef PLUGIN_INCLUDE_NPAPI_NPAPI_H
+#define PLUGIN_INCLUDE_NPAPI_NPAPI_H 1
 
 #if defined(__OS2__)
 #pragma pack(1)
@@ -888,4 +888,4 @@ void        NP_LOADDS NPN_URLRedirectResponse(NPP instance, void* notifyData, NP
 #pragma pack()
 #endif
 
-#endif /* npapi_h_ */
+#endif /* PLUGIN_INCLUDE_NPAPI_NPAPI_H */

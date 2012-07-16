@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef UINTEGER_H
-#define UINTEGER_H
+#ifndef SCRIPTING_TOPLEVEL_UINTEGER_H
+#define SCRIPTING_TOPLEVEL_UINTEGER_H 1
 #include "compat.h"
 #include "asobject.h"
 
@@ -53,4 +53,4 @@ public:
 };
 
 }
-#endif // UINTEGER_H
+#endif /* SCRIPTING_TOPLEVEL_UINTEGER_H */

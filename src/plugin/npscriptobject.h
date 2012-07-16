@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _NP_SCRIPT_OBJECT_H
-#define _NP_SCRIPT_OBJECT_H
+#ifndef PLUGIN_NPSCRIPTOBJECT_H
+#define PLUGIN_NPSCRIPTOBJECT_H 1
 
 #include <typeinfo>
 #include <string.h>
@@ -414,4 +414,4 @@ private:
 };
 
 }
-#endif
+#endif /* PLUGIN_NPSCRIPTOBJECT_H */

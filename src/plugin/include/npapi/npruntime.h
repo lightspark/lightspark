@@ -30,8 +30,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef _NP_RUNTIME_H_
-#define _NP_RUNTIME_H_
+#ifndef PLUGIN_INCLUDE_NPAPI_NPRUNTIME_H
+#define PLUGIN_INCLUDE_NPAPI_NPRUNTIME_H 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -390,4 +390,4 @@ void NPN_SetException(NPObject *npobj, const NPUTF8 *message);
 }
 #endif
 
-#endif
+#endif /* PLUGIN_INCLUDE_NPAPI_NPRUNTIME_H */

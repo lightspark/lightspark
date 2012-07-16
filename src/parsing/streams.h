@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _STREAMS_H
-#define _STREAMS_H
+#ifndef PARSING_STREAMS_H
+#define PARSING_STREAMS_H 1
 
 #include "compat.h"
 #include <streambuf>
@@ -89,4 +89,4 @@ public:
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 };
 
-#endif
+#endif /* PARSING_STREAMS_H */

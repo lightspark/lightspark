@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef TOPLEVEL_VECTOR_H
-#define TOPLEVEL_VECTOR_H
+#ifndef SCRIPTING_TOPLEVEL_VECTOR_H
+#define SCRIPTING_TOPLEVEL_VECTOR_H 1
 
 #include "asobject.h"
 
@@ -104,4 +104,4 @@ public:
 
 
 }
-#endif
+#endif /* SCRIPTING_TOPLEVEL_VECTOR_H */

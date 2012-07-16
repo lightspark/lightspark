@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_DISPLAY_H
-#define _FLASH_DISPLAY_H
+#ifndef SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H
+#define SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H 1
 
 #include <boost/bimap.hpp>
 #include "compat.h"
@@ -648,4 +648,4 @@ public:
 
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H */

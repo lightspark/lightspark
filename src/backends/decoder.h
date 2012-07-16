@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _DECODER_H
-#define _DECODER_H
+#ifndef BACKENDS_DECODER_H
+#define BACKENDS_DECODER_H 1
 
 #include "compat.h"
 #include "threading.h"
@@ -347,4 +347,4 @@ public:
 #endif
 
 };
-#endif
+#endif /* BACKENDS_DECODER */

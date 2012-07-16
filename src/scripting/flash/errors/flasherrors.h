@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_ERRORS_H
-#define _FLASH_ERRORS_H
+#ifndef SCRIPTING_FLASH_ERRORS_FLASHERRORS_H
+#define SCRIPTING_FLASH_ERRORS_FLASHERRORS_H 1
 
 #include "toplevel/Error.h"
 #include "swftypes.h"
@@ -95,4 +95,4 @@ public:
 
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_ERRORS_FLASHERRORS_H */

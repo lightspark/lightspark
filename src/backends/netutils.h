@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _NET_UTILS_H
-#define _NET_UTILS_H
+#ifndef BACKENDS_NETUTILS_H
+#define BACKENDS_NETUTILS_H 1
 
 #include "compat.h"
 #include <streambuf>
@@ -318,4 +318,4 @@ public:
 };
 
 };
-#endif
+#endif /* BACKENDS_NETUTILS_H */

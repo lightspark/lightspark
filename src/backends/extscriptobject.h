@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _EXT_SCRIPT_OBJECT_H
-#define _EXT_SCRIPT_OBJECT_H
+#ifndef BACKENDS_EXTSCRIPTOBJECT_H
+#define BACKENDS_EXTSCRIPTOBJECT_H 1
 
 #include <string>
 #include <map>
@@ -273,4 +273,4 @@ public:
 
 };
 
-#endif
+#endif /* BACKENDS_EXTSCRIPTOBJECT_H */

@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef SWF_H
-#define SWF_H
+#define SWF_H 1
 
 #include "compat.h"
 #include <fstream>
@@ -471,4 +471,4 @@ void setTLSSys(SystemState* sys) DLL_PUBLIC;
 ParseThread* getParseThread();
 
 };
-#endif
+#endif /* SWF_H */

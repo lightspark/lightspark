@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _THREADING_H
-#define _THREADING_H
+#ifndef THREADING_H
+#define THREADING_H 1
 
 #include "compat.h"
 #include <cstdlib>
@@ -217,4 +217,4 @@ public:
 };
 };
 
-#endif
+#endif /* THREADING_H */

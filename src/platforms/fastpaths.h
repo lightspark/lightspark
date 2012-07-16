@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FAST_PATHS_H
-#define _FAST_PATHS_H
+#ifndef PLATFORMS_FASTPATHS_H
+#define PLATFORMS_FASTPATHS_H 1
 
 #include "compat.h"
 #include <cinttypes>
@@ -40,4 +40,4 @@ namespace lightspark
 void fastYUV420ChannelsToYUV0Buffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height);
 
 };
-#endif
+#endif /* PLATFORMS_FASTPATHS_H */

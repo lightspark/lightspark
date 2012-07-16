@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef URLSTREAM_H_
-#define URLSTREAM_H_
+#ifndef SCRIPTING_FLASH_NET_URLSTREAM_H
+#define SCRIPTING_FLASH_NET_URLSTREAM_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -79,4 +79,4 @@ public:
 };
 
 }
-#endif /* URLSTREAM_H_ */
+#endif /* SCRIPTING_FLASH_NET_URLSTREAM_H */

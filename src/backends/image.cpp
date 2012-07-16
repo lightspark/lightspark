@@ -287,7 +287,7 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 	{
 		png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
 		if (rowPtrs != NULL) delete [] rowPtrs;
-		if (outData != NULL) delete outData;
+		if (outData != NULL) delete [] outData;
 
 		LOG(LOG_ERROR,"error during reading of the png file");
 

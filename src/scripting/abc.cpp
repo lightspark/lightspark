@@ -17,10 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "scripting/abc.h"
+#ifdef LLVM_28
+#define alignof alignOf
+#endif
+
+#include "compat.h"
+
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
+#include <llvm/PassManager.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Target/TargetData.h>
 #ifdef LLVM_28
@@ -65,7 +71,7 @@
 #include "scripting/flash/text/flashtextengine.h"
 #include "scripting/class.h"
 #include "exceptions.h"
-#include "compat.h"
+#include "scripting/abc.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1445,7 +1451,7 @@ void ABCVm::Run(ABCVm* th)
 #endif
 #endif
 		llvm::InitializeNativeTarget();
-		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
+		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context());
 		llvm::EngineBuilder eb(th->module);
 		eb.setEngineKind(llvm::EngineKind::JIT);
 #ifdef LLVM_31

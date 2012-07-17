@@ -20,22 +20,8 @@
 #ifndef SCRIPTING_ABC_H
 #define SCRIPTING_ABC_H 1
 
-#ifdef LLVM_28
-#define alignof alignOf
-#define LLVMTYPE const llvm::Type*
-#define LLVMMAKEARRAYREF(T) T
-#else
-#define LLVMTYPE llvm::Type*
-#define LLVMMAKEARRAYREF(T) makeArrayRef(T)
-#endif
-
 #include "compat.h"
 #include <cstddef>
-#include <llvm/Module.h>
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/Support/IRBuilder.h>
-#include <llvm/PassManager.h> 
-#include <llvm/LLVMContext.h>
 #include "parsing/tags.h"
 #include "logger.h"
 #include <vector>
@@ -47,39 +33,28 @@
 #include "scripting/abctypes.h"
 #include "scripting/flash/system/flashsystem.h"
 
+namespace llvm {
+	class ExecutionEngine;
+	class FunctionPassManager;
+	class FunctionType;
+	class Function;
+	class Module;
+	class Type;
+	class Value;
+	class LLVMContext;
+}
+
 namespace lightspark
 {
+struct block_info;
+#ifdef LLVM_28
+typedef const llvm::Type* LLVMTYPE;
+#else
+typedef llvm::Type* LLVMTYPE;
+#endif
 
 bool isVmThread();
 
-struct block_info
-{
-	llvm::BasicBlock* BB;
-	/* current type of locals, changed through interpreting the opcodes in doAnalysis */
-	std::vector<STACK_TYPE> locals;
-	/* types of locals at the start of the block
-	 * This is computed in doAnalysis. It is != STACK_NONE when all preceding blocks end with
-	 * the local having the same type. */
-	std::vector<STACK_TYPE> locals_start;
-	/* if locals_start[i] != STACK_NONE, then locals_start_obj[i] is an Alloca of the given type.
-	 * SyncLocals at the end of one block Store's the current locals to locals_start_obj. (if both have the same type)
-	 * At the beginning of this block, static_locals[i] is initialized by a Load(locals_start_obj[i]). */
-	std::vector<llvm::Value*> locals_start_obj;
-	/* there is no need to transfer the given local to this block by a preceding block
-	 * because this and all successive blocks will not read the local before writing to it.
-	 */
-	std::vector<bool> locals_reset;
-	/* getlocal/setlocal in this block used the given local */
-	std::vector<bool> locals_used;
-	std::set<block_info*> preds; /* preceding blocks */
-	std::set<block_info*> seqs; /* subsequent blocks */
-	std::map<int,STACK_TYPE> push_types;
-
-	//Needed for indexed access
-	block_info():BB(NULL){abort();}
-	block_info(const method_info* mi, const char* blockName);
-	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
-};
 std::ostream& operator<<(std::ostream& o, const block_info& b);
 
 typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
@@ -96,12 +71,6 @@ friend class SyntheticFunction;
 private:
 	struct method_info_simple info;
 
-	//Helper functions to sync the static stack and locals to the memory 
-	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, 
-			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
-			const std::vector<stack_entry>& static_locals,llvm::Value* locals,
-			const std::vector<STACK_TYPE>& expected,const block_info& dest_block);
 	typedef std::vector<std::pair<int, STACK_TYPE> > static_stack_types_vector;
 	//Helper function to sync only part of the static stack to the memory
 	void consumeStackForRTMultiname(static_stack_types_vector& stack, int multinameIndex) const;
@@ -112,8 +81,10 @@ private:
 	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 	llvm::Function* llvmf;
 
+	// Wrapper needed because llvm::IRBuilder is a template, cannot forward declare
+	struct BuilderWrapper;
 	//Does analysis on function code to find optimization chances
-	void doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder);
+	void doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderWrapper& builderWrapper);
 
 public:
 #ifdef PROFILING_SUPPORT
@@ -461,7 +432,7 @@ public:
 
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
-	llvm::LLVMContext llvm_context;
+	llvm::LLVMContext& llvm_context();
 
 	ABCVm(SystemState* s, MemoryAccount* m) DLL_PUBLIC;
 	/**

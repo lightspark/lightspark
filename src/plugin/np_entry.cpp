@@ -270,7 +270,7 @@ void SetUpQD(void)
   if (result == noErr) {
     // Now that we know the app name and FSSpec, we can call GetDiskFragment
     // to get a connID to use in a subsequent call to FindSymbol (it will also
-    // return the address of "main" in app, which we ignore).  If GetDiskFragment 
+    // return the address of 'main' in app, which we ignore).  If GetDiskFragment 
     // returns an error, we assume the app must be 68K.
     Ptr mainAddr; 	
     result =  GetDiskFragment(infoRec.processAppSpec, 0L, 0L, infoRec.processName,
@@ -279,7 +279,7 @@ void SetUpQD(void)
 
   if (result == noErr) {
     // The app is a PPC code fragment, so call FindSymbol
-    // to get the exported "qd" symbol so we can access its
+    // to get the exported 'qd' symbol so we can access its
     // QuickDraw globals.
     CFragSymbolClass symClass;
     result = FindSymbol(connID, "\pqd", (Ptr*)&gQDPtr, &symClass);

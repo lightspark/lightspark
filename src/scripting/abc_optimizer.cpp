@@ -1278,7 +1278,14 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			++it;
 		}
 
-		ei->to=instructionsMap.find(ei->to)->second;
+		auto instructionIterator=instructionsMap.lower_bound(ei->to);
+		if(instructionIterator==instructionsMap.end() || instructionIterator->first!=ei->to)
+		{
+			//If the to instruction has not been traslated, limit the range to the previous one
+			--instructionIterator;
+		}
+		ei->to = instructionIterator->second;
+		assert(ei->to >= ei->from);
 	}
 
 	//Loop over the basic blocks to do

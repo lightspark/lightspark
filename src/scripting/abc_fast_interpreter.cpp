@@ -63,11 +63,11 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 	{
 		assert(instructionPointer<code_len);
 		uint8_t opcode=code[instructionPointer];
+		//Save ip for exception handling in SyntheticFunction::callImpl
+		context->exec_pos = instructionPointer;
 		instructionPointer++;
 		const OpcodeData* data=reinterpret_cast<const OpcodeData*>(code+instructionPointer);
 
-		//Save ip for exception handling in SyntheticFunction::callImpl
-		context->exec_pos = instructionPointer;
 		switch(opcode)
 		{
 			case 0x02:

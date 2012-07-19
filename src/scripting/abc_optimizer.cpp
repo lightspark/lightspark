@@ -106,14 +106,10 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 	basicBlocks.insert(make_pair(0,BasicBlock(NULL)));
 	pendingBlocks.insert(0);
 
-	std::multimap<uint32_t, uint32_t*> exceptionFixups;
 	//Create a map of addresses to fixups to rewrite the exception data: from, to and target
 	for(uint32_t i=0;i<mi->body->exceptions.size();i++)
 	{
 		exception_info& ei=mi->body->exceptions[i];
-		exceptionFixups.insert(make_pair(ei.from,&ei.from));
-		exceptionFixups.insert(make_pair(ei.to,&ei.to));
-		exceptionFixups.insert(make_pair(ei.target,&ei.target));
 		//Also create a new basic block at the exception target address,
 		//otherwise that code might be considered unreachable and lost
 		if(basicBlocks.find(ei.target)==basicBlocks.end())
@@ -125,15 +121,18 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		}
 	}
 
+	//Instructions map, useful to translate exceptions and validate just addresses
+	std::map<uint32_t, uint32_t> instructionsMap;
+
 	//Rewrite optimized code for faster execution, the new format is
 	//uint8 opcode, [uint32 operand]* | [ASObject* pre resolved object]
 	//Analize validity of basic blocks
 	//Understand types of the values on the local scope stack
 	//Optimize away getLex
-	//Translate exception ranges to new values
 	while(1)
 	{
 		uint32_t here=code.tellg();
+		uint32_t there=out.tellp();
 		if(curBlock && curStart!=here)
 		{
 			//Try to find the block for this instruction
@@ -147,13 +146,15 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					out << (uint8_t)0x10;
 					writeInt32(out, it->second.realStart);
 					//End the current block, so that a pending one can be selected
+					curBlock->realEnd=there;
 					curBlock=NULL;
 				}
 				else
 				{
 					BasicBlock* predBlock=curBlock;
+					predBlock->realEnd=there;
 					curBlock=&(it->second);
-					curBlock->realStart=out.tellp();
+					curBlock->realStart=there;
 					curBlock->pred.push_back(predBlock);
 					curStart=it->first;
 				}
@@ -178,7 +179,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//The block has not been traslated yet
 				curStart=pendingStart;
 				curBlock=&blockIt->second;
-				curBlock->realStart=out.tellp();
+				curBlock->realStart=there;
 				code.seekg(curStart);
 				here=curStart;
 			}
@@ -186,19 +187,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		if(curBlock==NULL)
 			break;
 
-		//Apply exception fixups
-		if(!exceptionFixups.empty())
-		{
-			auto range=exceptionFixups.equal_range(here);
-			auto it=range.first;
-			while(it!=range.second)
-			{
-				*(it->second)=out.tellp();
-				auto oldIt=it;
-				++it;
-				exceptionFixups.erase(oldIt);
-			}
-		}
+		instructionsMap.insert(make_pair(here,there));
 
 		code >> opcode;
 		if(code.eof())
@@ -223,6 +212,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//throw
 				curBlock->popStack(1);
 				out << (uint8_t)opcode;
+				curBlock->realEnd=out.tellp();
 				curBlock=NULL;
 				break;
 			}
@@ -278,13 +268,13 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			{
 				//label
 				//Create a new basic block
-				BasicBlock* oldBlock=curBlock;
+				BasicBlock* predBlock=curBlock;
+				predBlock->realEnd=there;
 				int here=code.tellg();
 				curStart=here-1;
-				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(oldBlock))).first->second);
-				curBlock->realStart=out.tellp();
-				if(oldBlock)
-					curBlock->pred.push_back(oldBlock);
+				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
+				curBlock->realStart=there;
+				curBlock->pred.push_back(predBlock);
 				break;
 			}
 			case 0x0c:
@@ -316,7 +306,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				code >> t;
 				curBlock->popStack(2);
 				
-				BasicBlock* oldBlock=curBlock;
+				BasicBlock* const predBlock=curBlock;
 				uint32_t oldStart=curStart;
 				//The new block starts after this function
 				int here=code.tellg();
@@ -324,8 +314,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 				writeBranchAddress(basicBlocks, here, t, out);
 				curStart=here;
-				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(oldBlock))).first->second);
-				curBlock->pred.push_back(oldBlock);
+				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
+				curBlock->pred.push_back(predBlock);
+				predBlock->realEnd=out.tellp();
 				curBlock->realStart=out.tellp();
 				break;
 			}
@@ -341,6 +332,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 				writeBranchAddress(basicBlocks, here, t, out);
 				//Reset the block to NULL
+				curBlock->realEnd=out.tellp();
 				curBlock=NULL;
 				break;
 			}
@@ -353,7 +345,8 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				code >> t;
 				curBlock->popStack(1);
 
-				BasicBlock* oldBlock=curBlock;
+				BasicBlock* const predBlock=curBlock;
+				predBlock->realEnd=there;
 				uint32_t oldStart=curStart;
 				//The new block starts after this function
 				int here=code.tellg();
@@ -361,8 +354,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 				writeBranchAddress(basicBlocks, here, t, out);
 				curStart=here;
-				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(oldBlock))).first->second);
-				curBlock->pred.push_back(oldBlock);
+				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
+				curBlock->pred.push_back(predBlock);
+				predBlock->realEnd=out.tellp();
 				curBlock->realStart=out.tellp();
 				break;
 			}
@@ -388,6 +382,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				writeInt32(out, count);
 				for(int i=0;i<(count+1);i++)
 					writeBranchAddress(basicBlocks,here, (int)offsets[i], out);
+				curBlock->realEnd=out.tellp();
 				curBlock=NULL;
 				break;
 			}
@@ -659,6 +654,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			{
 				//returnvoid
 				out << (uint8_t)opcode;
+				curBlock->realEnd=out.tellp();
 				curBlock=NULL;
 				break;
 			}
@@ -667,6 +663,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//returnvalue
 				out << (uint8_t)opcode;
 				curBlock->popStack(1);
+				curBlock->realEnd=out.tellp();
 				curBlock=NULL;
 				break;
 			}
@@ -1240,7 +1237,50 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				throw ParseException("Not implemented instruction in optimizer");
 		}
 	}
-	assert(exceptionFixups.empty());
+
+	assert(!basicBlocks.empty());
+
+	//The original exception ranges must be translated to one
+	//or more exception ranges as the blocks have been reordered
+	uint32_t originalExceptionSize=mi->body->exceptions.size();
+	for(uint32_t i=0;i<originalExceptionSize;i++)
+	{
+		exception_info* ei=&mi->body->exceptions[i];
+		//Find out where the exception begins
+		uint32_t excStart = ei->from;
+		assert(instructionsMap.find(ei->target)!=instructionsMap.end());
+		assert(instructionsMap.find(ei->from)!=instructionsMap.end());
+		ei->target=instructionsMap.find(ei->target)->second;
+		ei->from=instructionsMap.find(ei->from)->second;
+		//Find out what block it starts into
+		auto it=(--basicBlocks.lower_bound(excStart));
+
+		uint32_t lastRealEnd = it->second.realEnd;
+
+		it++;
+
+		//Find out if the reordered blocks are linear,
+		//if not duplicate exception entry
+		BasicBlock* startBlock=&(it->second);
+		uint32_t originalEnd = ei->to;
+		while(it!=basicBlocks.end() && it->first < originalEnd)
+		{
+			if(it->second.realStart != lastRealEnd)
+			{
+				//Duplicate the exception
+				ei->to = lastRealEnd;
+				mi->body->exceptions.push_back(*ei);
+				//Careful! ei is invalidated by now!
+				ei=&mi->body->exceptions.back();
+				ei->from = it->second.realStart;
+			}
+			lastRealEnd = it->second.realEnd;
+			++it;
+		}
+
+		ei->to=instructionsMap.find(ei->to)->second;
+	}
+
 	//Loop over the basic blocks to do
 	//1) branch fixups
 	//3) consistency checks
@@ -1249,6 +1289,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		//Fixups
 		const BasicBlock& bb=it->second;
 		assert(bb.realStart!=0xffffffff);
+		assert(bb.realEnd!=0xffffffff);
 		for(uint32_t i=0;i<bb.fixups.size();i++)
 		{
 			uint32_t strOffset=bb.fixups[i];

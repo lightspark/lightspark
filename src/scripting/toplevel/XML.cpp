@@ -395,6 +395,12 @@ void XML::childrenImpl(XMLVector& ret, const tiny_string& name)
 	{
 		if(name!="*" && (*it)->get_name() != name.raw_buf())
 			continue;
+
+		// Ignore white-space-only text nodes
+		xmlpp::TextNode *textnode=dynamic_cast<xmlpp::TextNode*>(*it);
+		if (textnode && textnode->is_white_space())
+			continue;
+
 		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
 }

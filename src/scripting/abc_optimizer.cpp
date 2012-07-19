@@ -145,6 +145,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					//Create a jump to it
 					out << (uint8_t)0x10;
 					writeInt32(out, it->second.realStart);
+					there = out.tellp();
 					//End the current block, so that a pending one can be selected
 					curBlock->realEnd=there;
 					curBlock=NULL;

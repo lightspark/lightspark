@@ -304,7 +304,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	}
 
 	//Temporarily disable JITting
-	if(!mi->body->exception_count && getSys()->useJit && (hit_count==jit_hit_threshold || getSys()->useInterpreter==false))
+	if(mi->body->exceptions.size()==0 && getSys()->useJit && (hit_count==jit_hit_threshold || getSys()->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();
@@ -420,7 +420,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	{
 		try
 		{
-			if(mi->body->exception_count || (val==NULL && getSys()->useInterpreter))
+			if(mi->body->exceptions.size() || (val==NULL && getSys()->useInterpreter))
 			{
 				if(hit_count>=opt_hit_threshold && getSys()->useFastInterpreter)
 				{
@@ -443,11 +443,11 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 			LOG(LOG_TRACE, "got an " << excobj->toString());
 			LOG(LOG_TRACE, "pos=" << pos);
-			for (unsigned int i=0;i<mi->body->exception_count;i++)
+			for (unsigned int i=0;i<mi->body->exceptions.size();i++)
 			{
 				exception_info exc=mi->body->exceptions[i];
 				multiname* name=mi->context->getMultiname(exc.exc_type, NULL);
-				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to);
+				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to << " type=" << *name);
 				if (pos >= exc.from && pos <= exc.to && mi->context->isinstance(excobj, name))
 				{
 					no_handler = false;

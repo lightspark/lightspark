@@ -166,9 +166,10 @@ istream& lightspark::operator>>(istream& in, method_body_info& v)
 	v.code.resize(code_length);
 	in.read(&v.code[0],code_length);
 
-	in >> v.exception_count;
-	v.exceptions.resize(v.exception_count);
-	for(unsigned int i=0;i<v.exception_count;i++)
+	u30 exception_count;
+	in >> exception_count;
+	v.exceptions.resize(exception_count);
+	for(unsigned int i=0;i<exception_count;i++)
 		in >> v.exceptions[i];
 
 	in >> v.trait_count;

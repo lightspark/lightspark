@@ -803,7 +803,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 {
 	bool stop;
 	stringstream code(body->code);
-	for (unsigned int i=0;i<body->exception_count;i++)
+	for (unsigned int i=0;i<body->exceptions.size();i++)
 	{
 		exception_info& exc=body->exceptions[i];
 		LOG(LOG_TRACE,"Exception handler: from " << exc.from << " to " << exc.to << " handled by " << exc.target);
@@ -830,7 +830,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				break;
 
 			/* check if the local_ip is the beginning of a catch block */
-			for (unsigned int i=0;i<body->exception_count;i++)
+			for (unsigned int i=0;i<body->exceptions.size();i++)
 			{
 				exception_info& exc=body->exceptions[i];
 				if(exc.target == local_ip)
@@ -1892,7 +1892,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	static_stack.clear();
 
 	/* exception handling -> jump to exec_pos. exec_pos = 0 corresponds to normal execution */
-	if(body->exception_count)
+	if(body->exceptions.size())
 	{
 		llvm::Value* vexec_pos = Builder.CreateLoad(exec_pos);
 		llvm::BasicBlock* Default=llvm::BasicBlock::Create(llvm_context,"exec_pos_error", llvmf);
@@ -1912,7 +1912,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		Builder.CreateBr(blocks[0].BB);
 
 		/* start at an catch handler if its ip is given in exec_pos*/
-		for (unsigned int i=0;i<body->exception_count;i++)
+		for (unsigned int i=0;i<body->exceptions.size();i++)
 		{
 			exception_info& exc=body->exceptions[i];
 			Case=llvm::BasicBlock::Create(llvm_context,"exec_pos_handler", llvmf);
@@ -1977,7 +1977,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			continue;
 		}
 
-		if(body->exception_count)
+		if(body->exceptions.size())
 		{ //if this function has a try/catch block, record the local_ip, so we can figure out where we were
 		  //in case of an exception to find the right catch
 		  //TODO: would be enough to set this once on enter of try-block

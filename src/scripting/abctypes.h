@@ -250,7 +250,6 @@ struct method_body_info
 	u30 max_scope_depth;
 	//This is a string to use it in a stringstream
 	std::string code;
-	u30 exception_count;
 	std::vector<exception_info> exceptions;
 	u30 trait_count;
 	std::vector<traits_info> traits;

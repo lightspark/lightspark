@@ -508,6 +508,8 @@ public:
 	ASFUNCTION(_valueOf);
 	ASFUNCTION(_ECMA_valueOf);
 	bool isEqual(ASObject* o);
+	tiny_string getURI() { return uri; }
+	tiny_string getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
 };
 
 

@@ -85,6 +85,7 @@ public:
 	ASFUNCTION(elements);
 	ASFUNCTION(parent);
 	ASFUNCTION(inScopeNamespaces);
+	ASFUNCTION(addNamespace);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);

@@ -95,7 +95,7 @@ void XMLList::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
-	//REGISTER_XML_DELEGATE(addNamespace);
+	REGISTER_XML_DELEGATE(addNamespace);
 	REGISTER_XML_DELEGATE(appendChild);
 	//REGISTER_XML_DELEGATE(childIndex);
 	REGISTER_XML_DELEGATE(inScopeNamespaces);
@@ -115,7 +115,7 @@ void XMLList::sinit(Class_base* c)
 	//REGISTER_XML_DELEGATE(setNamespace);
 }
 
-//ASFUNCTIONBODY_XML_DELEGATE(addNamespace);
+ASFUNCTIONBODY_XML_DELEGATE(addNamespace);
 ASFUNCTIONBODY_XML_DELEGATE(appendChild);
 //ASFUNCTIONBODY_XML_DELEGATE(childIndex());
 ASFUNCTIONBODY_XML_DELEGATE(inScopeNamespaces);

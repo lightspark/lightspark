@@ -83,6 +83,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("inScopeNamespaces",AS3,Class<IFunction>::getFunction(inScopeNamespaces),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addNamespace",AS3,Class<IFunction>::getFunction(addNamespace),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
@@ -576,6 +577,35 @@ ASFUNCTIONBODY(XML,inScopeNamespaces)
 	}
 
 	return namespaces;
+}
+
+ASFUNCTIONBODY(XML,addNamespace)
+{
+	XML *th = obj->as<XML>();
+	if(argslen == 0)
+		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+
+	xmlpp::Element *element=dynamic_cast<xmlpp::Element*>(th->node);
+	if(!element)
+		return NULL;
+
+	// TODO: check if the prefix already exists
+
+	Namespace *ns=dynamic_cast<Namespace *>(args[0]);
+	if(ns)
+	{
+		tiny_string uri=ns->getURI();
+		bool prefix_is_undefined=false;
+		tiny_string prefix=ns->getPrefix(prefix_is_undefined);
+		element->set_namespace_declaration(uri, prefix);
+	}
+	else
+	{
+		tiny_string uri=args[0]->toString();
+		element->set_namespace_declaration(uri);
+	}
+
+	return NULL;
 }
 
 ASObject *XML::getParentNode()

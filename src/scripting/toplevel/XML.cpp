@@ -78,6 +78,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("length",AS3,Class<IFunction>::getFunction(length),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("name",AS3,Class<IFunction>::getFunction(name),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("namespace",AS3,Class<IFunction>::getFunction(_namespace),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
@@ -568,6 +569,62 @@ ASFUNCTIONBODY(XML,contains)
 		return abstract_b(false);
 
 	return abstract_b(th->isEqual(value.getPtr()));
+}
+
+ASFUNCTIONBODY(XML,_namespace)
+{
+	XML *th = obj->as<XML>();
+	tiny_string prefix;
+	ARG_UNPACK(prefix, "");
+
+	xmlElementType nodetype=th->node->cobj()->type;
+	if(prefix.empty() && 
+	   nodetype!=XML_ELEMENT_NODE && 
+	   nodetype!=XML_ATTRIBUTE_NODE)
+	{
+		return getSys()->getNullRef();
+	}
+
+	tiny_string local_uri=th->node->get_namespace_uri();
+	ASObject *ret=NULL;
+	xmlDocPtr xmlDoc=th->getRootNode()->parser.get_document()->cobj();
+	xmlNsPtr *nsarr=xmlGetNsList(xmlDoc, th->node->cobj());
+	if(nsarr)
+	{
+		for(int i=0; nsarr[i]!=NULL; i++)
+		{
+			tiny_string ns_prefix;
+			if(nsarr[i]->prefix)
+				ns_prefix=tiny_string((const char*)nsarr[i]->prefix, true);
+			tiny_string ns_uri((const char*)nsarr[i]->href, true);
+			if(!prefix.empty() && ns_prefix==prefix)
+			{
+				ret=Class<Namespace>::getInstanceS(ns_uri, prefix);
+				break;
+			}
+			else if(prefix.empty() && ns_uri==local_uri)
+			{
+				ret=Class<Namespace>::getInstanceS(ns_uri);
+				break;
+			}
+		}
+
+		xmlFree(nsarr);
+	}
+
+	if(!ret)
+	{
+		if(prefix.empty() && local_uri.empty())
+		{
+			ret=Class<Namespace>::getInstanceS();
+		}
+		else
+		{
+			ret=getSys()->getUndefinedRef();
+		}
+	}
+
+	return ret;
 }
 
 bool XML::hasSimpleContent() const

@@ -75,6 +75,7 @@ public:
 	ASFUNCTION(length);
 	ASFUNCTION(localName);
 	ASFUNCTION(name);
+	ASFUNCTION(_namespace);
 	ASFUNCTION(descendants);
 	ASFUNCTION(generator);
 	ASFUNCTION(_hasSimpleContent);

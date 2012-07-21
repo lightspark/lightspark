@@ -1470,7 +1470,8 @@ Namespace::Namespace(Class_base* c):ASObject(c)
 	prefix_is_undefined=false;
 }
 
-Namespace::Namespace(Class_base* c, const tiny_string& _uri):ASObject(c),uri(_uri)
+Namespace::Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& _prefix)
+  : ASObject(c),uri(_uri),prefix(_prefix)
 {
 	type=T_NAMESPACE;
 	prefix_is_undefined=false;

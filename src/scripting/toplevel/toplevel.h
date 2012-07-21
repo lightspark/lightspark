@@ -495,7 +495,7 @@ private:
 	tiny_string prefix;
 public:
 	Namespace(Class_base* c);
-	Namespace(Class_base* c, const tiny_string& _uri);
+	Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& _prefix="");
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

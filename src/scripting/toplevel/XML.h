@@ -40,6 +40,8 @@ private:
 	tiny_string toString_priv();
 	bool constructed;
 	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
+	XMLVector getAttributes(const tiny_string& name="*",
+				const tiny_string& namespace_uri="*");
 	XMLList* getAllAttributes();
 	void getText(XMLVector& ret);
 	_NR<XML> getRootNode();

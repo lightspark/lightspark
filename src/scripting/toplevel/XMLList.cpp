@@ -336,10 +336,6 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 		return ASObject::getVariableByMultiname(name,opt);
 
-	assert_and_throw(name.ns.size()>0);
-	if(!name.ns[0].hasEmptyName())
-		return ASObject::getVariableByMultiname(name,opt);
-
 	unsigned int index=0;
 	if(Array::isValidMultiname(name,index))
 	{

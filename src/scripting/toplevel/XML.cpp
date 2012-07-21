@@ -307,21 +307,33 @@ ASFUNCTIONBODY(XML,attributes)
 
 XMLList* XML::getAllAttributes()
 {
+	XML::XMLVector attributes=getAttributes();
+	return Class<XMLList>::getInstanceS(attributes);
+}
+
+XML::XMLVector XML::getAttributes(const tiny_string& name,
+				  const tiny_string& namespace_uri)
+{
 	assert(node);
-	//Needed dynamic cast, we want the type check
+	XMLVector ret;
+	//Only elements can have attributes
 	xmlpp::Element* elem=dynamic_cast<xmlpp::Element*>(node);
 	if(elem==NULL)
-		return Class<XMLList>::getInstanceS();
+		return ret;
 	const xmlpp::Element::AttributeList& list=elem->get_attributes();
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
-	XMLVector ret;
 	_NR<XML> rootXML=getRootNode();
 
 	for(;it!=list.end();it++)
-		ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+	{
+		if((name=="*" || (*it)->get_name()==name) && 
+		   (namespace_uri=="*" || (*it)->get_namespace_uri()==namespace_uri))
+		{
+			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+		}
+	}
 
-	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
-	return retObj;
+	return ret;
 }
 
 void XML::toXMLString_priv(xmlBufferPtr buf)
@@ -630,8 +642,15 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	tiny_string normalizedName=name.normalizedName();
 	if(normalizedName=="*")
 		normalizedName="";
-	//TODO: support namespaces
-	assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
+
+	//Only the first namespace is used, is this right?
+	tiny_string namespace_uri;
+	if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
+	{
+		nsNameAndKindImpl ns=name.ns[0].getImpl();
+		assert_and_throw(ns.kind==NAMESPACE);
+		namespace_uri=ns.name;
+	}
 
 	const char *buf=normalizedName.raw_buf();
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
@@ -642,21 +661,9 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	if(isAttr)
 	{
 		//Lookup attribute
-		if(normalizedName.empty())
-			return _MR(getAllAttributes());
-
-		assert(node);
-		//To have attributes we must be an Element
-		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
-		if(element==NULL)
-			return _MNR(Class<XMLList>::getInstanceS());
-		xmlpp::Attribute* attr=element->get_attribute(buf);
-		if(attr==NULL)
-			return _MNR(Class<XMLList>::getInstanceS());
-
-		XMLVector retnode;
-		retnode.push_back(_MR(Class<XML>::getInstanceS(getRootNode(), attr)));
-		return _MNR(Class<XMLList>::getInstanceS(retnode));
+		tiny_string ns_uri=namespace_uri.empty() ? "*" : namespace_uri;
+		XMLVector attributes=getAttributes(buf, ns_uri);
+		return _MNR(Class<XMLList>::getInstanceS(attributes));
 	}
 	else if(Array::isValidMultiname(name,index))
 	{
@@ -673,14 +680,18 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	else
 	{
 		//Lookup children
-		assert(node);
+		_NR<XML> rootnode=getRootNode();
 		const xmlpp::Node::NodeList& children=node->get_children(buf);
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
-
 		XMLVector ret;
 
 		for(;it!=children.end();it++)
-			ret.push_back(_MR(Class<XML>::getInstanceS(getRootNode(), *it)));
+		{
+			if((*it)->get_namespace_uri()==namespace_uri)
+			{
+				ret.push_back(_MR(Class<XML>::getInstanceS(rootnode, *it)));
+			}
+		}
 
 		if(ret.size()==0 && (opt & XML_STRICT)!=0)
 			return NullRef;

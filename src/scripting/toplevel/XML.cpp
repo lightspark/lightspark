@@ -82,6 +82,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("inScopeNamespaces",AS3,Class<IFunction>::getFunction(inScopeNamespaces),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
@@ -543,6 +544,38 @@ void XML::getElementNodes(const tiny_string& name, XMLVector& foundElements)
 		if(nodetype==XML_ELEMENT_NODE && (name.empty() || name == (*it)->get_name()))
 			foundElements.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
 	}
+}
+
+ASFUNCTIONBODY(XML,inScopeNamespaces)
+{
+	XML *th = obj->as<XML>();
+	Array *namespaces = Class<Array>::getInstanceS();
+	set<tiny_string> seen_prefix;
+
+	xmlDocPtr xmlDoc=th->getRootNode()->parser.get_document()->cobj();
+	xmlNsPtr *nsarr=xmlGetNsList(xmlDoc, th->node->cobj());
+	if(nsarr)
+	{
+		for(int i=0; nsarr[i]!=NULL; i++)
+		{
+			if(!nsarr[i]->prefix)
+				continue;
+
+			tiny_string prefix((const char*)nsarr[i]->prefix, true);
+			if(seen_prefix.find(prefix)==seen_prefix.end())
+			{
+				tiny_string uri((const char*)nsarr[i]->href, true);
+				Namespace *ns=Class<Namespace>::getInstanceS(uri, prefix);
+				namespaces->push(_MR(ns));
+			}
+
+			seen_prefix.insert(prefix);
+		}
+
+		xmlFree(nsarr);
+	}
+
+	return namespaces;
 }
 
 ASObject *XML::getParentNode()

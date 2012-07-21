@@ -61,6 +61,9 @@ public:
 	ASFUNCTION(parent);
 	ASFUNCTION(valueOf);
 	ASFUNCTION(text);
+	ASFUNCTION(_namespace);
+	ASFUNCTION(name);
+	ASFUNCTION(localName);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);

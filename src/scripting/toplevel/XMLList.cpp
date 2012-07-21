@@ -28,6 +28,27 @@
 using namespace std;
 using namespace lightspark;
 
+/* XMLList of size 1 delegates function calls to the single XML
+ * object, if no method with the same name has been defined for
+ * XMLList. */
+#define REGISTER_XML_DELEGATE(name) \
+	c->setDeclaredMethodByQName(#name,AS3,Class<IFunction>::getFunction(name),NORMAL_METHOD,true)
+
+#define REGISTER_XML_DELEGATE2(asname,cppname) \
+	c->setDeclaredMethodByQName(#asname,AS3,Class<IFunction>::getFunction(cppname),NORMAL_METHOD,true)
+
+#define ASFUNCTIONBODY_XML_DELEGATE(name) \
+	ASObject* XMLList::name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	{ \
+		XMLList* th=obj->as<XMLList>(); \
+		if(!th) \
+			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+		if(th->nodes.size()==1) \
+			return XML::name(th->nodes[0].getPtr(), args, argslen); \
+		else \
+			throw Class<TypeError>::getInstanceS("Error #1086: The method only works on lists of one item."); \
+	}
+
 SET_NAMESPACE("");
 REGISTER_CLASS_NAME(XMLList);
 
@@ -60,7 +81,6 @@ void XMLList::sinit(Class_base* c)
 	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("contains",AS3,Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
@@ -75,7 +95,44 @@ void XMLList::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
+	//REGISTER_XML_DELEGATE(addNamespace);
+	REGISTER_XML_DELEGATE(appendChild);
+	//REGISTER_XML_DELEGATE(childIndex);
+	//REGISTER_XML_DELEGATE(inScopeNamespaces);
+	//REGISTER_XML_DELEGATE(insertChildAfter);
+	//REGISTER_XML_DELEGATE(insertChildBefore);
+	REGISTER_XML_DELEGATE(localName);
+	REGISTER_XML_DELEGATE(name);
+	REGISTER_XML_DELEGATE2(namespace,_namespace);
+	//REGISTER_XML_DELEGATE(namespaceDeclarations);
+	//REGISTER_XML_DELEGATE(nodeKind);
+	//REGISTER_XML_DELEGATE(prependChild);
+	//REGISTER_XML_DELEGATE(removeNamespace);
+	//REGISTER_XML_DELEGATE(replace);
+	//REGISTER_XML_DELEGATE(setChildren);
+	//REGISTER_XML_DELEGATE(setLocalName);
+	//REGISTER_XML_DELEGATE(setName);
+	//REGISTER_XML_DELEGATE(setNamespace);
 }
+
+//ASFUNCTIONBODY_XML_DELEGATE(addNamespace);
+ASFUNCTIONBODY_XML_DELEGATE(appendChild);
+//ASFUNCTIONBODY_XML_DELEGATE(childIndex());
+//ASFUNCTIONBODY_XML_DELEGATE(inScopeNamespaces);
+//ASFUNCTIONBODY_XML_DELEGATE(insertChildAfter);
+//ASFUNCTIONBODY_XML_DELEGATE(insertChildBefore);
+ASFUNCTIONBODY_XML_DELEGATE(localName);
+ASFUNCTIONBODY_XML_DELEGATE(name);
+ASFUNCTIONBODY_XML_DELEGATE(_namespace);
+//ASFUNCTIONBODY_XML_DELEGATE(namespaceDeclarations);
+//ASFUNCTIONBODY_XML_DELEGATE(nodeKind);
+//ASFUNCTIONBODY_XML_DELEGATE(prependChild);
+//ASFUNCTIONBODY_XML_DELEGATE(removeNamespace);
+//ASFUNCTIONBODY_XML_DELEGATE(replace);
+//ASFUNCTIONBODY_XML_DELEGATE(setChildren);
+//ASFUNCTIONBODY_XML_DELEGATE(setLocalName);
+//ASFUNCTIONBODY_XML_DELEGATE(setName);
+//ASFUNCTIONBODY_XML_DELEGATE(setNamespace);
 
 ASFUNCTIONBODY(XMLList,_constructor)
 {
@@ -159,14 +216,6 @@ ASFUNCTIONBODY(XMLList,_getLength)
 	XMLList* th=Class<XMLList>::cast(obj);
 	assert_and_throw(argslen==0);
 	return abstract_i(th->nodes.size());
-}
-
-ASFUNCTIONBODY(XMLList,appendChild)
-{
-	XMLList* th=Class<XMLList>::cast(obj);
-	assert_and_throw(th->nodes.size()==1);
-	//Forward to the XML object
-	return XML::appendChild(th->nodes[0].getPtr(),args,argslen);
 }
 
 ASFUNCTIONBODY(XMLList,_hasSimpleContent)

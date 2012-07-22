@@ -56,6 +56,7 @@ private:
 	 */
 	void childrenImpl(XMLVector& ret, const tiny_string& name);
 	void childrenImpl(XMLVector& ret, uint32_t index);
+	tiny_string getNamespacePrefixByURI(const tiny_string& uri);
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);

@@ -825,8 +825,17 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 	bool isAttr=name.isAttribute;
 	//Normalize the name to the string form
 	const tiny_string normalizedName=name.normalizedName();
-	//TODO: support namespaces
-	assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
+
+	//Only the first namespace is used, is this right?
+	tiny_string ns_uri;
+	tiny_string ns_prefix;
+	if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
+	{
+		nsNameAndKindImpl ns=name.ns[0].getImpl();
+		assert_and_throw(ns.kind==NAMESPACE);
+		ns_uri=ns.name;
+		ns_prefix=getNamespacePrefixByURI(ns_uri);
+	}
 
 	const char *buf=normalizedName.raw_buf();
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
@@ -839,12 +848,23 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 		//To have attributes we must be an Element
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		assert_and_throw(element);
-		element->set_attribute(getSys()->getStringFromUniqueId(name.name_s_id), o->toString());
+		element->set_attribute(getSys()->getStringFromUniqueId(name.name_s_id), o->toString(), ns_prefix);
+
+		if(ns_prefix.empty() && !ns_uri.empty())
+		{
+			element->set_namespace_declaration(ns_uri);
+		}
 	}
 	else
 	{
-		xmlpp::Element* child=node->add_child(getSys()->getStringFromUniqueId(name.name_s_id));
+		xmlpp::Element* child=node->add_child(getSys()->getStringFromUniqueId(name.name_s_id), ns_prefix);
+
 		child->add_child_text(o->toString());
+
+		if(ns_prefix.empty() && !ns_uri.empty())
+		{
+			child->set_namespace_declaration(ns_uri);
+		}
 	}
 }
 
@@ -852,6 +872,17 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 {
 	if(node==NULL || considerDynamic == false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+
+	//Only the first namespace is used, is this right?
+	tiny_string ns_uri;
+	tiny_string ns_prefix;
+	if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
+	{
+		nsNameAndKindImpl ns=name.ns[0].getImpl();
+		assert_and_throw(ns.kind==NAMESPACE);
+		ns_uri=ns.name;
+		ns_prefix=getNamespacePrefixByURI(ns_uri);
+	}
 
 	bool isAttr=name.isAttribute;
 	const tiny_string normalizedName=name.normalizedName();
@@ -864,15 +895,12 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 	if(isAttr)
 	{
 		//Lookup attribute
-		//TODO: support namespaces
-		assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
-		//Normalize the name to the string form
 		assert(node);
 		//To have attributes we must be an Element
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		if(element)
 		{
-			xmlpp::Attribute* attr=element->get_attribute(buf);
+			xmlpp::Attribute* attr=element->get_attribute(buf, ns_prefix);
 			if(attr!=NULL)
 				return true;
 		}
@@ -880,22 +908,50 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 	else
 	{
 		//Lookup children
-		//TODO: support namespaces
-		assert_and_throw(name.ns.size()>0 && name.ns[0].hasEmptyName());
-		//Normalize the name to the string form
 		assert(node);
 		//Use low level libxml2 access to optimize the code
 		const xmlNode* cNode=node->cobj();
 		for(const xmlNode* cur=cNode->children;cur!=NULL;cur=cur->next)
 		{
 			//NOTE: xmlStrEqual returns 1 when the strings are equal.
-			if(xmlStrEqual(cur->name,(const xmlChar*)buf))
+			bool name_match=xmlStrEqual(cur->name,(const xmlChar*)buf);
+			bool ns_match=ns_uri.empty() || 
+				(cur->ns && xmlStrEqual(cur->ns->href, (const xmlChar*)ns_uri.raw_buf()));
+			if(name_match && ns_match)
 				return true;
 		}
 	}
 
 	//Try the normal path as the last resource
 	return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+}
+
+tiny_string XML::getNamespacePrefixByURI(const tiny_string& uri)
+{
+	tiny_string prefix;
+	xmlDocPtr xmlDoc=getRootNode()->parser.get_document()->cobj();
+	xmlNsPtr* namespaces=xmlGetNsList(xmlDoc,node->cobj());
+
+	if(namespaces)
+	{
+		for(int i=0; namespaces[i]!=NULL; i++)
+		{
+			tiny_string nsuri((const char*)namespaces[i]->href);
+			if(nsuri==uri)
+			{
+				if(namespaces[i]->prefix)
+				{
+					prefix=tiny_string((const char*)namespaces[i]->prefix, true);
+				}
+
+				break;
+			}
+		}
+
+		xmlFree(namespaces);
+	}
+
+	return prefix;
 }
 
 ASFUNCTIONBODY(XML,_toString)

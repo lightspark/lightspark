@@ -28,8 +28,8 @@
 #include "scripting/abcutils.h"
 #include "Boolean.h"
 #include "Error.h"
-#include "XML.h"
 #include "memory_support.h"
+#include <libxml++/parsers/domparser.h>
 
 namespace lightspark
 {

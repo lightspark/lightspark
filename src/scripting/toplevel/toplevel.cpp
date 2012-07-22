@@ -45,6 +45,7 @@
 #include "parsing/amf3_generator.h"
 #include "argconv.h"
 #include "Number.h"
+#include "XML.h"
 
 using namespace std;
 using namespace lightspark;

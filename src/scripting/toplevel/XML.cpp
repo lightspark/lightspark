@@ -88,6 +88,9 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(text),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("elements",AS3,Class<IFunction>::getFunction(elements),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setLocalName",AS3,Class<IFunction>::getFunction(_setLocalName),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setName",AS3,Class<IFunction>::getFunction(_setName),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setNamespace",AS3,Class<IFunction>::getFunction(_setNamespace),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(XML,generator)
@@ -690,6 +693,136 @@ ASFUNCTIONBODY(XML,_namespace)
 	return ret;
 }
 
+ASFUNCTIONBODY(XML,_setLocalName)
+{
+	XML *th = obj->as<XML>();
+	if(argslen == 0)
+		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+
+	xmlElementType nodetype=th->node->cobj()->type;
+	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
+		return NULL;
+
+	tiny_string new_name;
+	if(args[0]->is<ASQName>())
+	{
+		new_name=args[0]->as<ASQName>()->getLocalName();
+	}
+	else
+	{
+		new_name=args[0]->toString();
+	}
+
+	th->setLocalName(new_name);
+
+	return NULL;
+}
+
+void XML::setLocalName(const tiny_string& new_name)
+{
+	if(!isXMLName(Class<ASString>::getInstanceS(new_name)))
+	{
+		throw Class<TypeError>::getInstanceS("Error #1117");
+	}
+
+	node->set_name(new_name);
+}
+
+ASFUNCTIONBODY(XML,_setName)
+{
+	XML *th = obj->as<XML>();
+	if(argslen == 0)
+		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+
+	xmlElementType nodetype=th->node->cobj()->type;
+	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
+		return NULL;
+
+	tiny_string localname;
+	tiny_string ns_uri;
+	if(args[0]->is<ASQName>())
+	{
+		ASQName *qname=args[0]->as<ASQName>();
+		localname=qname->getLocalName();
+		ns_uri=qname->getURI();
+	}
+	else if (!args[0]->is<Undefined>())
+	{
+		localname=args[0]->toString();
+	}
+
+	th->setLocalName(localname);
+	th->setNamespace(ns_uri);
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(XML,_setNamespace)
+{
+	XML *th = obj->as<XML>();
+	if(argslen == 0)
+		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+
+	xmlElementType nodetype=th->node->cobj()->type;
+	if(nodetype==XML_TEXT_NODE ||
+	   nodetype==XML_COMMENT_NODE ||
+	   nodetype==XML_PI_NODE)
+		return NULL;
+
+	tiny_string ns_uri;
+	tiny_string ns_prefix;
+	if(args[0]->is<Namespace>())
+	{
+		Namespace *ns=args[0]->as<Namespace>();
+		ns_uri=ns->getURI();
+		bool prefix_is_undefined=true;
+		ns_prefix=ns->getPrefix(prefix_is_undefined);
+	}
+	else if(args[0]->is<ASQName>())
+	{
+		ASQName *qname=args[0]->as<ASQName>();
+		ns_uri=qname->getURI();
+	}
+	else if (!args[0]->is<Undefined>())
+	{
+		ns_uri=args[0]->toString();
+	}
+
+	th->setNamespace(ns_uri, ns_prefix);
+	
+	return NULL;
+}
+
+void XML::setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix)
+{
+	if(ns_uri.empty())
+	{
+		// libxml++ set_namespace() doesn't seem to be able to
+		// reset the namespace to empty (default) namespace,
+		// so we have to do this through libxml2
+		xmlDocPtr xmlDoc=getRootNode()->parser.get_document()->cobj();
+		xmlNsPtr default_ns=xmlSearchNs(xmlDoc, node->cobj(), NULL);
+		xmlSetNs(node->cobj(), default_ns);
+	}
+	else
+	{
+		if(!ns_prefix.empty())
+		{
+			xmlpp::Element *element;
+			element=dynamic_cast<xmlpp::Element *>(node);
+			xmlpp::Attribute *attribute;
+			attribute=dynamic_cast<xmlpp::Attribute *>(node);
+			if(attribute)
+				element=attribute->get_parent();
+
+			if(element)
+				element->set_namespace_declaration(ns_uri, ns_prefix);
+		}
+
+		node->set_namespace(getNamespacePrefixByURI(ns_uri, true));
+	}
+}
+
 bool XML::hasSimpleContent() const
 {
 	xmlElementType nodetype=node->cobj()->type;
@@ -938,9 +1071,10 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 	return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 }
 
-tiny_string XML::getNamespacePrefixByURI(const tiny_string& uri)
+tiny_string XML::getNamespacePrefixByURI(const tiny_string& uri, bool create)
 {
 	tiny_string prefix;
+	bool found=false;
 	xmlDocPtr xmlDoc=getRootNode()->parser.get_document()->cobj();
 	xmlNsPtr* namespaces=xmlGetNsList(xmlDoc,node->cobj());
 
@@ -956,11 +1090,22 @@ tiny_string XML::getNamespacePrefixByURI(const tiny_string& uri)
 					prefix=tiny_string((const char*)namespaces[i]->prefix, true);
 				}
 
+				found = true;
 				break;
 			}
 		}
 
 		xmlFree(namespaces);
+	}
+
+	if(!found && create)
+	{
+		xmlpp::Element *element=dynamic_cast<xmlpp::Element *>(node);
+		xmlpp::Attribute *attribute=dynamic_cast<xmlpp::Attribute *>(node);
+		if(attribute)
+			element=attribute->get_parent();
+		if(element)
+			element->set_namespace_declaration(uri);
 	}
 
 	return prefix;

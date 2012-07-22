@@ -56,7 +56,9 @@ private:
 	 */
 	void childrenImpl(XMLVector& ret, const tiny_string& name);
 	void childrenImpl(XMLVector& ret, uint32_t index);
-	tiny_string getNamespacePrefixByURI(const tiny_string& uri);
+	tiny_string getNamespacePrefixByURI(const tiny_string& uri, bool create=false);
+        void setLocalName(const tiny_string& localname);
+        void setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix="");
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
@@ -87,6 +89,9 @@ public:
 	ASFUNCTION(parent);
 	ASFUNCTION(inScopeNamespaces);
 	ASFUNCTION(addNamespace);
+	ASFUNCTION(_setLocalName);
+	ASFUNCTION(_setName);
+	ASFUNCTION(_setNamespace);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);

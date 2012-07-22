@@ -822,6 +822,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 
 void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
+	unsigned int index=0;
 	bool isAttr=name.isAttribute;
 	//Normalize the name to the string form
 	const tiny_string normalizedName=name.normalizedName();
@@ -855,8 +856,19 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 			element->set_namespace_declaration(ns_uri);
 		}
 	}
+	else if(Array::isValidMultiname(name,index))
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "XML::setVariableByMultiname: array indexes");
+	}
 	else
 	{
+		LOG(LOG_NOT_IMPLEMENTED, "XML::setVariableByMultiname: should replace if a node with the given name exists");
+		if(o->is<XML>() || o->is<XMLList>())
+		{
+			LOG(LOG_NOT_IMPLEMENTED, "XML::setVariableByMultiname: assigning XML values not implemented");
+			return;
+		}
+
 		xmlpp::Element* child=node->add_child(getSys()->getStringFromUniqueId(name.name_s_id), ns_prefix);
 
 		child->add_child_text(o->toString());

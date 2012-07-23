@@ -254,6 +254,18 @@ struct BasicBlock
 	uint32_t realStart;
 	uint32_t realEnd;
 	uint32_t originalEnd;
+	/*
+	 * This methods reset all the values that depends on the
+	 * actual translated code. Predecessor blocks and pending fixups will be left alone
+	 */
+	void resetCode()
+	{
+		stackTypes=initialStackTypes;
+		scopeStackTypes=initialScopeStackTypes;
+		realStart = 0xffffffff;
+		realEnd = 0xffffffff;
+		originalEnd = 0xffffffff;
+	}
 	const Type* peekStack() const
 	{
 		return stackTypes.back();

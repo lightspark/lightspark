@@ -1282,7 +1282,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		//if not duplicate exception entry
 		BasicBlock* startBlock=&(it->second);
 		uint32_t originalEnd = ei->to;
-		while(it!=basicBlocks.end() && it->first < originalEnd)
+		while(it!=basicBlocks.end() && it->first <= originalEnd)
 		{
 			if(it->second.realStart != lastRealEnd)
 			{
@@ -1297,8 +1297,8 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			++it;
 		}
 
-		auto instructionIterator=instructionsMap.lower_bound(ei->to);
-		if(instructionIterator==instructionsMap.end() || instructionIterator->first!=ei->to)
+		auto instructionIterator=instructionsMap.lower_bound(originalEnd);
+		if(instructionIterator==instructionsMap.end() || instructionIterator->first!=originalEnd)
 		{
 			//If the to instruction has not been traslated, limit the range to the previous one
 			--instructionIterator;

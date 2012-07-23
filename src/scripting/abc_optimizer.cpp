@@ -184,7 +184,27 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		if(curBlock==NULL)
 			break;
 
-		instructionsMap.insert(make_pair(here,there));
+		bool success=instructionsMap.insert(make_pair(here,there)).second;
+		if(success==false)
+		{
+			//This instruction has been already added
+			//it means that we discovered that a block starts here after the previous
+			//block has been already translated by fallthrough
+			//Solve the problem by invalidating the old block and adding it to the pending blocks
+			auto it=basicBlocks.lower_bound(here);
+			assert(it!=basicBlocks.begin());
+			it--;
+			uint32_t nextBlockStart=it->second.originalEnd;
+			uint32_t oldStart=it->first;
+
+			it->second.resetCode();
+
+			pendingBlocks.insert(oldStart);
+			//Delete all instructions in the deleted block from the instructionsMap
+			auto instructionsMapStart=instructionsMap.lower_bound(oldStart);
+			auto instructionsMapEnd=instructionsMap.lower_bound(nextBlockStart);
+			instructionsMap.erase(instructionsMapStart,instructionsMapEnd);
+		}
 
 		code >> opcode;
 		if(code.eof())

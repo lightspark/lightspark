@@ -117,6 +117,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			BasicBlock* expBlock=&(basicBlocks.insert(make_pair(ei.target,BasicBlock(NULL))).first->second);
 			//Those blocks starts with the exception on the stack
 			expBlock->pushStack(Type::anyType);
+			expBlock->initialStackTypes = expBlock->stackTypes;
 			pendingBlocks.insert(ei.target);
 		}
 	}

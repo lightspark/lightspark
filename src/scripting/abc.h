@@ -238,11 +238,13 @@ struct BasicBlock
 		//will be verified at the end of the optimization
 		if(pred)
 		{
-			stackTypes=pred->stackTypes;
-			scopeStackTypes=pred->scopeStackTypes;
+			stackTypes=initialStackTypes=pred->stackTypes;
+			scopeStackTypes=initialScopeStackTypes=pred->scopeStackTypes;
 		}
 	}
+	std::vector<const Type*> initialStackTypes;
 	std::vector<const Type*> stackTypes;
+	std::vector<const Type*> initialScopeStackTypes;
 	std::vector<const Type*> scopeStackTypes;
 	std::vector<BasicBlock*> pred;
 	/*

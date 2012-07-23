@@ -312,12 +312,19 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				verifyBranch(pendingBlocks,basicBlocks,oldStart,here,t,code_len);
 				out << (uint8_t)opcode;
 				writeBranchAddress(basicBlocks, here, t, out);
-				curStart=here;
-				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
-				curBlock->pred.push_back(predBlock);
 				predBlock->realEnd=out.tellp();
-				curBlock->realStart=out.tellp();
 				predBlock->originalEnd=here;
+
+				auto it=basicBlocks.find(curStart);
+				if(it==basicBlocks.end())
+				{
+					curStart=here;
+					curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
+					curBlock->pred.push_back(predBlock);
+					curBlock->realStart=out.tellp();
+				}
+				//If the fall through block alredy exists, just go on
+				//A jump will be added when the fallthrough is detected
 				break;
 			}
 			case 0x10:
@@ -354,12 +361,19 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				verifyBranch(pendingBlocks,basicBlocks,oldStart,here,t,code_len);
 				out << (uint8_t)opcode;
 				writeBranchAddress(basicBlocks, here, t, out);
-				curStart=here;
-				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
-				curBlock->pred.push_back(predBlock);
 				predBlock->realEnd=out.tellp();
-				curBlock->realStart=out.tellp();
 				predBlock->originalEnd=here;
+
+				auto it=basicBlocks.find(curStart);
+				if(it==basicBlocks.end())
+				{
+					curStart=here;
+					curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
+					curBlock->pred.push_back(predBlock);
+					curBlock->realStart=out.tellp();
+				}
+				//If the fall through block alredy exists, just go on
+				//A jump will be added when the fallthrough is detected
 				break;
 			}
 			case 0x1b:

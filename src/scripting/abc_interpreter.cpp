@@ -119,6 +119,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//kill
 				u30 t;
 				code >> t;
+				LOG(LOG_CALLS, "kill " << t);
 				assert_and_throw(context->locals[t]);
 				context->locals[t]->decRef();
 				context->locals[t]=getSys()->getUndefinedRef();

@@ -113,6 +113,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//kill
 				uint32_t t=data->uints[0];
+				LOG(LOG_CALLS, "kill " << t);
 				instructionPointer+=4;
 				assert_and_throw(context->locals[t]);
 				context->locals[t]->decRef();

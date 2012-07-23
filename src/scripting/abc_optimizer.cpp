@@ -75,17 +75,9 @@ void ABCVm::writeBranchAddress(std::map<uint32_t,BasicBlock>& basicBlocks, int h
 	int dest=here+offset;
 	auto it=basicBlocks.find(dest);
 	assert(it!=basicBlocks.end());
-	if(it->second.realStart==0xffffffff)
-	{
-		//We need to add a fixup for this integer
-		it->second.fixups.push_back(out.tellp());
-		writeInt32(out, 0xffffffff);
-	}
-	else
-	{
-		//We already know the right address
-		writeInt32(out, it->second.realStart);
-	}
+	//We need to add a fixup for this branch
+	it->second.fixups.push_back(out.tellp());
+	writeInt32(out, 0xffffffff);
 }
 
 void ABCVm::optimizeFunction(SyntheticFunction* function)
@@ -145,8 +137,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					//Fall into an already translated block
 					//Create a jump to it
 					out << (uint8_t)0x10;
-					writeInt32(out, it->second.realStart);
+					writeInt32(out, 0xffffffff);
 					there = out.tellp();
+					it->second.fixups.push_back(there-4);
 					//End the current block, so that a pending one can be selected
 					curBlock->realEnd=there;
 					curBlock->originalEnd=here;

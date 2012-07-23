@@ -148,12 +148,14 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					there = out.tellp();
 					//End the current block, so that a pending one can be selected
 					curBlock->realEnd=there;
+					curBlock->originalEnd=here;
 					curBlock=NULL;
 				}
 				else
 				{
 					BasicBlock* predBlock=curBlock;
 					predBlock->realEnd=there;
+					predBlock->originalEnd=here;
 					curBlock=&(it->second);
 					curBlock->realStart=there;
 					curBlock->pred.push_back(predBlock);
@@ -214,6 +216,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				curBlock->popStack(1);
 				out << (uint8_t)opcode;
 				curBlock->realEnd=out.tellp();
+				curBlock->originalEnd=code.tellg();
 				curBlock=NULL;
 				break;
 			}
@@ -272,6 +275,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				BasicBlock* predBlock=curBlock;
 				predBlock->realEnd=there;
 				int here=code.tellg();
+				predBlock->originalEnd=here;
 				curStart=here-1;
 				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
 				curBlock->realStart=there;
@@ -319,6 +323,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				curBlock->pred.push_back(predBlock);
 				predBlock->realEnd=out.tellp();
 				curBlock->realStart=out.tellp();
+				predBlock->originalEnd=here;
 				break;
 			}
 			case 0x10:
@@ -334,6 +339,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				writeBranchAddress(basicBlocks, here, t, out);
 				//Reset the block to NULL
 				curBlock->realEnd=out.tellp();
+				curBlock->originalEnd=here;
 				curBlock=NULL;
 				break;
 			}
@@ -359,6 +365,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				curBlock->pred.push_back(predBlock);
 				predBlock->realEnd=out.tellp();
 				curBlock->realStart=out.tellp();
+				predBlock->originalEnd=here;
 				break;
 			}
 			case 0x1b:
@@ -384,6 +391,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				for(int i=0;i<(count+1);i++)
 					writeBranchAddress(basicBlocks,here, (int)offsets[i], out);
 				curBlock->realEnd=out.tellp();
+				curBlock->originalEnd=code.tellg();
 				curBlock=NULL;
 				break;
 			}
@@ -656,6 +664,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//returnvoid
 				out << (uint8_t)opcode;
 				curBlock->realEnd=out.tellp();
+				curBlock->originalEnd=code.tellg();
 				curBlock=NULL;
 				break;
 			}
@@ -665,6 +674,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 				curBlock->popStack(1);
 				curBlock->realEnd=out.tellp();
+				curBlock->originalEnd=code.tellg();
 				curBlock=NULL;
 				break;
 			}
@@ -1298,6 +1308,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		const BasicBlock& bb=it->second;
 		assert(bb.realStart!=0xffffffff);
 		assert(bb.realEnd!=0xffffffff);
+		assert(bb.originalEnd!=0xffffffff);
 		for(uint32_t i=0;i<bb.fixups.size();i++)
 		{
 			uint32_t strOffset=bb.fixups[i];

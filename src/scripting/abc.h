@@ -232,7 +232,7 @@ public:
 
 struct BasicBlock
 {
-	BasicBlock(BasicBlock* pred):realStart(0xffffffff),realEnd(0xffffffff)
+	BasicBlock(BasicBlock* pred):realStart(0xffffffff),realEnd(0xffffffff),originalEnd(0xffffffff)
 	{
 		//Any predecessor block is fine. Consistency for all predecessors
 		//will be verified at the end of the optimization
@@ -251,6 +251,7 @@ struct BasicBlock
 	std::vector<uint32_t> fixups;
 	uint32_t realStart;
 	uint32_t realEnd;
+	uint32_t originalEnd;
 	const Type* peekStack() const
 	{
 		return stackTypes.back();

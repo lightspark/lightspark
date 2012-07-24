@@ -191,8 +191,8 @@ class ExternalCallEvent;
 class DLL_PUBLIC ExtASCallback : public ExtCallback
 {
 public:
-	ExtASCallback(IFunction* _func) : func(_func), result(NULL), funcWasCalled(false) { func->incRef(); }
-	~ExtASCallback() { func->decRef(); }
+	ExtASCallback(IFunction* _func) : func(_func), result(NULL), asArgs(NULL), funcWasCalled(false) { func->incRef(); }
+	~ExtASCallback();
 
 	// Don't forget to delete this copy after use
 	ExtASCallback* copy() { return new ExtASCallback(func); }
@@ -206,7 +206,8 @@ public:
 private:
 	IFunction* func;
 	_NR<ExternalCallEvent> funcEvent;
-	ExtVariant* result;
+	ASObject* result;
+        ASObject** asArgs;
 	bool funcWasCalled;
 };
 

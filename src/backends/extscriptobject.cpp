@@ -357,6 +357,12 @@ ASObject* ExtVariant::getASObject() const
 }
 
 /* -- ExtASCallback -- */
+ExtASCallback::~ExtASCallback() {
+	func->decRef();
+	if(asArgs)
+		delete[] asArgs;
+}
+
 void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		const ExtVariant** args, uint32_t argc, bool synchronous)
 {
@@ -370,10 +376,19 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 
 	// The caller indicated the VM isn't currently suspended,
 	// so add a FunctionEvent to the VM event queue.
+
+	// Convert ExtVariant arguments to ASObjects
+	assert(!asArgs);
+	asArgs = new ASObject*[argc];
+	for(uint32_t i = 0; i < argc; i++)
+	{
+		asArgs[i] = args[i]->getASObject();
+	}
+
 	if(!synchronous)
 	{
 		func->incRef();
-		funcEvent = _MR(new (getSys()->unaccountedMemory) ExternalCallEvent(_MR(func), args, argc, &result, &exceptionThrown, &exception));
+		funcEvent = _MR(new (getSys()->unaccountedMemory) ExternalCallEvent(_MR(func), asArgs, argc, &result, &exceptionThrown, &exception));
 		// Add the callback function event to the VM event queue
 		funcWasCalled=getVm()->addEvent(NullRef,funcEvent);
 		if(!funcWasCalled)
@@ -384,16 +399,8 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	{
 		try
 		{
-			// Convert ExtVariant arguments to ASObjects
-			ASObject** objArgs = g_newa(ASObject*,argc);
-			for(uint32_t i = 0; i < argc; i++)
-			{
-				objArgs[i] = args[i]->getASObject();
-			}
-
 			/* TODO: shouldn't we pass some global object instead of Null? */
-			ASObject* asObjResult = func->call(getSys()->getNullRef(), objArgs, argc);
-			result = new ExtVariant(_MR(asObjResult));
+			result = func->call(getSys()->getNullRef(), asArgs, argc);
 		}
 		// Catch AS exceptions and pass them on
 		catch(ASObject* _exception)
@@ -407,6 +414,8 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 			getSys()->setError(e.cause);
 		}
 		funcWasCalled = true;
+		delete[] asArgs;
+		asArgs = NULL;
 	}
 }
 void ExtASCallback::wait()
@@ -426,7 +435,10 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 	if(exceptionThrown)
 	{
 		if(result != NULL)
-			delete result;
+		{
+			result->decRef();
+			result = NULL;
+		}
 
 		// Pass on the exception to the container through the script object
 		so.setException(exception.raw_buf());
@@ -442,7 +454,7 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 	else if(result != NULL)
 	{
 		// Convert the result
-		*_result = result;
+		*_result = new ExtVariant(_MR(result));
 		success = true;
 	}
 	// No exception but also no result, still a success
@@ -453,6 +465,14 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 	result = NULL;
 	exceptionThrown = false;
 	exception = "";
+	if (asArgs)
+	{
+		// The references have been consumed by the called
+		// function. We only delete the array.
+		delete[] asArgs;
+		asArgs = NULL;
+	}
+
 	return success;
 }
 /* -- ExtBuiltinCallback -- */

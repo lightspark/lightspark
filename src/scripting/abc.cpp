@@ -1092,19 +1092,9 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case EXTERNAL_CALL:
 			{
 				ExternalCallEvent* ev=static_cast<ExternalCallEvent*>(e.second.getPtr());
-
-				// Convert ExtVariant arguments to ASObjects
-				ASObject** objArgs = g_newa(ASObject*,ev->numArgs);
-				for(uint32_t i = 0; i < ev->numArgs; i++)
-				{
-					objArgs[i] = ev->args[i]->getASObject();
-				}
-
 				try
 				{
-					ASObject* result = ev->f->call(getSys()->getNullRef(),objArgs,ev->numArgs);
-					// We should report the function result
-					*(ev->result) = new ExtVariant(_MR(result));
+					*(ev->result) = ev->f->call(getSys()->getNullRef(),ev->args,ev->numArgs);
 				}
 				catch(ASObject* exception)
 				{

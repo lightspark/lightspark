@@ -847,8 +847,8 @@ FunctionEvent::~FunctionEvent()
 	delete[] args;
 }
 
-ExternalCallEvent::ExternalCallEvent(_R<IFunction> _f, const ExtVariant** _args,
-	uint32_t _numArgs, ExtVariant** _result, bool* _thrown, tiny_string* _exception):
+ExternalCallEvent::ExternalCallEvent(_R<IFunction> _f, ASObject* const* _args,
+	uint32_t _numArgs, ASObject** _result, bool* _thrown, tiny_string* _exception):
 		WaitableEvent("ExternalCallEvent"),
 		f(_f),args(_args),numArgs(_numArgs),result(_result),thrown(_thrown),exception(_exception)
 {

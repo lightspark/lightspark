@@ -384,14 +384,14 @@ class ExternalCallEvent: public WaitableEvent
 friend class ABCVm;
 private:
 	_R<IFunction> f;
-	ExtVariant const ** args;
+	ASObject* const* args;
 	unsigned int numArgs;
-	ExtVariant** result;
+	ASObject** result;
 	bool* thrown;
 	tiny_string* exception;
 public:
-	ExternalCallEvent(_R<IFunction> _f, const ExtVariant** _args, uint32_t _numArgs,
-			ExtVariant** _result, bool* _thrown, tiny_string* _exception);
+	ExternalCallEvent(_R<IFunction> _f, ASObject* const* _args, uint32_t _numArgs,
+			  ASObject** _result, bool* _thrown, tiny_string* _exception);
 	~ExternalCallEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return EXTERNAL_CALL; }

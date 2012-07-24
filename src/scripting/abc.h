@@ -246,7 +246,7 @@ struct BasicBlock
 	std::vector<const Type*> stackTypes;
 	std::vector<const Type*> initialScopeStackTypes;
 	std::vector<const Type*> scopeStackTypes;
-	std::vector<BasicBlock*> pred;
+	std::vector<BasicBlock*> predBlocks;
 	/*
 	 * Pointers that must be set the actual offset of this block in optmized code
 	 */

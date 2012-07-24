@@ -60,13 +60,13 @@ void ABCVm::verifyBranch(std::set<uint32_t>& pendingBlocks,
 		//and to the pending blocks vector
 		BasicBlock* nextBlock=&(basicBlocks.insert(
 			make_pair(dest,BasicBlock(predBlock))).first->second);
-		nextBlock->pred.push_back(predBlock);
+		nextBlock->predBlocks.push_back(predBlock);
 		pendingBlocks.insert(dest);
 	}
 	else
 	{
 		//The destination already exists, add this block to the pred
-		it->second.pred.push_back(predBlock);
+		it->second.predBlocks.push_back(predBlock);
 	}
 }
 
@@ -152,7 +152,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					predBlock->originalEnd=here;
 					curBlock=&(it->second);
 					curBlock->realStart=there;
-					curBlock->pred.push_back(predBlock);
+					curBlock->predBlocks.push_back(predBlock);
 					curStart=it->first;
 				}
 			}
@@ -293,7 +293,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				curStart=here-1;
 				curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
 				curBlock->realStart=there;
-				curBlock->pred.push_back(predBlock);
+				curBlock->predBlocks.push_back(predBlock);
 				break;
 			}
 			case 0x0c:
@@ -340,7 +340,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				{
 					curStart=here;
 					curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
-					curBlock->pred.push_back(predBlock);
+					curBlock->predBlocks.push_back(predBlock);
 					curBlock->realStart=out.tellp();
 				}
 				//If the fall through block alredy exists, just go on
@@ -389,7 +389,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				{
 					curStart=here;
 					curBlock=&(basicBlocks.insert(make_pair(curStart,BasicBlock(predBlock))).first->second);
-					curBlock->pred.push_back(predBlock);
+					curBlock->predBlocks.push_back(predBlock);
 					curBlock->realStart=out.tellp();
 				}
 				//If the fall through block alredy exists, just go on
@@ -1343,14 +1343,14 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			out.seekp(strOffset);
 			writeInt32(out, bb.realStart);
 		}
-		if(bb.pred.size()==0)
+		if(bb.predBlocks.size()==0)
 		{
 			//It may be the starting block or an exception handling block
 			continue;
 		}
-		const vector<const Type*>& predStackTypes=bb.pred[0]->stackTypes;
-		const vector<const Type*>& predScopeStackTypes=bb.pred[0]->scopeStackTypes;
-		for(uint32_t i=0;i<bb.pred.size();i++)
+		const vector<const Type*>& predStackTypes=bb.predBlocks[0]->stackTypes;
+		const vector<const Type*>& predScopeStackTypes=bb.predBlocks[0]->scopeStackTypes;
+		for(uint32_t i=0;i<bb.predBlocks.size();i++)
 		{
 			//TODO: should check
 		}

@@ -975,17 +975,14 @@ void variables_map::check() const
 			break;
 
 		//No double definition of a single variable should exist
-		if(it->first==next->first && it->second.ns==next->second.ns)
+		if(it->first.nameId==next->first.nameId && it->first.ns==next->first.ns)
 		{
 			if(it->second.var==NULL && next->second.var==NULL)
 				continue;
 
-			if((it->second.kind == BORROWED_TRAIT && next->second.kind != BORROWED_TRAIT)
-				|| (it->second.kind != BORROWED_TRAIT && next->second.kind == BORROWED_TRAIT))
-				continue;
 			if(it->second.var==NULL || next->second.var==NULL)
 			{
-				LOG(LOG_INFO, it->first << " " << it->second.ns);
+				LOG(LOG_INFO, it->first.nameId << " " << it->first.ns);
 				LOG(LOG_INFO, it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
 				LOG(LOG_INFO, next->second.var << ' ' << next->second.setter << ' ' << next->second.getter);
 				abort();
@@ -993,7 +990,7 @@ void variables_map::check() const
 
 			if(it->second.var->getObjectType()!=T_FUNCTION || next->second.var->getObjectType()!=T_FUNCTION)
 			{
-				LOG(LOG_INFO, it->first);
+				LOG(LOG_INFO, it->first.nameId);
 				abort();
 			}
 		}

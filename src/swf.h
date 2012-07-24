@@ -324,6 +324,7 @@ public:
 
 	//Flags for command line options
 	bool useInterpreter;
+	bool useFastInterpreter;
 	bool useJit;
 	ERROR_TYPE exitOnError;
 

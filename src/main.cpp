@@ -96,6 +96,7 @@ int main(int argc, char* argv[])
 	char *HTTPcookie=NULL;
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
+	bool useFastInterpreter=true;
 	bool useJit=false;
 	SystemState::ERROR_TYPE exitOnError=SystemState::ERROR_PARSING;
 	LOG_LEVEL log_level=LOG_INFO;
@@ -138,6 +139,8 @@ int main(int argc, char* argv[])
 			flashMode=SystemState::AIR;
 		else if(strcmp(argv[i],"-ni")==0 || strcmp(argv[i],"--disable-interpreter")==0)
 			useInterpreter=false;
+		else if(strcmp(argv[i],"-fi")==0 || strcmp(argv[i],"--enable-fast-interpreter")==0)
+			useFastInterpreter=false;
 		else if(strcmp(argv[i],"-j")==0 || strcmp(argv[i],"--enable-jit")==0)
 			useJit=true;
 		else if(strcmp(argv[i],"-l")==0 || strcmp(argv[i],"--log-level")==0)
@@ -227,8 +230,8 @@ int main(int argc, char* argv[])
 	if(fileName==NULL)
 	{
 		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
-			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" <<
-			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
+			" [--disable-interpreter|-ni] [--enable-fast-interpreter|-fi] [--enable-jit|-j]" <<
+			" [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
 			" [--exit-on-error] [--HTTP-cookies cookie] [--air]" <<
 #ifdef PROFILING_SUPPORT
 			" [--profiling-output|-o profiling-file]" <<
@@ -304,6 +307,7 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 	sys->useInterpreter=useInterpreter;
+	sys->useFastInterpreter=useFastInterpreter;
 	sys->useJit=useJit;
 	sys->exitOnError=exitOnError;
 	if(paramsFileName)

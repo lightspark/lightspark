@@ -265,7 +265,7 @@ public:
 	 * If this is a function, inClass == NULL
 	 */
 	Class_base* inClass;
-	/* returns wether this is this a method of a function */
+	/* returns whether this is this a method of a function */
 	bool isMethod() const { return inClass != NULL; }
 	bool isBound() const { return closure_this; }
 	void finalize();

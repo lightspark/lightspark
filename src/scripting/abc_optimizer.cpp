@@ -56,6 +56,7 @@ bool ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFunction* f, con
 
 	if(found==false)
 	{
+		//TODO: We can also push directly those objects since they are fixed
 		std::cerr << "End of local stack" << std::endl;
 		//Now look in the objects that are stored in the function save scope stack
 		for(auto it=f->func_scope.rbegin();it!=f->func_scope.rend();++it)
@@ -102,42 +103,19 @@ bool ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFunction* f, co
 	return false;
 }
 
-bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name)
+bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<Type*>& scopeStack,
+		const multiname* name, uint32_t nameIndex)
 {
-	//Currently we can only early bind if the name is not resolved anywhere in the scope stack
-	//We only support early binding to objects coming from the applicationDomain
-
-	//Traverse in reverse order the scope stack. Stops at the first any/unknown type.
-	for(auto it=scopeStack.rbegin();it!=scopeStack.rend();++it)
+	bool found=earlyBindForScopeStack(out, f, scopeStack, name);
+	if(found)
 	{
-		Class_base* c=dynamic_cast<Class_base*>(*it);
-		if(c==NULL)
-		{
-			std::cerr << "Unknown type" << std::endl;
-			return false;
-		}
-		variable* var=c->findBorrowedGettable(*name);
-		if(var)
-			return false;
+		//Synthetize a getProperty here
+		std::cerr << "SYNT GET " << *name << std::endl;
+		out << (uint8_t)0x66;
+		writeInt32(out,nameIndex);
+		return true;
 	}
-
-	//Now look in the objects that are stored in the function save scope stack
-	std::cerr << "End of local stack" << std::endl;
-	for(auto it=f->func_scope.rbegin();it!=f->func_scope.rend();++it)
-	{
-		if(it->considerDynamic)
-		{
-			//We can't early bind
-			return false;
-		}
-
-		variable* var=it->object->findVariableByMultiname(*name, ASObject::XML_STRICT, it->object->getClass());
-		if(var)
-			return false;
-	}
-
 	//Now look in the application domain
-	std::cerr << "End of function stack" << std::endl;
 	ASObject* target;
 	//Now we should serach in the applicationDomain. The system domain is the first one searched. We can safely
 	//early bind for it, but not for custom domains, since we may change the expected order of evaluation
@@ -152,7 +130,7 @@ bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std:
 	//About custom domains. We can't resolve the object now. But we can output a special getLex opcode that will
 	//rewrite itself to a PUSH_EARLY when it's executed.
 	//NOTE: We use findVariableByMultiname because we don't want to actually run the init scripts now
-	bool found = f->mi->context->root->applicationDomain->findVariableAndTargetByMultiname(*name, target);
+	found = f->mi->context->root->applicationDomain->findVariableAndTargetByMultiname(*name, target);
 	if(found)
 	{
 		out << (uint8_t)GET_LEX_ONCE;
@@ -1005,7 +983,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//Only methods can be early binded, anonymous functions do
 				//not have a fixed function scope stack
 				if(function->isMethod())
-					earlyBinded=earlyBindGetLex(out, function, curBlock->scopeStackTypes, name);
+					earlyBinded=earlyBindGetLex(out, function, curBlock->scopeStackTypes, name, t);
 				if(!earlyBinded)
 				{
 					//Early binding failed, use normal translation

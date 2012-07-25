@@ -546,7 +546,7 @@ public:
 	static void writeDouble(std::ostream& out, double val);
 	static void writePtr(std::ostream& out, const void* val);
 	static bool earlyBindGetLex(std::ostream& out, const SyntheticFunction* f,
-			const std::vector<Type*>& scopeStack, const multiname* name);
+			const std::vector<Type*>& scopeStack, const multiname* name, uint32_t name_index);
 	static bool earlyBindFindPropStrict(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<Type*>& scopeStack, const multiname* name);
 	static bool earlyBindForScopeStack(std::ostream& out, const SyntheticFunction* f,

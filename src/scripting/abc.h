@@ -547,6 +547,10 @@ public:
 	static void writePtr(std::ostream& out, const void* val);
 	static bool earlyBindGetLex(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<Type*>& scopeStack, const multiname* name);
+	static bool earlyBindFindPropStrict(std::ostream& out, const SyntheticFunction* f,
+			const std::vector<Type*>& scopeStack, const multiname* name);
+	static bool earlyBindForScopeStack(std::ostream& out, const SyntheticFunction* f,
+			const std::vector<Type*>& scopeStack, const multiname* name);
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();

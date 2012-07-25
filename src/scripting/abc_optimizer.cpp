@@ -28,12 +28,85 @@
 using namespace std;
 using namespace lightspark;
 
-enum SPECIAL_OPCODES { GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
+enum SPECIAL_OPCODES { GET_SCOPE_AT_INDEX = 0xfd, GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
+
+bool ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name)
+{
+	//We try to find out the position on the scope stack where the name is found
+	uint32_t totalScopeStackLen = f->func_scope.size() + scopeStack.size();
+
+	bool found=false;
+	//Traverse in reverse order the scope stack. Stops at the first any/unknown type.
+	for(auto it=scopeStack.rbegin();it!=scopeStack.rend();++it)
+	{
+		totalScopeStackLen--;
+		Class_base* c=dynamic_cast<Class_base*>(*it);
+		if(c==NULL)
+		{
+			std::cerr << "Unknown type" << std::endl;
+			return false;
+		}
+		variable* var=c->findBorrowedGettable(*name);
+		if(var)
+		{
+			found=true;
+			break;
+		}
+	}
+
+	if(found==false)
+	{
+		std::cerr << "End of local stack" << std::endl;
+		//Now look in the objects that are stored in the function save scope stack
+		for(auto it=f->func_scope.rbegin();it!=f->func_scope.rend();++it)
+		{
+			totalScopeStackLen--;
+			if(it->considerDynamic)
+			{
+				//We can't early bind
+				return false;
+			}
+
+			variable* var=it->object->findVariableByMultiname(*name, ASObject::XML_STRICT, it->object->getClass());
+			if(var)
+			{
+				found=true;
+				break;
+			}
+		}
+	}
+	if(found)
+	{
+		out << (uint8_t)GET_SCOPE_AT_INDEX;
+		writeInt32(out, totalScopeStackLen);
+		return true;
+	}
+	return false;
+}
+
+bool ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name)
+{
+	bool ret=earlyBindForScopeStack(out, f, scopeStack, name);
+	if(ret)
+		return true;
+	//Look on the application domain
+	ASObject* target;
+	bool found = f->mi->context->root->applicationDomain->findVariableAndTargetByMultiname(*name, target);
+	if(found)
+	{
+		//If we found the property on the application domain we can safely use the target verbatim
+		out << (uint8_t)PUSH_EARLY;
+		writePtr(out, target);
+		return true;
+	}
+	return false;
+}
 
 bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name)
 {
 	//Currently we can only early bind if the name is not resolved anywhere in the scope stack
 	//We only support early binding to objects coming from the applicationDomain
+
 	//Traverse in reverse order the scope stack. Stops at the first any/unknown type.
 	for(auto it=scopeStack.rbegin();it!=scopeStack.rend();++it)
 	{
@@ -883,10 +956,23 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//findpropstrict
 				u30 t;
 				code >> t;
-				out << (uint8_t)opcode;
-				writeInt32(out,t);
 
 				int numRT=mi->context->getMultinameRTData(t);
+				//No runtime multinames are accepted
+				bool earlyBinded=false;
+				if(numRT==0 && function->isMethod())
+				{
+					//Attempt early binding
+					const multiname* name=mi->context->getMultiname(t,NULL);
+					earlyBinded=earlyBindFindPropStrict(out, function, curBlock->scopeStackTypes, name);
+				}
+
+				if(!earlyBinded)
+				{
+					out << (uint8_t)opcode;
+					writeInt32(out,t);
+				}
+
 				curBlock->popStack(numRT);
 				curBlock->pushStack(Type::anyType);
 				break;

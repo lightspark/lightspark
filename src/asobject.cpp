@@ -886,34 +886,37 @@ variable* ASObject::findGettable(const multiname& name)
 	return findGettableImpl(Variables,name);
 }
 
-_NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
+variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
 {
-	check();
-	assert(!cls || classdef->isSubClass(cls));
 	//Get from the current object without considering borrowed properties
-	variable* obj=findGettable(name);
+	variable* var=findGettable(name);
 
-	if(!obj && cls)
+	if(!var && cls)
 	{
 		//Look for borrowed traits before
-		obj=cls->findBorrowedGettable(name);
+		var=cls->findBorrowedGettable(name);
 	}
 
-	if(!obj && cls)
+	if(!var && cls)
 	{
 		//Check prototype chain
 		Prototype* proto = cls->prototype.getPtr();
 		while(proto)
 		{
-			obj = proto->getObj()->findGettable(name);
-			if(obj)
-			{
-				obj->var->incRef();
-				return _MNR(obj->var);
-			}
+			var = proto->getObj()->findGettable(name);
+			if(var)
+				break;
 			proto = proto->prevPrototype.getPtr();
 		}
 	}
+	return var;
+}
+
+_NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
+{
+	check();
+	assert(!cls || classdef->isSubClass(cls));
+	variable* obj=findVariableByMultiname(name, opt, cls);
 
 	if(!obj)
 		return NullRef;

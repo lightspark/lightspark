@@ -350,6 +350,11 @@ public:
 		return getVariableByMultiname(name,opt,classdef);
 	}
 	/*
+	 * Helper method using the get the raw variable struct instead of calling the getter.
+	 * It is used by getVariableByMultiname and by early binding code
+	 */
+	variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
+	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a getter, it is called and its return value returned.

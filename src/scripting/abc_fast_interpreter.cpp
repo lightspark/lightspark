@@ -34,6 +34,7 @@ struct OpcodeData
 		int32_t ints[0];
 		uint32_t uints[0];
 		double doubles[0];
+		ASObject* objs[0];
 	};
 };
 
@@ -1346,7 +1347,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//getlocal_n
 				int i=opcode&3;
 				assert_and_throw(context->locals[i]);
-				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
+				LOG(LOG_CALLS, "getLocal " << i << ": " << context->locals[i]->toDebugString() );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);
 				break;
@@ -1358,11 +1359,22 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//setlocal_n
 				int i=opcode&3;
-				LOG(LOG_CALLS, _("setLocal ") << i );
+				LOG(LOG_CALLS, "setLocal " << i );
 				ASObject* obj=context->runtime_stack_pop();
 				if(context->locals[i])
 					context->locals[i]->decRef();
 				context->locals[i]=obj;
+				break;
+			}
+			//lightspark custom opcodes
+			case 0xff:
+			{
+				//pushearly
+				ASObject* o=data->objs[0];
+				instructionPointer+=8;
+				LOG(LOG_CALLS, "pushEarly " << o);
+				o->incRef();
+				context->runtime_stack_push(o);
 				break;
 			}
 			default:

@@ -583,7 +583,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			case 0x30:
 			{
 				//pushscope
-				const Type* t=curBlock->peekStack();
+				Type* t=curBlock->peekStack();
 				curBlock->popStack(1);
 				curBlock->pushScopeStack(t);
 				out << (uint8_t)opcode;
@@ -1348,8 +1348,8 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			//It may be the starting block or an exception handling block
 			continue;
 		}
-		const vector<const Type*>& predStackTypes=bb.predBlocks[0]->stackTypes;
-		const vector<const Type*>& predScopeStackTypes=bb.predBlocks[0]->scopeStackTypes;
+		const vector<Type*>& predStackTypes=bb.predBlocks[0]->stackTypes;
+		const vector<Type*>& predScopeStackTypes=bb.predBlocks[0]->scopeStackTypes;
 		for(uint32_t i=0;i<bb.predBlocks.size();i++)
 		{
 			//TODO: should check

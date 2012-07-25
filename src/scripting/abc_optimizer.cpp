@@ -28,12 +28,59 @@
 using namespace std;
 using namespace lightspark;
 
+ASObject* ABCVm::earlyBindGetLex(const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name)
+{
+	//Currently we can only early bind if the name is not resolved anywhere in the scope stack
+	//We only support early binding to objects coming from the applicationDomain
+	//Traverse in reverse order the scope stack. Stops at the first any/unknown type.
+	for(auto it=scopeStack.rbegin();it!=scopeStack.rend();++it)
+	{
+		Class_base* c=dynamic_cast<Class_base*>(*it);
+		if(c==NULL)
+		{
+			std::cerr << "Unkonwn type" << std::endl;
+			return NULL;
+		}
+		variable* var=c->findBorrowedGettable(*name);
+		if(var)
+			return NULL;
+	}
+
+	//Now look in the objects that are stored in the function save scope stack
+	std::cerr << "End of local stack" << std::endl;
+	for(auto it=f->func_scope.rbegin();it!=f->func_scope.rend();++it)
+	{
+		if(it->considerDynamic)
+		{
+			//We can't early bind
+			return NULL;
+		}
+
+		variable* var=it->object->findVariableByMultiname(*name, ASObject::XML_STRICT, it->object->getClass());
+		if(var)
+			return NULL;
+	}
+
+	//Now look in the application domain
+	std::cerr << "End of function stack" << std::endl;
+	ASObject* target;
+	//Now we should serach in the applicationDomain. The system domain is the first one searched. We can safely
+	//early bind for it, but not for custom domains, since we may change the expected order of evaluation
+	ASObject* o=getSys()->systemDomain->getVariableAndTargetByMultiname(*name, target);
+	return o;
+}
+
 void ABCVm::writeInt32(std::ostream& o, int32_t val)
 {
 	o.write((char*)&val, 4);
 }
 
 void ABCVm::writeDouble(std::ostream& o, double val)
+{
+	o.write((char*)&val, 8);
+}
+
+void ABCVm::writePtr(std::ostream& o, ASObject* val)
 {
 	o.write((char*)&val, 8);
 }
@@ -842,13 +889,25 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//getlex
 				u30 t;
 				code >> t;
-				//TODO: optimize
-				out << (uint8_t)opcode;
-				writeInt32(out,t);
 				int numRT=mi->context->getMultinameRTData(t);
 				//No runtime multinames are accepted
 				if(numRT)
 					throw ParseException("Bad code in optimizer");
+				const multiname* name=mi->context->getMultiname(t,NULL);
+
+				//target will be set by earlyBindGetLex if the returned value is a getter
+				ASObject* earlyBinded=earlyBindGetLex(function, curBlock->scopeStackTypes, name);
+				if(earlyBinded)
+				{
+					//Output a special opcode
+					out << (uint8_t)0xff;
+					writePtr(out, earlyBinded);
+				}
+				else
+				{
+					out << (uint8_t)opcode;
+					writeInt32(out,t);
+				}
 
 				curBlock->pushStack(Type::anyType);
 				break;
@@ -1234,6 +1293,17 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//getlocal_n
 				//TODO: collapse on getlocal
 				out << (uint8_t)opcode;
+				//Infer the type of the object when possible
+				if(opcode==0xd0)
+				{
+					//Local 0
+					if(function->isMethod())
+					{
+						curBlock->pushStack(function->inClass);
+						break;
+					}
+				}
+				//No type inferred
 				curBlock->pushStack(Type::anyType);
 				break;
 			}
@@ -1300,7 +1370,6 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 
 		//Find out if the reordered blocks are linear,
 		//if not duplicate exception entry
-		BasicBlock* startBlock=&(it->second);
 		uint32_t originalEnd = ei->to;
 		while(it!=basicBlocks.end() && it->first <= originalEnd)
 		{

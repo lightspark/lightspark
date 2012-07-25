@@ -545,6 +545,7 @@ public:
 	static void writeInt32(std::ostream& out, int32_t val);
 	static void writeDouble(std::ostream& out, double val);
 	static void writePtr(std::ostream& out, ASObject* val);
+	static ASObject* earlyBindGetLex(const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name);
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();

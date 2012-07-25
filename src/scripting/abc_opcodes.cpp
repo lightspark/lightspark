@@ -1388,7 +1388,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 
 ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 {
-	LOG(LOG_CALLS, _("findPropStrict ") << *name );
+	LOG(LOG_CALLS, "findPropStrict " << *name );
 
 	vector<scope_entry>::reverse_iterator it=th->scope_stack.rbegin();
 	bool found=false;

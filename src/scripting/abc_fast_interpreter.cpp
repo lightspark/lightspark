@@ -1368,12 +1368,27 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				break;
 			}
 			//lightspark custom opcodes
+			case 0xfd:
+			{
+				//getscopeatindex
+				//This opcode is similar to getscopeobject, but it allows access to any
+				//index of the scope stack
+				uint32_t t=data->uints[0];
+				LOG(LOG_CALLS, "getScopeAtIndex " << t);
+				assert(t<context->scope_stack.size());
+				ASObject* obj=context->scope_stack[t].object.getPtr();
+				obj->incRef();
+				context->runtime_stack_push(obj);
+				instructionPointer+=4;
+				break;
+			}
 			case 0xfe:
 			{
 				//getlexonce
 				//This opcode execute a lookup on the application domain
 				//and rewrites itself to a pushearly
 				const multiname* name=data->names[0];
+				LOG(LOG_CALLS, "getLexOnce " << *name);
 				ASObject* target;
 				ASObject* obj=ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(*name,target);
 				//The object must exists, since it was found during optimization

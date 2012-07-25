@@ -544,8 +544,9 @@ public:
 	static void writeBranchAddress(std::map<uint32_t,BasicBlock>& basicBlocks, int here, int offset, std::ostream& out);
 	static void writeInt32(std::ostream& out, int32_t val);
 	static void writeDouble(std::ostream& out, double val);
-	static void writePtr(std::ostream& out, ASObject* val);
-	static ASObject* earlyBindGetLex(const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name);
+	static void writePtr(std::ostream& out, const void* val);
+	static bool earlyBindGetLex(std::ostream& out, const SyntheticFunction* f,
+			const std::vector<Type*>& scopeStack, const multiname* name);
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();

@@ -28,7 +28,9 @@
 using namespace std;
 using namespace lightspark;
 
-ASObject* ABCVm::earlyBindGetLex(const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name)
+enum SPECIAL_OPCODES { GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
+
+bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name)
 {
 	//Currently we can only early bind if the name is not resolved anywhere in the scope stack
 	//We only support early binding to objects coming from the applicationDomain
@@ -38,12 +40,12 @@ ASObject* ABCVm::earlyBindGetLex(const SyntheticFunction* f, const std::vector<T
 		Class_base* c=dynamic_cast<Class_base*>(*it);
 		if(c==NULL)
 		{
-			std::cerr << "Unkonwn type" << std::endl;
-			return NULL;
+			std::cerr << "Unknown type" << std::endl;
+			return false;
 		}
 		variable* var=c->findBorrowedGettable(*name);
 		if(var)
-			return NULL;
+			return false;
 	}
 
 	//Now look in the objects that are stored in the function save scope stack
@@ -53,12 +55,12 @@ ASObject* ABCVm::earlyBindGetLex(const SyntheticFunction* f, const std::vector<T
 		if(it->considerDynamic)
 		{
 			//We can't early bind
-			return NULL;
+			return false;
 		}
 
 		variable* var=it->object->findVariableByMultiname(*name, ASObject::XML_STRICT, it->object->getClass());
 		if(var)
-			return NULL;
+			return false;
 	}
 
 	//Now look in the application domain
@@ -67,7 +69,25 @@ ASObject* ABCVm::earlyBindGetLex(const SyntheticFunction* f, const std::vector<T
 	//Now we should serach in the applicationDomain. The system domain is the first one searched. We can safely
 	//early bind for it, but not for custom domains, since we may change the expected order of evaluation
 	ASObject* o=getSys()->systemDomain->getVariableAndTargetByMultiname(*name, target);
-	return o;
+	if(o)
+	{
+		//Output a special opcode
+		out << (uint8_t)PUSH_EARLY;
+		writePtr(out, o);
+		return true;
+	}
+	//About custom domains. We can't resolve the object now. But we can output a special getLex opcode that will
+	//rewrite itself to a PUSH_EARLY when it's executed.
+	//NOTE: We use findVariableByMultiname because we don't want to actually run the init scripts now
+	bool found = f->mi->context->root->applicationDomain->findVariableAndTargetByMultiname(*name, target);
+	if(found)
+	{
+		out << (uint8_t)GET_LEX_ONCE;
+		//Write directly the multiname pointer
+		writePtr(out, name);
+		return true;
+	}
+	return false;
 }
 
 void ABCVm::writeInt32(std::ostream& o, int32_t val)
@@ -80,7 +100,7 @@ void ABCVm::writeDouble(std::ostream& o, double val)
 	o.write((char*)&val, 8);
 }
 
-void ABCVm::writePtr(std::ostream& o, ASObject* val)
+void ABCVm::writePtr(std::ostream& o, const void* val)
 {
 	o.write((char*)&val, 8);
 }
@@ -895,16 +915,14 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					throw ParseException("Bad code in optimizer");
 				const multiname* name=mi->context->getMultiname(t,NULL);
 
-				//target will be set by earlyBindGetLex if the returned value is a getter
-				ASObject* earlyBinded=earlyBindGetLex(function, curBlock->scopeStackTypes, name);
-				if(earlyBinded)
+				bool earlyBinded=false;
+				//Only methods can be early binded, anonymous functions do
+				//not have a fixed function scope stack
+				if(function->isMethod())
+					earlyBinded=earlyBindGetLex(out, function, curBlock->scopeStackTypes, name);
+				if(!earlyBinded)
 				{
-					//Output a special opcode
-					out << (uint8_t)0xff;
-					writePtr(out, earlyBinded);
-				}
-				else
-				{
+					//Early binding failed, use normal translation
 					out << (uint8_t)opcode;
 					writeInt32(out,t);
 				}

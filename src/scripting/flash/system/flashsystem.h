@@ -61,6 +61,7 @@ public:
 	static void buildTraits(ASObject* o);
 	void registerGlobalScope(Global* scope);
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
+	bool findVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
 	ASObject* getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getCurrentDomain);

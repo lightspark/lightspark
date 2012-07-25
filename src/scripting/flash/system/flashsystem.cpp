@@ -272,6 +272,28 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 	return getVariableAndTargetByMultiname(name, target);
 }
 
+bool ApplicationDomain::findVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
+{
+	//Check in the parent first
+	if(!parentDomain.isNull())
+	{
+		bool ret=parentDomain->findVariableAndTargetByMultiname(name, target);
+		if(ret)
+			return true;
+	}
+
+	for(uint32_t i=0;i<globalScopes.size();i++)
+	{
+		bool ret=globalScopes[i]->hasPropertyByMultiname(name,true,true);
+		if(ret)
+		{
+			target=globalScopes[i];
+			return true;
+		}
+	}
+	return false;
+}
+
 ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
 {
 	//Check in the parent first

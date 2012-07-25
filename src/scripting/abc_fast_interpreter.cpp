@@ -35,6 +35,7 @@ struct OpcodeData
 		uint32_t uints[0];
 		double doubles[0];
 		ASObject* objs[0];
+		const multiname* names[0];
 	};
 };
 
@@ -1367,6 +1368,28 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				break;
 			}
 			//lightspark custom opcodes
+			case 0xfe:
+			{
+				//getlexonce
+				//This opcode execute a lookup on the application domain
+				//and rewrites itself to a pushearly
+				const multiname* name=data->names[0];
+				ASObject* target;
+				ASObject* obj=ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(*name,target);
+				//The object must exists, since it was found during optimization
+				assert_and_throw(obj);
+				char* rewriteableCode = &(mi->body->code[0]);
+				OpcodeData* rewritableData=reinterpret_cast<OpcodeData*>(rewriteableCode+instructionPointer);
+				//Rewrite this to a pushearly
+				rewriteableCode[instructionPointer-1]=0xff;
+				rewritableData->objs[0]=obj;
+				//Also push the object right away
+				obj->incRef();
+				context->runtime_stack_push(obj);
+				//Move to the next instruction
+				instructionPointer+=8;
+				break;
+			}
 			case 0xff:
 			{
 				//pushearly

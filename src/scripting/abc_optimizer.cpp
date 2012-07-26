@@ -1292,7 +1292,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		ei->target=instructionsMap.find(ei->target)->second;
 		ei->from=instructionsMap.find(ei->from)->second;
 		//Find out what block it starts into
-		auto it=(--basicBlocks.lower_bound(excStart));
+		auto it=(--basicBlocks.upper_bound(excStart));
 
 		uint32_t lastRealEnd = it->second.realEnd;
 

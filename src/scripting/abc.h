@@ -293,6 +293,8 @@ struct BasicBlock
 	}
 };
 
+struct InferenceData;
+
 class ABCVm
 {
 friend class ABCContext;
@@ -548,11 +550,11 @@ public:
 
 	static bool earlyBindGetLex(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<const Type*>& scopeStack, const multiname* name, uint32_t name_index);
-	static bool earlyBindFindPropStrict(std::ostream& out, const SyntheticFunction* f,
+	static InferenceData earlyBindFindPropStrict(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<const Type*>& scopeStack, const multiname* name);
 	enum EARLY_BIND_STATUS { NOT_BINDED=0, CANNOT_BIND=1, BINDED };
 	static EARLY_BIND_STATUS earlyBindForScopeStack(std::ostream& out, const SyntheticFunction* f,
-			const std::vector<const Type*>& scopeStack, const multiname* name);
+			const std::vector<const Type*>& scopeStack, const multiname* name, InferenceData& inferredData);
 	static const Type* getLocalType(const SyntheticFunction* f, int localIndex);
 
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;

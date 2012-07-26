@@ -30,8 +30,18 @@ using namespace lightspark;
 
 enum SPECIAL_OPCODES { GET_SCOPE_AT_INDEX = 0xfd, GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
 
+struct lightspark::InferenceData
+{
+	const Type* type;
+	const ASObject* obj;
+	InferenceData():type(NULL),obj(NULL){}
+	InferenceData(const Type* t):type(t),obj(NULL){}
+	InferenceData(const ASObject* o):type(NULL),obj(o){}
+	bool isValid() const { return type!=NULL || obj!=NULL; }
+};
+
 ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFunction* f,
-		const std::vector<const Type*>& scopeStack, const multiname* name)
+		const std::vector<const Type*>& scopeStack, const multiname* name, InferenceData& inferredData)
 {
 	//We try to find out the position on the scope stack where the name is found
 	uint32_t totalScopeStackLen = f->func_scope.size() + scopeStack.size();
@@ -51,6 +61,7 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 		if(var)
 		{
 			found=true;
+			inferredData.type=c;
 			break;
 		}
 	}
@@ -73,6 +84,7 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 			if(var)
 			{
 				found=true;
+				inferredData.obj=it->object.getPtr();
 				break;
 			}
 		}
@@ -86,31 +98,34 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 	return NOT_BINDED;
 }
 
-bool ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFunction* f, const std::vector<const Type*>& scopeStack, const multiname* name)
+InferenceData ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFunction* f,
+		const std::vector<const Type*>& scopeStack, const multiname* name)
 {
-	EARLY_BIND_STATUS ret=earlyBindForScopeStack(out, f, scopeStack, name);
-	if(ret==BINDED)
-		return true;
-	else if(ret==CANNOT_BIND)
-		return false;
+	InferenceData ret;
+	EARLY_BIND_STATUS status=earlyBindForScopeStack(out, f, scopeStack, name, ret);
+	if(status==BINDED || status==CANNOT_BIND)
+		return ret;
 	//Look on the application domain
 	ASObject* target;
 	bool found = f->mi->context->root->applicationDomain->findVariableAndTargetByMultiname(*name, target);
 	if(found)
 	{
 		//If we found the property on the application domain we can safely use the target verbatim
+		std::cerr << "OPT EARLY" << *name << std::endl;
 		out << (uint8_t)PUSH_EARLY;
 		writePtr(out, target);
-		return true;
+		ret.obj=target;
+		return ret;
 	}
-	return false;
+	return ret;
 }
 
 bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<const Type*>& scopeStack,
 		const multiname* name, uint32_t nameIndex)
 {
-	EARLY_BIND_STATUS ret=earlyBindForScopeStack(out, f, scopeStack, name);
-	if(ret==BINDED)
+	InferenceData ret;
+	EARLY_BIND_STATUS status=earlyBindForScopeStack(out, f, scopeStack, name, ret);
+	if(status==BINDED)
 	{
 		//Synthetize a getProperty here
 		std::cerr << "SYNT GET " << *name << std::endl;
@@ -118,7 +133,7 @@ bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std:
 		writeInt32(out,nameIndex);
 		return true;
 	}
-	else if(ret==CANNOT_BIND)
+	else if(status==CANNOT_BIND)
 		return false;
 	//Now look in the application domain
 	ASObject* target;
@@ -952,21 +967,20 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 
 				int numRT=mi->context->getMultinameRTData(t);
 				//No runtime multinames are accepted
-				bool earlyBinded=false;
+				InferenceData inferredData;
 				if(numRT==0 && function->isMethod())
 				{
 					//Attempt early binding
 					const multiname* name=mi->context->getMultiname(t,NULL);
-					earlyBinded=earlyBindFindPropStrict(out, function, curBlock->scopeStackTypes, name);
+					inferredData=earlyBindFindPropStrict(out, function, curBlock->scopeStackTypes, name);
 				}
 
-				if(!earlyBinded)
+				curBlock->popStack(numRT);
+				if(!inferredData.isValid())
 				{
 					out << (uint8_t)opcode;
 					writeInt32(out,t);
 				}
-
-				curBlock->popStack(numRT);
 				curBlock->pushStack(Type::anyType);
 				break;
 			}

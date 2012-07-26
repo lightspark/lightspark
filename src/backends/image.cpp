@@ -297,32 +297,64 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 	//Color type. (RGB, RGBA, Luminance, luminance alpha... palette... etc)
 	png_uint_32 color_type = png_get_color_type(pngPtr, infoPtr);
 
+	// Transform everything into 24 bit RGB
 	switch (color_type)
 	{
 		case PNG_COLOR_TYPE_PALETTE:
 			png_set_palette_to_rgb(pngPtr);
-			channels = 3;
+			// png_set_palette_to_rgb wil convert into 32
+			// bit, but we don't want the alpha
+			png_set_strip_alpha(pngPtr);
 			break;
 		case PNG_COLOR_TYPE_GRAY:
 			if (bitdepth < 8)
 				png_set_gray_to_rgb(pngPtr);
-			bitdepth = 8;
 			break;
 	}
 
+	if (bitdepth == 16)
+	{
+		png_set_strip_16(pngPtr);
+	}
+
+	if (channels > 3)
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "Alpha channel not supported in PNG");
+		png_set_strip_alpha(pngPtr);
+	}
+
+	// Update the infoPtr to reflect the transformations set
+	// above. Read new values by calling png_get_* again.
+	png_read_update_info(pngPtr, infoPtr);
+
+	//bitdepth = png_get_bit_depth(pngPtr, infoPtr);
+	//color_type = png_get_color_type(pngPtr, infoPtr);
+
+	channels = png_get_channels(pngPtr, infoPtr);
+	if (channels != 3)
+	{
+		// Should never get here because of the
+		// transformations
+		LOG(LOG_NOT_IMPLEMENTED, "Unexpected number of channels in PNG!");
+
+		png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
+
+		return NULL;
+	}
+
+	const unsigned int stride = png_get_rowbytes(pngPtr, infoPtr);
+
+	outData = new uint8_t[(*height) * stride];
 	rowPtrs = new png_bytep[(*height)];
-
-	outData = new uint8_t[(*width) * (*height) * bitdepth * channels / 8];
-	const unsigned int stride = (*width) * bitdepth * channels / 8;
-
 	for (size_t i = 0; i < (*height); i++)
 	{
 		rowPtrs[i] = (png_bytep)outData + i* stride;
 	}
 
 	png_read_image(pngPtr, rowPtrs);
-	delete[] (png_bytep)rowPtrs;
+	png_read_end(pngPtr, NULL);
 	png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
+	delete[] (png_bytep)rowPtrs;
 
 	return outData;
 }

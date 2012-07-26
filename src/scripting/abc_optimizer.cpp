@@ -31,7 +31,7 @@ using namespace lightspark;
 enum SPECIAL_OPCODES { GET_SCOPE_AT_INDEX = 0xfd, GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
 
 ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFunction* f,
-		const std::vector<Type*>& scopeStack, const multiname* name)
+		const std::vector<const Type*>& scopeStack, const multiname* name)
 {
 	//We try to find out the position on the scope stack where the name is found
 	uint32_t totalScopeStackLen = f->func_scope.size() + scopeStack.size();
@@ -41,7 +41,7 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 	for(auto it=scopeStack.rbegin();it!=scopeStack.rend();++it)
 	{
 		totalScopeStackLen--;
-		Class_base* c=dynamic_cast<Class_base*>(*it);
+		const Class_base* c=dynamic_cast<const Class_base*>(*it);
 		if(c==NULL)
 		{
 			std::cerr << "Unknown type" << std::endl;
@@ -86,7 +86,7 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 	return NOT_BINDED;
 }
 
-bool ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFunction* f, const std::vector<Type*>& scopeStack, const multiname* name)
+bool ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFunction* f, const std::vector<const Type*>& scopeStack, const multiname* name)
 {
 	EARLY_BIND_STATUS ret=earlyBindForScopeStack(out, f, scopeStack, name);
 	if(ret==BINDED)
@@ -106,7 +106,7 @@ bool ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFunction* f, co
 	return false;
 }
 
-bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<Type*>& scopeStack,
+bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<const Type*>& scopeStack,
 		const multiname* name, uint32_t nameIndex)
 {
 	EARLY_BIND_STATUS ret=earlyBindForScopeStack(out, f, scopeStack, name);

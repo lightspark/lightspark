@@ -40,6 +40,69 @@ struct lightspark::InferenceData
 	bool isValid() const { return type!=NULL || obj!=NULL; }
 };
 
+struct lightspark::BasicBlock
+{
+	BasicBlock(BasicBlock* pred):realStart(0xffffffff),realEnd(0xffffffff),originalEnd(0xffffffff)
+	{
+		//Any predecessor block is fine. Consistency for all predecessors
+		//will be verified at the end of the optimization
+		if(pred)
+		{
+			stackTypes=initialStackTypes=pred->stackTypes;
+			scopeStackTypes=initialScopeStackTypes=pred->scopeStackTypes;
+		}
+	}
+	std::vector<const Type*> initialStackTypes;
+	std::vector<const Type*> stackTypes;
+	std::vector<const Type*> initialScopeStackTypes;
+	std::vector<const Type*> scopeStackTypes;
+	std::vector<BasicBlock*> predBlocks;
+	/*
+	 * Pointers that must be set the actual offset of this block in optmized code
+	 */
+	std::vector<uint32_t> fixups;
+	uint32_t realStart;
+	uint32_t realEnd;
+	uint32_t originalEnd;
+	/*
+	 * This methods reset all the values that depends on the
+	 * actual translated code. Predecessor blocks and pending fixups will be left alone
+	 */
+	void resetCode()
+	{
+		stackTypes=initialStackTypes;
+		scopeStackTypes=initialScopeStackTypes;
+		realStart = 0xffffffff;
+		realEnd = 0xffffffff;
+		originalEnd = 0xffffffff;
+	}
+	const Type* peekStack() const
+	{
+		return stackTypes.back();
+	}
+	void popStack(uint32_t n)
+	{
+		if(stackTypes.size()<n)
+			throw ParseException("Invalid code in optimizer");
+		for(uint32_t i=0;i<n;i++)
+			stackTypes.pop_back();
+	}
+	void pushStack(const Type* t)
+	{
+		stackTypes.push_back(t);
+	}
+	void popScopeStack()
+	{
+		if(scopeStackTypes.empty())
+			throw ParseException("Invalid code in optimizer");
+		scopeStackTypes.pop_back();
+	}
+	void pushScopeStack(const Type* t)
+	{
+		scopeStackTypes.push_back(t);
+	}
+};
+
 ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFunction* f,
 		const std::vector<const Type*>& scopeStack, const multiname* name, InferenceData& inferredData)
 {

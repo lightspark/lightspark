@@ -242,10 +242,10 @@ struct BasicBlock
 			scopeStackTypes=initialScopeStackTypes=pred->scopeStackTypes;
 		}
 	}
-	std::vector<Type*> initialStackTypes;
-	std::vector<Type*> stackTypes;
-	std::vector<Type*> initialScopeStackTypes;
-	std::vector<Type*> scopeStackTypes;
+	std::vector<const Type*> initialStackTypes;
+	std::vector<const Type*> stackTypes;
+	std::vector<const Type*> initialScopeStackTypes;
+	std::vector<const Type*> scopeStackTypes;
 	std::vector<BasicBlock*> predBlocks;
 	/*
 	 * Pointers that must be set the actual offset of this block in optmized code
@@ -266,7 +266,7 @@ struct BasicBlock
 		realEnd = 0xffffffff;
 		originalEnd = 0xffffffff;
 	}
-	Type* peekStack() const
+	const Type* peekStack() const
 	{
 		return stackTypes.back();
 	}
@@ -277,7 +277,7 @@ struct BasicBlock
 		for(uint32_t i=0;i<n;i++)
 			stackTypes.pop_back();
 	}
-	void pushStack(Type* t)
+	void pushStack(const Type* t)
 	{
 		stackTypes.push_back(t);
 	}
@@ -287,7 +287,7 @@ struct BasicBlock
 			throw ParseException("Invalid code in optimizer");
 		scopeStackTypes.pop_back();
 	}
-	void pushScopeStack(Type* t)
+	void pushScopeStack(const Type* t)
 	{
 		scopeStackTypes.push_back(t);
 	}

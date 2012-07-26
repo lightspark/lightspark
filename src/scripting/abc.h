@@ -553,6 +553,7 @@ public:
 	enum EARLY_BIND_STATUS { NOT_BINDED=0, CANNOT_BIND=1, BINDED };
 	static EARLY_BIND_STATUS earlyBindForScopeStack(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<const Type*>& scopeStack, const multiname* name);
+	static const Type* getLocalType(const SyntheticFunction* f, int localIndex);
 
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();

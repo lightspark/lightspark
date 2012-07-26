@@ -146,6 +146,16 @@ bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std:
 	return false;
 }
 
+const Type* ABCVm::getLocalType(const SyntheticFunction* f, int localIndex)
+{
+	if(localIndex==0 && f->isMethod())
+		return f->inClass;
+	else if((localIndex-1) < f->mi->paramTypes.size())
+		return f->mi->paramTypes[localIndex-1];
+
+	return Type::anyType;
+}
+
 void ABCVm::writeInt32(std::ostream& o, int32_t val)
 {
 	o.write((char*)&val, 4);
@@ -1019,7 +1029,8 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 				writeInt32(out,i);
 
-				curBlock->pushStack(Type::anyType);
+				const Type* t=getLocalType(function, i);
+				curBlock->pushStack(t);
 				break;
 			}
 			case 0x63:
@@ -1381,17 +1392,8 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//TODO: collapse on getlocal
 				out << (uint8_t)opcode;
 				//Infer the type of the object when possible
-				if(opcode==0xd0)
-				{
-					//Local 0
-					if(function->isMethod())
-					{
-						curBlock->pushStack(function->inClass);
-						break;
-					}
-				}
-				//No type inferred
-				curBlock->pushStack(Type::anyType);
+				const Type* t=getLocalType(function, opcode-0xd0);
+				curBlock->pushStack(t);
 				break;
 			}
 			case 0xd4:

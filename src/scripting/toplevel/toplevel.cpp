@@ -1245,7 +1245,7 @@ void Class_base::initializeProtectedNamespace(const tiny_string& name, const nam
 		protected_ns=nsNameAndKind(name,baseNs->nsId,(NS_KIND)(int)ns.kind);
 }
 
-variable* Class_base::findBorrowedGettable(const multiname& name)
+const variable* Class_base::findBorrowedGettable(const multiname& name) const
 {
 	return ASObject::findGettableImpl(borrowedVariables,name);
 }

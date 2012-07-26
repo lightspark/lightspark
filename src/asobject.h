@@ -193,6 +193,10 @@ public:
 	*/
 	variable* findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
 	variable* findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
+	/**
+	 * Const version of findObjVar, useful when looking for getters
+	 */
+	const variable* findObjVar(const multiname& mname, uint32_t traitKinds) const;
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind);
 	void killObjVar(const multiname& mname);
@@ -261,11 +265,11 @@ protected:
 				std::map<const Class_base*, uint32_t> traitsMap) const;
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
-	static variable* findGettableImpl(variables_map& map, const multiname& name);
+	static const variable* findGettableImpl(const variables_map& map, const multiname& name);
 private:
 	//maps variable name to namespace and var
 	variables_map Variables;
-	variable* findGettable(const multiname& name) DLL_LOCAL;
+	const variable* findGettable(const multiname& name) const DLL_LOCAL;
 	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 
 	ATOMIC_INT32(ref_count);
@@ -353,7 +357,7 @@ public:
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
 	 */
-	variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
+	const variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
 	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.

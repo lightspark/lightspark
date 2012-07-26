@@ -180,7 +180,7 @@ public:
 		super = super_;
 		copyBorrowedTraitsFromSuper();
 	}
-	variable* findBorrowedGettable(const multiname& name) DLL_LOCAL;
+	const variable* findBorrowedGettable(const multiname& name) const DLL_LOCAL;
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 };
 

@@ -47,7 +47,7 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 			std::cerr << "Unknown type" << std::endl;
 			return CANNOT_BIND;
 		}
-		variable* var=c->findBorrowedGettable(*name);
+		const variable* var=c->findBorrowedGettable(*name);
 		if(var)
 		{
 			found=true;
@@ -69,7 +69,7 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 				return CANNOT_BIND;
 			}
 
-			variable* var=it->object->findVariableByMultiname(*name, ASObject::XML_STRICT, it->object->getClass());
+			const variable* var=it->object->findVariableByMultiname(*name, ASObject::XML_STRICT, it->object->getClass());
 			if(var)
 			{
 				found=true;

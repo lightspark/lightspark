@@ -726,6 +726,39 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	return &inserted->second;
 }
 
+const variable* variables_map::findObjVar(const multiname& mname, uint32_t traitKinds) const
+{
+	uint32_t name=mname.normalizedNameId();
+	assert(!mname.ns.empty());
+
+	const_var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
+	auto nsIt=mname.ns.begin();
+
+	//Find the namespace
+	while(ret!=Variables.end() && ret->first.nameId==name)
+	{
+		//breaks when the namespace is not found
+		const nsNameAndKind& ns=ret->first.ns;
+		if(ns==*nsIt)
+		{
+			if(ret->second.kind & traitKinds)
+				return &ret->second;
+			else
+				return NULL;
+		}
+		else if(*nsIt<ns)
+		{
+			++nsIt;
+			if(nsIt==mname.ns.end())
+				break;
+		}
+		else if(ns<*nsIt)
+			++ret;
+	}
+
+	return NULL;
+}
+
 void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind)
 {
 	const Type* type = NULL;
@@ -868,9 +901,9 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-variable* ASObject::findGettableImpl(variables_map& map, const multiname& name)
+const variable* ASObject::findGettableImpl(const variables_map& map, const multiname& name)
 {
-	variable* ret=map.findObjVar(name,NO_CREATE_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+	const variable* ret=map.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -881,15 +914,15 @@ variable* ASObject::findGettableImpl(variables_map& map, const multiname& name)
 	return ret;
 }
 
-variable* ASObject::findGettable(const multiname& name)
+const variable* ASObject::findGettable(const multiname& name) const
 {
 	return findGettableImpl(Variables,name);
 }
 
-variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
+const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
 {
 	//Get from the current object without considering borrowed properties
-	variable* var=findGettable(name);
+	const variable* var=findGettable(name);
 
 	if(!var && cls)
 	{
@@ -916,7 +949,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
-	variable* obj=findVariableByMultiname(name, opt, cls);
+	const variable* obj=findVariableByMultiname(name, opt, cls);
 
 	if(!obj)
 		return NullRef;

@@ -52,10 +52,10 @@ struct lightspark::BasicBlock
 			scopeStackTypes=initialScopeStackTypes=pred->scopeStackTypes;
 		}
 	}
-	std::vector<const Type*> initialStackTypes;
-	std::vector<const Type*> stackTypes;
-	std::vector<const Type*> initialScopeStackTypes;
-	std::vector<const Type*> scopeStackTypes;
+	std::vector<InferenceData> initialStackTypes;
+	std::vector<InferenceData> stackTypes;
+	std::vector<InferenceData> initialScopeStackTypes;
+	std::vector<InferenceData> scopeStackTypes;
 	std::vector<BasicBlock*> predBlocks;
 	/*
 	 * Pointers that must be set the actual offset of this block in optmized code
@@ -76,7 +76,7 @@ struct lightspark::BasicBlock
 		realEnd = 0xffffffff;
 		originalEnd = 0xffffffff;
 	}
-	const Type* peekStack() const
+	const InferenceData peekStack() const
 	{
 		return stackTypes.back();
 	}
@@ -89,6 +89,10 @@ struct lightspark::BasicBlock
 	}
 	void pushStack(const Type* t)
 	{
+		stackTypes.push_back(InferenceData(t));
+	}
+	void pushStack(InferenceData t)
+	{
 		stackTypes.push_back(t);
 	}
 	void popScopeStack()
@@ -99,12 +103,16 @@ struct lightspark::BasicBlock
 	}
 	void pushScopeStack(const Type* t)
 	{
+		scopeStackTypes.push_back(InferenceData(t));
+	}
+	void pushScopeStack(InferenceData t)
+	{
 		scopeStackTypes.push_back(t);
 	}
 };
 
 ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFunction* f,
-		const std::vector<const Type*>& scopeStack, const multiname* name, InferenceData& inferredData)
+		const std::vector<InferenceData>& scopeStack, const multiname* name, InferenceData& inferredData)
 {
 	//We try to find out the position on the scope stack where the name is found
 	uint32_t totalScopeStackLen = f->func_scope.size() + scopeStack.size();
@@ -114,18 +122,31 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 	for(auto it=scopeStack.rbegin();it!=scopeStack.rend();++it)
 	{
 		totalScopeStackLen--;
-		const Class_base* c=dynamic_cast<const Class_base*>(*it);
-		if(c==NULL)
+		if(!it->isValid())
 		{
-			std::cerr << "Unknown type" << std::endl;
+			std::cerr << "No inferred data" << std::endl;
 			return CANNOT_BIND;
 		}
-		const variable* var=c->findBorrowedGettable(*name);
-		if(var)
+		if(it->type)
 		{
-			found=true;
-			inferredData.type=c;
-			break;
+			const Class_base* c=dynamic_cast<const Class_base*>(it->type);
+			if(c==NULL)
+			{
+				std::cerr << "Unknown type" << std::endl;
+				return CANNOT_BIND;
+			}
+			const variable* var=c->findBorrowedGettable(*name);
+			if(var)
+			{
+				found=true;
+				inferredData=*it;
+				break;
+			}
+		}
+		else //if(it->obj)
+		{
+			std::cerr << "Scope lookup on objects is not supported" << std::endl;
+			return CANNOT_BIND;
 		}
 	}
 
@@ -162,7 +183,7 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 }
 
 InferenceData ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFunction* f,
-		const std::vector<const Type*>& scopeStack, const multiname* name)
+		const std::vector<InferenceData>& scopeStack, const multiname* name)
 {
 	InferenceData ret;
 	EARLY_BIND_STATUS status=earlyBindForScopeStack(out, f, scopeStack, name, ret);
@@ -183,7 +204,7 @@ InferenceData ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFuncti
 	return ret;
 }
 
-bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<const Type*>& scopeStack,
+InferenceData ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std::vector<InferenceData>& scopeStack,
 		const multiname* name, uint32_t nameIndex)
 {
 	InferenceData ret;
@@ -194,10 +215,11 @@ bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std:
 		std::cerr << "SYNT GET " << *name << std::endl;
 		out << (uint8_t)0x66;
 		writeInt32(out,nameIndex);
-		return true;
+		//We can't return the inferredData directly, since we don't know the type of the getted object
+		return InferenceData(Type::anyType);
 	}
 	else if(status==CANNOT_BIND)
-		return false;
+		return ret;
 	//Now look in the application domain
 	ASObject* target;
 	//Now we should serach in the applicationDomain. The system domain is the first one searched. We can safely
@@ -208,7 +230,8 @@ bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std:
 		//Output a special opcode
 		out << (uint8_t)PUSH_EARLY;
 		writePtr(out, o);
-		return true;
+		ret.obj=o;
+		return ret;
 	}
 	//About custom domains. We can't resolve the object now. But we can output a special getLex opcode that will
 	//rewrite itself to a PUSH_EARLY when it's executed.
@@ -219,9 +242,11 @@ bool ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, const std:
 		out << (uint8_t)GET_LEX_ONCE;
 		//Write directly the multiname pointer
 		writePtr(out, name);
-		return true;
+		//We need to set the returned InferenceData to a valid state
+		ret.type=Type::anyType;
+		return ret;
 	}
-	return false;
+	return ret;
 }
 
 const Type* ABCVm::getLocalType(const SyntheticFunction* f, int localIndex)
@@ -794,7 +819,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			case 0x30:
 			{
 				//pushscope
-				const Type* t=curBlock->peekStack();
+				InferenceData t=curBlock->peekStack();
 				curBlock->popStack(1);
 				curBlock->pushScopeStack(t);
 				out << (uint8_t)opcode;
@@ -1044,7 +1069,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					out << (uint8_t)opcode;
 					writeInt32(out,t);
 				}
-				curBlock->pushStack(Type::anyType);
+				curBlock->pushStack(inferredData);
 				break;
 			}
 			case 0x5e:
@@ -1071,19 +1096,19 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					throw ParseException("Bad code in optimizer");
 				const multiname* name=mi->context->getMultiname(t,NULL);
 
-				bool earlyBinded=false;
+				InferenceData inferredData;
 				//Only methods can be early binded, anonymous functions do
 				//not have a fixed function scope stack
 				if(function->isMethod())
-					earlyBinded=earlyBindGetLex(out, function, curBlock->scopeStackTypes, name, t);
-				if(!earlyBinded)
+					inferredData=earlyBindGetLex(out, function, curBlock->scopeStackTypes, name, t);
+				if(!inferredData.isValid())
 				{
 					//Early binding failed, use normal translation
 					out << (uint8_t)opcode;
 					writeInt32(out,t);
 				}
 
-				curBlock->pushStack(Type::anyType);
+				curBlock->pushStack(inferredData);
 				break;
 			}
 			case 0x61:
@@ -1583,8 +1608,8 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			//It may be the starting block or an exception handling block
 			continue;
 		}
-		const vector<const Type*>& predStackTypes=bb.predBlocks[0]->stackTypes;
-		const vector<const Type*>& predScopeStackTypes=bb.predBlocks[0]->scopeStackTypes;
+		const vector<InferenceData>& predStackTypes=bb.predBlocks[0]->stackTypes;
+		const vector<InferenceData>& predScopeStackTypes=bb.predBlocks[0]->scopeStackTypes;
 		for(uint32_t i=0;i<bb.predBlocks.size();i++)
 		{
 			//TODO: should check

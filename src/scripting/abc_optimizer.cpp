@@ -903,14 +903,27 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				curBlock->pushStack(Type::anyType);
 				break;
 			}
+			case 0x4a:
+			{
+				//constructprop
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+				out << (uint8_t)opcode;
+				writeInt32(out,t);
+				writeInt32(out,t2);
+
+				int numRT=mi->context->getMultinameRTData(t);
+				curBlock->popStack(numRT+t2+1);
+				curBlock->pushStack(Type::anyType);
+				break;
+			}
 			case 0x45:
 			case 0x46:
-			case 0x4a:
 			case 0x4c: //callproplex seems to be exactly like callproperty
 			{
 				//callsuper
 				//callproperty
-				//constructprop
 				u30 t,t2;
 				code >> t;
 				code >> t2;
@@ -919,8 +932,32 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				writeInt32(out,t2);
 				
 				int numRT=mi->context->getMultinameRTData(t);
-				curBlock->popStack(numRT+1+t2);
-				curBlock->pushStack(Type::anyType);
+				curBlock->popStack(numRT+t2);
+				InferenceData baseData=curBlock->peekStack();
+				//Try to infer the return type
+				InferenceData inferredData;
+				if(baseData.isValid() && numRT==0)
+				{
+					const multiname* name=mi->context->getMultiname(t,NULL);
+					if(baseData.type)
+					{
+						const Class_base* objType=dynamic_cast<const Class_base*>(baseData.type);
+						if(objType)
+						{
+							const variable* var=objType->findBorrowedGettable(*name);
+							assert(var);
+							if(var && var->var && var->var->getObjectType()==T_FUNCTION)
+							{
+								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(var->var);
+								if(calledFunc)
+									inferredData.type=calledFunc->mi->returnType;
+							}
+						}
+					}
+				}
+				//The object is the last thing in the stack
+				curBlock->popStack(1);
+				curBlock->pushStack(inferredData);
 				break;
 			}
 			case 0x47:

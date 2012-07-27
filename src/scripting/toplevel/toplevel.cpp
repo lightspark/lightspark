@@ -256,7 +256,7 @@ void SyntheticFunction::finalize()
  */
 ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs)
 {
-	const uint32_t opt_hit_threshold=0;
+	const uint32_t opt_hit_threshold=1;
 	const uint32_t jit_hit_threshold=20;
 	assert_and_throw(mi->body);
 	const uint32_t hit_count = mi->body->hit_count;

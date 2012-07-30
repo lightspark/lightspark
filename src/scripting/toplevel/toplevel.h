@@ -522,6 +522,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {};
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	_NR<ASObject> getVariableByMultinameOpportunistic(const multiname& name);
 	/*
 	 * Utility method to register builtin methods and classes
 	 */

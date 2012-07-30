@@ -28,7 +28,7 @@
 using namespace std;
 using namespace lightspark;
 
-enum SPECIAL_OPCODES { GET_SCOPE_AT_INDEX = 0xfd, GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
+enum SPECIAL_OPCODES { COERCE_EARLY = 0xfc, GET_SCOPE_AT_INDEX = 0xfd, GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
 
 struct lightspark::InferenceData
 {
@@ -191,7 +191,7 @@ InferenceData ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFuncti
 		return ret;
 	//Look on the application domain
 	ASObject* target;
-	bool found = f->mi->context->root->applicationDomain->findVariableAndTargetByMultiname(*name, target);
+	bool found = f->mi->context->root->applicationDomain->findTargetByMultiname(*name, target);
 	if(found)
 	{
 		//If we found the property on the application domain we can safely use the target verbatim
@@ -236,7 +236,7 @@ InferenceData ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, c
 	//About custom domains. We can't resolve the object now. But we can output a special getLex opcode that will
 	//rewrite itself to a PUSH_EARLY when it's executed.
 	//NOTE: We use findVariableByMultiname because we don't want to actually run the init scripts now
-	bool found = f->mi->context->root->applicationDomain->findVariableAndTargetByMultiname(*name, target);
+	bool found = f->mi->context->root->applicationDomain->findTargetByMultiname(*name, target);
 	if(found)
 	{
 		out << (uint8_t)GET_LEX_ONCE;
@@ -685,7 +685,10 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			case 0x20:
 			{
 				//pushnull
-				curBlock->pushStack(Type::anyType);
+				ASObject* ret=getSys()->getNullRef();
+				//We don't really need a reference to it
+				ret->decRef();
+				curBlock->pushStack(InferenceData(ret));
 				out << (uint8_t)opcode;
 				break;
 			}
@@ -1331,12 +1334,42 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//TODO: it may be optimized here
 				u30 t;
 				code >> t;
-				out << (uint8_t)opcode;
-				writeInt32(out,t);
 				int numRT=mi->context->getMultinameRTData(t);
 				//No runtime multinames are accepted
 				if(numRT)
 					throw ParseException("Bad code in optimizer");
+				InferenceData baseData=curBlock->peekStack();
+				const multiname* name=mi->context->getMultiname(t,NULL);
+				if(baseData.type)
+				{
+					const Class_base* objType=dynamic_cast<const Class_base*>(baseData.type);
+					if(objType)
+					{
+						std::cerr << *name << std::endl;
+						//Try to resolve the type is it is already defined
+						ASObject* ret=mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
+						if(ret->getObjectType()==T_CLASS)
+						{
+							Class_base* c=static_cast<Class_base*>(ret);
+							if(objType->isSubClass(c))
+							{
+								//We can skip the coercion
+								break;
+							}
+						}
+					}
+				}
+				else if(baseData.obj)
+				{
+					//If the object is Null we can skip the coercion
+					if(baseData.obj->getObjectType()==T_NULL)
+						break;
+				}
+				out << (uint8_t)opcode;
+				//Translate coerce to a rewriting opcode
+				//The pointer to the multiname will become the pointer to
+				//the type after the first execution
+				writePtr(out,name);
 				curBlock->popStack(1);
 				curBlock->pushStack(Type::anyType);
 				break;

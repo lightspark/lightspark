@@ -157,7 +157,7 @@ ASObject* ABCVm::coerce_s(ASObject* o)
 void ABCVm::coerce(call_context* th, int n)
 {
 	multiname* mn = th->context->getMultiname(n,NULL);
-	LOG(LOG_CALLS,_("coerce ") << *mn);
+	LOG(LOG_CALLS,"coerce " << *mn);
 
 	const Type* type = Type::getTypeFromMultiname(mn, th->context);
 

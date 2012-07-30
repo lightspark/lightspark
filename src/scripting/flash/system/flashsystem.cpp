@@ -272,12 +272,12 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 	return getVariableAndTargetByMultiname(name, target);
 }
 
-bool ApplicationDomain::findVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
+bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& target)
 {
 	//Check in the parent first
 	if(!parentDomain.isNull())
 	{
-		bool ret=parentDomain->findVariableAndTargetByMultiname(name, target);
+		bool ret=parentDomain->findTargetByMultiname(name, target);
 		if(ret)
 			return true;
 	}
@@ -310,6 +310,28 @@ ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& na
 		if(!o.isNull())
 		{
 			target=globalScopes[i];
+			// No incRef, return a reference borrowed from globalScopes
+			return o.getPtr();
+		}
+	}
+	return NULL;
+}
+
+ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname& name)
+{
+	//Check in the parent first
+	if(!parentDomain.isNull())
+	{
+		ASObject* ret=parentDomain->getVariableByMultinameOpportunistic(name);
+		if(ret)
+			return ret;
+	}
+
+	for(uint32_t i=0;i<globalScopes.size();i++)
+	{
+		_NR<ASObject> o=globalScopes[i]->getVariableByMultinameOpportunistic(name);
+		if(!o.isNull())
+		{
 			// No incRef, return a reference borrowed from globalScopes
 			return o.getPtr();
 		}

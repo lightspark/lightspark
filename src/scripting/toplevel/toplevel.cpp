@@ -1825,6 +1825,13 @@ void Global::sinit(Class_base* c)
 	c->setSuper(Class<ASObject>::getRef());
 }
 
+_NR<ASObject> Global::getVariableByMultinameOpportunistic(const multiname& name)
+{
+	_NR<ASObject> ret = ASObject::getVariableByMultiname(name, NONE);
+	//Do not attempt to define the variable now in any case
+	return ret;
+}
+
 _NR<ASObject> Global::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	_NR<ASObject> ret = ASObject::getVariableByMultiname(name, opt);

@@ -325,6 +325,7 @@ void URLLoader::sinit(Class_base* c)
 	c->setSuper(Class<EventDispatcher>::getRef());
 	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_setData),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
@@ -454,6 +455,18 @@ ASFUNCTIONBODY(URLLoader,_getData)
 	
 	th->data->incRef();
 	return th->data.getPtr();
+}
+
+ASFUNCTIONBODY(URLLoader,_setData)
+{
+	if(!obj->is<URLLoader>())
+		throw Class<ArgumentError>::getInstanceS("Function applied to wrong object");
+	URLLoader* th = obj->as<URLLoader>();
+	if(argslen != 1)
+		throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter");
+	args[0]->incRef();
+	th->setData(_MR(args[0]));
+	return NULL;
 }
 
 ASFUNCTIONBODY(URLLoader,_setDataFormat)

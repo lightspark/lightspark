@@ -138,6 +138,7 @@ public:
 	ASFUNCTION(close);
 	ASFUNCTION(_getDataFormat);
 	ASFUNCTION(_getData);
+	ASFUNCTION(_setData);
 	ASFUNCTION(_setDataFormat);
 	ASPROPERTY_GETTER_SETTER(uint32_t, bytesLoaded);
 	ASPROPERTY_GETTER_SETTER(uint32_t, bytesTotal);

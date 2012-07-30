@@ -36,6 +36,7 @@ struct OpcodeData
 		double doubles[0];
 		ASObject* objs[0];
 		const multiname* names[0];
+		const Type* types[0];
 	};
 };
 
@@ -953,9 +954,21 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x80:
 			{
 				//coerce
-				uint32_t t=data->uints[0];
-				instructionPointer+=4;
-				coerce(context, t);
+				const multiname* name=data->names[0];
+				char* rewriteableCode = &(mi->body->code[0]);
+				const Type* type = Type::getTypeFromMultiname(name, context->context);
+				OpcodeData* rewritableData=reinterpret_cast<OpcodeData*>(rewriteableCode+instructionPointer);
+				//Rewrite this to a coerceEarly
+				rewriteableCode[instructionPointer-1]=0xfc;
+				rewritableData->types[0]=type;
+
+				LOG(LOG_CALLS,"coerceOnce " << *name);
+
+				ASObject* o=context->runtime_stack_pop();
+				o=type->coerce(o);
+				context->runtime_stack_push(o);
+
+				instructionPointer+=8;
 				break;
 			}
 			case 0x82:
@@ -1368,6 +1381,19 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				break;
 			}
 			//lightspark custom opcodes
+			case 0xfc:
+			{
+				//coerceearly
+				const Type* type = data->types[0];
+				LOG(LOG_CALLS,"coerceEarly " << type);
+
+				ASObject* o=context->runtime_stack_pop();
+				o=type->coerce(o);
+				context->runtime_stack_push(o);
+
+				instructionPointer+=8;
+				break;
+			}
 			case 0xfd:
 			{
 				//getscopeatindex

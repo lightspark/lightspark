@@ -9,9 +9,14 @@
 <![CDATA[
 import flash.display.BitmapData;
 
+private function onMouseDown(e:Event):void
+{
+	trace("mouseDown "+e.target);
+}
+
 private function appComplete():void
 {
-	var b1:BitmapData = new BitmapData(400,400);
+	var b1:BitmapData = new BitmapData(200,200);
 	var c:DisplayObjectContainer = new Sprite();
 	c.x = 100;
 	c.y = 50;
@@ -45,6 +50,20 @@ private function appComplete():void
 	var b5:Bitmap = new Bitmap(b3);
 	b5.x=200;
 	visual.addChild(b5);
+
+	var b6:BitmapData = new BitmapData(200,200,false,0x000000);
+	var b7:Bitmap = new Bitmap(b6);
+	b7.y=200;
+	visual.addChild(b7);
+
+	var b8:BitmapData = new BitmapData(200,200,true,0x000000);
+	var b9:Bitmap = new Bitmap(b8);
+	b9.x=200;
+	b9.y=200;
+	visual.addChild(b9);
+
+	trace("test");
+	visual.addEventListener("mouseDown",onMouseDown);
 }
 ]]>
 </mx:Script>

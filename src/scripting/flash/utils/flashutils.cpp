@@ -1390,11 +1390,11 @@ ASFUNCTIONBODY(Timer,reset)
 		getSys()->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
-		th->currentCount=0;
 		//This is not anymore used by the timer, so it can die
 		th->decRef();
 		th->running=false;
 	}
+	th->currentCount=0;
 	return NULL;
 }
 

@@ -57,7 +57,7 @@ bool BitmapContainer::fromJPEG(uint8_t *inData, int len)
 	uint32_t w,h;
 	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &w, &h);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, true);
 }
 
 bool BitmapContainer::fromJPEG(std::istream &s)
@@ -67,7 +67,7 @@ bool BitmapContainer::fromJPEG(std::istream &s)
 	uint32_t w,h;
 	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &w, &h);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, true);
 }
 
 bool BitmapContainer::fromPNG(std::istream &s)

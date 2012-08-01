@@ -707,7 +707,7 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 		{
 			uint32_t* outDataPos = (uint32_t*)(outData+i*(*stride)) + j;
 			uint32_t pdata = 0xFF;
-			/* the alpha channel is set to zero above */
+			/* the alpha channel is set to opaque above */
 			uint8_t* rgbData = ((uint8_t*)&pdata)+1;
 			/* copy the RGB bytes to rgbData */
 			memcpy(rgbData, inData+(i*width+j)*3, 3);

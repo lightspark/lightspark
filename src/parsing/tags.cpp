@@ -717,15 +717,9 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 	assert(!zfstream.fail() && !zfstream.eof());
 
 	if(version == 1)
-	{	/* for version 1, the alpha field is always zero
-		 * but should not be interpreted. Setting it to
-		 * 0xff (opaque) allows us to handle it as ARGB
-		 */
-		for(size_t i=0;i<size;i+=4)
-			inData[i] = 0xFF;
-	}
-
-	fromRGB(inData, BitmapWidth, BitmapHeight, true);
+		fromRGB(inData, BitmapWidth, BitmapHeight, false);
+	else
+		fromRGB(inData, BitmapWidth, BitmapHeight, true);
 }
 
 ASObject* BitmapTag::instance(Class_base* c) const

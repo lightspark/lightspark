@@ -184,6 +184,8 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uin
 	jpeg_create_decompress(&cinfo);
 	cinfo.src = &src;
 	jpeg_read_header(&cinfo, TRUE);
+	cinfo.out_color_space = JCS_EXT_XRGB;
+	cinfo.output_components = 4;
 	jpeg_start_decompress(&cinfo);
 
 	*width = cinfo.output_width;
@@ -196,6 +198,7 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uin
 		jpeg_destroy_decompress(&cinfo);
 		return NULL;
 	}
+	assert(cinfo.output_components == 4);
 
 	int rowstride = cinfo.output_width * cinfo.output_components;
 	JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, rowstride, 1);

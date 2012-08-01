@@ -617,18 +617,27 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 
 	// Set the current root callback only if there isn't one already
 	bool rootCallback = false;
+
+	// We must avoid colliding with Flash code attemping an external call now
+	mutex.lock();
+
 	if(currentCallback == NULL)
 	{
 		// Remember to reset the current callback
 		rootCallback = true;
 		currentCallback = callback;
 	}
+
 	// Call the callback synchronously if:
 	// - We are not the root callback
 	//     (case: BROWSER -> invoke -> VM -> external call -> BROWSER -> invoke)
 	// - We are the root callback AND we are being called from within an external call
 	//     (case: VM -> external call -> BROWSER -> invoke)
 	bool synchronous = !rootCallback || (rootCallback && callStatusses.size() == 1);
+
+	//Now currentCallback have been set, the VM thread will notice this and invoke the code using
+	//a forced wake up
+	mutex.unlock();
 
 	// Call our callback.
 	// We can call it synchronously in the cases specified above.
@@ -637,6 +646,10 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	callback->call(*this, objId, objArgs, argc, synchronous);
 	// Wait for its result or a forced wake-up
 	callback->wait();
+
+	//Again, hostCallData is shared between the VM thread and the main thread and it should be protected
+	mutex.lock();
+
 	// As long as we get forced wake-ups, execute the requested external calls and keep waiting.
 	// Note that only the root callback can be forcibly woken up.
 	while(hostCallData != NULL)
@@ -647,10 +660,12 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 		// This will make sure another nested external call will
 		// be handled properly.
 		hostCallData = NULL;
+		mutex.unlock();
 		// Execute the external call
 		hostCallHandler(data);
 		// Keep waiting
 		callback->wait();
+		mutex.lock();
 	}
 	// Get the result of our callback
 	bool res = callback->getResult(*this, &objResult);
@@ -658,6 +673,9 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	// Reset the root current callback to NULL, if necessary
 	if(rootCallback)
 		currentCallback = NULL;
+
+	// No more shared data should be used hereafter
+	mutex.unlock();
 
 	// Delete our callback after use
 	delete callback;
@@ -776,9 +794,6 @@ void NPScriptObject::doHostCall(NPScriptObject::HOST_CALL_TYPE type,
 	// Add this callStatus semaphore to the list of running call statuses to be cleaned up on shutdown
 	callStatusses.push(&callStatus);
 
-	// Called JS may invoke a callback, which in turn may invoke another external method, which needs this mutex
-	mutex.unlock();
-
 	// Main thread is not occupied by an invoked callback,
 	// so ask the browser to asynchronously call our external function.
 	if(currentCallback == NULL)
@@ -790,6 +805,9 @@ void NPScriptObject::doHostCall(NPScriptObject::HOST_CALL_TYPE type,
 		hostCallData = &callData;
 		currentCallback->wakeUp();
 	}
+
+	// Called JS may invoke a callback, which in turn may invoke another external method, which needs this mutex
+	mutex.unlock();
 
 	// Wait for the (possibly asynchronously) called function to finish
 	callStatus.wait();

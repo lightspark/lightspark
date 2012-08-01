@@ -59,6 +59,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("copyPixels","",Class<IFunction>::getFunction(copyPixels),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fillRect","",Class<IFunction>::getFunction(fillRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("generateFilterRect","",Class<IFunction>::getFunction(generateFilterRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(hitTest),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
 	REGISTER_GETTER(c,transparent);
@@ -402,4 +403,33 @@ ASFUNCTIONBODY(BitmapData,generateFilterRect)
 	rect->width=th->width;
 	rect->height=th->height;
 	return rect;
+}
+
+ASFUNCTIONBODY(BitmapData,hitTest)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+
+	_NR<Point> firstPoint;
+	uint32_t firstAlphaThreshold;
+	_NR<ASObject> secondObject;
+	_NR<Point> secondBitmapDataPoint;
+	uint32_t secondAlphaThreshold;
+	ARG_UNPACK (firstPoint) (firstAlphaThreshold) (secondObject) (secondBitmapDataPoint, NullRef)
+					(secondAlphaThreshold,1);
+
+	if(!secondObject->getClass() || !secondObject->getClass()->isSubClass(Class<Point>::getClass()))
+		throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
+
+	if(!secondBitmapDataPoint.isNull() || secondAlphaThreshold!=1)
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest does not expect some parameters");
+
+	Point* secondPoint = secondObject->as<Point>();
+
+	uint32_t pix=th->getPixelPriv(firstPoint->getX()+secondPoint->getX(), firstPoint->getY()+secondPoint->getY());
+	if((pix>>24)>=firstAlphaThreshold)
+		return abstract_b(true);
+	else
+		return abstract_b(false);
 }

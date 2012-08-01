@@ -61,6 +61,7 @@ public:
 	ASFUNCTION(copyPixels);
 	ASFUNCTION(fillRect);
 	ASFUNCTION(generateFilterRect);
+	ASFUNCTION(hitTest);
 	ASFUNCTION(_getter_width);
 	ASFUNCTION(_getter_height);
 };

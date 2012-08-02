@@ -205,6 +205,15 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
 	null=_MR(new (unaccountedMemory) Null);
 	undefined=_MR(new (unaccountedMemory) Undefined);
+
+	//Untangle the messy relationship between class objects and the Class class
+	Class_object* classObject = Class_object::getClass();
+	//Getting the Object class object will set the classdef to the Class_object
+	//like any other class. This happens inside Class_base constructor
+	_R<Class_base> asobjectClass = Class<ASObject>::getRef();
+	//The only bit remaining is setting the Object class as the super class for Class
+	classObject->setSuper(asobjectClass);
+
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());
 	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(systemDomain));
 	securityDomain = _MR(Class<SecurityDomain>::getInstanceS());

@@ -697,11 +697,21 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 	return typeObject->as<Type>();
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(m),use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass()),use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),
 	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(m)),borrowedVariables(m),
 	isFinal(false),isSealed(false),length(1),context(NULL),class_name(name),class_index(-1),memoryAccount(m)
 {
 	type=T_CLASS;
+}
+
+Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),
+	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(NULL)),borrowedVariables(NULL),
+	isFinal(false),isSealed(false),length(1),context(NULL),class_name("Class",""),class_index(-1),memoryAccount(NULL)
+{
+	type=T_CLASS;
+	//We have tested that (Class is Class == true) so the classdef is 'this'
+	classdef=this;
+	//The super is Class<ASObject> but we set it in SystemState constructor to avoid an infinite loop
 }
 
 /*

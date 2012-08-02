@@ -45,6 +45,7 @@ struct traits_info;
 class namespace_info;
 class Any;
 class Void;
+class Class_object;
 /* This abstract class represents a type, i.e. something that a value can be coerced to.
  * Currently Class_base and Template_base implement this interface.
  * If you let another class implement this interface, change ASObject->is<Type>(), too!
@@ -144,6 +145,8 @@ public:
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	Class_base(const QName& name, MemoryAccount* m);
+	//Special constructor for Class_object
+	Class_base(const Class_object*);
 	~Class_base();
 	void finalize();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)=0;
@@ -196,7 +199,8 @@ public:
 class Class_object: public Class_base
 {
 private:
-	Class_object():Class_base(QName("Class",""),NULL){}
+	//Invoke the special constructor that will set the super to Object
+	Class_object():Class_base(this){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 	{
 		throw RunTimeException("Class_object::getInstance");

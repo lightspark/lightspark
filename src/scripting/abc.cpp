@@ -1324,16 +1324,6 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 
 		objc=obj->classdef;
 	}
-	else if(obj->getObjectType()==T_CLASS)
-	{
-		assert_and_throw(type->getObjectType()==T_CLASS);
-
-		//Special case for Class
-		if(c->class_name.name=="Class" && c->class_name.ns=="")
-			return true;
-		else
-			return false;
-	}
 	else
 	{
 		real_ret=obj->getObjectType()==type->getObjectType();

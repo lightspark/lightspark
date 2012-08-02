@@ -1555,25 +1555,6 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 
 		objc=obj->classdef;
 	}
-	else if(obj->getObjectType()==T_CLASS)
-	{
-		assert_and_throw(type->getObjectType()==T_CLASS);
-
-		//Special case for Class
-		if(c->class_name.ns=="" &&
-			(c->class_name.name=="Class" || c->class_name.name=="Object"))
-		{
-			type->decRef();
-			obj->decRef();
-			return true;
-		}
-		else
-		{
-			type->decRef();
-			obj->decRef();
-			return false;
-		}
-	}
 	else
 	{
 		real_ret=obj->getObjectType()==type->getObjectType();
@@ -1650,19 +1631,6 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	Class_base* objc;
 	if(obj->classdef)
 		objc=obj->classdef;
-	else if(obj->getObjectType()==T_CLASS)
-	{
-		//Special case for Class
-		if(c->class_name.ns=="" &&
-			(c->class_name.name=="Class" || c->class_name.name=="Object"))
-		{
-			type->decRef();
-			return obj;
-		}
-		obj->decRef();
-		type->decRef();
-		return getSys()->getNullRef();
-	}
 	else
 	{
 		obj->decRef();

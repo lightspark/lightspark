@@ -19,6 +19,16 @@
 		var c:Class = DisplayObject;
 		Tests.assertEquals(c, c as Object, "Class object as Object");
 		Tests.assertEquals(true, c is Object, "Class object is Object");
+		Tests.assertEquals(c, c as Class, "Class object as Class");
+		Tests.assertEquals(true, c is Class, "Class object is Class");
+		Tests.assertTrue(Class is Class, "Class is Class");
+		Tests.assertTrue(Class is Object, "Class is Object");
+		Tests.assertFalse(DisplayObject is DisplayObject, "DisplayObject is not DisplayObject");
+
+		var o:Object = DisplayObject as Object;
+		o["test"] = "foobar";
+
+		Tests.assertTrue(o.hasOwnProperty("test"),"hasOwnProperty on classes");
 
 		Tests.report(visual, this.name);
 	}

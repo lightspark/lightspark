@@ -2089,7 +2089,7 @@ void ABCVm::swap()
 
 ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 {
-	LOG(LOG_CALLS,_("newActivation"));
+	LOG(LOG_CALLS,"newActivation");
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act=Class<ASObject>::getInstanceS();

@@ -2284,3 +2284,21 @@ _NR<ASObject> Function_object::getVariableByMultiname(const multiname& name, GET
 
 	return functionPrototype->getVariableByMultiname(name, opt);
 }
+
+EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& name) const
+{
+	std::cerr << "Looking for " << name << std::endl;
+	for(unsigned int i=0;i<mi->body->trait_count;i++)
+	{
+		const traits_info* t=&mi->body->traits[i];
+		multiname* mname=mi->context->getMultiname(t->name,NULL);
+		std::cerr << "\t in " << *mname << std::endl;
+		assert_and_throw(mname->ns.size()==1 && mname->name_type==multiname::NAME_STRING);
+		if(mname->name_s_id!=name.normalizedNameId())
+			continue;
+		if(find(name.ns.begin(),name.ns.end(),mname->ns[0])==name.ns.end())
+			continue;
+		return BINDED;
+	}
+	return NOT_BINDED;
+}

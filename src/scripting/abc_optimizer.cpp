@@ -315,6 +315,7 @@ void ABCVm::writeBranchAddress(std::map<uint32_t,BasicBlock>& basicBlocks, int h
 void ABCVm::optimizeFunction(SyntheticFunction* function)
 {
 	method_info* mi=function->mi;
+	ActivationType activationType(mi);
 
 	istringstream code(mi->body->code);
 	const int code_len=mi->body->code.size();
@@ -1044,7 +1045,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			{
 				//newactivation
 				out << (uint8_t)opcode;
-				curBlock->pushStack(Type::anyType);
+				curBlock->pushStack(&activationType);
 				break;
 			}
 			case 0x58:

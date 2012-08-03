@@ -111,6 +111,21 @@ public:
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; };
 };
 
+/*
+ * This class is used exclusively to do early binding when a method uses newactivation
+ */
+class ActivationType: public Type
+{
+private:
+	const method_info* mi;
+public:
+	ActivationType(const method_info* m):mi(m){}
+	ASObject* coerce(ASObject* o) const { throw RunTimeException("Coercing to an ActivationType should not happen");};
+	virtual ~ActivationType() {};
+	tiny_string getName() const { return "activation"; }
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
+};
+
 class Prototype;
 
 class Class_base: public ASObject, public Type

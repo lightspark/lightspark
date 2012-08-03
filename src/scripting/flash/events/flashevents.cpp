@@ -893,12 +893,43 @@ void StatusEvent::sinit(Class_base* c)
 void DataEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<Event>::getRef());
+	c->setSuper(Class<TextEvent>::getRef());
 
 	/* TODO: dispatch this event */
 	c->setVariableByQName("DATA","",Class<ASString>::getInstanceS("data"),DECLARED_TRAIT);
 	/* TODO: dispatch this event */
 	c->setVariableByQName("UPLOAD_COMPLETE_DATA","",Class<ASString>::getInstanceS("uploadCompleteData"),DECLARED_TRAIT);
+
+	REGISTER_GETTER_SETTER(c, data);
+}
+
+ASFUNCTIONBODY_GETTER_SETTER(DataEvent, data);
+
+ASFUNCTIONBODY(DataEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	TextEvent::_constructor(obj,args,baseClassArgs);
+
+	DataEvent* th=static_cast<DataEvent*>(obj);
+	if (argslen >= 4)
+	{
+		th->data = args[3]->toString();
+	}
+
+	return NULL;
+}
+
+Event* DataEvent::cloneImpl() const
+{
+	DataEvent *clone = Class<DataEvent>::getInstanceS();
+	clone->data = data;
+	// TextEvent
+	clone->text = text;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
 }
 
 void InvokeEvent::sinit(Class_base* c)

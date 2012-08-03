@@ -331,12 +331,16 @@ public:
 	static void buildTraits(ASObject* o) {}
 };
 
-class DataEvent: public Event
+class DataEvent: public TextEvent
 {
+private:
+	Event* cloneImpl() const;
 public:
-	DataEvent(Class_base* c) : Event(c, "DataEvent") {}
+	DataEvent(Class_base* c, const tiny_string& _data="") : TextEvent(c, "DataEvent"), data(_data) {}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o) {}
+	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(tiny_string, data);
 };
 
 class RootMovieClip;

@@ -490,7 +490,6 @@ public:
 			const std::vector<InferenceData>& scopeStack, const multiname* name, uint32_t name_index);
 	static InferenceData earlyBindFindPropStrict(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<InferenceData>& scopeStack, const multiname* name);
-	enum EARLY_BIND_STATUS { NOT_BINDED=0, CANNOT_BIND=1, BINDED };
 	static EARLY_BIND_STATUS earlyBindForScopeStack(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<InferenceData>& scopeStack, const multiname* name, InferenceData& inferredData);
 	static const Type* getLocalType(const SyntheticFunction* f, int localIndex);

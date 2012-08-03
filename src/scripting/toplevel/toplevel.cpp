@@ -1265,6 +1265,14 @@ variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_gett
 	return ASObject::findSettableImpl(borrowedVariables,name,has_getter);
 }
 
+EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) const
+{
+	if(findBorrowedGettable(name)!=NULL)
+		return BINDED;
+	else
+		return NOT_BINDED;
+}
+
 ASQName::ASQName(Class_base* c):ASObject(c)
 {
 	type=T_QNAME; uri_is_null=false;

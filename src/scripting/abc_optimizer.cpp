@@ -111,7 +111,7 @@ struct lightspark::BasicBlock
 	}
 };
 
-ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFunction* f,
+EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFunction* f,
 		const std::vector<InferenceData>& scopeStack, const multiname* name, InferenceData& inferredData)
 {
 	//We try to find out the position on the scope stack where the name is found
@@ -129,14 +129,10 @@ ABCVm::EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const Synth
 		}
 		if(it->type)
 		{
-			const Class_base* c=dynamic_cast<const Class_base*>(it->type);
-			if(c==NULL)
-			{
-				std::cerr << "Unknown type" << std::endl;
+			EARLY_BIND_STATUS status=it->type->resolveMultinameStatically(*name);
+			if(status==CANNOT_BIND)
 				return CANNOT_BIND;
-			}
-			const variable* var=c->findBorrowedGettable(*name);
-			if(var)
+			if(status==BINDED)
 			{
 				found=true;
 				inferredData=*it;

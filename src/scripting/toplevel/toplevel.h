@@ -46,6 +46,10 @@ class namespace_info;
 class Any;
 class Void;
 class Class_object;
+
+// Enum used during early binding in abc_optimizer.cpp
+enum EARLY_BIND_STATUS { NOT_BINDED=0, CANNOT_BIND=1, BINDED };
+
 /* This abstract class represents a type, i.e. something that a value can be coerced to.
  * Currently Class_base and Template_base implement this interface.
  * If you let another class implement this interface, change ASObject->is<Type>(), too!
@@ -82,6 +86,9 @@ public:
 
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
 	virtual tiny_string getName() const=0;
+
+	/* Returns true if the given multiname is present in the declared traits of the type */
+	virtual EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const = 0;
 };
 template<> inline Type* ASObject::as<Type>() { return dynamic_cast<Type*>(this); }
 template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<const Type*>(this); }
@@ -92,6 +99,7 @@ public:
 	ASObject* coerce(ASObject* o) const { return o; }
 	virtual ~Any() {};
 	tiny_string getName() const { return "any"; }
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return CANNOT_BIND; };
 };
 
 class Void: public Type
@@ -100,6 +108,7 @@ public:
 	ASObject* coerce(ASObject* o) const;
 	virtual ~Void() {};
 	tiny_string getName() const { return "void"; }
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; };
 };
 
 class Prototype;
@@ -185,6 +194,7 @@ public:
 	}
 	const variable* findBorrowedGettable(const multiname& name) const DLL_LOCAL;
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
 };
 
 class Template_base : public ASObject

@@ -757,9 +757,10 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			{
 				//dup
 				out << (uint8_t)opcode;
+				InferenceData data=curBlock->peekStack();
 				curBlock->popStack(1);
-				curBlock->pushStack(Type::anyType);
-				curBlock->pushStack(Type::anyType);
+				curBlock->pushStack(data);
+				curBlock->pushStack(data);
 				break;
 			}
 			case 0x2b:

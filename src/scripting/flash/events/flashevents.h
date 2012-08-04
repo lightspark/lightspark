@@ -336,7 +336,7 @@ class DataEvent: public TextEvent
 private:
 	Event* cloneImpl() const;
 public:
-	DataEvent(Class_base* c, const tiny_string& _data="") : TextEvent(c, "DataEvent"), data(_data) {}
+	DataEvent(Class_base* c, const tiny_string& _data="") : TextEvent(c, "data"), data(_data) {}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o) {}
 	ASFUNCTION(_constructor);

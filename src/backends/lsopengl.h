@@ -43,6 +43,7 @@
 	#ifndef _WIN32
 		#include <GL/glx.h>
 	#endif
+	#undef None // conflicts with libxml++ headers
 #endif
 
 #endif

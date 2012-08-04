@@ -55,9 +55,10 @@ bool BitmapContainer::fromJPEG(uint8_t *inData, int len)
 	assert(data.empty());
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
-	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &w, &h);
+	bool hasAlpha;
+	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &w, &h, &hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, true);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, hasAlpha);
 }
 
 bool BitmapContainer::fromJPEG(std::istream &s)
@@ -65,9 +66,10 @@ bool BitmapContainer::fromJPEG(std::istream &s)
 	assert(data.empty());
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
-	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &w, &h);
+	bool hasAlpha;
+	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &w, &h, &hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, true);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, hasAlpha);
 }
 
 bool BitmapContainer::fromPNG(std::istream &s)

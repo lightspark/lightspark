@@ -138,7 +138,7 @@ void error_exit(j_common_ptr cinfo) {
 	longjmp(error->jmpBuf, -1);
 }
 
-uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, uint32_t* width, uint32_t* height)
+uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
 	struct source_mgr src(inData,len);
 
@@ -148,10 +148,10 @@ uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, uint32_t* width, uin
 	src.resync_to_restart = resync_to_restart;
 	src.term_source = term_source;
 
-	return decodeJPEGImpl(src, width, height);
+	return decodeJPEGImpl(src, width, height, hasAlpha);
 }
 
-uint8_t* ImageDecoder::decodeJPEG(std::istream& str, uint32_t* width, uint32_t* height)
+uint8_t* ImageDecoder::decodeJPEG(std::istream& str, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
 	struct istream_source_mgr src(str);
 
@@ -163,13 +163,13 @@ uint8_t* ImageDecoder::decodeJPEG(std::istream& str, uint32_t* width, uint32_t* 
 	src.resync_to_restart = jpeg_resync_to_restart;
 	src.term_source = term_source;
 
-	uint8_t* res=decodeJPEGImpl(src, width, height);
+	uint8_t* res=decodeJPEGImpl(src, width, height, hasAlpha);
 
 	delete[] src.data;
 	return res;
 }
 
-uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uint32_t* height)
+uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
 	struct jpeg_decompress_struct cinfo;
 	struct error_mgr err;
@@ -184,8 +184,12 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uin
 	jpeg_create_decompress(&cinfo);
 	cinfo.src = &src;
 	jpeg_read_header(&cinfo, TRUE);
+#ifdef JCS_EXTENSIONS
+	//JCS_EXT_XRGB is a fast decoder that outputs alpha channel,
+	//but is only available on libjpeg-turbo
 	cinfo.out_color_space = JCS_EXT_XRGB;
 	cinfo.output_components = 4;
+#endif
 	jpeg_start_decompress(&cinfo);
 
 	*width = cinfo.output_width;
@@ -198,7 +202,9 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uin
 		jpeg_destroy_decompress(&cinfo);
 		return NULL;
 	}
-	assert(cinfo.output_components == 4);
+	assert(cinfo.output_components == 3 || cinfo.output_components == 4);
+
+	*hasAlpha = (cinfo.output_components == 4);
 
 	int rowstride = cinfo.output_width * cinfo.output_components;
 	JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, rowstride, 1);

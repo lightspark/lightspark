@@ -67,8 +67,8 @@ namespace lightspark
 		const std::string& getPermittedPolicies() const { return permittedPolicies; }
 		//allow-access-from & allow-http-request-headers-from
 		const std::string& getDomain() const { return domain; }
-		bool getSecure() { return secure; };
-		bool getSecureSpecified() { return secureSpecified; }
+		bool getSecure() const { return secure; };
+		bool getSecureSpecified() const { return secureSpecified; }
 		//allow-access-from
 		const std::string& getToPorts() const { return toPorts; }
 		//allow-http-request-headers-from

@@ -27,12 +27,16 @@
 #include <map>
 #include <cinttypes>
 #include "swftypes.h"
+#include "threading.h"
+#include "urlutils.h"
+#include "parsing/crossdomainpolicy.h"
 
 namespace lightspark
 {
 
 class PolicyFile;
 class URLPolicyFile;
+class SocketPolicyFile;
 typedef std::list<URLPolicyFile*> URLPFileList;
 typedef std::list<URLPolicyFile*>::iterator URLPFileListIt;
 typedef std::list<URLPolicyFile*>::const_iterator URLPFileListConstIt;
@@ -42,6 +46,11 @@ typedef std::multimap<tiny_string, URLPolicyFile*>::iterator URLPFileMapIt;
 typedef std::multimap<tiny_string, URLPolicyFile*>::const_iterator URLPFileMapConstIt;
 typedef std::pair<URLPFileMapIt, URLPFileMapIt> URLPFileMapItPair;
 typedef std::pair<URLPFileMapConstIt, URLPFileMapConstIt> URLPFileMapConstItPair;
+
+typedef std::list<SocketPolicyFile*> SocketPFileList;
+typedef std::list<SocketPolicyFile*>::const_iterator SocketPFileListConstIt;
+typedef std::pair<tiny_string, SocketPolicyFile*> SocketPFilePair;
+typedef std::multimap<tiny_string, SocketPolicyFile*> SocketPFileMap;
 
 class SecurityManager
 {
@@ -58,12 +67,36 @@ private:
 	//Multimap (by domain) of loaded policy files
 	URLPFileMap loadedURLPFiles;
 
+	//Multimap (by domain) of pending socket policy files
+	SocketPFileMap pendingSocketPFiles;
+	//Multimap (by domain) of loaded socket policy files
+	SocketPFileMap loadedSocketPFiles;
+
 	//Security sandbox type
 	SANDBOXTYPE sandboxType;
 	//Use exact domains for player settings
 	bool exactSettings;
 	//True if exactSettings was already set once
 	bool exactSettingsLocked;
+
+	template <class T>
+	void loadPolicyFile(std::multimap<tiny_string, T*>& pendingFiles, std::multimap<tiny_string, T*>& loadedFiles, PolicyFile *file);
+	template <class T>
+	T* getPolicyFileByURL(std::multimap<tiny_string, T*>& pendingFiles, std::multimap<tiny_string, T*>& loadedFiles, const URLInfo& url);
+	template<class T>
+	std::list<T*> *searchPolicyFiles(const URLInfo& url,
+					 T *master,
+					 bool loadPendingPolicies,
+					 std::multimap<tiny_string, T*>& pendingFiles,
+					 std::multimap<tiny_string, T*>& loadedFiles);
+
+	//Search for and loads (if allowed) policy files which should be checked
+	//(used by evaluatePoliciesURL & evaluateHeader)
+	//Master policy file is first-in-line and should be checked first
+	URLPFileList* searchURLPolicyFiles(const URLInfo& url,
+			bool loadPendingPolicies);
+	SocketPFileList* searchSocketPolicyFiles(const URLInfo& url,
+			bool loadPendingPolicies);
 public:
 	SecurityManager();
 	~SecurityManager();
@@ -73,10 +106,14 @@ public:
 	PolicyFile* addPolicyFile(const URLInfo& url);
 	//Add an URL policy file located at url
 	URLPolicyFile* addURLPolicyFile(const URLInfo& url);
+	//Add a Socket policy file located at url
+	SocketPolicyFile* addSocketPolicyFile(const URLInfo& url);
 	//Get the URL policy file object (if any) for the URL policy file at url
 	URLPolicyFile* getURLPolicyFileByURL(const URLInfo& url);
+	SocketPolicyFile* getSocketPolicyFileByURL(const URLInfo& url);
 
-	void loadPolicyFile(URLPolicyFile* file);
+	void loadURLPolicyFile(URLPolicyFile* file);
+	void loadSocketPolicyFile(SocketPolicyFile* file);
 	
 	//Set the sandbox type
 	void setSandboxType(SANDBOXTYPE type) { sandboxType = type; }
@@ -115,12 +152,6 @@ public:
 	{ return evaluateSandbox(sandboxType, allowedSandboxes); }
 	bool evaluateSandbox(SANDBOXTYPE sandbox, int allowedSandboxes);
 
-	//Search for and loads (if allowed) policy files which should be checked
-	//(used by evaluatePoliciesURL & evaluateHeader)
-	//Master policy file is first-in-line and should be checked first
-	URLPFileList* searchURLPolicyFiles(const URLInfo& url,
-			bool loadPendingPolicies);
-
 	//The possible results for the URL evaluation methods below
 	enum EVALUATIONRESULT { ALLOWED, NA_RESTRICT_LOCAL_DIRECTORY,
 		NA_REMOTE_SANDBOX, 	NA_LOCAL_SANDBOX,
@@ -147,8 +178,9 @@ public:
 	//Checks URL policy files
 	EVALUATIONRESULT evaluatePoliciesURL(const URLInfo& url, bool loadPendingPolicies);
 
-	//TODO: add evaluateSocketConnection() for SOCKET policy files
-	
+	//Check socket policy files
+	EVALUATIONRESULT evaluateSocketConnection(const URLInfo& url, bool loadPendingPolicies);
+
 	//Check for restricted headers and policy files explicitly allowing certain headers
 	EVALUATIONRESULT evaluateHeader(const tiny_string& url, const tiny_string& header,
 			bool loadPendingPolicies) { return evaluateHeader(URLInfo(url), header, loadPendingPolicies); }
@@ -159,12 +191,13 @@ public:
 class PolicySiteControl;
 class PolicyAllowAccessFrom;
 class PolicyAllowHTTPRequestHeadersFrom;
-//TODO: add support for SOCKET policy files
 class PolicyFile
 {
 	friend class SecurityManager;
 public:
 	enum TYPE { URL, SOCKET };
+private:
+	URLInfo originalURL;
 protected:
 	PolicyFile(URLInfo _url, TYPE _type);
 	virtual ~PolicyFile();
@@ -182,13 +215,25 @@ protected:
 	//Is this file loaded and parsed yet?
 	bool loaded;
 	//Load and parse the policy file
-	virtual void load()=0;
+	void load();
+	//Return true, if master policy file tells to ignore this file
+	virtual bool isIgnoredByMaster()=0;
+	//Download polic file content from url into policy.
+	//Return true, if file was downloaded successfully and is valid.
+	virtual bool retrievePolicyFile(std::vector<unsigned char>& policy)=0;
+	//Return parser parameters required to handle this policy file
+	virtual void getParserType(CrossDomainPolicy::POLICYFILETYPE&, CrossDomainPolicy::POLICYFILESUBTYPE&)=0;
+	//Return false if siteControl is invalid
+	virtual bool checkSiteControlValidity();
+	//Process one element from the policy file
+        virtual void handlePolicyElement(CrossDomainPolicy::ELEMENT& elementType, const CrossDomainPolicy& parser);
 
 	PolicySiteControl* siteControl;
 	std::list<PolicyAllowAccessFrom*> allowAccessFrom;
 public:
 
 	const URLInfo& getURL() const { return url; }
+	const URLInfo& getOriginalURL() const { return originalURL; }
 	TYPE getType() const { return type; }
 
 	bool isValid() const { return valid; }
@@ -197,9 +242,12 @@ public:
 	bool isLoaded() const { return loaded; }
 
 	//Get the master policy file controlling this one
-	virtual PolicyFile* getMasterPolicyFile()=0;
+	//virtual PolicyFile* getMasterPolicyFile()=0;
 
 	const PolicySiteControl* getSiteControl() const { return siteControl ;}
+
+	//Is access to the policy file URL allowed by this policy file?
+	virtual bool allowsAccessFrom(const URLInfo& url, const URLInfo& to) = 0;
 };
 
 class URLPolicyFile : public PolicyFile
@@ -208,7 +256,6 @@ class URLPolicyFile : public PolicyFile
 public:
 	enum SUBTYPE { HTTP, HTTPS, FTP };
 private:
-	URLInfo originalURL;
 	SUBTYPE subtype;
 
 	std::list<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
@@ -216,10 +263,12 @@ protected:
 	URLPolicyFile(const URLInfo& _url);
 	~URLPolicyFile();
 	//Load and parse the policy file
-	void load();
+	bool isIgnoredByMaster();
+	bool retrievePolicyFile(std::vector<unsigned char>& policy);
+	void getParserType(CrossDomainPolicy::POLICYFILETYPE&, CrossDomainPolicy::POLICYFILESUBTYPE&);
+	bool checkSiteControlValidity();
+        void handlePolicyElement(CrossDomainPolicy::ELEMENT& elementType, const CrossDomainPolicy& parser);
 public:
-
-	const URLInfo& getOriginalURL() const { return originalURL; }
 	SUBTYPE getSubtype() const { return subtype; }
 
 	//If strict is true, the policy will be loaded first to see if it isn't redirected
@@ -233,12 +282,35 @@ public:
 	bool allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo& to, const std::string& header);
 };
 
+class SocketPolicyFile : public PolicyFile
+{
+	friend class SecurityManager;
+protected:
+	SocketPolicyFile(const URLInfo& _url);
+	bool isIgnoredByMaster();
+	bool retrievePolicyFile(std::vector<unsigned char>& outData);
+	void getParserType(CrossDomainPolicy::POLICYFILETYPE&, CrossDomainPolicy::POLICYFILESUBTYPE&);
+public:
+	static const unsigned int MASTER_PORT;
+	static const char *MASTER_PORT_URL;
+
+	//If strict is true, the policy will be loaded first to see if it isn't redirected
+	bool isMaster();
+
+	//Get the master policy file controlling this one
+	SocketPolicyFile* getMasterPolicyFile();
+
+	//Is access to the policy file URL allowed by this policy file?
+	bool allowsAccessFrom(const URLInfo& url, const URLInfo& to);
+};
+
 //Site-wide declarations for master policy file
 //Only valid inside master policy files
 class PolicySiteControl
 {
 	friend class PolicyFile;
 	friend class URLPolicyFile;
+	friend class SocketPolicyFile;
 public:
 	enum METAPOLICY { 
 		ALL, //All types of policy files are allowed (default for SOCKET)
@@ -285,6 +357,7 @@ class PolicyAllowAccessFrom
 {
 	friend class PolicyFile;
 	friend class URLPolicyFile;
+	friend class SocketPolicyFile;
 private:
 	PolicyFile* file;
 	std::string domain; //Required
@@ -301,7 +374,7 @@ public:
 	bool getSecure() const { return secure; }
 
 	//Does this entry allow a given URL?
-	bool allowsAccessFrom(const URLInfo& url) const;
+	bool allowsAccessFrom(const URLInfo& url, uint16_t toPort=0) const;
 };
 
 //Permit HTTP request header sending (only for HTTP)

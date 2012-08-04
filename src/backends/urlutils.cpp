@@ -239,6 +239,18 @@ const URLInfo URLInfo::goToURL(const tiny_string& u) const
 		return URLInfo(s);
 	}
 
+	//No protocol or hostname but has port, add protocol and hostname
+	if(str.size() >= 2 && str[0] == ':' && str[1] >= '0' && str[1] <= '9')
+	{
+		tiny_string qualified;
+
+		qualified = getProtocol();
+		qualified += "://";
+		qualified += getHostname();
+		qualified += str;
+		return URLInfo(qualified);
+	}
+
 	//No protocol, treat this as an unqualified URL
 	if(str.find("://") == std::string::npos)
 	{

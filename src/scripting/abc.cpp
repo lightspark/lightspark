@@ -52,6 +52,7 @@
 #include "flash/filters/flashfilters.h"
 #include "flash/net/flashnet.h"
 #include "flash/net/URLStream.h"
+#include "flash/net/XMLSocket.h"
 #include "flash/system/flashsystem.h"
 #include "flash/sensors/flashsensors.h"
 #include "flash/utils/flashutils.h"
@@ -358,6 +359,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("ObjectEncoding","flash.net",Class<ObjectEncoding>::getRef());
 	builtin->registerBuiltin("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")));
 	builtin->registerBuiltin("Responder","flash.net",Class<Responder>::getRef());
+	builtin->registerBuiltin("XMLSocket","flash.net",Class<XMLSocket>::getRef());
 	builtin->registerBuiltin("registerClassAlias","flash.net",_MR(Class<IFunction>::getFunction(registerClassAlias)));
 	builtin->registerBuiltin("getClassByAlias","flash.net",_MR(Class<IFunction>::getFunction(getClassByAlias)));
 

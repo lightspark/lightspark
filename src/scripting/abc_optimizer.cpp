@@ -1352,7 +1352,6 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			case 0x80:
 			{
 				//coerce
-				//TODO: it may be optimized here
 				u30 t;
 				code >> t;
 				int numRT=mi->context->getMultinameRTData(t);
@@ -1361,23 +1360,27 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					throw ParseException("Bad code in optimizer");
 				InferenceData baseData=curBlock->peekStack();
 				const multiname* name=mi->context->getMultiname(t,NULL);
+
+				Class_base* coerceToClass = NULL;
+				InferenceData inferredData;
+
+				//Try to resolve the type is it is already defined
+				ASObject* ret=mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
+				if(ret->getObjectType()==T_CLASS)
+				{
+					coerceToClass=static_cast<Class_base*>(ret);
+					//Also extract the type information for later use if the type has been
+					//already resolved
+					inferredData.type = coerceToClass;
+				}
+
 				if(baseData.type)
 				{
 					const Class_base* objType=dynamic_cast<const Class_base*>(baseData.type);
-					if(objType)
+					if(objType && coerceToClass && objType->isSubClass(coerceToClass))
 					{
-						std::cerr << *name << std::endl;
-						//Try to resolve the type is it is already defined
-						ASObject* ret=mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
-						if(ret->getObjectType()==T_CLASS)
-						{
-							Class_base* c=static_cast<Class_base*>(ret);
-							if(objType->isSubClass(c))
-							{
-								//We can skip the coercion
-								break;
-							}
-						}
+						//We can skip the coercion
+						break;
 					}
 				}
 				else if(baseData.obj)
@@ -1392,7 +1395,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//the type after the first execution
 				writePtr(out,name);
 				curBlock->popStack(1);
-				curBlock->pushStack(Type::anyType);
+				curBlock->pushStack(inferredData);
 				break;
 			}
 			case 0x82:

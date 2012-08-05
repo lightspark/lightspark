@@ -1381,6 +1381,20 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				break;
 			}
 			//lightspark custom opcodes
+			case 0xfb:
+			{
+				//setslot_no_coerce
+				uint32_t t=data->uints[0];
+				instructionPointer+=4;
+
+				ASObject* value=context->runtime_stack_pop();
+				ASObject* obj=context->runtime_stack_pop();
+
+				LOG(LOG_CALLS,"setSlotNoCoerce " << t);
+				obj->setSlotNoCoerce(t,value);
+				obj->decRef();
+				break;
+			}
 			case 0xfc:
 			{
 				//coerceearly

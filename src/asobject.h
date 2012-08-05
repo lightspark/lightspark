@@ -153,6 +153,10 @@ struct variable
 		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) {}
 	variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type);
 	void setVar(ASObject* v);
+	/*
+	 * To be used only if the value is guaranteed to be of the right type
+	 */
+	void setVarNoCoerce(ASObject* v);
 };
 
 struct varName
@@ -205,7 +209,16 @@ public:
 		assert_and_throw(n > 0 && n<=slots_vars.size());
 		return slots_vars[n-1]->second.var;
 	}
+	/*
+	 * This method does throw if the slot id is not valid
+	 */
+	void validateSlotId(unsigned int n) const;
 	void setSlot(unsigned int n,ASObject* o);
+	/*
+	 * This version of the call is guarantee to require no type conversion
+	 * this is verified at optimization time
+	 */
+	void setSlotNoCoerce(unsigned int n,ASObject* o);
 	void initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns);
 	int size() const
 	{
@@ -404,6 +417,10 @@ public:
 	void setSlot(unsigned int n,ASObject* o)
 	{
 		Variables.setSlot(n,o);
+	}
+	void setSlotNoCoerce(unsigned int n,ASObject* o)
+	{
+		Variables.setSlotNoCoerce(n,o);
 	}
 	void initSlot(unsigned int n, const multiname& name);
 	unsigned int numVariables() const;

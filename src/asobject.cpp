@@ -648,6 +648,13 @@ void variable::setVar(ASObject* v)
 	var=v;
 }
 
+void variable::setVarNoCoerce(ASObject* v)
+{
+	if(var)
+		var->decRef();
+	var=v;
+}
+
 void variables_map::killObjVar(const multiname& mname)
 {
 	uint32_t name=mname.normalizedNameId();
@@ -1159,12 +1166,23 @@ void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKin
 
 void variables_map::setSlot(unsigned int n,ASObject* o)
 {
+	validateSlotId(n);
+	slots_vars[n-1]->second.setVar(o);
+}
+
+void variables_map::setSlotNoCoerce(unsigned int n,ASObject* o)
+{
+	validateSlotId(n);
+	slots_vars[n-1]->second.setVarNoCoerce(o);
+}
+
+void variables_map::validateSlotId(unsigned int n) const
+{
 	if(n == 0 || n-1<slots_vars.size())
 	{
 		assert_and_throw(slots_vars[n-1]!=Variables.end());
 		if(slots_vars[n-1]->second.setter)
 			throw UnsupportedException("setSlot has setters");
-		slots_vars[n-1]->second.setVar(o);
 	}
 	else
 		throw RunTimeException("setSlot out of bounds");

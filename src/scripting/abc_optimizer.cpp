@@ -1197,8 +1197,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				code >> t;
 				out << (uint8_t)opcode;
 				writeInt32(out,t);
-
-				curBlock->pushStack(Type::anyType);
+				//NOTE: getscopeobject only resolves the local part of the scope stack
+				//not the one inherited
+				curBlock->pushStack(curBlock->scopeStackTypes[t]);
 				break;
 			}
 			case 0x66:

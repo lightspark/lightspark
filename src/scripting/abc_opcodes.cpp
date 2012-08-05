@@ -210,8 +210,6 @@ int32_t ABCVm::pushShort(intptr_t n)
 void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
 {
 	LOG(LOG_CALLS,"setSlot " << n);
-	if(value==NULL)
-		value=getSys()->getUndefinedRef();
 	obj->setSlot(n,value);
 	obj->decRef();
 }

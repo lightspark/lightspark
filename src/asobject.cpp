@@ -1159,7 +1159,7 @@ void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKin
 
 void variables_map::setSlot(unsigned int n,ASObject* o)
 {
-	if(n-1<slots_vars.size())
+	if(n == 0 || n-1<slots_vars.size())
 	{
 		assert_and_throw(slots_vars[n-1]!=Variables.end());
 		if(slots_vars[n-1]->second.setter)

@@ -28,7 +28,7 @@
 using namespace std;
 using namespace lightspark;
 
-enum SPECIAL_OPCODES { COERCE_EARLY = 0xfc, GET_SCOPE_AT_INDEX = 0xfd, GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
+enum SPECIAL_OPCODES { SET_SLOT_NO_COERCE = 0xfb, COERCE_EARLY = 0xfc, GET_SCOPE_AT_INDEX = 0xfd, GET_LEX_ONCE = 0xfe, PUSH_EARLY = 0xff };
 
 struct lightspark::InferenceData
 {
@@ -1257,10 +1257,33 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//setslot
 				u30 t;
 				code >> t;
+
+				InferenceData valueData = curBlock->peekStack();
+				curBlock->popStack(1);
+				InferenceData objData = curBlock->peekStack();
+				curBlock->popStack(1);
+				if(valueData.isValid() && objData.isValid())
+				{
+					const Class_base* valueClass = dynamic_cast<const Class_base*>(valueData.type);
+					const multiname* slotType = objData.type->resolveSlotTypeName(t);
+					if(valueClass && objData.type && slotType)
+					{
+						ASObject* ret=mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*slotType);
+						if(ret->getObjectType()==T_CLASS)
+						{
+							Class_base* c=static_cast<Class_base*>(ret);
+							if(valueClass->isSubClass(c))
+							{
+								out << (uint8_t)SET_SLOT_NO_COERCE;
+								writeInt32(out,t);
+								break;
+							}
+						}
+					}
+				}
+				//If we did not manage to optimize the call, translate it directly
 				out << (uint8_t)opcode;
 				writeInt32(out,t);
-
-				curBlock->popStack(2);
 				break;
 			}
 			case 0x70:

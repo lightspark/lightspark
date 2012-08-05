@@ -2302,3 +2302,18 @@ EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& na
 	}
 	return NOT_BINDED;
 }
+
+const multiname* ActivationType::resolveSlotTypeName(uint32_t slotId) const
+{
+	std::cerr << "Resolving type at id " << slotId << std::endl;
+	for(unsigned int i=0;i<mi->body->trait_count;i++)
+	{
+		const traits_info* t=&mi->body->traits[i];
+		if(t->slot_id!=slotId)
+			continue;
+
+		multiname* tname=mi->context->getMultiname(t->type_name,NULL);
+		return tname;
+	}
+	return NULL;
+}

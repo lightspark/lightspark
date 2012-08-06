@@ -406,7 +406,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				getConcatenatedAlpha());
 }
 
-void TextField::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+void TextField::renderImpl(RenderContext& ctxt, bool maskEnabled) const
 {
 	defaultRender(ctxt, maskEnabled);
 }

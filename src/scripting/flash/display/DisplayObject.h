@@ -101,7 +101,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
-	virtual void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+	virtual void renderImpl(RenderContext& ctxt, bool maskEnabled) const
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}

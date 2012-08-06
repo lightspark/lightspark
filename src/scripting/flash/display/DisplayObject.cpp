@@ -113,7 +113,7 @@ void DisplayObject::Render(RenderContext& ctxt, bool maskEnabled)
 
 	renderPrologue(ctxt);
 
-	renderImpl(ctxt, maskEnabled,t1,t2,t3,t4);
+	renderImpl(ctxt, maskEnabled);
 
 	renderEpilogue(ctxt);
 }

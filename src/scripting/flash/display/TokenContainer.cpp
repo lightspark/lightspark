@@ -36,7 +36,7 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 {
 }
 
-void TokenContainer::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+void TokenContainer::renderImpl(RenderContext& ctxt, bool maskEnabled) const
 {
 	owner->defaultRender(ctxt, maskEnabled);
 }

@@ -94,7 +94,7 @@ Video::~Video()
 {
 }
 
-void Video::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1,number_t t2,number_t t3,number_t t4) const
+void Video::renderImpl(RenderContext& ctxt, bool maskEnabled) const
 {
 	Mutex::Lock l(mutex);
 	if(skipRender(maskEnabled))

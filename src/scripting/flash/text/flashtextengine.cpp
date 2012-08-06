@@ -237,7 +237,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 				      getConcatenatedAlpha());
 }
 
-void TextLine::renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
+void TextLine::renderImpl(RenderContext& ctxt, bool maskEnabled) const
 {
 	defaultRender(ctxt, maskEnabled);
 }

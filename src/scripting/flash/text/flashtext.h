@@ -54,7 +54,7 @@ class TextField: public InteractiveObject, public TextData
 {
 private:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
-	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const;
+	void renderImpl(RenderContext& ctxt, bool maskEnabled) const;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix);
 	void requestInvalidation(InvalidateQueue* q);
@@ -141,8 +141,8 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
-	void renderImpl(RenderContext& ctxt, bool maskEnabled, number_t t1, number_t t2, number_t t3, number_t t4) const
-		{ TokenContainer::renderImpl(ctxt, maskEnabled,t1,t2,t3,t4); }
+	void renderImpl(RenderContext& ctxt, bool maskEnabled) const
+		{ TokenContainer::renderImpl(ctxt, maskEnabled); }
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last, x, y, type); }
 public:

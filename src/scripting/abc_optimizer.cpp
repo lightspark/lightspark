@@ -38,6 +38,25 @@ struct lightspark::InferenceData
 	InferenceData(const Type* t):type(t),obj(NULL){}
 	InferenceData(const ASObject* o):type(NULL),obj(o){}
 	bool isValid() const { return type!=NULL || obj!=NULL; }
+	/* Method to understand if the passed InferenceData is of the type of this InferenceData
+	 * \param c Must be not NULL
+	 */
+	bool isOfType(Class_base* c)
+	{
+		if(this->type)
+		{
+			const Class_base* classType=dynamic_cast<const Class_base*>(this->type);
+			if(classType && classType->isSubClass(c))
+				return true;
+		}
+		else if(this->obj)
+		{
+			//Both null and undefined can be of any class
+			if(this->obj->getObjectType()==T_NULL || this->obj->getObjectType()==T_UNDEFINED)
+				return true;
+		}
+		return false;
+	}
 };
 
 struct lightspark::BasicBlock
@@ -1262,18 +1281,19 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				curBlock->popStack(1);
 				InferenceData objData = curBlock->peekStack();
 				curBlock->popStack(1);
-				if(valueData.isValid() && objData.isValid())
+				if(objData.type)
 				{
-					const Class_base* valueClass = dynamic_cast<const Class_base*>(valueData.type);
 					const multiname* slotType = objData.type->resolveSlotTypeName(t);
-					if(valueClass && objData.type && slotType)
+					if(slotType)
 					{
 						ASObject* ret=mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*slotType);
-						if(ret->getObjectType()==T_CLASS)
+						if(ret && ret->getObjectType()==T_CLASS)
 						{
 							Class_base* c=static_cast<Class_base*>(ret);
-							if(valueClass->isSubClass(c))
+							if(valueData.isOfType(c))
 							{
+								//We know the value is already of the right type
+								//Let's skip coercion
 								out << (uint8_t)SET_SLOT_NO_COERCE;
 								writeInt32(out,t);
 								break;
@@ -1366,7 +1386,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 
 				//Try to resolve the type is it is already defined
 				ASObject* ret=mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
-				if(ret->getObjectType()==T_CLASS)
+				if(ret && ret->getObjectType()==T_CLASS)
 				{
 					coerceToClass=static_cast<Class_base*>(ret);
 					//Also extract the type information for later use if the type has been
@@ -1374,20 +1394,10 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					inferredData.type = coerceToClass;
 				}
 
-				if(baseData.type)
+				if(baseData.isOfType(coerceToClass))
 				{
-					const Class_base* objType=dynamic_cast<const Class_base*>(baseData.type);
-					if(objType && coerceToClass && objType->isSubClass(coerceToClass))
-					{
-						//We can skip the coercion
-						break;
-					}
-				}
-				else if(baseData.obj)
-				{
-					//If the object is Null we can skip the coercion
-					if(baseData.obj->getObjectType()==T_NULL)
-						break;
+					//We can skip the coercion
+					break;
 				}
 				out << (uint8_t)opcode;
 				//Translate coerce to a rewriting opcode

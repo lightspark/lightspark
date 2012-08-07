@@ -427,7 +427,7 @@ ASFUNCTIONBODY(BitmapData,hitTest)
 
 	Point* secondPoint = secondObject->as<Point>();
 
-	uint32_t pix=th->getPixelPriv(firstPoint->getX()+secondPoint->getX(), firstPoint->getY()+secondPoint->getY());
+	uint32_t pix=th->getPixelPriv(secondPoint->getX()-firstPoint->getX(), secondPoint->getY()-firstPoint->getY());
 	if((pix>>24)>=firstAlphaThreshold)
 		return abstract_b(true);
 	else

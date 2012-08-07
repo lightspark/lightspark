@@ -57,6 +57,16 @@ private function appComplete():void
 	Tests.assertEquals(100, sprite5.getBounds(stage).width, "getBounds with rotation (Width)");
 	Tests.assertEquals(100, sprite5.getBounds(stage).height, "getBounds with rotation (Height)");
 
+	var sprite6:Sprite = new Sprite();
+	var sprite7:Sprite = new Sprite();
+	sprite6.scaleX = 0.5;
+	sprite7.scaleX = 0.5;
+	sprite7.graphics.drawRect(0, 0, 100, 100);
+	sprite6.addChild(sprite7);
+
+	Tests.assertEquals(50, sprite7.width, "Width on child");
+	Tests.assertEquals(25, sprite6.width, "Width on parent");
+
 	Tests.report(visual, name);
 }
 ]]>

@@ -618,7 +618,7 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 	DisplayObject* cur=th;
 	while(cur!=NULL && cur!=target)
 	{
-		m = m.multiplyMatrix(cur->getMatrix());
+		m = cur->getMatrix().multiplyMatrix(m);
 		cur=cur->parent.getPtr();
 	}
 	if(cur==NULL)

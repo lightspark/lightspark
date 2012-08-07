@@ -813,7 +813,7 @@ ASFUNCTIONBODY(DisplayObject,_getVisible)
 number_t DisplayObject::computeHeight()
 {
 	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2,MATRIX());
+	bool ret=getBounds(x1,x2,y1,y2,getMatrix());
 
 	return (ret)?(y2-y1):0;
 }
@@ -821,7 +821,7 @@ number_t DisplayObject::computeHeight()
 number_t DisplayObject::computeWidth()
 {
 	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2,MATRIX());
+	bool ret=getBounds(x1,x2,y1,y2,getMatrix());
 
 	return (ret)?(x2-x1):0;
 }

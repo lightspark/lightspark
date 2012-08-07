@@ -106,11 +106,6 @@ void DisplayObject::Render(RenderContext& ctxt, bool maskEnabled)
 	if(!isConstructed() || skipRender(maskEnabled))
 		return;
 
-	number_t t1,t2,t3,t4;
-	bool notEmpty=boundsRect(t1,t2,t3,t4);
-	if(!notEmpty)
-		return;
-
 	renderPrologue(ctxt);
 
 	renderImpl(ctxt, maskEnabled);

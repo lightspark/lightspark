@@ -22,15 +22,15 @@
 
 #include "swf.h"
 #include "compat.h"
-#include "class.h"
-#include "toplevel/Error.h"
-#include "flash/net/XMLSocket.h"
+#include "scripting/class.h"
+#include "scripting/toplevel/Error.h"
+#include "scripting/flash/net/XMLSocket.h"
 #include <sstream>
 #include <string>
 #include <algorithm>
 #include <cctype>
 
-#include "security.h"
+#include "backends/security.h"
 
 using namespace lightspark;
 using namespace std;

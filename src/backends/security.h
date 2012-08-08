@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _SECURITY_H
-#define _SECURITY_H
+#ifndef BACKENDS_SECURITY_H
+#define BACKENDS_SECURITY_H 1
 
 #include "compat.h"
 #include <string>
@@ -261,7 +261,7 @@ private:
 	std::list<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
 protected:
 	URLPolicyFile(const URLInfo& _url);
-	~URLPolicyFile();
+	virtual ~URLPolicyFile();
 	//Load and parse the policy file
 	bool isIgnoredByMaster();
 	bool retrievePolicyFile(std::vector<unsigned char>& policy);
@@ -403,4 +403,4 @@ public:
 
 }
 
-#endif
+#endif /* BACKENDS_SECURITY_H */

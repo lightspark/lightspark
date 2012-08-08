@@ -19,7 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/toplevel/ASString.h"
-#include "class.h"
+#include "scripting/class.h"
 #include "parsing/tags.h"
 
 using namespace lightspark;

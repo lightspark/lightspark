@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _I_BITMAP_DRAWABLE_H
-#define _I_BITMAP_DRAWABLE_H
+#ifndef SCRIPTING_FLASH_DISPLAY_IBITMAPDRAWABLE_H
+#define SCRIPTING_FLASH_DISPLAY_IBITMAPDRAWABLE_H 1
 
 namespace lightspark
 {
@@ -32,4 +32,4 @@ public:
 };
 
 };
-#endif
+#endif /* SCRIPTING_FLASH_DISPLAY_IBITMAPDRAWABLE_H */

@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "engineutils.h"
+#include "platforms/engineutils.h"
 
 using namespace std;
 using namespace lightspark;

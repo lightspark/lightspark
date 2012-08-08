@@ -21,9 +21,9 @@
 #include <libxml++/parsers/textreader.h>
 
 #include "version.h"
-#include "flashsystem.h"
-#include "abc.h"
-#include "argconv.h"
+#include "scripting/flash/system/flashsystem.h"
+#include "scripting/abc.h"
+#include "scripting/argconv.h"
 #include "compat.h"
 #include "backends/security.h"
 

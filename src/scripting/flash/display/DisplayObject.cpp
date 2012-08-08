@@ -20,7 +20,7 @@
 #include "scripting/abc.h"
 #include "compat.h"
 #include "swf.h"
-#include "DisplayObject.h"
+#include "scripting/flash/display/DisplayObject.h"
 #include "backends/rendering.h"
 #include "backends/input.h"
 #include "scripting/argconv.h"

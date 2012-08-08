@@ -17,12 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_NET_H
-#define _FLASH_NET_H
+#ifndef SCRIPTING_FLASH_NET_FLASHNET_H
+#define SCRIPTING_FLASH_NET_FLASHNET_H 1
 
 #include "compat.h"
 #include "asobject.h"
-#include "flash/events/flashevents.h"
+#include "scripting/flash/events/flashevents.h"
 #include "thread_pool.h"
 #include "backends/netutils.h"
 #include "timer.h"
@@ -113,6 +113,7 @@ private:
 	void execute();
 public:
 	URLLoaderThread(_R<URLRequest> _request, _R<URLLoader> _loader);
+	virtual ~URLLoaderThread(){}
 };
 
 class URLLoader: public EventDispatcher, public IDownloaderThreadListener, public ILoadable
@@ -240,7 +241,7 @@ private:
 	void sendClientNotification(const tiny_string& name, ASObject *args);
 public:
 	NetStream(Class_base* c);
-	~NetStream();
+	virtual ~NetStream();
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -329,4 +330,4 @@ ASObject* getClassByAlias(ASObject* obj,ASObject* const* args, const unsigned in
 
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_NET_FLASHNET_H */

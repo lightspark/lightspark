@@ -17,15 +17,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _STREAMS_H
-#define _STREAMS_H
+#ifndef PARSING_STREAMS_H
+#define PARSING_STREAMS_H 1
 
 #include "compat.h"
 #include <streambuf>
 #include <fstream>
 #include <cinttypes>
-#include "zlib.h"
-#include "lzma.h"
+#include <zlib.h>
+#include <lzma.h>
 
 class uncompressing_filter: public std::streambuf
 {
@@ -62,7 +62,7 @@ protected:
 	virtual int fillBuffer();
 public:
 	zlib_filter(std::streambuf* b);
-	~zlib_filter();
+	virtual ~zlib_filter();
 };
 
 class liblzma_filter: public uncompressing_filter
@@ -75,7 +75,7 @@ protected:
 	virtual int fillBuffer();
 public:
 	liblzma_filter(std::streambuf* b);
-	~liblzma_filter();
+	virtual ~liblzma_filter();
 };
 
 class bytes_buf:public std::streambuf
@@ -89,4 +89,4 @@ public:
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 };
 
-#endif
+#endif /* PARSING_STREAMS_H */

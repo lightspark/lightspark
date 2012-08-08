@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _SMARTREFS_H
-#define _SMARTREFS_H
+#ifndef SMARTREFS_H
+#define SMARTREFS_H 1
 
 #include <stdexcept>
 
@@ -289,4 +289,4 @@ template<class T> template<class D> bool Ref<T>::operator==(const NullableRef<D>
 
 };
 
-#endif
+#endif /* SMARTREFS_H */

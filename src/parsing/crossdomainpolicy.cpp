@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "crossdomainpolicy.h"
+#include "parsing/crossdomainpolicy.h"
 
 using namespace lightspark;
 
@@ -127,7 +127,7 @@ CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
 					return INVALID;
 			}
 		}
-	} catch (xmlpp::parse_error) {
+	} catch (xmlpp::parse_error&) {
 		// Invalid XML
 		return INVALID;
 	}

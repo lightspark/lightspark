@@ -20,6 +20,11 @@ Credits:
 	www.lighthouse3d.com
 **************************************************************************/
 
+#ifndef PARSING_TEXTFILE_H
+#define PARSING_TEXTFILE_H 1
+
 char *textFileRead(const char *fn);
 char *dataFileRead(const char *fn);
 int textFileWrite(const char *fn, char *s);
+
+#endif /* PARSING_TEXTFILE_H */

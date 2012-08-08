@@ -17,12 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "flashtext.h"
-#include "class.h"
+#include "scripting/flash/text/flashtext.h"
+#include "scripting/class.h"
 #include "compat.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 
 using namespace std;
 using namespace lightspark;

@@ -17,16 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
+#include "scripting/abc.h"
 #include <limits>
-#include "class.h"
+#include "scripting/class.h"
 #include "exceptions.h"
 #include "compat.h"
-#include "abcutils.h"
+#include "scripting/abcutils.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/RegExp.h"
-#include "toplevel/XML.h"
-#include "toplevel/XMLList.h"
+#include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/XMLList.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1747,7 +1747,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		//Handle eventual exceptions from the constructor, to fix the stack
 		th->runtime_stack_push(getSys()->getUndefinedRef());
 		obj->decRef();
-		throw exc;
+		throw;
 	}
 
 	th->runtime_stack_push(ret);
@@ -2068,7 +2068,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 		//Remove the class to the ones being currently defined in this context
 		th->context->classesBeingDefined.erase(mname);
-		throw exc;
+		throw;
 	}
 	assert_and_throw(ret2->is<Undefined>());
 	ret2->decRef();

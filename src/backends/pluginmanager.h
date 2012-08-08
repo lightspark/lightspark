@@ -17,14 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef PLUGINMANAGER_H
-#define PLUGINMANAGER_H
+#ifndef BACKENDS_PLUGINMANAGER_H
+#define BACKENDS_PLUGINMANAGER_H 1
 
 #include "compat.h"
 #include <iostream>
 #include <vector>
 
-#include "interfaces/IPlugin.h"
+#include "backends/interfaces/IPlugin.h"
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
 typedef IPlugin * ( *PLUGIN_FACTORY ) ();
@@ -75,4 +75,4 @@ public:
 
 }
 
-#endif
+#endif /* BACKENDS_PLUGINMANAGER_H */

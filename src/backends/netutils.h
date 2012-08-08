@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _NET_UTILS_H
-#define _NET_UTILS_H
+#ifndef BACKENDS_NETUTILS_H
+#define BACKENDS_NETUTILS_H 1
 
 #include "compat.h"
 #include <streambuf>
@@ -71,7 +71,7 @@ class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 {
 public:
 	StandaloneDownloadManager();
-	~StandaloneDownloadManager();
+	virtual ~StandaloneDownloadManager();
 	Downloader* download(const URLInfo& url, bool cached, ILoadable* owner);
 	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data,
 			const char* contentType, ILoadable* owner);
@@ -318,4 +318,4 @@ public:
 };
 
 };
-#endif
+#endif /* BACKENDS_NETUTILS_H */

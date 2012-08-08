@@ -17,9 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
-#include "flashgeom.h"
-#include "argconv.h"
+#include "scripting/abc.h"
+#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/argconv.h"
 
 using namespace lightspark;
 using namespace std;

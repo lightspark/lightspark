@@ -25,13 +25,13 @@
 #include <algorithm>
 #include <sstream>
 #include "scripting/abc.h"
-#include "tags.h"
+#include "parsing/tags.h"
 #include "backends/geometry.h"
 #include "backends/security.h"
 #include "swftypes.h"
 #include "logger.h"
 #include "compat.h"
-#include "streams.h"
+#include "parsing/streams.h"
 #include "scripting/flash/display/BitmapData.h"
 
 #undef RGB
@@ -48,9 +48,9 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 	{
 		f >> h;
 	}
-	catch (ifstream::failure e) {
+	catch (ifstream::failure& e) {
 		if(!f.eof()) //Only handle eof
-			throw e;
+			throw;
 		f.clear();
 		LOG(LOG_INFO,"Simulating EndTag at EOF @ " << f.tellg());
 		return new EndTag(h,f);

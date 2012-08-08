@@ -18,11 +18,11 @@
 **************************************************************************/
 
 #include <map>
-#include "abc.h"
-#include "URLStream.h"
-#include "flash/net/flashnet.h"
+#include "scripting/abc.h"
+#include "scripting/flash/net/URLStream.h"
+#include "scripting/flash/net/flashnet.h"
 #include "backends/security.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 
 /**
  * TODO: This whole class shares a lot of code with URLLoader - unify!

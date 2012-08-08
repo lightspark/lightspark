@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_FILTERS_H
-#define _FLASH_FILTERS_H
+#ifndef SCRIPTING_FLASH_FILTERS_FLASHFILTERS_H
+#define SCRIPTING_FLASH_FILTERS_FLASHFILTERS_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -59,4 +59,4 @@ public:
 
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_FILTERS_FLASHFILTERS_H */

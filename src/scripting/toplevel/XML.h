@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef XML_H
-#define XML_H
+#ifndef SCRIPTING_TOPLEVEL_XML_H
+#define SCRIPTING_TOPLEVEL_XML_H 1
 #include "asobject.h"
 #include "backends/xml_support.h"
 
@@ -115,4 +115,4 @@ public:
 				std::map<const Class_base*, uint32_t>& traitsMap);
 };
 }
-#endif
+#endif /* SCRIPTING_TOPLEVEL_XML_H */

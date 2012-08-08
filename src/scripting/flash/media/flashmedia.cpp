@@ -18,14 +18,14 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
-#include "flashmedia.h"
-#include "class.h"
+#include "scripting/flash/media/flashmedia.h"
+#include "scripting/class.h"
 #include "compat.h"
 #include <iostream>
 #include "backends/audio.h"
 #include "backends/input.h"
 #include "backends/rendering.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 
 using namespace lightspark;
 using namespace std;

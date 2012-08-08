@@ -17,13 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _XML_SUPPORT_H
-#define _XML_SUPPORT_H
+#ifndef BACKENDS_XML_SUPPORT_H
+#define BACKENDS_XML_SUPPORT_H 1
 
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include <libxml++/exceptions/internal_error.h>
-#include <libxml/parserInternals.h>//For xmlCreateFileParserCtxt().
+//For xmlCreateFileParserCtxt().
+#include <libxml/parserInternals.h>
 
 namespace lightspark
 {
@@ -65,4 +66,4 @@ protected:
 
 };
 
-#endif
+#endif /* BACKENDS_XML_SUPPORT_H */

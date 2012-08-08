@@ -35,11 +35,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _NPPLAT_H_
-#define _NPPLAT_H_
+#ifndef PLUGIN_INCLUDE_NPPLAT_H
+#define PLUGIN_INCLUDE_NPPLAT_H 1
 
-#include "npapi.h"
-#include "npupp.h"
+#include "plugin/include/npapi/npapi.h"
+#include "plugin/include/npupp.h"
 
 /**************************************************/
 /*                                                */
@@ -47,7 +47,7 @@
 /*                                                */
 /**************************************************/
 #ifdef XP_WIN
-#include "windows.h"
+#include <windows.h>
 #endif //XP_WIN
 
 /**************************************************/
@@ -145,4 +145,4 @@ NPError Private_SetValue(NPP instance, NPNVariable variable, void *value);
 #define LOBYTE(i) (i & 0xff)
 #endif
 
-#endif //_NPPLAT_H_
+#endif /* PLUGIN_INCLUDE_NPPLAT_H */

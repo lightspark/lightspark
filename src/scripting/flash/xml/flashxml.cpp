@@ -19,10 +19,10 @@
 #include <libxml/tree.h>
 #include <libxml++/nodes/textnode.h>
 
-#include "flashxml.h"
+#include "scripting/flash/xml/flashxml.h"
 #include "swf.h"
 #include "compat.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 
 using namespace std;
 using namespace lightspark;
@@ -101,7 +101,7 @@ ASFUNCTIONBODY(XMLNode,childNodes)
 	assert_and_throw(!th->root.isNull());
 	const xmlpp::Node::NodeList& children=th->node->get_children();
 	xmlpp::Node::NodeList::const_iterator it = children.begin();
-	for(;it!=children.end();it++)
+	for(;it!=children.end();++it)
 	{
 		if((*it)->cobj()->type!=XML_TEXT_NODE) {
 			ret->push(_MR(Class<XMLNode>::getInstanceS(th->root, *it)));
@@ -124,7 +124,7 @@ ASFUNCTIONBODY(XMLNode,attributes)
 		return ret;
 	const xmlpp::Element::AttributeList& list=elem->get_attributes();
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
-	for(;it!=list.end();it++)
+	for(;it!=list.end();++it)
 	{
 		tiny_string attrName((*it)->get_name().c_str(),true);
 		const tiny_string nsName((*it)->get_namespace_prefix().c_str(),true);

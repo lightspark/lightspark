@@ -17,12 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _DECODER_H
-#define _DECODER_H
+#ifndef BACKENDS_DECODER_H
+#define BACKENDS_DECODER_H 1
 
 #include "compat.h"
 #include "threading.h"
-#include "graphics.h"
+#include "backends/graphics.h"
 #ifdef ENABLE_LIBAVCODEC
 extern "C"
 {
@@ -108,7 +108,7 @@ class NullVideoDecoder: public VideoDecoder
 {
 public:
 	NullVideoDecoder() {status=VALID;}
-	~NullVideoDecoder() { while(fenceCount); }
+	virtual ~NullVideoDecoder() { while(fenceCount); }
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
@@ -169,7 +169,7 @@ public:
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
 	FFMpegVideoDecoder(AVCodecContext* codecContext, double frameRateHint);
-	~FFMpegVideoDecoder();
+	virtual ~FFMpegVideoDecoder();
 	/*
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
@@ -291,7 +291,7 @@ public:
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
 	FFMpegAudioDecoder(AVCodecContext* codecContext);
-	~FFMpegAudioDecoder();
+	virtual ~FFMpegAudioDecoder();
 	/*
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
@@ -339,7 +339,7 @@ private:
 #endif
 public:
 	FFMpegStreamDecoder(std::istream& s);
-	~FFMpegStreamDecoder();
+	virtual ~FFMpegStreamDecoder();
 	bool decodeNextFrame();
 	bool getMetadataInteger(const char* name, uint32_t& ret) const;
 	bool getMetadataDouble(const char* name, double& ret) const;
@@ -347,4 +347,4 @@ public:
 #endif
 
 };
-#endif
+#endif /* BACKENDS_DECODER */

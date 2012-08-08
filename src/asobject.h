@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef ASOBJECT_H
-#define ASOBJECT_H
+#define ASOBJECT_H 1
 
 #include "compat.h"
 #include "swftypes.h"
@@ -522,4 +522,4 @@ template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; 
 template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
 }
-#endif
+#endif /* ASOBJECT_H */

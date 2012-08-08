@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _NP_SCRIPT_OBJECT_H
-#define _NP_SCRIPT_OBJECT_H
+#ifndef PLUGIN_NPSCRIPTOBJECT_H
+#define PLUGIN_NPSCRIPTOBJECT_H 1
 
 #include <typeinfo>
 #include <string.h>
@@ -27,8 +27,8 @@
 #include <map>
 #include <stack>
 
-#include "npapi.h"
-#include "npruntime.h"
+#include "plugin/include/npapi/npapi.h"
+#include "plugin/include/npapi/npruntime.h"
 
 #include "swf.h"
 #include "asobject.h"
@@ -53,7 +53,7 @@ public:
 	NPIdentifierObject(const NPIdentifierObject& id);
 	NPIdentifierObject(const NPIdentifier& id, bool convertToInt=false);
 
-	~NPIdentifierObject() {}
+	virtual ~NPIdentifierObject() {}
 
 	void copy(NPIdentifier& dest) const;
 
@@ -129,7 +129,7 @@ public:
 	NPVariantObject(NPP _instance, const NPVariantObject& other);
 	NPVariantObject(NPP _instance, const NPVariant& other);
 
-	~NPVariantObject();
+	virtual ~NPVariantObject();
 
 	// Copy this NPVariantObject's NPVariant value to another one.
 	void copy(NPVariant& dest) const { copy(variant, dest); }
@@ -170,7 +170,7 @@ class DLL_PUBLIC NPScriptObject : public lightspark::ExtScriptObject
 {
 public:
 	NPScriptObject(NPScriptObjectGW* gw);
-	~NPScriptObject();
+	virtual ~NPScriptObject();
 	// Stops all waiting external calls, should be called before destruction.
 	// Actual destruction should be initiated by the browser, as a last step of destruction.
 	void destroy();
@@ -414,4 +414,4 @@ private:
 };
 
 }
-#endif
+#endif /* PLUGIN_NPSCRIPTOBJECT_H */

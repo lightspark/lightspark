@@ -36,8 +36,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nptypes_h_
-#define nptypes_h_
+#ifndef PLUGIN_INCLUDE_NPAPI_NPTYPES_H
+#define PLUGIN_INCLUDE_NPAPI_NPTYPES_H 1
 
 /*
  * Header file for ensuring that C99 types ([u]int32_t, [u]int64_t and bool) and
@@ -118,4 +118,4 @@
   #endif
 #endif
 
-#endif /* nptypes_h_ */
+#endif /* PLUGIN_INCLUDE_NPAPI_NPTYPES_H */

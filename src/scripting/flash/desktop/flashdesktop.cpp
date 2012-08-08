@@ -17,10 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
-#include "class.h"
+#include "scripting/abc.h"
+#include "scripting/class.h"
 
-#include "flashdesktop.h"
+#include "scripting/flash/desktop/flashdesktop.h"
 
 using namespace std;
 using namespace lightspark;

@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_MEDIA_H
-#define _FLASH_MEDIA_H
+#ifndef SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H
+#define SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -53,7 +53,7 @@ private:
 	void setBytesLoaded(uint32_t b);
 public:
 	Sound(Class_base* c);
-	~Sound();
+	virtual ~Sound();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -98,7 +98,7 @@ private:
 public:
 	Video(Class_base* c, uint32_t w=320, uint32_t h=240);
 	void finalize();
-	~Video();
+	virtual ~Video();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -127,4 +127,4 @@ public:
 
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H */

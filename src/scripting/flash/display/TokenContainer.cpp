@@ -18,10 +18,10 @@
 **************************************************************************/
 
 #include <cairo.h>
-#include "TokenContainer.h"
+#include "scripting/flash/display/TokenContainer.h"
 #include "swf.h"
 #include "backends/input.h"
-#include "BitmapData.h"
+#include "scripting/flash/display/BitmapData.h"
 
 using namespace lightspark;
 using namespace std;

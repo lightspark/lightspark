@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef TOPLEVEL_ARRAY_H
-#define TOPLEVEL_ARRAY_H
+#ifndef SCRIPTING_TOPLEVEL_ARRAY_H
+#define SCRIPTING_TOPLEVEL_ARRAY_H 1
 
 #include "asobject.h"
 
@@ -49,7 +49,7 @@ protected:
 		reporter_allocator<std::pair<const uint32_t, data_slot>>> arrayType;
 	arrayType data;
 	void outofbounds() const;
-	~Array();
+	virtual ~Array();
 private:
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	class sortComparatorDefault
@@ -150,4 +150,4 @@ public:
 
 
 }
-#endif
+#endif /* SCRIPTING_TOPLEVEL_ARRAY_H */

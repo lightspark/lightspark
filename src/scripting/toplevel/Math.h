@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef TOPLEVEL_MATH_H
-#define TOPLEVEL_MATH_H
+#ifndef SCRIPTING_TOPLEVEL_MATH_H
+#define SCRIPTING_TOPLEVEL_MATH_H 1
 
 #include "asobject.h"
 
@@ -55,4 +55,4 @@ public:
 };
 
 }
-#endif
+#endif /* SCRIPTING_TOPLEVEL_MATH_H */

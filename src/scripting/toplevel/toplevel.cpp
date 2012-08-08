@@ -34,18 +34,18 @@
 
 #include <glib.h>
 
-#include "abc.h"
-#include "toplevel.h"
-#include "flash/events/flashevents.h"
+#include "scripting/abc.h"
+#include "scripting/toplevel/toplevel.h"
+#include "scripting/flash/events/flashevents.h"
 #include "swf.h"
 #include "compat.h"
-#include "class.h"
+#include "scripting/class.h"
 #include "exceptions.h"
 #include "backends/urlutils.h"
 #include "parsing/amf3_generator.h"
-#include "argconv.h"
-#include "Number.h"
-#include "XML.h"
+#include "scripting/argconv.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/XML.h"
 
 using namespace std;
 using namespace lightspark;
@@ -918,7 +918,7 @@ void Class_base::finalizeObjects() const
 		tmp->incRef();
 		tmp->finalize();
 		//Advance the iterator before decReffing the current object (decReffing may destroy the object right now
-		it++;
+		++it;
 		tmp->decRef();
 	}
 }

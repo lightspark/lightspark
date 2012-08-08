@@ -17,13 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "Array.h"
-#include "abc.h"
-#include "argconv.h"
+#include "scripting/toplevel/Array.h"
+#include "scripting/abc.h"
+#include "scripting/argconv.h"
 #include "parsing/amf3_generator.h"
-#include "Vector.h"
-#include "RegExp.h"
-#include "flash/utils/flashutils.h"
+#include "scripting/toplevel/Vector.h"
+#include "scripting/toplevel/RegExp.h"
+#include "scripting/flash/utils/flashutils.h"
 
 using namespace std;
 using namespace lightspark;
@@ -462,7 +462,7 @@ ASFUNCTIONBODY(Array,shift)
 	}
 	std::map<uint32_t,data_slot> tmp;
 	std::map<uint32_t,data_slot>::iterator it;
-	for ( it=th->data.begin(); it != th->data.end(); it++ )
+	for ( it=th->data.begin(); it != th->data.end(); ++it )
 	{
 		if(it->first)
 		{
@@ -621,7 +621,7 @@ ASFUNCTIONBODY(Array,indexOf)
 
 	DATA_TYPE dtype;
 	std::map<uint32_t,data_slot>::iterator it;
-	for ( it=th->data.begin() ; it != th->data.end(); it++ )
+	for ( it=th->data.begin() ; it != th->data.end(); ++it )
 	{
 		if (it->first < (uint32_t)index)
 			continue;
@@ -859,7 +859,7 @@ ASFUNCTIONBODY(Array,unshift)
 		th->resize(th->size()+argslen);
 		std::map<uint32_t,data_slot> tmp;
 		std::map<uint32_t,data_slot>::reverse_iterator it;
-		for ( it=th->data.rbegin(); it != th->data.rend(); it++ )
+		for ( it=th->data.rbegin(); it != th->data.rend(); ++it )
 		{
 			tmp[it->first+argslen]=it->second;
 		}
@@ -1331,7 +1331,7 @@ void Array::resize(uint64_t n)
 {
 	std::map<uint32_t,data_slot>::reverse_iterator it;
 	std::map<uint32_t,data_slot>::iterator itstart = n ? data.end() : data.begin();
-	for ( it=data.rbegin() ; it != data.rend(); it++ )
+	for ( it=data.rbegin() ; it != data.rend(); ++it )
 	{
 		if (it->first < n)
 		{
@@ -1393,7 +1393,7 @@ void Array::finalize()
 {
 	ASObject::finalize();
 	std::map<uint32_t,data_slot>::iterator it;
-	for ( it=data.begin() ; it != data.end(); it++ )
+	for ( it=data.begin() ; it != data.end(); ++it)
 	{
 		if(it->second.type==DATA_OBJECT && it->second.data)
 			it->second.data->decRef();

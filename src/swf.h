@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef SWF_H
-#define SWF_H
+#define SWF_H 1
 
 #include "compat.h"
 #include <fstream>
@@ -82,7 +82,7 @@ private:
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
 	RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
-	~RootMovieClip();
+	virtual ~RootMovieClip();
 	void finalize();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;
@@ -253,7 +253,7 @@ private:
 	//This needs to be atomic because it's decremented without the mutex held
 	ATOMIC_INT32(lastUsedNamespaceId);
 protected:
-	~SystemState();
+	virtual ~SystemState();
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 
@@ -438,7 +438,7 @@ public:
 	// Parse a clip from stream into root. The stream must be an
 	// SWF file.
 	ParseThread(std::istream& in, RootMovieClip *root) DLL_PUBLIC;
-	~ParseThread();
+	virtual ~ParseThread();
 	FILE_TYPE getFileType() const { return fileType; }
         _NR<DisplayObject> getParsedObject();
 	RootMovieClip* getRootMovie() const;
@@ -471,4 +471,4 @@ void setTLSSys(SystemState* sys) DLL_PUBLIC;
 ParseThread* getParseThread();
 
 };
-#endif
+#endif /* SWF_H */

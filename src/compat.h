@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef COMPAT_H
-#define COMPAT_H
+#define COMPAT_H 1
 
 #include <boost/version.hpp>
 #if BOOST_VERSION >= 104600
@@ -276,4 +276,4 @@ const char* getExectuablePath();
 HANDLE compat_spawn(char** args, int* stdinfd);
 #endif
 
-#endif
+#endif /* COMPAT_H */

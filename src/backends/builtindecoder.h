@@ -17,10 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _BUILTIN_DECODER_H
-#define _BUILTIN_DECODER_H
+#ifndef BACKENDS_BUILTINDECODER_H
+#define BACKENDS_BUILTINDECODER_H 1
 
-#include "decoder.h"
+#include "backends/decoder.h"
 #include "parsing/flv.h"
 
 namespace lightspark
@@ -42,6 +42,7 @@ private:
 	STREAM_TYPE classifyStream(std::istream& s);
 public:
 	BuiltinStreamDecoder(std::istream& _s);
+	virtual ~BuiltinStreamDecoder() {}
 	bool decodeNextFrame();
 	bool getMetadataInteger(const char* name, uint32_t& ret) const;
 	bool getMetadataDouble(const char* name, double& ret) const;
@@ -49,4 +50,4 @@ public:
 
 };
 
-#endif
+#endif /* BACKENDS_BUILTINDECODER_H */

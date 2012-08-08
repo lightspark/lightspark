@@ -17,11 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _DISPLAY_OBJECT_H
-#define _DISPLAY_OBJECT_H
+#ifndef SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H
+#define SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H 1
 
 #include "smartrefs.h"
-#include "IBitmapDrawable.h"
+#include "scripting/flash/display/IBitmapDrawable.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
 
@@ -70,7 +70,7 @@ private:
 	 */
 	void setMatrix(const MATRIX& m);
 protected:
-	~DisplayObject();
+	virtual ~DisplayObject();
 	/**
 	  	The object that masks us, if any
 	*/
@@ -204,4 +204,4 @@ public:
 	ASFUNCTION(globalToLocal);
 };
 };
-#endif
+#endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

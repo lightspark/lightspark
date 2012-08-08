@@ -17,10 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef ASSTRING_H_
-#define ASSTRING_H_
+#ifndef SCRIPTING_TOPLEVEL_ASSTRING_H
+#define SCRIPTING_TOPLEVEL_ASSTRING_H 1
 
-#include "class.h"
+#include "scripting/class.h"
 
 namespace Glib { class ustring; }
 
@@ -91,4 +91,4 @@ inline ASObject* Class<ASString>::coerce(ASObject* o) const
 }
 
 }
-#endif /* ASSTRING_H_ */
+#endif /* SCRIPTING_TOPLEVEL_ASSTRING_H */

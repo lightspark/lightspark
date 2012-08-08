@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef BOOLEAN_H_
-#define BOOLEAN_H_
+#ifndef SCRIPTING_TOPLEVEL_BOOLEAN_H
+#define SCRIPTING_TOPLEVEL_BOOLEAN_H 1
 
 #include "asobject.h"
 
@@ -56,4 +56,4 @@ public:
 };
 
 }
-#endif /* BOOLEAN_H_ */
+#endif /* SCRIPTING_TOPLEVEL_BOOLEAN_H */

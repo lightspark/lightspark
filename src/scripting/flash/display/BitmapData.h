@@ -17,10 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _BITMAP_DATA_H
-#define _BITMAP_DATA_H
+#ifndef SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H
+#define SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H 1
 
-#include "IBitmapDrawable.h"
+#include "scripting/flash/display/IBitmapDrawable.h"
 #include "asobject.h"
 #include "scripting/flash/display/BitmapContainer.h"
 
@@ -42,7 +42,7 @@ public:
 	BitmapData(Class_base* c);
 	BitmapData(Class_base* c, const BitmapContainer& b);
 	static void sinit(Class_base* c);
-	~BitmapData();
+	virtual ~BitmapData();
 	/* the bitmaps data in premultiplied, native-endian 32 bit
 	 * ARGB format. stride is the number of bytes per row, may be
 	 * larger than width. dataSize is the total allocated size of
@@ -67,4 +67,4 @@ public:
 };
 
 };
-#endif
+#endif /* SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H */

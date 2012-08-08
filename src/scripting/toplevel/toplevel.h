@@ -17,8 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef TOPLEVEL_H
-#define TOPLEVEL_H
+#ifndef SCRIPTING_TOPLEVEL_TOPLEVEL_H
+#define SCRIPTING_TOPLEVEL_TOPLEVEL_H 1
+
 #include "compat.h"
 #include <vector>
 #include <set>
@@ -26,8 +27,8 @@
 #include "exceptions.h"
 #include "threading.h"
 #include "scripting/abcutils.h"
-#include "Boolean.h"
-#include "Error.h"
+#include "scripting/toplevel/Boolean.h"
+#include "scripting/toplevel/Error.h"
 #include "memory_support.h"
 #include <libxml++/parsers/domparser.h>
 
@@ -233,6 +234,7 @@ class Class_object: public Class_base
 private:
 	//Invoke the special constructor that will set the super to Object
 	Class_object():Class_base(this){}
+	virtual ~Class_object() {}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 	{
 		throw RunTimeException("Class_object::getInstance");
@@ -361,6 +363,7 @@ protected:
 	}
 	method_info* getMethodInfo() const { return NULL; }
 public:
+	virtual ~Function() {}
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	bool isEqual(ASObject* r)
 	{
@@ -401,7 +404,7 @@ private:
 	}
 	method_info* getMethodInfo() const { return mi; }
 public:
-	~SyntheticFunction();
+	virtual ~SyntheticFunction();
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	void finalize();
 	std::vector<scope_entry> func_scope;
@@ -429,6 +432,7 @@ class Class<IFunction>: public Class_base
 {
 private:
 	Class<IFunction>(MemoryAccount* m):Class_base(QName("Function",""),m){}
+	virtual ~Class() {}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 	IFunction* getNopFunction();
 public:
@@ -631,4 +635,4 @@ inline Manager::~Manager()
 
 };
 
-#endif
+#endif /* SCRIPTING_TOPLEVEL_TOPLEVEL_H */

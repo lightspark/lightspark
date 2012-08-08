@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef ERROR_H_
-#define ERROR_H_
+#ifndef SCRIPTING_TOPLEVEL_ERROR_H
+#define SCRIPTING_TOPLEVEL_ERROR_H 1
 
 #include "asobject.h"
 
@@ -158,4 +158,4 @@ public:
 
 }
 
-#endif /* ERROR_H_ */
+#endif /* SCRIPTING_TOPLEVEL_ERROR_H */

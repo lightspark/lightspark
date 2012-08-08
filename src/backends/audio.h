@@ -17,16 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef AUDIO_H
-#define AUDIO_H
+#ifndef BACKENDS_AUDIO_H
+#define BACKENDS_AUDIO_H 1
 
 
 #include "compat.h"
-#include "decoder.h"
+#include "backends/decoder.h"
 #include <iostream>
 
-#include "pluginmanager.h"
-#include "interfaces/audio/IAudioPlugin.h"
+#include "backends/pluginmanager.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
 
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
@@ -65,4 +65,4 @@ public:
 
 };
 
-#endif
+#endif /* BACKENDS_AUDIO_H */

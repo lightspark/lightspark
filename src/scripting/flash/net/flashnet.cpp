@@ -18,16 +18,16 @@
 **************************************************************************/
 
 #include <map>
-#include "abc.h"
-#include "flashnet.h"
-#include "class.h"
-#include "flash/system/flashsystem.h"
+#include "scripting/abc.h"
+#include "scripting/flash/net/flashnet.h"
+#include "scripting/class.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "compat.h"
 #include "backends/audio.h"
 #include "backends/builtindecoder.h"
 #include "backends/rendering.h"
 #include "backends/security.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 
 using namespace std;
 using namespace lightspark;

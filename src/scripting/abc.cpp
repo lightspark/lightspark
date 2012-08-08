@@ -17,10 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
+#ifdef LLVM_28
+#define alignof alignOf
+#endif
+
+#include "compat.h"
+
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
+#include <llvm/PassManager.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Target/TargetData.h>
 #ifdef LLVM_28
@@ -37,35 +43,35 @@
 #include <limits>
 #include <cmath>
 #include "swf.h"
-#include "toplevel/ASString.h"
-#include "toplevel/Date.h"
-#include "toplevel/Math.h"
-#include "toplevel/RegExp.h"
-#include "toplevel/Vector.h"
-#include "toplevel/XML.h"
-#include "toplevel/XMLList.h"
-#include "flash/accessibility/flashaccessibility.h"
-#include "flash/desktop/flashdesktop.h"
-#include "flash/display/flashdisplay.h"
-#include "flash/display/BitmapData.h"
-#include "flash/events/flashevents.h"
-#include "flash/filters/flashfilters.h"
-#include "flash/net/flashnet.h"
-#include "flash/net/URLStream.h"
-#include "flash/net/XMLSocket.h"
-#include "flash/system/flashsystem.h"
-#include "flash/sensors/flashsensors.h"
-#include "flash/utils/flashutils.h"
-#include "flash/geom/flashgeom.h"
-#include "flash/external/ExternalInterface.h"
-#include "flash/media/flashmedia.h"
-#include "flash/xml/flashxml.h"
-#include "flash/errors/flasherrors.h"
-#include "flash/text/flashtext.h"
-#include "flash/text/flashtextengine.h"
-#include "class.h"
+#include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Date.h"
+#include "scripting/toplevel/Math.h"
+#include "scripting/toplevel/RegExp.h"
+#include "scripting/toplevel/Vector.h"
+#include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/XMLList.h"
+#include "scripting/flash/accessibility/flashaccessibility.h"
+#include "scripting/flash/desktop/flashdesktop.h"
+#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/filters/flashfilters.h"
+#include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/URLStream.h"
+#include "scripting/flash/net/XMLSocket.h"
+#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/sensors/flashsensors.h"
+#include "scripting/flash/utils/flashutils.h"
+#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/external/ExternalInterface.h"
+#include "scripting/flash/media/flashmedia.h"
+#include "scripting/flash/xml/flashxml.h"
+#include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/text/flashtext.h"
+#include "scripting/flash/text/flashtextengine.h"
+#include "scripting/class.h"
 #include "exceptions.h"
-#include "compat.h"
+#include "scripting/abc.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1445,7 +1451,7 @@ void ABCVm::Run(ABCVm* th)
 #endif
 #endif
 		llvm::InitializeNativeTarget();
-		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
+		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context());
 		llvm::EngineBuilder eb(th->module);
 		eb.setEngineKind(llvm::EngineKind::JIT);
 #ifdef LLVM_31

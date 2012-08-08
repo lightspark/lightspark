@@ -28,7 +28,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASString.h"
 
-#include "extscriptobject.h"
+#include "backends/extscriptobject.h"
 
 using namespace lightspark;
 using namespace std;
@@ -291,7 +291,7 @@ ASObject* ExtVariant::getASObject() const
 			uint32_t count;
 
 			// We are converting an array, so lets set indexes
-			if(objValue->getType() == ExtObject::EO_ARRAY)
+			if((objValue) && (objValue->getType() == ExtObject::EO_ARRAY))
 			{
 				asobj = Class<Array>::getInstanceS();
 				count = objValue->getLength();

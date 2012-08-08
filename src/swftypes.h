@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef SWFTYPES_H
-#define SWFTYPES_H
+#define SWFTYPES_H 1
 
 #include "compat.h"
 #include <iostream>
@@ -1350,4 +1350,4 @@ std::istream& operator>>(std::istream& stream, GRADIENTBEVELFILTER& v);
 
 
 };
-#endif
+#endif /* SWFTYPES_H */

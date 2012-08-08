@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "BitmapContainer.h"
+#include "scripting/flash/display/BitmapContainer.h"
 #include "backends/rendering_context.h"
 #include "backends/image.h"
 

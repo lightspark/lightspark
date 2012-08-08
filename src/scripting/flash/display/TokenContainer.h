@@ -17,13 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _TOKEN_CONTAINER_H
-#define _TOKEN_CONTAINER_H
+#ifndef SCRIPTING_FLASH_DISPLAY_TOKENCONTAINER_H
+#define SCRIPTING_FLASH_DISPLAY_TOKENCONTAINER_H 1
 
 #include <vector>
 #include "backends/geometry.h"
 #include "backends/graphics.h"
-#include "DisplayObject.h"
+#include "scripting/flash/display/DisplayObject.h"
 
 namespace lightspark
 {
@@ -64,4 +64,4 @@ protected:
 };
 
 };
-#endif
+#endif /* SCRIPTING_FLASH_DISPLAY_TOKENCONTAINER_H */

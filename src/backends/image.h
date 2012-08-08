@@ -16,13 +16,16 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
+#ifndef BACKENDS_IMAGE_H 
+#define BACKENDS_IMAGE_H 1
+
 #include <cstdint>
 #include <istream>
 
 extern "C" {
-#include "jpeglib.h"
+#include <jpeglib.h>
 #define PNG_SKIP_SETJMP_CHECK
-#include "png.h"
+#include <png.h>
 }
 
 namespace lightspark
@@ -45,3 +48,5 @@ public:
 };
 
 }
+
+#endif /* BACKENDS_IMAGE_H */

@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "builtindecoder.h"
+#include "backends/builtindecoder.h"
 
 using namespace lightspark;
 

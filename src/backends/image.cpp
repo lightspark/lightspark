@@ -22,12 +22,12 @@
 #include "logger.h"
 
 extern "C" {
-#include "jpeglib.h"
-#include "jerror.h"
+#include <jpeglib.h>
+#include <jerror.h>
 }
 
 #include <csetjmp>
-#include "image.h"
+#include "backends/image.h"
 
 namespace lightspark
 {
@@ -82,7 +82,7 @@ static boolean fill_input_buffer_istream(j_decompress_ptr cinfo) {
 	{
 		src->input.read(src->data, src->capacity);
 	}
-	catch(std::ios_base::failure exc)
+	catch(std::ios_base::failure& exc)
 	{
 		if(!src->input.eof())
 			throw;
@@ -92,8 +92,8 @@ static boolean fill_input_buffer_istream(j_decompress_ptr cinfo) {
 	if(src->bytes_in_buffer==0)
 	{
 		// EOI marker
-		src->data[0]=0xff;
-		src->data[1]=0xd9;
+		src->data[0]=(char)0xff;
+		src->data[1]=(char)0xd9;
 		src->bytes_in_buffer=2;
 	}
 
@@ -117,7 +117,7 @@ static void skip_input_data_istream(j_decompress_ptr cinfo, long num_bytes) {
 		{
 			src->input.seekg(num_bytes-src->bytes_in_buffer, std::ios_base::cur);
 		}
-		catch(std::ios_base::failure exc)
+		catch(std::ios_base::failure& exc)
 		{
 			if(!src->input.eof())
 				throw;
@@ -287,7 +287,7 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 	{
 		png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
 		if (rowPtrs != NULL) delete [] rowPtrs;
-		if (outData != NULL) delete outData;
+		if (outData != NULL) delete [] outData;
 
 		LOG(LOG_ERROR,"error during reading of the png file");
 

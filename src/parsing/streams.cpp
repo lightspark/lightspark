@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "streams.h"
+#include "parsing/streams.h"
 #include "logger.h"
 #include "exceptions.h"
 #include "compat.h"

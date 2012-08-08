@@ -18,8 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _EXT_SCRIPT_OBJECT_H
-#define _EXT_SCRIPT_OBJECT_H
+#ifndef BACKENDS_EXTSCRIPTOBJECT_H
+#define BACKENDS_EXTSCRIPTOBJECT_H 1
 
 #include <string>
 #include <map>
@@ -192,7 +192,7 @@ class DLL_PUBLIC ExtASCallback : public ExtCallback
 {
 public:
 	ExtASCallback(IFunction* _func) : func(_func), result(NULL), asArgs(NULL), funcWasCalled(false) { func->incRef(); }
-	~ExtASCallback();
+	virtual ~ExtASCallback();
 
 	// Don't forget to delete this copy after use
 	ExtASCallback* copy() { return new ExtASCallback(func); }
@@ -222,7 +222,7 @@ public:
 		const ExtVariant** args, uint32_t argc, ExtVariant** result);
 
 	ExtBuiltinCallback(funcPtr _func) : func(_func), result(NULL) {}
-	~ExtBuiltinCallback() {}
+	virtual ~ExtBuiltinCallback() {}
 	
 	// Don't forget to delete this copy after use
 	ExtBuiltinCallback* copy() { return new ExtBuiltinCallback(func); }
@@ -273,4 +273,4 @@ public:
 
 };
 
-#endif
+#endif /* BACKENDS_EXTSCRIPTOBJECT_H */

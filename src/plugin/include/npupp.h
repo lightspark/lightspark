@@ -42,8 +42,8 @@
  */
 
 
-#ifndef _NPUPP_H_
-#define _NPUPP_H_
+#ifndef PLUGIN_INCLUDE_NPUPP_H
+#define PLUGIN_INCLUDE_NPUPP_H 1
 
 #if defined(__OS2__)
 #pragma pack(1)
@@ -54,11 +54,11 @@
 #endif
 
 #ifndef _NPAPI_H_
-#include "npapi.h"
+#include "plugin/include/npapi/npapi.h"
 #endif
 
-#include "npruntime.h"
-#include "npfunctions.h"
+#include "plugin/include/npapi/npruntime.h"
+#include "plugin/include/npapi/npfunctions.h"
 
 /******************************************************************************************
    plug-in function table macros
@@ -1698,4 +1698,4 @@ NPError NP_GetValue(void *future, NPPVariable aVariable, void *aValue);
 
 #endif /* XP_UNIX */
 
-#endif /* _NPUPP_H_ */
+#endif /* PLUGIN_INCLUDE_NPUPP_H */

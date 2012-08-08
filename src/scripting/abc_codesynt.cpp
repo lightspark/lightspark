@@ -17,20 +17,60 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
+#ifdef LLVM_28
+#define alignof alignOf
+#define LLVMMAKEARRAYREF(T) T
+#else
+#define LLVMMAKEARRAYREF(T) makeArrayRef(T)
+#endif
+
+#include "compat.h"
 #include <llvm/Module.h>
 #include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/PassManager.h>
 #include <llvm/Constants.h> 
 #include <llvm/Support/IRBuilder.h> 
+#include <llvm/LLVMContext.h>
 #include <llvm/Target/TargetData.h>
 #include <sstream>
+#include "scripting/abc.h"
 #include "swftypes.h"
-#include "compat.h"
 #include "exceptions.h"
 
 using namespace std;
 using namespace lightspark;
+
+namespace lightspark {
+struct block_info
+{
+	llvm::BasicBlock* BB;
+	/* current type of locals, changed through interpreting the opcodes in doAnalysis */
+	std::vector<STACK_TYPE> locals;
+	/* types of locals at the start of the block
+	 * This is computed in doAnalysis. It is != STACK_NONE when all preceding blocks end with
+	 * the local having the same type. */
+	std::vector<STACK_TYPE> locals_start;
+	/* if locals_start[i] != STACK_NONE, then locals_start_obj[i] is an Alloca of the given type.
+	 * SyncLocals at the end of one block Store's the current locals to locals_start_obj. (if both have the same type)
+	 * At the beginning of this block, static_locals[i] is initialized by a Load(locals_start_obj[i]). */
+	std::vector<llvm::Value*> locals_start_obj;
+	/* there is no need to transfer the given local to this block by a preceding block
+	 * because this and all successive blocks will not read the local before writing to it.
+	 */
+	std::vector<bool> locals_reset;
+	/* getlocal/setlocal in this block used the given local */
+	std::vector<bool> locals_used;
+	std::set<block_info*> preds; /* preceding blocks */
+	std::set<block_info*> seqs; /* subsequent blocks */
+	std::map<int,STACK_TYPE> push_types;
+
+	//Needed for indexed access
+	block_info():BB(NULL){abort();}
+	block_info(const method_info* mi, const char* blockName);
+	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
+};
+}
 
 static LLVMTYPE void_type = NULL;
 static LLVMTYPE int_type = NULL;
@@ -51,6 +91,12 @@ void debug_d(number_t f)
 void debug_i(int32_t i)
 {
 	LOG(LOG_CALLS, _("debug_i ")<< i);
+}
+
+llvm::LLVMContext& ABCVm::llvm_context()
+{
+	static llvm::LLVMContext context;
+	return context;
 }
 
 opcode_handler ABCVm::opcode_table_args_pointer_2int[]={
@@ -225,15 +271,15 @@ void ABCVm::registerFunctions()
 	llvm::FunctionType* FT=NULL;
 
 	//Create types
-	ptr_type=ex->getTargetData()->getIntPtrType(llvm_context);
+	ptr_type=ex->getTargetData()->getIntPtrType(llvm_context());
 	//Pointer to 8 bit type, needed for pointer arithmetic
-	voidptr_type=llvm::IntegerType::get(getVm()->llvm_context,8)->getPointerTo();
-	number_type=llvm::Type::getDoubleTy(llvm_context);
-	numberptr_type=llvm::Type::getDoublePtrTy(llvm_context);
-	bool_type=llvm::IntegerType::get(llvm_context,1);
+	voidptr_type=llvm::IntegerType::get(getVm()->llvm_context(),8)->getPointerTo();
+	number_type=llvm::Type::getDoubleTy(llvm_context());
+	numberptr_type=llvm::Type::getDoublePtrTy(llvm_context());
+	bool_type=llvm::IntegerType::get(llvm_context(),1);
 	boolptr_type=bool_type->getPointerTo();
-	void_type=llvm::Type::getVoidTy(llvm_context);
-	int_type=llvm::IntegerType::get(getVm()->llvm_context,32);
+	void_type=llvm::Type::getVoidTy(llvm_context());
+	int_type=llvm::IntegerType::get(getVm()->llvm_context(),32);
 	intptr_type=int_type->getPointerTo();
 
 	//All the opcodes needs a pointer to the context
@@ -242,7 +288,7 @@ void ABCVm::registerFunctions()
 	struct_elems.push_back(voidptr_type->getPointerTo());
 	struct_elems.push_back(int_type);
 	struct_elems.push_back(int_type);
-	context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,LLVMMAKEARRAYREF(struct_elems),true));
+	context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context(),LLVMMAKEARRAYREF(struct_elems),true));
 
 	//newActivation needs both method_info and the context
 	sig.push_back(context_type);
@@ -501,7 +547,7 @@ static llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynam
 {
 	//decrement stack index
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context,32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context(),32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 
@@ -512,7 +558,7 @@ static llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynam
 static llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
 {
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context,32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context(),32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
 	return builder.CreateLoad(dest);
@@ -526,7 +572,7 @@ static void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builde
 	builder.CreateStore(val,dest);
 
 	//increment stack index
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context,32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context(),32), 1);
 	llvm::Value* index2=builder.CreateAdd(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 }
@@ -595,7 +641,8 @@ inline void abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder
 	e.second = STACK_OBJECT;
 }
 
-inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, 
+//Helper functions to sync the static stack and locals to the memory 
+inline void syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder,
 		vector<stack_entry>& static_stack,llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index) 
 {
 	for(unsigned int i=0;i<static_stack.size();i++)
@@ -606,7 +653,7 @@ inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 	static_stack.clear();
 }
 
-inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder,
+inline void syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder,
 	const vector<stack_entry>& static_locals,llvm::Value* locals,const vector<STACK_TYPE>& expected,
 	const block_info& dest_block)
 {
@@ -639,7 +686,7 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			//dest_block does not expect us to transfer locals,
 			//so just write them to call_context->locals, overwriting (and decRef'ing) the old contents of call_context->locals
 			assert(dest_block.locals_start[i] == STACK_NONE);
-			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context,32), i);
+			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context(),32), i);
 			llvm::Value* t=builder.CreateGEP(locals,constant);
 			llvm::Value* old=builder.CreateLoad(t);
 			if(static_locals[i].second==STACK_OBJECT)
@@ -787,7 +834,7 @@ inline pair<unsigned int,STACK_TYPE> method_info::popTypeFromStack(static_stack_
 
 block_info::block_info(const method_info* mi, const char* blockName)
 {
-	BB=llvm::BasicBlock::Create(getVm()->llvm_context, blockName, mi->llvmf);
+	BB=llvm::BasicBlock::Create(getVm()->llvm_context(), blockName, mi->llvmf);
 	locals_start.resize(mi->body->local_count,STACK_NONE);
 	locals_reset.resize(mi->body->local_count,false);
 	locals_used.resize(mi->body->local_count,false);
@@ -799,8 +846,15 @@ void method_info::addBlock(map<unsigned int,block_info>& blocks, unsigned int ip
 		blocks.insert(make_pair(ip, block_info(this, blockName)));
 }
 
-void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder)
+struct method_info::BuilderWrapper
 {
+	llvm::IRBuilder<>& Builder;
+	BuilderWrapper(llvm::IRBuilder<>& B) : Builder(B) { }
+};
+
+void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderWrapper& builderWrapper)
+{
+	llvm::IRBuilder<>& Builder = builderWrapper.Builder;
 	bool stop;
 	stringstream code(body->code);
 	for (unsigned int i=0;i<body->exceptions.size();i++)
@@ -1688,7 +1742,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 			{
 				set<block_info*>::iterator pred=cur.preds.begin();
 				new_start=(*pred)->locals;
-				pred++;
+				++pred;
 				for(;pred!=cur.preds.end();++pred)
 				{
 					for(unsigned int j=0;j<(*pred)->locals.size();j++)
@@ -1767,7 +1821,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		return NULL;
 	}
 	llvm::ExecutionEngine* ex=getVm()->ex;
-	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
+	llvm::LLVMContext& llvm_context=getVm()->llvm_context();
 	llvm::FunctionType* method_type=synt_method_prototype(ex);
 	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,method_name,getVm()->module);
 
@@ -1883,7 +1937,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	}
 #undef LOAD_LOCALPTR
-	doAnalysis(blocks,Builder);
+	BuilderWrapper wrapper(Builder);
+	doAnalysis(blocks,wrapper);
 
 	//Let's reset the stream
 	stringstream code(body->code);

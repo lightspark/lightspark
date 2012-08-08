@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef EXCEPTIONS_H
-#define EXCEPTIONS_H
+#define EXCEPTIONS_H 1
 
 #include "compat.h"
 #include <exception>
@@ -43,7 +43,7 @@ public:
 	LightsparkException(const std::string& c):cause(c)
 	{
 	}
-	~LightsparkException() throw(){}
+	virtual ~LightsparkException() throw(){}
 };
 
 class RunTimeException: public LightsparkException
@@ -131,4 +131,4 @@ public:
 };
 
 };
-#endif
+#endif /* EXCEPTIONS_H */

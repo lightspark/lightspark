@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _CONFIG_PARSER_H
-#define _CONFIG_PARSER_H
+#ifndef PARSING_CONFIG_H
+#define PARSING_CONFIG_H 1
 
 #include <string>
 #include <vector>
@@ -65,4 +65,4 @@ namespace lightspark
 	};
 }
 
-#endif
+#endif /* PARSING_CONFIG_H */

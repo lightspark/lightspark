@@ -18,19 +18,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef __PLUGIN_H__
-#define __PLUGIN_H__
+#ifndef PLUGIN_PLUGIN_H
+#define PLUGIN_PLUGIN_H 1
 
 #include "swf.h"
 #include <iostream>
 #include <sstream>
 
 #include "compat.h"
-#include "pluginbase.h"
+#include "plugin/include/pluginbase.h"
 #include "parsing/streams.h"
 #include "backends/netutils.h"
 #include "backends/urlutils.h"
-#include "npscriptobject.h"
+#include "plugin/npscriptobject.h"
 
 namespace lightspark
 {
@@ -81,7 +81,7 @@ public:
 	/* The widget must not be gtk_widget_destroy'ed in the destructor. This is done
 	 * by firefox.
 	 */
-	~PluginEngineData() {}
+	virtual ~PluginEngineData() {}
 
 	void stopMainDownload();
 	bool isSizable() const { return false; }
@@ -137,4 +137,4 @@ private:
 };
 
 }
-#endif // __PLUGIN_H__
+#endif /* PLUGIN_PLUGIN_H */

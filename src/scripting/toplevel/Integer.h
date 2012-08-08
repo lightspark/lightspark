@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef INTEGER_H
-#define INTEGER_H
+#ifndef SCRIPTING_TOPLEVEL_INTEGER_H
+#define SCRIPTING_TOPLEVEL_INTEGER_H 1
 #include "compat.h"
 #include "asobject.h"
 
@@ -56,4 +56,4 @@ public:
 };
 
 }
-#endif // INTEGER_H
+#endif /* SCRIPTING_TOPLEVEL_INTEGER_H */

@@ -18,16 +18,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef WINMMPLUGIN_H
-#define WINMMPLUGIN_H
+#ifndef BACKENDS_INTERFACES_AUDIO_WINMM_WINMMPLUGIN_H
+#define BACKENDS_INTERFACES_AUDIO_WINMM_WINMMPLUGIN_H 1
 
 #include <iostream>
 #include <windows.h>
 #include <mmsystem.h>
-#include "../IAudioPlugin.h"
-#include "../../../decoder.h"
-#include "../../../../compat.h"
-#include "../../../../threading.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
+#include "backends/decoder.h"
+#include "compat.h"
+#include "threading.h"
 
 namespace lightspark
 {
@@ -45,7 +45,7 @@ public:
 	void set_device( std::string desiredDevice, DEVICE_TYPES desiredType );
 	AudioStream *createStream( lightspark::AudioDecoder *decoder );
 	bool isTimingAvailable() const { return true; };
-	~WinMMPlugin();
+	virtual ~WinMMPlugin();
 };
 
 class WinMMStream: public AudioStream
@@ -75,8 +75,8 @@ public:
 	void mute();
 	void unmute();
 	void setVolume(double);
-	~WinMMStream();
+	virtual ~WinMMStream();
 };
 
 }
-#endif
+#endif /* BACKENDS_INTERFACES_AUDIO_WINMM_WINMMPLUGIN_H */

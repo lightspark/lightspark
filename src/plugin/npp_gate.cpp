@@ -22,7 +22,7 @@
 // Implementation of plugin entry points (NPP_*)
 //
 #include "compat.h"
-#include "pluginbase.h"
+#include "plugin/include/pluginbase.h"
 #include <stdio.h>
 
 // here the plugin creates a plugin instance object which 

@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef TINY_STRING_H
-#define TINY_STRING_H
+#define TINY_STRING_H 1
 
 #include <cstring>
 #include <cstdint>
@@ -429,4 +429,4 @@ public:
 };
 
 };
-#endif
+#endif /* TINY_STRING_H */

@@ -17,12 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef URLSTREAM_H_
-#define URLSTREAM_H_
+#ifndef SCRIPTING_FLASH_NET_URLSTREAM_H
+#define SCRIPTING_FLASH_NET_URLSTREAM_H 1
 
 #include "compat.h"
 #include "asobject.h"
-#include "flash/events/flashevents.h"
+#include "scripting/flash/events/flashevents.h"
 #include "thread_pool.h"
 #include "backends/netutils.h"
 
@@ -39,6 +39,7 @@ private:
 	void execute();
 public:
 	URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes);
+	virtual ~URLStreamThread() {}
 };
 
 class URLStream: public EventDispatcher, public IDataInput, public IDownloaderThreadListener
@@ -79,4 +80,4 @@ public:
 };
 
 }
-#endif /* URLSTREAM_H_ */
+#endif /* SCRIPTING_FLASH_NET_URLSTREAM_H */

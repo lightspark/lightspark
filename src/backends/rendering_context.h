@@ -17,12 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef RENDERCONTEXT_H
-#define RENDERCONTEXT_H
+#ifndef BACKENDS_RENDERING_CONTEXT_H
+#define BACKENDS_RENDERING_CONTEXT_H 1
 
 #include <stack>
-#include "lsopengl.h"
-#include "graphics.h"
+#include "backends/lsopengl.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {
@@ -115,7 +115,7 @@ protected:
 	std::vector<LargeTexture> largeTextures;
 
 	void renderMaskToTmpBuffer();
-	~GLRenderContext(){}
+	virtual ~GLRenderContext(){}
 
 	enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 	/*
@@ -176,4 +176,4 @@ public:
 };
 
 }
-#endif
+#endif /* BACKENDS_RENDERING_CONTEXT_H */

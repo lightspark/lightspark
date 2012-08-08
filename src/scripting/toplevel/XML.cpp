@@ -17,12 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "XML.h"
-#include "XMLList.h"
-#include "flash/xml/flashxml.h"
-#include "class.h"
+#include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/XMLList.h"
+#include "scripting/flash/xml/flashxml.h"
+#include "scripting/class.h"
 #include "compat.h"
-#include "argconv.h"
+#include "scripting/argconv.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include <libxml++/nodes/textnode.h>
@@ -330,7 +330,7 @@ XML::XMLVector XML::getAttributes(const tiny_string& name,
 	xmlpp::Element::AttributeList::const_iterator it=list.begin();
 	_NR<XML> rootXML=getRootNode();
 
-	for(;it!=list.end();it++)
+	for(;it!=list.end();++it)
 	{
 		if((name=="*" || (*it)->get_name()==name) && 
 		   (namespace_uri=="*" || (*it)->get_namespace_uri()==namespace_uri))
@@ -366,7 +366,7 @@ void XML::toXMLString_priv(xmlBufferPtr buf)
 			localNamespaces.emplace_back(**cur);
 			cur++;
 		}
-		for(uint32_t i=0;i<localNamespaces.size()-1;i++)
+		for(uint32_t i=0;i<localNamespaces.size()-1;++i)
 			localNamespaces[i].next=&localNamespaces[i+1];
 		localNamespaces.back().next=NULL;
 		//Free the namespaces arrary
@@ -409,7 +409,7 @@ void XML::childrenImpl(XMLVector& ret, const tiny_string& name)
 	const xmlpp::Node::NodeList& list=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
 	_NR<XML> rootXML=getRootNode();
-	for(;it!=list.end();it++)
+	for(;it!=list.end();++it)
 	{
 		if(name!="*" && (*it)->get_name() != name.raw_buf())
 			continue;
@@ -441,10 +441,10 @@ void XML::childrenImpl(XMLVector& ret, uint32_t index)
 				break;
 			}
 
-			i++;
+			++i;
 		}
 
-		it++;
+		++it;
 	}
 }
 
@@ -867,7 +867,7 @@ void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const 
 	//NOTE: Creating a temporary list is quite a large overhead, but there is no way in libxml++ to access the first child
 	const xmlpp::Node::NodeList& list=node->get_children();
 	xmlpp::Node::NodeList::const_iterator it=list.begin();
-	for(;it!=list.end();it++)
+	for(;it!=list.end();++it)
 		recursiveGetDescendantsByQName(root, *it, name, ns, ret);
 }
 
@@ -938,7 +938,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		xmlpp::Node::NodeList::const_iterator it=children.begin();
 		XMLVector ret;
 
-		for(;it!=children.end();it++)
+		for(;it!=children.end();++it)
 		{
 			if((*it)->get_namespace_uri()==namespace_uri)
 			{

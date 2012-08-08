@@ -17,20 +17,20 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_DISPLAY_H
-#define _FLASH_DISPLAY_H
+#ifndef SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H
+#define SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H 1
 
 #include <boost/bimap.hpp>
 #include "compat.h"
 
 #include "swftypes.h"
-#include "flash/events/flashevents.h"
+#include "scripting/flash/events/flashevents.h"
 #include "thread_pool.h"
-#include "flash/utils/flashutils.h"
+#include "scripting/flash/utils/flashutils.h"
 #include "backends/graphics.h"
 #include "backends/netutils.h"
-#include "DisplayObject.h"
-#include "TokenContainer.h"
+#include "scripting/flash/display/DisplayObject.h"
+#include "scripting/flash/display/TokenContainer.h"
 
 namespace lightspark
 {
@@ -55,7 +55,7 @@ protected:
 			return doubleClickEnabled && mouseEnabled;
 		return mouseEnabled;
 	}
-	~InteractiveObject();
+	virtual ~InteractiveObject();
 public:
 	InteractiveObject(Class_base* c);
 	ASFUNCTION(_constructor);
@@ -312,6 +312,7 @@ private:
 public:
 	LoaderThread(_R<URLRequest> request, _R<Loader> loader);
 	LoaderThread(_R<ByteArray> bytes, _R<Loader> loader);
+	virtual ~LoaderThread() {}
 };
 
 class Loader: public DisplayObjectContainer, public IDownloaderThreadListener
@@ -326,7 +327,7 @@ private:
 	void unload();
 public:
 	Loader(Class_base* c);
-	~Loader();
+	virtual ~Loader();
 	void finalize();
 	void threadFinished(IThreadJob* job);
 	static void sinit(Class_base* c);
@@ -617,7 +618,7 @@ public:
 	void updatedData();
 	Bitmap(Class_base* c, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(Class_base* c, _R<BitmapData> data);
-	~Bitmap();
+	virtual ~Bitmap();
 	void finalize();
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
@@ -648,4 +649,4 @@ public:
 
 };
 
-#endif
+#endif /* SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H */

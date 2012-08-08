@@ -312,7 +312,7 @@ ASObject* ExtVariant::getASObject() const
 				ExtIdentifier** ids;
 				uint32_t count;
 				std::stringstream conv;
-				if(objValue != NULL && objValue->enumerate(&ids, &count))
+				if(objValue->enumerate(&ids, &count))
 				{
 					for(uint32_t i = 0; i < count; i++)
 					{

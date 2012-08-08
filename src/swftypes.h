@@ -638,7 +638,7 @@ public:
 	unsigned char buffer;
 	unsigned char pos;
 public:
-	BitStream(std::istream& in):f(in),pos(0){};
+	BitStream(std::istream& in):f(in),buffer(0),pos(0){};
 	unsigned int readBits(unsigned int num)
 	{
 		unsigned int ret=0;
@@ -668,7 +668,7 @@ class FB
 	int32_t buf;
 	int size;
 public:
-	FB() { buf=0; }
+	FB():buf(0),size(0){}
 	FB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)
@@ -701,7 +701,7 @@ class UB
 	uint32_t buf;
 	int size;
 public:
-	UB() { buf=0; }
+	UB():buf(0),size(0) {}
 	UB(int s,BitStream& stream):size(s)
 	{
 /*		if(s%8)
@@ -730,7 +730,7 @@ class SB
 	int32_t buf;
 	int size;
 public:
-	SB() { buf=0; }
+	SB():buf(0),size(0) {}
 	SB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)
@@ -847,7 +847,7 @@ class GRADIENT
 {
 	friend std::istream& operator>>(std::istream& s, GRADIENT& v);
 public:
-	GRADIENT(int v):version(v){}
+	GRADIENT(int v):version(v),SpreadMode(0),InterpolationMode(0),NumGradient(0) {}
 	int version;
 	int SpreadMode;
 	int InterpolationMode;

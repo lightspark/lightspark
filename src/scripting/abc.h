@@ -114,11 +114,12 @@ public:
 	const Type* returnType;
 	bool hasExplicitTypes;
 	method_info():
+		llvmf(NULL),
 #ifdef PROFILING_SUPPORT
 		profTime(0),
 		validProfName(false),
 #endif
-		f(NULL),context(NULL),body(NULL),returnType(NULL)
+		f(NULL),context(NULL),body(NULL),returnType(NULL),hasExplicitTypes(false)
 	{
 	}
 };

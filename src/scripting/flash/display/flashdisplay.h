@@ -186,7 +186,7 @@ private:
 				       double u1, double u2, double u3,
 				       double c[3]);
 public:
-	Graphics(Class_base* c):ASObject(c),owner(NULL)
+	Graphics(Class_base* c):ASObject(c),curX(0),curY(0),owner(NULL)
 	{
 		throw RunTimeException("Cannot instantiate a Graphics object");
 	}

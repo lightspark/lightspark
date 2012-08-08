@@ -136,14 +136,14 @@ private:
 			delete[] buf;
 		}
 		stringSize=1;
+		_buf_static[0] = '\0';
 		buf=_buf_static;
-		buf[0] = '\0';
 		type=STATIC;
 	}
 public:
 	static const uint32_t npos = (uint32_t)(-1);
 
-	tiny_string():buf(_buf_static),stringSize(1),type(STATIC){buf[0]=0;}
+	tiny_string():_buf_static(),buf(_buf_static),stringSize(1),type(STATIC){buf[0]=0;}
 	/* construct from utf character */
 	static tiny_string fromChar(uint32_t c)
 	{
@@ -154,7 +154,7 @@ public:
 		ret.buf[ret.stringSize-1] = '\0';
 		return ret;
 	}
-	tiny_string(const char* s,bool copy=false):buf(_buf_static),type(READONLY)
+	tiny_string(const char* s,bool copy=false):_buf_static(),buf(_buf_static),type(READONLY)
 	{
 		if(copy)
 			makePrivateCopy(s);
@@ -164,7 +164,7 @@ public:
 			buf=(char*)s; //This is an unsafe conversion, we have to take care of the RO data
 		}
 	}
-	tiny_string(const tiny_string& r):buf(_buf_static),stringSize(r.stringSize),type(STATIC)
+	tiny_string(const tiny_string& r):_buf_static(),buf(_buf_static),stringSize(r.stringSize),type(STATIC)
 	{
 		//Fast path for static read-only strings
 		if(r.type==READONLY)
@@ -177,7 +177,7 @@ public:
 			createBuffer(stringSize);
 		memcpy(buf,r.buf,stringSize);
 	}
-	tiny_string(const std::string& r):buf(_buf_static),stringSize(r.size()+1),type(STATIC)
+	tiny_string(const std::string& r):_buf_static(),buf(_buf_static),stringSize(r.size()+1),type(STATIC)
 	{
 		if(stringSize > STATIC_SIZE)
 			createBuffer(stringSize);

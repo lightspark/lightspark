@@ -48,11 +48,11 @@ private:
 	tiny_string stream; //The requested stream, used for RTMP protocols
 	bool valid;
 public:
-	enum INVALID_REASON { MISSING_PROTOCOL, MISSING_PATH, MISSING_HOSTNAME, INVALID_PORT };
+	enum INVALID_REASON { IS_EMPTY, MISSING_PROTOCOL, MISSING_PATH, MISSING_HOSTNAME, INVALID_PORT };
 private:
 	INVALID_REASON invalidReason;
 public:
-	URLInfo():valid(false) {};
+	URLInfo():valid(false),invalidReason(IS_EMPTY) {};
 	URLInfo(const tiny_string& u);
 	~URLInfo() {};
 	bool isValid() const { return valid; }

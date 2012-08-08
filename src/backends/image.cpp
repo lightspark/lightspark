@@ -48,7 +48,7 @@ struct istream_source_mgr : public jpeg_source_mgr
 };
 
 static void init_source(j_decompress_ptr cinfo) {
-	source_mgr*  src = (source_mgr*)cinfo->src;
+	source_mgr*  src = static_cast<source_mgr*>(cinfo->src);
 	src->next_input_byte = (const JOCTET*)src->data;
 	src->bytes_in_buffer = src->len;
 }
@@ -58,7 +58,7 @@ static boolean fill_input_buffer(j_decompress_ptr cinfo) {
 }
 
 static void skip_input_data(j_decompress_ptr cinfo, long num_bytes) {
-	source_mgr*  src = (source_mgr*)cinfo->src;
+	source_mgr*  src = static_cast<source_mgr*>(cinfo->src);
 	src->next_input_byte = (const JOCTET*)((const char*)src->next_input_byte + num_bytes);
 	src->bytes_in_buffer -= num_bytes;
 }
@@ -70,12 +70,12 @@ static boolean resync_to_restart(j_decompress_ptr cinfo, int desired) {
 static void term_source(j_decompress_ptr /*cinfo*/) {}
 
 static void init_source_istream(j_decompress_ptr cinfo) {
-	istream_source_mgr* src = (istream_source_mgr*)cinfo->src;
+	istream_source_mgr* src = static_cast<istream_source_mgr*>(cinfo->src);
 	src->bytes_in_buffer=0;
 }
 
 static boolean fill_input_buffer_istream(j_decompress_ptr cinfo) {
-	istream_source_mgr* src = (istream_source_mgr*)cinfo->src;
+	istream_source_mgr* src = static_cast<istream_source_mgr*>(cinfo->src);
 
 	src->next_input_byte=(const JOCTET*)src->data;
 	try
@@ -101,7 +101,7 @@ static boolean fill_input_buffer_istream(j_decompress_ptr cinfo) {
 }
 
 static void skip_input_data_istream(j_decompress_ptr cinfo, long num_bytes) {
-	istream_source_mgr* src = (istream_source_mgr*)cinfo->src;
+	istream_source_mgr* src = static_cast<istream_source_mgr*>(cinfo->src);
 
 	if(num_bytes<=0)
 		return;
@@ -131,7 +131,7 @@ struct error_mgr : jpeg_error_mgr {
 };
 
 void error_exit(j_common_ptr cinfo) {
-	error_mgr* error = (error_mgr*)cinfo->err;
+	error_mgr* error = static_cast<error_mgr*>(cinfo->err);
 	(*error->output_message) (cinfo);
 	/* Let the memory manager delete any temp files before we die */
 	jpeg_destroy(cinfo);
@@ -240,7 +240,7 @@ static void ReadPNGDataFromStream(png_structp pngPtr, png_bytep data, png_size_t
 }
 static void ReadPNGDataFromBuffer(png_structp pngPtr, png_bytep data, png_size_t length)
 {
-	png_image_buffer* a = (png_image_buffer*)png_get_io_ptr(pngPtr);
+	png_image_buffer* a = reinterpret_cast<png_image_buffer*>(png_get_io_ptr(pngPtr));
 
 	memcpy(data,(void*)(a->data+a->curpos),length);
 	a->curpos+= length;

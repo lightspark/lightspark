@@ -215,7 +215,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	a->setVariableByQName("index","",abstract_i(index),DYNAMIC_TRAIT);
 	for(int i=0;i<namedGroups;i++)
 	{
-		nameEntry* entry=(nameEntry*)entries;
+		nameEntry* entry=reinterpret_cast<nameEntry*>(entries);
 		uint16_t num=GINT16_FROM_BE(entry->number);
 		ASObject* captured=a->at(num).getPtr();
 		captured->incRef();

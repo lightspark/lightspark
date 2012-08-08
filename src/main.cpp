@@ -59,7 +59,7 @@ public:
 	}
 	static void StandaloneDestroy(GtkWidget *widget, gpointer data)
 	{
-		StandaloneEngineData* e = (StandaloneEngineData*)data;
+		StandaloneEngineData* e = reinterpret_cast<StandaloneEngineData*>(data);
 		RecMutex::Lock l(e->mutex);
 		/* no need to destroy it - it's already done */
 		e->widget = NULL;

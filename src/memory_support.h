@@ -72,7 +72,7 @@ public:
 		//Prepend some internal data.
 		//Adding the data to the object itself would not work
 		//since it can be reset by the constructors
-		objData* ret=(objData*)malloc(size+sizeof(objData));
+		objData* ret=reinterpret_cast<objData*>(malloc(size+sizeof(objData)));
 		m->addBytes(size);
 		ret->objSize = size;
 		ret->memoryAccount = m;
@@ -81,7 +81,7 @@ public:
 	inline void operator delete( void* obj )
 	{
 		//Get back the metadata
-		objData* th=((objData*)obj-1);
+		objData* th=reinterpret_cast<objData*>(obj)-1;
 		th->memoryAccount->removeBytes(th->objSize);
 		free(th);
 	}
@@ -140,7 +140,7 @@ public:
 	}
 	void destroy(pointer p)
 	{
-		((T*)p)->~T();
+		(reinterpret_cast<T*>(p))->~T();
 	}
 	size_type max_size() const
 	{

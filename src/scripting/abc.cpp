@@ -1567,7 +1567,7 @@ void ABCVm::signalEventWaiters()
 	}
 }
 
-void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Responder> responder)
+void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder)
 {
 	uint16_t version;
 	if(!message->readShort(version))
@@ -1645,17 +1645,20 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Resp
 	assert_and_throw(marker==0x11);
 	_R<ASObject> ret=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
 
-	multiname onResultName(NULL);
-	onResultName.name_type=multiname::NAME_STRING;
-	onResultName.name_s_id=getSys()->getUniqueStringId("onResult");
-	onResultName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
-	if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
+	if(!responder.isNull())
 	{
-		ret->incRef();
-		ASObject* const callbackArgs[1] {ret.getPtr()};
-		responder->incRef();
-		callback->as<IFunction>()->call(responder.getPtr(), callbackArgs, 1);
+		multiname onResultName(NULL);
+		onResultName.name_type=multiname::NAME_STRING;
+		onResultName.name_s_id=getSys()->getUniqueStringId("onResult");
+		onResultName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
+		if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
+		{
+			ret->incRef();
+			ASObject* const callbackArgs[1] {ret.getPtr()};
+			responder->incRef();
+			callback->as<IFunction>()->call(responder.getPtr(), callbackArgs, 1);
+		}
 	}
 }
 

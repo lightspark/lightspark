@@ -392,7 +392,7 @@ private:
 	static void method_reset(method_info* th);
 	static void newClassRecursiveLink(Class_base* target, Class_base* c);
 	static ASObject* constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen);
-	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _R<Responder> responder);
+	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
 
 	//Opcode tables
 	void register_table(LLVMTYPE ret_type,typed_opcode_handler* table, int table_len);

@@ -557,14 +557,10 @@ ASFUNCTIONBODY(NetConnection,call)
 	NetConnection* th=Class<NetConnection>::cast(obj);
 	//Arguments are:
 	//1) A string for the command
-	//2) A Responder instance
+	//2) A Responder instance (optional)
 	//And other arguments to be passed to the server
-	assert_and_throw(argslen>=2 &&
-			args[0]->getObjectType()==T_STRING &&
-			args[1]->is<Responder>())
-	ASString* arg0=static_cast<ASString*>(args[0]);
-	args[1]->incRef();
-	th->responder=_MR(args[1]->as<Responder>());
+	tiny_string command;
+	ARG_UNPACK (command) (th->responder, NullRef);
 
 	th->messageCount++;
 
@@ -596,7 +592,7 @@ ASFUNCTIONBODY(NetConnection,call)
 	//Number of messages: 1
 	message->writeShort(1);
 	//Write the command
-	message->writeUTF(arg0->data);
+	message->writeUTF(command);
 	//Write a "response URI". Use an increasing index
 	//NOTE: this assumes that the tiny_string is constant and not modified
 	char responseBuf[20];

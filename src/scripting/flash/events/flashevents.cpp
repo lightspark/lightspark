@@ -893,7 +893,7 @@ BindClassEvent::BindClassEvent(DictionaryTag* t, const tiny_string& c)
 {
 }
 
-ParseRPCMessageEvent::ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> c, _R<Responder> r):
+ParseRPCMessageEvent::ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> c, _NR<Responder> r):
 	Event(NULL, "ParseRPCMessageEvent"),message(ba),client(c),responder(r)
 {
 }

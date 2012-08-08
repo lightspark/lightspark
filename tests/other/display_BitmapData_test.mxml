@@ -9,9 +9,18 @@
 <![CDATA[
 import flash.display.BitmapData;
 
-private function onMouseDown(e:Event):void
+private function onMouseDown(e:MouseEvent):void
 {
-	trace("mouseDown "+e.target);
+	trace("mouseDown ("+e.localX+","+e.localY+") "+e.target);
+	if(e.localX==0)
+		throw Error("The 0th line on the X axis should be ignored");
+}
+
+private function onMouseMove(e:MouseEvent):void
+{
+	trace("mouseMove ("+e.localX+","+e.localY+") "+e.target);
+	if(e.localX==0)
+		throw Error("The 0th line on the X axis should be ignored");
 }
 
 private function appComplete():void
@@ -63,7 +72,13 @@ private function appComplete():void
 	visual.addChild(b9);
 
 	trace("test");
+
+	visual.x=10;
+	visual.y=10;
+
 	visual.addEventListener("mouseDown",onMouseDown);
+	visual.addEventListener("mouseMove",onMouseMove);
+
 }
 ]]>
 </mx:Script>

@@ -724,23 +724,28 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 
 ASObject* BitmapTag::instance(Class_base* c) const
 {
-	Class_base* realClass=(c)?c:bindedTo;
 	//Flex imports bitmaps using BitmapAsset as the base class, which is derived from bitmap
 	//Also BitmapData is used in the wild though, so support both cases
-	bool returnBitmap = false;
-	Class_base* classRet = Class<BitmapData>::getClass();
-	if(realClass && realClass->isSubClass(Class<Bitmap>::getClass()))
-		returnBitmap = true;
-	else if(realClass && realClass->isSubClass(Class<BitmapData>::getClass()))
-		classRet = realClass;
 
-	BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, *this);
-	if(returnBitmap)
+	Class_base* realClass=(c)?c:bindedTo;
+	Class_base* classRet = Class<BitmapData>::getClass();
+
+	if(!realClass)
+		return new (classRet->memoryAccount) BitmapData(classRet, *this);
+
+	if(realClass->isSubClass(Class<Bitmap>::getClass()))
 	{
+		BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, *this);
 		Bitmap* bitmapRet=new (realClass->memoryAccount) Bitmap(realClass,_MR(ret));
 		return bitmapRet;
 	}
-	return ret;
+
+	if(realClass->isSubClass(Class<BitmapData>::getClass()))
+	{
+		classRet = realClass;
+	}
+
+	return new (classRet->memoryAccount) BitmapData(classRet, *this);
 }
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,int v):DictionaryTag(h,root),

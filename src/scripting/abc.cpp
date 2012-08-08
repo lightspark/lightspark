@@ -1315,9 +1315,8 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 
 	ASObject* type=ret;
 	bool real_ret=false;
-	Class_base* objc=NULL;
-	Class_base* c=NULL;
-	c=static_cast<Class_base*>(type);
+	Class_base* objc=obj->classdef;
+	Class_base* c=static_cast<Class_base*>(type);
 	//Special case numeric types
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
@@ -1326,19 +1325,14 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 		return real_ret;
 	}
 
-	if(obj->classdef)
-	{
-		assert_and_throw(type->getObjectType()==T_CLASS);
-
-		objc=obj->classdef;
-	}
-	else
+	if(!objc)
 	{
 		real_ret=obj->getObjectType()==type->getObjectType();
 		LOG(LOG_CALLS,_("isType on non classed object ") << real_ret);
 		return real_ret;
 	}
 
+	assert_and_throw(type->getObjectType()==T_CLASS);
 	real_ret=objc->isSubClass(c);
 	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"":_("not ")) 
 			<< "subclass of " << c->class_name);

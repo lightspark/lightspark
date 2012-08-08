@@ -308,7 +308,7 @@ NPError main(NPNetscapeFuncs* aNPNFuncs, NPPluginFuncs* aNPPFuncs, NPP_ShutdownU
   NPError rv = NPERR_NO_ERROR;
 
   if (aUnloadUpp == NULL)
-    rv = NPERR_INVALID_FUNCTABLE_ERROR;
+    return NPERR_INVALID_FUNCTABLE_ERROR;
 
   if (rv == NPERR_NO_ERROR)
     rv = fillNetscapeFunctionTable(aNPNFuncs);

@@ -341,8 +341,7 @@ ASObject* ExtVariant::getASObject() const
 				}
 				delete ids;
 			}
-			if(objValue != NULL)
-				delete objValue;
+			delete objValue;
 		}
 		break;
 	case EV_NULL:

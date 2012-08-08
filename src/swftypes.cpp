@@ -354,7 +354,7 @@ MATRIX MATRIX::multiplyMatrix(const MATRIX& r) const
 
 bool MATRIX::operator!=(const MATRIX& r) const
 {
-	return xx!=r.xx || yx!=r.yx || xy!=r.xy || yy!=yy ||
+	return xx!=r.xx || yx!=r.yx || xy!=r.xy || yy!=r.yy ||
 		x0!=r.x0 || y0!=r.y0;
 }
 

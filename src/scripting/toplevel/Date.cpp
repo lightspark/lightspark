@@ -975,7 +975,7 @@ number_t Date::parse(tiny_string str)
 		// HH:MM:SS TZD Day Mon/DD/YYYY 
 		d=0;h=0;m=0;s=0;y=0;mon=-1;
 		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%2d:%2d:%2d %s %*3s %3s/%2d/%4d",&h,&m,&s,tzd,mo,&d,&y);
+		c = sscanf(str.raw_buf(), "%2d:%2d:%2d %19s %*3s %3s/%2d/%4d",&h,&m,&s,tzd,mo,&d,&y);
 		bvalid = (c == 7);
 	}
 	if (!bvalid)

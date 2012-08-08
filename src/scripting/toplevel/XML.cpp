@@ -861,8 +861,8 @@ xmlElementType XML::getNodeKind() const
 void XML::recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns,
 		XMLVector& ret)
 {
-	//Check if this node is being requested. The empty string means ALL
-	if(name.empty() || name == node->get_name())
+	//Check if this node is being requested. The "*" string means all
+	if(name=="*" || name == node->get_name())
 		ret.push_back(_MR(Class<XML>::getInstanceS(root, node)));
 	//NOTE: Creating a temporary list is quite a large overhead, but there is no way in libxml++ to access the first child
 	const xmlpp::Node::NodeList& list=node->get_children();

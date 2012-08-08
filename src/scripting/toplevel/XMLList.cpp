@@ -271,10 +271,11 @@ ASFUNCTIONBODY(XMLList,generator)
 ASFUNCTIONBODY(XMLList,descendants)
 {
 	XMLList* th=Class<XMLList>::cast(obj);
-	assert_and_throw(argslen==1);
-	assert_and_throw(args[0]->getObjectType()!=T_QNAME);
+	tiny_string name;
+	assert_and_throw(argslen==0 || args[0]->getObjectType()!=T_QNAME);
+	ARG_UNPACK(name,"*");
 	XML::XMLVector ret;
-	th->getDescendantsByQName(args[0]->toString(),"",ret);
+	th->getDescendantsByQName(name,"",ret);
 	return Class<XMLList>::getInstanceS(ret);
 }
 

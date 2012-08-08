@@ -264,7 +264,7 @@ InferenceData ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, c
 	return ret;
 }
 
-const Type* ABCVm::getLocalType(const SyntheticFunction* f, int localIndex)
+const Type* ABCVm::getLocalType(const SyntheticFunction* f, unsigned localIndex)
 {
 	if(localIndex==0 && f->isMethod())
 		return f->inClass;
@@ -665,10 +665,10 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 				writeBranchAddress(basicBlocks, here, t, out);
 				//Verify other branches and output their translations
-				for(int i=0;i<(count+1);i++)
+				for(unsigned i=0;i<(count+1);i++)
 					verifyBranch(pendingBlocks,basicBlocks,curStart,here,offsets[i],code_len);
 				writeInt32(out, count);
-				for(int i=0;i<(count+1);i++)
+				for(unsigned i=0;i<(count+1);i++)
 					writeBranchAddress(basicBlocks,here, (int)offsets[i], out);
 				curBlock->realEnd=out.tellp();
 				curBlock->originalEnd=code.tellg();

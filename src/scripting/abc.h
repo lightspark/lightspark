@@ -464,7 +464,7 @@ public:
 			const std::vector<InferenceData>& scopeStack, const multiname* name);
 	static EARLY_BIND_STATUS earlyBindForScopeStack(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<InferenceData>& scopeStack, const multiname* name, InferenceData& inferredData);
-	static const Type* getLocalType(const SyntheticFunction* f, int localIndex);
+	static const Type* getLocalType(const SyntheticFunction* f, unsigned localIndex);
 
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();

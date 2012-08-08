@@ -553,7 +553,7 @@ istream& lightspark::operator>>(istream& s, LINESTYLE2& v)
 	v.NoHScaleFlag=UB(1,bs);
 	v.NoVScaleFlag=UB(1,bs);
 	v.PixelHintingFlag=UB(1,bs);
-	UB(5,bs);
+	bs.discard(5);
 	v.NoClose=UB(1,bs);
 	v.EndCapStyle=UB(2,bs);
 	if(v.JointStyle==2)
@@ -596,7 +596,7 @@ istream& lightspark::operator>>(istream& s, MORPHLINESTYLE2& v)
 	v.NoHScaleFlag = UB(1,bs);
 	v.NoVScaleFlag = UB(1,bs);
 	v.PixelHintingFlag = UB(1,bs);
-	UB(5,bs);
+	bs.discard(5);
 	v.NoClose = UB(1,bs);
 	v.EndCapStyle = UB(2,bs);
 	if(v.JoinStyle==2)
@@ -957,7 +957,7 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 	assert_and_throw(v.buttonVersion==2);
 	BitStream bs(stream);
 
-	UB(2,bs);
+	bs.discard(2);
 	v.ButtonHasBlendMode=UB(1,bs);
 	v.ButtonHasFilterList=UB(1,bs);
 	v.ButtonStateHitTest=UB(1,bs);
@@ -1036,7 +1036,7 @@ std::istream& lightspark::operator>>(std::istream& stream, GLOWFILTER& v)
 	v.InnerGlow = UB(1,bs);
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
-	UB(5,bs);
+	bs.discard(5);
 
 	return stream;
 }
@@ -1053,7 +1053,7 @@ std::istream& lightspark::operator>>(std::istream& stream, DROPSHADOWFILTER& v)
 	v.InnerShadow = UB(1,bs);
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
-	UB(5,bs);
+	bs.discard(5);
 
 	return stream;
 }
@@ -1064,7 +1064,7 @@ std::istream& lightspark::operator>>(std::istream& stream, BLURFILTER& v)
 	stream >> v.BlurY;
 	BitStream bs(stream);
 	v.Passes = UB(5,bs);
-	UB(3,bs);
+	bs.discard(3);
 
 	return stream;
 }
@@ -1083,7 +1083,7 @@ std::istream& lightspark::operator>>(std::istream& stream, BEVELFILTER& v)
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
 	v.OnTop = UB(1,bs);
-	UB(4,bs);
+	bs.discard(4);
 
 	return stream;
 }
@@ -1110,7 +1110,7 @@ std::istream& lightspark::operator>>(std::istream& stream, GRADIENTGLOWFILTER& v
 	v.InnerGlow = UB(1,bs);
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
-	UB(5,bs);
+	bs.discard(5);
 
 	return stream;
 }
@@ -1131,7 +1131,7 @@ std::istream& lightspark::operator>>(std::istream& stream, CONVOLUTIONFILTER& v)
 	BitStream bs(stream);
 	v.Clamp = UB(1,bs);
 	v.PreserveAlpha = UB(1,bs);
-	UB(6,bs);
+	bs.discard(6);
 
 	return stream;
 }
@@ -1169,7 +1169,7 @@ std::istream& lightspark::operator>>(std::istream& stream, GRADIENTBEVELFILTER& 
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
 	v.OnTop = UB(1,bs);
-	UB(4,bs);
+	bs.discard(4);
 
 	return stream;
 }

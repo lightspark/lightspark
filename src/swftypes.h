@@ -656,6 +656,11 @@ public:
 		}
 		return ret;
 	}
+	// discards 'num' bits (padding)
+	void discard(unsigned int num)
+	{
+		readBits(num);
+	}
 };
 
 class FB

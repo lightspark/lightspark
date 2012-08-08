@@ -2765,7 +2765,10 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 _NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	//Simple check inside the area, opacity data should not be considered
-	if(!bitmapData.isNull() && x >= 0 && x < bitmapData->getWidth() && y >=0 && y < bitmapData->getHeight())
+	//NOTE: on the X axis the 0th line must be ignored, while the one past the width is valid
+	//NOTE: on the Y asix the 0th line is valid, while the one past the width is not
+	//NOTE: This is tested behaviour!
+	if(!bitmapData.isNull() && x > 0 && x <= bitmapData->getWidth() && y >=0 && y < bitmapData->getHeight())
 		return last;
 	return NullRef;
 }

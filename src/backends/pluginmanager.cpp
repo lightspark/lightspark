@@ -60,7 +60,6 @@ void PluginManager::findPlugins()
 	if(patternError)
 		throw RunTimeException("PluginManager::findPlugins(): can't compile file_pattern");
 	//We don't expect any captured substrings, so 3 ints should be enough
-	int patternOvector[3];
 
 #if defined DEBUG
 	LOG(LOG_INFO, "Looking for plugins under " << plugins_folder << " for pattern " << pattern);
@@ -81,6 +80,7 @@ void PluginManager::findPlugins()
 #else
 				string leaf_name = itr->path().filename();
 #endif
+				int patternOvector[3];
 				int rc=pcre_exec(file_pattern, NULL, leaf_name.c_str(), leaf_name.length(), 0, 0, patternOvector, 3);
 				if ( rc > 0 )   // Does it answer to the desired pattern?
 				{

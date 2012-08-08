@@ -875,10 +875,10 @@ ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	name.isAttribute=false;
-	unsigned int index = 0;
 	if (obj->is<Array>()) // propertyIsEnumerable(index) isn't mentioned in the ECMA specs but is tested for
 	{
 		Array* a = static_cast<Array*>(obj);
+		unsigned int index = 0;
 		if (a->isValidMultiname(name,index))
 		{
 			return abstract_b(index < (unsigned int)a->size());

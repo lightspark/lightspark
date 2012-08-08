@@ -32,8 +32,6 @@ char *textFileRead(const char *fn)
 	FILE *fp;
 	char *content = NULL;
 
-	int count=0;
-
 	if (fn != NULL)
 	{
 		fp = fopen(fn,"rt");
@@ -41,7 +39,7 @@ char *textFileRead(const char *fn)
 		if (fp != NULL)
 		{
 			fseek(fp, 0, SEEK_END);
-			count = ftell(fp);
+			int count = ftell(fp);
 			rewind(fp);
 			if (count > 0)
 			{

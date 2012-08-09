@@ -95,7 +95,8 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 	ARG_UNPACK(width, 0)(height, 0)(transparent, true)(fillColor, 0xFFFFFFFF);
 
 	ASObject::_constructor(obj,NULL,0);
-	if(width==0 || height==0)
+	//If the bitmap is already initialized, just return
+	if(width==0 || height==0 || !th->data.empty())
 		return NULL;
 
 	uint32_t *pixels=new uint32_t[width*height];

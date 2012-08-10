@@ -982,7 +982,7 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 		//To have attributes we must be an Element
 		xmlpp::Element* element=dynamic_cast<xmlpp::Element*>(node);
 		assert_and_throw(element);
-		element->set_attribute(getSys()->getStringFromUniqueId(name.name_s_id), o->toString(), ns_prefix);
+		element->set_attribute(buf, o->toString(), ns_prefix);
 
 		if(ns_prefix.empty() && !ns_uri.empty())
 		{

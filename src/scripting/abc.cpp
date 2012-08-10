@@ -57,6 +57,7 @@
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/flash/net/URLStream.h"
 #include "scripting/flash/net/XMLSocket.h"
 #include "scripting/flash/system/flashsystem.h"
@@ -359,6 +360,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("URLStream","flash.net",Class<URLStream>::getRef());
 	builtin->registerBuiltin("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getRef());
 	builtin->registerBuiltin("URLRequest","flash.net",Class<URLRequest>::getRef());
+	builtin->registerBuiltin("URLRequestHeader","flash.net",Class<URLRequestHeader>::getRef());
 	builtin->registerBuiltin("URLRequestMethod","flash.net",Class<URLRequestMethod>::getRef());
 	builtin->registerBuiltin("URLVariables","flash.net",Class<URLVariables>::getRef());
 	builtin->registerBuiltin("SharedObject","flash.net",Class<SharedObject>::getRef());

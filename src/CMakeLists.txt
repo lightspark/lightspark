@@ -76,6 +76,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/geom/flashgeom.cpp
   scripting/flash/media/flashmedia.cpp
   scripting/flash/net/flashnet.cpp
+  scripting/flash/net/URLRequestHeader.cpp
   scripting/flash/net/URLStream.cpp
   scripting/flash/net/XMLSocket.cpp
   scripting/flash/errors/flasherrors.cpp

@@ -1343,7 +1343,6 @@ PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const string _do
 		size_t dashPos;
 		string startPortStr;
 		string endPortStr;
-		istringstream is;
 		uint16_t startPort;
 		uint16_t endPort;
 		do

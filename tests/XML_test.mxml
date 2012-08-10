@@ -124,6 +124,10 @@
 		}
 		Tests.assertEquals("", exception, "No exception when constructor is applied to a general object");
 
+		var xml23:XML = new XML("<a/>");
+		xml23["@fooattr"] = "bar";
+		Tests.assertEquals("<a fooattr=\"bar\"/>",xml23.toXMLString(),"Setting attributes using @name syntax");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

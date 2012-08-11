@@ -33,20 +33,8 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.net");
-
-REGISTER_CLASS_NAME(URLLoader);
-REGISTER_CLASS_NAME(URLLoaderDataFormat);
-REGISTER_CLASS_NAME(URLRequest);
-REGISTER_CLASS_NAME(URLRequestMethod);
-REGISTER_CLASS_NAME(URLVariables);
-REGISTER_CLASS_NAME(SharedObject);
-REGISTER_CLASS_NAME(ObjectEncoding);
-REGISTER_CLASS_NAME(NetConnection);
-REGISTER_CLASS_NAME(NetStream);
-REGISTER_CLASS_NAME(Responder);
-
-URLRequest::URLRequest(Class_base* c):ASObject(c),method(GET),contentType("application/x-www-form-urlencoded"),requestHeaders(Class<Array>::getInstanceS())
+URLRequest::URLRequest(Class_base* c):ASObject(c),method(GET),contentType("application/x-www-form-urlencoded"),
+	requestHeaders(Class<Array>::getInstanceS())
 {
 }
 

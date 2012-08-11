@@ -23,9 +23,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
-REGISTER_CLASS_NAME(RegExp);
-
 RegExp::RegExp(Class_base* c):ASObject(c),dotall(false),global(false),ignoreCase(false),
 	extended(false),multiline(false),lastIndex(0)
 {

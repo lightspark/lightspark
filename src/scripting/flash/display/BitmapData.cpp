@@ -27,10 +27,6 @@
 using namespace lightspark;
 using namespace std;
 
-SET_NAMESPACE("flash.display");
-
-REGISTER_CLASS_NAME(BitmapData);
-
 BitmapData::BitmapData(Class_base* c):ASObject(c),BitmapContainer(c->memoryAccount),disposed(false)
 {
 }

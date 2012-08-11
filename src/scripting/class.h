@@ -39,17 +39,6 @@ public:
 	static const char* name;
 };
 
-#define SET_NAMESPACE(NS) \
-	static const char* CURRENTNAMESPACE=NS;
-
-#define REGISTER_CLASS_NAME(TYPE) \
-	template<> const char* ClassName<TYPE>::name = #TYPE; \
-	template<> const char* ClassName<TYPE>::ns = CURRENTNAMESPACE;
-
-#define REGISTER_CLASS_NAME2(TYPE,NAME,NS) \
-	template<> const char* ClassName<TYPE>::name = NAME; \
-	template<> const char* ClassName<TYPE>::ns = NS;
-
 class Class_inherit:public Class_base
 {
 private:

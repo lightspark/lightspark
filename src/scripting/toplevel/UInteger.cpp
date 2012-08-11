@@ -23,8 +23,6 @@
 using namespace std;
 using namespace lightspark;
 
-REGISTER_CLASS_NAME2(UInteger,"uint","");
-
 tiny_string UInteger::toString()
 {
 	return UInteger::toString(val);

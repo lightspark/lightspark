@@ -20,6 +20,7 @@
 
 # liblightspark.so sources
 SET(LIBSPARK_SOURCES 
+  allclasses.cpp
   asobject.cpp
   compat.cpp
   logger.cpp

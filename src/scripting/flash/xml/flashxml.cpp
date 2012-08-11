@@ -27,11 +27,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.xml");
-
-REGISTER_CLASS_NAME(XMLDocument);
-REGISTER_CLASS_NAME(XMLNode);
-
 XMLNode::XMLNode(Class_base* c, _R<XMLDocument> _r, xmlpp::Node* _n):ASObject(c),root(_r),node(_n)
 {
 }

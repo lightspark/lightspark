@@ -25,9 +25,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
-REGISTER_CLASS_NAME(Date);
-
 Date::Date(Class_base* c):ASObject(c),extrayears(0), nan(false), datetime(NULL),datetimeUTC(NULL)
 {
 }

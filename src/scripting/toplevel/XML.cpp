@@ -30,9 +30,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
-REGISTER_CLASS_NAME(XML);
-
 XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false),ignoreComments(true)
 {
 }

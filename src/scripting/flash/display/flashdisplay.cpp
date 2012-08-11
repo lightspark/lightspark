@@ -38,35 +38,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.display");
-
-REGISTER_CLASS_NAME(LoaderInfo);
-REGISTER_CLASS_NAME(MovieClip);
-REGISTER_CLASS_NAME(InteractiveObject);
-REGISTER_CLASS_NAME(DisplayObjectContainer);
-REGISTER_CLASS_NAME(Sprite);
-REGISTER_CLASS_NAME(Loader);
-REGISTER_CLASS_NAME(Shape);
-REGISTER_CLASS_NAME(MorphShape);
-REGISTER_CLASS_NAME(Stage);
-REGISTER_CLASS_NAME(Graphics);
-REGISTER_CLASS_NAME(LineScaleMode);
-REGISTER_CLASS_NAME(StageScaleMode);
-REGISTER_CLASS_NAME(StageAlign);
-REGISTER_CLASS_NAME(StageQuality);
-REGISTER_CLASS_NAME(StageDisplayState);
-REGISTER_CLASS_NAME(GradientType);
-REGISTER_CLASS_NAME(BlendMode);
-REGISTER_CLASS_NAME(SpreadMethod);
-REGISTER_CLASS_NAME(InterpolationMethod);
-REGISTER_CLASS_NAME(IBitmapDrawable);
-REGISTER_CLASS_NAME(Bitmap);
-REGISTER_CLASS_NAME(SimpleButton);
-REGISTER_CLASS_NAME(FrameLabel);
-REGISTER_CLASS_NAME(Scene);
-REGISTER_CLASS_NAME(AVM1Movie);
-REGISTER_CLASS_NAME(Shader);
-
 std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 {
 	s << "[" << r.getClass()->class_name << "]";

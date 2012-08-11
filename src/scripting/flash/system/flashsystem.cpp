@@ -32,16 +32,6 @@
 
 using namespace lightspark;
 
-SET_NAMESPACE("flash.system");
-
-REGISTER_CLASS_NAME(ApplicationDomain);
-REGISTER_CLASS_NAME(Capabilities);
-REGISTER_CLASS_NAME(LoaderContext);
-REGISTER_CLASS_NAME(Security);
-REGISTER_CLASS_NAME(SecurityDomain);
-REGISTER_CLASS_NAME(System);
-
-
 #ifdef _WIN32
 const char* Capabilities::EMULATED_VERSION = "WIN 11,1,0," SHORTVERSION;
 const char* Capabilities::MANUFACTURER = "Adobe Windows";

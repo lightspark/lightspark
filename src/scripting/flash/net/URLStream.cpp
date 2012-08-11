@@ -32,10 +32,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.net");
-
-REGISTER_CLASS_NAME(URLStream);
-
 URLStreamThread::URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes)
   : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), data(bytes)
 {

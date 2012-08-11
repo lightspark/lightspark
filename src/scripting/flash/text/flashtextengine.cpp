@@ -27,16 +27,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.text.engine");
-
-REGISTER_CLASS_NAME(ContentElement);
-REGISTER_CLASS_NAME(ElementFormat);
-REGISTER_CLASS_NAME(FontDescription);
-REGISTER_CLASS_NAME(FontWeight);
-REGISTER_CLASS_NAME(TextBlock);
-REGISTER_CLASS_NAME(TextElement);
-REGISTER_CLASS_NAME(TextLine);
-
 void ContentElement::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

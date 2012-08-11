@@ -29,10 +29,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.sensors");
-
-REGISTER_CLASS_NAME(Accelerometer);
-
 Accelerometer::Accelerometer(Class_base* c):ASObject(c) {}
 
 void Accelerometer::sinit(Class_base* c)

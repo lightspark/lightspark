@@ -24,15 +24,6 @@
 using namespace lightspark;
 using namespace std;
 
-SET_NAMESPACE("flash.geom");
-
-REGISTER_CLASS_NAME(Transform);
-REGISTER_CLASS_NAME(ColorTransform);
-REGISTER_CLASS_NAME(Point);
-REGISTER_CLASS_NAME(Vector3D);
-REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle","flash.geom");
-REGISTER_CLASS_NAME(Matrix);
-
 void Rectangle::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

@@ -24,9 +24,6 @@
 using namespace std;
 using namespace lightspark;
 
-REGISTER_CLASS_NAME2(Integer,"int","");
-
-
 ASFUNCTIONBODY(Integer,_toString)
 {
 	Integer* th=static_cast<Integer*>(obj);

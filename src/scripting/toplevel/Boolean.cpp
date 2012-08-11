@@ -26,9 +26,6 @@
 using namespace lightspark;
 using namespace std;
 
-SET_NAMESPACE("");
-REGISTER_CLASS_NAME(Boolean);
-
 Boolean* lightspark::abstract_b(bool v)
 {
 	Boolean* b = Class<Boolean>::getInstanceS();

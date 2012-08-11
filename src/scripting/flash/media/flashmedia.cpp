@@ -30,14 +30,6 @@
 using namespace lightspark;
 using namespace std;
 
-SET_NAMESPACE("flash.media");
-
-REGISTER_CLASS_NAME(SoundTransform);
-REGISTER_CLASS_NAME(Video);
-REGISTER_CLASS_NAME(Sound);
-REGISTER_CLASS_NAME(SoundLoaderContext);
-REGISTER_CLASS_NAME(SoundChannel);
-
 void SoundTransform::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

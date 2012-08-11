@@ -50,13 +50,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
-
-REGISTER_CLASS_NAME2(ASQName,"QName","");
-REGISTER_CLASS_NAME2(IFunction,"Function","");
-REGISTER_CLASS_NAME2(Global,"global","");
-REGISTER_CLASS_NAME(Namespace);
-
 Any* const Type::anyType = new Any();
 Void* const Type::voidType = new Void();
 

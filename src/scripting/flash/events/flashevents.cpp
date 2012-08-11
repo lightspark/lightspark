@@ -27,31 +27,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.events");
-
-REGISTER_CLASS_NAME(IEventDispatcher);
-REGISTER_CLASS_NAME(EventDispatcher);
-REGISTER_CLASS_NAME(Event);
-REGISTER_CLASS_NAME(EventPhase);
-REGISTER_CLASS_NAME(MouseEvent);
-REGISTER_CLASS_NAME(TimerEvent);
-REGISTER_CLASS_NAME(ProgressEvent);
-REGISTER_CLASS_NAME(IOErrorEvent);
-REGISTER_CLASS_NAME(FocusEvent);
-REGISTER_CLASS_NAME(NetStatusEvent);
-REGISTER_CLASS_NAME(HTTPStatusEvent);
-REGISTER_CLASS_NAME(FullScreenEvent);
-REGISTER_CLASS_NAME(KeyboardEvent);
-REGISTER_CLASS_NAME(TextEvent);
-REGISTER_CLASS_NAME(ErrorEvent);
-REGISTER_CLASS_NAME(SecurityErrorEvent);
-REGISTER_CLASS_NAME(AsyncErrorEvent);
-REGISTER_CLASS_NAME(StatusEvent);
-REGISTER_CLASS_NAME(DataEvent);
-REGISTER_CLASS_NAME(InvokeEvent);
-REGISTER_CLASS_NAME(DRMErrorEvent);
-REGISTER_CLASS_NAME(DRMStatusEvent);
-
 void IEventDispatcher::linkTraits(Class_base* c)
 {
 	lookupAndLink(c,"addEventListener","flash.events:IEventDispatcher");

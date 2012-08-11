@@ -24,10 +24,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
-
-REGISTER_CLASS_NAME(Number);
-
 const number_t Number::NaN = numeric_limits<double>::quiet_NaN();
 
 number_t ASObject::toNumber()

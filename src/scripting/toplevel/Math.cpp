@@ -24,9 +24,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
-REGISTER_CLASS_NAME(Math);
-
 void Math::sinit(Class_base* c)
 {
 	c->isFinal=true;

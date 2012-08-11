@@ -23,16 +23,6 @@
 
 using namespace lightspark;
 
-SET_NAMESPACE("flash.errors");
-
-REGISTER_CLASS_NAME(IOError);
-REGISTER_CLASS_NAME(EOFError);
-REGISTER_CLASS_NAME(IllegalOperationError);
-REGISTER_CLASS_NAME(InvalidSWFError);
-REGISTER_CLASS_NAME(MemoryError);
-REGISTER_CLASS_NAME(ScriptTimeoutError);
-REGISTER_CLASS_NAME(StackOverflowError);
-
 ASFUNCTIONBODY(IOError,_constructor)
 {
 	IOError* th=static_cast<IOError*>(obj);

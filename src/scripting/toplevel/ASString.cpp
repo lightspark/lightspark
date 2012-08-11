@@ -28,8 +28,6 @@
 using namespace std;
 using namespace lightspark;
 
-REGISTER_CLASS_NAME2(ASString, "String", "");
-
 ASString::ASString(Class_base* c):ASObject(c)
 {
 	type=T_STRING;

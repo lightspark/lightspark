@@ -26,21 +26,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
-
-REGISTER_CLASS_NAME2(ASError, "Error", "");
-REGISTER_CLASS_NAME(SecurityError);
-REGISTER_CLASS_NAME(ArgumentError);
-REGISTER_CLASS_NAME(DefinitionError);
-REGISTER_CLASS_NAME(EvalError);
-REGISTER_CLASS_NAME(RangeError);
-REGISTER_CLASS_NAME(ReferenceError);
-REGISTER_CLASS_NAME(SyntaxError);
-REGISTER_CLASS_NAME(TypeError);
-REGISTER_CLASS_NAME(URIError);
-REGISTER_CLASS_NAME(VerifyError);
-REGISTER_CLASS_NAME(UninitializedError);
-
 ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name):
 	ASObject(c),message(error_message), errorID(id), name(error_name)
 {

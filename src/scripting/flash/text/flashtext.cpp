@@ -27,18 +27,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.text");
-
-REGISTER_CLASS_NAME2(ASFont,"Font","flash.text");
-REGISTER_CLASS_NAME(AntiAliasType);
-REGISTER_CLASS_NAME(TextField);
-REGISTER_CLASS_NAME(TextFieldType);
-REGISTER_CLASS_NAME(TextFieldAutoSize);
-REGISTER_CLASS_NAME(TextFormatAlign);
-REGISTER_CLASS_NAME(TextFormat);
-REGISTER_CLASS_NAME(StyleSheet);
-REGISTER_CLASS_NAME(StaticText);
-
 void lightspark::AntiAliasType::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);

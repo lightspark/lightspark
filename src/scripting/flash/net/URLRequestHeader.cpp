@@ -4,9 +4,6 @@
 
 using namespace lightspark;
 
-SET_NAMESPACE("flash.net");
-REGISTER_CLASS_NAME(URLRequestHeader);
-
 URLRequestHeader::URLRequestHeader(Class_base* c) : ASObject(c)
 {
 }

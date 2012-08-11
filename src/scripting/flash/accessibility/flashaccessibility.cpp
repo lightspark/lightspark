@@ -22,10 +22,6 @@
 #include "scripting/argconv.h"
 
 using namespace lightspark;
-SET_NAMESPACE("flash.accessibility");
-
-REGISTER_CLASS_NAME(AccessibilityProperties);
-REGISTER_CLASS_NAME(AccessibilityImplementation);
 
 void AccessibilityProperties::sinit(Class_base* c)
 {

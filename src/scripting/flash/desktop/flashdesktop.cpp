@@ -25,10 +25,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.desktop");
-
-REGISTER_CLASS_NAME(NativeApplication);
-
 void NativeApplication::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

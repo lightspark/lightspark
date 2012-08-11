@@ -39,9 +39,6 @@ const char SOCKET_COMMAND_CLOSE = '-';
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.net");
-REGISTER_CLASS_NAME(XMLSocket);
-
 SocketIO::~SocketIO()
 {
 	if (fd != -1)

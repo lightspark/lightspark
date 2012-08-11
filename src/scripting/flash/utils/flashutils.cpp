@@ -32,17 +32,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.utils");
-
-REGISTER_CLASS_NAME(IExternalizable);
-REGISTER_CLASS_NAME(Endian);
-REGISTER_CLASS_NAME(IDataInput);
-REGISTER_CLASS_NAME(IDataOutput);
-REGISTER_CLASS_NAME(ByteArray);
-REGISTER_CLASS_NAME(Timer);
-REGISTER_CLASS_NAME(Dictionary);
-REGISTER_CLASS_NAME(Proxy);
-
 #define BA_CHUNK_SIZE 4096
 
 const char* Endian::littleEndian = "littleEndian";

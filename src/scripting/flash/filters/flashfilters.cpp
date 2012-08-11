@@ -23,12 +23,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("flash.filters");
-
-REGISTER_CLASS_NAME(BitmapFilter);
-REGISTER_CLASS_NAME(GlowFilter);
-REGISTER_CLASS_NAME(DropShadowFilter);
-
 void BitmapFilter::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);

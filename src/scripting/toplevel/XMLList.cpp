@@ -49,9 +49,6 @@ using namespace lightspark;
 			throw Class<TypeError>::getInstanceS("Error #1086: The method only works on lists of one item."); \
 	}
 
-SET_NAMESPACE("");
-REGISTER_CLASS_NAME(XMLList);
-
 XMLList::XMLList(Class_base* c):ASObject(c),nodes(c->memoryAccount),constructed(false)
 {
 }

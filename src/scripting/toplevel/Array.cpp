@@ -28,9 +28,6 @@
 using namespace std;
 using namespace lightspark;
 
-SET_NAMESPACE("");
-REGISTER_CLASS_NAME(Array);
-
 Array::Array(Class_base* c):ASObject(c),
 	data(std::less<arrayType::key_type>(), reporter_allocator<arrayType::value_type>(c->memoryAccount))
 {

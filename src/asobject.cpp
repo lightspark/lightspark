@@ -1246,29 +1246,6 @@ unsigned int ASObject::numVariables() const
 
 void ASObject::constructionComplete()
 {
-	Mutex::Lock lock(constructionMutex);
-	constructionSignal.broadcast();
-}
-
-bool ASObject::waitUntilConstructed(unsigned long maxwait_ms)
-{
-	Mutex::Lock lock(constructionMutex);
-
-	if(isConstructed())
-		return true;
-
-	// No need to loop over wait() because the construction state
-	// will change only once from false to true.
-	if(maxwait_ms==0)
-	{
-		constructionSignal.wait(constructionMutex);
-		return true;
-	}
-	else
-	{
-		CondTime wakeUp(maxwait_ms);
-		return wakeUp.wait(constructionMutex, constructionSignal);
-	}
 }
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

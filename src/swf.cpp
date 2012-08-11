@@ -1454,8 +1454,11 @@ void ParseThread::parseSWF(UI8 ver)
 
 void ParseThread::parseBitmap()
 {
-	_NR<Bitmap> tmp=_MNR(Class<Bitmap>::getInstanceS(&f, fileType));
+	_NR<LoaderInfo> li;
+	if(loader)
+		li=loader->getContentLoaderInfo();
 
+	_NR<Bitmap> tmp=_MNR(Class<Bitmap>::getInstanceS(li, &f, fileType));
 	{
 		SpinlockLocker l(objectSpinlock);
 		parsedObject=tmp;
@@ -1828,13 +1831,6 @@ void RootMovieClip::advanceFrame()
 		return;
 
 	MovieClip::advanceFrame();
-}
-
-void RootMovieClip::constructionComplete()
-{
-	MovieClip::constructionComplete();
-	if(this==getSys())
-		loaderInfo->sendInit();
 }
 
 void RootMovieClip::finalize()

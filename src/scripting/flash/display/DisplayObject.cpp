@@ -946,3 +946,11 @@ void DisplayObject::initFrame()
 	}
 }
 
+void DisplayObject::constructionComplete()
+{
+	if(!loaderInfo.isNull())
+	{
+		this->incRef();
+		loaderInfo->objectHasLoaded(_MR(this));
+	}
+}

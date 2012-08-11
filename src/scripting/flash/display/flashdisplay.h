@@ -287,6 +287,7 @@ public:
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_getHeight);
 	void sendInit();
+	void objectHasLoaded(_R<DisplayObject> obj);
 	//ILoadable interface
 	void setBytesTotal(uint32_t b)
 	{
@@ -615,7 +616,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
-	Bitmap(Class_base* c, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
+	Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(Class_base* c, _R<BitmapData> data);
 	~Bitmap();
 	void finalize();

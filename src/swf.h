@@ -72,7 +72,6 @@ private:
 	float frameRate;
 	bool toBind;
 	tiny_string bindName;
-	void constructionComplete();
 	/* those are private because you shouldn't call sys->*,
 	 * but sys->getStage()->* instead.
 	 */

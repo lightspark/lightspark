@@ -130,6 +130,7 @@ class Manager;
 template<class T> class Class;
 class Class_base;
 class ByteArray;
+class Loader;
 class Type;
 class ABCContext;
 
@@ -289,8 +290,6 @@ private:
 	Manager* manager;
 	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
-	Mutex constructionMutex;
-	Cond constructionSignal;
 public:
 	ASObject(Class_base* c);
 #ifndef NDEBUG
@@ -301,7 +300,6 @@ public:
 	bool implEnable;
 	Class_base* getClass() const { return classdef; }
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
-	bool waitUntilConstructed(unsigned long maxwait_ms=0);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(hasOwnProperty);

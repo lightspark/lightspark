@@ -141,6 +141,13 @@ void LoaderInfo::sendInit()
 	}
 }
 
+void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
+{
+	if(!loader.isNull())
+		loader->setContent(obj);
+	sendInit();
+}
+
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
@@ -302,18 +309,6 @@ void LoaderThread::execute()
 			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
 		return;
 	}
-
-	// Wait until the object is constructed before adding
-	// to the Loader. Check threadAborting once per
-	// second.
-	while(!obj->waitUntilConstructed(1000) && !threadAborting)
-		/* do nothing */;
-
-	if(threadAborting)
-		return;
-
-	loader->setContent(obj);
-	loaderInfo->sendInit();
 }
 
 ASFUNCTIONBODY(Loader,_constructor)
@@ -2611,8 +2606,10 @@ void StageDisplayState::sinit(Class_base* c)
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
 }
 
-Bitmap::Bitmap(Class_base* c, std::istream *s, FILE_TYPE type) : DisplayObject(c),TokenContainer(this)
+Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type) : DisplayObject(c),TokenContainer(this)
 {
+	loaderInfo = li;
+
 	bitmapData = _MR(Class<BitmapData>::getInstanceS());
 	bitmapData->addUser(this);
 	if(!s)
@@ -3165,7 +3162,7 @@ void MovieClip::advanceFrame()
 
 void MovieClip::constructionComplete()
 {
-	ASObject::constructionComplete();
+	DisplayObject::constructionComplete();
 
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame

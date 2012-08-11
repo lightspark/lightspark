@@ -41,6 +41,7 @@ friend class TokenContainer;
 friend class GLRenderContext;
 friend class AsyncDrawJob;
 friend class Transform;
+friend class ParseThread;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
 	enum HIT_TYPE { GENERIC_HIT, DOUBLE_CLICK };
@@ -109,6 +110,8 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
+
+	void constructionComplete();
 public:
 	tiny_string name;
 	UI16_SWF CharacterId;

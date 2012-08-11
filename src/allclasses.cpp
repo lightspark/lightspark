@@ -62,6 +62,8 @@ using namespace lightspark;
 
 enum ASClassIds
 {
+//Leave a space for the special Class class
+CLASS_CLASS=0,
 #include "allclasses.h"
 CLASS_LAST
 };

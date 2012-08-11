@@ -321,24 +321,27 @@ XML::XMLVector XML::getAttributes(const tiny_string& name,
 				  const tiny_string& namespace_uri)
 {
 	assert(node);
+	//Use low level libxml2 access for speed
+	const xmlNode* xmlN = node->cobj();
 	XMLVector ret;
 	//Only elements can have attributes
-	xmlpp::Element* elem=dynamic_cast<xmlpp::Element*>(node);
-	if(elem==NULL)
+	if(xmlN->type!=XML_ELEMENT_NODE)
 		return ret;
-	const xmlpp::Element::AttributeList& list=elem->get_attributes();
-	xmlpp::Element::AttributeList::const_iterator it=list.begin();
-	_NR<XML> rootXML=getRootNode();
 
-	for(;it!=list.end();++it)
+	_NR<XML> rootXML=getRootNode();
+	for(xmlAttr* attr=xmlN->properties; attr!=NULL; attr=attr->next)
 	{
-		if((name=="*" || (*it)->get_name()==name) && 
-		   (namespace_uri=="*" || (*it)->get_namespace_uri()==namespace_uri))
+		if((name=="*" || name==attr->name) &&
+			(namespace_uri=="*" || (namespace_uri=="" && attr->ns==NULL) || namespace_uri==attr->ns->href))
 		{
-			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, *it)));
+			//NOTE: libxmlpp headers says that Node::create_wrapper
+			//is supposed to be internal API. Still it's very useful and
+			//we use it.
+			xmlpp::Node::create_wrapper(reinterpret_cast<xmlNode*>(attr));
+			xmlpp::Node* attrX=static_cast<xmlpp::Node*>(attr->_private);
+			ret.push_back(_MR(Class<XML>::getInstanceS(rootXML, attrX)));
 		}
 	}
-
 	return ret;
 }
 
@@ -915,7 +918,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	{
 		//Lookup attribute
 		tiny_string ns_uri=namespace_uri.empty() ? "*" : namespace_uri;
-		XMLVector attributes=getAttributes(buf, ns_uri);
+		const XMLVector& attributes=getAttributes(buf, ns_uri);
 		return _MNR(Class<XMLList>::getInstanceS(attributes));
 	}
 	else if(Array::isValidMultiname(name,index))
@@ -934,19 +937,25 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	{
 		//Lookup children
 		_NR<XML> rootnode=getRootNode();
-		const xmlpp::Node::NodeList& children=node->get_children(buf);
-		xmlpp::Node::NodeList::const_iterator it=children.begin();
+
+		//Use low level libxml2 access for speed
+		const xmlNode* xmlN = node->cobj();
 		XMLVector ret;
 
-		for(;it!=children.end();++it)
+		for(xmlNode* child=xmlN->children; child!=NULL; child=child->next)
 		{
-			if((*it)->get_namespace_uri()==namespace_uri)
+			if((normalizedName=="*" || normalizedName==child->name) &&
+				(namespace_uri=="*" || (namespace_uri=="" && child->ns==NULL) || namespace_uri==child->ns->href))
 			{
-				ret.push_back(_MR(Class<XML>::getInstanceS(rootnode, *it)));
+				//NOTE: libxmlpp headers says that Node::create_wrapper
+				//is supposed to be internal API. Still it's very useful and
+				//we use it.
+				xmlpp::Node::create_wrapper(child);
+				xmlpp::Node* attrX=static_cast<xmlpp::Node*>(child->_private);
+				ret.push_back(_MR(Class<XML>::getInstanceS(rootnode, attrX)));
 			}
 		}
-
-		if(ret.size()==0 && (opt & XML_STRICT)!=0)
+		if(ret.empty() && (opt & XML_STRICT)!=0)
 			return NullRef;
 
 		return _MNR(Class<XMLList>::getInstanceS(ret));

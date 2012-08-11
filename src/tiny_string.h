@@ -30,6 +30,7 @@
 
 /* forward declare for tiny_string conversion */
 namespace Glib { class ustring; }
+typedef unsigned char xmlChar;
 
 namespace lightspark
 {
@@ -284,6 +285,10 @@ public:
 	bool operator==(const char* r) const
 	{
 		return strcmp(buf,r)==0;
+	}
+	bool operator==(const xmlChar* r) const
+	{
+		return strcmp(buf,reinterpret_cast<const char*>(r))==0;
 	}
 	bool operator!=(const char* r) const
 	{

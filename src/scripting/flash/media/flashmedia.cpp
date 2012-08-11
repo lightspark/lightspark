@@ -290,8 +290,9 @@ ASFUNCTIONBODY(Sound,load)
 	}
 	else
 	{
+		list<tiny_string> headers=urlRequest->getHeaders();
 		th->downloader=getSys()->downloadManager->downloadWithData(th->url, th->postData,
-				"Content-Type: application/x-www-form-urlencoded", th);
+				headers, th);
 		//Clean up the postData for the next load
 		th->postData.clear();
 	}

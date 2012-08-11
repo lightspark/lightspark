@@ -47,8 +47,7 @@ void URLStreamThread::execute()
 
 	//TODO: support httpStatus, progress events
 
-	const char contenttype[]="Content-Type: application/x-www-form-urlencoded";
-	if(!createDownloader(false, contenttype, loader))
+	if(!createDownloader(false, loader))
 		return;
 
 	bool success=false;

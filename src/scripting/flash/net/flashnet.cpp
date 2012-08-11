@@ -20,6 +20,7 @@
 #include <map>
 #include "scripting/abc.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/class.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "compat.h"
@@ -45,7 +46,7 @@ REGISTER_CLASS_NAME(NetConnection);
 REGISTER_CLASS_NAME(NetStream);
 REGISTER_CLASS_NAME(Responder);
 
-URLRequest::URLRequest(Class_base* c):ASObject(c),method(GET),contentType("application/x-www-form-urlencoded")
+URLRequest::URLRequest(Class_base* c):ASObject(c),method(GET),contentType("application/x-www-form-urlencoded"),requestHeaders(Class<Array>::getInstanceS())
 {
 }
 
@@ -60,6 +61,7 @@ void URLRequest::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_setData),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,contentType);
+	REGISTER_GETTER_SETTER(c,requestHeaders);
 }
 
 void URLRequest::buildTraits(ASObject* o)
@@ -104,6 +106,99 @@ tiny_string URLRequest::validatedContentType() const
 	return contentType;
 }
 
+/* Throws ArgumentError if headerName is not an allowed HTTP header
+ * name.
+ */
+void URLRequest::validateHeaderName(const tiny_string& headerName) const
+{
+	const char *illegalHeaders[] = 
+		{"accept-charset", "accept_charset", "accept-encoding",
+		 "accept_encoding", "accept-ranges", "accept_ranges",
+		 "age", "allow", "allowed", "authorization", "charge-to",
+		 "charge_to", "connect", "connection", "content-length",
+		 "content_length", "content-location", "content_location",
+		 "content-range", "content_range", "cookie", "date", "delete",
+		 "etag", "expect", "get", "head", "host", "if-modified-since",
+		 "if_modified-since", "if-modified_since", "if_modified_since",
+		 "keep-alive", "keep_alive", "last-modified", "last_modified",
+		 "location", "max-forwards", "max_forwards", "options",
+		 "origin", "post", "proxy-authenticate", "proxy_authenticate",
+		 "proxy-authorization", "proxy_authorization",
+		 "proxy-connection", "proxy_connection", "public", "put",
+		 "range", "referer", "request-range", "request_range",
+		 "retry-after", "retry_after", "server", "te", "trace",
+		 "trailer", "transfer-encoding", "transfer_encoding",
+		 "upgrade", "uri", "user-agent", "user_agent", "vary", "via",
+		 "warning", "www-authenticate", "www_authenticate",
+		 "x-flash-version", "x_flash-version", "x-flash_version",
+		 "x_flash_version"};
+
+	if ((headerName.strchr('\r') != NULL) ||
+	     headerName.strchr('\n') != NULL)
+		throw Class<ArgumentError>::getInstanceS("Error #2096: The HTTP request header cannot be set via ActionScript");
+
+	for (unsigned i=0; i<(sizeof illegalHeaders)/(sizeof illegalHeaders[0]); i++)
+	{
+		if (headerName.lowercase() == illegalHeaders[i])
+		{
+			tiny_string msg("Error #2096: The HTTP request header ");
+			msg += headerName;
+			msg += " cannot be set via ActionScript";
+			throw Class<ArgumentError>::getInstanceS(msg);
+		}
+	}
+}
+
+/* Validate requestHeaders and return them as list. Throws
+ * ArgumentError if requestHeaders contains illegal headers or the
+ * cumulative length is too long.
+ */
+std::list<tiny_string> URLRequest::getHeaders() const
+{
+	list<tiny_string> headers;
+	int headerTotalLen = 0;
+	for (unsigned i=0; i<requestHeaders->size(); i++)
+	{
+		_R<ASObject> headerObject = requestHeaders->at(i);
+
+		// Validate
+		if (!headerObject->is<URLRequestHeader>())
+			throw Class<TypeError>::getInstanceS("Error #1034: Object is not URLRequestHeader");
+		URLRequestHeader *header = headerObject->as<URLRequestHeader>();
+		tiny_string headerName = header->name;
+		validateHeaderName(headerName);
+		if ((header->value.strchr('\r') != NULL) ||
+		     header->value.strchr('\n') != NULL)
+			throw Class<ArgumentError>::getInstanceS("Illegal HTTP header value");
+		
+		// Should this include the separators?
+		headerTotalLen += header->name.numBytes();
+		headerTotalLen += header->value.numBytes();
+		if (headerTotalLen >= 8192)
+			throw Class<ArgumentError>::getInstanceS("Error #2145: Cumulative length of requestHeaders must be less than 8192 characters.");
+
+		// Append header to results
+		headers.push_back(headerName + ": " + header->value);
+	}
+
+	tiny_string contentType = getContentTypeHeader();
+	if (!contentType.empty())
+		headers.push_back(contentType);
+
+	return headers;
+}
+
+tiny_string URLRequest::getContentTypeHeader() const
+{
+	if(method!=POST)
+		return "";
+
+	if(!data.isNull() && data->getClass()==Class<URLVariables>::getClass())
+		return "Content-type: application/x-www-form-urlencoded";
+	else
+		return tiny_string("Content-Type: ") + validatedContentType();
+}
+
 void URLRequest::getPostData(vector<uint8_t>& outData) const
 {
 	if(method!=POST)
@@ -115,29 +210,8 @@ void URLRequest::getPostData(vector<uint8_t>& outData) const
 	if(data->getClass()==Class<ByteArray>::getClass())
 	{
 		ByteArray *ba=data->as<ByteArray>();
-		tiny_string tmp="Content-type: ";
-		outData.insert(outData.end(),tmp.raw_buf(),tmp.raw_buf()+tmp.numBytes());
-		tmp=validatedContentType();
-		outData.insert(outData.end(),tmp.raw_buf(),tmp.raw_buf()+tmp.numBytes());
-		tmp="\r\nContent-length: ";
-		outData.insert(outData.end(),tmp.raw_buf(),tmp.raw_buf()+tmp.numBytes());
-		char contentlenbuf[20];
-		snprintf(contentlenbuf,20,"%u\r\n\r\n",ba->getLength());
-		outData.insert(outData.end(),contentlenbuf,contentlenbuf+strlen(contentlenbuf));
-
 		const uint8_t *buf=ba->getBuffer(ba->getLength(), false);
 		outData.insert(outData.end(),buf,buf+ba->getLength());
-	}
-	else if(data->getClass()==Class<URLVariables>::getClass())
-	{
-		//Prepend the Content-Type header
-		tiny_string strData="Content-type: application/x-www-form-urlencoded\r\nContent-length: ";
-		const tiny_string& tmpStr=data->toString();
-		char buf[20];
-		snprintf(buf,20,"%u\r\n\r\n",tmpStr.numBytes());
-		strData+=buf;
-		strData+=tmpStr;
-		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.numBytes());
 	}
 	else
 	{
@@ -225,6 +299,7 @@ ASFUNCTIONBODY(URLRequest,_setData)
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(URLRequest,contentType);
+ASFUNCTIONBODY_GETTER_SETTER(URLRequest,requestHeaders);
 
 void URLRequestMethod::sinit(Class_base* c)
 {
@@ -244,8 +319,7 @@ void URLLoaderThread::execute()
 
 	//TODO: support httpStatus, progress events
 
-	const char contenttype[]="Content-Type: application/x-www-form-urlencoded";
-	if(!createDownloader(false, contenttype, loader, loader.getPtr()))
+	if(!createDownloader(false, loader, loader.getPtr()))
 		return;
 
 	_NR<ASObject> data;
@@ -621,8 +695,10 @@ void NetConnection::execute()
 {
 	LOG(LOG_CALLS,_("NetConnection async execution ") << uri);
 	assert(!messageData.empty());
+	std::list<tiny_string> headers;
+	headers.push_back("Content-Type: application/x-amf");
 	downloader=getSys()->downloadManager->downloadWithData(uri, messageData,
-			"Content-Type: application/x-amf", NULL);
+			headers, NULL);
 	//Get the whole answer
 	downloader->waitForTermination();
 	if(downloader->hasFailed()) //Check to see if the download failed for some reason

@@ -40,7 +40,10 @@ private:
 	enum METHOD { GET=0, POST };
 	METHOD method;
 	tiny_string validatedContentType() const;
+	tiny_string getContentTypeHeader() const;
+	void validateHeaderName(const tiny_string& headerName) const;
 	ASPROPERTY_GETTER_SETTER(tiny_string,contentType);
+	ASPROPERTY_GETTER_SETTER(_R<Array>,requestHeaders);
 public:
 	URLRequest(Class_base* c);
 	void finalize();
@@ -54,6 +57,7 @@ public:
 	ASFUNCTION(_setData);
 	ASFUNCTION(_getData);
 	URLInfo getRequestURL() const;
+	std::list<tiny_string> getHeaders() const;
 	void getPostData(std::vector<uint8_t>& data) const;
 };
 

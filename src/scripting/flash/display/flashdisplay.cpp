@@ -285,8 +285,7 @@ void LoaderThread::execute()
 	streambuf *sbuf = 0;
 	if(source==URL)
 	{
-		const char contenttype[]="Content-Type: application/x-www-form-urlencoded";
-		if(!createDownloader(false, contenttype, loaderInfo, loaderInfo.getPtr(), false))
+		if(!createDownloader(false, loaderInfo, loaderInfo.getPtr(), false))
 			return;
 
 		downloader->waitForData(); //Wait for some data, making sure our check for failure is working

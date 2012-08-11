@@ -35,7 +35,7 @@ bool Boolean_concrete(const ASObject* obj);
 class Boolean: public ASObject
 {
 public:
-	Boolean(Class_base* c):ASObject(c) {type=T_BOOLEAN;}
+	Boolean(Class_base* c, bool v=false):ASObject(c),val(v) {type=T_BOOLEAN;}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o){};
 	bool val;

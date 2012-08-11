@@ -200,9 +200,11 @@ private:
 	GPid childPid;
 #endif
 
-	//shared null and undefined instances
+	//shared null, undefined, true and false instances
 	_NR<Null> null;
 	_NR<Undefined> undefined;
+	_NR<Boolean> trueRef;
+	_NR<Boolean> falseRef;
 
 	//Parameters/FlashVars
 	_NR<ASObject> parameters;

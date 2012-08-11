@@ -219,6 +219,9 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	//The only bit remaining is setting the Object class as the super class for Class
 	classObject->setSuper(asobjectClass);
 
+	trueRef=_MR(Class<Boolean>::getInstanceS(true));
+	falseRef=_MR(Class<Boolean>::getInstanceS(false));
+
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());
 	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(systemDomain));
 	securityDomain = _MR(Class<SecurityDomain>::getInstanceS());
@@ -489,6 +492,8 @@ void SystemState::finalize()
 	frameListeners.clear();
 	null.reset();
 	undefined.reset();
+	trueRef.reset();
+	falseRef.reset();
 	systemDomain.reset();
 }
 

@@ -77,7 +77,7 @@ public:
 	/*
 	 * Checks if the type is already in sys->classes
 	 */
-	static bool isBuiltinType(const multiname* mn);
+	static Type* getBuiltinType(const multiname* mn);
 	/*
 	 * Converts the given object to an object of this type.
 	 * It consumes one reference of 'o'.

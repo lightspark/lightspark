@@ -619,23 +619,26 @@ ASObject* Void::coerce(ASObject* o) const
 	return o;
 }
 
-bool Type::isBuiltinType(const multiname* mn)
+Type* Type::getBuiltinType(const multiname* mn)
 {
 	assert_and_throw(mn->isQName());
 	assert(mn->name_type == multiname::NAME_STRING);
 	if(mn == 0)
-		return true; //any
+		return Type::anyType; //any
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::ANY
 		&& mn->ns[0].hasEmptyName())
-		return true;
+		return Type::anyType;
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::VOID
 		&& mn->ns[0].hasEmptyName())
-		return true;
+		return Type::voidType;
 
 	//Check if the class has already been defined
 	ASObject* target;
-	ASObject* ret=getSys()->systemDomain->getVariableAndTargetByMultiname(*mn, target);
-	return ret!=NULL;
+	ASObject* tmp=getSys()->systemDomain->getVariableAndTargetByMultiname(*mn, target);
+	if(tmp && tmp->getObjectType()==T_CLASS)
+		return static_cast<Class_base*>(tmp);
+	else
+		return NULL;
 }
 
 /*

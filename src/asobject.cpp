@@ -770,7 +770,9 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	 /* If typename is a builtin type, we coerce obj.
 	  * It it's not it must be a user defined class,
 	  * so we only allow Null and Undefined (which are both coerced to Null) */
-	if(!Type::isBuiltinType(typemname))
+
+	type = Type::getBuiltinType(typemname);
+	if(type==NULL)
 	{
 		assert_and_throw(obj->is<Null>() || obj->is<Undefined>());
 		if(obj->is<Undefined>())
@@ -782,10 +784,8 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 		}
 	}
 	else
-	{
-		type = Type::getTypeFromMultiname(typemname, context);
 		obj = type->coerce(obj);
-	}
+
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT);
 
 	uint32_t name=mname.normalizedNameId();

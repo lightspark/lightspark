@@ -321,6 +321,7 @@ public:
 	std::set<Class_base*> customClasses;
 	std::map<QName, Class_base*> builtinClasses;
 	std::map<QName, Template_base*> templates;
+	std::map<QName, Class_base*> instantiatedTemplates;
 
 	//Flags for command line options
 	bool useInterpreter;

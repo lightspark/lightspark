@@ -500,13 +500,13 @@ public:
 	{
 		QName instantiatedQName = getQName(types);
 
-		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(instantiatedQName);
+		std::map<QName, Class_base*>::iterator it=getSys()->instantiatedTemplates.find(instantiatedQName);
 		Class<T>* ret=NULL;
-		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
+		if(it==getSys()->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(instantiatedQName.name);
 			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,memoryAccount);
-			getSys()->builtinClasses.insert(std::make_pair(instantiatedQName,ret));
+			getSys()->instantiatedTemplates.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
 			if(ret->super)

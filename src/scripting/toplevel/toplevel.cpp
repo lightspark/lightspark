@@ -619,7 +619,7 @@ ASObject* Void::coerce(ASObject* o) const
 	return o;
 }
 
-bool Type::isTypeResolvable(const multiname* mn)
+bool Type::isBuiltinType(const multiname* mn)
 {
 	assert_and_throw(mn->isQName());
 	assert(mn->name_type == multiname::NAME_STRING);
@@ -633,8 +633,9 @@ bool Type::isTypeResolvable(const multiname* mn)
 		return true;
 
 	//Check if the class has already been defined
-	auto i = getSys()->builtinClasses.find(QName(getSys()->getStringFromUniqueId(mn->name_s_id), mn->ns[0].getImpl().name));
-	return i != getSys()->builtinClasses.end();
+	ASObject* target;
+	ASObject* ret=getSys()->systemDomain->getVariableAndTargetByMultiname(*mn, target);
+	return ret!=NULL;
 }
 
 /*

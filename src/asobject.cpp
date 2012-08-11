@@ -767,10 +767,10 @@ const variable* variables_map::findObjVar(const multiname& mname, uint32_t trait
 void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind)
 {
 	const Type* type = NULL;
-	 /* If typename is resolvable right now, we coerce obj.
-	  * It it's not resolvable, then it must be a user defined class,
+	 /* If typename is a builtin type, we coerce obj.
+	  * It it's not it must be a user defined class,
 	  * so we only allow Null and Undefined (which are both coerced to Null) */
-	if(!Type::isTypeResolvable(typemname))
+	if(!Type::isBuiltinType(typemname))
 	{
 		assert_and_throw(obj->is<Null>() || obj->is<Undefined>());
 		if(obj->is<Undefined>())

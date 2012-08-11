@@ -37,6 +37,7 @@ class ClassName
 public:
 	static const char* ns;
 	static const char* name;
+	static unsigned int id;
 };
 
 class Class_inherit:public Class_base

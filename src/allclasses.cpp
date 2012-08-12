@@ -85,4 +85,4 @@ CLASS_LAST
 #include "allclasses.h"
 
 //Define a variable to let outside code know the number of defined classes
-uint32_t asClassCound = CLASS_LAST;
+uint32_t asClassCount = CLASS_LAST;

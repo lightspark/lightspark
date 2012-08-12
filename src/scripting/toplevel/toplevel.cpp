@@ -938,17 +938,20 @@ Template_base::Template_base(QName name) : ASObject((Class_base*)(NULL)),templat
 
 Class_object* Class_object::getClass()
 {
-	//We check if we are registered in the class map
+	//We check if we are registered already
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(QName("Class",""));
+	//Class object position in the map is hardwired to 0
+	uint32_t classId=0;
 	Class_object* ret=NULL;
-	if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
+	Class_base** retAddr=&getSys()->builtinClasses[classId];
+	if(*retAddr==NULL)
 	{
+		//Create the class
 		ret=new (getSys()->unaccountedMemory) Class_object();
-		getSys()->builtinClasses.insert(std::make_pair(QName("Class",""),ret));
+		*retAddr=ret;
 	}
 	else
-		ret=static_cast<Class_object*>(it->second);
+		ret=static_cast<Class_object*>(*retAddr);
 
 	return ret;
 }
@@ -1789,10 +1792,12 @@ ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, c
 
 Class<IFunction>* Class<IFunction>::getClass()
 {
-	std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
+	uint32_t classId=ClassName<IFunction>::id;
 	Class<IFunction>* ret=NULL;
-	if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
+	Class_base** retAddr=&getSys()->builtinClasses[classId];
+	if(*retAddr==NULL)
 	{
+		//Create the class
 		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(ClassName<IFunction>::name);
 		ret=new (getSys()->unaccountedMemory) Class<IFunction>(memoryAccount);
 		//This function is called from Class<ASObject>::getRef(),
@@ -1805,7 +1810,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->incRef();
 		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 
-		getSys()->builtinClasses.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
+		*retAddr = ret;
 
 		//we cannot use sinit, as we need to setup 'this_class' before calling
 		//addPrototypeGetter and setDeclaredMethodByQName.
@@ -1822,7 +1827,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	}
 	else
-		ret=static_cast<Class<IFunction>*>(it->second);
+		ret=static_cast<Class<IFunction>*>(*retAddr);
 
 	return ret;
 }

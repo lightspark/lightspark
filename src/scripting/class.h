@@ -196,14 +196,16 @@ public:
 #endif
 	static Class<T>* getClass()
 	{
-		QName name(ClassName<T>::name,ClassName<T>::ns);
-		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(name);
+		uint32_t classId=ClassName<T>::id;
 		Class<T>* ret=NULL;
-		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
+		Class_base** retAddr=&getSys()->builtinClasses[classId];
+		if(*retAddr==NULL)
 		{
+			//Create the class
+			QName name(ClassName<T>::name,ClassName<T>::ns);
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 			ret=new (getSys()->unaccountedMemory) Class<T>(name, memoryAccount);
-			getSys()->builtinClasses.insert(std::make_pair(name,ret));
+			*retAddr=ret;
 			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
 
@@ -216,7 +218,7 @@ public:
 			ret->addLengthGetter();
 		}
 		else
-			ret=static_cast<Class<T>*>(it->second);
+			ret=static_cast<Class<T>*>(*retAddr);
 
 		return ret;
 	}
@@ -316,31 +318,33 @@ public:
 		ret->addLengthGetter();
 
 		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-		getSys()->builtinClasses.insert(std::make_pair(name,ret));
+		getSys()->customClasses.insert(ret);
 		ret->incRef();
 		return _MR(ret);
 	}
 	static Class<ASObject>* getClass()
 	{
-		QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
-		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(name);
+		uint32_t classId=ClassName<ASObject>::id;
 		Class<ASObject>* ret=NULL;
-		if(it==getSys()->builtinClasses.end()) //This class is not yet in the map, create it
+		Class_base** retAddr=&getSys()->builtinClasses[classId];
+		if(*retAddr==NULL)
 		{
+			//Create the class
+			QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
-			ret=new (getSys()->unaccountedMemory) Class<ASObject>(name,memoryAccount);
-			getSys()->builtinClasses.insert(std::make_pair(name,ret));
+			ret=new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
+			*retAddr=ret;
 			ret->prototype = _MNR(new_objectPrototype());
 			ASObject::sinit(ret);
+
 			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
 			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-
 			ret->addPrototypeGetter();
 			ret->addLengthGetter();
 		}
 		else
-			ret=static_cast<Class<ASObject>*>(it->second);
+			ret=static_cast<Class<ASObject>*>(*retAddr);
 
 		return ret;
 	}
@@ -402,18 +406,19 @@ class InterfaceClass: public Class_base
 public:
 	static InterfaceClass<T>* getClass()
 	{
-		QName name(ClassName<T>::name,ClassName<T>::ns);
-		std::map<QName, Class_base*>::iterator it=getSys()->builtinClasses.find(name);
+		uint32_t classId=ClassName<T>::id;
 		InterfaceClass<T>* ret=NULL;
-		if(it==getSys()->builtinClasses.end())
+		Class_base** retAddr=&getSys()->builtinClasses[classId];
+		if(*retAddr==NULL)
 		{
-			//This class is not yet in the map, create it
+			//Create the class
+			QName name(ClassName<T>::name,ClassName<T>::ns);
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 			ret=new (getSys()->unaccountedMemory) InterfaceClass<T>(name, memoryAccount);
-			getSys()->builtinClasses.insert(std::make_pair(name,ret));
+			*retAddr=ret;
 		}
 		else
-			ret=static_cast<InterfaceClass<T>*>(it->second);
+			ret=static_cast<InterfaceClass<T>*>(*retAddr);
 
 		return ret;
 	}

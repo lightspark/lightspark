@@ -169,6 +169,8 @@ void SystemState::staticDeinit()
 //See BUILTIN_STRINGS enum
 static const char* builtinStrings[] = {"", "any", "void", "prototype" };
 
+extern uint32_t asClassCount;
+
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	RootMovieClip(NULL,NullRef,NullRef,NULL),terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
@@ -176,8 +178,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
 	showProfilingData(false),flashMode(mode),
-	currentVm(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),downloadManager(NULL),
-	extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
+	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),
+	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
 {
 	//Forge the builtin strings
 	for(uint32_t i=0;i<LAST_BUILTIN_STRING;i++)
@@ -205,6 +207,9 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
 	null=_MR(new (unaccountedMemory) Null);
 	undefined=_MR(new (unaccountedMemory) Undefined);
+
+	builtinClasses = new Class_base*[asClassCount];
+	memset(builtinClasses,0,asClassCount*sizeof(Class_base*));
 
 	//Untangle the messy relationship between class objects and the Class class
 	Class_object* classObject = Class_object::getClass();
@@ -489,6 +494,7 @@ void SystemState::finalize()
 
 SystemState::~SystemState()
 {
+	delete[] builtinClasses;
 }
 
 void SystemState::destroy()
@@ -553,8 +559,11 @@ void SystemState::destroy()
 	 * 'classes' and 'templates' maps.
 	 */
 
-	for(auto it = builtinClasses.begin(); it != builtinClasses.end(); ++it)
-		it->second->finalize();
+	for(uint32_t i=0;i<asClassCount;i++)
+	{
+		if(builtinClasses[i])
+			builtinClasses[i]->finalize();
+	}
 	for(auto it = customClasses.begin(); it != customClasses.end(); ++it)
 		(*it)->finalize();
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
@@ -567,8 +576,11 @@ void SystemState::destroy()
 		currentVm->finalize();
 
 	//Free classes by decRef'ing them
-	for(auto i = builtinClasses.begin(); i != builtinClasses.end(); ++i)
-		i->second->decRef();
+	for(uint32_t i=0;i<asClassCount;i++)
+	{
+		if(builtinClasses[i])
+			builtinClasses[i]->decRef();
+	}
 	for(auto i = customClasses.begin(); i != customClasses.end(); ++i)
 		(*i)->decRef();
 

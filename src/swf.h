@@ -319,7 +319,8 @@ public:
 
 	//Classes set. They own one reference to each class/template
 	std::set<Class_base*> customClasses;
-	std::map<QName, Class_base*> builtinClasses;
+	//This is an array of fixed size, we can avoid using std::vector
+	Class_base** builtinClasses;
 	std::map<QName, Template_base*> templates;
 	std::map<QName, Class_base*> instantiatedTemplates;
 

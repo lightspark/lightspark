@@ -1742,6 +1742,20 @@ Undefined* SystemState::getUndefinedRef() const
 	return ret;
 }
 
+Boolean* SystemState::getTrueRef() const
+{
+	Boolean* ret=trueRef.getPtr();
+	ret->incRef();
+	return ret;
+}
+
+Boolean* SystemState::getFalseRef() const
+{
+	Boolean* ret=falseRef.getPtr();
+	ret->incRef();
+	return ret;
+}
+
 const tiny_string& SystemState::getStringFromUniqueId(uint32_t id) const
 {
 	Locker l(poolMutex);

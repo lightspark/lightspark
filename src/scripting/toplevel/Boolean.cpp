@@ -28,9 +28,10 @@ using namespace std;
 
 Boolean* lightspark::abstract_b(bool v)
 {
-	Boolean* b = Class<Boolean>::getInstanceS();
-	b->val = v;
-	return b;
+	if(v==true)
+		return getSys()->getTrueRef();
+	else
+		return getSys()->getFalseRef();
 }
 
 /* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
@@ -78,9 +79,12 @@ void Boolean::sinit(Class_base* c)
 ASFUNCTIONBODY(Boolean,_constructor)
 {
 	Boolean* th=static_cast<Boolean*>(obj);
-	_NR<ASObject> o;
-	ARG_UNPACK (o,_MNR(getSys()->getUndefinedRef()));
-	th->val=Boolean_concrete(o.getPtr());
+	if(argslen==0)
+	{
+		//No need to handle default argument. The object is initialized to false anyway
+		return NULL;
+	}
+	th->val=Boolean_concrete(args[0]);
 	return NULL;
 }
 

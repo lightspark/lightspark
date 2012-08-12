@@ -309,6 +309,8 @@ public:
 	
 	Null* getNullRef() const;
 	Undefined* getUndefinedRef() const;
+	Boolean* getTrueRef() const;
+	Boolean* getFalseRef() const;
 
 	Stage* stage;
 	ABCVm* currentVm;

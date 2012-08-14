@@ -67,6 +67,8 @@ private function appComplete():void
 	Tests.assertEquals(50, sprite7.width, "Width on child");
 	Tests.assertEquals(25, sprite6.width, "Width on parent");
 
+	Tests.assertNotNull(visual.stage, "Stage not null");
+
 	Tests.report(visual, name);
 }
 ]]>

@@ -246,9 +246,6 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	
 	setClass(Class<MovieClip>::getClass());
 
-	//Override getStage as for SystemState that can't be null
-	setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(_getStage),GETTER_METHOD,false);
-
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);
 }
@@ -1042,12 +1039,6 @@ void SystemState::flushInvalidationQueue()
 	}
 	invalidateQueueHead=NullRef;
 	invalidateQueueTail=NullRef;
-}
-
-_NR<Stage> SystemState::getStage()
-{
-	stage->incRef();
-	return _MR(stage);
 }
 
 #ifdef PROFILING_SUPPORT

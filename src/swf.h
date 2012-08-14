@@ -285,8 +285,6 @@ public:
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 	void needsAVM2(bool n);
-	//DisplayObject interface
-	_NR<Stage> getStage();
 
 	/**
 	 * Be careful, SystemState constructor does some global initialization that must be done

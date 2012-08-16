@@ -85,7 +85,6 @@ protected:
 	 */
 	void extractValuesFromMatrix();
 	bool onStage;
-	_NR<LoaderInfo> loaderInfo;
 	number_t computeWidth();
 	number_t computeHeight();
 	bool isSimple() const;
@@ -128,6 +127,7 @@ public:
 	DisplayObject(Class_base* c);
 	void finalize();
 	MATRIX getMatrix() const;
+	_NR<LoaderInfo> loaderInfo;
 	/**
 	 * Generate a new IDrawable instance for this object
 	 * @param target The topmost object in the hierarchy that is being drawn. Such object

@@ -51,7 +51,7 @@ void RTMPDownloader::execute()
 	rtmpUrl+=" playpath=";
 	rtmpUrl+=stream;
 	rtmpUrl+=" swfVfy=";
-	rtmpUrl+=getSys()->getOrigin().getURL();
+	rtmpUrl+=getSys()->mainClip->getOrigin().getURL();
 	rtmpUrl+=" tcUrl=";
 	rtmpUrl+=url;
 	//Setup url needs a char*, not a const char*...

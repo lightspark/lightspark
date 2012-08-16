@@ -634,7 +634,7 @@ void RenderThread::commonGLInit(int width, int height)
 void RenderThread::commonGLResize()
 {
 	//Get the size of the content
-	RECT r=m_sys->getFrameSize();
+	RECT r=m_sys->mainClip->getFrameSize();
 	r.Xmax/=20;
 	r.Ymax/=20;
 	//Now compute the scalings and offsets
@@ -809,7 +809,7 @@ void RenderThread::plotProfilingData()
 	glUniform1f(directUniform, 1);
 
 	char frameBuf[20];
-	snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
+	snprintf(frameBuf,20,"Frame %u",m_sys->mainClip->state.FP);
 
 	GLfloat vertex_coords[40];
 	GLfloat color_coords[80];
@@ -835,7 +835,7 @@ void RenderThread::plotProfilingData()
  
 	list<ThreadProfile*>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();++it)
-		(*it)->plot(1000000/m_sys->getFrameRate(),cr);
+		(*it)->plot(1000000/m_sys->mainClip->getFrameRate(),cr);
 	glUniform1f(directUniform, 0);
 
 	mapCairoTexture(windowWidth, windowHeight);
@@ -853,13 +853,13 @@ void RenderThread::coreRendering()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 	//Clear the back buffer
-	RGB bg=m_sys->getBackground();
+	RGB bg=m_sys->mainClip->getBackground();
 	glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 	glClear(GL_COLOR_BUFFER_BIT);
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
-	m_sys->getStage()->Render(*this, false);
+	m_sys->mainClip->getStage()->Render(*this, false);
 	assert(maskStack.empty());
 
 	if(m_sys->showProfilingData)
@@ -887,7 +887,7 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 			0,th->windowHeight/2+20);
 
 	stringstream errorMsg;
-	errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
+	errorMsg << "SWF file: " << th->m_sys->mainClip->getOrigin().getParsedURL();
 	renderText(cr, errorMsg.str().c_str(),0,th->windowHeight/2);
 
 	errorMsg.str("");

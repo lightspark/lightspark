@@ -525,7 +525,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSandboxURL(const URLI
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateLocalDirectoryURL(const URLInfo& url)
 {
 	//The URL is local and points to a directory above the origin
-	if(url.getProtocol() == "file" && !url.isSubOf(getSys()->getOrigin()))
+	if(url.getProtocol() == "file" && !url.isSubOf(getSys()->mainClip->getOrigin()))
 		return NA_RESTRICT_LOCAL_DIRECTORY;
 
 	return ALLOWED;
@@ -571,7 +571,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		bool loadPendingPolicies)
 {
 	//This check doesn't apply to local files
-	if(url.getProtocol() == "file" && getSys()->getOrigin().getProtocol() == "file")
+	if(url.getProtocol() == "file" && getSys()->mainClip->getOrigin().getProtocol() == "file")
 		return ALLOWED;
 
 	//Streaming from RTMP is always allowed (see
@@ -581,11 +581,11 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 
 	LOG(LOG_INFO, _("SECURITY: Evaluating URL for cross domain policies:"));
 	LOG(LOG_INFO, _("SECURITY: --> URL:    ") << url);
-	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << getSys()->getOrigin());
+	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << getSys()->mainClip->getOrigin());
 
 	//The URL has exactly the same domain name as the origin, always allowed
-	if(url.getProtocol() == getSys()->getOrigin().getProtocol() &&
-			url.getHostname() == getSys()->getOrigin().getHostname())
+	if(url.getProtocol() == getSys()->mainClip->getOrigin().getProtocol() &&
+			url.getHostname() == getSys()->mainClip->getOrigin().getHostname())
 	{
 		LOG(LOG_INFO, _("SECURITY: Same hostname as origin, allowing"));
 		return ALLOWED;
@@ -602,7 +602,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		URLPFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
-			if((*it)->allowsAccessFrom(getSys()->getOrigin(), url))
+			if((*it)->allowsAccessFrom(getSys()->mainClip->getOrigin(), url))
 			{
 				LOG(LOG_INFO, _("SECURITY: ALLOWED: A policy file explicitly allowed access"));
 				delete files;
@@ -625,7 +625,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSocketConnection(cons
 
 	LOG(LOG_INFO, _("SECURITY: Evaluating socket policy:"));
 	LOG(LOG_INFO, _("SECURITY: --> URL:    ") << url);
-	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << getSys()->getOrigin());
+	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << getSys()->mainClip->getOrigin());
 
 	//Search for the policy files to check
 	SocketPFileList* files = searchSocketPolicyFiles(url, loadPendingPolicies);
@@ -638,7 +638,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSocketConnection(cons
 		SocketPFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
-			if((*it)->allowsAccessFrom(getSys()->getOrigin(), url))
+			if((*it)->allowsAccessFrom(getSys()->mainClip->getOrigin(), url))
 			{
 				LOG(LOG_INFO, _("SECURITY: ALLOWED: A policy file explicitly allowed access"));
 				delete files;
@@ -667,12 +667,12 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 		const tiny_string& header, bool loadPendingPolicies)
 {
 	//This check doesn't apply to local files
-	if(url.getProtocol() == "file" && getSys()->getOrigin().getProtocol() == "file")
+	if(url.getProtocol() == "file" && getSys()->mainClip->getOrigin().getProtocol() == "file")
 		return ALLOWED;
 
 	LOG(LOG_INFO, _("SECURITY: Evaluating header for cross domain policies ('") << header << "'):");
 	LOG(LOG_INFO, _("SECURITY: --> URL: ") << url);
-	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << getSys()->getOrigin());
+	LOG(LOG_INFO, _("SECURITY: --> Origin: ") << getSys()->mainClip->getOrigin());
 
 	string headerStrLower(header.raw_buf());
 	transform(headerStrLower.begin(), headerStrLower.end(), headerStrLower.begin(), ::tolower);
@@ -702,8 +702,8 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	}
 
 	//The URL has exactly the same domain name as the origin, always allowed
-	if(url.getProtocol() == getSys()->getOrigin().getProtocol() &&
-			url.getHostname() == getSys()->getOrigin().getHostname())
+	if(url.getProtocol() == getSys()->mainClip->getOrigin().getProtocol() &&
+			url.getHostname() == getSys()->mainClip->getOrigin().getHostname())
 	{
 		LOG(LOG_INFO, _("SECURITY: ALLOWED: Same hostname as origin"));
 		return ALLOWED;
@@ -720,7 +720,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 		URLPFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
-			if((*it)->allowsHTTPRequestHeaderFrom(getSys()->getOrigin(), url, headerStrLower))
+			if((*it)->allowsHTTPRequestHeaderFrom(getSys()->mainClip->getOrigin(), url, headerStrLower))
 			{
 				LOG(LOG_INFO, _("SECURITY: ALLOWED: A policy file explicitly allowed the header"));
 				delete files;

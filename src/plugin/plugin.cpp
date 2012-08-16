@@ -304,10 +304,6 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 	setTLSSys( NULL );
 }
 
-#ifdef MEMORY_USAGE_PROFILING
-static MemoryAccount sysAccount("sysAccount");
-#endif
-
 ////////////////////////////////////////
 //
 // nsPluginInstance class implementation
@@ -318,11 +314,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 {
 	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2012 Alessandro Pignotti and others");
 	setTLSSys( NULL );
-#ifdef MEMORY_USAGE_PROFILING
-	m_sys=new (&sysAccount) lightspark::SystemState(0, lightspark::SystemState::FLASH);
-#else
-	m_sys=new ((MemoryAccount*)NULL) lightspark::SystemState(0, lightspark::SystemState::FLASH);
-#endif
+	m_sys=new lightspark::SystemState(0, lightspark::SystemState::FLASH);
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 	//Find flashvars argument
@@ -367,6 +359,7 @@ nsPluginInstance::~nsPluginInstance()
 	m_sys->setShutdownFlag();
 
 	m_sys->destroy();
+	delete m_sys;
 	delete m_pt;
 	setTLSSys(NULL);
 }
@@ -598,8 +591,8 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	else if(m_pt==NULL)
 	{
 		//This is the main file
-		m_sys->setOrigin(stream->url);
-		m_sys->parseParametersFromURL(m_sys->getOrigin());
+		m_sys->mainClip->setOrigin(stream->url);
+		m_sys->parseParametersFromURL(m_sys->mainClip->getOrigin());
 		*stype=NP_ASFILE;
 		//Let's get the cookies now, they might be useful
 		uint32_t len = 0;
@@ -617,11 +610,11 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 			m_sys->setCookies(packedCookies.c_str());
 		}
 		//Now create a Downloader for this
-		dl=new NPDownloader(stream->url,m_sys->getLoaderInfo());
+		dl=new NPDownloader(stream->url,m_sys->mainClip->loaderInfo.getPtr());
 		dl->setLength(stream->end);
 		mainDownloader=dl;
 		mainDownloaderStream.rdbuf(mainDownloader);
-		m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys);
+		m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys->mainClip);
 		m_sys->addJob(m_pt);
 	}
 	//The downloader is set as the private data for this stream

@@ -60,7 +60,6 @@ class RootMovieClip: public MovieClip
 {
 friend class ParseThread;
 protected:
-	Mutex rootMutex;
 	URLInfo origin;
 private:
 	bool parsingIsFailed;
@@ -72,15 +71,15 @@ private:
 	float frameRate;
 	bool toBind;
 	tiny_string bindName;
-	/* those are private because you shouldn't call sys->*,
-	 * but sys->getStage()->* instead.
+	/* those are private because you shouldn't call mainClip->*,
+	 * but mainClip->getStage()->* instead.
 	 */
 	void initFrame();
 	void advanceFrame();
 	void setOnStage(bool staged);
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
-	RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
+	RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
 	void finalize();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
@@ -106,7 +105,7 @@ public:
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
 	void setVariableByString(const std::string& s, ASObject* o);*/
-	static RootMovieClip* getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
+	static RootMovieClip* getInstance(_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
 	/*
 	 * The application domain for this clip
 	 */
@@ -148,7 +147,7 @@ public:
 enum BUILTIN_STRINGS { EMPTY=0, ANY, VOID, PROTOTYPE, LAST_BUILTIN_STRING };
 enum BUILTIN_NAMESPACES { EMPTY_NS=0 };
 
-class SystemState: public RootMovieClip, public ITickJob, public InvalidateQueue
+class SystemState: public ITickJob, public InvalidateQueue
 {
 private:
 	class EngineCreator: public IThreadJob
@@ -170,6 +169,7 @@ private:
 	EngineData* engineData;
 	Thread* mainThread;
 	void startRenderTicks();
+	Mutex rootMutex;
 	/**
 		Create the rendering and input engines
 
@@ -253,8 +253,7 @@ private:
 	boost::bimap<nsNameAndKindImpl, uint32_t> uniqueNamespaceMap;
 	//This needs to be atomic because it's decremented without the mutex held
 	ATOMIC_INT32(lastUsedNamespaceId);
-protected:
-	~SystemState();
+	void systemFinalize();
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 
@@ -293,7 +292,7 @@ public:
 	 * \param mode FLASH or AIR
 	 */
 	SystemState(uint32_t fileSize, FLASH_MODE mode) DLL_PUBLIC;
-	void finalize();
+	~SystemState();
 	/* Stop engines, threads and free classes and objects.
 	 * This call will decRef this object in the end,
 	 * thus destroy() may cause a 'delete this'.
@@ -309,6 +308,7 @@ public:
 	Boolean* getTrueRef() const;
 	Boolean* getFalseRef() const;
 
+	RootMovieClip* mainClip;
 	Stage* stage;
 	ABCVm* currentVm;
 
@@ -349,11 +349,6 @@ public:
 
 	void setRenderRate(float rate);
 	float getRenderRate();
-	/*
-	   This is not supposed to be used in the VM, it's only useful to create the Downloader when plugin is being used
-	   So don't create a smart reference
-	*/
-	LoaderInfo* getLoaderInfo() const { return loaderInfo.getPtr(); }
 
 	/*
 	 * The application domain for the system

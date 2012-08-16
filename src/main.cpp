@@ -265,13 +265,8 @@ int main(int argc, char* argv[])
 	SystemState::staticInit();
 	EngineData::startGTKMain();
 	//NOTE: see SystemState declaration
-#ifdef MEMORY_USAGE_PROFILING
-	MemoryAccount sysAccount("sysAccount");
-	SystemState* sys = new (&sysAccount) SystemState(fileSize, flashMode);
-#else
-	SystemState* sys = new ((MemoryAccount*)NULL) SystemState(fileSize, flashMode);
-#endif
-	ParseThread* pt = new ParseThread(f, sys);
+	SystemState* sys = new SystemState(fileSize, flashMode);
+	ParseThread* pt = new ParseThread(f, sys->mainClip);
 	setTLSSys(sys);
 	sys->setDownloadedPath(fileName);
 
@@ -279,8 +274,8 @@ int main(int argc, char* argv[])
 	//When the URL parameter is set, set the root URL to the given parameter
 	if(url)
 	{
-		sys->setOrigin(url, fileName);
-		sys->parseParametersFromURL(sys->getOrigin());
+		sys->mainClip->setOrigin(url, fileName);
+		sys->parseParametersFromURL(sys->mainClip->getOrigin());
 		sandboxType = SecurityManager::REMOTE;
 	}
 #ifndef _WIN32
@@ -291,12 +286,12 @@ int main(int argc, char* argv[])
 		string cwdStr = string("file://") + string(cwd);
 		free(cwd);
 		cwdStr += "/";
-		sys->setOrigin(cwdStr, fileName);
+		sys->mainClip->setOrigin(cwdStr, fileName);
 	}
 #endif
 	else
 	{
-		sys->setOrigin(string("file://") + fileName);
+		sys->mainClip->setOrigin(string("file://") + fileName);
 		LOG(LOG_INFO, _("Warning: running with no origin URL set."));
 	}
 
@@ -340,6 +335,7 @@ int main(int argc, char* argv[])
 	 * SystemState::setShutdownFlag.
 	 */
 	sys->destroy();
+	delete sys;
 	delete pt;
 
 	SystemState::staticDeinit();

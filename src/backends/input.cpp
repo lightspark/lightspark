@@ -159,7 +159,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
-		selected=m_sys->getStage()->hitTest(NullRef,x,y, type);
+		selected=m_sys->mainClip->getStage()->hitTest(NullRef,x,y, type);
 	}
 	catch(LightsparkException& e)
 	{

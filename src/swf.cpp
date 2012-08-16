@@ -71,14 +71,12 @@ ParseThread* lightspark::getParseThread()
 	return pt;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
+RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(c),
 	parsingIsFailed(false),frameRate(0),
 	toBind(false),finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
-	if(li)
-		li->incRef();
-	loaderInfo=_MNR(li);
+	loaderInfo=li;
 }
 
 RootMovieClip::~RootMovieClip()
@@ -135,7 +133,7 @@ void RootMovieClip::setOnStage(bool staged)
 	MovieClip::setOnStage(staged);
 }
 
-RootMovieClip* RootMovieClip::getInstance(LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
+RootMovieClip* RootMovieClip::getInstance(_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass();
 	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(li, appDomain, secDomain, movieClipClass);
@@ -172,7 +170,7 @@ static const char* builtinStrings[] = {"", "any", "void", "prototype" };
 extern uint32_t asClassCount;
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
-	RootMovieClip(NULL,NullRef,NullRef,NULL),terminated(0),renderRate(0),error(false),shutdown(false),
+	terminated(0),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -223,8 +221,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	falseRef=_MR(Class<Boolean>::getInstanceS(false));
 
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS());
-	applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(systemDomain));
-	securityDomain = _MR(Class<SecurityDomain>::getInstanceS());
+	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(systemDomain));
+	_NR<SecurityDomain> securityDomain = _MR(Class<SecurityDomain>::getInstanceS());
 
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
@@ -233,19 +231,18 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
 
-	loaderInfo=_MR(Class<LoaderInfo>::getInstanceS());
+	_NR<LoaderInfo> loaderInfo=_MR(Class<LoaderInfo>::getInstanceS());
 	loaderInfo->applicationDomain = applicationDomain;
 	//If the size is not known those will stay at zero
 	loaderInfo->setBytesLoaded(fileSize);
 	loaderInfo->setBytesTotal(fileSize);
+	mainClip=RootMovieClip::getInstance(loaderInfo, applicationDomain, securityDomain);
 	stage=Class<Stage>::getInstanceS();
-	this->incRef();
-	stage->_addChildAt(_MR(this),0);
+	mainClip->incRef();
+	stage->_addChildAt(_MR(mainClip),0);
 	//Get starting time
 	startTime=compat_msectiming();
 	
-	setClass(Class<MovieClip>::getClass());
-
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);
 }
@@ -397,7 +394,7 @@ void SystemState::parseParametersFromURL(const URLInfo& url)
 void SystemState::setParameters(_R<ASObject> p)
 {
 	parameters=p;
-	loaderInfo->parameters = p;
+	mainClip->loaderInfo->parameters = p;
 }
 
 _NR<ASObject> SystemState::getParameters() const
@@ -480,9 +477,8 @@ void SystemState::saveMemoryUsageInformation(ofstream& out, int snapshotCount) c
 }
 #endif
 
-void SystemState::finalize()
+void SystemState::systemFinalize()
 {
-	RootMovieClip::finalize();
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
 	parameters.reset();
@@ -492,6 +488,10 @@ void SystemState::finalize()
 	trueRef.reset();
 	falseRef.reset();
 	systemDomain.reset();
+
+	mainClip->decRef();
+	//Free the stage. This should free all objects on the displaylist
+	stage->decRef();
 }
 
 SystemState::~SystemState()
@@ -544,14 +544,7 @@ void SystemState::destroy()
 	delete extScriptObject;
 	delete intervalManager;
 	//Finalize ourselves
-	finalize();
-
-	//We are already being destroyed, make our classdef abandon us
-	setClass(NULL);
-	
-	//Free the stage. This should free all objects on the displaylist
-	stage->decRef();
-	stage = NULL;
+	systemFinalize();
 
 	/*
 	 * 1) call finalize on all objects, this will free all referenced objects and thereby
@@ -612,8 +605,6 @@ void SystemState::destroy()
 
 	for(auto it=profilingData.begin();it!=profilingData.end();it++)
 		delete *it;
-
-	this->decRef(); //free a reference we obtained by 'new SystemState'
 }
 
 bool SystemState::isOnError() const
@@ -695,8 +686,8 @@ void SystemState::delayedCreation()
 {
 	gdk_threads_enter();
 
-	int32_t reqWidth=getFrameSize().Xmax/20;
-	int32_t reqHeight=getFrameSize().Ymax/20;
+	int32_t reqWidth=mainClip->getFrameSize().Xmax/20;
+	int32_t reqHeight=mainClip->getFrameSize().Ymax/20;
 
 	engineData->showWindow(reqWidth, reqHeight);
 
@@ -826,8 +817,8 @@ void SystemState::launchGnash()
 	char bufHeight[32];
 	snprintf(bufXid,32,"%lu",(long unsigned)engineData->getWindowForGnash());
 	/* Use swf dimensions in standalone mode and window dimensions in plugin mode */
-	snprintf(bufWidth,32,"%u",standalone ? getFrameSize().Xmax/20 : engineData->width);
-	snprintf(bufHeight,32,"%u",standalone ? getFrameSize().Ymax/20 : engineData->height);
+	snprintf(bufWidth,32,"%u",standalone ? mainClip->getFrameSize().Xmax/20 : engineData->width);
+	snprintf(bufHeight,32,"%u",standalone ? mainClip->getFrameSize().Ymax/20 : engineData->height);
 	/* renderMode: 0: disable sound and rendering
 	 *             1: enable rendering and disable sound
 	 *             2: enable sound and disable rendering
@@ -850,7 +841,7 @@ void SystemState::launchGnash()
 		strdup("-k"), //Height
 		bufHeight,
 		strdup("-u"), //SWF url
-		strdup(origin.getParsedURL().raw_buf()),
+		strdup(mainClip->getOrigin().getParsedURL().raw_buf()),
 		strdup("-P"), //SWF parameters
 		strdup(params.c_str()),
 		strdup("--render-mode"),
@@ -1091,7 +1082,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		return;
 
 	Locker locker(mutex);
-	RECT size=getSys()->getFrameSize();
+	RECT size=getSys()->mainClip->getFrameSize();
 	int width=size.Xmax/20;
 	int height=size.Ymax/20;
 	
@@ -1291,7 +1282,9 @@ void ParseThread::parseSWF(UI8 ver)
 	RootMovieClip* root=NULL;
 	if(parsedObject.isNull())
 	{
-		LoaderInfo *li=loader?loader->getContentLoaderInfo().getPtr():NULL;
+		_NR<LoaderInfo> li;
+		if(loader)
+			li=loader->getContentLoaderInfo();
 		root=RootMovieClip::getInstance(li, applicationDomain, securityDomain);
 		parsedObject=_MNR(root);
 		if(!url.empty())
@@ -1323,7 +1316,7 @@ void ParseThread::parseSWF(UI8 ver)
 			return;
 		}
 		//Check if this clip is the main clip then honour its FileAttributesTag
-		if(root == getSys())
+		if(root == getSys()->mainClip)
 		{
 			getSys()->needsAVM2(fat->ActionScript3);
 			if(!fat->ActionScript3)
@@ -1527,7 +1520,7 @@ void RootMovieClip::commitFrame(bool another)
 	if(getFramesLoaded()==1 && frameRate!=0)
 	{
 		SystemState* sys = getSys();
-		if(this==sys)
+		if(this==sys->mainClip)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
 			sys->addTick(1000/frameRate,sys);
@@ -1676,7 +1669,7 @@ void SystemState::tick()
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
 	 * run their constructors (bottom-up)
 	 * and their frameScripts (Step 5) (bottom-up) */
-	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(getStage())));
+	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(mainClip->getStage())));
 
 	/* Step 4: dispatch frameConstructed events */
 	/* (TODO: should be run between step 3 and 5 */

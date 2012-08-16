@@ -58,7 +58,7 @@ void URLRequest::buildTraits(ASObject* o)
 
 URLInfo URLRequest::getRequestURL() const
 {
-	URLInfo ret=getSys()->getOrigin().goToURL(url);
+	URLInfo ret=getSys()->mainClip->getOrigin().goToURL(url);
 	if(method!=GET)
 		return ret;
 
@@ -1023,7 +1023,7 @@ ASFUNCTIONBODY(NetStream,play)
 		assert_and_throw(argslen>=1);
 		//args[0] is the url
 		//what is the meaning of the other arguments
-		th->url = getSys()->getOrigin().goToURL(args[0]->toString());
+		th->url = getSys()->mainClip->getOrigin().goToURL(args[0]->toString());
 
 		SecurityManager::EVALUATIONRESULT evaluationResult =
 			getSys()->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),

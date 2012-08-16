@@ -322,7 +322,7 @@ ASFUNCTIONBODY(Loader,_constructor)
 		p->incRef();
 		th->contentLoaderInfo->setVariableByQName("parameters","",p.getPtr(),DECLARED_TRAIT);
 	}
-	th->contentLoaderInfo->setLoaderURL(getSys()->getOrigin().getParsedURL());
+	th->contentLoaderInfo->setLoaderURL(getSys()->mainClip->getOrigin().getParsedURL());
 	return NULL;
 }
 
@@ -1898,7 +1898,7 @@ uint32_t Stage::internalGetWidth() const
 		width=getSys()->getRenderThread()->windowWidth;
 	else
 	{
-		RECT size=getSys()->getFrameSize();
+		RECT size=getSys()->mainClip->getFrameSize();
 		width=size.Xmax/20;
 	}
 	return width;
@@ -1911,7 +1911,7 @@ uint32_t Stage::internalGetHeight() const
 		height=getSys()->getRenderThread()->windowHeight;
 	else
 	{
-		RECT size=getSys()->getFrameSize();
+		RECT size=getSys()->mainClip->getFrameSize();
 		height=size.Ymax/20;
 	}
 	return height;
@@ -1931,7 +1931,7 @@ ASFUNCTIONBODY(Stage,_getStageHeight)
 
 ASFUNCTIONBODY(Stage,_getLoaderInfo)
 {
-	return SystemState::_getLoaderInfo(getSys(),NULL,0);
+	return RootMovieClip::_getLoaderInfo(getSys()->mainClip,NULL,0);
 }
 
 ASFUNCTIONBODY(Stage,_getScaleMode)

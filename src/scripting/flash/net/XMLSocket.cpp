@@ -222,7 +222,7 @@ void XMLSocket::connect(tiny_string host, int port)
 		throw Class<SecurityError>::getInstanceS("Invalid port");
 
 	if (host.empty())
-		host = getSys()->getOrigin().getHostname();
+		host = getSys()->mainClip->getOrigin().getHostname();
 
 	if (isConnected())
 		throw Class<IOError>::getInstanceS("Already connected");

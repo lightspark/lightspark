@@ -39,7 +39,7 @@ class ABCContext;
 class DictionaryTag;
 class InteractiveObject;
 class PlaceObject2Tag;
-class MovieClip;
+class DisplayObject;
 class Responder;
 
 class Event: public ASObject
@@ -420,9 +420,9 @@ class InitFrameEvent: public Event
 {
 friend class ABCVm;
 private:
-	_NR<MovieClip> clip;
+	_NR<DisplayObject> clip;
 public:
-	InitFrameEvent(_NR<MovieClip> m=NullRef) : Event(NULL, "InitFrameEvent"),clip(m) {}
+	InitFrameEvent(_NR<DisplayObject> m) : Event(NULL, "InitFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const { return INIT_FRAME; }
 };
 

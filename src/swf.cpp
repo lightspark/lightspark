@@ -1676,7 +1676,7 @@ void SystemState::tick()
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
 	 * run their constructors (bottom-up)
 	 * and their frameScripts (Step 5) (bottom-up) */
-	getSys()->currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent()));
+	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(getStage())));
 
 	/* Step 4: dispatch frameConstructed events */
 	/* (TODO: should be run between step 3 and 5 */

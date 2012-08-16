@@ -782,12 +782,12 @@ void PolicyFile::load()
 	
 	ignore = isIgnoredByMaster();
 
-	Mutex::Lock l(mutex);
-
 	//Download the policy file
 	vector<unsigned char> policy;
 	if (!isIgnored())
 		valid = retrievePolicyFile(policy);
+
+	Mutex::Lock l(mutex);
 
 	//We've checked the master file to see of we need to ignore this file. (not the case)
 	//Now let's parse this file.

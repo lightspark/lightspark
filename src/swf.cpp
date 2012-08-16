@@ -1654,7 +1654,7 @@ void SystemState::tick()
 		for(;it!=profilingData.end();++it)
 			(*it)->tick();
 	}
-	if(getSys()->currentVm==NULL)
+	if(currentVm==NULL)
 		return;
 	/* See http://www.senocular.com/flash/tutorials/orderofoperations/
 	 * for the description of steps.
@@ -1705,7 +1705,7 @@ void SystemState::tick()
 
 	/* Step 0: Set current frame number to the next frame */
 	_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
-	if(getSys()->currentVm->addEvent(NullRef, advFrame))
+	if(currentVm->addEvent(NullRef, advFrame))
 		advFrame->done.wait();
 }
 

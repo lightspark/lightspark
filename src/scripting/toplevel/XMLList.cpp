@@ -381,7 +381,21 @@ ASFUNCTIONBODY(XMLList,contains)
 _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
-		return ASObject::getVariableByMultiname(name,opt);
+	{
+		_NR<ASObject> res=ASObject::getVariableByMultiname(name,opt);
+
+		//If a method is not found on XMLList object and this
+		//is a single element list with simple content,
+		//delegate to ASString
+		if(res.isNull() && nodes.size()==1 && nodes[0]->hasSimpleContent())
+		{
+			ASString *contentstr=Class<ASString>::getInstanceS(nodes[0]->toString_priv());
+			res=contentstr->getVariableByMultiname(name, opt);
+			contentstr->decRef();
+		}
+
+		return res;
+	}
 
 	unsigned int index=0;
 	if(Array::isValidMultiname(name,index))

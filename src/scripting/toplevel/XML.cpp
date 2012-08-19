@@ -881,7 +881,20 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0)
-		return ASObject::getVariableByMultiname(name,opt);
+	{
+		_NR<ASObject> res=ASObject::getVariableByMultiname(name,opt);
+
+		//If a method is not found on XML object and the
+		//object is a leaf node, delegate to ASString
+		if(res.isNull() && hasSimpleContent())
+		{
+			ASString *contentstr=Class<ASString>::getInstanceS(toString_priv());
+			res=contentstr->getVariableByMultiname(name, opt);
+			contentstr->decRef();
+		}
+
+		return res;
+	}
 
 	if(node==NULL)
 	{

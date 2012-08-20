@@ -824,7 +824,7 @@ void DefineTextTag::computeCached() const
 		 * And, of course, scale by the TextHeight.
 		 */
 		int scaling = TextRecords[i].TextHeight * curFont->scaling;
-		for(int j=0;j<TextRecords[i].GlyphCount;++j)
+		for(uint32_t j=0;j<TextRecords[i].GlyphEntries.size();++j)
 		{
 			const GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
 			const std::vector<SHAPERECORD>& sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;

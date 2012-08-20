@@ -40,11 +40,11 @@ do {							\
 class Log
 {
 private:
-	LOG_LEVEL cur_level;
-	bool valid;
 	static const char* level_names[];
 	static LOG_LEVEL log_level DLL_PUBLIC;
 	std::stringstream message;
+	LOG_LEVEL cur_level;
+	bool valid;
 public:
 	static void print(const std::string& s);
 	Log(LOG_LEVEL l) DLL_PUBLIC;

@@ -56,9 +56,9 @@ typedef Mutex::Lock SpinlockLocker;
 class DLL_PUBLIC Semaphore
 {
 private:
-	uint32_t value;
 	Mutex mutex;
 	Cond cond;
+	uint32_t value;
 public:
 	Semaphore(uint32_t init);
 	~Semaphore();

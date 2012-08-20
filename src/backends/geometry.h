@@ -77,13 +77,13 @@ public:
 	FILLSTYLE  fillStyle;
 	LINESTYLE2 lineStyle;
 	MATRIX textureTransform;
-	GeomToken(GEOM_TOKEN_TYPE _t):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(-1),lineStyle(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),p2(0,0),p3(0,0),fillStyle(-1),lineStyle(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):type(_t),p1(_p1),p2(_p2),p3(0,0),fillStyle(-1),lineStyle(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):type(_t),p1(_p1),p2(_p2),p3(_p3),fillStyle(-1),lineStyle(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE  _f):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(_f),lineStyle(-1){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2 _s):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(-1),lineStyle(_s){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const MATRIX _m):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(-1),lineStyle(-1),textureTransform(_m){}
+	GeomToken(GEOM_TOKEN_TYPE _t):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(0xff),lineStyle(0xff){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),p2(0,0),p3(0,0),fillStyle(0xff),lineStyle(0xff){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):type(_t),p1(_p1),p2(_p2),p3(0,0),fillStyle(0xff),lineStyle(0xff){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):type(_t),p1(_p1),p2(_p2),p3(_p3),fillStyle(0xff),lineStyle(0xff){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE  _f):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(_f),lineStyle(0xff){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2 _s):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(0xff),lineStyle(_s){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const MATRIX _m):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(0xff),lineStyle(0xff),textureTransform(_m){}
 };
 
 typedef std::vector<GeomToken, reporter_allocator<GeomToken>> tokensVector;

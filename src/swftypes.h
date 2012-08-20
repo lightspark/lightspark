@@ -348,9 +348,6 @@ struct nsNameAndKind
 
 struct multiname: public memory_reporter
 {
-	multiname(MemoryAccount* m);
-	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
-	NAME_TYPE name_type;
 	union
 	{
 		uint32_t name_s_id;
@@ -359,7 +356,10 @@ struct multiname: public memory_reporter
 		ASObject* name_o;
 	};
 	std::vector<nsNameAndKind, reporter_allocator<nsNameAndKind>> ns;
+	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
+	NAME_TYPE name_type;
 	bool isAttribute;
+	multiname(MemoryAccount* m);
 	/*
 		Returns a string name whatever is the name type
 	*/
@@ -408,8 +408,8 @@ class RECORDHEADER
 {
 friend std::istream& operator>>(std::istream& s, RECORDHEADER& v);
 private:
-	UI16_SWF CodeAndLen;
 	UI32_SWF Length;
+	UI16_SWF CodeAndLen;
 public:
 	unsigned int getLength() const
 	{
@@ -699,10 +699,9 @@ public:
 class UB
 {
 	uint32_t buf;
-	int size;
 public:
-	UB():buf(0),size(0) {}
-	UB(int s,BitStream& stream):size(s)
+	UB():buf(0) {}
+	UB(int s,BitStream& stream)
 	{
 /*		if(s%8)
 			buf=new uint8_t[s/8+1];
@@ -728,10 +727,9 @@ public:
 class SB
 {
 	int32_t buf;
-	int size;
 public:
-	SB():buf(0),size(0) {}
-	SB(int s,BitStream& stream):size(s)
+	SB():buf(0) {}
+	SB(int s,BitStream& stream)
 	{
 		if(s>32)
 			LOG(LOG_ERROR,_("Signed bit field wider than 32 bit not supported"));
@@ -833,10 +831,10 @@ class GRADRECORD
 {
 	friend std::istream& operator>>(std::istream& s, GRADRECORD& v);
 public:
-	GRADRECORD(int v):version(v){}
-	int version;
-	UI8 Ratio;
+	GRADRECORD(uint8_t v):version(v){}
 	RGBA Color;
+	uint8_t version;
+	UI8 Ratio;
 	bool operator<(const GRADRECORD& g) const
 	{
 		return Ratio<g.Ratio;
@@ -847,12 +845,11 @@ class GRADIENT
 {
 	friend std::istream& operator>>(std::istream& s, GRADIENT& v);
 public:
-	GRADIENT(int v):version(v),SpreadMode(0),InterpolationMode(0),NumGradient(0) {}
-	int version;
+	GRADIENT(uint8_t v):SpreadMode(0),InterpolationMode(0),version(v) {}
 	int SpreadMode;
 	int InterpolationMode;
-	int NumGradient;
 	std::vector<GRADRECORD> GradientRecords;
+	uint8_t version;
 };
 
 class FOCALGRADIENT
@@ -876,51 +873,48 @@ enum FILL_STYLE_TYPE { SOLID_FILL=0x00, LINEAR_GRADIENT=0x10, RADIAL_GRADIENT=0x
 class FILLSTYLE
 {
 public:
-	FILLSTYLE(int v);
+	FILLSTYLE(uint8_t v);
 	FILLSTYLE(const FILLSTYLE& r);
 	virtual ~FILLSTYLE();
-	int version;
-	FILL_STYLE_TYPE FillStyleType;
-	RGBA Color;
 	MATRIX Matrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
 	BitmapContainer bitmap;
+	RGBA Color;
+	FILL_STYLE_TYPE FillStyleType;
+	uint8_t version;
 };
 
 class MORPHFILLSTYLE:public FILLSTYLE
 {
 public:
 	MORPHFILLSTYLE():FILLSTYLE(1){}
-	RGBA StartColor;
-	RGBA EndColor;
 	MATRIX StartGradientMatrix;
 	MATRIX EndGradientMatrix;
 	MATRIX StartBitmapMatrix;
 	MATRIX EndBitmapMatrix;
-	UI8 NumGradients;
 	std::vector<UI8> StartRatios;
 	std::vector<UI8> EndRatios;
 	std::vector<RGBA> StartColors;
 	std::vector<RGBA> EndColors;
+	RGBA StartColor;
+	RGBA EndColor;
 	~MORPHFILLSTYLE(){}
 };
 
 class LINESTYLE
 {
 public:
-	LINESTYLE(int v):version(v){}
-	int version;
-	UI16_SWF Width;
+	LINESTYLE(uint8_t v):version(v){}
 	RGBA Color;
+	UI16_SWF Width;
+	uint8_t version;
 };
 
 class LINESTYLE2
 {
 public:
-	LINESTYLE2(int v):version(v),FillType(v){}
-	int version;
-	UI16_SWF Width;
+	LINESTYLE2(uint8_t v):FillType(v),version(v){}
 	UB StartCapStyle;
 	UB JointStyle;
 	UB HasFillFlag;
@@ -929,9 +923,11 @@ public:
 	UB PixelHintingFlag;
 	UB NoClose;
 	UB EndCapStyle;
+	UI16_SWF Width;
 	UI16_SWF MiterLimitFactor;
 	RGBA Color;
 	FILLSTYLE FillType;
+	uint8_t version;
 };
 
 class MORPHLINESTYLE
@@ -947,6 +943,7 @@ class MORPHLINESTYLE2: public MORPHLINESTYLE
 {
 public:
 	UB StartCapStyle;
+	MORPHFILLSTYLE FillType;
 	UB JoinStyle;
 	UB HasFillFlag;
 	UB NoHScaleFlag;
@@ -955,44 +952,39 @@ public:
 	UB NoClose;
 	UB EndCapStyle;
 	UI16_SWF MiterLimitFactor;
-	MORPHFILLSTYLE FillType;
 };
 
 class LINESTYLEARRAY
 {
 public:
-	LINESTYLEARRAY(int v):version(v){}
-	int version;
+	LINESTYLEARRAY(uint8_t v):version(v){}
 	void appendStyles(const LINESTYLEARRAY& r);
-	UI8 LineStyleCount;
 	std::list<LINESTYLE> LineStyles;
 	std::list<LINESTYLE2> LineStyles2;
+	uint8_t version;
 };
 
 class MORPHLINESTYLEARRAY
 {
 public:
-	MORPHLINESTYLEARRAY(int v):version(v){}
-	const int version;
-	UI8 LineStyleCount;
+	MORPHLINESTYLEARRAY(uint8_t v):version(v){}
 	std::list<MORPHLINESTYLE> LineStyles;
 	std::list<MORPHLINESTYLE2> LineStyles2;
+	const uint8_t version;
 };
 
 class FILLSTYLEARRAY
 {
 public:
-	FILLSTYLEARRAY(int v):version(v){}
-	int version;
+	FILLSTYLEARRAY(uint8_t v):version(v){}
 	void appendStyles(const FILLSTYLEARRAY& r);
-	UI8 FillStyleCount;
 	std::list<FILLSTYLE> FillStyles;
+	uint8_t version;
 };
 
 class MORPHFILLSTYLEARRAY
 {
 public:
-	UI8 FillStyleCount;
 	std::list<MORPHFILLSTYLE> FillStyles;
 };
 
@@ -1003,12 +995,6 @@ class SHAPERECORD
 {
 public:
 	SHAPE* parent;
-	bool TypeFlag;
-	bool StateNewStyles;
-	bool StateLineStyle;
-	bool StateFillStyle1;
-	bool StateFillStyle0;
-	bool StateMoveTo;
 
 	uint32_t MoveBits;
 	int32_t MoveDeltaX;
@@ -1019,10 +1005,7 @@ public:
 	unsigned int LineStyle;
 
 	//Edge record
-	bool StraightFlag;
 	uint32_t NumBits;
-	bool GeneralLineFlag;
-	bool VertLineFlag;
 	int32_t DeltaX;
 	int32_t DeltaY;
 
@@ -1031,6 +1014,15 @@ public:
 	int32_t AnchorDeltaX;
 	int32_t AnchorDeltaY;
 
+	bool TypeFlag;
+	bool StateNewStyles;
+	bool StateLineStyle;
+	bool StateFillStyle1;
+	bool StateFillStyle0;
+	bool StateMoveTo;
+	bool StraightFlag;
+	bool GeneralLineFlag;
+	bool VertLineFlag;
 	SHAPERECORD(SHAPE* p,BitStream& bs);
 };
 
@@ -1050,20 +1042,19 @@ class DefineTextTag;
 class TEXTRECORD
 {
 public:
+	std::vector <GLYPHENTRY> GlyphEntries;
+	DefineTextTag* parent;
 	UB TextRecordType;
 	UB StyleFlagsReserved;
 	UB StyleFlagsHasFont;
 	UB StyleFlagsHasColor;
 	UB StyleFlagsHasYOffset;
 	UB StyleFlagsHasXOffset;
-	UI16_SWF FontID;
 	RGBA TextColor;
 	SI16_SWF XOffset;
 	SI16_SWF YOffset;
 	UI16_SWF TextHeight;
-	UI8 GlyphCount;
-	std::vector <GLYPHENTRY> GlyphEntries;
-	DefineTextTag* parent;
+	UI16_SWF FontID;
 	TEXTRECORD(DefineTextTag* p):parent(p){}
 };
 
@@ -1085,10 +1076,10 @@ class SHAPEWITHSTYLE : public SHAPE
 {
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
-	SHAPEWITHSTYLE(int v):version(v),FillStyles(v),LineStyles(v){}
-	const int version;
+	SHAPEWITHSTYLE(uint8_t v):FillStyles(v),LineStyles(v),version(v){}
 	FILLSTYLEARRAY FillStyles;
 	LINESTYLEARRAY LineStyles;
+	const uint8_t version;
 };
 
 class CXFORMWITHALPHA
@@ -1120,11 +1111,11 @@ public:
     FIXED BlurY;
     FIXED Angle;
     FIXED Distance;
+    UB Passes;
     FIXED8 Strength;
     bool InnerShadow;
     bool Knockout;
     bool CompositeSource;
-    UB Passes;
 };
 
 class BLURFILTER
@@ -1141,11 +1132,11 @@ public:
     RGBA GlowColor;
     FIXED BlurX;
     FIXED BlurY;
+    UB Passes;
     FIXED8 Strength;
     bool InnerGlow;
     bool Knockout;
     bool CompositeSource;
-    UB Passes;
 };
 
 class BEVELFILTER
@@ -1157,40 +1148,39 @@ public:
     FIXED BlurY;
     FIXED Angle;
     FIXED Distance;
+    UB Passes;
     FIXED8 Strength;
     bool InnerShadow;
     bool Knockout;
     bool CompositeSource;
     bool OnTop;
-    UB Passes;
 };
 
 class GRADIENTGLOWFILTER
 {
 public:
-    UI8 NumColors;
     std::vector<RGBA> GradientColors;
     std::vector<UI8> GradientRatio;
     FIXED BlurX;
     FIXED BlurY;
     FIXED Angle;
     FIXED Distance;
+    UB Passes;
     FIXED8 Strength;
     bool InnerGlow;
     bool Knockout;
     bool CompositeSource;
-    UB Passes;
 };
 
 class CONVOLUTIONFILTER
 {
 public:
-    UI8 MatrixX;
-    UI8 MatrixY;
     FLOAT Divisor;
     FLOAT Bias;
     std::vector<FLOAT> Matrix;
     RGBA DefaultColor;
+    UI8 MatrixX;
+    UI8 MatrixY;
     bool Clamp;
     bool PreserveAlpha;
 };
@@ -1204,25 +1194,23 @@ public:
 class GRADIENTBEVELFILTER
 {
 public:
-    UI8 NumColors;
     std::vector<RGBA> GradientColors;
     std::vector<UI8> GradientRatio;
     FIXED BlurX;
     FIXED BlurY;
     FIXED Angle;
     FIXED Distance;
+    UB Passes;
     FIXED8 Strength;
     bool InnerShadow;
     bool Knockout;
     bool CompositeSource;
     bool OnTop;
-    UB Passes;
 };
 
 class FILTER
 {
 public:
-	UI8 FilterID;
 	DROPSHADOWFILTER DropShadowFilter;
 	BLURFILTER BlurFilter;
 	GLOWFILTER GlowFilter;
@@ -1236,7 +1224,6 @@ public:
 class FILTERLIST
 {
 public:
-	UI8 NumberOfFilters;
 	std::vector<FILTER> Filters;
 };
 
@@ -1252,11 +1239,11 @@ public:
 	UB ButtonStateDown;
 	UB ButtonStateOver;
 	UB ButtonStateUp;
+	MATRIX PlaceMatrix;
+	FILTERLIST FilterList;
+	CXFORMWITHALPHA	ColorTransform;
 	UI16_SWF CharacterID;
 	UI16_SWF PlaceDepth;
-	MATRIX PlaceMatrix;
-	CXFORMWITHALPHA	ColorTransform;
-	FILTERLIST FilterList;
 	UI8 BlendMode;
 
 	bool isNull() const
@@ -1283,9 +1270,8 @@ public:
 class CLIPACTIONS
 {
 public:
-	UI16_SWF Reserved;
-	CLIPEVENTFLAGS AllEventFlags;
 	std::vector<CLIPACTIONRECORD> ClipActionRecords;
+	CLIPEVENTFLAGS AllEventFlags;
 };
 
 class RunState

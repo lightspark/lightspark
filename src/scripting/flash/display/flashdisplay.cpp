@@ -2421,7 +2421,7 @@ ASFUNCTIONBODY(Graphics,lineStyle)
 
 	// TODO: pixel hinting, scaling, caps, miter, joints
 	
-	LINESTYLE2 style(-1);
+	LINESTYLE2 style(0xff);
 	style.Color = RGBA(color, alpha);
 	style.Width = thickness;
 	th->owner->tokens.emplace_back(GeomToken(SET_STROKE, style));
@@ -2434,7 +2434,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	assert_and_throw(argslen>=4);
 	th->checkAndSetScaling();
 
-	FILLSTYLE style(-1);
+	FILLSTYLE style(0xff);
 
 	assert_and_throw(args[1]->getObjectType()==T_ARRAY);
 	Array* colors=Class<Array>::cast(args[1]);
@@ -2465,11 +2465,10 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		return NULL;
 
 	// Don't support FOCALGRADIENT for now.
-	GRADIENT grad(-1);
-	grad.NumGradient = NumGradient;
+	GRADIENT grad(0xff);
 	for(int i = 0; i < NumGradient; i ++)
 	{
-		GRADRECORD record(-1);
+		GRADRECORD record(0xff);
 		record.Color = RGBA(colors->at(i)->toUInt(), (int)alphas->at(i)->toNumber()*255);
 		record.Ratio = UI8(ratios->at(i)->toUInt());
 		grad.GradientRecords.push_back(record);
@@ -2523,7 +2522,7 @@ ASFUNCTIONBODY(Graphics,beginBitmapFill)
 		return NULL;
 
 	th->checkAndSetScaling();
-	FILLSTYLE style(-1);
+	FILLSTYLE style(0xff);
 	if(repeat && smooth)
 		style.FillStyleType = REPEATING_BITMAP;
 	else if(repeat && !smooth)
@@ -2551,7 +2550,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 		color=args[0]->toUInt();
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
-	FILLSTYLE style(-1);
+	FILLSTYLE style(0xff);
 	style.FillStyleType = SOLID_FILL;
 	style.Color         = RGBA(color, alpha);
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
@@ -2713,7 +2712,7 @@ void Bitmap::updatedData()
 	if(bitmapData.isNull())
 		return;
 
-	FILLSTYLE style(-1);
+	FILLSTYLE style(0xff);
 	style.FillStyleType=CLIPPED_BITMAP;
 	style.bitmap=*static_cast<BitmapContainer*>(bitmapData.getPtr());
 	tokens.emplace_back(GeomToken(SET_FILL, style));

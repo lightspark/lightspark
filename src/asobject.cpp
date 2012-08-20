@@ -1083,8 +1083,8 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject(MemoryAccount* m):type(T_OBJECT),Variables(m),ref_count(1),
-	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
+ASObject::ASObject(MemoryAccount* m):Variables(m),manager(NULL),classdef(NULL),
+	ref_count(1),type(T_OBJECT),constructed(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1092,8 +1092,8 @@ ASObject::ASObject(MemoryAccount* m):type(T_OBJECT),Variables(m),ref_count(1),
 #endif
 }
 
-ASObject::ASObject(Class_base* c):type(T_OBJECT),Variables((c)?c->memoryAccount:NULL),ref_count(1),
-	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
+ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),manager(NULL),classdef(NULL),
+	ref_count(1),type(T_OBJECT),constructed(false),implEnable(true)
 {
 	setClass(c);
 #ifndef NDEBUG
@@ -1102,8 +1102,8 @@ ASObject::ASObject(Class_base* c):type(T_OBJECT),Variables((c)?c->memoryAccount:
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):type(o.type),Variables((o.classdef)?o.classdef->memoryAccount:NULL),ref_count(1),
-	manager(NULL),classdef(NULL),constructed(false),implEnable(true)
+ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),manager(NULL),classdef(NULL),
+	ref_count(1),type(o.type),constructed(false),implEnable(true)
 {
 	if(o.classdef)
 		setClass(o.classdef);

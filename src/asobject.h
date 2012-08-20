@@ -269,6 +269,13 @@ friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
 friend void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 friend class IFunction; //Needed for clone
+private:
+	variables_map Variables;
+	Manager* manager;
+	Class_base* classdef;
+	ATOMIC_INT32(ref_count);
+	const variable* findGettable(const multiname& name) const DLL_LOCAL;
+	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 protected:
 	ASObject(MemoryAccount* m);
 	ASObject(const ASObject& o);
@@ -281,14 +288,6 @@ protected:
 	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
 	static const variable* findGettableImpl(const variables_map& map, const multiname& name);
 private:
-	//maps variable name to namespace and var
-	variables_map Variables;
-	const variable* findGettable(const multiname& name) const DLL_LOCAL;
-	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
-
-	ATOMIC_INT32(ref_count);
-	Manager* manager;
-	Class_base* classdef;
 	ACQUIRE_RELEASE_FLAG(constructed);
 public:
 	ASObject(Class_base* c);

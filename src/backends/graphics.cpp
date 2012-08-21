@@ -396,15 +396,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<Geom
 	cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
 	cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 
-#ifdef _MSC_VER
-	#define PATH(operation, ...) \
-		operation(cr, __VA_ARGS__); \
-		operation(stroke_cr, __VA_ARGS__);
-#else
 	#define PATH(operation, args...) \
 		operation(cr, ## args); \
 		operation(stroke_cr, ## args);
-#endif
 
 	for(uint32_t i=0;i<tokens.size();i++)
 	{

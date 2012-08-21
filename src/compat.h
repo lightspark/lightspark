@@ -97,40 +97,27 @@ _CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MAL
 	void aligned_free(void *mem);
 #endif
 
-#ifdef _MSC_VER
-// WINTODO: Hopefully, the MSVC instrinsics are similar enough
-//          to what the standard mandates
-#	define ATOMIC_INT32(x) __declspec(align(4)) volatile long x
-#	define ATOMIC_INCREMENT(x) InterlockedIncrement(&x)
-#	define ATOMIC_DECREMENT(x) InterlockedDecrement(&x)
-#	define ATOMIC_ADD(x, v) (InterlockedExchangeAdd(&x, v)+v)
-#	define ATOMIC_SUB(x, v) (InterlockedExchangeAdd(&x, -v)-v)
-#	define ACQUIRE_RELEASE_FLAG(x) ATOMIC_INT32(x)
-#	define ACQUIRE_READ(x) InterlockedCompareExchange(const_cast<long*>(&x),1,1)
-#	define RELEASE_WRITE(x, v) InterlockedExchange(&x,v)
-#else //GCC
 #ifndef _WIN32
 #	define CALLBACK
 #endif
 
 //Support both atomic header ( gcc >= 4.6 ), and earlier ( stdatomic.h )
-#	ifdef HAVE_ATOMIC
-#		include <atomic>
-#	else
-#		include <cstdatomic>
-#	endif
+#ifdef HAVE_ATOMIC
+#	include <atomic>
+#else
+#	include <cstdatomic>
+#endif
 
-#	define ATOMIC_INT32(x) std::atomic<int32_t> x
-#	define ATOMIC_INCREMENT(x) (x.fetch_add(1)+1)
-#	define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
-#	define ATOMIC_ADD(x, v) (x.fetch_add(v)+v)
-#	define ATOMIC_SUB(x, v) (x.fetch_sub(v)-v)
+#define ATOMIC_INT32(x) std::atomic<int32_t> x
+#define ATOMIC_INCREMENT(x) (x.fetch_add(1)+1)
+#define ATOMIC_DECREMENT(x) (x.fetch_sub(1)-1)
+#define ATOMIC_ADD(x, v) (x.fetch_add(v)+v)
+#define ATOMIC_SUB(x, v) (x.fetch_sub(v)-v)
 
 //Boolean type with acquire release barrier semantics
-#	define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
-#	define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
-#	define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
-#endif
+#define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
+#define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
+#define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
 
 
 /* DLL_LOCAL / DLL_PUBLIC */

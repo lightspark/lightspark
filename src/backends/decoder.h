@@ -198,14 +198,8 @@ protected:
 	class FrameSamples
 	{
 	public:
-#ifdef _MSC_VER
-		// WINTODO: a macro doesn't seem to work
-		__declspec(align(16))
-#endif
-			int16_t samples[MAX_AUDIO_FRAME_SIZE/2];
-#ifndef _MSC_VER
+		int16_t samples[MAX_AUDIO_FRAME_SIZE/2];
 		__attribute__ ((aligned (16)))
-#endif
 		int16_t* current;
 		uint32_t len;
 		uint32_t time;

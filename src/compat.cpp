@@ -40,19 +40,6 @@
 
 using namespace std;
 
-#ifdef _MSC_VER
-int round(double f)
-{
-    return ( f < 0.0 ) ? (int) ( f - 0.5 ) : (int) ( f + 0.5 );
-}
-
-long lrint(double f)
-{
-	return (floor(f+(f>0) ? 0.5 : -0.5));
-}
-
-#endif
-
 uint64_t compat_msectiming()
 {
 #ifdef _WIN32

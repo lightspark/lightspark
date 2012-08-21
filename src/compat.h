@@ -36,6 +36,12 @@
 #ifndef M_PI
 #	define M_PI 3.14159265358979323846
 #endif
+
+#ifdef _WIN32
+	//For ssize_t on win32
+	#include <sys/types.h>
+#endif
+
 // TODO: This should be reworked to use CMake feature detection where possible
 
 /* gettext support */
@@ -47,20 +53,8 @@
 #include <glib.h>
 #include <cstdlib>
 
-#ifdef _WIN32
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <io.h>
-#undef DOUBLE_CLICK
-#undef RGB
-#undef VOID
-#ifndef PATH_MAX
-#define PATH_MAX 260
-#endif
-#ifdef __GNUC__
+
+#if defined(__GNUC__) && defined(_WIN32)
 /* There is a bug in mingw preventing those from being declared */
 extern "C" {
 _CRTIMP int __cdecl __MINGW_NOTHROW	_stricmp (const char*, const char*);
@@ -70,7 +64,6 @@ _CRTIMP void * __cdecl __MINGW_NOTHROW _aligned_malloc (size_t, size_t);
 _CRTIMP void __cdecl __MINGW_NOTHROW _aligned_free (void*);
 _CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MALLOC;
 }
-#endif
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #define strdup _strdup
@@ -270,9 +263,11 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 }
 #endif // __BYTE_ORDER == __BIG_ENDIAN
 
+/* spawning */
 #ifdef _WIN32
 /* returns the path of the current executable */
 const char* getExectuablePath();
+typedef void* HANDLE;
 HANDLE compat_spawn(char** args, int* stdinfd);
 #endif
 

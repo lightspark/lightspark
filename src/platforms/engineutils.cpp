@@ -20,6 +20,14 @@
 
 #include "platforms/engineutils.h"
 
+#ifdef _WIN32
+#	include <gdk/gdkwin32.h>
+#else
+#	include <sys/resource.h>
+#	include <gdk/gdkx.h>
+#endif
+
+
 using namespace std;
 using namespace lightspark;
 
@@ -65,4 +73,29 @@ void EngineData::quitGTKMain()
 	gdk_threads_leave();
 	gtkThread->join();
 	gtkThread = NULL;
+}
+
+/* This function must be called from the gtk main thread
+	 * and within gdk_threads_enter/leave */
+void EngineData::showWindow(uint32_t w, uint32_t h)
+{
+	RecMutex::Lock l(mutex);
+
+	assert(!widget);
+	widget = createGtkWidget();
+	/* create a window handle */
+	gtk_widget_realize(widget);
+#if _WIN32
+	window = (HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget));
+#else
+	window = GDK_WINDOW_XID(gtk_widget_get_window(widget));
+#endif
+	if(isSizable())
+	{
+		gtk_widget_set_size_request(widget, w, h);
+		width = w;
+		height = h;
+	}
+	gtk_widget_show(widget);
+	gtk_widget_map(widget);
 }

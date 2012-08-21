@@ -24,6 +24,20 @@
 #include "logger.h"
 #include <unistd.h>
 
+#ifdef _WIN32
+#	ifndef NOMINMAX
+#		define NOMINMAX
+#	endif
+#	define WIN32_LEAN_AND_MEAN
+#	include <windows.h>
+#	undef DOUBLE_CLICK
+#	undef RGB
+#	undef VOID
+#	ifndef PATH_MAX
+#		define PATH_MAX 260
+#	endif
+#endif
+
 using namespace std;
 
 #ifdef _MSC_VER

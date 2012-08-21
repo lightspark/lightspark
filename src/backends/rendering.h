@@ -25,6 +25,10 @@
 #include "timer.h"
 #include <glibmm/timeval.h>
 
+#ifdef _WIN32
+#	include <windef.h>
+#endif
+
 namespace lightspark
 {
 

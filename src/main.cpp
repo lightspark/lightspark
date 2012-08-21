@@ -24,6 +24,7 @@
 #include "platforms/engineutils.h"
 #ifndef _WIN32
 #	include <sys/resource.h>
+#	include <gdk/gdkx.h>
 #endif
 #include "compat.h"
 

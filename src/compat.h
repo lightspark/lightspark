@@ -69,23 +69,6 @@ _CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MAL
 #define strdup _strdup
 #endif
 
-#ifdef _MSC_VER
-#undef exception_info // Let's hope MS functions always use _exception_info
-/* those are C++11 but not available in Visual Studio 2010 */
-namespace std
-{
-	inline double copysign(double x, double y) { return _copysign(x, y); }
-	inline bool isnan(double d) { return (bool)_isnan(d); }
-	inline int signbit(double arg) { return (int)copysign(1,arg); }
-	inline bool isfinite(double d) { return (bool)_finite(d); }
-	inline bool isinf(double d) { return !isfinite(d) && !isnan(d); }
-}
-
-// Emulate these functions
-int round(double f);
-long lrint(double f);
-#endif
-
 #ifdef __GNUC__
 #	ifndef __STDC_LIMIT_MACROS
 #		define __STDC_LIMIT_MACROS

@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 
 	sys->mainClip->setOrigin(string("file://") + fileNames[0]);
 
-#ifndef WIN32
+#ifndef _WIN32
 	struct rlimit rl;
 	getrlimit(RLIMIT_AS,&rl);
 	rl.rlim_cur=1500000000;

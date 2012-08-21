@@ -75,7 +75,7 @@ int kill_child(GPid childPid)
 	return 0;
 }
 
-#ifndef WIN32
+#ifndef _WIN32
 #include "timer.h"
 uint64_t timespecToUsecs(timespec t)
 {

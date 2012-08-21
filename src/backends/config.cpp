@@ -36,7 +36,7 @@ Config* Config::getConfig()
 
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 const std::string LS_REG_KEY = "SOFTWARE\\MozillaPlugins\\@lightspark.github.com/Lightspark;version=1";
 std::string readRegistryEntry(std::string name)
 {

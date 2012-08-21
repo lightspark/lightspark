@@ -595,10 +595,9 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 #ifndef NDEBUG
 	ret->initialized=false;
 #endif
-	if (sf->isConstructed())
+	if (sf->mi->body)
 	{
 		LOG(LOG_CALLS,_("Building method traits"));
-		assert(sf->mi->body);
 		for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
 			th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 	}

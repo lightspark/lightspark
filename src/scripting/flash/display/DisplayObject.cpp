@@ -123,7 +123,7 @@ void DisplayObject::hitTestEpilogue() const
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),useLegacyMatrix(true),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),maskOf(),parent(),mask(),onStage(false),
+	sx(1),sy(1),alpha(1.0),maskOf(),parent(),constructed(false),mask(),onStage(false),
 	visible(true),invalidateQueueNext(),loaderInfo()
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
@@ -948,9 +948,12 @@ void DisplayObject::initFrame()
 
 void DisplayObject::constructionComplete()
 {
+	RELEASE_WRITE(constructed,true);
 	if(!loaderInfo.isNull())
 	{
 		this->incRef();
 		loaderInfo->objectHasLoaded(_MR(this));
 	}
+	if(onStage)
+		requestInvalidation(getSys());
 }

@@ -1084,7 +1084,7 @@ void variables_map::destroyContents()
 }
 
 ASObject::ASObject(MemoryAccount* m):Variables(m),manager(NULL),classdef(NULL),
-	ref_count(1),type(T_OBJECT),constructed(false),implEnable(true)
+	ref_count(1),type(T_OBJECT),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1093,7 +1093,7 @@ ASObject::ASObject(MemoryAccount* m):Variables(m),manager(NULL),classdef(NULL),
 }
 
 ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),manager(NULL),classdef(NULL),
-	ref_count(1),type(T_OBJECT),constructed(false),implEnable(true)
+	ref_count(1),type(T_OBJECT),implEnable(true)
 {
 	setClass(c);
 #ifndef NDEBUG
@@ -1103,7 +1103,7 @@ ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),manager(N
 }
 
 ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),manager(NULL),classdef(NULL),
-	ref_count(1),type(o.type),constructed(false),implEnable(true)
+	ref_count(1),type(o.type),implEnable(true)
 {
 	if(o.classdef)
 		setClass(o.classdef);

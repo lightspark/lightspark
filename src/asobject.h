@@ -287,8 +287,6 @@ protected:
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
 	static const variable* findGettableImpl(const variables_map& map, const multiname& name);
-private:
-	ACQUIRE_RELEASE_FLAG(constructed);
 public:
 	ASObject(Class_base* c);
 #ifndef NDEBUG
@@ -298,7 +296,6 @@ public:
 #endif
 	bool implEnable;
 	Class_base* getClass() const { return classdef; }
-	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(hasOwnProperty);

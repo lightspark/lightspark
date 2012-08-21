@@ -70,6 +70,7 @@ private:
 	 * Also used by Transform
 	 */
 	void setMatrix(const MATRIX& m);
+	ACQUIRE_RELEASE_FLAG(constructed);
 protected:
 	~DisplayObject();
 	/**
@@ -128,6 +129,7 @@ public:
 	void finalize();
 	MATRIX getMatrix() const;
 	_NR<LoaderInfo> loaderInfo;
+	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 	/**
 	 * Generate a new IDrawable instance for this object
 	 * @param target The topmost object in the hierarchy that is being drawn. Such object

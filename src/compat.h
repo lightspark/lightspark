@@ -121,7 +121,7 @@ _CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MAL
 
 
 /* DLL_LOCAL / DLL_PUBLIC */
-/* When building on win32, DLL_PUBLIC is set top __declspec(dllexport)
+/* When building on win32, DLL_PUBLIC is set to __declspec(dllexport)
  * during build of the audio plugins.
  * The browser plugin uses its own definitions from npapi.
  * And the liblightspark.dll is linked directly (without need for dllexport)
@@ -157,8 +157,6 @@ inline T maxTmpl(T a, T b)
 uint64_t compat_msectiming();
 void compat_msleep(unsigned int time);
 uint64_t compat_get_thread_cputime_us();
-
-int kill_child(GPid p);
 
 /* byte order */
 #if G_BYTE_ORDER == G_BIG_ENDIAN
@@ -240,5 +238,7 @@ const char* getExectuablePath();
 typedef void* HANDLE;
 HANDLE compat_spawn(char** args, int* stdinfd);
 #endif
+
+int kill_child(GPid p);
 
 #endif /* COMPAT_H */

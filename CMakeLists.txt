@@ -257,6 +257,9 @@ ENDIF(XMLPP_FOUND AND NOT(XMLPP_VERSION VERSION_LESS 2.35.1))
 find_package(Boost COMPONENTS filesystem system REQUIRED)
 if(Boost_FOUND)
   INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+  #Without BOOST_MULTI_INDEX_DISABLE_SERIALIZATION, it will indirectly include
+  #windows.h and pollute our namespace
+  ADD_DEFINITIONS(-DBOOST_MULTI_INDEX_DISABLE_SERIALIZATION)
 ENDIF(Boost_FOUND) 
 
 pkg_check_modules(CAIRO REQUIRED cairo pangocairo)

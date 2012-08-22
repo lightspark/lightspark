@@ -1305,9 +1305,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 	{
 		th->local_name="";
 		th->uri_is_null=false;
-		th->uri="";
-		// Should set th->uri to the default namespace
-		LOG(LOG_NOT_IMPLEMENTED, "QName constructor not completely implemented");
+		th->uri=getVm()->getDefaultXMLNamespace();
 		return NULL;
 	}
 	if(argslen==1)
@@ -1349,9 +1347,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 		}
 		else
 		{
-			// Should set th->uri to the default namespace
-			LOG(LOG_NOT_IMPLEMENTED, "QName constructor not completely implemented");
-			th->uri="";
+			th->uri=getVm()->getDefaultXMLNamespace();
 		}
 	}
 	else if(namespaceval->getObjectType()==T_NULL)

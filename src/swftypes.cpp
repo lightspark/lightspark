@@ -35,7 +35,7 @@
 using namespace std;
 using namespace lightspark;
 
-multiname::multiname(MemoryAccount* m):name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT)
+multiname::multiname(MemoryAccount* m):name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false)
 {
 }
 

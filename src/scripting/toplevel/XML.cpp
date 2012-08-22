@@ -1001,6 +1001,12 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 		ns_prefix=getNamespacePrefixByURI(ns_uri);
 	}
 
+	// namespace set by "default xml namespace = ..."
+	if (ns_uri.empty() && ns_prefix.empty())
+	{
+		ns_uri = getVm()->getDefaultXMLNamespace();
+	}
+
 	const char *buf=normalizedName.raw_buf();
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
 	{
@@ -1057,6 +1063,12 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 		assert_and_throw(ns.kind==NAMESPACE);
 		ns_uri=ns.name;
 		ns_prefix=getNamespacePrefixByURI(ns_uri);
+	}
+
+	// namespace set by "default xml namespace = ..."
+	if (ns_uri.empty() && ns_prefix.empty())
+	{
+		ns_uri = getVm()->getDefaultXMLNamespace();
 	}
 
 	bool isAttr=name.isAttribute;

@@ -55,7 +55,10 @@ class XMLBase
 protected:
 	//The parser will destroy the document and all the childs on destruction
 	LSDomParser parser;
-	xmlpp::Node* buildFromString(const std::string& str);
+	xmlpp::Node* buildFromString(const std::string& str,
+				     const std::string& default_ns=std::string());
+	void addDefaultNamespace(xmlpp::Element *root, const std::string& default_ns);
+	void addDefaultNamespaceRecursive(xmlNodePtr node, xmlNsPtr ns);
 	// Set the root to be a copy of src. If src is a text node,
 	// create a new element node with the same content.
 	xmlpp::Node* buildCopy(const xmlpp::Node* node);

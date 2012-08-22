@@ -73,7 +73,7 @@ void RecoveryDomParser::parse_memory_raw(const unsigned char* contents, size_typ
 }
 #endif
 
-xmlpp::Node* XMLBase::buildFromString(const string& str)
+xmlpp::Node* XMLBase::buildFromString(const string& str, const string& default_ns)
 {
 	string buf = parserQuirks(str);
 	try
@@ -85,14 +85,49 @@ xmlpp::Node* XMLBase::buildFromString(const string& str)
 	}
 	xmlpp::Document* doc=parser.get_document();
 	if(doc && doc->get_root_node())
-		return doc->get_root_node();
+	{
+		xmlpp::Element *root = doc->get_root_node();
+		addDefaultNamespace(root, default_ns);
+		return root;
+	}
 
 	LOG(LOG_ERROR, "XML parsing failed, creating text node");
 	//If everything fails, create a fake document and add a single text string child
-	buf="<a></a>";
+	if (default_ns.empty())
+		buf="<a></a>";
+	else
+		buf="<a xmlns=\"" + default_ns + "\"></a>";
 	parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
+
 	return parser.get_document()->get_root_node()->add_child_text(str);
 	// TODO: node's parent (root) should be inaccessible from AS code
+}
+
+void XMLBase::addDefaultNamespace(xmlpp::Element *root, const string& default_ns)
+{
+	if(default_ns.empty() || !root->get_namespace_uri().empty())
+		return;
+
+	xmlNodePtr node = root->cobj();
+	xmlNsPtr ns = xmlNewNs(node, BAD_CAST default_ns.c_str(), NULL);
+	addDefaultNamespaceRecursive(node, ns);
+}
+
+void XMLBase::addDefaultNamespaceRecursive(xmlNodePtr node, xmlNsPtr ns)
+{
+	//Set the default namespace to nodes by descending until we
+	//encounter another namespace.
+	if ((node->type != XML_ELEMENT_NODE) || (node->ns != NULL))
+		return;
+
+	xmlSetNs(node, ns);
+
+	xmlNodePtr child=node->children;
+	while(child)
+	{
+		addDefaultNamespaceRecursive(child, ns);
+		child = child->next;
+	}
 }
 
 xmlpp::Node* XMLBase::buildCopy(const xmlpp::Node* src)

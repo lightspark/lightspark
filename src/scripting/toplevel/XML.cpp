@@ -23,6 +23,7 @@
 #include "scripting/class.h"
 #include "compat.h"
 #include "scripting/argconv.h"
+#include "abc.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include <libxml++/nodes/textnode.h>
@@ -149,7 +150,8 @@ ASFUNCTIONBODY(XML,_constructor)
 		ByteArray* ba=Class<ByteArray>::cast(args[0]);
 		uint32_t len=ba->getLength();
 		const uint8_t* str=ba->getBuffer(len, false);
-		th->node=th->buildFromString(std::string((const char*)str,len));
+		th->node=th->buildFromString(std::string((const char*)str,len),
+					     getVm()->getDefaultXMLNamespace());
 	}
 	else if(args[0]->is<ASString>() ||
 		args[0]->is<Number>() ||
@@ -159,7 +161,8 @@ ASFUNCTIONBODY(XML,_constructor)
 	{
 		//By specs, XML constructor will only convert to string Numbers or Booleans
 		//ints are not explicitly mentioned, but they seem to work
-		th->node=th->buildFromString(args[0]->toString());
+		th->node=th->buildFromString(args[0]->toString(),
+					     getVm()->getDefaultXMLNamespace());
 	}
 	else if(args[0]->is<XML>())
 	{
@@ -173,7 +176,8 @@ ASFUNCTIONBODY(XML,_constructor)
 	}
 	else
 	{
-		th->node=th->buildFromString(args[0]->toString());
+		th->node=th->buildFromString(args[0]->toString(),
+					     getVm()->getDefaultXMLNamespace());
 	}
 	return NULL;
 }
@@ -329,7 +333,7 @@ XML::XMLVector XML::getAttributes(const tiny_string& name,
 	for(xmlAttr* attr=xmlN->properties; attr!=NULL; attr=attr->next)
 	{
 		if((name=="*" || name==attr->name) &&
-			(namespace_uri=="*" || (namespace_uri=="" && attr->ns==NULL) || namespace_uri==attr->ns->href))
+		   (namespace_uri=="*" || (namespace_uri=="" && attr->ns==NULL) || (attr->ns && namespace_uri==attr->ns->href)))
 		{
 			//NOTE: libxmlpp headers says that Node::create_wrapper
 			//is supposed to be internal API. Still it's very useful and
@@ -918,6 +922,10 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		namespace_uri=ns.name;
 	}
 
+	// namespace set by "default xml namespace = ..."
+	if(namespace_uri.empty())
+		namespace_uri=getVm()->getDefaultXMLNamespace();
+
 	const char *buf=normalizedName.raw_buf();
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
 	{
@@ -951,11 +959,14 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 		//Use low level libxml2 access for speed
 		const xmlNode* xmlN = node->cobj();
 		XMLVector ret;
-
 		for(xmlNode* child=xmlN->children; child!=NULL; child=child->next)
 		{
-			if((normalizedName=="*" || normalizedName==child->name) &&
-				(namespace_uri=="*" || (namespace_uri=="" && child->ns==NULL) || namespace_uri==child->ns->href))
+			bool nameMatches = (normalizedName=="" || normalizedName==child->name);
+			bool nsMatches = (namespace_uri=="*" || 
+					  (namespace_uri=="" && child->ns==NULL) || 
+					  (child->ns && namespace_uri==child->ns->href));
+
+			if(nameMatches && nsMatches)
 			{
 				//NOTE: libxmlpp headers says that Node::create_wrapper
 				//is supposed to be internal API. Still it's very useful and

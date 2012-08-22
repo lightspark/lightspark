@@ -489,6 +489,7 @@ public:
 
 	uint32_t getAndIncreaseNamespaceBase(uint32_t nsNum);
 
+	tiny_string getDefaultXMLNamespace();
 };
 
 class DoABCTag: public ControlTag

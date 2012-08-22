@@ -1677,6 +1677,11 @@ uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)
 	return ATOMIC_ADD(nextNamespaceBase,nsNum)-nsNum;
 }
 
+tiny_string ABCVm::getDefaultXMLNamespace()
+{
+	return currentCallContext->defaultNamespaceUri;
+}
+
 const tiny_string& ABCContext::getString(unsigned int s) const
 {
 	return constant_pool.strings[s];

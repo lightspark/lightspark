@@ -26,11 +26,18 @@
 #include "flash/errors/flasherrors.h"
 #include "backends/security.h"
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#ifdef _WIN32
+#	define _WIN32_WINNT 0x0501
+#	include <winsock2.h>
+#	include <ws2tcpip.h>
+#	include <fcntl.h>
+#else
+#	include <sys/socket.h>
+#	include <netdb.h>
+#	include <sys/select.h>
+#endif
 #include <string.h>
 #include <unistd.h>
-#include <sys/select.h>
 #include <errno.h>
 
 const char SOCKET_COMMAND_SEND = '*';
@@ -39,10 +46,23 @@ const char SOCKET_COMMAND_CLOSE = '-';
 using namespace std;
 using namespace lightspark;
 
+SocketIO::SocketIO() : fd(-1)
+{
+#ifdef _WIN32
+	//TODO: move WSAStartup/WSACleanup to some more global place
+	WSADATA wsdata;
+	if(WSAStartup(MAKEWORD(2, 2), &wsdata))
+		LOG(LOG_ERROR,"WSAStartup failed");
+#endif
+}
+
 SocketIO::~SocketIO()
 {
 	if (fd != -1)
 		::close(fd);
+#ifdef _WIN32
+	WSACleanup();
+#endif
 }
 
 bool SocketIO::connect(const tiny_string& hostname, int port)
@@ -316,6 +336,17 @@ XMLSocketThread::XMLSocketThread(_R<XMLSocket> _owner, const tiny_string& _hostn
 {
 	sendQueue = g_async_queue_new();
 
+#ifdef _WIN32
+	HANDLE readPipe, writePipe;
+	if (!CreatePipe(&readPipe,&writePipe,NULL,0))
+	{
+		signalListener = -1;
+		signalEmitter = -1;
+		return;
+	}
+	signalListener = _open_osfhandle((intptr_t)readPipe, _O_RDONLY);
+	signalEmitter = _open_osfhandle((intptr_t)writePipe, _O_WRONLY);
+#else
 	int pipefd[2];
 	if (pipe(pipefd) == -1)
 	{
@@ -323,9 +354,9 @@ XMLSocketThread::XMLSocketThread(_R<XMLSocket> _owner, const tiny_string& _hostn
 		signalEmitter = -1;
 		return;
 	}
-
 	signalListener = pipefd[0];
 	signalEmitter = pipefd[1];
+#endif
 }
 
 XMLSocketThread::~XMLSocketThread()

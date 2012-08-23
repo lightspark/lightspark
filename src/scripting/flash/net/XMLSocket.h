@@ -34,7 +34,7 @@ class SocketIO
 private:
 	int fd;
 public:
-	SocketIO() : fd(-1) {};
+	SocketIO();
 	~SocketIO();
 
 	bool connect(const tiny_string& hostname, int port);

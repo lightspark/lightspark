@@ -18,12 +18,13 @@
 **************************************************************************/
 
 #include <glib.h>
-
-#include "compat.h"
 #include <string>
 #include <boost/filesystem.hpp>
 
 #include "backends/config.h"
+#include "compat.h"
+#include "logger.h"
+#include "exceptions.h"
 
 using namespace lightspark;
 using namespace std;
@@ -37,6 +38,9 @@ Config* Config::getConfig()
 }
 
 #ifdef _WIN32
+#	define WIN32_LEAN_AND_MEAN
+#	include <windows.h>
+
 const std::string LS_REG_KEY = "SOFTWARE\\MozillaPlugins\\@lightspark.github.com/Lightspark;version=1";
 std::string readRegistryEntry(std::string name)
 {

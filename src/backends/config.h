@@ -21,8 +21,6 @@
 #define BACKENDS_CONFIG_H 1
 
 #include "parsing/config.h"
-#include "compat.h"
-#include "swftypes.h"
 
 namespace lightspark
 {
@@ -30,7 +28,7 @@ namespace lightspark
 	{
 	private:
 		ConfigParser* parser;
-		
+
 		void handleEntry();
 
 		//-- CONFIGURATION FILENAME AND SEARCH DIRECTORIES

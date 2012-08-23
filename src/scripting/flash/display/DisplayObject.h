@@ -118,11 +118,9 @@ protected:
 	void constructionComplete();
 public:
 	tiny_string name;
-	UI16_SWF CharacterId;
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	CXFORMWITHALPHA ColorTransform;
-	CLIPACTIONS ClipActions;
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
 	void setParent(_NR<DisplayObjectContainer> p);
 	/*

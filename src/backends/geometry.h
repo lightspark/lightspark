@@ -70,20 +70,21 @@ enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, 
 class GeomToken
 {
 public:
+	FILLSTYLE  fillStyle;
+	LINESTYLE2 lineStyle;
+	MATRIX textureTransform;
 	GEOM_TOKEN_TYPE type;
 	Vector2 p1;
 	Vector2 p2;
 	Vector2 p3;
-	FILLSTYLE  fillStyle;
-	LINESTYLE2 lineStyle;
-	MATRIX textureTransform;
-	GeomToken(GEOM_TOKEN_TYPE _t):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(0xff),lineStyle(0xff){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),p2(0,0),p3(0,0),fillStyle(0xff),lineStyle(0xff){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):type(_t),p1(_p1),p2(_p2),p3(0,0),fillStyle(0xff),lineStyle(0xff){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):type(_t),p1(_p1),p2(_p2),p3(_p3),fillStyle(0xff),lineStyle(0xff){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE  _f):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(_f),lineStyle(0xff){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2 _s):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(0xff),lineStyle(_s){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const MATRIX _m):type(_t),p1(0,0),p2(0,0),p3(0,0),fillStyle(0xff),lineStyle(0xff),textureTransform(_m){}
+	GeomToken(GEOM_TOKEN_TYPE _t):fillStyle(0xff),lineStyle(0xff),type(_t),p1(0,0),p2(0,0),p3(0,0){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):fillStyle(0xff),lineStyle(0xff),type(_t),p1(_p),p2(0,0),p3(0,0){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):fillStyle(0xff),lineStyle(0xff),type(_t),p1(_p1),p2(_p2),p3(0,0){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):fillStyle(0xff),lineStyle(0xff),type(_t),
+			p1(_p1),p2(_p2),p3(_p3){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE  _f):fillStyle(_f),lineStyle(0xff),type(_t),p1(0,0),p2(0,0),p3(0,0){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2 _s):fillStyle(0xff),lineStyle(_s),type(_t),p1(0,0),p2(0,0),p3(0,0){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const MATRIX _m):fillStyle(0xff),lineStyle(0xff),textureTransform(_m),type(_t),p1(0,0),p2(0,0),p3(0,0){}
 };
 
 typedef std::vector<GeomToken, reporter_allocator<GeomToken>> tokensVector;

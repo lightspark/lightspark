@@ -133,15 +133,15 @@ private:
 	//Counting semaphores for the queue
 	Semaphore freeBuffers;
 	Semaphore usedBuffers;
-	bool empty;
 	uint32_t bufferHead;
 	uint32_t bufferTail;
+	bool empty;
 public:
-	BlockingCircularQueue():freeBuffers(size),usedBuffers(0),empty(true),bufferHead(0),bufferTail(0)
+	BlockingCircularQueue():freeBuffers(size),usedBuffers(0),bufferHead(0),bufferTail(0),empty(true)
 	{
 	}
 	template<class GENERATOR>
-	BlockingCircularQueue(const GENERATOR& g):freeBuffers(size),usedBuffers(0),empty(true),bufferHead(0),bufferTail(0)
+	BlockingCircularQueue(const GENERATOR& g):freeBuffers(size),usedBuffers(0),bufferHead(0),bufferTail(0),empty(true)
 	{
 		for(uint32_t i=0;i<size;i++)
 			g.init(queue[i]);

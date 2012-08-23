@@ -27,13 +27,13 @@ namespace lightspark
 
 class ASError: public ASObject
 {
+private:
+	ASPROPERTY_GETTER(int32_t, errorID);
+	ASPROPERTY_GETTER_SETTER(tiny_string, name);
 protected:
 	ASPROPERTY_GETTER_SETTER(tiny_string, message);
 	void setErrorID(int32_t id) { errorID=id; }
 	static void errorGenerator(ASError *obj, ASObject* const* args, const unsigned int argslen);
-private:
-	ASPROPERTY_GETTER(int32_t, errorID);
-	ASPROPERTY_GETTER_SETTER(tiny_string, name);
 public:
 	ASError(Class_base* c, const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error");
 	ASFUNCTION(_constructor);

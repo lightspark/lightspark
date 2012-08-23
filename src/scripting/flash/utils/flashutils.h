@@ -64,12 +64,12 @@ class ByteArray: public ASObject, public IDataInput, public IDataOutput
 friend class LoaderThread;
 friend class URLLoader;
 protected:
+	bool littleEndian;
+	uint8_t objectEncoding;
+	uint32_t position;
 	uint8_t* bytes;
 	uint32_t real_len;
 	uint32_t len;
-	uint32_t position;
-	bool littleEndian;
-	uint32_t objectEncoding;
 	void compress_zlib();
 	void uncompress_zlib();
 public:
@@ -173,12 +173,12 @@ private:
 	void tick();
 	void tickFence();
 protected:
+	bool running;
 	uint32_t delay;
 	uint32_t repeatCount;
 	uint32_t currentCount;
-	bool running;
 public:
-	Timer(Class_base* c):EventDispatcher(c),delay(0),repeatCount(0),currentCount(0),running(false){};
+	Timer(Class_base* c):EventDispatcher(c),running(false),delay(0),repeatCount(0),currentCount(0){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getCurrentCount);
@@ -275,8 +275,8 @@ private:
 	uint32_t id;
 	_R<IFunction> callback;
 	ASObject** args;
-	const unsigned int argslen;
 	_R<ASObject> obj;
+	const unsigned int argslen;
 	uint32_t interval;
 public:
 	IntervalRunner(INTERVALTYPE _type, uint32_t _id, _R<IFunction> _callback, ASObject** _args,

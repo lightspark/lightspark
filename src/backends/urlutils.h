@@ -39,20 +39,20 @@ private:
 	tiny_string parsedURL; //The URL normalized and space encoded
 	tiny_string protocol; //Part after
 	tiny_string hostname; //Part after :// after protocol
-	uint16_t port; //Part after first : after hostname
 	tiny_string path; //Part after first / after hostname
 	tiny_string pathDirectory;
 	tiny_string pathFile;
 	tiny_string query; //Part after first ?
 	tiny_string fragment; //Part after first #
 	tiny_string stream; //The requested stream, used for RTMP protocols
-	bool valid;
 public:
 	enum INVALID_REASON { IS_EMPTY, MISSING_PROTOCOL, MISSING_PATH, MISSING_HOSTNAME, INVALID_PORT };
 private:
 	INVALID_REASON invalidReason;
+	uint16_t port; //Part after first : after hostname
+	bool valid;
 public:
-	URLInfo():valid(false),invalidReason(IS_EMPTY) {};
+	URLInfo():invalidReason(IS_EMPTY),valid(false) {};
 	URLInfo(const tiny_string& u);
 	~URLInfo() {};
 	bool isValid() const { return valid; }

@@ -122,9 +122,9 @@ void DisplayObject::hitTestEpilogue() const
 		getSys()->getInputThread()->popMask();
 }
 
-DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),useLegacyMatrix(true),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),maskOf(),parent(),constructed(false),mask(),onStage(false),
-	visible(true),invalidateQueueNext(),loaderInfo()
+DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotation(0),
+	sx(1),sy(1),alpha(1.0),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo()
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }

@@ -99,14 +99,14 @@ protected:
 	Mutex mutex;
 	//Signals the cache opening
 	Semaphore cacheOpened;
-	//True if cache has opened
-	bool cacheHasOpened;
 	//Signals new bytes available for reading
 	Semaphore dataAvailable;
 	//Signals termination of the download
 	Semaphore terminated;
 	//True if the download is terminated
 	bool hasTerminated;
+	//True if cache has opened
+	bool cacheHasOpened;
 
 	//-- STATUS
 	//True if the downloader is waiting for the cache to be opened
@@ -144,9 +144,12 @@ protected:
 	//Synchronize stableBuffer and buffer
 	void syncBuffers();
 
+	//-- PROGRESS MONITORING
+	ILoadable* owner;
+	void notifyOwnerAboutBytesTotal() const;
+	void notifyOwnerAboutBytesLoaded() const;
+
 	//-- CACHING
-	//True if the file is cached to disk (default = false)
-	bool cached;	
 	//Cache filename
 	tiny_string cacheFilename;
 	//Cache fstream
@@ -158,24 +161,16 @@ protected:
 	//Maximum size of the cache buffer
 	static const size_t cacheMaxSize = 8192;
 	//True if the cache file doesn't need to be deleted on destruction
-	bool keepCache;
+	bool keepCache:1;
+	//True if the file is cached to disk (default = false)
+	bool cached:1;
 	//Creates & opens a temporary cache file
 	void openCache();
 	//Opens an existing cache file
 	void openExistingCache(tiny_string filename);
 
-	//-- DOWNLOADED DATA
-	//File length (can change in certain cases, resulting in reallocation of the buffer (non-cached))
-	uint32_t length;
-	//Amount of data already received
-	uint32_t receivedLength;
-	//Append data to the internal buffer
-	void append(uint8_t* buffer, uint32_t length);
-	//Set the length of the downloaded file, can be called multiple times to accomodate a growing file
-	void setLength(uint32_t _length);
-
 	//-- HTTP REDIRECTION, STATUS & HEADERS
-	bool redirected;
+	bool redirected:1;
 	void setRedirected(const tiny_string& newURL)
 	{
 		redirected = true;
@@ -189,10 +184,15 @@ protected:
 	const std::list<tiny_string> requestHeaders;
 	const std::vector<uint8_t> data;
 
-	//-- PROGRESS MONITORING
-	ILoadable* owner;
-	void notifyOwnerAboutBytesTotal() const;
-	void notifyOwnerAboutBytesLoaded() const;
+	//-- DOWNLOADED DATA
+	//File length (can change in certain cases, resulting in reallocation of the buffer (non-cached))
+	uint32_t length;
+	//Amount of data already received
+	uint32_t receivedLength;
+	//Append data to the internal buffer
+	void append(uint8_t* buffer, uint32_t length);
+	//Set the length of the downloaded file, can be called multiple times to accomodate a growing file
+	void setLength(uint32_t _length);
 public:
 	//This class can only get destroyed by DownloadManager derivate classes
 	virtual ~Downloader();

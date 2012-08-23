@@ -105,7 +105,7 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):
-	curBuffer(0),curBufferOffset(0),codecContext(NULL),ownedContext(true)
+	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0)
 {
 	//The tag is the header, initialize decoding
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -170,7 +170,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint):
-	curBuffer(0),curBufferOffset(0),codecContext(_c),ownedContext(false)
+	ownedContext(false),curBuffer(0),codecContext(_c),curBufferOffset(0)
 {
 	status=INIT;
 	//The tag is the header, initialize decoding
@@ -648,7 +648,7 @@ StreamDecoder::~StreamDecoder()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):stream(s),formatCtx(NULL),audioFound(false),videoFound(false),avioContext(NULL)
+FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):audioFound(false),videoFound(false),stream(s),formatCtx(NULL),avioContext(NULL)
 {
 	valid=false;
 #ifdef HAVE_AVIO_ALLOC_CONTEXT

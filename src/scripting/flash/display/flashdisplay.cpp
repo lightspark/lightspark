@@ -46,15 +46,17 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 	return s;
 }
 
-LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true),
-	contentType("application/x-shockwave-flash"),applicationDomain(NullRef),securityDomain(NullRef)
+LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
+	contentType("application/x-shockwave-flash"),
+	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
+	loader(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true)
 {
 }
 
-LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true),
-	contentType("application/x-shockwave-flash"),applicationDomain(NullRef),securityDomain(NullRef)
+LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
+	contentType("application/x-shockwave-flash"),
+	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
+	loader(l),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true)
 {
 }
 
@@ -490,7 +492,7 @@ void Loader::finalize()
 	contentLoaderInfo.reset();
 }
 
-Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),job(NULL),loaded(false),contentLoaderInfo(NullRef)
+Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),job(NULL),contentLoaderInfo(NullRef),loaded(false)
 {
 	incRef();
 	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(this)));
@@ -862,7 +864,7 @@ FrameContainer::FrameContainer():framesLoaded(0)
 	scenes.resize(1);
 }
 
-FrameContainer::FrameContainer(const FrameContainer& f):framesLoaded((int)f.framesLoaded),frames(f.frames),scenes(f.scenes)
+FrameContainer::FrameContainer(const FrameContainer& f):frames(f.frames),scenes(f.scenes),framesLoaded((int)f.framesLoaded)
 {
 }
 

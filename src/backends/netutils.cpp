@@ -232,15 +232,15 @@ Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, cons
  * \param[in] _cached Whether or not to cache this download.
  */
 Downloader::Downloader(const tiny_string& _url, bool _cached, ILoadable* o):
-	cacheOpened(0),cacheHasOpened(false),dataAvailable(0),terminated(0),hasTerminated(false), //LOCKING
+	cacheOpened(0),dataAvailable(0),terminated(0),hasTerminated(false),cacheHasOpened(false), //LOCKING
 	waitingForCache(false),waitingForData(false),waitingForTermination(false), //STATUS
 	forceStop(true),failed(false),finished(false),                //FLAGS
 	url(_url),originalURL(url),                                   //PROPERTIES
 	buffer(NULL),stableBuffer(NULL),                              //BUFFERING
-	cached(_cached),cachePos(0),cacheSize(0),keepCache(false),    //CACHING
-	length(0),receivedLength(0),                                  //DOWNLOADED DATA
+	owner(o),                                                     //PROGRESS
+	cachePos(0),cacheSize(0),keepCache(false),cached(_cached),    //CACHING
 	redirected(false),requestStatus(0),                           //HTTP REDIR, STATUS & HEADERS
-	owner(o)                                                   //PROGRESS
+	length(0),receivedLength(0)                                   //DOWNLOADED DATA
 {
 	setg(NULL,NULL,NULL);
 }
@@ -253,15 +253,15 @@ Downloader::Downloader(const tiny_string& _url, bool _cached, ILoadable* o):
  * \param[in] data Additional data to send to the host
  */
 Downloader::Downloader(const tiny_string& _url, const std::vector<uint8_t>& _data, const std::list<tiny_string>& h, ILoadable* o):
-	cacheOpened(0),cacheHasOpened(false),dataAvailable(0),terminated(0),hasTerminated(false), //LOCKING
+	cacheOpened(0),dataAvailable(0),terminated(0),hasTerminated(false),cacheHasOpened(false), //LOCKING
 	waitingForCache(false),waitingForData(false),waitingForTermination(false), //STATUS
-	forceStop(true),failed(false),finished(false),                //FLAGS
-	url(_url),originalURL(url),                                   //PROPERTIES
-	buffer(NULL),stableBuffer(NULL),                              //BUFFERING
-	cached(false),cachePos(0),cacheSize(0),keepCache(false),      //CACHING
-	length(0),receivedLength(0),                                  //DOWNLOADED DATA
+	forceStop(true),failed(false),finished(false),                   //FLAGS
+	url(_url),originalURL(url),                                      //PROPERTIES
+	buffer(NULL),stableBuffer(NULL),                                 //BUFFERING
+	owner(o),                                                        //PROGRESS
+	cachePos(0),cacheSize(0),keepCache(false),cached(false),         //CACHING
 	redirected(false),requestStatus(0),requestHeaders(h),data(_data),//HTTP REDIR, STATUS & HEADERS
-	owner(o)                                                   //PROGRESS
+	length(0),receivedLength(0)                                      //DOWNLOADED DATA
 {
 	setg(NULL,NULL,NULL);
 }

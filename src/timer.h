@@ -55,21 +55,21 @@ private:
 	class TimingEvent
 	{
 	public:
-		TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime)
-			: isTick(_isTick),job(_job),wakeUpTime(_isTick ? _tickTime : _waitTime), tickTime(_tickTime) {};
-		bool isTick;
+		TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime) 
+			: job(_job),wakeUpTime(_isTick ? _tickTime : _waitTime),tickTime(_tickTime),isTick(_isTick) {};
 		ITickJob* job;
 		CondTime wakeUpTime;
 		uint32_t tickTime;
+		bool isTick;
 	};
 	Mutex mutex;
 	Cond newEvent;
 	Thread* t;
 	std::list<TimingEvent*> pendingEvents;
 	SystemState* m_sys;
+	volatile ITickJob* inExecution;
 	volatile bool stopped;
 	bool joined;
-	volatile ITickJob* inExecution;
 	void worker();
 	void insertNewEvent(TimingEvent* e);
 	void insertNewEvent_nolock(TimingEvent* e);

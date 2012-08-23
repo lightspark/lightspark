@@ -35,9 +35,9 @@ public:
 	virtual const std::string get_backendName();
 	virtual ~IPlugin();
 protected:
-	PLUGIN_TYPES pluginType;	//type of plugin of PLUGIN_TYPES
 	std::string pluginName;		//name of the plugin
 	std::string backendName;		//backend supported by the plugin
+	PLUGIN_TYPES pluginType;	//type of plugin of PLUGIN_TYPES
 	IPlugin ( PLUGIN_TYPES plugin_type, std::string plugin_name, std::string backend_name );
 };
 

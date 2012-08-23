@@ -863,10 +863,10 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 
 ASFUNCTIONBODY_GETTER_SETTER(NetConnection, client);
 
-NetStream::NetStream(Class_base* c):EventDispatcher(c),frameRate(0),tickStarted(false),connection(),downloader(NULL),
-	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),
-	closed(true),client(NullRef),checkPolicyFile(false),rawAccessAllowed(false),
-	oldVolume(-1.0)
+NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused(false),closed(true),
+	streamTime(0),frameRate(0),connection(),downloader(NULL),videoDecoder(NULL),
+	audioDecoder(NULL),audioStream(NULL),
+	client(NullRef),oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false)
 {
 	soundTransform = _MNR(Class<SoundTransform>::getInstanceS());
 }

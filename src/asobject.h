@@ -291,10 +291,10 @@ public:
 	ASObject(Class_base* c);
 #ifndef NDEBUG
 	//Stuff only used in debugging
-	bool initialized;
+	bool initialized:1;
 	int getRefCount(){ return ref_count; }
 #endif
-	bool implEnable;
+	bool implEnable:1;
 	Class_base* getClass() const { return classdef; }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);

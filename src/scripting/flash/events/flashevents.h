@@ -44,11 +44,6 @@ class Responder;
 
 class Event: public ASObject
 {
-private:
-	/*
-	 * To be implemented by each derived class to allow redispatching
-	 */
-	virtual Event* cloneImpl() const;
 public:
 	Event(Class_base* cb, const tiny_string& t = "Event", bool b=false, bool c=false);
 	void finalize();
@@ -61,15 +56,20 @@ public:
 	ASFUNCTION(formatToString);
 	ASFUNCTION(clone);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
-	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
-	//and the handling is serialized
-	ASPROPERTY_GETTER(tiny_string,type);
-	ASPROPERTY_GETTER(_NR<ASObject>,target);
-	ASPROPERTY_GETTER(_NR<ASObject>,currentTarget);
 	ASPROPERTY_GETTER(bool,bubbles);
 	ASPROPERTY_GETTER(bool,cancelable);
-	ASPROPERTY_GETTER(uint32_t,eventPhase);
 	bool defaultPrevented;
+	ASPROPERTY_GETTER(uint32_t,eventPhase);
+	ASPROPERTY_GETTER(tiny_string,type);
+	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
+	//and the handling is serialized
+	ASPROPERTY_GETTER(_NR<ASObject>,target);
+	ASPROPERTY_GETTER(_NR<ASObject>,currentTarget);
+private:
+	/*
+	 * To be implemented by each derived class to allow redispatching
+	 */
+	virtual Event* cloneImpl() const;
 };
 
 /* Base class for all events that the one can wait on */
@@ -389,10 +389,10 @@ friend class ABCVm;
 private:
 	_R<IFunction> f;
 	ASObject* const* args;
-	unsigned int numArgs;
 	ASObject** result;
 	bool* thrown;
 	tiny_string* exception;
+	unsigned int numArgs;
 public:
 	ExternalCallEvent(_R<IFunction> _f, ASObject* const* _args, uint32_t _numArgs,
 			  ASObject** _result, bool* _thrown, tiny_string* _exception);

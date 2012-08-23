@@ -54,7 +54,6 @@ struct call_context
 	uint32_t locals_size;
 	uint32_t max_stack;
 	std::vector<scope_entry> scope_stack;
-	int initialScopeStack;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used
 	 * by {construct,call,get,set}Super
@@ -64,6 +63,7 @@ struct call_context
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
 	tiny_string defaultNamespaceUri;
+	int initialScopeStack;
 	~call_context();
 	void runtime_stack_clear();
 	void runtime_stack_push(ASObject* s)

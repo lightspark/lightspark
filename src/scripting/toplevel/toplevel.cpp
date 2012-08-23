@@ -117,7 +117,7 @@ void Undefined::setVariableByMultiname(const multiname& name, ASObject* o, CONST
 	o->decRef();
 }
 
-IFunction::IFunction(Class_base* c):ASObject(c),inClass(NULL),length(0)
+IFunction::IFunction(Class_base* c):ASObject(c),length(0),inClass(NULL)
 {
 	type=T_FUNCTION;
 }
@@ -694,16 +694,16 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 	return typeObject->as<Type>();
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass()),use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass()),protected_ns("",NAMESPACE),constructor(NULL),
 	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(m)),borrowedVariables(m),
-	isFinal(false),isSealed(false),length(1),context(NULL),class_name(name),class_index(-1),memoryAccount(m)
+	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),use_protected(false)
 {
 	type=T_CLASS;
 }
 
-Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),
+Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns("",NAMESPACE),constructor(NULL),
 	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(NULL)),borrowedVariables(NULL),
-	isFinal(false),isSealed(false),length(1),context(NULL),class_name("Class",""),class_index(-1),memoryAccount(NULL)
+	context(NULL),class_name("Class",""),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),use_protected(false)
 {
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
@@ -1824,7 +1824,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 }
 
 
-Global::Global(Class_base* cb, ABCContext* c, int s):ASObject(cb),context(c),scriptId(s)
+Global::Global(Class_base* cb, ABCContext* c, int s):ASObject(cb),scriptId(s),context(c)
 {
 }
 

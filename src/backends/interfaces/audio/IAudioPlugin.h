@@ -49,16 +49,16 @@ Abstract class for audio plugin implementation
 class IAudioPlugin : public IPlugin
 {
 protected:
+	bool stopped;
+	bool muteAllStreams;
+	volatile bool contextReady;
+	volatile bool noServer;
 	std::string playbackDeviceName;
 	std::string captureDeviceName;
 	std::vector<std::string *> playbackDevicesList;
 	std::vector<std::string *> captureDevicesList;
 	std::list<AudioStream *> streams;
 	typedef std::list<AudioStream *>::iterator stream_iterator;
-	volatile bool contextReady;
-	volatile bool noServer;
-	bool stopped;
-	bool muteAllStreams;
 
 	IAudioPlugin ( std::string plugin_name, std::string backend_name, bool init_stopped = false );
 

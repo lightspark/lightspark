@@ -863,7 +863,7 @@ ASFUNCTIONBODY(Array,unshift)
 		
 		for(uint32_t i=0;i<argslen;i++)
 		{
-			tmp[i] = data_slot(args[i],DATA_OBJECT);
+			tmp[i] = data_slot(args[i]);
 			args[i]->incRef();
 		}
 		th->data.clear();

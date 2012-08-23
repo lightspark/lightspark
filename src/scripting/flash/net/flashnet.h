@@ -35,10 +35,10 @@ namespace lightspark
 class URLRequest: public ASObject
 {
 private:
-	tiny_string url;
-	_NR<ASObject> data;
 	enum METHOD { GET=0, POST };
 	METHOD method;
+	tiny_string url;
+	_NR<ASObject> data;
 	tiny_string validatedContentType() const;
 	tiny_string getContentTypeHeader() const;
 	void validateHeaderName(const tiny_string& headerName) const;
@@ -167,8 +167,6 @@ friend class NetStream;
 private:
 	//Indicates whether the application is connected to a server through a persistent RMTP connection/HTTP server with Flash Remoting
 	bool _connected;
-	//The connection is to a flash media server
-	ObjectEncoding::ENCODING objectEncoding;
 	tiny_string protocol;
 	URLInfo uri;
 	//Data for remoting support (NetConnection::call)
@@ -178,6 +176,8 @@ private:
 	Downloader* downloader;
 	_NR<Responder> responder;
 	uint32_t messageCount;
+	//The connection is to a flash media server
+	ObjectEncoding::ENCODING objectEncoding;
 	//IThreadJob interface
 	void execute();
 	void threadAbort();
@@ -204,16 +204,22 @@ class SoundTransform;
 class NetStream: public EventDispatcher, public IThreadJob, public ITickJob
 {
 private:
+	bool tickStarted;
+	//Indicates whether the NetStream is paused
+	bool paused;
+	//Indicates whether the NetStream has been closed/threadAborted. This is reset at every play() call.
+	//We initialize this value to true, so we can check that play() hasn't been called without being closed first.
+	volatile bool closed;
+
+	uint32_t streamTime;
 	URLInfo url;
 	double frameRate;
-	bool tickStarted;
 	//The NetConnection used by this NetStream
 	_NR<NetConnection> connection;
 	Downloader* downloader;
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
 	AudioStream *audioStream;
-	uint32_t streamTime;
 	Mutex mutex;
 	//IThreadJob interface for long jobs
 	void execute();
@@ -223,21 +229,16 @@ private:
 	void tick();
 	void tickFence();
 	bool isReady() const;
+	_NR<ASObject> client;
 
-	//Indicates whether the NetStream is paused
-	bool paused;
-	//Indicates whether the NetStream has been closed/threadAborted. This is reset at every play() call.
-	//We initialize this value to true, so we can check that play() hasn't been called without being closed first.
-	volatile bool closed;
+	ASPROPERTY_GETTER_SETTER(NullableRef<SoundTransform>,soundTransform);
+	number_t oldVolume;
 
 	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
 	CONNECTION_TYPE peerID;
 
-	_NR<ASObject> client;
 	bool checkPolicyFile;
 	bool rawAccessAllowed;
-	number_t oldVolume;
-	ASPROPERTY_GETTER_SETTER(NullableRef<SoundTransform>,soundTransform);
 
 	ASObject *createMetaDataObject(StreamDecoder* streamDecoder);
 	ASObject *createPlayStatusObject(const tiny_string& code);

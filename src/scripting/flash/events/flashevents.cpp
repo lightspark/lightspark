@@ -36,7 +36,7 @@ void IEventDispatcher::linkTraits(Class_base* c)
 }
 
 Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c):
-	ASObject(cb),type(t),target(),currentTarget(),bubbles(b),cancelable(c),eventPhase(0),defaultPrevented(false)
+	ASObject(cb),bubbles(b),cancelable(c),defaultPrevented(false),eventPhase(0),type(t),target(),currentTarget()
 {
 }
 
@@ -850,7 +850,7 @@ FunctionEvent::~FunctionEvent()
 ExternalCallEvent::ExternalCallEvent(_R<IFunction> _f, ASObject* const* _args,
 	uint32_t _numArgs, ASObject** _result, bool* _thrown, tiny_string* _exception):
 		WaitableEvent("ExternalCallEvent"),
-		f(_f),args(_args),numArgs(_numArgs),result(_result),thrown(_thrown),exception(_exception)
+		f(_f),args(_args),result(_result),thrown(_thrown),exception(_exception),numArgs(_numArgs)
 {
 }
 

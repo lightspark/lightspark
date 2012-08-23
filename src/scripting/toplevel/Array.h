@@ -29,22 +29,22 @@ enum DATA_TYPE {DATA_OBJECT=0,DATA_INT};
 
 struct data_slot
 {
-	DATA_TYPE type;
 	union
 	{
 		ASObject* data;
 		int32_t data_i;
 	};
-	explicit data_slot(ASObject* o,DATA_TYPE t=DATA_OBJECT):type(t),data(o){}
-	data_slot():type(DATA_OBJECT),data(NULL){}
-	explicit data_slot(int32_t i):type(DATA_INT),data_i(i){}
+	DATA_TYPE type;
+	explicit data_slot(ASObject* o):data(o),type(DATA_OBJECT){}
+	data_slot():data(NULL),type(DATA_OBJECT){}
+	explicit data_slot(int32_t i):data_i(i),type(DATA_INT){}
 };
 
 class Array: public ASObject
 {
 friend class ABCVm;
 protected:
-	uint64_t currentsize;
+	uint32_t currentsize;
 	typedef std::map<uint32_t,data_slot,std::less<uint32_t>,
 		reporter_allocator<std::pair<const uint32_t, data_slot>>> arrayType;
 	arrayType data;
@@ -128,7 +128,7 @@ public:
 	void push(_R<ASObject> o)
 	{
 		o->incRef();
-		data[currentsize] = data_slot(o.getPtr(),DATA_OBJECT);
+		data[currentsize] = data_slot(o.getPtr());
 		currentsize++;
 	}
 	void resize(uint64_t n);

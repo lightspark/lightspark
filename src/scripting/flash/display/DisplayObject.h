@@ -49,11 +49,14 @@ private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);
 	MATRIX Matrix;
-	bool useLegacyMatrix;
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;
 	float alpha;
+public:
+	UI16_SWF Ratio;
+	UI16_SWF ClipDepth;
+private:
 	/**
 	  	The object we are masking, if any
 	*/
@@ -71,7 +74,10 @@ private:
 	 */
 	void setMatrix(const MATRIX& m);
 	ACQUIRE_RELEASE_FLAG(constructed);
+	bool useLegacyMatrix;
 protected:
+	bool onStage;
+	bool visible;
 	~DisplayObject();
 	/**
 	  	The object that masks us, if any
@@ -85,13 +91,11 @@ protected:
 	 * Assume the lock is held and the matrix will not change
 	 */
 	void extractValuesFromMatrix();
-	bool onStage;
 	number_t computeWidth();
 	number_t computeHeight();
 	bool isSimple() const;
 	bool skipRender(bool maskEnabled) const;
 	float clippedAlpha() const;
-	bool visible;
 
 	void defaultRender(RenderContext& ctxt, bool maskEnabled) const;
 	void renderPrologue(RenderContext& ctxt) const;
@@ -115,20 +119,18 @@ protected:
 public:
 	tiny_string name;
 	UI16_SWF CharacterId;
+	_NR<DisplayObject> invalidateQueueNext;
+	_NR<LoaderInfo> loaderInfo;
 	CXFORMWITHALPHA ColorTransform;
-	UI16_SWF Ratio;
-	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
 	void setParent(_NR<DisplayObjectContainer> p);
 	/*
 	   Used to link DisplayObjects the invalidation queue
 	*/
-	_NR<DisplayObject> invalidateQueueNext;
 	DisplayObject(Class_base* c);
 	void finalize();
 	MATRIX getMatrix() const;
-	_NR<LoaderInfo> loaderInfo;
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 	/**
 	 * Generate a new IDrawable instance for this object

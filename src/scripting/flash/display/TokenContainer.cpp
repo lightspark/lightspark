@@ -31,8 +31,8 @@ TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f)
 }
 
 TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) :
-	owner(_o), scaling(_scaling),
-	tokens(_tokens.begin(),_tokens.end())
+	owner(_o), tokens(_tokens.begin(),_tokens.end()), scaling(_scaling)
+
 {
 }
 

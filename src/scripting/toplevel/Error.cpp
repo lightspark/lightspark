@@ -27,7 +27,7 @@ using namespace std;
 using namespace lightspark;
 
 ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name):
-	ASObject(c),message(error_message), errorID(id), name(error_name)
+	ASObject(c),errorID(id),name(error_name),message(error_message)
 {
 }
 

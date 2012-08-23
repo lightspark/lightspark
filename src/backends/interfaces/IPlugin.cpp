@@ -21,7 +21,7 @@
 #include "backends/interfaces/IPlugin.h"
 
 IPlugin::IPlugin ( PLUGIN_TYPES plugin_type, std::string plugin_name, std::string backend_name ) :
-		pluginType ( plugin_type ), pluginName ( plugin_name ), backendName ( backend_name )
+		pluginName ( plugin_name ), backendName ( backend_name ), pluginType ( plugin_type )
 {
 
 }

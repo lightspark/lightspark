@@ -45,12 +45,12 @@ enum LS_AUDIO_CODEC { LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_L
 class Decoder
 {
 protected:
+	Semaphore flushed;
 	enum STATUS { PREINIT=0, INIT, VALID, FLUSHED};
 	STATUS status;
 	bool flushing;
-	Semaphore flushed;
 public:
-	Decoder():status(PREINIT),flushing(false),flushed(0){}
+	Decoder():flushed(0),status(PREINIT),flushing(false){}
 	virtual ~Decoder(){}
 	bool isValid() const
 	{
@@ -65,21 +65,8 @@ public:
 
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
-private:
-	bool resizeGLBuffers;
-protected:
-	/*
-		Derived classes must spinwaits on this to become false before deleting
-	*/
-	ATOMIC_INT32(fenceCount);
-	uint32_t frameWidth;
-	uint32_t frameHeight;
-	bool setSize(uint32_t w, uint32_t h);
-	bool resizeIfNeeded(TextureChunk& tex);
-	LS_VIDEO_CODEC videoCodec;
-	TextureChunk videoTexture;
 public:
-	VideoDecoder():resizeGLBuffers(false),fenceCount(0),frameWidth(0),frameHeight(0),frameRate(0){}
+	VideoDecoder():frameRate(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false){}
 	virtual ~VideoDecoder(){};
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
@@ -102,6 +89,19 @@ public:
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
 	const TextureChunk& getTexture();
 	void uploadFence();
+protected:
+	TextureChunk videoTexture;
+	uint32_t frameWidth;
+	uint32_t frameHeight;
+	/*
+		Derived classes must spinwaits on this to become false before deleting
+	*/
+	ATOMIC_INT32(fenceCount);
+	bool setSize(uint32_t w, uint32_t h);
+	bool resizeIfNeeded(TextureChunk& tex);
+	LS_VIDEO_CODEC videoCodec;
+private:
+	bool resizeGLBuffers;
 };
 
 class NullVideoDecoder: public VideoDecoder
@@ -153,16 +153,16 @@ private:
 		YUVBufferGenerator(uint32_t b):bufferSize(b){}
 		void init(YUVBuffer& buf) const;
 	};
-	uint32_t curBuffer;
-	uint32_t curBufferOffset;
-	AVCodecContext* codecContext;
 	bool ownedContext;
+	uint32_t curBuffer;
+	AVCodecContext* codecContext;
 	BlockingCircularQueue<YUVBuffer,80> buffers;
 	Mutex mutex;
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t time);
 	void setSize(uint32_t w, uint32_t h);
 	bool fillDataAndCheckValidity();
+	uint32_t curBufferOffset;
 public:
 	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint);
 	/*
@@ -210,6 +210,9 @@ protected:
 	public:
 		void init(FrameSamples& f) const {f.len=0;}
 	};
+public:
+	uint32_t sampleRate;
+protected:
 	BlockingCircularQueue<FrameSamples,150> samplesBuffer;
 public:
 	/**
@@ -251,7 +254,6 @@ public:
 			flushed.signal();
 		}
 	}
-	uint32_t sampleRate;
 	uint32_t channelCount;
 	//Saves the timestamp of the first decoded frame
 	uint32_t initialTime;
@@ -273,8 +275,8 @@ public:
 class FFMpegAudioDecoder: public AudioDecoder
 {
 private:
-	AVCodecContext* codecContext;
 	bool ownedContext;
+	AVCodecContext* codecContext;
 	bool fillDataAndCheckValidity();
 #if HAVE_AVCODEC_DECODE_AUDIO4
 	AVFrame* frameIn;
@@ -296,10 +298,8 @@ public:
 
 class StreamDecoder
 {
-protected:
-	bool valid;
 public:
-	StreamDecoder():valid(false),audioDecoder(NULL),videoDecoder(NULL){}
+	StreamDecoder():audioDecoder(NULL),videoDecoder(NULL),valid(false){}
 	virtual ~StreamDecoder();
 	virtual bool decodeNextFrame() = 0;
 	virtual bool getMetadataInteger(const char* name, uint32_t& ret) const=0;
@@ -307,16 +307,18 @@ public:
 	bool isValid() const { return valid; }
 	AudioDecoder* audioDecoder;
 	VideoDecoder* videoDecoder;
+protected:
+	bool valid;
 };
 
 #ifdef ENABLE_LIBAVCODEC
 class FFMpegStreamDecoder: public StreamDecoder
 {
 private:
-	std::istream& stream;
-	AVFormatContext* formatCtx;
 	bool audioFound;
 	bool videoFound;
+	std::istream& stream;
+	AVFormatContext* formatCtx;
 	int32_t audioIndex;
 	int32_t videoIndex;
 	//We use our own copy of these to have access of the ffmpeg specific methods

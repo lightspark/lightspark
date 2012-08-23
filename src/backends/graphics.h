@@ -130,11 +130,11 @@ private:
 	 * For CairoRenderContext texId is an arbitrary id for the texture and chunks is
 	 * not used.
 	 */
-	uint32_t texId;
 	uint32_t* chunks;
+	uint32_t texId;
 	TextureChunk(uint32_t w, uint32_t h);
 public:
-	TextureChunk():texId(0),chunks(NULL),width(0),height(0){}
+	TextureChunk():chunks(NULL),texId(0),width(0),height(0){}
 	TextureChunk(const TextureChunk& r);
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();
@@ -238,15 +238,15 @@ public:
 class CairoRenderer: public IDrawable
 {
 protected:
-	/**
-	  The whole transformation matrix that is applied to the rendered object
-	*/
-	MATRIX matrix;
 	/*
 	   The scale to be applied in both the x and y axis.
 	   Useful to adapt points defined in pixels and twips (1/20 of pixel)
 	*/
 	const float scaleFactor;
+	/**
+	  The whole transformation matrix that is applied to the rendered object
+	*/
+	MATRIX matrix;
 	/*
 	 * There are reports (http://lists.freedesktop.org/archives/cairo/2011-September/022247.html)
 	 * that cairo is not threadsafe, and I have encountered some spurious crashes, too.
@@ -326,25 +326,25 @@ class TextData
 {
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
-	TextData() : width(100), height(100), textWidth(0), textHeight(0), background(false), backgroundColor(0xFFFFFF),
+	TextData() : width(100), height(100), textWidth(0), textHeight(0), font("Times New Roman"), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
-		wordWrap(false), autoSize(AS_NONE), fontSize(12), font("Times New Roman") {}
+		autoSize(AS_NONE), fontSize(12), wordWrap(false) {}
 	uint32_t width;
 	uint32_t height;
 	uint32_t textWidth;
 	uint32_t textHeight;
 	tiny_string text;
+	tiny_string font;
 	bool background;
 	RGB backgroundColor;
 	bool border;
 	RGB borderColor;
 	bool multiline;
 	RGB textColor;
-	bool wordWrap;
 	enum AUTO_SIZE {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
 	AUTO_SIZE autoSize;
 	uint32_t fontSize;
-	tiny_string font;
+	bool wordWrap;
 };
 
 class CairoPangoRenderer : public CairoRenderer

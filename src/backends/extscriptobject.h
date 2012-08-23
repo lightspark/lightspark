@@ -66,9 +66,9 @@ public:
 	virtual std::string getString() const { return strValue; }
 	virtual int32_t getInt() const { return intValue; }
 private:
-	EI_TYPE type;
 	std::string strValue;
 	int32_t intValue;
+	EI_TYPE type;
 	void stringToInt();
 };
 
@@ -100,8 +100,8 @@ public:
 	EO_TYPE getType() const { return type; }
 	void setType(EO_TYPE _type) { type = _type; }
 protected:
-	EO_TYPE type;
 	std::map<ExtIdentifier, ExtVariant> properties;
+	EO_TYPE type;
 };
 
 /**
@@ -150,12 +150,12 @@ public:
 	virtual ExtObject* getObject() const { return new ExtObject(objectValue); }
 	ASObject* getASObject() const;
 private:
-	EV_TYPE type;
 	std::string strValue;
-	int32_t intValue;
-	double doubleValue;
-	bool booleanValue;
 	ExtObject objectValue;
+	double doubleValue;
+	int32_t intValue;
+	EV_TYPE type;
+	bool booleanValue;
 };
 
 class ExtScriptObject;
@@ -179,9 +179,9 @@ public:
 	// The result variable should be "delete"d by the caller after use.
 	virtual bool getResult(const ExtScriptObject& so, ExtVariant** result)=0;
 protected:
+	tiny_string exception;
 	bool success;
 	bool exceptionThrown;
-	tiny_string exception;
 };
 
 class ExternalCallEvent;
@@ -190,8 +190,14 @@ class ExternalCallEvent;
  */
 class DLL_PUBLIC ExtASCallback : public ExtCallback
 {
+private:
+	bool funcWasCalled;
+	IFunction* func;
+	_NR<ExternalCallEvent> funcEvent;
+	ASObject* result;
+        ASObject** asArgs;
 public:
-	ExtASCallback(IFunction* _func) : func(_func), result(NULL), asArgs(NULL), funcWasCalled(false) { func->incRef(); }
+	ExtASCallback(IFunction* _func) :funcWasCalled(false), func(_func), result(NULL), asArgs(NULL) { func->incRef(); }
 	~ExtASCallback();
 
 	// Don't forget to delete this copy after use
@@ -203,12 +209,6 @@ public:
 	void wakeUp();
 	// The result variable should be "delete"d by the caller after use.
 	bool getResult(const ExtScriptObject& so, ExtVariant** _result);
-private:
-	IFunction* func;
-	_NR<ExternalCallEvent> funcEvent;
-	ASObject* result;
-        ASObject** asArgs;
-	bool funcWasCalled;
 };
 
 /**

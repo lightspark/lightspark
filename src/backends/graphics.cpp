@@ -186,7 +186,7 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 	chunks=new uint32_t[blocksW*blocksH];
 }
 
-TextureChunk::TextureChunk(const TextureChunk& r):texId(0),chunks(NULL),width(r.width),height(r.height)
+TextureChunk::TextureChunk(const TextureChunk& r):chunks(NULL),texId(0),width(r.width),height(r.height)
 {
 	*this = r;
 	return;
@@ -253,7 +253,7 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 }
 
 CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
-	: IDrawable(_w, _h, _x, _y, _a), matrix(_m), scaleFactor(_s)
+	: IDrawable(_w, _h, _x, _y, _a), scaleFactor(_s), matrix(_m)
 {
 }
 

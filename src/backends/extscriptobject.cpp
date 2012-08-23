@@ -36,22 +36,22 @@ using namespace std;
 /* -- ExtIdentifier -- */
 // Constructors
 ExtIdentifier::ExtIdentifier() :
-	type(EI_STRING), strValue(""), intValue(0)
+	strValue(""), intValue(0), type(EI_STRING)
 {
 }
 ExtIdentifier::ExtIdentifier(const std::string& value) :
-	type(EI_STRING), strValue(value), intValue(0)
+	strValue(value), intValue(0), type(EI_STRING)
 {
 	stringToInt();
 }
 ExtIdentifier::ExtIdentifier(const char* value) :
-	type(EI_STRING), strValue(value), intValue(0)
+	strValue(value), intValue(0), type(EI_STRING)
 {
 	stringToInt();
 }
 
 ExtIdentifier::ExtIdentifier(int32_t value) :
-	type(EI_INT32), strValue(""), intValue(value)
+	strValue(""), intValue(value), type(EI_INT32)
 {
 }
 ExtIdentifier::ExtIdentifier(const ExtIdentifier& other)
@@ -156,27 +156,27 @@ bool ExtObject::enumerate(ExtIdentifier*** ids, uint32_t* count) const
 /* -- ExtVariant -- */
 // Constructors
 ExtVariant::ExtVariant() :
-	type(EV_VOID), strValue(""), intValue(0), doubleValue(0), booleanValue(false)
+	strValue(""), doubleValue(0), intValue(0), type(EV_VOID), booleanValue(false)
 {
 }
 ExtVariant::ExtVariant(const std::string& value) :
-	type(EV_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false)
+	strValue(value), doubleValue(0), intValue(0), type(EV_STRING), booleanValue(false)
 {
 }
 ExtVariant::ExtVariant(const char* value) :
-	type(EV_STRING), strValue(value), intValue(0), doubleValue(0), booleanValue(false)
+	strValue(value), doubleValue(0), intValue(0), type(EV_STRING), booleanValue(false)
 {
 }
 ExtVariant::ExtVariant(int32_t value) :
-	type(EV_INT32), strValue(""), intValue(value), doubleValue(0), booleanValue(false)
+	strValue(""), doubleValue(0), intValue(value), type(EV_INT32), booleanValue(false)
 {
 }
 ExtVariant::ExtVariant(double value) :
-	type(EV_DOUBLE), strValue(""), intValue(0), doubleValue(value), booleanValue(false)
+	strValue(""), doubleValue(value), intValue(0), type(EV_DOUBLE), booleanValue(false)
 {
 }
 ExtVariant::ExtVariant(bool value) :
-	type(EV_BOOLEAN), strValue(""), intValue(0), doubleValue(0), booleanValue(value)
+	strValue(""), doubleValue(0), intValue(0), type(EV_BOOLEAN), booleanValue(value)
 {
 }
 ExtVariant::ExtVariant(const ExtVariant& other)
@@ -184,7 +184,7 @@ ExtVariant::ExtVariant(const ExtVariant& other)
 	*this=other;
 }
 ExtVariant::ExtVariant(_R<ASObject> other) :
-	strValue(""), intValue(0), doubleValue(0), booleanValue(false)
+	strValue(""), doubleValue(0), intValue(0), booleanValue(false)
 {
 	switch(other->getObjectType())
 	{

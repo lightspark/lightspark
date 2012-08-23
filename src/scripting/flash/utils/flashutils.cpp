@@ -89,8 +89,8 @@ void IDataOutput::linkTraits(Class_base* c)
 	lookupAndLink(c,"writeUTFBytes","flash.utils:IDataOutput");
 }
 
-ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),bytes(b),real_len(l),len(l),position(0),
-	littleEndian(false),objectEncoding(ObjectEncoding::AMF3)
+ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),littleEndian(false),objectEncoding(ObjectEncoding::AMF3),
+	position(0),bytes(b),real_len(l),len(l)
 {
 #ifdef MEMORY_USAGE_PROFILING
 	c->memoryAccount->addBytes(l);
@@ -1974,7 +1974,7 @@ ASFUNCTIONBODY(lightspark,clearTimeout)
 
 IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, _R<IFunction> _callback, ASObject** _args,
 		const unsigned int _argslen, _R<ASObject> _obj, uint32_t _interval):
-	EventDispatcher(NULL),type(_type), id(_id), callback(_callback),argslen(_argslen),obj(_obj),interval(_interval)
+	EventDispatcher(NULL),type(_type), id(_id), callback(_callback),obj(_obj),argslen(_argslen),interval(_interval)
 {
 	args = new ASObject*[argslen];
 	for(uint32_t i=0; i<argslen; i++)

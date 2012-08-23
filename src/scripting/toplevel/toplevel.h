@@ -144,8 +144,6 @@ template<class T> friend class Template;
 private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
-	//TODO: move in Class_inherit
-	bool use_protected;
 	nsNameAndKind protected_ns;
 	void initializeProtectedNamespace(const tiny_string& name, const namespace_info& ns);
 	void recursiveBuild(ASObject* target);
@@ -161,19 +159,23 @@ protected:
 	ASFUNCTION(_toString);
 public:
 	variables_map borrowedVariables;
-	bool isFinal:1;
-	bool isSealed:1;
-	void addPrototypeGetter();
-	void addLengthGetter();
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
-	ASPROPERTY_GETTER(int32_t,length);
 	_NR<Class_base> super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
 	const QName class_name;
-	int class_index;
 	//Memory reporter to keep track of used bytes
 	MemoryAccount* memoryAccount;
+	ASPROPERTY_GETTER(int32_t,length);
+	int32_t class_index;
+	bool isFinal:1;
+	bool isSealed:1;
+private:
+	//TODO: move in Class_inherit
+	bool use_protected:1;
+public:
+	void addPrototypeGetter();
+	void addLengthGetter();
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	Class_base(const QName& name, MemoryAccount* m);
@@ -299,6 +301,8 @@ public:
  */
 class IFunction: public ASObject
 {
+public:
+	ASPROPERTY_GETTER_SETTER(uint32_t,length);
 protected:
 	IFunction(Class_base *c);
 	virtual IFunction* clone()=0;
@@ -316,7 +320,6 @@ public:
 	ASFUNCTION(_call);
 	ASFUNCTION(_toString);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,prototype);
-	ASPROPERTY_GETTER_SETTER(uint32_t,length);
 	/*
 	 * Calls this function with the given object and args.
 	 * One reference of obj and each args[i] is consumed.
@@ -570,8 +573,8 @@ public:
 class Global : public ASObject
 {
 private:
-	ABCContext* context;
 	int scriptId;
+	ABCContext* context;
 public:
 	Global(Class_base* cb, ABCContext* c, int s);
 	static void sinit(Class_base* c);

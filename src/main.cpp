@@ -73,7 +73,7 @@ public:
 		destroyHandlerId = g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),this);
 		return window;
 	}
-	NativeWindow getWindowForGnash()
+	GdkNativeWindow getWindowForGnash()
 	{
 		/* passing and invalid window id to gnash makes
 		 * it create its own window */

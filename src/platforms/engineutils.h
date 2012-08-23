@@ -27,21 +27,8 @@
 namespace lightspark
 {
 
-/* We define the platform-specific window handle typedefs without
- * including the specific headers to not pollute our namespace.
- * Especially windows.h defines things thus as MAX,VOID,RGB etc.
- *
- * There is GdkNativeWindow, but that is not HWND on win32!?
- */
-#ifdef _WIN32
-//taken from MSDN online documentation
-typedef HANDLE HWND;
-typedef HWND NativeWindow;
-#else
+#ifndef _WIN32
 //taken from X11/X.h
-typedef unsigned long XID;
-typedef XID Window;
-typedef Window NativeWindow;
 typedef unsigned long VisualID;
 #endif
 
@@ -71,7 +58,7 @@ protected:
 public:
 	int width;
 	int height;
-	NativeWindow window;
+	GdkNativeWindow window;
 #ifndef _WIN32
 	VisualID visual;
 #endif
@@ -80,7 +67,7 @@ public:
 	virtual bool isSizable() const = 0;
 	virtual void stopMainDownload() = 0;
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
-	virtual NativeWindow getWindowForGnash()=0;
+	virtual GdkNativeWindow getWindowForGnash()=0;
 	/* Runs 'func' in the thread of gtk_main() */
 	static void runInGtkThread(const sigc::slot<void>& func)
 	{

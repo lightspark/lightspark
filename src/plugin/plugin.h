@@ -85,7 +85,7 @@ public:
 
 	void stopMainDownload();
 	bool isSizable() const { return false; }
-	NativeWindow getWindowForGnash();
+	GdkNativeWindow getWindowForGnash();
 	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
 	GtkWidget* createGtkWidget();
 };
@@ -127,7 +127,7 @@ private:
 	 * window we draw into. We create a child of mWindow and
 	 * draw into that.
 	 */
-	NativeWindow mWindow;
+	GdkNativeWindow mWindow;
 	int mX, mY;
 
 	std::istream mainDownloaderStream;

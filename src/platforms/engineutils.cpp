@@ -86,7 +86,7 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 	/* create a window handle */
 	gtk_widget_realize(widget);
 #if _WIN32
-	window = (HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget));
+	window = GDK_WINDOW_HWND(gtk_widget_get_window(widget));
 #else
 	window = GDK_WINDOW_XID(gtk_widget_get_window(widget));
 #endif

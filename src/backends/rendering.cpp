@@ -23,6 +23,10 @@
 #include "compat.h"
 #include <sstream>
 
+#ifdef _WIN32
+#   define WIN32_LEAN_AND_MEAN
+#	include <windows.h>
+#endif
 //None is #defined by X11/X.h, but because it conflicts with libxml++
 //headers Lightspark undefines it elsewhere except in this file.
 #ifndef None
@@ -210,7 +214,7 @@ void RenderThread::init()
 			0,
 			0, 0, 0
 		};
-	if(!(mDC = GetDC(engineData->window)))
+	if(!(mDC = GetDC((HWND)engineData->window)))
 		throw RunTimeException("GetDC failed");
 	int PixelFormat;
 	if (!(PixelFormat=ChoosePixelFormat(mDC,&pfd)))

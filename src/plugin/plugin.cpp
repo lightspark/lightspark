@@ -24,6 +24,9 @@
 #include "compat.h"
 #include <string>
 #include <algorithm>
+#ifdef _WIN32
+#	include <gdk/gdkwin32.h>
+#endif
 #include "backends/urlutils.h"
 #include "backends/security.h"
 
@@ -430,7 +433,7 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
  */
 GtkWidget* PluginEngineData::createGtkWidget()
 {
-	HWND parent_hwnd = instance->mWindow;
+	HWND parent_hwnd = (HWND)instance->mWindow;
 
 	GtkWidget* widget=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	/* Remove window decorations */
@@ -477,7 +480,16 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	mY = aWindow->y;
 	uint32_t width = aWindow->width;
 	uint32_t height = aWindow->height;
-	if (mWindow == (NativeWindow) aWindow->window)
+	/* aWindow->window is always a void*,
+	 * GdkNativeWindow is int on linux and void* on win32.
+	 * Casting void* to int gvies an error (loss of precision), so we cast to intptr_t.
+	 */
+#ifdef _WIN32
+	GdkNativeWindow win = reinterpret_cast<GdkNativeWindow>(aWindow->window);
+#else
+	GdkNativeWindow win = reinterpret_cast<intptr_t>(aWindow->window);
+#endif
+	if (mWindow == win )
 	{
 		// The page with the plugin is being resized.
 		// Save any UI information because the next time
@@ -488,7 +500,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	assert(mWindow==0);
 
 	PluginEngineData* e = new PluginEngineData(this, width, height);
-	mWindow = (NativeWindow) aWindow->window;
+	mWindow = win;
 
 	LOG(LOG_INFO,"From Browser: Window " << mWindow << " Width: " << width << " Height: " << height);
 
@@ -729,7 +741,7 @@ void PluginEngineData::stopMainDownload()
 		instance->mainDownloader->stop();
 }
 
-NativeWindow PluginEngineData::getWindowForGnash()
+GdkNativeWindow PluginEngineData::getWindowForGnash()
 {
 	return instance->mWindow;
 }

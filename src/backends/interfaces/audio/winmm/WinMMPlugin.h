@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <windows.h>
+#undef RGB //conflicts with swftypes.h
 #include <mmsystem.h>
 #include "backends/interfaces/audio/IAudioPlugin.h"
 #include "backends/decoder.h"

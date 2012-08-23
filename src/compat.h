@@ -38,8 +38,8 @@
 #endif
 
 #ifdef _WIN32
-	//For ssize_t on win32
-	#include <sys/types.h>
+	#include <sys/types.h> //for ssize_t
+	#include <io.h> //for close(), unlink()
 #endif
 
 // TODO: This should be reworked to use CMake feature detection where possible

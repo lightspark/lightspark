@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "compat.h"
 #include "scripting/argconv.h"
+#include "abc.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include <libxml++/nodes/textnode.h>
@@ -175,7 +176,8 @@ ASFUNCTIONBODY(XMLList,_constructor)
 void XMLList::buildFromString(const std::string& str)
 {
 	xmlpp::DomParser parser;
-	std::string expanded="<parent>" + str + "</parent>";
+	std::string default_ns=getVm()->getDefaultXMLNamespace();
+	std::string expanded="<parent xmlns=\"" + default_ns + "\">" + str + "</parent>";
 	try
 	{
 		parser.parse_memory(expanded);

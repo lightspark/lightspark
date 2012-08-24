@@ -102,6 +102,15 @@ void TimerThread::dumpJobs()
 		LOG(LOG_INFO, (*it)->job );
 }
 
+/*
+ * Worker executing the queued events.
+ *
+ * It holds "mutex" all the time but
+ *   1. when waiting for on newEvent or for the correct time to execute a job.
+ *   2. while executing e->job->tick() (during this time inExectution == e->job)
+ * The pendingEvents queue may be altered by another thread with "mutex"
+ * An event may be deleted by another thread with "mutex" only if inExectution != jobToDelete
+ */
 void TimerThread::worker()
 {
 	setTLSSys(m_sys);
@@ -153,15 +162,21 @@ void TimerThread::worker()
 			insertNewEvent_nolock(e);
 		}
 
-		/* let removeJob() know what we are currently doing */
-		inExecution = e->job;
+		/* If e->isTick == false, e is not in pendingQueue anymore and this function has the only reference to it.
+		 * If e->isTick == true, we just enqueued e another time. If removeJob() is called on e->job from
+		 * job->tick() or another thread, then this will remove e from pendingQueue and delete e after we release the mutex.
+		 * In that case we may not access e after 'l.release()'.
+		 */
+		ITickJob* job = e->job;
+		bool isTick = e->isTick;
 		l.release();
-		e->job->tick();
-		inExecution = NULL;
+
+		job->tick();
+
 		l.acquire();
 
 		/* Cleanup */
-		if(!e->isTick)
+		if(!isTick)
 		{
 			e->job->tickFence();
 			delete e;
@@ -181,12 +196,14 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 	insertNewEvent(e);
 }
 
+/*
+ * removeJob()
+ *
+ * Removes the given job from the pendingEvents queue
+ */
 void TimerThread::removeJob(ITickJob* job)
 {
 	Mutex::Lock l(mutex);
-	/* Busy-wait until job is not executing anymore */
-	while(inExecution == job)
-		Thread::yield();
 
 	/* See if that job is currently pending */
 	list<TimingEvent*>::iterator it=pendingEvents.begin();

@@ -45,7 +45,7 @@ public:
 	virtual void tick()=0;
 	ITickJob():stopMe(false){}
 	virtual ~ITickJob(){};
-	//Last method to be called when no more ticks will be sent
+	// This is called after tick() for single-shot jobs (i.e. enqueued with isTick==false)
 	virtual void tickFence() = 0;
 };
 
@@ -55,7 +55,7 @@ private:
 	class TimingEvent
 	{
 	public:
-		TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime) 
+		TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime)
 			: isTick(_isTick),job(_job),wakeUpTime(_isTick ? _tickTime : _waitTime), tickTime(_tickTime) {};
 		bool isTick;
 		ITickJob* job;
@@ -101,6 +101,6 @@ public:
 	Chronometer();
 	uint32_t checkpoint();
 };
-	
+
 };
 #endif /* TIMER_H */

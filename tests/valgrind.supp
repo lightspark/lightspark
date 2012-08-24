@@ -1,0 +1,85 @@
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   ioctl(generic)
+   ...
+   fun:glXQueryVersion
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   ...
+   fun:glXQueryVersion
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   ...
+   fun:glXCreateNewContext
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   ioctl(generic)
+   ...
+   fun:glXCreateNewContext
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   ioctl(generic)
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/dri/i965_dri.so
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/dri/i965_dri.so
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr4
+   ...
+   fun:_mesa_Clear
+}
+{
+   Check this!
+   Memcheck:Addr8
+   fun:wcslen
+   fun:wcscoll_l
+   fun:g_utf8_collate
+   fun:_ZNK10lightspark3XML10nodesEqualEPN5xmlpp4NodeES3_
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr8
+   fun:wcscmp
+   fun:_ZNSt10moneypunctIwLb0EED1Ev
+   fun:_ZNSt10moneypunctIwLb0EED0Ev
+   fun:_ZNSt6locale5_ImplD1Ev
+   fun:_ZNSt6localeD1Ev
+   fun:__cxa_finalize
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr8
+   fun:wcscmp
+   fun:_ZNSt10moneypunctIwLb1EED1Ev
+   fun:_ZNSt10moneypunctIwLb1EED0Ev
+   fun:_ZNSt6locale5_ImplD1Ev
+   fun:_ZNSt6localeD1Ev
+   fun:__cxa_finalize
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr8
+   ...
+   fun:_mesa_TexSubImage2D
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr2
+   ...
+   fun:_mesa_TexSubImage2D
+}

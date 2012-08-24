@@ -585,9 +585,12 @@ void ABCVm::decLocal_i(call_context* th, int n)
 ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen)
 {
 	//See ECMA 13.2.2
+	if(f->inClass)
+		throw Class<TypeError>::getInstanceS("Error #1064: Cannot call method as constructor");
+
 	assert(f->is<SyntheticFunction>());
 	SyntheticFunction* sf=f->as<SyntheticFunction>();
-
+	assert(sf->prototype);
 	ASObject* ret=new_functionObject(sf->prototype);
 #ifndef NDEBUG
 	ret->initialized=false;
@@ -607,8 +610,6 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	ret->setVariableByQName("constructor","",sf,DYNAMIC_TRAIT);
 
 	ret->incRef();
-	if (sf->closure_this)
-		throw Class<TypeError>::getInstanceS("Error #1064: Cannot call method as constructor");
 
 	sf->incRef();
 	ASObject* ret2=sf->call(ret,args,argslen);

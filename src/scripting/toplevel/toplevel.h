@@ -292,6 +292,11 @@ public:
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
+/*
+ * The base-class for everything that resambles a function or method.
+ * It is specialized in Function for C-implemented functions
+ * and SyntheticFunction for AS3-implemented functions (from the SWF)
+ */
 class IFunction: public ASObject
 {
 protected:
@@ -349,12 +354,17 @@ public:
 	virtual ASObject *describeType() const;
 };
 
+/*
+ * Implements the IFunction interface for functions implemented
+ * in c-code.
+ */
 class Function : public IFunction
 {
 friend class Class<IFunction>;
 public:
 	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
 protected:
+	/* Function pointer to the C-function implementation */
 	as_function val;
 	Function(Class_base* c, as_function v=NULL):IFunction(c),val(v){}
 	Function* clone()
@@ -387,6 +397,9 @@ public:
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
+/*
+ * Represents a function implemented in AS3-code
+ */
 class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
@@ -394,7 +407,9 @@ friend class Class<IFunction>;
 public:
 	typedef ASObject* (*synt_function)(call_context* cc);
 private:
+	/* Data structure with information directly loaded from the SWF */
 	method_info* mi;
+	/* Pointer to JIT-compiled function or NULL if not yet compiled */
 	synt_function val;
 	SyntheticFunction(Class_base* c,method_info* m);
 	SyntheticFunction* clone()
@@ -425,7 +440,9 @@ public:
 	}
 };
 
-//Specialized class for IFunction
+/*
+ * The Class of a Function
+ */
 template<>
 class Class<IFunction>: public Class_base
 {

@@ -336,8 +336,8 @@ int main(int argc, char* argv[])
 	 * SystemState::setShutdownFlag.
 	 */
 	sys->destroy();
-	delete sys;
 	delete pt;
+	delete sys;
 
 	SystemState::staticDeinit();
 	EngineData::quitGTKMain();

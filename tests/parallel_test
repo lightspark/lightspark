@@ -1,0 +1,39 @@
+#!/bin/bash
+
+XVFB_NOT_RUNNING=`echo $XAUTHORITY | grep xvfb-run > /dev/null; echo $?`
+#Check for '--no-xfvb' or if we are already running under xvfb-run
+if [[ "$XVFB_NOT_RUNNING" == "1" ]]; then
+        if [ `which xvfb-run > /dev/null` ]; then
+                echo "Warning: 'xvfb-run' not found. Windows will pop up."
+                echo "xvfb-run is part of the XvFB package (e.g. apt-get install xvfb)."
+        else
+                xvfb-run -s '-extension GLX' -a $0 --no-xvfb $ALLARGS
+                exit $?
+        fi
+fi
+
+date
+rm -f ptests-*.junit
+for i in as3  e4x  misc  recursion  regress  spidermonkey  versioning
+do
+  nice ./tests -q -j ptests-$i.junit --no-xvfb tamarin-SWF/$i 1>/dev/null &
+done
+
+for i in `ls tamarin-SWF/ecma3`
+do
+  nice ./tests -q -j ptests-ecma3-$i.junit --no-xvfb tamarin-SWF/ecma3/$i 1>/dev/null &
+done
+
+nice ./tests -q -j ptests-toplevel.junit --no-xvfb *.mxml 1>/dev/null &
+
+echo -n "Waiting..."
+wait
+echo "finished!"
+date
+
+wget -N http://mediaservant.info/jenkins/job/Lightspark/lastSuccessfulBuild/artifact/tests/Debug.junit
+for i in `ls ptests*`
+do
+  ./showRegression Debug.junit $i
+done
+

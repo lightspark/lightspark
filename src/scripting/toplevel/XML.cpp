@@ -352,44 +352,47 @@ void XML::toXMLString_priv(xmlBufferPtr buf)
 	xmlDocPtr xmlDoc=getRootNode()->parser.get_document()->cobj();
 	assert(xmlDoc);
 	xmlNodePtr cNode=node->cobj();
-	//As libxml2 does not automatically add the needed namespaces to the dump
-	//we have to workaround the issue
-
-	//Get the needed namespaces
-	xmlNsPtr* neededNamespaces=xmlGetNsList(xmlDoc,cNode);
-	//Save a copy of the namespaces actually defined in the node
-	xmlNsPtr oldNsDef=cNode->nsDef;
-
-	//Copy the namespaces (we need to modify them to create a customized list)
-	vector<xmlNs> localNamespaces;
-	if(neededNamespaces)
-	{
-		xmlNsPtr* cur=neededNamespaces;
-		while(*cur)
-		{
-			localNamespaces.emplace_back(**cur);
-			cur++;
-		}
-		for(uint32_t i=0;i<localNamespaces.size()-1;++i)
-			localNamespaces[i].next=&localNamespaces[i+1];
-		localNamespaces.back().next=NULL;
-		//Free the namespaces arrary
-		xmlFree(neededNamespaces);
-		//Override the node defined namespaces
-		cNode->nsDef=&localNamespaces.front();
-	}
-
 	int retVal;
-	if(cNode->type==XML_ATTRIBUTE_NODE)
+	if(cNode->type == XML_ATTRIBUTE_NODE)
 	{
+		//cobj() return a xmlNodePtr for XML_ATTRIBUTE_NODE
+		//even though its actually a different structure
+		//containing only the first few member. Especially,
+		//there is no nsDef member in that struct.
 		retVal=xmlNodeBufGetContent(buf, cNode);
 	}
 	else
 	{
+		//As libxml2 does not automatically add the needed namespaces to the dump
+		//we have to workaround the issue
+
+		//Get the needed namespaces
+		xmlNsPtr* neededNamespaces=xmlGetNsList(xmlDoc,cNode);
+		//Save a copy of the namespaces actually defined in the node
+		xmlNsPtr oldNsDef=cNode->nsDef;
+
+		//Copy the namespaces (we need to modify them to create a customized list)
+		vector<xmlNs> localNamespaces;
+		if(neededNamespaces)
+		{
+			xmlNsPtr* cur=neededNamespaces;
+			while(*cur)
+			{
+				localNamespaces.emplace_back(**cur);
+				cur++;
+			}
+			for(uint32_t i=0;i<localNamespaces.size()-1;++i)
+				localNamespaces[i].next=&localNamespaces[i+1];
+			localNamespaces.back().next=NULL;
+			//Free the namespaces arrary
+			xmlFree(neededNamespaces);
+			//Override the node defined namespaces
+			cNode->nsDef=&localNamespaces.front();
+		}
 		retVal=xmlNodeDump(buf, xmlDoc, cNode, 0, 0);
+		//Restore the previously defined namespaces
+		cNode->nsDef=oldNsDef;
 	}
-	//Restore the previously defined namespaces
-	cNode->nsDef=oldNsDef;
 	if(retVal==-1)
 		throw RunTimeException("Error om XML::toXMLString_priv");
 }

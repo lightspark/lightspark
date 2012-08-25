@@ -51,6 +51,7 @@ public:
 	ASFUNCTION(child);
 	ASFUNCTION(children);
 	ASFUNCTION(contains);
+	ASFUNCTION(copy);
 	ASFUNCTION(_hasSimpleContent);
 	ASFUNCTION(_hasComplexContent);
 	ASFUNCTION(_toString);

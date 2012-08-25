@@ -89,6 +89,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setLocalName",AS3,Class<IFunction>::getFunction(_setLocalName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setName",AS3,Class<IFunction>::getFunction(_setName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setNamespace",AS3,Class<IFunction>::getFunction(_setNamespace),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copy",AS3,Class<IFunction>::getFunction(_copy),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(XML,generator)
@@ -828,6 +829,17 @@ void XML::setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix)
 
 		node->set_namespace(getNamespacePrefixByURI(ns_uri, true));
 	}
+}
+
+ASFUNCTIONBODY(XML,_copy)
+{
+	XML* th=Class<XML>::cast(obj);
+	return th->copy();
+}
+
+XML *XML::copy() const
+{
+	return Class<XML>::getInstanceS(node);
 }
 
 bool XML::hasSimpleContent() const

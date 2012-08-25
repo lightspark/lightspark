@@ -82,6 +82,7 @@ void XMLList::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("contains",AS3,Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copy",AS3,Class<IFunction>::getFunction(copy),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("elements",AS3,Class<IFunction>::getFunction(elements),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
@@ -378,6 +379,18 @@ ASFUNCTIONBODY(XMLList,contains)
 	}
 
 	return abstract_b(false);
+}
+
+ASFUNCTIONBODY(XMLList,copy)
+{
+	XMLList* th = obj->as<XMLList>();
+	XMLList *dest = Class<XMLList>::getInstanceS();
+	auto it=th->nodes.begin();
+        for(; it!=th->nodes.end(); ++it)
+        {
+		dest->nodes.push_back(_MR((*it)->copy()));
+	}
+	return dest;
 }
 
 _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)

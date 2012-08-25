@@ -72,6 +72,7 @@ public:
 	ASFUNCTION(child);
 	ASFUNCTION(children);
 	ASFUNCTION(contains);
+	ASFUNCTION(_copy);
 	ASFUNCTION(attributes);
 	ASFUNCTION(attribute);
 	ASFUNCTION(appendChild);
@@ -105,6 +106,7 @@ public:
 	bool hasComplexContent() const;
         xmlElementType getNodeKind() const;
 	ASObject *getParentNode();
+	XML *copy() const;
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);

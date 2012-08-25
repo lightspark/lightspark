@@ -989,3 +989,92 @@ ASFUNCTIONBODY(DRMStatusEvent,_constructor)
 		LOG(LOG_NOT_IMPLEMENTED, "DRMStatusEvent constructor doesn't support all parameters");
 	return NULL;
 }
+
+StageVideoEvent::StageVideoEvent(Class_base* c)
+  : Event(c, "renderState")
+{
+}
+
+void StageVideoEvent::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<Event>::getRef());
+	
+	c->setVariableByQName("RENDER_STATE","",Class<ASString>::getInstanceS("renderState"),DECLARED_TRAIT);
+
+	REGISTER_GETTER(c,colorSpace);
+	REGISTER_GETTER(c,status);
+}
+
+ASFUNCTIONBODY(StageVideoEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+
+	StageVideoEvent* th=static_cast<StageVideoEvent*>(obj);
+	if(argslen>=4)
+	{
+		th->status=args[3]->toString();
+	}
+	if(argslen>=5)
+	{
+		th->colorSpace=args[4]->toString();
+	}
+
+	return NULL;
+}
+
+Event* StageVideoEvent::cloneImpl() const
+{
+	StageVideoEvent *clone;
+	clone = Class<StageVideoEvent>::getInstanceS();
+	clone->status = status;
+	clone->colorSpace = colorSpace;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
+}
+
+ASFUNCTIONBODY_GETTER(StageVideoEvent,colorSpace);
+ASFUNCTIONBODY_GETTER(StageVideoEvent,status);
+
+StageVideoAvailabilityEvent::StageVideoAvailabilityEvent(Class_base* c)
+  : Event(c, "stageVideoAvailability"), availability("unavailable")
+{
+}
+
+void StageVideoAvailabilityEvent::sinit(Class_base* c)
+{
+	c->setVariableByQName("STAGE_VIDEO_AVAILABILITY","",Class<ASString>::getInstanceS("stageVideoAvailability"),DECLARED_TRAIT);
+	REGISTER_GETTER(c, availability);
+}
+
+ASFUNCTIONBODY(StageVideoAvailabilityEvent, _constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+
+	StageVideoAvailabilityEvent* th=static_cast<StageVideoAvailabilityEvent*>(obj);
+	if(argslen>=4)
+	{
+		th->availability = args[3]->toString();
+	}
+	
+	return NULL;
+}
+
+Event* StageVideoAvailabilityEvent::cloneImpl() const
+{
+	StageVideoAvailabilityEvent *clone;
+	clone = Class<StageVideoAvailabilityEvent>::getInstanceS();
+	clone->availability = availability;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
+}
+
+ASFUNCTIONBODY_GETTER(StageVideoAvailabilityEvent,availability);

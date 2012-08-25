@@ -474,5 +474,28 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class StageVideoEvent: public Event
+{
+private:
+	Event* cloneImpl() const;
+public:
+	StageVideoEvent(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER(tiny_string,colorSpace);
+	ASPROPERTY_GETTER(tiny_string,status);
+};
+
+class StageVideoAvailabilityEvent: public Event
+{
+private:
+	Event* cloneImpl() const;
+public:
+	StageVideoAvailabilityEvent(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER(tiny_string,availability);
+};
+
 };
 #endif /* SCRIPTING_FLASH_EVENTS_FLASHEVENTS_H */

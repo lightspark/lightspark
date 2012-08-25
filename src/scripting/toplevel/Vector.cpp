@@ -77,7 +77,7 @@ void Vector::sinit(Class_base* c)
 	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
 }
 
-Vector::Vector(Class_base* c):ASObject(c),vec_type(NULL),fixed(false),vec(reporter_allocator<ASObject*>(c->memoryAccount))
+Vector::Vector(Class_base* c, Type *vtype):ASObject(c),vec_type(vtype),fixed(false),vec(reporter_allocator<ASObject*>(c->memoryAccount))
 {
 }
 

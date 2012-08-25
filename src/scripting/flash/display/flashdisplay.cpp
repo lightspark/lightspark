@@ -1848,6 +1848,7 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageVideos","",Class<IFunction>::getFunction(_getStageVideos),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,displayState);
 }
 
@@ -1967,6 +1968,12 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 	RenderThread* rt=getSys()->getRenderThread();
 	rt->requestResize(rt->windowWidth, rt->windowHeight, true);
 	return NULL;
+}
+
+ASFUNCTIONBODY(Stage,_getStageVideos)
+{
+	// We don't really support stageVideos, return an empty vector
+	return Class<Vector>::getInstanceS(Class<StageVideo>::getClass());
 }
 
 void Graphics::sinit(Class_base* c)

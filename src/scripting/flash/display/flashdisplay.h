@@ -524,6 +524,7 @@ public:
 	ASFUNCTION(_getScaleMode);
 	ASFUNCTION(_setScaleMode);
 	ASFUNCTION(_getLoaderInfo);
+	ASFUNCTION(_getStageVideos);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
 };
 

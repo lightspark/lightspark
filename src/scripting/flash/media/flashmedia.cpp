@@ -472,3 +472,30 @@ ASFUNCTIONBODY(SoundChannel, _constructor)
 {
 	return NULL;
 }
+
+void StageVideo::sinit(Class_base *c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<EventDispatcher>::getRef());
+}
+
+ASFUNCTIONBODY(StageVideo,_constructor)
+{
+	EventDispatcher::_constructor(obj, NULL, 0);
+	return NULL;
+}
+
+void StageVideoAvailability::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setVariableByQName("AVAILABLE","",Class<ASString>::getInstanceS("available"),DECLARED_TRAIT);
+	c->setVariableByQName("UNAVAILABLE","",Class<ASString>::getInstanceS("unavailable"),DECLARED_TRAIT);
+}
+
+void VideoStatus::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setVariableByQName("ACCELERATED","",Class<ASString>::getInstanceS("accelerated"),DECLARED_TRAIT);
+	c->setVariableByQName("SOFTWARE","",Class<ASString>::getInstanceS("software"),DECLARED_TRAIT);
+	c->setVariableByQName("UNAVAILABLE","",Class<ASString>::getInstanceS("unavailable"),DECLARED_TRAIT);
+}

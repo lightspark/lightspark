@@ -125,6 +125,28 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class StageVideo : public EventDispatcher
+{
+public:
+	StageVideo(Class_base* c):EventDispatcher(c){}
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
+
+class StageVideoAvailability : public ASObject
+{
+public:
+	StageVideoAvailability(Class_base* c):ASObject(c){}
+	static void sinit(Class_base*);
+};
+
+class VideoStatus : public ASObject
+{
+public:
+	VideoStatus(Class_base* c):ASObject(c){}
+	static void sinit(Class_base*);
+};
+
 };
 
 #endif /* SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H */

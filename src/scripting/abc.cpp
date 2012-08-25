@@ -350,6 +350,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("DataEvent","flash.events",Class<DataEvent>::getRef());
 	builtin->registerBuiltin("DRMErrorEvent","flash.events",Class<DRMErrorEvent>::getRef());
 	builtin->registerBuiltin("DRMStatusEvent","flash.events",Class<DRMStatusEvent>::getRef());
+	builtin->registerBuiltin("StageVideoEvent","flash.events",Class<StageVideoEvent>::getRef());
+	builtin->registerBuiltin("StageVideoAvailabilityEvent","flash.events",Class<StageVideoAvailabilityEvent>::getRef());
 
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")));
@@ -384,6 +386,9 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Sound","flash.media",Class<Sound>::getRef());
 	builtin->registerBuiltin("SoundLoaderContext","flash.media",Class<SoundLoaderContext>::getRef());
 	builtin->registerBuiltin("SoundChannel","flash.media",Class<SoundChannel>::getRef());
+	builtin->registerBuiltin("StageVideo","flash.media",Class<StageVideo>::getRef());
+	builtin->registerBuiltin("StageVideoAvailability","flash.media",Class<StageVideoAvailability>::getRef());
+	builtin->registerBuiltin("VideoStatus","flash.media",Class<VideoStatus>::getRef());
 
 	builtin->registerBuiltin("Keyboard","flash.ui",Class<ASObject>::getStubClass(QName("Keyboard","flash.ui")));
 	builtin->registerBuiltin("ContextMenu","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenu","flash.ui")));

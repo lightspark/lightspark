@@ -1972,7 +1972,7 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 
 ASFUNCTIONBODY(Stage,_getStageVideos)
 {
-	// We don't really support stageVideos, return an empty vector
+	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
 	return Class<Vector>::getInstanceS(Class<StageVideo>::getClass());
 }
 

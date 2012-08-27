@@ -47,10 +47,12 @@ ASFUNCTIONBODY(Integer,_toString)
 ASFUNCTIONBODY(Integer,_constructor)
 {
 	Integer* th=static_cast<Integer*>(obj);
-	if(args && argslen==1)
-		th->val=args[0]->toInt();
-	else
-		th->val=0;
+	if(argslen==0)
+	{
+		//The int is already initialized to 0
+		return NULL;
+	}
+	th->val=args[0]->toInt();
 	return NULL;
 }
 

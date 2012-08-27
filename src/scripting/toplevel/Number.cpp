@@ -280,10 +280,12 @@ void Number::sinit(Class_base* c)
 ASFUNCTIONBODY(Number,_constructor)
 {
 	Number* th=static_cast<Number*>(obj);
-	if(args && argslen==1)
-		th->val=args[0]->toNumber();
-	else
-		th->val=0;
+	if(argslen==0)
+	{
+		//The number is already initialized to NaN
+		return NULL;
+	}
+	th->val=args[0]->toNumber();
 	return NULL;
 }
 

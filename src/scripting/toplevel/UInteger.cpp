@@ -86,10 +86,12 @@ TRISTATE UInteger::isLess(ASObject* o)
 ASFUNCTIONBODY(UInteger,_constructor)
 {
 	UInteger* th=static_cast<UInteger*>(obj);
-	if(args && argslen==1)
-		th->val=args[0]->toUInt();
-	else
-		th->val=0;
+	if(argslen==0)
+	{
+		//The uint is already initialized to 0
+		return NULL;
+	}
+	th->val=args[0]->toUInt();
 	return NULL;
 }
 

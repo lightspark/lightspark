@@ -603,54 +603,6 @@ ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen)
 bool isXMLName(ASObject* obj);
 ASObject* _isXMLName(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
-
-inline void Manager::put(ASObject* o)
-{
-	if(available.size()>=maxCache)
-		delete o;
-	else
-	{
-		//The Manager now owns this object
-		if(o->classdef)
-			o->classdef->abandonObject(o);
-		available.push_back(o);
-	}
-}
-
-template<class T>
-T* Manager::get()
-{
-	if(available.size())
-	{
-		T* ret=static_cast<T*>(available.back());
-		available.pop_back();
-		ret->incRef();
-		//Transfer ownership back to the classdef
-		if(ret->getClass())
-			ret->getClass()->acquireObject(ret);
-		//std::cout << "getting[" << name << "] " << ret << std::endl;
-		return ret;
-	}
-	else
-	{
-		T* ret=Class<T>::getInstanceS();
-		ret->manager = this;
-		//std::cout << "newing" << ret << std::endl;
-		return ret;
-	}
-}
-
-inline Manager::~Manager()
-{
-	for(auto i = available.begin(); i != available.end(); ++i)
-	{
-		// ~ASObject will call abandonObject() again
-		if((*i)->classdef)
-			(*i)->classdef->acquireObject(*i);
-		delete *i;
-	}
-}
-
 };
 
 #endif /* SCRIPTING_TOPLEVEL_TOPLEVEL_H */

@@ -425,9 +425,6 @@ private:
 	ATOMIC_INT32(nextNamespaceBase);
 public:
 	call_context* currentCallContext;
-	Manager* int_manager;
-	Manager* uint_manager;
-	Manager* number_manager;
 
 	MemoryAccount* vmDataMemory;
 

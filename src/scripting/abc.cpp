@@ -869,9 +869,6 @@ ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),shutting
 	limits.max_recursion = 256;
 	limits.script_timeout = 20;
 	m_sys=s;
-	int_manager=new Manager(15);
-	uint_manager=new Manager(15);
-	number_manager=new Manager(15);
 }
 
 void ABCVm::start()
@@ -912,10 +909,6 @@ ABCVm::~ABCVm()
 {
 	for(size_t i=0;i<contexts.size();++i)
 		delete contexts[i];
-
-	delete int_manager;
-	delete uint_manager;
-	delete number_manager;
 }
 
 int ABCVm::getEventQueueSize()

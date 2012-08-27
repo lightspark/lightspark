@@ -126,7 +126,6 @@ namespace lightspark
 
 class ASObject;
 class IFunction;
-class Manager;
 template<class T> class Class;
 class Class_base;
 class ByteArray;
@@ -237,33 +236,12 @@ public:
 	void destroyContents();
 };
 
-/*
- * This class manages a list of unreferenced
- * objects (ref_count == 0), which can be reused
- * to save new/delete. ASObjects that have their
- * 'manager' property set wont delete themselves
- * on decRef to zero, but call Manager::put.
- */
-class Manager
-{
-private:
-	std::vector<ASObject*> available;
-	uint32_t maxCache;
-public:
-	Manager(uint32_t m):maxCache(m){}
-template<class T>
-	T* get();
-	void put(ASObject* o);
-	~Manager();
-};
-
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 
 class ASObject: public memory_reporter
 {
-friend class Manager;
 friend class ABCVm;
 friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
@@ -271,7 +249,6 @@ friend void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_str
 friend class IFunction; //Needed for clone
 private:
 	variables_map Variables;
-	Manager* manager;
 	Class_base* classdef;
 	ATOMIC_INT32(ref_count);
 	const variable* findGettable(const multiname& name) const DLL_LOCAL;
@@ -316,15 +293,10 @@ public:
 		uint32_t t=ATOMIC_DECREMENT(ref_count);
 		if(t==0)
 		{
-			if(manager)
-				manager->put(this);
-			else
-			{
-				//Let's make refcount very invalid
-				ref_count=-1024;
-				//std::cout << "delete " << this << std::endl;
-				delete this;
-			}
+			//Let's make refcount very invalid
+			ref_count=-1024;
+			//std::cout << "delete " << this << std::endl;
+			delete this;
 		}
 	}
 	void fake_decRef()

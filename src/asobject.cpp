@@ -1083,7 +1083,7 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject(MemoryAccount* m):Variables(m),manager(NULL),classdef(NULL),
+ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),
 	ref_count(1),type(T_OBJECT),implEnable(true)
 {
 #ifndef NDEBUG
@@ -1092,7 +1092,7 @@ ASObject::ASObject(MemoryAccount* m):Variables(m),manager(NULL),classdef(NULL),
 #endif
 }
 
-ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),manager(NULL),classdef(NULL),
+ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),
 	ref_count(1),type(T_OBJECT),implEnable(true)
 {
 	setClass(c);
@@ -1102,7 +1102,7 @@ ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),manager(N
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),manager(NULL),classdef(NULL),
+ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),
 	ref_count(1),type(o.type),implEnable(true)
 {
 	if(o.classdef)

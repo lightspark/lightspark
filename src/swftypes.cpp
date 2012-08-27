@@ -1229,22 +1229,19 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 
 ASObject* lightspark::abstract_d(number_t i)
 {
-	Number* ret=getVm()->number_manager->get<Number>();
-	ret->val=i;
+	Number* ret=Class<Number>::getInstanceS(i);
 	return ret;
 }
 
 ASObject* lightspark::abstract_i(int32_t i)
 {
-	Integer* ret=getVm()->int_manager->get<Integer>();
-	ret->val=i;
+	Integer* ret=Class<Integer>::getInstanceS(i);
 	return ret;
 }
 
 ASObject* lightspark::abstract_ui(uint32_t i)
 {
-	UInteger* ret=getVm()->uint_manager->get<UInteger>();
-	ret->val=i;
+	UInteger* ret=Class<UInteger>::getInstanceS(i);
 	return ret;
 }
 

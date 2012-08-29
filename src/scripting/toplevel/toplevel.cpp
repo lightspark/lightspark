@@ -912,6 +912,7 @@ void Class_base::finalize()
 	finalizeObjects();
 
 	ASObject::finalize();
+	borrowedVariables.destroyContents();
 	super.reset();
 	prototype.reset();
 	if(constructor)

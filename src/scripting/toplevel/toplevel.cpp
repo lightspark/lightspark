@@ -707,6 +707,7 @@ Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),prote
 {
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
+	this->incRef();
 	classdef=this;
 	//The super is Class<ASObject> but we set it in SystemState constructor to avoid an infinite loop
 }

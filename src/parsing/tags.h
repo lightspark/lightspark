@@ -514,6 +514,7 @@ private:
 	UI16_SWF FrameCount;
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
+	~DefineSpriteTag();
 	virtual int getId() const { return SpriteID; }
 	virtual ASObject* instance(Class_base* c=NULL) const;
 };

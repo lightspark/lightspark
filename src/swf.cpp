@@ -1348,6 +1348,7 @@ void ParseThread::parseSWF(UI8 ver)
 				LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
 			}
 		}
+		delete fat;
 
 		bool done=false;
 		bool empty=true;

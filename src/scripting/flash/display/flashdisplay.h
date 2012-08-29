@@ -424,6 +424,11 @@ class Frame
 public:
 	std::list<const DisplayListTag*> blueprint;
 	void execute(_R<DisplayObjectContainer> displayList);
+	/**
+	 * destroyTags must be called only by the tag destructor, not by
+	 * the objects that are instance of tags
+	 */
+	void destroyTags();
 };
 
 class FrameContainer

@@ -851,6 +851,13 @@ ASFUNCTIONBODY(Scene,_getNumFrames)
 	return abstract_i(th->numFrames);
 }
 
+void Frame::destroyTags()
+{
+	auto it=blueprint.begin();
+	for(;it!=blueprint.end();++it)
+		delete (*it);
+}
+
 void Frame::execute(_R<DisplayObjectContainer> displayList)
 {
 	auto it=blueprint.begin();

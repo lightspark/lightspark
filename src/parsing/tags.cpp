@@ -323,7 +323,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 {
 	in >> SpriteID >> FrameCount;
 
-	LOG(LOG_TRACE,_("DefineSprite ID: ") << SpriteID);
+	LOG(LOG_TRACE,"DefineSprite ID: " << SpriteID);
 	//Create a non top level TagFactory
 	TagFactory factory(in, false);
 	Tag* tag;
@@ -338,6 +338,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 		switch(tag->getType())
 		{
 			case DICT_TAG:
+				delete tag;
 				throw ParseException("Dictionary tag inside a sprite. Should not happen.");
 			case DISPLAY_LIST_TAG:
 				addToFrame(static_cast<DisplayListTag*>(tag));
@@ -345,6 +346,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				break;
 			case SHOW_TAG:
 			{
+				delete tag;
 				frames.emplace_back(Frame());
 				empty=true;
 				break;
@@ -352,15 +354,19 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 			case SYMBOL_CLASS_TAG:
 			case ABC_TAG:
 			case CONTROL_TAG:
+				delete tag;
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case FRAMELABEL_TAG:
 				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
+				delete tag;
 				empty=false;
 				break;
 			case TAG:
+				delete tag;
 				LOG(LOG_NOT_IMPLEMENTED,_("Unclassified tag inside Sprite?"));
 				break;
 			case END_TAG:
+				delete tag;
 				done=true;
 				if(empty && frames.size()!=FrameCount)
 					frames.pop_back();
@@ -376,8 +382,13 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 	}
 
 	setFramesLoaded(frames.size());
+}
 
-	LOG(LOG_TRACE,_("EndDefineSprite ID: ") << SpriteID);
+DefineSpriteTag::~DefineSpriteTag()
+{
+	//This is the actual parsed tag so it also has to clean up the tag in the FrameContainer
+	for(auto it=frames.begin();it!=frames.end();++it)
+		it->destroyTags();
 }
 
 ASObject* DefineSpriteTag::instance(Class_base* c) const

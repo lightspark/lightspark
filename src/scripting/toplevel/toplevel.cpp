@@ -898,17 +898,11 @@ void Class_base::abandonObject(ASObject* ob)
 
 void Class_base::finalizeObjects() const
 {
-	set<ASObject*>::iterator it=referencedObjects.begin();
-	for(;it!=referencedObjects.end();)
+	while(!referencedObjects.empty())
 	{
-		//A reference is acquired before finalizing the object, to make sure it will survive
-		//the call
-		ASObject* tmp=*it;
-		tmp->incRef();
-		tmp->finalize();
-		//Advance the iterator before decReffing the current object (decReffing may destroy the object right now
-		++it;
-		tmp->decRef();
+		set<ASObject*>::iterator it=referencedObjects.begin();
+		//Finalizing the object does also release the classdef and call abandonObject
+		(*it)->finalize();
 	}
 }
 

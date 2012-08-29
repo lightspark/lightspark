@@ -1134,16 +1134,17 @@ void ASObject::setClass(Class_base* c)
 void ASObject::finalize()
 {
 	Variables.destroyContents();
+	if(classdef)
+	{
+		classdef->abandonObject(this);
+		classdef->decRef();
+		classdef=NULL;
+	}
 }
 
 ASObject::~ASObject()
 {
 	finalize();
-	if(classdef)
-	{
-		classdef->abandonObject(this);
-		classdef->decRef();
-	}
 }
 
 void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)

@@ -466,7 +466,10 @@ public:
 	static Ref<Class_base> getTemplateInstance(Type* type)
 	{
 		std::vector<Type*> t(1,type);
-		return _MR(getTemplate()->applyType(t));
+		Template<T>* templ=getTemplate();
+		Ref<Class_base> ret=_MR(templ->applyType(t));
+		templ->decRef();
+		return ret;
 	}
 
 	static Template<T>* getTemplate(const QName& name)

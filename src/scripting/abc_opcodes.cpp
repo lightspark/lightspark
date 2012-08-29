@@ -2152,6 +2152,7 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 		Class_base* c=f->as<Class_base>();
 		ASObject* ret=c->generator(args,m);
 		assert_and_throw(ret);
+		c->decRef();
 		if(keepReturn)
 			th->runtime_stack_push(ret);
 		else
@@ -2175,10 +2176,15 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 		if(f->is<Undefined>())
 		{
 			if(keepReturn)
-				th->runtime_stack_push(getSys()->getUndefinedRef());
+				th->runtime_stack_push(f);
+			else
+				f->decRef();
 		}
 		else
+		{
+			f->decRef();
 			throw Class<TypeError>::getInstanceS("Error #1006: Tried to call something that is not a function");
+		}
 	}
 	LOG(LOG_CALLS,_("End of call ") << m << ' ' << f);
 }

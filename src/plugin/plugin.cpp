@@ -320,7 +320,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	m_sys=new lightspark::SystemState(0, lightspark::SystemState::FLASH);
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
-	//Find flashvars argument
+	//Parse OBJECT/EMBED tag attributes
+	string baseURL;
 	for(int i=0;i<argc;i++)
 	{
 		if(argn[i]==NULL || argv[i]==NULL)
@@ -329,8 +330,18 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		{
 			m_sys->parseParametersFromFlashvars(argv[i]);
 		}
+		else if(strcasecmp(argn[i],"base")==0)
+		{
+			baseURL = argv[i];
+			//This is a directory, not a file
+			baseURL += "/";
+		}
 		//The SWF file url should be getted from NewStream
 	}
+	//basedir is a qualified URL or a path relative to the HTML page
+	URLInfo page(getPageURL());
+	m_sys->mainClip->setBaseURL(page.goToURL(baseURL).getURL());
+
 	m_sys->downloadManager=new NPDownloadManager(mInstance);
 
 	int p_major, p_minor, n_major, n_minor;

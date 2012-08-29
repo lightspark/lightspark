@@ -71,6 +71,7 @@ private:
 	float frameRate;
 	bool toBind;
 	tiny_string bindName;
+	URLInfo baseURL;
 	/* those are private because you shouldn't call mainClip->*,
 	 * but mainClip->getStage()->* instead.
 	 */
@@ -101,6 +102,8 @@ public:
 	void bindToName(const tiny_string& n);
 	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
 	URLInfo& getOrigin() { return origin; };
+	void DLL_PUBLIC setBaseURL(const tiny_string& url);
+	const URLInfo& getBaseURL();
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);

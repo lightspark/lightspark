@@ -101,7 +101,6 @@ void RootMovieClip::bindToName(const tiny_string& n)
 void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 {
 	//We can use this origin to implement security measures.
-	//It also allows loading files without specifying a fully qualified path.
 	//Note that for plugins, this url is NOT the page url, but it is the swf file url.
 	origin = URLInfo(u);
 	//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
@@ -113,6 +112,26 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 		loaderInfo->setURL(origin.getParsedURL());
 		loaderInfo->setLoaderURL(origin.getParsedURL());
 	}
+}
+
+void RootMovieClip::setBaseURL(const tiny_string& url)
+{
+	//Set the URL to be used in resolving relative paths. For the
+	//plugin this is either the value of base attribute in the
+	//OBJECT or EMBED tag or, if the attribute is not provided,
+	//the address of the hosting HTML page.
+	baseURL = URLInfo(url);
+}
+
+const URLInfo& RootMovieClip::getBaseURL()
+{
+	//The plugin uses the address of the HTML page (baseURL) for
+	//resolving relative paths. AIR and the standalone Lightspark
+	//use the SWF location (origin).
+	if(baseURL.isValid())
+		return baseURL;
+	else
+		return origin;
 }
 
 void SystemState::registerFrameListener(_R<DisplayObject> obj)

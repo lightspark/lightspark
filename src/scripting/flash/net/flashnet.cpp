@@ -58,7 +58,7 @@ void URLRequest::buildTraits(ASObject* o)
 
 URLInfo URLRequest::getRequestURL() const
 {
-	URLInfo ret=getSys()->mainClip->getOrigin().goToURL(url);
+	URLInfo ret=getSys()->mainClip->getBaseURL().goToURL(url);
 	if(method!=GET)
 		return ret;
 

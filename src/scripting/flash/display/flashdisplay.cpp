@@ -426,24 +426,23 @@ ASFUNCTIONBODY(Loader,loadBytes)
 
 	th->unload();
 
-	//Find the actual ByteArray object
-	assert_and_throw(argslen>=1);
-	assert_and_throw(args[0]->getClass() && 
-			args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
+	_NR<ByteArray> bytes;
+	_NR<LoaderContext> context;
+	ARG_UNPACK (bytes)(context, NullRef);
 
-	//TODO: support LoaderContext
 	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
-	th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+	if(context.isNull() || context->applicationDomain.isNull())
+		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+	else
+		th->contentLoaderInfo->applicationDomain = context->applicationDomain;
 	//Always loaded in the current security domain
 	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
 	th->contentLoaderInfo->securityDomain = curSecDomain;
 
-	ByteArray *ba=static_cast<ByteArray*>(args[0]);
-	if(ba->getLength()!=0)
+	if(bytes->getLength()!=0)
 	{
 		th->incRef();
-		ba->incRef();
-		LoaderThread *thread=new LoaderThread(_MR(ba), _MR(th));
+		LoaderThread *thread=new LoaderThread(_MR(bytes), _MR(th));
 		getSys()->addJob(thread);
 		th->job=thread;
 	}

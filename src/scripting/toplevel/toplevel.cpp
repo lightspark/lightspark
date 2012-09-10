@@ -939,6 +939,7 @@ Class_object* Class_object::getClass()
 	{
 		//Create the class
 		ret=new (getSys()->unaccountedMemory) Class_object();
+		ret->incRef();
 		*retAddr=ret;
 	}
 	else
@@ -1796,7 +1797,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->prototype = _MNR(new_functionPrototype(ret, ret->super->prototype));
 		ret->incRef();
 		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-
+		ret->incRef();
 		*retAddr = ret;
 
 		//we cannot use sinit, as we need to setup 'this_class' before calling

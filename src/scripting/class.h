@@ -143,6 +143,7 @@ public:
 			QName name(ClassName<T>::name,ClassName<T>::ns);
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 			ret=new (getSys()->unaccountedMemory) Class<T>(name, memoryAccount);
+			ret->incRef();
 			*retAddr=ret;
 			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
@@ -271,6 +272,7 @@ public:
 			QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 			ret=new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
+			ret->incRef();
 			*retAddr=ret;
 			ret->prototype = _MNR(new_objectPrototype());
 			ASObject::sinit(ret);
@@ -353,6 +355,7 @@ public:
 			QName name(ClassName<T>::name,ClassName<T>::ns);
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 			ret=new (getSys()->unaccountedMemory) InterfaceClass<T>(name, memoryAccount);
+			ret->incRef();
 			*retAddr=ret;
 		}
 		else

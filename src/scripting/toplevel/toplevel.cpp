@@ -707,8 +707,7 @@ Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),prote
 {
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
-	this->incRef();
-	classdef=this;
+	setClass(this);
 	//The super is Class<ASObject> but we set it in SystemState constructor to avoid an infinite loop
 }
 
@@ -947,11 +946,19 @@ Class_object* Class_object::getClass()
 
 	return ret;
 }
+
 _R<Class_object> Class_object::getRef()
 {
 	Class_object* ret = getClass();
 	ret->incRef();
 	return _MR(ret);
+}
+
+void Class_object::finalize()
+{
+	//Remove the cyclic reference to itself
+	setClass(NULL);
+	Class_base::finalize();
 }
 
 const std::vector<Class_base*>& Class_base::getInterfaces() const

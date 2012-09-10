@@ -246,6 +246,7 @@ private:
 	{
 		throw RunTimeException("Class_object::buildInstanceTraits");
 	}
+	void finalize();
 public:
 	static Class_object* getClass();
 	static _R<Class_object> getRef();

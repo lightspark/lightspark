@@ -901,8 +901,11 @@ void Class_base::finalizeObjects() const
 	while(!referencedObjects.empty())
 	{
 		set<ASObject*>::iterator it=referencedObjects.begin();
+		ASObject* tmp=(*it);
+		tmp->incRef();
 		//Finalizing the object does also release the classdef and call abandonObject
-		(*it)->finalize();
+		tmp->finalize();
+		tmp->decRef();
 	}
 }
 

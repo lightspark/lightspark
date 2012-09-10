@@ -36,12 +36,14 @@ friend class XML;
 protected:
 	_NR<XMLDocument> root;
 	xmlpp::Node* node;
+	tiny_string toString_priv(xmlpp::Node *outputNode);
 public:
 	XMLNode(Class_base* c):ASObject(c),root(NullRef),node(NULL){}
 	XMLNode(Class_base* c, _R<XMLDocument> _r, xmlpp::Node* _n);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+	tiny_string toString();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(firstChild);
 	ASFUNCTION(childNodes);
@@ -49,6 +51,7 @@ public:
 	ASFUNCTION(_getNodeType);
 	ASFUNCTION(_getNodeName);
 	ASFUNCTION(_getNodeValue);
+	ASFUNCTION(_toString);
 };
 
 class XMLDocument: public XMLNode, public XMLBase
@@ -61,9 +64,11 @@ public:
 	void parseXMLImpl(const std::string& str);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+	tiny_string toString();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(parseXML);
 	ASFUNCTION(firstChild);
+	ASFUNCTION(_toString);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

@@ -41,6 +41,7 @@ void XMLNode::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(XMLNode::firstChild),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("childNodes","",Class<IFunction>::getFunction(XMLNode::childNodes),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("attributes","",Class<IFunction>::getFunction(attributes),GETTER_METHOD,true);
@@ -153,11 +154,41 @@ ASFUNCTIONBODY(XMLNode,_getNodeValue)
 		return getSys()->getNullRef();
 }
 
+ASFUNCTIONBODY(XMLNode,_toString)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	return Class<ASString>::getInstanceS(th->toString_priv(th->node));
+}
+
+tiny_string XMLNode::toString()
+{
+	return toString_priv(node);
+}
+
+tiny_string XMLNode::toString_priv(xmlpp::Node *outputNode)
+{
+	if(outputNode==NULL)
+		return "";
+
+	xmlNodePtr cNode=outputNode->cobj();
+	xmlDocPtr xmlDoc=cNode->doc;
+	xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
+	int success=xmlNodeDump(xmlBuffer, xmlDoc, cNode, 0, 0);
+	if (!success)
+		throw RunTimeException("Error in XMLNode::toString_priv");
+
+	tiny_string ret=tiny_string((char*)xmlBuffer->content,true);
+	xmlBufferFree(xmlBuffer);
+
+	return ret;
+}
+
 void XMLDocument::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<XMLNode>::getRef());
 	c->setDeclaredMethodByQName("parseXML","",Class<IFunction>::getFunction(parseXML),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(XMLDocument::firstChild),GETTER_METHOD,true);
 }
 
@@ -167,8 +198,13 @@ void XMLDocument::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(XMLDocument,_constructor)
 {
-//	XMLDocument* th=Class<XMLDocument>::cast(obj);
-	assert_and_throw(argslen==0);
+	XMLDocument* th=Class<XMLDocument>::cast(obj);
+	tiny_string source;
+
+	ARG_UNPACK(source, "");
+	if(!source.empty())
+		th->parseXMLImpl(source);
+
 	return NULL;
 }
 
@@ -182,6 +218,19 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 void XMLDocument::parseXMLImpl(const string& str)
 {
 	rootNode=buildFromString(str);
+}
+
+ASFUNCTIONBODY(XMLDocument,_toString)
+{
+	//TODO: should output xmlDecl and docTypeDecl, see the
+	//documentation on XMLNode.tostring()
+	XMLDocument* th=Class<XMLDocument>::cast(obj);
+	return Class<ASString>::getInstanceS(th->toString_priv(th->rootNode));
+}
+
+tiny_string XMLDocument::toString()
+{
+	return toString_priv(rootNode);
 }
 
 ASFUNCTIONBODY(XMLDocument,parseXML)

@@ -289,7 +289,7 @@ public:
 	void decRef()
 	{
 		//std::cout << "decref " << this << std::endl;
-		assert_and_throw(ref_count>0);
+		assert(ref_count>0);
 		uint32_t t=ATOMIC_DECREMENT(ref_count);
 		if(t==0)
 		{

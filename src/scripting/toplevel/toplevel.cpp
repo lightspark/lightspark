@@ -2223,6 +2223,7 @@ ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
 
 void ObjectPrototype::finalize()
 {
+	ASObject::finalize();
 	prevPrototype.reset();
 }
 
@@ -2244,6 +2245,7 @@ FunctionPrototype::FunctionPrototype(Class_base* c, _NR<Prototype> p) : Function
 
 void FunctionPrototype::finalize()
 {
+	Function::finalize();
 	prevPrototype.reset();
 }
 

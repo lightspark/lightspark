@@ -176,7 +176,19 @@ public:
 
 class IDrawable
 {
+public:
+	enum MASK_MODE { HARD_MASK = 0, SOFT_MASK };
+	struct MaskData
+	{
+		IDrawable* m;
+		MASK_MODE maskMode;
+		MaskData(IDrawable* _m, MASK_MODE _mm):m(_m),maskMode(_mm){}
+	};
 protected:
+	/*
+	 * The masks to be applied
+	 */
+	std::vector<MaskData> masks;
 	int32_t width;
 	int32_t height;
 	/*
@@ -189,8 +201,8 @@ protected:
 	int32_t yOffset;
 	float alpha;
 public:
-	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y, float a):
-		width(w),height(h),xOffset(x),yOffset(y),alpha(a){}
+	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m):
+		masks(m),width(w),height(h),xOffset(x),yOffset(y),alpha(a){}
 	virtual ~IDrawable(){}
 	virtual uint8_t* getPixelBuffer()=0;
 	int32_t getWidth() const { return width; }
@@ -259,7 +271,7 @@ protected:
 	cairo_surface_t* allocateSurface(uint8_t*& buf);
 	virtual void executeDraw(cairo_t* cr)=0;
 public:
-	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a);
+	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer();
 	/*
@@ -298,10 +310,12 @@ public:
 	   @param _m The whole transformation matrix
 	   @param _s The scale factor to be applied in both the x and y axis
 	   @param _a The alpha factor to be applied
+	   @param _ms The masks that must be applied
 	*/
 	CairoTokenRenderer(const std::vector<GeomToken>& _g, const MATRIX& _m,
-					   int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
-		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a), tokens(_g) {}
+			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
+		    float _s, float _a, const std::vector<MaskData>& _ms)
+		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms),tokens(_g){}
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -358,8 +372,8 @@ class CairoPangoRenderer : public CairoRenderer
 	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData);
 public:
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
-			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
-		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a), textData(_textData) {}
+			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& _ms)
+		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms), textData(_textData) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested

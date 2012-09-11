@@ -26,6 +26,7 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
+#include "scripting/flash/display/BitmapData.h"
 
 using namespace lightspark;
 using namespace std;
@@ -964,4 +965,84 @@ void DisplayObject::constructionComplete()
 	}
 	if(onStage)
 		requestInvalidation(getSys());
+}
+
+void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const
+{
+	if(mask.isNull())
+		return;
+
+	//If the mask is hard we need the drawable for each child
+	//If the mask is soft we need the rendered final result
+	IDrawable::MASK_MODE maskMode = IDrawable::HARD_MASK;
+	//For soft masking to work, both the object and the mask must be
+	//cacheAsBitmap and the mask must be on the stage
+	if(this->computeCacheAsBitmap() && mask->computeCacheAsBitmap() && mask->isOnStage())
+		maskMode = IDrawable::SOFT_MASK;
+
+	if(maskMode == IDrawable::HARD_MASK)
+	{
+		SoftwareInvalidateQueue queue;
+		mask->requestInvalidation(&queue);
+		for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
+		{
+			DisplayObject* target=(*it).getPtr();
+			//Get the drawable from each of the added objects
+			IDrawable* drawable=target->invalidate(NULL, MATRIX());
+			if(drawable==NULL)
+				continue;
+			masks.emplace_back(drawable, maskMode);
+		}
+	}
+	else
+	{
+		IDrawable* drawable=NULL;
+		if(mask->is<DisplayObjectContainer>())
+		{
+			//HACK: use bitmap temporarily
+			//NOTE: this is actually not only inefficient but wrong. It happens that
+			//the drawing happens unscaled on the bitmap and the bitmap is then scaled by
+			//the matrix. Is good enough only if no scaling/rotation is applied.
+			number_t xmin,xmax,ymin,ymax;
+			bool ret=mask->getBounds(xmin,xmax,ymin,ymax,mask->getConcatenatedMatrix());
+			if(ret==false)
+				return;
+			_R<BitmapData> data(Class<BitmapData>::getInstanceS(xmax-xmin,ymax-ymin));
+			ASObject* drawArgs = mask.getPtr();
+			BitmapData::draw(data.getPtr(), &drawArgs, 1);
+			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(data));
+
+			drawable=bmp->invalidate(NULL, mask->getConcatenatedMatrix());
+		}
+		else
+			drawable=mask->invalidate(NULL, MATRIX());
+
+		if(drawable==NULL)
+			return;
+		masks.emplace_back(drawable, maskMode);
+	}
+}
+
+void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix) const
+{
+	const DisplayObject* cur=this;
+	bool gatherMasks = true;
+	while(cur!=target)
+	{
+		totalMatrix=cur->getMatrix().multiplyMatrix(totalMatrix);
+		//Get an IDrawable for all the hierarchy of each mask.
+		if(gatherMasks)
+		{
+			if(cur->maskOf.isNull())
+				cur->gatherMaskIDrawables(masks);
+			else
+			{
+				//Stop gathering masks if any level of the hierarchy it's a mask
+				masks.clear();
+				masks.shrink_to_fit();
+				gatherMasks=false;
+			}
+		}
+		cur=cur->getParent().getPtr();
+	}
 }

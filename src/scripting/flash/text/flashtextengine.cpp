@@ -211,20 +211,18 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 		return NULL;
 	}
 
-	MATRIX totalMatrix(initialMatrix);
-	DisplayObject* cur=this;
-	while(cur!=target)
-	{
-		totalMatrix=cur->getMatrix().multiplyMatrix(totalMatrix);
-		cur=cur->getParent().getPtr();
-	}
+	//Compute the matrix and the masks that are relevant
+	MATRIX totalMatrix;
+	std::vector<IDrawable::MaskData> masks;
+	computeMasksAndMatrix(target,masks,totalMatrix);
+	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;
 
 	return new CairoPangoRenderer(*this,
 				      totalMatrix, x, y, width, height, 1.0f,
-				      getConcatenatedAlpha());
+				      getConcatenatedAlpha(),masks);
 }
 
 void TextLine::renderImpl(RenderContext& ctxt, bool maskEnabled) const

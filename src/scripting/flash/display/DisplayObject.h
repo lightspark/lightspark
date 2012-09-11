@@ -75,6 +75,7 @@ private:
 	void setMatrix(const MATRIX& m);
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
+	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const;
 protected:
 	bool onStage;
 	bool visible;
@@ -125,6 +126,7 @@ public:
 	 * cacheAsBitmap is true also if any filter is used
 	 */
 	bool computeCacheAsBitmap() const;
+	void computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks,MATRIX& totalMatrix) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
 	void setParent(_NR<DisplayObjectContainer> p);

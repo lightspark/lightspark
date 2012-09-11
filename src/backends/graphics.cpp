@@ -252,8 +252,9 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	return false;
 }
 
-CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a)
-	: IDrawable(_w, _h, _x, _y, _a), scaleFactor(_s), matrix(_m)
+CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h,
+		float _s, float _a, const std::vector<MaskData>& _ms)
+	: IDrawable(_w, _h, _x, _y, _a, _ms), scaleFactor(_s), matrix(_m)
 {
 }
 

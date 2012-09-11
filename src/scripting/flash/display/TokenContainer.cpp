@@ -135,20 +135,17 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		return NULL;
 	}
 
+	//Compute the matrix and the masks that are relevant
 	MATRIX totalMatrix;
-	DisplayObject* cur=owner;
-	while(cur!=target)
-	{
-		totalMatrix=cur->getMatrix().multiplyMatrix(totalMatrix);
-		cur=cur->getParent().getPtr();
-	}
+	std::vector<IDrawable::MaskData> masks;
+	owner->computeMasksAndMatrix(target,masks,totalMatrix);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;
 	return new CairoTokenRenderer(tokens,
 				totalMatrix, x, y, width, height, scaling,
-				owner->getConcatenatedAlpha());
+				owner->getConcatenatedAlpha(), masks);
 }
 
 bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const

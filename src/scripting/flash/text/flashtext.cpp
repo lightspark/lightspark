@@ -373,12 +373,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	}
 
 	MATRIX totalMatrix;
-	DisplayObject* cur=this;
-	while(cur!=target)
-	{
-		totalMatrix=cur->getMatrix().multiplyMatrix(totalMatrix);
-		cur=cur->getParent().getPtr();
-	}
+	std::vector<IDrawable::MaskData> masks;
+	computeMasksAndMatrix(target, masks, totalMatrix);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
@@ -392,7 +388,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	*/
 	return new CairoPangoRenderer(*this,
 				totalMatrix, x, y, width, height, 1.0f,
-				getConcatenatedAlpha());
+				getConcatenatedAlpha(), masks);
 }
 
 void TextField::renderImpl(RenderContext& ctxt, bool maskEnabled) const

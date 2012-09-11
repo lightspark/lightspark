@@ -204,6 +204,11 @@ public:
 	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m):
 		masks(m),width(w),height(h),xOffset(x),yOffset(y),alpha(a){}
 	virtual ~IDrawable(){}
+	/*
+	 * This method returns a raster buffer of the image
+	 * The various implementation are responsible for applying the
+	 * masks
+	 */
 	virtual uint8_t* getPixelBuffer()=0;
 	/*
 	 * This method creates a cairo path that can be used as a mask for

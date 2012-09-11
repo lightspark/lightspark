@@ -41,6 +41,7 @@ class BitmapData: public ASObject, public BitmapContainer, public IBitmapDrawabl
 public:
 	BitmapData(Class_base* c);
 	BitmapData(Class_base* c, const BitmapContainer& b);
+	BitmapData(Class_base* c, uint32_t width, uint32_t height);
 	static void sinit(Class_base* c);
 	~BitmapData();
 	/* the bitmaps data in premultiplied, native-endian 32 bit

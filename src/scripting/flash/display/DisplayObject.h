@@ -122,6 +122,10 @@ public:
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	CXFORMWITHALPHA ColorTransform;
+	/**
+	 * cacheAsBitmap is true also if any filter is used
+	 */
+	bool computeCacheAsBitmap() const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
 	void setParent(_NR<DisplayObjectContainer> p);

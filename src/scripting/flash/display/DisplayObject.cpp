@@ -198,6 +198,11 @@ ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,cacheAsBitmap);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,filters);
 
+bool DisplayObject::computeCacheAsBitmap() const
+{
+	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0);
+}
+
 ASFUNCTIONBODY(DisplayObject,_getTransform)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);

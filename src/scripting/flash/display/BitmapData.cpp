@@ -198,7 +198,8 @@ ASFUNCTIONBODY(BitmapData,draw)
 			surface.yOffset=drawable->getYOffset();
 			delete drawable;
 		}
-		d->Render(ctxt, false);
+		//Enable rendering of masks as well
+		d->Render(ctxt, true);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());

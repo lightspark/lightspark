@@ -146,6 +146,10 @@ private:
 	std::map<const DisplayObject*, CachedSurface> customSurfaces;
 	cairo_t* cr;
 	static cairo_surface_t* getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height);
+	/*
+	 * An invalid surface to be returned for objects with no content
+	 */
+	static const CachedSurface invalidSurface;
 public:
 	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height);
 	virtual ~CairoRenderContext();

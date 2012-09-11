@@ -47,6 +47,8 @@ const GLfloat RenderContext::lsIdentityMatrix[16] = {
 								0, 0, 0, 1
 								};
 
+const CachedSurface CairoRenderContext::invalidSurface;
+
 RenderContext::RenderContext(CONTEXT_TYPE t):contextType(t)
 {
 	lsglLoadIdentity();
@@ -350,7 +352,11 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d) const
 {
 	auto ret=customSurfaces.find(d);
-	assert(ret!=customSurfaces.end());
+	if(ret==customSurfaces.end())
+	{
+		//No surface is stored, return an invalid one
+		return invalidSurface;
+	}
 	return ret->second;
 }
 

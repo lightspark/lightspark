@@ -24,6 +24,7 @@
 #include "compat.h"
 #include "scripting/argconv.h"
 #include "abc.h"
+#include "parsing/amf3_generator.h"
 #include <libxml/tree.h>
 #include <libxml++/parsers/domparser.h>
 #include <libxml++/nodes/textnode.h>
@@ -1323,10 +1324,11 @@ bool XML::isEqual(ASObject* r)
 }
 
 void XML::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+		    std::map<const ASObject*, uint32_t>& objMap,
+		    std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	throw UnsupportedException("XML::serialize not implemented");
+	out->writeByte(xml_marker);
+	out->writeXMLString(objMap, this, toString());
 }
 
 _NR<XML> XML::getRootNode()

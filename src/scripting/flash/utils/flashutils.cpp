@@ -1051,6 +1051,8 @@ void ByteArray::writeU29(uint32_t val)
 void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_string& s)
 {
 	const uint32_t len=s.numBytes();
+	if(len >= 1<<28)
+		throw Class<RangeError>::getInstanceS("Error #2006: The supplied index is out of bounds.");
 
 	//Check if the string is already in the map
 	auto it=stringMap.find(s);
@@ -1074,6 +1076,35 @@ void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_
 		getBuffer(position+len,true);
 		memcpy(bytes+position,s.raw_buf(),len);
 		position+=len;
+	}
+}
+
+void ByteArray::writeXMLString(std::map<const ASObject*, uint32_t>& objMap,
+			       ASObject *xml,
+			       const tiny_string& xmlstr)
+{
+	if(xmlstr.numBytes() >= 1<<28)
+		throw Class<RangeError>::getInstanceS("Error #2006: The supplied index is out of bounds.");
+
+	//Check if the XML object has been already serialized
+	auto it=objMap.find(xml);
+	if(it!=objMap.end())
+	{
+		//The least significant bit is 0 to signal a reference
+		writeU29(it->second << 1);
+	}
+	else
+	{
+		//Add the XML object to the map
+		objMap.insert(make_pair(xml, objMap.size()));
+
+		//The first bit must be 1, the next 29 bits
+		//store the number of bytes of the string
+		writeU29((xmlstr.numBytes()<<1) | 1);
+
+		getBuffer(position+xmlstr.numBytes(),true);
+		memcpy(bytes+position,xmlstr.raw_buf(),xmlstr.numBytes());
+		position+=xmlstr.numBytes();
 	}
 }
 

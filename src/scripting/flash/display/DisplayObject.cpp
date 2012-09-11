@@ -318,12 +318,6 @@ void DisplayObject::extractValuesFromMatrix()
 	Matrix.scale(1.0/sx,1.0/sy);
 }
 
-bool DisplayObject::isSimple() const
-{
-	//TODO: Check filters
-	return clippedAlpha()==1.0;
-}
-
 bool DisplayObject::skipRender(bool maskEnabled) const
 {
 	return visible==false || clippedAlpha()==0.0 || (!maskEnabled && !maskOf.isNull());

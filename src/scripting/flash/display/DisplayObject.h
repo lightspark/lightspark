@@ -93,7 +93,6 @@ protected:
 	void extractValuesFromMatrix();
 	number_t computeWidth();
 	number_t computeHeight();
-	bool isSimple() const;
 	bool skipRender(bool maskEnabled) const;
 	float clippedAlpha() const;
 

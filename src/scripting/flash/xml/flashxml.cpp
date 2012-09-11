@@ -184,6 +184,15 @@ tiny_string XMLNode::toString_priv(xmlpp::Node *outputNode)
 	return ret;
 }
 
+XMLDocument::XMLDocument(Class_base* c, tiny_string s)
+ : XMLNode(c),rootNode(NULL)
+{
+	if(!s.empty())
+	{
+		parseXMLImpl(s);
+	}
+}
+
 void XMLDocument::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));

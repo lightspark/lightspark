@@ -60,7 +60,7 @@ friend class XMLNode;
 private:
 	xmlpp::Node* rootNode;
 public:
-	XMLDocument(Class_base* c):XMLNode(c),rootNode(NULL){}
+	XMLDocument(Class_base* c, tiny_string s="");
 	void parseXMLImpl(const std::string& str);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

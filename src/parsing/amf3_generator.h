@@ -75,6 +75,7 @@ private:
 			std::vector<TraitsRef>& traitsMap) const;
 	_R<ASObject> parseInteger() const;
 	_R<ASObject> parseDouble() const;
+	_R<ASObject> parseXML(std::vector<ASObject*>& objMap, bool legacyXML) const;
 public:
 	Amf3Deserializer(ByteArray* i):input(i) {}
 	_R<ASObject> readObject() const;

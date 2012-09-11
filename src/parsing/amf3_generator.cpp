@@ -22,6 +22,8 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/class.h"
+#include "scripting/flash/xml/flashxml.h"
+#include "toplevel/XML.h"
 #include <iostream>
 #include <fstream>
 
@@ -236,6 +238,41 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 	return ret;
 }
 
+_R<ASObject> Amf3Deserializer::parseXML(std::vector<ASObject*>& objMap, bool legacyXML) const
+{
+	uint32_t xmlRef;
+	if(!input->readU29(xmlRef))
+		throw ParseException("Not enough data to parse XML");
+
+	if((xmlRef&0x01)==0)
+	{
+		//Just a reference
+		if(objMap.size() <= (xmlRef >> 1))
+			throw ParseException("Invalid XML reference in AMF3 data");
+		ASObject *xmlObj = objMap[xmlRef >> 1];
+		xmlObj->incRef();
+		return _MR(xmlObj);
+	}
+
+	uint32_t strLen=xmlRef>>1;
+	string xmlStr;
+	for(uint32_t i=0;i<strLen;i++)
+	{
+		uint8_t c;
+		if(!input->readByte(c))
+			throw ParseException("Not enough data to parse string");
+		xmlStr.push_back(c);
+	}
+
+	ASObject *xmlObj;
+	if(legacyXML)
+		xmlObj=Class<XMLDocument>::getInstanceS(xmlStr);
+	else
+		xmlObj=Class<XML>::getInstanceS(xmlStr);
+	objMap.push_back(xmlObj);
+	return _MR(xmlObj);
+}
+
 _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
@@ -261,10 +298,14 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			return parseDouble();
 		case string_marker:
 			return _MR(Class<ASString>::getInstanceS(parseStringVR(stringMap)));
+		case xml_doc_marker:
+			return parseXML(objMap, true);
 		case array_marker:
 			return parseArray(stringMap, objMap, traitsMap);
 		case object_marker:
 			return parseObject(stringMap, objMap, traitsMap);
+		case xml_marker:
+			return parseXML(objMap, false);
 		default:
 			LOG(LOG_ERROR,"Unsupported marker " << (uint32_t)marker);
 			throw UnsupportedException("Unsupported marker");

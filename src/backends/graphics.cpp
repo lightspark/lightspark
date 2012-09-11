@@ -618,9 +618,65 @@ uint8_t* CairoRenderer::getPixelBuffer()
 		matrix.x0-=xOffset;
 	if(yOffset >= 0)
 		matrix.y0-=yOffset;
-	cairo_transform(cr, &matrix);
 
+	//Apply all the masks to clip the drawn part
+	for(uint32_t i=0;i<masks.size();i++)
+	{
+		if(masks[i].maskMode != HARD_MASK)
+			continue;
+		masks[i].m->applyCairoMask(cr,xOffset,yOffset);
+	}
+
+	cairo_set_matrix(cr, &matrix);
 	executeDraw(cr);
+
+	cairo_surface_t* maskSurface = NULL;
+	uint8_t* maskRawData = NULL;
+	cairo_t* maskCr = NULL;
+	int32_t maskXOffset = 0;
+	int32_t maskYOffset = 0;
+	//Also apply the soft masks
+	for(uint32_t i=0;i<masks.size();i++)
+	{
+		if(masks[i].maskMode != SOFT_MASK)
+			continue;
+		//TODO: this may be optimized if needed
+		uint8_t* maskData = masks[i].m->getPixelBuffer();
+		if(maskData==NULL)
+			continue;
+
+		cairo_surface_t* tmp = cairo_image_surface_create_for_data(maskData,CAIRO_FORMAT_ARGB32,
+				masks[i].m->getWidth(),masks[i].m->getHeight(),masks[i].m->getWidth()*4);
+		if(maskSurface==NULL)
+		{
+			maskSurface = tmp;
+			maskRawData = maskData;
+			maskCr = cairo_create(maskSurface);
+			maskXOffset = masks[i].m->getXOffset();
+			maskYOffset = masks[i].m->getYOffset();
+		}
+		else
+		{
+			//We only care about alpha here, DEST_IN multiplies the two alphas
+			cairo_set_operator(maskCr, CAIRO_OPERATOR_DEST_IN);
+			//TODO: consider offsets
+			cairo_set_source_surface(maskCr, tmp, masks[i].m->getXOffset()-maskXOffset, masks[i].m->getYOffset()-maskYOffset);
+			//cairo_set_source_surface(maskCr, tmp, 0, 0);
+			cairo_paint(maskCr);
+			cairo_surface_destroy(tmp);
+			delete[] maskData;
+		}
+	}
+	if(maskCr)
+	{
+		cairo_destroy(maskCr);
+		//Do a last paint with DEST_IN to apply mask
+		cairo_set_operator(cr, CAIRO_OPERATOR_DEST_IN);
+		cairo_set_source_surface(cr, maskSurface, maskXOffset-getXOffset(), maskYOffset-getYOffset());
+		cairo_paint(cr);
+		cairo_surface_destroy(maskSurface);
+		delete[] maskRawData;
+	}
 
 	cairo_destroy(cr);
 	return ret;

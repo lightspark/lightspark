@@ -23,6 +23,7 @@
 #include "swf.h"
 #include "compat.h"
 #include "scripting/argconv.h"
+#include "parsing/amf3_generator.h"
 
 using namespace std;
 using namespace lightspark;
@@ -212,7 +213,8 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	throw UnsupportedException("XMLDocument::serialize not implemented");
+	out->writeByte(xml_doc_marker);
+	out->writeXMLString(objMap, this, toString());
 }
 
 void XMLDocument::parseXMLImpl(const string& str)

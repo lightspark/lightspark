@@ -670,6 +670,16 @@ bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float sc
 	return pixelBytes[0]!=0x00;
 }
 
+void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOffset) const
+{
+	cairo_matrix_t tmp=matrix;
+	tmp.x0-=xOffset;
+	tmp.y0-=yOffset;
+	cairo_set_matrix(cr, &tmp);
+	cairoPathFromTokens(cr, tokens, scaleFactor, true);
+	cairo_clip(cr);
+}
+
 void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
 		uint32_t height, size_t* dataSize, size_t* stride)
 {
@@ -826,6 +836,11 @@ bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint3
 	}
 
 	return (h!=0) && (w!=0);
+}
+
+void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yOffset) const
+{
+	assert(false);
 }
 
 AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(NULL),uploadNeeded(false)

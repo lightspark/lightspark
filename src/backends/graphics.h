@@ -205,6 +205,11 @@ public:
 		masks(m),width(w),height(h),xOffset(x),yOffset(y),alpha(a){}
 	virtual ~IDrawable(){}
 	virtual uint8_t* getPixelBuffer()=0;
+	/*
+	 * This method creates a cairo path that can be used as a mask for
+	 * another object
+	 */
+	virtual void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const = 0;
 	int32_t getWidth() const { return width; }
 	int32_t getHeight() const { return height; }
 	int32_t getXOffset() const { return xOffset; }
@@ -300,6 +305,7 @@ private:
 	 * This is run by CairoRenderer::execute()
 	 */
 	void executeDraw(cairo_t* cr);
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const;
 public:
 	/*
 	   CairoTokenRenderer constructor
@@ -370,6 +376,7 @@ class CairoPangoRenderer : public CairoRenderer
 	void executeDraw(cairo_t* cr);
 	TextData textData;
 	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData);
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const;
 public:
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& _ms)

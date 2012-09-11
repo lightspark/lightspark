@@ -121,6 +121,7 @@ public:
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	CXFORMWITHALPHA ColorTransform;
+	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	_NR<DisplayObjectContainer> getParent() const { return parent; }
 	void setParent(_NR<DisplayObjectContainer> p);
 	/*

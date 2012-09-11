@@ -124,7 +124,7 @@ void DisplayObject::hitTestEpilogue() const
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo()
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cacheAsBitmap(false)
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
@@ -176,8 +176,6 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(_setMask),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(_getAlpha),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(_setAlpha),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(_getBounds),NORMAL_METHOD,true);
@@ -188,12 +186,15 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(_getTransform),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
+	REGISTER_GETTER_SETTER(c,cacheAsBitmap);
 
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
 	IBitmapDrawable::linkTraits(c);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
+//TODO: Use a callback for the cacheAsBitmap getter, since it should use computeCacheAsBitmap
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,cacheAsBitmap);
 
 ASFUNCTIONBODY(DisplayObject,_getTransform)
 {

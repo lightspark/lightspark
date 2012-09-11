@@ -2747,7 +2747,8 @@ void Bitmap::updatedData()
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->getWidth(), bitmapData->getHeight())));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->getWidth(), 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
-	requestInvalidation(getSys());
+	if(onStage)
+		requestInvalidation(getSys());
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {

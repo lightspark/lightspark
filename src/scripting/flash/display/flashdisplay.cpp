@@ -2676,6 +2676,7 @@ void Bitmap::finalize()
 	if(!bitmapData.isNull())
 		bitmapData->removeUser(this);
 	bitmapData.reset();
+	DisplayObject::finalize();
 }
 
 void Bitmap::sinit(Class_base* c)

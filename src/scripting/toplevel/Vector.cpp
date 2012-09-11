@@ -94,6 +94,7 @@ void Vector::finalize()
 			vec[i]->decRef();
 	}
 	vec.clear();
+	ASObject::finalize();
 }
 
 void Vector::setTypes(const std::vector<Type*>& types)

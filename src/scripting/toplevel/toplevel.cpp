@@ -2272,6 +2272,7 @@ Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c), f
 void Function_object::finalize()
 {
 	functionPrototype.reset();
+	ASObject::finalize();
 }
 
 _NR<ASObject> Function_object::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)

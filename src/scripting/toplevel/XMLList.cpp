@@ -72,6 +72,7 @@ XMLList::XMLList(Class_base* c,const XML::XMLVector& r):
 void XMLList::finalize()
 {
 	nodes.clear();
+	ASObject::finalize();
 }
 
 void XMLList::sinit(Class_base* c)

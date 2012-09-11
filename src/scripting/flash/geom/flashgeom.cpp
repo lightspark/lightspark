@@ -918,6 +918,7 @@ Transform::Transform(Class_base* c, _R<DisplayObject> o):ASObject(c),owner(o)
 void Transform::finalize()
 {
 	owner.reset();
+	ASObject::finalize();
 }
 
 void Transform::sinit(Class_base* c)

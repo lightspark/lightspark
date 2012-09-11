@@ -124,7 +124,7 @@ void DisplayObject::hitTestEpilogue() const
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cacheAsBitmap(false)
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(),cacheAsBitmap(false)
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
@@ -187,6 +187,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(_getTransform),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 	REGISTER_GETTER_SETTER(c,cacheAsBitmap);
+	REGISTER_GETTER_SETTER(c,filters);
 
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
 	IBitmapDrawable::linkTraits(c);
@@ -195,6 +196,7 @@ void DisplayObject::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 //TODO: Use a callback for the cacheAsBitmap getter, since it should use computeCacheAsBitmap
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,cacheAsBitmap);
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,filters);
 
 ASFUNCTIONBODY(DisplayObject,_getTransform)
 {

@@ -120,6 +120,7 @@ public:
 	tiny_string name;
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
+	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	CXFORMWITHALPHA ColorTransform;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	_NR<DisplayObjectContainer> getParent() const { return parent; }

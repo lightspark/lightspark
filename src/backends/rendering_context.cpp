@@ -351,6 +351,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 
 const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d) const
 {
+	std::cerr << d << std::endl;
 	auto ret=customSurfaces.find(d);
 	if(ret==customSurfaces.end())
 	{

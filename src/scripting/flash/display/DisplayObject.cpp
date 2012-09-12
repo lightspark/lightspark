@@ -417,7 +417,7 @@ void DisplayObject::setOnStage(bool staged)
 		  asynchronous uses of setOnStage are removed the code can be simplified
 		  by removing the !isVmThread case.
 		*/
-		if(onStage==true && isConstructed())
+		if(onStage==true)
 		{
 			this->incRef();
 			_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));

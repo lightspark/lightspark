@@ -74,7 +74,7 @@ ParseThread* lightspark::getParseThread()
 RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(c),
 	parsingIsFailed(false),frameRate(0),
-	toBind(false),finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
+	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
 	loaderInfo=li;
 }
@@ -89,13 +89,6 @@ void RootMovieClip::parsingFailed()
 {
 	//The parsing is failed, we have no change to be ever valid
 	parsingIsFailed=true;
-}
-
-void RootMovieClip::bindToName(const tiny_string& n)
-{
-	assert_and_throw(toBind==false);
-	toBind=true;
-	bindName=n;
 }
 
 void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
@@ -145,11 +138,6 @@ void SystemState::unregisterFrameListener(_R<DisplayObject> obj)
 {
 	Locker l(mutexFrameListeners);
 	frameListeners.erase(obj);
-}
-
-void RootMovieClip::setOnStage(bool staged)
-{
-	MovieClip::setOnStage(staged);
 }
 
 RootMovieClip* RootMovieClip::getInstance(_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)

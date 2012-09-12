@@ -69,15 +69,12 @@ private:
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
 	float frameRate;
-	bool toBind;
-	tiny_string bindName;
 	URLInfo baseURL;
 	/* those are private because you shouldn't call mainClip->*,
 	 * but mainClip->getStage()->* instead.
 	 */
 	void initFrame();
 	void advanceFrame();
-	void setOnStage(bool staged);
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 public:
 	RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
@@ -99,7 +96,6 @@ public:
 	void revertFrame();
 	void parsingFailed();
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void bindToName(const tiny_string& n);
 	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
 	URLInfo& getOrigin() { return origin; };
 	void DLL_PUBLIC setBaseURL(const tiny_string& url);

@@ -156,9 +156,6 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		tiny_string className((const char*)Names[i],true);
 		if(Tags[i]==0)
 		{
-			//We have to bind this root movieclip itself, let's tell it.
-			//This will be done later
-			root->bindToName(className);
 			root->incRef();
 			getVm()->addEvent(NullRef, _MR(new (getSys()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 

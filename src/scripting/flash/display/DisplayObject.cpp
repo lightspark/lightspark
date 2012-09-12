@@ -940,9 +940,9 @@ void DisplayObject::initFrame()
 		 * This is from "Order of Operations".
 		 */
 		/* TODO: also dispatch event "added" */
-		/* TODO: should we directly call handleEventPublic? */
 		this->incRef();
-		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("addedToStage")));
+		_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));
+		ABCVm::publicHandleEvent(_MR(this),e);
 	}
 }
 

@@ -2,6 +2,7 @@ package {
 	import Tests;
 	import flash.display.*;
 	import flash.events.*;
+	import OrderOfOperationsChild;
 	
 	public class OrderOfOperations extends MovieClip {
 
@@ -18,6 +19,7 @@ package {
 			//Not tested events: removedFromStage
 			this.addFrameScript(0,frame1)
 			this.addFrameScript(1,frame2)
+			this.addFrameScript(2,frame3)
 			
 			this.addFrameScript(3,exit)
 		}
@@ -36,6 +38,10 @@ package {
 			Tests.assertEquals(2,this.currentFrame,"frame script on frame 2");
 			Tests.assertEquals(1,this.numChildren,"frame2: One child created");
 			Tests.assertNotNull(this.getChildAt(0),"Legacy child created and non-null in frameScript");
+		}
+
+		private function frame3():void {
+			var a:OrderOfOperationsChild = new OrderOfOperationsChild(stage);
 		}
 		
 		private function exit():void {
@@ -153,7 +159,7 @@ package {
 		}
 		
 		private function onRemoved(e:Event):void {
-			Tests.assertEquals(true,this != e.target);
+			Tests.assertEquals(true,this != e.target,"onRemoved this != e.target");
 			//This is the event for the child added in frame 2 (it bubbles)
 			Tests.assertEquals(13,numOp, "onRemoved for child is in right order");
 			numOp++;

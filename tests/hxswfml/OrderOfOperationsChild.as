@@ -13,11 +13,26 @@ package
 			Tests.assertFalse(constructorEnded, "addedToStage called immediately for 'new'ed objects 1/2");
 			addedToStageReceived = true;
 		}
-		public function OrderOfOperationsChild(c:DisplayObjectContainer):void
+		private function legacyAddedToStage(e:Event):void
 		{
-			this.addEventListener("addedToStage",onAddedToStage);
-			c.addChild(this);
-			Tests.assertTrue(addedToStageReceived, "addedToStage called immediately for 'new'ed objects 2/2");
+			Tests.assertTrue(constructorEnded, "addedToStage called after constructor for legacy objects 2/2");
+			addedToStageReceived = true;
+		}
+		public function OrderOfOperationsChild(c:DisplayObjectContainer = null):void
+		{
+			if(c)
+			{
+				this.addEventListener("addedToStage",onAddedToStage);
+				c.addChild(this);
+				Tests.assertTrue(addedToStageReceived, "addedToStage called immediately for 'new'ed objects 2/2");
+			}
+			else
+			{
+				Tests.assertNotNull(parent, "Parent already available in constructor of legacy children");
+				Tests.assertEquals(2, parent.numChildren, "Legacy children already in parent before their constructor is run");
+				this.addEventListener("addedToStage",legacyAddedToStage);
+				Tests.assertFalse(addedToStageReceived, "addedToStage called after constructor for legacy objects 1/2");
+			}
 			constructorEnded = true;
 		}
 	}

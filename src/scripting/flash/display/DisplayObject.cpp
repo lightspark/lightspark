@@ -932,17 +932,23 @@ void DisplayObject::initFrame()
 	{
 		getClass()->handleConstruction(this,NULL,0,true);
 
-		if(!onStage)
-			return;
-
-		/* addChild has already been called for this object,
-		 * but addedToStage is delayed until after construction.
+		/*
+		 * Legacy objects have their display list properties set on creation, but
+		 * the related events must only be sent after the constructor is sent.
 		 * This is from "Order of Operations".
 		 */
-		/* TODO: also dispatch event "added" */
-		this->incRef();
-		_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));
-		ABCVm::publicHandleEvent(_MR(this),e);
+		if(!parent.isNull())
+		{
+			this->incRef();
+			_R<Event> e=_MR(Class<Event>::getInstanceS("added"));
+			ABCVm::publicHandleEvent(_MR(this),e);
+		}
+		if(onStage)
+		{
+			this->incRef();
+			_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));
+			ABCVm::publicHandleEvent(_MR(this),e);
+		}
 	}
 }
 

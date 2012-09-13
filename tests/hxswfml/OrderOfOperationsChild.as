@@ -20,6 +20,7 @@ package
 		}
 		public function OrderOfOperationsChild(c:DisplayObjectContainer = null):void
 		{
+			Tests.assertEquals(1, this.numChildren, "Legacy children already in parent before their constructor is run");
 			if(c)
 			{
 				this.addEventListener("addedToStage",onAddedToStage);

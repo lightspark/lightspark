@@ -856,6 +856,8 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	#ifndef NDEBUG
 		target->initialized=true;
 	#endif
+		//Tell the object that the construction is complete
+		target->constructionComplete();
 	}
 
 	//TODO: is there any valid case for not having a constructor?
@@ -870,12 +872,6 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	{
 		for(uint32_t i=0;i<argslen;i++)
 			args[i]->decRef();
-	}
-
-	if(buildAndLink)
-	{
-		//Tell the object that the construction is complete
-		target->constructionComplete();
 	}
 }
 

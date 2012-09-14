@@ -2520,6 +2520,12 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		else if (spread == "repeat")
 			grad.SpreadMode = 2;
 	}
+	else
+	{
+		//default is pad
+		grad.SpreadMode = 0;
+	}
+
 
 	if(argslen > 6)
 	{
@@ -2528,6 +2534,11 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 			grad.InterpolationMode = 0;
 		else if (interp == "linearRGB")
 			grad.InterpolationMode = 1;
+	}
+	else
+	{
+		//default is rgb
+		grad.InterpolationMode = 0;
 	}
 
 	style.Gradient = grad;

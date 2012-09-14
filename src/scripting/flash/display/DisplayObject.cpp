@@ -1000,19 +1000,23 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 		if(mask->is<DisplayObjectContainer>())
 		{
 			//HACK: use bitmap temporarily
-			//NOTE: this is actually not only inefficient but wrong. It happens that
-			//the drawing happens unscaled on the bitmap and the bitmap is then scaled by
-			//the matrix. Is good enough only if no scaling/rotation is applied.
 			number_t xmin,xmax,ymin,ymax;
 			bool ret=mask->getBounds(xmin,xmax,ymin,ymax,mask->getConcatenatedMatrix());
 			if(ret==false)
 				return;
 			_R<BitmapData> data(Class<BitmapData>::getInstanceS(xmax-xmin,ymax-ymin));
-			ASObject* drawArgs = mask.getPtr();
-			BitmapData::draw(data.getPtr(), &drawArgs, 1);
+			//Forge a matrix. It must contain the right rotation and scaling while translation
+			//only compensate for the xmin/ymin offset
+			MATRIX m=mask->getConcatenatedMatrix();
+			m.x0 -= xmin;
+			m.y0 -= ymin;
+			data->drawDisplayObject(mask.getPtr(), m);
 			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(data));
 
-			drawable=bmp->invalidate(NULL, mask->getConcatenatedMatrix());
+			//The created bitmap is already correctly scaled and rotated
+			//Just apply the needed offset
+			MATRIX m2(1,1,0,0,xmin,ymin);
+			drawable=bmp->invalidate(NULL, m2);
 		}
 		else
 			drawable=mask->invalidate(NULL, MATRIX());

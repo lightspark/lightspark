@@ -135,6 +135,34 @@ ASFUNCTIONBODY(BitmapData,dispose)
 	return NULL;
 }
 
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix)
+{
+	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
+	SoftwareInvalidateQueue queue;
+	d->requestInvalidation(&queue);
+	CairoRenderContext ctxt(getData(), width, height);
+	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
+	{
+		DisplayObject* target=(*it).getPtr();
+		//Get the drawable from each of the added objects
+		IDrawable* drawable=target->invalidate(d, initialMatrix);
+		if(drawable==NULL)
+			continue;
+
+		//Compute the matrix for this object
+		uint8_t* buf=drawable->getPixelBuffer();
+		//Construct a CachedSurface using the data
+		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf);
+		surface.tex.width=drawable->getWidth();
+		surface.tex.height=drawable->getHeight();
+		surface.xOffset=drawable->getXOffset();
+		surface.yOffset=drawable->getYOffset();
+		delete drawable;
+	}
+	//Enable rendering of masks as well
+	d->Render(ctxt, true);
+}
+
 ASFUNCTIONBODY(BitmapData,draw)
 {
 	BitmapData* th = obj->as<BitmapData>();
@@ -171,35 +199,12 @@ ASFUNCTIONBODY(BitmapData,draw)
 	}
 	else if(drawable->is<DisplayObject>())
 	{
-		//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
-		SoftwareInvalidateQueue queue;
 		DisplayObject* d=drawable->as<DisplayObject>();
-		d->requestInvalidation(&queue);
-		CairoRenderContext ctxt(th->getData(), th->width, th->height);
 		//Compute the initial matrix, if any
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
-		{
-			DisplayObject* target=(*it).getPtr();
-			//Get the drawable from each of the added objects
-			IDrawable* drawable=target->invalidate(d, initialMatrix);
-			if(drawable==NULL)
-				continue;
-
-			//Compute the matrix for this object
-			uint8_t* buf=drawable->getPixelBuffer();
-			//Construct a CachedSurface using the data
-			CachedSurface& surface=ctxt.allocateCustomSurface(target,buf);
-			surface.tex.width=drawable->getWidth();
-			surface.tex.height=drawable->getHeight();
-			surface.xOffset=drawable->getXOffset();
-			surface.yOffset=drawable->getYOffset();
-			delete drawable;
-		}
-		//Enable rendering of masks as well
-		d->Render(ctxt, true);
+		th->drawDisplayObject(d, initialMatrix);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());

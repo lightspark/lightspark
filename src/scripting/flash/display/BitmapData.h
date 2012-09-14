@@ -28,6 +28,7 @@ namespace lightspark
 {
 
 class Bitmap;
+class DisplayObject;
 
 class BitmapData: public ASObject, public BitmapContainer, public IBitmapDrawable
 {
@@ -50,6 +51,10 @@ public:
 	 * data (=stride*height) */
 	void addUser(Bitmap* b);
 	void removeUser(Bitmap* b);
+	/*
+	 * Utility method to draw a DisplayObject on the surface
+	 */
+	void drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix);
 	ASPROPERTY_GETTER(bool, transparent);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(dispose);

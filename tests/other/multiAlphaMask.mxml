@@ -82,21 +82,32 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 		visual.addChild(test2Container);
 		obj2.mask = mask4;
 
-		var controlText:TextField = new TextField();
-		controlText.x=200;
-		controlText.text = "Control";
-		controlText.scaleX = 2;
-		controlText.scaleY = 2;
-		visual.addChild(controlText);
-		var controlContainer:Sprite = new Sprite();
-		controlContainer.x = 200;
-		controlContainer.y = 40;
-		var control:Sprite = new Sprite();
-		control.graphics.beginFill(0xff0000,0.5);
-		control.graphics.drawRect(50,50,50,50);
-		control.graphics.endFill();
-		controlContainer.addChild(control);
-		visual.addChild(controlContainer);
+		var test3Text:TextField = new TextField();
+		test3Text.x=200;
+		test3Text.text = "Test 3";
+		test3Text.scaleX = 2;
+		test3Text.scaleY = 2;
+		visual.addChild(test3Text);
+		var test3Container:Sprite = new Sprite();
+		test3Container.y = 40;
+		test3Container.x=200;
+		var objParent:Sprite = new Sprite();
+		var mask5:Sprite = new Sprite();
+		mask5.graphics.beginFill(0x00ff00,0.1);
+		mask5.graphics.drawRect(50,0,100,100);
+		mask5.graphics.endFill();
+		mask5.cacheAsBitmap = true;
+		var obj3:Sprite = new Sprite();
+		obj3.graphics.beginFill(0xff0000);
+		obj3.graphics.drawRect(0,0,200,200);
+		obj3.graphics.endFill();
+		objParent.addChild(obj3);
+		objParent.addChild(mask5);
+		objParent.cacheAsBitmap = true;
+		objParent.mask = mask5;
+		mask5.rotation = 30;
+		test3Container.addChild(objParent);
+		visual.addChild(test3Container);
 	}
 	]]>
 </mx:Script>

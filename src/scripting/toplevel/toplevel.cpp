@@ -695,14 +695,14 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 }
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass()),protected_ns("",NAMESPACE),constructor(NULL),
-	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(m)),borrowedVariables(m),
+	borrowedVariables(m),
 	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),use_protected(false)
 {
 	type=T_CLASS;
 }
 
 Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns("",NAMESPACE),constructor(NULL),
-	referencedObjects(std::less<ASObject*>(), reporter_allocator<ASObject*>(NULL)),borrowedVariables(NULL),
+	borrowedVariables(NULL),
 	context(NULL),class_name("Class",""),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),use_protected(false)
 {
 	type=T_CLASS;
@@ -878,26 +878,33 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 void Class_base::acquireObject(ASObject* ob)
 {
 	Locker l(referencedObjectsMutex);
-	bool ret=referencedObjects.insert(ob).second;
-	assert_and_throw(ret);
+	assert_and_throw(!ob->is_linked());
+	referencedObjects.push_back(*ob);
 }
 
 void Class_base::abandonObject(ASObject* ob)
 {
 	Locker l(referencedObjectsMutex);
-	set<ASObject>::size_type ret=referencedObjects.erase(ob);
-	if(ret!=1)
+	assert_and_throw(ob->is_linked());
+#ifdef EXPENSIVE_DEBUG
+	//Check that the object is really referenced by this class
+	int count=0;
+	for (auto it=referencedObjects.cbegin(); it!=referencedObjects.cend(); ++it)
 	{
-		LOG(LOG_ERROR,_("Failure in reference counting in ") << class_name);
+		if ((&*it) == ob)
+			count++;
 	}
+	assert_and_throw(count==1);
+#endif
+
+	referencedObjects.erase(referencedObjects.iterator_to(*ob));
 }
 
-void Class_base::finalizeObjects() const
+void Class_base::finalizeObjects()
 {
 	while(!referencedObjects.empty())
 	{
-		set<ASObject*>::iterator it=referencedObjects.begin();
-		ASObject* tmp=(*it);
+		ASObject *tmp=&referencedObjects.front();
 		tmp->incRef();
 		//Finalizing the object does also release the classdef and call abandonObject
 		tmp->finalize();

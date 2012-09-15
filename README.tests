@@ -3,23 +3,48 @@ http://opensource.adobe.com/wiki/display/flexsdk/Download+Flex+4
 
 Flex 4 SDK is assumed to be installed in $FLEX_ROOT
 
-To compile tests inside the tests/ directory use the following command:
+To compile and run the test suite run:
+
+./tests
+
+Run "./tests --help" inside tests/ to see scripts usage.
+
+Compiling tests manually inside the tests/ directory:
 $FLEX_ROOT/bin/mxmlc -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false test.mxml -output test.swf
 
+Creating new testcases
+----------------------
 
-NOTE: Use the ./tests script in tests/ to run the tests in an automated way.
-      Run "./tests --help" inside tests/ to see its usage.
+Use template.mxml as a template for new testcases.
 
-NOTE: Use template.mxml as a template for new testcases.
+We've provided a simple Tests class which should be used where
+possible to test general behaviour of AS classes. See Tests.as for its
+usage.
 
-NOTE: We've provided a simple Tests class which should be used where possible to test general behaviour of AS classes. See Tests.as for its usage.
+Please use a naming scheme as follow:
 
-NOTE: Please use a naming scheme as follow:
-      For toplevel classes: tests/CLASSNAME_test.mxml (CLASSNAME is the exact name of the class/function)
-			For other classes: tests/NAMESPACE_CLASSNAME_test.mxml (NAMESPACE is for example "net" for "flash.net" classes/functions, e.g.: tests/net_NetStream_test.mxml)
-			Please group all tests for one class in one file.
+For toplevel classes: tests/CLASSNAME_test.mxml (CLASSNAME is the
+exact name of the class/function)
 
-NOTE:	Tests that aren't suitable for testing with the Tests class should be put in tests/other. (e.g.: testing video playing, StageScaleMode testing etc...)
-      The naming schemes still apply to these testcases though.
+For other classes: tests/NAMESPACE_CLASSNAME_test.mxml (NAMESPACE is
+for example "net" for "flash.net" classes/functions, e.g.:
+tests/net_NetStream_test.mxml)
 
-NOTE:	Tests for unimplemented features should be placed in tests/unimplemented.
+Please group all tests for one class in one file.
+
+Subdirectories
+--------------
+
+tests/other:
+
+Tests that aren't suitable for testing with the Tests class should be
+put in here. (e.g.: testing video playing, StageScaleMode testing
+etc...). The naming schemes still apply to these testcases though.
+
+tests/unimplemented:
+
+Tests for unimplemented features.
+
+tests/performance:
+
+Tests aimed at measuring runtime performance.

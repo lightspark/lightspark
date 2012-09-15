@@ -26,6 +26,7 @@
 #include "threading.h"
 #include "memory_support.h"
 #include <map>
+#include <boost/intrusive/list.hpp>
 
 #define ASFUNCTION(name) \
 	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
@@ -240,7 +241,7 @@ enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 
-class ASObject: public memory_reporter
+class ASObject: public memory_reporter, public boost::intrusive::list_base_hook<>
 {
 friend class ABCVm;
 friend class ABCContext;

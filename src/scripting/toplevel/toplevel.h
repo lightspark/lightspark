@@ -32,6 +32,7 @@
 //#include "scripting/toplevel/XML.h"
 #include "memory_support.h"
 #include <libxml++/parsers/domparser.h>
+#include <boost/intrusive/list.hpp>
 
 namespace lightspark
 {
@@ -152,8 +153,8 @@ private:
 	void describeMetadata(xmlpp::Element* node, const traits_info& trait) const;
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
-	std::set<ASObject*, std::less<ASObject*>, reporter_allocator<ASObject*>> referencedObjects;
-	void finalizeObjects() const;
+	boost::intrusive::list<ASObject, boost::intrusive::constant_time_size<false> > referencedObjects;
+	void finalizeObjects();
 protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_utils_SHA256_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import flash.system.fscommand;
+	import mx.utils.SHA256;
+	import flash.utils.ByteArray;
+
+	private function appComplete():void
+	{
+		var ba:ByteArray = new ByteArray();
+		for (var i:int=0; i<10000; i++) {
+		    ba.writeUTFBytes("1234567890");
+		}
+
+		SHA256.computeDigest(ba);
+
+		fscommand("quit");
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

@@ -23,12 +23,15 @@
 #include "swftypes.h"
 #include "memory_support.h"
 
+class memorystream;
+
 namespace lightspark
 {
 
 class u8
 {
 friend std::istream& operator>>(std::istream& in, u8& v);
+friend memorystream& operator>>(memorystream& in, u8& v);
 private:
 	uint32_t val;
 public:
@@ -52,6 +55,7 @@ public:
 class s24
 {
 friend std::istream& operator>>(std::istream& in, s24& v);
+friend memorystream& operator>>(memorystream& in, s24& v);
 private:
 	int32_t val;
 public:
@@ -61,6 +65,7 @@ public:
 class u30
 {
 friend std::istream& operator>>(std::istream& in, u30& v);
+friend memorystream& operator>>(memorystream& in, u30& v);
 private:
 	uint32_t val;
 public:

@@ -21,6 +21,8 @@
 #define PARSING_STREAMS_H 1
 
 #include "compat.h"
+#include "abctypes.h"
+#include "swftypes.h"
 #include <streambuf>
 #include <fstream>
 #include <cinttypes>
@@ -88,5 +90,35 @@ public:
 	bytes_buf(const uint8_t* b, int l);
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 };
+
+// A lightweight, istream-like interface for reading from a memory
+// buffer.
+// 
+// This is used in the interpreter for reading bytecode because this
+// is faster than istringstream.
+class memorystream
+{
+private:
+	const char* const code;
+	unsigned int len;
+	unsigned int pos;
+	bool read_past_end;
+public:
+	// Create a stream from a buffer b.
+	//
+	// The buffer is not copied, so b must continue to exists for
+	// the life-time of this memorystream instance.
+	memorystream(const char* const b, unsigned int l);
+	unsigned int size() const;
+	unsigned int tellg() const;
+	void seekg(unsigned int offset);
+	void read(char *out, unsigned int nbytes);
+	bool eof() const;
+};
+
+memorystream& lightspark::operator>>(memorystream& in, lightspark::u8& v);
+memorystream& lightspark::operator>>(memorystream& in, lightspark::s24& v);
+memorystream& lightspark::operator>>(memorystream& in, lightspark::u30& v);
+memorystream& lightspark::operator>>(memorystream& in, lightspark::u32& v);
 
 #endif /* PARSING_STREAMS_H */

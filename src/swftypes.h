@@ -39,6 +39,8 @@
 #include <algorithm>
 #endif
 
+class memorystream;
+
 namespace lightspark
 {
 
@@ -222,6 +224,7 @@ public:
 class u32
 {
 friend std::istream& operator>>(std::istream& in, u32& v);
+friend memorystream& operator>>(memorystream& in, u32& v);
 private:
 	uint32_t val;
 public:

@@ -21,6 +21,7 @@
 #include "compat.h"
 #include "exceptions.h"
 #include "scripting/abcutils.h"
+#include "parsing/streams.h"
 #include <string>
 #include <sstream>
 
@@ -39,7 +40,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 {
 	method_info* mi=function->mi;
 
-	istringstream code(mi->body->code);
+	memorystream code(mi->body->code.data(), mi->body->code.size());
 	//This may be non-zero and point to the position of an exception handler
 	code.seekg(context->exec_pos);
 

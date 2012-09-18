@@ -92,15 +92,10 @@ class NPVariantObject;
 class NPObjectObject : public lightspark::ExtObject
 {
 public:
-	NPObjectObject();
-	NPObjectObject(NPP _instance);
-	NPObjectObject(NPP _instance, lightspark::ExtObject& other);
-	NPObjectObject(NPP _instance, NPObject* obj);
+	NPObjectObject(std::map<const NPObject*, std::unique_ptr<ExtObject>>& objectsMap, NPP _instance, NPObject* obj);
 	
-	~NPObjectObject() {}
-
-	NPObject* getNPObject() const { return getNPObject(instance, *this); }
-	static NPObject* getNPObject(NPP instance, const lightspark::ExtObject& obj);
+	NPObject* getNPObject(std::map<const ExtObject*, NPObject*>& objectsMap) const { return getNPObject(objectsMap, instance, this); }
+	static NPObject* getNPObject(std::map<const ExtObject*, NPObject*>& objectsMap, NPP instance, const lightspark::ExtObject* obj);
 private:
 	NPP instance;
 
@@ -116,49 +111,11 @@ private:
 class NPVariantObject : public lightspark::ExtVariant
 {
 public:
-	NPVariantObject();
-	NPVariantObject(NPP _instance);
-	NPVariantObject(NPP _instance, const std::string& value);
-	NPVariantObject(NPP _instance, const char* value);
-	NPVariantObject(NPP _instance, int32_t value);
-	NPVariantObject(NPP _instance, double value);
-	NPVariantObject(NPP _instance, bool value);
-	// ExtVariant copy-constructor
-	NPVariantObject(NPP _instance, const ExtVariant& value);
-	// NPVariantObject copy-constructor
-	NPVariantObject(NPP _instance, const NPVariantObject& other);
-	NPVariantObject(NPP _instance, const NPVariant& other);
+	NPVariantObject(std::map<const NPObject*, std::unique_ptr<ExtObject>>& objectsMap, NPP _instance, const NPVariant& other);
+	static void ExtVariantToNPVariant(std::map<const ExtObject*, NPObject*>& objectsMap, NPP _instance,
+			const ExtVariant& value, NPVariant& variant);
 
-	~NPVariantObject();
-
-	// Copy this NPVariantObject's NPVariant value to another one.
-	void copy(NPVariant& dest) const { copy(variant, dest); }
-
-	// Straight copying of this object isn't correct.
-	// We need to properly copy the stored data.
-	NPVariantObject& operator=(const NPVariantObject& other);
-	NPVariantObject& operator=(const NPVariant& other);
-
-	NPP getInstance() const { return instance; }
-
-	EV_TYPE getType() const { return getType(variant); }
-	static EV_TYPE getType(const NPVariant& variant);
-
-	std::string getString() const { return getString(variant); }
-	static std::string getString(const NPVariant& variant);
-	int32_t getInt() const { return getInt(variant); }
-	static int32_t getInt(const NPVariant& variant);
-	double getDouble() const { return getDouble(variant); }
-	static double getDouble(const NPVariant& variant);
-	bool getBoolean() const { return getBoolean(variant); }
-	static bool getBoolean(const NPVariant& variant);
-	lightspark::ExtObject* getObject() const;
-private:
-	NPP instance;
-	NPVariant variant;
-
-	// This forms the base for the NPVariantObject & NPVariant copy-constructors.
-	static void copy(const NPVariant& from, NPVariant& dest);
+	static EV_TYPE getTypeS(const NPVariant& variant);
 };
 
 class NPScriptObjectGW;
@@ -199,8 +156,7 @@ public:
 	{
 		return properties.find(id) != properties.end();
 	}
-	// The returned value should be "delete"d by the caller after use
-	NPVariantObject* getProperty(const lightspark::ExtIdentifier& id) const;
+	const ExtVariant& getProperty(const lightspark::ExtIdentifier& id) const;
 	void setProperty(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant& value)
 	{
 		properties[id] = value;
@@ -246,43 +202,43 @@ public:
 	// going to a frame, pausing etc... to the external container.
 	static bool stdGetVariable(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdSetVariable(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdGotoFrame(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdIsPlaying(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdLoadMovie(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdPan(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdPercentLoaded(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdPlay(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdRewind(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdStopPlay(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdSetZoomRect(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdZoom(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 	static bool stdTotalFrames(const lightspark::ExtScriptObject& so,
 			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, lightspark::ExtVariant** result);
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 private:
 	NPScriptObjectGW* gw;
 	NPP instance;
@@ -386,8 +342,9 @@ public:
 	{
 		lightspark::SystemState* prevSys = getSys();
 		setTLSSys( static_cast<NPScriptObjectGW*>(obj)->m_sys );
+		std::map<const NPObject*, std::unique_ptr<ExtObject>> objectsMap;
 		static_cast<NPScriptObjectGW*>(obj)->so->setProperty(
-			NPIdentifierObject(id), NPVariantObject(static_cast<NPScriptObjectGW*>(obj)->instance, *value));
+			NPIdentifierObject(id), NPVariantObject(objectsMap,static_cast<NPScriptObjectGW*>(obj)->instance, *value));
 		bool success = true;
 		setTLSSys( prevSys );
 		return success;

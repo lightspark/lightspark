@@ -45,12 +45,12 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 	if(getSys()->extScriptObject == NULL)
 		return Class<ASString>::getInstanceS("");
 
-	ExtVariant* object = getSys()->extScriptObject->getProperty("name");
-	if(object == NULL)
+	ExtScriptObject* so=getSys()->extScriptObject;
+	if(so->hasProperty("name")==false)
 		return Class<ASString>::getInstanceS("");
 
-	std::string result = object->getString();
-	delete object;
+	const ExtVariant& object = so->getProperty("name");
+	std::string result = object.getString();
 	return Class<ASString>::getInstanceS(result);
 }
 
@@ -99,10 +99,11 @@ ASFUNCTIONBODY(ExternalInterface,call)
 
 	// Convert given arguments to ExtVariants
 	const ExtVariant** callArgs = g_newa(const ExtVariant*,argslen-1);
+	std::map<const ASObject*, std::unique_ptr<ExtObject>> objectsMap;
 	for(uint32_t i = 0; i < argslen-1; i++)
 	{
 		args[i+1]->incRef();
-		callArgs[i] = new ExtVariant(_MR(args[i+1]));
+		callArgs[i] = new ExtVariant(objectsMap,_MR(args[i+1]));
 	}
 
 	ASObject* asobjResult = NULL;

@@ -23,6 +23,7 @@
 
 #include <string>
 #include <map>
+#include <memory>
 
 #include "asobject.h"
 #include "compat.h"
@@ -88,8 +89,11 @@ public:
 	void copy(std::map<ExtIdentifier, ExtVariant>& dest) const;
 
 	bool hasProperty(const ExtIdentifier& id) const;
-	// The returned value should be "delete"d by the caller after use
-	ExtVariant* getProperty(const ExtIdentifier& id) const;
+	/*
+	 * NOTE: The caller must make sure that the property exists
+	 * using hasProperty
+	 */
+	const ExtVariant& getProperty(const ExtIdentifier& id) const;
 	void setProperty(const ExtIdentifier& id, const ExtVariant& value);
 	bool removeProperty(const ExtIdentifier& id);
 
@@ -124,34 +128,29 @@ public:
 	ExtVariant(int32_t value);
 	ExtVariant(double value);
 	ExtVariant(bool value);
-	ExtVariant(const ExtVariant& other);
-	ExtVariant(_R<ASObject> other);
+	ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& objectsMap, _R<ASObject> other);
 
-	// Since this class is used as value in property maps
-	// it must implement a proper copy operator that must
-	// deal with any subclass by acquiring the contents in
-	// the internal data structures
-	ExtVariant& operator=(const ExtVariant& other);
-
-	virtual ~ExtVariant() {}
+	~ExtVariant() {}
 
 	enum EV_TYPE
 	{ EV_STRING, EV_INT32, EV_DOUBLE, EV_BOOLEAN, EV_OBJECT, EV_NULL, EV_VOID };
-	virtual EV_TYPE getType() const { return type; }
+	EV_TYPE getType() const { return type; }
 
 	// These methods return the value of the ExtVariant.
 	// Returned values for non-matching types are undefined.
 	// As such, don't get a string value for an integer ExtVariant
-	virtual std::string getString() const { return strValue; }
-	virtual int32_t getInt() const { return intValue; }
-	virtual double getDouble() const { return doubleValue; }
-	virtual bool getBoolean() const { return booleanValue; }
-	// Returned pointer should get "delete"d by caller after use
-	virtual ExtObject* getObject() const { return new ExtObject(objectValue); }
-	ASObject* getASObject() const;
-private:
+	std::string getString() const { return strValue; }
+	int32_t getInt() const { return intValue; }
+	double getDouble() const { return doubleValue; }
+	bool getBoolean() const { return booleanValue; }
+	/*
+	 * ExtObject instances are always owned by the objectMaps
+	 */
+	ExtObject* getObject() const { return objectValue; }
+	ASObject* getASObject(std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const;
+protected:
 	std::string strValue;
-	ExtObject objectValue;
+	ExtObject* objectValue;
 	double doubleValue;
 	int32_t intValue;
 	EV_TYPE type;
@@ -177,7 +176,8 @@ public:
 	virtual void wait()=0;
 	virtual void wakeUp()=0;
 	// The result variable should be "delete"d by the caller after use.
-	virtual bool getResult(const ExtScriptObject& so, ExtVariant** result)=0;
+	virtual bool getResult(std::map<const ASObject*, std::unique_ptr<ExtObject>>& objectsMap,
+			const ExtScriptObject& so, const ExtVariant** result)=0;
 protected:
 	tiny_string exception;
 	bool success;
@@ -208,7 +208,8 @@ public:
 	void wait();
 	void wakeUp();
 	// The result variable should be "delete"d by the caller after use.
-	bool getResult(const ExtScriptObject& so, ExtVariant** _result);
+	bool getResult(std::map<const ASObject*, std::unique_ptr<ExtObject>>& objectsMap,
+			const ExtScriptObject& so, const ExtVariant** _result);
 };
 
 /**
@@ -219,7 +220,7 @@ class DLL_PUBLIC ExtBuiltinCallback : public ExtCallback
 public:
 	// The signature for a hard-coded callback function.
 	typedef bool (*funcPtr)(const ExtScriptObject& so, const ExtIdentifier& id,
-		const ExtVariant** args, uint32_t argc, ExtVariant** result);
+		const ExtVariant** args, uint32_t argc, const ExtVariant** result);
 
 	ExtBuiltinCallback(funcPtr _func) : func(_func), result(NULL) {}
 	~ExtBuiltinCallback() {}
@@ -232,10 +233,11 @@ public:
 	void wait();
 	void wakeUp();
 	// The result variable should be "delete"d by the caller after use.
-	bool getResult(const ExtScriptObject& so, ExtVariant** _result);
+	bool getResult(std::map<const ASObject*, std::unique_ptr<ExtObject>>& objectsMap,
+			const ExtScriptObject& so, const ExtVariant** _result);
 private:
 	funcPtr func;
-	ExtVariant* result;
+	const ExtVariant* result;
 };
 
 /**
@@ -257,8 +259,11 @@ public:
 	virtual bool removeMethod(const ExtIdentifier& id) = 0;
 
 	virtual bool hasProperty(const ExtIdentifier& id) const = 0;
-	// The returned value should be "delete"d by the caller after use
-	virtual ExtVariant* getProperty(const ExtIdentifier& id) const = 0;
+	/*
+	 * NOTE: The caller must make sure that the property exists
+	 * using hasProperty
+	 */
+	virtual const ExtVariant& getProperty(const ExtIdentifier& id) const = 0;
 	virtual void setProperty(const ExtIdentifier& id, const ExtVariant& value) = 0;
 	virtual bool removeProperty(const ExtIdentifier& id) = 0;
 

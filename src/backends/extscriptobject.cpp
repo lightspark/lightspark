@@ -117,13 +117,12 @@ bool ExtObject::hasProperty(const ExtIdentifier& id) const
 {
 	return properties.find(id) != properties.end();
 }
-ExtVariant* ExtObject::getProperty(const ExtIdentifier& id) const
+const ExtVariant& ExtObject::getProperty(const ExtIdentifier& id) const
 {
 	std::map<ExtIdentifier, ExtVariant>::const_iterator it = properties.find(id);
-	if(it == properties.end())
-		return NULL;
+	assert(it != properties.end());
 
-	return new ExtVariant(it->second);
+	return it->second;
 }
 void ExtObject::setProperty(const ExtIdentifier& id, const ExtVariant& value)
 {
@@ -179,11 +178,7 @@ ExtVariant::ExtVariant(bool value) :
 	strValue(""), doubleValue(0), intValue(0), type(EV_BOOLEAN), booleanValue(value)
 {
 }
-ExtVariant::ExtVariant(const ExtVariant& other)
-{
-	*this=other;
-}
-ExtVariant::ExtVariant(_R<ASObject> other) :
+ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& objectsMap, _R<ASObject> other) :
 	strValue(""), doubleValue(0), intValue(0), booleanValue(false)
 {
 	switch(other->getObjectType())
@@ -205,10 +200,21 @@ ExtVariant::ExtVariant(_R<ASObject> other) :
 		type = EV_BOOLEAN;
 		break;
 	case T_ARRAY:
-		objectValue.setType(ExtObject::EO_ARRAY);
 	case T_OBJECT:
-		type = EV_OBJECT;
 		{
+			type = EV_OBJECT;
+			auto it=objectsMap.find(other.getPtr());
+			if(it!=objectsMap.end())
+			{
+				objectValue = it->second.get();
+				break;
+			}
+			objectValue = new ExtObject();
+			if(other->getObjectType()==T_ARRAY)
+				objectValue->setType(ExtObject::EO_ARRAY);
+
+			objectsMap[other.getPtr()] = move(unique_ptr<ExtObject>(objectValue));
+
 			unsigned int index = 0;
 			while((index=other->nextNameIndex(index))!=0)
 			{
@@ -216,9 +222,9 @@ ExtVariant::ExtVariant(_R<ASObject> other) :
 				_R<ASObject> nextValue=other->nextValue(index);
 
 				if(nextName->getObjectType() == T_INTEGER)
-					objectValue.setProperty(nextName->toInt(), nextValue);
+					objectValue->setProperty(nextName->toInt(), ExtVariant(objectsMap, nextValue));
 				else
-					objectValue.setProperty(nextName->toString().raw_buf(), nextValue);
+					objectValue->setProperty(nextName->toString().raw_buf(), ExtVariant(objectsMap, nextValue));
 			}
 		}
 		break;
@@ -232,41 +238,8 @@ ExtVariant::ExtVariant(_R<ASObject> other) :
 	}
 }
 
-ExtVariant& ExtVariant::operator=(const ExtVariant& other)
-{
-	type = other.getType();
-
-	switch(type)
-	{
-	case EV_STRING:
-		strValue = other.getString();
-		break;
-	case EV_INT32:
-		intValue = other.getInt();
-		break;
-	case EV_DOUBLE:
-		doubleValue = other.getDouble();
-		break;
-	case EV_BOOLEAN:
-		booleanValue = other.getBoolean();
-		break;
-	case EV_OBJECT:
-		{
-			ExtObject* tmpObj=other.getObject();
-			objectValue = *tmpObj;
-			delete tmpObj;
-		}
-		break;
-	case EV_NULL:
-	case EV_VOID:
-		break;
-	}
-
-	return *this;
-}
-
 // Conversion to ASObject
-ASObject* ExtVariant::getASObject() const
+ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const
 {
 	ASObject* asobj;
 	switch(getType())
@@ -286,28 +259,34 @@ ASObject* ExtVariant::getASObject() const
 	case EV_OBJECT:
 		{
 			ExtObject* objValue = getObject();
+			auto it=objectsMap.find(objValue);
+			if(it!=objectsMap.end())
+			{
+				it->second->incRef();
+				return it->second;
+			}
 
-			ExtVariant* property;
 			uint32_t count;
 
 			// We are converting an array, so lets set indexes
 			if(objValue->getType() == ExtObject::EO_ARRAY)
 			{
 				asobj = Class<Array>::getInstanceS();
+				objectsMap[objValue] = asobj;
+
 				count = objValue->getLength();
 				static_cast<Array*>(asobj)->resize(count);
 				for(uint32_t i = 0; i < count; i++)
 				{
-					property = objValue->getProperty(i);
-					assert(property);
-					static_cast<Array*>(asobj)->set(i, _MR(property->getASObject()));
-					delete property;
+					const ExtVariant& property = objValue->getProperty(i);
+					static_cast<Array*>(asobj)->set(i, _MR(property.getASObject(objectsMap)));
 				}
 			}
 			// We are converting an object, so lets set variables
 			else
 			{
 				asobj = Class<ASObject>::getInstanceS();
+				objectsMap[objValue] = asobj;
 			
 				ExtIdentifier** ids;
 				uint32_t count;
@@ -316,12 +295,12 @@ ASObject* ExtVariant::getASObject() const
 				{
 					for(uint32_t i = 0; i < count; i++)
 					{
-						property = objValue->getProperty(*ids[i]);
+						const ExtVariant& property = objValue->getProperty(*ids[i]);
 
 						if(ids[i]->getType() == ExtIdentifier::EI_STRING)
 						{
 							asobj->setVariableByQName(ids[i]->getString(), "",
-									property->getASObject(), DYNAMIC_TRAIT);
+									property.getASObject(objectsMap), DYNAMIC_TRAIT);
 						}
 						else
 						{
@@ -333,15 +312,13 @@ ASObject* ExtVariant::getASObject() const
 								continue;
 							}
 							asobj->setVariableByQName(conv.str().c_str(), "",
-									property->getASObject(), DYNAMIC_TRAIT);
+									property.getASObject(objectsMap), DYNAMIC_TRAIT);
 						}
-						delete property;
 						delete ids[i];
 					}
 				}
-				delete ids;
+				delete[] ids;
 			}
-			delete objValue;
 		}
 		break;
 	case EV_NULL:
@@ -379,10 +356,9 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	// Convert ExtVariant arguments to ASObjects
 	assert(!asArgs);
 	asArgs = new ASObject*[argc];
+	std::map<const ExtObject*, ASObject*> objectsMap;
 	for(uint32_t i = 0; i < argc; i++)
-	{
-		asArgs[i] = args[i]->getASObject();
-	}
+		asArgs[i] = args[i]->getASObject(objectsMap);
 
 	if(!synchronous)
 	{
@@ -427,7 +403,8 @@ void ExtASCallback::wakeUp()
 	if(!funcEvent.isNull())
 		funcEvent->done.signal();
 }
-bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
+bool ExtASCallback::getResult(std::map<const ASObject*, std::unique_ptr<ExtObject>>& objectsMap,
+		const ExtScriptObject& so, const ExtVariant** _result)
 {
 	funcEvent = NullRef;
 	// Did the callback throw an AS exception?
@@ -453,7 +430,7 @@ bool ExtASCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
 	else if(result != NULL)
 	{
 		// Convert the result
-		*_result = new ExtVariant(_MR(result));
+		*_result = new ExtVariant(objectsMap, _MR(result));
 		success = true;
 	}
 	// No exception but also no result, still a success
@@ -504,7 +481,8 @@ void ExtBuiltinCallback::wait()
 void ExtBuiltinCallback::wakeUp()
 {
 }
-bool ExtBuiltinCallback::getResult(const ExtScriptObject& so, ExtVariant** _result)
+bool ExtBuiltinCallback::getResult(std::map<const ASObject*, std::unique_ptr<ExtObject>>& objectsMap,
+		const ExtScriptObject& so, const ExtVariant** _result)
 {
 	// Set the result
 	*_result = result;

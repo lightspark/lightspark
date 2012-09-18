@@ -18,6 +18,8 @@ public class external_ExternalInterface_test extends Sprite {
 		ExternalInterface.addCallback("returnStringTest", returnTest("hello world"));
 		ExternalInterface.addCallback("returnArgumentsTest", 
 			function(... args):* { return args; });
+		ExternalInterface.addCallback("returnCyclicTest", 
+			function(... args):* { return args[0]["recursive"]; });
 
 		ExternalInterface.addCallback("nested1Test", 
 			function(... args):*

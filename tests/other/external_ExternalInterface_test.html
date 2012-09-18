@@ -96,6 +96,12 @@ function testAll()
 	test("unsupportedCall3Test", testPlayer.unsupportedCall3Test(), "hello");
 	test("undefinedMethodTest", testPlayer.undefinedMethodTest(), null);
 	test("jsExceptionTest", testPlayer.jsExceptionTest(), "success");
+	var cyclic = {payload: "Payload"};
+	cyclic.recursive = cyclic;
+	var retCyclic = testPlayer.returnCyclicTest(cyclic);
+	test("Cyclic references 1/3", retCyclic.payload, "Payload");
+	test("Cyclic references 2/3", retCyclic.recursive.payload, "Payload");
+	test("Cyclic references 3/3", retCyclic.recursive.payload, "Payload");
 }
 
 function ready()

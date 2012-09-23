@@ -1480,7 +1480,7 @@ void ABCVm::Run(ABCVm* th)
 
 #ifdef MEMORY_USAGE_PROFILING
 	string memoryProfileFile="lightspark.massif.";
-	memoryProfileFile+=th->m_sys->getOrigin().getPathFile().raw_buf();
+	memoryProfileFile+=th->m_sys->mainClip->getOrigin().getPathFile().raw_buf();
 	ofstream memoryProfile(memoryProfileFile, ios_base::out | ios_base::trunc);
 	int snapshotCount = 0;
 	memoryProfile << "desc: (none) \ncmd: lightspark\ntime_unit: i" << endl;

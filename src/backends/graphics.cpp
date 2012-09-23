@@ -566,14 +566,14 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 }
 
 #ifdef HAVE_NEW_GLIBMM_THREAD_API
-StaticMutex CairoRenderer::cairoMutex;
+StaticRecMutex CairoRenderer::cairoMutex;
 #else
-StaticMutex CairoRenderer::cairoMutex = GLIBMM_STATIC_MUTEX_INIT;
+StaticRecMutex CairoRenderer::cairoMutex = GLIBMM_STATIC_REC_MUTEX_INIT;
 #endif
 
 uint8_t* CairoRenderer::getPixelBuffer()
 {
-	Mutex::Lock l(cairoMutex);
+	RecMutex::Lock l(cairoMutex);
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 		return NULL;
 

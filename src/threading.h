@@ -41,10 +41,12 @@ using Glib::Threads::RecMutex;
 using Glib::Threads::Cond;
 using Glib::Threads::Thread;
 typedef Mutex StaticMutex; // GLib::Threads::Mutex can be static
+typedef RecMutex StaticRecMutex; // GLib::Threads::RecMutex can be static
 #else
 using Glib::Mutex;
 using Glib::RecMutex;
 using Glib::StaticMutex;
+using Glib::StaticRecMutex;
 using Glib::Cond;
 using Glib::Thread;
 #endif

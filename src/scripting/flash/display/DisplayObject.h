@@ -161,6 +161,7 @@ public:
 	}
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
+	bool isMask() const { return !maskOf.isNull(); }
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);

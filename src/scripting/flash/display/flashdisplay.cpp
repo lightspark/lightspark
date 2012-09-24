@@ -686,7 +686,12 @@ void DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 	//Now draw also the display list
 	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
+	{
+		//Skip the drawing of masks
+		if((*it)->isMask())
+			continue;
 		(*it)->Render(ctxt);
+	}
 }
 
 void Sprite::renderImpl(RenderContext& ctxt) const

@@ -485,15 +485,13 @@ int32_t ASString::toInt()
 {
 	assert_and_throw(implEnable);
 	const char* cur=data.raw_buf();
+	int64_t ret;
+	bool valid=Integer::fromStringFlashCompatible(cur,ret);
 
-	errno=0;
-	char *end;
-	int64_t val=g_ascii_strtoll(cur, &end, 0);
-
-	if(errno==ERANGE || end > cur)
-		return static_cast<int32_t>(val);
-	else
+	if(valid==false || ret<INT32_MIN || ret>INT32_MAX)
 		return 0;
+	else
+		return static_cast<int32_t>(ret);
 }
 
 uint32_t ASString::toUInt()

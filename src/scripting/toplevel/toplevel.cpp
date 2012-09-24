@@ -1886,23 +1886,16 @@ ASFUNCTIONBODY(lightspark,parseInt)
 		return abstract_d(numeric_limits<double>::quiet_NaN());
 
 	const char* cur=str.raw_buf();
+	int64_t ret;
+	bool valid=Integer::fromStringFlashCompatible(cur,ret);
 
-	errno=0;
-	char *end;
-	int64_t val=g_ascii_strtoll(cur, &end, radix);
-
-	if(errno==ERANGE)
-	{
-		if(val==LONG_MAX)
-			return abstract_d(numeric_limits<double>::infinity());
-		if(val==LONG_MIN)
-			return abstract_d(-numeric_limits<double>::infinity());
-	}
-
-	if(end==cur)
+	if(valid==false)
 		return abstract_d(numeric_limits<double>::quiet_NaN());
-
-	return abstract_d(val);
+	if(ret==INT64_MAX)
+		return abstract_d(numeric_limits<double>::infinity());
+	if(ret==INT64_MIN)
+		return abstract_d(-numeric_limits<double>::infinity());
+	return abstract_d(ret);
 }
 
 ASFUNCTIONBODY(lightspark,parseFloat)

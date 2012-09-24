@@ -197,3 +197,32 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 		throw AssertionException("Range exception in Integer::serialize");
 	out->writeU29((uint32_t)val);
 }
+
+bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret)
+{
+	//Skip spaces
+	while(*cur==' ')
+		cur++;
+
+	int64_t multiplier=1;
+	//Skip and take note of minus sign
+	if(*cur=='-')
+	{
+		multiplier=-1;
+		cur++;
+	}
+
+	//Skip leading zeroes
+	while(*cur=='0')
+		cur++;
+
+	errno=0;
+	char *end;
+	ret=g_ascii_strtoll(cur, &end, 0);
+
+	if(end==cur)
+		return false;
+
+	ret*=multiplier;
+	return true;
+}

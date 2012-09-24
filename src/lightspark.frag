@@ -3,7 +3,6 @@ precision highp float;
 #endif
 uniform sampler2D g_tex1, g_tex2;
 uniform float yuv;
-uniform float mask;
 uniform float alpha;
 uniform float direct;
 varying vec4 ls_TexCoords[2];
@@ -15,11 +14,6 @@ const mat3 YUVtoRGB = mat3(1, 1, 1, //First coloumn
 
 void main()
 {
-	float maskMultiplier = 1.0;
-	if(mask==1.0)
-		maskMultiplier=texture2D(g_tex2,ls_TexCoords[1].xy).a;
-	//TODO: check if discarding for maskMultiplier==0.0 is efficient
-
 	//Tranform the value from YUV to RGB
 	vec4 vbase = texture2D(g_tex1,ls_TexCoords[0].xy);
 #ifdef GL_ES
@@ -35,5 +29,4 @@ void main()
 	} else {
 		gl_FragColor=(vbase*(1.0-yuv))+(val*yuv);
 	}
-	gl_FragColor *= maskMultiplier;
 }

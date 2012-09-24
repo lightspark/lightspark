@@ -83,7 +83,7 @@ protected:
 	void setOnStage(bool staged);
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void renderImpl(RenderContext& ctxt, bool maskEnabled) const;
+	void renderImpl(RenderContext& ctxt) const;
 public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList();
@@ -218,8 +218,8 @@ protected:
 	_NR<Graphics> graphics;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
-	void renderImpl(RenderContext& ctxt, bool maskEnabled) const
-		{ TokenContainer::renderImpl(ctxt, maskEnabled); }
+	void renderImpl(RenderContext& ctxt) const
+		{ TokenContainer::renderImpl(ctxt); }
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
@@ -356,7 +356,7 @@ private:
 	_NR<Graphics> graphics;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void renderImpl(RenderContext& ctxt, bool maskEnabled) const;
+	void renderImpl(RenderContext& ctxt) const;
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
 	Sprite(Class_base* c);
@@ -615,8 +615,8 @@ friend class CairoTokenRenderer;
 private:
 	void onBitmapData(_NR<BitmapData>);
 protected:
-	void renderImpl(RenderContext& ctxt, bool maskEnabled) const
-		{ TokenContainer::renderImpl(ctxt, maskEnabled); }
+	void renderImpl(RenderContext& ctxt) const
+		{ TokenContainer::renderImpl(ctxt); }
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	/* Call this after updating any member of 'data' */

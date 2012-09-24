@@ -35,8 +35,6 @@ enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
 class RenderContext
 {
 protected:
-	/* Masks */
-	std::vector<DisplayObject*> maskStack;
 	/* Modelview matrix manipulation */
 	static const GLfloat lsIdentityMatrix[16];
 	GLfloat lsMVPMatrix[16];
@@ -47,27 +45,6 @@ public:
 	enum CONTEXT_TYPE { CAIRO=0, GL };
 	RenderContext(CONTEXT_TYPE t);
 	CONTEXT_TYPE contextType;
-	/* Masks */
-	/**
-		Add a mask to the stack mask
-		@param d The DisplayObject used as a mask
-		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
-	*/
-	void pushMask(DisplayObject* d)
-	{
-		maskStack.push_back(d);
-	}
-	/**
-		Remove the last pushed mask
-	*/
-	void popMask()
-	{
-		maskStack.pop_back();
-	}
-	bool isMaskPresent()
-	{
-		return !maskStack.empty();
-	}
 
 	/* Modelview matrix manipulation */
 	void lsglLoadIdentity();
@@ -82,7 +59,7 @@ public:
 		Render a quad of given size using the given chunk
 	*/
 	virtual void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)=0;
+			float alpha, COLOR_MODE colorMode)=0;
 	/**
 	 * Get the right CachedSurface from an object
 	 */
@@ -92,13 +69,10 @@ public:
 class GLRenderContext: public RenderContext
 {
 protected:
-	GLuint fboId;
-
 	GLint projectionMatrixUniform;
 	GLint modelviewMatrixUniform;
 
 	GLint yuvUniform;
-	GLint maskUniform;
 	GLint alphaUniform;
 
 	/* Textures */
@@ -114,7 +88,6 @@ protected:
 	};
 	std::vector<LargeTexture> largeTextures;
 
-	void renderMaskToTmpBuffer();
 	~GLRenderContext(){}
 
 	enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
@@ -129,7 +102,7 @@ public:
 	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
 
 	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode);
+			float alpha, COLOR_MODE colorMode);
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
@@ -154,7 +127,7 @@ public:
 	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height);
 	virtual ~CairoRenderContext();
 	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode);
+			float alpha, COLOR_MODE colorMode);
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the Cairo case we get the right CachedSurface out of the map

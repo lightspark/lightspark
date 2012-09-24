@@ -225,9 +225,9 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 				      getConcatenatedAlpha(),masks);
 }
 
-void TextLine::renderImpl(RenderContext& ctxt, bool maskEnabled) const
+void TextLine::renderImpl(RenderContext& ctxt) const
 {
-	defaultRender(ctxt, maskEnabled);
+	defaultRender(ctxt);
 }
 
 _NR<InteractiveObject> TextLine::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)

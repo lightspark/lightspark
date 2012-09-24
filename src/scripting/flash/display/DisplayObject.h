@@ -94,19 +94,17 @@ protected:
 	void extractValuesFromMatrix();
 	number_t computeWidth();
 	number_t computeHeight();
-	bool skipRender(bool maskEnabled) const;
+	bool skipRender() const;
 	float clippedAlpha() const;
 
-	void defaultRender(RenderContext& ctxt, bool maskEnabled) const;
-	void renderPrologue(RenderContext& ctxt) const;
-	void renderEpilogue(RenderContext& ctxt) const;
+	void defaultRender(RenderContext& ctxt) const;
 	void hitTestPrologue() const;
 	void hitTestEpilogue() const;
 	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
-	virtual void renderImpl(RenderContext& ctxt, bool maskEnabled) const
+	virtual void renderImpl(RenderContext& ctxt) const
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
@@ -153,7 +151,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	void Render(RenderContext& ctxt, bool maskEnabled);
+	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
 	//API to handle mask support in hit testing

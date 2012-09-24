@@ -391,9 +391,9 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				getConcatenatedAlpha(), masks);
 }
 
-void TextField::renderImpl(RenderContext& ctxt, bool maskEnabled) const
+void TextField::renderImpl(RenderContext& ctxt) const
 {
-	defaultRender(ctxt, maskEnabled);
+	defaultRender(ctxt);
 }
 
 void TextFieldAutoSize ::sinit(Class_base* c)

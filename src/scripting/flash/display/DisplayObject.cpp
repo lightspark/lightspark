@@ -87,28 +87,12 @@ number_t DisplayObject::getNominalHeight()
 	return ret?(ymax-ymin):0;
 }
 
-void DisplayObject::renderPrologue(RenderContext& ctxt) const
+void DisplayObject::Render(RenderContext& ctxt)
 {
-	if(!mask.isNull())
-		ctxt.pushMask(mask.getPtr());
-}
-
-void DisplayObject::renderEpilogue(RenderContext& ctxt) const
-{
-	if(!mask.isNull())
-		ctxt.popMask();
-}
-
-void DisplayObject::Render(RenderContext& ctxt, bool maskEnabled)
-{
-	if(!isConstructed() || skipRender(maskEnabled))
+	if(!isConstructed() || skipRender())
 		return;
 
-	renderPrologue(ctxt);
-
-	renderImpl(ctxt, maskEnabled);
-
-	renderEpilogue(ctxt);
+	renderImpl(ctxt);
 }
 
 void DisplayObject::hitTestPrologue() const
@@ -319,12 +303,12 @@ void DisplayObject::extractValuesFromMatrix()
 	Matrix.scale(1.0/sx,1.0/sy);
 }
 
-bool DisplayObject::skipRender(bool maskEnabled) const
+bool DisplayObject::skipRender() const
 {
-	return visible==false || clippedAlpha()==0.0 || (!maskEnabled && !maskOf.isNull());
+	return visible==false || clippedAlpha()==0.0;
 }
 
-void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
+void DisplayObject::defaultRender(RenderContext& ctxt) const
 {
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
@@ -332,16 +316,10 @@ void DisplayObject::defaultRender(RenderContext& ctxt, bool maskEnabled) const
 	if(!surface.tex.isValid())
 		return;
 
-	bool enableMaskLookup=false;
-	//If the maskEnabled is already set we are the mask!
-	if(!maskEnabled && ctxt.isMaskPresent())
-		enableMaskLookup=true;
-
 	ctxt.lsglLoadIdentity();
 	ctxt.renderTextured(surface.tex, surface.xOffset, surface.yOffset,
 			surface.tex.width, surface.tex.height,
-			surface.alpha, RenderContext::RGB_MODE,
-			(enableMaskLookup)?RenderContext::ENABLE_MASK:RenderContext::NO_MASK);
+			surface.alpha, RenderContext::RGB_MODE);
 }
 
 void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,

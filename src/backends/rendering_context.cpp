@@ -125,15 +125,10 @@ const CachedSurface& GLRenderContext::getCachedSurface(const DisplayObject* d) c
 }
 
 void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
+			float alpha, COLOR_MODE colorMode)
 {
-	if(maskMode==ENABLE_MASK)
-		renderMaskToTmpBuffer();
-
 	//Set color mode
 	glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);
-	//Set mask mode
-	glUniform1f(maskUniform, (maskMode==ENABLE_MASK)?1.0f:0.0f);
 	//Set alpha
 	glUniform1f(alphaUniform, alpha);
 	//Set matrix
@@ -256,22 +251,6 @@ void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 	glUniformMatrix4fv(uni, 1, GL_FALSE, lsMVPMatrix);
 }
 
-void GLRenderContext::renderMaskToTmpBuffer()
-{
-	assert(!maskStack.empty());
-	//Clear the tmp buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	glClearColor(0,0,0,0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	for(uint32_t i=0;i<maskStack.size();i++)
-	{
-		maskStack[i]->Render(*this, true);
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_BACK);
-}
-
 CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height):RenderContext(CAIRO)
 {
 	cairo_surface_t* cairoSurface=getCairoSurfaceForData(buf, width, height);
@@ -330,9 +309,9 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, ui
 }
 
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, MASK_MODE maskMode)
+			float alpha, COLOR_MODE colorMode)
 {
-	//TODO: support alpha, colorMode, and maskMode
+	//TODO: support alpha, and colorMode
 	uint8_t* buf=(uint8_t*)chunk.chunks;
 	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_pattern_t* chunkPattern = cairo_pattern_create_for_surface(chunkSurface);

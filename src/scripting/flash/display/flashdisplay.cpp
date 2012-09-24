@@ -680,22 +680,22 @@ void Sprite::requestInvalidation(InvalidateQueue* q)
 	TokenContainer::requestInvalidation(q);
 }
 
-void DisplayObjectContainer::renderImpl(RenderContext& ctxt, bool maskEnabled) const
+void DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 {
 	Locker l(mutexDisplayList);
 	//Now draw also the display list
 	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
-		(*it)->Render(ctxt, maskEnabled);
+		(*it)->Render(ctxt);
 }
 
-void Sprite::renderImpl(RenderContext& ctxt, bool maskEnabled) const
+void Sprite::renderImpl(RenderContext& ctxt) const
 {
 	//Draw the dynamically added graphics, if any
 	if(!tokensEmpty())
-		defaultRender(ctxt, maskEnabled);
+		defaultRender(ctxt);
 
-	DisplayObjectContainer::renderImpl(ctxt, maskEnabled);
+	DisplayObjectContainer::renderImpl(ctxt);
 }
 
 /*

@@ -159,8 +159,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.yOffset=drawable->getYOffset();
 		delete drawable;
 	}
-	//Enable rendering of masks as well
-	d->Render(ctxt, true);
+	d->Render(ctxt);
 }
 
 ASFUNCTIONBODY(BitmapData,draw)

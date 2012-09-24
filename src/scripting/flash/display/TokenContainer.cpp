@@ -36,9 +36,9 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 {
 }
 
-void TokenContainer::renderImpl(RenderContext& ctxt, bool maskEnabled) const
+void TokenContainer::renderImpl(RenderContext& ctxt) const
 {
-	owner->defaultRender(ctxt, maskEnabled);
+	owner->defaultRender(ctxt);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list

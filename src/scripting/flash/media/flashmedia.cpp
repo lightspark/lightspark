@@ -86,10 +86,10 @@ Video::~Video()
 {
 }
 
-void Video::renderImpl(RenderContext& ctxt, bool maskEnabled) const
+void Video::renderImpl(RenderContext& ctxt) const
 {
 	Mutex::Lock l(mutex);
-	if(skipRender(maskEnabled))
+	if(skipRender())
 		return;
 
 	//Video is especially optimized for GL rendering
@@ -115,8 +115,7 @@ void Video::renderImpl(RenderContext& ctxt, bool maskEnabled) const
 		//Enable YUV to RGB conversion
 		//width and height will not change now (the Video mutex is acquired)
 		ctxt.renderTextured(netStream->getTexture(), 0, 0, width, height,
-			clippedAlpha(), RenderContext::YUV_MODE,
-			RenderContext::NO_MASK);
+			clippedAlpha(), RenderContext::YUV_MODE);
 		
 		netStream->unlock();
 	}

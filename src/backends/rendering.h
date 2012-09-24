@@ -160,7 +160,6 @@ public:
 
 	//OpenGL programs
 	int gpu_program;
-	TextureBuffer tempTex;
 	volatile uint32_t windowWidth;
 	volatile uint32_t windowHeight;
 	bool hasNPOTTextures;

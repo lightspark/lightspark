@@ -72,7 +72,7 @@ RenderThread::RenderThread(SystemState* s):
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),
-	tempTex(false),hasNPOTTextures(false),cairoTextureContext(NULL)
+	hasNPOTTextures(false),cairoTextureContext(NULL)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
 #ifdef _WIN32
@@ -520,8 +520,6 @@ bool RenderThread::loadShaderPrograms()
 void RenderThread::commonGLDeinit()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
-	glDeleteFramebuffers(1,&fboId);
-	tempTex.shutdown();
 	for(uint32_t i=0;i<largeTextures.size();i++)
 	{
 		glDeleteTextures(1,&largeTextures[i].id);
@@ -570,8 +568,6 @@ void RenderThread::commonGLInit(int width, int height)
 	glActiveTexture(GL_TEXTURE0);
 	//Viewport setup is left for GLResize	
 
-	tempTex.init(width, height, GL_NEAREST);
-
 	//Get the maximum allowed texture size, up to 1024
 	int maxTexSize;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
@@ -592,8 +588,6 @@ void RenderThread::commonGLInit(int width, int height)
 
 	//The uniform that enables YUV->RGB transform on the texels (needed for video)
 	yuvUniform =glGetUniformLocation(gpu_program,"yuv");
-	//The uniform that tells the shader if a mask is being rendered
-	maskUniform =glGetUniformLocation(gpu_program,"mask");
 	//The uniform that tells the alpha value multiplied to the alpha of every pixel
 	alphaUniform =glGetUniformLocation(gpu_program,"alpha");
 	//The uniform that tells to draw directly using the selected color
@@ -603,30 +597,10 @@ void RenderThread::commonGLInit(int width, int height)
 	modelviewMatrixUniform =glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
 
 	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
-	if(fragmentTexScaleUniform!=-1)
-		tempTex.setTexScale(fragmentTexScaleUniform);
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	glEnable(GL_TEXTURE_2D);
-	//At least two texture unit are guaranteed in OpenGL 1.3
-	//The second unit will be used to access the temporary buffer
-	glActiveTexture(GL_TEXTURE1);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, tempTex.getId());
-
-	glActiveTexture(GL_TEXTURE0);
-	//Create a framebuffer object
-	glGenFramebuffers(1, &fboId);
-	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, tempTex.getId(), 0);
 	
-	// check FBO status
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if(status != GL_FRAMEBUFFER_COMPLETE)
-	{
-		LOG(LOG_ERROR,_("Incomplete FBO status ") << status << _("... Aborting"));
-		throw RunTimeException("Rendering: Could not initialize OpenGL framebuffer object");
-	}
 	glGenTextures(1, &cairoTextureID);
 
 	if(handleGLErrors())
@@ -716,7 +690,6 @@ void RenderThread::commonGLResize()
 	lsglTranslatef(offsetX,windowHeight-offsetY,0);
 	lsglScalef(scaleX,-scaleY,1);
 	setMatrixUniform(LSGL_PROJECTION);
-	tempTex.resize(windowWidth, windowHeight);
 }
 
 void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
@@ -863,8 +836,7 @@ void RenderThread::coreRendering()
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
-	m_sys->mainClip->getStage()->Render(*this, false);
-	assert(maskStack.empty());
+	m_sys->mainClip->getStage()->Render(*this);
 
 	if(m_sys->showProfilingData)
 		plotProfilingData();

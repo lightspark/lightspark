@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+NOTE: name attribute should be:
+lightspark_CLASSNAME_test or lightspark_FUNCTIONNAME_test for toplevel tests
+lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test for non-toplevel tests
+(e.g.: lightspark_net_NetStream_test or lightspark_Array_test)
+-->
+<mx:Application name="lightspark_NAME_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import Date;
+	private function appComplete():void
+	{
+		Tests.assertEquals(8,parseInt("  08"),"parseInt with leading 0 and spaces");
+		Tests.assertEquals(-8,parseInt("  -08"),"parseInt with leading 0 and spaces");
+		Tests.assertEquals(9999999999,parseInt("9999999999"),"parseInt with large number");
+		Tests.assertEquals(18446744073709552000,parseInt("18446744073709551615"),"parseInt with very large number");
+		Tests.assertEquals(18446744073709552000,parseInt("18446744073709551616"),"parseInt with extremely large number");
+		Tests.assertEquals(8,int("  08"),"int() with leading 0 and spaces");
+		Tests.assertEquals(-8,int("  -08"),"int() with leading 0 and spaces");
+		Tests.assertEquals(1410065407,int("9999999999"),"int large number");
+		Tests.assertEquals(0,int("18446744073709551615"),"int with very large number");
+		Tests.assertEquals(0,int("18446744073709551616"),"int with extremely large number");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

@@ -50,6 +50,7 @@ public:
 	ASFUNCTION(appendChild);
 	ASFUNCTION(child);
 	ASFUNCTION(children);
+	ASFUNCTION(childIndex);
 	ASFUNCTION(contains);
 	ASFUNCTION(copy);
 	ASFUNCTION(_hasSimpleContent);

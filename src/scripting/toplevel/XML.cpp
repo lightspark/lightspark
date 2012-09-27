@@ -71,6 +71,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("childIndex",AS3,Class<IFunction>::getFunction(childIndex),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("contains",AS3,Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(attribute),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),NORMAL_METHOD,true);
@@ -485,6 +486,37 @@ ASFUNCTIONBODY(XML,children)
 	th->childrenImpl(ret, "*");
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	return retObj;
+}
+
+ASFUNCTIONBODY(XML,childIndex)
+{
+	XML* th=Class<XML>::cast(obj);
+	xmlpp::Node *parent=th->node->get_parent();
+	if (parent && (th->node->cobj()->type!=XML_ATTRIBUTE_NODE))
+	{
+		xmlpp::Node::NodeList children=parent->get_children();
+		xmlpp::Node::NodeList::const_iterator it;
+		unsigned int n;
+		
+		it=children.begin();
+		n=0;
+		while(it!=children.end())
+		{
+			if((*it)==th->node)
+				return abstract_i(n);
+
+			// Ignore white-space text nodes
+			xmlpp::TextNode *textnode=dynamic_cast<xmlpp::TextNode*>(*it);
+			if (!(textnode && textnode->is_white_space()))
+			{
+				++n;
+			}
+
+			++it;
+		}
+	}
+
+	return abstract_i(-1);
 }
 
 ASFUNCTIONBODY(XML,_hasSimpleContent)

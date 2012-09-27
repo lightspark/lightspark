@@ -71,6 +71,7 @@ public:
 	ASFUNCTION(nodeKind);
 	ASFUNCTION(child);
 	ASFUNCTION(children);
+	ASFUNCTION(childIndex);
 	ASFUNCTION(contains);
 	ASFUNCTION(_copy);
 	ASFUNCTION(attributes);

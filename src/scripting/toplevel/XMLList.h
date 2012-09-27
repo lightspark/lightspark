@@ -65,6 +65,7 @@ public:
 	ASFUNCTION(text);
 	ASFUNCTION(_namespace);
 	ASFUNCTION(name);
+	ASFUNCTION(nodeKind);
 	ASFUNCTION(localName);
 	ASFUNCTION(inScopeNamespaces);
 	ASFUNCTION(addNamespace);

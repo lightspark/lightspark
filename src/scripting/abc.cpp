@@ -219,7 +219,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("eval","",_MR(Class<IFunction>::getFunction(eval)));
 	builtin->registerBuiltin("print","",_MR(Class<IFunction>::getFunction(print)));
 	builtin->registerBuiltin("trace","",_MR(Class<IFunction>::getFunction(trace)));
-	builtin->registerBuiltin("parseInt","",_MR(Class<IFunction>::getFunction(parseInt)));
+	builtin->registerBuiltin("parseInt","",_MR(Class<IFunction>::getFunction(parseInt,2)));
 	builtin->registerBuiltin("parseFloat","",_MR(Class<IFunction>::getFunction(parseFloat)));
 	builtin->registerBuiltin("encodeURI","",_MR(Class<IFunction>::getFunction(encodeURI)));
 	builtin->registerBuiltin("decodeURI","",_MR(Class<IFunction>::getFunction(decodeURI)));

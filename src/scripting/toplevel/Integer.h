@@ -56,7 +56,7 @@ public:
 	/*
 	 * This method skips trailing spaces and zeroes
 	 */
-	static bool fromStringFlashCompatible(const char* str, int64_t& ret);
+	static bool fromStringFlashCompatible(const char* str, int64_t& ret,int radix);
 };
 
 }

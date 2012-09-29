@@ -1887,7 +1887,7 @@ ASFUNCTIONBODY(lightspark,parseInt)
 
 	const char* cur=str.raw_buf();
 	int64_t ret;
-	bool valid=Integer::fromStringFlashCompatible(cur,ret);
+	bool valid=Integer::fromStringFlashCompatible(cur,ret,radix);
 
 	if(valid==false)
 		return abstract_d(numeric_limits<double>::quiet_NaN());

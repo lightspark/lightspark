@@ -198,11 +198,11 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 	out->writeU29((uint32_t)val);
 }
 
-bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret)
+bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret, int radix)
 {
-	//Skip spaces
-	while(*cur==' ')
-		cur++;
+	//Skip whitespace chars
+	while(g_unichar_isspace(g_utf8_get_char(cur)))
+		cur = g_utf8_next_char(cur);
 
 	int64_t multiplier=1;
 	//Skip and take note of minus sign
@@ -211,16 +211,23 @@ bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret)
 		multiplier=-1;
 		cur++;
 	}
-
+	if (radix == 0 && (g_str_has_prefix(cur,"0x") || g_str_has_prefix(cur,"0X")))
+	{
+		radix = 16;
+		cur+=2;
+	}
 	//Skip leading zeroes
-	while(*cur=='0')
-		cur++;
-
+	if (radix == 0)
+	{
+		while(*cur=='0')
+			cur++;
+	}
+	
 	errno=0;
 	char *end;
-	ret=g_ascii_strtoll(cur, &end, 0);
+	ret=g_ascii_strtoll(cur, &end, radix);
 
-	if(end==cur)
+	if(end==cur || errno==ERANGE)
 		return false;
 
 	ret*=multiplier;

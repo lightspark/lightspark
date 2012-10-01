@@ -247,19 +247,21 @@ struct method_info_simple
 
 struct method_body_info
 {
-	method_body_info():hit_count(0){}
+	method_body_info():hit_count(0),codeStatus(ORIGINAL){}
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
 	u30 init_scope_depth;
 	u30 max_scope_depth;
-	//This is a string to use it in a stringstream
 	std::string code;
 	std::vector<exception_info> exceptions;
 	u30 trait_count;
 	std::vector<traits_info> traits;
 	//The hit_count belongs here, since it is used to manipulate the code
-	int hit_count;
+	uint16_t hit_count;
+	//The code status
+	enum CODE_STATUS { ORIGINAL = 0, USED, OPTIMIZED, JITTED };
+	CODE_STATUS codeStatus;
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

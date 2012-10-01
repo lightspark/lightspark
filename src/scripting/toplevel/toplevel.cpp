@@ -252,7 +252,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	const uint32_t opt_hit_threshold=1;
 	const uint32_t jit_hit_threshold=20;
 	assert_and_throw(mi->body);
-	const uint32_t hit_count = mi->body->hit_count;
+	const uint16_t hit_count = mi->body->hit_count;
+	const method_body_info::CODE_STATUS& codeStatus = mi->body->codeStatus;
 
 	uint32_t& cur_recursion = getVm()->cur_recursion;
 	if(cur_recursion == getVm()->limits.max_recursion)
@@ -291,17 +292,17 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	}
 
 	//For sufficiently hot methods, optimize them to the internal bytecode
-	if(hit_count==opt_hit_threshold && getSys()->useFastInterpreter)
+	if(hit_count>=opt_hit_threshold && codeStatus==method_body_info::ORIGINAL && getSys()->useFastInterpreter)
 	{
 		ABCVm::optimizeFunction(this);
 	}
 
 	//Temporarily disable JITting
-	if(mi->body->exceptions.size()==0 && getSys()->useJit && (hit_count==jit_hit_threshold || getSys()->useInterpreter==false))
+	if(mi->body->exceptions.size()==0 && getSys()->useJit && ((hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSys()->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();
-		assert_and_throw(val);
+		assert(val);
 	}
 	mi->body->hit_count++;
 
@@ -415,15 +416,20 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		{
 			if(mi->body->exceptions.size() || (val==NULL && getSys()->useInterpreter))
 			{
-				if(hit_count>=opt_hit_threshold && getSys()->useFastInterpreter)
+				if(codeStatus == method_body_info::OPTIMIZED && getSys()->useFastInterpreter)
 				{
 					//This is a mildy hot function, execute it using the fast interpreter
 					ret=ABCVm::executeFunctionFast(this,&cc);
 				}
 				else
 				{
+					//Switch the codeStatus to USED to make sure the method will not be optimized while being used
+					const method_body_info::CODE_STATUS oldCodeStatus = codeStatus;
+					mi->body->codeStatus = method_body_info::USED;
 					//This is not a hot function, execute it using the interpreter
 					ret=ABCVm::executeFunction(this,&cc);
+					//Restore the previous codeStatus
+					mi->body->codeStatus = oldCodeStatus;
 				}
 			}
 			else

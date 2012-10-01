@@ -4215,6 +4215,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	getVm()->FPM->run(*llvmf);
 	f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
 	//llvmf->dump(); //dump after optimization
+	body->codeStatus = method_body_info::JITTED;
 	return f;
 }
 

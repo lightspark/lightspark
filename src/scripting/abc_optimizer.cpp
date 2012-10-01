@@ -1721,4 +1721,5 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 	}
 	//Overwrite the old code
 	mi->body->code=out.str();
+	mi->body->codeStatus = method_body_info::OPTIMIZED;
 }

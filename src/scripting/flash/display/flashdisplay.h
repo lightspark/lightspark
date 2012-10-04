@@ -505,7 +505,6 @@ public:
 	void advanceFrame();
 	void initFrame();
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
-	void setTotalFrames(uint32_t t);
 
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 };

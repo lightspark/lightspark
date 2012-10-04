@@ -927,8 +927,10 @@ MovieClip::MovieClip(Class_base* c):Sprite(c),totalFrames_unreliable(1)
 {
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f):Sprite(c),FrameContainer(f),totalFrames_unreliable(1)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f):Sprite(c),FrameContainer(f),totalFrames_unreliable(frames.size())
 {
+	//For sprites totalFrames_unreliable is the actual frame count
+	//For the root movie, it's the frame count from the header
 }
 
 void MovieClip::finalize()
@@ -936,15 +938,6 @@ void MovieClip::finalize()
 	Sprite::finalize();
 	frames.clear();
 	frameScripts.clear();
-}
-
-void MovieClip::setTotalFrames(uint32_t t)
-{
-	//For sprites, this is called after parsing
-	//with the actual frame count
-	//For the root movie, this is called before the parsing
-	//with the frame count from the header
-	totalFrames_unreliable=t;
 }
 
 uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const

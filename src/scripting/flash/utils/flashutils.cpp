@@ -722,7 +722,7 @@ bool ByteArray::readU29(uint32_t& ret)
 			return false;
 
 		uint8_t tmp=bytes[position++];
-		ret <<= i*7;
+		ret <<= 7;
 		if(i<3)
 		{
 			ret |= tmp&0x7f;

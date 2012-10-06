@@ -159,8 +159,9 @@ ASFUNCTIONBODY(IFunction,apply)
 		newArgs=g_newa(ASObject*, newArgsLen);
 		for(int i=0;i<newArgsLen;i++)
 		{
-			newArgs[i]=array->at(i).getPtr();
-			newArgs[i]->incRef();
+			_R<ASObject> val = array->at(i);
+			val->incRef();
+			newArgs[i]=val.getPtr();
 		}
 	}
 

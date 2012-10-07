@@ -154,6 +154,41 @@ public:
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
 	{ return TokenContainer::invalidate(target, initialMatrix); }
 };
+
+class FontStyle: public ASObject
+{
+public:
+	FontStyle(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
+class FontType: public ASObject
+{
+public:
+	FontType(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
+class TextDisplayMode: public ASObject
+{
+public:
+	TextDisplayMode(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
+class TextColorType: public ASObject
+{
+public:
+	TextColorType(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
+class GridFitType: public ASObject
+{
+public:
+	GridFitType(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
 };
 
 #endif /* SCRIPTING_FLASH_TEXT_FLASHTEXT_H */

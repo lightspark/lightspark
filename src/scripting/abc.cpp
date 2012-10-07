@@ -277,7 +277,12 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef());
 	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef());
+	builtin->registerBuiltin("FontStyle","flash.text",Class<FontStyle>::getRef());
+	builtin->registerBuiltin("FontType","flash.text",Class<FontType>::getRef());
+	builtin->registerBuiltin("GridFitType","flash.text",Class<GridFitType>::getRef());
 	builtin->registerBuiltin("StyleSheet","flash.text",Class<StyleSheet>::getRef());
+	builtin->registerBuiltin("TextColorType","flash.text",Class<TextColorType>::getRef());
+	builtin->registerBuiltin("TextDisplayMode","flash.text",Class<TextDisplayMode>::getRef());
 	builtin->registerBuiltin("TextField","flash.text",Class<TextField>::getRef());
 	builtin->registerBuiltin("TextFieldType","flash.text",Class<TextFieldType>::getRef());
 	builtin->registerBuiltin("TextFieldAutoSize","flash.text",Class<TextFieldAutoSize>::getRef());

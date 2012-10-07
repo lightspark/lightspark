@@ -416,9 +416,11 @@ void TextFieldType::sinit(Class_base* c)
 void TextFormatAlign ::sinit(Class_base* c)
 {
 	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"),DECLARED_TRAIT);
+	c->setVariableByQName("END","",Class<ASString>::getInstanceS("end"),DECLARED_TRAIT);
 	c->setVariableByQName("JUSTIFY","",Class<ASString>::getInstanceS("justify"),DECLARED_TRAIT);
 	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"),DECLARED_TRAIT);
 	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"),DECLARED_TRAIT);
+	c->setVariableByQName("START","",Class<ASString>::getInstanceS("start"),DECLARED_TRAIT);
 }
 
 void TextFormat::sinit(Class_base* c)
@@ -531,4 +533,49 @@ ASFUNCTIONBODY(StaticText,_getText)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.display.StaticText.text is not implemented");
 	return Class<ASString>::getInstanceS("");
+}
+
+void FontStyle::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+	c->setVariableByQName("BOLD","",Class<ASString>::getInstanceS("bold"),DECLARED_TRAIT);
+	c->setVariableByQName("BOLD_ITALIC","",Class<ASString>::getInstanceS("boldItalic"),DECLARED_TRAIT);
+	c->setVariableByQName("ITALIC","",Class<ASString>::getInstanceS("italic"),DECLARED_TRAIT);
+	c->setVariableByQName("REGULAR","",Class<ASString>::getInstanceS("regular"),DECLARED_TRAIT);
+}
+
+void FontType::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+	c->setVariableByQName("DEVICE","",Class<ASString>::getInstanceS("device"),DECLARED_TRAIT);
+	c->setVariableByQName("EMBEDDED","",Class<ASString>::getInstanceS("embedded"),DECLARED_TRAIT);
+	c->setVariableByQName("EMBEDDED_CFF","",Class<ASString>::getInstanceS("embeddedCFF"),DECLARED_TRAIT);
+}
+
+void TextDisplayMode::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+	c->setVariableByQName("CRT","",Class<ASString>::getInstanceS("crt"),DECLARED_TRAIT);
+	c->setVariableByQName("DEFAULT","",Class<ASString>::getInstanceS("default"),DECLARED_TRAIT);
+	c->setVariableByQName("LCD","",Class<ASString>::getInstanceS("lcd"),DECLARED_TRAIT);
+}
+
+void TextColorType::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+	c->setVariableByQName("DARK_COLOR","",Class<ASString>::getInstanceS("dark"),DECLARED_TRAIT);
+	c->setVariableByQName("LIGHT_COLOR","",Class<ASString>::getInstanceS("light"),DECLARED_TRAIT);
+}
+
+void GridFitType::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
+	c->setVariableByQName("PIXEL","",Class<ASString>::getInstanceS("pixel"),DECLARED_TRAIT);
+	c->setVariableByQName("SUBPIXEL","",Class<ASString>::getInstanceS("subpixel"),DECLARED_TRAIT);
 }

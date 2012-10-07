@@ -1273,6 +1273,18 @@ void ParseThread::execute()
 			parseSWF(Signature[3]);
 		}
 	}
+	catch(ParseException& e)
+	{
+		SpinlockLocker l(objectSpinlock);
+		parsedObject = NullRef;
+		// Set system error only for main SWF. Loader classes
+		// handle error for loaded SWFs.
+		if(!loader)
+		{
+			LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
+			getSys()->setError(e.cause, SystemState::ERROR_PARSING);
+		}
+	}
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);

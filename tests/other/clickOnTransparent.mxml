@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<!--
+NOTE: name attribute should be:
+lightspark_CLASSNAME_test or lightspark_FUNCTIONNAME_test for toplevel tests
+lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test for non-toplevel tests
+(e.g.: lightspark_net_NetStream_test or lightspark_Array_test)
+-->
+<mx:Application name="lightspark_NAME_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import flash.events.Event
+	private function handleClick(e:Event):void
+	{
+		trace("click handled");
+	}
+	private function appComplete():void
+	{
+		var obj:Sprite = new Sprite();
+		obj.graphics.beginFill(0xff0000);
+		obj.graphics.drawRect(0,0,100,100);
+		obj.graphics.endFill();
+		obj.graphics.beginFill(0xff0000);
+		obj.graphics.drawRect(200,0,100,100);
+		obj.graphics.endFill();
+		obj.addEventListener("click",handleClick);
+		visual.addChild(obj);
+
+		var obj2:Sprite = new Sprite();
+		obj2.y=100;
+		obj2.graphics.beginFill(0x00ff00);
+		obj2.graphics.drawRect(0,0,100,100);
+		obj2.graphics.endFill();
+		obj2.graphics.beginFill(0x00ff00,0.0);
+		obj2.graphics.drawRect(100,0,100,100);
+		obj2.graphics.endFill();
+		obj2.graphics.beginFill(0x00ff00,0.5);
+		obj2.graphics.drawRect(200,0,100,100);
+		obj2.graphics.endFill();
+		obj2.addEventListener("click",handleClick);
+		visual.addChild(obj2);
+
+		var obj3:Sprite = new Sprite();
+		obj3.y=200;
+		obj3.graphics.beginFill(0x000000ff);
+		obj3.graphics.drawRect(0,0,100,100);
+		obj3.graphics.endFill();
+		obj3.graphics.beginFill(0x0000ff,0.0);
+		obj3.graphics.drawRect(100,0,100,100);
+		obj3.graphics.endFill();
+		obj3.graphics.beginFill(0x0000ff);
+		obj3.graphics.drawRect(200,0,100,100);
+		obj3.graphics.endFill();
+		obj3.addEventListener("click",handleClick);
+		obj3.cacheAsBitmap=true;
+		visual.addChild(obj3);
+
+		var obj4:Sprite = new Sprite();
+		obj4.y=300;
+		obj4.graphics.beginFill(0x000000ff);
+		obj4.graphics.drawRect(0,0,100,100);
+		obj4.graphics.endFill();
+		obj4.graphics.beginFill(0x0000ff,0.0);
+		obj4.graphics.drawRect(100,0,100,100);
+		obj4.graphics.endFill();
+		obj4.graphics.beginFill(0x0000ff);
+		obj4.graphics.drawRect(200,0,100,100);
+		obj4.graphics.endFill();
+		obj4.addEventListener("click",handleClick);
+		obj4.cacheAsBitmap=true;
+
+		var mask:Sprite = new Sprite();
+		mask.y=300;
+		mask.graphics.beginFill(0x00ff00,1.0);
+		mask.graphics.drawRect(0,0,300,33)
+		mask.graphics.endFill();
+		mask.graphics.beginFill(0x00ff00,0.0);
+		mask.graphics.drawRect(0,33,300,33)
+		mask.graphics.endFill();
+		mask.graphics.beginFill(0x00ff00,1.0);
+		mask.graphics.drawRect(0,66,300,33)
+		mask.graphics.endFill();
+		mask.cacheAsBitmap = true;
+		obj4.mask = mask;
+
+		var containerMask:Sprite = new Sprite();
+		containerMask.y = 300;
+		containerMask.graphics.beginFill(0,1.0);
+		containerMask.graphics.drawRect(0,20,300,180);
+		containerMask.graphics.endFill();
+
+		var container:Sprite = new Sprite();
+
+		container.addChild(obj4);
+		container.addChild(mask);
+		container.mask = containerMask;
+
+		visual.addChild(container);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

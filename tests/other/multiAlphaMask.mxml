@@ -13,6 +13,11 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 
 <mx:Script>
 	<![CDATA[
+	import flash.events.Event
+	private function handleClick(e:Event):void
+	{
+		trace("click handled");
+	}
 	private function appComplete():void
 	{
 		//Alpha masking only works if
@@ -49,6 +54,7 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 		testContainer.mask = mask1;
 		visual.addChild(testContainer);
 		obj.mask = mask2;
+		obj.addEventListener("click",handleClick);
 
 		var test2Text:TextField = new TextField();
 		test2Text.x=100;
@@ -81,6 +87,7 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 		test2Container.mask = mask3;
 		visual.addChild(test2Container);
 		obj2.mask = mask4;
+		obj2.addEventListener("click",handleClick);
 
 		var test3Text:TextField = new TextField();
 		test3Text.x=200;
@@ -108,6 +115,7 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 		mask5.rotation = 30;
 		test3Container.addChild(objParent);
 		visual.addChild(test3Container);
+		obj3.addEventListener("click",handleClick);
 	}
 	]]>
 </mx:Script>

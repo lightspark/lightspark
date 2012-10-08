@@ -60,7 +60,6 @@ protected:
 	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
 	void renderImpl(RenderContext& ctxt) const;
 	bool tokensEmpty() const { return tokens.empty(); }
-	bool isOpaqueImpl(number_t x, number_t y) const;
 };
 
 };

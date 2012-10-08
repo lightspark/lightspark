@@ -98,8 +98,6 @@ protected:
 	float clippedAlpha() const;
 
 	void defaultRender(RenderContext& ctxt) const;
-	void hitTestPrologue() const;
-	void hitTestEpilogue() const;
 	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
@@ -154,11 +152,6 @@ public:
 	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
 	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
-	//API to handle mask support in hit testing
-	virtual bool isOpaque(number_t x, number_t y) const
-	{
-		throw RunTimeException("DisplayObject::isOpaque");
-	}
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return !maskOf.isNull(); }

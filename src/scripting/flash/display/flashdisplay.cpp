@@ -715,6 +715,10 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 	list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
+		//Don't check masks
+		if((*j)->isMask())
+			continue;
+
 		if(!(*j)->getMatrix().isInvertible())
 			continue; /* The object is shrunk to zero size */
 
@@ -1786,35 +1790,6 @@ void Shape::sinit(Class_base* c)
 
 void Shape::buildTraits(ASObject* o)
 {
-}
-
-bool Shape::isOpaque(number_t x, number_t y) const
-{
-	return TokenContainer::isOpaqueImpl(x, y);
-}
-
-bool Sprite::isOpaque(number_t x, number_t y) const
-{
-	return (TokenContainer::isOpaqueImpl(x, y)) || (DisplayObjectContainer::isOpaque(x,y));
-}
-
-bool DisplayObjectContainer::isOpaque(number_t x, number_t y) const
-{
-	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-	number_t lx, ly;
-	for(;it!=dynamicDisplayList.end();++it)
-	{
-		if(!((*it)->getMatrix()).isInvertible())
-			continue; /* The object is shrunk to zero size */
-
-		//x y are local coordinates of the container, should be local coord of *it
-		((*it)->getMatrix()).getInverted().multiply2D(x,y,lx,ly);
-		if(((*it)->isOpaque(lx,ly)))
-		{			
-			return true;		
-		}
-	}
-	return false;
 }
 
 ASFUNCTIONBODY(Shape,_constructor)

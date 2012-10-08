@@ -148,25 +148,12 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				owner->getConcatenatedAlpha(), masks);
 }
 
-bool TokenContainer::isOpaqueImpl(number_t x, number_t y) const
-{
-	return CairoTokenRenderer::isOpaque(tokens, scaling, x, y);
-}
-
 _NR<InteractiveObject> TokenContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const
 {
-	//TODO: test against the CachedSurface
+	//Masks have been already checked along the way
+
 	if(CairoTokenRenderer::hitTest(tokens, scaling, x, y))
-	{
-		if(getSys()->getInputThread()->isMaskPresent())
-		{
-			number_t globalX, globalY;
-			owner->getConcatenatedMatrix().multiply2D(x,y,globalX,globalY);
-			if(!getSys()->getInputThread()->isMasked(globalX, globalY))//You must be under the mask to be hit
-				return NullRef;
-		}
 		return last;
-	}
 	return NullRef;
 }
 

@@ -208,7 +208,6 @@ ASFUNCTIONBODY(Video,attachNetStream)
 
 _NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
-	assert_and_throw(!getSys()->getInputThread()->isMaskPresent());
 	//TODO: support masks
 	if(x>=0 && x<=width && y>=0 && y<=height)
 		return last;

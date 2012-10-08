@@ -98,7 +98,6 @@ public:
 	void purgeLegacyChildren();
 	void advanceFrame();
 	void initFrame();
-	bool isOpaque(number_t x, number_t y) const;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -230,7 +229,6 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
-	bool isOpaque(number_t x, number_t y) const;
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
 	{ return TokenContainer::invalidate(target, initialMatrix); }
@@ -374,7 +372,6 @@ public:
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
 	{ return TokenContainer::invalidate(target, initialMatrix); }
 	void requestInvalidation(InvalidateQueue* q);
-	bool isOpaque(number_t x, number_t y) const;
 };
 
 struct FrameLabel_data

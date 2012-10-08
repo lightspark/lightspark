@@ -95,18 +95,6 @@ void DisplayObject::Render(RenderContext& ctxt)
 	renderImpl(ctxt);
 }
 
-void DisplayObject::hitTestPrologue() const
-{
-	if(!mask.isNull())
-		getSys()->getInputThread()->pushMask(mask.getPtr(),mask->getConcatenatedMatrix().getInverted());
-}
-
-void DisplayObject::hitTestEpilogue() const
-{
-	if(!mask.isNull())
-		getSys()->getInputThread()->popMask();
-}
-
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(),cacheAsBitmap(false)
@@ -898,9 +886,29 @@ _NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, numbe
 	if(!visible || !isConstructed())
 		return NullRef;
 
-	hitTestPrologue();
+	//First check if there is any mask on this object, if so the point must be inside the mask to go on
+	if(!mask.isNull())
+	{
+		//First compute the global coordinates from the local ones
+		//TODO: we may also pass the global coordinates to all the calls
+		const MATRIX& thisMatrix = this->getConcatenatedMatrix();
+		number_t globalX, globalY;
+		thisMatrix.multiply2D(x,y,globalX,globalY);
+		//Now compute the coordinates local to the mask
+		const MATRIX& maskMatrix = mask->getConcatenatedMatrix();
+		if(!maskMatrix.isInvertible())
+		{
+			//If the matrix is not invertible the mask as collapsed to zero size
+			//If the mask is zero sized then the object is not visible
+			return NullRef;
+		}
+		number_t maskX, maskY;
+		maskMatrix.getInverted().multiply2D(globalX,globalY,maskX,maskY);
+		if(mask->hitTest(last, maskX, maskY, type)==false)
+			return NullRef;
+	}
+
 	_NR<InteractiveObject> ret = hitTestImpl(last, x,y, type);
-	hitTestEpilogue();
 	return ret;
 }
 

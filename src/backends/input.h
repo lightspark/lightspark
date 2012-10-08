@@ -65,7 +65,6 @@ private:
 		MATRIX m;
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
-	std::vector<MaskData> maskStack;
 	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type);
 	void handleMouseDown(uint32_t x, uint32_t y);
 	void handleMouseDoubleClick(uint32_t x, uint32_t y);
@@ -83,31 +82,6 @@ public:
 	void removeListener(InteractiveObject* ob);
 	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);
 	void stopDrag(Sprite* s);
-	/**
-	  	Add a mask to the stack mask
-		@param d The DisplayObject used as a mask
-		@param m The total matrix from object to stage
-		\pre A reference is not acquired, we assume the object life is protected until the corresponding pop
-	*/
-	void pushMask(DisplayObject* d, const MATRIX& m)
-	{
-		maskStack.push_back(MaskData(d,m));
-	}
-	/**
-	  	Remove the last pushed mask
-	*/
-	void popMask()
-	{
-		maskStack.pop_back();
-	}
-	bool isMaskPresent()
-	{
-		return !maskStack.empty();
-	}
-	/*
-	   	Checks if the given point in Stage coordinates is currently masked or not
-	*/
-	bool isMasked(number_t x, number_t y) const;
 
 	Vector2 getMousePos()
 	{

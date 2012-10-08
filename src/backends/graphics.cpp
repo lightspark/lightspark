@@ -685,8 +685,10 @@ uint8_t* CairoRenderer::getPixelBuffer()
 bool CairoTokenRenderer::hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
-
 	cairo_t *cr=cairo_create(cairoSurface);
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+
 	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true);
 	bool ret=false;
 	if(!empty)
@@ -700,30 +702,6 @@ bool CairoTokenRenderer::hitTest(const std::vector<GeomToken>& tokens, float sca
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
 	return ret;
-}
-
-bool CairoTokenRenderer::isOpaque(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y)
-{
-	//We render the alpha value of a single pixel, hopefully this is not too slow
-	int32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_A8, 1);
-	uint8_t* pixelBytes=g_newa(uint8_t, cairoWidthStride);
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(pixelBytes, CAIRO_FORMAT_A8, 1, 1, cairoWidthStride);
-
-	cairo_t* cr=cairo_create(cairoSurface);
-	cairoClean(cr);
-
-	//Make sure the rendering starts at 0,0 in surface coordinates
-	cairo_translate(cr, -x, -y);
-
-	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-
-	cairoPathFromTokens(cr, tokens, scaleFactor, false);
-
-	cairo_destroy(cr);
-	cairo_surface_destroy(cairoSurface);
-	//CHECK: the condition is alpha > 0x00 or alpha==0xff
-	return pixelBytes[0]!=0x00;
 }
 
 void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOffset) const

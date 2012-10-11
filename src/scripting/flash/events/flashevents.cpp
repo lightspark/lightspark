@@ -643,7 +643,7 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 		return true;
 }
 
-NetStatusEvent::NetStatusEvent(Class_base* cb, const tiny_string& l, const tiny_string& c):Event(cb, "netStatus"),level(l),code(c)
+NetStatusEvent::NetStatusEvent(Class_base* cb, const tiny_string& level, const tiny_string& code):Event(cb, "netStatus")
 {
 	//The object has been initialized internally
 	ASObject* info=Class<ASObject>::getInstanceS();
@@ -663,17 +663,17 @@ void NetStatusEvent::sinit(Class_base* c)
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
 {
 	NetStatusEvent* th=Class<NetStatusEvent>::cast(obj);
-	if(th->level!="" && th->code!="")
-	{
-		//TODO: purge this away
-		return NULL;
-	}
-	assert_and_throw(argslen>=1 && argslen<=4);
 	//Also call the base class constructor, using only the first arguments
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(obj,args,baseClassArgs);
 	ASObject* info;
-	if(argslen==4)
+	if(argslen==0)
+	{
+		//Called from C++ code, info was set in the C++
+		//constructor
+		return NULL;
+	}
+	else if(argslen==4)
 	{
 		//Building from AS code, use the data
 		args[3]->incRef();
@@ -686,6 +686,27 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 	}
 	obj->setVariableByQName("info","",info,DECLARED_TRAIT);
 	return NULL;
+}
+
+Event* NetStatusEvent::cloneImpl() const
+{
+	NetStatusEvent *clone=Class<NetStatusEvent>::getInstanceS();
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+
+	multiname infoName(NULL);
+	infoName.name_type=multiname::NAME_STRING;
+	infoName.name_s_id=getSys()->getUniqueStringId("info");
+	infoName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	infoName.isAttribute = false;
+
+	_NR<ASObject> info = const_cast<NetStatusEvent*>(this)->getVariableByMultiname(infoName);
+	assert(!info.isNull());
+	info->incRef();
+	clone->setVariableByMultiname(infoName, info.getPtr(), CONST_NOT_ALLOWED);
+
+	return clone;
 }
 
 FullScreenEvent::FullScreenEvent(Class_base* c):Event(c, "fullScreenEvent")

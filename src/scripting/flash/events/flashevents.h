@@ -131,8 +131,7 @@ public:
 class NetStatusEvent: public Event
 {
 private:
-	tiny_string level;
-	tiny_string code;
+	virtual Event* cloneImpl() const;
 public:
 	NetStatusEvent(Class_base* c):Event(c, "netStatus"){}
 	NetStatusEvent(Class_base* cb, const tiny_string& l, const tiny_string& c);

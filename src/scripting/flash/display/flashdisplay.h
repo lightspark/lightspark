@@ -295,7 +295,7 @@ public:
 		bytesTotal=b;
 	}
 	void setBytesLoaded(uint32_t b);
-	void setURL(const tiny_string& _url) { url=_url; }
+	void setURL(const tiny_string& _url, bool setParameters=true);
 	void setLoaderURL(const tiny_string& _url) { loaderURL=_url; }
 	void resetState();
 };

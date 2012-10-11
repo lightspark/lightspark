@@ -102,7 +102,7 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 
 	if(!loaderInfo.isNull())
 	{
-		loaderInfo->setURL(origin.getParsedURL());
+		loaderInfo->setURL(origin.getParsedURL(), false);
 		loaderInfo->setLoaderURL(origin.getParsedURL());
 	}
 }
@@ -385,18 +385,22 @@ void SystemState::parseParametersFromURL(const URLInfo& url)
 	if(params.isNull())
 		params=_MNR(Class<ASObject>::getInstanceS());
 
+	parseParametersFromURLIntoObject(url, params);
+	setParameters(params);
+}
+
+void SystemState::parseParametersFromURLIntoObject(const URLInfo& url, _R<ASObject> outParams)
+{
 	std::list< std::pair<tiny_string, tiny_string> > queries=url.getQueryKeyValue();
 	std::list< std::pair<tiny_string, tiny_string> >::iterator it;
 	for (it=queries.begin(); it!=queries.end(); ++it)
 	{
-		if(params->hasPropertyByMultiname(QName(it->first,""), true, true))
+		if(outParams->hasPropertyByMultiname(QName(it->first,""), true, true))
 			LOG(LOG_ERROR,"URL query parameters has duplicate key '" << it->first << "' - ignoring");
 		else
-			params->setVariableByQName(it->first,"",
+			outParams->setVariableByQName(it->first,"",
 			   lightspark::Class<lightspark::ASString>::getInstanceS(it->second),DYNAMIC_TRAIT);
 	}
-
-	setParameters(params);
 }
 
 void SystemState::setParameters(_R<ASObject> p)

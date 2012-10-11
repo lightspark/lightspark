@@ -150,6 +150,23 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 	sendInit();
 }
 
+void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
+{
+	url=_url;
+
+	//Specs says that parameters should be set from the *main* SWF
+	//URL query string, but testing shows that it should be the
+	//loaded URL.
+	//
+	//TODO: the parameters should only be set if the loaded clip
+	//uses AS3. See specs.
+	if (setParameters)
+	{
+		parameters = _MR(Class<ASObject>::getInstanceS());
+		SystemState::parseParametersFromURLIntoObject(url, parameters);
+	}
+}
+
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
@@ -317,13 +334,6 @@ ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	//TODO: the parameters should only be set if the loaded clip uses AS3. See specs.
-	_NR<ASObject> p=getSys()->getParameters();
-	if(!p.isNull())
-	{
-		p->incRef();
-		th->contentLoaderInfo->setVariableByQName("parameters","",p.getPtr(),DECLARED_TRAIT);
-	}
 	th->contentLoaderInfo->setLoaderURL(getSys()->mainClip->getOrigin().getParsedURL());
 	return NULL;
 }

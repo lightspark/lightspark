@@ -334,6 +334,7 @@ public:
 	void parseParametersFromFile(const char* f) DLL_PUBLIC;
 	void parseParametersFromFlashvars(const char* vars) DLL_PUBLIC;
 	void parseParametersFromURL(const URLInfo& url) DLL_PUBLIC;
+	static void parseParametersFromURLIntoObject(const URLInfo& url, _R<ASObject> outParams);
 	_NR<ASObject> getParameters() const;
 
 	//Cookies management (HTTP downloads and Gnash fallback)

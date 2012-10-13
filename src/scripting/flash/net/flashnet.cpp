@@ -319,9 +319,10 @@ void URLLoaderThread::execute()
 		if(!downloader->hasFailed() && !threadAborting)
 		{
 			istream s(downloader);
-			uint8_t* buf=new uint8_t[downloader->getLength()];
+			uint8_t* buf=new uint8_t[downloader->getLength()+1];
 			//TODO: avoid this useless copy
 			s.read((char*)buf,downloader->getLength());
+			buf[downloader->getLength()] = '\0';
 			//TODO: test binary data format
 			tiny_string dataFormat=loader->getDataFormat();
 			if(dataFormat=="binary")

@@ -1544,6 +1544,14 @@ void URLVariables::decode(const tiny_string& s)
 			nameEnd=NULL;
 			valueStart=NULL;
 			valueEnd=NULL;
+			if(name==NULL || value==NULL)
+			{
+				g_free(name);
+				g_free(value);
+				cur++;
+				continue;
+			}
+
 			//Check if the variable already exists
 			multiname propName(NULL);
 			propName.name_type=multiname::NAME_STRING;

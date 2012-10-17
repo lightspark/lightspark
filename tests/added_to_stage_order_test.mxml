@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_added_to_stage_order_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import flash.display.Sprite;
+	import flash.events.Event;
+
+	private var children:Array;
+	private var eventOrder:Array = [];
+	private var eventOrder2:Array = [];
+
+	private function appComplete():void
+	{
+		// Removing parent in ADDED_TO_STAGE listener
+		children = [new Sprite(), new Sprite()];
+		var listeners:Array = [spriteAdded, spriteRemoved];
+		addListeners(children, listeners);
+
+		var child:Sprite = children[0];
+		var grandchild:Sprite = children[1];
+		child.addChild(grandchild);
+		stage.addChild(child);
+
+		removeListeners(children, listeners);
+
+		Tests.assertArrayEquals(eventOrder, ["+10", "+01", "-10", "-01"],
+					"removing parent in ADDED_TO_STAGE listener");
+
+
+		// Removing self in ADDED_TO_STAGE listener
+		children = [new Sprite(), new Sprite()];
+		listeners = [spriteAdded2, spriteRemoved2];
+		addListeners(children, listeners);
+
+		child = children[0];
+		grandchild = children[1];
+		child.addChild(grandchild);
+		stage.addChild(child);
+
+		removeListeners(children, listeners);
+
+		Tests.assertArrayEquals(eventOrder2, ["+10", "-10", "-01", "+01"],
+					"removing self in ADDED_TO_STAGE listener");
+
+		Tests.report(visual, this.name)
+	}
+
+	private function addListeners(sprites:Array, listeners:Array):void {
+		for each (var sp:Sprite in sprites) {
+			sp.addEventListener(Event.ADDED_TO_STAGE, listeners[0]);
+			sp.addEventListener(Event.REMOVED_FROM_STAGE, listeners[1]);
+		}
+	}
+
+	private function removeListeners(sprites:Array, listeners:Array):void {
+		for each (var sp:Sprite in sprites) {
+			sp.removeEventListener(Event.ADDED_TO_STAGE, listeners[0]);
+			sp.removeEventListener(Event.REMOVED_FROM_STAGE, listeners[1]);
+		}
+	}
+
+	private function spriteAdded(e:Event):void {
+		registerEvent(e.target, true, eventOrder);
+
+		// Removing parent
+		if (e.target == children[1]) {
+			stage.removeChild(children[0]);
+		}
+	}
+
+	private function spriteRemoved(e:Event):void {
+		registerEvent(e.target, false, eventOrder);
+	}
+
+	private function spriteAdded2(e:Event):void {
+		registerEvent(e.target, true, eventOrder2);
+
+		// Removing self
+		if (e.target == children[0]) {
+			stage.removeChild(children[0]);
+		}
+	}
+
+	private function spriteRemoved2(e:Event):void {
+		registerEvent(e.target, false, eventOrder2);
+	}
+
+	private function registerEvent(target:Object, added:Boolean, events:Array):void {
+		// Encode add/remove operation as a string. The first
+		// character is + or - indicating the operation. The
+		// rest is a binary string indicating the sprite in
+		// the children array.
+		var eventType:String = added ? "+" : "-";
+		events.push(eventType + childString(target));
+	}
+
+	private function childString(target:Object):String {
+		var idx:Array = children.map(function(item:*, index:int, array:Array):int {
+			return int(target == item);
+		});
+
+		return idx.join("");
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

@@ -1379,9 +1379,16 @@ void DisplayObjectContainer::setOnStage(bool staged)
 	{
 		DisplayObject::setOnStage(staged);
 		//Notify childern
-		Locker l(mutexDisplayList);
-		list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-		for(;it!=dynamicDisplayList.end();++it)
+		//Make a copy of display list, and release the mutex
+		//before calling setOnStage
+		list<_R<DisplayObject>> displayListCopy;
+		{
+			Locker l(mutexDisplayList);
+			displayListCopy.assign(dynamicDisplayList.begin(),
+					       dynamicDisplayList.end());
+		}
+		list<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
+		for(;it!=displayListCopy.end();++it)
 			(*it)->setOnStage(staged);
 	}
 }

@@ -1829,6 +1829,17 @@ void RootMovieClip::initFrame()
 	if(getFramesLoaded() == 0)
 		return;
 
+	/* Bind classes between the previous and new frame. */
+	std::list<Frame>::iterator frame=frames.begin();
+	for(unsigned int i=0;i<=state.FP;i++)
+	{
+		if((int)i > state.last_FP)
+		{
+			frame->bindClasses(this);
+		}
+		++frame;
+	}
+
 	MovieClip::initFrame();
 }
 
@@ -1847,4 +1858,11 @@ void RootMovieClip::finalize()
 	MovieClip::finalize();
 	applicationDomain.reset();
 	securityDomain.reset();
+}
+
+void RootMovieClip::addBinding(const tiny_string& name, DictionaryTag *tag)
+{
+	// This function will be called only be the parsing thread,
+	// and will only access the last frame, so no locking needed.
+	frames.back().classesToBeBound.push_back(make_pair(name, tag));
 }

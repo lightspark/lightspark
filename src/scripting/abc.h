@@ -415,7 +415,6 @@ private:
 	std::deque<eventType, reporter_allocator<eventType>> events_queue;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
 	void signalEventWaiters();
-	void buildClassAndBindTag(const std::string& s, DictionaryTag* t);
 	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
 	Class_inherit* findClassInherit(const std::string& s, RootMovieClip* r);
 
@@ -487,6 +486,8 @@ public:
 	uint32_t getAndIncreaseNamespaceBase(uint32_t nsNum);
 
 	tiny_string getDefaultXMLNamespace();
+
+	void buildClassAndBindTag(const std::string& s, DictionaryTag* t);
 };
 
 class DoABCTag: public ControlTag

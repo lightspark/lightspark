@@ -115,6 +115,7 @@ public:
 	_NR<SecurityDomain> securityDomain;
 	//DisplayObject interface
 	_NR<RootMovieClip> getRoot();
+	void addBinding(const tiny_string& name, DictionaryTag *tag);
 };
 
 class ThreadProfile

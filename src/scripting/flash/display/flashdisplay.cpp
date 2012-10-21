@@ -883,6 +883,16 @@ void Frame::execute(_R<DisplayObjectContainer> displayList)
 		(*it)->execute(displayList.getPtr());
 }
 
+void Frame::bindClasses(RootMovieClip *root)
+{
+	ABCVm *vm = getVm();
+	auto it=classesToBeBound.begin();
+	for(;it!=classesToBeBound.end();++it)
+		vm->buildClassAndBindTag(it->first.raw_buf(), it->second);
+
+	classesToBeBound.clear();
+}
+
 FrameContainer::FrameContainer():framesLoaded(0)
 {
 	frames.emplace_back(Frame());

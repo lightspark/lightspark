@@ -420,12 +420,14 @@ class Frame
 {
 public:
 	std::list<const DisplayListTag*> blueprint;
+	std::list< std::pair<tiny_string, DictionaryTag*> > classesToBeBound;
 	void execute(_R<DisplayObjectContainer> displayList);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
 	 * the objects that are instance of tags
 	 */
 	void destroyTags();
+	void bindClasses(RootMovieClip *root);
 };
 
 class FrameContainer

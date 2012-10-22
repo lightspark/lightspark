@@ -47,6 +47,8 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLength);
+	ASFUNCTION(attribute);
+	ASFUNCTION(attributes);
 	ASFUNCTION(appendChild);
 	ASFUNCTION(child);
 	ASFUNCTION(children);

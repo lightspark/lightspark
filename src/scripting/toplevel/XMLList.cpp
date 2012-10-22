@@ -80,6 +80,8 @@ void XMLList::sinit(Class_base* c)
 	c->setSuper(Class<ASObject>::getRef());
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(attribute),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("contains",AS3,Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
@@ -392,6 +394,40 @@ ASFUNCTIONBODY(XMLList,copy)
 		dest->nodes.push_back(_MR((*it)->copy()));
 	}
 	return dest;
+}
+
+ASFUNCTIONBODY(XMLList,attribute)
+{
+	XMLList *th = obj->as<XMLList>();
+
+	if(argslen > 0 && args[0]->is<QName>())
+		LOG(LOG_NOT_IMPLEMENTED,"XMLList.attribute called with QName");
+
+	tiny_string attrname;
+	ARG_UNPACK (attrname);
+	multiname mname(NULL);
+	mname.name_type=multiname::NAME_STRING;
+	mname.name_s_id=getSys()->getUniqueStringId(attrname);
+	mname.ns.push_back(nsNameAndKind("",NAMESPACE));
+	mname.isAttribute = true;
+
+	_NR<ASObject> attr=th->getVariableByMultiname(mname, NONE);
+	assert(!attr.isNull());
+	attr->incRef();
+	return attr.getPtr();
+}
+
+ASFUNCTIONBODY(XMLList,attributes)
+{
+	XMLList *th = obj->as<XMLList>();
+	XMLList *res = Class<XMLList>::getInstanceS();
+	auto it=th->nodes.begin();
+	for(; it!=th->nodes.end(); ++it)
+	{
+		XML::XMLVector nodeAttributes = (*it)->getAttributes();
+		res->nodes.insert(res->nodes.end(), nodeAttributes.begin(), nodeAttributes.end());
+	}
+	return res;
 }
 
 _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)

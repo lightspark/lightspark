@@ -1135,12 +1135,10 @@ void Class_base::describeTraits(xmlpp::Element* root,
 		if(kind==traits_info::Slot || kind==traits_info::Const)
 		{
 			multiname* type=context->getMultiname(t.type_name,NULL);
-			assert(type->name_type==multiname::NAME_STRING);
-
 			const char *nodename=kind==traits_info::Const?"constant":"variable";
 			xmlpp::Element* node=root->add_child(nodename);
 			node->set_attribute("name", getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
-			node->set_attribute("type", getSys()->getStringFromUniqueId(type->name_s_id).raw_buf());
+			node->set_attribute("type", type->qualifiedString().raw_buf());
 
 			describeMetadata(node, t);
 		}
@@ -1152,8 +1150,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 
 			method_info& method=context->methods[t.method];
 			const multiname* rtname=method.returnTypeName();
-			assert(rtname->name_type==multiname::NAME_STRING);
-			node->set_attribute("returnType", getSys()->getStringFromUniqueId(rtname->name_s_id).raw_buf());
+			node->set_attribute("returnType", rtname->qualifiedString().raw_buf());
 
 			assert(method.numArgs() >= method.numOptions());
 			uint32_t firstOpt=method.numArgs() - method.numOptions();
@@ -1161,7 +1158,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			{
 				xmlpp::Element* param=node->add_child("parameter");
 				param->set_attribute("index", UInteger::toString(j+1).raw_buf());
-				param->set_attribute("type", getSys()->getStringFromUniqueId(method.paramTypeName(j)->name_s_id).raw_buf());
+				param->set_attribute("type", method.paramTypeName(j)->qualifiedString().raw_buf());
 				param->set_attribute("optional", j>=firstOpt?"true":"false");
 			}
 
@@ -1203,20 +1200,19 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			if(access)
 				node->set_attribute("access", access);
 
-			const char* type=NULL;
+			tiny_string type;
 			method_info& method=context->methods[t.method];
 			if(kind==traits_info::Getter)
 			{
 				const multiname* rtname=method.returnTypeName();
-				assert(rtname->name_type==multiname::NAME_STRING);
-				type=getSys()->getStringFromUniqueId(rtname->name_s_id).raw_buf();
+				type=rtname->qualifiedString();
 			}
 			else if(method.numArgs()>0) // setter
 			{
-				type=getSys()->getStringFromUniqueId(method.paramTypeName(0)->name_s_id).raw_buf();
+				type=method.paramTypeName(0)->qualifiedString();
 			}
-			if(type)
-				node->set_attribute("type", type);
+			if(!type.empty())
+				node->set_attribute("type", type.raw_buf());
 
 			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
 

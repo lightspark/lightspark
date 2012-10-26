@@ -69,7 +69,10 @@ for dirpath, dirnames, filenames in os.walk(langref):
 			while(True):
 				m = regclass.search(line)
 				if m:
-					curClass = m.group(1)
+					if dirpath==langref:
+						curClass = m.group(1)
+					else:
+						curClass = dirpath.replace("langref/","").replace("/",".") +"."+ m.group(1)
 			                dclasses.add(curClass)
 			                isConst = False
 					break

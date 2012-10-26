@@ -39,6 +39,15 @@ struct data_slot
 	data_slot():data(NULL),type(DATA_OBJECT){}
 	explicit data_slot(int32_t i):data_i(i),type(DATA_INT){}
 };
+struct sorton_field
+{
+	bool isNumeric;
+	bool isCaseInsensitive;
+	bool isDescending;
+	multiname fieldname;
+	sorton_field(const multiname& sortfieldname):isNumeric(false),isCaseInsensitive(false),isDescending(false),fieldname(sortfieldname){}
+};
+
 
 class Array: public ASObject
 {
@@ -68,6 +77,14 @@ private:
 		IFunction* comparator;
 	public:
 		sortComparatorWrapper(IFunction* c):comparator(c){}
+		bool operator()(const data_slot& d1, const data_slot& d2);
+	};
+	class sortOnComparator
+	{
+	private:
+		std::vector<sorton_field> fields;
+	public:
+		sortOnComparator(const std::vector<sorton_field>& sf):fields(sf){}
 		bool operator()(const data_slot& d1, const data_slot& d2);
 	};
 	tiny_string toString_priv() const;

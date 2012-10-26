@@ -67,7 +67,7 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
-	//c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
@@ -819,12 +819,145 @@ ASFUNCTIONBODY(Array,_sort)
 	return obj;
 }
 
+bool Array::sortOnComparator::operator()(const data_slot& d1, const data_slot& d2)
+{
+	std::vector<sorton_field>::iterator it=fields.begin();
+	for(;it != fields.end();++it)
+	{
+		assert_and_throw(d1.type == DATA_OBJECT && d1.type == DATA_OBJECT);
+
+		_NR<ASObject> obj1 = d1.data->getVariableByMultiname(it->fieldname);
+		_NR<ASObject> obj2 = d2.data->getVariableByMultiname(it->fieldname);
+		if(it->isNumeric)
+		{
+			number_t a=numeric_limits<double>::quiet_NaN();
+			number_t b=numeric_limits<double>::quiet_NaN();
+			a=obj1->toNumber();
+			
+			b=obj2->toNumber();
+			
+			if(std::isnan(a) || std::isnan(b))
+				throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
+			if (b != a)
+			{
+				if(it->isDescending)
+					return b>a;
+				else
+					return a<b;
+			}
+		}
+		else
+		{
+			//Comparison is always in lexicographic order
+			tiny_string s1;
+			tiny_string s2;
+			s1=obj1->toString();
+			s2=obj2->toString();
+			if (s1 != s2)
+			{
+				if(it->isDescending)
+				{
+					if(it->isCaseInsensitive)
+						return s1.strcasecmp(s2)>0;
+					else
+						return s1>s2;
+				}
+				else
+				{
+					if(it->isCaseInsensitive)
+						return s1.strcasecmp(s2)<0;
+					else
+						return s1<s2;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 ASFUNCTIONBODY(Array,sortOn)
 {
-//	Array* th=static_cast<Array*>(obj);
-/*	if(th->data.size()>1)
-		throw UnsupportedException("Array::sort not completely implemented");
-	LOG(LOG_NOT_IMPLEMENTED,_("Array::sort not really implemented"));*/
+	Array* th=static_cast<Array*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	std::vector<sorton_field> sortfields;
+	if(args[0]->is<Array>())
+	{
+		Array* obj=static_cast<Array*>(args[0]);
+		int n = 0;
+		std::map<uint32_t, data_slot>::iterator it=obj->data.begin();
+		for(;it != obj->data.end();++it)
+		{
+			multiname sortfieldname(NULL);
+			sortfieldname.ns.push_back(nsNameAndKind("",NAMESPACE));
+			if (it->second.type == DATA_OBJECT)
+			{
+				sortfieldname.setName(it->second.data);
+			}
+			sorton_field sf(sortfieldname);
+			sortfields.push_back(sf);
+		}
+		if (argslen == 2 && args[1]->is<Array>())
+		{
+			Array* opts=static_cast<Array*>(args[1]);
+			std::map<uint32_t, data_slot>::iterator itopt=opts->data.begin();
+			int nopt = 0;
+			for(;itopt != opts->data.end() && nopt < n;++itopt)
+			{
+				uint32_t options=0;
+				if (itopt->second.type == DATA_OBJECT)
+					options = itopt->second.data->toInt();
+				else
+					options = itopt->second.data_i;
+				if(options&NUMERIC)
+					sortfields[nopt].isNumeric=true;
+				if(options&CASEINSENSITIVE)
+					sortfields[nopt].isCaseInsensitive=true;
+				if(options&DESCENDING)
+					sortfields[nopt].isDescending=true;
+				if(options&(~(NUMERIC|CASEINSENSITIVE|DESCENDING)))
+					throw UnsupportedException("Array::sort not completely implemented");
+				nopt++;
+			}
+		}
+	}
+	else
+	{
+		multiname sortfieldname(NULL);
+		sortfieldname.setName(args[0]);
+		sortfieldname.ns.push_back(nsNameAndKind("",NAMESPACE));
+		sorton_field sf(sortfieldname);
+		if (argslen == 2)
+		{
+			uint32_t options = args[1]->toInt();
+			if(options&NUMERIC)
+				sf.isNumeric=true;
+			if(options&CASEINSENSITIVE)
+				sf.isCaseInsensitive=true;
+			if(options&DESCENDING)
+				sf.isDescending=true;
+			if(options&(~(NUMERIC|CASEINSENSITIVE|DESCENDING)))
+				throw UnsupportedException("Array::sort not completely implemented");
+		}
+		sortfields.push_back(sf);
+	}
+	
+	std::vector<data_slot> tmp = vector<data_slot>(th->data.size());
+	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	int i = 0;
+	for(;it != th->data.end();++it)
+	{
+		tmp[i++]= it->second;
+	}
+	
+	sort(tmp.begin(),tmp.end(),sortOnComparator(sortfields));
+
+	th->data.clear();
+	std::vector<data_slot>::iterator ittmp=tmp.begin();
+	i = 0;
+	for(;ittmp != tmp.end();++ittmp)
+	{
+		th->data[i++]= *ittmp;
+	}
 	obj->incRef();
 	return obj;
 }

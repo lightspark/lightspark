@@ -268,8 +268,9 @@ ASFUNCTIONBODY(XML,appendChild)
 	else if(args[0]->getClass()==Class<XMLList>::getClass())
 	{
 		XMLList* list=Class<XMLList>::cast(args[0]);
-		arg=list->convertToXML();
-		assert_and_throw(!arg.isNull());
+		list->appendNodesTo(th);
+		th->incRef();
+		return th;
 	}
 	else
 	{

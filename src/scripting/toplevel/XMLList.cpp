@@ -688,3 +688,15 @@ _R<ASObject> XMLList::nextValue(uint32_t index)
 	else
 		throw RunTimeException("XMLList::nextValue out of bounds");
 }
+
+void XMLList::appendNodesTo(XML *dest) const
+{
+	std::vector<_R<XML>, reporter_allocator<_R<XML>>>::const_iterator it;
+	for (it=nodes.begin(); it!=nodes.end(); ++it)
+	{
+		ASObject *arg0=it->getPtr();
+		ASObject *ret=XML::appendChild(dest, &arg0, 1);
+		if(ret)
+			ret->decRef();
+	}
+}

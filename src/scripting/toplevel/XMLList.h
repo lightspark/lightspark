@@ -89,6 +89,7 @@ public:
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);
 	_R<XML> reduceToXML() const;
+	void appendNodesTo(XML *dest) const;
 };
 }
 #endif /* SCRIPTING_TOPLEVEL_XMLLIST_H */

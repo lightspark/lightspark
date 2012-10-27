@@ -1,3 +1,9 @@
+lightspark (0.7.0-0ubuntu1~ppa1) quantal; urgency=low
+
+  * New release
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Sat, 27 Oct 2012 17:57:52 +0200
+
 lightspark (0.6.0.1-0ubuntu1~ppa1) precise; urgency=low
 
   * New release

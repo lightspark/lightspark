@@ -94,7 +94,11 @@ uint32_t multiname::normalizedNameId() const
 
 void multiname::setName(ASObject* n)
 {
-	assert(name_type!=NAME_OBJECT || name_o==NULL);
+	if (name_type==NAME_OBJECT && name_o!=NULL) {
+		name_o->decRef();
+		name_o = NULL;
+	}
+
 	if(n->is<Integer>())
 	{
 		name_i=n->as<Integer>()->val;

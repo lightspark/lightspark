@@ -96,6 +96,7 @@ void LoaderInfo::finalize()
 	loader.reset();
 	applicationDomain.reset();
 	securityDomain.reset();
+	waitedObject.reset();
 }
 
 void LoaderInfo::resetState()
@@ -131,7 +132,6 @@ void LoaderInfo::sendInit()
 {
 	this->incRef();
 	getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("init")));
-	SpinlockLocker l(spinlock);
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
 	if(bytesTotal && bytesLoaded==bytesTotal)
@@ -143,11 +143,21 @@ void LoaderInfo::sendInit()
 	}
 }
 
+void LoaderInfo::setWaitedObject(_NR<DisplayObject> w)
+{
+	SpinlockLocker l(spinlock);
+	waitedObject = w;
+}
+
 void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 {
-	if(!loader.isNull())
+	SpinlockLocker l(spinlock);
+	if(waitedObject != obj)
+		return;
+	if(!loader.isNull() && obj==waitedObject)
 		loader->setContent(obj);
 	sendInit();
+	waitedObject.reset();
 }
 
 void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
@@ -2631,9 +2641,15 @@ void StageDisplayState::sinit(Class_base* c)
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
 }
 
-Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type) : DisplayObject(c),TokenContainer(this)
+Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
+	DisplayObject(c),TokenContainer(this)
 {
-	loaderInfo = li;
+	if(li)
+	{
+		loaderInfo = li;
+		this->incRef();
+		loaderInfo->setWaitedObject(_MR(this));
+	}
 
 	bitmapData = _MR(Class<BitmapData>::getInstanceS());
 	bitmapData->addUser(this);

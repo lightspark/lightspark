@@ -262,9 +262,22 @@ private:
 	tiny_string loaderURL;
 	_NR<EventDispatcher> sharedEvents;
 	_NR<Loader> loader;
+	/*
+	 * waitedObject is the object we are supposed to wait,
+	 * it's necessary when multiple loads are invoked on
+	 * the same Loader. Since the construction may complete
+	 * after the second load is used we need to know what is
+	 * the last object that will notify this LoaderInfo about
+	 * completion
+	 */
+	_NR<DisplayObject> waitedObject;
 	Spinlock spinlock;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
 	LOAD_STATUS loadStatus;
+	/*
+	 * sendInit should be called with the spinlock held
+	 */
+	void sendInit();
 public:
 	ASPROPERTY_GETTER(uint32_t,actionScriptVersion);
 	ASPROPERTY_GETTER(bool, childAllowsParent);
@@ -285,8 +298,8 @@ public:
 	ASFUNCTION(_getSharedEvents);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_getHeight);
-	void sendInit();
 	void objectHasLoaded(_R<DisplayObject> obj);
+	void setWaitedObject(_NR<DisplayObject> w);
 	//ILoadable interface
 	void setBytesTotal(uint32_t b)
 	{

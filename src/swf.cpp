@@ -1306,16 +1306,18 @@ void ParseThread::parseSWF(UI8 ver)
 	RootMovieClip* root=NULL;
 	if(parsedObject.isNull())
 	{
-		_NR<LoaderInfo> li;
-		if(loader)
-			li=loader->getContentLoaderInfo();
+		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
 		root=RootMovieClip::getInstance(li, applicationDomain, securityDomain);
 		parsedObject=_MNR(root);
+		li->setWaitedObject(parsedObject);
 		if(!url.empty())
 			root->setOrigin(url, "");
 	}
 	else
+	{
 		root=getRootMovie();
+		parsedObject->loaderInfo->setWaitedObject(parsedObject);
+	}
 	objectSpinlock.unlock();
 
 	std::queue<const ControlTag*> symbolClassTags;
@@ -1464,8 +1466,7 @@ void ParseThread::parseSWF(UI8 ver)
 void ParseThread::parseBitmap()
 {
 	_NR<LoaderInfo> li;
-	if(loader)
-		li=loader->getContentLoaderInfo();
+	li=loader->getContentLoaderInfo();
 
 	_NR<Bitmap> tmp=_MNR(Class<Bitmap>::getInstanceS(li, &f, fileType));
 	{

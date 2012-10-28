@@ -522,7 +522,14 @@ void SystemState::destroy()
 	renderThread->wait();
 	inputThread->wait();
 	if(currentVm)
+	{
+		//If the VM exists it MUST be started to flush pending events.
+		//In some cases it will not be started by regular means, if so
+		//we will start it here.
+		if(!currentVm->hasEverStarted())
+			currentVm->start();
 		currentVm->shutdown();
+	}
 
 	l.release();
 

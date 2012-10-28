@@ -29,10 +29,10 @@
 #include <llvm/PassManager.h>
 #include <llvm/LLVMContext.h>
 #include <llvm/Target/TargetData.h>
-#ifdef LLVM_28
-#include <llvm/Target/TargetSelect.h>
-#else
+#ifdef HAVE_SUPPORT_TARGETSELECT_H
 #include <llvm/Support/TargetSelect.h>
+#else
+#include <llvm/Target/TargetSelect.h>
 #endif
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Analysis/Verifier.h>

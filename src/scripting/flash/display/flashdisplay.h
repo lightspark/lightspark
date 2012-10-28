@@ -239,6 +239,7 @@ class MorphShape: public DisplayObject
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
+	virtual void renderImpl(RenderContext& ctxt) const {}
 public:
 	MorphShape(Class_base* c):DisplayObject(c){}
 	static void sinit(Class_base* c);

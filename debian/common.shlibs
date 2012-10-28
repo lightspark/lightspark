@@ -1,1 +1,1 @@
-liblightspark 0.6 lightspark-common (= ${binary:Version})
+liblightspark 0.7 lightspark-common (= ${binary:Version})

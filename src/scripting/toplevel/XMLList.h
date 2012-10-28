@@ -71,6 +71,7 @@ public:
 	ASFUNCTION(localName);
 	ASFUNCTION(inScopeNamespaces);
 	ASFUNCTION(addNamespace);
+	ASFUNCTION(_setChildren);
 	ASFUNCTION(_setLocalName);
 	ASFUNCTION(_setName);
 	ASFUNCTION(_setNamespace);

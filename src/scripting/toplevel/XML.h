@@ -59,6 +59,7 @@ private:
 	tiny_string getNamespacePrefixByURI(const tiny_string& uri, bool create=false);
         void setLocalName(const tiny_string& localname);
         void setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix="");
+	void removeAllChildren();
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
@@ -94,6 +95,7 @@ public:
 	ASFUNCTION(_setLocalName);
 	ASFUNCTION(_setName);
 	ASFUNCTION(_setNamespace);
+	ASFUNCTION(_setChildren);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);

@@ -92,6 +92,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setName",AS3,Class<IFunction>::getFunction(_setName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setNamespace",AS3,Class<IFunction>::getFunction(_setNamespace),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copy",AS3,Class<IFunction>::getFunction(_copy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setChildren",AS3,Class<IFunction>::getFunction(_setChildren),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(XML,generator)
@@ -874,6 +875,43 @@ ASFUNCTIONBODY(XML,_copy)
 XML *XML::copy() const
 {
 	return Class<XML>::getInstanceS(node);
+}
+
+ASFUNCTIONBODY(XML,_setChildren)
+{
+	XML* th=obj->as<XML>();
+	_NR<ASObject> newChildren;
+	ARG_UNPACK(newChildren);
+
+	th->removeAllChildren();
+
+	if (newChildren->is<XML>())
+	{
+		XML *newChildrenXML=newChildren->as<XML>();
+		th->node->import_node(newChildrenXML->node);
+	}
+	else if (newChildren->is<XMLList>())
+	{
+		XMLList *list=newChildren->as<XMLList>();
+		list->appendNodesTo(th);
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "XML::setChildren supports only XMLs and XMLLists");
+	}
+
+	th->incRef();
+	return th;
+}
+
+void XML::removeAllChildren()
+{
+	xmlpp::Node::NodeList children=node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=children.begin();
+	for(;it!=children.end();++it)
+	{
+		node->remove_child(*it);
+	}
 }
 
 bool XML::hasSimpleContent() const

@@ -47,7 +47,9 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 	const char* const code=&(mi->body->code[0]);
 	//This may be non-zero and point to the position of an exception handler
 
+#if defined (PROFILING_SUPPORT) || !defined(NDEBUG)
 	const uint32_t code_len=mi->body->code.size();
+#endif
 	uint32_t instructionPointer=context->exec_pos;
 
 #ifdef PROFILING_SUPPORT

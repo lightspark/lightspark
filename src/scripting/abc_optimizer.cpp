@@ -1717,6 +1717,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 		for(uint32_t i=0;i<bb.predBlocks.size();i++)
 		{
 			//TODO: should check
+			//until then, silence warning about unused variables:
+			(void) predStackTypes;
+			(void) predScopeStackTypes;
 		}
 	}
 	//Overwrite the old code

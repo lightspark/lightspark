@@ -18,9 +18,9 @@
 **************************************************************************/
 
 #include "version.h"
+#include "backends/security.h"
 #include "swf.h"
 #include "logger.h"
-#include "backends/security.h"
 #include "platforms/engineutils.h"
 #ifndef _WIN32
 #	include <sys/resource.h>

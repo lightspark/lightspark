@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include <map>
+#include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/net/URLRequestHeader.h"
@@ -27,7 +28,6 @@
 #include "backends/audio.h"
 #include "backends/builtindecoder.h"
 #include "backends/rendering.h"
-#include "backends/security.h"
 #include "scripting/argconv.h"
 
 using namespace std;

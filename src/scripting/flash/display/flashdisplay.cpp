@@ -19,6 +19,7 @@
 
 #include <list>
 
+#include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "swf.h"
@@ -33,7 +34,6 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Vector.h"
-#include "backends/security.h"
 
 using namespace std;
 using namespace lightspark;

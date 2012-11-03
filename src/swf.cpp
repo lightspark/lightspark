@@ -19,6 +19,7 @@
 
 #include <string>
 #include <algorithm>
+#include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
@@ -31,7 +32,6 @@
 #include "backends/config.h"
 #include "backends/pluginmanager.h"
 #include "backends/rendering.h"
-#include "backends/security.h"
 #include "backends/image.h"
 #include "backends/extscriptobject.h"
 #include "memory_support.h"

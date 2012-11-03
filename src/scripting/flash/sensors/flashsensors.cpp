@@ -18,13 +18,13 @@
 **************************************************************************/
 
 #include <map>
+#include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/sensors/flashsensors.h"
 #include "scripting/class.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "compat.h"
 #include "backends/audio.h"
-#include "backends/security.h"
 
 using namespace std;
 using namespace lightspark;

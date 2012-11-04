@@ -81,9 +81,9 @@ ASFUNCTIONBODY(XMLNode,firstChild)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
 	assert_and_throw(argslen==0);
-	if(th->node==NULL) //We assume NULL node is like empty node
+	//We assume NULL node is like empty node
+	if(th->node==NULL || th->node->cobj()->type==XML_TEXT_NODE)
 		return getSys()->getNullRef();
-	assert_and_throw(th->node->cobj()->type!=XML_TEXT_NODE);
 	const xmlpp::Node::NodeList& children=th->node->get_children();
 	if(children.empty())
 		return getSys()->getNullRef();
@@ -96,9 +96,9 @@ ASFUNCTIONBODY(XMLNode,lastChild)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
 	assert_and_throw(argslen==0);
-	if(th->node==NULL) //We assume NULL node is like empty node
+	//We assume NULL node is like empty node
+	if(th->node==NULL || th->node->cobj()->type==XML_TEXT_NODE)
 		return getSys()->getNullRef();
-	assert_and_throw(th->node->cobj()->type!=XML_TEXT_NODE);
 	const xmlpp::Node::NodeList& children=th->node->get_children();
 	if(children.empty())
 		return getSys()->getNullRef();

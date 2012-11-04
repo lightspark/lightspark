@@ -73,7 +73,9 @@ void RecoveryDomParser::parse_memory_raw(const unsigned char* contents, size_typ
 }
 #endif
 
-xmlpp::Node* XMLBase::buildFromString(const string& str, const string& default_ns)
+xmlpp::Node* XMLBase::buildFromString(const string& str,
+				      bool ignoreEmptyTextNodes,
+				      const string& default_ns)
 {
 	string buf = parserQuirks(str);
 	try
@@ -87,6 +89,10 @@ xmlpp::Node* XMLBase::buildFromString(const string& str, const string& default_n
 	if(doc && doc->get_root_node())
 	{
 		xmlpp::Element *root = doc->get_root_node();
+		// It would be better to remove empty nodes during
+		// parsing, but xmlpp doesn't offer an interface.
+		if (ignoreEmptyTextNodes)
+			removeWhitespaceNodes(root);
 		addDefaultNamespace(root, default_ns);
 		return root;
 	}
@@ -135,7 +141,7 @@ xmlpp::Node* XMLBase::buildCopy(const xmlpp::Node* src)
 	const xmlpp::TextNode* textnode=dynamic_cast<const xmlpp::TextNode*>(src);
 	if(textnode)
 	{
-		return buildFromString(textnode->get_content());
+		return buildFromString(textnode->get_content(), false);
 	}
 	else
 	{
@@ -186,3 +192,21 @@ string XMLBase::quirkXMLDeclarationInMiddle(const string& str) {
 	return buf;
 }
 
+void XMLBase::removeWhitespaceNodes(xmlpp::Element *node)
+{
+	xmlpp::Node::NodeList children = node->get_children();
+	xmlpp::Node::NodeList::iterator it;
+	for (it=children.begin(); it!=children.end(); ++it)
+	{
+		xmlpp::Element *element = dynamic_cast<xmlpp::Element*>(*it);
+		xmlNode *xmlnode = (*it)->cobj();
+		if (xmlnode->type == XML_TEXT_NODE && xmlIsBlankNode(xmlnode))
+		{
+			node->remove_child(*it);
+		}
+		else if (element)
+		{
+			removeWhitespaceNodes(element);
+		}
+	}
+}

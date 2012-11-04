@@ -70,6 +70,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	tiny_string toString();
+	ASPROPERTY_GETTER_SETTER(bool, ignoreWhite);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(parseXML);
 	ASFUNCTION(firstChild);

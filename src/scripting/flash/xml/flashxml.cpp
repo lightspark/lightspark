@@ -252,7 +252,7 @@ tiny_string XMLNode::toString_priv(xmlpp::Node *outputNode)
 }
 
 XMLDocument::XMLDocument(Class_base* c, tiny_string s)
- : XMLNode(c),rootNode(NULL)
+  : XMLNode(c),rootNode(NULL),ignoreWhite(false)
 {
 	if(!s.empty())
 	{
@@ -267,7 +267,10 @@ void XMLDocument::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("parseXML","",Class<IFunction>::getFunction(parseXML),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(XMLDocument::firstChild),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c, ignoreWhite);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(XMLDocument, ignoreWhite);
 
 void XMLDocument::buildTraits(ASObject* o)
 {
@@ -295,7 +298,7 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 
 void XMLDocument::parseXMLImpl(const string& str)
 {
-	rootNode=buildFromString(str);
+	rootNode=buildFromString(str, ignoreWhite);
 }
 
 ASFUNCTIONBODY(XMLDocument,_toString)

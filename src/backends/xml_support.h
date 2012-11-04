@@ -56,6 +56,7 @@ protected:
 	//The parser will destroy the document and all the childs on destruction
 	LSDomParser parser;
 	xmlpp::Node* buildFromString(const std::string& str,
+				     bool ignoreEmptyTextnodes,
 				     const std::string& default_ns=std::string());
 	void addDefaultNamespace(xmlpp::Element *root, const std::string& default_ns);
 	void addDefaultNamespaceRecursive(xmlNodePtr node, xmlNsPtr ns);
@@ -65,6 +66,7 @@ protected:
 	static std::string parserQuirks(const std::string& str);
 	static std::string quirkCData(const std::string& str);
 	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
+	void removeWhitespaceNodes(xmlpp::Element *node);
 };
 
 };

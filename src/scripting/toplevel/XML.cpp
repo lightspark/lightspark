@@ -38,7 +38,7 @@ XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false),ignoreComments
 
 XML::XML(Class_base* c,const string& str):ASObject(c),node(NULL),constructed(true)
 {
-	node=buildFromString(str);
+	node=buildFromString(str, false);
 }
 
 XML::XML(Class_base* c,_R<XML> _r, xmlpp::Node* _n):ASObject(c),root(_r),node(_n),constructed(true)
@@ -145,7 +145,7 @@ ASFUNCTIONBODY(XML,_constructor)
 	   args[0]->is<Null>() || 
 	   args[0]->is<Undefined>())
 	{
-		th->node=th->buildFromString("");
+		th->node=th->buildFromString("", false);
 	}
 	else if(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()))
 	{
@@ -154,7 +154,7 @@ ASFUNCTIONBODY(XML,_constructor)
 		ByteArray* ba=Class<ByteArray>::cast(args[0]);
 		uint32_t len=ba->getLength();
 		const uint8_t* str=ba->getBuffer(len, false);
-		th->node=th->buildFromString(std::string((const char*)str,len),
+		th->node=th->buildFromString(std::string((const char*)str,len), false,
 					     getVm()->getDefaultXMLNamespace());
 	}
 	else if(args[0]->is<ASString>() ||
@@ -165,7 +165,7 @@ ASFUNCTIONBODY(XML,_constructor)
 	{
 		//By specs, XML constructor will only convert to string Numbers or Booleans
 		//ints are not explicitly mentioned, but they seem to work
-		th->node=th->buildFromString(args[0]->toString(),
+		th->node=th->buildFromString(args[0]->toString(), false,
 					     getVm()->getDefaultXMLNamespace());
 	}
 	else if(args[0]->is<XML>())
@@ -180,7 +180,7 @@ ASFUNCTIONBODY(XML,_constructor)
 	}
 	else
 	{
-		th->node=th->buildFromString(args[0]->toString(),
+		th->node=th->buildFromString(args[0]->toString(), false,
 					     getVm()->getDefaultXMLNamespace());
 	}
 	return NULL;

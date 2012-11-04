@@ -43,12 +43,16 @@ void XMLNode::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(XMLNode::firstChild),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("childNodes","",Class<IFunction>::getFunction(XMLNode::childNodes),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("attributes","",Class<IFunction>::getFunction(attributes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("childNodes","",Class<IFunction>::getFunction(XMLNode::childNodes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(XMLNode::firstChild),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("lastChild","",Class<IFunction>::getFunction(lastChild),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nextSibling","",Class<IFunction>::getFunction(nextSibling),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeType","",Class<IFunction>::getFunction(_getNodeType),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeName","",Class<IFunction>::getFunction(_getNodeName),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeValue","",Class<IFunction>::getFunction(_getNodeValue),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("parentNode","",Class<IFunction>::getFunction(parentNode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("previousSibling","",Class<IFunction>::getFunction(previousSibling),GETTER_METHOD,true);
 }
 
 void XMLNode::buildTraits(ASObject* o)
@@ -84,6 +88,21 @@ ASFUNCTIONBODY(XMLNode,firstChild)
 	if(children.empty())
 		return getSys()->getNullRef();
 	xmlpp::Node* newNode=children.front();
+	assert_and_throw(!th->root.isNull());
+	return Class<XMLNode>::getInstanceS(th->root,newNode);
+}
+
+ASFUNCTIONBODY(XMLNode,lastChild)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	assert_and_throw(argslen==0);
+	if(th->node==NULL) //We assume NULL node is like empty node
+		return getSys()->getNullRef();
+	assert_and_throw(th->node->cobj()->type!=XML_TEXT_NODE);
+	const xmlpp::Node::NodeList& children=th->node->get_children();
+	if(children.empty())
+		return getSys()->getNullRef();
+	xmlpp::Node* newNode=children.back();
 	assert_and_throw(!th->root.isNull());
 	return Class<XMLNode>::getInstanceS(th->root,newNode);
 }
@@ -131,6 +150,54 @@ ASFUNCTIONBODY(XMLNode,attributes)
 		ret->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
 	}
 	return ret;
+}
+
+xmlpp::Node *XMLNode::getParentNode()
+{
+	if (!node)
+		return NULL;
+
+	xmlpp::Node *parent = node->get_parent();
+	if (parent)
+		return parent;
+	else
+		return NULL;
+}
+
+ASFUNCTIONBODY(XMLNode,parentNode)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	xmlpp::Node *parent = th->getParentNode();
+	if (parent)
+		return Class<XMLNode>::getInstanceS(th->root, parent);
+	else
+		return getSys()->getNullRef();
+}
+
+ASFUNCTIONBODY(XMLNode,nextSibling)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	if(th->node==NULL)
+		return getSys()->getNullRef();
+
+	xmlpp::Node *sibling = th->node->get_next_sibling();
+	if (sibling)
+		return Class<XMLNode>::getInstanceS(th->root, sibling);
+	else
+		return getSys()->getNullRef();
+}
+
+ASFUNCTIONBODY(XMLNode,previousSibling)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	if(th->node==NULL)
+		return getSys()->getNullRef();
+
+	xmlpp::Node *sibling = th->node->get_previous_sibling();
+	if (sibling)
+		return Class<XMLNode>::getInstanceS(th->root, sibling);
+	else
+		return getSys()->getNullRef();
 }
 
 ASFUNCTIONBODY(XMLNode,_getNodeType)

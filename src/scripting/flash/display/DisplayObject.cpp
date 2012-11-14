@@ -157,6 +157,8 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestObject","",Class<IFunction>::getFunction(hitTestObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestPoint","",Class<IFunction>::getFunction(hitTestPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(_getTransform),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 	REGISTER_GETTER_SETTER(c,cacheAsBitmap);
@@ -1035,4 +1037,54 @@ void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDr
 		}
 		cur=cur->getParent().getPtr();
 	}
+}
+
+ASFUNCTIONBODY(DisplayObject,hitTestObject)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	_NR<DisplayObject> another;
+	ARG_UNPACK(another);
+
+	number_t xmin, xmax, ymin, ymax;
+	if (!th->boundsRect(xmin, xmax, ymin, ymax))
+		return abstract_b(false);
+
+	th->localToGlobal(xmin, ymin, xmin, ymin);
+	th->localToGlobal(xmax, ymax, xmax, ymax);
+
+	number_t xmin2, xmax2, ymin2, ymax2;
+	if (!another->boundsRect(xmin2, xmax2, ymin2, ymax2))
+		return abstract_b(false);
+
+	another->localToGlobal(xmin2, ymin2, xmin2, ymin2);
+	another->localToGlobal(xmax2, ymax2, xmax2, ymax2);
+
+	number_t intersect_xmax = std::min(xmax, xmax2);
+	number_t intersect_xmin = std::max(xmin, xmin2);
+	number_t intersect_ymax = std::min(ymax, ymax2);
+	number_t intersect_ymin = std::max(ymin, ymin2);
+
+	return abstract_b((intersect_xmax > intersect_xmin) && 
+			  (intersect_ymax > intersect_ymin));
+}
+
+ASFUNCTIONBODY(DisplayObject,hitTestPoint)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	number_t x;
+	number_t y;
+	bool shapeFlag;
+	ARG_UNPACK (x) (y) (shapeFlag, false);
+
+	number_t xmin, xmax, ymin, ymax;
+	if (!th->boundsRect(xmin, xmax, ymin, ymax))
+		return abstract_b(false);
+
+	th->localToGlobal(xmin, ymin, xmin, ymin);
+	th->localToGlobal(xmax, ymax, xmax, ymax);
+
+	if (shapeFlag)
+		LOG(LOG_NOT_IMPLEMENTED, "hitTestPoint shapeFlag = true not supported");
+
+	return abstract_b((xmin <= x) && (x < xmax) && (ymin <= y) && (y < ymax));
 }

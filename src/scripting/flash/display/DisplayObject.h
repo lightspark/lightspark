@@ -206,6 +206,8 @@ public:
 	ASFUNCTION(_getTransform);
 	ASFUNCTION(localToGlobal);
 	ASFUNCTION(globalToLocal);
+	ASFUNCTION(hitTestObject);
+	ASFUNCTION(hitTestPoint);
 };
 };
 #endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

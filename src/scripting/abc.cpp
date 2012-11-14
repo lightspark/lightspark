@@ -266,6 +266,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef());
 	builtin->registerBuiltin("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef());
 	builtin->registerBuiltin("GlowFilter","flash.filters",Class<GlowFilter>::getRef());
+	builtin->registerBuiltin("GradientGlowFilter","flash.filters",
+			Class<ASObject>::getStubClass(QName("GradientGlowFilter","flash.filters")));
 	builtin->registerBuiltin("BevelFilter","flash.filters",
 			Class<ASObject>::getStubClass(QName("BevelFilter","flash.filters")));
 	builtin->registerBuiltin("ColorMatrixFilter","flash.filters",

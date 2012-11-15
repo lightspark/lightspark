@@ -481,6 +481,13 @@ ASFUNCTIONBODY(Rectangle,_toString)
 	return Class<ASString>::getInstanceS(buf);
 }
 
+ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
+  : ASObject(c)
+{
+	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
+			 redOffset, greenOffset, blueOffset, alphaOffset);
+}
+
 void ColorTransform::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -924,7 +931,9 @@ void Transform::finalize()
 void Transform::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(_getColorTransform),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(_setColorTransform),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_setMatrix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_getMatrix),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_setMatrix),SETTER_METHOD,true);
 }
@@ -952,6 +961,27 @@ ASFUNCTIONBODY(Transform,_setMatrix)
 		return NULL;
 
 	th->owner->setMatrix(m->getMATRIX());
+	return NULL;
+}
+
+ASFUNCTIONBODY(Transform,_getColorTransform)
+{
+	Transform* th=Class<Transform>::cast(obj);
+	const CXFORMWITHALPHA& ct=th->owner->ColorTransform;
+	return Class<ColorTransform>::getInstanceS(ct);
+}
+
+ASFUNCTIONBODY(Transform,_setColorTransform)
+{
+	//Transform* th=Class<Transform>::cast(obj);
+	_NR<ColorTransform> ct;
+	ARG_UNPACK(ct);
+	if (ct.isNull())
+		throw Class<TypeError>::getInstanceS();
+
+	LOG(LOG_NOT_IMPLEMENTED, "Transform::setColorTransform");
+	// Set colortransform on th->owner
+
 	return NULL;
 }
 

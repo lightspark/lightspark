@@ -112,6 +112,7 @@ private:
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 public:
 	ColorTransform(Class_base* c):ASObject(c){}
+	ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -194,6 +195,8 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void finalize();
+	ASFUNCTION(_getColorTransform);
+	ASFUNCTION(_setColorTransform);
 	ASFUNCTION(_getMatrix);
 	ASFUNCTION(_setMatrix);
 };

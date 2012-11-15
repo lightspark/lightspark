@@ -911,6 +911,46 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveDeltaX(0),MoveDel
 	}
 }
 
+void CXFORMWITHALPHA::getParameters(number_t& redMultiplier,
+				    number_t& greenMultiplier, 
+				    number_t& blueMultiplier,
+				    number_t& alphaMultiplier,
+				    number_t& redOffset,
+				    number_t& greenOffset,
+				    number_t& blueOffset,
+				    number_t& alphaOffset) const
+{
+	if (HasMultTerms)
+	{
+		redMultiplier = RedMultTerm;
+		greenMultiplier = GreenMultTerm;
+		blueMultiplier = BlueMultTerm;
+		alphaMultiplier = AlphaMultTerm;
+	}
+	else
+	{
+		redMultiplier = 1.0;
+		greenMultiplier = 1.0;
+		blueMultiplier = 1.0;
+		alphaMultiplier = 1.0;
+	}
+
+	if (HasAddTerms)
+	{
+		redOffset = RedAddTerm;
+		greenOffset = GreenAddTerm;
+		blueOffset = BlueAddTerm;
+		alphaOffset = AlphaAddTerm;
+	}
+	else
+	{
+		redOffset = 0;
+		greenOffset = 0;
+		blueOffset = 0;
+		alphaOffset = 0;
+	}
+}
+
 std::istream& lightspark::operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 {
 	BitStream bs(stream);

@@ -482,6 +482,7 @@ friend class ParserThread;
 private:
 	uint32_t getCurrentScene();
 	std::map<uint32_t,_NR<IFunction> > frameScripts;
+	bool fromDefineSpriteTag;
 protected:
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
@@ -489,7 +490,7 @@ protected:
 public:
 	RunState state;
 	MovieClip(Class_base* c);
-	MovieClip(Class_base* c, const FrameContainer& f);
+	MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag);
 	void finalize();
 	ASObject* gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);

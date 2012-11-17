@@ -401,7 +401,7 @@ ASObject* DefineSpriteTag::instance(Class_base* c) const
 	else
 		retClass=Class<MovieClip>::getClass();
 
-	return new (retClass->memoryAccount) MovieClip(retClass, *this);
+	return new (retClass->memoryAccount) MovieClip(retClass, *this, true);
 }
 
 void lightspark::ignore(istream& i, int count)

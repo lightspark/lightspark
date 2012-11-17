@@ -962,11 +962,11 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),totalFrames_unreliable(1)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(false),totalFrames_unreliable(1)
 {
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f):Sprite(c),FrameContainer(f),totalFrames_unreliable(frames.size())
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTag),totalFrames_unreliable(frames.size())
 {
 	//For sprites totalFrames_unreliable is the actual frame count
 	//For the root movie, it's the frame count from the header
@@ -3194,8 +3194,8 @@ void MovieClip::advanceFrame()
 	 * 1b. or it is a DefineSpriteTag
 	 * 2. and is exported as a subclass of MovieClip (see bindedTo)
 	 */
-	if((!dynamic_cast<RootMovieClip*>(this) && !dynamic_cast<DefineSpriteTag*>(this))
-		|| !getClass()->isSubClass(Class<MovieClip>::getClass()))
+	if((!dynamic_cast<RootMovieClip*>(this) && !fromDefineSpriteTag)
+	   || !getClass()->isSubClass(Class<MovieClip>::getClass()))
 		return;
 
 	//If we have not yet loaded enough frames delay advancement

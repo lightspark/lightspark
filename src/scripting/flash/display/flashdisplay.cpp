@@ -1023,6 +1023,7 @@ ASFUNCTIONBODY(MovieClip,stop)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	th->state.stop_FP=true;
+	th->state.next_FP=th->state.FP;
 	return NULL;
 }
 

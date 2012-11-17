@@ -44,7 +44,10 @@ friend class Transform;
 friend class ParseThread;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
-	enum HIT_TYPE { GENERIC_HIT, DOUBLE_CLICK };
+	enum HIT_TYPE { GENERIC_HIT, // point is over the object
+			MOUSE_CLICK, // point over the object and mouseEnabled
+			DOUBLE_CLICK // point over the object and doubleClickEnabled
+		      };
 private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);
@@ -106,7 +109,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
-	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
+	virtual _NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
 	{
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
@@ -151,7 +154,7 @@ public:
 	}
 	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
-	_NR<InteractiveObject> hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
+	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return !maskOf.isNull(); }

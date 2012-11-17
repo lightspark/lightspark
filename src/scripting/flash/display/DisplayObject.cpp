@@ -883,7 +883,7 @@ ASFUNCTIONBODY(DisplayObject,_getMouseY)
 	return abstract_d(th->getLocalMousePos().y);
 }
 
-_NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
+_NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
 {
 	if(!visible || !isConstructed())
 		return NullRef;
@@ -910,8 +910,7 @@ _NR<InteractiveObject> DisplayObject::hitTest(_NR<InteractiveObject> last, numbe
 			return NullRef;
 	}
 
-	_NR<InteractiveObject> ret = hitTestImpl(last, x,y, type);
-	return ret;
+	return hitTestImpl(last, x,y, type);
 }
 
 /* Display objects have no children in general,
@@ -1083,8 +1082,27 @@ ASFUNCTIONBODY(DisplayObject,hitTestPoint)
 	th->localToGlobal(xmin, ymin, xmin, ymin);
 	th->localToGlobal(xmax, ymax, xmax, ymax);
 
-	if (shapeFlag)
-		LOG(LOG_NOT_IMPLEMENTED, "hitTestPoint shapeFlag = true not supported");
+	bool insideBoundingBox = (xmin <= x) && (x < xmax) && (ymin <= y) && (y < ymax);
 
-	return abstract_b((xmin <= x) && (x < xmax) && (ymin <= y) && (y < ymax));
+	if (!shapeFlag)
+	{
+		return abstract_b(insideBoundingBox);
+	}
+	else
+	{
+		if (!insideBoundingBox)
+			return abstract_b(false);
+
+		number_t localX;
+		number_t localY;
+		th->globalToLocal(x, y, localX, localY);
+
+		// Hmm, hitTest will also check the mask, is this the
+		// right thing to do?
+		th->incRef();
+		_NR<DisplayObject> hit = th->hitTest(_MR(th), localX, localY,
+						     HIT_TYPE::GENERIC_HIT);
+
+		return abstract_b(hit.getPtr() == th);
+	}
 }

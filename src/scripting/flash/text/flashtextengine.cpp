@@ -230,7 +230,7 @@ void TextLine::renderImpl(RenderContext& ctxt) const
 	defaultRender(ctxt);
 }
 
-_NR<InteractiveObject> TextLine::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> TextLine::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);

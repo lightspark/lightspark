@@ -51,9 +51,12 @@ protected:
 	bool doubleClickEnabled;
 	bool isHittable(DisplayObject::HIT_TYPE type)
 	{
-		if(type == DisplayObject::DOUBLE_CLICK)
+		if(type == DisplayObject::MOUSE_CLICK)
+			return mouseEnabled;
+		else if(type == DisplayObject::DOUBLE_CLICK)
 			return doubleClickEnabled && mouseEnabled;
-		return mouseEnabled;
+		else
+			return true;
 	}
 	~InteractiveObject();
 public:
@@ -81,7 +84,7 @@ protected:
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged);
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
 public:
@@ -139,7 +142,7 @@ private:
 	bool enabled;
 	bool useHandCursor;
 	void reflectState();
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e);
 public:
@@ -220,7 +223,7 @@ protected:
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	void renderImpl(RenderContext& ctxt) const
 		{ TokenContainer::renderImpl(ctxt); }
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
 	Shape(Class_base* c);
@@ -239,7 +242,7 @@ class MorphShape: public DisplayObject
 {
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	virtual _NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type);
+	virtual _NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);
 	virtual void renderImpl(RenderContext& ctxt) const {}
 public:
 	MorphShape(Class_base* c):DisplayObject(c){}
@@ -370,7 +373,7 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
 	Sprite(Class_base* c);
 	void finalize();
@@ -532,7 +535,7 @@ private:
 	uint32_t internalGetWidth() const;
 	void onDisplayState(const tiny_string&);
 public:
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}
 	Stage(Class_base* c);
 	static void sinit(Class_base* c);
@@ -644,7 +647,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)

@@ -206,7 +206,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	return NULL;
 }
 
-_NR<InteractiveObject> Video::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	//TODO: support masks
 	if(x>=0 && x<=width && y>=0 && y<=height)

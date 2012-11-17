@@ -57,7 +57,7 @@ protected:
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix);
 	void requestInvalidation(InvalidateQueue* q);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
 	void renderImpl(RenderContext& ctxt) const;
 	bool tokensEmpty() const { return tokens.empty(); }
 };

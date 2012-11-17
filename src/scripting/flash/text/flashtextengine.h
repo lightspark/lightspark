@@ -88,7 +88,7 @@ private:
 	void requestInvalidation(InvalidateQueue* q);
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix);
 	void renderImpl(RenderContext& ctxt) const;
-	_NR<InteractiveObject> hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
 	TextLine(Class_base* c, _NR<ContentElement> content=NullRef, _NR<TextBlock> owner=NullRef);
 	static void sinit(Class_base* c);

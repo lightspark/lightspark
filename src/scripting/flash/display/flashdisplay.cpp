@@ -717,9 +717,9 @@ void Sprite::renderImpl(RenderContext& ctxt) const
 Subclasses of DisplayObjectContainer must still check
 isHittable() to see if they should send out events.
 */
-_NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
-	_NR<InteractiveObject> ret = NullRef;
+	_NR<DisplayObject> ret = NullRef;
 	//Test objects added at runtime, in reverse order
 	Locker l(mutexDisplayList);
 	list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
@@ -748,9 +748,9 @@ _NR<InteractiveObject> DisplayObjectContainer::hitTestImpl(_NR<InteractiveObject
 	return ret;
 }
 
-_NR<InteractiveObject> Sprite::hitTestImpl(_NR<InteractiveObject>, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
-	_NR<InteractiveObject> ret = NullRef;
+	_NR<DisplayObject> ret = NullRef;
 	this->incRef();
 	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type);
 	if(!ret && isHittable(type))
@@ -1859,7 +1859,7 @@ bool MorphShape::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 	return false;
 }
 
-_NR<InteractiveObject> MorphShape::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, HIT_TYPE type)
+_NR<DisplayObject> MorphShape::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
 {
 	return NullRef;
 }
@@ -1908,9 +1908,9 @@ ASFUNCTIONBODY(Stage,_constructor)
 	return NULL;
 }
 
-_NR<InteractiveObject> Stage::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> Stage::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
-	_NR<InteractiveObject> ret;
+	_NR<DisplayObject> ret;
 	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type);
 	if(!ret)
 	{
@@ -2797,7 +2797,7 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 }
 
-_NR<InteractiveObject> Bitmap::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	//Simple check inside the area, opacity data should not be considered
 	//NOTE: on the X axis the 0th line must be ignored, while the one past the width is valid
@@ -2836,9 +2836,9 @@ void SimpleButton::buildTraits(ASObject* o)
 {
 }
 
-_NR<InteractiveObject> SimpleButton::hitTestImpl(_NR<InteractiveObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
-	_NR<InteractiveObject> ret = NullRef;
+	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)
 	{
 		if(hitTestState->getMatrix().isInvertible())

@@ -65,6 +65,8 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("fillRect","",Class<IFunction>::getFunction(fillRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("generateFilterRect","",Class<IFunction>::getFunction(generateFilterRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(hitTest),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("scroll","",Class<IFunction>::getFunction(scroll),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,width);
 	REGISTER_GETTER(c,height);
 	REGISTER_GETTER(c,transparent);
@@ -443,4 +445,55 @@ ASFUNCTIONBODY(BitmapData,hitTest)
 		return abstract_b(true);
 	else
 		return abstract_b(false);
+}
+
+ASFUNCTIONBODY(BitmapData,scroll)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+
+	int x;
+	int y;
+	ARG_UNPACK (x) (y);
+
+	int sourceX = imax(-x, 0);
+	int sourceY = imax(-y, 0);
+
+	int destX = imax(x, 0);
+	int destY = imax(y, 0);
+
+	int copyWidth = imax(th->width - abs(x), 0);
+	int copyHeight = imax(th->height - abs(y), 0);
+
+	if (copyWidth > 0 && copyHeight > 0)
+	{
+		for(int i=0; i<copyHeight; i++)
+		{
+			//Set the copy direction so that we don't
+			//overwrite the destination region
+			int row;
+			if (y > 0)
+				row = copyHeight - i - 1;
+			else
+				row = i;
+
+			memmove(th->getData() + (destY+row)*th->stride + 4*destX,
+				th->getData() + (sourceY+row)*th->stride + 4*sourceX,
+				4*copyWidth);
+		}
+
+		th->notifyUsers();
+	}
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(BitmapData,clone)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->disposed)
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+
+	return Class<BitmapData>::getInstanceS(*th);
 }

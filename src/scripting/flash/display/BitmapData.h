@@ -70,6 +70,8 @@ public:
 	ASFUNCTION(hitTest);
 	ASFUNCTION(_getter_width);
 	ASFUNCTION(_getter_height);
+	ASFUNCTION(scroll);
+	ASFUNCTION(clone);
 };
 
 };

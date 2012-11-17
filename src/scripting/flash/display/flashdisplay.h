@@ -208,6 +208,7 @@ public:
 	ASFUNCTION(curveTo);
 	ASFUNCTION(cubicCurveTo);
 	ASFUNCTION(clear);
+	ASFUNCTION(copyFrom);
 };
 
 

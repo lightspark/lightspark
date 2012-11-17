@@ -2000,6 +2000,7 @@ void Graphics::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(copyFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),NORMAL_METHOD,true);
@@ -2600,6 +2601,19 @@ ASFUNCTIONBODY(Graphics,endFill)
 	Graphics* th=static_cast<Graphics*>(obj);
 	th->checkAndSetScaling();
 	th->owner->tokens.emplace_back(CLEAR_FILL);
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,copyFrom)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	_NR<Graphics> source;
+	ARG_UNPACK(source);
+	if (source.isNull())
+		return NULL;
+
+	th->owner->tokens.assign(source->owner->tokens.begin(),
+				 source->owner->tokens.end());
 	return NULL;
 }
 

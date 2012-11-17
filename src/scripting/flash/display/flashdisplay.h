@@ -505,6 +505,7 @@ public:
 	ASFUNCTION(swapDepths);
 	ASFUNCTION(addFrameScript);
 	ASFUNCTION(stop);
+	ASFUNCTION(play);
 	ASFUNCTION(gotoAndStop);
 	ASFUNCTION(gotoAndPlay);
 	ASFUNCTION(nextFrame);

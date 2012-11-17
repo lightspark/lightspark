@@ -952,6 +952,7 @@ void MovieClip::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scenes","",Class<IFunction>::getFunction(_getScenes),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("currentScene","",Class<IFunction>::getFunction(_getCurrentScene),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(gotoAndPlay),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),NORMAL_METHOD,true);
@@ -1022,6 +1023,13 @@ ASFUNCTIONBODY(MovieClip,stop)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	th->state.stop_FP=true;
+	return NULL;
+}
+
+ASFUNCTIONBODY(MovieClip,play)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	th->state.stop_FP=false;
 	return NULL;
 }
 

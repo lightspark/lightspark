@@ -94,9 +94,13 @@ bool InputThread::worker(GdkEvent *event)
 		}
 		case GDK_BUTTON_PRESS:
 		{
-			//Grab focus, to receive keypresses
 			if(event->button.button == 1)
+			{
+				//Grab focus, to receive keypresses
+				engineData->grabFocus();
+
 				handleMouseDown(event->button.x,event->button.y);
+			}
 			ret=TRUE;
 			break;
 		}

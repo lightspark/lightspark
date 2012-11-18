@@ -482,6 +482,14 @@ GtkWidget* PluginEngineData::createGtkWidget()
 }
 #endif
 
+void PluginEngineData::grabFocus()
+{
+	if (!widget)
+		return;
+
+	gtk_widget_grab_focus(widget);
+}
+
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
 	if(aWindow == NULL)

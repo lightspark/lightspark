@@ -78,6 +78,8 @@ public:
 	 * It fills this->widget and this->window.
          */
 	void showWindow(uint32_t w, uint32_t h);
+	/* This function must be called within gdk_threads_enter/leave */
+        virtual void grabFocus()=0;
 	static gboolean inputDispatch(GtkWidget *widget, GdkEvent *event, EngineData* e)
 	{
 		RecMutex::Lock l(e->mutex);

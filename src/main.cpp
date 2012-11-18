@@ -84,6 +84,11 @@ public:
 	{
 		return true;
 	}
+        void grabFocus()
+	{
+		/* Nothing to do because the standalone main window is
+		 * always focused */
+	}
 };
 
 int main(int argc, char* argv[])

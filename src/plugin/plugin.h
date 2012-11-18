@@ -88,6 +88,8 @@ public:
 	GdkNativeWindow getWindowForGnash();
 	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
 	GtkWidget* createGtkWidget();
+	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
+        void grabFocus();
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

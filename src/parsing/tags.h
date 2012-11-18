@@ -24,7 +24,6 @@
 #include <vector>
 #include <iostream>
 #include "swftypes.h"
-#include "backends/input.h"
 #include "backends/geometry.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/utils/flashutils.h"

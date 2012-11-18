@@ -39,6 +39,11 @@ class InteractiveObject;
 class Sprite;
 class MouseEvent;
 
+struct KeyNameCodePair {
+	const char *keyname;
+	unsigned int keycode;
+};
+
 class InputThread
 {
 private:
@@ -52,6 +57,8 @@ private:
 	std::vector<InteractiveObject* > listeners;
 	Mutex mutexListeners;
 	Mutex mutexDragged;
+
+	std::vector<KeyNameCodePair> keyNamesAndCodes;
 
 	_NR<Sprite> curDragged;
 	_NR<InteractiveObject> currentMouseOver;
@@ -71,6 +78,10 @@ private:
 	void handleMouseUp(uint32_t x, uint32_t y);
 	void handleMouseMove(uint32_t x, uint32_t y);
 
+	void initKeyTable();
+	bool handleKeyboardShortcuts(const GdkEventKey *keyevent);
+	void sendKeyEvent(const GdkEventKey *keyevent);
+
 	Spinlock inputDataSpinlock;
 	Vector2 mousePos;
 public:
@@ -82,6 +93,7 @@ public:
 	void removeListener(InteractiveObject* ob);
 	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);
 	void stopDrag(Sprite* s);
+	const std::vector<KeyNameCodePair>& getKeyNamesAndCodes();
 
 	Vector2 getMousePos()
 	{

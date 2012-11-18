@@ -70,6 +70,7 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/text/flashtextengine.h"
+#include "scripting/flash/ui/Keyboard.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "scripting/abc.h"
@@ -392,7 +393,9 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("StageVideoAvailability","flash.media",Class<StageVideoAvailability>::getRef());
 	builtin->registerBuiltin("VideoStatus","flash.media",Class<VideoStatus>::getRef());
 
-	builtin->registerBuiltin("Keyboard","flash.ui",Class<ASObject>::getStubClass(QName("Keyboard","flash.ui")));
+	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef());
+	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef());
+	builtin->registerBuiltin("KeyLocation","flash.ui",Class<KeyLocation>::getRef());
 	builtin->registerBuiltin("ContextMenu","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenu","flash.ui")));
 	builtin->registerBuiltin("ContextMenuItem","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenuItem","flash.ui")));
 

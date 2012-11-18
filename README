@@ -47,6 +47,13 @@ Firefox is not able to deal very well with multiple plugins for the same MIME
 type. If you only see a black box where a flash app should be try to remove any
 other flash plugin you have installed.
 
+KEYBOARD SHORTCUTS:
+
+Ctrl+Q Quit (standalone player only)
+Ctrl+M Mute/unmute sounds
+Ctrl+P Show profiling data
+Ctrl+C Copy an error to the clipboard (when Lightspark fails)
+
 TEST:
 You may try it on some known-to-work movies:
 

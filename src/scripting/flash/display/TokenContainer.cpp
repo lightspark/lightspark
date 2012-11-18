@@ -20,7 +20,6 @@
 #include <cairo.h>
 #include "scripting/flash/display/TokenContainer.h"
 #include "swf.h"
-#include "backends/input.h"
 #include "scripting/flash/display/BitmapData.h"
 
 using namespace lightspark;

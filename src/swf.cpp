@@ -34,6 +34,7 @@
 #include "backends/rendering.h"
 #include "backends/image.h"
 #include "backends/extscriptobject.h"
+#include "backends/input.h"
 #include "memory_support.h"
 
 #ifdef ENABLE_CURL

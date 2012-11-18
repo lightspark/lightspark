@@ -662,7 +662,6 @@ void NetStatusEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
 {
-	NetStatusEvent* th=Class<NetStatusEvent>::cast(obj);
 	//Also call the base class constructor, using only the first arguments
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(obj,args,baseClassArgs);
@@ -728,7 +727,8 @@ ASFUNCTIONBODY(FullScreenEvent,_constructor)
 	return NULL;
 }
 
-KeyboardEvent::KeyboardEvent(Class_base* c):Event(c, "keyboardEvent")
+KeyboardEvent::KeyboardEvent(Class_base* c, tiny_string _type, uint32_t _charcode, uint32_t _keycode, unsigned _modifiers)
+  : Event(c, _type), modifiers(_modifiers), charCode(_charcode), keyCode(_keycode), keyLocation(0)
 {
 }
 
@@ -737,15 +737,134 @@ void KeyboardEvent::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<Event>::getRef());
 
+	REGISTER_GETTER_SETTER(c, altKey);
+	REGISTER_GETTER_SETTER(c, charCode);
+	REGISTER_GETTER_SETTER(c, commandKey);
+	REGISTER_GETTER_SETTER(c, controlKey);
+	REGISTER_GETTER_SETTER(c, ctrlKey);
+	REGISTER_GETTER_SETTER(c, keyCode);
+	REGISTER_GETTER_SETTER(c, keyLocation);
+	REGISTER_GETTER_SETTER(c, shiftKey);
 	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS("keyDown"),DECLARED_TRAIT);
 	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS("keyUp"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(KeyboardEvent,_constructor)
 {
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(obj,args,baseClassArgs);
+
+	if(argslen > 3) {
+		th->charCode = args[3]->toUInt();
+	}
+	if(argslen > 4) {
+		th->keyCode = args[4]->toUInt();
+	}
+	if(argslen > 5) {
+		th->keyLocation = args[5]->toUInt();
+	}
+	if(argslen > 6) {
+		if (args[6]->is<Boolean>() && args[6]->as<Boolean>()->val)
+			th->modifiers |= GDK_CONTROL_MASK;
+	}
+	if(argslen > 7) {
+		if (args[7]->is<Boolean>() && args[7]->as<Boolean>()->val)
+			th->modifiers |= GDK_MOD1_MASK;
+	}
+	if(argslen > 8) {
+		if (args[8]->is<Boolean>() && args[8]->as<Boolean>()->val)
+			th->modifiers |= GDK_SHIFT_MASK;
+	}
+	if(argslen > 9) {
+		if (args[9]->is<Boolean>() && args[9]->as<Boolean>()->val)
+			th->modifiers |= GDK_CONTROL_MASK;
+	}
+	// args[10] (commandKeyValue) is only supported on Max OSX
+
 	return NULL;
+}
+
+ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, charCode);
+ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyCode);
+ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyLocation);
+
+ASFUNCTIONBODY(KeyboardEvent, _getter_altKey)
+{
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_MOD1_MASK);
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _setter_altKey)
+{
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	th->modifiers |= GDK_MOD1_MASK;
+	return NULL;
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _getter_commandKey)
+{
+	// Supported only on OSX
+	return abstract_b(false);
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _setter_commandKey)
+{
+	// Supported only on OSX
+	return NULL;
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _getter_controlKey)
+{
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_CONTROL_MASK);
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _setter_controlKey)
+{
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	th->modifiers |= GDK_CONTROL_MASK;
+	return NULL;
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _getter_ctrlKey)
+{
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_CONTROL_MASK);
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _setter_ctrlKey)
+{
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	th->modifiers |= GDK_CONTROL_MASK;
+	return NULL;
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _getter_shiftKey)
+{
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_SHIFT_MASK);
+}
+
+ASFUNCTIONBODY(KeyboardEvent, _setter_shiftKey)
+{
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	th->modifiers |= GDK_SHIFT_MASK;
+	return NULL;
+}
+
+Event* KeyboardEvent::cloneImpl() const
+{
+	KeyboardEvent *cloned = Class<KeyboardEvent>::getInstanceS();
+	cloned->type = type;
+	cloned->bubbles = bubbles;
+	cloned->cancelable = cancelable;
+	cloned->modifiers = modifiers;
+	cloned->charCode = charCode;
+	cloned->keyCode = keyCode;
+	cloned->keyLocation = keyLocation;
+	return cloned;
 }
 
 TextEvent::TextEvent(Class_base* c,const tiny_string& t):Event(c,t)

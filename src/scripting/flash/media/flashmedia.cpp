@@ -23,7 +23,6 @@
 #include "compat.h"
 #include <iostream>
 #include "backends/audio.h"
-#include "backends/input.h"
 #include "backends/rendering.h"
 #include "scripting/argconv.h"
 

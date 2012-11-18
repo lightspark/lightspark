@@ -97,13 +97,25 @@ public:
 
 class KeyboardEvent: public Event
 {
+private:
+	virtual Event* cloneImpl() const;
+
+	unsigned int modifiers;  // bitflags of GdkModifierType constants
+	ASPROPERTY_GETTER_SETTER(uint32_t, charCode);
+	ASPROPERTY_GETTER_SETTER(uint32_t, keyCode);
+	ASPROPERTY_GETTER_SETTER(uint32_t, keyLocation);
 public:
-	KeyboardEvent(Class_base* c);
+	KeyboardEvent(Class_base* c, tiny_string type="", uint32_t charcode=0, uint32_t keycode=0, unsigned modifiers=0);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
 	}
 	ASFUNCTION(_constructor);
+	ASFUNCTION_GETTER_SETTER(altKey);
+	ASFUNCTION_GETTER_SETTER(commandKey);
+	ASFUNCTION_GETTER_SETTER(controlKey);
+	ASFUNCTION_GETTER_SETTER(ctrlKey);
+	ASFUNCTION_GETTER_SETTER(shiftKey);
 };
 
 class FocusEvent: public Event

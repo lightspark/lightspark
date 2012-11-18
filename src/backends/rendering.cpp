@@ -875,11 +875,11 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 		renderText(cr, "Please look at the console output to copy this error",
 			0,th->windowHeight/2-40);
 
-		renderText(cr, "Press 'Q' to exit",0,th->windowHeight/2-60);
+		renderText(cr, "Press 'Ctrl+Q' to exit",0,th->windowHeight/2-60);
 	}
 	else
 	{
-		renderText(cr, "Press C to copy this error to clipboard",
+		renderText(cr, "Press Ctrl+C to copy this error to clipboard",
 				0,th->windowHeight/2-40);
 	}
 

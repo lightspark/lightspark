@@ -210,6 +210,11 @@ REGISTER_CLASS_NAME(IExternalizable,"flash.utils")
 REGISTER_CLASS_NAME(Proxy,"flash.utils")
 REGISTER_CLASS_NAME(Timer,"flash.utils")
 
+//UI
+REGISTER_CLASS_NAME(Keyboard,"flash.ui")
+REGISTER_CLASS_NAME(KeyboardType,"flash.ui")
+REGISTER_CLASS_NAME(KeyLocation,"flash.ui")
+
 //XML
 REGISTER_CLASS_NAME(XMLDocument,"flash.xml")
 REGISTER_CLASS_NAME(XMLNode,"flash.xml")

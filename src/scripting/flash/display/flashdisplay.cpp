@@ -30,6 +30,7 @@
 #include "scripting/class.h"
 #include "backends/rendering.h"
 #include "backends/geometry.h"
+#include "backends/input.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/argconv.h"
@@ -1878,6 +1879,8 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageVideos","",Class<IFunction>::getFunction(_getStageVideos),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(_getFocus),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(_setFocus),SETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,displayState);
 }
 
@@ -2003,6 +2006,50 @@ ASFUNCTIONBODY(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
 	return Class<Vector>::getInstanceS(Class<StageVideo>::getClass());
+}
+
+_NR<InteractiveObject> Stage::getFocusTarget()
+{
+	SpinlockLocker l(focusSpinlock);
+	if (focus.isNull())
+	{
+		incRef();
+		return _MNR(this);
+	}
+	else
+	{
+		return focus;
+	}
+}
+
+void Stage::setFocusTarget(_NR<InteractiveObject> f)
+{
+	SpinlockLocker l(focusSpinlock);
+	focus = f;
+}
+
+ASFUNCTIONBODY(Stage,_getFocus)
+{
+	Stage* th=static_cast<Stage*>(obj);
+	_NR<InteractiveObject> focus = th->getFocusTarget();
+	if (focus.isNull())
+	{
+		return NULL;
+	}
+	else
+	{
+		focus->incRef();
+		return focus.getPtr();
+	}
+}
+
+ASFUNCTIONBODY(Stage,_setFocus)
+{
+	Stage* th=static_cast<Stage*>(obj);
+	_NR<InteractiveObject> focus;
+	ARG_UNPACK(focus);
+	th->setFocusTarget(focus);
+	return NULL;
 }
 
 void Graphics::sinit(Class_base* c)

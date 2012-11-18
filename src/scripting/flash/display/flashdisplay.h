@@ -534,6 +534,10 @@ private:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
 	void onDisplayState(const tiny_string&);
+	// Keyboard focus object is accessed from the VM thread (AS
+	// code) and the input thread and is protected focusSpinlock
+	Spinlock focusSpinlock;
+	_NR<InteractiveObject> focus;
 public:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}
@@ -541,6 +545,8 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	_NR<Stage> getStage();
+	_NR<InteractiveObject> getFocusTarget();
+	void setFocusTarget(_NR<InteractiveObject> focus);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getStageWidth);
 	ASFUNCTION(_getStageHeight);
@@ -548,6 +554,8 @@ public:
 	ASFUNCTION(_setScaleMode);
 	ASFUNCTION(_getLoaderInfo);
 	ASFUNCTION(_getStageVideos);
+	ASFUNCTION(_getFocus);
+	ASFUNCTION(_setFocus);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
 };
 

@@ -44,6 +44,7 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/text/flashtextengine.h"
+#include "scripting/flash/ui/Keyboard.h"
 
 using namespace lightspark;
 

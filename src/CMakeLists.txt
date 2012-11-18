@@ -86,6 +86,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/text/flashtext.cpp
   scripting/flash/text/flashtextengine.cpp
   scripting/flash/utils/flashutils.cpp
+  scripting/flash/ui/Keyboard.cpp
   scripting/flash/xml/flashxml.cpp
   scripting/toplevel/Array.cpp
   scripting/toplevel/ASString.cpp

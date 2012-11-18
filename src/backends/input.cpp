@@ -22,6 +22,7 @@
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "compat.h"
+#include "scripting/flash/ui/keycodes.h"
 
 #if GTK_CHECK_VERSION (2,21,8)
 #include <gdk/gdkkeysyms-compat.h> 
@@ -41,6 +42,7 @@ InputThread::InputThread(SystemState* s):m_sys(s),engineData(NULL),terminated(fa
 
 void InputThread::start(EngineData* e)
 {
+	initKeyTable();
 	engineData = e;
 	engineData->setInputHandler(sigc::mem_fun(this, &InputThread::worker));
 }
@@ -71,43 +73,15 @@ bool InputThread::worker(GdkEvent *event)
 	{
 		case GDK_KEY_PRESS:
 		{
-			//LOG(LOG_INFO, "key press");
-			switch(event->key.keyval)
-			{
-				case GDK_q:
-					if(m_sys->standalone)
-						m_sys->setShutdownFlag();
-					break;
-				case GDK_p:
-					m_sys->showProfilingData=!m_sys->showProfilingData;
-					break;
-				case GDK_m:
-					if (!m_sys->audioManager->pluginLoaded())
-						break;
-					m_sys->audioManager->toggleMuteAll();
-					if(m_sys->audioManager->allMuted())
-						LOG(LOG_INFO, "All sounds muted");
-					else
-						LOG(LOG_INFO, "All sounds unmuted");
-					break;
-				case GDK_c:
-					if(m_sys->hasError())
-					{
-						GtkClipboard *clipboard;
-						clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-						gtk_clipboard_set_text(clipboard, m_sys->getErrorCause().c_str(),
-								m_sys->getErrorCause().size());
-						clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-						gtk_clipboard_set_text(clipboard, m_sys->getErrorCause().c_str(),
-								m_sys->getErrorCause().size());
-						LOG(LOG_INFO, "Copied error to clipboard");
-					}
-					else
-						LOG(LOG_INFO, "No error to be coppied to clipboard");
-					break;
-				default:
-					break;
-			}
+			bool handled = handleKeyboardShortcuts(&event->key);
+			if (!handled)
+				sendKeyEvent(&event->key);
+			ret=TRUE;
+			break;
+		}
+		case GDK_KEY_RELEASE:
+		{
+			sendKeyEvent(&event->key);
 			ret=TRUE;
 			break;
 		}
@@ -273,6 +247,118 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 			currentMouseOver = selected;
 		}
 	}
+}
+
+void InputThread::initKeyTable()
+{
+	int i = 0;
+	while (hardwareKeycodes[i].keyname)
+	{
+		// Map GDK keyvals to hardware keycodes.
+		//
+		// NOTE: The keycodes returned by GDK are different
+		// from the keycodes in the Flash documentation.
+		// Should add mapping from GDK codes to Flash codes
+		// for AS files that use raw numerical values instead
+		// of Keyboard.* constants.
+		GdkKeymapKey *keys;
+		int keys_len;
+		const char *keyname = hardwareKeycodes[i].keyname;
+		unsigned keyval = hardwareKeycodes[i].gdkKeyval;
+		if (gdk_keymap_get_entries_for_keyval(NULL, keyval, &keys, &keys_len))
+		{
+			KeyNameCodePair key;
+			key.keyname = keyname;
+			key.keycode = keys[0].keycode;
+			keyNamesAndCodes.push_back(key);
+			g_free(keys);
+		}
+
+		i++;
+	}
+}
+
+const std::vector<KeyNameCodePair>& InputThread::getKeyNamesAndCodes()
+{
+	// No locking needed, because keyNamesAndCodes is not modified
+	// after being initialized
+	return keyNamesAndCodes;
+}
+
+bool InputThread::handleKeyboardShortcuts(const GdkEventKey *keyevent)
+{
+	bool handled = false;
+
+	if ((keyevent->state & GDK_MODIFIER_MASK) != GDK_CONTROL_MASK)
+		return handled;
+
+	switch(keyevent->keyval)
+	{
+		case GDK_q:
+			handled = true;
+			if(m_sys->standalone)
+				m_sys->setShutdownFlag();
+			break;
+		case GDK_p:
+			handled = true;
+			m_sys->showProfilingData=!m_sys->showProfilingData;
+			break;
+		case GDK_m:
+			handled = true;
+			if (!m_sys->audioManager->pluginLoaded())
+				break;
+			m_sys->audioManager->toggleMuteAll();
+			if(m_sys->audioManager->allMuted())
+				LOG(LOG_INFO, "All sounds muted");
+			else
+				LOG(LOG_INFO, "All sounds unmuted");
+			break;
+		case GDK_c:
+			handled = true;
+			if(m_sys->hasError())
+			{
+				GtkClipboard *clipboard;
+				clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+				gtk_clipboard_set_text(clipboard, m_sys->getErrorCause().c_str(),
+						       m_sys->getErrorCause().size());
+				clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+				gtk_clipboard_set_text(clipboard, m_sys->getErrorCause().c_str(),
+						       m_sys->getErrorCause().size());
+				LOG(LOG_INFO, "Copied error to clipboard");
+			}
+			else
+				LOG(LOG_INFO, "No error to be copied to clipboard");
+			break;
+		default:
+			break;
+	}
+
+	return handled;
+}
+
+void InputThread::sendKeyEvent(const GdkEventKey *keyevent)
+{
+	if(m_sys->currentVm == NULL)
+		return;
+
+	Locker locker(mutexListeners);
+
+	_NR<DisplayObject> target = m_sys->mainClip->getStage()->getFocusTarget();
+	if (target.isNull())
+		return;
+
+	tiny_string type;
+	if (keyevent->type == GDK_KEY_PRESS)
+		type = "keyDown";
+	else
+		type = "keyUp";
+
+	uint32_t charcode = keyevent->keyval;
+	if (keyevent->is_modifier)
+		charcode = 0;
+
+	m_sys->currentVm->addEvent(target,
+	    _MR(Class<KeyboardEvent>::getInstanceS(type, charcode, keyevent->hardware_keycode, keyevent->state)));
 }
 
 void InputThread::addListener(InteractiveObject* ob)

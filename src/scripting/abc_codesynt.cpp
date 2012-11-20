@@ -29,10 +29,18 @@
 #include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/PassManager.h>
-#include <llvm/Constants.h> 
-#include <llvm/Support/IRBuilder.h> 
+#include <llvm/Constants.h>
+#ifdef HAVE_IRBUILDER_H
+#  include <llvm/IRBuilder.h>
+#else
+#  include <llvm/Support/IRBuilder.h>
+#endif
 #include <llvm/LLVMContext.h>
-#include <llvm/Target/TargetData.h>
+#ifdef HAVE_DATALAYOUT_H
+#  include <llvm/DataLayout.h>
+#else
+#  include <llvm/Target/TargetData.h>
+#endif
 #include <sstream>
 #include "scripting/abc.h"
 #include "swftypes.h"
@@ -271,7 +279,11 @@ void ABCVm::registerFunctions()
 	llvm::FunctionType* FT=NULL;
 
 	//Create types
+#ifdef HAVE_DATALAYOUT_H
+	ptr_type=ex->getDataLayout()->getIntPtrType(llvm_context());
+#else
 	ptr_type=ex->getTargetData()->getIntPtrType(llvm_context());
+#endif
 	//Pointer to 8 bit type, needed for pointer arithmetic
 	voidptr_type=llvm::IntegerType::get(getVm()->llvm_context(),8)->getPointerTo();
 	number_type=llvm::Type::getDoubleTy(llvm_context());

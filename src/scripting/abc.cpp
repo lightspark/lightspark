@@ -28,7 +28,11 @@
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/PassManager.h>
 #include <llvm/LLVMContext.h>
-#include <llvm/Target/TargetData.h>
+#ifdef HAVE_DATALAYOUT_H
+#  include <llvm/DataLayout.h>
+#else
+#  include <llvm/Target/TargetData.h>
+#endif
 #ifdef HAVE_SUPPORT_TARGETSELECT_H
 #include <llvm/Support/TargetSelect.h>
 #else
@@ -1459,7 +1463,11 @@ void ABCVm::Run(ABCVm* th)
 		assert_and_throw(th->ex);
 
 		th->FPM=new llvm::FunctionPassManager(th->module);
+#ifdef HAVE_DATALAYOUT_H
+		th->FPM->add(new llvm::DataLayout(*th->ex->getDataLayout()));
+#else
 		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
+#endif
 #ifdef EXPENSIVE_DEBUG
 		//This is pretty heavy, do not enable in release
 		th->FPM->add(llvm::createVerifierPass());

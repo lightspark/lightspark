@@ -45,6 +45,7 @@ friend class ParseThread;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
 	enum HIT_TYPE { GENERIC_HIT, // point is over the object
+                        GENERIC_HIT_INVISIBLE, // ...even if the object is invisible
 			MOUSE_CLICK, // point over the object and mouseEnabled
 			DOUBLE_CLICK // point over the object and doubleClickEnabled
 		      };

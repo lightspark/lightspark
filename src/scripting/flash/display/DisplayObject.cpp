@@ -885,7 +885,7 @@ ASFUNCTIONBODY(DisplayObject,_getMouseY)
 
 _NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
 {
-	if(!visible || !isConstructed())
+	if(!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed())
 		return NullRef;
 
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on
@@ -1101,7 +1101,7 @@ ASFUNCTIONBODY(DisplayObject,hitTestPoint)
 		// right thing to do?
 		th->incRef();
 		_NR<DisplayObject> hit = th->hitTest(_MR(th), localX, localY,
-						     HIT_TYPE::GENERIC_HIT);
+						     HIT_TYPE::GENERIC_HIT_INVISIBLE);
 
 		return abstract_b(hit.getPtr() == th);
 	}

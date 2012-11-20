@@ -805,7 +805,7 @@ public:
 	}
 	number_t getRotation() const
 	{
-		return atan(xx/yx)*180/M_PI;
+		return atan(yx/xx)*180/M_PI;
 	}
 	/*
 	 * Implement flash style premultiply matrix operators

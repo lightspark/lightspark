@@ -210,8 +210,7 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 				break;
 			}
 			objectValue = new ExtObject();
-			if(other->getObjectType()==T_ARRAY)
-				objectValue->setType(ExtObject::EO_ARRAY);
+			bool allNumericProperties = true;
 
 			objectsMap[other.getPtr()] = move(unique_ptr<ExtObject>(objectValue));
 
@@ -224,7 +223,15 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 				if(nextName->getObjectType() == T_INTEGER)
 					objectValue->setProperty(nextName->toInt(), ExtVariant(objectsMap, nextValue));
 				else
+				{
+					allNumericProperties = false;
 					objectValue->setProperty(nextName->toString().raw_buf(), ExtVariant(objectsMap, nextValue));
+				}
+			}
+
+			if(other->getObjectType()==T_ARRAY && allNumericProperties)
+			{
+				objectValue->setType(ExtObject::EO_ARRAY);
 			}
 		}
 		break;

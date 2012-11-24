@@ -1038,6 +1038,27 @@ void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDr
 	}
 }
 
+// Compute the minimal, axis aligned bounding box in global
+// coordinates
+bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	number_t x1, x2, y1, y2;
+	if (!boundsRect(x1, x2, y1, y2))
+		return abstract_b(false);
+
+	localToGlobal(x1, y1, x1, y1);
+	localToGlobal(x2, y2, x2, y2);
+
+	// Mapping to global may swap min and max values (for example,
+	// rotation by 180 degrees)
+	xmin = dmin(x1, x2);
+	xmax = dmax(x1, x2);
+	ymin = dmin(y1, y2);
+	ymax = dmax(y1, y2);
+
+	return true;
+}
+
 ASFUNCTIONBODY(DisplayObject,hitTestObject)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
@@ -1045,23 +1066,17 @@ ASFUNCTIONBODY(DisplayObject,hitTestObject)
 	ARG_UNPACK(another);
 
 	number_t xmin, xmax, ymin, ymax;
-	if (!th->boundsRect(xmin, xmax, ymin, ymax))
+	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
 		return abstract_b(false);
-
-	th->localToGlobal(xmin, ymin, xmin, ymin);
-	th->localToGlobal(xmax, ymax, xmax, ymax);
 
 	number_t xmin2, xmax2, ymin2, ymax2;
-	if (!another->boundsRect(xmin2, xmax2, ymin2, ymax2))
+	if (!another->boundsRectGlobal(xmin2, xmax2, ymin2, ymax2))
 		return abstract_b(false);
 
-	another->localToGlobal(xmin2, ymin2, xmin2, ymin2);
-	another->localToGlobal(xmax2, ymax2, xmax2, ymax2);
-
-	number_t intersect_xmax = std::min(xmax, xmax2);
-	number_t intersect_xmin = std::max(xmin, xmin2);
-	number_t intersect_ymax = std::min(ymax, ymax2);
-	number_t intersect_ymin = std::max(ymin, ymin2);
+	number_t intersect_xmax = dmin(xmax, xmax2);
+	number_t intersect_xmin = dmax(xmin, xmin2);
+	number_t intersect_ymax = dmin(ymax, ymax2);
+	number_t intersect_ymin = dmax(ymin, ymin2);
 
 	return abstract_b((intersect_xmax > intersect_xmin) && 
 			  (intersect_ymax > intersect_ymin));
@@ -1076,11 +1091,8 @@ ASFUNCTIONBODY(DisplayObject,hitTestPoint)
 	ARG_UNPACK (x) (y) (shapeFlag, false);
 
 	number_t xmin, xmax, ymin, ymax;
-	if (!th->boundsRect(xmin, xmax, ymin, ymax))
+	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
 		return abstract_b(false);
-
-	th->localToGlobal(xmin, ymin, xmin, ymin);
-	th->localToGlobal(xmax, ymax, xmax, ymax);
 
 	bool insideBoundingBox = (xmin <= x) && (x < xmax) && (ymin <= y) && (y < ymax);
 

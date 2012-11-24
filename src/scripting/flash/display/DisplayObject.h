@@ -106,6 +106,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
+	bool boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual void renderImpl(RenderContext& ctxt) const
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");

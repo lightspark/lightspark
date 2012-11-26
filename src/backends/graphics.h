@@ -280,6 +280,8 @@ protected:
 	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface(uint8_t*& buf);
 	virtual void executeDraw(cairo_t* cr)=0;
+	static void copyRGB15To24(uint8_t* dest, uint8_t* src);
+	static void copyRGB24To24(uint8_t* dest, uint8_t* src);
 public:
 	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& m);
 	//IDrawable interface
@@ -288,7 +290,7 @@ public:
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 */
 	static void convertBitmapToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
-			uint32_t height, size_t* dataSize, size_t* stride);
+					 uint32_t height, size_t* dataSize, size_t* stride, bool rgb15);
 	/*
 	 * Converts data (which is in ARGB format) to the format internally used by cairo.
 	 */

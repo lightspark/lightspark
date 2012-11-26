@@ -29,17 +29,17 @@ BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),dataSize(0),width(0
 {
 }
 
-bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, bool hasAlpha)
+bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMAT format)
 {
 	if(!rgb)
 		return false;
 
 	width = w;
 	height = h;
-	if(hasAlpha)
+	if(format==ARGB32)
 		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride);
 	else
-		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride);
+		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride, format==RGB15);
 	delete[] rgb;
 	if(data.empty())
 	{
@@ -58,7 +58,8 @@ bool BitmapContainer::fromJPEG(uint8_t *inData, int len)
 	bool hasAlpha;
 	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &w, &h, &hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, hasAlpha);
+	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, format);
 }
 
 bool BitmapContainer::fromJPEG(std::istream &s)
@@ -69,7 +70,8 @@ bool BitmapContainer::fromJPEG(std::istream &s)
 	bool hasAlpha;
 	uint8_t *rgb=ImageDecoder::decodeJPEG(s, &w, &h, &hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, hasAlpha);
+	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, format);
 }
 
 bool BitmapContainer::fromPNG(std::istream &s)
@@ -79,7 +81,19 @@ bool BitmapContainer::fromPNG(std::istream &s)
 	uint32_t w,h;
 	uint8_t *rgb=ImageDecoder::decodePNG(s, &w, &h);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, false);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
+}
+
+bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint8_t* palette, unsigned numColors)
+{
+	assert(data.empty());
+	if (!inData || !palette)
+		return false;
+
+	width = w;
+	height = h;
+	uint8_t *rgb=ImageDecoder::decodePalette(inData, w, h, palette, numColors);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
 }
 
 void BitmapContainer::reset()

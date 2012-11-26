@@ -367,4 +367,31 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 
 	return outData;
 }
+
+uint8_t* ImageDecoder::decodePalette(uint8_t* pixels, uint32_t width, uint32_t height, uint8_t* palette, unsigned int numColors)
+{
+	if (numColors == 0)
+		return NULL;
+
+	uint8_t* outData = new uint8_t[3*width*height];
+	for (size_t y=0; y<height; y++)
+	{
+		for (size_t x=0; x<width; x++)
+		{
+			size_t pixelPos = y*width + x;
+			uint8_t paletteIndex = pixels[pixelPos];
+			if ((unsigned)paletteIndex >= numColors)
+			{
+				// Invalid palette index
+				paletteIndex = 0;
+			}
+
+			uint8_t *dest = outData + 3*pixelPos;
+			memcpy(dest, &palette[3*paletteIndex], 3);
+		}
+	}
+
+	return outData;
+}
+
 }

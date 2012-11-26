@@ -733,8 +733,29 @@ void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t, reporter_
 	}
 }
 
+inline void CairoRenderer::copyRGB15To24(uint8_t* dest, uint8_t* src)
+{
+	// highest bit is ignored
+	uint8_t r = (src[0] & 0x7C) >> 2;
+	uint8_t g = ((src[0] & 0x03) << 3) + (src[1] & 0xE0 >> 5);
+	uint8_t b = src[1] & 0x1F;
+
+	r = r*255/31;
+	g = g*255/31;
+	b = b*255/31;
+
+	dest[0] = r;
+	dest[1] = g;
+	dest[2] = b;
+}
+
+inline void CairoRenderer::copyRGB24To24(uint8_t* dest, uint8_t* src)
+{
+	memcpy(dest, src, 3);
+}
+
 void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
-		uint32_t height, size_t* dataSize, size_t* stride)
+					 uint32_t height, size_t* dataSize, size_t* stride, bool rgb15)
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;
@@ -749,7 +770,10 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 			/* the alpha channel is set to opaque above */
 			uint8_t* rgbData = ((uint8_t*)&pdata)+1;
 			/* copy the RGB bytes to rgbData */
-			memcpy(rgbData, inData+(i*width+j)*3, 3);
+			if(rgb15)
+				copyRGB15To24(rgbData, inData+(i*width+j)*2);
+			else
+				copyRGB24To24(rgbData, inData+(i*width+j)*3);
 			/* cairo needs this in host endianess */
 			*outDataPos = GINT32_FROM_BE(pdata);
 		}

@@ -45,6 +45,11 @@ public:
 	static uint8_t* decodeJPEG(std::istream& str, uint32_t* width, uint32_t* height, bool* hasAlpha);
 	static uint8_t* decodePNG(uint8_t* inData, int len, uint32_t* width, uint32_t* height);
 	static uint8_t* decodePNG(std::istream& str, uint32_t* width, uint32_t* height);
+	/* Convert paletted image into new[]'ed 24bit RGB image.
+	 * pixels array contains indexes to the palette, 1 byte per
+	 * index. Palette has numColors RGB values, 3 bytes per color.
+	 */
+	static uint8_t* decodePalette(uint8_t* pixels, uint32_t width, uint32_t height, uint8_t* palette, unsigned int numColors);
 };
 
 }

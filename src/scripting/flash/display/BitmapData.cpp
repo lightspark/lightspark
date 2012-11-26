@@ -41,7 +41,7 @@ BitmapData::BitmapData(Class_base* c, uint32_t width, uint32_t height):ASObject(
 
 	uint32_t *pixels=new uint32_t[width*height];
 	memset(pixels,0,width*height*sizeof(uint32_t));
-	fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, true);
+	fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, ARGB32);
 }
 
 BitmapData::~BitmapData()
@@ -115,7 +115,7 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 	}
 	for(uint32_t i=0; i<width*height; i++)
 		pixels[i]=c;
-	th->fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, true);
+	th->fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, ARGB32);
 	th->transparent=transparent;
 
 	return NULL;

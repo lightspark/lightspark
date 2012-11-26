@@ -1703,6 +1703,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
 	assert_and_throw(args[1] && args[1]->getClass() && 
 		args[1]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
 
+	if (args[0] == args[1])
+	{
+		// Must return, otherwise crashes trying to erase the
+		// same object twice
+		return NULL;
+	}
+
 	//Cast to object
 	args[0]->incRef();
 	_R<DisplayObject> child1=_MR(Class<DisplayObject>::cast(args[0]));

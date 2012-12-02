@@ -34,17 +34,13 @@ namespace lightspark
 class AudioDecoder;
 class NetStream;
 
-class Sound: public EventDispatcher, public IThreadJob, public ILoadable
+class Sound: public EventDispatcher, public ILoadable
 {
-friend class SoundChannel;
 private:
 	URLInfo url;
 	std::vector<uint8_t> postData;
 	Downloader* downloader;
-	Mutex mutex;
-	ACQUIRE_RELEASE_FLAG(stopped);
-	AudioDecoder* audioDecoder;
-	AudioStream* audioStream;
+	bool soundChannelCreated;
 	ASPROPERTY_GETTER(uint32_t,bytesLoaded);
 	ASPROPERTY_GETTER(uint32_t,bytesTotal);
 	ASPROPERTY_GETTER(number_t,length);
@@ -60,11 +56,6 @@ public:
 	ASFUNCTION(load);
 	ASFUNCTION(play);
 	ASFUNCTION(close);
-
-	//IThreadJob interface
-	void execute();
-	void jobFence();
-	void threadAbort();
 };
 
 class SoundTransform: public ASObject
@@ -77,14 +68,30 @@ public:
 	ASFUNCTION(_constructor);
 };
 
-class SoundChannel : public EventDispatcher
+class SoundChannel : public EventDispatcher, public IThreadJob
 {
+private:
+	std::istream stream;
+	// owner keeps reference to the Sound object that owns the
+	// streambuf. TODO: ugly, get rid of this
+	_NR<Sound> owner;
+	Mutex mutex;
+	ACQUIRE_RELEASE_FLAG(stopped);
+	AudioDecoder* audioDecoder;
+	AudioStream* audioStream;
+	ASPROPERTY_GETTER_SETTER(uint32_t,position);
 public:
-	SoundChannel(Class_base* c) : EventDispatcher(c) {}
+	SoundChannel(Class_base* c, std::streambuf *s=NULL, _NR<Sound> owner=NullRef);
+	~SoundChannel();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(addEventListener);
+	ASFUNCTION(stop);
+
+	//IThreadJob interface
+	void execute();
+	void jobFence();
+	void threadAbort();
 };
 
 class Video: public DisplayObject

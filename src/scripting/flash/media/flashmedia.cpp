@@ -214,8 +214,8 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 		return NullRef;
 }
 
-Sound::Sound(Class_base* c):EventDispatcher(c),downloader(NULL),stopped(false),audioDecoder(NULL),audioStream(NULL),
-	bytesLoaded(0),bytesTotal(0),length(60*1000)
+Sound::Sound(Class_base* c)
+ :EventDispatcher(c),downloader(NULL),soundChannelCreated(false),bytesLoaded(0),bytesTotal(0),length(60*1000)
 {
 }
 
@@ -302,109 +302,28 @@ ASFUNCTIONBODY(Sound,play)
 	if(startTime!=0)
 		LOG(LOG_NOT_IMPLEMENTED,"startTime not supported in Sound::play");
 
-	if(th->downloader && !th->downloader->hasFailed())
+	if (!th->soundChannelCreated)
 	{
-		//Add the object as a job so that playback starts
+		th->soundChannelCreated = true;
 		th->incRef();
-		getSys()->addJob(th);
+		return Class<SoundChannel>::getInstanceS(th->downloader, _MNR(th));
 	}
-
-	return getSys()->getUndefinedRef();
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Sound::play called more than once");
+		// should return a new independent SoundChannel for
+		// the same downloaded data
+		return getSys()->getUndefinedRef();
+	}
 }
 
 ASFUNCTIONBODY(Sound,close)
 {
 	Sound* th=Class<Sound>::cast(obj);
-	if(!ACQUIRE_READ(th->stopped))
-		th->threadAbort();
+	if(th->downloader)
+		th->downloader->stop();
 
 	return NULL;
-}
-
-void Sound::execute()
-{
-	downloader->waitForData();
-	istream s(downloader);
-	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
-
-	bool waitForFlush=true;
-	StreamDecoder* streamDecoder=NULL;
-	//We need to catch possible EOF and other error condition in the non reliable stream
-	try
-	{
-#ifdef ENABLE_LIBAVCODEC
-		streamDecoder=new FFMpegStreamDecoder(s);
-		if(!streamDecoder->isValid())
-			threadAbort();
-
-		while(!ACQUIRE_READ(stopped))
-		{
-			bool decodingSuccess=streamDecoder->decodeNextFrame();
-			if(decodingSuccess==false)
-				break;
-
-			if(audioDecoder==NULL && streamDecoder->audioDecoder)
-				audioDecoder=streamDecoder->audioDecoder;
-
-			//TODO: Move the audio plugin check before
-			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
-				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
-
-			if(threadAborting)
-				throw JobTerminationException();
-		}
-#endif //ENABLE_LIBAVCODEC
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR, "Exception in Sound " << e.cause);
-		threadAbort();
-		waitForFlush=false;
-	}
-	catch(JobTerminationException& e)
-	{
-		waitForFlush=false;
-	}
-	catch(exception& e)
-	{
-		LOG(LOG_ERROR, _("Exception in reading: ")<<e.what());
-	}
-	if(waitForFlush)
-	{
-		//Put the decoders in the flushing state and wait for the complete consumption of contents
-		if(audioDecoder)
-		{
-			audioDecoder->setFlushing();
-			audioDecoder->waitFlushed();
-		}
-	}
-
-	{
-		Locker l(mutex);
-		audioDecoder=NULL;
-		delete audioStream;
-		audioStream=NULL;
-	}
-	delete streamDecoder;
-}
-
-void Sound::jobFence()
-{
-	this->decRef();
-}
-
-void Sound::threadAbort()
-{
-	RELEASE_WRITE(stopped,true);
-	Locker l(mutex);
-	if(audioDecoder)
-	{
-		//Clear everything we have in buffers, discard all frames
-		audioDecoder->setFlushing();
-		audioDecoder->skipAll();
-	}
-	/*if(downloader)
-		downloader->stop();*/
 }
 
 void Sound::setBytesTotal(uint32_t b)
@@ -455,11 +374,32 @@ ASFUNCTIONBODY(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
+SoundChannel::SoundChannel(Class_base* c, std::streambuf *s, _NR<Sound> _owner)
+  : EventDispatcher(c),stream(s),owner(_owner),stopped(false),audioDecoder(NULL),audioStream(NULL),position(0)
+{
+	if(s)
+	{
+		// Start playback
+		incRef();
+		getSys()->addJob(this);
+	}
+}
+
+SoundChannel::~SoundChannel()
+{
+	threadAbort();
+}
+
 void SoundChannel::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<EventDispatcher>::getRef());
+	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
+
+	REGISTER_GETTER(c,position);
 }
+
+ASFUNCTIONBODY_GETTER(SoundChannel,position);
 
 void SoundChannel::buildTraits(ASObject* o)
 {
@@ -467,7 +407,108 @@ void SoundChannel::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(SoundChannel, _constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
+
 	return NULL;
+}
+
+ASFUNCTIONBODY(SoundChannel, stop)
+{
+	SoundChannel* th=Class<SoundChannel>::cast(obj);
+	th->threadAbort();
+	return NULL;
+}
+
+void SoundChannel::execute()
+{
+	stream.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+
+	bool waitForFlush=true;
+	StreamDecoder* streamDecoder=NULL;
+	//We need to catch possible EOF and other error condition in the non reliable stream
+	try
+	{
+#ifdef ENABLE_LIBAVCODEC
+		streamDecoder=new FFMpegStreamDecoder(stream);
+		if(!streamDecoder->isValid())
+			threadAbort();
+
+		while(!ACQUIRE_READ(stopped))
+		{
+			bool decodingSuccess=streamDecoder->decodeNextFrame();
+			if(decodingSuccess==false)
+				break;
+
+			if(audioDecoder==NULL && streamDecoder->audioDecoder)
+				audioDecoder=streamDecoder->audioDecoder;
+
+			//TODO: Move the audio plugin check before
+			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
+				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
+
+			// TODO: check the position only when the getter is called
+			if(audioStream)
+				position=audioStream->getPlayedTime();
+
+			if(threadAborting)
+				throw JobTerminationException();
+		}
+#endif //ENABLE_LIBAVCODEC
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR, "Exception in SoundChannel " << e.cause);
+		threadAbort();
+		waitForFlush=false;
+	}
+	catch(JobTerminationException& e)
+	{
+		waitForFlush=false;
+	}
+	catch(exception& e)
+	{
+		LOG(LOG_ERROR, _("Exception in reading SoundChannel: ")<<e.what());
+	}
+	if(waitForFlush)
+	{
+		//Put the decoders in the flushing state and wait for the complete consumption of contents
+		if(audioDecoder)
+		{
+			audioDecoder->setFlushing();
+			audioDecoder->waitFlushed();
+		}
+	}
+
+	{
+		Locker l(mutex);
+		audioDecoder=NULL;
+		delete audioStream;
+		audioStream=NULL;
+	}
+	delete streamDecoder;
+
+	if (!ACQUIRE_READ(stopped))
+	{
+		incRef();
+		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("soundComplete")));
+	}
+}
+
+void SoundChannel::jobFence()
+{
+	this->decRef();
+}
+
+void SoundChannel::threadAbort()
+{
+	RELEASE_WRITE(stopped,true);
+	Locker l(mutex);
+	if(audioDecoder)
+	{
+		//Clear everything we have in buffers, discard all frames
+		audioDecoder->setFlushing();
+		audioDecoder->skipAll();
+	}
 }
 
 void StageVideo::sinit(Class_base *c)

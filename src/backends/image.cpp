@@ -34,8 +34,8 @@ namespace lightspark
 
 struct source_mgr : public jpeg_source_mgr
 {
-	source_mgr(uint8_t* _data, int _len) : data(_data), len(_len) {}
-	uint8_t* data;
+	source_mgr(const uint8_t* _data, int _len) : data(_data), len(_len) {}
+	const uint8_t* data;
 	int len;
 };
 
@@ -138,7 +138,7 @@ void error_exit(j_common_ptr cinfo) {
 	longjmp(error->jmpBuf, -1);
 }
 
-uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, uint32_t* width, uint32_t* height, bool* hasAlpha)
+uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, const uint8_t* tablesData, int tablesLen, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
 	struct source_mgr src(inData,len);
 
@@ -148,7 +148,25 @@ uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, uint32_t* width, uin
 	src.resync_to_restart = resync_to_restart;
 	src.term_source = term_source;
 
-	return decodeJPEGImpl(src, width, height, hasAlpha);
+	struct source_mgr *tablesSrc;
+	if (tablesData)
+	{
+		tablesSrc = new source_mgr(tablesData,tablesLen);
+
+		tablesSrc->init_source = init_source;
+		tablesSrc->fill_input_buffer = fill_input_buffer;
+		tablesSrc->skip_input_data = skip_input_data;
+		tablesSrc->resync_to_restart = resync_to_restart;
+		tablesSrc->term_source = term_source;
+	}
+	else
+	{
+		tablesSrc = NULL;
+	}
+
+	uint8_t* decoded = decodeJPEGImpl(&src, tablesSrc, width, height, hasAlpha);
+	delete tablesSrc;
+	return decoded;
 }
 
 uint8_t* ImageDecoder::decodeJPEG(std::istream& str, uint32_t* width, uint32_t* height, bool* hasAlpha)
@@ -163,13 +181,13 @@ uint8_t* ImageDecoder::decodeJPEG(std::istream& str, uint32_t* width, uint32_t* 
 	src.resync_to_restart = jpeg_resync_to_restart;
 	src.term_source = term_source;
 
-	uint8_t* res=decodeJPEGImpl(src, width, height, hasAlpha);
+	uint8_t* res=decodeJPEGImpl(&src, NULL, width, height, hasAlpha);
 
 	delete[] src.data;
 	return res;
 }
 
-uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uint32_t* height, bool* hasAlpha)
+uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr *src, jpeg_source_mgr *headerTables, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
 	struct jpeg_decompress_struct cinfo;
 	struct error_mgr err;
@@ -182,7 +200,21 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr& src, uint32_t* width, uin
 	}
 
 	jpeg_create_decompress(&cinfo);
-	cinfo.src = &src;
+	
+	if (headerTables)
+	{
+		cinfo.src = headerTables;
+		jpeg_read_header(&cinfo, FALSE);
+	}
+
+	cinfo.src = src;
+
+	if (headerTables)
+	{
+		// Must call init_source manually after switching src
+		src->init_source(&cinfo);
+	}
+
 	jpeg_read_header(&cinfo, TRUE);
 #ifdef JCS_EXTENSIONS
 	//JCS_EXT_XRGB is a fast decoder that outputs alpha channel,

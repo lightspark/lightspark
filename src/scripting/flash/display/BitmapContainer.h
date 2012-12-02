@@ -41,7 +41,7 @@ public:
 	const uint8_t* getData() const { return &data[0]; }
 	enum BITMAP_FORMAT { RGB15, RGB24, ARGB32 };
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, BITMAP_FORMAT format);
-	bool fromJPEG(uint8_t* data, int len);
+	bool fromJPEG(uint8_t* data, int len, const uint8_t *tablesData=NULL, int tablesLen=0);
 	bool fromJPEG(std::istream& s);
 	bool fromPNG(std::istream& s);
 	bool fromPalette(uint8_t* inData, uint32_t width, uint32_t height, uint8_t* palette, unsigned numColors);

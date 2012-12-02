@@ -44,6 +44,9 @@
 using namespace std;
 using namespace lightspark;
 
+uint8_t* JPEGTablesTag::JPEGTables = NULL;
+int JPEGTablesTag::tableSize = 0;
+
 Tag* TagFactory::readTag(RootMovieClip* root)
 {
 	RECORDHEADER h;
@@ -80,6 +83,9 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 	//		ret=new PlaceObjectTag(h,f);
 		case 6:
 			ret=new DefineBitsTag(h,f,root);
+			break;
+		case 8:
+			ret=new JPEGTablesTag(h,f);
 			break;
 		case 9:
 			ret=new SetBackgroundColorTag(h,f);
@@ -1508,19 +1514,47 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 	}
 }
 
+JPEGTablesTag::JPEGTablesTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	if (JPEGTables == NULL)
+	{
+		tableSize=Header.getLength();
+		JPEGTables=new(nothrow) uint8_t[tableSize];
+		in.read((char*)JPEGTables, tableSize);
+	}
+	else
+	{
+		LOG(LOG_ERROR, "Malformed SWF file: duplicated JPEGTables tag");
+		skip(in);
+	}
+}
+
+const uint8_t* JPEGTablesTag::getJPEGTables()
+{
+	return JPEGTables;
+}
+
+int JPEGTablesTag::getJPEGTableSize()
+{
+	return tableSize;
+}
+
 DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):BitmapTag(h,root)
 {
 	LOG(LOG_TRACE,_("DefineBitsTag Tag"));
+	if (JPEGTablesTag::getJPEGTables() == NULL)
+	{
+		LOG(LOG_ERROR, "Malformed SWF file: JPEGTable was expected before DefineBits");
+		// try to continue anyway
+	}
+
 	in >> CharacterId;
 	//Read image data
 	int dataSize=Header.getLength()-2;
-	data=new(nothrow) uint8_t[dataSize];
-	in.read((char*)data,dataSize);
-}
-
-DefineBitsTag::~DefineBitsTag()
-{
-	delete[] data;
+	uint8_t *inData=new(nothrow) uint8_t[dataSize];
+	in.read((char*)inData,dataSize);
+	fromJPEG(inData,dataSize,JPEGTablesTag::getJPEGTables(),JPEGTablesTag::getJPEGTableSize());
+	delete[] inData;
 }
 
 DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):BitmapTag(h,root)

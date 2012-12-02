@@ -532,6 +532,17 @@ public:
 	ASObject* instance(Class_base* c=NULL) const;
 };
 
+class JPEGTablesTag: public Tag
+{
+private:
+	static uint8_t* JPEGTables;
+	static int tableSize;
+public:
+	JPEGTablesTag(RECORDHEADER h, std::istream& in);
+	static const uint8_t* getJPEGTables();
+	static int getJPEGTableSize();
+};
+
 class DefineBitsLosslessTag: public BitmapTag
 {
 private:
@@ -550,10 +561,8 @@ class DefineBitsTag: public BitmapTag
 {
 private:
 	UI16_SWF CharacterId;
-	uint8_t* data;
 public:
 	DefineBitsTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	~DefineBitsTag();
 	int getId() const{ return CharacterId; }
 };
 

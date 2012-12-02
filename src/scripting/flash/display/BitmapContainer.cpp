@@ -50,13 +50,13 @@ bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMA
 	return true;
 }
 
-bool BitmapContainer::fromJPEG(uint8_t *inData, int len)
+bool BitmapContainer::fromJPEG(uint8_t *inData, int len, const uint8_t *tablesData, int tablesLen)
 {
 	assert(data.empty());
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
 	bool hasAlpha;
-	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, &w, &h, &hasAlpha);
+	uint8_t *rgb=ImageDecoder::decodeJPEG(inData, len, tablesData, tablesLen, &w, &h, &hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
 	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, format);

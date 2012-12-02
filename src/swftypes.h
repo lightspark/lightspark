@@ -1101,14 +1101,15 @@ private:
 	SB BlueAddTerm;
 	SB AlphaAddTerm;
 public:
-       void getParameters(number_t& redMultiplier, 
-			  number_t& greenMultiplier, 
-			  number_t& blueMultiplier,
-			  number_t& alphaMultiplier,
-			  number_t& redOffset,
-			  number_t& greenOffset,
-			  number_t& blueOffset,
-			  number_t& alphaOffset) const;
+	void getParameters(number_t& redMultiplier, 
+			   number_t& greenMultiplier, 
+			   number_t& blueMultiplier,
+			   number_t& alphaMultiplier,
+			   number_t& redOffset,
+			   number_t& greenOffset,
+			   number_t& blueOffset,
+			   number_t& alphaOffset) const;
+	float transformedAlpha(float alpha) const;
 };
 
 class CXFORM

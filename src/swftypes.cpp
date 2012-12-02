@@ -951,6 +951,16 @@ void CXFORMWITHALPHA::getParameters(number_t& redMultiplier,
 	}
 }
 
+float CXFORMWITHALPHA::transformedAlpha(float alpha) const
+{
+	float ret = alpha;
+	if (HasMultTerms)
+		ret = alpha*AlphaMultTerm/256.;
+	if (HasAddTerms)
+		ret = alpha + AlphaAddTerm/256.;
+	return dmin(dmax(ret, 0.), 1.);
+}
+
 std::istream& lightspark::operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 {
 	BitStream bs(stream);

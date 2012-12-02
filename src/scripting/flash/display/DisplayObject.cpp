@@ -254,7 +254,8 @@ MATRIX DisplayObject::getConcatenatedMatrix() const
  * necessary bounded.) */
 float DisplayObject::clippedAlpha() const
 {
-	return dmin(dmax(alpha, 0.), 1.);
+	float a = ColorTransform.transformedAlpha(alpha);
+	return dmin(dmax(a, 0.), 1.);
 }
 
 float DisplayObject::getConcatenatedAlpha() const

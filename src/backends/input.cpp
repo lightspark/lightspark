@@ -99,7 +99,9 @@ bool InputThread::worker(GdkEvent *event)
 				//Grab focus, to receive keypresses
 				engineData->grabFocus();
 
-				handleMouseDown(event->button.x,event->button.y);
+				int stageX, stageY;
+				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
+				handleMouseDown(stageX,stageY);
 			}
 			ret=TRUE;
 			break;
@@ -107,19 +109,27 @@ bool InputThread::worker(GdkEvent *event)
 		case GDK_2BUTTON_PRESS:
 		{
 			if(event->button.button == 1)
-				handleMouseDoubleClick(event->button.x,event->button.y);
+			{
+				int stageX, stageY;
+				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
+				handleMouseDoubleClick(stageX,stageY);
+			}
 			ret=TRUE;
 			break;
 		}
 		case GDK_BUTTON_RELEASE:
 		{
-			handleMouseUp(event->button.x,event->button.y);
+			int stageX, stageY;
+			m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
+			handleMouseUp(stageX,stageY);
 			ret=TRUE;
 			break;
 		}
 		case GDK_MOTION_NOTIFY:
 		{
-			handleMouseMove(event->motion.x,event->motion.y);
+			int stageX, stageY;
+			m_sys->windowToStageCoordinates(event->motion.x,event->motion.y,stageX,stageY);
+			handleMouseMove(stageX,stageY);
 			ret=TRUE;
 			break;
 		}

@@ -284,6 +284,8 @@ public:
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 	void needsAVM2(bool n);
+	void stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHeight, int& offsetX, int& offsetY, float& scaleX, float& scaleY);
+	void windowToStageCoordinates(int windowX, int windowY, int& stageX, int& stageY);
 
 	/**
 	 * Be careful, SystemState constructor does some global initialization that must be done

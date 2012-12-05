@@ -611,77 +611,7 @@ void RenderThread::commonGLInit(int width, int height)
 
 void RenderThread::commonGLResize()
 {
-	//Get the size of the content
-	RECT r=m_sys->mainClip->getFrameSize();
-	r.Xmax/=20;
-	r.Ymax/=20;
-	//Now compute the scalings and offsets
-	switch(m_sys->scaleMode)
-	{
-		case SystemState::SHOW_ALL:
-			//Compute both scaling
-			scaleX=windowWidth;
-			scaleX/=r.Xmax;
-			scaleY=windowHeight;
-			scaleY/=r.Ymax;
-			//Enlarge with no distortion
-			if(scaleX<scaleY)
-			{
-				//Uniform scaling for Y
-				scaleY=scaleX;
-				//Apply the offset
-				offsetY=(windowHeight-r.Ymax*scaleY)/2;
-				offsetX=0;
-			}
-			else
-			{
-				//Uniform scaling for X
-				scaleX=scaleY;
-				//Apply the offset
-				offsetX=(windowWidth-r.Xmax*scaleX)/2;
-				offsetY=0;
-			}
-			break;
-		case SystemState::NO_BORDER:
-			//Compute both scaling
-			scaleX=windowWidth;
-			scaleX/=r.Xmax;
-			scaleY=windowHeight;
-			scaleY/=r.Ymax;
-			//Enlarge with no distortion
-			if(scaleX>scaleY)
-			{
-				//Uniform scaling for Y
-				scaleY=scaleX;
-				//Apply the offset
-				offsetY=(windowHeight-r.Ymax*scaleY)/2;
-				offsetX=0;
-			}
-			else
-			{
-				//Uniform scaling for X
-				scaleX=scaleY;
-				//Apply the offset
-				offsetX=(windowWidth-r.Xmax*scaleX)/2;
-				offsetY=0;
-			}
-			break;
-		case SystemState::EXACT_FIT:
-			//Compute both scaling
-			scaleX=windowWidth;
-			scaleX/=r.Xmax;
-			scaleY=windowHeight;
-			scaleY/=r.Ymax;
-			offsetX=0;
-			offsetY=0;
-			break;
-		case SystemState::NO_SCALE:
-			scaleX=1;
-			scaleY=1;
-			offsetX=0;
-			offsetY=0;
-			break;
-	}
+	m_sys->stageCoordinateMapping(windowWidth, windowHeight, offsetX, offsetY, scaleX, scaleY);
 	glViewport(0,0,windowWidth,windowHeight);
 	lsglLoadIdentity();
 	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);

@@ -1047,11 +1047,11 @@ bool URLPolicyFile::checkSiteControlValidity()
 /**
  * \brief Checks whether this policy file allows the given URL access
  *
- * \param url The URL to check if it is allowed by the policy file
- * \param to The URL that is being requested by a resource at \c url
+ * \param requestingUrl The URL (of the SWF file) that is requesting the data
+ * \param to The URL that is being requested by a resource at \c requestingUrl
  * \return \c true if allowed, otherwise \c false
  */
-bool URLPolicyFile::allowsAccessFrom(const URLInfo& url, const URLInfo& to)
+bool URLPolicyFile::allowsAccessFrom(const URLInfo& requestingUrl, const URLInfo& to)
 {
 	//File must be loaded
 	if(!isLoaded())
@@ -1069,7 +1069,7 @@ bool URLPolicyFile::allowsAccessFrom(const URLInfo& url, const URLInfo& to)
 	for(; i != allowAccessFrom.end(); ++i)
 	{
 		//This allow-access-from entry applies to our domain AND it allows our domain
-		if((*i)->allowsAccessFrom(url))
+		if((*i)->allowsAccessFrom(requestingUrl))
 			return true;
 	}
 	return false;
@@ -1140,11 +1140,11 @@ SocketPolicyFile::SocketPolicyFile(const URLInfo& _url):
 /**
  * \brief Checks whether this policy file allows the given URL access
  *
- * \param url The URL to check if it is allowed by the policy file
- * \param to The URL that is being requested by a resource at \c url
+ * \param requestingUrl The URL (of the SWF file) that is requesting the data
+ * \param to The URL that is being requested by a resource at \c requestingUrl
  * \return \c true if allowed, otherwise \c false
  */
-bool SocketPolicyFile::allowsAccessFrom(const URLInfo& url, const URLInfo& to)
+bool SocketPolicyFile::allowsAccessFrom(const URLInfo& requestingUrl, const URLInfo& to)
 {
 	//File must be loaded
 	if(!isLoaded())
@@ -1158,7 +1158,7 @@ bool SocketPolicyFile::allowsAccessFrom(const URLInfo& url, const URLInfo& to)
 	for(; i != allowAccessFrom.end(); ++i)
 	{
 		//This allow-access-from entry applies to our domain AND it allows our domain
-		if((*i)->allowsAccessFrom(url, to.getPort()))
+		if((*i)->allowsAccessFrom(requestingUrl, to.getPort()))
 			return true;
 	}
 	return false;

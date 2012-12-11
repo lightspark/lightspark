@@ -104,6 +104,7 @@ public:
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	tiny_string toString();
+	int32_t toInt();
 	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;

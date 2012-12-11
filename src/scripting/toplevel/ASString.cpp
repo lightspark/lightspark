@@ -488,14 +488,7 @@ double ASString::toNumber() const
 int32_t ASString::toInt()
 {
 	assert_and_throw(implEnable);
-	const char* cur=data.raw_buf();
-	int64_t ret;
-	bool valid=Integer::fromStringFlashCompatible(cur,ret,0);
-
-	if(valid==false || ret<INT32_MIN || ret>INT32_MAX)
-		return 0;
-	else
-		return static_cast<int32_t>(ret);
+	return Integer::stringToASInteger(data.raw_buf(), 0);
 }
 
 uint32_t ASString::toUInt()

@@ -85,6 +85,7 @@ public:
 	void append(_R<XML> x);
 	void append(_R<XMLList> x);
 	tiny_string toString();
+	int32_t toInt();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);

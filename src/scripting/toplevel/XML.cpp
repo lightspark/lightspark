@@ -1273,6 +1273,15 @@ tiny_string XML::toString()
 	return toString_priv();
 }
 
+int32_t XML::toInt()
+{
+	if (!hasSimpleContent())
+		return 0;
+
+	tiny_string str = toString();
+	return Integer::stringToASInteger(str.raw_buf(), 0);
+}
+
 bool XML::nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const
 {
 	assert(a && b);

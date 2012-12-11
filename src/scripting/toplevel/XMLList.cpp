@@ -613,6 +613,15 @@ tiny_string XMLList::toString()
 	return toString_priv();
 }
 
+int32_t XMLList::toInt()
+{
+	if (!hasSimpleContent())
+		return 0;
+
+	tiny_string str = toString();
+	return Integer::stringToASInteger(str.raw_buf(), 0);
+}
+
 ASFUNCTIONBODY(XMLList,_toString)
 {
 	XMLList* th=Class<XMLList>::cast(obj);

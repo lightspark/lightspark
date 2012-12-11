@@ -57,6 +57,11 @@ public:
 	 * This method skips trailing spaces and zeroes
 	 */
 	static bool fromStringFlashCompatible(const char* str, int64_t& ret,int radix);
+	/* Converts a string into AS (32 bit) integer value using ECMA
+	 * script conversion algorithm (i.e. accepts hex, skips
+	 * whitespace, zeroes). Returns 0 if conversion fails.
+	 */
+	static int32_t stringToASInteger(const char* cur, int radix);
 };
 
 }

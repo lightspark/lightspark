@@ -201,7 +201,7 @@ bool ASObject::isEqualStrict(ASObject* r)
 	return ABCVm::strictEqualImpl(this, r);
 }
 
-unsigned int ASObject::toUInt()
+uint32_t ASObject::toUInt()
 {
 	return toInt();
 }
@@ -212,7 +212,7 @@ uint16_t ASObject::toUInt16()
 	return val32 & 0xFFFF;
 }
 
-int ASObject::toInt()
+int32_t ASObject::toInt()
 {
 	return 0;
 }

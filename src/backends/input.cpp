@@ -101,7 +101,7 @@ bool InputThread::worker(GdkEvent *event)
 
 				int stageX, stageY;
 				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-				handleMouseDown(stageX,stageY);
+				handleMouseDown(stageX,stageY,event->button.state);
 			}
 			ret=TRUE;
 			break;
@@ -112,7 +112,7 @@ bool InputThread::worker(GdkEvent *event)
 			{
 				int stageX, stageY;
 				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-				handleMouseDoubleClick(stageX,stageY);
+				handleMouseDoubleClick(stageX,stageY,event->button.state);
 			}
 			ret=TRUE;
 			break;
@@ -121,7 +121,7 @@ bool InputThread::worker(GdkEvent *event)
 		{
 			int stageX, stageY;
 			m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-			handleMouseUp(stageX,stageY);
+			handleMouseUp(stageX,stageY,event->button.state);
 			ret=TRUE;
 			break;
 		}
@@ -129,7 +129,7 @@ bool InputThread::worker(GdkEvent *event)
 		{
 			int stageX, stageY;
 			m_sys->windowToStageCoordinates(event->motion.x,event->motion.y,stageX,stageY);
-			handleMouseMove(stageX,stageY);
+			handleMouseMove(stageX,stageY,event->button.state);
 			ret=TRUE;
 			break;
 		}
@@ -165,7 +165,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 	return selected;
 }
 
-void InputThread::handleMouseDown(uint32_t x, uint32_t y)
+void InputThread::handleMouseDown(uint32_t x, uint32_t y, unsigned int buttonState)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -174,11 +174,11 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y)
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS("mouseDown",localX,localY,true)));
+		_MR(Class<MouseEvent>::getInstanceS("mouseDown",localX,localY,true,buttonState)));
 	lastMouseDownTarget=selected;
 }
 
-void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
+void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, unsigned int buttonState)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -187,10 +187,10 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y)
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS("doubleClick",localX,localY,true)));
+		_MR(Class<MouseEvent>::getInstanceS("doubleClick",localX,localY,true,buttonState)));
 }
 
-void InputThread::handleMouseUp(uint32_t x, uint32_t y)
+void InputThread::handleMouseUp(uint32_t x, uint32_t y, unsigned int buttonState)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -199,17 +199,17 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y)
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS("mouseUp",localX,localY,true)));
+		_MR(Class<MouseEvent>::getInstanceS("mouseUp",localX,localY,true,buttonState)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
 		m_sys->currentVm->addEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS("click",localX,localY,true)));
+			_MR(Class<MouseEvent>::getInstanceS("click",localX,localY,true,buttonState)));
 	}
 	lastMouseDownTarget=NullRef;
 }
 
-void InputThread::handleMouseMove(uint32_t x, uint32_t y)
+void InputThread::handleMouseMove(uint32_t x, uint32_t y, unsigned int buttonState)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -242,7 +242,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 		selected->globalToLocal(x,y,localX,localY);
 		if(currentMouseOver == selected)
 			m_sys->currentVm->addEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS("mouseMove",localX,localY,true)));
+				_MR(Class<MouseEvent>::getInstanceS("mouseMove",localX,localY,true,buttonState)));
 		else
 		{
 			if(!currentMouseOver.isNull())
@@ -250,14 +250,14 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y)
 				number_t clocalX, clocalY;
 				currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
 				m_sys->currentVm->addEvent(currentMouseOver,
-					_MR(Class<MouseEvent>::getInstanceS("mouseOut",clocalX,clocalY,true,selected)));
+					_MR(Class<MouseEvent>::getInstanceS("mouseOut",clocalX,clocalY,true,buttonState,selected)));
 				m_sys->currentVm->addEvent(currentMouseOver,
-					_MR(Class<MouseEvent>::getInstanceS("rollOut",clocalX,clocalY,true,selected)));
+					_MR(Class<MouseEvent>::getInstanceS("rollOut",clocalX,clocalY,true,buttonState,selected)));
 			}
 			m_sys->currentVm->addEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS("mouseOver",localX,localY,true,currentMouseOver)));
+				_MR(Class<MouseEvent>::getInstanceS("mouseOver",localX,localY,true,buttonState,currentMouseOver)));
 			m_sys->currentVm->addEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS("rollOver",localX,localY,true,currentMouseOver)));
+				_MR(Class<MouseEvent>::getInstanceS("rollOver",localX,localY,true,buttonState,currentMouseOver)));
 			currentMouseOver = selected;
 		}
 	}

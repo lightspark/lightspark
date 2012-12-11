@@ -222,14 +222,15 @@ MouseEvent::MouseEvent(Class_base* c):Event(c, "mouseEvent"), localX(0), localY(
 {
 }
 
-MouseEvent::MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly, bool b, _NR<InteractiveObject> relObj):Event(c,t,b),
-	 localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
+MouseEvent::MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
+		       bool b, unsigned int buttonState, _NR<InteractiveObject> relObj)
+  : Event(c,t,b), modifiers(buttonState), localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
 {
 }
 
 Event* MouseEvent::cloneImpl() const
 {
-	return Class<MouseEvent>::getInstanceS(type,localX,localY,bubbles,relatedObject);
+	return Class<MouseEvent>::getInstanceS(type,localX,localY,bubbles,modifiers,relatedObject);
 }
 
 ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false),bytesLoaded(0),bytesTotal(0)
@@ -301,12 +302,15 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver"),DECLARED_TRAIT);
 	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"),DECLARED_TRAIT);
 
-
 	REGISTER_GETTER(c,relatedObject);
 	REGISTER_GETTER(c,stageX);
 	REGISTER_GETTER(c,stageY);
 	REGISTER_GETTER_SETTER(c,localX);
 	REGISTER_GETTER_SETTER(c,localY);
+	REGISTER_GETTER_SETTER(c,altKey);
+	REGISTER_GETTER_SETTER(c,buttonDown);
+	REGISTER_GETTER_SETTER(c,ctrlKey);
+	REGISTER_GETTER_SETTER(c,shiftKey);
 }
 
 ASFUNCTIONBODY(MouseEvent,_constructor)
@@ -320,6 +324,25 @@ ASFUNCTIONBODY(MouseEvent,_constructor)
 		th->localY=args[4]->toNumber();
 	if(argslen>=6)
 		th->relatedObject=ArgumentConversion< _NR<InteractiveObject> >::toConcrete(args[5]);
+	if(argslen>=7)
+		if (ArgumentConversion<bool>::toConcrete(args[6]))
+			th->modifiers |= GDK_CONTROL_MASK;
+	if(argslen>=8)
+		if (ArgumentConversion<bool>::toConcrete(args[7]))
+			th->modifiers |= GDK_MOD1_MASK;
+	if(argslen>=9)
+		if (ArgumentConversion<bool>::toConcrete(args[8]))
+			th->modifiers |= GDK_SHIFT_MASK;
+	if(argslen>=10)
+		if (ArgumentConversion<bool>::toConcrete(args[9]))
+			th->modifiers |= GDK_BUTTON1_MASK;
+	// TODO: args[10] = delta
+	// TODO: args[11] = command
+	if(argslen>=13)
+		if (ArgumentConversion<bool>::toConcrete(args[12]))
+			th->modifiers |= GDK_CONTROL_MASK;
+	// TODO: args[13] = clickCount
+
 	return NULL;
 }
 
@@ -361,6 +384,71 @@ ASFUNCTIONBODY(MouseEvent,_setter_localY)
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
 	return NULL; 
+}
+
+ASFUNCTIONBODY(MouseEvent,_getter_buttonDown)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_BUTTON1_MASK);
+}
+
+ASFUNCTIONBODY(MouseEvent,_setter_buttonDown)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	th->modifiers |= GDK_BUTTON1_MASK;
+	return NULL;
+}
+
+ASFUNCTIONBODY(MouseEvent,_getter_altKey)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_MOD1_MASK);
+}
+
+ASFUNCTIONBODY(MouseEvent,_setter_altKey)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	th->modifiers |= GDK_MOD1_MASK;
+	return NULL;
+}
+
+ASFUNCTIONBODY(MouseEvent,_getter_controlKey)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_CONTROL_MASK);
+}
+
+ASFUNCTIONBODY(MouseEvent,_setter_controlKey)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	th->modifiers |= GDK_CONTROL_MASK;
+	return NULL;
+}
+
+ASFUNCTIONBODY(MouseEvent,_getter_ctrlKey)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_CONTROL_MASK);
+}
+
+ASFUNCTIONBODY(MouseEvent,_setter_ctrlKey)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	th->modifiers |= GDK_CONTROL_MASK;
+	return NULL;
+}
+
+ASFUNCTIONBODY(MouseEvent,_getter_shiftKey)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	return abstract_b(th->modifiers & GDK_SHIFT_MASK);
+}
+
+ASFUNCTIONBODY(MouseEvent,_setter_shiftKey)
+{
+	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	th->modifiers |= GDK_SHIFT_MASK;
+	return NULL;
 }
 
 void MouseEvent::buildTraits(ASObject* o)
@@ -766,19 +854,19 @@ ASFUNCTIONBODY(KeyboardEvent,_constructor)
 		th->keyLocation = args[5]->toUInt();
 	}
 	if(argslen > 6) {
-		if (args[6]->is<Boolean>() && args[6]->as<Boolean>()->val)
+		if (ArgumentConversion<bool>::toConcrete(args[6]))
 			th->modifiers |= GDK_CONTROL_MASK;
 	}
 	if(argslen > 7) {
-		if (args[7]->is<Boolean>() && args[7]->as<Boolean>()->val)
+		if (ArgumentConversion<bool>::toConcrete(args[7]))
 			th->modifiers |= GDK_MOD1_MASK;
 	}
 	if(argslen > 8) {
-		if (args[8]->is<Boolean>() && args[8]->as<Boolean>()->val)
+		if (ArgumentConversion<bool>::toConcrete(args[8]))
 			th->modifiers |= GDK_SHIFT_MASK;
 	}
 	if(argslen > 9) {
-		if (args[9]->is<Boolean>() && args[9]->as<Boolean>()->val)
+		if (ArgumentConversion<bool>::toConcrete(args[9]))
 			th->modifiers |= GDK_CONTROL_MASK;
 	}
 	// args[10] (commandKeyValue) is only supported on Max OSX

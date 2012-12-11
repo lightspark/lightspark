@@ -251,17 +251,25 @@ public:
 class MouseEvent: public Event
 {
 private:
+	unsigned int modifiers;  // bitflags of GdkModifierType constants
 	Event* cloneImpl() const;
 public:
 	MouseEvent(Class_base* c);
-	MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly, bool b=true, _NR<InteractiveObject> relObj = NullRef);
+	MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
+		   bool b=true, unsigned int buttonState=0,
+		   _NR<InteractiveObject> relObj = NullRef);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void setTarget(_NR<ASObject> t);
 	EVENT_TYPE getEventType() const { return MOUSE_EVENT;}
 	ASFUNCTION(_constructor);
+	ASFUNCTION_GETTER_SETTER(altKey);
+	ASFUNCTION_GETTER_SETTER(buttonDown);
+	ASFUNCTION_GETTER_SETTER(controlKey);
+	ASFUNCTION_GETTER_SETTER(ctrlKey);
 	ASPROPERTY_GETTER_SETTER(number_t,localX);
 	ASPROPERTY_GETTER_SETTER(number_t,localY);
+	ASFUNCTION_GETTER_SETTER(shiftKey);
 	ASPROPERTY_GETTER(number_t,stageX);
 	ASPROPERTY_GETTER(number_t,stageY);
 	ASPROPERTY_GETTER(_NR<InteractiveObject>,relatedObject);	

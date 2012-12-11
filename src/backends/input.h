@@ -73,10 +73,10 @@ private:
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
 	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type);
-	void handleMouseDown(uint32_t x, uint32_t y);
-	void handleMouseDoubleClick(uint32_t x, uint32_t y);
-	void handleMouseUp(uint32_t x, uint32_t y);
-	void handleMouseMove(uint32_t x, uint32_t y);
+	void handleMouseDown(uint32_t x, uint32_t y, unsigned int buttonState);
+	void handleMouseDoubleClick(uint32_t x, uint32_t y, unsigned int buttonState);
+	void handleMouseUp(uint32_t x, uint32_t y, unsigned int buttonState);
+	void handleMouseMove(uint32_t x, uint32_t y, unsigned int buttonState);
 
 	void initKeyTable();
 	bool handleKeyboardShortcuts(const GdkEventKey *keyevent);

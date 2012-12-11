@@ -37,11 +37,12 @@ BitmapData::BitmapData(Class_base* c, const BitmapContainer& b):ASObject(c),Bitm
 
 BitmapData::BitmapData(Class_base* c, uint32_t width, uint32_t height):ASObject(c),BitmapContainer(c->memoryAccount),disposed(false)
 {
-	assert(width!=0 && height!=0);
-
 	uint32_t *pixels=new uint32_t[width*height];
-	memset(pixels,0,width*height*sizeof(uint32_t));
-	fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, ARGB32);
+	if (width!=0 && height!=0)
+	{
+		memset(pixels,0,width*height*sizeof(uint32_t));
+		fromRGB(reinterpret_cast<uint8_t *>(pixels), width, height, ARGB32);
+	}
 }
 
 BitmapData::~BitmapData()

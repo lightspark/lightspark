@@ -218,19 +218,20 @@ ASFUNCTIONBODY(FocusEvent,_constructor)
 	return NULL;
 }
 
-MouseEvent::MouseEvent(Class_base* c):Event(c, "mouseEvent"), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
+MouseEvent::MouseEvent(Class_base* c)
+ : Event(c, "mouseEvent"), modifiers(0), delta(1), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
 {
 }
 
 MouseEvent::MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
-		       bool b, unsigned int buttonState, _NR<InteractiveObject> relObj)
-  : Event(c,t,b), modifiers(buttonState), localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
+		       bool b, unsigned int buttonState, _NR<InteractiveObject> relObj, int32_t _delta)
+  : Event(c,t,b), modifiers(buttonState), delta(_delta), localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
 {
 }
 
 Event* MouseEvent::cloneImpl() const
 {
-	return Class<MouseEvent>::getInstanceS(type,localX,localY,bubbles,modifiers,relatedObject);
+	return Class<MouseEvent>::getInstanceS(type,localX,localY,bubbles,modifiers,relatedObject,delta);
 }
 
 ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false),bytesLoaded(0),bytesTotal(0)
@@ -311,6 +312,7 @@ void MouseEvent::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,buttonDown);
 	REGISTER_GETTER_SETTER(c,ctrlKey);
 	REGISTER_GETTER_SETTER(c,shiftKey);
+	REGISTER_GETTER_SETTER(c,delta);
 }
 
 ASFUNCTIONBODY(MouseEvent,_constructor)
@@ -336,7 +338,8 @@ ASFUNCTIONBODY(MouseEvent,_constructor)
 	if(argslen>=10)
 		if (ArgumentConversion<bool>::toConcrete(args[9]))
 			th->modifiers |= GDK_BUTTON1_MASK;
-	// TODO: args[10] = delta
+	if(argslen>=11)
+		th->delta=args[10]->toInt();
 	// TODO: args[11] = command
 	if(argslen>=13)
 		if (ArgumentConversion<bool>::toConcrete(args[12]))
@@ -351,6 +354,7 @@ ASFUNCTIONBODY_GETTER(MouseEvent,localX);
 ASFUNCTIONBODY_GETTER(MouseEvent,localY);
 ASFUNCTIONBODY_GETTER(MouseEvent,stageX);
 ASFUNCTIONBODY_GETTER(MouseEvent,stageY);
+ASFUNCTIONBODY_GETTER_SETTER(MouseEvent,delta);
 
 ASFUNCTIONBODY(MouseEvent,_setter_localX)
 {

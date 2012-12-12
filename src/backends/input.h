@@ -77,6 +77,7 @@ private:
 	void handleMouseDoubleClick(uint32_t x, uint32_t y, unsigned int buttonState);
 	void handleMouseUp(uint32_t x, uint32_t y, unsigned int buttonState);
 	void handleMouseMove(uint32_t x, uint32_t y, unsigned int buttonState);
+	void handleScrollEvent(uint32_t x, uint32_t y, GdkScrollDirection direction, unsigned int buttonState);
 
 	void initKeyTable();
 	bool handleKeyboardShortcuts(const GdkEventKey *keyevent);

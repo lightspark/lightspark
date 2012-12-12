@@ -133,6 +133,14 @@ bool InputThread::worker(GdkEvent *event)
 			ret=TRUE;
 			break;
 		}
+		case GDK_SCROLL:
+		{
+			int stageX, stageY;
+			m_sys->windowToStageCoordinates(event->scroll.x,event->scroll.y,stageX,stageY);
+			handleScrollEvent(stageX,stageY,event->scroll.direction,event->scroll.state);
+			ret=TRUE;
+			break;
+		}
 		default:
 //#ifdef EXPENSIVE_DEBUG
 //			LOG(LOG_INFO, "GDKTYPE " << event->type);
@@ -261,6 +269,27 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, unsigned int buttonSta
 			currentMouseOver = selected;
 		}
 	}
+}
+
+void InputThread::handleScrollEvent(uint32_t x, uint32_t y, GdkScrollDirection direction, unsigned int buttonState)
+{
+	if(m_sys->currentVm == NULL)
+		return;
+
+	int delta;
+	if(direction==GDK_SCROLL_UP)
+		delta = 1;
+	else if(direction==GDK_SCROLL_DOWN)
+		delta = -1;
+	else
+		return;
+
+	Locker locker(mutexListeners);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
+	number_t localX, localY;
+	selected->globalToLocal(x,y,localX,localY);
+	m_sys->currentVm->addEvent(selected,
+		_MR(Class<MouseEvent>::getInstanceS("mouseWheel",localX,localY,true,buttonState,NullRef,delta)));
 }
 
 void InputThread::initKeyTable()

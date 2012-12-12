@@ -257,7 +257,7 @@ public:
 	MouseEvent(Class_base* c);
 	MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
 		   bool b=true, unsigned int buttonState=0,
-		   _NR<InteractiveObject> relObj = NullRef);
+		   _NR<InteractiveObject> relObj = NullRef, int32_t delta=1);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void setTarget(_NR<ASObject> t);
@@ -267,6 +267,7 @@ public:
 	ASFUNCTION_GETTER_SETTER(buttonDown);
 	ASFUNCTION_GETTER_SETTER(controlKey);
 	ASFUNCTION_GETTER_SETTER(ctrlKey);
+	ASPROPERTY_GETTER_SETTER(int32_t,delta);
 	ASPROPERTY_GETTER_SETTER(number_t,localX);
 	ASPROPERTY_GETTER_SETTER(number_t,localY);
 	ASFUNCTION_GETTER_SETTER(shiftKey);

@@ -778,6 +778,8 @@ ASFUNCTIONBODY(ASString,replace)
 			prevsubstring += ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0]);
 			ret->data.replace_bytes(ovector[0],ovector[1]-ovector[0],replaceWithTmp);
 			offset=ovector[0]+replaceWithTmp.numBytes();
+			if (ovector[0] == ovector[1])
+				offset+=1;
 			retDiff+=replaceWithTmp.numBytes()-(ovector[1]-ovector[0]);
 		}
 		while(re->global);

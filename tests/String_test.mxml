@@ -74,6 +74,9 @@
 		Tests.assertArrayEquals(["bl","bl","b",8,"replaceable"], callbackArgs[1],
 			"replace(): global regexp replace with capturing groups with function callback arguments", false);
 
+		ret2 = str.replace(/\s*/g, "-");
+		Tests.assertEquals("-r-e-p-l-a-c-e-a-b-l-e-", ret2, "replace(): whitespace", true);
+
 		//Split tests
 		str = new String("splittable");
 		var ret3:Array = str.split("l");

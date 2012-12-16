@@ -278,9 +278,9 @@ std::list<T*> *SecurityManager::searchPolicyFiles(const URLInfo& url,
 	{
 		LOG(LOG_INFO, _("SECURITY: Master policy file is loaded and valid (") << url << ")");
 
-		PolicySiteControl::METAPOLICY siteControl = master->getSiteControl()->getPermittedPolicies();
+		PolicyFile::METAPOLICY siteControl = master->getMetaPolicy();
 		//Master defines no policy files are allowed at all
-		if(siteControl == PolicySiteControl::NONE)
+		if(siteControl == PolicyFile::NONE)
 		{
 			LOG(LOG_INFO, _("SECURITY: DISALLOWED: Master policy file disallows policy files"));
 			delete result;
@@ -290,7 +290,7 @@ std::list<T*> *SecurityManager::searchPolicyFiles(const URLInfo& url,
 		result->push_back(master);
 
 		//Non-master policy files are allowed
-		if(siteControl != PolicySiteControl::MASTER_ONLY)
+		if(siteControl != PolicyFile::MASTER_ONLY)
 		{
 			LOG(LOG_INFO, _("SECURITY: Searching for loaded non-master policy files (") <<
 					loadedFiles.count(url.getHostname()) << ")");
@@ -395,9 +395,7 @@ SocketPFileList* SecurityManager::searchSocketPolicyFiles(const URLInfo& url, bo
 	//The target port is checked last if allowed
 	if(master->isLoaded() && master->isValid() && (result != NULL))
 	{
-		PolicySiteControl::METAPOLICY siteControl = master->getSiteControl()->getPermittedPolicies();
-
-		if (siteControl == PolicySiteControl::ALL)
+		if (master->getMetaPolicy() == PolicyFile::ALL)
 		{
 			SocketPolicyFile* destination = getSocketPolicyFileByURL(url);
 			if (destination == NULL)
@@ -768,6 +766,9 @@ PolicyFile::~PolicyFile()
 	for(list<PolicyAllowAccessFrom*>::iterator i = allowAccessFrom.begin();
 			i != allowAccessFrom.end(); ++i)
 		delete (*i);
+
+	if (siteControl)
+		delete siteControl;
 }
 
 /**
@@ -822,7 +823,7 @@ void PolicyFile::load()
 			//No more parsing is needed if this site-control entry specifies that
 			//no policy files are allowed
 			if (elementType == CrossDomainPolicy::SITE_CONTROL && isMaster() && 
-			    siteControl->getPermittedPolicies() == PolicySiteControl::NONE)
+			    getMetaPolicy() == PolicyFile::NONE)
 			{
 				break;
 			}
@@ -836,12 +837,8 @@ void PolicyFile::load()
 
 		if(isMaster())
 		{
-			//Set siteControl to the default value if it isn't set before and we are a master file
-			if(siteControl == NULL)
-				siteControl = new PolicySiteControl(this, "");
-
 			//Ignore this file if the site control policy is "none"
-			if(siteControl->getPermittedPolicies() == PolicySiteControl::NONE)
+			if(getMetaPolicy() == PolicyFile::NONE)
 				ignore = true;
 
 			valid = checkSiteControlValidity();
@@ -863,12 +860,47 @@ void PolicyFile::handlePolicyElement(CrossDomainPolicy::ELEMENT& elementType,
 {
 	if(elementType == CrossDomainPolicy::SITE_CONTROL)
 	{
-		siteControl = new PolicySiteControl(this, parser.getPermittedPolicies());
+		if (siteControl)
+		{
+			// From spec: If site-control is defined
+			// multiple times, "none" takes preference.
+			if (getMetaPolicy() == NONE)
+				return;
+
+			delete siteControl;
+			siteControl = NULL;
+		}
+
+		siteControl = new PolicySiteControl(parser.getPermittedPolicies());
 	}
 	else if(elementType == CrossDomainPolicy::ALLOW_ACCESS_FROM)
 	{
 		allowAccessFrom.push_back(new PolicyAllowAccessFrom(this, 
 			parser.getDomain(), parser.getToPorts(), parser.getSecure(), parser.getSecureSpecified()));
+	}
+}
+
+PolicyFile::METAPOLICY PolicyFile::getMetaPolicy()
+{
+	if (!isMaster())
+	{
+		// Only the master can have site-control
+		return PolicyFile::NONE;
+	}
+	else if (siteControl)
+	{
+		return siteControl->getPermittedPolicies();
+	}
+	else if (isValid() && isLoaded())
+	{
+		// Policy file is loaded but does not contain
+		// site-control tag
+		return PolicySiteControl::defaultSitePolicy(getType());
+	}
+	else
+	{
+		// Policy file is invalid, deny everything
+		return PolicyFile::NONE;
 	}
 }
 
@@ -935,7 +967,7 @@ URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
  *
  * \return \c true if this policy file is a master policy file, otherwise \c false
  */
-bool URLPolicyFile::isMaster()
+bool URLPolicyFile::isMaster() const
 {
 	return url.getPath() == "/crossdomain.xml";
 }
@@ -948,14 +980,14 @@ bool URLPolicyFile::isIgnoredByMaster()
 		URLPolicyFile* master = getMasterPolicyFile();
 		getSys()->securityManager->loadURLPolicyFile(master);
 		//Master policy file found and valid and has a site-control entry
-		if(master->isValid() && master->getSiteControl() != NULL)
+		if(master->isValid())
 		{
-			PolicySiteControl::METAPOLICY permittedPolicies = master->getSiteControl()->getPermittedPolicies();
+			PolicyFile::METAPOLICY permittedPolicies = master->getMetaPolicy();
 			//For all types: master-only, none
-			if(permittedPolicies == PolicySiteControl::MASTER_ONLY || permittedPolicies == PolicySiteControl::NONE)
+			if(permittedPolicies == PolicyFile::MASTER_ONLY || permittedPolicies == PolicyFile::NONE)
 				return true;
 			//Only for FTP: by-ftp-filename
-			else if(subtype == FTP && permittedPolicies == PolicySiteControl::BY_FTP_FILENAME && 
+			else if(subtype == FTP && permittedPolicies == PolicyFile::BY_FTP_FILENAME && 
 					url.getPathFile() != "crossdomain.xml")
 				return true;
 		}
@@ -1008,9 +1040,9 @@ bool URLPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 		//If the site-control policy of the master policy file is by-content-type, only policy files with
 		//content-type = text/x-cross-domain-policy are allowed.
 		URLPolicyFile* master = getMasterPolicyFile();
-		if(master->isValid() && master->getSiteControl() != NULL &&
+		if(master->isValid() &&
 				(subtype == HTTP || subtype == HTTPS) &&
-				master->getSiteControl()->getPermittedPolicies() == PolicySiteControl::BY_CONTENT_TYPE &&
+				master->getMetaPolicy() == PolicyFile::BY_CONTENT_TYPE &&
 				contentType != "text/x-cross-domain-policy")
 		{
 			LOG(LOG_INFO, _("SECURITY: Policy file content-type isn't strict, marking invalid"));
@@ -1049,11 +1081,11 @@ bool URLPolicyFile::checkSiteControlValidity()
 {
 	//by-ftp-filename only applies to FTP
 	if((subtype == HTTP || subtype == HTTPS) && 
-	   siteControl->getPermittedPolicies() == PolicySiteControl::BY_FTP_FILENAME)
+	   getMetaPolicy() == PolicyFile::BY_FTP_FILENAME)
 		return false;
 	//by-content-type only applies to HTTP(S)
 	else if(subtype == FTP && 
-		siteControl->getPermittedPolicies() == PolicySiteControl::BY_CONTENT_TYPE)
+		getMetaPolicy() == PolicyFile::BY_CONTENT_TYPE)
 		return false;
 
 	return true;
@@ -1184,7 +1216,7 @@ bool SocketPolicyFile::allowsAccessFrom(const URLInfo& requestingUrl, const URLI
  *
  * \return \c true if this policy file is a master policy file, otherwise \c false
  */
-bool SocketPolicyFile::isMaster()
+bool SocketPolicyFile::isMaster() const
 {
 	return url.getPort() == MASTER_PORT;
 }
@@ -1213,11 +1245,11 @@ bool SocketPolicyFile::isIgnoredByMaster()
 		SocketPolicyFile* master = getMasterPolicyFile();
 		getSys()->securityManager->loadSocketPolicyFile(master);
 		//Master policy file found and valid and has a site-control entry
-		if(master->isValid() && master->getSiteControl() != NULL)
+		if(master->isValid())
 		{
-			PolicySiteControl::METAPOLICY permittedPolicies = master->getSiteControl()->getPermittedPolicies();
-			if(permittedPolicies == PolicySiteControl::MASTER_ONLY || 
-			   permittedPolicies == PolicySiteControl::NONE)
+			PolicyFile::METAPOLICY permittedPolicies = master->getMetaPolicy();
+			if(permittedPolicies == PolicyFile::MASTER_ONLY || 
+			   permittedPolicies == PolicyFile::NONE)
 				return true;
 		}
 	}
@@ -1304,23 +1336,31 @@ void SocketPolicyFile::getParserType(CrossDomainPolicy::POLICYFILETYPE& parserTy
  * \param _permittedPolicies The value of the permitted-cross-domain-policies attribute.
  * \see URLPolicyFile::load()
  */
-PolicySiteControl::PolicySiteControl(PolicyFile* _file, const string _permittedPolicies):
-	file(_file)
+PolicySiteControl::PolicySiteControl(const string _permittedPolicies)
 {
 	if(_permittedPolicies == "all")
-		permittedPolicies = ALL;
+		permittedPolicies = PolicyFile::ALL;
 	else if(_permittedPolicies == "by-content-type")
-		permittedPolicies = BY_CONTENT_TYPE;
+		permittedPolicies = PolicyFile::BY_CONTENT_TYPE;
 	else if(_permittedPolicies == "by-ftp-filename")
-		permittedPolicies = BY_FTP_FILENAME;
+		permittedPolicies = PolicyFile::BY_FTP_FILENAME;
 	else if(_permittedPolicies == "master-only")
-		permittedPolicies = MASTER_ONLY;
+		permittedPolicies = PolicyFile::MASTER_ONLY;
 	else if(_permittedPolicies == "none")
-		permittedPolicies = NONE;
-	else if(file->getType() == PolicyFile::SOCKET) //Default for SOCKET
-		permittedPolicies = ALL;
-	else //Default for everything except SOCKET
-		permittedPolicies = MASTER_ONLY;
+		permittedPolicies = PolicyFile::NONE;
+	else
+	{
+		LOG(LOG_ERROR, _("SECURITY: Unknown site-policy value: ") << _permittedPolicies);
+		permittedPolicies = PolicyFile::NONE;
+	}
+}
+
+PolicyFile::METAPOLICY PolicySiteControl::defaultSitePolicy(PolicyFile::TYPE policyFileType)
+{
+	if (policyFileType == PolicyFile::SOCKET)
+		return PolicyFile::ALL;
+	else
+		return PolicyFile::MASTER_ONLY;
 }
 
 /**

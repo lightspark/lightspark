@@ -196,6 +196,15 @@ class PolicyFile
 	friend class SecurityManager;
 public:
 	enum TYPE { URL, SOCKET };
+
+	enum METAPOLICY { 
+		ALL, //All types of policy files are allowed (default for SOCKET)
+		BY_CONTENT_TYPE, //Only policy files served with 'Content-Type: text/x-cross-domain-policy' are allowed (only for HTTP)
+		BY_FTP_FILENAME, //Only policy files with 'crossdomain.xml' as filename are allowed (only for FTP)
+		MASTER_ONLY, //Only this master policy file is allowed (default for HTTP/HTTPS/FTP)
+		NONE, //No policy files are allowed, including this master policy file
+		NONE_THIS_RESPONSE //Don't use this policy file, provided as a HTTP header only (TODO: support this type)
+	};
 private:
 	URLInfo originalURL;
 protected:
@@ -238,13 +247,13 @@ public:
 
 	bool isValid() const { return valid; }
 	bool isIgnored() const { return ignore; }
-	virtual bool isMaster()=0;
+	virtual bool isMaster() const = 0;
 	bool isLoaded() const { return loaded; }
 
 	//Get the master policy file controlling this one
 	//virtual PolicyFile* getMasterPolicyFile()=0;
 
-	const PolicySiteControl* getSiteControl() const { return siteControl ;}
+	METAPOLICY getMetaPolicy();
 
 	//Is access to the policy file URL allowed by this policy file?
 	virtual bool allowsAccessFrom(const URLInfo& url, const URLInfo& to) = 0;
@@ -272,7 +281,7 @@ public:
 	SUBTYPE getSubtype() const { return subtype; }
 
 	//If strict is true, the policy will be loaded first to see if it isn't redirected
-	bool isMaster();
+	bool isMaster() const;
 	//Get the master policy file controlling this one
 	URLPolicyFile* getMasterPolicyFile();
 
@@ -295,7 +304,7 @@ public:
 	static const char *MASTER_PORT_URL;
 
 	//If strict is true, the policy will be loaded first to see if it isn't redirected
-	bool isMaster();
+	bool isMaster() const;
 
 	//Get the master policy file controlling this one
 	SocketPolicyFile* getMasterPolicyFile();
@@ -308,25 +317,12 @@ public:
 //Only valid inside master policy files
 class PolicySiteControl
 {
-	friend class PolicyFile;
-	friend class URLPolicyFile;
-	friend class SocketPolicyFile;
-public:
-	enum METAPOLICY { 
-		ALL, //All types of policy files are allowed (default for SOCKET)
-		BY_CONTENT_TYPE, //Only policy files served with 'Content-Type: text/x-cross-domain-policy' are allowed (only for HTTP)
-		BY_FTP_FILENAME, //Only policy files with 'crossdomain.xml' as filename are allowed (only for FTP)
-		MASTER_ONLY, //Only this master policy file is allowed (default for HTTP/HTTPS/FTP)
-		NONE, //No policy files are allowed, including this master policy file
-		NONE_THIS_RESPONSE //Don't use this policy file, provided as a HTTP header only (TODO: support this type)
-	};
 private:
-	PolicyFile* file;
-	METAPOLICY permittedPolicies; //Required
-protected:
-	PolicySiteControl(PolicyFile* _file, const std::string _permittedPolicies="");
+	PolicyFile::METAPOLICY permittedPolicies; //Required
 public:
-	METAPOLICY getPermittedPolicies() const { return permittedPolicies; }
+	PolicySiteControl(const std::string _permittedPolicies);
+	PolicyFile::METAPOLICY getPermittedPolicies() const { return permittedPolicies; }
+	static PolicyFile::METAPOLICY defaultSitePolicy(PolicyFile::TYPE policyFileType);
 };
 
 class PortRange

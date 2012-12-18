@@ -150,6 +150,11 @@
 		ret5 = str.slice(-4, -2);
 		Tests.assertEquals("ab", ret5, "slice(): negative parameters", true);
 
+		//indexOf tests
+		str = "abc";
+		Tests.assertEquals(str.indexOf("b", -10), 1, "indexOf() negative offset");
+		Tests.assertEquals(str.indexOf("b", 3), -1, "indexOf() offset too big");
+
 		//lastIndexOf tests
 		var e:String="abcdb";
 		Tests.assertEquals(e.lastIndexOf("b"), 4, "lastIndexOf() no offset");

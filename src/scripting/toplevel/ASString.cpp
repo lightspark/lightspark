@@ -611,6 +611,7 @@ ASFUNCTIONBODY(ASString,indexOf)
 	int startIndex=0;
 	if(argslen>1)
 		startIndex=args[1]->toInt();
+	startIndex = imin(imax(startIndex, 0), data.numChars());
 
 	size_t pos = data.find(arg0.raw_buf(), startIndex);
 	if(pos == data.npos)
@@ -632,6 +633,8 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 			return abstract_i(-1);
 		startIndex = i;
 	}
+
+	startIndex = imin(startIndex, data.numChars());
 
 	size_t pos=data.rfind(val.raw_buf(), startIndex);
 	if(pos==data.npos)

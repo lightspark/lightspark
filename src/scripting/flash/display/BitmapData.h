@@ -33,8 +33,8 @@ class DisplayObject;
 class BitmapData: public ASObject, public BitmapContainer, public IBitmapDrawable
 {
 	bool disposed;
-	uint32_t getPixelPriv(uint32_t x, uint32_t y);
-	void setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha);
+	uint32_t getPixelPriv(int32_t x, int32_t y);
+	void setPixelPriv(int32_t x, int32_t y, uint32_t color, bool setAlpha);
 	//Avoid cycles by not using automatic references
 	//Bitmap will take care of removing itself when needed
 	std::set<Bitmap*> users;

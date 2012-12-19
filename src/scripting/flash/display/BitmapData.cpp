@@ -215,9 +215,9 @@ ASFUNCTIONBODY(BitmapData,draw)
 	return NULL;
 }
 
-uint32_t BitmapData::getPixelPriv(uint32_t x, uint32_t y)
+uint32_t BitmapData::getPixelPriv(int32_t x, int32_t y)
 {
-	if ((int)x >= width || (int)y >= height)
+	if (x < 0 || x >= width || y < 0 || y >= height)
 		return 0;
 
 	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
@@ -233,8 +233,6 @@ ASFUNCTIONBODY(BitmapData,getPixel)
 	int32_t x;
 	int32_t y;
 	ARG_UNPACK(x)(y);
-	if(x<0 || x>th->width || y<0 || y>th->width)
-		return abstract_ui(0);
 
 	uint32_t pix=th->getPixelPriv(x, y);
 	return abstract_ui(pix & 0xffffff);
@@ -248,16 +246,14 @@ ASFUNCTIONBODY(BitmapData,getPixel32)
 	int32_t x;
 	int32_t y;
 	ARG_UNPACK(x)(y);
-	if(x<0 || x>th->width || y<0 || y>th->width)
-		return abstract_ui(0);
 
 	uint32_t pix=th->getPixelPriv(x, y);
 	return abstract_ui(pix);
 }
 
-void BitmapData::setPixelPriv(uint32_t x, uint32_t y, uint32_t color, bool setAlpha)
+void BitmapData::setPixelPriv(int32_t x, int32_t y, uint32_t color, bool setAlpha)
 {
-	if ((int)x >= width || (int)y >= height)
+	if (x<0 || x >= width || y<0 || y >= height)
 		return;
 
 	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
@@ -273,10 +269,11 @@ ASFUNCTIONBODY(BitmapData,setPixel)
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
 		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
-	uint32_t x;
-	uint32_t y;
+	int32_t x;
+	int32_t y;
 	uint32_t color;
 	ARG_UNPACK(x)(y)(color);
+
 	th->setPixelPriv(x, y, color, false);
 	return NULL;
 }
@@ -286,10 +283,11 @@ ASFUNCTIONBODY(BitmapData,setPixel32)
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
 		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
-	uint32_t x;
-	uint32_t y;
+	int32_t x;
+	int32_t y;
 	uint32_t color;
 	ARG_UNPACK(x)(y)(color);
+
 	th->setPixelPriv(x, y, color, th->transparent);
 	return NULL;
 }

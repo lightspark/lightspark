@@ -1125,7 +1125,16 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 			return;
 		}
 
-		xmlpp::Element* child=node->add_child(getSys()->getStringFromUniqueId(name.name_s_id), ns_prefix);
+		xmlpp::Element* child = NULL;
+		try
+		{
+			child=node->add_child(getSys()->getStringFromUniqueId(name.name_s_id), ns_prefix);
+		}
+		catch (xmlpp::exception& e)
+		{
+			LOG(LOG_NOT_IMPLEMENTED, "Adding child node failed: " << e.what());
+			return;
+		}
 
 		child->add_child_text(o->toString());
 

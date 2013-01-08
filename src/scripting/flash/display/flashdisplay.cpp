@@ -372,8 +372,8 @@ ASFUNCTIONBODY(Loader,close)
 {
 	Loader* th=static_cast<Loader*>(obj);
  	SpinlockLocker l(th->spinlock);
-	if(th->job)
-		th->job->threadAbort();
+	for (auto j=th->jobs.begin(); j!=th->jobs.end(); j++)
+		(*j)->threadAbort();
 
 	return NULL;
 }
@@ -436,8 +436,11 @@ ASFUNCTIONBODY(Loader,load)
 	th->incRef();
 	r->incRef();
 	LoaderThread *thread=new LoaderThread(_MR(r), _MR(th));
+
+	SpinlockLocker l(th->spinlock);
+	th->jobs.push_back(thread);
 	getSys()->addJob(thread);
-	th->job=thread;
+
 	return NULL;
 }
 
@@ -464,8 +467,9 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	{
 		th->incRef();
 		LoaderThread *thread=new LoaderThread(_MR(bytes), _MR(th));
+		SpinlockLocker l(th->spinlock);
+		th->jobs.push_back(thread);
 		getSys()->addJob(thread);
-		th->job=thread;
 	}
 	else
 		LOG(LOG_INFO, "Empty ByteArray passed to Loader.loadBytes");
@@ -484,8 +488,8 @@ void Loader::unload()
 	_NR<DisplayObject> content_copy = NullRef;
 	{
 		SpinlockLocker l(spinlock);
-		if(job)
-			job->threadAbort();
+		for (auto j=jobs.begin(); j!=jobs.end(); j++)
+			(*j)->threadAbort();
 
 		content_copy=content;
 		content.reset();
@@ -512,7 +516,7 @@ void Loader::finalize()
 	contentLoaderInfo.reset();
 }
 
-Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),job(NULL),contentLoaderInfo(NullRef),loaded(false)
+Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),contentLoaderInfo(NullRef),loaded(false)
 {
 	incRef();
 	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(this)));
@@ -536,14 +540,8 @@ void Loader::sinit(Class_base* c)
 
 void Loader::threadFinished(IThreadJob* finishedJob)
 {
-	// If this is the current job, we are done. If these are not
-	// equal, finishedJob is a job that was cancelled when load()
-	// was called again, and we have to still wait for the correct
-	// job.
 	SpinlockLocker l(spinlock);
-	if(finishedJob==job)
-		job=NULL;
-
+	jobs.remove(finishedJob);
 	delete finishedJob;
 }
 

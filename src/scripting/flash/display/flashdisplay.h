@@ -337,7 +337,9 @@ class Loader: public DisplayObjectContainer, public IDownloaderThreadListener
 private:
 	mutable Spinlock spinlock;
 	_NR<DisplayObject> content;
-	IThreadJob *job;
+	// There can be multiple jobs, one active and aborted ones
+	// that have not yet terminated
+	std::list<IThreadJob *> jobs;
 	URLInfo url;
 	_NR<LoaderInfo> contentLoaderInfo;
 	void unload();

@@ -279,6 +279,14 @@ void ABCVm::registerClasses()
 			Class<ASObject>::getStubClass(QName("ColorMatrixFilter","flash.filters")));
 	builtin->registerBuiltin("BlurFilter","flash.filters",
 			Class<ASObject>::getStubClass(QName("BlurFilter","flash.filters")));
+	builtin->registerBuiltin("ConvolutionFilter","flash.filters",
+			Class<ASObject>::getStubClass(QName("ConvolutionFilter","flash.filters")));
+	builtin->registerBuiltin("DisplacementMapFilter","flash.filters",
+			Class<ASObject>::getStubClass(QName("DisplacementMapFilter","flash.filters")));
+	builtin->registerBuiltin("GradientBevelFilter","flash.filters",
+			Class<ASObject>::getStubClass(QName("GradientBevelFilter","flash.filters")));
+	builtin->registerBuiltin("ShaderFilter","flash.filters",
+			Class<ASObject>::getStubClass(QName("ShaderFilter","flash.filters")));
 
 	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef());
 	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef());

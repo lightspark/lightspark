@@ -1019,7 +1019,7 @@ void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDr
 {
 	const DisplayObject* cur=this;
 	bool gatherMasks = true;
-	while(cur!=target)
+	while(cur && cur!=target)
 	{
 		totalMatrix=cur->getMatrix().multiplyMatrix(totalMatrix);
 		//Get an IDrawable for all the hierarchy of each mask.

@@ -646,27 +646,14 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	_NR<ASObject> target = e->getVariableByMultiname("target", {""});
 	if(!target.isNull() && !target->is<Null>() && !target->is<Undefined>())
 	{
-		//Object must be cloned, closing is implemented with the clone AS method
-		multiname cloneName(NULL);
-		cloneName.name_type=multiname::NAME_STRING;
-		cloneName.name_s_id=getSys()->getUniqueStringId("clone");
-		cloneName.ns.push_back(nsNameAndKind("",NAMESPACE));
-
-		_NR<ASObject> clone=e->getVariableByMultiname(cloneName);
+		//Object must be cloned, cloning is implemented with the clone AS method
+		_NR<ASObject> cloned = e->executeASMethod("clone", {""}, NULL, 0);
 		//Clone always exists since it's implemented in Event itself
-		assert(!clone.isNull());
-		IFunction* f = static_cast<IFunction*>(clone.getPtr());
-		e->incRef();
-		ASObject* funcRet=f->call(e.getPtr(),NULL,0);
-		//Verify that the returned object is actually an event
-		Event* newEvent=dynamic_cast<Event*>(funcRet);
-		if(newEvent==NULL)
-		{
-			if(funcRet)
-				funcRet->decRef();
+		if(!cloned->is<Event>())
 			return abstract_b(false);
-		}
-		e=_MR(newEvent);
+
+		cloned->incRef();
+		e = _MR(cloned->as<Event>());
 	}
 	if(!th->forcedTarget.isNull())
 		e->setTarget(th->forcedTarget);

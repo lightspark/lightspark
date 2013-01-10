@@ -345,6 +345,15 @@ public:
 	 */
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
 	virtual int32_t getVariableByMultiname_i(const multiname& name);
+	/* Simple getter interface for the common case */
+	_NR<ASObject> getVariableByMultiname(const tiny_string& name, std::list<tiny_string> namespaces);
+	/*
+	 * Execute a AS method on this object. Returns the value
+	 * returned by the function. One reference of each args[i] is
+	 * consumed. The method must exist, otherwise a TypeError is
+	 * thrown.
+	 */
+	_NR<ASObject> executeASMethod(const tiny_string& methodName, std::list<tiny_string> namespaces, ASObject* const* args, uint32_t num_args);
 	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
 	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)

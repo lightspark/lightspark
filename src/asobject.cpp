@@ -996,6 +996,33 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	}
 }
 
+_NR<ASObject> ASObject::getVariableByMultiname(const tiny_string& name, std::list<tiny_string> namespaces)
+{
+	multiname varName(NULL);
+	varName.name_type=multiname::NAME_STRING;
+	varName.name_s_id=getSys()->getUniqueStringId(name);
+	for (auto ns=namespaces.begin(); ns!=namespaces.end(); ns++)
+		varName.ns.push_back(nsNameAndKind(*ns,NAMESPACE));
+	varName.isAttribute = false;
+
+	return getVariableByMultiname(varName,SKIP_IMPL);
+}
+
+_NR<ASObject> ASObject::executeASMethod(const tiny_string& methodName,
+					std::list<tiny_string> namespaces,
+					ASObject* const* args,
+					uint32_t num_args)
+{
+	_NR<ASObject> o = getVariableByMultiname(methodName, namespaces);
+	if (o.isNull() || !o->is<IFunction>())
+		throw Class<TypeError>::getInstanceS("Error #1006: Call attempted on an object that is not a function.");
+	IFunction* f=o->as<IFunction>();
+
+	incRef();
+	ASObject *ret=f->call(this,args,num_args);
+	return _MNR(ret);
+}
+
 void ASObject::check() const
 {
 	//Put here a bunch of safety check on the object

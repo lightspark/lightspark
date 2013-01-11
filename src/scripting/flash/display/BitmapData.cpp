@@ -327,10 +327,10 @@ ASFUNCTIONBODY(BitmapData,fillRect)
 		rectH+=rectY;
 		rectY = 0;
 	}
-	if(rectW > th->width)
-		rectW = th->width;
-	if(rectH > th->height)
-		rectH = th->height;
+	if(rectX + rectW > th->width)
+		rectW = th->width - rectX;
+	if(rectY + rectH > th->height)
+		rectH = th->height - rectY;
 
 	for(int32_t i=0;i<rectH;i++)
 	{

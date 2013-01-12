@@ -630,15 +630,16 @@ variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type
 void variable::setVar(ASObject* v)
 {
 	//Resolve the typename if we have one
-	if(!(traitState&TYPE_RESOLVED) && traitTypemname)
+	//currentCallContext may be NULL when inserting legacy
+	//children, which is done outisde any ABC context
+	if(!(traitState&TYPE_RESOLVED) && traitTypemname && getVm()->currentCallContext)
 	{
 		type = Type::getTypeFromMultiname(traitTypemname, getVm()->currentCallContext->context);
 		assert(type);
-		if(type)
-			traitState=TYPE_RESOLVED;
+		traitState=TYPE_RESOLVED;
 	}
 
-	if(type)
+	if((traitState&TYPE_RESOLVED) && type)
 		v = type->coerce(v);
 
 	if(var)

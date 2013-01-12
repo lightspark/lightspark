@@ -1441,8 +1441,16 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 
 ASObject* DefineSoundTag::instance(Class_base* c) const
 {
+	Class_base* retClass=NULL;
+	if (c)
+		retClass=c;
+	else if(bindedTo)
+		retClass=bindedTo;
+	else
+		retClass=Class<Sound>::getClass();
+
 	//TODO: use the tag sound data
-	return Class<Sound>::getInstanceS(c);
+	return new (retClass->memoryAccount) Sound(retClass);
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):ControlTag(h)

@@ -1298,15 +1298,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=getSys()->getUniqueStringId(obj->name);
 		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		//TODO: discuss the following comment with aajanki
-		// If this function is called by PlaceObject tag
-		// before the properties are initialized, we need to
-		// initialize the property here to make sure that it
-		// will be a declared property and not a dynamic one.
-		if(hasPropertyByMultiname(objName,true,false))
-			setVariableByMultiname(objName,obj,ASObject::CONST_NOT_ALLOWED);
-		else
-			setVariableByQName(objName.name_s_id,objName.ns[0],obj,DYNAMIC_TRAIT);
+		setVariableByMultiname(objName,obj,ASObject::CONST_NOT_ALLOWED);
 	}
 
 	depthToLegacyChild.insert(boost::bimap<uint32_t,DisplayObject*>::value_type(depth,obj));

@@ -648,7 +648,9 @@ StreamDecoder::~StreamDecoder()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s):audioFound(false),videoFound(false),stream(s),formatCtx(NULL),avioContext(NULL)
+FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
+ : audioFound(false),videoFound(false),stream(s),formatCtx(NULL),audioIndex(-1),
+   videoIndex(-1),customAudioDecoder(NULL),customVideoDecoder(NULL),avioContext(NULL)
 {
 	valid=false;
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
@@ -766,7 +768,7 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 	//Should use dts
 	uint32_t mtime=pkt.dts*1000*time_base.num/time_base.den;
 
-	if(pkt.stream_index==(int)audioIndex)
+	if(customAudioDecoder && pkt.stream_index==(int)audioIndex)
 		customAudioDecoder->decodePacket(&pkt, mtime);
 	else
 		customVideoDecoder->decodePacket(&pkt, mtime);

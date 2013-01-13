@@ -1214,7 +1214,7 @@ void NetStream::execute()
 	//The downloader hasn't failed yet at this point
 
 	istream s(downloader);
-	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	s.exceptions(istream::goodbit);
 
 	ThreadProfile* profile=getSys()->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");

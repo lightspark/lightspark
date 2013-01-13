@@ -1159,7 +1159,8 @@ void NetStream::tick()
 	else
 	{
 		streamTime+=1000/frameRate;
-		audioDecoder->skipAll();
+		if (audioDecoder)
+			audioDecoder->skipAll();
 	}
 	videoDecoder->skipUntil(streamTime);
 	//The next line ensures that the downloader will not be destroyed before the upload jobs are fenced
@@ -1173,11 +1174,10 @@ void NetStream::tickFence()
 
 bool NetStream::isReady() const
 {
-	if(videoDecoder==NULL || audioDecoder==NULL)
-		return false;
-
-	bool ret=videoDecoder->isValid() && audioDecoder->isValid();
-	return ret;
+	//Must have videoDecoder, but audioDecoder is optional (in
+	//case the video doesn't have audio)
+	return videoDecoder && videoDecoder->isValid() && 
+		(!audioDecoder || audioDecoder->isValid());
 }
 
 bool NetStream::lockIfReady()

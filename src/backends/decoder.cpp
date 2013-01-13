@@ -711,7 +711,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
 			videoFound=true;
 			videoIndex=(int32_t)i;
 		}
-		else if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO && audioFound==false)
+		else if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO && formatCtx->streams[i]->codec->codec_id!=CODEC_ID_NONE && audioFound==false)
 		{
 			audioFound=true;
 			audioIndex=(int32_t)i;

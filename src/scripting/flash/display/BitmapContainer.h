@@ -44,7 +44,7 @@ public:
 	bool fromJPEG(uint8_t* data, int len, const uint8_t *tablesData=NULL, int tablesLen=0);
 	bool fromJPEG(std::istream& s);
 	bool fromPNG(std::istream& s);
-	bool fromPalette(uint8_t* inData, uint32_t width, uint32_t height, uint8_t* palette, unsigned numColors);
+	bool fromPalette(uint8_t* inData, uint32_t width, uint32_t height, uint32_t inStride, uint8_t* palette, unsigned numColors, unsigned paletteBPP);
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 	void reset();

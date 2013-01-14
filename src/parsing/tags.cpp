@@ -747,15 +747,26 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 	else if (BitmapFormat == LOSSLESS_BITMAP_PALETTE)
 	{
 		unsigned numColors = BitmapColorTableSize+1;
-		
-		size_t size = 3*numColors + BitmapWidth*BitmapHeight;
+
+		/* Bitmap rows are 32 bit aligned */
+		uint32_t stride = BitmapWidth;
+		while (stride % 4 != 0)
+			stride++;
+
+		unsigned int paletteBPP;
+		if (version == 1)
+			paletteBPP = 3;
+		else
+			paletteBPP = 4;
+
+		size_t size = paletteBPP*numColors + stride*BitmapHeight;
 		uint8_t* inData=new(nothrow) uint8_t[size];
 		zfstream.read((char*)inData,size);
 		assert(!zfstream.fail() && !zfstream.eof());
 
 		uint8_t *palette = inData;
-		uint8_t *pixelData = inData + 3*numColors;
-		fromPalette(pixelData, BitmapWidth, BitmapHeight, palette, numColors);
+		uint8_t *pixelData = inData + paletteBPP*numColors;
+		fromPalette(pixelData, BitmapWidth, BitmapHeight, stride, palette, numColors, paletteBPP);
 		delete[] inData;
 	}
 	else

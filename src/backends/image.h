@@ -48,9 +48,11 @@ public:
 	static uint8_t* decodePNG(std::istream& str, uint32_t* width, uint32_t* height);
 	/* Convert paletted image into new[]'ed 24bit RGB image.
 	 * pixels array contains indexes to the palette, 1 byte per
-	 * index. Palette has numColors RGB values, 3 bytes per color.
+	 * index. Palette has numColors RGB(A) values, paletteBPP (==
+	 * 3 or 4) bytes per color. The alpha channel (present if
+	 * paletteBPP == 4) is ignored.
 	 */
-	static uint8_t* decodePalette(uint8_t* pixels, uint32_t width, uint32_t height, uint8_t* palette, unsigned int numColors);
+	static uint8_t* decodePalette(uint8_t* pixels, uint32_t width, uint32_t height, uint32_t stride, uint8_t* palette, unsigned int numColors, unsigned int paletteBPP);
 };
 
 }

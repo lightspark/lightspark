@@ -84,7 +84,7 @@ bool BitmapContainer::fromPNG(std::istream &s)
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
 }
 
-bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint8_t* palette, unsigned numColors)
+bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint32_t inStride, uint8_t* palette, unsigned numColors, unsigned paletteBPP)
 {
 	assert(data.empty());
 	if (!inData || !palette)
@@ -92,7 +92,7 @@ bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint8
 
 	width = w;
 	height = h;
-	uint8_t *rgb=ImageDecoder::decodePalette(inData, w, h, palette, numColors);
+	uint8_t *rgb=ImageDecoder::decodePalette(inData, w, h, inStride, palette, numColors, paletteBPP);
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
 }
 

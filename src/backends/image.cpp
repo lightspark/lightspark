@@ -164,6 +164,8 @@ uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, const uint8_t* table
 		tablesSrc = NULL;
 	}
 
+	*width = 0;
+	*height = 0;
 	uint8_t* decoded = decodeJPEGImpl(&src, tablesSrc, width, height, hasAlpha);
 	delete tablesSrc;
 	return decoded;

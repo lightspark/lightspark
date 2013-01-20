@@ -41,6 +41,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(toFixed);
+	ASFUNCTION(_valueOf);
 	tiny_string toString();
 	static tiny_string toString(number_t val);
 	static tiny_string toStringRadix(number_t val, int radix);

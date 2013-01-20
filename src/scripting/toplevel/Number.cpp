@@ -275,6 +275,7 @@ void Number::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toFixed",AS3,Class<IFunction>::getFunction(Number::toFixed),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(Number,_constructor)
@@ -325,6 +326,17 @@ ASFUNCTIONBODY(Number,toFixed)
 	if ( val < 0)
 		res = tiny_string::fromChar('-')+res;
 	return Class<ASString>::getInstanceS(res);
+}
+
+ASFUNCTIONBODY(Number,_valueOf)
+{
+	if(Class<Number>::getClass()->prototype->getObj() == obj)
+		return abstract_d(0.);
+
+	if(!obj->is<Number>())
+			throw Class<TypeError>::getInstanceS("");
+
+	return abstract_d(obj->as<Number>()->val);
 }
 
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

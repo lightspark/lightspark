@@ -48,6 +48,7 @@ public:
 	bool isEqual(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
+	ASFUNCTION(_valueOf);
 	std::string toDebugString() { return toString()+"i"; }
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

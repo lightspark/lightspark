@@ -48,6 +48,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
 	ASFUNCTION(_toString);
+	ASFUNCTION(_valueOf);
 	std::string toDebugString() { return toString()+"ui"; }
 	//CHECK: should this have a special serialization?
 };

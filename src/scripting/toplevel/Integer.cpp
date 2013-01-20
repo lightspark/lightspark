@@ -44,6 +44,17 @@ ASFUNCTIONBODY(Integer,_toString)
 	}
 }
 
+ASFUNCTIONBODY(Integer,_valueOf)
+{
+	if(Class<Integer>::getClass()->prototype->getObj() == obj)
+		return abstract_i(0);
+
+	if(!obj->is<Integer>())
+			throw Class<TypeError>::getInstanceS("");
+
+	return abstract_i(obj->as<Integer>()->val);
+}
+
 ASFUNCTIONBODY(Integer,_constructor)
 {
 	Integer* th=static_cast<Integer*>(obj);
@@ -185,6 +196,7 @@ void Integer::sinit(Class_base* c)
 	c->setVariableByQName("MAX_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
 }
 
 void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

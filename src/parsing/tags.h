@@ -337,16 +337,16 @@ public:
 	SoundStreamHead2Tag(RECORDHEADER h, std::istream& in);
 };
 
-class DefineButton2Tag: public DictionaryTag
+class DefineButtonTag: public DictionaryTag
 {
 private:
 	UI16_SWF ButtonId;
 	UB ReservedFlags;
-	UB TrackAsMenu;
+	bool TrackAsMenu;
 	UI16_SWF ActionOffset;
 	std::vector<BUTTONRECORD> Characters;
 public:
-	DefineButton2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
+	DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root);
 	virtual int getId() const { return ButtonId; }
 	ASObject* instance(Class_base* c=NULL) const;
 };

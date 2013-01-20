@@ -1009,7 +1009,6 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 {
-	assert_and_throw(v.buttonVersion==2);
 	BitStream bs(stream);
 
 	bs.discard(2);
@@ -1023,13 +1022,18 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 	if(v.isNull())
 		return stream;
 
-	stream >> v.CharacterID >> v.PlaceDepth >> v.PlaceMatrix >> v.ColorTransform;
+	stream >> v.CharacterID >> v.PlaceDepth >> v.PlaceMatrix;
 
-	if(v.ButtonHasFilterList)
+	if (v.buttonVersion==2)
+		stream >> v.ColorTransform;
+
+	if(v.ButtonHasFilterList && v.buttonVersion==2)
 		stream >> v.FilterList;
 
-	if(v.ButtonHasBlendMode)
+	if(v.ButtonHasBlendMode && v.buttonVersion==2)
 		stream >> v.BlendMode;
+	else
+		v.BlendMode = 0;
 
 	return stream;
 }

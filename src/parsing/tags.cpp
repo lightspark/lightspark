@@ -84,6 +84,9 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 		case 6:
 			ret=new DefineBitsTag(h,f,root);
 			break;
+		case 7:
+			ret=new DefineButtonTag(h,f,1,root);
+			break;
 		case 8:
 			ret=new JPEGTablesTag(h,f);
 			break;
@@ -136,7 +139,7 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 			ret=new DefineText2Tag(h,f,root);
 			break;
 		case 34:
-			ret=new DefineButton2Tag(h,f,root);
+			ret=new DefineButtonTag(h,f,2,root);
 			break;
 		case 35:
 			ret=new DefineBitsJPEG3Tag(h,f,root);
@@ -1286,15 +1289,23 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 		in >> NamedAnchor;
 }
 
-DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root)
+DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root):DictionaryTag(h,root)
 {
 	in >> ButtonId;
-	BitStream bs(in);
-	UB(7,bs);
-	TrackAsMenu=UB(1,bs);
-	in >> ActionOffset;
+	if (version > 1)
+	{
+		BitStream bs(in);
+		UB(7,bs);
+		TrackAsMenu=UB(1,bs);
+		in >> ActionOffset;
+	}
+	else
+	{
+		TrackAsMenu=false;
+		ActionOffset=0;
+	}
 
-	BUTTONRECORD br(2);
+	BUTTONRECORD br(version);
 
 	do
 	{
@@ -1305,11 +1316,11 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in,RootMovieCli
 	}
 	while(true);
 
-	if(ActionOffset)
-		LOG(LOG_NOT_IMPLEMENTED,"DefineButton2Tag: Actions are not supported");
+	if(ActionOffset || version == 1)
+		LOG(LOG_NOT_IMPLEMENTED,"DefineButton(2)Tag: Actions are not supported");
 }
 
-ASObject* DefineButton2Tag::instance(Class_base* c) const
+ASObject* DefineButtonTag::instance(Class_base* c) const
 {
 	DisplayObject* states[4] = {NULL, NULL, NULL, NULL};
 	bool isSprite[4] = {false, false, false, false};

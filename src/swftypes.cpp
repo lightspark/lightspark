@@ -889,7 +889,7 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveDeltaX(0),MoveDel
 		{
 			LineStyle=UB(parent->NumLineBits,bs)+p->lineOffset;
 		}
-		if(StateNewStyles)
+		if(StateNewStyles && parent->version >= 2)
 		{
 			SHAPEWITHSTYLE* ps=dynamic_cast<SHAPEWITHSTYLE*>(parent);
 			if(ps==NULL)

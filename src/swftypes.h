@@ -1066,12 +1066,14 @@ class SHAPE
 	friend std::istream& operator>>(std::istream& stream, SHAPE& v);
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
-	SHAPE():fillOffset(0),lineOffset(0){}
+	SHAPE(uint8_t v=0):fillOffset(0),lineOffset(0),version(v){}
 	virtual ~SHAPE(){};
 	UB NumFillBits;
 	UB NumLineBits;
 	unsigned int fillOffset;
 	unsigned int lineOffset;
+	const uint8_t version; /* version of the DefineShape tag, 0 if
+				* DefineFont or other tag */
 	std::vector<SHAPERECORD> ShapeRecords;
 };
 
@@ -1079,10 +1081,9 @@ class SHAPEWITHSTYLE : public SHAPE
 {
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
-	SHAPEWITHSTYLE(uint8_t v):FillStyles(v),LineStyles(v),version(v){}
+	SHAPEWITHSTYLE(uint8_t v):SHAPE(v),FillStyles(v),LineStyles(v){}
 	FILLSTYLEARRAY FillStyles;
 	LINESTYLEARRAY LineStyles;
-	const uint8_t version;
 };
 
 class CXFORMWITHALPHA

@@ -573,7 +573,7 @@ ASObject* DefineFont2Tag::instance(Class_base* c) const
 	return ret;
 }
 
-DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root)
+DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)
 {
 	LOG(LOG_TRACE,_("DefineFont3"));
 	in >> FontID;
@@ -594,6 +594,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		FontName.push_back(t);
 	}
 	in >> NumGlyphs;
+	streampos offsetReference = in.tellg();
 	if(FontFlagsWideOffsets)
 	{
 		UI32_SWF t;
@@ -624,11 +625,40 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 			CodeTableOffset=t;
 		}
 	}
+
 	GlyphShapeTable.resize(NumGlyphs);
 	for(int i=0;i<NumGlyphs;i++)
 	{
+		//It seems legal to have 1 byte records. We ignore
+		//them, because 1 byte is too short to encode a SHAPE.
+		if ((i < NumGlyphs-1) && 
+		    (OffsetTable[i+1]-OffsetTable[i] == 1))
+		{
+			char ignored;
+			in.get(ignored);
+			continue;
+		}
+
 		in >> GlyphShapeTable[i];
 	}
+
+	//sanity check the stream position
+	streampos expectedPos = offsetReference + (streampos)CodeTableOffset;
+	if (in.tellg() != expectedPos)
+	{
+		LOG(LOG_ERROR, "Malformed SWF file: unexpected offset in DefineFont3 tag");
+		if (in.tellg() < expectedPos)
+		{
+			//Read too few bytes => We can still continue
+			ignore(in, expectedPos-in.tellg());
+		}
+		else
+		{
+			//Read too many bytes => fail
+			assert(in.tellg() == expectedPos);
+		}
+	}
+
 	for(int i=0;i<NumGlyphs;i++)
 	{
 		UI16_SWF t;

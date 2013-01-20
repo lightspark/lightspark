@@ -831,7 +831,7 @@ GLYPHENTRY::GLYPHENTRY(TEXTRECORD* p,BitStream& bs):parent(p)
 	GlyphAdvance = SB(parent->parent->AdvanceBits,bs);
 }
 
-SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveDeltaX(0),MoveDeltaY(0),DeltaX(0),DeltaY(0),TypeFlag(false),StateNewStyles(false),StateLineStyle(false),StateFillStyle1(false),StateFillStyle0(false),StateMoveTo(false)
+SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDeltaX(0),MoveDeltaY(0),FillStyle1(0),FillStyle0(0),LineStyle(0),NumBits(0),DeltaX(0),DeltaY(0),ControlDeltaX(0),ControlDeltaY(0),AnchorDeltaX(0),AnchorDeltaY(0),TypeFlag(false),StateNewStyles(false),StateLineStyle(false),StateFillStyle1(false),StateFillStyle0(false),StateMoveTo(false),StraightFlag(false),GeneralLineFlag(false),VertLineFlag(false)
 {
 	TypeFlag = UB(1,bs);
 	if(TypeFlag)

@@ -79,6 +79,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("localName",AS3,Class<IFunction>::getFunction(localName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("name",AS3,Class<IFunction>::getFunction(name),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("namespace",AS3,Class<IFunction>::getFunction(_namespace),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("normalize",AS3,Class<IFunction>::getFunction(_normalize),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
@@ -902,6 +903,48 @@ ASFUNCTIONBODY(XML,_setChildren)
 
 	th->incRef();
 	return th;
+}
+
+ASFUNCTIONBODY(XML,_normalize)
+{
+	XML* th=obj->as<XML>();
+	th->normalize();
+
+	th->incRef();
+	return th;
+}
+
+void XML::normalize()
+{
+	normalizeRecursive(node);
+}
+
+void XML::normalizeRecursive(xmlpp::Node *node)
+{
+	// TODO: merge adjacent text nodes
+
+	xmlpp::Node::NodeList children=node->get_children();
+	xmlpp::Node::NodeList::const_iterator it=children.begin();
+	for(;it!=children.end();++it)
+	{
+		if (dynamic_cast<xmlpp::Element*>(*it))
+		{
+			normalizeRecursive(*it);
+		}
+		else
+		{
+			xmlpp::TextNode *textnode = dynamic_cast<xmlpp::TextNode*>(*it);
+			if (textnode && textnode->is_white_space())
+				node->remove_child(*it);
+		}
+	}
+}
+
+void XML::addTextContent(const tiny_string& str)
+{
+	assert(getNodeKind() == XML_TEXT_NODE);
+
+	xmlNodeAddContentLen(node->cobj(), BAD_CAST str.raw_buf(), str.numBytes());
 }
 
 void XML::removeAllChildren()

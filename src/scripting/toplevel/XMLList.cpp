@@ -88,6 +88,7 @@ void XMLList::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("copy",AS3,Class<IFunction>::getFunction(copy),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("elements",AS3,Class<IFunction>::getFunction(elements),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("normalize",AS3,Class<IFunction>::getFunction(normalize),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(_hasSimpleContent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(_hasComplexContent),NORMAL_METHOD,true);
@@ -428,6 +429,46 @@ ASFUNCTIONBODY(XMLList,attributes)
 		res->nodes.insert(res->nodes.end(), nodeAttributes.begin(), nodeAttributes.end());
 	}
 	return res;
+}
+
+ASFUNCTIONBODY(XMLList,normalize)
+{
+	XMLList *th = obj->as<XMLList>();
+	auto it=th->nodes.begin();
+	while (it!=th->nodes.end())
+	{
+		if ((*it)->getNodeKind() == XML_ELEMENT_NODE)
+		{
+			(*it)->normalize();
+			++it;
+		}
+		else if ((*it)->getNodeKind() == XML_TEXT_NODE)
+		{
+			if ((*it)->toString().empty())
+			{
+				it = th->nodes.erase(it);
+			}
+			else
+			{
+				_R<XML> textnode = *it;
+
+				++it;
+				while (it!=th->nodes.end() && (*it)->getNodeKind() == XML_TEXT_NODE)
+				{
+					textnode->addTextContent((*it)->toString());
+					it = th->nodes.erase(it);
+				}
+			}
+
+		}
+		else
+		{
+			++it;
+		}
+	}
+
+	th->incRef();
+	return th;
 }
 
 _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)

@@ -768,10 +768,16 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 	//Should use dts
 	uint32_t mtime=pkt.dts*1000*time_base.num/time_base.den;
 
-	if(customAudioDecoder && pkt.stream_index==(int)audioIndex)
-		customAudioDecoder->decodePacket(&pkt, mtime);
-	else
-		customVideoDecoder->decodePacket(&pkt, mtime);
+	if (pkt.stream_index==(int)audioIndex)
+	{
+		if (customAudioDecoder)
+			customAudioDecoder->decodePacket(&pkt, mtime);
+	}
+	else 
+	{
+		if (customVideoDecoder)
+			customVideoDecoder->decodePacket(&pkt, mtime);
+	}
 	av_free_packet(&pkt);
 	return true;
 }

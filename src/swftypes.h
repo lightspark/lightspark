@@ -1072,8 +1072,8 @@ public:
 	UB NumLineBits;
 	unsigned int fillOffset;
 	unsigned int lineOffset;
-	const uint8_t version; /* version of the DefineShape tag, 0 if
-				* DefineFont or other tag */
+	uint8_t version; /* version of the DefineShape tag, 0 if
+			  * DefineFont or other tag */
 	std::vector<SHAPERECORD> ShapeRecords;
 };
 

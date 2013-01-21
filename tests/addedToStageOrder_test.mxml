@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<mx:Application name="lightspark_added_to_stage_order_test"
+<mx:Application name="lightspark_addedToStageOrder_test"
 	xmlns:mx="http://www.adobe.com/2006/mxml"
 	layout="absolute"
 	applicationComplete="appComplete();"

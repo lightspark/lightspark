@@ -173,6 +173,9 @@ class Timer: public EventDispatcher, public ITickJob
 private:
 	void tick();
 	void tickFence();
+	//tickJobInstance keeps a reference to self while this
+	//instance is being used by the timer thread.
+	_NR<Timer> tickJobInstance;
 protected:
 	bool running;
 	uint32_t delay;

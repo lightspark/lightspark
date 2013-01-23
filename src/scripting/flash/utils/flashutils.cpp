@@ -1251,7 +1251,7 @@ void Timer::tick()
 
 void Timer::tickFence()
 {
-	this->decRef();
+	tickJobInstance = NullRef;
 }
 
 // this seems to be how AS3 handles generic pop calls in Array class
@@ -1354,8 +1354,8 @@ ASFUNCTIONBODY(Timer,_setRepeatCount)
 	if(th->repeatCount>0 && th->repeatCount<=th->currentCount)
 	{
 		getSys()->removeJob(th);
-		th->decRef();
 		th->running=false;
+		th->tickJobInstance = NullRef;
 	}
 	return NULL;
 }
@@ -1392,8 +1392,8 @@ ASFUNCTIONBODY(Timer,start)
 		return NULL;
 	th->running=true;
 	th->stopMe=false;
-	//To be decReffed in tickFence
 	th->incRef();
+	th->tickJobInstance = _MNR(th);
 	if(th->repeatCount==1)
 		getSys()->addWait(th->delay,th);
 	else
@@ -1411,7 +1411,7 @@ ASFUNCTIONBODY(Timer,reset)
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
 		//This is not anymore used by the timer, so it can die
-		th->decRef();
+		th->tickJobInstance = NullRef;
 		th->running=false;
 	}
 	th->currentCount=0;
@@ -1429,7 +1429,7 @@ ASFUNCTIONBODY(Timer,stop)
 		//Is this behaviour right?
 
 		//This is not anymore used by the timer, so it can die
-		th->decRef();
+		th->tickJobInstance = NullRef;
 		th->running=false;
 	}
 	return NULL;

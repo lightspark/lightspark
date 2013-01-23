@@ -518,6 +518,12 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 	return ret;
 }
 
+StaticText::StaticText(Class_base* c, const tokensVector& tokens, const MATRIX& matrix)
+  : DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f)
+{
+	setMatrix(matrix);
+}
+
 void StaticText::sinit(Class_base* c)
 {
 	//TODO: spec says that constructor should throw ArgumentError

@@ -485,7 +485,10 @@ class MovieClip: public Sprite, public FrameContainer
 {
 friend class ParserThread;
 private:
-	uint32_t getCurrentScene();
+	uint32_t getCurrentScene() const;
+	const Scene_data *getScene(const tiny_string &sceneName) const;
+	uint32_t getFrameIdByNumber(uint32_t i, const tiny_string& sceneName) const;
+	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	std::map<uint32_t,_NR<IFunction> > frameScripts;
 	bool fromDefineSpriteTag;
 protected:
@@ -525,7 +528,6 @@ public:
 
 	void advanceFrame();
 	void initFrame();
-	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 };

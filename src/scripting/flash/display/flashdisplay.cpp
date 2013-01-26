@@ -36,6 +36,8 @@
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Vector.h"
 
+#define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
+
 using namespace std;
 using namespace lightspark;
 
@@ -979,15 +981,71 @@ void MovieClip::finalize()
 	frameScripts.clear();
 }
 
-uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const
+/* Returns a Scene_data pointer for a scene called sceneName, or for
+ * the current scene if sceneName is empty. Returns NULL, if not found.
+ */
+const Scene_data *MovieClip::getScene(const tiny_string &sceneName) const
 {
-	for(size_t i=0;i<scenes.size();++i)
+	if (sceneName.empty())
 	{
-		for(size_t j=0;j<scenes[i].labels.size();++j)
-			if(scenes[i].labels[j].name == l)
-				return scenes[i].labels[j].frame;
+		return &scenes[getCurrentScene()];
 	}
-	return 0xffffffff;
+	else
+	{
+		//Find scene by name
+		for (auto it=scenes.begin(); it!=scenes.end(); ++it)
+		{
+			if (it->name == sceneName)
+				return &*it;
+		}
+	}
+
+	return NULL;  //Not found!
+}
+
+/* Return global frame index for a named frame. If sceneName is not
+ * empty, return a frame only if it belong to the named scene.
+ */
+uint32_t MovieClip::getFrameIdByLabel(const tiny_string& label, const tiny_string& sceneName) const
+{
+	if (sceneName.empty())
+	{
+		//Find frame in any scene
+		for(size_t i=0;i<scenes.size();++i)
+		{
+			for(size_t j=0;j<scenes[i].labels.size();++j)
+				if(scenes[i].labels[j].name == label)
+					return scenes[i].labels[j].frame;
+		}
+	}
+	else
+	{
+		//Find frame in the named scene only
+		const Scene_data *scene = getScene(sceneName);
+		if (scene)
+		{
+			for(size_t j=0;j<scene->labels.size();++j)
+			{
+				if(scene->labels[j].name == label)
+					return scene->labels[j].frame;
+			}
+		}
+	}
+
+	return FRAME_NOT_FOUND;
+}
+
+/* Return global frame index for frame i (zero-based) in a scene
+ * called sceneName. If sceneName is empty, use the current scene.
+ */
+uint32_t MovieClip::getFrameIdByNumber(uint32_t i, const tiny_string& sceneName) const
+{
+	const Scene_data *sceneData = getScene(sceneName);
+	if (!sceneData)
+		return FRAME_NOT_FOUND;
+
+	//Should we check if the scene has at least i frames?
+	return sceneData->startframe + i;
 }
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)
@@ -1036,16 +1094,16 @@ ASFUNCTIONBODY(MovieClip,play)
 ASObject* MovieClip::gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop)
 {
 	uint32_t next_FP;
+	tiny_string sceneName;
 	assert_and_throw(argslen==1 || argslen==2);
 	if(argslen==2)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"MovieClip.gotoAndStop/Play with two args is not supported yet");
-		return NULL;
+		sceneName = args[1]->toString();
 	}
 	if(args[0]->getObjectType()==T_STRING)
 	{
-		uint32_t dest=getFrameIdByLabel(args[0]->toString());
-		if(dest==0xffffffff)
+		uint32_t dest=getFrameIdByLabel(args[0]->toString(), sceneName);
+		if(dest==FRAME_NOT_FOUND)
 			throw Class<ArgumentError>::getInstanceS("gotoAndPlay/Stop: label not found");
 
 		next_FP = dest;
@@ -1055,8 +1113,8 @@ ASObject* MovieClip::gotoAnd(ASObject* const* args, const unsigned int argslen, 
 		uint32_t inFrameNo = args[0]->toInt();
 		if(inFrameNo == 0)
 			return NULL; /*this behavior was observed by testing */
-		/* "the current scene determines the global frame number" */
-		next_FP = scenes[getCurrentScene()].startframe + inFrameNo - 1;
+
+		next_FP = getFrameIdByNumber(inFrameNo-1, sceneName);
 		if(next_FP >= getFramesLoaded())
 		{
 			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded());
@@ -1122,7 +1180,7 @@ ASFUNCTIONBODY(MovieClip,_getScenes)
 	return ret;
 }
 
-uint32_t MovieClip::getCurrentScene()
+uint32_t MovieClip::getCurrentScene() const
 {
 	for(size_t i=0;i<scenes.size();++i)
 	{

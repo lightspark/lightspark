@@ -64,8 +64,6 @@ NPError NPN_GetURLNotify(NPP instance, const char *url, const char *target, void
 NPError NPN_GetURL(NPP instance, const char *url, const char *target)
 {
   NPError rv = CallNPN_GetURLProc(NPNFuncs.geturl, instance, url, target);
-  if(rv!=0)
-	  abort();
   return rv;
 }
 

@@ -1693,28 +1693,14 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	if(!url.isValid())
 		return NULL;
 
-	//TODO: support the right events (like SecurityErrorEvent)
-	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
-	SecurityManager::EVALUATIONRESULT evaluationResult =
-		getSys()->securityManager->evaluateURLStatic(url, ~(SecurityManager::LOCAL_WITH_FILE),
-			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
-			true);
-	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
-	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
-		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
-				"connect to network");
-	//Local-with-filesystem sandbox can't access network
-	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
-		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
-				"connect to local file");
-	else if(evaluationResult == SecurityManager::NA_PORT)
-		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
-				"connect to restricted port");
-	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
-		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
-				"not allowed to navigate up for local files");
+	getSys()->securityManager->checkURLStaticAndThrow(
+		url, 
+		~(SecurityManager::LOCAL_WITH_FILE),
+		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
+		true);
 
 	//Also check cross domain policies. TODO: this should be async as it could block if invoked from ExternalInterface
+	SecurityManager::EVALUATIONRESULT evaluationResult;
 	evaluationResult = getSys()->securityManager->evaluatePoliciesURL(url, true);
 	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 	{
@@ -1735,6 +1721,41 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	//TODO: make the download asynchronous instead of waiting for an unused response
 	downloader->waitForTermination();
 	getSys()->downloadManager->destroy(downloader);
+	return NULL;
+}
+
+ASFUNCTIONBODY(lightspark,navigateToURL)
+{
+	_NR<URLRequest> request;
+	tiny_string window;
+	ARG_UNPACK (request) (window,"");
+
+	if (request.isNull())
+		return NULL;
+
+	URLInfo url=request->getRequestURL();
+	if(!url.isValid())
+		return NULL;
+
+	getSys()->securityManager->checkURLStaticAndThrow(
+		url, 
+		~(SecurityManager::LOCAL_WITH_FILE),
+		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
+		true);
+
+	if (window.empty())
+		window = "_blank";
+
+	vector<uint8_t> postData;
+	request->getPostData(postData);
+	if (!postData.empty())
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "POST requests not supported in navigateToURL");
+		return NULL;
+	}
+
+	getSys()->openPageInBrowser(url.getURL(), window);
+
 	return NULL;
 }
 

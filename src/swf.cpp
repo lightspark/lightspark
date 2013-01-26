@@ -1917,6 +1917,12 @@ void SystemState::windowToStageCoordinates(int windowX, int windowY, int& stageX
 	stageY = (windowY-offsetY)/scaleY;
 }
 
+void SystemState::openPageInBrowser(const tiny_string& url, const tiny_string& window)
+{
+	assert(engineData);
+	engineData->openPageInBrowser(url, window);
+}
+
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
 {

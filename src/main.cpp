@@ -89,6 +89,10 @@ public:
 		/* Nothing to do because the standalone main window is
 		 * always focused */
 	}
+        void openPageInBrowser(const tiny_string& url, const tiny_string& window)
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "openPageInBrowser not implemented in the standalone mode");
+	}
 };
 
 int main(int argc, char* argv[])

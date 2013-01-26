@@ -426,6 +426,9 @@ public:
 	 */
 	void getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t& nsId, uint32_t& baseId);
 	const nsNameAndKindImpl& getNamespaceFromUniqueId(uint32_t id) const;
+
+	//Opening web pages
+	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
 };
 
 class ParseThread: public IThreadJob

@@ -368,6 +368,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("StageVideoEvent","flash.events",Class<StageVideoEvent>::getRef());
 	builtin->registerBuiltin("StageVideoAvailabilityEvent","flash.events",Class<StageVideoAvailabilityEvent>::getRef());
 
+	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")));
 	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef());

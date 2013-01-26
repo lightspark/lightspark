@@ -89,7 +89,8 @@ public:
 	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
 	GtkWidget* createGtkWidget();
 	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
-        void grabFocus();
+	void grabFocus();
+	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
 };
 
 class nsPluginInstance : public nsPluginInstanceBase
@@ -111,6 +112,7 @@ public:
 	void    StreamAsFile(NPStream* stream, const char* fname);
 	void    URLNotify(const char* url, NPReason reason,
 			void* notifyData);
+	void openLink(const tiny_string& url, const tiny_string& window);
 
 	// locals
 	const char * getVersion();
@@ -121,6 +123,7 @@ private:
 	std::string getPageURL() const;
 	void asyncDownloaderDestruction(const char *url, NPDownloader* dl) const;
 	void downloaderFinished(NPDownloader* dl, const char *url, NPReason reason) const;
+	static void asyncOpenPage(void* data);
 
 	NPP mInstance;
 	NPBool mInitialized;

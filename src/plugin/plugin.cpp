@@ -765,6 +765,40 @@ GdkNativeWindow PluginEngineData::getWindowForGnash()
 	return instance->mWindow;
 }
 
+struct linkOpenData
+{
+	NPP instance;
+	tiny_string url;
+	tiny_string window;
+};
+
+void nsPluginInstance::openLink(const tiny_string& url, const tiny_string& window)
+{
+	assert(!window.empty());
+
+	linkOpenData *data = new linkOpenData;
+	data->instance = mInstance;
+	data->url = url;
+	data->window = window;
+	NPN_PluginThreadAsyncCall(mInstance, asyncOpenPage, data);
+}
+
+void nsPluginInstance::asyncOpenPage(void *data)
+{
+	linkOpenData *page = (linkOpenData *)data;
+
+	NPError e = NPN_GetURL(page->instance, page->url.raw_buf(), page->window.raw_buf());
+	if (e != NPERR_NO_ERROR)
+		LOG(LOG_ERROR, _("Failed to open a page in the browser"));
+	
+	delete page;
+}
+
+void PluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_string& window)
+{
+	instance->openLink(url, window);
+}
+
 #ifdef _WIN32
 /* Setup for getExectuablePath() */
 extern HINSTANCE g_hinstance;

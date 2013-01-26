@@ -853,13 +853,21 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 
 	if(textData.background)
 	{
-		cairo_set_source_rgb (cr, textData.backgroundColor.Red, textData.backgroundColor.Green, textData.backgroundColor.Blue);
+		cairo_set_source_rgb (cr, textData.backgroundColor.Red/255., textData.backgroundColor.Green/255., textData.backgroundColor.Blue/255.);
 		cairo_paint(cr);
 	}
-	cairo_set_source_rgb (cr, textData.textColor.Red, textData.textColor.Green, textData.textColor.Blue);
 
 	/* draw the text */
+	cairo_set_source_rgb (cr, textData.textColor.Red/255., textData.textColor.Green/255., textData.textColor.Blue/255.);
 	pango_cairo_show_layout(cr, layout);
+
+	if(textData.border)
+	{
+		cairo_set_source_rgb(cr, textData.borderColor.Red/255., textData.borderColor.Green/255., textData.borderColor.Blue/255.);
+		cairo_set_line_width(cr, 1);
+		cairo_rectangle(cr, 0, 0, textData.width, textData.height);
+		cairo_stroke_preserve(cr);
+	}
 
 	g_object_unref(layout);
 }

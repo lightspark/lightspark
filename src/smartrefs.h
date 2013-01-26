@@ -58,9 +58,13 @@ public:
 		//incRef before decRef to make sure this works even if the pointer is the same
 		r.m->incRef();
 
-		m->decRef();
-
+		T* old=m;
 		m=r.m;
+
+		//decRef as the very last function call, because it
+		//may cause this Ref to be deleted (if old owns this Ref)
+		old->decRef();
+
 		return *this;
 	}
 	template<class D> Ref<T>& operator=(const Ref<D>& r)
@@ -68,9 +72,11 @@ public:
 		//incRef before decRef to make sure this works even if the pointer is the same
 		r.m->incRef();
 
-		m->decRef();
-
+		T* old=m;
 		m=r.m;
+
+		old->decRef();
+
 		return *this;
 	}
 	template<class D> bool operator==(const Ref<D>& r) const
@@ -155,9 +161,10 @@ public:
 		if(r.m)
 			r.m->incRef();
 
-		if(m)
-			m->decRef();
+		T* old=m;
 		m=r.m;
+		if(old)
+			old->decRef();
 		return *this;
 	}
 	template<class D> NullableRef<T>& operator=(const NullableRef<D>& r)
@@ -165,18 +172,20 @@ public:
 		if(r.getPtr())
 			r->incRef();
 
-		if(m)
-			m->decRef();
+		T* old=m;
 		m=r.getPtr();
+		if(old)
+			old->decRef();
 		return *this;
 	}
 	template<class D> NullableRef<T>& operator=(const Ref<D>& r)
 	{
 		r.getPtr()->incRef();
 
-		if(m)
-			m->decRef();
+		T* old=m;
 		m=r.getPtr();
+		if(old)
+			old->decRef();
 		return *this;
 	}
 	template<class D> bool operator==(const NullableRef<D>& r) const
@@ -233,9 +242,10 @@ public:
 	bool isNull() const { return m==NULL; }
 	void reset()
 	{
-		if(m)
-			m->decRef();
+		T* old=m;
 		m=NULL;
+		if(old)
+			old->decRef();
 	}
 	void fakeRelease()
 	{

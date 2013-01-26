@@ -88,6 +88,14 @@ ASFUNCTIONBODY(ASFont,registerFont)
 	return NULL;
 }
 
+TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
+	: InteractiveObject(c), TextData(textData), type(READ_ONLY), 
+	  mouseWheelEnabled(true), selectable(_selectable)
+{
+	if (!readOnly)
+		type = EDITABLE;
+}
+
 void TextField::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
@@ -110,10 +118,25 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(TextField::_getDefaultTextFormat),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(TextField::_setDefaultTextFormat),SETTER_METHOD,true);
 
-	REGISTER_GETTER_SETTER(c,textColor);
+	REGISTER_GETTER_SETTER(c, background);
+	REGISTER_GETTER_SETTER(c, backgroundColor);
+	REGISTER_GETTER_SETTER(c, border);
+	REGISTER_GETTER_SETTER(c, borderColor);
+	REGISTER_GETTER_SETTER(c, multiline);
+	REGISTER_GETTER_SETTER(c, mouseWheelEnabled);
+	REGISTER_GETTER_SETTER(c, selectable);
+	REGISTER_GETTER_SETTER(c, textColor);
+	REGISTER_GETTER_SETTER(c, type);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(TextField,textColor);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, background);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, backgroundColor);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, border);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, textColor);
 
 void TextField::buildTraits(ASObject* o)
 {
@@ -329,6 +352,32 @@ ASFUNCTIONBODY(TextField,_setDefaultTextFormat)
 		th->font = tf->font;
 	th->fontSize = tf->size;
 	LOG(LOG_NOT_IMPLEMENTED,"setDefaultTextFormat does not set all fields of TextFormat");
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField, _getter_type)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	if (th->type == READ_ONLY)
+		return Class<ASString>::getInstanceS("dynamic");
+	else
+		return Class<ASString>::getInstanceS("input");
+}
+
+ASFUNCTIONBODY(TextField, _setter_type)
+{
+	TextField* th=Class<TextField>::cast(obj);
+
+	tiny_string value;
+	ARG_UNPACK(value);
+
+	if (value == "dynamic")
+		th->type = READ_ONLY;
+	else if (value == "input")
+		th->type = EDITABLE;
+	else
+		throw Class<ArgumentError>::getInstanceS("Invalid TextField type");
+
 	return NULL;
 }
 

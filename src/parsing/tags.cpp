@@ -306,7 +306,12 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 		textData.fontSize = twipsToPixels(FontHeight);
 	}
 	if(HasTextColor)
+	{
 		in >> TextColor;
+		textData.textColor.Red = TextColor.Red;
+		textData.textColor.Green = TextColor.Green;
+		textData.textColor.Blue = TextColor.Blue;
+	}
 	if(HasMaxLength)
 		in >> MaxLength;
 	if(HasLayout)
@@ -320,6 +325,12 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 		in >> InitialText;
 		textData.text = (const char*)InitialText;
 	}
+	textData.wordWrap = WordWrap;
+	textData.multiline = Multiline;
+	textData.border = Border;
+	if (AutoSize)
+		textData.autoSize = TextData::AS_LEFT;
+
 	LOG(LOG_NOT_IMPLEMENTED, "DefineEditTextTag does not parse many attributes");
 }
 
@@ -329,7 +340,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c) const
 		c=Class<TextField>::getClass();
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
-	TextField* ret=new (c->memoryAccount) TextField(c, textData);
+	TextField* ret=new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly);
 	return ret;
 }
 

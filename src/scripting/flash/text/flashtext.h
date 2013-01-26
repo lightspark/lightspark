@@ -52,6 +52,8 @@ public:
 
 class TextField: public InteractiveObject, public TextData
 {
+public:
+	enum EDIT_TYPE {READ_ONLY, EDITABLE};
 private:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);
 	void renderImpl(RenderContext& ctxt) const;
@@ -61,9 +63,9 @@ private:
 	void updateText(const tiny_string& new_text);
 	//Computes and changes (text)width and (text)height using Pango
 	void updateSizes();
+	EDIT_TYPE type;
 public:
-	TextField(Class_base* c):InteractiveObject(c) {};
-	TextField(Class_base* c,const TextData& textData):InteractiveObject(c),TextData(textData) {};
+	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(appendText);
@@ -83,8 +85,15 @@ public:
 	ASFUNCTION(_setTextFormat);
 	ASFUNCTION(_getDefaultTextFormat);
 	ASFUNCTION(_setDefaultTextFormat);
-	
+	ASFUNCTION_GETTER_SETTER(background);
+	ASFUNCTION_GETTER_SETTER(backgroundColor);
+	ASFUNCTION_GETTER_SETTER(border);
+	ASFUNCTION_GETTER_SETTER(borderColor);
+	ASFUNCTION_GETTER_SETTER(multiline);
+	ASPROPERTY_GETTER_SETTER(bool, mouseWheelEnabled);
+	ASPROPERTY_GETTER_SETTER(bool, selectable);
 	ASFUNCTION_GETTER_SETTER(textColor);
+	ASFUNCTION_GETTER_SETTER(type);
 };
 
 class TextFormat: public ASObject

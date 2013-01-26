@@ -1234,7 +1234,10 @@ void NetStream::execute()
 		{
 			//Check if threadAbort has been called, if so, stop this loop
 			if(closed)
+			{
 				done = true;
+				continue;
+			}
 			bool decodingSuccess=streamDecoder->decodeNextFrame();
 			if(decodingSuccess==false)
 				done = true;

@@ -480,7 +480,7 @@ void SecurityManager::checkURLStaticAndThrow(const URLInfo& url,
 {
 	SecurityManager::EVALUATIONRESULT evaluationResult = 
 		getSys()->securityManager->evaluateURLStatic(url, allowedSandboxesRemote,
-			allowedSandboxesLocal, true);
+			allowedSandboxesLocal, restrictLocalDirectory);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
 	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: "

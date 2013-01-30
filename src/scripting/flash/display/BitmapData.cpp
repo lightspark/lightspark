@@ -341,6 +341,8 @@ ASFUNCTIONBODY(BitmapData,fillRect)
 			*ptr=color;
 		}
 	}
+
+	th->notifyUsers();
 	return NULL;
 }
 
@@ -402,6 +404,7 @@ ASFUNCTIONBODY(BitmapData,copyPixels)
 				srcLeft, srcTop, copyWidth, copyHeight);
 	}
 
+	th->notifyUsers();
 	return NULL;
 }
 

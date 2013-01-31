@@ -475,7 +475,15 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<Geom
 					cairo_set_miter_limit(stroke_cr, style.MiterLimitFactor);
 				}
 
-				cairo_set_line_width(stroke_cr, (double)(style.Width / 20.0));
+				//Width == 0 should be a hairline, but
+				//cairo does not support hairlines.
+				//Line width 1 is not a perfect
+				//substitute, because it is affected
+				//by transformations.
+				if (style.Width == 0)
+					cairo_set_line_width(stroke_cr, 1);
+				else
+					cairo_set_line_width(stroke_cr, (double)(style.Width / 20.0));
 				break;
 			}
 

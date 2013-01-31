@@ -2552,7 +2552,7 @@ ASFUNCTIONBODY(Graphics,lineStyle)
 	}
 	uint32_t color = 0;
 	uint8_t alpha = 255;
-	UI16_SWF thickness = UI16_SWF(args[0]->toNumber() * 20);
+	UI16_SWF thickness = UI16_SWF(imax(args[0]->toNumber() * 20, 0));
 	if (argslen >= 2)
 		color = args[1]->toUInt();
 	if (argslen >= 3)

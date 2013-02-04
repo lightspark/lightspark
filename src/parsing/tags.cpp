@@ -1187,7 +1187,17 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent) const
 			throw RunTimeException("No tag to place");
 
 		//We can create the object right away
-		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(placedTag->instance());
+		ASObject *instance = placedTag->instance();
+		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(instance);
+
+		if(!toAdd && instance)
+		{
+			//We ignore weird tags. I have seen ASFont
+			//(from a DefineFont) being added by PlaceObject2.
+			LOG(LOG_NOT_IMPLEMENTED, "Adding non-DisplayObject to display list");
+			instance->decRef();
+			return;
+		}
 
 		assert_and_throw(toAdd);
 		//The matrix must be set before invoking the constructor

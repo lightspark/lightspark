@@ -72,6 +72,11 @@ private:
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
 	CachedSurface cachedSurface;
+	/*
+	 * Utility function to set internal MATRIX
+	 * Also used by Transform
+	 */
+	void setMatrix(const MATRIX& m);
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
 	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const;
@@ -87,11 +92,6 @@ protected:
 	void computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight,
 			const MATRIX& m) const;
-	/*
-	 * Utility function to set internal MATRIX
-	 * Also used by Transform
-	 */
-	void setMatrix(const MATRIX& m);
 	/*
 	 * Assume the lock is held and the matrix will not change
 	 */

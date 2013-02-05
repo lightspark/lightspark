@@ -156,7 +156,8 @@ protected:
 		{ return TokenContainer::hitTestImpl(last, x, y, type); }
 public:
 	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this) {};
-	StaticText(Class_base* c, const tokensVector& tokens, const MATRIX& matrix);
+	StaticText(Class_base* c, const tokensVector& tokens):
+		DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {};
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)

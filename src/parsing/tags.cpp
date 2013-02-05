@@ -876,7 +876,7 @@ ASObject* DefineTextTag::instance(Class_base* c) const
 	if(c==NULL)
 		c=Class<StaticText>::getClass();
 
-	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens, TextMatrix);
+	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens);
 	return ret;
 }
 

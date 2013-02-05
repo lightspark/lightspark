@@ -341,6 +341,14 @@ Vector2f MATRIX::multiply2D(const Vector2f& in) const
 	return out;
 }
 
+Vector2 MATRIX::multiply2D(const Vector2& in) const
+{
+	number_t xout;
+	number_t yout;
+	multiply2D(in.x,in.y,xout,yout);
+	return Vector2(xout,yout);
+}
+
 void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	xout=xin;

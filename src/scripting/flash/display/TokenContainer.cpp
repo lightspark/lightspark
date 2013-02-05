@@ -47,10 +47,9 @@ void TokenContainer::renderImpl(RenderContext& ctxt) const
 void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 								  tokensVector& tokens,
 								  const std::list<FILLSTYLE>& fillStyles,
-								  const Vector2& offset, int scaling)
+								  const MATRIX& matrix)
 {
-	int startX=offset.x;
-	int startY=offset.y;
+	Vector2 cursor;
 	unsigned int color0=0;
 	unsigned int color1=0;
 
@@ -63,10 +62,10 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 		{
 			if(cur->StraightFlag)
 			{
-				Vector2 p1(startX,startY);
-				startX+=cur->DeltaX * scaling;
-				startY+=cur->DeltaY * scaling;
-				Vector2 p2(startX,startY);
+				Vector2 p1(matrix.multiply2D(cursor));
+				cursor.x += cur->DeltaX;
+				cursor.y += cur->DeltaY;
+				Vector2 p2(matrix.multiply2D(cursor));
 
 				if(color0)
 					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
@@ -75,13 +74,13 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 			}
 			else
 			{
-				Vector2 p1(startX,startY);
-				startX+=cur->ControlDeltaX * scaling;
-				startY+=cur->ControlDeltaY * scaling;
-				Vector2 p2(startX,startY);
-				startX+=cur->AnchorDeltaX * scaling;
-				startY+=cur->AnchorDeltaY * scaling;
-				Vector2 p3(startX,startY);
+				Vector2 p1(matrix.multiply2D(cursor));
+				cursor.x += cur->ControlDeltaX;
+				cursor.y += cur->ControlDeltaY;
+				Vector2 p2(matrix.multiply2D(cursor));
+				cursor.x += cur->AnchorDeltaX;
+				cursor.y += cur->AnchorDeltaY;
+				Vector2 p3(matrix.multiply2D(cursor));
 
 				if(color0)
 					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
@@ -93,8 +92,8 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 		{
 			if(cur->StateMoveTo)
 			{
-				startX=cur->MoveDeltaX * scaling + offset.x;
-				startY=cur->MoveDeltaY * scaling + offset.y;
+				cursor.x=cur->MoveDeltaX;
+				cursor.y=cur->MoveDeltaY;
 			}
 /*			if(cur->StateLineStyle)
 			{

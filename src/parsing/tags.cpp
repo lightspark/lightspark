@@ -893,6 +893,21 @@ void DefineTextTag::computeCached() const
 	fs.Color = RGBA(0,0,0,255);
 	fillStyles.push_back(fs);
 
+	/*
+	 * All coordinates are scaled into 1024*20*20 units per pixel.
+	 * This is scaled back to pixels by cairo. (1024 is the glyph
+	 * EM square scale, 20 is twips-per-pixel and the second 20
+	 * comes from TextHeight, which is also in twips)
+	 */
+	const int twipsScaling = 1024*20;
+	const int pixelScaling = 1024*20*20;
+
+	// Scale the translation component of TextMatrix. -1 because
+	// removes the unscaled translation first.
+	MATRIX scaledTextMatrix = TextMatrix;
+	scaledTextMatrix.translate((pixelScaling-1)*TextMatrix.getTranslateX(),
+				   (pixelScaling-1)*TextMatrix.getTranslateY());
+
 	for(size_t i=0; i< TextRecords.size();++i)
 	{
 		if(TextRecords[i].StyleFlagsHasFont)
@@ -925,10 +940,16 @@ void DefineTextTag::computeCached() const
 		{
 			const GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
 			const std::vector<SHAPERECORD>& sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
-			/* curPos is in pixel, but the glyph coordinates are 1024*20 times pixel size,
-			 * so we scale curPos. This is scaled back to pixels by cairo.
-			 */
-			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,curPos*1024*20,scaling);
+			Vector2 glyphPos = curPos*twipsScaling;
+
+			MATRIX glyphMatrix(scaling, scaling, 0, 0, 
+					   glyphPos.x,
+					   glyphPos.y);
+			
+			//Apply glyphMatrix first, then scaledTextMatrix
+			glyphMatrix = scaledTextMatrix.multiplyMatrix(glyphMatrix);
+
+			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 			curPos.x += ge.GlyphAdvance;
 		}
 	}

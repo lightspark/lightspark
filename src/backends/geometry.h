@@ -62,8 +62,6 @@ public:
 		return s;
 	}
 };
-typedef Vector2Tmpl<int> Vector2;
-typedef Vector2Tmpl<double> Vector2f;
 
 enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CLEAR_FILL, CLEAR_STROKE, CURVE_CUBIC, FILL_KEEP_SOURCE, FILL_TRANSFORM_TEXTURE };
 

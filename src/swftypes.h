@@ -764,6 +764,7 @@ public:
 };
 
 template<class T> class Vector2Tmpl;
+typedef Vector2Tmpl<int> Vector2;
 typedef Vector2Tmpl<double> Vector2f;
 
 class MATRIX: public cairo_matrix_t
@@ -775,6 +776,7 @@ public:
 	void get4DMatrix(float matrix[16]) const;
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	Vector2f multiply2D(const Vector2f& in) const;
+	Vector2 multiply2D(const Vector2& in) const;
 	MATRIX multiplyMatrix(const MATRIX& r) const;
 	bool operator!=(const MATRIX& r) const;
 	MATRIX getInverted() const;

@@ -48,7 +48,7 @@ public:
 	std::vector<GeomToken> tokens;
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
-					 const Vector2& offset = Vector2(), int scaling = 1);
+					 const MATRIX& matrix = MATRIX());
 	void getTextureSize(int *width, int *height) const;
 	float scaling;
 protected:

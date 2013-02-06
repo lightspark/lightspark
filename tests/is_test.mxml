@@ -14,6 +14,7 @@
 	{
 		Tests.assertFalse(flash.display.Sprite is flash.display.DisplayObject, "'is' keyword: flash.display.Sprite is flash.display.DisplayObject");
 		Tests.assertTrue(this is flash.display.DisplayObject, "'is' keyword: this is flash.display.DisplayObject");
+		Tests.assertTrue(this is flash.events.IEventDispatcher, "'is' keyword: this is flash.events.IEventDispatcher");
 
 		Tests.report(visual, name);
 	}

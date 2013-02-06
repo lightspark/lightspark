@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_instanceof_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import flash.events.EventDispatcher;
+	import flash.events.IEventDispatcher;
+	import flash.display.Sprite;
+
+	private function appComplete():void
+	{
+		// EventDispatcher implements IEventDispatcher
+		var obj:Object = new EventDispatcher();
+		Tests.assertTrue(obj instanceof EventDispatcher, "instanceof own class");
+		Tests.assertFalse(obj instanceof IEventDispatcher, "not instance of own interface");
+		Tests.assertFalse(obj instanceof Class, "not instance of the Class object");
+
+		// Sprite is derived from EventDispatcher and
+		// therefore implements IEventDispatcher
+		obj = new Sprite();
+		Tests.assertTrue(obj instanceof EventDispatcher, "instanceof derived class");
+		Tests.assertFalse(obj instanceof IEventDispatcher, "not instanceof derived interface");
+
+		Tests.assertFalse(Sprite instanceof Sprite, "class not instanceof class");
+		Tests.assertFalse(Sprite instanceof EventDispatcher, "class not instanceof base class");
+		Tests.assertFalse(Sprite instanceof IEventDispatcher, "class not instanceof interface");
+		Tests.assertTrue(Sprite instanceof Class, "class instanceof the Class object");
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

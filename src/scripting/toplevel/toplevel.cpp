@@ -1021,21 +1021,24 @@ void Class_base::linkInterface(Class_base* c) const
 	}
 }
 
-bool Class_base::isSubClass(const Class_base* cls) const
+bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) const
 {
 	check();
 	if(cls==this || cls==Class<ASObject>::getClass())
 		return true;
 
 	//Now check the interfaces
-	for(unsigned int i=0;i<getInterfaces().size();i++)
+	if (considerInterfaces)
 	{
-		if(getInterfaces()[i]->isSubClass(cls))
-			return true;
+		for(unsigned int i=0;i<getInterfaces().size();i++)
+		{
+			if(getInterfaces()[i]->isSubClass(cls, considerInterfaces))
+				return true;
+		}
 	}
 
 	//Now ask the super
-	if(super && super->isSubClass(cls))
+	if(super && super->isSubClass(cls, considerInterfaces))
 		return true;
 	return false;
 }

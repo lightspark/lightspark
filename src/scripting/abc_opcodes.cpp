@@ -2297,9 +2297,9 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 		throw Class<TypeError>::getInstanceS("Error #1040: instanceOf expects a class of function as second parameter!");
 
 	if(value->is<Class_base>())
-		return value->as<Class_base>()->isSubClass(type->as<Class_base>());
+		return type->as<Class_base>()->isSubClass(Class_object::getClass()->as<Class_base>());
 	else
-		return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>());
+		return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>(), false);
 }
 
 Namespace* ABCVm::pushNamespace(call_context* th, int n)

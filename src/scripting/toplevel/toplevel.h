@@ -193,8 +193,9 @@ public:
 	/*
 	 * Returns true when 'this' is a subclass of 'cls',
 	 * i.e. this == cls or cls equals some super of this.
+         * If considerInterfaces is true, check interfaces, too.
 	 */
-	bool isSubClass(const Class_base* cls) const;
+	bool isSubClass(const Class_base* cls, bool considerInterfaces=true) const;
 	tiny_string getQualifiedClassName() const;
 	tiny_string getName() const { return class_name.name; }
 	tiny_string toString();

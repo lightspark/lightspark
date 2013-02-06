@@ -1045,9 +1045,8 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 
 tiny_string Class_base::getQualifiedClassName() const
 {
-	//TODO: use also the namespace
 	if(class_index==-1)
-		return class_name.name;
+		return class_name.getQualifiedName();
 	else
 	{
 		assert_and_throw(context);

@@ -2297,7 +2297,10 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 		throw Class<TypeError>::getInstanceS("Error #1040: instanceOf expects a class of function as second parameter!");
 
 	if(value->is<Class_base>())
-		return type->as<Class_base>()->isSubClass(Class_object::getClass()->as<Class_base>());
+		// Classes are instance of Class and Object but not
+		// itself or super classes
+		return type == Class_object::getClass() || 
+			type == Class<ASObject>::getClass();
 	else
 		return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>(), false);
 }

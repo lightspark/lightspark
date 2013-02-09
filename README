@@ -1,20 +1,26 @@
-INSTALLATION:
-To compile this software you need to install development packages for llvm (version 2.8, 3.0 or 3.1),
-opengl, curl, zlib, libavcodec, libglew, pcre, librtmp, cairo, libboost-filesystem,
-libxml++, gtk-2, libjpeg, libavformat, pango, liblzma
+Lightspark is an open source Flash player implementation for playing
+files in SWF format. Lightspark can run as a web browser plugin or as
+a standalone application.
 
-If sound is enabled (on by default), you will also need the development package
-for pulseaudio-libs and/or libsdl.
-If the browser plugin is enabled (on by default), you will need the development
-package for xulrunner.
-Install also cmake and nasm.
-NOTE:
-Lightspark depends on an updated version of libxml++ (at least version 2.33.1).
-If an older version of libxml++ must be supported the following commits must be backported:
-dee3577c66333d3f1dd3db4ba43f50e6d6d3f974
-752ff3b4394d334ad6ba3e38189d5898fa15c8f0
-95243eee9837ab6843a20fa43a6a1ef41d1fcd62
-c8e34c3de03c2b41e825e392247efc1ea8698fbf
+Lightspark supports SWF files written on the newest version of the
+ActionScript language, ActionScript 3.0, which was introduced at the
+same time as Flash player 9.
+
+INSTALLATION
+============
+
+To compile this software you need to install development packages for
+llvm (version 2.8, 3.0, 3.1 or 3.2), opengl, curl, zlib, libavcodec,
+libglew, pcre, librtmp, cairo, libboost-filesystem, libxml++ (version
+2.33.1 or newer), gtk-2, libjpeg, libavformat, pango, liblzma
+
+If sound is enabled (on by default), you will also need the
+development package for pulseaudio-libs and/or libsdl.
+
+If the browser plugin is enabled (on by default), you will need the
+development package for xulrunner.
+
+Install also gcc (version 4.6.0 or newer), cmake and nasm.
 
 To build the software please follow these steps.
 
@@ -29,33 +35,44 @@ DEBUG MODE:
 To enable debug mode change the cmake command like this:
 4b) cmake -DCMAKE_BUILD_TYPE=Debug
 
-CMAKE_BUILD_TYPE available: Debug Release RelWithDebInfo Profile
-Sound support may be disabled using the following option: -DENABLE_SOUND=0
-The audio backend can be set using -DAUDIO_BACKEND=<pulseaudio|sdl> (default is pulseaudio)
+CMAKE_BUILD_TYPE available: Debug Release RelWithDebInfo Profile Sound
+support may be disabled using the following option: -DENABLE_SOUND=0
+The audio backend can be set using -DAUDIO_BACKEND=<pulseaudio|sdl>
+(default is pulseaudio)
 
-EXECUTION:
-Using `make install`, lightspark is installed in the system wide Firefox plugin
-path and Firefox should show it in the about:plugins list and in the
-Tools->Add-ons->Plugins window.
+EXECUTION
+=========
 
-Lightspark registers itself as the plugin for application/x-shockwave-flash and
-for application/x-lightspark, so it should be recognisable in the about:plugins
-page. Its description string is "Shockwave Flash 10.2 r<current version>". The
-current version is now "r450".
+Using `make install`, lightspark is installed in the system wide
+Firefox plugin path and Firefox should show it in the about:plugins
+list and in the Tools->Add-ons->Plugins window.
 
-Firefox is not able to deal very well with multiple plugins for the same MIME
-type. If you only see a black box where a flash app should be try to remove any
-other flash plugin you have installed.
+Lightspark registers itself as the plugin for
+application/x-shockwave-flash and for application/x-lightspark, so it
+should be recognisable in the about:plugins page. Its description
+string is "Shockwave Flash 12.1 r<current version>". The current
+version is now "r710".
 
-KEYBOARD SHORTCUTS:
+Firefox is not able to deal very well with multiple plugins for the
+same MIME type. If you only see a black box where a flash app should
+be try to remove any other flash plugin you have installed.
+
+Keyboard shortcuts
+------------------
 
 Ctrl+Q Quit (standalone player only)
 Ctrl+M Mute/unmute sounds
 Ctrl+P Show profiling data
 Ctrl+C Copy an error to the clipboard (when Lightspark fails)
 
-TEST:
-You may try it on some known-to-work movies:
+SWF SUPPORT
+===========
+
+Many web sites do not yet work yet because the implementation is
+incomplete. See the following page for support status of selected web
+sites: https://github.com/lightspark/lightspark/wiki/Site-Support
+
+You may also try Lightspark on some known-to-work Youtube movies:
 
 http://www.youtube.com/watch?v=ca20NEt4VSQ
 http://www.youtube.com/watch?v=4N2YWRJ-ppo
@@ -64,3 +81,11 @@ http://www.youtube.com/watch?v=-j7c0u9yZ8M
 http://www.youtube.com/watch?v=G4S9tV8ZLcE
 
 http://www.youtube.com/watch?v=FatHLHG2uGY
+
+REPORTING BUGS
+==============
+
+If you think you have found a bug in Lightspark, please file a bug
+report at https://bugs.launchpad.net/lightspark. See
+https://github.com/lightspark/lightspark/wiki/Reporting-Bugs for help
+on reporting bugs.

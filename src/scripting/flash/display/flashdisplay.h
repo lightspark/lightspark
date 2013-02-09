@@ -388,6 +388,8 @@ public:
 	ASFUNCTION(_getGraphics);
 	ASFUNCTION(_startDrag);
 	ASFUNCTION(_stopDrag);
+	ASPROPERTY_GETTER_SETTER(bool, buttonMode);
+	ASPROPERTY_GETTER_SETTER(bool, useHandCursor);
 	int getDepth() const
 	{
 		return 0;

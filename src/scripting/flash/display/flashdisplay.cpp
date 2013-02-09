@@ -568,7 +568,7 @@ void Loader::setContent(_R<DisplayObject> o)
 	_addChildAt(o, 0);
 }
 
-Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef)
+Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef),buttonMode(false),useHandCursor(false)
 {
 }
 
@@ -585,7 +585,12 @@ void Sprite::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c, buttonMode);
+	REGISTER_GETTER_SETTER(c, useHandCursor);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(Sprite, buttonMode);
+ASFUNCTIONBODY_GETTER_SETTER(Sprite, useHandCursor);
 
 void Sprite::buildTraits(ASObject* o)
 {

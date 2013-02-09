@@ -546,13 +546,24 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 
 	if(!obj)
 	{
-		if(has_getter)
+		if(has_getter)  // Is this a read-only property?
 		{
 			tiny_string err=tiny_string("Error #1074: Illegal write to read-only property ")+name.normalizedName();
 			if(cls)
 				err+=tiny_string(" on type ")+cls->getQualifiedClassName();
 			throw Class<ReferenceError>::getInstanceS(err);
 		}
+
+		// Properties can not be added to a sealed class
+		if (cls && cls->isSealed)
+		{
+			tiny_string err=tiny_string("Error #1056: Cannot create property ") + 
+				name.normalizedName() + 
+				tiny_string(" on ") +
+				cls->getQualifiedClassName();
+			throw Class<ReferenceError>::getInstanceS(err);
+		}
+
 		//Create a new dynamic variable
 		obj=Variables.findObjVar(name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
 	}

@@ -74,7 +74,7 @@ ParseThread* lightspark::getParseThread()
 
 RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(c),
-	parsingIsFailed(false),frameRate(0),
+	parsingIsFailed(false),Background(0xFF,0xFF,0xFF),frameRate(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
 	loaderInfo=li;

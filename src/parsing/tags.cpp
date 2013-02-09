@@ -1161,6 +1161,11 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		else
 			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
 	}
+	else if (!PlaceFlagMove)
+	{
+		//Remove the automatic name set by the DisplayObject constructor
+		obj->name = "";
+	}
 }
 
 void PlaceObject2Tag::execute(DisplayObjectContainer* parent) const

@@ -93,7 +93,10 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 	  mouseWheelEnabled(true), selectable(_selectable)
 {
 	if (!readOnly)
+	{
 		type = EDITABLE;
+		tabEnabled = true;
+	}
 }
 
 void TextField::sinit(Class_base* c)

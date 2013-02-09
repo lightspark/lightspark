@@ -61,6 +61,9 @@ protected:
 	~InteractiveObject();
 public:
 	InteractiveObject(Class_base* c);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,contextMenu); // TOOD: should be NativeMenu
+	ASPROPERTY_GETTER_SETTER(bool,tabEnabled);
+	ASPROPERTY_GETTER_SETTER(int32_t,tabIndex);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_setMouseEnabled);
 	ASFUNCTION(_getMouseEnabled);

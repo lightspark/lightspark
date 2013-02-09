@@ -1389,7 +1389,7 @@ void DisplayObjectContainer::finalize()
 	dynamicDisplayList.clear();
 }
 
-InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false)
+InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),tabEnabled(false),tabIndex(-1)
 {
 }
 
@@ -1450,7 +1450,14 @@ void InteractiveObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_setDoubleClickEnabled),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_getDoubleClickEnabled),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c, contextMenu);
+	REGISTER_GETTER_SETTER(c, tabEnabled);
+	REGISTER_GETTER_SETTER(c, tabIndex);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, contextMenu);
+ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled);
+ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex);
 
 void DisplayObjectContainer::dumpDisplayList()
 {
@@ -3003,6 +3010,8 @@ SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 	if(hTS) hTS->initFrame();
 	if(oS) oS->initFrame();
 	if(uS) uS->initFrame();
+
+	tabEnabled = true;
 }
 
 void SimpleButton::finalize()

@@ -1437,7 +1437,11 @@ void ParseThread::parseSWF(UI8 ver)
 					 * locking in ctag->execute's implementation.
 					 * ABC_TAG's are an exception, as they require no locking.
 					 */
-					assert(root->frames.size()==1);
+					if (root->frames.size()!=1)
+					{
+						delete tag;
+						break;
+					}
 					//fall through
 				case ABC_TAG:
 				{

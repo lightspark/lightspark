@@ -2781,7 +2781,7 @@ void StageDisplayState::sinit(Class_base* c)
 }
 
 Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
-	DisplayObject(c),TokenContainer(this)
+	DisplayObject(c),TokenContainer(this),smoothing(false)
 {
 	if(li)
 	{
@@ -2824,7 +2824,7 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 	Bitmap::updatedData();
 }
 
-Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this)
+Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this),smoothing(false)
 {
 	bitmapData = data;
 	bitmapData->addUser(this);
@@ -2849,22 +2849,20 @@ void Bitmap::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<DisplayObject>::getRef());
 	REGISTER_GETTER_SETTER(c,bitmapData);
+	REGISTER_GETTER_SETTER(c,smoothing);
 }
 
 ASFUNCTIONBODY(Bitmap,_constructor)
 {
 	tiny_string _pixelSnapping;
-	bool _smoothing;
 	_NR<BitmapData> _bitmapData;
 	Bitmap* th = obj->as<Bitmap>();
-	ARG_UNPACK(_bitmapData, NullRef)(_pixelSnapping, "auto")(_smoothing, false);
+	ARG_UNPACK(_bitmapData, NullRef)(_pixelSnapping, "auto")(th->smoothing, false);
 
 	DisplayObject::_constructor(obj,NULL,0);
 
 	if(_pixelSnapping!="auto")
 		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support pixelSnapping");
-	if(_smoothing)
-		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support smoothing");
 
 	if(!_bitmapData.isNull())
 	{
@@ -2885,7 +2883,13 @@ void Bitmap::onBitmapData(_NR<BitmapData> old)
 	Bitmap::updatedData();
 }
 
+void Bitmap::onSmoothingChanged(bool /*old*/)
+{
+	updatedData();
+}
+
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData);
+ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged);
 
 void Bitmap::updatedData()
 {
@@ -2895,7 +2899,10 @@ void Bitmap::updatedData()
 		return;
 
 	FILLSTYLE style(0xff);
-	style.FillStyleType=CLIPPED_BITMAP;
+	if (smoothing)
+		style.FillStyleType=CLIPPED_BITMAP;
+	else
+		style.FillStyleType=NON_SMOOTHED_CLIPPED_BITMAP;
 	style.bitmap=*static_cast<BitmapContainer*>(bitmapData.getPtr());
 	tokens.emplace_back(GeomToken(SET_FILL, style));
 	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));

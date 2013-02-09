@@ -650,11 +650,13 @@ class Bitmap: public DisplayObject, public TokenContainer
 friend class CairoTokenRenderer;
 private:
 	void onBitmapData(_NR<BitmapData>);
+	void onSmoothingChanged(bool);
 protected:
 	void renderImpl(RenderContext& ctxt) const
 		{ TokenContainer::renderImpl(ctxt); }
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
+	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
 	Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);

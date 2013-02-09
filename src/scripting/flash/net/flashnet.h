@@ -264,6 +264,12 @@ public:
 	ASFUNCTION(_setClient);
 	ASFUNCTION(_getCheckPolicyFile);
 	ASFUNCTION(_setCheckPolicyFile);
+	ASPROPERTY_GETTER(number_t, backBufferLength);
+	ASPROPERTY_GETTER_SETTER(number_t, backBufferTime);
+	ASPROPERTY_GETTER(number_t, bufferLength);
+	ASPROPERTY_GETTER_SETTER(number_t, bufferTime);
+	ASPROPERTY_GETTER_SETTER(number_t, bufferTimeMax);
+	ASPROPERTY_GETTER_SETTER(number_t, maxPauseBufferTime);
 
 	//Interface for video
 	/**

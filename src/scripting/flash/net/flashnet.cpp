@@ -863,7 +863,9 @@ ASFUNCTIONBODY_GETTER_SETTER(NetConnection, client);
 NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused(false),closed(true),
 	streamTime(0),frameRate(0),connection(),downloader(NULL),videoDecoder(NULL),
 	audioDecoder(NULL),audioStream(NULL),
-	client(NullRef),oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false)
+	client(NullRef),oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false),
+	backBufferLength(0),backBufferTime(30),bufferLength(0),bufferTime(0.1),bufferTimeMax(0),
+	maxPauseBufferTime(0)
 {
 	soundTransform = _MNR(Class<SoundTransform>::getInstanceS());
 }
@@ -903,6 +905,12 @@ void NetStream::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("client","",Class<IFunction>::getFunction(_setClient),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(_getCheckPolicyFile),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(_setCheckPolicyFile),SETTER_METHOD,true);
+	REGISTER_GETTER(c, backBufferLength);
+	REGISTER_GETTER_SETTER(c, backBufferTime);
+	REGISTER_GETTER(c, bufferLength);
+	REGISTER_GETTER_SETTER(c, bufferTime);
+	REGISTER_GETTER_SETTER(c, bufferTimeMax);
+	REGISTER_GETTER_SETTER(c, maxPauseBufferTime);
 	REGISTER_GETTER_SETTER(c,soundTransform);
 }
 
@@ -910,6 +918,12 @@ void NetStream::buildTraits(ASObject* o)
 {
 }
 
+ASFUNCTIONBODY_GETTER(NetStream, backBufferLength);
+ASFUNCTIONBODY_GETTER_SETTER(NetStream, backBufferTime);
+ASFUNCTIONBODY_GETTER(NetStream, bufferLength);
+ASFUNCTIONBODY_GETTER_SETTER(NetStream, bufferTime);
+ASFUNCTIONBODY_GETTER_SETTER(NetStream, bufferTimeMax);
+ASFUNCTIONBODY_GETTER_SETTER(NetStream, maxPauseBufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(NetStream,soundTransform);
 
 ASFUNCTIONBODY(NetStream,_getClient)

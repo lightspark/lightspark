@@ -1431,9 +1431,9 @@ ASObject *ASObject::describeType() const
 		if(prot->super)
 			root->set_attribute("base", prot->super->getQualifiedClassName().raw_buf());
 	}
-	bool isDynamic=type==T_ARRAY; // FIXME
+	bool isDynamic = classdef && !classdef->isSealed;
 	root->set_attribute("isDynamic", isDynamic?"true":"false");
-	bool isFinal=!(type==T_OBJECT || type==T_ARRAY); // FIXME
+	bool isFinal = classdef && classdef->isFinal;
 	root->set_attribute("isFinal", isFinal?"true":"false");
 	root->set_attribute("isStatic", "false");
 

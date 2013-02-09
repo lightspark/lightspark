@@ -1255,7 +1255,12 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 
 	root->fileLength=FileLength;
 	float frameRate=FrameRate;
-	frameRate/=256;
+	if (frameRate == 0)
+		//The Adobe player ignores frameRate == 0 and substitutes
+		//some larger value. Value 30 here is arbitrary.
+		frameRate = 30;
+	else
+		frameRate/=256;
 	LOG(LOG_INFO,_("FrameRate ") << frameRate);
 	root->setFrameRate(frameRate);
 	//TODO: setting render rate should be done when the clip is added to the displaylist

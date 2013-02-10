@@ -476,32 +476,76 @@ void TextFormat::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
+	REGISTER_GETTER_SETTER(c,align);
+	REGISTER_GETTER_SETTER(c,blockIndent);
+	REGISTER_GETTER_SETTER(c,bold);
+	REGISTER_GETTER_SETTER(c,bullet);
 	REGISTER_GETTER_SETTER(c,color);
 	REGISTER_GETTER_SETTER(c,font);
+	REGISTER_GETTER_SETTER(c,indent);
+	REGISTER_GETTER_SETTER(c,italic);
+	REGISTER_GETTER_SETTER(c,kerning);
+	REGISTER_GETTER_SETTER(c,leading);
+	REGISTER_GETTER_SETTER(c,leftMargin);
+	REGISTER_GETTER_SETTER(c,letterSpacing);
+	REGISTER_GETTER_SETTER(c,rightMargin);
 	REGISTER_GETTER_SETTER(c,size);
+	REGISTER_GETTER_SETTER(c,tabStops);
+	REGISTER_GETTER_SETTER(c,target);
+	REGISTER_GETTER_SETTER(c,underline);
+	REGISTER_GETTER_SETTER(c,url);
 }
+
 ASFUNCTIONBODY(TextFormat,_constructor)
 {
 	TextFormat* th=static_cast<TextFormat*>(obj);
-	tiny_string font;
-	int32_t size;
-	_NR<ASObject> color;
-	ARG_UNPACK (font, "")(size, 12)(color,_MNR(getSys()->getNullRef()));
-	th->font = font;
-	th->size = size;
-	th->color = color;
-	LOG(LOG_NOT_IMPLEMENTED,"TextFormat: not all properties are set in constructor");
+	ARG_UNPACK (th->font, "")
+		(th->size, 12)
+		(th->color,_MNR(getSys()->getNullRef()))
+		(th->bold,_MNR(getSys()->getNullRef()))
+		(th->italic,_MNR(getSys()->getNullRef()))
+		(th->underline,_MNR(getSys()->getNullRef()))
+		(th->url,"")
+		(th->target,"")
+		(th->align,"left")
+		(th->leftMargin,_MNR(getSys()->getNullRef()))
+		(th->rightMargin,_MNR(getSys()->getNullRef()))
+		(th->indent,_MNR(getSys()->getNullRef()))
+		(th->leading,_MNR(getSys()->getNullRef()));
 	return NULL;
 }
 
-
-
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextFormat,align,onAlign);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,blockIndent);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,bold);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,bullet);
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,color);
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,font);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,indent);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,italic);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,kerning);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,leading);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,leftMargin);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,letterSpacing);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,rightMargin);
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,size);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,tabStops);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,target);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,underline);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,url);
 
 void TextFormat::buildTraits(ASObject* o)
 {
+}
+
+void TextFormat::onAlign(const tiny_string& old)
+{
+	if (align != "center" && align != "end" && align != "justify" && 
+	    align != "left" && align != "right" && align != "start")
+	{
+		align = old;
+		throw Class<ArgumentError>::getInstanceS();
+	}
 }
 
 void StyleSheet::finalize()

@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/toplevel/Array.h"
 
 namespace lightspark
 {
@@ -98,14 +99,31 @@ public:
 
 class TextFormat: public ASObject
 {
+private:
+	void onAlign(const tiny_string& old);
 public:
 	TextFormat(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(tiny_string,align);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,blockIndent);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,bold);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,bullet);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,color);
 	ASPROPERTY_GETTER_SETTER(tiny_string,font);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,indent);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,italic);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,kerning);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,leading);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,leftMargin);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,letterSpacing);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,rightMargin);
 	ASPROPERTY_GETTER_SETTER(int32_t,size);
+	ASPROPERTY_GETTER_SETTER(_NR<Array>,tabStops);
+	ASPROPERTY_GETTER_SETTER(tiny_string,target);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,underline);
+	ASPROPERTY_GETTER_SETTER(tiny_string,url);
 };
 
 class TextFieldType: public ASObject

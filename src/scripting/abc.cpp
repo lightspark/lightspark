@@ -727,6 +727,16 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		case 0x1c: //MultinameLA
 		{
 			assert(n && !n2);
+
+			//Testing shows that the namespace from a
+			//QName is used even in MultinameL
+			if (n->is<ASQName>())
+			{
+				ASQName *qname = n->as<ASQName>();
+				ret->ns.clear();
+				ret->ns.push_back(nsNameAndKind(qname->getURI(),NAMESPACE));
+			}
+
 			ret->setName(n);
 			n->decRef();
 			break;

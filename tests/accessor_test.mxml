@@ -12,7 +12,7 @@
 
 	private function appComplete():void
 	{
-		var x:ReadOnlyTest = new ReadOnlyTest();
+		var x:AccessorTest = new AccessorTest();
 
 		try
 		{
@@ -38,6 +38,18 @@
 		catch (e:Object)
 		{
 			Tests.assertDontReach("Exception when calling super class setter");
+		}
+
+		var prop:QName = new QName("testns", "testproperty");
+		try
+		{
+			// "testns" namespace is not an opened, so the
+			// interpreter must use the namespace from the QName
+			Tests.assertEquals(x[prop], 123, "Getting a property by QName");
+		}
+		catch (e:Object)
+		{
+			Tests.assertDontReach("Exception at getting a property by QName");
 		}
 
 		Tests.report(visual, this.name);

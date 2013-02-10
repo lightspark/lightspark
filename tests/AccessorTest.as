@@ -1,7 +1,9 @@
 package {
 	import flash.display.Sprite;
 
-	public class ReadOnlyTest extends Sprite {
+	public class AccessorTest extends Sprite {
+		testns var testproperty:Number = 123;
+
 		public function get readOnlyProperty():int {
 			return 0;
 		}

@@ -31,6 +31,13 @@
 		Tests.assertFalse(Sprite instanceof IEventDispatcher, "class not instanceof interface");
 		Tests.assertTrue(Sprite instanceof Class, "class instanceof the Class object");
 
+		var customClass:Object = function():* {};
+		customClass.prototype = new Sprite();
+		var customInstance:Object = new customClass();
+		Tests.assertTrue(customInstance instanceof customClass, "old style class instanceof own class");
+		Tests.assertTrue(customInstance instanceof Sprite, "old style class instanceof base class");
+		Tests.assertTrue(customInstance instanceof EventDispatcher, "old style class instanceof derived class");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

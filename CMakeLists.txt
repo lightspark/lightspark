@@ -76,18 +76,18 @@ SET(SHORTVERSION "${MINOR_VERSION}${PATCH_VERSION}${SUBPATCH_VERSION}")
 CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/src/version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/version.h" @ONLY)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 
-# GCC 4.4+ is required, GCC_VERSION macro taken from GCC manual
+# GCC 4.6+ is required, GCC_VERSION macro taken from GCC manual
 INCLUDE(CheckCSourceCompiles)
 IF(CMAKE_COMPILER_IS_GNUCC)
    CHECK_C_SOURCE_COMPILES("
    #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-   #if GCC_VERSION < 40400
+   #if GCC_VERSION < 40600
    #error
    #endif
-   int main() { return 0; }" GCC_IS_4_4)
-   IF(NOT GCC_IS_4_4)
-	  MESSAGE(FATAL_ERROR "GCC 4.4+ is required.")
-   ENDIF(NOT GCC_IS_4_4)
+   int main() { return 0; }" GCC_IS_4_6)
+   IF(NOT GCC_IS_4_6)
+	  MESSAGE(FATAL_ERROR "GCC 4.6+ is required.")
+   ENDIF(NOT GCC_IS_4_6)
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 # Find put the path of the gnash executable, if available

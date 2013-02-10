@@ -259,6 +259,7 @@ protected:
 	ASObject(const ASObject& o);
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;
+	bool traitsInitialized:1;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const;

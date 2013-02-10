@@ -847,9 +847,9 @@ void Class_base::setConstructor(IFunction* c)
 	constructor=c;
 }
 
-void Class_base::handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink)
+void Class_base::setupDeclaredTraits(ASObject *target)
 {
-	if(buildAndLink)
+	if (!target->traitsInitialized)
 	{
 	#ifndef NDEBUG
 		assert_and_throw(!target->initialized);
@@ -860,9 +860,20 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 		recursiveBuild(target);
 		//And restore it
 		target->implEnable=bak;
+
 	#ifndef NDEBUG
 		target->initialized=true;
 	#endif
+		target->traitsInitialized = true;
+	}
+}
+
+void Class_base::handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink)
+{
+	if(buildAndLink)
+	{
+		setupDeclaredTraits(target);
+
 		//Tell the object that the construction is complete
 		target->constructionComplete();
 	}

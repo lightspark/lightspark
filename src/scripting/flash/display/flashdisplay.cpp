@@ -3263,6 +3263,10 @@ void MovieClip::initFrame()
 	if((int)state.FP < state.last_FP)
 		purgeLegacyChildren();
 
+	//Declared traits must exists before legacy objects are added
+	if (getClass())
+		getClass()->setupDeclaredTraits(this);
+
 	if(getFramesLoaded())
 	{
 		std::list<Frame>::iterator iter=frames.begin();

@@ -177,6 +177,7 @@ private:
 public:
 	void addPrototypeGetter();
 	void addLengthGetter();
+	void setupDeclaredTraits(ASObject *target);
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	Class_base(const QName& name, MemoryAccount* m);

@@ -1057,6 +1057,10 @@ ASFUNCTIONBODY(NetStream,play)
 
 	assert_and_throw(th->downloader==NULL);
 
+	//Until buffering is implemented, set a fake value. The BBC
+	//news player panics if bufferLength is smaller than 2.
+	th->bufferLength = 10;
+
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading

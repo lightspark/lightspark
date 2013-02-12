@@ -576,6 +576,8 @@ void Sprite::finalize()
 {
 	DisplayObjectContainer::finalize();
 	graphics.reset();
+	hitArea.reset();
+	hitTarget.reset();
 }
 
 void Sprite::sinit(Class_base* c)
@@ -586,6 +588,7 @@ void Sprite::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, buttonMode);
+	REGISTER_GETTER_SETTER(c, hitArea);
 	REGISTER_GETTER_SETTER(c, useHandCursor);
 }
 
@@ -627,6 +630,27 @@ ASFUNCTIONBODY(Sprite,_stopDrag)
 {
 	Sprite* th=Class<Sprite>::cast(obj);
 	getSys()->getInputThread()->stopDrag(th);
+	return NULL;
+}
+
+ASFUNCTIONBODY_GETTER(Sprite, hitArea);
+
+ASFUNCTIONBODY(Sprite,_setter_hitArea)
+{
+	Sprite* th=Class<Sprite>::cast(obj);
+	_NR<Sprite> value;
+	ARG_UNPACK(value);
+
+	if (!th->hitArea.isNull())
+		th->hitArea->hitTarget.reset();
+
+	th->hitArea = value;
+	if (!th->hitArea.isNull())
+	{
+		th->incRef();
+		th->hitArea->hitTarget = _MNR(th);
+	}
+
 	return NULL;
 }
 
@@ -756,17 +780,37 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 
 _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
+	//Did we hit a children?
 	_NR<DisplayObject> ret = NullRef;
 	this->incRef();
 	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type);
-	if(!ret && isHittable(type))
+
+	if (ret.isNull() && hitArea.isNull())
 	{
 		//The coordinates are locals
 		this->incRef();
-		return TokenContainer::hitTestImpl(_MR(this),x,y, type);
+		ret = TokenContainer::hitTestImpl(_MR(this),x,y, type);
+
+		if (!ret.isNull())  //Did we hit the sprite?
+		{
+			if (!hitTarget.isNull())
+			{
+				//Another Sprite has registered us
+				//as its hitArea -> relay the hit
+				if (hitTarget->isHittable(type))
+					ret = hitTarget;
+				else
+					ret.reset();
+			}
+			else if (!isHittable(type))
+			{
+				//Hit ignored due to a disabled HIT_TYPE
+				ret.reset();
+			}
+		}
 	}
-	else
-		return ret;
+
+	return ret;
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)

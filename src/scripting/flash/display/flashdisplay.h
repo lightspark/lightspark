@@ -375,6 +375,9 @@ class Sprite: public DisplayObjectContainer, public TokenContainer
 friend class DisplayObject;
 private:
 	_NR<Graphics> graphics;
+	//hitTarget is non-null if another Sprite has registered this
+	//Sprite as its hitArea. Hits will be relayed to hitTarget.
+	_NR<Sprite> hitTarget;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
@@ -389,6 +392,7 @@ public:
 	ASFUNCTION(_startDrag);
 	ASFUNCTION(_stopDrag);
 	ASPROPERTY_GETTER_SETTER(bool, buttonMode);
+	ASPROPERTY_GETTER_SETTER(_NR<Sprite>, hitArea);
 	ASPROPERTY_GETTER_SETTER(bool, useHandCursor);
 	int getDepth() const
 	{

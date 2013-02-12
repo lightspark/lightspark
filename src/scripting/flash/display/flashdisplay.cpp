@@ -1487,6 +1487,12 @@ ASFUNCTIONBODY(InteractiveObject,_getDoubleClickEnabled)
 	return abstract_b(th->doubleClickEnabled);
 }
 
+void InteractiveObject::finalize()
+{
+	DisplayObject::finalize();
+	contextMenu.reset();
+}
+
 void InteractiveObject::buildTraits(ASObject* o)
 {
 }

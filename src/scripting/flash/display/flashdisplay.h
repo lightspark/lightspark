@@ -69,6 +69,7 @@ public:
 	ASFUNCTION(_getMouseEnabled);
 	ASFUNCTION(_setDoubleClickEnabled);
 	ASFUNCTION(_getDoubleClickEnabled);
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };

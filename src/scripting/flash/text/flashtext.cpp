@@ -496,6 +496,24 @@ void TextFormat::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,url);
 }
 
+void TextFormat::finalize()
+{
+	ASObject::finalize();
+	blockIndent.reset();
+	bold.reset();
+	bullet.reset();
+	color.reset();
+	indent.reset();
+	italic.reset();
+	kerning.reset();
+	leading.reset();
+	leftMargin.reset();
+	letterSpacing.reset();
+	rightMargin.reset();
+	tabStops.reset();
+	underline.reset();
+}
+
 ASFUNCTIONBODY(TextFormat,_constructor)
 {
 	TextFormat* th=static_cast<TextFormat*>(obj);

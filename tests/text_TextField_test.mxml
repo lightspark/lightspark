@@ -30,6 +30,13 @@
 		Tests.assertEquals(0xFF00FF,field.getTextFormat().color, "TextField.setTextFormat with null does not change");
 
 		Tests.assertEquals(0,field.textColor, "TextField.setTextFormat does not change TextField.textColor");
+
+		field = new TextField();
+		field.htmlText = "<font face='Arial' size='30' color='#123456'>aaa</font>";
+		Tests.assertEquals(0x123456, field.getTextFormat().color, "HTML formating: textColor");
+		Tests.assertEquals(30, field.getTextFormat().size, "HTML formating: font size");
+		Tests.assertEquals("Arial", field.getTextFormat().font, "HTML formating: font face");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

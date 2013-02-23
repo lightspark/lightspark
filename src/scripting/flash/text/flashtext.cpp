@@ -17,6 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <libxml++/nodes/element.h>
+#include <libxml++/parsers/domparser.h>
+#include <libxml++/exceptions/exception.h>
+#include <libxml/tree.h>
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/class.h"
 #include "compat.h"
@@ -107,6 +111,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(TextField::_getHtmlText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(TextField::_setHtmlText),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(TextField::_getTextHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getTextWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
@@ -274,6 +280,21 @@ ASFUNCTIONBODY(TextField,_getTextHeight)
 	return abstract_i(th->textHeight);
 }
 
+ASFUNCTIONBODY(TextField,_getHtmlText)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return Class<ASString>::getInstanceS(th->toHtmlText());
+}
+
+ASFUNCTIONBODY(TextField,_setHtmlText)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	tiny_string value;
+	ARG_UNPACK(value);
+	th->setHtmlText(value);
+	return NULL;
+}
+
 ASFUNCTIONBODY(TextField,_getText)
 {
 	TextField* th=Class<TextField>::cast(obj);
@@ -397,6 +418,45 @@ void TextField::updateSizes()
 	textHeight=th;
 }
 
+tiny_string TextField::toHtmlText()
+{
+	xmlpp::DomParser parser;
+	xmlpp::Document *doc = parser.get_document();
+	xmlpp::Element *root = doc->create_root_node("font");
+
+	ostringstream ss;
+	ss << fontSize;
+	root->set_attribute("size", ss.str());
+	root->set_attribute("color", textColor.toString());
+	root->set_attribute("face", font);
+
+	//Split text into paragraphs and wraps them into <p> tags
+	uint32_t para_start = 0;
+	uint32_t para_end;
+	do
+	{
+		para_end = text.find("\n", para_start);
+		if (para_end == text.npos)
+			para_end = text.numChars();
+
+		xmlpp::Element *pNode = root->add_child("p");
+		pNode->add_child_text(text.substr(para_start, para_end));
+		para_start = para_end + 1;
+	} while (para_end < text.numChars());
+
+	xmlBufferPtr buf = xmlBufferCreateSize(4096);
+	xmlNodeDump(buf, doc->cobj(), doc->get_root_node()->cobj(), 0, 0);
+	tiny_string ret = tiny_string((char*)buf->content,true);
+	xmlBufferFree(buf);
+	return ret;
+}
+
+void TextField::setHtmlText(const tiny_string& html)
+{
+	HtmlTextParser parser;
+	parser.parseTextAndFormating(html, this);
+}
+
 void TextField::updateText(const tiny_string& new_text)
 {
 	text = new_text;
@@ -446,6 +506,138 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 void TextField::renderImpl(RenderContext& ctxt) const
 {
 	defaultRender(ctxt);
+}
+
+void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
+						      TextData *dest)
+{
+	textdata = dest;
+	if (!textdata)
+		return;
+
+	textdata->text = "";
+
+	tiny_string rooted = tiny_string("<root>") + html + tiny_string("</root>");
+	try
+	{
+		parse_memory_raw((const unsigned char*)rooted.raw_buf(), rooted.numBytes());
+	}
+	catch (xmlpp::exception& exc)
+	{
+		LOG(LOG_ERROR, "TextField HTML parser error");
+		return;
+	}
+}
+
+void TextField::HtmlTextParser::on_start_element(const Glib::ustring& name,
+						 const xmlpp::SaxParser::AttributeList& attributes)
+{
+	if (!textdata)
+		return;
+
+	if (name == "root")
+	{
+		return;
+	}
+	else if (name == "br")
+	{
+		if (textdata->multiline)
+			textdata->text += "\n";
+			
+	}
+	else if (name == "p")
+	{
+		if (textdata->multiline)
+		{
+			if (!textdata->text.empty() && 
+			    !textdata->text.endsWith("\n"))
+				textdata->text += "\n";
+		}
+	}
+	else if (name == "font")
+	{
+		if (!textdata->text.empty())
+		{
+			LOG(LOG_NOT_IMPLEMENTED, "Font can be defined only in the beginning");
+			return;
+		}
+
+		for (auto it=attributes.begin(); it!=attributes.end(); ++it)
+		{
+			if (it->name == "face")
+			{
+				textdata->font = it->value;
+			}
+			else if (it->name == "size")
+			{
+				textdata->fontSize = parseFontSize(it->value, textdata->fontSize);
+			}
+			else if (it->name == "color")
+			{
+				textdata->textColor = RGB(tiny_string(it->value));
+			}
+		}
+	}
+	else if (name == "a" || name == "img" || name == "u" ||
+		 name == "li" || name == "b" || name == "i" ||
+		 name == "span" || name == "textformat" || name == "tab")
+	{
+		LOG(LOG_NOT_IMPLEMENTED, _("Unsupported tag in TextField: ") + name);
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED, _("Unknown tag in TextField: ") + name);
+	}
+}
+
+void TextField::HtmlTextParser::on_end_element(const Glib::ustring& name)
+{
+	if (!textdata)
+		return;
+
+	if (name == "p")
+	{
+		if (textdata->multiline)
+		{
+			if (!textdata->text.empty() && 
+			    !textdata->text.endsWith("\n"))
+				textdata->text += "\n";
+		}
+	}
+}
+
+void TextField::HtmlTextParser::on_characters(const Glib::ustring& characters)
+{
+	if (!textdata)
+		return;
+
+	textdata->text += characters;
+}
+
+uint32_t TextField::HtmlTextParser::parseFontSize(const Glib::ustring& sizestr,
+						  uint32_t currentFontSize)
+{
+	const char *s = sizestr.c_str();
+	if (!s)
+		return currentFontSize;
+
+	uint32_t basesize = 0;
+	int multiplier = 1;
+	if (s[0] == '+' || s[0] == '-')
+	{
+		// relative size
+		basesize = currentFontSize;
+		if (s[0] == '-')
+			multiplier = -1;
+	}
+
+	int64_t size = basesize + multiplier*g_ascii_strtoll(s, NULL, 10);
+	if (size < 1)
+		size = 1;
+	if (size > G_MAXUINT32)
+		size = G_MAXUINT32;
+	
+	return (uint32_t)size;
 }
 
 void TextFieldAutoSize ::sinit(Class_base* c)

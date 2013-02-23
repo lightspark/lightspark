@@ -341,6 +341,8 @@ ASObject* DefineEditTextTag::instance(Class_base* c) const
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
 	TextField* ret=new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly);
+	if (HTML)
+		ret->setHtmlText((const char*)InitialText);
 	return ret;
 }
 

@@ -433,10 +433,14 @@ public:
 	RGB(){};
 	RGB(int r,int g, int b):Red(r),Green(g),Blue(b){};
 	RGB(uint32_t color):Red((color>>16)&0xFF),Green((color>>8)&0xFF),Blue(color&0xFF){}
+	//Parses a color from hex triplet string #RRGGBB
+	RGB(const tiny_string& colorstr);
 	UI8 Red;
 	UI8 Green;
 	UI8 Blue;
 	uint32_t toUInt() const { return Blue + (Green<<8) + (Red<<16); }
+	//Return a string representation in #RRGGBB format
+	tiny_string toString() const;
 };
 
 class RGBA

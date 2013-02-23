@@ -349,6 +349,12 @@ public:
 	{
 		return strncmp(buf,o,strlen(o)) == 0;
 	}
+        bool endsWith(const char* o) const
+        {
+                size_t olen = strlen(o);
+                return (numBytes() >= olen) && 
+                        (strncmp(buf+numBytes()-olen,o,olen) == 0);
+        }
 	/* idx is an index of utf-8 characters */
 	uint32_t charAt(uint32_t idx) const
 	{

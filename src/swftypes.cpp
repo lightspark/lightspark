@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <cmath>
 #include <cairo.h>
+#include <glib.h>
+#include <iomanip> 
 
 #include "exceptions.h"
 #include "compat.h"
@@ -1419,4 +1421,30 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 const nsNameAndKindImpl& nsNameAndKind::getImpl() const
 {
 	return getSys()->getNamespaceFromUniqueId(nsRealId);
+}
+
+RGB::RGB(const tiny_string& colorstr):Red(0),Green(0),Blue(0)
+{
+	if (colorstr.empty())
+		return;
+
+	const char *s = colorstr.raw_buf();
+	if (s[0] == '#')
+		s++;
+
+	gint64 color = g_ascii_strtoll(s, NULL, 16);
+	Red = (color >> 16) & 0xFF;
+	Green = (color >> 8) & 0xFF;
+	Blue = color & 0xFF;
+}
+
+tiny_string RGB::toString() const
+{
+	ostringstream ss;
+	ss << "#" << std::hex << std::setfill('0') << 
+		std::setw(2) << (int)Red << 
+		std::setw(2) << (int)Green << 
+		std::setw(2) << (int)Blue;
+
+	return ss.str();
 }

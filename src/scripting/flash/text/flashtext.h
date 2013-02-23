@@ -20,6 +20,7 @@
 #ifndef SCRIPTING_FLASH_TEXT_FLASHTEXT_H
 #define SCRIPTING_FLASH_TEXT_FLASHTEXT_H 1
 
+#include <libxml++/parsers/saxparser.h>
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/display/flashdisplay.h"
@@ -53,6 +54,24 @@ public:
 
 class TextField: public InteractiveObject, public TextData
 {
+private:
+	/*
+	 * A parser for the HTML subset supported by TextField.
+	 */
+	class HtmlTextParser : public xmlpp::SaxParser {
+	protected:
+		TextData *textdata;
+
+		uint32_t parseFontSize(const Glib::ustring& s, uint32_t currentFontSize);
+		void on_start_element(const Glib::ustring& name, const xmlpp::SaxParser::AttributeList& attributes);
+		void on_end_element(const Glib::ustring& name);
+		void on_characters(const Glib::ustring& characters);
+	public:
+		HtmlTextParser() : textdata(NULL) {};
+		//Stores the text and formating into a TextData object
+		void parseTextAndFormating(const tiny_string& html, TextData *dest);
+	};
+
 public:
 	enum EDIT_TYPE {READ_ONLY, EDITABLE};
 private:
@@ -64,16 +83,20 @@ private:
 	void updateText(const tiny_string& new_text);
 	//Computes and changes (text)width and (text)height using Pango
 	void updateSizes();
+	tiny_string toHtmlText();
 	EDIT_TYPE type;
 public:
 	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	void setHtmlText(const tiny_string& html);
 	ASFUNCTION(appendText);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_setHeight);
+	ASFUNCTION(_getHtmlText);
+	ASFUNCTION(_setHtmlText);
 	ASFUNCTION(_getText);
 	ASFUNCTION(_setText);
 	ASFUNCTION(_setAutoSize);

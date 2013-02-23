@@ -32,6 +32,7 @@
 #include "backends/geometry.h"
 #include "backends/input.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
+#include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Vector.h"

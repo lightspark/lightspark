@@ -33,6 +33,8 @@
 #include "compat.h"
 #include "parsing/streams.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/text/flashtext.h"
+#include "scripting/flash/media/flashmedia.h"
 
 #undef RGB
 

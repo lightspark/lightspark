@@ -25,9 +25,7 @@
 #include <iostream>
 #include "swftypes.h"
 #include "backends/geometry.h"
-#include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/utils/flashutils.h"
-#include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/class.h"
 

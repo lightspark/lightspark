@@ -25,6 +25,7 @@
 #include "timer.h"
 #include "backends/graphics.h"
 #include "backends/netutils.h"
+#include "scripting/flash/display/DisplayObject.h"
 
 class AudioStream;
 

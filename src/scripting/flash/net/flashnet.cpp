@@ -24,6 +24,7 @@
 #include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/class.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/media/flashmedia.h"
 #include "compat.h"
 #include "backends/audio.h"
 #include "backends/builtindecoder.h"

@@ -209,26 +209,31 @@ std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
 	const char* prefix;
 	switch(r.getImpl().kind)
 	{
-		case 0x08:
+		case NAMESPACE:
 			prefix="ns:";
 			break;
-		case 0x16:
+		case PACKAGE_NAMESPACE:
 			prefix="pakns:";
 			break;
-		case 0x17:
+		case PACKAGE_INTERNAL_NAMESPACE:
 			prefix="pakintns:";
 			break;
-		case 0x18:
+		case PROTECTED_NAMESPACE:
 			prefix="protns:";
 			break;
-		case 0x19:
+		case EXPLICIT_NAMESPACE:
 			prefix="explns:";
 			break;
-		case 0x1a:
+		case STATIC_PROTECTED_NAMESPACE:
 			prefix="staticprotns:";
 			break;
-		case 0x05:
+		case PRIVATE_NAMESPACE:
 			prefix="privns:";
+			break;
+		default:
+			//Not reached
+			assert("Unexpected namespace kind" && false);
+			prefix="";
 			break;
 	}
 	s << prefix << r.getImpl().name;
@@ -1421,6 +1426,44 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 const nsNameAndKindImpl& nsNameAndKind::getImpl() const
 {
 	return getSys()->getNamespaceFromUniqueId(nsRealId);
+}
+
+nsNameAndKindImpl::nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind, uint32_t b)
+  : name(_name),kind(_kind),baseId(b)
+{
+	if (kind != NAMESPACE &&
+	    kind != PACKAGE_NAMESPACE &&
+	    kind != PACKAGE_INTERNAL_NAMESPACE &&
+	    kind != PROTECTED_NAMESPACE &&
+	    kind != EXPLICIT_NAMESPACE &&
+	    kind != STATIC_PROTECTED_NAMESPACE &&
+	    kind != PRIVATE_NAMESPACE)
+	{
+		//I have seen empty namespace with kind 0. For other
+		//namespaces we should not get here.
+		if (!name.empty())
+			LOG(LOG_ERROR, "Invalid namespace kind, converting to public namespace");
+		kind = NAMESPACE;
+	}
+}
+
+nsNameAndKindImpl::nsNameAndKindImpl(const char* _name, NS_KIND _kind, uint32_t b)
+ : name(_name),kind(_kind),baseId(b)
+{
+	if (kind != NAMESPACE &&
+	    kind != PACKAGE_NAMESPACE &&
+	    kind != PACKAGE_INTERNAL_NAMESPACE &&
+	    kind != PROTECTED_NAMESPACE &&
+	    kind != EXPLICIT_NAMESPACE &&
+	    kind != STATIC_PROTECTED_NAMESPACE &&
+	    kind != PRIVATE_NAMESPACE)
+	{
+		//I have seen empty namespace with kind 0. For other
+		//namespaces we should not get here.
+		if (!name.empty())
+			LOG(LOG_ERROR, "Invalid namespace kind, converting to public namespace");
+		kind = NAMESPACE;
+	}
 }
 
 RGB::RGB(const tiny_string& colorstr):Red(0),Green(0),Blue(0)

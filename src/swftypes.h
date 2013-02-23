@@ -292,8 +292,8 @@ struct nsNameAndKindImpl
 	tiny_string name;
 	NS_KIND kind;
 	uint32_t baseId;
-	nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind, uint32_t b=-1):name(_name),kind(_kind),baseId(b){}
-	nsNameAndKindImpl(const char* _name, NS_KIND _kind, uint32_t b=-1):name(_name),kind(_kind),baseId(b){}
+	nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind, uint32_t b=-1);
+	nsNameAndKindImpl(const char* _name, NS_KIND _kind, uint32_t b=-1);
 	bool operator<(const nsNameAndKindImpl& r) const
 	{
 		if(kind==r.kind)

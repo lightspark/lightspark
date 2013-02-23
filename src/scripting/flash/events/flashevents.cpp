@@ -491,7 +491,10 @@ void IOErrorEvent::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ErrorEvent>::getRef());
 
+	c->setVariableByQName("DISK_ERROR","",Class<ASString>::getInstanceS("diskError"),DECLARED_TRAIT);
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),DECLARED_TRAIT);
+	c->setVariableByQName("NETWORK_ERROR","",Class<ASString>::getInstanceS("networkError"),DECLARED_TRAIT);
+	c->setVariableByQName("VERIFY_ERROR","",Class<ASString>::getInstanceS("verifyError"),DECLARED_TRAIT);
 }
 
 EventDispatcher::EventDispatcher(Class_base* c):ASObject(c)

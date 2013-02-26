@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2011-2012  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2011-2013  Alessandro Pignotti (a.pignotti@sssup.it)
     Copyright (C) 2011 Ludger Krämer (dbluelle@blau-weissoedingen.de)
 
     This program is free software: you can redistribute it and/or modify

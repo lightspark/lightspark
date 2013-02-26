@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2008-2012  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2008-2013  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
 	bindtextdomain("lightspark", localedir);
 	textdomain("lightspark");
 
-	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2012 Alessandro Pignotti and others");
+	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
 
 	//Make GTK thread enabled
 #ifdef HAVE_G_THREAD_INIT

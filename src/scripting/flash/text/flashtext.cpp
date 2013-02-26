@@ -400,7 +400,7 @@ ASFUNCTIONBODY(TextField, _setter_type)
 	else if (value == "input")
 		th->type = EDITABLE;
 	else
-		throw Class<ArgumentError>::getInstanceS("Invalid TextField type");
+		throwError<ArgumentError>(kInvalidEnumError, "type");
 
 	return NULL;
 }
@@ -754,7 +754,7 @@ void TextFormat::onAlign(const tiny_string& old)
 	    align != "left" && align != "right" && align != "start")
 	{
 		align = old;
-		throw Class<ArgumentError>::getInstanceS();
+		throwError<ArgumentError>(kInvalidEnumError, "align");
 	}
 }
 

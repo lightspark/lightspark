@@ -977,7 +977,7 @@ ASFUNCTIONBODY(Transform,_setColorTransform)
 	_NR<ColorTransform> ct;
 	ARG_UNPACK(ct);
 	if (ct.isNull())
-		throw Class<TypeError>::getInstanceS();
+		throwError<TypeError>(kNullPointerError, "colorTransform");
 
 	LOG(LOG_NOT_IMPLEMENTED, "Transform::setColorTransform");
 	// Set colortransform on th->owner

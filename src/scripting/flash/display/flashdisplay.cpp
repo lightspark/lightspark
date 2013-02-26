@@ -1735,7 +1735,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 	d->incRef();
 	if(!th->_removeChild(_MR(d)))
-		throw Class<ArgumentError>::getInstanceS("removeChild: child not in list");
+		throw Class<ArgumentError>::getInstanceS("removeChild: child not in list", 2025);
 
 	//As we return the child we have to incRef it
 	d->incRef();
@@ -1754,7 +1754,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 	{
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
-			throw Class<RangeError>::getInstanceS("removeChildAt: invalid index");
+			throw Class<RangeError>::getInstanceS("removeChildAt: invalid index", 2025);
 		list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 		for(int32_t i=0;i<index;i++)
 			++it;
@@ -1832,7 +1832,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
 		std::list<_R<DisplayObject>>::iterator it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
 		std::list<_R<DisplayObject>>::iterator it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
 		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS("Argument is not child of this object");
+			throw Class<ArgumentError>::getInstanceS("Argument is not child of this object", 2025);
 
 		th->dynamicDisplayList.insert(it1, child2);
 		th->dynamicDisplayList.insert(it2, child1);
@@ -1873,7 +1873,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 	assert_and_throw(argslen==1);
 	unsigned int index=args[0]->toInt();
 	if(index>=th->dynamicDisplayList.size())
-		throw Class<RangeError>::getInstanceS("getChildAt: invalid index");
+		throw Class<RangeError>::getInstanceS("getChildAt: invalid index", 2025);
 	list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
@@ -1893,7 +1893,7 @@ int DisplayObjectContainer::getChildIndex(_R<DisplayObject> child)
 		ret++;
 		++it;
 		if(it == dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS("getChildIndex: child not in list");
+			throw Class<ArgumentError>::getInstanceS("getChildIndex: child not in list", 2025);
 	}
 	while(1);
 	return ret;
@@ -2500,7 +2500,7 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 	if ((indices.isNull() && (vertices->size() % 6 != 0)) || 
 	    (!indices.isNull() && (indices->size() % 3 != 0)))
 	{
-		throw Class<ArgumentError>::getInstanceS("Error #2004");
+		throwError<ArgumentError>(kInvalidParamError);
 	}
 
 	unsigned int numvertices=vertices->size()/2;
@@ -2530,7 +2530,7 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 		}
 		else
 		{
-			throw Class<ArgumentError>::getInstanceS("Error #2004");
+			throwError<ArgumentError>(kInvalidParamError);
 		}
 
 		th->owner->getTextureSize(&texturewidth, &textureheight);

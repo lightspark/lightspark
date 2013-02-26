@@ -100,7 +100,7 @@ ASFUNCTIONBODY(Array,_constructor)
 	{
 		number_t size=args[0]->toNumber();
 		if (size < 0 || size > UINT32_MAX)
-			throw Class<RangeError>::getInstanceS("");
+			throwError<RangeError>(kArrayIndexNotIntegerError, Number::toString(size));
 		LOG(LOG_CALLS,_("Creating array of length ") << size);
 		th->resize((uint32_t)size);
 	}
@@ -124,7 +124,7 @@ ASFUNCTIONBODY(Array,generator)
 	{
 		number_t size=args[0]->toNumber();
 		if (size < 0 || size > UINT32_MAX)
-			throw Class<RangeError>::getInstanceS("");
+			throwError<RangeError>(kArrayIndexNotIntegerError, Number::toString(size));
 		LOG(LOG_CALLS,_("Creating array of length ") << size);
 		th->resize((uint32_t)size);
 	}
@@ -1072,7 +1072,7 @@ ASFUNCTIONBODY(Array,_map)
 	Array* th=static_cast<Array*>(obj);
 
 	if(argslen < 1)
-		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+		throwError<ArgumentError>(kWrongArgumentCountError, "Array.map", "1", Integer::toString(argslen));
 	IFunction* func= NULL;
 	if (!args[0]->is<RegExp>())
 	{

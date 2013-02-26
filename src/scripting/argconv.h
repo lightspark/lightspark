@@ -65,7 +65,9 @@ public:
 	{
 		T* o = dynamic_cast<T*>(obj);
 		if(!o)
-			throw Class<ArgumentError>::getInstanceS("Error #1034: Wrong type");
+                        throwError<ArgumentError>(kCheckTypeFailedError,
+                                                  obj->getClassName(),
+                                                  Class<T>::getClass()->getQualifiedClassName());
 		o->incRef();
 		return _MR(o);
 	}
@@ -91,7 +93,9 @@ public:
 
 		T* o = dynamic_cast<T*>(obj);
 		if(!o)
-			throw Class<ArgumentError>::getInstanceS("Error #1034: Wrong type");
+                        throwError<ArgumentError>(kCheckTypeFailedError,
+                                                  obj->getClassName(),
+                                                  Class<T>::getClass()->getQualifiedClassName());
 		o->incRef();
 		return _MNR(o);
 	}
@@ -224,7 +228,7 @@ public:
 	template<class T> ArgUnpack& operator()(T& v)
 	{
 		if(argslen == 0)
-			throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+                        throwError<ArgumentError>(kWrongArgumentCountError, "object", "?", "?");
 
 		v = ArgumentConversion<T>::toConcrete(args[0]);
 		args++;

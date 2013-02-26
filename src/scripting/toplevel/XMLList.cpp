@@ -47,7 +47,8 @@ using namespace lightspark;
 		if(th->nodes.size()==1) \
 			return XML::name(th->nodes[0].getPtr(), args, argslen); \
 		else \
-			throw Class<TypeError>::getInstanceS("Error #1086: The method only works on lists of one item."); \
+			throwError<TypeError>(kXMLOnlyWorksWithOneItemLists, #name); \
+		return NULL; \
 	}
 
 XMLList::XMLList(Class_base* c):ASObject(c),nodes(c->memoryAccount),constructed(false)
@@ -212,7 +213,10 @@ _R<XML> XMLList::reduceToXML() const
 	if(nodes.size()==1)
 		return nodes[0];
 	else
-		throw Class<TypeError>::getInstanceS("#1080");
+	{
+		throwError<TypeError>(kIllegalNamespaceError);
+		return nodes[0]; // not reached, the previous line throws always
+	}
 }
 
 ASFUNCTIONBODY(XMLList,_getLength)

@@ -629,8 +629,8 @@ ASFUNCTIONBODY(XML,inScopeNamespaces)
 ASFUNCTIONBODY(XML,addNamespace)
 {
 	XML *th = obj->as<XML>();
-	if(argslen == 0)
-		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+	_NR<ASObject> newNamespace;
+	ARG_UNPACK(newNamespace);
 
 	xmlpp::Element *element=dynamic_cast<xmlpp::Element*>(th->node);
 	if(!element)
@@ -638,7 +638,7 @@ ASFUNCTIONBODY(XML,addNamespace)
 
 	// TODO: check if the prefix already exists
 
-	Namespace *ns=dynamic_cast<Namespace *>(args[0]);
+	Namespace *ns=dynamic_cast<Namespace *>(newNamespace.getPtr());
 	if(ns)
 	{
 		tiny_string uri=ns->getURI();
@@ -648,7 +648,7 @@ ASFUNCTIONBODY(XML,addNamespace)
 	}
 	else
 	{
-		tiny_string uri=args[0]->toString();
+		tiny_string uri=newNamespace->toString();
 		element->set_namespace_declaration(uri);
 	}
 
@@ -740,21 +740,21 @@ ASFUNCTIONBODY(XML,_namespace)
 ASFUNCTIONBODY(XML,_setLocalName)
 {
 	XML *th = obj->as<XML>();
-	if(argslen == 0)
-		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+	_NR<ASObject> newName;
+	ARG_UNPACK(newName);
 
 	xmlElementType nodetype=th->node->cobj()->type;
 	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
 		return NULL;
 
 	tiny_string new_name;
-	if(args[0]->is<ASQName>())
+	if(newName->is<ASQName>())
 	{
-		new_name=args[0]->as<ASQName>()->getLocalName();
+		new_name=newName->as<ASQName>()->getLocalName();
 	}
 	else
 	{
-		new_name=args[0]->toString();
+		new_name=newName->toString();
 	}
 
 	th->setLocalName(new_name);
@@ -766,7 +766,7 @@ void XML::setLocalName(const tiny_string& new_name)
 {
 	if(!isXMLName(Class<ASString>::getInstanceS(new_name)))
 	{
-		throw Class<TypeError>::getInstanceS("Error #1117");
+		throwError<TypeError>(kXMLInvalidName, new_name);
 	}
 
 	node->set_name(new_name);
@@ -775,8 +775,8 @@ void XML::setLocalName(const tiny_string& new_name)
 ASFUNCTIONBODY(XML,_setName)
 {
 	XML *th = obj->as<XML>();
-	if(argslen == 0)
-		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+	_NR<ASObject> newName;
+	ARG_UNPACK(newName);
 
 	xmlElementType nodetype=th->node->cobj()->type;
 	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
@@ -784,15 +784,15 @@ ASFUNCTIONBODY(XML,_setName)
 
 	tiny_string localname;
 	tiny_string ns_uri;
-	if(args[0]->is<ASQName>())
+	if(newName->is<ASQName>())
 	{
-		ASQName *qname=args[0]->as<ASQName>();
+		ASQName *qname=newName->as<ASQName>();
 		localname=qname->getLocalName();
 		ns_uri=qname->getURI();
 	}
-	else if (!args[0]->is<Undefined>())
+	else if (!newName->is<Undefined>())
 	{
-		localname=args[0]->toString();
+		localname=newName->toString();
 	}
 
 	th->setLocalName(localname);
@@ -804,8 +804,8 @@ ASFUNCTIONBODY(XML,_setName)
 ASFUNCTIONBODY(XML,_setNamespace)
 {
 	XML *th = obj->as<XML>();
-	if(argslen == 0)
-		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+	_NR<ASObject> newNamespace;
+	ARG_UNPACK(newNamespace);
 
 	xmlElementType nodetype=th->node->cobj()->type;
 	if(nodetype==XML_TEXT_NODE ||
@@ -815,21 +815,21 @@ ASFUNCTIONBODY(XML,_setNamespace)
 
 	tiny_string ns_uri;
 	tiny_string ns_prefix;
-	if(args[0]->is<Namespace>())
+	if(newNamespace->is<Namespace>())
 	{
-		Namespace *ns=args[0]->as<Namespace>();
+		Namespace *ns=newNamespace->as<Namespace>();
 		ns_uri=ns->getURI();
 		bool prefix_is_undefined=true;
 		ns_prefix=ns->getPrefix(prefix_is_undefined);
 	}
-	else if(args[0]->is<ASQName>())
+	else if(newNamespace->is<ASQName>())
 	{
-		ASQName *qname=args[0]->as<ASQName>();
+		ASQName *qname=newNamespace->as<ASQName>();
 		ns_uri=qname->getURI();
 	}
-	else if (!args[0]->is<Undefined>())
+	else if (!newNamespace->is<Undefined>())
 	{
-		ns_uri=args[0]->toString();
+		ns_uri=newNamespace->toString();
 	}
 
 	th->setNamespace(ns_uri, ns_prefix);

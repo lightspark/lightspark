@@ -28,6 +28,7 @@
 #include "scripting/toplevel/Date.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
+#include "scripting/toplevel/Error.h"
 
 using namespace lightspark;
 using namespace std;
@@ -286,7 +287,7 @@ _R<ASObject> ASObject::call_valueOf()
 
 	_NR<ASObject> o=getVariableByMultiname(valueOfName,SKIP_IMPL);
 	if (!o->is<IFunction>())
-		throw Class<TypeError>::getInstanceS("Error #1006: Call attempted on an object that is not a function.");
+		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedName());
 	IFunction* f=o->as<IFunction>();
 
 	incRef();
@@ -523,10 +524,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
-		tiny_string err=tiny_string("Error #1074: Illegal write to read-only property ")+name.normalizedName();
-		if(classdef)
-			err+=tiny_string(" on type ")+classdef->as<Class_base>()->getQualifiedClassName();
-		throw Class<ReferenceError>::getInstanceS(err);
+		throwError<ReferenceError>(kConstWriteError, name.normalizedName(), classdef->as<Class_base>()->getQualifiedClassName());
 	}
 	if(!obj && cls)
 	{
@@ -537,8 +535,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		obj=cls->findBorrowedSettable(name,&has_getter);
 		if(obj && cls->isFinal && !obj->setter)
 		{
-			tiny_string err=tiny_string("Error #1037: Cannot assign to a method ")+name.normalizedName()+tiny_string(" on ")+cls->getQualifiedClassName();
-			throw Class<ReferenceError>::getInstanceS(err);
+			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
 		}
 	}
 
@@ -548,20 +545,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	{
 		if(has_getter)  // Is this a read-only property?
 		{
-			tiny_string err=tiny_string("Error #1074: Illegal write to read-only property ")+name.normalizedName();
-			if(cls)
-				err+=tiny_string(" on type ")+cls->getQualifiedClassName();
-			throw Class<ReferenceError>::getInstanceS(err);
+			throwError<ReferenceError>(kConstWriteError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
 		}
 
 		// Properties can not be added to a sealed class
 		if (cls && cls->isSealed)
 		{
-			tiny_string err=tiny_string("Error #1056: Cannot create property ") + 
-				name.normalizedName() + 
-				tiny_string(" on ") +
-				cls->getQualifiedClassName();
-			throw Class<ReferenceError>::getInstanceS(err);
+			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(), cls->getQualifiedClassName());
 		}
 
 		//Create a new dynamic variable
@@ -732,7 +722,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	if(createKind == DYNAMIC_TRAIT)
 	{
 		if(!mname.ns.begin()->hasEmptyName())
-			throw Class<ReferenceError>::getInstanceS("Error #1056: Trying to create a dynamic variable with namespace != \"\"");
+			throwError<ReferenceError>(kWriteSealedError, mname.normalizedName(), "" /* TODO: class name */);
 		var_iterator inserted=Variables.insert(
 			make_pair(varName(name,mname.ns[0]),variable(createKind))).first;
 		return &inserted->second;
@@ -1027,7 +1017,7 @@ _NR<ASObject> ASObject::executeASMethod(const tiny_string& methodName,
 {
 	_NR<ASObject> o = getVariableByMultiname(methodName, namespaces);
 	if (o.isNull() || !o->is<IFunction>())
-		throw Class<TypeError>::getInstanceS("Error #1006: Call attempted on an object that is not a function.");
+		throwError<TypeError>(kCallOfNonFunctionError, methodName);
 	IFunction* f=o->as<IFunction>();
 
 	incRef();
@@ -1351,7 +1341,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	{
 		//Custom serialization necessary
 		if(!serializeTraits)
-			throw Class<TypeError>::getInstanceS("#2004: IExternalizable class must have an alias registered");
+			throwError<TypeError>(kInvalidParamError);
 		out->writeU29(0x7);
 		out->writeStringVR(stringMap, alias);
 
@@ -1487,7 +1477,9 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	bool has_getter = false;
 	variable* ret=findSettable(prototypeName,&has_getter);
 	if(!ret && has_getter)
-		throw Class<ReferenceError>::getInstanceS("Error #1074: Illegal write to read-only property prototype");
+		throwError<ReferenceError>(kConstWriteError,
+					   prototypeName.normalizedName(),
+					   classdef ? classdef->as<Class_base>()->getQualifiedClassName() : "");
 	if(!ret)
 		ret = Variables.findObjVar(prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret->setter)
@@ -1497,4 +1489,12 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	}
 	else
 		ret->setVar(obj);
+}
+
+tiny_string ASObject::getClassName()
+{
+	if (getClass())
+		return getClass()->getQualifiedClassName();
+	else
+		return "";
 }

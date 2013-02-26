@@ -62,12 +62,14 @@ void Math::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Math,_constructor)
 {
-	throw Class<TypeError>::getInstanceS("Error #1076: Math is not a constructor");
+	throwError<TypeError>(kMathNotConstructorError);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Math,generator)
 {
-	throw Class<TypeError>::getInstanceS("Error #1075: Math is not a function");
+	throwError<TypeError>(kMathNotFunctionError);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Math,atan2)

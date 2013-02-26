@@ -61,7 +61,7 @@ ASFUNCTIONBODY(RegExp,_constructor)
 	if(argslen > 0 && args[0]->is<RegExp>())
 	{
 		if(argslen > 1 && !args[1]->is<Undefined>())
-			throw Class<TypeError>::getInstanceS("flags must be Undefined");
+			throwError<TypeError>(kRegExpFlagsArgumentError);
 		RegExp *src=args[0]->as<RegExp>();
 		th->source=src->source;
 		th->dotall=src->dotall;

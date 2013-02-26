@@ -429,6 +429,9 @@ public:
 	bool has_toString();
 	_R<ASObject> call_toString();
 
+	/* Helper function for calling getClass()->getQualifiedClassName() */
+	virtual tiny_string getClassName();
+
 	ASFUNCTION(generator);
 
 	/* helpers for the dynamic property 'prototype' */

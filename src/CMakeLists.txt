@@ -31,6 +31,7 @@ SET(LIBSPARK_SOURCES
   threading.cpp
   timer.cpp
   tiny_string.cpp
+  errorconstants.cpp
   backends/audio.cpp
   backends/builtindecoder.cpp
   backends/config.cpp

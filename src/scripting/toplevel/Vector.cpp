@@ -142,8 +142,10 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS("global Vector() function takes Array or Vector");
+		throwError<ArgumentError>(kCheckTypeFailedError, args[0]->toString(), "Vector");
 	}
+
+	return NULL;
 }
 
 ASFUNCTIONBODY(Vector,_constructor)
@@ -212,9 +214,9 @@ ASFUNCTIONBODY(Vector,_concat)
 ASFUNCTIONBODY(Vector,filter)
 {
 	if (argslen < 1 || argslen > 2)
-		throw Class<ArgumentError>::getInstanceS("Error #1063"); 
+		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.filter", "1", Integer::toString(argslen));
 	if (!args[0]->is<IFunction>())
-		throw Class<TypeError>::getInstanceS("Error #1034"); 
+		throwError<TypeError>(kCheckTypeFailedError, args[0]->getClassName(), "Function");
 	Vector* th=static_cast<Vector*>(obj);
 	  
 	IFunction* f = static_cast<IFunction*>(args[0]);
@@ -257,9 +259,9 @@ ASFUNCTIONBODY(Vector,filter)
 ASFUNCTIONBODY(Vector, some)
 {
 	if (argslen < 1)
-		throw Class<ArgumentError>::getInstanceS("Error #1063");
+		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.some", "1", Integer::toString(argslen));
 	if (!args[0]->is<IFunction>())
-		throw Class<TypeError>::getInstanceS("Error #1034"); 
+		throwError<TypeError>(kCheckTypeFailedError, args[0]->getClassName(), "Function");
 	Vector* th=static_cast<Vector*>(obj);
 	IFunction* f = static_cast<IFunction*>(args[0]);
 	ASObject* params[3];
@@ -300,9 +302,9 @@ ASFUNCTIONBODY(Vector, every)
 {
 	Vector* th=static_cast<Vector*>(obj);
 	if (argslen < 1)
-		throw Class<ArgumentError>::getInstanceS("Error #1063");
+		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.some", "1", Integer::toString(argslen));
 	if (!args[0]->is<IFunction>())
-		throw Class<TypeError>::getInstanceS("Error #1034"); 
+		throwError<TypeError>(kCheckTypeFailedError, args[0]->getClassName(), "Function");
 	IFunction* f = static_cast<IFunction*>(args[0]);
 	ASObject* params[3];
 	ASObject *funcRet;
@@ -332,7 +334,7 @@ ASFUNCTIONBODY(Vector, every)
 		if(funcRet)
 		{
 			if (funcRet->is<Undefined>() || funcRet->is<Null>())
-				throw Class<TypeError>::getInstanceS("Error #1006");
+				throwError<TypeError>(kCallOfNonFunctionError, funcRet->toString());
 			if(!Boolean_concrete(funcRet))
 			{
 				return funcRet;
@@ -347,7 +349,7 @@ ASFUNCTIONBODY(Vector,push)
 {
 	Vector* th=static_cast<Vector*>(obj);
 	if (th->fixed)
-		throw Class<RangeError>::getInstanceS("Error #1126");
+		throwError<RangeError>(kVectorFixedError);
 	for(size_t i = 0; i < argslen; ++i)
 	{
 		args[i]->incRef();
@@ -362,7 +364,7 @@ ASFUNCTIONBODY(Vector,_pop)
 {
 	Vector* th=static_cast<Vector*>(obj);
 	if (th->fixed)
-		throw Class<RangeError>::getInstanceS("Error #1126");
+		throwError<RangeError>(kVectorFixedError);
 	uint32_t size =th->size();
 	if (size == 0)
         return th->vec_type->coerce(getSys()->getNullRef());
@@ -382,7 +384,7 @@ ASFUNCTIONBODY(Vector,setLength)
 {
 	Vector* th = obj->as<Vector>();
 	if (th->fixed)
-		throw Class<RangeError>::getInstanceS("Error #1126");
+		throwError<RangeError>(kVectorFixedError);
 	uint32_t len;
 	ARG_UNPACK (len);
 	if(len <= th->vec.size())
@@ -412,9 +414,9 @@ ASFUNCTIONBODY(Vector,setFixed)
 ASFUNCTIONBODY(Vector,forEach)
 {
 	if (argslen < 1)
-		throw Class<ArgumentError>::getInstanceS("Error #1063");
+		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.forEach", "1", Integer::toString(argslen));
 	if (!args[0]->is<IFunction>())
-		throw Class<TypeError>::getInstanceS("Error #1034"); 
+		throwError<TypeError>(kCheckTypeFailedError, args[0]->getClassName(), "Function");
 	Vector* th=static_cast<Vector*>(obj);
 	IFunction* f = static_cast<IFunction*>(args[0]);
 	ASObject* params[3];
@@ -517,7 +519,7 @@ ASFUNCTIONBODY(Vector,shift)
 {
 	Vector* th=static_cast<Vector*>(obj);
 	if (th->fixed)
-		throw Class<RangeError>::getInstanceS("Error #1126");
+		throwError<RangeError>(kVectorFixedError);
 	if(!th->size())
 		return th->vec_type->coerce(getSys()->getNullRef());
 	ASObject* ret;
@@ -591,7 +593,7 @@ ASFUNCTIONBODY(Vector,splice)
 {
 	Vector* th=static_cast<Vector*>(obj);
 	if (th->fixed)
-		throw Class<RangeError>::getInstanceS("Error #1126");
+		throwError<RangeError>(kVectorFixedError);
 	int startIndex=args[0]->toInt();
 	//By default, delete all the element up to the end
 	//Use the array len, it will be capped below
@@ -724,7 +726,7 @@ bool Vector::sortComparatorWrapper::operator()(ASObject* d1, ASObject* d2)
 ASFUNCTIONBODY(Vector,_sort)
 {
 	if (argslen != 1)
-		throw Class<ArgumentError>::getInstanceS("Error #1063: Non-optional argument missing");
+		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.sort", "1", Integer::toString(argslen));
 	Vector* th=static_cast<Vector*>(obj);
 	
 	IFunction* comp=static_cast<IFunction*>(args[0]);
@@ -739,7 +741,7 @@ ASFUNCTIONBODY(Vector,unshift)
 {
 	Vector* th=static_cast<Vector*>(obj);
 	if (th->fixed)
-		throw Class<RangeError>::getInstanceS("Error #1126");
+		throwError<RangeError>(kVectorFixedError);
 	th->vec.resize(th->size()+argslen, NULL);
 	for(uint32_t i=th->size();i> 0;i--)
 	{
@@ -853,8 +855,12 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 	}
 	else
 	{
-		throw Class<RangeError>::getInstanceS("Error #1125");
+		throwError<RangeError>(kOutOfRangeError,
+				       Integer::toString(index),
+				       Integer::toString(vec.size()));
 	}
+
+	return NullRef;
 }
 
 void Vector::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
@@ -882,7 +888,9 @@ void Vector::setVariableByMultiname(const multiname& name, ASObject* o, CONST_AL
 	{
 		/* Spec says: one may not set a value with an index more than
 		 * one beyond the current final index. */
-		throw Class<RangeError>::getInstanceS("Error #1125");
+		throwError<RangeError>(kOutOfRangeError,
+				       Integer::toString(index),
+				       Integer::toString(vec.size()));
 	}
 }
 
@@ -945,7 +953,7 @@ bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
 	// Don't throw for non-numeric NAME_STRING or NAME_OBJECT
 	// because they can still be valid built-in property names.
 	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type==multiname::NAME_NUMBER))
-		throw Class<RangeError>::getInstanceS("Error #1125");
+		throwError<RangeError>(kOutOfRangeError, name.normalizedName(), "?");
 
 	return validIndex;
 }

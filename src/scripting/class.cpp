@@ -100,7 +100,8 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 template<>
 Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 {
-	throw Class<TypeError>::getInstanceS("Error #1007: Cannot construct global object");
+	throwError<TypeError>(kConstructOfNonFunctionError);
+	return NULL;
 }
 
 void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)

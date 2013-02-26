@@ -176,7 +176,7 @@ ASFUNCTIONBODY(Number,_toString)
 	if(Class<Number>::getClass()->prototype->getObj() == obj)
 		return Class<ASString>::getInstanceS("0");
 	if(!obj->is<Number>())
-		throw Class<TypeError>::getInstanceS("Error #1004: Number.toString is not generic");
+		throwError<TypeError>(kInvokeOnIncompatibleObjectError, "Number.toString");
 	Number* th=static_cast<Number*>(obj);
 	int radix=10;
 	ARG_UNPACK (radix,10);
@@ -233,7 +233,7 @@ tiny_string Number::toString(number_t val)
 tiny_string Number::toStringRadix(number_t val, int radix)
 {
 	if(radix < 2 || radix > 36)
-		throw Class<RangeError>::getInstanceS("Error #1003");
+		throwError<RangeError>(kInvalidRadixError, Integer::toString(radix));
 
 	if(std::isnan(val) || std::isinf(val))
 		return Number::toString(val);
@@ -296,7 +296,7 @@ ASFUNCTIONBODY(Number,toFixed)
 	int fractiondigits=0;
 	ARG_UNPACK (fractiondigits,0);
 	if (fractiondigits < 0 || fractiondigits > 20)
-		throw Class<RangeError>::getInstanceS("Error #1002");
+		throwError<RangeError>(kInvalidPrecisionError, Integer::toString(fractiondigits));
 	if(std::isnan(val))
 		return  Class<ASString>::getInstanceS("NaN");
 	number_t fractpart, intpart;
@@ -334,7 +334,7 @@ ASFUNCTIONBODY(Number,_valueOf)
 		return abstract_d(0.);
 
 	if(!obj->is<Number>())
-			throw Class<TypeError>::getInstanceS("");
+		throwError<TypeError>(kInvokeOnIncompatibleObjectError);
 
 	return abstract_d(obj->as<Number>()->val);
 }

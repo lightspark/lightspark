@@ -174,7 +174,7 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	// so we simply don't allow bytearrays larger than 1GiB
 	// maybe we should set this smaller
 	if (size > 0x4000000) 
-		throw Class<ASError>::getInstanceS("Error #1000: out of memory.");
+		throwError<ASError>(kOutOfMemoryError);
 	// The first allocation is exactly the size we need,
 	// the subsequent reallocations happen in increments of BA_CHUNK_SIZE bytes
 	uint32_t prevLen = len;
@@ -309,7 +309,7 @@ ASFUNCTIONBODY(ByteArray,_setEndian)
 	else if(args[0]->toString() == Endian::bigEndian)
 		th->littleEndian = false;
 	else
-		throw Class<ArgumentError>::getInstanceS("Error #2008: Parameter type must be one of the accepted values.");
+		throwError<ArgumentError>(kInvalidEnumError, "endian");
 	return NULL;
 }
 
@@ -325,7 +325,7 @@ ASFUNCTIONBODY(ByteArray,_setObjectEncoding)
 	uint32_t value;
 	ARG_UNPACK(value);
 	if(value!=ObjectEncoding::AMF0 && value!=ObjectEncoding::AMF3)
-		throw Class<ArgumentError>::getInstanceS("Error #2008: Parameter objectEncoding must be one of the accepted values.");
+		throwError<ArgumentError>(kInvalidEnumError, "objectEncoding");
 
 	th->objectEncoding=value;
 	return NULL;
@@ -397,7 +397,7 @@ ASFUNCTIONBODY(ByteArray,readBoolean)
 	uint8_t ret;
 	if(!th->readByte(ret))
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	return abstract_b(ret!=0);
@@ -420,7 +420,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	//Error checks
 	if(th->position+length > th->len)
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 	if((uint64_t)length+offset > 0xFFFFFFFF)
 	{
@@ -455,7 +455,7 @@ ASFUNCTIONBODY(ByteArray,readUTF)
 	tiny_string res;
 	if (!th->readUTF(res))
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	return Class<ASString>::getInstanceS(res);
@@ -469,7 +469,7 @@ ASFUNCTIONBODY(ByteArray,readUTFBytes)
 	ARG_UNPACK (length);
 	if(th->position+length > th->len)
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	uint8_t *bufStart=th->bytes+th->position;
@@ -482,7 +482,7 @@ void ByteArray::writeUTF(const tiny_string& str)
 	getBuffer(position+str.numBytes()+2,true);
 	if(str.numBytes() > 65535)
 	{
-		throw Class<RangeError>::getInstanceS("Error #2006: The supplied index is out of bounds.");
+		throwError<RangeError>(kParamRangeError);
 	}
 	uint16_t numBytes=endianIn((uint16_t)str.numBytes());
 	memcpy(bytes+position,&numBytes,2);
@@ -748,7 +748,7 @@ ASFUNCTIONBODY(ByteArray, readByte)
 	uint8_t ret;
 	if(!th->readByte(ret))
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 	return abstract_i((int8_t)ret);
 }
@@ -760,7 +760,7 @@ ASFUNCTIONBODY(ByteArray,readDouble)
 
 	if(th->len < th->position+8)
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	uint64_t ret;
@@ -779,7 +779,7 @@ ASFUNCTIONBODY(ByteArray,readFloat)
 
 	if(th->len < th->position+4)
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	uint32_t ret;
@@ -798,7 +798,7 @@ ASFUNCTIONBODY(ByteArray,readInt)
 
 	if(th->len < th->position+4)
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	uint32_t ret;
@@ -828,7 +828,7 @@ ASFUNCTIONBODY(ByteArray,readShort)
 	uint16_t ret;
 	if(!th->readShort(ret))
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	return abstract_i((int16_t)ret);
@@ -842,7 +842,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedByte)
 	uint8_t ret;
 	if (!th->readByte(ret))
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 	return abstract_ui(ret);
 }
@@ -866,7 +866,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedInt)
 
 	uint32_t ret;
 	if(!th->readUnsignedInt(ret))
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 
 	return abstract_ui(ret);
 }
@@ -879,7 +879,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedShort)
 	uint16_t ret;
 	if(!th->readShort(ret))
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	return abstract_ui(ret);
@@ -894,7 +894,7 @@ ASFUNCTIONBODY(ByteArray,readMultiByte)
 
 	if(th->len < th->position+strlen)
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 
 	// TODO: should convert from charset to UTF-8
@@ -908,7 +908,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	assert_and_throw(argslen==0);
 	if(th->bytes==NULL)
 	{
-		throw Class<EOFError>::getInstanceS("Error #2030: End of file was encountered.");
+		throwError<ArgumentError>(kEOFError);
 	}
 	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
 	Amf3Deserializer d(th);
@@ -1052,7 +1052,7 @@ void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_
 {
 	const uint32_t len=s.numBytes();
 	if(len >= 1<<28)
-		throw Class<RangeError>::getInstanceS("Error #2006: The supplied index is out of bounds.");
+		throwError<RangeError>(kParamRangeError);
 
 	//Check if the string is already in the map
 	auto it=stringMap.find(s);
@@ -1084,7 +1084,7 @@ void ByteArray::writeXMLString(std::map<const ASObject*, uint32_t>& objMap,
 			       const tiny_string& xmlstr)
 {
 	if(xmlstr.numBytes() >= 1<<28)
-		throw Class<RangeError>::getInstanceS("Error #2006: The supplied index is out of bounds.");
+		throwError<RangeError>(kParamRangeError);
 
 	//Check if the XML object has been already serialized
 	auto it=objMap.find(xml);
@@ -1377,7 +1377,7 @@ ASFUNCTIONBODY(Timer,_setDelay)
 	assert_and_throw(argslen==1);
 	int32_t newdelay = args[0]->toInt();
 	if (newdelay<=0)
-		throw Class<ASError>::getInstanceS("delay must be positive");
+		throw Class<RangeError>::getInstanceS("delay must be positive", 2066);
 
 	Timer* th=static_cast<Timer*>(obj);
 	th->delay=newdelay;

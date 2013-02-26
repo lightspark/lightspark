@@ -586,7 +586,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 {
 	//See ECMA 13.2.2
 	if(f->inClass)
-		throw Class<TypeError>::getInstanceS("Error #1064: Cannot call method as constructor");
+		throwError<TypeError>(kCannotCallMethodAsConstructor, "");
 
 	assert(f->is<SyntheticFunction>());
 	SyntheticFunction* sf=f->as<SyntheticFunction>();
@@ -672,7 +672,7 @@ void ABCVm::construct(call_context* th, int m)
 
 		default:
 		{
-			throw Class<TypeError>::getInstanceS("Error #1007: Instantiation attempted on a non-constructor");
+			throwError<TypeError>(kConstructOfNonFunctionError);
 		}
 	}
 
@@ -685,7 +685,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 {
 	LOG(LOG_CALLS, _("constructGenericType ") << m);
 	if (m != 1)
-			throw Class<TypeError>::getInstanceS("Error #1128");
+		throwError<TypeError>(kWrongTypeArgCountError, "function", "1", Integer::toString(m));
 	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
@@ -1517,15 +1517,15 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		case T_STRING:
 			obj->decRef();
 			type->decRef();
-			throw Class<TypeError>::getInstanceS("Error #1009");
+			throwError<TypeError>(kConvertNullToObjectError);
 		case T_UNDEFINED:
 			obj->decRef();
 			type->decRef();
-			throw Class<TypeError>::getInstanceS("Error #1010");
+			throwError<TypeError>(kConvertUndefinedToObjectError);
 		case T_CLASS:
 			break;
 		default:
-			throw Class<TypeError>::getInstanceS("Error #1041");
+			throwError<TypeError>(kIsTypeMustBeClassError);
 	}
 
 	c=static_cast<Class_base*>(type);
@@ -1599,7 +1599,7 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	{
 		obj->decRef();
 		type->decRef();
-		throw Class<TypeError>::getInstanceS("Error #1009: Not a type in asTypelate");
+		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	Class_base* c=static_cast<Class_base*>(type);
 	//Special case numeric types
@@ -1714,15 +1714,16 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	ASObject* obj=th->runtime_stack_pop();
 
 	_NR<ASObject> o=obj->getVariableByMultiname(*name);
-	name->resetNameIfObject();
 
 	if(o.isNull())
 	{
 		for(int i=0;i<m;++i)
 			args[i]->decRef();
 		obj->decRef();
-		throw Class<ReferenceError>::getInstanceS("Error #1065: Variable is not defined.");
+		throwError<ReferenceError>(kUndefinedVarError, name->normalizedName());
 	}
+
+	name->resetNameIfObject();
 
 	LOG(LOG_CALLS,_("Constructing"));
 	ASObject* ret;
@@ -1738,7 +1739,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 			ret = constructFunction(th, o->as<IFunction>(), args, m);
 		}
 		else
-			throw Class<TypeError>::getInstanceS("Error #1007: Cannot construct such an object in constructProp");
+			throwError<TypeError>(kConstructOfNonFunctionError);
 	}
 	catch(ASObject* exc)
 	{
@@ -1851,15 +1852,17 @@ void ABCVm::getDescendants(call_context* th, int n)
 			}
 			else
 			{
+				tiny_string objName = obj->getClassName();
 				obj->decRef();
-				throw Class<TypeError>::getInstanceS("Only XML and XMLList objects have descendants");
+				throwError<TypeError>(kDescendentsError, objName);
 			}
 		}
 	}
 	else
 	{
+		tiny_string objName = obj->getClassName();
 		obj->decRef();
-		throw Class<TypeError>::getInstanceS("Only XML and XMLList objects have descendants");
+		throwError<TypeError>(kDescendentsError, objName);
 	}
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
 	th->runtime_stack_push(retObj);
@@ -2183,7 +2186,7 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 		else
 		{
 			f->decRef();
-			throw Class<TypeError>::getInstanceS("Error #1006: Tried to call something that is not a function");
+			throwError<TypeError>(kCallOfNonFunctionError, "Object");
 		}
 	}
 	LOG(LOG_CALLS,_("End of call ") << m << ' ' << f);
@@ -2294,7 +2297,7 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 	}
 
 	if(!type->is<Class_base>())
-		throw Class<TypeError>::getInstanceS("Error #1040: instanceOf expects a class of function as second parameter!");
+		throwError<TypeError>(kCantUseInstanceofOnNonObjectError);
 
 	if(value->is<Class_base>())
 		// Classes are instance of Class and Object but not

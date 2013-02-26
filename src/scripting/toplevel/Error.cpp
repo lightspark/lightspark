@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <sstream>
 #include "scripting/toplevel/Error.h"
 #include "asobject.h"
 #include "scripting/toplevel/toplevel.h"
@@ -25,6 +26,52 @@
 
 using namespace std;
 using namespace lightspark;
+
+tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1, const tiny_string& arg2, const tiny_string& arg3)
+{
+	auto found = errorMessages.find(errorID);
+	if (found == errorMessages.end())
+		return "";
+
+	//Replace "%1", "%2" and "%3" with the optional arguments
+	stringstream msg;
+	const char *msgtemplate = found->second;
+	assert(msgtemplate);
+	while (*msgtemplate)
+	{
+		if (*msgtemplate == '%')
+		{
+			msgtemplate++;
+			switch (*msgtemplate)
+			{
+				case '1':
+					msg << arg1;
+					break;
+				case '2':
+					msg << arg2;
+					break;
+				case '3':
+					msg << arg3;
+					break;
+				default:
+					msg << '%';
+					msg << *msgtemplate;
+					break;
+			}
+
+			if (*msgtemplate == '\0')
+				break;
+		}
+		else
+		{
+			msg << *msgtemplate;
+		}
+
+		msgtemplate++;
+	}
+
+	return msg.str();
+}
 
 ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name):
 	ASObject(c),errorID(id),name(error_name),message(error_message)
@@ -41,10 +88,13 @@ ASFUNCTIONBODY(ASError,getStackTrace)
 
 tiny_string ASError::toString(bool debugMsg)
 {
+	tiny_string ret;
 	if( !message.empty() )
-		return name + ": " + message;
-	else
-		return name;
+		ret = name + ": ";
+	if(errorID != 0)
+		ret += tiny_string("Error #") + Integer::toString(errorID) + ": ";
+	ret += message;
+	return ret;
 }
 
 ASFUNCTIONBODY(ASError,_toString)

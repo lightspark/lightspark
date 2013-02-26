@@ -99,7 +99,7 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 	uint32_t fillColor;
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	ARG_UNPACK(width, 0)(height, 0)(transparent, true)(fillColor, 0xFFFFFFFF);
 
 	ASObject::_constructor(obj,NULL,0);
@@ -169,7 +169,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 
 	_NR<ASObject> drawable;
 	_NR<Matrix> matrix;
@@ -181,7 +181,9 @@ ASFUNCTIONBODY(BitmapData,draw)
 					(clipRect, NullRef) (smoothing, false);
 
 	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass()) )
-		throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
+		throwError<TypeError>(kCheckTypeFailedError, 
+				      drawable->getClassName(),
+				      "IBitmapDrawable");
 
 	if(!ctransform.isNull() || !blendMode.isNull() || !clipRect.isNull() || smoothing)
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters");
@@ -229,7 +231,7 @@ ASFUNCTIONBODY(BitmapData,getPixel)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	int32_t x;
 	int32_t y;
 	ARG_UNPACK(x)(y);
@@ -242,7 +244,7 @@ ASFUNCTIONBODY(BitmapData,getPixel32)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	int32_t x;
 	int32_t y;
 	ARG_UNPACK(x)(y);
@@ -268,7 +270,7 @@ ASFUNCTIONBODY(BitmapData,setPixel)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	int32_t x;
 	int32_t y;
 	uint32_t color;
@@ -282,7 +284,7 @@ ASFUNCTIONBODY(BitmapData,setPixel32)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	int32_t x;
 	int32_t y;
 	uint32_t color;
@@ -296,7 +298,7 @@ ASFUNCTIONBODY(BitmapData,getRect)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	Rectangle *rect=Class<Rectangle>::getInstanceS();
 	rect->width=th->width;
 	rect->height=th->height;
@@ -307,7 +309,7 @@ ASFUNCTIONBODY(BitmapData,fillRect)
 {
 	BitmapData* th=obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	_NR<Rectangle> rect;
 	uint32_t color;
 	ARG_UNPACK(rect)(color);
@@ -350,7 +352,7 @@ ASFUNCTIONBODY(BitmapData,copyPixels)
 {
 	BitmapData* th=obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	_NR<BitmapData> source;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
@@ -413,7 +415,7 @@ ASFUNCTIONBODY(BitmapData,generateFilterRect)
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData::generateFilterRect is just a stub");
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 	Rectangle *rect=Class<Rectangle>::getInstanceS();
 	rect->width=th->width;
 	rect->height=th->height;
@@ -424,7 +426,7 @@ ASFUNCTIONBODY(BitmapData,hitTest)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 
 	_NR<Point> firstPoint;
 	uint32_t firstAlphaThreshold;
@@ -435,7 +437,9 @@ ASFUNCTIONBODY(BitmapData,hitTest)
 					(secondAlphaThreshold,1);
 
 	if(!secondObject->getClass() || !secondObject->getClass()->isSubClass(Class<Point>::getClass()))
-		throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
+		throwError<TypeError>(kCheckTypeFailedError, 
+				      secondObject->getClassName(),
+				      "Point");
 
 	if(!secondBitmapDataPoint.isNull() || secondAlphaThreshold!=1)
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest does not expect some parameters");
@@ -453,7 +457,7 @@ ASFUNCTIONBODY(BitmapData,scroll)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 
 	int x;
 	int y;
@@ -495,7 +499,7 @@ ASFUNCTIONBODY(BitmapData,clone)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->disposed)
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData");
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
 
 	return Class<BitmapData>::getInstanceS(*th);
 }

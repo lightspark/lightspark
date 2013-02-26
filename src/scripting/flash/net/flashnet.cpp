@@ -89,7 +89,7 @@ tiny_string URLRequest::validatedContentType() const
 	if(contentType.find("\r")!=contentType.npos || 
 	   contentType.find("\n")!=contentType.npos)
 	{
-		throw Class<ArgumentError>::getInstanceS(tiny_string("Error #2096: The HTTP request header ") + contentType + tiny_string(" cannot be set via ActionScript."));
+		throw Class<ArgumentError>::getInstanceS(tiny_string("The HTTP request header ") + contentType + tiny_string(" cannot be set via ActionScript."), 2096);
 	}
 
 	return contentType;
@@ -124,16 +124,16 @@ void URLRequest::validateHeaderName(const tiny_string& headerName) const
 
 	if ((headerName.strchr('\r') != NULL) ||
 	     headerName.strchr('\n') != NULL)
-		throw Class<ArgumentError>::getInstanceS("Error #2096: The HTTP request header cannot be set via ActionScript");
+		throw Class<ArgumentError>::getInstanceS("The HTTP request header cannot be set via ActionScript", 2096);
 
 	for (unsigned i=0; i<(sizeof illegalHeaders)/(sizeof illegalHeaders[0]); i++)
 	{
 		if (headerName.lowercase() == illegalHeaders[i])
 		{
-			tiny_string msg("Error #2096: The HTTP request header ");
+			tiny_string msg("The HTTP request header ");
 			msg += headerName;
 			msg += " cannot be set via ActionScript";
-			throw Class<ArgumentError>::getInstanceS(msg);
+			throw Class<ArgumentError>::getInstanceS(msg, 2096);
 		}
 	}
 }
@@ -152,7 +152,7 @@ std::list<tiny_string> URLRequest::getHeaders() const
 
 		// Validate
 		if (!headerObject->is<URLRequestHeader>())
-			throw Class<TypeError>::getInstanceS("Error #1034: Object is not URLRequestHeader");
+			throwError<TypeError>(kCheckTypeFailedError, headerObject->getClassName(), "URLRequestHeader");
 		URLRequestHeader *header = headerObject->as<URLRequestHeader>();
 		tiny_string headerName = header->name;
 		validateHeaderName(headerName);
@@ -164,7 +164,7 @@ std::list<tiny_string> URLRequest::getHeaders() const
 		headerTotalLen += header->name.numBytes();
 		headerTotalLen += header->value.numBytes();
 		if (headerTotalLen >= 8192)
-			throw Class<ArgumentError>::getInstanceS("Error #2145: Cumulative length of requestHeaders must be less than 8192 characters.");
+			throw Class<ArgumentError>::getInstanceS("Cumulative length of requestHeaders must be less than 8192 characters.", 2145);
 
 		// Append header to results
 		headers.push_back(headerName + ": " + header->value);
@@ -1836,7 +1836,7 @@ ASFUNCTIONBODY(lightspark,getClassByAlias)
 	const tiny_string& arg0 = args[0]->toString();
 	auto it=getSys()->aliasMap.find(arg0);
 	if(it==getSys()->aliasMap.end())
-		throw Class<ReferenceError>::getInstanceS("Alias not set");
+		throwError<ReferenceError>(kClassNotFoundError, arg0);
 
 	it->second->incRef();
 	return it->second.getPtr();

@@ -35,7 +35,8 @@ void ContentElement::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ContentElement, _constructor)
 {
-	throw Class<ArgumentError>::getInstanceS("Error #2012: ContentElement class cannot be instantiated.");
+	throwError<ArgumentError>(kCantInstantiateError, "ContentElement");
+	return NULL;
 }
 
 void ElementFormat::sinit(Class_base* c)

@@ -262,7 +262,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		for(uint32_t i=0;i<numArgs;i++)
 			args[i]->decRef();
 		obj->decRef();
-		throw Class<ASError>::getInstanceS("Error #1023: Stack overflow occurred");
+		throwError<ASError>(kStackOverflowError);
 	}
 
 	/* resolve argument and return types */
@@ -289,7 +289,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		 * We won't throw if all arguments are of 'Any' type.
 		 * This is in accordance with the proprietary player. */
 		if(isMethod() || mi->hasExplicitTypes)
-			throw Class<ArgumentError>::getInstanceS("Error #1063: Not enough arguments provided");
+			throwError<ArgumentError>(kWrongArgumentCountError,
+						  obj ? obj->getClassName() : "",
+						  Integer::toString(mi->numArgs()-mi->numOptions()),
+						  Integer::toString(numArgs));
 	}
 
 	//For sufficiently hot methods, optimize them to the internal bytecode
@@ -593,12 +596,14 @@ TRISTATE Null::isLess(ASObject* r)
 
 int32_t Null::getVariableByMultiname_i(const multiname& name)
 {
-	throw Class<TypeError>::getInstanceS("Error #1009: null has no properties.");
+	throwError<TypeError>(kConvertNullToObjectError);
+	return 0;
 }
 
 _NR<ASObject> Null::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	throw Class<TypeError>::getInstanceS("Error #1009: null has no properties.");
+	throwError<TypeError>(kConvertNullToObjectError);
+	return NullRef;
 }
 
 int Null::toInt()
@@ -616,7 +621,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 void Null::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	o->decRef();
-	throw Class<TypeError>::getInstanceS("Cannot set on null");
+	throwError<TypeError>(kConvertNullToObjectError);
 }
 
 ASObject* Void::coerce(ASObject* o) const
@@ -759,12 +764,12 @@ ASObject* Class_base::coerce(ASObject* o) const
 		|| (class_name.name=="Class" && class_name.ns==""))
 		       return o; /* 'this' is the type of a class */
 	       else
-		       throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
+		       throwError<TypeError>(kCheckTypeFailedError, o->getClassName(), getQualifiedClassName());
 	}
 	//o->getClass() == NULL for primitive types
 	//those are handled in overloads Class<Number>::coerce etc.
 	if(!o->getClass() || !o->getClass()->isSubClass(this))
-		throw Class<TypeError>::getInstanceS("Error #1034: Wrong type");
+		throwError<TypeError>(kCheckTypeFailedError, o->getClassName(), getQualifiedClassName());
 	return o;
 }
 
@@ -1803,7 +1808,7 @@ IFunction* Class<IFunction>::getNopFunction()
 ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 {
 	if (argslen > 0)
-		throw Class<EvalError>::getInstanceS("Error #1066: Function('function body') is not supported");
+		throwError<EvalError>(kFunctionConstructorError);
 	return getNopFunction();
 }
 

@@ -828,7 +828,7 @@ void StaticText::sinit(Class_base* c)
 {
 	//TODO: spec says that constructor should throw ArgumentError
 	c->setConstructor(NULL);
-	c->setSuper(Class<InteractiveObject>::getRef());
+	c->setSuper(Class<DisplayObject>::getRef());
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(_getText),GETTER_METHOD,true);
 }
 

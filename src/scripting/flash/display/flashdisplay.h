@@ -93,7 +93,7 @@ protected:
 	void renderImpl(RenderContext& ctxt) const;
 public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
-	void dumpDisplayList();
+	void dumpDisplayList(unsigned int level=0);
 	bool _removeChild(_R<DisplayObject> child);
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);

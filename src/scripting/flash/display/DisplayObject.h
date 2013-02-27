@@ -99,7 +99,6 @@ protected:
 	number_t computeWidth();
 	number_t computeHeight();
 	bool skipRender() const;
-	float clippedAlpha() const;
 
 	void defaultRender(RenderContext& ctxt) const;
 	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -160,6 +159,8 @@ public:
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return !maskOf.isNull(); }
+	bool isVisible() const { return visible; };
+	float clippedAlpha() const;
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);

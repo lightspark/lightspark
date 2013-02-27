@@ -1515,12 +1515,26 @@ ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, contextMenu);
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled);
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex);
 
-void DisplayObjectContainer::dumpDisplayList()
+void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 {
-	LOG(LOG_INFO, "Size: " << dynamicDisplayList.size());
+	tiny_string indent(std::string(2*level, ' '));
 	list<_R<DisplayObject> >::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
-		LOG(LOG_INFO, (*it)->getClass()->class_name);
+	{
+		Vector2f pos = (*it)->getXY();
+		LOG(LOG_INFO, indent << (*it)->getClass()->class_name <<
+		    " (" << pos.x << "," << pos.y << ") " <<
+		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
+		    ((*it)->isVisible() ? "v" : "") <<
+		    ((*it)->isMask() ? "m" : "") << " " <<
+		    "a=" << (*it)->clippedAlpha() << " " <<
+		    it->getPtr());
+
+		if ((*it)->is<DisplayObjectContainer>())
+		{
+			(*it)->as<DisplayObjectContainer>()->dumpDisplayList(level+1);
+		}
+	}
 }
 
 void DisplayObjectContainer::setOnStage(bool staged)

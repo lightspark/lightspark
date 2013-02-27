@@ -109,6 +109,7 @@ public:
 	ASFUNCTION(_setTextFormat);
 	ASFUNCTION(_getDefaultTextFormat);
 	ASFUNCTION(_setDefaultTextFormat);
+	ASFUNCTION(_getLineMetrics);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
@@ -240,6 +241,25 @@ public:
 	GridFitType(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
+
+class TextLineMetrics : public ASObject
+{
+protected:
+	ASPROPERTY_GETTER_SETTER(number_t, ascent);
+	ASPROPERTY_GETTER_SETTER(number_t, descent);
+	ASPROPERTY_GETTER_SETTER(number_t, height);
+	ASPROPERTY_GETTER_SETTER(number_t, leading);
+	ASPROPERTY_GETTER_SETTER(number_t, width);
+	ASPROPERTY_GETTER_SETTER(number_t, x);
+public:
+	TextLineMetrics(Class_base* c, number_t _x=0, number_t _width=0, number_t _height=0,
+			number_t _ascent=0, number_t _descent=0, number_t _leading=0)
+		: ASObject(c), ascent(_ascent), descent(_descent),
+		  height(_height), leading(_leading), width(_width), x(_x) {}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
 };
 
 #endif /* SCRIPTING_FLASH_TEXT_FLASHTEXT_H */

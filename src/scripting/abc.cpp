@@ -301,6 +301,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextFieldAutoSize","flash.text",Class<TextFieldAutoSize>::getRef());
 	builtin->registerBuiltin("TextFormat","flash.text",Class<TextFormat>::getRef());
 	builtin->registerBuiltin("TextFormatAlign","flash.text",Class<TextFormatAlign>::getRef());
+	builtin->registerBuiltin("TextLineMetrics","flash.text",Class<TextLineMetrics>::getRef());
 	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef());
 
 	builtin->registerBuiltin("ContentElement","flash.text.engine",Class<ContentElement>::getRef());

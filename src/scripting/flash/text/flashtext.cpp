@@ -124,6 +124,7 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getTextFormat","",Class<IFunction>::getFunction(_getTextFormat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(_setTextFormat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineMetrics","",Class<IFunction>::getFunction(_getLineMetrics),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(TextField::_getDefaultTextFormat),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(TextField::_setDefaultTextFormat),SETTER_METHOD,true);
 
@@ -403,6 +404,12 @@ ASFUNCTIONBODY(TextField, _setter_type)
 		throwError<ArgumentError>(kInvalidEnumError, "type");
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_getLineMetrics)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "TextField.getLineMetrics() returns bogus values");
+	return Class<TextLineMetrics>::getInstanceS(19, 280, 14, 11, 3.5, 0);
 }
 
 void TextField::updateSizes()
@@ -882,3 +889,36 @@ void GridFitType::sinit(Class_base* c)
 	c->setVariableByQName("PIXEL","",Class<ASString>::getInstanceS("pixel"),DECLARED_TRAIT);
 	c->setVariableByQName("SUBPIXEL","",Class<ASString>::getInstanceS("subpixel"),DECLARED_TRAIT);
 }
+
+void TextLineMetrics::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSuper(Class<ASObject>::getRef());
+	REGISTER_GETTER_SETTER(c, ascent);
+	REGISTER_GETTER_SETTER(c, descent);
+	REGISTER_GETTER_SETTER(c, height);
+	REGISTER_GETTER_SETTER(c, leading);
+	REGISTER_GETTER_SETTER(c, width);
+	REGISTER_GETTER_SETTER(c, x);
+}
+
+ASFUNCTIONBODY(TextLineMetrics, _constructor)
+{
+	if (argslen == 0)
+	{
+		//Assume that the values were initialized by the C++
+		//constructor
+		return NULL;
+	}
+
+	TextLineMetrics* th=static_cast<TextLineMetrics*>(obj);
+	ARG_UNPACK (th->x) (th->width) (th->height) (th->ascent) (th->descent) (th->leading);
+	return NULL;
+}
+
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, ascent);
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, descent);
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, height);
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, leading);
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, width);
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, x);

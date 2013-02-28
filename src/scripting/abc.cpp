@@ -272,21 +272,21 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef());
 	builtin->registerBuiltin("GlowFilter","flash.filters",Class<GlowFilter>::getRef());
 	builtin->registerBuiltin("GradientGlowFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("GradientGlowFilter","flash.filters")));
+			Class<ASObject>::getStubClass(QName("GradientGlowFilter","flash.filters"), Class<BitmapFilter>::getRef()));
 	builtin->registerBuiltin("BevelFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("BevelFilter","flash.filters")));
+			Class<ASObject>::getStubClass(QName("BevelFilter","flash.filters"), Class<BitmapFilter>::getRef()));
 	builtin->registerBuiltin("ColorMatrixFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("ColorMatrixFilter","flash.filters")));
+			Class<ASObject>::getStubClass(QName("ColorMatrixFilter","flash.filters"), Class<BitmapFilter>::getRef()));
 	builtin->registerBuiltin("BlurFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("BlurFilter","flash.filters")));
+			Class<ASObject>::getStubClass(QName("BlurFilter","flash.filters"), Class<BitmapFilter>::getRef()));
 	builtin->registerBuiltin("ConvolutionFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("ConvolutionFilter","flash.filters")));
+			Class<ASObject>::getStubClass(QName("ConvolutionFilter","flash.filters"), Class<BitmapFilter>::getRef()));
 	builtin->registerBuiltin("DisplacementMapFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("DisplacementMapFilter","flash.filters")));
+			Class<ASObject>::getStubClass(QName("DisplacementMapFilter","flash.filters"), Class<BitmapFilter>::getRef()));
 	builtin->registerBuiltin("GradientBevelFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("GradientBevelFilter","flash.filters")));
+			Class<ASObject>::getStubClass(QName("GradientBevelFilter","flash.filters"), Class<BitmapFilter>::getRef()));
 	builtin->registerBuiltin("ShaderFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("ShaderFilter","flash.filters")));
+			Class<ASObject>::getStubClass(QName("ShaderFilter","flash.filters"), Class<BitmapFilter>::getRef()));
 
 	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef());
 	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef());

@@ -243,12 +243,12 @@ public:
 	/* This creates a stub class, i.e. a class with given name but without
 	 * any implementation.
 	 */
-	static _R<Class<ASObject>> getStubClass(const QName& name)
+	static _R<Class<ASObject>> getStubClass(const QName& name, _R<Class_base> superClass=Class<ASObject>::getRef())
 	{
 		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 		Class<ASObject>* ret = new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
 
-		ret->setSuper(Class<ASObject>::getRef());
+		ret->setSuper(superClass);
 		ret->prototype = _MNR(new_objectPrototype());
 		ret->prototype->prevPrototype=ret->super->prototype;
 		ret->incRef();

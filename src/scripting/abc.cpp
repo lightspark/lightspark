@@ -423,6 +423,11 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("ScriptTimeoutError","flash.errors",Class<ScriptTimeoutError>::getRef());
 	builtin->registerBuiltin("StackOverflowError","flash.errors",Class<StackOverflowError>::getRef());
 
+	builtin->registerBuiltin("PrintJob","flash.printing",
+				 Class<ASObject>::getStubClass(QName("PrintJob","flash.printing"), Class<EventDispatcher>::getRef()));
+	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<ASObject>::getStubClass(QName("PrintJobOptions","flash.printing")));
+	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<ASObject>::getStubClass(QName("PrintJobOrientation","flash.printing")));
+
 	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(isNaN)));
 	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite)));
 	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));

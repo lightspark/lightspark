@@ -317,21 +317,28 @@ void LoaderThread::execute()
 		loaderInfo->setBytesTotal(bytes->getLength());
 		loaderInfo->setBytesLoaded(bytes->getLength());
 
-		bytes_buf bb(bytes->bytes,bytes->getLength());
-		sbuf=&bb;
+		sbuf = new bytes_buf(bytes->bytes,bytes->getLength());
 	}
 
 	istream s(sbuf);
 	ParseThread local_pt(s,loaderInfo->applicationDomain,loaderInfo->securityDomain,loader.getPtr(),url.getParsedURL());
 	local_pt.execute();
 
-	{
+	// Delete the bytes container (downloader or bytes_buf)
+	if (source==URL) {
 		//Acquire the lock to ensure consistency in threadAbort
 		SpinlockLocker l(downloaderLock);
 		if(downloader)
 			getSys()->downloadManager->destroy(downloader);
 		downloader=NULL;
+		sbuf = NULL;
 	}
+	else if (source==BYTES)
+	{
+		delete sbuf;
+		sbuf = NULL;
+	}
+
 	bytes.reset();
 
 	_NR<DisplayObject> obj=local_pt.getParsedObject();

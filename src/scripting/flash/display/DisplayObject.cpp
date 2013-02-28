@@ -27,6 +27,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/geom/flashgeom.h"
 
 using namespace lightspark;
 using namespace std;
@@ -163,6 +164,7 @@ void DisplayObject::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 	REGISTER_GETTER_SETTER(c,cacheAsBitmap);
 	REGISTER_GETTER_SETTER(c,filters);
+	REGISTER_GETTER_SETTER(c,scrollRect);
 
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
 	IBitmapDrawable::linkTraits(c);
@@ -172,6 +174,7 @@ ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 //TODO: Use a callback for the cacheAsBitmap getter, since it should use computeCacheAsBitmap
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,cacheAsBitmap);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,filters);
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect);
 
 bool DisplayObject::computeCacheAsBitmap() const
 {
@@ -301,6 +304,8 @@ bool DisplayObject::skipRender() const
 
 void DisplayObject::defaultRender(RenderContext& ctxt) const
 {
+	// TODO: use scrollRect
+
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */

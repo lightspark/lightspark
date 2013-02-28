@@ -34,6 +34,7 @@ class LoaderInfo;
 class RenderContext;
 class Stage;
 class Transform;
+class Rectangle;
 
 class DisplayObject: public EventDispatcher, public IBitmapDrawable
 {
@@ -121,6 +122,7 @@ public:
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
+	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
 	CXFORMWITHALPHA ColorTransform;
 	/**
 	 * cacheAsBitmap is true also if any filter is used

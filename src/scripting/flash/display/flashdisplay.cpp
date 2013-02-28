@@ -1350,13 +1350,16 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_setMouseChildren),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_getMouseChildren),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c, tabChildren);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObjectContainer, tabChildren);
 
 void DisplayObjectContainer::buildTraits(ASObject* o)
 {
 }
 
-DisplayObjectContainer::DisplayObjectContainer(Class_base* c):InteractiveObject(c),mouseChildren(true)
+DisplayObjectContainer::DisplayObjectContainer(Class_base* c):InteractiveObject(c),mouseChildren(true),tabChildren(true)
 {
 }
 
@@ -2013,6 +2016,8 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("stageVideos","",Class<IFunction>::getFunction(_getStageVideos),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(_getFocus),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(_setFocus),SETTER_METHOD,true);
+	// override the setter from DisplayObjectContainer
+	c->setDeclaredMethodByQName("tabChildren","",Class<IFunction>::getFunction(_setTabChildren),SETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,displayState);
 }
 
@@ -2181,6 +2186,14 @@ ASFUNCTIONBODY(Stage,_setFocus)
 	_NR<InteractiveObject> focus;
 	ARG_UNPACK(focus);
 	th->setFocusTarget(focus);
+	return NULL;
+}
+
+ASFUNCTIONBODY(Stage,_setTabChildren)
+{
+	// The specs says that Stage.tabChildren should throw
+	// IllegalOperationError, but testing shows that instead of
+	// throwing this simply ignores the value.
 	return NULL;
 }
 

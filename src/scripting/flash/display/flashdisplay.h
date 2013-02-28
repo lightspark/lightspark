@@ -91,6 +91,7 @@ protected:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
+	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList(unsigned int level=0);
@@ -570,6 +571,7 @@ public:
 	ASFUNCTION(_getStageVideos);
 	ASFUNCTION(_getFocus);
 	ASFUNCTION(_setFocus);
+	ASFUNCTION(_setTabChildren);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
 };
 

@@ -30,21 +30,23 @@ namespace lightspark
 class Bitmap;
 class DisplayObject;
 
-class BitmapData: public ASObject, public BitmapContainer, public IBitmapDrawable
+class BitmapData: public ASObject, public IBitmapDrawable
 {
-	bool disposed;
-	uint32_t getPixelPriv(int32_t x, int32_t y);
-	void setPixelPriv(int32_t x, int32_t y, uint32_t color, bool setAlpha);
+private:
+	_NR<BitmapContainer> pixels;
 	//Avoid cycles by not using automatic references
 	//Bitmap will take care of removing itself when needed
 	std::set<Bitmap*> users;
 	void notifyUsers() const;
 public:
 	BitmapData(Class_base* c);
-	BitmapData(Class_base* c, const BitmapContainer& b);
+	BitmapData(Class_base* c, _R<BitmapContainer> b);
+	BitmapData(Class_base* c, const BitmapData& other);
 	BitmapData(Class_base* c, uint32_t width, uint32_t height);
 	static void sinit(Class_base* c);
-	~BitmapData();
+	_NR<BitmapContainer> getBitmapContainer() const { return pixels; }
+	int getWidth() const { return pixels->getWidth(); }
+	int getHeight() const { return pixels->getHeight(); }
 	/* the bitmaps data in premultiplied, native-endian 32 bit
 	 * ARGB format. stride is the number of bytes per row, may be
 	 * larger than width. dataSize is the total allocated size of
@@ -68,8 +70,8 @@ public:
 	ASFUNCTION(fillRect);
 	ASFUNCTION(generateFilterRect);
 	ASFUNCTION(hitTest);
-	ASFUNCTION(_getter_width);
-	ASFUNCTION(_getter_height);
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_getHeight);
 	ASFUNCTION(scroll);
 	ASFUNCTION(clone);
 };

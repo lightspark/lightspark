@@ -2782,7 +2782,7 @@ ASFUNCTIONBODY(Graphics,beginBitmapFill)
 	if(!matrix.isNull())
 		style.Matrix = matrix->getMATRIX();
 
-	style.bitmap = *static_cast<BitmapContainer*>((bitmap.getPtr()));
+	style.bitmap = bitmap->getBitmapContainer();
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 	return NULL;
 }
@@ -2894,10 +2894,10 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 	switch(type)
 	{
 		case FT_JPEG:
-			bitmapData->fromJPEG(*s);
+			bitmapData->getBitmapContainer()->fromJPEG(*s);
 			break;
 		case FT_PNG:
-			bitmapData->fromPNG(*s);
+			bitmapData->getBitmapContainer()->fromPNG(*s);
 			break;
 		case FT_GIF:
 			LOG(LOG_NOT_IMPLEMENTED, _("GIFs are not yet supported"));
@@ -2980,7 +2980,7 @@ void Bitmap::updatedData()
 {
 	tokens.clear();
 
-	if(bitmapData.isNull())
+	if(bitmapData.isNull() || bitmapData->getBitmapContainer().isNull())
 		return;
 
 	FILLSTYLE style(0xff);
@@ -2988,12 +2988,12 @@ void Bitmap::updatedData()
 		style.FillStyleType=CLIPPED_BITMAP;
 	else
 		style.FillStyleType=NON_SMOOTHED_CLIPPED_BITMAP;
-	style.bitmap=*static_cast<BitmapContainer*>(bitmapData.getPtr());
+	style.bitmap=bitmapData->getBitmapContainer();
 	tokens.emplace_back(GeomToken(SET_FILL, style));
 	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, bitmapData->getHeight())));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->getWidth(), bitmapData->getHeight())));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bitmapData->getWidth(), 0)));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, style.bitmap->getHeight())));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), style.bitmap->getHeight())));
+	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
 	if(onStage)
 		requestInvalidation(getSys());

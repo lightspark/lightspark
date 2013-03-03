@@ -22,12 +22,13 @@
 
 #include "compat.h"
 #include "memory_support.h"
+#include "smartrefs.h"
 #include <vector>
 
 namespace lightspark
 {
 
-class BitmapContainer
+class BitmapContainer : public RefCountable
 {
 protected:
 	size_t stride;
@@ -45,9 +46,18 @@ public:
 	bool fromJPEG(std::istream& s);
 	bool fromPNG(std::istream& s);
 	bool fromPalette(uint8_t* inData, uint32_t width, uint32_t height, uint32_t inStride, uint8_t* palette, unsigned numColors, unsigned paletteBPP);
+	void setAlpha(int32_t x, int32_t y, uint8_t alpha);
+	void setPixel(int32_t x, int32_t y, uint32_t color, bool setAlpha);
+	uint32_t getPixel(int32_t x, int32_t y);
+	void copyRectangle(_R<BitmapContainer> source, int32_t sourceLeft,
+			   int32_t sourceTop, int32_t destLeft, int32_t destTop,
+			   int32_t width, int32_t height, bool mergeAlpha);
+	void fillRectangle(int32_t x, int32_t y, int32_t width, int32_t height, uint32_t color, bool useAlpha);
+	bool scroll(int32_t x, int32_t y);
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
-	void reset();
+	bool isEmpty() const { return data.empty(); }
+	void clear();
 };
 
 };

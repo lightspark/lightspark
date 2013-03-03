@@ -888,7 +888,7 @@ public:
 	MATRIX Matrix;
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
-	BitmapContainer bitmap;
+	_NR<BitmapContainer> bitmap;
 	RGBA Color;
 	FILL_STYLE_TYPE FillStyleType;
 	uint8_t version;

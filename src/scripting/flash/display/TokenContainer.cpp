@@ -246,8 +246,11 @@ void TokenContainer::getTextureSize(int *width, int *height) const
 		    fstype==CLIPPED_BITMAP ||
 		    fstype==NON_SMOOTHED_CLIPPED_BITMAP))
 		{
-			*width=style.bitmap.getWidth();
-			*height=style.bitmap.getHeight();
+			if (style.bitmap.isNull())
+				return;
+
+			*width=style.bitmap->getWidth();
+			*height=style.bitmap->getHeight();
 			return;
 		}
 	}

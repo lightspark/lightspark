@@ -523,11 +523,14 @@ public:
 	void execute(RootMovieClip* root) const{};
 };
 
-class BitmapTag: public DictionaryTag, public BitmapContainer
+class BitmapTag: public DictionaryTag
 {
+protected:
+        _R<BitmapContainer> bitmap;
 public:
 	BitmapTag(RECORDHEADER h,RootMovieClip* root);
 	ASObject* instance(Class_base* c=NULL) const;
+        _R<BitmapContainer> getBitmap() const { return bitmap; }
 };
 
 class JPEGTablesTag: public Tag

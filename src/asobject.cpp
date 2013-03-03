@@ -456,8 +456,6 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 
 bool ASObject::deleteVariableByMultiname(const multiname& name)
 {
-	assert_and_throw(ref_count>0);
-
 	variable* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	
 	if(obj==NULL)
@@ -1028,7 +1026,9 @@ _NR<ASObject> ASObject::executeASMethod(const tiny_string& methodName,
 void ASObject::check() const
 {
 	//Put here a bunch of safety check on the object
-	assert(ref_count>0);
+#ifndef NDEBUG
+	assert(getRefCount()>0);
+#endif
 	Variables.check();
 }
 
@@ -1113,7 +1113,7 @@ void variables_map::destroyContents()
 }
 
 ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),
-	ref_count(1),type(T_OBJECT),traitsInitialized(false),implEnable(true)
+	type(T_OBJECT),traitsInitialized(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1122,7 +1122,7 @@ ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),
 }
 
 ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),
-	ref_count(1),type(T_OBJECT),traitsInitialized(false),implEnable(true)
+	type(T_OBJECT),traitsInitialized(false),implEnable(true)
 {
 	setClass(c);
 #ifndef NDEBUG
@@ -1132,7 +1132,7 @@ ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(
 }
 
 ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),
-	ref_count(1),type(o.type),traitsInitialized(false),implEnable(true)
+	type(o.type),traitsInitialized(false),implEnable(true)
 {
 	if(o.classdef)
 		setClass(o.classdef);

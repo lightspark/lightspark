@@ -753,7 +753,7 @@ ASObject* DefineFont4Tag::instance(Class_base* c) const
 	return ret;
 }
 
-BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),BitmapContainer(getSys()->tagsMemory)
+BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),bitmap(_MR(new BitmapContainer(getSys()->tagsMemory)))
 {
 }
 
@@ -784,13 +784,13 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 
 		BitmapContainer::BITMAP_FORMAT format;
 		if (BitmapFormat == LOSSLESS_BITMAP_RGB15)
-			format = RGB15;
+			format = BitmapContainer::RGB15;
 		else if (version == 1)
-			format = RGB24;
+			format = BitmapContainer::RGB24;
 		else
-			format = ARGB32;
+			format = BitmapContainer::ARGB32;
 
-		fromRGB(inData, BitmapWidth, BitmapHeight, format);
+		bitmap->fromRGB(inData, BitmapWidth, BitmapHeight, format);
 	}
 	else if (BitmapFormat == LOSSLESS_BITMAP_PALETTE)
 	{
@@ -814,7 +814,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 
 		uint8_t *palette = inData;
 		uint8_t *pixelData = inData + paletteBPP*numColors;
-		fromPalette(pixelData, BitmapWidth, BitmapHeight, stride, palette, numColors, paletteBPP);
+		bitmap->fromPalette(pixelData, BitmapWidth, BitmapHeight, stride, palette, numColors, paletteBPP);
 		delete[] inData;
 	}
 	else
@@ -832,11 +832,11 @@ ASObject* BitmapTag::instance(Class_base* c) const
 	Class_base* classRet = Class<BitmapData>::getClass();
 
 	if(!realClass)
-		return new (classRet->memoryAccount) BitmapData(classRet, *this);
+		return new (classRet->memoryAccount) BitmapData(classRet, bitmap);
 
 	if(realClass->isSubClass(Class<Bitmap>::getClass()))
 	{
-		BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, *this);
+		BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, bitmap);
 		Bitmap* bitmapRet=new (realClass->memoryAccount) Bitmap(realClass,_MR(ret));
 		return bitmapRet;
 	}
@@ -846,7 +846,7 @@ ASObject* BitmapTag::instance(Class_base* c) const
 		classRet = realClass;
 	}
 
-	return new (classRet->memoryAccount) BitmapData(classRet, *this);
+	return new (classRet->memoryAccount) BitmapData(classRet, bitmap);
 }
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,int v):DictionaryTag(h,root),
@@ -1664,7 +1664,7 @@ DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in,RootMovieClip* roo
 	int dataSize=Header.getLength()-2;
 	uint8_t *inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
-	fromJPEG(inData,dataSize,JPEGTablesTag::getJPEGTables(),JPEGTablesTag::getJPEGTableSize());
+	bitmap->fromJPEG(inData,dataSize,JPEGTablesTag::getJPEGTables(),JPEGTablesTag::getJPEGTableSize());
 	delete[] inData;
 }
 
@@ -1677,7 +1677,7 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in, RootMov
 	uint8_t* inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
 
-	fromJPEG(inData,dataSize);
+	bitmap->fromJPEG(inData,dataSize);
 	delete[] inData;
 }
 
@@ -1691,7 +1691,7 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in, RootMov
 	in.read((char*)inData,dataSize);
 
 	//TODO: check header. Could also be PNG or GIF
-	fromJPEG(inData,dataSize);
+	bitmap->fromJPEG(inData,dataSize);
 	delete[] inData;
 
 	//Read alpha data (if any)
@@ -1711,10 +1711,10 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in, RootMov
 		try
 		{
 			//Set alpha
-			for(int32_t i=0;i<height;i++)
+			for(int32_t i=0;i<bitmap->getHeight();i++)
 			{
-				for(int32_t j=0;j<width;j++)
-					data[i*stride + j*4 + 3]=zfstream.get();
+				for(int32_t j=0;j<bitmap->getWidth();j++)
+					bitmap->setAlpha(i, j, zfstream.get());
 			}
 		}
 		catch(std::exception& e)

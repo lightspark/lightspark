@@ -241,7 +241,7 @@ enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 
-class ASObject: public memory_reporter, public boost::intrusive::list_base_hook<>
+class ASObject: public memory_reporter, public boost::intrusive::list_base_hook<>, public RefCountable
 {
 friend class ABCVm;
 friend class ABCContext;
@@ -251,7 +251,6 @@ friend class IFunction; //Needed for clone
 private:
 	variables_map Variables;
 	Class_base* classdef;
-	ATOMIC_INT32(ref_count);
 	const variable* findGettable(const multiname& name) const DLL_LOCAL;
 	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 protected:
@@ -271,7 +270,6 @@ public:
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	bool initialized:1;
-	int getRefCount(){ return ref_count; }
 #endif
 	bool implEnable:1;
 	Class_base* getClass() const { return classdef; }
@@ -282,29 +280,6 @@ public:
 	ASFUNCTION(isPrototypeOf);
 	ASFUNCTION(propertyIsEnumerable);
 	void check() const;
-	void incRef()
-	{
-		//std::cout << "incref " << this << std::endl;
-		ATOMIC_INCREMENT(ref_count);
-		assert(ref_count>0);
-	}
-	void decRef()
-	{
-		//std::cout << "decref " << this << std::endl;
-		assert(ref_count>0);
-		uint32_t t=ATOMIC_DECREMENT(ref_count);
-		if(t==0)
-		{
-			//Let's make refcount very invalid
-			ref_count=-1024;
-			//std::cout << "delete " << this << std::endl;
-			delete this;
-		}
-	}
-	void fake_decRef()
-	{
-		ATOMIC_DECREMENT(ref_count);
-	}
 	static void s_incRef(ASObject* o)
 	{
 		o->incRef();

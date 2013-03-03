@@ -775,7 +775,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 					LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
 					throw ParseException("Invalid ID for bitmap");
 				}
-				v.bitmap = *b;
+				v.bitmap = b->getBitmap();
 			}
 			catch(RunTimeException& e)
 			{
@@ -1372,7 +1372,7 @@ QName::operator multiname() const
 	return ret;
 }
 
-FILLSTYLE::FILLSTYLE(uint8_t v):Gradient(v),bitmap(getSys()->unaccountedMemory),version(v)
+FILLSTYLE::FILLSTYLE(uint8_t v):Gradient(v),version(v)
 {
 }
 

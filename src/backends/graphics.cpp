@@ -343,11 +343,16 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 		case REPEATING_BITMAP:
 		case CLIPPED_BITMAP:
 		{
-			//bitmap is always present, it may be empty though
+			_NR<BitmapContainer> bm(style.bitmap);
+			if(bm.isNull())
+				return NULL;
+
 			//Do an explicit cast, the data will not be modified
-			cairo_surface_t* surface = cairo_image_surface_create_for_data ((uint8_t*)style.bitmap.getData(),
-								CAIRO_FORMAT_ARGB32, style.bitmap.getWidth(), style.bitmap.getHeight(),
-								cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, style.bitmap.getWidth()));
+			cairo_surface_t* surface = cairo_image_surface_create_for_data ((uint8_t*)bm->getData(),
+								CAIRO_FORMAT_ARGB32,
+								bm->getWidth(),
+								bm->getHeight(),
+								cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, bm->getWidth()));
 
 			pattern = cairo_pattern_create_for_surface(surface);
 			cairo_surface_destroy(surface);

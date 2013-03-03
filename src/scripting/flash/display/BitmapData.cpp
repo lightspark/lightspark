@@ -27,21 +27,21 @@
 using namespace lightspark;
 using namespace std;
 
-BitmapData::BitmapData(Class_base* c):ASObject(c),pixels(_MR(new BitmapContainer(c->memoryAccount))),transparent(true)
+BitmapData::BitmapData(Class_base* c):ASObject(c),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
 {
 }
 
-BitmapData::BitmapData(Class_base* c, _R<BitmapContainer> b):ASObject(c),pixels(b),transparent(true)
+BitmapData::BitmapData(Class_base* c, _R<BitmapContainer> b):ASObject(c),pixels(b),locked(0),transparent(true)
 {
 }
 
 BitmapData::BitmapData(Class_base* c, const BitmapData& other)
- : ASObject(c),pixels(other.pixels),transparent(other.transparent)
+  : ASObject(c),pixels(other.pixels),locked(other.locked),transparent(other.transparent)
 {
 }
 
 BitmapData::BitmapData(Class_base* c, uint32_t width, uint32_t height)
- : ASObject(c),pixels(_MR(new BitmapContainer(c->memoryAccount))),transparent(true)
+ : ASObject(c),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
 {
 	uint32_t *pixelArray=new uint32_t[width*height];
 	if (width!=0 && height!=0)
@@ -69,6 +69,8 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scroll","",Class<IFunction>::getFunction(scroll),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyChannel","",Class<IFunction>::getFunction(copyChannel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(lock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(unlock),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -91,6 +93,9 @@ void BitmapData::removeUser(Bitmap* b)
 
 void BitmapData::notifyUsers() const
 {
+	if (locked > 0)
+		return;
+
 	for(auto it=users.begin();it!=users.end();it++)
 		(*it)->updatedData();
 }
@@ -496,3 +501,28 @@ ASFUNCTIONBODY(BitmapData,copyChannel)
 	return NULL;
 }
 
+ASFUNCTIONBODY(BitmapData,lock)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+
+	th->locked++;
+	return NULL;
+}
+
+ASFUNCTIONBODY(BitmapData,unlock)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+
+	if (th->locked > 0)
+	{
+		th->locked--;
+		if (th->locked == 0)
+			th->notifyUsers();
+	}
+		
+	return NULL;
+}

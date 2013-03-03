@@ -36,6 +36,7 @@ class BitmapData: public ASObject, public IBitmapDrawable
 {
 private:
 	_NR<BitmapContainer> pixels;
+	int locked;
 	//Avoid cycles by not using automatic references
 	//Bitmap will take care of removing itself when needed
 	std::set<Bitmap*> users;
@@ -82,6 +83,8 @@ public:
 	ASFUNCTION(scroll);
 	ASFUNCTION(clone);
 	ASFUNCTION(copyChannel);
+	ASFUNCTION(lock);
+	ASFUNCTION(unlock);
 };
 
 };

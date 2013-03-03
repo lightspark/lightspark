@@ -3479,3 +3479,36 @@ ASFUNCTIONBODY(Shader,_constructor)
 	LOG(LOG_NOT_IMPLEMENTED, _("Shader class is unimplemented."));
 	return NULL;
 }
+
+void BitmapDataChannel::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+	c->setVariableByQName("ALPHA","",abstract_ui(8),DECLARED_TRAIT);
+	c->setVariableByQName("BLUE","",abstract_ui(4),DECLARED_TRAIT);
+	c->setVariableByQName("GREEN","",abstract_ui(2),DECLARED_TRAIT);
+	c->setVariableByQName("RED","",abstract_ui(1),DECLARED_TRAIT);
+}
+
+unsigned int BitmapDataChannel::channelShift(uint32_t channelConstant)
+{
+	unsigned int shift;
+	switch (channelConstant)
+	{
+		case BitmapDataChannel::ALPHA:
+			shift = 24;
+			break;
+		case BitmapDataChannel::RED:
+			shift = 16;
+			break;
+		case BitmapDataChannel::GREEN:
+			shift = 8;
+			break;
+		case BitmapDataChannel::BLUE:
+		default: // check
+			shift = 0;
+			break;
+	}
+
+	return shift;
+}

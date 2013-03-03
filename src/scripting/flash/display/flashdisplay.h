@@ -697,6 +697,16 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class BitmapDataChannel : public ASObject
+{
+public:
+	enum {RED=1, GREEN=2, BLUE=4, ALPHA=8};
+	BitmapDataChannel(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	static unsigned int channelShift(uint32_t channelConstant);
+};
+
 };
 
 #endif /* SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H */

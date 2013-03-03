@@ -68,6 +68,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(hitTest),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("scroll","",Class<IFunction>::getFunction(scroll),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyChannel","",Class<IFunction>::getFunction(copyChannel),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -404,3 +405,94 @@ ASFUNCTIONBODY(BitmapData,clone)
 
 	return Class<BitmapData>::getInstanceS(*th);
 }
+
+void BitmapData::clipRect(_R<BitmapData> source, _R<Rectangle> sourceRect,
+			  _R<Point> destPoint, RECT& outputSourceRect,
+			  Vector2& outputDestPoint)
+{
+	int sLeft = imax(sourceRect->x, 0);
+	int sTop = imax(sourceRect->y, 0);
+	int sRight = imin(sourceRect->x+sourceRect->width, source->getWidth());
+	int sBottom = imin(sourceRect->y+sourceRect->height, source->getHeight());
+
+	int dLeft = destPoint->getX();
+	int dTop = destPoint->getY();
+	if (dLeft < 0)
+	{
+		sLeft += -dLeft;
+		dLeft = 0;
+	}
+	if (dTop < 0)
+	{
+		sTop += -dTop;
+		dTop = 0;
+	}
+
+	int clippedWidth = imin(sRight - sLeft, getWidth() - dLeft);
+	int clippedHeight = imin(sBottom - sTop, getHeight() - dTop);
+
+	outputSourceRect.Xmin = sLeft;
+	outputSourceRect.Xmax = sLeft + clippedWidth;
+	outputSourceRect.Ymin = sTop;
+	outputSourceRect.Ymax = sTop + clippedHeight;
+	
+	outputDestPoint.x = dLeft;
+	outputDestPoint.y = dTop;
+}
+
+ASFUNCTIONBODY(BitmapData,copyChannel)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+	
+	_NR<BitmapData> source;
+	_NR<Rectangle> sourceRect;
+	_NR<Point> destPoint;
+	uint32_t sourceChannel;
+	uint32_t destChannel;
+	ARG_UNPACK (source) (sourceRect) (destPoint) (sourceChannel) (destChannel);
+
+	if (source.isNull())
+		throwError<TypeError>(kNullPointerError, "source");
+	if (sourceRect.isNull())
+		throwError<TypeError>(kNullPointerError, "sourceRect");
+	if (destPoint.isNull())
+		throwError<TypeError>(kNullPointerError, "destPoint");
+
+	unsigned int sourceShift = BitmapDataChannel::channelShift(sourceChannel);
+	unsigned int destShift = BitmapDataChannel::channelShift(destChannel);
+
+	RECT clippedSourceRect;
+	Vector2 clippedDestPoint; 
+	th->clipRect(source, sourceRect, destPoint, clippedSourceRect, clippedDestPoint);
+	int regionWidth = clippedSourceRect.Xmax - clippedSourceRect.Xmin;
+	int regionHeight = clippedSourceRect.Ymax - clippedSourceRect.Ymin;
+
+	if (regionWidth < 0 || regionHeight < 0)
+		return NULL;
+
+	uint32_t constantChannelsMask = ~(0xFF << destShift);
+	for (int32_t y=0; y<regionHeight; y++)
+	{
+		for (int32_t x=0; x<regionWidth; x++)
+		{
+			int32_t sx = clippedSourceRect.Xmin+x;
+			int32_t sy = clippedSourceRect.Ymin+y;
+			uint32_t sourcePixel = source->pixels->getPixel(sx, sy);
+			uint32_t channel = (sourcePixel >> sourceShift) & 0xFF;
+			uint32_t destChannelValue = channel << destShift;
+
+			int32_t dx = clippedDestPoint.x + x;
+			int32_t dy = clippedDestPoint.y + y;
+			uint32_t oldPixel = th->pixels->getPixel(dx, dy);
+			uint32_t newColor = (oldPixel & constantChannelsMask) | destChannelValue;
+			th->pixels->setPixel(dx, dy, newColor, true);
+		}
+	}
+
+	th->notifyUsers();
+
+	return NULL;
+}
+

@@ -267,6 +267,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Scene","flash.display",Class<Scene>::getRef());
 	builtin->registerBuiltin("AVM1Movie","flash.display",Class<AVM1Movie>::getRef());
 	builtin->registerBuiltin("Shader","flash.display",Class<Shader>::getRef());
+	builtin->registerBuiltin("BitmapDataChannel","flash.display",Class<BitmapDataChannel>::getRef());
 
 	builtin->registerBuiltin("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef());
 	builtin->registerBuiltin("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef());

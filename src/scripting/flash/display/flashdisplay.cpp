@@ -1015,17 +1015,20 @@ void MovieClip::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(gotoAndPlay),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addFrameScript","",Class<IFunction>::getFunction(addFrameScript),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c, enabled);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled);
 
 void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(false),totalFrames_unreliable(1)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(false),totalFrames_unreliable(1),enabled(true)
 {
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTag),totalFrames_unreliable(frames.size())
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTag),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	//For sprites totalFrames_unreliable is the actual frame count
 	//For the root movie, it's the frame count from the header

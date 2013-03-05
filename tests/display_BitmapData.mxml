@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_display_BitmapData_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import flash.display.BitmapData;
+
+	private function appComplete():void
+	{
+		var bmd:BitmapData;
+		var bmd2:BitmapData;
+
+		bmd = new BitmapData(10, 10, false, 0xAABBCC);
+		Tests.assertEquals(0xAABBCC, bmd.getPixel(1, 1), "constrcutor fill color");
+		Tests.assertEquals(0xFFAABBCC, bmd.getPixel32(1, 1), "constructor fill color 32");
+
+		// colorTransform
+		bmd = new BitmapData(10, 10, true, 0xFFAABBCC);
+		var ct:ColorTransform = new ColorTransform(0.5, 1.0, 1.0, 1.0, 0.0, -0x50, 0xFF, 0x00);
+		bmd.colorTransform(new Rectangle(0, 0, 5, 5), ct);
+		Tests.assertEquals(0xFF556BFF,  bmd.getPixel32(0, 0), "colorTransform");
+
+		// compare
+		bmd = new BitmapData(10, 10, true, 0xFFAABBCC);
+		bmd2 = new BitmapData(10, 10, true, 0xFFAABBCC);
+		Tests.assertEquals(0, bmd.compare(bmd2), "compare: equivalent bitmaps", true);
+
+		bmd = new BitmapData(10, 10, true, 0xFFAABBCC);
+		bmd2 = new BitmapData(99, 10, true, 0xFFAABBCC);
+		Tests.assertEquals(-3, bmd.compare(bmd2), "compare: different widths", true);
+
+		// TODO: Remove comments after compare() is implemented
+		bmd = new BitmapData(10, 10, true, 0xFFA0B0C0);
+		bmd2 = new BitmapData(10, 10, true, 0xFFA0B0C0);
+		bmd2.setPixel32(1, 0, 0xFF00F0F0);
+		bmd2.setPixel32(2, 0, 0xFFF00000);
+		var compared:BitmapData = bmd.compare(bmd2) as BitmapData;
+		Tests.assertNotNull(compared, "compare: color differences, return type");
+		//Tests.assertEquals(0, compared.getPixel32(0, 0), "compare: color differences 1");
+		//Tests.assertEquals(0xFFA0C0D0, compared.getPixel32(1, 0), "compare: color differences 2");
+		//Tests.assertEquals(0xFFB0B0C0, compared.getPixel32(2, 0), "compare: color differences 3");
+
+		bmd = new BitmapData(10, 10, true, 0x90A00000);
+		bmd2 = new BitmapData(10, 10, true, 0x90A00000);
+		bmd2.setPixel32(1, 0, 0xB0A00000);
+		bmd2.setPixel32(2, 0, 0x30A00000);
+		compared = bmd.compare(bmd2) as BitmapData;
+		//Tests.assertEquals(0, compared.getPixel32(0, 0), "compare: alpha differences 1");
+		//Tests.assertEquals(0xE0FFFFFF, compared.getPixel32(1, 0), "compare: alpha differences 2");
+		//Tests.assertEquals(0x60FFFFFF, compared.getPixel32(2, 0), "compare: alpha differences 3");
+
+		// copyChannel
+		bmd = new BitmapData(10, 10, true, 0xFFAABBCC);
+		bmd2 = new BitmapData(10, 10, true, 0xFF112233);
+		bmd.copyChannel(bmd2, new Rectangle(0, 0, 5, 5), new Point(0,0), BitmapDataChannel.RED, BitmapDataChannel.GREEN);
+		Tests.assertEquals(0xFFAA11CC, bmd.getPixel32(0, 0), "copyChannel, inside the region");
+		Tests.assertEquals(0xFFAABBCC, bmd.getPixel32(6, 0), "copyChannel, outside the region");
+
+		// copyPixels
+		bmd = new BitmapData(10, 10, false, 0xAABBCC);
+		var src:BitmapData = new BitmapData(5, 5, true, 0xFFFF0000);
+		bmd.copyPixels(src, new Rectangle(3, 3, 2, 2), new Point(5, 5));
+		Tests.assertEquals(0xFFFF0000, bmd.getPixel32(5, 5), "copyPixels");
+
+		bmd = new BitmapData(10, 10, true, 0xFFAABBCC);
+		src = new BitmapData(5, 5, true, 0x80FF0000);
+		bmd.copyPixels(src, new Rectangle(3, 3, 2, 2), new Point(5, 5));
+		Tests.assertEquals(0x80FF0000, bmd.getPixel32(5, 5), "copyPixels, mergeAlpha");
+
+		bmd = new BitmapData(10, 10, true, 0xFFAABBCC);
+		src = new BitmapData(5, 5, false, 0x80FF0000);
+		bmd.copyPixels(src, new Rectangle(3, 3, 2, 2), new Point(5, 5));
+		Tests.assertEquals(0xFFFF0000, bmd.getPixel32(5, 5), "copyPixels, mergeAlpha with non-transparent source");
+
+		// fillRect
+		bmd = new BitmapData(10, 10, false, 0xFFAABBCC);
+		bmd.fillRect(new Rectangle(3, 3, 2, 2), 0x100000);
+		Tests.assertEquals(0xFF100000, bmd.getPixel32(4, 4), "fillRect");
+
+		bmd = new BitmapData(10, 10, true, 0xFFAABBCC);
+		bmd.fillRect(new Rectangle(3, 3, 2, 2), 0x100000);
+		Tests.assertEquals(0, bmd.getPixel32(4, 4), "fillRect, transparent");
+
+		// floodFill
+		bmd = new BitmapData(50, 50, false, 0xFF000000);
+		// draw a convex region in red
+		bmd.fillRect(new Rectangle(10, 10, 30, 30), 0xFF0000);
+		bmd.fillRect(new Rectangle(20, 20, 10, 10), 0x000000);
+		// flood fill the region in green
+		bmd.floodFill(12, 12, 0x00FF00);
+		Tests.assertEquals(0x00FF00, bmd.getPixel(12, 38), "floodFill, inside the filled region");
+		Tests.assertEquals(0, bmd.getPixel(22, 22), "floodFill, outside the filled region");
+
+		// getColorBoundsRect
+		bmd = new BitmapData(50, 50, false, 0xFF000000);
+		bmd.fillRect(new Rectangle(0, 25, 50, 25), 0xAABB00);
+		bmd.setPixel(10, 20, 0xAA00CC);
+		bmd.setPixel(20, 10, 0xAA00CC);
+		bmd.setPixel(30, 30, 0xAA00CC);
+		bmd.setPixel(40, 40, 0xAABB00);
+		var colorBounds:Rectangle = bmd.getColorBoundsRect(0x00FFFFFF, 0x00AA00CC, true);
+		Tests.assertTrue(colorBounds.equals(new Rectangle(10, 10, 21, 21)), "getColorBoundsRect: findColor = true");
+		colorBounds = bmd.getColorBoundsRect(0x00FF0000, 0x00AA0000, false);
+		Tests.assertTrue(colorBounds.equals(new Rectangle(0, 0, 50, 25)), "getColorBoundsRect: findColor = false");
+
+		// histogram
+		bmd = new BitmapData(256, 10, false, 0);
+		for (var i:int=0; i<256; i++) {
+			bmd.setPixel(i, 0, i);
+		}
+		var hist:Vector.<Vector.<Number>> = bmd.histogram(new Rectangle(0, 0, 256, 1));
+		var isZero:Function = function(item:Number, index:int, vector:Vector.<Number>):Boolean {
+			return item == 0;
+		}
+		var isOne:Function = function(item:Number, index:int, vector:Vector.<Number>):Boolean {
+			return item == 1;
+		}
+		var redHistOK:Boolean = (hist[0].shift() == 256) && hist[0].every(isZero);
+		var greenHistOK:Boolean = (hist[1].shift() == 256) && hist[1].every(isZero);
+		var blueHistOK:Boolean = hist[2].every(isOne);
+		Tests.assertTrue(redHistOK && greenHistOK && blueHistOK, "histogram");
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

@@ -85,6 +85,7 @@ public:
 	ASFUNCTION(copyChannel);
 	ASFUNCTION(lock);
 	ASFUNCTION(unlock);
+	ASFUNCTION(floodFill);
 };
 
 };

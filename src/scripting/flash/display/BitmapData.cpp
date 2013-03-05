@@ -71,6 +71,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("copyChannel","",Class<IFunction>::getFunction(copyChannel),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(lock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(unlock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("floodFill","",Class<IFunction>::getFunction(floodFill),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -524,5 +525,24 @@ ASFUNCTIONBODY(BitmapData,unlock)
 			th->notifyUsers();
 	}
 		
+	return NULL;
+}
+
+ASFUNCTIONBODY(BitmapData,floodFill)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+
+	int32_t x;
+	int32_t y;
+	uint32_t color;
+	ARG_UNPACK (x) (y) (color);
+
+	if (!th->transparent)
+		color = 0xFF000000 | color;
+
+	th->pixels->floodFill(x, y, color);
+	th->notifyUsers();
 	return NULL;
 }

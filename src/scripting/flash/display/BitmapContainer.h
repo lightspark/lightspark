@@ -35,6 +35,7 @@ protected:
 	size_t dataSize;
 	int32_t width;
 	int32_t height;
+	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y);
 public:
 	BitmapContainer(MemoryAccount* m);
 	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
@@ -54,6 +55,7 @@ public:
 			   int32_t width, int32_t height, bool mergeAlpha);
 	void fillRectangle(int32_t x, int32_t y, int32_t width, int32_t height, uint32_t color, bool useAlpha);
 	bool scroll(int32_t x, int32_t y);
+	void floodFill(int32_t x, int32_t y, uint32_t color);
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 	bool isEmpty() const { return data.empty(); }

@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <stack>
 #include "scripting/flash/display/BitmapContainer.h"
 #include "backends/rendering_context.h"
 #include "backends/image.h"
@@ -254,4 +255,125 @@ bool BitmapContainer::scroll(int32_t x, int32_t y)
 	}
 
 	return true;
+}
+
+inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y)
+{
+	return (uint32_t*)&data[y*stride + 4*x];
+}
+
+/*
+ * Fill a connected area around (startX, startY) with the given color.
+ *
+ * Adapted from "A simple non-recursive scan line method" at
+ * http://www.codeproject.com/Articles/6017/QuickFill-An-efficient-flood-fill-algorithm
+ */
+void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
+{
+	struct LineSegment {
+		LineSegment(int32_t _x1, int32_t _x2, int32_t _y, int32_t _dy) 
+			: x1(_x1), x2(_x2), y(_y), dy(_dy) {};
+		int32_t x1; // leftmost filled point on last line
+		int32_t x2; // rightmost filled point on last line
+		int32_t y;  // y coordinate (may be invalid!)
+		int32_t dy; // vertical direction (1 or -1)
+	};
+
+	stack<LineSegment> segments;
+
+	if (startX < 0 || startX >= width || startY < 0 || startY >= height)
+		return;
+
+	uint32_t seedColor = getPixel(startX, startY);
+
+	// Comment on the codeproject.com: "needed in some cases" ???
+	segments.push(LineSegment(startX, startX, startY+1, 1));
+	// The starting point
+	segments.push(LineSegment(startX, startX, startY, -1));
+
+	while (!segments.empty())
+	{
+		int32_t left;
+		LineSegment r = segments.top();
+		segments.pop();
+		if (r.y < 0 || r.y >= height)
+			continue;
+
+		assert(r.x1 <= r.x2);
+		assert(r.x1 >= 0);
+		assert(r.x2 < width);
+
+		// current x-coordinate
+		int t = r.x1;
+		// pointer to the current pixel, keep in sync with t
+		uint32_t *p = getDataNoBoundsChecking(r.x1, r.y);
+
+		// extend left
+		while (t >= 0 && *p == seedColor)
+		{
+			*p = color;
+			p--;
+			t--;
+		}
+
+		if (t >= r.x1)
+		{
+			// Did not extend to left. Skip over border if
+			// any.
+			while (t <= r.x2 && *p != seedColor)
+			{
+				p++;
+				t++;
+			}
+			left = t;
+		}
+		else
+		{
+			// Extended past r.x1, push the segment on the
+			// previous line
+			left = t+1;
+			if (left < r.x1)
+			{
+				segments.push(LineSegment(left, r.x1-1, r.y-r.dy, -r.dy));
+			}
+
+			t = r.x1 + 1;
+		}
+
+		// fill rightwards starting from r.x1 or the leftmost
+		// filled point
+		do
+		{
+			p = getDataNoBoundsChecking(t, r.y);
+			while (t < width && *p == seedColor)
+			{
+				*p = color;
+				p++;
+				t++;
+			}
+
+			// push the segment on the next line
+			if (t >= left+1)
+				segments.push(LineSegment(left, t-1, r.y+r.dy, r.dy));
+
+			// If extended past r.x2, push the segment on
+			// the previous line
+			if (t > r.x2+1)
+			{
+				segments.push(LineSegment(r.x2, t-1, r.y-r.dy, -r.dy));
+				break; // we are done with this segment
+			}
+
+			// Skip forward
+			p++;
+			t++;
+			while (t <= r.x2 && *p != seedColor)
+			{
+				p++;
+				t++;
+			}
+			left = t;
+		}
+		while (t <= r.x2);
+	}
 }

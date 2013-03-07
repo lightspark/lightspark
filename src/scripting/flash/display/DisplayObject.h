@@ -212,6 +212,7 @@ public:
 	ASFUNCTION(_getMouseX);
 	ASFUNCTION(_getMouseY);
 	ASFUNCTION(_getTransform);
+	ASFUNCTION(_setTransform);
 	ASFUNCTION(localToGlobal);
 	ASFUNCTION(globalToLocal);
 	ASFUNCTION(hitTestObject);

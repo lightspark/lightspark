@@ -161,6 +161,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("hitTestObject","",Class<IFunction>::getFunction(hitTestObject),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hitTestPoint","",Class<IFunction>::getFunction(hitTestPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(_getTransform),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(_setTransform),SETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 	REGISTER_GETTER_SETTER(c,cacheAsBitmap);
 	REGISTER_GETTER_SETTER(c,filters);
@@ -190,6 +191,12 @@ ASFUNCTIONBODY(DisplayObject,_getTransform)
 	LOG(LOG_NOT_IMPLEMENTED, "DisplayObject::transform is a stub and does not reflect the real display state");
 	th->incRef();
 	return Class<Transform>::getInstanceS(_MR(th));
+}
+
+ASFUNCTIONBODY(DisplayObject,_setTransform)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "DisplayObject::transform is a stub");
+	return NULL;
 }
 
 void DisplayObject::buildTraits(ASObject* o)

@@ -74,6 +74,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(unlock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("floodFill","",Class<IFunction>::getFunction(floodFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("histogram","",Class<IFunction>::getFunction(histogram),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getColorBoundsRect","",Class<IFunction>::getFunction(getColorBoundsRect),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -599,4 +600,50 @@ ASFUNCTIONBODY(BitmapData,histogram)
 	}
 
 	return result;
+}
+
+ASFUNCTIONBODY(BitmapData,getColorBoundsRect)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+
+	uint32_t mask;
+	uint32_t color;
+	bool findColor;
+	ARG_UNPACK (mask) (color) (findColor, true);
+
+	int xmin = th->getWidth();
+	int xmax = 0;
+	int ymin = th->getHeight();
+	int ymax = 0;
+	for (int32_t x=0; x<th->getWidth(); x++)
+	{
+		for (int32_t y=0; y<th->getHeight(); y++)
+		{
+			uint32_t pixel = th->pixels->getPixel(x, y);
+			if ((findColor && ((pixel & mask) == color)) ||
+			    (!findColor && ((pixel & mask) != color)))
+			{
+				if (x < xmin)
+					xmin = x;
+				if (x > xmax)
+					xmax = x;
+				if (y < ymin)
+					ymin = y;
+				if (y > ymax)
+					ymax = y;
+			}
+		}
+	}
+
+	Rectangle *bounds = Class<Rectangle>::getInstanceS();
+	if ((xmin <= xmax) && (ymin <= ymax))
+	{
+		bounds->x = xmin;
+		bounds->y = ymin;
+		bounds->width = xmax - xmin + 1;
+		bounds->height = ymax - ymin + 1;
+	}
+	return bounds;
 }

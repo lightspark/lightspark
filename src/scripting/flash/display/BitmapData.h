@@ -88,6 +88,7 @@ public:
 	ASFUNCTION(unlock);
 	ASFUNCTION(floodFill);
 	ASFUNCTION(histogram);
+	ASFUNCTION(getColorBoundsRect);
 };
 
 };

@@ -21,6 +21,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Vector.h"
 #include "compat.h"
 #include "asobject.h"
 #include "swf.h"
@@ -419,6 +420,29 @@ public:
 	const std::vector<Type*> getTypes() const
 	{
 		return types;
+	}
+
+	ASObject* coerce(ASObject* o) const
+	{
+		if (o->is<Undefined>())
+		{
+			o->decRef();
+			return getSys()->getNullRef();
+		}
+		else if ((o->is<Vector>() && o->as<Vector>()->sameType(types)) || 
+			 o->is<Null>())
+		{
+			// Vector.<x> can be coerced to Vector.<y>
+			// only if x and y are the same type
+			return o;
+		}
+		else
+		{
+			o->decRef();
+			throwError<TypeError>(kCheckTypeFailedError, o->getClassName(),
+					      Class<T>::getQualifiedClassName());
+			return NULL; // not reached
+		}
 	}
 };
 

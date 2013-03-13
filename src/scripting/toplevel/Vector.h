@@ -50,6 +50,7 @@ public:
 	static ASObject* generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen);
 
 	void setTypes(const std::vector<Type*>& types);
+	bool sameType(const std::vector<Type*>& types) const;
 
 	//Overloads
 	tiny_string toString(bool debugMsg=false);
@@ -70,6 +71,10 @@ public:
         {
                 return vec.at(index);
         }
+
+	//Appends an object to the Vector. o is coerced to vec_type.
+	//Takes ownership of o.
+	void append(ASObject *o);
 
 	//TODO: do we need to implement generator?
 	ASFUNCTION(_constructor);
@@ -100,8 +105,6 @@ public:
 	ASFUNCTION(every);
 	ASFUNCTION(some);
 };
-
-
 
 }
 #endif /* SCRIPTING_TOPLEVEL_VECTOR_H */

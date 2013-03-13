@@ -104,6 +104,13 @@ void Vector::setTypes(const std::vector<Type*>& types)
 	vec_type = types[0];
 }
 
+bool Vector::sameType(const std::vector<Type*>& types) const
+{
+	return (types.size() == 1) && ((types[0] == vec_type) ||
+				       (vec_type == Type::anyType) ||
+				       (types[0] == Type::anyType));
+}
+
 ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen)
 {
 	assert_and_throw(argslen == 1);
@@ -343,6 +350,17 @@ ASFUNCTIONBODY(Vector, every)
 		}
 	}
 	return abstract_b(true);
+}
+
+void Vector::append(ASObject *o)
+{
+	if (fixed)
+	{
+		o->decRef();
+		throwError<RangeError>(kVectorFixedError);
+	}
+
+	vec.push_back(vec_type->coerce(o));
 }
 
 ASFUNCTIONBODY(Vector,push)

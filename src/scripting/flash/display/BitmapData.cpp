@@ -22,6 +22,7 @@
 #include "scripting/argconv.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/toplevel/Vector.h"
 #include "backends/rendering_context.h"
 
 using namespace lightspark;
@@ -72,6 +73,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(lock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(unlock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("floodFill","",Class<IFunction>::getFunction(floodFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("histogram","",Class<IFunction>::getFunction(histogram),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -418,8 +420,8 @@ void BitmapData::clipRect(_R<BitmapData> source, _R<Rectangle> sourceRect,
 {
 	int sLeft = imax(sourceRect->x, 0);
 	int sTop = imax(sourceRect->y, 0);
-	int sRight = imin(sourceRect->x+sourceRect->width, source->getWidth());
-	int sBottom = imin(sourceRect->y+sourceRect->height, source->getHeight());
+	int sRight = imax(imin(sourceRect->x+sourceRect->width, source->getWidth()), 0);
+	int sBottom = imax(imin(sourceRect->y+sourceRect->height, source->getHeight()), 0);
 
 	int dLeft = destPoint->getX();
 	int dTop = destPoint->getY();
@@ -444,6 +446,14 @@ void BitmapData::clipRect(_R<BitmapData> source, _R<Rectangle> sourceRect,
 	
 	outputDestPoint.x = dLeft;
 	outputDestPoint.y = dTop;
+}
+
+void BitmapData::clipRect(_R<Rectangle> sourceRect, RECT& clippedRect)
+{
+	clippedRect.Xmin = imax(sourceRect->x, 0);
+	clippedRect.Ymin = imax(sourceRect->y, 0);
+	clippedRect.Xmax = imax(imin(sourceRect->x+sourceRect->width, getWidth()), 0);
+	clippedRect.Ymax = imax(imin(sourceRect->y+sourceRect->height, getHeight()), 0);
 }
 
 ASFUNCTIONBODY(BitmapData,copyChannel)
@@ -545,4 +555,48 @@ ASFUNCTIONBODY(BitmapData,floodFill)
 	th->pixels->floodFill(x, y, color);
 	th->notifyUsers();
 	return NULL;
+}
+
+ASFUNCTIONBODY(BitmapData,histogram)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+
+	_NR<Rectangle> inputRect;
+	ARG_UNPACK (inputRect);
+
+	RECT rect;
+	if (inputRect.isNull()) {
+		rect = RECT(0, th->getWidth(), 0, th->getHeight());
+	} else {
+		th->clipRect(inputRect, rect);
+	}
+
+	unsigned int counts[4][256] = {{0}};
+	for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
+	{
+		for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
+		{
+			uint32_t pixel = th->pixels->getPixel(x, y);
+			for (int i=0; i<4; i++)
+			{
+				counts[i][(pixel >> (8*i)) & 0xFF]++;
+			}
+		}
+	}
+
+	Vector *result = Class<Vector>::getInstanceS(Class<Vector>::getClass());
+	int channelOrder[4] = {2, 1, 0, 3}; // red, green, blue, alpha
+	for (int j=0; j<4; j++)
+	{
+		Vector *histogram = Class<Vector>::getInstanceS(Class<Number>::getClass());
+		for (int level=0; level<256; level++)
+		{
+			histogram->append(abstract_d(counts[channelOrder[j]][level]));
+		}
+		result->append(histogram);
+	}
+
+	return result;
 }

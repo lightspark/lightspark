@@ -46,6 +46,7 @@ private:
 	void clipRect(_R<BitmapData> source, _R<Rectangle> sourceRect,
 		      _R<Point> destPoint, RECT& outputSourceRect,
 		      Vector2& outputDestPoint);
+        void clipRect(_R<Rectangle> sourceRect, RECT& clippedRect);
 public:
 	BitmapData(Class_base* c);
 	BitmapData(Class_base* c, _R<BitmapContainer> b);
@@ -86,6 +87,7 @@ public:
 	ASFUNCTION(lock);
 	ASFUNCTION(unlock);
 	ASFUNCTION(floodFill);
+	ASFUNCTION(histogram);
 };
 
 };

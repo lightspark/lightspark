@@ -720,6 +720,16 @@ void ABCVm::constructGenericType(call_context* th, int m)
 
 	Class_base* o_class = o_template->applyType(t);
 
+	// Register the type name in the global scope. The type name
+	// is later used by the coerce opcode.
+	_R<ASObject> global = th->scope_stack[0].object;
+	QName qname = o_class->class_name;
+	if (!global->hasPropertyByMultiname(qname, false, false))
+	{
+		o_class->incRef();
+		global->setVariableByQName(qname.name,nsNameAndKind(qname.ns,NAMESPACE),o_class,DECLARED_TRAIT);
+	}
+
 	for(int i=0;i<m;++i)
 		args[i]->decRef();
 

@@ -26,7 +26,6 @@
 #include "swftypes.h"
 #include "backends/geometry.h"
 #include "scripting/flash/utils/flashutils.h"
-#include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/class.h"
 
 namespace lightspark
@@ -523,6 +522,8 @@ public:
 	void execute(RootMovieClip* root) const{};
 };
 
+class BitmapContainer;
+
 class BitmapTag: public DictionaryTag
 {
 protected:
@@ -530,7 +531,7 @@ protected:
 public:
 	BitmapTag(RECORDHEADER h,RootMovieClip* root);
 	ASObject* instance(Class_base* c=NULL) const;
-        _R<BitmapContainer> getBitmap() const { return bitmap; }
+        _R<BitmapContainer> getBitmap() const;
 };
 
 class JPEGTablesTag: public Tag

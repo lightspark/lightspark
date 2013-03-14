@@ -25,7 +25,7 @@
 using namespace std;
 using namespace lightspark;
 
-BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),dataSize(0),width(0),height(0),
+BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 	data(reporter_allocator<uint8_t>(m))
 {
 }
@@ -37,6 +37,7 @@ bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMA
 
 	width = w;
 	height = h;
+	size_t dataSize;
 	if(format==ARGB32)
 		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride);
 	else
@@ -102,7 +103,6 @@ void BitmapContainer::clear()
 	data.clear();
 	data.shrink_to_fit();
 	stride=0;
-	dataSize=0;
 	width=0;
 	height=0;
 }
@@ -128,7 +128,7 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 		*p=(*p & 0xff000000) | (color & 0x00ffffff);
 }
 
-uint32_t BitmapContainer::getPixel(int32_t x, int32_t y)
+uint32_t BitmapContainer::getPixel(int32_t x, int32_t y) const
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return 0;
@@ -138,43 +138,30 @@ uint32_t BitmapContainer::getPixel(int32_t x, int32_t y)
 }
 
 void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
-				    int32_t srcLeft, int32_t srcTop,
-				    int32_t destLeft, int32_t destTop,
-				    int32_t rectWidth, int32_t rectHeight,
+				    const RECT& sourceRect,
+				    int32_t destX, int32_t destY,
 				    bool mergeAlpha)
 {
-	// Ensure that the coordinates are valid
-	int sLeft = imax(srcLeft, 0);
-	int sTop = imax(srcTop, 0);
-	int sRight = imin(sLeft+rectWidth, source->getWidth());
-	int sBottom = imin(sTop+rectHeight, source->getHeight());
+	RECT clippedSourceRect;
+	int32_t clippedX;
+	int32_t clippedY;
+	clipRect(source, sourceRect, destX, destY, clippedSourceRect, clippedX, clippedY);
 
-	int dLeft = destLeft;
-	int dTop = destTop;
-	if (dLeft < 0)
-	{
-		sLeft += -dLeft;
-		dLeft = 0;
-	}
-	if (dTop < 0)
-	{
-		sTop += -dTop;
-		dTop = 0;
-	}
-
-	int copyWidth = imin(sRight - sLeft, width - dLeft);
-	int copyHeight = imin(sBottom - sTop, height - dTop);
+	int copyWidth = clippedSourceRect.Xmax - clippedSourceRect.Xmin;
+	int copyHeight = clippedSourceRect.Ymax - clippedSourceRect.Ymin;
 
 	if (copyWidth <= 0 || copyHeight <= 0)
 		return;
 
+	int sx = clippedSourceRect.Xmin;
+	int sy = clippedSourceRect.Ymin;
 	if (mergeAlpha==false)
 	{
 		//Fast path using memmove
 		for (int i=0; i<copyHeight; i++)
 		{
-			memmove(&data[(dTop+i)*stride + 4*dLeft],
-				&source->data[(sTop+i)*source->stride + 4*sLeft],
+			memmove(&data[(clippedY+i)*stride + 4*clippedX],
+				&source->data[(sy+i)*source->stride + 4*sx],
 				4*copyWidth);
 		}
 	}
@@ -182,39 +169,22 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 	{
 		//Slow path using Cairo
 		CairoRenderContext ctxt(&data[0], width, height);
-		ctxt.simpleBlit(dLeft, dTop, &source->data[0],
+		ctxt.simpleBlit(clippedX, clippedY, &source->data[0],
 				source->getWidth(), source->getHeight(),
-				sLeft, sTop, copyWidth, copyHeight);
+				sx, sy, copyWidth, copyHeight);
 	}
 }
 
-void BitmapContainer::fillRectangle(int32_t x, int32_t y, int32_t rectWidth, int32_t rectHeight, uint32_t color, bool useAlpha)
+void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool useAlpha)
 {
-	//Clip rectangle
-	int32_t rectX=x;
-	int32_t rectY=y;
-	int32_t rectW=rectWidth;
-	int32_t rectH=rectHeight;
-	if(rectX<0)
-	{
-		rectW+=rectX;
-		rectX = 0;
-	}
-	if(rectY<0)
-	{
-		rectH+=rectY;
-		rectY = 0;
-	}
-	if(rectX + rectW > width)
-		rectW = width - rectX;
-	if(rectY + rectH > height)
-		rectH = height - rectY;
+	RECT clippedRect;
+	clipRect(inputRect, clippedRect);
 
-	for(int32_t i=0;i<rectH;i++)
+	for(int32_t y=clippedRect.Ymin;y<clippedRect.Ymax;y++)
 	{
-		for(int32_t j=0;j<rectW;j++)
+		for(int32_t x=clippedRect.Xmin;x<clippedRect.Xmax;x++)
 		{
-			uint32_t offset=(i+rectY)*stride + (j+rectX)*4;
+			uint32_t offset=y*stride + x*4;
 			uint32_t* ptr=(uint32_t*)(getData()+offset);
 			if (useAlpha)
 				*ptr = color;
@@ -257,7 +227,7 @@ bool BitmapContainer::scroll(int32_t x, int32_t y)
 	return true;
 }
 
-inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y)
+inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y) const
 {
 	return (uint32_t*)&data[y*stride + 4*x];
 }
@@ -376,4 +346,67 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 		}
 		while (t <= r.x2);
 	}
+}
+
+void BitmapContainer::clipRect(const RECT& sourceRect, RECT& clippedRect) const
+{
+	clippedRect.Xmin = imax(sourceRect.Xmin, 0);
+	clippedRect.Ymin = imax(sourceRect.Ymin, 0);
+	clippedRect.Xmax = imax(imin(sourceRect.Xmax, getWidth()), 0);
+	clippedRect.Ymax = imax(imin(sourceRect.Ymax, getHeight()), 0);
+}
+
+void BitmapContainer::clipRect(_R<BitmapContainer> source, const RECT& sourceRect,
+			       int32_t destX, int32_t destY, RECT& outputSourceRect,
+			       int32_t& outputX, int32_t& outputY) const
+{
+	int sLeft = imax(sourceRect.Xmin, 0);
+	int sTop = imax(sourceRect.Ymin, 0);
+	int sRight = imax(imin(sourceRect.Xmax, source->getWidth()), 0);
+	int sBottom = imax(imin(sourceRect.Ymax, source->getHeight()), 0);
+
+	int dLeft = destX;
+	int dTop = destY;
+	if (dLeft < 0)
+	{
+		sLeft += -dLeft;
+		dLeft = 0;
+	}
+	if (dTop < 0)
+	{
+		sTop += -dTop;
+		dTop = 0;
+	}
+
+	int clippedWidth = imax(imin(sRight - sLeft, getWidth() - dLeft), 0);
+	int clippedHeight = imax(imin(sBottom - sTop, getHeight() - dTop), 0);
+
+	outputSourceRect.Xmin = sLeft;
+	outputSourceRect.Xmax = sLeft + clippedWidth;
+	outputSourceRect.Ymin = sTop;
+	outputSourceRect.Ymax = sTop + clippedHeight;
+	
+	outputX = dLeft;
+	outputY = dTop;
+}
+
+std::vector<uint32_t> BitmapContainer::getPixelVector(const RECT& inputRect) const
+{
+	RECT rect;
+	clipRect(inputRect, rect);
+
+	std::vector<uint32_t> result;
+	if ((rect.Xmax - rect.Xmin <= 0) || (rect.Ymax - rect.Ymin <= 0))
+		return result;
+
+	result.reserve((rect.Xmax - rect.Xmin)*(rect.Ymax - rect.Ymin));
+	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
+	{
+		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
+		{
+			result.push_back(*getDataNoBoundsChecking(x, y));
+		}
+	}
+
+	return result;
 }

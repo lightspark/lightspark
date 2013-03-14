@@ -108,6 +108,24 @@
 		colorBounds = bmd.getColorBoundsRect(0x00FF0000, 0x00AA0000, false);
 		Tests.assertTrue(colorBounds.equals(new Rectangle(0, 0, 50, 25)), "getColorBoundsRect: findColor = false");
 
+		// getPixels and getVector
+		bmd = new BitmapData(10, 10, true, 0xFF000000);
+		bmd.fillRect(new Rectangle(5, 0, 2, 10), 0xFF112233);
+		var pixelsba:ByteArray = bmd.getPixels(new Rectangle(4, 2, 2, 2));
+		pixelsba.position = 0;
+		var pixelsOK:Boolean = (pixelsba.readUnsignedInt() == 0xFF000000) && 
+			(pixelsba.readUnsignedInt() == 0xFF112233) && 
+			(pixelsba.readUnsignedInt() == 0xFF000000) && 
+			(pixelsba.readUnsignedInt() == 0xFF112233);
+		Tests.assertTrue(pixelsOK, "getPixels");
+
+		var pixelsvec:Vector.<uint> = bmd.getVector(new Rectangle(4, 2, 2, 2));
+		pixelsOK = (pixelsvec[0] == 0xFF000000) &&
+			(pixelsvec[1] == 0xFF112233) &&
+			(pixelsvec[2] == 0xFF000000) &&
+			(pixelsvec[3] == 0xFF112233);
+		Tests.assertTrue(pixelsOK, "getVector");
+
 		// histogram
 		bmd = new BitmapData(256, 10, false, 0);
 		for (var i:int=0; i<256; i++) {
@@ -124,6 +142,35 @@
 		var greenHistOK:Boolean = (hist[1].shift() == 256) && hist[1].every(isZero);
 		var blueHistOK:Boolean = hist[2].every(isOne);
 		Tests.assertTrue(redHistOK && greenHistOK && blueHistOK, "histogram");
+
+		// setPixels
+		bmd = new BitmapData(10, 10, true, 0xFF000000);
+		var ba:ByteArray = new ByteArray();
+		ba.writeUnsignedInt(0xFF111111);
+		ba.writeUnsignedInt(0xFF222222);
+		ba.writeUnsignedInt(0xFF333333);
+		ba.writeUnsignedInt(0xFF444444);
+		ba.position = 0;
+		bmd.setPixels(new Rectangle(2, 2, 2, 2), ba);
+		pixelsOK = (bmd.getPixel32(2, 2) == 0xFF111111) &&
+			(bmd.getPixel32(3, 2) == 0xFF222222) &&
+			(bmd.getPixel32(2, 3) == 0xFF333333) &&
+			(bmd.getPixel32(3, 3) == 0xFF444444);
+		Tests.assertTrue(pixelsOK, "setPixels");
+
+		// setVector
+		bmd = new BitmapData(10, 10, true, 0xFF000000);
+		var vec:Vector.<uint> = new Vector.<uint>();
+		vec.push(0xFF111111);
+		vec.push(0xFF222222);
+		vec.push(0xFF333333);
+		vec.push(0xFF444444);
+		bmd.setVector(new Rectangle(2, 2, 2, 2), vec);
+		pixelsOK = (bmd.getPixel32(2, 2) == 0xFF111111) &&
+			(bmd.getPixel32(3, 2) == 0xFF222222) &&
+			(bmd.getPixel32(2, 3) == 0xFF333333) &&
+			(bmd.getPixel32(3, 3) == 0xFF444444);
+		Tests.assertTrue(pixelsOK, "setVector");
 
 		Tests.report(visual, this.name);
 	}

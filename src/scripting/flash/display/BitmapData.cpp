@@ -23,6 +23,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "backends/rendering_context.h"
 
 using namespace lightspark;
@@ -75,6 +76,10 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("floodFill","",Class<IFunction>::getFunction(floodFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("histogram","",Class<IFunction>::getFunction(histogram),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getColorBoundsRect","",Class<IFunction>::getFunction(getColorBoundsRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPixels","",Class<IFunction>::getFunction(getPixels),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getVector","",Class<IFunction>::getFunction(getVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPixels","",Class<IFunction>::getFunction(setPixels),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setVector","",Class<IFunction>::getFunction(setVector),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -316,8 +321,10 @@ ASFUNCTIONBODY(BitmapData,fillRect)
 
 	if(th->pixels.isNull())
 		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+	if (rect.isNull())
+		throwError<TypeError>(kNullPointerError, "rect");
 
-	th->pixels->fillRectangle(rect->x, rect->y, rect->width, rect->height, color, th->transparent);
+	th->pixels->fillRectangle(rect->getRect(), color, th->transparent);
 	th->notifyUsers();
 	return NULL;
 }
@@ -335,13 +342,19 @@ ASFUNCTIONBODY(BitmapData,copyPixels)
 
 	if(th->pixels.isNull())
 		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+	if (source.isNull())
+		throwError<TypeError>(kNullPointerError, "source");
+	if (sourceRect.isNull())
+		throwError<TypeError>(kNullPointerError, "sourceRect");
+	if (destPoint.isNull())
+		throwError<TypeError>(kNullPointerError, "destPoint");
 
 	if(!alphaBitmapData.isNull())
 		LOG(LOG_NOT_IMPLEMENTED, "BitmapData.copyPixels doesn't support alpha bitmap");
 
-	th->pixels->copyRectangle(source->pixels, sourceRect->x, sourceRect->y,
-			destPoint->getX(), destPoint->getY(), sourceRect->width,
-			sourceRect->height, mergeAlpha);
+	th->pixels->copyRectangle(source->pixels, sourceRect->getRect(),
+				  destPoint->getX(), destPoint->getY(),
+				  mergeAlpha);
 	th->notifyUsers();
 
 	return NULL;
@@ -415,48 +428,6 @@ ASFUNCTIONBODY(BitmapData,clone)
 	return Class<BitmapData>::getInstanceS(*th);
 }
 
-void BitmapData::clipRect(_R<BitmapData> source, _R<Rectangle> sourceRect,
-			  _R<Point> destPoint, RECT& outputSourceRect,
-			  Vector2& outputDestPoint)
-{
-	int sLeft = imax(sourceRect->x, 0);
-	int sTop = imax(sourceRect->y, 0);
-	int sRight = imax(imin(sourceRect->x+sourceRect->width, source->getWidth()), 0);
-	int sBottom = imax(imin(sourceRect->y+sourceRect->height, source->getHeight()), 0);
-
-	int dLeft = destPoint->getX();
-	int dTop = destPoint->getY();
-	if (dLeft < 0)
-	{
-		sLeft += -dLeft;
-		dLeft = 0;
-	}
-	if (dTop < 0)
-	{
-		sTop += -dTop;
-		dTop = 0;
-	}
-
-	int clippedWidth = imin(sRight - sLeft, getWidth() - dLeft);
-	int clippedHeight = imin(sBottom - sTop, getHeight() - dTop);
-
-	outputSourceRect.Xmin = sLeft;
-	outputSourceRect.Xmax = sLeft + clippedWidth;
-	outputSourceRect.Ymin = sTop;
-	outputSourceRect.Ymax = sTop + clippedHeight;
-	
-	outputDestPoint.x = dLeft;
-	outputDestPoint.y = dTop;
-}
-
-void BitmapData::clipRect(_R<Rectangle> sourceRect, RECT& clippedRect)
-{
-	clippedRect.Xmin = imax(sourceRect->x, 0);
-	clippedRect.Ymin = imax(sourceRect->y, 0);
-	clippedRect.Xmax = imax(imin(sourceRect->x+sourceRect->width, getWidth()), 0);
-	clippedRect.Ymax = imax(imin(sourceRect->y+sourceRect->height, getHeight()), 0);
-}
-
 ASFUNCTIONBODY(BitmapData,copyChannel)
 {
 	BitmapData* th = obj->as<BitmapData>();
@@ -481,8 +452,11 @@ ASFUNCTIONBODY(BitmapData,copyChannel)
 	unsigned int destShift = BitmapDataChannel::channelShift(destChannel);
 
 	RECT clippedSourceRect;
-	Vector2 clippedDestPoint; 
-	th->clipRect(source, sourceRect, destPoint, clippedSourceRect, clippedDestPoint);
+	int32_t clippedDestX;
+	int32_t clippedDestY;
+	th->pixels->clipRect(source->pixels, sourceRect->getRect(),
+			     destPoint->getX(), destPoint->getY(),
+			     clippedSourceRect, clippedDestX, clippedDestY);
 	int regionWidth = clippedSourceRect.Xmax - clippedSourceRect.Xmin;
 	int regionHeight = clippedSourceRect.Ymax - clippedSourceRect.Ymin;
 
@@ -500,8 +474,8 @@ ASFUNCTIONBODY(BitmapData,copyChannel)
 			uint32_t channel = (sourcePixel >> sourceShift) & 0xFF;
 			uint32_t destChannelValue = channel << destShift;
 
-			int32_t dx = clippedDestPoint.x + x;
-			int32_t dy = clippedDestPoint.y + y;
+			int32_t dx = clippedDestX + x;
+			int32_t dy = clippedDestY + y;
 			uint32_t oldPixel = th->pixels->getPixel(dx, dy);
 			uint32_t newColor = (oldPixel & constantChannelsMask) | destChannelValue;
 			th->pixels->setPixel(dx, dy, newColor, true);
@@ -571,7 +545,7 @@ ASFUNCTIONBODY(BitmapData,histogram)
 	if (inputRect.isNull()) {
 		rect = RECT(0, th->getWidth(), 0, th->getHeight());
 	} else {
-		th->clipRect(inputRect, rect);
+		th->pixels->clipRect(inputRect->getRect(), rect);
 	}
 
 	unsigned int counts[4][256] = {{0}};
@@ -646,4 +620,111 @@ ASFUNCTIONBODY(BitmapData,getColorBoundsRect)
 		bounds->height = ymax - ymin + 1;
 	}
 	return bounds;
+}
+
+ASFUNCTIONBODY(BitmapData,getPixels)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+	
+	_NR<Rectangle> rect;
+	ARG_UNPACK (rect);
+
+	if (rect.isNull())
+		throwError<TypeError>(kNullPointerError, "rect");
+
+	ByteArray *ba = Class<ByteArray>::getInstanceS();
+	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect->getRect());
+	vector<uint32_t>::const_iterator it;
+	for (it=pixelvec.begin(); it!=pixelvec.end(); ++it)
+		ba->writeUnsignedInt(ba->endianIn(*it));
+	return ba;
+}
+
+ASFUNCTIONBODY(BitmapData,getVector)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+	
+	_NR<Rectangle> rect;
+	ARG_UNPACK (rect);
+
+	if (rect.isNull())
+		throwError<TypeError>(kNullPointerError, "rect");
+
+	Vector *result = Class<Vector>::getInstanceS(Class<UInteger>::getClass());
+	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect->getRect());
+	vector<uint32_t>::const_iterator it;
+	for (it=pixelvec.begin(); it!=pixelvec.end(); ++it)
+		result->append(abstract_ui(*it));
+	return result;
+}
+
+ASFUNCTIONBODY(BitmapData,setPixels)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+	
+	_NR<Rectangle> inputRect;
+	_NR<ByteArray> inputByteArray;
+	ARG_UNPACK (inputRect) (inputByteArray);
+
+	if (inputRect.isNull())
+		throwError<TypeError>(kNullPointerError, "rect");
+	if (inputByteArray.isNull())
+		throwError<TypeError>(kNullPointerError, "inputByteArray");
+
+	RECT rect;
+	th->pixels->clipRect(inputRect->getRect(), rect);
+
+	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
+	{
+		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
+		{
+			uint32_t pixel;
+			if (!inputByteArray->readUnsignedInt(pixel))
+				throwError<EOFError>(kEOFError);
+			th->pixels->setPixel(x, y, pixel, th->transparent);
+		}
+	}
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(BitmapData,setVector)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+	
+	_NR<Rectangle> inputRect;
+	_NR<Vector> inputVector;
+	ARG_UNPACK (inputRect) (inputVector);
+
+	if (inputRect.isNull())
+		throwError<TypeError>(kNullPointerError, "rect");
+	if (inputVector.isNull())
+		throwError<TypeError>(kNullPointerError, "inputVector");
+
+	RECT rect;
+	th->pixels->clipRect(inputRect->getRect(), rect);
+
+	unsigned int i = 0;
+	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
+	{
+		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
+		{
+			if (i >= inputVector->size())
+				throwError<RangeError>(kParamRangeError);
+
+			uint32_t pixel = inputVector->at(i)->toUInt();
+			th->pixels->setPixel(x, y, pixel, th->transparent);
+			i++;
+		}
+	}
+
+	return NULL;
 }

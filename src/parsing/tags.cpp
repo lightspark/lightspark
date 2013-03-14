@@ -757,6 +757,10 @@ BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),b
 {
 }
 
+_R<BitmapContainer> BitmapTag::getBitmap() const {
+	return bitmap;
+}
+
 DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version, RootMovieClip* root):BitmapTag(h,root),BitmapColorTableSize(0)
 {
 	int dest=in.tellg();

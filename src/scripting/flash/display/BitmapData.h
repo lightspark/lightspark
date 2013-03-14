@@ -29,8 +29,6 @@ namespace lightspark
 
 class Bitmap;
 class DisplayObject;
-class Point;
-class Rectangle;
 
 class BitmapData: public ASObject, public IBitmapDrawable
 {
@@ -41,12 +39,6 @@ private:
 	//Bitmap will take care of removing itself when needed
 	std::set<Bitmap*> users;
 	void notifyUsers() const;
-	// Clip a rectangle to fit both source and destination
-	// bitmaps.
-	void clipRect(_R<BitmapData> source, _R<Rectangle> sourceRect,
-		      _R<Point> destPoint, RECT& outputSourceRect,
-		      Vector2& outputDestPoint);
-        void clipRect(_R<Rectangle> sourceRect, RECT& clippedRect);
 public:
 	BitmapData(Class_base* c);
 	BitmapData(Class_base* c, _R<BitmapContainer> b);
@@ -56,10 +48,6 @@ public:
 	_NR<BitmapContainer> getBitmapContainer() const { return pixels; }
 	int getWidth() const { return pixels->getWidth(); }
 	int getHeight() const { return pixels->getHeight(); }
-	/* the bitmaps data in premultiplied, native-endian 32 bit
-	 * ARGB format. stride is the number of bytes per row, may be
-	 * larger than width. dataSize is the total allocated size of
-	 * data (=stride*height) */
 	void addUser(Bitmap* b);
 	void removeUser(Bitmap* b);
 	/*
@@ -89,6 +77,10 @@ public:
 	ASFUNCTION(floodFill);
 	ASFUNCTION(histogram);
 	ASFUNCTION(getColorBoundsRect);
+	ASFUNCTION(getPixels);
+	ASFUNCTION(getVector);
+	ASFUNCTION(setPixels);
+	ASFUNCTION(setVector);
 };
 
 };

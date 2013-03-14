@@ -33,7 +33,6 @@
 #include "smartrefs.h"
 #include "tiny_string.h"
 #include "memory_support.h"
-#include "scripting/flash/display/BitmapContainer.h"
 
 #ifdef BIG_ENDIAN
 #include <algorithm>
@@ -878,6 +877,8 @@ class MORPHFILLSTYLE;
 
 enum FILL_STYLE_TYPE { SOLID_FILL=0x00, LINEAR_GRADIENT=0x10, RADIAL_GRADIENT=0x12, FOCAL_RADIAL_GRADIENT=0x13, REPEATING_BITMAP=0x40,
 			CLIPPED_BITMAP=0x41, NON_SMOOTHED_REPEATING_BITMAP=0x42, NON_SMOOTHED_CLIPPED_BITMAP=0x43};
+
+class BitmapContainer;
 
 class FILLSTYLE
 {

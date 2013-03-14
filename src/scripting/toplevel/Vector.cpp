@@ -967,7 +967,7 @@ bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
 	if(!name.ns[0].hasEmptyName())
 		return false;
 
-	bool validIndex=name.toUInt(index);
+	bool validIndex=name.toUInt(index, true);
 	// Don't throw for non-numeric NAME_STRING or NAME_OBJECT
 	// because they can still be valid built-in property names.
 	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type==multiname::NAME_NUMBER))

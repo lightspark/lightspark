@@ -145,7 +145,7 @@ void multiname::resetNameIfObject()
 	}
 }
 
-bool multiname::toUInt(uint32_t& index) const
+bool multiname::toUInt(uint32_t& index, bool acceptStringFractions) const
 {
 	switch(name_type)
 	{
@@ -164,7 +164,20 @@ bool multiname::toUInt(uint32_t& index) const
 			index=0;
 			for(auto i=str.begin(); i!=str.end(); ++i)
 			{
-				if(!i.isdigit())
+				if (*i == '.' && acceptStringFractions)
+				{
+					if (i==str.begin())
+						return false;
+					
+					// Accept fractional part if it
+					// is all zeros, e.g. "2.00"
+					++i;
+					for (; i!=str.end(); ++i)
+						if (*i != '0')
+							return false;
+					return true;
+				}
+				else if(!i.isdigit())
 					return false;
 
 				index*=10;

@@ -1,6 +1,6 @@
 lightspark: An open source flash player implementation
 
-Version NEXT:
+Version 0.7.2:
 
 	* Improved image support: alpha in palettes, abbreviated JPEGs
 	* Improved embedded font parsing and text positioning

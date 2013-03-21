@@ -116,6 +116,7 @@ _CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MAL
 
 //Boolean type with acquire release barrier semantics
 #define ACQUIRE_RELEASE_FLAG(x) std::atomic_bool x
+#define ACQUIRE_RELEASE_VARIABLE(t, x) std::atomic<t> x
 #define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
 #define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
 

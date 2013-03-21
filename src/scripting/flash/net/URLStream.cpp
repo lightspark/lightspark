@@ -43,17 +43,19 @@ void URLStreamThread::execute()
 
 	//TODO: support httpStatus, progress events
 
-	if(!createDownloader(false, loader))
+	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
+	if(!createDownloader(cache, loader))
 		return;
 
 	bool success=false;
 	if(!downloader->hasFailed())
 	{
 		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("open")));
-		downloader->waitForTermination();
+		cache->waitForTermination();
 		if(!downloader->hasFailed() && !threadAborting)
 		{
-			istream s(downloader);
+			std::streambuf *sbuf = cache->createReader();
+			istream s(sbuf);
 			uint8_t* buf=new uint8_t[downloader->getLength()];
 			//TODO: avoid this useless copy
 			s.read((char*)buf,downloader->getLength());
@@ -61,6 +63,7 @@ void URLStreamThread::execute()
 			data->acquireBuffer(buf,downloader->getLength());
 			//The buffers must not be deleted, it's now handled by the ByteArray instance
 			success=true;
+			delete sbuf;
 		}
 	}
 

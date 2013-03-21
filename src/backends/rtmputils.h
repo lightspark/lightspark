@@ -34,7 +34,8 @@ private:
 	void threadAbort();
 	tiny_string stream;
 public:
-	RTMPDownloader(const tiny_string& _url, const tiny_string& _stream, ILoadable* o);
+	RTMPDownloader(const tiny_string& _url, _R<StreamCache> _cache,
+		       const tiny_string& _stream, ILoadable* o);
 };
 
 };

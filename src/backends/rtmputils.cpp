@@ -20,6 +20,7 @@
 #include "backends/rtmputils.h"
 #include "logger.h"
 #include "swf.h"
+#include "backends/streamcache.h"
 
 #ifdef ENABLE_RTMP
 #include <librtmp/rtmp.h>
@@ -28,8 +29,9 @@
 using namespace lightspark;
 using namespace std;
 
-RTMPDownloader::RTMPDownloader(const tiny_string& _url, const tiny_string& _stream, ILoadable* o):
-	ThreadedDownloader(_url, true, o),
+RTMPDownloader::RTMPDownloader(const tiny_string& _url, _R<StreamCache> _cache,
+			       const tiny_string& _stream, ILoadable* o):
+	ThreadedDownloader(_url, _cache, o),
 	stream(_stream)
 {
 }

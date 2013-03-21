@@ -44,8 +44,11 @@ private:
 	NPP instance;
 public:
 	NPDownloadManager(NPP i);
-	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner);
-	lightspark::Downloader* downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
+	lightspark::Downloader* download(const lightspark::URLInfo& url,
+					 _R<StreamCache> cache,
+					 lightspark::ILoadable* owner);
+	lightspark::Downloader* downloadWithData(const lightspark::URLInfo& url,
+			_R<StreamCache> cache, const std::vector<uint8_t>& data,
 			const std::list<tiny_string>& headers, lightspark::ILoadable* owner);
 	void destroy(lightspark::Downloader* downloader);
 };
@@ -63,8 +66,8 @@ public:
 	STATE state;
 	//Constructor used for the main file
 	NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner);
-	NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::ILoadable* owner);
-	NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data,
+	NPDownloader(const lightspark::tiny_string& _url, _R<StreamCache> cache, NPP _instance, lightspark::ILoadable* owner);
+	NPDownloader(const lightspark::tiny_string& _url, _R<StreamCache> cache, const std::vector<uint8_t>& _data,
 			const std::list<tiny_string>& headers, NPP _instance, lightspark::ILoadable* owner);
 };
 
@@ -135,6 +138,7 @@ private:
 	GdkNativeWindow mWindow;
 	int mX, mY;
 
+	std::streambuf *mainDownloaderStreambuf;
 	std::istream mainDownloaderStream;
 	NPDownloader* mainDownloader;
 	NPScriptObjectGW* scriptObject;

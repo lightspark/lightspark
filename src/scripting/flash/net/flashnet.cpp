@@ -29,6 +29,7 @@
 #include "backends/audio.h"
 #include "backends/builtindecoder.h"
 #include "backends/rendering.h"
+#include "backends/streamcache.h"
 #include "scripting/argconv.h"
 
 using namespace std;
@@ -304,7 +305,8 @@ void URLLoaderThread::execute()
 
 	//TODO: support httpStatus, progress events
 
-	if(!createDownloader(false, loader, loader.getPtr()))
+	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
+	if(!createDownloader(cache, loader, loader.getPtr()))
 		return;
 
 	_NR<ASObject> data;
@@ -312,10 +314,12 @@ void URLLoaderThread::execute()
 	if(!downloader->hasFailed())
 	{
 		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("open")));
-		downloader->waitForTermination();
+
+		cache->waitForTermination();
 		if(!downloader->hasFailed() && !threadAborting)
 		{
-			istream s(downloader);
+			std::streambuf *sbuf = cache->createReader();
+			istream s(sbuf);
 			uint8_t* buf=new uint8_t[downloader->getLength()+1];
 			//TODO: avoid this useless copy
 			s.read((char*)buf,downloader->getLength());
@@ -344,6 +348,7 @@ void URLLoaderThread::execute()
 				assert(false && "invalid dataFormat");
 			}
 
+			delete sbuf;
 			success=true;
 		}
 	}
@@ -683,22 +688,25 @@ void NetConnection::execute()
 	assert(!messageData.empty());
 	std::list<tiny_string> headers;
 	headers.push_back("Content-Type: application/x-amf");
-	downloader=getSys()->downloadManager->downloadWithData(uri, messageData,
-			headers, NULL);
+	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
+	downloader=getSys()->downloadManager->downloadWithData(uri, cache,
+			messageData, headers, NULL);
 	//Get the whole answer
-	downloader->waitForTermination();
-	if(downloader->hasFailed()) //Check to see if the download failed for some reason
+	cache->waitForTermination();
+	if(cache->hasFailed()) //Check to see if the download failed for some reason
 	{
 		LOG(LOG_ERROR, "NetConnection::execute(): Download of URL failed: " << uri);
 //		getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
 		getSys()->downloadManager->destroy(downloader);
 		return;
 	}
-	istream s(downloader);
+	std::streambuf *sbuf = cache->createReader();
+	istream s(sbuf);
 	_R<ByteArray> message=_MR(Class<ByteArray>::getInstanceS());
 	uint8_t* buf=message->getBuffer(downloader->getLength(), true);
 	s.read((char*)buf,downloader->getLength());
 	//Download is done, destroy it
+	delete sbuf;
 	{
 		//Acquire the lock to ensure consistency in threadAbort
 		SpinlockLocker l(downloaderLock);
@@ -1070,9 +1078,8 @@ ASFUNCTIONBODY(NetStream,play)
 	}
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
-		//Cahe the download only if it is not RTMP based
-		bool cached=!th->url.isRTMP();
-		th->downloader=getSys()->downloadManager->download(th->url, cached, NULL);
+		StreamCache *cache = new FileStreamCache;
+		th->downloader=getSys()->downloadManager->download(th->url, _MR(cache), NULL);
 		th->streamTime=0;
 		//To be decreffed in jobFence
 		th->incRef();
@@ -1232,7 +1239,8 @@ void NetStream::execute()
 
 	//The downloader hasn't failed yet at this point
 
-	istream s(downloader);
+	std::streambuf *sbuf = downloader->getCache()->createReader();
+	istream s(sbuf);
 	s.exceptions(istream::goodbit);
 
 	ThreadProfile* profile=getSys()->allocateProfiler(RGB(0,0,200));
@@ -1349,6 +1357,7 @@ void NetStream::execute()
 		audioStream=NULL;
 	}
 	delete streamDecoder;
+	delete sbuf;
 }
 
 void NetStream::threadAbort()
@@ -1738,8 +1747,7 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	urlRequest->getPostData(postData);
 	assert_and_throw(postData.empty());
 
-	//Don't cache our downloaded files
-	Downloader* downloader=getSys()->downloadManager->download(url, false, NULL);
+	Downloader* downloader=getSys()->downloadManager->download(url, _MR(new MemoryStreamCache), NULL);
 	//TODO: make the download asynchronous instead of waiting for an unused response
 	downloader->waitForTermination();
 	getSys()->downloadManager->destroy(downloader);

@@ -72,17 +72,14 @@ public:
 class SoundChannel : public EventDispatcher, public IThreadJob
 {
 private:
-	std::istream stream;
-	// owner keeps reference to the Sound object that owns the
-	// streambuf. TODO: ugly, get rid of this
-	_NR<Sound> owner;
+        _NR<StreamCache> stream;
 	Mutex mutex;
 	ACQUIRE_RELEASE_FLAG(stopped);
 	AudioDecoder* audioDecoder;
 	AudioStream* audioStream;
 	ASPROPERTY_GETTER_SETTER(uint32_t,position);
 public:
-	SoundChannel(Class_base* c, std::streambuf *s=NULL, _NR<Sound> owner=NullRef);
+	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef);
 	~SoundChannel();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

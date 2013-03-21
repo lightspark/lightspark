@@ -20,6 +20,7 @@
 
 #include "version.h"
 #include "backends/security.h"
+#include "backends/streamcache.h"
 #include "plugin/plugin.h"
 #include "logger.h"
 #include "compat.h"
@@ -63,18 +64,22 @@ NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached, lightspark::ILoadable* owner)
+lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, _R<StreamCache> cache, lightspark::ILoadable* owner)
 {
 	// Handle RTMP requests internally, not through NPAPI
 	if(url.isRTMP())
 	{
-		return StandaloneDownloadManager::download(url, cached, owner);
+		return StandaloneDownloadManager::download(url, cache, owner);
 	}
 
+	// FIXME: dynamic_cast fails because the linker doesn't find
+	// typeinfo for FileStreamCache
+	//bool cached = dynamic_cast<FileStreamCache *>(cache.getPtr()) != NULL;
+	bool cached = false;
 	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
-	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance, owner);
+	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cache, instance, owner);
 	addDownloader(downloader);
 	return downloader;
 }
@@ -88,18 +93,19 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
  * \return A pointer to a newly created \c Downloader for the given URL.
  * \see DownloadManager::destroy()
  */
-lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::URLInfo& url, const std::vector<uint8_t>& data, 
+lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::URLInfo& url,
+		_R<StreamCache> cache, const std::vector<uint8_t>& data,
 		const std::list<tiny_string>& headers, lightspark::ILoadable* owner)
 {
 	// Handle RTMP requests internally, not through NPAPI
 	if(url.isRTMP())
 	{
-		return StandaloneDownloadManager::downloadWithData(url, data, headers, owner);
+		return StandaloneDownloadManager::downloadWithData(url, cache, data, headers, owner);
 	}
 
 	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
 	//Register this download
-	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), data, headers, instance, owner);
+	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cache, data, headers, instance, owner);
 	addDownloader(downloader);
 	return downloader;
 }
@@ -139,7 +145,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* downloader)
  * \param[in] _url The URL for the Downloader.
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner):
-	Downloader(_url, false, owner),instance(NULL),cleanupInDestroyStream(true),state(INIT)
+	Downloader(_url, _MR(new MemoryStreamCache), owner),instance(NULL),cleanupInDestroyStream(true),state(INIT)
 {
 }
 
@@ -151,8 +157,8 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoa
  * \param[in] _instance The netscape plugin instance
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
-NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cached, owner),instance(_instance),cleanupInDestroyStream(false),state(INIT)
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache, NPP _instance, lightspark::ILoadable* owner):
+	Downloader(_url, _cache, owner),instance(_instance),cleanupInDestroyStream(false),state(INIT)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
@@ -165,9 +171,10 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NP
  * \param[in] _instance The netscape plugin instance
  * \param[in] owner The \c LoaderInfo object that keeps track of this download
  */
-NPDownloader::NPDownloader(const lightspark::tiny_string& _url, const std::vector<uint8_t>& _data,
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache,
+		const std::vector<uint8_t>& _data,
 		const std::list<tiny_string>& headers, NPP _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _data, headers, owner),instance(_instance),cleanupInDestroyStream(false),state(INIT)
+	Downloader(_url, _cache, _data, headers, owner),instance(_instance),cleanupInDestroyStream(false),state(INIT)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
@@ -313,7 +320,8 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : 
 	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mWindow(0),
-	mainDownloaderStream(NULL),mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
+	mainDownloaderStreambuf(NULL),mainDownloaderStream(NULL),
+	mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
 {
 	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
 	setTLSSys( NULL );
@@ -366,6 +374,8 @@ nsPluginInstance::~nsPluginInstance()
 	setTLSSys(m_sys);
 	if(mainDownloader)
 		mainDownloader->stop();
+	if (mainDownloaderStreambuf)
+		delete mainDownloaderStreambuf;
 
 	// Kill all stuff relating to NPScriptObject which is still running
 	static_cast<NPScriptObject*>(m_sys->extScriptObject)->destroy();
@@ -644,7 +654,8 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 		dl=new NPDownloader(stream->url,m_sys->mainClip->loaderInfo.getPtr());
 		dl->setLength(stream->end);
 		mainDownloader=dl;
-		mainDownloaderStream.rdbuf(mainDownloader);
+		mainDownloaderStreambuf = mainDownloader->getCache()->createReader();
+		mainDownloaderStream.rdbuf(mainDownloaderStreambuf);
 		m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys->mainClip);
 		m_sys->addJob(m_pt);
 	}

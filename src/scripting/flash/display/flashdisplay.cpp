@@ -296,19 +296,23 @@ void LoaderThread::execute()
 	streambuf *sbuf = 0;
 	if(source==URL)
 	{
-		if(!createDownloader(false, loaderInfo, loaderInfo.getPtr(), false))
+		_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
+		if(!createDownloader(cache, loaderInfo, loaderInfo.getPtr(), false))
 			return;
 
-		downloader->waitForData(); //Wait for some data, making sure our check for failure is working
-		if(downloader->hasFailed()) //Check to see if the download failed for some reason
+		sbuf = cache->createReader();
+		
+		// Wait for some data, making sure our check for failure is working
+		sbuf->sgetc(); // peek one byte
+		if(cache->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
 			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			delete sbuf;
 			// downloader will be deleted in jobFence
 			return;
 		}
 		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("open")));
-		sbuf=downloader;
 	}
 	else if(source==BYTES)
 	{
@@ -324,19 +328,15 @@ void LoaderThread::execute()
 	ParseThread local_pt(s,loaderInfo->applicationDomain,loaderInfo->securityDomain,loader.getPtr(),url.getParsedURL());
 	local_pt.execute();
 
-	// Delete the bytes container (downloader or bytes_buf)
+	// Delete the bytes container (cache reader or bytes_buf)
+	delete sbuf;
+	sbuf = NULL;
 	if (source==URL) {
 		//Acquire the lock to ensure consistency in threadAbort
 		SpinlockLocker l(downloaderLock);
 		if(downloader)
 			getSys()->downloadManager->destroy(downloader);
 		downloader=NULL;
-		sbuf = NULL;
-	}
-	else if (source==BYTES)
-	{
-		delete sbuf;
-		sbuf = NULL;
 	}
 
 	bytes.reset();

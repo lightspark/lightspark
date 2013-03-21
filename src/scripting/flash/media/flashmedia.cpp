@@ -275,13 +275,13 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//This is a GET request
 		//Use disk cache our downloaded files
-		th->downloader=getSys()->downloadManager->download(th->url, true, th);
+		th->downloader=getSys()->downloadManager->download(th->url, _MR(new FileStreamCache), th);
 	}
 	else
 	{
 		list<tiny_string> headers=urlRequest->getHeaders();
-		th->downloader=getSys()->downloadManager->downloadWithData(th->url, th->postData,
-				headers, th);
+		th->downloader=getSys()->downloadManager->downloadWithData(th->url,
+				_MR(new MemoryStreamCache), th->postData, headers, th);
 		//Clean up the postData for the next load
 		th->postData.clear();
 	}
@@ -306,7 +306,7 @@ ASFUNCTIONBODY(Sound,play)
 	{
 		th->soundChannelCreated = true;
 		th->incRef();
-		return Class<SoundChannel>::getInstanceS(th->downloader, _MNR(th));
+		return Class<SoundChannel>::getInstanceS(th->downloader->getCache());
 	}
 	else
 	{
@@ -374,10 +374,10 @@ ASFUNCTIONBODY(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
-SoundChannel::SoundChannel(Class_base* c, std::streambuf *s, _NR<Sound> _owner)
-  : EventDispatcher(c),stream(s),owner(_owner),stopped(false),audioDecoder(NULL),audioStream(NULL),position(0)
+SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream)
+  : EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),position(0)
 {
-	if(s)
+	if (!stream.isNull())
 	{
 		// Start playback
 		incRef();
@@ -421,7 +421,11 @@ ASFUNCTIONBODY(SoundChannel, stop)
 
 void SoundChannel::execute()
 {
-	stream.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	assert(!stream.isNull());
+
+	std::streambuf *sbuf = stream->createReader();
+	istream s(sbuf);
+	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 
 	bool waitForFlush=true;
 	StreamDecoder* streamDecoder=NULL;
@@ -429,7 +433,7 @@ void SoundChannel::execute()
 	try
 	{
 #ifdef ENABLE_LIBAVCODEC
-		streamDecoder=new FFMpegStreamDecoder(stream);
+		streamDecoder=new FFMpegStreamDecoder(s);
 		if(!streamDecoder->isValid())
 			threadAbort();
 
@@ -486,6 +490,7 @@ void SoundChannel::execute()
 		audioStream=NULL;
 	}
 	delete streamDecoder;
+	delete sbuf;
 
 	if (!ACQUIRE_READ(stopped))
 	{

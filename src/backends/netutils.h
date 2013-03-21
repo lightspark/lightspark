@@ -29,6 +29,7 @@
 #include "swftypes.h"
 #include "thread_pool.h"
 #include "backends/urlutils.h"
+#include "backends/streamcache.h"
 #include "smartrefs.h"
 
 namespace lightspark
@@ -57,8 +58,9 @@ protected:
 	void cleanUp();
 public:
 	virtual ~DownloadManager();
-	virtual Downloader* download(const URLInfo& url, bool cached, ILoadable* owner)=0;
-	virtual Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data,
+	virtual Downloader* download(const URLInfo& url, _R<StreamCache> cache, ILoadable* owner)=0;
+	virtual Downloader* downloadWithData(const URLInfo& url, _R<StreamCache> cache, 
+			const std::vector<uint8_t>& data,
 			const std::list<tiny_string>& headers, ILoadable* owner)=0;
 	virtual void destroy(Downloader* downloader)=0;
 	void stopAll();
@@ -72,57 +74,22 @@ class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 public:
 	StandaloneDownloadManager();
 	~StandaloneDownloadManager();
-	Downloader* download(const URLInfo& url, bool cached, ILoadable* owner);
-	Downloader* downloadWithData(const URLInfo& url, const std::vector<uint8_t>& data,
+	Downloader* download(const URLInfo& url, _R<StreamCache> cache, ILoadable* owner);
+	Downloader* downloadWithData(const URLInfo& url, _R<StreamCache> cache,
+			const std::vector<uint8_t>& data,
 			const std::list<tiny_string>& headers, ILoadable* owner);
 	void destroy(Downloader* downloader);
 };
 
-class DLL_PUBLIC Downloader: public std::streambuf
+class DLL_PUBLIC Downloader
 {
-private:
-	//Handles streambuf out-of-data events
-	virtual int_type underflow();
-	//Seeks to absolute position
-	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
-	//Seeks to relative position
-	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
-	//Helper to get the current offset
-	pos_type getOffset() const;
 protected:
 	//Abstract base class, can't be constructed
-	Downloader(const tiny_string& _url, bool _cached, ILoadable* o);
-	Downloader(const tiny_string& _url, const std::vector<uint8_t>& data,
+	Downloader(const tiny_string& _url, _R<StreamCache> _cache, ILoadable* o);
+	Downloader(const tiny_string& _url, _R<StreamCache> _cache, const std::vector<uint8_t>& data,
 		   const std::list<tiny_string>& headers, ILoadable* o);
-	//-- LOCKING
-	//Provides internal mutual exclusing
-	Mutex mutex;
-	//Signals the cache opening
-	Semaphore cacheOpened;
-	//Signals new bytes available for reading
-	Semaphore dataAvailable;
-	//Signals termination of the download
-	Semaphore terminated;
-	//True if the download is terminated
-	bool hasTerminated;
-	//True if cache has opened
-	bool cacheHasOpened;
-
-	//-- STATUS
-	//True if the downloader is waiting for the cache to be opened
-	bool waitingForCache;
-	//True if the downloader is waiting for data
-	bool waitingForData;
-	void waitForData_locked();
-	//True if the downloader is waiting for termination
-	bool waitingForTermination;
 
 	//-- FLAGS
-	//This flag forces a stop in internal code
-	bool forceStop;
-	//These flags specify what type of termination happened
-	bool failed;
-	bool finished;
 	//Mark the download as failed
 	void setFailed();
 	//Mark the download as finished
@@ -132,42 +99,13 @@ protected:
 	tiny_string url;
 	tiny_string originalURL;
 
-	//-- BUFFERING
-	//This will hold the whole download (non-cached) or a window into the download (cached)
-	uint8_t* buffer;
-	//We can't change the used buffer (for example when resizing) asynchronously. We can only do that on underflows
-	uint8_t* stableBuffer;
-	//Minimum growth of the buffer
-	static const size_t bufferMinGrowth = 4096;
-	//(Re)allocate the buffer
-	void allocateBuffer(size_t size);
-	//Synchronize stableBuffer and buffer
-	void syncBuffers();
+	//-- CACHING
+        _R<StreamCache> cache;
 
 	//-- PROGRESS MONITORING
 	ILoadable* owner;
 	void notifyOwnerAboutBytesTotal() const;
 	void notifyOwnerAboutBytesLoaded() const;
-
-	//-- CACHING
-	//Cache filename
-	tiny_string cacheFilename;
-	//Cache fstream
-	std::fstream cache;
-	//Position of the cache buffer into the file
-	uint32_t cachePos;
-	//Size of data in the buffer
-	uint32_t cacheSize;
-	//Maximum size of the cache buffer
-	static const size_t cacheMaxSize = 8192;
-	//True if the cache file doesn't need to be deleted on destruction
-	bool keepCache:1;
-	//True if the file is cached to disk (default = false)
-	bool cached:1;
-	//Creates & opens a temporary cache file
-	void openCache();
-	//Opens an existing cache file
-	void openExistingCache(tiny_string filename);
 
 	//-- HTTP REDIRECTION, STATUS & HEADERS
 	bool redirected:1;
@@ -187,8 +125,6 @@ protected:
 	//-- DOWNLOADED DATA
 	//File length (can change in certain cases, resulting in reallocation of the buffer (non-cached))
 	uint32_t length;
-	//Amount of data already received
-	uint32_t receivedLength;
 	//Append data to the internal buffer
 	void append(uint8_t* buffer, uint32_t length);
 	//Set the length of the downloaded file, can be called multiple times to accomodate a growing file
@@ -198,28 +134,23 @@ public:
 	virtual ~Downloader();
 	//Stop the download
 	void stop();
-	//Wait for cache to be opened
-	void waitForCache();
-	//Wait for data to become available
-	void waitForData() { Mutex::Lock l(mutex); waitForData_locked(); }
-	//Wait for the download to terminate
-	void waitForTermination();
 
 	//True if the download has failed
-	bool hasFailed() { return failed; }
+	bool hasFailed() { return cache->hasFailed(); }
 	//True if the download has finished
 	//Can be used in conjunction with failed to find out if it finished successfully
-	bool hasFinished() { return finished; }
-
-	//True if the download is cached
-	bool isCached() { return cached; }
+	bool hasFinished() { return cache->hasTerminated(); }
 
 	const tiny_string& getURL() { return url; }
 
+	//Wait until the downloader completes
+	void waitForTermination() { return cache->waitForTermination(); }
+
+	_R<StreamCache> getCache() { return cache; }
 	//Gets the total length of the downloaded file (may change)
 	uint32_t getLength() { return length; }
 	//Gets the length of downloaded data
-	uint32_t getReceivedLength() { return receivedLength; }
+	uint32_t getReceivedLength() { return cache->getReceivedLength(); }
 
 	size_t getHeaderCount() { return headers.size(); }
 	tiny_string getHeader(const char* header) { return getHeader(tiny_string(header)); }
@@ -245,8 +176,9 @@ public:
 	void waitFencing();
 protected:
 	//Abstract base class, can not be constructed
-	ThreadedDownloader(const tiny_string& url, bool cached, ILoadable* o);
-	ThreadedDownloader(const tiny_string& url, const std::vector<uint8_t>& data,
+	ThreadedDownloader(const tiny_string& url, _R<StreamCache> cache, ILoadable* o);
+	ThreadedDownloader(const tiny_string& url, _R<StreamCache> cache,
+			   const std::vector<uint8_t>& data,
 			   const std::list<tiny_string>& headers, ILoadable* o);
 //	//This class can only get destroyed by DownloadManager
 //	virtual ~ThreadedDownloader();
@@ -262,8 +194,8 @@ private:
 	void execute();
 	void threadAbort();
 public:
-	CurlDownloader(const tiny_string& _url, bool _cached, ILoadable* o);
-	CurlDownloader(const tiny_string& _url, const std::vector<uint8_t>& data,
+	CurlDownloader(const tiny_string& _url, _R<StreamCache> cache, ILoadable* o);
+	CurlDownloader(const tiny_string& _url, _R<StreamCache> cache, const std::vector<uint8_t>& data,
 		       const std::list<tiny_string>& headers, ILoadable* o);
 };
 
@@ -280,7 +212,7 @@ private:
 	//Size of the reading buffer
 	static const size_t bufSize = 8192;
 public:
-	LocalDownloader(const tiny_string& _url, bool _cached, ILoadable* o);
+	LocalDownloader(const tiny_string& _url, _R<StreamCache> _cache, ILoadable* o);
 };
 
 class IDownloaderThreadListener
@@ -306,7 +238,7 @@ protected:
 	std::list<tiny_string> requestHeaders;
 	Spinlock downloaderLock;
 	Downloader* downloader;
-	bool createDownloader(bool cached,
+	bool createDownloader(_R<StreamCache> cache,
 			      _NR<EventDispatcher> dispatcher=NullRef,
 			      ILoadable* owner=NULL,
 			      bool checkPolicyFile=true);

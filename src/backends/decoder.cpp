@@ -451,19 +451,7 @@ void AudioDecoder::skipAll()
 #ifdef ENABLE_LIBAVCODEC
 FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen):ownedContext(true)
 {
-	CodecID codecId;
-	switch(audioCodec)
-	{
-		case AAC:
-			codecId=CODEC_ID_AAC;
-			break;
-		case MP3:
-			codecId=CODEC_ID_MP3;
-			break;
-		default:
-			::abort();
-	}
-	AVCodec* codec=avcodec_find_decoder(codecId);
+	AVCodec* codec=avcodec_find_decoder(LSToFFMpegCodec(audioCodec));
 	assert(codec);
 
 	codecContext=avcodec_alloc_context3(codec);
@@ -490,7 +478,33 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initd
 #endif
 }
 
-FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):codecContext(_c)
+FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC lscodec, int sampleRate, int channels, bool):ownedContext(true)
+{
+	status=INIT;
+
+	CodecID codecId = LSToFFMpegCodec(lscodec);
+	AVCodec* codec=avcodec_find_decoder(codecId);
+	assert(codec);
+	codecContext=avcodec_alloc_context3(codec);
+	codecContext->codec_id = codecId;
+	codecContext->sample_rate = sampleRate;
+	codecContext->channels = channels;
+
+#ifdef HAVE_AVCODEC_OPEN2
+	if(avcodec_open2(codecContext, codec, NULL)<0)
+#else
+	if(avcodec_open(codecContext, codec)<0)
+#endif //HAVE_AVCODEC_ALLOC_CONTEXT3
+		return;
+
+	if(fillDataAndCheckValidity())
+		status=VALID;
+#if HAVE_AVCODEC_DECODE_AUDIO4
+	frameIn=avcodec_alloc_frame();
+#endif
+}
+
+FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):ownedContext(false),codecContext(_c)
 {
 	status=INIT;
 	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
@@ -518,6 +532,21 @@ FFMpegAudioDecoder::~FFMpegAudioDecoder()
 #if HAVE_AVCODEC_DECODE_AUDIO4
 	av_free(frameIn);
 #endif
+}
+
+CodecID FFMpegAudioDecoder::LSToFFMpegCodec(LS_AUDIO_CODEC LSCodec)
+{
+	switch(LSCodec)
+	{
+		case AAC:
+			return CODEC_ID_AAC;
+		case MP3:
+			return CODEC_ID_MP3;
+		case ADPCM:
+			return CODEC_ID_ADPCM_SWF;
+		default:
+			return CODEC_ID_NONE;
+	}
 }
 
 bool FFMpegAudioDecoder::fillDataAndCheckValidity()
@@ -556,8 +585,25 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 #if HAVE_AVCODEC_DECODE_AUDIO3 || HAVE_AVCODEC_DECODE_AUDIO4
 	AVPacket pkt;
 	av_init_packet(&pkt);
-	pkt.data=data;
-	pkt.size=datalen;
+
+	// If some data was left unprocessed on previous call,
+	// concatenate.
+	std::vector<uint8_t> combinedBuffer;
+	if (overflowBuffer.empty())
+	{
+		pkt.data=data;
+		pkt.size=datalen;
+	}
+	else
+	{
+		combinedBuffer.assign(overflowBuffer.begin(), overflowBuffer.end());
+		if (datalen > 0)
+			combinedBuffer.insert(combinedBuffer.end(), data, data+datalen);
+		pkt.data = &combinedBuffer[0];
+		pkt.size = combinedBuffer.size();
+		overflowBuffer.clear();
+	}
+
 #if HAVE_AVCODEC_DECODE_AUDIO4
 	avcodec_get_frame_defaults(frameIn);
 	int frameOk=0;
@@ -577,10 +623,16 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 #else
 	int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
 #endif
-	assert_and_throw(ret==datalen);
+	if (ret > 0)
+	{
+		pkt.data += ret;
+		pkt.size -= ret;
 
-	if(status==INIT && fillDataAndCheckValidity())
-		status=VALID;
+		if (pkt.size > 0)
+		{
+			overflowBuffer.assign(pkt.data, pkt.data+pkt.size);
+		}
+	}
 
 	curTail.len=maxLen;
 	assert(!(curTail.len&0x80000000));
@@ -588,6 +640,10 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	curTail.current=curTail.samples;
 	curTail.time=time;
 	samplesBuffer.commitLast();
+
+	if(status==INIT && fillDataAndCheckValidity())
+		status=VALID;
+
 	return maxLen;
 }
 
@@ -639,6 +695,31 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	samplesBuffer.commitLast();
 	return maxLen;
 }
+
+uint32_t FFMpegAudioDecoder::decodeStreamSomePackets(std::istream& s, uint32_t time)
+{
+	const size_t BUF_SIZE = 4096;
+	uint32_t ret;
+	uint8_t inbuf[BUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
+	s.read((char*)inbuf, BUF_SIZE);
+	if (s.gcount() == 0)
+		return 0;
+
+	ret = decodeData(inbuf, s.gcount(), time);
+
+	// Keep the overflowBuffer from growing without bounds
+	size_t overflowSize = overflowBuffer.size();
+	while (overflowSize > BUF_SIZE)
+	{
+		ret = decodeData(NULL, 0, time);
+		if (overflowBuffer.size() == overflowSize)
+			break;
+		overflowSize = overflowBuffer.size();
+	}
+
+	return ret;
+}
+
 #endif //ENABLE_LIBAVCODEC
 
 StreamDecoder::~StreamDecoder()

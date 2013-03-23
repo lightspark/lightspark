@@ -1504,3 +1504,26 @@ tiny_string RGB::toString() const
 
 	return ss.str();
 }
+
+std::istream& lightspark::operator>>(std::istream& stream, SOUNDINFO& v)
+{
+	BitStream bs(stream);
+	UB(2,bs); // reserved
+	v.SyncStop = UB(1,bs);
+	v.SyncNoMultiple = UB(1,bs);
+	v.HasEnvelope = UB(1,bs);
+	v.HasLoops = UB(1,bs);
+	v.HasOutPoint = UB(1,bs);
+	v.HasInPoint = UB(1,bs);
+	if (v.HasInPoint)
+		stream >> v.InPoint;
+	if (v.HasOutPoint)
+		stream >> v.OutPoint;
+	if (v.HasLoops)
+		stream >> v.LoopCount;
+	if (v.HasEnvelope)
+		stream >> v.EnvPoints;
+	// TODO: EnvelopeRecords
+	return stream;
+}
+

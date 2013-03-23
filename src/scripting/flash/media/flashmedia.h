@@ -34,6 +34,16 @@ namespace lightspark
 
 class AudioDecoder;
 class NetStream;
+class StreamCache;
+
+class AudioFormat
+{
+public:
+	AudioFormat(LS_AUDIO_CODEC co, int sr, int ch):codec(co),sampleRate(sr),channels(ch) {}
+	LS_AUDIO_CODEC codec;
+	int sampleRate;
+	int channels;
+};
 
 class Sound: public EventDispatcher, public ILoadable
 {
@@ -41,7 +51,12 @@ private:
 	URLInfo url;
 	std::vector<uint8_t> postData;
 	Downloader* downloader;
-	bool soundChannelCreated;
+	_R<StreamCache> soundData;
+	// If container is true, audio format is parsed from
+	// soundData. If container is false, soundData is raw samples
+	// and format is defined by format member.
+	bool container;
+	AudioFormat format;
 	ASPROPERTY_GETTER(uint32_t,bytesLoaded);
 	ASPROPERTY_GETTER(uint32_t,bytesTotal);
 	ASPROPERTY_GETTER(number_t,length);
@@ -50,6 +65,7 @@ private:
 	void setBytesLoaded(uint32_t b);
 public:
 	Sound(Class_base* c);
+	Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format);
 	~Sound();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -77,9 +93,12 @@ private:
 	ACQUIRE_RELEASE_FLAG(stopped);
 	AudioDecoder* audioDecoder;
 	AudioStream* audioStream;
+	AudioFormat format;
 	ASPROPERTY_GETTER_SETTER(uint32_t,position);
+	void playStream();
+	void playRaw();
 public:
-	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef);
+	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0));
 	~SoundChannel();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

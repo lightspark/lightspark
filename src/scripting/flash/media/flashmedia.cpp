@@ -24,6 +24,7 @@
 #include <iostream>
 #include "backends/audio.h"
 #include "backends/rendering.h"
+#include "backends/streamcache.h"
 #include "scripting/argconv.h"
 
 using namespace lightspark;
@@ -215,7 +216,16 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 }
 
 Sound::Sound(Class_base* c)
- :EventDispatcher(c),downloader(NULL),soundChannelCreated(false),bytesLoaded(0),bytesTotal(0),length(60*1000)
+	:EventDispatcher(c),downloader(NULL),soundData(new MemoryStreamCache),
+	 container(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(60*1000)
+{
+}
+
+Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format)
+	:EventDispatcher(c),downloader(NULL),soundData(data),
+	 container(false),format(_format),
+	 bytesLoaded(soundData->getReceivedLength()),
+	 bytesTotal(soundData->getReceivedLength()),length(60*1000)
 {
 }
 
@@ -261,6 +271,9 @@ ASFUNCTIONBODY(Sound,load)
 	th->url = urlRequest->getRequestURL();
 	urlRequest->getPostData(th->postData);
 
+	_R<StreamCache> c(_MR(new MemoryStreamCache()));
+	th->soundData = c;
+
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading
@@ -275,13 +288,13 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//This is a GET request
 		//Use disk cache our downloaded files
-		th->downloader=getSys()->downloadManager->download(th->url, _MR(new FileStreamCache), th);
+		th->downloader=getSys()->downloadManager->download(th->url, th->soundData, th);
 	}
 	else
 	{
 		list<tiny_string> headers=urlRequest->getHeaders();
 		th->downloader=getSys()->downloadManager->downloadWithData(th->url,
-				_MR(new MemoryStreamCache), th->postData, headers, th);
+				th->soundData, th->postData, headers, th);
 		//Clean up the postData for the next load
 		th->postData.clear();
 	}
@@ -302,19 +315,11 @@ ASFUNCTIONBODY(Sound,play)
 	if(startTime!=0)
 		LOG(LOG_NOT_IMPLEMENTED,"startTime not supported in Sound::play");
 
-	if (!th->soundChannelCreated)
-	{
-		th->soundChannelCreated = true;
-		th->incRef();
-		return Class<SoundChannel>::getInstanceS(th->downloader->getCache());
-	}
+	th->incRef();
+	if (th->container)
+		return Class<SoundChannel>::getInstanceS(th->soundData);
 	else
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Sound::play called more than once");
-		// should return a new independent SoundChannel for
-		// the same downloaded data
-		return getSys()->getUndefinedRef();
-	}
+		return Class<SoundChannel>::getInstanceS(th->soundData, th->format);
 }
 
 ASFUNCTIONBODY(Sound,close)
@@ -374,8 +379,9 @@ ASFUNCTIONBODY(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
-SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream)
-  : EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),position(0)
+SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format)
+: EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),
+  format(_format),position(0)
 {
 	if (!stream.isNull())
 	{
@@ -421,8 +427,15 @@ ASFUNCTIONBODY(SoundChannel, stop)
 
 void SoundChannel::execute()
 {
-	assert(!stream.isNull());
+	if (format.codec == CODEC_NONE)
+		playStream();
+	else
+		playRaw();
+}
 
+void SoundChannel::playStream()
+{
+	assert(!stream.isNull());
 	std::streambuf *sbuf = stream->createReader();
 	istream s(sbuf);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
@@ -490,6 +503,44 @@ void SoundChannel::execute()
 		audioStream=NULL;
 	}
 	delete streamDecoder;
+	delete sbuf;
+
+	if (!ACQUIRE_READ(stopped))
+	{
+		incRef();
+		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("soundComplete")));
+	}
+}
+
+void SoundChannel::playRaw()
+{
+	assert(!stream.isNull());
+	FFMpegAudioDecoder *decoder = new FFMpegAudioDecoder(format.codec,
+							     format.sampleRate,
+							     format.channels,
+							     true);
+	if (!decoder)
+		return;
+	if(!getSys()->audioManager->pluginLoaded())
+		return;
+
+	AudioStream *audioStream = NULL;
+	std::streambuf *sbuf = stream->createReader();
+	istream stream(sbuf);
+	do
+	{
+		decoder->decodeStreamSomePackets(stream, 0);
+		if (decoder->isValid())
+			audioStream=getSys()->audioManager->createStreamPlugin(decoder);
+	}
+	while (!ACQUIRE_READ(stopped) && !stream.eof() && !stream.fail() && !stream.bad());
+
+	decoder->setFlushing();
+	decoder->waitFlushed();
+	sleep(1);
+	
+	delete audioStream;
+	delete decoder;
 	delete sbuf;
 
 	if (!ACQUIRE_READ(stopped))

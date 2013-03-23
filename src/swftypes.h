@@ -1295,6 +1295,21 @@ public:
 	CLIPEVENTFLAGS AllEventFlags;
 };
 
+class SOUNDINFO
+{
+public:
+	UB SyncStop;
+	UB SyncNoMultiple;
+	UB HasEnvelope;
+	UB HasLoops;
+	UB HasOutPoint;
+	UB HasInPoint;
+	UI32_SWF InPoint;
+	UI32_SWF OutPoint;
+	UI16_SWF LoopCount;
+	UI8 EnvPoints;
+};
+
 class RunState
 {
 public:
@@ -1359,7 +1374,7 @@ std::istream& operator>>(std::istream& stream, GRADIENTGLOWFILTER& v);
 std::istream& operator>>(std::istream& stream, CONVOLUTIONFILTER& v);
 std::istream& operator>>(std::istream& stream, COLORMATRIXFILTER& v);
 std::istream& operator>>(std::istream& stream, GRADIENTBEVELFILTER& v);
-
+std::istream& operator>>(std::istream& stream, SOUNDINFO& v);
 
 };
 #endif /* SWFTYPES_H */

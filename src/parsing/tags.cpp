@@ -24,10 +24,12 @@
 #include <list>
 #include <algorithm>
 #include <sstream>
+#include <alloca.h>
 #include "scripting/abc.h"
 #include "parsing/tags.h"
 #include "backends/geometry.h"
 #include "backends/security.h"
+#include "backends/streamcache.h"
 #include "swftypes.h"
 #include "logger.h"
 #include "compat.h"
@@ -35,6 +37,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/media/flashmedia.h"
+#include "backends/audio.h"
 
 #undef RGB
 
@@ -383,6 +386,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 			case SYMBOL_CLASS_TAG:
 			case ABC_TAG:
 			case CONTROL_TAG:
+			case ACTION_TAG:
 				delete tag;
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case FRAMELABEL_TAG:
@@ -1532,7 +1536,7 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 	UB(24,bs);
 }
 
-DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root)
+DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),SoundData(new MemoryStreamCache)
 {
 	LOG(LOG_TRACE,_("DefineSound Tag"));
 	in >> SoundId;
@@ -1542,8 +1546,13 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 	SoundSize=UB(1,bs);
 	SoundType=UB(1,bs);
 	in >> SoundSampleCount;
-	//TODO: read and parse actual sound data
-	ignore(in,h.getLength()-7);
+
+	//TODO: get rid of the temporary copy
+	unsigned int soundDataLength = h.getLength()-7;
+	unsigned char *tmp = (unsigned char *)alloca(soundDataLength);
+	in.read((char *)tmp, soundDataLength);
+	SoundData->append(tmp, in.gcount());
+	SoundData->markFinished();
 }
 
 ASObject* DefineSoundTag::instance(Class_base* c) const
@@ -1556,8 +1565,82 @@ ASObject* DefineSoundTag::instance(Class_base* c) const
 	else
 		retClass=Class<Sound>::getClass();
 
-	//TODO: use the tag sound data
-	return new (retClass->memoryAccount) Sound(retClass);
+	return new (retClass->memoryAccount) Sound(retClass, SoundData,
+		AudioFormat(getAudioCodec(), getSampleRate(), getChannels()));
+}
+
+LS_AUDIO_CODEC DefineSoundTag::getAudioCodec() const
+{
+	return (LS_AUDIO_CODEC)SoundFormat;
+}
+
+int DefineSoundTag::getSampleRate() const
+{
+	switch(SoundRate)
+	{
+		case 0:
+			return 5500;
+		case 1:
+			return 11000;
+		case 2:
+			return 22000;
+		case 3:
+			return 44000;
+	}
+
+	// not reached
+	assert(false && "invalid sample rate");
+	return 0;
+}
+
+int DefineSoundTag::getChannels() const
+{
+	return (int)SoundType + 1;
+}
+
+_R<MemoryStreamCache> DefineSoundTag::getSoundData() const
+{
+	return SoundData;
+}
+
+std::streambuf *DefineSoundTag::createSoundStream() const
+{
+	return SoundData->createReader();
+}
+
+StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):ActionTag(h)
+{
+	LOG(LOG_TRACE,_("StartSound Tag"));
+	in >> SoundId >> SoundInfo;
+}
+
+void StartSoundTag::execute(RootMovieClip* root) const
+{
+	DefineSoundTag *soundTag = \
+		dynamic_cast<DefineSoundTag *>(root->dictionaryLookup(SoundId));
+
+	if (SoundInfo.SyncStop || SoundInfo.HasEnvelope || SoundInfo.HasLoops ||
+	    SoundInfo.HasOutPoint || SoundInfo.HasInPoint)
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "StartSoundTag: some modifiers not supported");
+		if (SoundInfo.SyncStop)
+			return;
+	}
+
+	play(soundTag);
+}
+
+void StartSoundTag::play(const DefineSoundTag *soundTag) const
+{
+	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(
+		soundTag->getSoundData(),
+		AudioFormat(soundTag->getAudioCodec(),
+			    soundTag->getSampleRate(),
+			    soundTag->getChannels()));
+
+	// SoundChannel thread keeps one reference, which will be
+	// removed thread is finished
+	schannel->decRef();
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):ControlTag(h)

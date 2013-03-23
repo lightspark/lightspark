@@ -31,7 +31,7 @@
 namespace lightspark
 {
 
-enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ABC_TAG,END_TAG};
+enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
 
@@ -91,6 +91,17 @@ class ControlTag: public Tag
 public:
 	ControlTag(RECORDHEADER h):Tag(h){}
 	virtual TAGTYPE getType()const{ return CONTROL_TAG; }
+	virtual void execute(RootMovieClip* root) const=0;
+};
+
+/*
+ * Initiates an action. Action is executed after a frame is parsed.
+ */
+class ActionTag: public ControlTag
+{
+public:
+	ActionTag(RECORDHEADER h):ControlTag(h){}
+	virtual TAGTYPE getType()const{ return ACTION_TAG; }
 	virtual void execute(RootMovieClip* root) const=0;
 };
 
@@ -212,6 +223,8 @@ public:
 	ASObject* instance(Class_base* c=NULL) const;
 };
 
+class MemoryStreamCache;
+
 class DefineSoundTag: public DictionaryTag
 {
 private:
@@ -221,16 +234,28 @@ private:
 	char SoundSize;
 	char SoundType;
 	UI32_SWF SoundSampleCount;
+	_R<MemoryStreamCache> SoundData;
 public:
 	DefineSoundTag(RECORDHEADER h, std::istream& s, RootMovieClip* root);
 	virtual int getId() const { return SoundId; }
 	ASObject* instance(Class_base* c=NULL) const;
+	LS_AUDIO_CODEC getAudioCodec() const;
+	int getSampleRate() const;
+	int getChannels() const;
+	_R<MemoryStreamCache> getSoundData() const;
+	std::streambuf *createSoundStream() const;
 };
 
-class StartSoundTag: public Tag
+class StartSoundTag: public ActionTag
 {
+private:
+	UI16_SWF SoundId;
+	SOUNDINFO SoundInfo;
+
+	void play(const DefineSoundTag *soundTag) const;
 public:
 	StartSoundTag(RECORDHEADER h, std::istream& s);
+	virtual void execute(RootMovieClip* root) const;
 };
 
 class SoundStreamHeadTag: public Tag

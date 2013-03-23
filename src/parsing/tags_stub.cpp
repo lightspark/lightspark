@@ -39,12 +39,6 @@ DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 	skip(in);
 }
 
-StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("StartSound Tag"));
-	skip(in);
-}
-
 SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("SoundStreamHead Tag"));

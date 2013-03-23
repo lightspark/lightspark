@@ -40,7 +40,8 @@ namespace lightspark
 {
 
 enum LS_VIDEO_CODEC { H264=0, H263, VP6 };
-enum LS_AUDIO_CODEC { LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10 };
+// "Audio coding formats" from Chapter 11 in SWF documentation
+enum LS_AUDIO_CODEC { CODEC_NONE=-1, LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10 };
 
 class Decoder
 {
@@ -277,12 +278,15 @@ class FFMpegAudioDecoder: public AudioDecoder
 private:
 	bool ownedContext;
 	AVCodecContext* codecContext;
+	std::vector<uint8_t> overflowBuffer;
 	bool fillDataAndCheckValidity();
+	CodecID LSToFFMpegCodec(LS_AUDIO_CODEC lscodec);
 #if HAVE_AVCODEC_DECODE_AUDIO4
 	AVFrame* frameIn;
 #endif
 public:
 	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
+	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, int sampleRate, int channels, bool);
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
@@ -293,6 +297,7 @@ public:
 	*/
 	uint32_t decodePacket(AVPacket* pkt, uint32_t time);
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time);
+	uint32_t decodeStreamSomePackets(std::istream& s, uint32_t time);
 };
 #endif
 

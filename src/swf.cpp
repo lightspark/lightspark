@@ -1333,7 +1333,7 @@ void ParseThread::parseSWF(UI8 ver)
 	}
 	objectSpinlock.unlock();
 
-	std::queue<const ControlTag*> symbolClassTags;
+	std::queue<const ControlTag*> queuedTags;
 	try
 	{
 		parseSWFHeader(root, ver);
@@ -1378,14 +1378,14 @@ void ParseThread::parseSWF(UI8 ver)
 			{
 				case END_TAG:
 				{
-					// The whole frame has been parsed, now execute all queued SymbolClass tags,
+					// The whole frame has been parsed, now execute all queued tags,
 					// in the order in which they appeared in the file.
-					while(!symbolClassTags.empty())
+					while(!queuedTags.empty())
 					{
-						const ControlTag* t=symbolClassTags.front();
+						const ControlTag* t=queuedTags.front();
 						t->execute(root);
 						delete t;
-						symbolClassTags.pop();
+						queuedTags.pop();
 					}
 
 					if(!empty)
@@ -1411,12 +1411,12 @@ void ParseThread::parseSWF(UI8 ver)
 				case SHOW_TAG:
 					// The whole frame has been parsed, now execute all queued SymbolClass tags,
 					// in the order in which they appeared in the file.
-					while(!symbolClassTags.empty())
+					while(!queuedTags.empty())
 					{
-						const ControlTag* t=symbolClassTags.front();
+						const ControlTag* t=queuedTags.front();
 						t->execute(root);
 						delete t;
-						symbolClassTags.pop();
+						queuedTags.pop();
 					}
 
 					root->commitFrame(true);
@@ -1424,13 +1424,14 @@ void ParseThread::parseSWF(UI8 ver)
 					delete tag;
 					break;
 				case SYMBOL_CLASS_TAG:
+				case ACTION_TAG:
 				{
-					// Add symbol class tags to the queue, to be executed when the rest of the 
+					// Add symbol class tags or action to the queue, to be executed when the rest of the 
 					// frame has been parsed. This is to handle invalid SWF files that define ID's
 					// used in the SymbolClass tag only after the tag, which would otherwise result
 					// in "undefined dictionary ID" errors.
 					const ControlTag* stag = static_cast<const ControlTag*>(tag);
-					symbolClassTags.push(stag);
+					queuedTags.push(stag);
 					break;
 				}
 				case CONTROL_TAG:

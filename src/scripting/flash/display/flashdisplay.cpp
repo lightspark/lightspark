@@ -3039,6 +3039,8 @@ void SimpleButton::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(_setHitTestState),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(_getEnabled),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(_setEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(_getUseHandCursor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(_setUseHandCursor),SETTER_METHOD,true);
 }
 
 void SimpleButton::buildTraits(ASObject* o)

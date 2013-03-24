@@ -73,7 +73,9 @@ private:
 	};
 
 public:
-	enum EDIT_TYPE {READ_ONLY, EDITABLE};
+	enum EDIT_TYPE { ET_READ_ONLY, ET_EDITABLE };
+	enum ANTI_ALIAS_TYPE { AA_NORMAL, AA_ADVANCED };
+	enum GRID_FIT_TYPE { GF_NONE, GF_PIXEL, GF_SUBPIXEL };
 private:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);
 	void renderImpl(RenderContext& ctxt) const;
@@ -84,13 +86,21 @@ private:
 	//Computes and changes (text)width and (text)height using Pango
 	void updateSizes();
 	tiny_string toHtmlText();
+	void validateSharpness(number_t oldValue);
 	EDIT_TYPE type;
+	ANTI_ALIAS_TYPE antiAliasType;
+	GRID_FIT_TYPE gridFitType;
 public:
 	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void setHtmlText(const tiny_string& html);
 	ASFUNCTION(appendText);
+	ASFUNCTION(_getAntiAliasType);
+	ASFUNCTION(_setAntiAliasType);
+	ASFUNCTION(_getGridFitType);
+	ASFUNCTION(_setGridFitType);
+	ASFUNCTION(_getLength);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getHeight);
@@ -114,9 +124,11 @@ public:
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
 	ASFUNCTION_GETTER_SETTER(borderColor);
+	ASPROPERTY_GETTER_SETTER(int32_t, maxChars);
 	ASFUNCTION_GETTER_SETTER(multiline);
 	ASPROPERTY_GETTER_SETTER(bool, mouseWheelEnabled);
 	ASPROPERTY_GETTER_SETTER(bool, selectable);
+	ASPROPERTY_GETTER_SETTER(number_t, sharpness);
 	ASFUNCTION_GETTER_SETTER(textColor);
 	ASFUNCTION_GETTER_SETTER(type);
 };

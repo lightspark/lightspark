@@ -93,12 +93,14 @@ ASFUNCTIONBODY(ASFont,registerFont)
 }
 
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
-	: InteractiveObject(c), TextData(textData), type(READ_ONLY), 
-	  mouseWheelEnabled(true), selectable(_selectable)
+	: InteractiveObject(c), TextData(textData), type(ET_READ_ONLY), 
+	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
+	  maxChars(0), mouseWheelEnabled(true), selectable(_selectable),
+	  sharpness(0)
 {
 	if (!readOnly)
 	{
-		type = EDITABLE;
+		type = ET_EDITABLE;
 		tabEnabled = true;
 	}
 }
@@ -107,34 +109,45 @@ void TextField::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
 	c->setSuper(Class<InteractiveObject>::getRef());
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(TextField::_getHtmlText),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(TextField::_setHtmlText),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(TextField::_getTextHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getTextWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_setWordWrap),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_getWordWrap),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_setAutoSize),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_getAutoSize),GETTER_METHOD,true);
+
+	// methods
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getTextFormat","",Class<IFunction>::getFunction(_getTextFormat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(_setTextFormat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getLineMetrics","",Class<IFunction>::getFunction(_getLineMetrics),NORMAL_METHOD,true);
+
+	// properties
+	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(TextField::_getAntiAliasType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(TextField::_setAntiAliasType),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_setAutoSize),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_getAutoSize),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(TextField::_getDefaultTextFormat),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(TextField::_setDefaultTextFormat),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("gridFitType","",Class<IFunction>::getFunction(TextField::_getGridFitType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("gridFitType","",Class<IFunction>::getFunction(TextField::_setGridFitType),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(TextField::_getHtmlText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(TextField::_setHtmlText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(TextField::_getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(TextField::_getTextHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getTextWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_setWordWrap),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_getWordWrap),GETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c, background);
 	REGISTER_GETTER_SETTER(c, backgroundColor);
 	REGISTER_GETTER_SETTER(c, border);
 	REGISTER_GETTER_SETTER(c, borderColor);
+	REGISTER_GETTER_SETTER(c, maxChars);
 	REGISTER_GETTER_SETTER(c, multiline);
 	REGISTER_GETTER_SETTER(c, mouseWheelEnabled);
 	REGISTER_GETTER_SETTER(c, selectable);
+	REGISTER_GETTER_SETTER(c, sharpness);
 	REGISTER_GETTER_SETTER(c, textColor);
 	REGISTER_GETTER_SETTER(c, type);
 }
@@ -143,9 +156,11 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, background);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, backgroundColor);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, border);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable);
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, textColor);
 
 void TextField::buildTraits(ASObject* o)
@@ -383,7 +398,7 @@ ASFUNCTIONBODY(TextField,_setDefaultTextFormat)
 ASFUNCTIONBODY(TextField, _getter_type)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	if (th->type == READ_ONLY)
+	if (th->type == ET_READ_ONLY)
 		return Class<ASString>::getInstanceS("dynamic");
 	else
 		return Class<ASString>::getInstanceS("input");
@@ -397,9 +412,9 @@ ASFUNCTIONBODY(TextField, _setter_type)
 	ARG_UNPACK(value);
 
 	if (value == "dynamic")
-		th->type = READ_ONLY;
+		th->type = ET_READ_ONLY;
 	else if (value == "input")
-		th->type = EDITABLE;
+		th->type = ET_EDITABLE;
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "type");
 
@@ -410,6 +425,73 @@ ASFUNCTIONBODY(TextField,_getLineMetrics)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "TextField.getLineMetrics() returns bogus values");
 	return Class<TextLineMetrics>::getInstanceS(19, 280, 14, 11, 3.5, 0);
+}
+
+ASFUNCTIONBODY(TextField,_getAntiAliasType)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	if (th->antiAliasType == AA_NORMAL)
+		return Class<ASString>::getInstanceS("normal");
+	else
+		return Class<ASString>::getInstanceS("advanced");
+}
+
+ASFUNCTIONBODY(TextField,_setAntiAliasType)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	tiny_string value;
+	ARG_UNPACK(value);
+
+	if (value == "advanced")
+	{
+		th->antiAliasType = AA_ADVANCED;
+		LOG(LOG_NOT_IMPLEMENTED, "TextField advanced antiAliasType not implemented");
+	}
+	else
+		th->antiAliasType = AA_NORMAL;
+
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_getGridFitType)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	if (th->gridFitType == GF_NONE)
+		return Class<ASString>::getInstanceS("none");
+	else if (th->gridFitType == GF_PIXEL)
+		return Class<ASString>::getInstanceS("pixel");
+	else
+		return Class<ASString>::getInstanceS("subpixel");
+}
+
+ASFUNCTIONBODY(TextField,_setGridFitType)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	tiny_string value;
+	ARG_UNPACK(value);
+
+	if (value == "none")
+		th->gridFitType = GF_NONE;
+	else if (value == "pixel")
+		th->gridFitType = GF_PIXEL;
+	else
+		th->gridFitType = GF_SUBPIXEL;
+
+	LOG(LOG_NOT_IMPLEMENTED, "TextField gridFitType not implemented");
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_getLength)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_i(th->text.numChars());
+}
+
+void TextField::validateSharpness(number_t /*oldValue*/)
+{
+	sharpness = dmin(dmax(sharpness, -400.), 400.);
 }
 
 void TextField::updateSizes()

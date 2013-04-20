@@ -2215,6 +2215,7 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawEllipse","",Class<IFunction>::getFunction(drawEllipse),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawTriangles","",Class<IFunction>::getFunction(drawTriangles),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),NORMAL_METHOD,true);
@@ -2453,6 +2454,50 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 
 	th->owner->owner->requestInvalidation(getSys());
 	
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,drawEllipse)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	assert_and_throw(argslen==4);
+	th->checkAndSetScaling();
+
+	double left=args[0]->toNumber();
+	double top=args[1]->toNumber();
+	double width=args[2]->toNumber();
+	double height=args[3]->toNumber();
+
+	double xkappa = KAPPA*width/2;
+	double ykappa = KAPPA*height/2;
+
+	// right
+	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(left+width, top+height/2)));
+	
+	// bottom
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
+	                        Vector2(left+width , top+height/2+ykappa),
+	                        Vector2(left+width/2+xkappa, top+height),
+	                        Vector2(left+width/2, top+height)));
+
+	// left
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
+	                        Vector2(left+width/2-xkappa, top+height),
+	                        Vector2(left, top+height/2+ykappa),
+	                        Vector2(left, top+height/2)));
+
+	// top
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
+	                        Vector2(left, top+height/2-ykappa),
+	                        Vector2(left+width/2-xkappa, top),
+	                        Vector2(left+width/2, top)));
+
+	// back to right
+	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
+	                        Vector2(left+width/2+xkappa, top),
+	                        Vector2(left+width, top+height/2-ykappa),
+	                        Vector2(left+width, top+height/2)));
+
 	return NULL;
 }
 

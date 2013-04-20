@@ -210,6 +210,7 @@ public:
 	ASFUNCTION(drawRect);
 	ASFUNCTION(drawRoundRect);
 	ASFUNCTION(drawCircle);
+	ASFUNCTION(drawEllipse);
 	ASFUNCTION(drawTriangles);
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineTo);

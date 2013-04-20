@@ -43,6 +43,7 @@ class RenderContext;
 class ApplicationDomain;
 class SecurityDomain;
 class BitmapData;
+class Matrix;
 
 class InteractiveObject: public DisplayObject
 {
@@ -192,6 +193,18 @@ private:
 				       double x3, double y3,
 				       double u1, double u2, double u3,
 				       double c[3]);
+	static FILLSTYLE createGradientFill(const tiny_string& type,
+					    _NR<Array> colors,
+					    _NR<Array> alphas,
+					    _NR<Array> ratios,
+					    _NR<Matrix> matrix,
+					    const tiny_string& spreadMethod,
+					    const tiny_string& interpolationMethod,
+					    number_t focalPointRatio);
+	static FILLSTYLE createBitmapFill(_R<BitmapData> bitmap,
+					  _NR<Matrix> matrix,
+					  bool repeat,
+					  bool smooth);
 public:
 	Graphics(Class_base* c):ASObject(c),curX(0),curY(0),owner(NULL)
 	{
@@ -202,6 +215,8 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(lineBitmapStyle);
+	ASFUNCTION(lineGradientStyle);
 	ASFUNCTION(lineStyle);
 	ASFUNCTION(beginFill);
 	ASFUNCTION(beginGradientFill);

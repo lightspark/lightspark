@@ -458,10 +458,20 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const std::vector<Geom
 				cairo_stroke(stroke_cr);
 
 				const LINESTYLE2& style = tokens[i].lineStyle;
-				const RGBA& color = style.Color;
 
 				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
-				cairo_set_source_rgba(stroke_cr, color.rf(), color.gf(), color.bf(), color.af());
+				if (style.HasFillFlag)
+				{
+					cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection);
+					if (pattern)
+					{
+						cairo_set_source(stroke_cr, pattern);
+						cairo_pattern_destroy(pattern);
+					}
+				} else {
+					const RGBA& color = style.Color;
+					cairo_set_source_rgba(stroke_cr, color.rf(), color.gf(), color.bf(), color.af());
+				}
 
 				// TODO: EndCapStyle
 				if (style.StartCapStyle == 0)

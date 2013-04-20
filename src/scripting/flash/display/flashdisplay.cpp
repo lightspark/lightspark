@@ -2221,6 +2221,8 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineBitmapStyle","",Class<IFunction>::getFunction(lineBitmapStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineGradientStyle","",Class<IFunction>::getFunction(lineGradientStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),NORMAL_METHOD,true);
@@ -2712,41 +2714,117 @@ ASFUNCTIONBODY(Graphics,lineStyle)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Graphics,lineBitmapStyle)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
+
+	_NR<BitmapData> bitmap;
+	_NR<Matrix> matrix;
+	bool repeat, smooth;
+	ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
+
+	if (bitmap.isNull())
+		return NULL;
+
+	LINESTYLE2 style(0xff);
+	style.Width = th->owner->getCurrentLineWidth();
+	style.HasFillFlag = true;
+	style.FillType = createBitmapFill(bitmap, matrix, repeat, smooth);
+	
+	th->owner->tokens.emplace_back(GeomToken(SET_STROKE, style));
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,lineGradientStyle)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
+
+	tiny_string type;
+	_NR<Array> colors;
+	_NR<Array> alphas;
+	_NR<Array> ratios;
+	_NR<Matrix> matrix;
+	tiny_string spreadMethod;
+	tiny_string interpolationMethod;
+	number_t focalPointRatio;
+	ARG_UNPACK (type) (colors) (alphas) (ratios) (matrix, NullRef)
+		(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
+
+	LINESTYLE2 style(0xff);
+	style.Width = th->owner->getCurrentLineWidth();
+	style.HasFillFlag = true;
+	style.FillType = createGradientFill(type, colors, alphas, ratios, matrix,
+					    spreadMethod, interpolationMethod,
+					    focalPointRatio);
+
+	th->owner->tokens.emplace_back(GeomToken(SET_STROKE, style));
+
+	return NULL;
+}
+
 ASFUNCTIONBODY(Graphics,beginGradientFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	assert_and_throw(argslen>=4);
 	th->checkAndSetScaling();
 
+	tiny_string type;
+	_NR<Array> colors;
+	_NR<Array> alphas;
+	_NR<ASObject> ratiosParam;
+	_NR<Matrix> matrix;
+	tiny_string spreadMethod;
+	tiny_string interpolationMethod;
+	number_t focalPointRatio;
+	ARG_UNPACK (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
+		(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
+
+	//Work around for bug in YouTube player of July 13 2011
+	if (!ratiosParam->is<Array>())
+		return NULL;
+	if (ratiosParam.isNull())
+		return NULL;
+
+	ratiosParam->incRef();
+	_NR<Array> ratios = _MNR(ratiosParam->as<Array>());
+
+	FILLSTYLE style = createGradientFill(type, colors, alphas, ratios, matrix,
+					     spreadMethod, interpolationMethod,
+					     focalPointRatio);
+	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
+
+	return NULL;
+}
+
+FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
+				       _NR<Array> colors,
+				       _NR<Array> alphas,
+				       _NR<Array> ratios,
+				       _NR<Matrix> matrix,
+				       const tiny_string& spreadMethod,
+				       const tiny_string& interpolationMethod,
+				       number_t focalPointRatio)
+{
 	FILLSTYLE style(0xff);
 
-	assert_and_throw(args[1]->getObjectType()==T_ARRAY);
-	Array* colors=Class<Array>::cast(args[1]);
-
-	assert_and_throw(args[2]->getObjectType()==T_ARRAY);
-	Array* alphas=Class<Array>::cast(args[2]);
-
-	//assert_and_throw(args[3]->getObjectType()==T_ARRAY);
-	//Work around for bug in YouTube player of July 13 2011
-	if(args[3]->getObjectType()==T_UNDEFINED)
-		return NULL;
-	Array* ratios=Class<Array>::cast(args[3]);
+	if (colors.isNull() || alphas.isNull() || ratios.isNull())
+		return style;
 
 	int NumGradient = colors->size();
 	if (NumGradient != (int)alphas->size() || NumGradient != (int)ratios->size())
-		return NULL;
+		return style;
 
 	if (NumGradient < 1 || NumGradient > 15)
-		return NULL;
-
-	const tiny_string& type=args[0]->toString();
+		return style;
 
 	if(type == "linear")
 		style.FillStyleType=LINEAR_GRADIENT;
 	else if(type == "radial")
 		style.FillStyleType=RADIAL_GRADIENT;
 	else
-		return NULL;
+		return style;
 
 	// Don't support FOCALGRADIENT for now.
 	GRADIENT grad(0xff);
@@ -2758,65 +2836,39 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		grad.GradientRecords.push_back(record);
 	}
 
-	if(argslen > 4 && args[4]->getClass()==Class<Matrix>::getClass())
-	{
-		style.Matrix = static_cast<Matrix*>(args[4])->getMATRIX();
-		//Conversion from twips to pixels
-		cairo_matrix_scale(&style.Matrix, 1.0f/20.0f, 1.0f/20.0f);
-	}
-	else
+	if(matrix.isNull())
 	{
 		cairo_matrix_scale(&style.Matrix, 100.0/16384.0, 100.0/16384.0);
 	}
-
-	if(argslen > 5)
-	{
-		const tiny_string& spread=args[5]->toString();
-		if (spread == "pad")
-			grad.SpreadMode = 0;
-		else if (spread == "reflect")
-			grad.SpreadMode = 1;
-		else if (spread == "repeat")
-			grad.SpreadMode = 2;
-	}
 	else
 	{
-		//default is pad
+		style.Matrix = matrix->getMATRIX();
+		//Conversion from twips to pixels
+		cairo_matrix_scale(&style.Matrix, 1.0f/20.0f, 1.0f/20.0f);
+	}
+
+	if (spreadMethod == "pad")
 		grad.SpreadMode = 0;
-	}
-
-
-	if(argslen > 6)
-	{
-		const tiny_string& interp=args[6]->toString();
-		if (interp == "rgb")
-			grad.InterpolationMode = 0;
-		else if (interp == "linearRGB")
-			grad.InterpolationMode = 1;
-	}
+	else if (spreadMethod == "reflect")
+		grad.SpreadMode = 1;
+	else if (spreadMethod == "repeat")
+		grad.SpreadMode = 2;
 	else
-	{
-		//default is rgb
+		grad.SpreadMode = 0; // should not be reached
+
+	if (interpolationMethod == "rgb")
 		grad.InterpolationMode = 0;
-	}
+	else if (interpolationMethod == "linearRGB")
+		grad.InterpolationMode = 1;
+	else
+		grad.InterpolationMode = 0; // should not be reached
 
 	style.Gradient = grad;
-	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
-	return NULL;
+	return style;
 }
 
-ASFUNCTIONBODY(Graphics,beginBitmapFill)
+FILLSTYLE Graphics::createBitmapFill(_R<BitmapData> bitmap, _NR<Matrix> matrix, bool repeat, bool smooth)
 {
-	Graphics* th = obj->as<Graphics>();
-	_NR<BitmapData> bitmap;
-	_NR<Matrix> matrix;
-	bool repeat, smooth;
-	ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
-
-	if(bitmap.isNull())
-		return NULL;
-
-	th->checkAndSetScaling();
 	FILLSTYLE style(0xff);
 	if(repeat && smooth)
 		style.FillStyleType = REPEATING_BITMAP;
@@ -2831,6 +2883,24 @@ ASFUNCTIONBODY(Graphics,beginBitmapFill)
 		style.Matrix = matrix->getMATRIX();
 
 	style.bitmap = bitmap->getBitmapContainer();
+
+	return style;
+}
+
+ASFUNCTIONBODY(Graphics,beginBitmapFill)
+{
+	Graphics* th = obj->as<Graphics>();
+	_NR<BitmapData> bitmap;
+	_NR<Matrix> matrix;
+	bool repeat, smooth;
+	ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
+
+	if(bitmap.isNull())
+		return NULL;
+
+	th->checkAndSetScaling();
+
+	FILLSTYLE style = createBitmapFill(bitmap, matrix, repeat, smooth);
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 	return NULL;
 }

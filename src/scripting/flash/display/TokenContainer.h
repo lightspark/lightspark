@@ -50,6 +50,7 @@ public:
 					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
 					 const MATRIX& matrix = MATRIX());
 	void getTextureSize(int *width, int *height) const;
+	uint16_t getCurrentLineWidth() const;
 	float scaling;
 protected:
 	TokenContainer(DisplayObject* _o);

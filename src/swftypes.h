@@ -924,10 +924,10 @@ public:
 class LINESTYLE2
 {
 public:
-	LINESTYLE2(uint8_t v):FillType(v),version(v){}
+	LINESTYLE2(uint8_t v):HasFillFlag(false),FillType(v),version(v){}
 	UB StartCapStyle;
 	UB JointStyle;
-	UB HasFillFlag;
+	bool HasFillFlag;
 	UB NoHScaleFlag;
 	UB NoVScaleFlag;
 	UB PixelHintingFlag;

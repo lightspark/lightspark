@@ -235,12 +235,11 @@ void TokenContainer::getTextureSize(int *width, int *height) const
 	*width=0;
 	*height=0;
 
-	unsigned int len=tokens.size();
-	for(unsigned int i=0;i<len;i++)
+	for(int i=tokens.size()-1;i>=0;i--)
 	{
-		const FILLSTYLE& style=tokens[len-i-1].fillStyle;
+		const FILLSTYLE& style=tokens[i].fillStyle;
 		const FILL_STYLE_TYPE& fstype=style.FillStyleType;
-		if(tokens[len-i-1].type==SET_FILL && 
+		if(tokens[i].type==SET_FILL && 
 		   (fstype==REPEATING_BITMAP ||
 		    fstype==NON_SMOOTHED_REPEATING_BITMAP ||
 		    fstype==CLIPPED_BITMAP ||
@@ -254,4 +253,18 @@ void TokenContainer::getTextureSize(int *width, int *height) const
 			return;
 		}
 	}
+}
+
+/* Return the width of the latest SET_STROKE */
+uint16_t TokenContainer::getCurrentLineWidth() const
+{
+	for(int i=tokens.size()-1;i>=0;i--)
+	{
+		if(tokens[i].type==SET_STROKE)
+		{
+			return tokens[i].lineStyle.Width;
+		}
+	}
+
+	return 0;
 }

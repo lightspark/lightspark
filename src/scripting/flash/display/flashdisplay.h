@@ -45,6 +45,7 @@ class SecurityDomain;
 class BitmapData;
 class Matrix;
 class Vector;
+class Graphics;
 
 class InteractiveObject: public DisplayObject
 {
@@ -171,79 +172,6 @@ public:
 	ASFUNCTION(_setEnabled);
 	ASFUNCTION(_getUseHandCursor);
 	ASFUNCTION(_setUseHandCursor);
-};
-
-/* This objects paints to its owners tokens */
-class Graphics: public ASObject
-{
-private:
-	TokenContainer *const owner;
-	//TODO: Add spinlock
-	void checkAndSetScaling()
-	{
-		if(owner->scaling != 1.0f)
-		{
-			owner->scaling = 1.0f;
-			owner->tokens.clear();
-		}
-	}
-	static void solveVertexMapping(double x1, double y1,
-				       double x2, double y2,
-				       double x3, double y3,
-				       double u1, double u2, double u3,
-				       double c[3]);
-public:
-	Graphics(Class_base* c):ASObject(c),owner(NULL)
-	{
-		throw RunTimeException("Cannot instantiate a Graphics object");
-	}
-	Graphics(Class_base* c, TokenContainer* _o)
-		: ASObject(c),owner(_o) {}
-	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
-	static FILLSTYLE createGradientFill(const tiny_string& type,
-					    _NR<Array> colors,
-					    _NR<Array> alphas,
-					    _NR<Array> ratios,
-					    _NR<Matrix> matrix,
-					    const tiny_string& spreadMethod,
-					    const tiny_string& interpolationMethod,
-					    number_t focalPointRatio);
-	static FILLSTYLE createBitmapFill(_R<BitmapData> bitmap,
-					  _NR<Matrix> matrix,
-					  bool repeat,
-					  bool smooth);
-	static FILLSTYLE createSolidFill(uint32_t color, uint8_t alpha);
-	static void pathToTokens(_NR<Vector> commands,
-				 _NR<Vector> data,
-				 tiny_string windings,
-				 std::vector<GeomToken>& tokens);
-	static void drawTrianglesToTokens(_NR<Vector> vertices,
-					  _NR<Vector> indices,
-					  _NR<Vector> uvtData,
-					  tiny_string culling,
-					  std::vector<GeomToken>& tokens);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(lineBitmapStyle);
-	ASFUNCTION(lineGradientStyle);
-	ASFUNCTION(lineStyle);
-	ASFUNCTION(beginFill);
-	ASFUNCTION(beginGradientFill);
-	ASFUNCTION(beginBitmapFill);
-	ASFUNCTION(endFill);
-	ASFUNCTION(drawRect);
-	ASFUNCTION(drawRoundRect);
-	ASFUNCTION(drawCircle);
-	ASFUNCTION(drawEllipse);
-	ASFUNCTION(drawGraphicsData);
-	ASFUNCTION(drawPath);
-	ASFUNCTION(drawTriangles);
-	ASFUNCTION(moveTo);
-	ASFUNCTION(lineTo);
-	ASFUNCTION(curveTo);
-	ASFUNCTION(cubicCurveTo);
-	ASFUNCTION(clear);
-	ASFUNCTION(copyFrom);
 };
 
 class Shape: public DisplayObject, public TokenContainer

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/display/GraphicsGradientFill.h"
+#include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Array.h"

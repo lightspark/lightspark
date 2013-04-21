@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/display/GraphicsTrianglePath.h"
+#include "scripting/flash/display/Graphics.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

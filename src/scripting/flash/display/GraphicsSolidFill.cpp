@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/display/GraphicsSolidFill.h"
+#include "scripting/flash/display/Graphics.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 

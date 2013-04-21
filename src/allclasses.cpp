@@ -28,6 +28,7 @@
 #include "scripting/flash/desktop/flashdesktop.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/display/GraphicsBitmapFill.h"
 #include "scripting/flash/display/GraphicsEndFill.h"
 #include "scripting/flash/display/GraphicsGradientFill.h"

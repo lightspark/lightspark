@@ -19,6 +19,7 @@
 
 #include "scripting/flash/display/GraphicsBitmapFill.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

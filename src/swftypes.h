@@ -885,6 +885,7 @@ class FILLSTYLE
 public:
 	FILLSTYLE(uint8_t v);
 	FILLSTYLE(const FILLSTYLE& r);
+	FILLSTYLE& operator=(FILLSTYLE r);
 	virtual ~FILLSTYLE();
 	MATRIX Matrix;
 	GRADIENT Gradient;

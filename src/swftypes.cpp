@@ -1398,6 +1398,18 @@ FILLSTYLE::~FILLSTYLE()
 {
 }
 
+FILLSTYLE& FILLSTYLE::operator=(FILLSTYLE r)
+{
+	std::swap(Matrix, r.Matrix);
+	std::swap(Gradient, r.Gradient);
+	std::swap(FocalGradient, r.FocalGradient);
+	std::swap(bitmap, r.bitmap);
+	std::swap(Color, r.Color);
+	std::swap(FillStyleType, r.FillStyleType);
+	std::swap(version, r.version);
+	return *this;
+}
+
 nsNameAndKind::nsNameAndKind(const tiny_string& _name, NS_KIND _kind)
 {
 	nsNameAndKindImpl tmp(_name, _kind);

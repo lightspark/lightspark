@@ -184,6 +184,7 @@ public:
 	ASFUNCTION(_set_ty);
 };
 
+class DisplayObject;
 class Transform: public ASObject
 {
 private:

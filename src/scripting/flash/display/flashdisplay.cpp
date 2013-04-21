@@ -36,6 +36,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/flash/display/IGraphicsData.h"
 
 #define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
 
@@ -2216,7 +2217,9 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawEllipse","",Class<IFunction>::getFunction(drawEllipse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawPath","",Class<IFunction>::getFunction(drawPath),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawTriangles","",Class<IFunction>::getFunction(drawTriangles),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawGraphicsData","",Class<IFunction>::getFunction(drawGraphicsData),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),NORMAL_METHOD,true);
@@ -2254,10 +2257,10 @@ ASFUNCTIONBODY(Graphics,moveTo)
 	th->checkAndSetScaling();
 	assert_and_throw(argslen==2);
 
-	th->curX=args[0]->toInt();
-	th->curY=args[1]->toInt();
+	int32_t x=args[0]->toInt();
+	int32_t y=args[1]->toInt();
 
-	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(th->curX, th->curY)));
+	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(x, y)));
 	return NULL;
 }
 
@@ -2273,8 +2276,6 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
 	th->owner->owner->requestInvalidation(getSys());
 
-	th->curX=x;
-	th->curY=y;
 	return NULL;
 }
 
@@ -2295,8 +2296,6 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	                        Vector2(anchorX, anchorY)));
 	th->owner->owner->requestInvalidation(getSys());
 
-	th->curX=anchorX;
-	th->curY=anchorY;
 	return NULL;
 }
 
@@ -2321,8 +2320,6 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 	                        Vector2(anchorX, anchorY)));
 	th->owner->owner->requestInvalidation(getSys());
 
-	th->curX=anchorX;
-	th->curY=anchorY;
 	return NULL;
 }
 
@@ -2500,6 +2497,8 @@ ASFUNCTIONBODY(Graphics,drawEllipse)
 	                        Vector2(left+width, top+height/2-ykappa),
 	                        Vector2(left+width, top+height/2)));
 
+	th->owner->owner->requestInvalidation(getSys());
+
 	return NULL;
 }
 
@@ -2527,6 +2526,111 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	th->owner->owner->requestInvalidation(getSys());
 	
 	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,drawPath)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
+
+	_NR<Vector> commands;
+	_NR<Vector> data;
+	tiny_string winding;
+	ARG_UNPACK (commands) (data) (winding, "evenOdd");
+
+	if (commands.isNull() || data.isNull())
+		throwError<ArgumentError>(kInvalidParamError);
+
+	pathToTokens(commands, data, winding, th->owner->tokens);
+
+	th->owner->owner->requestInvalidation(getSys());
+
+	return NULL;
+}
+
+void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
+			    tiny_string winding, std::vector<GeomToken>& tokens)
+{
+	if (commands.isNull() || data.isNull())
+		return;
+
+	if (winding != "evenOdd")
+		LOG(LOG_NOT_IMPLEMENTED, "Only event-odd winding implemented in Graphics.drawPath");
+
+	_R<Number> zeroRef = _MR(Class<Number>::getInstanceS(0));
+	Number *zero = zeroRef.getPtr();
+
+	int k = 0;
+	for (unsigned int i=0; i<commands->size(); i++)
+	{
+		switch (commands->at(i)->toInt())
+		{
+			case GraphicsPathCommand::MOVE_TO:
+			{
+				number_t x = data->at(k++, zero)->toNumber();
+				number_t y = data->at(k++, zero)->toNumber();
+				tokens.emplace_back(GeomToken(MOVE, Vector2(x, y)));
+				break;
+			}
+
+			case GraphicsPathCommand::LINE_TO:
+			{
+				number_t x = data->at(k++, zero)->toNumber();
+				number_t y = data->at(k++, zero)->toNumber();
+				tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
+				break;
+			}
+
+			case GraphicsPathCommand::CURVE_TO:
+			{
+				number_t cx = data->at(k++, zero)->toNumber();
+				number_t cy = data->at(k++, zero)->toNumber();
+				number_t x = data->at(k++, zero)->toNumber();
+				number_t y = data->at(k++, zero)->toNumber();
+				tokens.emplace_back(GeomToken(CURVE_QUADRATIC,
+							      Vector2(cx, cy),
+							      Vector2(x, y)));
+				break;
+			}
+
+			case GraphicsPathCommand::WIDE_MOVE_TO:
+			{
+				k+=2;
+				number_t x = data->at(k++, zero)->toNumber();
+				number_t y = data->at(k++, zero)->toNumber();
+				tokens.emplace_back(GeomToken(MOVE, Vector2(x, y)));
+				break;
+			}
+
+			case GraphicsPathCommand::WIDE_LINE_TO:
+			{
+				k+=2;
+				number_t x = data->at(k++, zero)->toNumber();
+				number_t y = data->at(k++, zero)->toNumber();
+				tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
+				break;
+			}
+
+			case GraphicsPathCommand::CUBIC_CURVE_TO:
+			{
+				number_t c1x = data->at(k++, zero)->toNumber();
+				number_t c1y = data->at(k++, zero)->toNumber();
+				number_t c2x = data->at(k++, zero)->toNumber();
+				number_t c2y = data->at(k++, zero)->toNumber();
+				number_t x = data->at(k++, zero)->toNumber();
+				number_t y = data->at(k++, zero)->toNumber();
+				tokens.emplace_back(GeomToken(CURVE_CUBIC,
+							      Vector2(c1x, c1y),
+							      Vector2(c2x, c2y),
+							      Vector2(x, y)));
+				break;
+			}
+
+			case GraphicsPathCommand::NO_OP:
+			default:
+				break;
+		}
+	}
 }
 
 /* Solve for c in the matrix equation
@@ -2571,16 +2675,29 @@ void Graphics::solveVertexMapping(double x1, double y1,
 ASFUNCTIONBODY(Graphics,drawTriangles)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
+
 	_NR<Vector> vertices;
 	_NR<Vector> indices;
 	_NR<Vector> uvtData;
 	tiny_string culling;
 	ARG_UNPACK (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
 
+	drawTrianglesToTokens(vertices, indices, uvtData, culling, th->owner->tokens);
+	th->owner->owner->requestInvalidation(getSys());
+
+	return NULL;
+}
+
+void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, _NR<Vector> uvtData, tiny_string culling, std::vector<GeomToken>& tokens)
+{
 	if (culling != "none")
 		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support culling");
 
 	// Validate the parameters
+	if (vertices.isNull())
+		return;
+
 	if ((indices.isNull() && (vertices->size() % 6 != 0)) || 
 	    (!indices.isNull() && (indices->size() % 3 != 0)))
 	{
@@ -2617,15 +2734,15 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 			throwError<ArgumentError>(kInvalidParamError);
 		}
 
-		th->owner->getTextureSize(&texturewidth, &textureheight);
+		TokenContainer::getTextureSize(tokens, &texturewidth, &textureheight);
 	}
 
 	// According to testing, drawTriangles first fills the current
 	// path and creates a new path, but keeps the source.
-	th->owner->tokens.emplace_back(FILL_KEEP_SOURCE);
+	tokens.emplace_back(FILL_KEEP_SOURCE);
 
 	if (has_uvt && (texturewidth==0 || textureheight==0))
-		return NULL;
+		return;
 
 	// Construct the triangles
 	for (unsigned int i=0; i<numtriangles; i++)
@@ -2653,10 +2770,10 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 		Vector2 b(x[1], y[1]);
 		Vector2 c(x[2], y[2]);
 
-		th->owner->tokens.emplace_back(GeomToken(MOVE, a));
-		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, b));
-		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
-		th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
+		tokens.emplace_back(GeomToken(MOVE, a));
+		tokens.emplace_back(GeomToken(STRAIGHT, b));
+		tokens.emplace_back(GeomToken(STRAIGHT, c));
+		tokens.emplace_back(GeomToken(STRAIGHT, a));
 
 		if (has_uvt)
 		{
@@ -2672,16 +2789,37 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 			// v = t[3] + t[4]*x + t[5]*y
 			//
 			// u and v parts can be solved separately.
-			th->solveVertexMapping(x[0], y[0], x[1], y[1], x[2], y[2],
-					       u[0], u[1], u[2], t);
-			th->solveVertexMapping(x[0], y[0], x[1], y[1], x[2], y[2],
-					       v[0], v[1], v[2], &t[3]);
+			solveVertexMapping(x[0], y[0], x[1], y[1], x[2], y[2],
+					   u[0], u[1], u[2], t);
+			solveVertexMapping(x[0], y[0], x[1], y[1], x[2], y[2],
+					   v[0], v[1], v[2], &t[3]);
 
 			MATRIX m(t[1], t[5], t[4], t[2], t[0], t[3]);
-			th->owner->tokens.emplace_back(GeomToken(FILL_TRANSFORM_TEXTURE, m));
+			tokens.emplace_back(GeomToken(FILL_TRANSFORM_TEXTURE, m));
 		}
 	}
-	
+}
+
+ASFUNCTIONBODY(Graphics,drawGraphicsData)
+{
+	Graphics* th=static_cast<Graphics*>(obj);
+	th->checkAndSetScaling();
+
+	_NR<Vector> graphicsData;
+	ARG_UNPACK(graphicsData);
+
+	for (unsigned int i=0; i<graphicsData->size(); i++)
+	{
+		IGraphicsData *graphElement = dynamic_cast<IGraphicsData *>(graphicsData->at(i));
+		if (!graphElement)
+		{
+			LOG(LOG_ERROR, "Invalid type in Graphics::drawGraphicsData()");
+			continue;
+		}
+
+		graphElement->appendToTokens(th->owner->tokens);
+	}
+
 	th->owner->owner->requestInvalidation(getSys());
 
 	return NULL;
@@ -2887,6 +3025,14 @@ FILLSTYLE Graphics::createBitmapFill(_R<BitmapData> bitmap, _NR<Matrix> matrix, 
 	return style;
 }
 
+FILLSTYLE Graphics::createSolidFill(uint32_t color, uint8_t alpha)
+{
+	FILLSTYLE style(0xff);
+	style.FillStyleType = SOLID_FILL;
+	style.Color = RGBA(color, alpha);
+	return style;
+}
+
 ASFUNCTIONBODY(Graphics,beginBitmapFill)
 {
 	Graphics* th = obj->as<Graphics>();
@@ -2915,9 +3061,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 		color=args[0]->toUInt();
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
-	FILLSTYLE style(0xff);
-	style.FillStyleType = SOLID_FILL;
-	style.Color         = RGBA(color, alpha);
+	FILLSTYLE style = Graphics::createSolidFill(color, alpha);
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 	return NULL;
 }
@@ -3427,6 +3571,25 @@ void InterpolationMethod::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->setVariableByQName("RGB","",Class<ASString>::getInstanceS("rgb"),DECLARED_TRAIT);
 	c->setVariableByQName("LINEAR_RGB","",Class<ASString>::getInstanceS("linearRGB"),DECLARED_TRAIT);
+}
+
+void GraphicsPathCommand::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setVariableByQName("CUBIC_CURVE_TO","",abstract_i(6),DECLARED_TRAIT);
+	c->setVariableByQName("CURVE_TO","",abstract_i(3),DECLARED_TRAIT);
+	c->setVariableByQName("LINE_TO","",abstract_i(2),DECLARED_TRAIT);
+	c->setVariableByQName("MOVE_TO","",abstract_i(1),DECLARED_TRAIT);
+	c->setVariableByQName("NO_OP","",abstract_i(0),DECLARED_TRAIT);
+	c->setVariableByQName("WIDE_LINE_TO","",abstract_i(5),DECLARED_TRAIT);
+	c->setVariableByQName("WIDE_MOVE_TO","",abstract_i(4),DECLARED_TRAIT);
+}
+
+void GraphicsPathWinding::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setVariableByQName("EVEN_ODD","",Class<ASString>::getInstanceS("evenOdd"),DECLARED_TRAIT);
+	c->setVariableByQName("NON_ZERO","",Class<ASString>::getInstanceS("nonZero"),DECLARED_TRAIT);
 }
 
 /* Go through the hierarchy and add all

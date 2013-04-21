@@ -73,6 +73,14 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/IBitmapDrawable.cpp
   scripting/flash/display/flashdisplay.cpp
   scripting/flash/display/TokenContainer.cpp
+  scripting/flash/display/GraphicsBitmapFill.cpp
+  scripting/flash/display/GraphicsEndFill.cpp
+  scripting/flash/display/GraphicsGradientFill.cpp
+  scripting/flash/display/GraphicsPath.cpp
+  scripting/flash/display/GraphicsShaderFill.cpp
+  scripting/flash/display/GraphicsSolidFill.cpp
+  scripting/flash/display/GraphicsStroke.cpp
+  scripting/flash/display/GraphicsTrianglePath.cpp
   scripting/flash/events/flashevents.cpp
   scripting/flash/external/ExternalInterface.cpp
   scripting/flash/filters/flashfilters.cpp

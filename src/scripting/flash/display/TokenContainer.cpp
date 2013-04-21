@@ -230,7 +230,7 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 }
 
 /* Find the size of the active texture (bitmap set by the latest SET_FILL). */
-void TokenContainer::getTextureSize(int *width, int *height) const
+void TokenContainer::getTextureSize(std::vector<GeomToken>& tokens, int *width, int *height)
 {
 	*width=0;
 	*height=0;

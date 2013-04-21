@@ -975,3 +975,11 @@ bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
 
 	return validIndex;
 }
+
+ASObject* Vector::at(unsigned int index, ASObject *defaultValue) const
+{
+	if (index < vec.size())
+		return vec.at(index);
+	else
+		return defaultValue;
+}

@@ -58,6 +58,18 @@
 #include "scripting/flash/desktop/flashdesktop.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/GraphicsBitmapFill.h"
+#include "scripting/flash/display/GraphicsEndFill.h"
+#include "scripting/flash/display/GraphicsGradientFill.h"
+#include "scripting/flash/display/GraphicsPath.h"
+#include "scripting/flash/display/GraphicsShaderFill.h"
+#include "scripting/flash/display/GraphicsSolidFill.h"
+#include "scripting/flash/display/GraphicsStroke.h"
+#include "scripting/flash/display/GraphicsTrianglePath.h"
+#include "scripting/flash/display/IGraphicsData.h"
+#include "scripting/flash/display/IGraphicsFill.h"
+#include "scripting/flash/display/IGraphicsPath.h"
+#include "scripting/flash/display/IGraphicsStroke.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/net/flashnet.h"
@@ -246,6 +258,20 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Shape","flash.display",Class<Shape>::getRef());
 	builtin->registerBuiltin("Stage","flash.display",Class<Stage>::getRef());
 	builtin->registerBuiltin("Graphics","flash.display",Class<Graphics>::getRef());
+	builtin->registerBuiltin("GraphicsBitmapFill","flash.display",Class<GraphicsBitmapFill>::getRef());
+	builtin->registerBuiltin("GraphicsEndFill","flash.display",Class<GraphicsEndFill>::getRef());
+	builtin->registerBuiltin("GraphicsGradientFill","flash.display",Class<GraphicsGradientFill>::getRef());
+	builtin->registerBuiltin("GraphicsPath","flash.display",Class<GraphicsPath>::getRef());
+	builtin->registerBuiltin("GraphicsPathCommand","flash.display",Class<GraphicsPathCommand>::getRef());
+	builtin->registerBuiltin("GraphicsPathWinding","flash.display",Class<GraphicsPathWinding>::getRef());
+	builtin->registerBuiltin("GraphicsShaderFill","flash.display",Class<GraphicsShaderFill>::getRef());
+	builtin->registerBuiltin("GraphicsSolidFill","flash.display",Class<GraphicsSolidFill>::getRef());
+	builtin->registerBuiltin("GraphicsStroke","flash.display",Class<GraphicsStroke>::getRef());
+	builtin->registerBuiltin("GraphicsTrianglePath","flash.display",Class<GraphicsTrianglePath>::getRef());
+	builtin->registerBuiltin("IGraphicsData","flash.display",InterfaceClass<IGraphicsData>::getRef());
+	builtin->registerBuiltin("IGraphicsFill","flash.display",InterfaceClass<IGraphicsFill>::getRef());
+	builtin->registerBuiltin("IGraphicsPath","flash.display",InterfaceClass<IGraphicsPath>::getRef());
+	builtin->registerBuiltin("IGraphicsStroke","flash.display",InterfaceClass<IGraphicsStroke>::getRef());
 	builtin->registerBuiltin("GradientType","flash.display",Class<GradientType>::getRef());
 	builtin->registerBuiltin("BlendMode","flash.display",Class<BlendMode>::getRef());
 	builtin->registerBuiltin("LineScaleMode","flash.display",Class<LineScaleMode>::getRef());
@@ -256,10 +282,6 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("BitmapData","flash.display",Class<BitmapData>::getRef());
 	builtin->registerBuiltin("Bitmap","flash.display",Class<Bitmap>::getRef());
 	builtin->registerBuiltin("IBitmapDrawable","flash.display",InterfaceClass<IBitmapDrawable>::getRef());
-	builtin->registerBuiltin("GraphicsGradientFill","flash.display",
-			Class<ASObject>::getStubClass(QName("GraphicsGradientFill","flash.display")));
-	builtin->registerBuiltin("GraphicsPath","flash.display",
-			Class<ASObject>::getStubClass(QName("GraphicsPath","flash.display")));
 	builtin->registerBuiltin("MorphShape","flash.display",Class<MorphShape>::getRef());
 	builtin->registerBuiltin("SpreadMethod","flash.display",Class<SpreadMethod>::getRef());
 	builtin->registerBuiltin("InterpolationMethod","flash.display",Class<InterpolationMethod>::getRef());

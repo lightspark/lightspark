@@ -71,6 +71,9 @@ public:
         {
                 return vec.at(index);
         }
+	//Get value at index, or return defaultValue (a borrowed
+	//reference) if index is out-of-range
+	ASObject* at(unsigned int index, ASObject *defaultValue) const;
 
 	//Appends an object to the Vector. o is coerced to vec_type.
 	//Takes ownership of o.

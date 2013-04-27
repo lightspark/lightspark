@@ -133,6 +133,7 @@ public:
 	ASFUNCTION(_getMaxScrollH);
 	ASFUNCTION(_getMaxScrollV);
 	ASFUNCTION(_getBottomScrollV);
+	ASPROPERTY_GETTER_SETTER(bool, alwaysShowSelection);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
@@ -146,6 +147,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, sharpness);
 	ASFUNCTION_GETTER_SETTER(textColor);
 	ASFUNCTION_GETTER_SETTER(type);
+	ASPROPERTY_GETTER_SETTER(bool, useRichTextClipboard);
 };
 
 class TextFormat: public ASObject

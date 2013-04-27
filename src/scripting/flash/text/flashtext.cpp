@@ -95,8 +95,8 @@ ASFUNCTIONBODY(ASFont,registerFont)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
 	: InteractiveObject(c), TextData(textData), type(ET_READ_ONLY), 
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  maxChars(0), mouseWheelEnabled(true), selectable(_selectable),
-	  sharpness(0)
+	  alwaysShowSelection(false), maxChars(0), mouseWheelEnabled(true),
+	  selectable(_selectable), sharpness(0), useRichTextClipboard(false)
 {
 	if (!readOnly)
 	{
@@ -148,6 +148,7 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("maxScrollV","",Class<IFunction>::getFunction(TextField::_getMaxScrollV),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bottomScrollV","",Class<IFunction>::getFunction(TextField::_getBottomScrollV),GETTER_METHOD,true);
 
+	REGISTER_GETTER_SETTER(c, alwaysShowSelection);
 	REGISTER_GETTER_SETTER(c, background);
 	REGISTER_GETTER_SETTER(c, backgroundColor);
 	REGISTER_GETTER_SETTER(c, border);
@@ -161,8 +162,10 @@ void TextField::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, sharpness);
 	REGISTER_GETTER_SETTER(c, textColor);
 	REGISTER_GETTER_SETTER(c, type);
+	REGISTER_GETTER_SETTER(c, useRichTextClipboard);
 }
 
+ASFUNCTIONBODY_GETTER_SETTER(TextField, alwaysShowSelection);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, background);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, backgroundColor);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, border);
@@ -175,6 +178,7 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollV, validateScrollV);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable);
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, textColor);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard);
 
 void TextField::buildTraits(ASObject* o)
 {

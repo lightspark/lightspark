@@ -87,6 +87,10 @@ private:
 	void updateSizes();
 	tiny_string toHtmlText();
 	void validateSharpness(number_t oldValue);
+	void validateScrollH(int32_t oldValue);
+	void validateScrollV(int32_t oldValue);
+	int32_t getMaxScrollH();
+	int32_t getMaxScrollV();
 	EDIT_TYPE type;
 	ANTI_ALIAS_TYPE antiAliasType;
 	GRID_FIT_TYPE gridFitType;
@@ -120,6 +124,10 @@ public:
 	ASFUNCTION(_getDefaultTextFormat);
 	ASFUNCTION(_setDefaultTextFormat);
 	ASFUNCTION(_getLineMetrics);
+	ASFUNCTION(_getNumLines);
+	ASFUNCTION(_getMaxScrollH);
+	ASFUNCTION(_getMaxScrollV);
+	ASFUNCTION(_getBottomScrollV);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
@@ -127,6 +135,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(int32_t, maxChars);
 	ASFUNCTION_GETTER_SETTER(multiline);
 	ASPROPERTY_GETTER_SETTER(bool, mouseWheelEnabled);
+	ASFUNCTION_GETTER_SETTER(scrollH);
+	ASFUNCTION_GETTER_SETTER(scrollV);
 	ASPROPERTY_GETTER_SETTER(bool, selectable);
 	ASPROPERTY_GETTER_SETTER(number_t, sharpness);
 	ASFUNCTION_GETTER_SETTER(textColor);

@@ -138,6 +138,10 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_setWordWrap),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_getWordWrap),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numLines","",Class<IFunction>::getFunction(TextField::_getNumLines),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("maxScrollH","",Class<IFunction>::getFunction(TextField::_getMaxScrollH),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("maxScrollV","",Class<IFunction>::getFunction(TextField::_getMaxScrollV),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottomScrollV","",Class<IFunction>::getFunction(TextField::_getBottomScrollV),GETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c, background);
 	REGISTER_GETTER_SETTER(c, backgroundColor);
@@ -146,6 +150,8 @@ void TextField::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, maxChars);
 	REGISTER_GETTER_SETTER(c, multiline);
 	REGISTER_GETTER_SETTER(c, mouseWheelEnabled);
+	REGISTER_GETTER_SETTER(c, scrollH);
+	REGISTER_GETTER_SETTER(c, scrollV);
 	REGISTER_GETTER_SETTER(c, selectable);
 	REGISTER_GETTER_SETTER(c, sharpness);
 	REGISTER_GETTER_SETTER(c, textColor);
@@ -159,6 +165,8 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled);
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollH, validateScrollH);
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollV, validateScrollV);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable);
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, textColor);
@@ -489,9 +497,93 @@ ASFUNCTIONBODY(TextField,_getLength)
 	return abstract_i(th->text.numChars());
 }
 
+ASFUNCTIONBODY(TextField,_getNumLines)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_i(CairoPangoRenderer::getLineData(*th).size());
+}
+
+ASFUNCTIONBODY(TextField,_getMaxScrollH)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_i(th->getMaxScrollH());
+}
+
+ASFUNCTIONBODY(TextField,_getMaxScrollV)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	return abstract_i(th->getMaxScrollV());
+}
+
+ASFUNCTIONBODY(TextField,_getBottomScrollV)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	std::vector<RECT> lines = CairoPangoRenderer::getLineData(*th);
+	for (unsigned int k=0; k<lines.size()-1; k++)
+	{
+		if (lines[k+1].Ymin >= (int)th->height)
+			return abstract_i(k + 1);
+	}
+
+	return abstract_i(lines.size() + 1);
+}
+
 void TextField::validateSharpness(number_t /*oldValue*/)
 {
 	sharpness = dmin(dmax(sharpness, -400.), 400.);
+}
+
+void TextField::validateScrollH(int32_t oldValue)
+{
+	int32_t maxScrollH = getMaxScrollH();
+	if (scrollH > maxScrollH)
+		scrollH = maxScrollH;
+
+	if (onStage && (scrollH != oldValue))
+		requestInvalidation(getSys());
+}
+
+void TextField::validateScrollV(int32_t oldValue)
+{
+	int32_t maxScrollV = getMaxScrollV();
+	if (scrollV < 1)
+		scrollV = 1;
+	else if (scrollV > maxScrollV)
+		scrollV = maxScrollV;
+
+	if (onStage && (scrollV != oldValue))
+		requestInvalidation(getSys());
+}
+
+int32_t TextField::getMaxScrollH()
+{
+	if (wordWrap)
+		return 0;
+	else
+		return textWidth;
+}
+
+int32_t TextField::getMaxScrollV()
+{
+	std::vector<RECT> lines = CairoPangoRenderer::getLineData(*this);
+	if (lines.size() <= 1)
+		return 1;
+
+	int32_t Ymax = lines[lines.size()-1].Ymax;
+	int32_t measuredTextHeight = Ymax - lines[0].Ymin;
+	if (measuredTextHeight <= (int32_t)height)
+		return 1;
+
+	// one full page from the bottom
+	for (int k=(int)lines.size()-1; k>=0; k--)
+	{
+		if (Ymax - lines[k].Ymin > (int32_t)height)
+		{
+			return imin(k+1+1, lines.size());
+		}
+	}
+
+	return 1;
 }
 
 void TextField::updateSizes()
@@ -549,6 +641,8 @@ void TextField::setHtmlText(const tiny_string& html)
 void TextField::updateText(const tiny_string& new_text)
 {
 	text = new_text;
+	scrollH = 0;
+	scrollV = 1;
 	if(onStage)
 		requestInvalidation(getSys());
 	else

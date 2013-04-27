@@ -852,7 +852,8 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 	if(tData.autoSize == TextData::AUTO_SIZE::AS_NONE)
 	{
 		pango_layout_set_width(layout,PANGO_SCALE*tData.width);
-		pango_layout_set_height(layout,PANGO_SCALE*tData.height);//TODO:Not sure what Pango does if the text is too long to fit
+		// Do not set height, because we want to compute the
+		// layout of every line
 	}
 
 	/* setup font description */
@@ -880,9 +881,19 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 		cairo_paint(cr);
 	}
 
+	/* text scroll position */
+	int32_t translateX = textData.scrollH;
+	int32_t translateY = 0;
+	if (textData.scrollV > 1)
+	{
+		translateY = -PANGO_PIXELS(lineExtents(layout, textData.scrollV-1).y);
+	}
+
 	/* draw the text */
 	cairo_set_source_rgb (cr, textData.textColor.Red/255., textData.textColor.Green/255., textData.textColor.Blue/255.);
+	cairo_translate(cr, translateX, translateY);
 	pango_cairo_show_layout(cr, layout);
+	cairo_translate(cr, -translateX, -translateY);
 
 	if(textData.border)
 	{
@@ -925,6 +936,62 @@ bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint3
 	}
 
 	return (h!=0) && (w!=0);
+}
+
+PangoRectangle CairoPangoRenderer::lineExtents(PangoLayout *layout, int lineNumber)
+{
+	PangoRectangle rect;
+	memset(&rect, 0, sizeof(PangoRectangle));
+	int i = 0;
+	PangoLayoutIter* lineIter = pango_layout_get_iter(layout);
+	do
+	{
+		if (i == lineNumber)
+		{
+			pango_layout_iter_get_line_extents(lineIter, NULL, &rect);
+			break;
+		}
+
+		i++;
+	} while (pango_layout_iter_next_line(lineIter));
+	pango_layout_iter_free(lineIter);
+
+	return rect;
+}
+
+std::vector<RECT> CairoPangoRenderer::getLineData(const TextData& _textData)
+{
+	//TODO:check locking
+	Locker l(pangoMutex);
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+	cairo_t *cr=cairo_create(cairoSurface);
+
+	PangoLayout* layout;
+	layout = pango_cairo_create_layout(cr);
+	pangoLayoutFromData(layout, _textData);
+
+	int XOffset = _textData.scrollH;
+	int YOffset = PANGO_PIXELS(lineExtents(layout, _textData.scrollV-1).y);
+	std::vector<RECT> extents;
+	extents.reserve(pango_layout_get_line_count(layout));
+	PangoLayoutIter* lineIter = pango_layout_get_iter(layout);
+	do
+	{
+		PangoRectangle logical_rect;
+		pango_layout_iter_get_line_extents(lineIter, NULL, &logical_rect);
+		extents.emplace_back(
+			PANGO_PIXELS(logical_rect.x) - XOffset,
+			PANGO_PIXELS(logical_rect.x) - XOffset + PANGO_PIXELS(logical_rect.width),
+			PANGO_PIXELS(logical_rect.y) - YOffset,
+			PANGO_PIXELS(logical_rect.y) - YOffset + PANGO_PIXELS(logical_rect.height));
+	} while (pango_layout_iter_next_line(lineIter));
+	pango_layout_iter_free(lineIter);
+
+	g_object_unref(layout);
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+
+	return extents;
 }
 
 void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yOffset) const

@@ -367,6 +367,30 @@ public:
 	bool wordWrap;
 };
 
+class LineData {
+public:
+	LineData(const TextData& o, int32_t x, int32_t y, int32_t _width,
+		 int32_t _height, int32_t _firstCharOffset, int32_t _length,
+		 number_t _ascent, number_t _descent, number_t _leading,
+		 number_t _indent):
+		owner(o), extents(x, x+_width, y, y+_height), 
+		firstCharOffset(_firstCharOffset), length(_length),
+		ascent(_ascent), descent(_descent), leading(_leading),
+		indent(_indent) {}
+	// This line belongs to owner
+	const TextData& owner;
+	// position and size
+	RECT extents;
+	// Offset of the first character on this line
+	int32_t firstCharOffset;
+	// length of the line in characters
+	int32_t length;
+	number_t ascent;
+	number_t descent;
+	number_t leading;
+	number_t indent;
+};
+
 class CairoPangoRenderer : public CairoRenderer
 {
 	static StaticMutex pangoMutex;
@@ -388,7 +412,7 @@ public:
 		@param w,h,tw,th are the (text)width and (text)height of the textData.
 	*/
 	static bool getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th);
-	static std::vector<RECT> getLineData(const TextData& _textData);
+	static std::vector<LineData> getLineData(const TextData& _textData);
 };
 
 class InvalidateQueue

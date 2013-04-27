@@ -418,6 +418,8 @@ public:
 	}
 	/* split string at each occurrence of delimiter character */
 	std::list<tiny_string> split(uint32_t delimiter) const;
+	/* Convert from byte offset to UTF-8 character index */
+	uint32_t bytePosToIndex(uint32_t bytepos) const;
 	/* iterate over utf8 characters */
 	CharIterator begin()
 	{

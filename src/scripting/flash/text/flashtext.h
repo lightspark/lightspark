@@ -123,7 +123,12 @@ public:
 	ASFUNCTION(_setTextFormat);
 	ASFUNCTION(_getDefaultTextFormat);
 	ASFUNCTION(_setDefaultTextFormat);
+	ASFUNCTION(_getLineIndexAtPoint);
+	ASFUNCTION(_getLineIndexOfChar);
+	ASFUNCTION(_getLineLength);
 	ASFUNCTION(_getLineMetrics);
+	ASFUNCTION(_getLineOffset);
+	ASFUNCTION(_getLineText);
 	ASFUNCTION(_getNumLines);
 	ASFUNCTION(_getMaxScrollH);
 	ASFUNCTION(_getMaxScrollV);

@@ -959,7 +959,7 @@ PangoRectangle CairoPangoRenderer::lineExtents(PangoLayout *layout, int lineNumb
 	return rect;
 }
 
-std::vector<RECT> CairoPangoRenderer::getLineData(const TextData& _textData)
+std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 {
 	//TODO:check locking
 	Locker l(pangoMutex);
@@ -972,18 +972,25 @@ std::vector<RECT> CairoPangoRenderer::getLineData(const TextData& _textData)
 
 	int XOffset = _textData.scrollH;
 	int YOffset = PANGO_PIXELS(lineExtents(layout, _textData.scrollV-1).y);
-	std::vector<RECT> extents;
-	extents.reserve(pango_layout_get_line_count(layout));
+	std::vector<LineData> data;
+	data.reserve(pango_layout_get_line_count(layout));
 	PangoLayoutIter* lineIter = pango_layout_get_iter(layout);
 	do
 	{
-		PangoRectangle logical_rect;
-		pango_layout_iter_get_line_extents(lineIter, NULL, &logical_rect);
-		extents.emplace_back(
-			PANGO_PIXELS(logical_rect.x) - XOffset,
-			PANGO_PIXELS(logical_rect.x) - XOffset + PANGO_PIXELS(logical_rect.width),
-			PANGO_PIXELS(logical_rect.y) - YOffset,
-			PANGO_PIXELS(logical_rect.y) - YOffset + PANGO_PIXELS(logical_rect.height));
+		PangoRectangle rect;
+		pango_layout_iter_get_line_extents(lineIter, NULL, &rect);
+		PangoLayoutLine* line = pango_layout_iter_get_line(lineIter);
+		data.emplace_back(_textData,
+				  PANGO_PIXELS(rect.x) - XOffset,
+				  PANGO_PIXELS(rect.y) - YOffset,
+				  PANGO_PIXELS(rect.width),
+				  PANGO_PIXELS(rect.height),
+				  _textData.text.bytePosToIndex(line->start_index),
+				  _textData.text.substr_bytes(line->start_index, line->length).numChars(),
+				  PANGO_PIXELS(PANGO_ASCENT(rect)),
+				  PANGO_PIXELS(PANGO_DESCENT(rect)),
+				  PANGO_PIXELS(PANGO_LBEARING(rect)),
+				  0); // FIXME
 	} while (pango_layout_iter_next_line(lineIter));
 	pango_layout_iter_free(lineIter);
 
@@ -991,7 +998,7 @@ std::vector<RECT> CairoPangoRenderer::getLineData(const TextData& _textData)
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
 
-	return extents;
+	return data;
 }
 
 void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yOffset) const

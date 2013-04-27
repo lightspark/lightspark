@@ -114,7 +114,12 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getTextFormat","",Class<IFunction>::getFunction(_getTextFormat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(_setTextFormat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineIndexAtPoint","",Class<IFunction>::getFunction(_getLineIndexAtPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineIndexOfChar","",Class<IFunction>::getFunction(_getLineIndexOfChar),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineLength","",Class<IFunction>::getFunction(_getLineLength),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getLineMetrics","",Class<IFunction>::getFunction(_getLineMetrics),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineOffset","",Class<IFunction>::getFunction(_getLineOffset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineText","",Class<IFunction>::getFunction(_getLineText),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(TextField::_getAntiAliasType),GETTER_METHOD,true);
@@ -429,10 +434,108 @@ ASFUNCTIONBODY(TextField, _setter_type)
 	return NULL;
 }
 
+ASFUNCTIONBODY(TextField,_getLineIndexAtPoint)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	number_t x;
+	number_t y;
+	ARG_UNPACK(x) (y);
+
+	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
+	std::vector<LineData>::const_iterator it;
+	int i;
+	for (i=0, it=lines.begin(); it!=lines.end(); ++i, ++it)
+	{
+		if (x > it->extents.Xmin && x <= it->extents.Xmax &&
+		    y > it->extents.Ymin && y <= it->extents.Ymax)
+			return abstract_i(i);
+	}
+
+	return abstract_i(-1);
+}
+
+ASFUNCTIONBODY(TextField,_getLineIndexOfChar)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	int32_t charIndex;
+	ARG_UNPACK(charIndex);
+
+	if (charIndex < 0)
+		return abstract_i(-1);
+
+	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
+	std::vector<LineData>::const_iterator it;
+	int i;
+	for (i=0, it=lines.begin(); it!=lines.end(); ++i, ++it)
+	{
+		if (charIndex >= it->firstCharOffset &&
+		    charIndex < it->firstCharOffset + it->length)
+			return abstract_i(i);
+	}
+
+	// testing shows that returns -1 on invalid index instead of
+	// throwing RangeError
+	return abstract_i(-1);
+}
+
+ASFUNCTIONBODY(TextField,_getLineLength)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	int32_t  lineIndex;
+	ARG_UNPACK(lineIndex);
+
+	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
+	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
+		throwError<RangeError>(kParamRangeError);
+
+	return abstract_i(lines[lineIndex].length);
+}
+
 ASFUNCTIONBODY(TextField,_getLineMetrics)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "TextField.getLineMetrics() returns bogus values");
-	return Class<TextLineMetrics>::getInstanceS(19, 280, 14, 11, 3.5, 0);
+	TextField* th=Class<TextField>::cast(obj);
+	int32_t  lineIndex;
+	ARG_UNPACK(lineIndex);
+
+	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
+	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
+		throwError<RangeError>(kParamRangeError);
+
+	return Class<TextLineMetrics>::getInstanceS(
+		lines[lineIndex].indent,
+		lines[lineIndex].extents.Xmax - lines[lineIndex].extents.Xmin,
+		lines[lineIndex].extents.Ymax - lines[lineIndex].extents.Ymin,
+		lines[lineIndex].ascent,
+		lines[lineIndex].descent,
+		lines[lineIndex].leading);
+}
+
+ASFUNCTIONBODY(TextField,_getLineOffset)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	int32_t  lineIndex;
+	ARG_UNPACK(lineIndex);
+
+	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
+	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
+		throwError<RangeError>(kParamRangeError);
+
+	return abstract_i(lines[lineIndex].firstCharOffset);
+}
+
+ASFUNCTIONBODY(TextField,_getLineText)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	int32_t  lineIndex;
+	ARG_UNPACK(lineIndex);
+
+	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
+	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
+		throwError<RangeError>(kParamRangeError);
+
+	tiny_string substr = th->text.substr(lines[lineIndex].firstCharOffset,
+					     lines[lineIndex].length);
+	return Class<ASString>::getInstanceS(substr);
 }
 
 ASFUNCTIONBODY(TextField,_getAntiAliasType)
@@ -518,10 +621,10 @@ ASFUNCTIONBODY(TextField,_getMaxScrollV)
 ASFUNCTIONBODY(TextField,_getBottomScrollV)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	std::vector<RECT> lines = CairoPangoRenderer::getLineData(*th);
+	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
 	for (unsigned int k=0; k<lines.size()-1; k++)
 	{
-		if (lines[k+1].Ymin >= (int)th->height)
+		if (lines[k+1].extents.Ymin >= (int)th->height)
 			return abstract_i(k + 1);
 	}
 
@@ -565,19 +668,19 @@ int32_t TextField::getMaxScrollH()
 
 int32_t TextField::getMaxScrollV()
 {
-	std::vector<RECT> lines = CairoPangoRenderer::getLineData(*this);
+	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*this);
 	if (lines.size() <= 1)
 		return 1;
 
-	int32_t Ymax = lines[lines.size()-1].Ymax;
-	int32_t measuredTextHeight = Ymax - lines[0].Ymin;
+	int32_t Ymax = lines[lines.size()-1].extents.Ymax;
+	int32_t measuredTextHeight = Ymax - lines[0].extents.Ymin;
 	if (measuredTextHeight <= (int32_t)height)
 		return 1;
 
 	// one full page from the bottom
 	for (int k=(int)lines.size()-1; k>=0; k--)
 	{
-		if (Ymax - lines[k].Ymin > (int32_t)height)
+		if (Ymax - lines[k].extents.Ymin > (int32_t)height)
 		{
 			return imin(k+1+1, lines.size());
 		}

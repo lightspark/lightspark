@@ -202,6 +202,14 @@ std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 	return res;
 }
 
+uint32_t tiny_string::bytePosToIndex(uint32_t bytepos) const
+{
+	if (bytepos >= numBytes())
+		return numChars();
+
+	return g_utf8_pointer_to_offset(raw_buf(), raw_buf() + bytepos);
+}
+
 #ifdef MEMORY_USAGE_PROFILING
 void tiny_string::reportMemoryChange(int32_t change) const
 {

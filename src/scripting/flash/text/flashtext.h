@@ -86,6 +86,7 @@ private:
 	//Computes and changes (text)width and (text)height using Pango
 	void updateSizes();
 	tiny_string toHtmlText();
+	tiny_string compactHTMLWhiteSpace(const tiny_string&);
 	void validateSharpness(number_t oldValue);
 	void validateScrollH(int32_t oldValue);
 	void validateScrollV(int32_t oldValue);
@@ -138,6 +139,7 @@ public:
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
 	ASFUNCTION_GETTER_SETTER(borderColor);
+	ASPROPERTY_GETTER_SETTER(bool, condenseWhite);
 	ASPROPERTY_GETTER_SETTER(int32_t, maxChars);
 	ASFUNCTION_GETTER_SETTER(multiline);
 	ASPROPERTY_GETTER_SETTER(bool, mouseWheelEnabled);

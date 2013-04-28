@@ -95,8 +95,9 @@ ASFUNCTIONBODY(ASFont,registerFont)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
 	: InteractiveObject(c), TextData(textData), type(ET_READ_ONLY), 
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  alwaysShowSelection(false), maxChars(0), mouseWheelEnabled(true),
-	  selectable(_selectable), sharpness(0), useRichTextClipboard(false)
+	  alwaysShowSelection(false), condenseWhite(false), maxChars(0),
+	  mouseWheelEnabled(true), selectable(_selectable), sharpness(0),
+	  useRichTextClipboard(false)
 {
 	if (!readOnly)
 	{
@@ -153,6 +154,7 @@ void TextField::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, backgroundColor);
 	REGISTER_GETTER_SETTER(c, border);
 	REGISTER_GETTER_SETTER(c, borderColor);
+	REGISTER_GETTER_SETTER(c, condenseWhite);
 	REGISTER_GETTER_SETTER(c, maxChars);
 	REGISTER_GETTER_SETTER(c, multiline);
 	REGISTER_GETTER_SETTER(c, mouseWheelEnabled);
@@ -170,6 +172,7 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, background);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, backgroundColor);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, border);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, condenseWhite);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled);
@@ -742,7 +745,37 @@ tiny_string TextField::toHtmlText()
 void TextField::setHtmlText(const tiny_string& html)
 {
 	HtmlTextParser parser;
-	parser.parseTextAndFormating(html, this);
+	if (condenseWhite)
+	{
+		tiny_string processedHtml = compactHTMLWhiteSpace(html);
+		parser.parseTextAndFormating(processedHtml, this);
+	}
+	else
+	{
+		parser.parseTextAndFormating(html, this);
+	}
+}
+
+tiny_string TextField::compactHTMLWhiteSpace(const tiny_string& html)
+{
+	tiny_string compacted;
+	bool previousWasSpace = false;
+	for (CharIterator ch=html.begin(); ch!=html.end(); ++ch)
+	{
+		if (g_unichar_isspace(*ch))
+		{
+			if (!previousWasSpace)
+				compacted += ' ';
+			previousWasSpace = true;
+		}
+		else
+		{
+			compacted += *ch;
+			previousWasSpace = false;
+		}
+	}
+
+	return compacted;
 }
 
 void TextField::updateText(const tiny_string& new_text)

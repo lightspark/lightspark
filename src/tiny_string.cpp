@@ -42,6 +42,78 @@ tiny_string::tiny_string(std::istream& in, int len):buf(_buf_static),stringSize(
 	buf[len]='\0';
 }
 
+tiny_string::tiny_string(const char* s,bool copy):_buf_static(),buf(_buf_static),type(READONLY)
+{
+	if(copy)
+		makePrivateCopy(s);
+	else
+	{
+		stringSize=strlen(s)+1;
+		buf=(char*)s; //This is an unsafe conversion, we have to take care of the RO data
+	}
+}
+
+tiny_string::tiny_string(const tiny_string& r):_buf_static(),buf(_buf_static),stringSize(r.stringSize),type(STATIC)
+{
+	//Fast path for static read-only strings
+	if(r.type==READONLY)
+	{
+		type=READONLY;
+		buf=r.buf;
+		return;
+	}
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf,r.buf,stringSize);
+}
+
+tiny_string::tiny_string(const std::string& r):_buf_static(),buf(_buf_static),stringSize(r.size()+1),type(STATIC)
+{
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf,r.c_str(),stringSize);
+}
+
+tiny_string::~tiny_string()
+{
+	resetToStatic();
+}
+
+tiny_string& tiny_string::operator=(const tiny_string& s)
+{
+	resetToStatic();
+	stringSize=s.stringSize;
+	//Fast path for static read-only strings
+	if(s.type==READONLY)
+	{
+		type=READONLY;
+		buf=s.buf;
+	}
+	else
+	{
+		if(stringSize > STATIC_SIZE)
+			createBuffer(stringSize);
+		memcpy(buf,s.buf,stringSize);
+	}
+	return *this;
+}
+
+tiny_string& tiny_string::operator=(const std::string& s)
+{
+	resetToStatic();
+	stringSize=s.size()+1;
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf,s.c_str(),stringSize);
+	return *this;
+}
+
+tiny_string& tiny_string::operator=(const char* s)
+{
+	makePrivateCopy(s);
+	return *this;
+}
+
 tiny_string& tiny_string::operator=(const Glib::ustring& r)
 {
 	resetToStatic();
@@ -123,10 +195,233 @@ tiny_string& tiny_string::operator+=(const tiny_string& r)
 	return *this;
 }
 
+tiny_string& tiny_string::operator+=(const std::string& s)
+{
+	//TODO: optimize
+	return *this += tiny_string(s);
+}
+
+tiny_string& tiny_string::operator+=(uint32_t c)
+{
+	return (*this += tiny_string::fromChar(c));
+}
+
 const tiny_string tiny_string::operator+(const tiny_string& r) const
 {
 	tiny_string ret(*this);
 	ret+=r;
+	return ret;
+}
+
+const tiny_string tiny_string::operator+(const char* s) const
+{
+	return *this + tiny_string(s);
+}
+
+const tiny_string tiny_string::operator+(const std::string& r) const
+{
+	return *this + tiny_string(r);
+}
+
+bool tiny_string::operator<(const tiny_string& r) const
+{
+	//don't check trailing \0
+	return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))<0;
+}
+
+bool tiny_string::operator>(const tiny_string& r) const
+{
+	//don't check trailing \0
+	return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))>0;
+}
+
+bool tiny_string::operator==(const tiny_string& r) const
+{
+	//The length is checked as an optimization before checking the contents
+	if(stringSize != r.stringSize)
+		return false;
+	//don't check trailing \0
+	return memcmp(buf,r.buf,stringSize-1)==0;
+}
+
+bool tiny_string::operator==(const std::string& r) const
+{
+	//The length is checked as an optimization before checking the contents
+	if(stringSize != r.size()+1)
+		return false;
+	//don't check trailing \0
+	return memcmp(buf,r.c_str(),stringSize-1)==0;
+}
+
+bool tiny_string::operator!=(const std::string& r) const
+{
+	if(stringSize != r.size()+1)
+		return true;
+	//don't check trailing \0
+	return memcmp(buf,r.c_str(),stringSize-1)!=0;
+}
+
+bool tiny_string::operator!=(const tiny_string& r) const
+{
+	return !(*this==r);
+}
+
+bool tiny_string::operator==(const char* r) const
+{
+	return strcmp(buf,r)==0;
+}
+
+bool tiny_string::operator==(const xmlChar* r) const
+{
+	return strcmp(buf,reinterpret_cast<const char*>(r))==0;
+}
+
+bool tiny_string::operator!=(const char* r) const
+{
+	return !(*this==r);
+}
+
+const char* tiny_string::raw_buf() const
+{
+	return buf;
+}
+
+bool tiny_string::empty() const
+{
+	return stringSize == 1;
+}
+
+/* returns the length in bytes, not counting the trailing \0 */
+uint32_t tiny_string::numBytes() const
+{
+	return stringSize-1;
+}
+
+/* returns the length in utf-8 characters, not counting the trailing \0 */
+uint32_t tiny_string::numChars() const
+{
+	//we cannot use g_utf8_strlen, as we may have '\0' inside our string
+	uint32_t len = 0;
+	char* end = buf+numBytes();
+	char* p = buf;
+	while(p < end)
+	{
+		p = g_utf8_next_char(p);
+		++len;
+	}
+	return len;
+}
+
+char* tiny_string::strchr(char c) const
+{
+	//TODO: does this handle '\0' in middle of buf gracefully?
+	return g_utf8_strchr(buf, numBytes(), c);
+}
+
+char* tiny_string::strchrr(char c) const
+{
+	//TODO: does this handle '\0' in middle of buf gracefully?
+	return g_utf8_strrchr(buf, numBytes(), c);
+}
+
+tiny_string::operator std::string() const
+{
+	return std::string(buf,stringSize-1);
+}
+
+bool tiny_string::startsWith(const char* o) const
+{
+	return strncmp(buf,o,strlen(o)) == 0;
+}
+bool tiny_string::endsWith(const char* o) const
+{
+	size_t olen = strlen(o);
+	return (numBytes() >= olen) && 
+		(strncmp(buf+numBytes()-olen,o,olen) == 0);
+}
+
+/* idx is an index of utf-8 characters */
+uint32_t tiny_string::charAt(uint32_t idx) const
+{
+	return g_utf8_get_char(g_utf8_offset_to_pointer(buf,idx));
+}
+
+/* start is an index of characters.
+ * returns index of character */
+uint32_t tiny_string::find(const tiny_string& needle, uint32_t start) const
+{
+	//TODO: omit copy into std::string
+	size_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+	size_t bytepos = std::string(*this).find(needle.raw_buf(),bytestart,needle.numBytes());
+	if(bytepos == std::string::npos)
+		return npos;
+	else
+		return g_utf8_pointer_to_offset(buf,buf+bytepos);
+}
+
+uint32_t tiny_string::rfind(const tiny_string& needle, uint32_t start) const
+{
+	//TODO: omit copy into std::string
+	size_t bytestart;
+	if(start == npos)
+		bytestart = std::string::npos;
+	else
+		bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+
+	size_t bytepos = std::string(*this).rfind(needle.raw_buf(),bytestart,needle.numBytes());
+	if(bytepos == std::string::npos)
+		return npos;
+	else
+		return g_utf8_pointer_to_offset(buf,buf+bytepos);
+}
+
+void tiny_string::makePrivateCopy(const char* s)
+{
+	resetToStatic();
+	stringSize=strlen(s)+1;
+	if(stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	strcpy(buf,s);
+}
+
+void tiny_string::createBuffer(uint32_t s)
+{
+	type=DYNAMIC;
+	reportMemoryChange(s);
+	buf=new char[s];
+}
+
+void tiny_string::resizeBuffer(uint32_t s)
+{
+	assert(type==DYNAMIC);
+	char* oldBuf=buf;
+	reportMemoryChange(s-stringSize);
+	buf=new char[s];
+	assert(s >= stringSize);
+	memcpy(buf,oldBuf,stringSize);
+	delete[] oldBuf;
+}
+
+void tiny_string::resetToStatic()
+{
+	if(type==DYNAMIC)
+	{
+		reportMemoryChange(-stringSize);
+		delete[] buf;
+	}
+	stringSize=1;
+	_buf_static[0] = '\0';
+	buf=_buf_static;
+	type=STATIC;
+}
+
+tiny_string tiny_string::fromChar(uint32_t c)
+{
+	tiny_string ret;
+	ret.buf = ret._buf_static;
+	ret.type = STATIC;
+	ret.stringSize = g_unichar_to_utf8(c,ret.buf) + 1;
+	ret.buf[ret.stringSize-1] = '\0';
 	return ret;
 }
 
@@ -202,12 +497,64 @@ std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 	return res;
 }
 
+tiny_string tiny_string::lowercase() const
+{
+	//TODO: omit copy, handle \0 in string
+	char *strdown = g_utf8_strdown(buf,numBytes());
+	tiny_string ret(strdown,/*copy:*/true);
+	g_free(strdown);
+	return ret;
+}
+
+tiny_string tiny_string::uppercase() const
+{
+	//TODO: omit copy, handle \0 in string
+	char *strup = g_utf8_strup(buf,numBytes());
+	tiny_string ret(strup,/*copy:*/true);
+	g_free(strup);
+	return ret;
+}
+
+/* like strcasecmp(s1.raw_buf(),s2.raw_buf()) but for unicode
+ * TODO: slow! */
+int tiny_string::strcasecmp(tiny_string& s2) const
+{
+	char* str1 = g_utf8_casefold(this->raw_buf(),this->numBytes());
+	char* str2 = g_utf8_casefold(s2.raw_buf(),s2.numBytes());
+	int ret = g_utf8_collate(str1,str2);
+	g_free(str1);
+	g_free(str2);
+	return ret;
+}
+
 uint32_t tiny_string::bytePosToIndex(uint32_t bytepos) const
 {
 	if (bytepos >= numBytes())
 		return numChars();
 
 	return g_utf8_pointer_to_offset(raw_buf(), raw_buf() + bytepos);
+}
+
+CharIterator tiny_string::begin()
+{
+	return CharIterator(buf);
+}
+
+CharIterator tiny_string::begin() const
+{
+	return CharIterator(buf);
+}
+
+CharIterator tiny_string::end()
+{
+	//points to the trailing '\0' byte
+	return CharIterator(buf+numBytes());
+}
+
+CharIterator tiny_string::end() const
+{
+	//points to the trailing '\0' byte
+	return CharIterator(buf+numBytes());
 }
 
 #ifdef MEMORY_USAGE_PROFILING

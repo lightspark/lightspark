@@ -848,13 +848,6 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 		pango_layout_set_width(layout,PANGO_SCALE*tData.width);
 		pango_layout_set_wrap(layout,PANGO_WRAP_WORD);//I think this is what Adobe does
 	}
-	//In case autoSize is NONE, we also have the height
-	if(tData.autoSize == TextData::AUTO_SIZE::AS_NONE)
-	{
-		pango_layout_set_width(layout,PANGO_SCALE*tData.width);
-		// Do not set height, because we want to compute the
-		// layout of every line
-	}
 
 	/* setup font description */
 	desc = pango_font_description_new();

@@ -93,6 +93,7 @@ private:
 	int32_t getMaxScrollH();
 	int32_t getMaxScrollV();
 	void textUpdated();
+	void setSizeAndPositionFromAutoSize();
 	EDIT_TYPE type;
 	ANTI_ALIAS_TYPE antiAliasType;
 	GRID_FIT_TYPE gridFitType;

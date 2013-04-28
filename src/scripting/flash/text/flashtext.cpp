@@ -216,8 +216,8 @@ ASFUNCTIONBODY(TextField,_getWordWrap)
 ASFUNCTIONBODY(TextField,_setWordWrap)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	assert_and_throw(argslen==1);
-	th->wordWrap=Boolean_concrete(args[0]);
+	ARG_UNPACK(th->wordWrap);
+	th->setSizeAndPositionFromAutoSize();
 	if(th->onStage)
 		th->requestInvalidation(getSys());
 	return NULL;
@@ -243,21 +243,57 @@ ASFUNCTIONBODY(TextField,_getAutoSize)
 ASFUNCTIONBODY(TextField,_setAutoSize)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	assert_and_throw(argslen==1);
-	tiny_string temp = args[0]->toString();
-	if(temp == "none")
-		th->autoSize = AS_NONE;//TODO: take care of corner cases : what to do with sizes when changing the autoSize
-	else if (temp == "left")
-		th->autoSize = AS_LEFT;
-	else if (temp == "right")
-		th->autoSize = AS_RIGHT;
-	else if (temp == "center")
-		th->autoSize = AS_CENTER;
+	tiny_string autoSizeString;
+	ARG_UNPACK(autoSizeString);
+
+	AUTO_SIZE newAutoSize = AS_NONE;
+	if(autoSizeString == "none")
+		newAutoSize = AS_NONE;
+	else if (autoSizeString == "left")
+		newAutoSize = AS_LEFT;
+	else if (autoSizeString == "right")
+		newAutoSize = AS_RIGHT;
+	else if (autoSizeString == "center")
+		newAutoSize = AS_CENTER;
 	else
-		throw Class<ArgumentError>::getInstanceS("Wrong argument in TextField.autoSize");
-	if(th->onStage)
-		th->requestInvalidation(getSys());//TODO:check if there was any change
+		throwError<ArgumentError>(kInvalidEnumError, "autoSize");
+
+	if (th->autoSize != newAutoSize)
+	{
+		th->autoSize = newAutoSize;
+		th->setSizeAndPositionFromAutoSize();
+		if(th->onStage)
+			th->requestInvalidation(getSys());
+	}
+
 	return NULL;
+}
+
+void TextField::setSizeAndPositionFromAutoSize()
+{
+	if (autoSize == AS_NONE)
+		return;
+
+	height = textHeight;
+	if (!wordWrap && width < textWidth)
+	{
+		if (autoSize == AS_RIGHT)
+		{
+			number_t oldX = getXY().x;
+			setX(oldX+width-textWidth);
+			width = textWidth;
+		}
+		else if (autoSize == AS_CENTER)
+		{
+			number_t oldX = getXY().x;
+			setX(oldX + width/2 - textWidth/2);
+			width = textWidth;
+		}
+		else // AS_LEFT, because AS_NONE was handled before
+		{
+			width = textWidth;
+		}
+	}
 }
 
 ASFUNCTIONBODY(TextField,_getWidth)

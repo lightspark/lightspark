@@ -141,6 +141,10 @@ public:
 
 	static void startGTKMain();
 	static void quitGTKMain();
+
+	/* show/hide mouse cursor, must be called from the gtk thread */
+	void showMouseCursor();
+	void hideMouseCursor();
 };
 
 };

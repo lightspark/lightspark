@@ -99,3 +99,33 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 	gtk_widget_show(widget);
 	gtk_widget_map(widget);
 }
+
+void EngineData::showMouseCursor()
+{
+	if (!widget)
+		return;
+
+	gdk_threads_enter();
+	GdkWindow* gdkwindow = gtk_widget_get_window(widget);
+	if (gdkwindow)
+		gdk_window_set_cursor(gdkwindow, NULL);
+	gdk_threads_leave();
+}
+
+void EngineData::hideMouseCursor()
+{
+	if (!widget)
+		return;
+
+	gdk_threads_enter();
+	GdkCursor* cursor = gdk_cursor_new(GDK_BLANK_CURSOR);
+	if (cursor)
+	{
+		GdkWindow* gdkwindow = gtk_widget_get_window(widget);
+		if (gdkwindow)
+			gdk_window_set_cursor(gdkwindow, cursor);
+		gdk_cursor_unref(cursor);
+	}
+	gdk_threads_leave();
+}
+

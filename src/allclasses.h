@@ -230,6 +230,7 @@ REGISTER_CLASS_NAME(Timer,"flash.utils")
 REGISTER_CLASS_NAME(Keyboard,"flash.ui")
 REGISTER_CLASS_NAME(KeyboardType,"flash.ui")
 REGISTER_CLASS_NAME(KeyLocation,"flash.ui")
+REGISTER_CLASS_NAME(Mouse,"flash.ui")
 
 //XML
 REGISTER_CLASS_NAME(XMLDocument,"flash.xml")

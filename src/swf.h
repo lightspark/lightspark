@@ -429,6 +429,8 @@ public:
 
 	//Opening web pages
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
+
+	void showMouseCursor(bool visible);
 };
 
 class ParseThread: public IThreadJob

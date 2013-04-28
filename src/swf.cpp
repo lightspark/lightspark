@@ -1933,6 +1933,14 @@ void SystemState::openPageInBrowser(const tiny_string& url, const tiny_string& w
 	engineData->openPageInBrowser(url, window);
 }
 
+void SystemState::showMouseCursor(bool visible)
+{
+	if (visible)
+		EngineData::runInGtkThread(sigc::mem_fun(engineData, &EngineData::showMouseCursor));
+	else
+		EngineData::runInGtkThread(sigc::mem_fun(engineData, &EngineData::hideMouseCursor));
+}
+
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
 {

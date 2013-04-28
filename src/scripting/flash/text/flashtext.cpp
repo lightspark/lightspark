@@ -754,6 +754,7 @@ void TextField::setHtmlText(const tiny_string& html)
 	{
 		parser.parseTextAndFormating(html, this);
 	}
+	textUpdated();
 }
 
 tiny_string TextField::compactHTMLWhiteSpace(const tiny_string& html)
@@ -781,6 +782,11 @@ tiny_string TextField::compactHTMLWhiteSpace(const tiny_string& html)
 void TextField::updateText(const tiny_string& new_text)
 {
 	text = new_text;
+	textUpdated();
+}
+
+void TextField::textUpdated()
+{
 	scrollH = 0;
 	scrollV = 1;
 	if(onStage)

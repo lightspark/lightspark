@@ -92,6 +92,7 @@ private:
 	void validateScrollV(int32_t oldValue);
 	int32_t getMaxScrollH();
 	int32_t getMaxScrollV();
+	void textUpdated();
 	EDIT_TYPE type;
 	ANTI_ALIAS_TYPE antiAliasType;
 	GRID_FIT_TYPE gridFitType;

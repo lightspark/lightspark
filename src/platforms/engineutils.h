@@ -99,8 +99,11 @@ public:
 		assert(!inputHandlerId);
 		inputHandler = ic;
 		gtk_widget_set_can_focus(widget,TRUE);
-		gtk_widget_add_events(widget,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-						GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK);
+		gtk_widget_add_events(widget,
+			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
+			GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
+			GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK |
+			GDK_LEAVE_NOTIFY_MASK);
 		inputHandlerId = g_signal_connect(widget, "event", G_CALLBACK(inputDispatch), this);
 	}
 	void removeInputHandler()

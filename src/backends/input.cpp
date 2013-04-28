@@ -141,6 +141,12 @@ bool InputThread::worker(GdkEvent *event)
 			ret=TRUE;
 			break;
 		}
+		case GDK_LEAVE_NOTIFY:
+		{
+			handleMouseLeave();
+			ret=TRUE;
+			break;
+		}
 		default:
 //#ifdef EXPENSIVE_DEBUG
 //			LOG(LOG_INFO, "GDKTYPE " << event->type);
@@ -290,6 +296,15 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, GdkScrollDirection d
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS("mouseWheel",localX,localY,true,buttonState,NullRef,delta)));
+}
+
+void InputThread::handleMouseLeave()
+{
+	if(m_sys->currentVm == NULL)
+		return;
+
+	m_sys->currentVm->addEvent(m_sys->mainClip->getStage(),
+		_MR(Class<Event>::getInstanceS("mouseLeave")));
 }
 
 void InputThread::initKeyTable()

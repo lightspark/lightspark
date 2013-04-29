@@ -973,8 +973,7 @@ std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 		PangoRectangle rect;
 		pango_layout_iter_get_line_extents(lineIter, NULL, &rect);
 		PangoLayoutLine* line = pango_layout_iter_get_line(lineIter);
-		data.emplace_back(_textData,
-				  PANGO_PIXELS(rect.x) - XOffset,
+		data.emplace_back(PANGO_PIXELS(rect.x) - XOffset,
 				  PANGO_PIXELS(rect.y) - YOffset,
 				  PANGO_PIXELS(rect.width),
 				  PANGO_PIXELS(rect.height),

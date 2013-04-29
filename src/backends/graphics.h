@@ -369,16 +369,14 @@ public:
 
 class LineData {
 public:
-	LineData(const TextData& o, int32_t x, int32_t y, int32_t _width,
+	LineData(int32_t x, int32_t y, int32_t _width,
 		 int32_t _height, int32_t _firstCharOffset, int32_t _length,
 		 number_t _ascent, number_t _descent, number_t _leading,
 		 number_t _indent):
-		owner(o), extents(x, x+_width, y, y+_height), 
+		extents(x, x+_width, y, y+_height), 
 		firstCharOffset(_firstCharOffset), length(_length),
 		ascent(_ascent), descent(_descent), leading(_leading),
 		indent(_indent) {}
-	// This line belongs to owner
-	const TextData& owner;
 	// position and size
 	RECT extents;
 	// Offset of the first character on this line

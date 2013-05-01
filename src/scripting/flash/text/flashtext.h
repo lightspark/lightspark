@@ -97,6 +97,7 @@ private:
 	EDIT_TYPE type;
 	ANTI_ALIAS_TYPE antiAliasType;
 	GRID_FIT_TYPE gridFitType;
+        _NR<ASString> restrictChars;
 public:
 	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true);
 	static void sinit(Class_base* c);
@@ -136,12 +137,15 @@ public:
 	ASFUNCTION(_getMaxScrollH);
 	ASFUNCTION(_getMaxScrollV);
 	ASFUNCTION(_getBottomScrollV);
+	ASFUNCTION(_getRestrict);
+	ASFUNCTION(_setRestrict);
 	ASPROPERTY_GETTER_SETTER(bool, alwaysShowSelection);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
 	ASFUNCTION_GETTER_SETTER(borderColor);
 	ASPROPERTY_GETTER_SETTER(bool, condenseWhite);
+	ASPROPERTY_GETTER_SETTER(bool, displayAsPassword);
 	ASPROPERTY_GETTER_SETTER(int32_t, maxChars);
 	ASFUNCTION_GETTER_SETTER(multiline);
 	ASPROPERTY_GETTER_SETTER(bool, mouseWheelEnabled);

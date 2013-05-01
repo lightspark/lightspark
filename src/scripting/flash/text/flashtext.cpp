@@ -95,7 +95,8 @@ ASFUNCTIONBODY(ASFont,registerFont)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
 	: InteractiveObject(c), TextData(textData), type(ET_READ_ONLY), 
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  alwaysShowSelection(false), condenseWhite(false), maxChars(0),
+	  alwaysShowSelection(false), condenseWhite(false), 
+	  displayAsPassword(false), maxChars(0),
 	  mouseWheelEnabled(true), selectable(_selectable), sharpness(0),
 	  useRichTextClipboard(false)
 {
@@ -148,6 +149,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("maxScrollH","",Class<IFunction>::getFunction(TextField::_getMaxScrollH),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("maxScrollV","",Class<IFunction>::getFunction(TextField::_getMaxScrollV),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bottomScrollV","",Class<IFunction>::getFunction(TextField::_getBottomScrollV),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(TextField::_getRestrict),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(TextField::_setRestrict),SETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c, alwaysShowSelection);
 	REGISTER_GETTER_SETTER(c, background);
@@ -155,6 +158,7 @@ void TextField::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, border);
 	REGISTER_GETTER_SETTER(c, borderColor);
 	REGISTER_GETTER_SETTER(c, condenseWhite);
+	REGISTER_GETTER_SETTER(c, displayAsPassword);
 	REGISTER_GETTER_SETTER(c, maxChars);
 	REGISTER_GETTER_SETTER(c, multiline);
 	REGISTER_GETTER_SETTER(c, mouseWheelEnabled);
@@ -167,21 +171,22 @@ void TextField::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, useRichTextClipboard);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(TextField, alwaysShowSelection);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, alwaysShowSelection); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, background);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, backgroundColor);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, border);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, condenseWhite);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, displayAsPassword); // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled); // stub
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollH, validateScrollH);
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollV, validateScrollV);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable);
-ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable); // stub
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, textColor);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard);
+ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard); // stub
 
 void TextField::buildTraits(ASObject* o)
 {
@@ -672,6 +677,27 @@ ASFUNCTIONBODY(TextField,_getBottomScrollV)
 	}
 
 	return abstract_i(lines.size() + 1);
+}
+
+ASFUNCTIONBODY(TextField,_getRestrict)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	if (th->restrictChars.isNull())
+		return NULL;
+	else
+	{
+		th->restrictChars->incRef();
+		return th->restrictChars.getPtr();
+	}
+}
+
+ASFUNCTIONBODY(TextField,_setRestrict)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	ARG_UNPACK(th->restrictChars);
+	if (!th->restrictChars.isNull())
+		LOG(LOG_NOT_IMPLEMENTED, "TextField restrict property");
+	return NULL;
 }
 
 void TextField::validateSharpness(number_t /*oldValue*/)

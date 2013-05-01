@@ -2015,6 +2015,11 @@ void Stage::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<DisplayObjectContainer>::getRef());
+	c->setDeclaredMethodByQName("allowFullScreen","",Class<IFunction>::getFunction(_getAllowFullScreen),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("allowFullScreenInteractive","",Class<IFunction>::getFunction(_getAllowFullScreenInteractive),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorCorrectionSupport","",Class<IFunction>::getFunction(_getColorCorrectionSupport),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullScreenHeight","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullScreenWidth","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
@@ -2027,23 +2032,58 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("stageVideos","",Class<IFunction>::getFunction(_getStageVideos),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(_getFocus),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(_setFocus),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(_getFrameRate),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(_setFrameRate),SETTER_METHOD,true);
 	// override the setter from DisplayObjectContainer
 	c->setDeclaredMethodByQName("tabChildren","",Class<IFunction>::getFunction(_setTabChildren),SETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c,align);
+	REGISTER_GETTER_SETTER(c,colorCorrection);
 	REGISTER_GETTER_SETTER(c,displayState);
+	REGISTER_GETTER_SETTER(c,fullScreenSourceRect);
+	REGISTER_GETTER_SETTER(c,quality);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,align,onAlign);
+ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,colorCorrection,onColorCorrection);
+ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,displayState,onDisplayState);
+ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,fullScreenSourceRect,onFullScreenSourceRect);
+ASFUNCTIONBODY_GETTER_SETTER(Stage,quality);
 
 void Stage::onDisplayState(const tiny_string&)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Stage.displayState = " << displayState);
+	if (displayState != "normal")
+		LOG(LOG_NOT_IMPLEMENTED,"Stage.displayState = " << displayState);
+	displayState = "normal"; // until fullscreen support is implemented
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,displayState,onDisplayState);
+void Stage::onAlign(const tiny_string& /*oldValue*/)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Stage.align = " << align);
+}
+
+void Stage::onColorCorrection(const tiny_string& oldValue)
+{
+	if (colorCorrection != "default" && 
+	    colorCorrection != "on" && 
+	    colorCorrection != "off")
+	{
+		colorCorrection = oldValue;
+		throwError<ArgumentError>(kInvalidEnumError, "colorCorrection");
+	}
+}
+
+void Stage::onFullScreenSourceRect(_NR<Rectangle> /*oldValue*/)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Stage.fullScreenSourceRect");
+	fullScreenSourceRect.reset();
+}
 
 void Stage::buildTraits(ASObject* o)
 {
 }
 
-Stage::Stage(Class_base* c):DisplayObjectContainer(c)
+Stage::Stage(Class_base* c):
+	DisplayObjectContainer(c), colorCorrection("default"), quality("high")
 {
 	onStage = true;
 }
@@ -2208,6 +2248,42 @@ ASFUNCTIONBODY(Stage,_setTabChildren)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Stage,_getFrameRate)
+{
+	Stage* th=obj->as<Stage>();
+	_NR<RootMovieClip> root = th->getRoot();
+	if (root.isNull())
+		return abstract_d(0.);
+	else
+		return abstract_d(root->getFrameRate());
+}
+
+ASFUNCTIONBODY(Stage,_setFrameRate)
+{
+	Stage* th=obj->as<Stage>();
+	number_t frameRate;
+	ARG_UNPACK(frameRate);
+	_NR<RootMovieClip> root = th->getRoot();
+	if (!root.isNull())
+		root->setFrameRate(frameRate);
+	return NULL;
+}
+
+ASFUNCTIONBODY(Stage,_getAllowFullScreen)
+{
+	return abstract_b(false); // until fullscreen support is implemented
+}
+
+ASFUNCTIONBODY(Stage,_getAllowFullScreenInteractive)
+{
+	return abstract_b(false);
+}
+
+ASFUNCTIONBODY(Stage,_getColorCorrectionSupport)
+{
+	return abstract_b(false); // until color correction is implemented
+}
+
 void StageScaleMode::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
@@ -2220,7 +2296,14 @@ void StageScaleMode::sinit(Class_base* c)
 void StageAlign::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
+	c->setVariableByQName("BOTTOM","",Class<ASString>::getInstanceS("B"),DECLARED_TRAIT);
+	c->setVariableByQName("BOTTOM_LEFT","",Class<ASString>::getInstanceS("BL"),DECLARED_TRAIT);
+	c->setVariableByQName("BOTTOM_RIGHT","",Class<ASString>::getInstanceS("BR"),DECLARED_TRAIT);
+	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("L"),DECLARED_TRAIT);
+	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("R"),DECLARED_TRAIT);
+	c->setVariableByQName("TOP","",Class<ASString>::getInstanceS("T"),DECLARED_TRAIT);
 	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL"),DECLARED_TRAIT);
+	c->setVariableByQName("TOP_RIGHT","",Class<ASString>::getInstanceS("TR"),DECLARED_TRAIT);
 }
 
 void StageQuality::sinit(Class_base* c)
@@ -2236,6 +2319,7 @@ void StageDisplayState::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
 	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"),DECLARED_TRAIT);
+	c->setVariableByQName("FULL_SCREEN_INTERACTIVE","",Class<ASString>::getInstanceS("fullScreenInteractive"),DECLARED_TRAIT);
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
 }
 

@@ -46,6 +46,7 @@ class BitmapData;
 class Matrix;
 class Vector;
 class Graphics;
+class Rectangle;
 
 class InteractiveObject: public DisplayObject
 {
@@ -504,6 +505,9 @@ private:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
 	void onDisplayState(const tiny_string&);
+	void onAlign(const tiny_string&);
+	void onColorCorrection(const tiny_string&);
+	void onFullScreenSourceRect(_NR<Rectangle>);
 	// Keyboard focus object is accessed from the VM thread (AS
 	// code) and the input thread and is protected focusSpinlock
 	Spinlock focusSpinlock;
@@ -518,6 +522,9 @@ public:
 	_NR<InteractiveObject> getFocusTarget();
 	void setFocusTarget(_NR<InteractiveObject> focus);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getAllowFullScreen);
+	ASFUNCTION(_getAllowFullScreenInteractive);
+	ASFUNCTION(_getColorCorrectionSupport);
 	ASFUNCTION(_getStageWidth);
 	ASFUNCTION(_getStageHeight);
 	ASFUNCTION(_getScaleMode);
@@ -527,7 +534,13 @@ public:
 	ASFUNCTION(_getFocus);
 	ASFUNCTION(_setFocus);
 	ASFUNCTION(_setTabChildren);
+	ASFUNCTION(_getFrameRate);
+	ASFUNCTION(_setFrameRate);
+	ASPROPERTY_GETTER_SETTER(tiny_string,align);
+	ASPROPERTY_GETTER_SETTER(tiny_string,colorCorrection);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
+	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,fullScreenSourceRect);
+	ASPROPERTY_GETTER_SETTER(tiny_string,quality);
 };
 
 class StageScaleMode: public ASObject

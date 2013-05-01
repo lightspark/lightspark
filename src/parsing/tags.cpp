@@ -1440,6 +1440,7 @@ ASObject* DefineButtonTag::instance(Class_base* c) const
 			assert_and_throw(state);
 			//The matrix must be set before invoking the constructor
 			state->setLegacyMatrix(i->PlaceMatrix);
+			state->name = "";
 			/*
 			 * TODO: BlendMode, filerList, PlaceDepth, ColorTransfrom
 			 */

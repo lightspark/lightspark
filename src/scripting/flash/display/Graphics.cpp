@@ -35,7 +35,7 @@ using namespace lightspark;
 
 void Graphics::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(copyFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),NORMAL_METHOD,true);
@@ -920,13 +920,4 @@ ASFUNCTIONBODY(Graphics,copyFrom)
 	th->owner->tokens.assign(source->owner->tokens.begin(),
 				 source->owner->tokens.end());
 	return NULL;
-}
-
-void LineScaleMode::sinit(Class_base* c)
-{
-	c->setConstructor(NULL);
-	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS("horizontal"),DECLARED_TRAIT);
-	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
-	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS("vertical"),DECLARED_TRAIT);
 }

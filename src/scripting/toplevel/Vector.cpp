@@ -28,8 +28,7 @@ using namespace lightspark;
 
 void Vector::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(getLength),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(setLength),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);

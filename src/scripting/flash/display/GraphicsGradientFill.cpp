@@ -35,9 +35,7 @@ GraphicsGradientFill::GraphicsGradientFill(Class_base* c):
 
 void GraphicsGradientFill::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
-
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, alphas);
 	REGISTER_GETTER_SETTER(c, colors);
 	REGISTER_GETTER_SETTER(c, focalPointRatio);

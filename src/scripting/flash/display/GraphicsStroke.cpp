@@ -35,9 +35,7 @@ GraphicsStroke::GraphicsStroke(Class_base* c):
 
 void GraphicsStroke::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
-
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, caps);
 	REGISTER_GETTER_SETTER(c, fill);
 	REGISTER_GETTER_SETTER(c, joints);

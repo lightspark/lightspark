@@ -140,8 +140,7 @@ void ASError::errorGenerator(ASError* obj, ASObject* const* args, const unsigned
 
 void ASError::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->setDeclaredMethodByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	REGISTER_GETTER(c, errorID);
@@ -177,8 +176,7 @@ ASFUNCTIONBODY(SecurityError,generator)
 
 void SecurityError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void SecurityError::buildTraits(ASObject* o)
@@ -205,8 +203,7 @@ ASFUNCTIONBODY(ArgumentError,generator)
 
 void ArgumentError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void ArgumentError::buildTraits(ASObject* o)
@@ -233,8 +230,7 @@ ASFUNCTIONBODY(DefinitionError,generator)
 
 void DefinitionError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void DefinitionError::buildTraits(ASObject* o)
@@ -261,8 +257,7 @@ ASFUNCTIONBODY(EvalError,generator)
 
 void EvalError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void EvalError::buildTraits(ASObject* o)
@@ -289,8 +284,7 @@ ASFUNCTIONBODY(RangeError,generator)
 
 void RangeError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void RangeError::buildTraits(ASObject* o)
@@ -317,8 +311,7 @@ ASFUNCTIONBODY(ReferenceError,generator)
 
 void ReferenceError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void ReferenceError::buildTraits(ASObject* o)
@@ -345,8 +338,7 @@ ASFUNCTIONBODY(SyntaxError,generator)
 
 void SyntaxError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void SyntaxError::buildTraits(ASObject* o)
@@ -373,8 +365,7 @@ ASFUNCTIONBODY(TypeError,generator)
 
 void TypeError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void TypeError::buildTraits(ASObject* o)
@@ -401,8 +392,7 @@ ASFUNCTIONBODY(URIError,generator)
 
 void URIError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void URIError::buildTraits(ASObject* o)
@@ -429,8 +419,7 @@ ASFUNCTIONBODY(VerifyError,generator)
 
 void VerifyError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void VerifyError::buildTraits(ASObject* o)
@@ -457,8 +446,7 @@ ASFUNCTIONBODY(UninitializedError,generator)
 
 void UninitializedError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void UninitializedError::buildTraits(ASObject* o)

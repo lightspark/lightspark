@@ -33,16 +33,14 @@ using namespace lightspark;
 
 void lightspark::AntiAliasType::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("ADVANCED","",Class<ASString>::getInstanceS("advanced"),DECLARED_TRAIT);
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
 }
 
 void ASFont::sinit(Class_base* c)
 {
-//	c->constructor=Class<IFunction>::getFunction(_constructor);
-	//c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("registerFont","",Class<IFunction>::getFunction(registerFont),NORMAL_METHOD,false);
 
@@ -110,8 +108,7 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 
 void TextField::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<InteractiveObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, InteractiveObject, CLASS_SEALED);
 
 	// methods
 	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
@@ -1139,8 +1136,9 @@ uint32_t TextField::HtmlTextParser::parseFontSize(const Glib::ustring& sizestr,
 	return (uint32_t)size;
 }
 
-void TextFieldAutoSize ::sinit(Class_base* c)
+void TextFieldAutoSize::sinit(Class_base* c)
 {
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"),DECLARED_TRAIT);
 	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"),DECLARED_TRAIT);
 	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
@@ -1149,12 +1147,14 @@ void TextFieldAutoSize ::sinit(Class_base* c)
 
 void TextFieldType::sinit(Class_base* c)
 {
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("DYNAMIC","",Class<ASString>::getInstanceS("dynamic"),DECLARED_TRAIT);
 	c->setVariableByQName("INPUT","",Class<ASString>::getInstanceS("input"),DECLARED_TRAIT);
 }
 
-void TextFormatAlign ::sinit(Class_base* c)
+void TextFormatAlign::sinit(Class_base* c)
 {
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"),DECLARED_TRAIT);
 	c->setVariableByQName("END","",Class<ASString>::getInstanceS("end"),DECLARED_TRAIT);
 	c->setVariableByQName("JUSTIFY","",Class<ASString>::getInstanceS("justify"),DECLARED_TRAIT);
@@ -1165,8 +1165,7 @@ void TextFormatAlign ::sinit(Class_base* c)
 
 void TextFormat::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	REGISTER_GETTER_SETTER(c,align);
 	REGISTER_GETTER_SETTER(c,blockIndent);
 	REGISTER_GETTER_SETTER(c,bold);
@@ -1265,8 +1264,7 @@ void StyleSheet::finalize()
 
 void StyleSheet::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_DYNAMIC_NOT_FINAL);
 	c->setDeclaredMethodByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("setStyle","",Class<IFunction>::getFunction(setStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getStyle","",Class<IFunction>::getFunction(getStyle),NORMAL_METHOD,true);
@@ -1325,9 +1323,10 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 
 void StaticText::sinit(Class_base* c)
 {
-	//TODO: spec says that constructor should throw ArgumentError
-	c->setConstructor(NULL);
-	c->setSuper(Class<DisplayObject>::getRef());
+	// FIXME: the constructor should be
+	// _constructorNotInstantiatable but that breaks when
+	// DisplayObjectContainer::initFrame calls the constructor
+	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(_getText),GETTER_METHOD,true);
 }
 
@@ -1339,8 +1338,7 @@ ASFUNCTIONBODY(StaticText,_getText)
 
 void FontStyle::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("BOLD","",Class<ASString>::getInstanceS("bold"),DECLARED_TRAIT);
 	c->setVariableByQName("BOLD_ITALIC","",Class<ASString>::getInstanceS("boldItalic"),DECLARED_TRAIT);
 	c->setVariableByQName("ITALIC","",Class<ASString>::getInstanceS("italic"),DECLARED_TRAIT);
@@ -1349,8 +1347,7 @@ void FontStyle::sinit(Class_base* c)
 
 void FontType::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("DEVICE","",Class<ASString>::getInstanceS("device"),DECLARED_TRAIT);
 	c->setVariableByQName("EMBEDDED","",Class<ASString>::getInstanceS("embedded"),DECLARED_TRAIT);
 	c->setVariableByQName("EMBEDDED_CFF","",Class<ASString>::getInstanceS("embeddedCFF"),DECLARED_TRAIT);
@@ -1358,8 +1355,7 @@ void FontType::sinit(Class_base* c)
 
 void TextDisplayMode::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("CRT","",Class<ASString>::getInstanceS("crt"),DECLARED_TRAIT);
 	c->setVariableByQName("DEFAULT","",Class<ASString>::getInstanceS("default"),DECLARED_TRAIT);
 	c->setVariableByQName("LCD","",Class<ASString>::getInstanceS("lcd"),DECLARED_TRAIT);
@@ -1367,16 +1363,14 @@ void TextDisplayMode::sinit(Class_base* c)
 
 void TextColorType::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("DARK_COLOR","",Class<ASString>::getInstanceS("dark"),DECLARED_TRAIT);
 	c->setVariableByQName("LIGHT_COLOR","",Class<ASString>::getInstanceS("light"),DECLARED_TRAIT);
 }
 
 void GridFitType::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
 	c->setVariableByQName("PIXEL","",Class<ASString>::getInstanceS("pixel"),DECLARED_TRAIT);
 	c->setVariableByQName("SUBPIXEL","",Class<ASString>::getInstanceS("subpixel"),DECLARED_TRAIT);
@@ -1384,16 +1378,14 @@ void GridFitType::sinit(Class_base* c)
 
 void TextInteractionMode::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
 	c->setVariableByQName("SELECTION","",Class<ASString>::getInstanceS("selection"),DECLARED_TRAIT);
 }
 
 void TextLineMetrics::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	REGISTER_GETTER_SETTER(c, ascent);
 	REGISTER_GETTER_SETTER(c, descent);
 	REGISTER_GETTER_SETTER(c, height);

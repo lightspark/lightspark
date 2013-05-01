@@ -30,7 +30,6 @@ class Mouse : public ASObject
 public:
 	Mouse(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
 	ASFUNCTION(hide);
 	ASFUNCTION(show);
 	ASFUNCTION(getCursor);

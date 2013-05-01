@@ -1317,8 +1317,7 @@ void ASQName::setByNode(xmlpp::Node* node)
 
 void ASQName::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localName","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
@@ -1540,8 +1539,7 @@ Namespace::Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& 
 
 void Namespace::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),SETTER_METHOD,true);

@@ -190,9 +190,7 @@ tiny_string Integer::toString(int32_t val)
 
 void Integer::sinit(Class_base* c)
 {
-	c->isFinal = true;
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("MAX_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),DYNAMIC_TRAIT);

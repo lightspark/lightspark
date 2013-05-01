@@ -74,9 +74,7 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
-	c->isFinal = true;
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(split,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substring",AS3,Class<IFunction>::getFunction(substring,2),NORMAL_METHOD,true);

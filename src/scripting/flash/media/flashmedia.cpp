@@ -32,8 +32,7 @@ using namespace std;
 
 void SoundTransform::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c,volume);
 	REGISTER_GETTER_SETTER(c,pan);
 }
@@ -56,8 +55,7 @@ ASFUNCTIONBODY(SoundTransform,_constructor)
 
 void Video::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<DisplayObject>::getRef());
+	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(Video::_getWidth),GETTER_METHOD,true);
@@ -243,8 +241,7 @@ Sound::~Sound()
 
 void Sound::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
@@ -363,8 +360,7 @@ ASFUNCTIONBODY_GETTER(Sound,length);
 
 void SoundLoaderContext::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	REGISTER_GETTER_SETTER(c,bufferTime);
 	REGISTER_GETTER_SETTER(c,checkPolicyFile);
 }
@@ -404,8 +400,7 @@ SoundChannel::~SoundChannel()
 
 void SoundChannel::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
 
 	REGISTER_GETTER(c,position);
@@ -592,8 +587,7 @@ void SoundChannel::threadAbort()
 
 void StageVideo::sinit(Class_base *c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 }
 
 ASFUNCTIONBODY(StageVideo,_constructor)
@@ -604,14 +598,14 @@ ASFUNCTIONBODY(StageVideo,_constructor)
 
 void StageVideoAvailability::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("AVAILABLE","",Class<ASString>::getInstanceS("available"),DECLARED_TRAIT);
 	c->setVariableByQName("UNAVAILABLE","",Class<ASString>::getInstanceS("unavailable"),DECLARED_TRAIT);
 }
 
 void VideoStatus::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("ACCELERATED","",Class<ASString>::getInstanceS("accelerated"),DECLARED_TRAIT);
 	c->setVariableByQName("SOFTWARE","",Class<ASString>::getInstanceS("software"),DECLARED_TRAIT);
 	c->setVariableByQName("UNAVAILABLE","",Class<ASString>::getInstanceS("unavailable"),DECLARED_TRAIT);

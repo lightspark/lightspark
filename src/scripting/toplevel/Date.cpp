@@ -39,9 +39,7 @@ Date::~Date()
 
 void Date::sinit(Class_base* c)
 {
-	c->isFinal=true;
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor,7));
+	CLASS_SETUP_CONSTRUCTOR_LENGTH(c, ASObject, _constructor, 7, CLASS_FINAL);
 	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(getTimezoneOffset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getTime",AS3,Class<IFunction>::getFunction(getTime),NORMAL_METHOD,true);

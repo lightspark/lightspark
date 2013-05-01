@@ -892,6 +892,12 @@ ASFUNCTIONBODY(ASObject,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(ASObject,_constructorNotInstantiatable)
+{
+	throwError<ArgumentError>(kCantInstantiateError, obj->getClassName());
+	return NULL;
+}
+
 void ASObject::initSlot(unsigned int n, const multiname& name)
 {
 	Variables.initSlot(n,name.name_s_id,name.ns[0]);

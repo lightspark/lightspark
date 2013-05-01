@@ -118,8 +118,7 @@ void DisplayObject::finalize()
 
 void DisplayObject::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);
 	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_setWidth),SETTER_METHOD,true);
@@ -632,14 +631,6 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 		ret->height=0;
 	}
 	return ret;
-}
-
-ASFUNCTIONBODY(DisplayObject,_constructor)
-{
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	EventDispatcher::_constructor(obj,NULL,0);
-
-	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)

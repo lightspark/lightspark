@@ -26,8 +26,7 @@ using namespace lightspark;
 
 void BitmapFilter::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED);
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
 }
 
@@ -50,8 +49,7 @@ GlowFilter::GlowFilter(Class_base* c):
 
 void GlowFilter::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<BitmapFilter>::getRef());
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, alpha);
 	REGISTER_GETTER_SETTER(c, blurX);
 	REGISTER_GETTER_SETTER(c, blurY);
@@ -108,8 +106,7 @@ DropShadowFilter::DropShadowFilter(Class_base* c):
 
 void DropShadowFilter::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<BitmapFilter>::getRef());
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, alpha);
 	REGISTER_GETTER_SETTER(c, angle);
 	REGISTER_GETTER_SETTER(c, blurX);
@@ -171,8 +168,7 @@ BitmapFilter* DropShadowFilter::cloneImpl() const
 
 void BitmapFilterQuality::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("HIGH","",abstract_i(3),DECLARED_TRAIT);
 	c->setVariableByQName("LOW","",abstract_i(1),DECLARED_TRAIT);
 	c->setVariableByQName("MEDIUM","",abstract_i(3),DECLARED_TRAIT);

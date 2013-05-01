@@ -208,7 +208,6 @@ public:
 	MorphShape(Class_base* c):DisplayObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
 };
 
 class Loader;

@@ -26,9 +26,7 @@ using namespace lightspark;
 
 void Math::sinit(Class_base* c)
 {
-	c->isFinal=true;
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	// public constants
 	c->setVariableByQName("E","",abstract_d(2.71828182845905),CONSTANT_TRAIT);
 	c->setVariableByQName("LN10","",abstract_d(2.302585092994046),CONSTANT_TRAIT);

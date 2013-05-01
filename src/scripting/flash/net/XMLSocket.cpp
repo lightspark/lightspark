@@ -172,8 +172,7 @@ XMLSocket::~XMLSocket()
 
 void XMLSocket::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(_close),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(_connect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(_send),NORMAL_METHOD,true);

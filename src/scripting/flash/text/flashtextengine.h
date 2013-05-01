@@ -34,7 +34,6 @@ class ContentElement: public ASObject
 public:
 	ContentElement(Class_base* c): ASObject(c) {};
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
 };
 
 class ElementFormat: public ASObject

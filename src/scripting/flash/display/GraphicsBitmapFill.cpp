@@ -33,9 +33,7 @@ GraphicsBitmapFill::GraphicsBitmapFill(Class_base* c):
 
 void GraphicsBitmapFill::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
-
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, bitmapData);
 	REGISTER_GETTER_SETTER(c, matrix);
 	REGISTER_GETTER_SETTER(c, repeat);

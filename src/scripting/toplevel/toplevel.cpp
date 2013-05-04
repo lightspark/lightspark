@@ -206,6 +206,14 @@ ASFUNCTIONBODY(IFunction,_toString)
 	return Class<ASString>::getInstanceS("function Function() {}");
 }
 
+ASObject* Class<IFunction>::generator(ASObject* const* args, const unsigned int argslen)
+{
+	for(unsigned int i=0;i<argslen;i++)
+		args[i]->decRef();
+	throwError<EvalError>(kFunctionConstructorError);
+	return NULL;
+}
+
 ASObject *IFunction::describeType() const
 {
 	xmlpp::DomParser p;

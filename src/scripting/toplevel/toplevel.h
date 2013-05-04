@@ -488,6 +488,7 @@ public:
 	void buildInstanceTraits(ASObject* o) const
 	{
 	}
+	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 };
 
 class Undefined : public ASObject

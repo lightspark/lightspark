@@ -554,15 +554,30 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, CONST_A
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,allowConst);
-
-	XML* newNode=dynamic_cast<XML*>(o);
-	if(newNode==NULL)
-		return ASObject::setVariableByMultiname(name,o,allowConst);
-
-	//Nodes are always added at the end. The requested index are ignored. This is a tested behaviour.
-	nodes.push_back(_MR(newNode));
+	if(Array::isValidMultiname(name,index))
+	{
+		if (index >= nodes.size())
+		{
+			appendSingleNode(o);
+		}
+		else
+		{
+			replace(index, o);
+		}
+	}
+	else if (nodes.size() == 0)
+	{
+		appendSingleNode(o);
+	}
+	else if (nodes.size() == 1)
+	{
+		nodes.pop_back();
+		appendSingleNode(o);
+	}
+	else
+	{
+		// do nothing, see ECMA-357, Section 9.2.1.2
+	}
 }
 
 void XMLList::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XML::XMLVector& ret)
@@ -620,6 +635,32 @@ bool XMLList::hasComplexContent() const
 	return false;
 }
 
+void XMLList::appendSingleNode(ASObject *x)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "XMLList::appendSingleNode should set the parent property of the added node");
+
+	if (x->is<XML>())
+	{
+		x->incRef();
+		append(_MR(x->as<XML>()));
+	}
+	else if (x->is<XMLList>())
+	{
+		XMLList *list = x->as<XMLList>();
+		if (list->nodes.size() == 1)
+		{
+			append(list->nodes[0]);
+		}
+		// do nothing, if length != 1. See ECMA-357, Section
+		// 9.2.1.2
+	}
+	else
+	{
+		tiny_string str = x->toString();
+		append(_MR(Class<XML>::getInstanceS(str)));
+	}
+}
+
 void XMLList::append(_R<XML> x)
 {
 	nodes.push_back(x);
@@ -628,6 +669,43 @@ void XMLList::append(_R<XML> x)
 void XMLList::append(_R<XMLList> x)
 {
 	nodes.insert(nodes.end(),x->nodes.begin(),x->nodes.end());
+}
+
+void XMLList::replace(unsigned int idx, ASObject *o)
+{
+	if (idx >= nodes.size())
+		return;
+
+	LOG(LOG_NOT_IMPLEMENTED, "XMLList::replace should set the parent property of the added nodes");
+
+	if (nodes[idx]->getNodeKind() == XML_ATTRIBUTE_NODE)
+	{
+		nodes[idx]->setTextContent(o->toString());
+	}
+	else if (o->is<XMLList>())
+	{
+		unsigned int k = 0;
+		vector<_R<XML>, reporter_allocator<_R<XML>>>::iterator it = nodes.begin();
+		while (k < idx && it!=nodes.end())
+		{
+			++k;
+			++it;
+		}
+
+		it = nodes.erase(it);
+
+		XMLList *toAdd = o->as<XMLList>();
+		nodes.insert(it, toAdd->nodes.begin(), toAdd->nodes.end());
+	}
+	else if (o->is<XML>())
+	{
+		o->incRef();
+		nodes[idx] = _MR(o->as<XML>());
+	}
+	else
+	{
+		nodes[idx] = _MR(Class<XML>::getInstanceS(o->toString()));
+	}
 }
 
 tiny_string XMLList::toString_priv() const

@@ -947,6 +947,19 @@ void XML::addTextContent(const tiny_string& str)
 	xmlNodeAddContentLen(node->cobj(), BAD_CAST str.raw_buf(), str.numBytes());
 }
 
+void XML::setTextContent(const tiny_string& content)
+{
+	if (getNodeKind() == XML_TEXT_NODE ||
+	    getNodeKind() == XML_ATTRIBUTE_NODE ||
+	    getNodeKind() == XML_COMMENT_NODE ||
+	    getNodeKind() == XML_PI_NODE)
+	{
+		xmlChar *encoded = xmlEncodeSpecialChars(node->cobj()->doc, BAD_CAST content.raw_buf());
+		xmlNodeSetContent(node->cobj(), encoded);
+		xmlFree(encoded);
+	}
+}
+
 void XML::removeAllChildren()
 {
 	xmlpp::Node::NodeList children=node->get_children();

@@ -102,12 +102,14 @@ public:
 class LoaderContext: public ASObject
 {
 public:
-	LoaderContext(Class_base* c):ASObject(c){};
+	LoaderContext(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<ApplicationDomain>, applicationDomain);
+	ASPROPERTY_GETTER_SETTER(bool, checkPolicyFile);
 	ASPROPERTY_GETTER_SETTER(_NR<SecurityDomain>, securityDomain);
 	void finalize();
+	bool getCheckPolicyFile();
 };
 
 class SecurityDomain: public ASObject

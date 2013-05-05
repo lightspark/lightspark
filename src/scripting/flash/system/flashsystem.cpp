@@ -329,10 +329,16 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 	return NULL;
 }
 
+LoaderContext::LoaderContext(Class_base* c):
+	ASObject(c),checkPolicyFile(false)
+{
+}
+
 void LoaderContext::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	REGISTER_GETTER_SETTER(c, applicationDomain);
+	REGISTER_GETTER_SETTER(c, checkPolicyFile);
 	REGISTER_GETTER_SETTER(c, securityDomain);
 }
 
@@ -346,18 +352,20 @@ void LoaderContext::finalize()
 ASFUNCTIONBODY(LoaderContext,_constructor)
 {
 	LoaderContext* th=Class<LoaderContext>::cast(obj);
-	bool checkPolicy;
-	_NR<ApplicationDomain> appDomain;
-	_NR<SecurityDomain> secDomain;
-	ARG_UNPACK (checkPolicy, false) (appDomain, NullRef) (secDomain, NullRef);
-	//TODO: Support checkPolicyFile
-	th->applicationDomain=appDomain;
-	th->securityDomain=secDomain;
+	ARG_UNPACK (th->checkPolicyFile, false)
+		(th->applicationDomain, NullRef)
+		(th->securityDomain, NullRef);
 	return NULL;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, applicationDomain);
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, checkPolicyFile);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, securityDomain);
+
+bool LoaderContext::getCheckPolicyFile()
+{
+	return checkPolicyFile;
+}
 
 void SecurityDomain::sinit(Class_base* c)
 {

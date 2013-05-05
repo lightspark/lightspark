@@ -444,6 +444,19 @@ ASFUNCTIONBODY(Loader,load)
 	SecurityManager::checkURLStaticAndThrow(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
 		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
 
+	if (!context.isNull() && context->getCheckPolicyFile())
+	{
+		//TODO: this should be async as it could block if invoked from ExternalInterface
+		SecurityManager::EVALUATIONRESULT evaluationResult;
+		evaluationResult = getSys()->securityManager->evaluatePoliciesURL(th->url, true);
+		if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
+		{
+			// should this dispatch SecurityErrorEvent instead of throwing?
+			throw Class<SecurityError>::getInstanceS(
+				"SecurityError: connection to domain not allowed by securityManager");
+		}
+	}
+
 	th->incRef();
 	r->incRef();
 	LoaderThread *thread=new LoaderThread(_MR(r), _MR(th));

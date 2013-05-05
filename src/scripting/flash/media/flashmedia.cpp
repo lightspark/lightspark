@@ -65,7 +65,12 @@ void Video::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(Video::_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(Video::_setHeight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c, deblocking);
+	REGISTER_GETTER_SETTER(c, smoothing);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(Video, deblocking);
+ASFUNCTIONBODY_GETTER_SETTER(Video, smoothing);
 
 void Video::buildTraits(ASObject* o)
 {
@@ -78,7 +83,8 @@ void Video::finalize()
 }
 
 Video::Video(Class_base* c, uint32_t w, uint32_t h)
-	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),initialized(false),netStream(NullRef)
+	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),
+	  initialized(false),netStream(NullRef),deblocking(0),smoothing(false)
 {
 }
 

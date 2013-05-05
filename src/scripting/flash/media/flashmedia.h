@@ -119,6 +119,8 @@ private:
 	mutable uint32_t videoWidth, videoHeight;
 	bool initialized;
 	_NR<NetStream> netStream;
+	ASPROPERTY_GETTER_SETTER(int32_t, deblocking);
+	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 public:
 	Video(Class_base* c, uint32_t w=320, uint32_t h=240);
 	void finalize();

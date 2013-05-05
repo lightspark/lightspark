@@ -23,20 +23,34 @@
 
 using namespace lightspark;
 
+AccessibilityProperties::AccessibilityProperties(Class_base* c):
+	ASObject(c), forceSimple(false), noAutoLabeling(false), silent(false)
+{
+}
+
 void AccessibilityProperties::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setSuper(Class<ASObject>::getRef());
-	REGISTER_GETTER_SETTER(c,name);
+	REGISTER_GETTER_SETTER(c, description);
+	REGISTER_GETTER_SETTER(c, forceSimple);
+	REGISTER_GETTER_SETTER(c, name);
+	REGISTER_GETTER_SETTER(c, noAutoLabeling);
+	REGISTER_GETTER_SETTER(c, shortcut);
+	REGISTER_GETTER_SETTER(c, silent);
 }
 
 ASFUNCTIONBODY(AccessibilityProperties,_constructor)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("AccessibilityProperties class is unimplemented."));
 	return NULL;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties,name);
+ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties, description);
+ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties, forceSimple);
+ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties, name);
+ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties, noAutoLabeling);
+ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties, shortcut);
+ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties, silent);
 
 void AccessibilityImplementation::sinit(Class_base* c)
 {

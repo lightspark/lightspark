@@ -28,9 +28,14 @@ namespace lightspark
 class AccessibilityProperties : public ASObject
 {
 private:
-	ASPROPERTY_GETTER_SETTER(tiny_string,name);
+	ASPROPERTY_GETTER_SETTER(tiny_string, description);
+	ASPROPERTY_GETTER_SETTER(bool, forceSimple);
+	ASPROPERTY_GETTER_SETTER(tiny_string, name);
+	ASPROPERTY_GETTER_SETTER(bool, noAutoLabeling);
+	ASPROPERTY_GETTER_SETTER(tiny_string, shortcut);
+	ASPROPERTY_GETTER_SETTER(bool, silent);
 public:
-	AccessibilityProperties(Class_base* c):ASObject(c){}
+	AccessibilityProperties(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 };

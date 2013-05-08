@@ -387,7 +387,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format)
 : EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),
-  format(_format),position(0)
+  format(_format),position(0),soundTransform(_MR(Class<SoundTransform>::getInstanceS()))
 {
 	if (!stream.isNull())
 	{
@@ -409,12 +409,29 @@ void SoundChannel::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
 
 	REGISTER_GETTER(c,position);
+	REGISTER_GETTER_SETTER(c,soundTransform);
 }
 
 ASFUNCTIONBODY_GETTER(SoundChannel,position);
+ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform);
 
 void SoundChannel::buildTraits(ASObject* o)
 {
+}
+
+void SoundChannel::finalize()
+{
+	EventDispatcher::finalize();
+	soundTransform.reset();
+}
+
+void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
+{
+	if (soundTransform.isNull())
+	{
+		soundTransform = oldValue;
+		throwError<TypeError>(kNullPointerError, "soundTransform");
+	}
 }
 
 ASFUNCTIONBODY(SoundChannel, _constructor)

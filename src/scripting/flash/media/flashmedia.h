@@ -95,6 +95,8 @@ private:
 	AudioStream* audioStream;
 	AudioFormat format;
 	ASPROPERTY_GETTER_SETTER(uint32_t,position);
+	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
+	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
 	void playRaw();
 public:
@@ -102,6 +104,7 @@ public:
 	~SoundChannel();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	void finalize();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(stop);
 

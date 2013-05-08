@@ -95,10 +95,11 @@ ASFUNCTIONBODY(ASFont,registerFont)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
 	: InteractiveObject(c), TextData(textData), type(ET_READ_ONLY), 
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  alwaysShowSelection(false), condenseWhite(false), 
-	  displayAsPassword(false), maxChars(0),
-	  mouseWheelEnabled(true), selectable(_selectable), sharpness(0),
-	  useRichTextClipboard(false)
+	  textInteractionMode(TI_NORMAL), alwaysShowSelection(false),
+	  caretIndex(0), condenseWhite(false), displayAsPassword(false),
+	  embedFonts(false), maxChars(0), mouseWheelEnabled(true),
+	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
+	  sharpness(0), thickness(0), useRichTextClipboard(false)
 {
 	if (!readOnly)
 	{
@@ -122,6 +123,9 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("getLineMetrics","",Class<IFunction>::getFunction(_getLineMetrics),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getLineOffset","",Class<IFunction>::getFunction(_getLineOffset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getLineText","",Class<IFunction>::getFunction(_getLineText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replaceSelectedText","",Class<IFunction>::getFunction(_replaceSelectedText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replaceText","",Class<IFunction>::getFunction(_replaceText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setSelection","",Class<IFunction>::getFunction(_setSelection),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(TextField::_getAntiAliasType),GETTER_METHOD,true);
@@ -151,22 +155,29 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("bottomScrollV","",Class<IFunction>::getFunction(TextField::_getBottomScrollV),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(TextField::_getRestrict),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(TextField::_setRestrict),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textInteractionMode","",Class<IFunction>::getFunction(TextField::_getTextInteractionMode),GETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c, alwaysShowSelection);
 	REGISTER_GETTER_SETTER(c, background);
 	REGISTER_GETTER_SETTER(c, backgroundColor);
 	REGISTER_GETTER_SETTER(c, border);
 	REGISTER_GETTER_SETTER(c, borderColor);
+	REGISTER_GETTER(c, caretIndex);
 	REGISTER_GETTER_SETTER(c, condenseWhite);
 	REGISTER_GETTER_SETTER(c, displayAsPassword);
+	REGISTER_GETTER_SETTER(c, embedFonts);
 	REGISTER_GETTER_SETTER(c, maxChars);
 	REGISTER_GETTER_SETTER(c, multiline);
 	REGISTER_GETTER_SETTER(c, mouseWheelEnabled);
 	REGISTER_GETTER_SETTER(c, scrollH);
 	REGISTER_GETTER_SETTER(c, scrollV);
 	REGISTER_GETTER_SETTER(c, selectable);
+	REGISTER_GETTER(c, selectionBeginIndex);
+	REGISTER_GETTER(c, selectionEndIndex);
 	REGISTER_GETTER_SETTER(c, sharpness);
+	REGISTER_GETTER_SETTER(c, styleSheet);
 	REGISTER_GETTER_SETTER(c, textColor);
+	REGISTER_GETTER_SETTER(c, thickness);
 	REGISTER_GETTER_SETTER(c, type);
 	REGISTER_GETTER_SETTER(c, useRichTextClipboard);
 }
@@ -176,17 +187,30 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, background);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, backgroundColor);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, border);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor);
+ASFUNCTIONBODY_GETTER(TextField, caretIndex);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, condenseWhite);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, displayAsPassword); // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, embedFonts); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled); // stub
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollH, validateScrollH);
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollV, validateScrollV);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable); // stub
+ASFUNCTIONBODY_GETTER(TextField, selectionBeginIndex);
+ASFUNCTIONBODY_GETTER(TextField, selectionEndIndex);
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness); // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, styleSheet); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, textColor);
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, thickness, validateThickness); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard); // stub
+
+void TextField::finalize()
+{
+	ASObject::finalize();
+	restrictChars.reset();
+	styleSheet.reset();
+}
 
 void TextField::buildTraits(ASObject* o)
 {
@@ -700,6 +724,87 @@ ASFUNCTIONBODY(TextField,_setRestrict)
 	return NULL;
 }
 
+ASFUNCTIONBODY(TextField,_getTextInteractionMode)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	if (th->textInteractionMode == TI_NORMAL)
+		return Class<ASString>::getInstanceS("normal");
+	else
+		return Class<ASString>::getInstanceS("selection");
+}
+
+ASFUNCTIONBODY(TextField,_setSelection)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	ARG_UNPACK(th->selectionBeginIndex) (th->selectionEndIndex);
+
+	if (th->selectionBeginIndex < 0)
+		th->selectionBeginIndex = 0;
+
+	if (th->selectionEndIndex >= (int32_t)th->text.numChars())
+		th->selectionEndIndex = th->text.numChars()-1;
+
+	if (th->selectionBeginIndex > th->selectionEndIndex)
+		th->selectionBeginIndex = th->selectionEndIndex;
+
+	if (th->selectionBeginIndex == th->selectionEndIndex)
+		th->caretIndex = th->selectionBeginIndex;
+
+	LOG(LOG_NOT_IMPLEMENTED, "TextField selection will not be rendered");
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_replaceSelectedText)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	tiny_string newText;
+	ARG_UNPACK(newText);
+	th->replaceText(th->selectionBeginIndex, th->selectionEndIndex, newText);
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_replaceText)
+{
+	TextField* th=Class<TextField>::cast(obj);
+	int32_t begin;
+	int32_t end;
+	tiny_string newText;
+	ARG_UNPACK(begin) (end) (newText);
+	th->replaceText(begin, end, newText);
+	return NULL;
+}
+
+void TextField::replaceText(unsigned int begin, unsigned int end, const tiny_string& newText)
+{
+	if (!styleSheet.isNull())
+		throw Class<ASError>::getInstanceS("Can not replace text on text field with a style sheet");
+
+	if (begin >= text.numChars())
+	{
+		text = text + newText;
+	}
+	else if (begin > end)
+	{
+		return;
+	}
+	else if (end >= text.numChars())
+	{
+		text = text.substr(0, begin) + newText;
+	}
+	else
+	{
+		text = text.substr(0, begin) + newText + text.substr(end, text.end());
+	}
+
+	textUpdated();
+}
+
+void TextField::validateThickness(number_t /*oldValue*/)
+{
+	thickness = dmin(dmax(thickness, -200.), 200.);
+}
+
 void TextField::validateSharpness(number_t /*oldValue*/)
 {
 	sharpness = dmin(dmax(sharpness, -400.), 400.);
@@ -851,6 +956,9 @@ void TextField::textUpdated()
 {
 	scrollH = 0;
 	scrollV = 1;
+	selectionBeginIndex = 0;
+	selectionEndIndex = 0;
+
 	if(onStage)
 		requestInvalidation(getSys());
 	else
@@ -1272,6 +1380,14 @@ void GridFitType::sinit(Class_base* c)
 	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
 	c->setVariableByQName("PIXEL","",Class<ASString>::getInstanceS("pixel"),DECLARED_TRAIT);
 	c->setVariableByQName("SUBPIXEL","",Class<ASString>::getInstanceS("subpixel"),DECLARED_TRAIT);
+}
+
+void TextInteractionMode::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->setSuper(Class<ASObject>::getRef());
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
+	c->setVariableByQName("SELECTION","",Class<ASString>::getInstanceS("selection"),DECLARED_TRAIT);
 }
 
 void TextLineMetrics::sinit(Class_base* c)

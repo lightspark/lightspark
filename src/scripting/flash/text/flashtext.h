@@ -52,6 +52,20 @@ public:
 	ASPROPERTY_GETTER(tiny_string, fontType);
 };
 
+class StyleSheet: public EventDispatcher
+{
+private:
+	std::map<tiny_string, _R<ASObject> > styles;
+public:
+	StyleSheet(Class_base* c):EventDispatcher(c){}
+	void finalize();
+	ASFUNCTION(getStyle);
+	ASFUNCTION(setStyle);
+	ASFUNCTION(_getStyleNames);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
 class TextField: public InteractiveObject, public TextData
 {
 private:
@@ -76,6 +90,7 @@ public:
 	enum EDIT_TYPE { ET_READ_ONLY, ET_EDITABLE };
 	enum ANTI_ALIAS_TYPE { AA_NORMAL, AA_ADVANCED };
 	enum GRID_FIT_TYPE { GF_NONE, GF_PIXEL, GF_SUBPIXEL };
+	enum TEXT_INTERACTION_MODE { TI_NORMAL, TI_SELECTION };
 private:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);
 	void renderImpl(RenderContext& ctxt) const;
@@ -87,6 +102,7 @@ private:
 	void updateSizes();
 	tiny_string toHtmlText();
 	tiny_string compactHTMLWhiteSpace(const tiny_string&);
+	void validateThickness(number_t oldValue);
 	void validateSharpness(number_t oldValue);
 	void validateScrollH(int32_t oldValue);
 	void validateScrollV(int32_t oldValue);
@@ -94,12 +110,15 @@ private:
 	int32_t getMaxScrollV();
 	void textUpdated();
 	void setSizeAndPositionFromAutoSize();
+	void replaceText(unsigned int begin, unsigned int end, const tiny_string& newText);
 	EDIT_TYPE type;
 	ANTI_ALIAS_TYPE antiAliasType;
 	GRID_FIT_TYPE gridFitType;
+	TEXT_INTERACTION_MODE textInteractionMode;
         _NR<ASString> restrictChars;
 public:
 	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true);
+	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void setHtmlText(const tiny_string& html);
@@ -139,21 +158,31 @@ public:
 	ASFUNCTION(_getBottomScrollV);
 	ASFUNCTION(_getRestrict);
 	ASFUNCTION(_setRestrict);
+	ASFUNCTION(_getTextInteractionMode);
+	ASFUNCTION(_setSelection);
+	ASFUNCTION(_replaceText);
+	ASFUNCTION(_replaceSelectedText);
 	ASPROPERTY_GETTER_SETTER(bool, alwaysShowSelection);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
 	ASFUNCTION_GETTER_SETTER(borderColor);
+	ASPROPERTY_GETTER(int32_t, caretIndex);
 	ASPROPERTY_GETTER_SETTER(bool, condenseWhite);
 	ASPROPERTY_GETTER_SETTER(bool, displayAsPassword);
+	ASPROPERTY_GETTER_SETTER(bool, embedFonts);
 	ASPROPERTY_GETTER_SETTER(int32_t, maxChars);
 	ASFUNCTION_GETTER_SETTER(multiline);
 	ASPROPERTY_GETTER_SETTER(bool, mouseWheelEnabled);
 	ASFUNCTION_GETTER_SETTER(scrollH);
 	ASFUNCTION_GETTER_SETTER(scrollV);
 	ASPROPERTY_GETTER_SETTER(bool, selectable);
+	ASPROPERTY_GETTER(int32_t, selectionBeginIndex);
+	ASPROPERTY_GETTER(int32_t, selectionEndIndex);
 	ASPROPERTY_GETTER_SETTER(number_t, sharpness);
+	ASPROPERTY_GETTER_SETTER(_NR<StyleSheet>, styleSheet);
 	ASFUNCTION_GETTER_SETTER(textColor);
+	ASPROPERTY_GETTER_SETTER(number_t, thickness);
 	ASFUNCTION_GETTER_SETTER(type);
 	ASPROPERTY_GETTER_SETTER(bool, useRichTextClipboard);
 };
@@ -209,20 +238,6 @@ public:
 	static void sinit(Class_base* c);
 };
 
-class StyleSheet: public EventDispatcher
-{
-private:
-	std::map<tiny_string, _R<ASObject> > styles;
-public:
-	StyleSheet(Class_base* c):EventDispatcher(c){}
-	void finalize();
-	ASFUNCTION(getStyle);
-	ASFUNCTION(setStyle);
-	ASFUNCTION(_getStyleNames);
-	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
-};
-
 class StaticText: public DisplayObject, public TokenContainer
 {
 private:
@@ -276,6 +291,13 @@ class GridFitType: public ASObject
 {
 public:
 	GridFitType(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
+class TextInteractionMode: public ASObject
+{
+public:
+	TextInteractionMode(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 

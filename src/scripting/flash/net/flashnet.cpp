@@ -578,7 +578,9 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
 };
 
-NetConnection::NetConnection(Class_base* c):EventDispatcher(c),_connected(false),downloader(NULL),messageCount(0)
+NetConnection::NetConnection(Class_base* c):
+	EventDispatcher(c),_connected(false),downloader(NULL),messageCount(0),
+	proxyType(PT_NONE)
 {
 }
 
@@ -595,6 +597,8 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("protocol","",Class<IFunction>::getFunction(_getProtocol),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(_getProxyType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(_setProxyType),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,client);
 }
@@ -806,6 +810,14 @@ ASFUNCTIONBODY(NetConnection,_getConnected)
 	return abstract_b(th->_connected);
 }
 
+ASFUNCTIONBODY(NetConnection,_getConnectedProxyType)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	if (!th->_connected)
+		throw Class<ArgumentError>::getInstanceS("NetConnection object must be connected.", 2126);
+	return Class<ASString>::getInstanceS("none");
+}
+
 ASFUNCTIONBODY(NetConnection,_getDefaultObjectEncoding)
 {
 	return abstract_i(getSys()->staticNetConnectionDefaultObjectEncoding);
@@ -853,6 +865,59 @@ ASFUNCTIONBODY(NetConnection,_getProtocol)
 		return Class<ASString>::getInstanceS(th->protocol);
 	else
 		throw Class<ArgumentError>::getInstanceS("get NetConnection.protocol before connect");
+}
+
+ASFUNCTIONBODY(NetConnection,_getProxyType)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	tiny_string name;
+	switch(th->proxyType)
+	{
+		case PT_NONE:
+			name = "NONE";
+			break;
+		case PT_HTTP:
+			name = "HTTP";
+			break;
+		case PT_CONNECT_ONLY:
+			name = "CONNECTOnly";
+			break;
+		case PT_CONNECT:
+			name = "CONNECT";
+			break;
+		case PT_BEST:
+			name = "best";
+			break;
+		default:
+			assert(false && "Invalid proxy type");
+			name = "";
+			break;
+	}
+	return Class<ASString>::getInstanceS(name);
+}
+
+ASFUNCTIONBODY(NetConnection,_setProxyType)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	tiny_string value;
+	ARG_UNPACK(value);
+	if (value == "NONE")
+		th->proxyType = PT_NONE;
+	else if (value == "HTTP")
+		th->proxyType = PT_HTTP;
+	else if (value == "CONNECTOnly")
+		th->proxyType = PT_CONNECT_ONLY;
+	else if (value == "CONNECT")
+		th->proxyType = PT_CONNECT;
+	else if (value == "best")
+		th->proxyType = PT_BEST;
+	else
+		throwError<ArgumentError>(kInvalidEnumError, "proxyType");
+
+	if (th->proxyType != PT_NONE)
+		LOG(LOG_NOT_IMPLEMENTED, "Unimplemented proxy type " << value);
+
+	return NULL;
 }
 
 ASFUNCTIONBODY(NetConnection,_getURI)

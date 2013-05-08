@@ -134,6 +134,7 @@ REGISTER_CLASS_NAME(ExternalInterface,"flash.external")
 
 //Filters
 REGISTER_CLASS_NAME(BitmapFilter,"flash.filters")
+REGISTER_CLASS_NAME(BitmapFilterQuality,"flash.filters")
 REGISTER_CLASS_NAME(DropShadowFilter,"flash.filters")
 REGISTER_CLASS_NAME(GlowFilter,"flash.filters")
 

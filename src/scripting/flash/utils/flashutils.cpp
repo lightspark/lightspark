@@ -397,7 +397,7 @@ ASFUNCTIONBODY(ByteArray,readBoolean)
 	uint8_t ret;
 	if(!th->readByte(ret))
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	return abstract_b(ret!=0);
@@ -420,7 +420,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	//Error checks
 	if(th->position+length > th->len)
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 	if((uint64_t)length+offset > 0xFFFFFFFF)
 	{
@@ -455,7 +455,7 @@ ASFUNCTIONBODY(ByteArray,readUTF)
 	tiny_string res;
 	if (!th->readUTF(res))
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	return Class<ASString>::getInstanceS(res);
@@ -469,7 +469,7 @@ ASFUNCTIONBODY(ByteArray,readUTFBytes)
 	ARG_UNPACK (length);
 	if(th->position+length > th->len)
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	uint8_t *bufStart=th->bytes+th->position;
@@ -748,7 +748,7 @@ ASFUNCTIONBODY(ByteArray, readByte)
 	uint8_t ret;
 	if(!th->readByte(ret))
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 	return abstract_i((int8_t)ret);
 }
@@ -760,7 +760,7 @@ ASFUNCTIONBODY(ByteArray,readDouble)
 
 	if(th->len < th->position+8)
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	uint64_t ret;
@@ -779,7 +779,7 @@ ASFUNCTIONBODY(ByteArray,readFloat)
 
 	if(th->len < th->position+4)
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	uint32_t ret;
@@ -798,7 +798,7 @@ ASFUNCTIONBODY(ByteArray,readInt)
 
 	if(th->len < th->position+4)
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	uint32_t ret;
@@ -828,7 +828,7 @@ ASFUNCTIONBODY(ByteArray,readShort)
 	uint16_t ret;
 	if(!th->readShort(ret))
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	return abstract_i((int16_t)ret);
@@ -842,7 +842,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedByte)
 	uint8_t ret;
 	if (!th->readByte(ret))
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 	return abstract_ui(ret);
 }
@@ -866,7 +866,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedInt)
 
 	uint32_t ret;
 	if(!th->readUnsignedInt(ret))
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 
 	return abstract_ui(ret);
 }
@@ -879,7 +879,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedShort)
 	uint16_t ret;
 	if(!th->readShort(ret))
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	return abstract_ui(ret);
@@ -894,7 +894,7 @@ ASFUNCTIONBODY(ByteArray,readMultiByte)
 
 	if(th->len < th->position+strlen)
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 
 	// TODO: should convert from charset to UTF-8
@@ -908,7 +908,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	assert_and_throw(argslen==0);
 	if(th->bytes==NULL)
 	{
-		throwError<ArgumentError>(kEOFError);
+		throwError<EOFError>(kEOFError);
 	}
 	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
 	Amf3Deserializer d(th);

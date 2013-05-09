@@ -537,7 +537,20 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		}
 	}
 
-	//Do not lookup in the prototype chain. This is tested behaviour
+	//Do not set variables in prototype chain. Still have to do
+	//lookup to throw a correct error in case a named function
+	//exists in prototype chain. See Tamarin test
+	//ecma3/Boolean/ecma4_sealedtype_1_rt
+	if(!obj && cls && cls->isSealed)
+	{
+		variable *protoObj = cls->findSettableInPrototype(name);
+		if (protoObj && 
+		    ((protoObj->var && protoObj->var->is<Function>()) ||
+		     protoObj->setter))
+		{
+			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
+		}
+	}
 
 	if(!obj)
 	{

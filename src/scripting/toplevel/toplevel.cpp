@@ -1296,6 +1296,21 @@ variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_gett
 	return ASObject::findSettableImpl(borrowedVariables,name,has_getter);
 }
 
+variable* Class_base::findSettableInPrototype(const multiname& name)
+{
+	Prototype* proto = prototype.getPtr();
+	while(proto)
+	{
+		variable *obj = proto->getObj()->findSettable(name);
+		if (obj)
+			return obj;
+
+		proto = proto->prevPrototype.getPtr();
+	}
+
+	return NULL;
+}
+
 EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) const
 {
 	if(findBorrowedGettable(name)!=NULL)

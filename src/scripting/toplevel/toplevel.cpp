@@ -210,8 +210,9 @@ ASObject* Class<IFunction>::generator(ASObject* const* args, const unsigned int 
 {
 	for(unsigned int i=0;i<argslen;i++)
 		args[i]->decRef();
-	throwError<EvalError>(kFunctionConstructorError);
-	return NULL;
+	if (argslen > 0)
+		throwError<EvalError>(kFunctionConstructorError);
+	return getNopFunction();
 }
 
 ASObject *IFunction::describeType() const

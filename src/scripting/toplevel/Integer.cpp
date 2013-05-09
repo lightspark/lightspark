@@ -26,6 +26,9 @@ using namespace lightspark;
 
 ASFUNCTIONBODY(Integer,_toString)
 {
+	if(Class<Integer>::getClass()->prototype->getObj() == obj)
+		return Class<ASString>::getInstanceS("0");
+
 	Integer* th=static_cast<Integer*>(obj);
 	int radix=10;
 	if(argslen==1)

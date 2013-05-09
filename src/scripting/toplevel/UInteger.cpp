@@ -124,6 +124,9 @@ void UInteger::sinit(Class_base* c)
 
 ASFUNCTIONBODY(UInteger,_toString)
 {
+	if(Class<UInteger>::getClass()->prototype->getObj() == obj)
+		return Class<ASString>::getInstanceS("0");
+
 	UInteger* th=static_cast<UInteger*>(obj);
 	uint32_t radix;
 	ARG_UNPACK (radix,10);

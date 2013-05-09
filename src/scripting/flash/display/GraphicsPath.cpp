@@ -32,9 +32,7 @@ GraphicsPath::GraphicsPath(Class_base* c):
 
 void GraphicsPath::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
-
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, commands);
 	REGISTER_GETTER_SETTER(c, data);
 	REGISTER_GETTER_SETTER(c, winding);

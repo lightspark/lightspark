@@ -42,8 +42,7 @@ URLRequest::URLRequest(Class_base* c):ASObject(c),method(GET),contentType("appli
 
 void URLRequest::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_setURL),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_getURL),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(_setMethod),SETTER_METHOD,true);
@@ -289,7 +288,7 @@ ASFUNCTIONBODY_GETTER_SETTER(URLRequest,requestHeaders);
 
 void URLRequestMethod::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("GET","",Class<ASString>::getInstanceS("GET"),DECLARED_TRAIT);
 	c->setVariableByQName("POST","",Class<ASString>::getInstanceS("POST"),DECLARED_TRAIT);
 }
@@ -386,8 +385,7 @@ void URLLoader::finalize()
 
 void URLLoader::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_setData),SETTER_METHOD,true);
@@ -544,7 +542,7 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 
 void URLLoaderDataFormat::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables"),DECLARED_TRAIT);
 	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text"),DECLARED_TRAIT);
 	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"),DECLARED_TRAIT);
@@ -557,7 +555,9 @@ SharedObject::SharedObject(Class_base* c):EventDispatcher(c)
 
 void SharedObject::sinit(Class_base* c)
 {
-	c->setSuper(Class<EventDispatcher>::getRef());
+	// TODO: Use _constructorNotInstantiatable after getLocal is
+	// implemented
+	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
 	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(getLocal),NORMAL_METHOD,false);
 	REGISTER_GETTER(c,data);
 };
@@ -572,20 +572,21 @@ ASFUNCTIONBODY(SharedObject,getLocal)
 
 void ObjectEncoding::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("AMF0","",abstract_i(AMF0),DECLARED_TRAIT);
 	c->setVariableByQName("AMF3","",abstract_i(AMF3),DECLARED_TRAIT);
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
 };
 
-NetConnection::NetConnection(Class_base* c):EventDispatcher(c),_connected(false),downloader(NULL),messageCount(0)
+NetConnection::NetConnection(Class_base* c):
+	EventDispatcher(c),_connected(false),downloader(NULL),messageCount(0),
+	proxyType(PT_NONE)
 {
 }
 
 void NetConnection::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(call),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(_getConnected),GETTER_METHOD,true);
@@ -595,6 +596,8 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("protocol","",Class<IFunction>::getFunction(_getProtocol),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(_getProxyType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(_setProxyType),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,client);
 }
@@ -806,6 +809,14 @@ ASFUNCTIONBODY(NetConnection,_getConnected)
 	return abstract_b(th->_connected);
 }
 
+ASFUNCTIONBODY(NetConnection,_getConnectedProxyType)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	if (!th->_connected)
+		throw Class<ArgumentError>::getInstanceS("NetConnection object must be connected.", 2126);
+	return Class<ASString>::getInstanceS("none");
+}
+
 ASFUNCTIONBODY(NetConnection,_getDefaultObjectEncoding)
 {
 	return abstract_i(getSys()->staticNetConnectionDefaultObjectEncoding);
@@ -855,6 +866,59 @@ ASFUNCTIONBODY(NetConnection,_getProtocol)
 		throw Class<ArgumentError>::getInstanceS("get NetConnection.protocol before connect");
 }
 
+ASFUNCTIONBODY(NetConnection,_getProxyType)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	tiny_string name;
+	switch(th->proxyType)
+	{
+		case PT_NONE:
+			name = "NONE";
+			break;
+		case PT_HTTP:
+			name = "HTTP";
+			break;
+		case PT_CONNECT_ONLY:
+			name = "CONNECTOnly";
+			break;
+		case PT_CONNECT:
+			name = "CONNECT";
+			break;
+		case PT_BEST:
+			name = "best";
+			break;
+		default:
+			assert(false && "Invalid proxy type");
+			name = "";
+			break;
+	}
+	return Class<ASString>::getInstanceS(name);
+}
+
+ASFUNCTIONBODY(NetConnection,_setProxyType)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	tiny_string value;
+	ARG_UNPACK(value);
+	if (value == "NONE")
+		th->proxyType = PT_NONE;
+	else if (value == "HTTP")
+		th->proxyType = PT_HTTP;
+	else if (value == "CONNECTOnly")
+		th->proxyType = PT_CONNECT_ONLY;
+	else if (value == "CONNECT")
+		th->proxyType = PT_CONNECT;
+	else if (value == "best")
+		th->proxyType = PT_BEST;
+	else
+		throwError<ArgumentError>(kInvalidEnumError, "proxyType");
+
+	if (th->proxyType != PT_NONE)
+		LOG(LOG_NOT_IMPLEMENTED, "Unimplemented proxy type " << value);
+
+	return NULL;
+}
+
 ASFUNCTIONBODY(NetConnection,_getURI)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);
@@ -896,8 +960,7 @@ NetStream::~NetStream()
 
 void NetStream::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"),DECLARED_TRAIT);
 	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
@@ -1614,8 +1677,7 @@ void URLVariables::decode(const tiny_string& s)
 
 void URLVariables::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->setDeclaredMethodByQName("decode","",Class<IFunction>::getFunction(decode),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
@@ -1791,8 +1853,7 @@ ASFUNCTIONBODY(lightspark,navigateToURL)
 
 void Responder::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("onResult","",Class<IFunction>::getFunction(onResult),NORMAL_METHOD,true);
 }
 

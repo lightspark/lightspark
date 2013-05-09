@@ -26,7 +26,7 @@ using namespace lightspark;
 
 void ExternalInterface::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("available","",Class<IFunction>::getFunction(_getAvailable),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(_getMarshallExceptions),GETTER_METHOD,false);

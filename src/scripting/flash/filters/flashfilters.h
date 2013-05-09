@@ -40,21 +40,49 @@ public:
 class GlowFilter: public BitmapFilter
 {
 private:
-	virtual GlowFilter* cloneImpl() const;
+	ASPROPERTY_GETTER_SETTER(number_t, alpha);
+	ASPROPERTY_GETTER_SETTER(number_t, blurX);
+	ASPROPERTY_GETTER_SETTER(number_t, blurY);
+	ASPROPERTY_GETTER_SETTER(uint32_t, color);
+	ASPROPERTY_GETTER_SETTER(bool, inner);
+	ASPROPERTY_GETTER_SETTER(bool, knockout);
+	ASPROPERTY_GETTER_SETTER(int32_t, quality);
+	ASPROPERTY_GETTER_SETTER(number_t, strength);
+	virtual BitmapFilter* cloneImpl() const;
 public:
-	GlowFilter(Class_base* c):BitmapFilter(c){}
+	GlowFilter(Class_base* c);
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
 };
 
 class DropShadowFilter: public BitmapFilter
 {
 private:
-	virtual DropShadowFilter* cloneImpl() const;
+	ASPROPERTY_GETTER_SETTER(number_t, alpha);
+	ASPROPERTY_GETTER_SETTER(number_t, angle);
+	ASPROPERTY_GETTER_SETTER(number_t, blurX);
+	ASPROPERTY_GETTER_SETTER(number_t, blurY);
+	ASPROPERTY_GETTER_SETTER(uint32_t, color);
+	ASPROPERTY_GETTER_SETTER(number_t, distance);
+	ASPROPERTY_GETTER_SETTER(bool, hideObject);
+	ASPROPERTY_GETTER_SETTER(bool, inner);
+	ASPROPERTY_GETTER_SETTER(bool, knockout);
+	ASPROPERTY_GETTER_SETTER(int32_t, quality);
+	ASPROPERTY_GETTER_SETTER(number_t, strength);
+	virtual BitmapFilter* cloneImpl() const;
 public:
-	DropShadowFilter(Class_base* c):BitmapFilter(c){}
+	DropShadowFilter(Class_base* c);
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+};
+
+class BitmapFilterQuality: public ASObject
+{
+public:
+	BitmapFilterQuality(Class_base* c):ASObject(c) {}
+	static void sinit(Class_base* c);
 };
 
 };

@@ -30,7 +30,7 @@
 
 namespace lightspark
 {
-class Accelerometer: public ASObject {
+class Accelerometer: public EventDispatcher {
 	public:
 		Accelerometer(Class_base* c);
 		static void sinit(Class_base* c);

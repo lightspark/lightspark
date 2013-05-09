@@ -222,6 +222,7 @@ public:
 	}
 	const variable* findBorrowedGettable(const multiname& name) const DLL_LOCAL;
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
+	variable* findSettableInPrototype(const multiname& name) DLL_LOCAL;
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { /*TODO: implement*/ return NULL; }
 };

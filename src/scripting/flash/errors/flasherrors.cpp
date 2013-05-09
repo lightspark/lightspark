@@ -32,8 +32,7 @@ ASFUNCTIONBODY(IOError,_constructor)
 
 void IOError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void IOError::buildTraits(ASObject* o)
@@ -49,8 +48,7 @@ ASFUNCTIONBODY(EOFError,_constructor)
 
 void EOFError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<IOError>::getRef());
+	CLASS_SETUP(c, IOError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void EOFError::buildTraits(ASObject* o)
@@ -66,8 +64,7 @@ ASFUNCTIONBODY(IllegalOperationError,_constructor)
 
 void IllegalOperationError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void IllegalOperationError::buildTraits(ASObject* o)
@@ -85,8 +82,7 @@ ASFUNCTIONBODY(InvalidSWFError,_constructor)
 
 void InvalidSWFError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void InvalidSWFError::buildTraits(ASObject* o)
@@ -102,8 +98,7 @@ ASFUNCTIONBODY(MemoryError,_constructor)
 
 void MemoryError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void MemoryError::buildTraits(ASObject* o)
@@ -119,8 +114,7 @@ ASFUNCTIONBODY(ScriptTimeoutError,_constructor)
 
 void ScriptTimeoutError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void ScriptTimeoutError::buildTraits(ASObject* o)
@@ -136,8 +130,7 @@ ASFUNCTIONBODY(StackOverflowError,_constructor)
 
 void StackOverflowError::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASError>::getRef());
+	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void StackOverflowError::buildTraits(ASObject* o)

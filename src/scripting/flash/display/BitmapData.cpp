@@ -55,8 +55,7 @@ BitmapData::BitmapData(Class_base* c, uint32_t width, uint32_t height)
 
 void BitmapData::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
 	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(draw),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(dispose),NORMAL_METHOD,true);

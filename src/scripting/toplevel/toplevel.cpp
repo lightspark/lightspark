@@ -210,8 +210,9 @@ ASObject* Class<IFunction>::generator(ASObject* const* args, const unsigned int 
 {
 	for(unsigned int i=0;i<argslen;i++)
 		args[i]->decRef();
-	throwError<EvalError>(kFunctionConstructorError);
-	return NULL;
+	if (argslen > 0)
+		throwError<EvalError>(kFunctionConstructorError);
+	return getNopFunction();
 }
 
 ASObject *IFunction::describeType() const
@@ -1296,6 +1297,21 @@ variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_gett
 	return ASObject::findSettableImpl(borrowedVariables,name,has_getter);
 }
 
+variable* Class_base::findSettableInPrototype(const multiname& name)
+{
+	Prototype* proto = prototype.getPtr();
+	while(proto)
+	{
+		variable *obj = proto->getObj()->findSettable(name);
+		if (obj)
+			return obj;
+
+		proto = proto->prevPrototype.getPtr();
+	}
+
+	return NULL;
+}
+
 EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) const
 {
 	if(findBorrowedGettable(name)!=NULL)
@@ -1317,8 +1333,7 @@ void ASQName::setByNode(xmlpp::Node* node)
 
 void ASQName::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("localName","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
@@ -1540,8 +1555,7 @@ Namespace::Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& 
 
 void Namespace::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),SETTER_METHOD,true);

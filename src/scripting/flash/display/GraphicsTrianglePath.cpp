@@ -32,9 +32,7 @@ GraphicsTrianglePath::GraphicsTrianglePath(Class_base* c):
 
 void GraphicsTrianglePath::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
-
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, culling);
 	REGISTER_GETTER_SETTER(c, indices);
 	REGISTER_GETTER_SETTER(c, uvtData);

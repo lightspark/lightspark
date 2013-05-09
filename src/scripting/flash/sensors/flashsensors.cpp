@@ -29,10 +29,11 @@
 using namespace std;
 using namespace lightspark;
 
-Accelerometer::Accelerometer(Class_base* c):ASObject(c) {}
+Accelerometer::Accelerometer(Class_base* c):EventDispatcher(c) {}
 
 void Accelerometer::sinit(Class_base* c)
 {
+	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
 	// properties
 	c->setDeclaredMethodByQName("isSupported", "", Class<IFunction>::getFunction(_isSupported),GETTER_METHOD,false);
 }

@@ -122,6 +122,25 @@
 		REGISTER_GETTER(c,name); \
 		REGISTER_SETTER(c,name)
 
+#define CLASS_DYNAMIC_NOT_FINAL 0
+#define CLASS_FINAL 1
+#define CLASS_SEALED 2
+
+// TODO: Every class should have a constructor
+#define CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes) \
+	c->setSuper(Class<superClass>::getRef()); \
+	c->setConstructor(NULL); \
+	c->isFinal = ((attributes) & CLASS_FINAL) != 0;	\
+	c->isSealed = ((attributes) & CLASS_SEALED) != 0
+
+#define CLASS_SETUP(c, superClass, constructor, attributes) \
+	CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+	c->setConstructor(Class<IFunction>::getFunction(constructor));
+
+#define CLASS_SETUP_CONSTRUCTOR_LENGTH(c, superClass, constructor, ctorlength, attributes) \
+	CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+	c->setConstructor(Class<IFunction>::getFunction((constructor), (ctorlength)));
+
 namespace lightspark
 {
 
@@ -274,6 +293,9 @@ public:
 	bool implEnable:1;
 	Class_base* getClass() const { return classdef; }
 	ASFUNCTION(_constructor);
+	// constructor for subclasses that can't be instantiated.
+	// Throws ArgumentError.
+	ASFUNCTION(_constructorNotInstantiatable);
 	ASFUNCTION(_toString);
 	ASFUNCTION(hasOwnProperty);
 	ASFUNCTION(valueOf);

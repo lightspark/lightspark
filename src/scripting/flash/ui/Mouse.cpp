@@ -29,20 +29,13 @@ using namespace lightspark;
 
 void Mouse::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("hide","",Class<IFunction>::getFunction(hide),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("show","",Class<IFunction>::getFunction(show),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(getCursor),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(setCursor),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("supportsCursor","",Class<IFunction>::getFunction(getSupportsCursor),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("supportsNativeCursor","",Class<IFunction>::getFunction(getSupportsNativeCursor),GETTER_METHOD,false);
-}
-
-ASFUNCTIONBODY(Mouse, _constructor)
-{
-	throwError<ArgumentError>(kCantInstantiateError, "Mouse");
-	return NULL;
 }
 
 ASFUNCTIONBODY(Mouse, hide)

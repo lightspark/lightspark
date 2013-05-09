@@ -39,7 +39,7 @@ const char* Endian::bigEndian = "bigEndian";
 
 void Endian::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("LITTLE_ENDIAN","",Class<ASString>::getInstanceS(littleEndian),DECLARED_TRAIT);
 	c->setVariableByQName("BIG_ENDIAN","",Class<ASString>::getInstanceS(bigEndian),DECLARED_TRAIT);
 }
@@ -110,9 +110,7 @@ ByteArray::~ByteArray()
 
 void ByteArray::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
-
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_setLength),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),GETTER_METHOD,true);
@@ -1308,8 +1306,7 @@ ASFUNCTIONBODY(ByteArray,unshift)
 
 void Timer::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<EventDispatcher>::getRef());
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(_getCurrentCount),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_getRepeatCount),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_setRepeatCount),SETTER_METHOD,true);
@@ -1531,8 +1528,7 @@ void Dictionary::finalize()
 
 void Dictionary::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void Dictionary::buildTraits(ASObject* o)
@@ -1740,8 +1736,7 @@ tiny_string Dictionary::toString()
 
 void Proxy::sinit(Class_base* c)
 {
-	//c->constructor=Class<IFunction>::getFunction(_constructor);
-	c->setConstructor(NULL);
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 }
 
 void Proxy::buildTraits(ASObject* o)

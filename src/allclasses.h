@@ -134,6 +134,7 @@ REGISTER_CLASS_NAME(ExternalInterface,"flash.external")
 
 //Filters
 REGISTER_CLASS_NAME(BitmapFilter,"flash.filters")
+REGISTER_CLASS_NAME(BitmapFilterQuality,"flash.filters")
 REGISTER_CLASS_NAME(DropShadowFilter,"flash.filters")
 REGISTER_CLASS_NAME(GlowFilter,"flash.filters")
 
@@ -203,6 +204,7 @@ REGISTER_CLASS_NAME(TextFieldAutoSize,"flash.text")
 REGISTER_CLASS_NAME(TextFieldType,"flash.text")
 REGISTER_CLASS_NAME(TextFormat,"flash.text")
 REGISTER_CLASS_NAME(TextFormatAlign,"flash.text")
+REGISTER_CLASS_NAME(TextInteractionMode,"flash.text")
 REGISTER_CLASS_NAME(TextLineMetrics,"flash.text")
 REGISTER_CLASS_NAME(StaticText,"flash.text")
 REGISTER_CLASS_NAME(StyleSheet,"flash.text")

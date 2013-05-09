@@ -43,6 +43,7 @@ const char* Capabilities::MANUFACTURER = "Adobe Linux";
 
 void Capabilities::sinit(Class_base* c)
 {
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(_getLanguage),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("playerType","",Class<IFunction>::getFunction(_getPlayerType),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("version","",Class<IFunction>::getFunction(_getVersion),GETTER_METHOD,false);
@@ -127,7 +128,7 @@ ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):AS
 
 void ApplicationDomain::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	//Static
 	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(_getMinDomainMemoryLength),GETTER_METHOD,false);
@@ -336,7 +337,7 @@ LoaderContext::LoaderContext(Class_base* c):
 
 void LoaderContext::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	REGISTER_GETTER_SETTER(c, applicationDomain);
 	REGISTER_GETTER_SETTER(c, checkPolicyFile);
 	REGISTER_GETTER_SETTER(c, securityDomain);
@@ -369,7 +370,7 @@ bool LoaderContext::getCheckPolicyFile()
 
 void SecurityDomain::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	//Static
 	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),GETTER_METHOD,false);
 }
@@ -392,8 +393,8 @@ ASFUNCTIONBODY(SecurityDomain,_getCurrentDomain)
 
 void Security::sinit(Class_base* c)
 {
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	//Fully static class
-	c->setConstructor(NULL);
 	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(_getExactSettings),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType),GETTER_METHOD,false);
@@ -484,6 +485,7 @@ ASFUNCTIONBODY(lightspark, fscommand)
 
 void System::sinit(Class_base* c)
 {
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(totalMemory),GETTER_METHOD,false);
 }
 

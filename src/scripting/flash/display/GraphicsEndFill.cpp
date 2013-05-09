@@ -29,9 +29,7 @@ GraphicsEndFill::GraphicsEndFill(Class_base* c):
 
 void GraphicsEndFill::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
-
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->addImplementedInterface(InterfaceClass<IGraphicsFill>::getClass());
 	IGraphicsFill::linkTraits(c);
 	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass());

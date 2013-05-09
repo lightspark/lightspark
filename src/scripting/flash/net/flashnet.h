@@ -165,6 +165,7 @@ class NetConnection: public EventDispatcher, public IThreadJob
 {
 friend class NetStream;
 private:
+	enum PROXY_TYPE { PT_NONE, PT_HTTP, PT_CONNECT_ONLY, PT_CONNECT, PT_BEST };
 	//Indicates whether the application is connected to a server through a persistent RMTP connection/HTTP server with Flash Remoting
 	bool _connected;
 	tiny_string protocol;
@@ -178,6 +179,7 @@ private:
 	uint32_t messageCount;
 	//The connection is to a flash media server
 	ObjectEncoding::ENCODING objectEncoding;
+	PROXY_TYPE proxyType;
 	//IThreadJob interface
 	void execute();
 	void threadAbort();
@@ -191,11 +193,14 @@ public:
 	ASFUNCTION(connect);
 	ASFUNCTION(call);
 	ASFUNCTION(_getConnected);
+	ASFUNCTION(_getConnectedProxyType);
 	ASFUNCTION(_getDefaultObjectEncoding);
 	ASFUNCTION(_setDefaultObjectEncoding);
 	ASFUNCTION(_getObjectEncoding);
 	ASFUNCTION(_setObjectEncoding);
 	ASFUNCTION(_getProtocol);
+	ASFUNCTION(_getProxyType);
+	ASFUNCTION(_setProxyType);
 	ASFUNCTION(_getURI);
 	ASPROPERTY_GETTER_SETTER(NullableRef<ASObject>,client);
 };

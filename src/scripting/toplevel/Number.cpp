@@ -258,9 +258,7 @@ tiny_string Number::toStringRadix(number_t val, int radix)
 
 void Number::sinit(Class_base* c)
 {
-	c->isFinal = true;
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	//Must create and link the number the hard way
 	Number* ninf=new (c->memoryAccount) Number(c, -numeric_limits<double>::infinity());
 	Number* pinf=new (c->memoryAccount) Number(c, numeric_limits<double>::infinity());

@@ -37,10 +37,7 @@ Array::Array(Class_base* c):ASObject(c),
 
 void Array::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	// public constants
-	c->setSuper(Class<ASObject>::getRef());
-
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE),CONSTANT_TRAIT);
 	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING),CONSTANT_TRAIT);
 	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC),CONSTANT_TRAIT);

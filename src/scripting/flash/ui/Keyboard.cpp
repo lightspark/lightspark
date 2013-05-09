@@ -27,8 +27,7 @@ using namespace lightspark;
 
 void Keyboard::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("capsLock","",Class<IFunction>::getFunction(capsLock),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("hasVirtualKeyboard","",Class<IFunction>::getFunction(hasVirtualKeyboard),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("numLock","",Class<IFunction>::getFunction(numLock),GETTER_METHOD,true);
@@ -76,8 +75,7 @@ ASFUNCTIONBODY(Keyboard, isAccessible)
 
 void KeyboardType::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("ALPHANUMERIC","",Class<ASString>::getInstanceS("alphanumeric"),DECLARED_TRAIT);
 	c->setVariableByQName("KEYPAD","",Class<ASString>::getInstanceS("keypad"),DECLARED_TRAIT);
 	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
@@ -85,8 +83,7 @@ void KeyboardType::sinit(Class_base* c)
 
 void KeyLocation::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("LEFT","",Class<UInteger>::getInstanceS(1),DECLARED_TRAIT);
 	c->setVariableByQName("NUM_PAD","",Class<UInteger>::getInstanceS(3),DECLARED_TRAIT);
 	c->setVariableByQName("RIGHT","",Class<UInteger>::getInstanceS(2),DECLARED_TRAIT);

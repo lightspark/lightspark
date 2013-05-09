@@ -115,9 +115,7 @@ ASFUNCTIONBODY(UInteger,_valueOf)
 
 void UInteger::sinit(Class_base* c)
 {
-	c->isFinal = true;
-	c->setSuper(Class<ASObject>::getRef());
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);

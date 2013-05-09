@@ -29,20 +29,12 @@ using namespace lightspark;
 
 void ContentElement::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
-}
-
-ASFUNCTIONBODY(ContentElement, _constructor)
-{
-	throwError<ArgumentError>(kCantInstantiateError, "ContentElement");
-	return NULL;
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED);
 }
 
 void ElementFormat::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("GRAPHIC_ELEMENT","",abstract_ui(0xFDEF),CONSTANT_TRAIT);
 }
 
@@ -54,8 +46,7 @@ ASFUNCTIONBODY(ElementFormat, _constructor)
 
 void FontDescription::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 }
 
 ASFUNCTIONBODY(FontDescription, _constructor)
@@ -66,16 +57,14 @@ ASFUNCTIONBODY(FontDescription, _constructor)
 
 void FontWeight::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("BOLD","",Class<ASString>::getInstanceS("bold"),CONSTANT_TRAIT);
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
 }
 
 void TextBlock::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("createTextLine","",Class<IFunction>::getFunction(createTextLine),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, content);
 }
@@ -120,8 +109,7 @@ ASFUNCTIONBODY(TextBlock, createTextLine)
 
 void TextElement::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ContentElement>::getRef());
+	CLASS_SETUP(c, ContentElement, _constructor, CLASS_FINAL | CLASS_SEALED);
 	REGISTER_GETTER_SETTER(c, text);
 }
 
@@ -156,8 +144,7 @@ TextLine::TextLine(Class_base* c, _NR<ContentElement> content, _NR<TextBlock> ow
 
 void TextLine::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<DisplayObjectContainer>::getRef());
+	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_FINAL | CLASS_SEALED);
 	REGISTER_GETTER(c, textBlock);
 	c->setVariableByQName("MAX_LINE_WIDTH","",abstract_ui(MAX_LINE_WIDTH),CONSTANT_TRAIT);
 }

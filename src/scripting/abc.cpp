@@ -294,6 +294,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("BitmapDataChannel","flash.display",Class<BitmapDataChannel>::getRef());
 
 	builtin->registerBuiltin("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef());
+	builtin->registerBuiltin("BitmapFilterQuality","flash.filters",Class<BitmapFilterQuality>::getRef());
 	builtin->registerBuiltin("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef());
 	builtin->registerBuiltin("GlowFilter","flash.filters",Class<GlowFilter>::getRef());
 	builtin->registerBuiltin("GradientGlowFilter","flash.filters",
@@ -327,6 +328,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextFormat","flash.text",Class<TextFormat>::getRef());
 	builtin->registerBuiltin("TextFormatAlign","flash.text",Class<TextFormatAlign>::getRef());
 	builtin->registerBuiltin("TextLineMetrics","flash.text",Class<TextLineMetrics>::getRef());
+	builtin->registerBuiltin("TextInteractionMode","flash.text",Class<TextInteractionMode>::getRef());
 	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef());
 
 	builtin->registerBuiltin("ContentElement","flash.text.engine",Class<ContentElement>::getRef());

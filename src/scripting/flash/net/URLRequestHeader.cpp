@@ -10,8 +10,7 @@ URLRequestHeader::URLRequestHeader(Class_base* c) : ASObject(c)
 
 void URLRequestHeader::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSuper(Class<ASObject>::getRef());
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	REGISTER_GETTER_SETTER(c,name);
 	REGISTER_GETTER_SETTER(c,value);
 }

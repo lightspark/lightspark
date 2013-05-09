@@ -252,8 +252,8 @@ int32_t Integer::stringToASInteger(const char* cur, int radix)
 	int64_t value;
 	bool valid=Integer::fromStringFlashCompatible(cur, value, 0);
 
-	if(valid==false || value<INT32_MIN || value>INT32_MAX)
+	if (!valid)
 		return 0;
 	else
-		return static_cast<int32_t>(value);
+		return static_cast<int32_t>(value & 0xFFFFFFFF);
 }

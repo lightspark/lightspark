@@ -203,6 +203,9 @@ ASFUNCTIONBODY(Array,filter)
 		params[2] = th;
 		th->incRef();
 
+		// ensure that return values are the original values
+		ASObject *origval = it->second.data;
+		it->second.data->incRef();
 		if(argslen==1)
 		{
 			funcRet=f->call(getSys()->getNullRef(), params, 3);
@@ -215,10 +218,9 @@ ASFUNCTIONBODY(Array,filter)
 		if(funcRet)
 		{
 			if(Boolean_concrete(funcRet))
-			{
-				it->second.data->incRef();
-				ret->push(_MR(it->second.data));
-			}
+				ret->push(_MR(origval));
+			else
+				origval->decRef();
 			funcRet->decRef();
 		}
 	}
@@ -378,7 +380,7 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	int ret=-1;
 	ASObject* arg0=args[0];
 
-	if(th->data.empty())
+	if(argslen == 1 && th->data.empty())
 		return abstract_d(0);
 
 	size_t i = th->size()-1;
@@ -614,6 +616,7 @@ ASFUNCTIONBODY(Array,indexOf)
 	ASObject* arg0 = args[0];
 	if (argslen > 1) 
 		index = args[1]->toInt();
+	if (index < 0) index = abs(index);
 
 
 	DATA_TYPE dtype;

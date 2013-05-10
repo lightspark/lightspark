@@ -60,7 +60,8 @@ void RecoveryDomParser::parse_memory_raw(const unsigned char* contents, size_typ
 	if(!context_->wellFormed)
 		LOG(LOG_ERROR, "XML data not well formed!");
 
-	doc_ = new RecoveryDocument(context_->myDoc);
+	if (context_->myDoc)
+		doc_ = new RecoveryDocument(context_->myDoc);
 	// This is to indicate to release_underlying that we took the
 	// ownership on the doc.
 	context_->myDoc = 0;

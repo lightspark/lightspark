@@ -23,12 +23,19 @@
 
 #include "compat.h"
 
-#include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/PassManager.h>
-#include <llvm/LLVMContext.h>
-#ifdef HAVE_DATALAYOUT_H
+#ifdef HAVE_IR_DATALAYOUT_H
+#  include <llvm/IR/Module.h>
+#  include <llvm/IR/LLVMContext.h>
+#else
+#  include <llvm/Module.h>
+#  include <llvm/LLVMContext.h>
+#endif
+#ifdef HAVE_IR_DATALAYOUT_H
+#  include <llvm/IR/DataLayout.h>
+#elif defined HAVE_DATALAYOUT_H
 #  include <llvm/DataLayout.h>
 #else
 #  include <llvm/Target/TargetData.h>
@@ -1516,7 +1523,7 @@ void ABCVm::Run(ABCVm* th)
 		assert_and_throw(th->ex);
 
 		th->FPM=new llvm::FunctionPassManager(th->module);
-#ifdef HAVE_DATALAYOUT_H
+#if defined HAVE_DATALAYOUT_H || defined HAVE_IR_DATALAYOUT_H
 		th->FPM->add(new llvm::DataLayout(*th->ex->getDataLayout()));
 #else
 		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));

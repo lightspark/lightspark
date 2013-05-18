@@ -25,18 +25,29 @@
 #endif
 
 #include "compat.h"
-#include <llvm/Module.h>
-#include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/PassManager.h>
-#include <llvm/Constants.h>
-#ifdef HAVE_IRBUILDER_H
+#ifdef HAVE_IR_DATALAYOUT_H
+#  include <llvm/IR/Constants.h>
+#  include <llvm/IR/DerivedTypes.h>
+#  include <llvm/IR/Module.h>
+#  include <llvm/IR/LLVMContext.h>
+#else
+#  include <llvm/Constants.h>
+#  include <llvm/DerivedTypes.h>
+#  include <llvm/Module.h>
+#  include <llvm/LLVMContext.h>
+#endif
+#ifdef HAVE_IR_DATALAYOUT_H
+#  include <llvm/IR/IRBuilder.h>
+#elif defined HAVE_IRBUILDER_H
 #  include <llvm/IRBuilder.h>
 #else
 #  include <llvm/Support/IRBuilder.h>
 #endif
-#include <llvm/LLVMContext.h>
-#ifdef HAVE_DATALAYOUT_H
+#ifdef HAVE_IR_DATALAYOUT_H
+#  include <llvm/IR/DataLayout.h>
+#elif defined HAVE_DATALAYOUT_H
 #  include <llvm/DataLayout.h>
 #else
 #  include <llvm/Target/TargetData.h>
@@ -279,7 +290,7 @@ void ABCVm::registerFunctions()
 	llvm::FunctionType* FT=NULL;
 
 	//Create types
-#ifdef HAVE_DATALAYOUT_H
+#if defined HAVE_DATALAYOUT_H || defined HAVE_IR_DATALAYOUT_H
 	ptr_type=ex->getDataLayout()->getIntPtrType(llvm_context());
 #else
 	ptr_type=ex->getTargetData()->getIntPtrType(llvm_context());

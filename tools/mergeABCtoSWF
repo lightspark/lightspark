@@ -1,0 +1,134 @@
+#!/usr/bin/python
+
+# Copyright (C) 2013 Antti Ajanki (antti.ajanki@iki.fi)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# This script merges one or more ABC files into a simple SWF wrapper.
+#
+# Usage: mergeABCtoSWF abcFile1 [abcFile2 ...] [-o outputSWFFile]
+#
+# The ABC files should be in dependency order, files that provide
+# functions should be listed before files that use those functions.
+
+import struct
+import sys
+import os.path
+from optparse import OptionParser
+
+class SWFFile:
+    TAG_END = 0
+    TAG_SHOW_FRAME = 1
+    TAG_FILE_ATTRIBUTES = 69
+    TAG_DOABC = 82
+
+    ATTR_HAS_AS3 = 8
+
+    # RECT 8000x6000
+    DEFAULT_RECT = '\x78\x00\x03\xe8\x00\x00\x0b\xb8\x00'
+    
+    def __init__(self, filename):
+        self.file = open(filename, 'wb')
+        self.writeSWFHeader()
+
+    def writeSWFHeader(self):
+        self.file.write('FWS')
+        # version
+        self.file.write(chr(9))
+        # length, will be set in finalize
+        self.file.write('\0'*4)
+        # rect size in twips
+        self.file.write(self.DEFAULT_RECT)
+        # framerate
+        self.writeUI16(20 << 8)
+        # frame count
+        self.writeUI16(1)
+        self.addFileAttributesTag()
+
+    def finalize(self):
+        self.addShowFrameTag()
+        self.addEndTag()
+        self.updateSize()
+        self.file.close()
+        self.file = None
+
+    def addFileAttributesTag(self):
+        body = chr(self.ATTR_HAS_AS3) + '\0'*3
+        self.writeTag(self.TAG_FILE_ATTRIBUTES, body)
+        
+    def addABCBlock(self, abc):
+        body = '\0'*4 # flags
+        body += '\0' # name
+        body += abc
+        self.writeTag(self.TAG_DOABC, body)
+
+    def addShowFrameTag(self):
+        self.writeTag(self.TAG_SHOW_FRAME, '')
+
+    def addEndTag(self):
+        self.file.write('\0\0')
+
+    def writeTag(self, tagType, body):
+        #print 'tag %d at %d length %s' % (tagType, self.file.tell(), len(body))
+        self.writeTagHeader(tagType, len(body))
+        self.file.write(body)
+        
+    def writeTagHeader(self, tagType, tagLength):
+        assert (tagType & 0x3FF) == tagType
+        if tagLength >= 0x3F:
+            self.writeUI16((tagType << 6) | 0x3F)
+            self.writeSI32(tagLength)
+        else:
+            self.writeUI16((tagType << 6) | tagLength)
+        
+    def updateSize(self):
+        size = self.file.tell()
+        self.file.seek(4, 0)
+        self.writeSI32(size)
+        self.file.seek(0, 2)
+
+    def writeUI16(self, value):
+        self.file.write(struct.pack('<H', value))
+
+    def writeSI32(self, value):
+        self.file.write(struct.pack('<i', value))
+
+
+def parseParameters():
+    usage = 'usage: %prog abcFile1 [abcFile2 ...] [-o outputSWFFile]'
+    parser = OptionParser(usage=usage)
+    parser.add_option('-o', dest='output',
+                      help='Name of the output SWF file')
+    (options, abcFiles) = parser.parse_args()
+
+    if not abcFiles:
+        print 'ABC filenames required'
+        sys.exit(1)
+    
+    if options.output:
+        SWF = options.output
+    else:
+        SWF = os.path.splitext(abcFiles[-1])[0] + '.swf'
+    
+    return (abcFiles, SWF)
+
+def main():
+    abcfiles, swfFileName = parseParameters()
+    swf = SWFFile(swfFileName)
+    for abc in abcfiles:
+        swf.addABCBlock(open(abc).read())
+    swf.finalize()
+
+if __name__ == '__main__':
+    main()

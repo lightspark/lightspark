@@ -5,6 +5,7 @@ echo "or ./make-tamarin ecma3/Boolean"
 
 TAMARIN=${TAMARIN:-tamarin}
 ASC=${ASC:-`pwd`/asc.jar}
+AVM=${AVM:-${TAMARIN}/objdir/shell/avmshell}
 if [[ ! -d $TAMARIN ]]; then
   echo "Directory tamarin not found, please run"
   echo "hg clone http://hg.mozilla.org/tamarin-redux tamarin"
@@ -23,15 +24,64 @@ if [[ `java -jar $ASC | sed -n -e 's/version [^ ]* build \(.*\)/\1/p'` -lt 18513
   exit 1
 fi
 
-CUR=`pwd`
+export CUR=`pwd`
 
-#cd $TAMARIN/test/acceptance && \
-#rm -f ats_temp.abc ats_temp.as shell.as && \
-#echo "override| -optimize -in $CUR/tamarin-lightspark.as -AS3 -swf 200,200 -in ./ats_temp.as" > dir.asc_args && \
-#./runtests.py --asc $ASC --builtinabc ../../core/builtin.abc --shellabc ../../shell/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF || exit 1
-(cd $TAMARIN/test/acceptance && \
-rm -f ats_temp.abc ats_temp.as shell.as && \
-grep USES_SWFVERSION . -R --files-with-matches | xargs --no-run-if-empty rm && \
-echo "override| -optimize -in $CUR/tamarin-lightspark.as -AS3 -swf 200,200 -in ./ats_temp.as" > dir.asc_args && \
-./runtests.py --asc $ASC --builtinabc ../../generated/builtin.abc --shellabc ../../generated/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF $1) \
-|| echo "Compiling tests failed. Make sure you have the latest tamarin-redux and asc.jar from http://hg.mozilla.org/tamarin-redux and ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar, respectively."
+printCompileErrorAndExit()
+{
+    echo "Compiling tests failed. Make sure you have the latest tamarin-redux and asc.jar from http://hg.mozilla.org/tamarin-redux and ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar, respectively."
+    exit 1;
+}
+
+# compile tests from Tamarin before commit 7555
+makeTamarin1()
+{
+    (cd $TAMARIN/test/acceptance && \
+    rm -f ats_temp.abc ats_temp.as shell.as && \
+    grep USES_SWFVERSION . -R --files-with-matches | xargs --no-run-if-empty rm && \
+    echo "override| -optimize -in $CUR/tamarin-lightspark.as -AS3 -swf 200,200 -in ./ats_temp.as" > dir.asc_args && \
+    ./runtests.py --asc $ASC --builtinabc ../../generated/builtin.abc --shellabc ../../generated/shell_toplevel.abc --ats --atsdir $CUR/tamarin-SWF $1) \
+    || printCompileErrorAndExit;
+}
+
+# compile tests from Tamarin commit 7555 and later
+makeTamarin2()
+{
+    if [[ ! -f $AVM ]]; then
+        echo "Set shell variable AVM to point to avmshell executable"
+        exit 1
+    fi
+
+    java -jar $ASC -import $TAMARIN/generated/builtin.abc quit.as
+
+    cd $TAMARIN/test/acceptance
+    compiled=$(./runtests.py --asc $ASC --avm $AVM --builtinabc ../../generated/builtin.abc --shellabc ../../generated/shell_toplevel.abc --rebuildtests $1)
+    if [[ $? -ne 0 ]]; then
+        printCompileErrorAndExit;
+    fi
+
+    # The first sed selects lines starting with "compiling" unless the
+    # following lines starts with "Excluding".
+    #
+    # The second sed filters out some strange cases (TODO: check
+    # these!).
+    echo "$compiled" | \
+        sed -n '/^compiling/{N; /\nExcluding/ b excluded; P; D; b; :excluded d}' | \
+        sed -n '/ascompiling\|mmgc\/outofmemory\.as\|mmgc\/memlimit\.as\|abc_$/!p' | \
+        sed -e 's/compiling \(.*\)/\1/' \
+            -e 's/\(.*\.\)[a-z]\+$/\1abc/' | \
+        xargs -L 1 bash -c 'if [[ -f $0 ]]; then echo $0; mkdir -p $CUR/tamarin-SWF/$(dirname $0); $CUR/../tools/mergeABCtoSWF Assert.abc Utils.abc $(if [[ -d ${0/%.abc/} ]]; then echo $(ls ${0/%.abc/}/*.abc 2> /dev/null); fi) $(if [[ -f ${0/%abc/abs} ]]; then echo abcasm/abs_helper.abc; fi) $0 $CUR/quit.abc -o $CUR/tamarin-SWF/${0/%ab[cs]/swf}; fi'
+    cd -
+}
+
+if [[ "x$1" = "x" ]]; then
+    rm -rf tamarin-SWF/*
+fi
+
+# Tamarin testing framework changed in commit 7555 in a way that is
+# incompatible with previous version of this script. Use Assert.as, a
+# file introduced in that commit, to detect the new test setup.
+if [[ -f $TAMARIN/test/acceptance/Assert.as ]]; then
+    makeTamarin2;
+else
+    makeTamarin1;
+fi

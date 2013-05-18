@@ -1244,7 +1244,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 
-				ASObject* ret=abstract_i(urShift(v1, v2));
+				ASObject* ret=abstract_ui(urShift(v1, v2));
 				context->runtime_stack_push(ret);
 				break;
 			}

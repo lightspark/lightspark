@@ -333,7 +333,11 @@ for test in $TESTS; do
 			fi
 		fi
 		if [[ -n "$JUNITFILE" ]]; then
-			echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"exitvalue\">Exit Value $ev</failure></testcase>" >> "$JUNITFILE"
+			if [[ "$ev" = "124" ]]; then
+				echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"timeout\">Timeout</failure></testcase>" >> "$JUNITFILE"
+			else
+				echo "<testcase classname=\"$testclass\" name=\"$testname\"><failure type=\"exitvalue\">Exit Value $ev</failure></testcase>" >> "$JUNITFILE"
+			fi
 		fi
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"

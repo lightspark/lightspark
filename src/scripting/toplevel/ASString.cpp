@@ -63,7 +63,7 @@ ASFUNCTIONBODY(ASString,_constructor)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	if(args && argslen==1)
-		th->data=args[0]->toString().raw_buf();
+		th->data=args[0]->toString();
 	return NULL;
 }
 

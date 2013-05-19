@@ -499,19 +499,47 @@ std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 
 tiny_string tiny_string::lowercase() const
 {
-	//TODO: omit copy, handle \0 in string
-	char *strdown = g_utf8_strdown(buf,numBytes());
-	tiny_string ret(strdown,/*copy:*/true);
-	g_free(strdown);
+	// have to loop manually, because g_utf8_strdown doesn't
+	// handle nul-chars
+	tiny_string ret;
+	uint32_t allocated = 2*numBytes()+7;
+	ret.createBuffer(allocated);
+	char *p = ret.buf;
+	char *pend = ret.buf + allocated;
+	uint32_t len = 0;
+	for (CharIterator it=begin(); it!=end(); it++)
+	{
+		assert(pend-p >= 6);
+		gunichar c = g_unichar_tolower(*it);
+		gint n = g_unichar_to_utf8(c, p);
+		p += n;
+		len += n;
+	}
+	*p = '\0';
+	ret.stringSize = len+1;
 	return ret;
 }
 
 tiny_string tiny_string::uppercase() const
 {
-	//TODO: omit copy, handle \0 in string
-	char *strup = g_utf8_strup(buf,numBytes());
-	tiny_string ret(strup,/*copy:*/true);
-	g_free(strup);
+	// have to loop manually, because g_utf8_strup doesn't
+	// handle nul-chars
+	tiny_string ret;
+	uint32_t allocated = 2*numBytes()+7;
+	ret.createBuffer(allocated);
+	char *p = ret.buf;
+	char *pend = ret.buf + allocated;
+	uint32_t len = 0;
+	for (CharIterator it=begin(); it!=end(); it++)
+	{
+		assert(pend-p >= 6);
+		gunichar c = g_unichar_toupper(*it);
+		gint n = g_unichar_to_utf8(c, p);
+		p += n;
+		len += n;
+	}
+	*p = '\0';
+	ret.stringSize = len+1;
 	return ret;
 }
 

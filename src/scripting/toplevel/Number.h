@@ -34,17 +34,24 @@ friend class ABCContext;
 friend class ABCVm;
 private:
 	static void purgeTrailingZeroes(char* buf);
+	static tiny_string purgeExponentLeadingZeros(const tiny_string& exponentialForm);
+	static int32_t countSignificantDigits(double v);
 public:
 	Number(Class_base* c, double v=0.):ASObject(c),val(v){type=T_NUMBER;}
 	static const number_t NaN;
 	double val;
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
+	ASFUNCTION(toExponential);
+	ASFUNCTION(toPrecision);
 	ASFUNCTION(toFixed);
 	ASFUNCTION(_valueOf);
 	tiny_string toString();
 	static tiny_string toString(number_t val);
 	static tiny_string toStringRadix(number_t val, int radix);
+	static tiny_string toExponentialString(double v, int32_t fractionDigits);
+	static tiny_string toFixedString(double v, int32_t fractionDigits);
+	static tiny_string toPrecisionString(double v, int32_t precision);
 	static bool isInteger(number_t val)
 	{
 		return floor(val) == val;

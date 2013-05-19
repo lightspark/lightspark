@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <cmath>
 #include "scripting/argconv.h"
 #include "scripting/toplevel/UInteger.h"
 
@@ -118,6 +119,9 @@ void UInteger::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toExponential",AS3,Class<IFunction>::getFunction(_toExponential, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed",AS3,Class<IFunction>::getFunction(_toFixed, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toPrecision",AS3,Class<IFunction>::getFunction(_toPrecision, 1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
 }
@@ -160,4 +164,38 @@ bool UInteger::isEqual(ASObject* o)
 		default:
 			return o->isEqual(this);
 	}
+}
+
+ASFUNCTIONBODY(UInteger,_toExponential)
+{
+	UInteger *th=obj->as<UInteger>();
+	double v = (double)th->val;
+	int32_t fractionDigits;
+	ARG_UNPACK(fractionDigits, 0);
+	if (argslen == 0 || args[0]->is<Undefined>())
+	{
+		if (v == 0)
+			fractionDigits = 1;
+		else
+			fractionDigits = imin(imax((int32_t)ceil(::log10(v)), 1), 20);
+	}
+	return Class<ASString>::getInstanceS(Number::toExponentialString(v, fractionDigits));
+}
+
+ASFUNCTIONBODY(UInteger,_toFixed)
+{
+	UInteger *th=obj->as<UInteger>();
+	int fractiondigits;
+	ARG_UNPACK (fractiondigits, 0);
+	return Class<ASString>::getInstanceS(Number::toFixedString(th->val, fractiondigits));
+}
+
+ASFUNCTIONBODY(UInteger,_toPrecision)
+{
+	UInteger *th=obj->as<UInteger>();
+	if (argslen == 0 || args[0]->is<Undefined>())
+		return Class<ASString>::getInstanceS(th->toString());
+	int precision;
+	ARG_UNPACK (precision);
+	return Class<ASString>::getInstanceS(Number::toPrecisionString(th->val, precision));
 }

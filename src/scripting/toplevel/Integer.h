@@ -49,6 +49,9 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
 	ASFUNCTION(_valueOf);
+	ASFUNCTION(_toExponential);
+	ASFUNCTION(_toFixed);
+	ASFUNCTION(_toPrecision);
 	std::string toDebugString() { return toString()+"i"; }
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

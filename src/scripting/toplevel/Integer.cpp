@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <cmath>
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Integer.h"
@@ -196,6 +197,9 @@ void Integer::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("MAX_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toExponential",AS3,Class<IFunction>::getFunction(Integer::_toExponential, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed",AS3,Class<IFunction>::getFunction(Integer::_toFixed, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toPrecision",AS3,Class<IFunction>::getFunction(Integer::_toPrecision, 1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
 }
@@ -256,4 +260,38 @@ int32_t Integer::stringToASInteger(const char* cur, int radix)
 		return 0;
 	else
 		return static_cast<int32_t>(value & 0xFFFFFFFF);
+}
+
+ASFUNCTIONBODY(Integer,_toExponential)
+{
+	Integer *th=obj->as<Integer>();
+	double v = (double)th->val;
+	int32_t fractionDigits;
+	ARG_UNPACK(fractionDigits, 0);
+	if (argslen == 0 || args[0]->is<Undefined>())
+	{
+		if (v == 0)
+			fractionDigits = 1;
+		else
+			fractionDigits = imin(imax((int32_t)ceil(::log10(::fabs(v))), 1), 20);
+	}
+	return Class<ASString>::getInstanceS(Number::toExponentialString(v, fractionDigits));
+}
+
+ASFUNCTIONBODY(Integer,_toFixed)
+{
+	Integer *th=obj->as<Integer>();
+	int fractiondigits;
+	ARG_UNPACK (fractiondigits, 0);
+	return Class<ASString>::getInstanceS(Number::toFixedString(th->val, fractiondigits));
+}
+
+ASFUNCTIONBODY(Integer,_toPrecision)
+{
+	Integer *th=obj->as<Integer>();
+	if (argslen == 0 || args[0]->is<Undefined>())
+		return Class<ASString>::getInstanceS(th->toString());
+	int precision;
+	ARG_UNPACK (precision);
+	return Class<ASString>::getInstanceS(Number::toPrecisionString(th->val, precision));
 }

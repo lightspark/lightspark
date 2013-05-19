@@ -49,6 +49,9 @@ public:
 	ASFUNCTION(generator);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_valueOf);
+	ASFUNCTION(_toExponential);
+	ASFUNCTION(_toFixed);
+	ASFUNCTION(_toPrecision);
 	std::string toDebugString() { return toString()+"ui"; }
 	//CHECK: should this have a special serialization?
 };

@@ -139,10 +139,20 @@ void XMLBase::addDefaultNamespaceRecursive(xmlNodePtr node, xmlNsPtr ns)
 
 xmlpp::Node* XMLBase::buildCopy(const xmlpp::Node* src)
 {
+	const xmlpp::ContentNode* contentnode;
 	const xmlpp::TextNode* textnode=dynamic_cast<const xmlpp::TextNode*>(src);
 	if(textnode)
 	{
 		return buildFromString(textnode->get_content(), false);
+	}
+	else if ((contentnode = dynamic_cast<const xmlpp::ContentNode*>(src)))
+	{
+		// ContentNode but not TextNode => comment, PI or CData
+		// These can't be root nodes so we add a dummy root.
+		// TODO: The root node should not be accessible from
+		// AS code.
+		xmlpp::Element* root = parser.get_document()->create_root_node("dummy_root");
+		return root->import_node(contentnode);
 	}
 	else
 	{

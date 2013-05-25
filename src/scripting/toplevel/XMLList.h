@@ -51,7 +51,7 @@ public:
 	ASFUNCTION(_getLength);
 	ASFUNCTION(attribute);
 	ASFUNCTION(attributes);
-	ASFUNCTION(appendChild);
+	ASFUNCTION(_appendChild);
 	ASFUNCTION(child);
 	ASFUNCTION(children);
 	ASFUNCTION(childIndex);

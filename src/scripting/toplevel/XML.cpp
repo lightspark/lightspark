@@ -80,7 +80,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("namespace",AS3,Class<IFunction>::getFunction(_namespace),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("normalize",AS3,Class<IFunction>::getFunction(_normalize),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(descendants),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(_appendChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(parent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("inScopeNamespaces",AS3,Class<IFunction>::getFunction(inScopeNamespaces),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addNamespace",AS3,Class<IFunction>::getFunction(addNamespace),NORMAL_METHOD,true);
@@ -256,7 +256,7 @@ ASFUNCTIONBODY(XML,descendants)
  	return Class<XMLList>::getInstanceS(ret);
 }
 
-ASFUNCTIONBODY(XML,appendChild)
+ASFUNCTIONBODY(XML,_appendChild)
 {
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==1);
@@ -281,9 +281,21 @@ ASFUNCTIONBODY(XML,appendChild)
 		arg=_MR(Class<XML>::getInstanceS(args[0]->toString()));
 	}
 
-	th->node->import_node(arg->node, true);
+	th->appendChild(arg);
 	th->incRef();
 	return th;
+}
+
+void XML::appendChild(_R<XML> newChild)
+{
+	// Work around a text node concatenation bug in libxml++ older
+	// than 2.35.3 by importing manually instead of calling
+	// import_node().
+	xmlNode* imported_node = xmlDocCopyNode(newChild->node->cobj(), node->cobj()->doc, 1);
+	if (!imported_node)
+		return;
+
+	xmlAddChild(node->cobj(), imported_node);
 }
 
 /* returns the named attribute in an XMLList */

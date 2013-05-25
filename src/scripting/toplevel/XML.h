@@ -57,9 +57,12 @@ private:
 	void childrenImpl(XMLVector& ret, const tiny_string& name);
 	void childrenImpl(XMLVector& ret, uint32_t index);
 	tiny_string getNamespacePrefixByURI(const tiny_string& uri, bool create=false);
-        void setLocalName(const tiny_string& localname);
-        void setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix="");
+	void setLocalName(const tiny_string& localname);
+	void setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix="");
 	void removeAllChildren();
+	// Append node or attribute to this. Concatenates adjacent
+	// text nodes.
+	void appendChild(_R<XML> child);
 	static void normalizeRecursive(xmlpp::Node *node);
 	void addTextContent(const tiny_string& str);
 public:
@@ -79,7 +82,7 @@ public:
 	ASFUNCTION(_copy);
 	ASFUNCTION(attributes);
 	ASFUNCTION(attribute);
-	ASFUNCTION(appendChild);
+	ASFUNCTION(_appendChild);
 	ASFUNCTION(length);
 	ASFUNCTION(localName);
 	ASFUNCTION(name);
@@ -112,7 +115,7 @@ public:
 	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
-        xmlElementType getNodeKind() const;
+	xmlElementType getNodeKind() const;
 	ASObject *getParentNode();
 	XML *copy() const;
 	void normalize();

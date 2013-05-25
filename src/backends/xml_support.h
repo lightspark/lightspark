@@ -63,10 +63,11 @@ protected:
 	// Set the root to be a copy of src. If src is a text node,
 	// create a new element node with the same content.
 	xmlpp::Node* buildCopy(const xmlpp::Node* node);
-	static std::string parserQuirks(const std::string& str);
 	static std::string quirkCData(const std::string& str);
 	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
 	void removeWhitespaceNodes(xmlpp::Element *node);
+public:
+	static std::string parserQuirks(const std::string& str);
 };
 
 };

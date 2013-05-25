@@ -33,6 +33,7 @@ private:
 	bool constructed;
 	tiny_string toString_priv() const;
 	void buildFromString(const std::string& str);
+	std::string extractXMLDeclaration(const std::string& xml, std::string& xmldecl_out);
 	void toXMLString_priv(xmlBufferPtr buf) const;
 	void appendSingleNode(ASObject *x);
 	void replace(unsigned int i, ASObject *x);

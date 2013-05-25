@@ -182,7 +182,12 @@ void XMLList::buildFromString(const std::string& str)
 {
 	xmlpp::DomParser parser;
 	std::string default_ns=getVm()->getDefaultXMLNamespace();
-	std::string expanded="<parent xmlns=\"" + default_ns + "\">" + str + "</parent>";
+	std::string xmldecl;
+	std::string str_without_xmldecl = extractXMLDeclaration(str, xmldecl);
+	std::string expanded = xmldecl + 
+		"<parent xmlns=\"" + default_ns + "\">" + 
+		XMLBase::parserQuirks(str_without_xmldecl) + 
+		"</parent>";
 	try
 	{
 		parser.parse_memory(expanded);
@@ -203,6 +208,23 @@ void XMLList::buildFromString(const std::string& str)
 	xmlpp::Node::NodeList::const_iterator it;
 	for(it=children.begin(); it!=children.end(); ++it)
 		nodes.push_back(_MR(Class<XML>::getInstanceS(*it)));
+}
+
+std::string XMLList::extractXMLDeclaration(const std::string& xml, std::string& xmldecl_out)
+{
+	std::string res = xml;
+	xmldecl_out = "";
+	if (xml.compare(0, 4, "<?xml"))
+	{
+		size_t declEnd = xml.find("?>");
+		if (declEnd != xml.npos)
+		{
+			declEnd += 2;
+			xmldecl_out = xml.substr(0, declEnd);
+			res = xml.substr(declEnd);
+		}
+	}
+	return res;
 }
 
 _R<XML> XMLList::reduceToXML() const

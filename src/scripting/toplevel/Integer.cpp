@@ -218,7 +218,7 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret, int radix)
 {
 	//Skip whitespace chars
-	while(g_unichar_isspace(g_utf8_get_char(cur)))
+	while(ASString::isEcmaSpace(g_utf8_get_char(cur)))
 		cur = g_utf8_next_char(cur);
 
 	int64_t multiplier=1;

@@ -34,6 +34,7 @@ class ASString: public ASObject
 {
 private:
 	tiny_string toString_priv() const;
+	number_t parseStringInfinite(const char *s, char **end) const;
 public:
 	ASString(Class_base* c);
 	ASString(Class_base* c, const std::string& s);
@@ -73,6 +74,8 @@ public:
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
 	std::string toDebugString() { return std::string("\"") + std::string(data) + "\""; }
+	static bool isEcmaSpace(uint32_t c);
+	static bool isEcmaLineTerminator(uint32_t c);
 };
 
 template<>

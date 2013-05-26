@@ -454,33 +454,68 @@ double ASString::toNumber() const
 {
 	assert_and_throw(implEnable);
 
-	/* TODO: data holds a utf8-character sequence, not ascii! */
-	const char *s=data.raw_buf();
-	char *end=NULL;
-	while(g_ascii_isspace(*s))
-		s++;
-	double val=g_ascii_strtod(s, &end);
+	const char *s = data.raw_buf();
+	while (*s && isEcmaSpace(g_utf8_get_char(s)))
+		s = g_utf8_next_char(s);
 
-	// strtod converts case-insensitive "inf" and "infinity" to
-	// inf, flash only accepts case-sensitive "Infinity".
-	if(std::isinf(val)) {
-		const char *tmp=s;
-		while(g_ascii_isspace(*tmp))
-			tmp++;
-		if(*tmp=='+' || *tmp=='-')
-			tmp++;
-		if(strncasecmp(tmp, "inf", 3)==0 && strcmp(tmp, "Infinity")!=0)
+	double val;
+	char *end = NULL;
+	val = parseStringInfinite(s, &end);
+
+	// If did not parse as infinite, try decimal
+	if (!std::isinf(val))
+	{
+		errno = 0;
+		val = g_ascii_strtod(s, &end);
+
+		if (errno == ERANGE)
+		{
+			if (val == HUGE_VAL)
+				val = numeric_limits<double>::infinity();
+			else if (val == -HUGE_VAL)
+				val = -numeric_limits<double>::infinity();
+		}
+		else if (std::isinf(val))
+		{
+			// strtod accepts values such as "inf" and lowercase
+			// "infinity" which are not valid values in Flash
 			return numeric_limits<double>::quiet_NaN();
+		}
 	}
 
 	// Fail if there is any rubbish after the converted number
 	while(*end) {
-		if(!g_ascii_isspace(*end))
+		if(!isEcmaSpace(g_utf8_get_char(end)))
 			return numeric_limits<double>::quiet_NaN();
-		end++;
+		end = g_utf8_next_char(end);
 	}
 
 	return val;
+}
+
+number_t ASString::parseStringInfinite(const char *s, char **end) const
+{
+	if (end)
+		*end = const_cast<char *>(s);
+	double sign = 1.;
+	if (*s == '+')
+	{
+		sign = +1.;
+		s++;
+	}
+	else if (*s == '-')
+	{
+		sign = -1.;
+		s++;
+	}
+	if (strncmp(s, "Infinity", 8) == 0)
+	{
+		if (end)
+			*end = const_cast<char *>(s+8);
+		return sign*numeric_limits<double>::infinity();
+	}
+
+	return 0.; // not an infinite value
 }
 
 int32_t ASString::toInt()
@@ -816,4 +851,18 @@ ASFUNCTIONBODY(ASString,generator)
 		return Class<ASString>::getInstanceS("");
 	else
 		return Class<ASString>::getInstanceS(args[0]->toString());
+}
+
+bool ASString::isEcmaSpace(uint32_t c)
+{
+	return (c == 0x09) || (c == 0x0B) || (c == 0x0C) || (c == 0x20) ||
+		(c == 0xA0) || (c == 0x1680) || (c == 0x180E) ||
+		((c >= 0x2000) && (c <= 0x200B)) || (c == 0x202F) ||
+		(c == 0x205F) || (c == 0x3000) || (c == 0xFEFF) || 
+		isEcmaLineTerminator(c);
+}
+
+bool ASString::isEcmaLineTerminator(uint32_t c)
+{
+	return (c == 0x0A) || (c == 0x0D) || (c == 0x2028) || (c == 0x2029);
 }

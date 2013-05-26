@@ -1222,6 +1222,8 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 		ASObject::setVariableByMultiname_i(name,value);
 		return;
 	}
+	if (index==0xFFFFFFFF)
+		return;
 	if(index>=size())
 		resize(index+1);
 
@@ -1263,7 +1265,8 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	uint32_t index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::setVariableByMultiname(name,o,allowConst);
-
+	if (index==0xFFFFFFFF)
+		return;
 	if(index>=size())
 		resize((uint64_t)index+1);
 
@@ -1459,6 +1462,11 @@ void Array::outofbounds() const
 
 void Array::resize(uint64_t n)
 {
+	// Bug-for-bug compatible wrapping. See Tamarin test
+	// as3/Array/length_mods.swf and Tamarin bug #685323.
+	if (n > 0xFFFFFFFF)
+		n = (n % 0x100000000);
+
 	std::map<uint32_t,data_slot>::reverse_iterator it;
 	std::map<uint32_t,data_slot>::iterator itstart = n ? data.end() : data.begin();
 	for ( it=data.rbegin() ; it != data.rend(); ++it )

@@ -66,7 +66,7 @@ makeTamarin2()
     # these!).
     echo "$compiled" | \
         sed -n '/^compiling/{N; /\nExcluding/ b excluded; P; D; b; :excluded d}' | \
-        sed -n '/ascompiling\|mmgc\/outofmemory\.as\|mmgc\/memlimit\.as\|abc_$/!p' | \
+        sed -n '/ascompiling\|mmgc\/outofmemory\.as\|mmgc\/memlimit\.as\|bug_515935.as\|abc_$/!p' | \
         sed -e 's/compiling \(.*\)/\1/' \
             -e 's/\(.*\.\)[a-z]\+$/\1abc/' | \
         xargs -L 1 bash -c 'if [[ -f $0 ]]; then echo $0; mkdir -p $CUR/tamarin-SWF/$(dirname $0); $CUR/../tools/mergeABCtoSWF Assert.abc Utils.abc $(if [[ -d ${0/%.abc/} ]]; then echo $(ls ${0/%.abc/}/*.abc 2> /dev/null); fi) $(if [[ -f ${0/%abc/abs} ]]; then echo abcasm/abs_helper.abc; fi) $0 $CUR/quit.abc -o $CUR/tamarin-SWF/${0/%ab[cs]/swf}; fi'

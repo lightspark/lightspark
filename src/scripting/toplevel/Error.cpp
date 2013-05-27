@@ -89,11 +89,11 @@ ASFUNCTIONBODY(ASError,getStackTrace)
 tiny_string ASError::toString(bool debugMsg)
 {
 	tiny_string ret;
-	if( !message.empty() )
-		ret = name + ": ";
+	ret = name;
 	if(errorID != 0)
-		ret += tiny_string("Error #") + Integer::toString(errorID) + ": ";
-	ret += message;
+		ret += tiny_string(": Error #") + Integer::toString(errorID);
+	if (!message.empty())
+		ret += tiny_string(": ") + message;
 	return ret;
 }
 
@@ -143,6 +143,7 @@ void ASError::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->setDeclaredMethodByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, errorID);
 	REGISTER_GETTER_SETTER(c, message);
 	REGISTER_GETTER_SETTER(c, name);

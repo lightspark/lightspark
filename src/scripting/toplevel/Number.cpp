@@ -307,7 +307,8 @@ tiny_string Number::toFixedString(double v, int32_t fractiondigits)
 	if (v >= pow(10., 21))
 		return toString(v);
 	number_t fractpart, intpart;
-	fractpart = modf (v , &intpart);
+	double rounded = v + 0.5*pow(10., -fractiondigits);
+	fractpart = modf(rounded , &intpart);
 
 	tiny_string res("");
 	char buf[40];

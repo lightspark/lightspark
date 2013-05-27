@@ -69,9 +69,39 @@ makeTamarin2()
         sed -n '/ascompiling\|mmgc\/outofmemory\.as\|mmgc\/memlimit\.as\|bug_515935.as\|abc_$/!p' | \
         sed -e 's/compiling \(.*\)/\1/' \
             -e 's/\(.*\.\)[a-z]\+$/\1abc/' | \
-        xargs -L 1 bash -c 'if [[ -f $0 ]]; then echo $0; mkdir -p $CUR/tamarin-SWF/$(dirname $0); $CUR/../tools/mergeABCtoSWF Assert.abc Utils.abc $(if [[ -d ${0/%.abc/} ]]; then echo $(ls ${0/%.abc/}/*.abc 2> /dev/null); fi) $(if [[ -f ${0/%abc/abs} ]]; then echo abcasm/abs_helper.abc; fi) $0 $CUR/quit.abc -o $CUR/tamarin-SWF/${0/%ab[cs]/swf}; fi'
+        xargs -L 1 bash -c 'linkTamarinTest $0'
     cd -
 }
+
+# Sort classes in $TEST_SUPPORT in dependecy order: put interface
+# classes first and sort other classes alphabetically.
+function sortSupportClasses() {
+    local interfaces=$(echo "$TEST_SUPPORT" | tr " " "\n" | grep Interface)
+    local classes=$(echo "$TEST_SUPPORT" | tr " " "\n" | grep -v Interface | sort)
+    TEST_SUPPORT=$(echo "$interfaces $classes" | tr "\n" " ")
+}
+
+# Create a .swf for a Tamarin test case by figuring out which .abc
+# files belong to the test case and merging them.
+# Input: the name of test case's main .abc or .abs file
+function linkTamarinTest() {
+    if [[ -f $1 ]]; then
+        echo "Compiling $1"
+
+        mkdir -p $CUR/tamarin-SWF/$(dirname $1)
+        OUTPUT_SWF="$CUR/tamarin-SWF/${1/%ab[cs]/swf}"
+
+        COMMON="Assert.abc Utils.abc"
+        ABS_SUPPORT=$(if [[ -f ${1/%abc/abs} ]]; then echo abcasm/abs_helper.abc; fi)
+        TEST_SUPPORT=$(if [[ -d ${1/%.abc/} ]]; then echo $(ls ${1/%.abc/}/*.abc 2> /dev/null); fi)
+        sortSupportClasses
+        ABC_FILES="$COMMON $TEST_SUPPORT $ABS_SUPPORT $1 $CUR/quit.abc"
+
+        $CUR/../tools/mergeABCtoSWF $ABC_FILES -o $OUTPUT_SWF
+    fi
+}
+
+export -f linkTamarinTest sortSupportClasses
 
 if [[ "x$1" = "x" ]]; then
     rm -rf tamarin-SWF/*

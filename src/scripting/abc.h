@@ -390,7 +390,10 @@ private:
 
 	//Internal utilities
 	static void method_reset(method_info* th);
-	static void newClassRecursiveLink(Class_base* target, Class_base* c);
+
+	static void SetAllClassLinks();
+	static void AddClassLinks(Class_base* target);
+	static bool newClassRecursiveLink(Class_base* target, Class_base* c);
 	static ASObject* constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen);
 	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
 
@@ -404,6 +407,7 @@ private:
 	static typed_opcode_handler opcode_table_void[];
 	static typed_opcode_handler opcode_table_voidptr[];
 	static typed_opcode_handler opcode_table_bool_t[];
+
 
 	//Synchronization
 	Mutex event_queue_mutex;

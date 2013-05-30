@@ -999,25 +999,40 @@ void Class_object::finalize()
 	Class_base::finalize();
 }
 
-const std::vector<Class_base*>& Class_base::getInterfaces() const
+const std::vector<Class_base*>& Class_base::getInterfaces(bool *alldefined) const
 {
+	if (alldefined)
+		*alldefined = true;
 	if(!interfaces.empty())
 	{
 		//Recursively get interfaces implemented by this interface
-		for(unsigned int i=0;i<interfaces.size();i++)
+		std::vector<multiname>::iterator it = interfaces.begin();
+		while (it !=interfaces.end())
 		{
 			ASObject* target;
 			ASObject* interface_obj=this->context->root->applicationDomain->
-				getVariableAndTargetByMultiname(interfaces[i], target);
-			assert_and_throw(interface_obj && interface_obj->getObjectType()==T_CLASS);
-			Class_base* inter=static_cast<Class_base*>(interface_obj);
-
-			interfaces_added.push_back(inter);
-			//Probe the interface for its interfaces
-			inter->getInterfaces();
+					getVariableAndTargetByMultiname(*it, target);
+			if (interface_obj)
+			{
+				assert_and_throw(interface_obj->getObjectType()==T_CLASS);
+				Class_base* inter=static_cast<Class_base*>(interface_obj);
+				//Probe the interface for its interfaces
+				bool bAllDefinedSub;
+				inter->getInterfaces(&bAllDefinedSub);
+				
+				if (bAllDefinedSub)
+				{
+					interfaces_added.push_back(inter);
+					interfaces.erase(it);
+					continue;
+				}
+				else if (alldefined)
+					*alldefined = false;
+			}
+			else if (alldefined)
+				*alldefined = false;
+			it++;
 		}
-		//Clean the interface vector to save some space
-		interfaces.clear();
 	}
 	return interfaces_added;
 }

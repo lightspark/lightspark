@@ -1924,18 +1924,42 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 	ret->incRef();
 	return ret.getPtr();
 }
+std::vector<Class_base*> classesToLinkInterfaces;
+void ABCVm::SetAllClassLinks()
+{
+	for (unsigned int i = 0; i < classesToLinkInterfaces.size(); i++)
+	{
+		Class_base* cls = classesToLinkInterfaces[i];
+		if (!cls)
+			continue;
+		if (ABCVm::newClassRecursiveLink(cls, cls))
+			classesToLinkInterfaces[i] = NULL;
+	}
+}
+void ABCVm::AddClassLinks(Class_base* target)
+{
+	classesToLinkInterfaces.push_back(target);
+}
 
-void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
+bool ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 {
 	if(c->super)
-		newClassRecursiveLink(target, c->super.getPtr());
-
-	const vector<Class_base*>& interfaces=c->getInterfaces();
+	{
+		if (!newClassRecursiveLink(target, c->super.getPtr()))
+			return false;
+	}
+	bool bAllDefined = false;
+	const vector<Class_base*>& interfaces=c->getInterfaces(&bAllDefined);
+	if (!bAllDefined)
+	{
+		return false;
+	}
 	for(unsigned int i=0;i<interfaces.size();i++)
 	{
 		LOG(LOG_CALLS,_("Linking with interface ") << interfaces[i]->class_name);
 		interfaces[i]->linkInterface(target);
 	}
+	return true;
 }
 
 void ABCVm::newClass(call_context* th, int n)
@@ -1959,6 +1983,9 @@ void ABCVm::newClass(call_context* th, int n)
 		baseClass->decRef();
 		oldDefinition->incRef();
 		th->runtime_stack_push(oldDefinition);
+		// ensure that this interface is linked to all previously defined classes implementing this interface
+		if (th->context->instances[n].isInterface())
+			ABCVm::SetAllClassLinks();
 		return;
 	}
 
@@ -2058,9 +2085,16 @@ void ABCVm::newClass(call_context* th, int n)
 	if(!th->context->instances[n].isInterface())
 	{
 		//Link all the interfaces for this class and all the bases
-		newClassRecursiveLink(ret, ret);
+		if (!newClassRecursiveLink(ret, ret))
+		{
+			// remember classes where not all interfaces are defined yet
+			ABCVm::AddClassLinks(ret);
+		}
 	}
-
+	// ensure that this interface is linked to all previously defined classes implementing this interface
+	if (th->context->instances[n].isInterface())
+		ABCVm::SetAllClassLinks();
+	
 	LOG(LOG_CALLS,_("Calling Class init ") << ret);
 	ret->incRef();
 	//Class init functions are called with global as this

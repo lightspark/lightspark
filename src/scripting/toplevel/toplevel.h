@@ -189,7 +189,7 @@ public:
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
-	const std::vector<Class_base*>& getInterfaces() const;
+	const std::vector<Class_base*>& getInterfaces(bool *alldefined = NULL) const;
 	virtual void linkInterface(Class_base* c) const;
 	/*
 	 * Returns true when 'this' is a subclass of 'cls',

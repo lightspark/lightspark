@@ -2034,16 +2034,19 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(_setFrameRate),SETTER_METHOD,true);
 	// override the setter from DisplayObjectContainer
 	c->setDeclaredMethodByQName("tabChildren","",Class<IFunction>::getFunction(_setTabChildren),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wmodeGPU","",Class<IFunction>::getFunction(_getWmodeGPU),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,align);
 	REGISTER_GETTER_SETTER(c,colorCorrection);
 	REGISTER_GETTER_SETTER(c,displayState);
 	REGISTER_GETTER_SETTER(c,fullScreenSourceRect);
+	REGISTER_GETTER_SETTER(c,showDefaultContextMenu);
 	REGISTER_GETTER_SETTER(c,quality);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,align,onAlign);
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,colorCorrection,onColorCorrection);
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,displayState,onDisplayState);
+ASFUNCTIONBODY_GETTER_SETTER(Stage,showDefaultContextMenu);  // stub
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,fullScreenSourceRect,onFullScreenSourceRect);
 ASFUNCTIONBODY_GETTER_SETTER(Stage,quality);
 
@@ -2081,7 +2084,8 @@ void Stage::buildTraits(ASObject* o)
 }
 
 Stage::Stage(Class_base* c):
-	DisplayObjectContainer(c), colorCorrection("default"), quality("high")
+	DisplayObjectContainer(c), colorCorrection("default"),
+	showDefaultContextMenu(true), quality("high")
 {
 	onStage = true;
 }
@@ -2280,6 +2284,11 @@ ASFUNCTIONBODY(Stage,_getAllowFullScreenInteractive)
 ASFUNCTIONBODY(Stage,_getColorCorrectionSupport)
 {
 	return abstract_b(false); // until color correction is implemented
+}
+
+ASFUNCTIONBODY(Stage,_getWmodeGPU)
+{
+	return abstract_b(false);
 }
 
 void StageScaleMode::sinit(Class_base* c)

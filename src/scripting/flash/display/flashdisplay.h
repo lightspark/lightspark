@@ -535,10 +535,12 @@ public:
 	ASFUNCTION(_setTabChildren);
 	ASFUNCTION(_getFrameRate);
 	ASFUNCTION(_setFrameRate);
+	ASFUNCTION(_getWmodeGPU);
 	ASPROPERTY_GETTER_SETTER(tiny_string,align);
 	ASPROPERTY_GETTER_SETTER(tiny_string,colorCorrection);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,fullScreenSourceRect);
+	ASPROPERTY_GETTER_SETTER(bool,showDefaultContextMenu);
 	ASPROPERTY_GETTER_SETTER(tiny_string,quality);
 };
 

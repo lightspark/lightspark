@@ -126,10 +126,10 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 		Array* a = static_cast<Array*>(args[0]);
 		for(unsigned int i=0;i<a->size();++i)
 		{
-			ASObject* obj = a->at(i).getPtr();
+			_R<ASObject> obj = a->at(i);
 			obj->incRef();
 			//Convert the elements of the array to the type of this vector
-			ret->vec.push_back( type->coerce(obj) );
+			ret->vec.push_back( type->coerce(obj.getPtr()) );
 		}
 		return ret;
 	}

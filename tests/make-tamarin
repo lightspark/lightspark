@@ -85,8 +85,11 @@ function sortSupportClasses() {
 # files belong to the test case and merging them.
 # Input: the name of test case's main .abc or .abs file
 function linkTamarinTest() {
-    if [[ -f $1 ]]; then
-        echo "Compiling $1"
+    shouldExcludeTest "$1"
+    local exclude_test=$?
+
+    if [[ -f "$1" && "$exclude_test" -eq 0 ]]; then
+        echo "Linking $1"
 
         mkdir -p $CUR/tamarin-SWF/$(dirname $1)
         OUTPUT_SWF="$CUR/tamarin-SWF/${1/%ab[cs]/swf}"
@@ -98,10 +101,24 @@ function linkTamarinTest() {
         ABC_FILES="$COMMON $TEST_SUPPORT $ABS_SUPPORT $1 $CUR/quit.abc"
 
         $CUR/../tools/mergeABCtoSWF $ABC_FILES -o $OUTPUT_SWF
+    elif [[ "$exclude_test" -ne 0 ]]; then
+	echo "Excluding $1"
     fi
 }
 
-export -f linkTamarinTest sortSupportClasses
+# Exclude testcases that need imports from shell_toplevel (avmplus,
+# avmshell packages) until versioned identifiers are supported.
+function shouldExcludeTest() {
+    local asfile=${1/ab[cs]/as}
+    grep --quiet --no-messages "import avmplus\|import avmshell" "$asfile"
+    if [[ $? -eq 0 ]]; then
+	return 1
+    else
+	return 0
+    fi
+}
+
+export -f linkTamarinTest sortSupportClasses shouldExcludeTest
 
 if [[ "x$1" = "x" ]]; then
     rm -rf tamarin-SWF/*

@@ -145,8 +145,7 @@ class NetStatusEvent: public Event
 private:
 	virtual Event* cloneImpl() const;
 public:
-	NetStatusEvent(Class_base* c):Event(c, "netStatus"){}
-	NetStatusEvent(Class_base* cb, const tiny_string& l, const tiny_string& c);
+	NetStatusEvent(Class_base* cb, const tiny_string& l="", const tiny_string& c="");
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{

@@ -717,7 +717,6 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 
 NetStatusEvent::NetStatusEvent(Class_base* cb, const tiny_string& level, const tiny_string& code):Event(cb, "netStatus")
 {
-	//The object has been initialized internally
 	ASObject* info=Class<ASObject>::getInstanceS();
 	info->setVariableByQName("level","",Class<ASString>::getInstanceS(level),DECLARED_TRAIT);
 	info->setVariableByQName("code","",Class<ASString>::getInstanceS(code),DECLARED_TRAIT);
@@ -753,7 +752,12 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 		//Uninitialized info
 		info=getSys()->getNullRef();
 	}
-	obj->setVariableByQName("info","",info,DECLARED_TRAIT);
+	multiname infoName(NULL);
+	infoName.name_type=multiname::NAME_STRING;
+	infoName.name_s_id=getSys()->getUniqueStringId("info");
+	infoName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	infoName.isAttribute = false;
+	obj->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
 	return NULL;
 }
 

@@ -1255,8 +1255,30 @@ bool Array::isValidMultiname(const multiname& name, uint32_t& index)
 	assert_and_throw(name.ns.size()!=0);
 	if(!name.ns[0].hasEmptyName())
 		return false;
+	if (name.name_type == multiname::NAME_STRING && 
+	    !isIntegerWithoutLeadingZeros(name.normalizedName()))
+		return false;
 
 	return name.toUInt(index);
+}
+
+bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
+{
+	if (value.empty())
+		return false;
+	else if (value == "0")
+		return true;
+
+	bool first = true;
+	for (CharIterator it=value.begin(); it!=value.end(); ++it)
+	{
+		if (!it.isdigit() || (first && *it == '0'))
+			return false;
+
+		first = false;
+	}
+	
+	return true;
 }
 
 void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)

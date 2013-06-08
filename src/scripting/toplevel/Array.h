@@ -89,6 +89,7 @@ private:
 	};
 	tiny_string toString_priv() const;
 	int capIndex(int i) const;
+	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 public:
 	Array(Class_base* c);
 	void finalize();

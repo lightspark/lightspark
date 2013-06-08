@@ -831,7 +831,7 @@ void TextField::validateScrollV(int32_t oldValue)
 
 int32_t TextField::getMaxScrollH()
 {
-	if (wordWrap)
+	if (wordWrap || (textWidth <= width))
 		return 0;
 	else
 		return textWidth;

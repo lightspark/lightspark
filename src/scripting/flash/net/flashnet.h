@@ -39,6 +39,7 @@ private:
 	METHOD method;
 	tiny_string url;
 	_NR<ASObject> data;
+	tiny_string digest;
 	tiny_string validatedContentType() const;
 	tiny_string getContentTypeHeader() const;
 	void validateHeaderName(const tiny_string& headerName) const;
@@ -56,6 +57,8 @@ public:
 	ASFUNCTION(_setMethod);
 	ASFUNCTION(_setData);
 	ASFUNCTION(_getData);
+	ASFUNCTION(_getDigest);
+	ASFUNCTION(_setDigest);
 	URLInfo getRequestURL() const;
 	std::list<tiny_string> getHeaders() const;
 	void getPostData(std::vector<uint8_t>& data) const;

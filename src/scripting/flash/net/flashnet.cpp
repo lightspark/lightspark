@@ -49,6 +49,8 @@ void URLRequest::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(_getMethod),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_setData),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(_getData),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("digest","",Class<IFunction>::getFunction(_setDigest),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("digest","",Class<IFunction>::getFunction(_getDigest),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,contentType);
 	REGISTER_GETTER_SETTER(c,requestHeaders);
 }
@@ -280,6 +282,45 @@ ASFUNCTIONBODY(URLRequest,_setData)
 	args[0]->incRef();
 	th->data=_MR(args[0]);
 
+	return NULL;
+}
+
+ASFUNCTIONBODY(URLRequest,_getDigest)
+{
+	URLRequest* th=obj->as<URLRequest>();
+	if (th->digest.numChars() == 0)
+		return getSys()->getNullRef();
+	else
+		return Class<ASString>::getInstanceS(th->digest);
+}
+
+ASFUNCTIONBODY(URLRequest,_setDigest)
+{
+	URLRequest* th=obj->as<URLRequest>();
+	tiny_string value;
+	ARG_UNPACK(value);
+
+	int numHexChars = 0;
+	bool validChars = true;
+	for (CharIterator it=value.begin(); it!=value.end(); ++it)
+	{
+		if (((*it >= 'A') && (*it <= 'F')) ||
+		    ((*it >= 'a') && (*it <= 'f')) ||
+		    ((*it >= '0') && (*it <= '9')))
+		{
+			numHexChars++;
+		}
+		else
+		{
+			validChars = false;
+			break;
+		}
+	}
+
+	if (!validChars || numHexChars != 64)
+		throw Class<ArgumentError>::getInstanceS("An invalid digest was supplied", 2034);
+
+	th->digest = value;
 	return NULL;
 }
 

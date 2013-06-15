@@ -55,6 +55,16 @@ typedef Mutex::Lock Locker;
 typedef Mutex Spinlock;
 typedef Mutex::Lock SpinlockLocker;
 
+#if GLIB_CHECK_VERSION(2, 31, 0)
+#define DEFINE_AND_INITIALIZE_TLS(name) static GPrivate (name)
+void tls_set(GPrivate *key, gpointer value);
+gpointer tls_get(GPrivate *key);
+#else
+#define DEFINE_AND_INITIALIZE_TLS(name) static GStaticPrivate (name) = G_STATIC_PRIVATE_INIT
+void tls_set(GStaticPrivate *key, gpointer value);
+gpointer tls_get(GStaticPrivate *key);
+#endif
+
 class DLL_PUBLIC Semaphore
 {
 private:

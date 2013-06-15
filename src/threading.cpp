@@ -26,6 +26,33 @@
 
 using namespace lightspark;
 
+#if GLIB_CHECK_VERSION(2, 31, 0)
+
+void lightspark::tls_set(GPrivate *key, gpointer value)
+{
+	g_private_set(key, value);
+}
+
+gpointer lightspark::tls_get(GPrivate *key)
+{
+	return g_private_get(key);
+}
+
+#else
+
+void lightspark::tls_set(GStaticPrivate *key, gpointer value)
+{
+	g_static_private_set(key, value, NULL);
+}
+
+gpointer lightspark::tls_get(GStaticPrivate *key)
+{
+	return g_static_private_get(key);
+}
+
+#endif
+
+
 Semaphore::Semaphore(uint32_t init):value(init)
 {
 }

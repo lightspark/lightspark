@@ -331,13 +331,16 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 }
 
 LoaderContext::LoaderContext(Class_base* c):
-	ASObject(c),checkPolicyFile(false)
+	ASObject(c),allowCodeImport(true),checkPolicyFile(false)
 {
 }
 
 void LoaderContext::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->setDeclaredMethodByQName("allowLoadBytesCodeExecution","",Class<IFunction>::getFunction(_getter_allowCodeImport),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("allowLoadBytesCodeExecution","",Class<IFunction>::getFunction(_setter_allowCodeImport),SETTER_METHOD,false);
+	REGISTER_GETTER_SETTER(c, allowCodeImport);
 	REGISTER_GETTER_SETTER(c, applicationDomain);
 	REGISTER_GETTER_SETTER(c, checkPolicyFile);
 	REGISTER_GETTER_SETTER(c, securityDomain);
@@ -359,6 +362,7 @@ ASFUNCTIONBODY(LoaderContext,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, allowCodeImport);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, applicationDomain);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, checkPolicyFile);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, securityDomain);
@@ -366,6 +370,11 @@ ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, securityDomain);
 bool LoaderContext::getCheckPolicyFile()
 {
 	return checkPolicyFile;
+}
+
+bool LoaderContext::getAllowCodeImport()
+{
+	return allowCodeImport;
 }
 
 void SecurityDomain::sinit(Class_base* c)

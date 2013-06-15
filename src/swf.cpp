@@ -1315,6 +1315,14 @@ void ParseThread::execute()
 
 void ParseThread::parseSWF(UI8 ver)
 {
+	if (loader && !loader->allowLoadingSWF())
+	{
+		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
+		getVm()->addEvent(li,_MR(Class<SecurityErrorEvent>::getInstanceS(
+			"Cannot import a SWF file when LoaderContext.allowCodeImport is false."))); // 3226
+		return;
+	}
+
 	objectSpinlock.lock();
 	RootMovieClip* root=NULL;
 	if(parsedObject.isNull())

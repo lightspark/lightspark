@@ -402,12 +402,18 @@ ASFUNCTIONBODY(Loader,load)
 	//Check if a security domain has been manually set
 	_NR<SecurityDomain> secDomain;
 	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
-	if(!context.isNull() && !context->securityDomain.isNull())
+	if(!context.isNull())
 	{
-		//The passed domain must be the current one. See Loader::load specs.
-		if(context->securityDomain!=curSecDomain)
-			throw Class<SecurityError>::getInstanceS("SecurityError: securityDomain must be current one");
-		secDomain=curSecDomain;
+		if (!context->securityDomain.isNull())
+		{
+			//The passed domain must be the current one. See Loader::load specs.
+			if(context->securityDomain!=curSecDomain)
+				throw Class<SecurityError>::getInstanceS("SecurityError: securityDomain must be current one");
+			secDomain=curSecDomain;
+		}
+
+		bool sameDomain = (secDomain == curSecDomain);
+		th->allowCodeImport = !sameDomain || context->getAllowCodeImport();
 	}
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
@@ -486,6 +492,8 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
 	th->contentLoaderInfo->securityDomain = curSecDomain;
 
+	th->allowCodeImport = context.isNull() || context->getAllowCodeImport();
+
 	if(bytes->getLength()!=0)
 	{
 		th->incRef();
@@ -539,7 +547,7 @@ void Loader::finalize()
 	contentLoaderInfo.reset();
 }
 
-Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),contentLoaderInfo(NullRef),loaded(false)
+Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true)
 {
 	incRef();
 	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(this)));

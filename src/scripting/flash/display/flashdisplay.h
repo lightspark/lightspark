@@ -303,6 +303,7 @@ private:
 	_NR<LoaderInfo> contentLoaderInfo;
 	void unload();
 	bool loaded;
+	bool allowCodeImport;
 public:
 	Loader(Class_base* c);
 	~Loader();
@@ -324,6 +325,7 @@ public:
 	void setContent(_R<DisplayObject> o);
 	_NR<DisplayObject> getContent() { return content; }
 	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
+	bool allowLoadingSWF() { return allowCodeImport; };
 };
 
 class Sprite: public DisplayObjectContainer, public TokenContainer

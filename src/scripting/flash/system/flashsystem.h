@@ -108,6 +108,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, allowCodeImport);
 	ASPROPERTY_GETTER_SETTER(_NR<ApplicationDomain>, applicationDomain);
 	ASPROPERTY_GETTER_SETTER(bool, checkPolicyFile);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, parameters);
 	ASPROPERTY_GETTER_SETTER(_NR<SecurityDomain>, securityDomain);
 	void finalize();
 	bool getAllowCodeImport();

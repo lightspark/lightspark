@@ -414,6 +414,9 @@ ASFUNCTIONBODY(Loader,load)
 
 		bool sameDomain = (secDomain == curSecDomain);
 		th->allowCodeImport = !sameDomain || context->getAllowCodeImport();
+
+		if (!context->parameters.isNull())
+			th->contentLoaderInfo->setParameters(context->parameters);
 	}
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
@@ -493,6 +496,9 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	th->contentLoaderInfo->securityDomain = curSecDomain;
 
 	th->allowCodeImport = context.isNull() || context->getAllowCodeImport();
+
+	if (!context.isNull() && !context->parameters.isNull())
+		th->contentLoaderInfo->setParameters(context->parameters);
 
 	if(bytes->getLength()!=0)
 	{

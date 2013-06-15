@@ -272,6 +272,7 @@ public:
 	void setBytesLoaded(uint32_t b);
 	void setURL(const tiny_string& _url, bool setParameters=true);
 	void setLoaderURL(const tiny_string& _url) { loaderURL=_url; }
+	void setParameters(_NR<ASObject> p) { parameters = p; }
 	void resetState();
 };
 

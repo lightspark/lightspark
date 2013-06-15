@@ -343,6 +343,7 @@ void LoaderContext::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, allowCodeImport);
 	REGISTER_GETTER_SETTER(c, applicationDomain);
 	REGISTER_GETTER_SETTER(c, checkPolicyFile);
+	REGISTER_GETTER_SETTER(c, parameters);
 	REGISTER_GETTER_SETTER(c, securityDomain);
 }
 
@@ -365,6 +366,7 @@ ASFUNCTIONBODY(LoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, allowCodeImport);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, applicationDomain);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, checkPolicyFile);
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, parameters);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, securityDomain);
 
 bool LoaderContext::getCheckPolicyFile()

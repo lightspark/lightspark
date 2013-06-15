@@ -1274,6 +1274,11 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	uint32_t index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::setVariableByMultiname(name,o,allowConst);
+	// Derived classes may be sealed!
+	if (getClass() && getClass()->isSealed)
+		throwError<ReferenceError>(kWriteSealedError,
+					   name.normalizedName(),
+					   getClass()->getQualifiedClassName());
 	if (index==0xFFFFFFFF)
 		return;
 	if(index>=size())

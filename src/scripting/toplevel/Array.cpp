@@ -92,50 +92,37 @@ void Array::buildTraits(ASObject* o)
 ASFUNCTIONBODY(Array,_constructor)
 {
 	Array* th=static_cast<Array*>(obj);
-
-	if(argslen==1 && (args[0]->getObjectType()==T_INTEGER || args[0]->getObjectType()==T_UINTEGER || args[0]->getObjectType()==T_NUMBER))
-	{
-		number_t size=args[0]->toNumber();
-		if (size < 0 || size > UINT32_MAX)
-			throwError<RangeError>(kArrayIndexNotIntegerError, Number::toString(size));
-		LOG(LOG_CALLS,_("Creating array of length ") << size);
-		th->resize((uint32_t)size);
-	}
-	else
-	{
-		LOG(LOG_CALLS,_("Called Array constructor"));
-		th->resize(argslen);
-		for(unsigned int i=0;i<argslen;i++)
-		{
-			args[i]->incRef();
-			th->set(i,_MR(args[i]));
-		}
-	}
+	th->constructorImpl(args, argslen);
 	return NULL;
 }
 
 ASFUNCTIONBODY(Array,generator)
 {
 	Array* th=Class<Array>::getInstanceS();
-	if(argslen==1 && (args[0]->getObjectType()==T_INTEGER || args[0]->getObjectType()==T_UINTEGER || args[0]->getObjectType()==T_NUMBER))
+	th->constructorImpl(args, argslen);
+	return th;
+}
+
+void Array::constructorImpl(ASObject* const* args, const unsigned int argslen)
+{
+	if(argslen==1 && (args[0]->is<Integer>() || args[0]->is<UInteger>() || args[0]->is<Number>()))
 	{
-		number_t size=args[0]->toNumber();
-		if (size < 0 || size > UINT32_MAX)
-			throwError<RangeError>(kArrayIndexNotIntegerError, Number::toString(size));
+		uint32_t size = args[0]->toUInt();
+		if ((number_t)size != args[0]->toNumber())
+			throwError<RangeError>(kArrayIndexNotIntegerError, Number::toString(args[0]->toNumber()));
 		LOG(LOG_CALLS,_("Creating array of length ") << size);
-		th->resize((uint32_t)size);
+		resize(size);
 	}
 	else
 	{
 		LOG(LOG_CALLS,_("Called Array constructor"));
-		th->resize(argslen);
+		resize(argslen);
 		for(unsigned int i=0;i<argslen;i++)
 		{
 			args[i]->incRef();
-			th->set(i,_MR(args[i]));
+			set(i,_MR(args[i]));
 		}
 	}
-	return th;
 }
 
 ASFUNCTIONBODY(Array,_concat)

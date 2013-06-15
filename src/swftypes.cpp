@@ -162,6 +162,7 @@ bool multiname::toUInt(uint32_t& index, bool acceptStringFractions) const
 			if(str.empty())
 				return false;
 			index=0;
+			uint64_t parsed = 0;
 			for(auto i=str.begin(); i!=str.end(); ++i)
 			{
 				if (*i == '.' && acceptStringFractions)
@@ -175,14 +176,21 @@ bool multiname::toUInt(uint32_t& index, bool acceptStringFractions) const
 					for (; i!=str.end(); ++i)
 						if (*i != '0')
 							return false;
-					return true;
+					break;
 				}
 				else if(!i.isdigit())
 					return false;
 
-				index*=10;
-				index+=i.digit_value();
+				parsed*=10;
+				parsed+=i.digit_value();
+				if (parsed > UINT32_MAX)
+					break;
 			}
+
+			if (parsed > UINT32_MAX)
+				return false;
+
+			index = (uint32_t)parsed;
 			break;
 		}
 		//This is already an int, so its good enough
@@ -192,7 +200,7 @@ bool multiname::toUInt(uint32_t& index, bool acceptStringFractions) const
 			index=name_i;
 			break;
 		case multiname::NAME_NUMBER:
-			if(!Number::isInteger(name_d) || name_d < 0)
+			if(!Number::isInteger(name_d) || name_d < 0 || name_d > UINT32_MAX)
 				return false;
 			index=name_d;
 			break;

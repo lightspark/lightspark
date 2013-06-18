@@ -140,12 +140,9 @@ void ABCVm::coerce_a()
 
 ASObject* ABCVm::checkfilter(ASObject* o)
 {
-	Class_base* xmlClass=Class<XML>::getClass();
-	Class_base* xmlListClass=Class<XMLList>::getClass();
-
-	if (o->getClass()!=xmlClass && o->getClass()!=xmlListClass)
-		throw Class<TypeError>::getInstanceS();
-
+	LOG(LOG_CALLS, _("checkfilter") );
+	if (!o->is<XML>() && !o->is<XMLList>())
+		throwError<TypeError>(kFilterError, o->getClassName());
 	return o;
 }
 

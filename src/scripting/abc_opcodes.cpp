@@ -654,15 +654,6 @@ void ABCVm::construct(call_context* th, int m)
 			break;
 		}
 
-		case T_UNDEFINED:
-		case T_NULL:
-		{
-			//Inc ref count to make up for decremnt later
-			obj->incRef();
-			ret=obj;
-			break;
-		}
-
 		case T_FUNCTION:
 		{
 			ret = constructFunction(th, obj->as<IFunction>(), args, m);

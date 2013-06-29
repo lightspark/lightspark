@@ -179,10 +179,13 @@ ASFUNCTIONBODY(Array,_concat)
 ASFUNCTIONBODY(Array,filter)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1 || argslen==2);
-	IFunction* f = static_cast<IFunction*>(args[0]);
-	ASObject* params[3];
 	Array* ret=Class<Array>::getInstanceS();
+	_NR<IFunction> f;
+	ARG_UNPACK(f);
+	if (f.isNull())
+		return ret;
+
+	ASObject* params[3];
 	ASObject *funcRet;
 
 	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
@@ -222,8 +225,11 @@ ASFUNCTIONBODY(Array,filter)
 ASFUNCTIONBODY(Array, some)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1 || argslen==2);
-	IFunction* f = static_cast<IFunction*>(args[0]);
+	_NR<IFunction> f;
+	ARG_UNPACK(f);
+	if (f.isNull())
+		return abstract_b(false);
+
 	ASObject* params[3];
 	ASObject *funcRet;
 
@@ -261,8 +267,11 @@ ASFUNCTIONBODY(Array, some)
 ASFUNCTIONBODY(Array, every)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1 || argslen==2);
-	IFunction* f = static_cast<IFunction*>(args[0]);
+	_NR<IFunction> f;
+	ARG_UNPACK(f);
+	if (f.isNull())
+		return abstract_b(true);
+
 	ASObject* params[3];
 	ASObject *funcRet;
 
@@ -305,9 +314,9 @@ ASFUNCTIONBODY(Array,_getLength)
 
 ASFUNCTIONBODY(Array,_setLength)
 {
-	assert_and_throw(argslen == 1);
+	uint32_t newLen;
+	ARG_UNPACK(newLen);
 	Array* th=static_cast<Array*>(obj);
-	uint32_t newLen=args[0]->toUInt();
 	//If newLen is equal to size do nothing
 	if(newLen==th->size())
 		return NULL;
@@ -317,9 +326,11 @@ ASFUNCTIONBODY(Array,_setLength)
 
 ASFUNCTIONBODY(Array,forEach)
 {
-	assert_and_throw(argslen == 1 || argslen == 2);
 	Array* th=static_cast<Array*>(obj);
-	IFunction* f = static_cast<IFunction*>(args[0]);
+	_NR<IFunction> f;
+	ARG_UNPACK(f);
+	if (f.isNull())
+		return NULL;
 	ASObject* params[3];
 
 	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
@@ -368,9 +379,9 @@ ASFUNCTIONBODY(Array, _reverse)
 ASFUNCTIONBODY(Array,lastIndexOf)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1 || argslen==2);
+	_NR<ASObject> arg0;
+	ARG_UNPACK(arg0);
 	int ret=-1;
-	ASObject* arg0=args[0];
 
 	if(argslen == 1 && th->data.empty())
 		return abstract_d(0);
@@ -404,7 +415,7 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 		    continue;
 		DATA_TYPE dtype = th->data[i].type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		if((dtype == DATA_OBJECT && th->data[i].data->isEqualStrict(arg0)) ||
+		if((dtype == DATA_OBJECT && th->data[i].data->isEqualStrict(arg0.getPtr())) ||
 			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
 		{
 			ret=i;
@@ -488,14 +499,10 @@ int Array::capIndex(int i) const
 ASFUNCTIONBODY(Array,slice)
 {
 	Array* th=static_cast<Array*>(obj);
+	int startIndex;
+	int endIndex;
 
-	int startIndex=0;
-	int endIndex=16777215;
-	if(argslen>0)
-		startIndex=args[0]->toInt();
-	if(argslen>1)
-		endIndex=args[1]->toInt();
-
+	ARG_UNPACK(startIndex, 0) (endIndex, 16777215);
 	startIndex=th->capIndex(startIndex);
 	endIndex=th->capIndex(endIndex);
 
@@ -518,13 +525,11 @@ ASFUNCTIONBODY(Array,slice)
 ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen >= 1);
-	int startIndex=args[0]->toInt();
+	int startIndex;
+	int deleteCount;
 	//By default, delete all the element up to the end
-	//Use the array len, it will be capped below
-	int deleteCount=th->size();
-	if(argslen > 1)
-		deleteCount=args[1]->toUInt();
+	//DeleteCount defaults to the array len, it will be capped below
+	ARG_UNPACK(startIndex) (deleteCount, th->size());
 
 	int totalSize=th->size();
 	Array* ret=Class<Array>::getInstanceS();
@@ -584,11 +589,10 @@ ASFUNCTIONBODY(Array,splice)
 ASFUNCTIONBODY(Array,join)
 {
 	Array* th=static_cast<Array*>(obj);
-	
-	tiny_string del = ",";
-	if (argslen == 1)
-	      del=args[0]->toString();
 	string ret;
+	tiny_string del;
+	ARG_UNPACK(del, ",");
+
 	for(uint32_t i=0;i<th->size();i++)
 	{
 		_R<ASObject> o = th->at(i);
@@ -604,10 +608,9 @@ ASFUNCTIONBODY(Array,indexOf)
 {
 	Array* th=static_cast<Array*>(obj);
 	int ret=-1;
-	int32_t index=0;
-	ASObject* arg0 = args[0];
-	if (argslen > 1) 
-		index = args[1]->toInt();
+	int32_t index;
+	_NR<ASObject> arg0;
+	ARG_UNPACK(arg0) (index, 0);
 	if (index < 0) index = abs(index);
 
 
@@ -620,7 +623,7 @@ ASFUNCTIONBODY(Array,indexOf)
 		data_slot sl = it->second;
 		dtype = sl.type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		if((dtype == DATA_OBJECT && sl.data->isEqualStrict(arg0)) ||
+		if((dtype == DATA_OBJECT && sl.data->isEqualStrict(arg0.getPtr())) ||
 			(dtype == DATA_INT && arg0->toInt() == sl.data_i))
 		{
 			ret=it->first;
@@ -872,8 +875,10 @@ bool Array::sortOnComparator::operator()(const data_slot& d1, const data_slot& d
 
 ASFUNCTIONBODY(Array,sortOn)
 {
+	if (argslen != 1 && argslen != 2)
+		throwError<ArgumentError>(kWrongArgumentCountError, "1",
+					  Integer::toString(argslen));
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1 || argslen==2);
 	std::vector<sorton_field> sortfields;
 	if(args[0]->is<Array>())
 	{

@@ -14,15 +14,82 @@
 		var encodedStr:String = "0189ABYZabyz;/?:@&=+$,#-_.!~*'()%20%7B%7D&";
 		var lowerEncodedStr:String = "0189ABYZabyz;/?:@&=+$,#-_.!~*'()%20%7b%7d&";
 		Tests.assertEquals(encodedStr, encodeURI(decodedStr), "encodeURI(): standard encodeURI");
+		Tests.assertEquals("a%C3%A4o%C3%B6", encodeURI("aäoö"), "encodeURI(): UTF-8 string");
 		Tests.assertEquals(decodedStr, decodeURI(encodedStr), "deocdeURI(): standard decodeURI");
 		Tests.assertEquals(decodedStr, decodeURI(lowerEncodedStr), "decodeURI(): decode lowercase encoded string");
+		Tests.assertEquals("ABC %3B%2F%3F%3A%40%26%3D%2B%24%2C%23 DEF", decodeURI("ABC%20%3B%2F%3F%3A%40%26%3D%2B%24%2C%23%20DEF"), "decodeURI(): reserved characters are not decoded");
+		Tests.assertEquals("aäoö", decodeURI("a%C3%A4o%C3%B6"), "decodeURI(): UTF-8 string");
+
+		var actual:String = "no exception thrown";
+		try {
+			decodeURI("%3X");
+		} catch (e:URIError) {
+			actual="URIError";
+		} catch (e:Error) {
+			actual = "wrong Error";
+		}
+		Tests.assertEquals("URIError", actual, "decodeURI(): invalid percent encoding");
+
+		actual = "no exception thrown";
+		try {
+			decodeURI("%C0%80");
+		} catch (e:URIError) {
+			actual="URIError";
+		} catch (e:Error) {
+			actual = "wrong Error";
+		}
+		Tests.assertEquals("URIError", actual, "decodeURI(): invalid UTF-8 sequence");
+
+		actual = "no exception thrown";
+		try {
+			decodeURI("%C3xyz");
+		} catch (e:URIError) {
+			actual="URIError";
+		} catch (e:Error) {
+			actual = "wrong Error";
+		}
+		Tests.assertEquals("URIError", actual, "decodeURI(): truncated UTF-8 sequence");
 
 		decodedStr = "0189ABYZabyz;/?:@&=+$,#-_.!~*'() {}&";
 		encodedStr = "0189ABYZabyz%3B%2F%3F%3A%40%26%3D%2B%24%2C%23-_.!~*'()%20%7B%7D%26";
 		lowerEncodedStr = "0189ABYZabyz%3b%2f%3f%3a%40%26%3d%2b%24%2c%23-_.!~*'()%20%7b%7d%26";
 		Tests.assertEquals(encodedStr, encodeURIComponent(decodedStr), "encodeURIComponent(): standard encodeURIComponent");
+		Tests.assertEquals("a%C3%A4o%C3%B6", encodeURIComponent("aäoö"), "encodeURIComponent(): UTF-8 string");
 		Tests.assertEquals(decodedStr, decodeURIComponent(encodedStr), "deocdeURIComponent(): standard decodeURIComponent");
 		Tests.assertEquals(decodedStr, decodeURIComponent(lowerEncodedStr), "decodeURIComponent(): decode lowercase encoded string");
+		Tests.assertEquals("aäoö", decodeURIComponent("a%C3%A4o%C3%B6"), "decodeURIComponent(): UTF-8 string");
+
+		actual = "no exception thrown";
+		try {
+			decodeURIComponent("%3X");
+		} catch (e:URIError) {
+			actual="URIError";
+		} catch (e:Error) {
+			actual = "wrong Error";
+		}
+		Tests.assertEquals("URIError", actual, "decodeURIComponent(): invalid percent encoding");
+
+		actual = "no exception thrown";
+		try {
+			decodeURIComponent("%C0%80");
+		} catch (e:URIError) {
+			actual="URIError";
+		} catch (e:Error) {
+			actual = "wrong Error";
+		}
+		Tests.assertEquals("URIError", actual, "decodeURIComponent(): invalid UTF-8 sequence");
+
+		actual = "no exception thrown";
+		try {
+			decodeURIComponent("%C3xyz");
+		} catch (e:URIError) {
+			actual="URIError";
+		} catch (e:Error) {
+			actual = "wrong Error";
+		}
+		Tests.assertEquals("URIError", actual, "decodeURIComponent(): truncated UTF-8 sequence");
+
+
 		Tests.report(visual, this.name);
 	}
 	]]>

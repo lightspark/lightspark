@@ -35,6 +35,10 @@ class DLL_PUBLIC URLInfo
 {
 	friend std::ostream& operator<<(std::ostream& s, const URLInfo& u);
 private:
+	static std::list<uint32_t> uriReservedAndHash;
+	static std::list<uint32_t> uriUnescaped;
+	static std::list<uint32_t> uriReservedAndUnescapedAndHash;
+	static const uint32_t REPLACEMENT_CHARACTER = 0xFFFD;
 	tiny_string url; //The URL space encoded
 	tiny_string parsedURL; //The URL normalized and space encoded
 	tiny_string protocol; //Part after
@@ -51,6 +55,16 @@ private:
 	INVALID_REASON invalidReason;
 	uint16_t port; //Part after first : after hostname
 	bool valid;
+	static tiny_string encodeURI(const tiny_string& u, const std::list<uint32_t>& unescapedChars);
+	static tiny_string encodeSurrogatePair(CharIterator& c, const CharIterator& end);
+	static tiny_string encodeSingleChar(uint32_t codepoint);
+	static tiny_string encodeOctet(char c);
+	static tiny_string decodeURI(const tiny_string& u, const std::list<uint32_t>& reservedChars);
+	static uint32_t decodeSingleEscapeSequence(CharIterator& c, const CharIterator& end);
+	static uint32_t decodeSingleChar(CharIterator& c, const CharIterator& end);
+	static uint32_t decodeRestOfUTF8Sequence(uint32_t firstOctet, CharIterator& c, const CharIterator& end);
+	static uint32_t decodeHexDigit(CharIterator& c, const CharIterator& end);
+	static bool isSurrogateUTF8Sequence(const char *octets, unsigned int numOctets);
 public:
 	URLInfo():invalidReason(IS_EMPTY),valid(false) {};
 	URLInfo(const tiny_string& u);
@@ -109,11 +123,7 @@ public:
 	{
 		return std::string(encode(tiny_string(u), type));
 	}
-	static tiny_string decode(const tiny_string& u, ENCODING type=ENCODE_URICOMPONENT)
-	{
-		return tiny_string(decode(std::string(u.raw_buf()), type));
-	};
-	static std::string decode(const std::string& u, ENCODING type=ENCODE_URICOMPONENT);
+	static tiny_string decode(const std::string& u, ENCODING type=ENCODE_URICOMPONENT);
 };
 
 };

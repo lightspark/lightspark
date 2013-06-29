@@ -22,14 +22,34 @@
 #include "backends/urlutils.h"
 #include "compat.h"
 #include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/Error.h"
+#include "scripting/class.h"
 #include <string>
 #include <algorithm>
 #include <cctype>
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <alloca.h>
 
 using namespace lightspark;
+
+std::list<uint32_t> URLInfo::uriReservedAndHash =
+	{';', '/', '?', ':', '@', '&', '=', '+', '$', ',', '#'};
+std::list<uint32_t> URLInfo::uriUnescaped = 
+	{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+	 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B',
+	 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+	 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3',
+	 '4', '5', '6', '7', '8', '9', '-', '_', '.', '!', '~', '*', '\'', '(',
+	 ')'};
+std::list<uint32_t> URLInfo::uriReservedAndUnescapedAndHash =
+	{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+	 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B',
+	 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+	 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3',
+	 '4', '5', '6', '7', '8', '9', '-', '_', '.', '!', '~', '*', '\'', '(',
+	 ')', ';', '/', '?', ':', '@', '&', '=', '+', '$', ',', '#'};
 
 std::ostream& lightspark::operator<<(std::ostream& s, const URLInfo& u)
 {
@@ -332,6 +352,11 @@ bool URLInfo::sameHost(const URLInfo& other) const
 
 tiny_string URLInfo::encode(const tiny_string& u, ENCODING type)
 {
+	if (type == ENCODE_URI)
+		return encodeURI(u, uriReservedAndUnescapedAndHash);
+	else if (type == ENCODE_URICOMPONENT)
+		return encodeURI(u, uriUnescaped);
+
 	tiny_string str;
 	char buf[7];
 	
@@ -355,20 +380,6 @@ tiny_string URLInfo::encode(const tiny_string& u, ENCODING type)
 			//ENCODE_FORM encodes spaces as + instead of %20
 			else if(type == ENCODE_FORM && *i == ' ')
 				str += '+';
-			//Additionally ENCODE_URICOMPONENT and ENCODE_URI don't encode:
-			//- _ . ! ~ * ' ( )
-			else if((type == ENCODE_URI || type == ENCODE_URICOMPONENT) && 
-					(*i == '-' || *i == '_' || *i == '.' || *i == '!' ||
-						*i == '~' || *i == '*' || *i == '\'' ||	*i == '(' ||
-						*i == ')'))
-				str += *i;
-			//Additionally ENCODE_URI doesn't encode:
-			//; / ? : @ & = + $ , # 
-			else if((type == ENCODE_URI) && 
-						(*i == ';' || *i == '/' || *i == '?' || *i == ':' ||
-							*i == '@' || *i == '&' || *i == '=' || *i == '+' ||
-							*i == '$' || *i == ',' || *i == '#'))
-				str += *i;
 			// ENCODE_ESCAPE doesn't encode:
 			//@ - _ . * + /
 			else if(type == ENCODE_ESCAPE && 
@@ -390,8 +401,72 @@ tiny_string URLInfo::encode(const tiny_string& u, ENCODING type)
 	return str;
 }
 
-std::string URLInfo::decode(const std::string& u, ENCODING type)
+tiny_string URLInfo::encodeURI(const tiny_string& u, const std::list<uint32_t>& unescapedChars) {
+	tiny_string res;
+	CharIterator c = u.begin();
+	CharIterator end = u.end();
+	while (c != end)
+	{
+		if (std::find(unescapedChars.begin(), unescapedChars.end(), *c) == unescapedChars.end())
+		{
+			if ((*c >= 0xD800) && (*c <= 0xDFFF))
+			{
+				res += encodeSurrogatePair(c, end);
+			}
+			else
+			{
+				res += encodeSingleChar(*c);
+			}
+		}
+		else
+		{
+			res += *c;
+		}
+		++c;
+	}
+	return res;
+}
+
+tiny_string URLInfo::encodeSurrogatePair(CharIterator& c, const CharIterator& end)
 {
+	if ((*c < 0xD800) || (*c >= 0xDC00))
+		throwError<URIError>(kInvalidURIError, "encodeURI");
+	uint32_t highSurrogate = *c;
+	++c;
+	if ((c == end) || ((*c < 0xDC00) || (*c > 0xDFFF)))
+		throwError<URIError>(kInvalidURIError, "encodeURI");
+	uint32_t lowSurrogate = *c;
+	return encodeSingleChar((highSurrogate - 0xD800)*0x400 +
+				(lowSurrogate - 0xDC00) + 0x10000);
+}
+
+tiny_string URLInfo::encodeSingleChar(uint32_t codepoint)
+{
+	char octets[6];
+	gint numOctets = g_unichar_to_utf8(codepoint, octets);
+	tiny_string encoded;
+	for (int i=0; i<numOctets; i++)
+	{
+		encoded += encodeOctet(octets[i]);
+	}
+
+	return encoded;
+}
+
+tiny_string URLInfo::encodeOctet(char c) {
+	gchar *buf = (gchar *)alloca(6);
+	g_snprintf(buf, 6, "%%%.2X", (unsigned char)c);
+	buf[5] = '\0';
+	return tiny_string(buf, true);
+}
+
+tiny_string URLInfo::decode(const std::string& u, ENCODING type)
+{
+	if (type == ENCODE_URI)
+		return decodeURI(u, uriReservedAndHash);
+	else if (type == ENCODE_URICOMPONENT)
+		return decodeURI(u, {});
+
 	std::string str;
 	//The string can only shrink
 	str.reserve(u.length());
@@ -415,26 +490,6 @@ std::string URLInfo::decode(const std::string& u, ENCODING type)
 				str += " ";
 			//ENCODE_SPACES doesn't decode other characters
 			else if(type == ENCODE_SPACES)
-			{
-				str += stringBuf;
-				i+=2;
-			}
-			//ENCODE_URI and ENCODE_URICOMPONENT don't decode:
-			//- _ . ! ~ * ' ( ) 
-			else if((type == ENCODE_URI || type == ENCODE_URICOMPONENT) && 
-					(stringBuf == "%2D" || stringBuf == "%5F" || stringBuf == "%2E" || stringBuf == "%21" ||
-					 stringBuf == "%7E" || stringBuf == "%2A" || stringBuf == "%27" || stringBuf == "%28" || 
-					 stringBuf == "%29"))
-			{
-				str += stringBuf;
-				i+=2;
-			}
-			//Additionally ENCODE_URI doesn't decode:
-			//; / ? : @ & = + $ , # 
-			else if(type == ENCODE_URI && 
-					(stringBuf == "%23" || stringBuf == "%24" || stringBuf == "%26" || stringBuf == "%2B" ||
-					 stringBuf == "%2C" || stringBuf == "%2F" || stringBuf == "%3A" || stringBuf == "%3B" ||
-					 stringBuf == "%3D" || stringBuf == "%3F" || stringBuf == "%40"))
 			{
 				str += stringBuf;
 				i+=2;
@@ -464,6 +519,112 @@ std::string URLInfo::decode(const std::string& u, ENCODING type)
 		}
 	}
 	return str;
+}
+
+tiny_string URLInfo::decodeURI(const tiny_string& u, const std::list<uint32_t>& reservedChars)
+{
+	tiny_string res;
+	CharIterator c = u.begin();
+	CharIterator end = u.end();
+	while (c != end)
+	{
+		if (*c == '%')
+		{
+			CharIterator encodeBegin = c;
+			uint32_t decoded = decodeSingleChar(c, end);
+			if (std::find(reservedChars.begin(), reservedChars.end(), decoded) == reservedChars.end())
+			{
+				res += decoded;
+			}
+			else
+			{
+				CharIterator it = encodeBegin;
+				while (it != c)
+				{
+					res += *it;
+					++it;
+				}
+			}
+		}
+		else
+		{
+			res += *c;
+			++c;
+		}
+	}
+
+	return res;
+}
+
+uint32_t URLInfo::decodeSingleChar(CharIterator& c, const CharIterator& end)
+{
+	uint32_t decoded = decodeSingleEscapeSequence(c, end);
+	if ((decoded & 0x80) != 0) {
+		decoded = decodeRestOfUTF8Sequence(decoded, c, end);
+	}
+	return decoded;
+}
+
+uint32_t URLInfo::decodeRestOfUTF8Sequence(uint32_t firstOctet, CharIterator& c, const CharIterator& end) {
+	unsigned int numOctets = 0;
+	uint32_t mask = 0x80;
+	while ((firstOctet & mask) != 0) {
+		numOctets++;
+		mask = mask >> 1;
+	}
+	if (numOctets <= 1 || numOctets > 4)
+		throwError<URIError>(kInvalidURIError, "decodeURI");
+
+	char *octets = (char *)alloca(numOctets);
+	octets[0] = firstOctet;
+	for (unsigned int i=1; i<numOctets; i++) {
+		octets[i] = decodeSingleEscapeSequence(c, end);
+	}
+
+	if (isSurrogateUTF8Sequence(octets, numOctets))
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "decodeURI: decoding surrogate pairs");
+		return REPLACEMENT_CHARACTER;
+	}
+
+	gunichar unichar = g_utf8_get_char_validated(octets, numOctets);
+	if ((unichar == (gunichar)-1) || 
+	    (unichar == (gunichar)-2) ||
+	    (unichar >= 0x10FFFF))
+		throwError<URIError>(kInvalidURIError, "decodeURI");
+
+	return (uint32_t)unichar;
+}
+
+uint32_t URLInfo::decodeSingleEscapeSequence(CharIterator& c, const CharIterator& end)
+{
+	if (*c != '%')
+		throwError<URIError>(kInvalidURIError, "decodeURI");
+	++c;
+	uint32_t h1 = decodeHexDigit(c, end);
+	uint32_t h2 = decodeHexDigit(c, end);
+	return (h1 << 4) + h2;
+}
+
+bool URLInfo::isSurrogateUTF8Sequence(const char *octets, unsigned int numOctets)
+{
+	// Surrogate code points: 0xD800 - 0xDFFF
+	// UTF-8 encoded: 0xED 0xA0 0x80 - 0xED 0xBF 0xBF
+	return (numOctets == 3) &&
+		((unsigned char)octets[0] == 0xED) &&
+		((unsigned char)octets[1] >= 0xA0) &&
+		((unsigned char)octets[1] <= 0xBF);
+}
+
+uint32_t URLInfo::decodeHexDigit(CharIterator& c, const CharIterator& end)
+{
+	if (c == end || !isxdigit(*c))
+		throwError<URIError>(kInvalidURIError, "decodeURI");
+
+	gint h = g_unichar_xdigit_value(*c);
+	assert((h >= 0) && (h < 16));
+	++c;
+	return (uint32_t) h;
 }
 
 bool URLInfo::isRTMP() const

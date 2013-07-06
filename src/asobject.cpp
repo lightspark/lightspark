@@ -53,6 +53,10 @@ string ASObject::toDebugString()
 		ret+=this->as<Class_base>()->class_name.getQualifiedName().raw_buf();
 		ret+="]";
 	}
+	else if(this->is<Template_base>())
+	{
+		ret = "[templated class]";
+	}
 	else
 	{
 		assert(false);

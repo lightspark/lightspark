@@ -41,6 +41,7 @@ void RegExp::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("test","",Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("exec","",Class<IFunction>::getFunction(exec),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(exec),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("test","",Class<IFunction>::getFunction(test),DYNAMIC_TRAIT);
@@ -260,6 +261,8 @@ ASFUNCTIONBODY(RegExp,test)
 
 ASFUNCTIONBODY(RegExp,_toString)
 {
+	if(Class<RegExp>::getClass()->prototype->getObj() == obj)
+		return Class<ASString>::getInstanceS("/(?:)/");
 	if(!obj->is<RegExp>())
 		throw Class<TypeError>::getInstanceS("RegExp.toString is not generic");
 

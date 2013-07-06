@@ -270,12 +270,13 @@ void Number::sinit(Class_base* c)
 	c->setVariableByQName("MAX_VALUE","",pmax,CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",pmin,CONSTANT_TRAIT);
 	c->setVariableByQName("NaN","",pnan,CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toFixed",AS3,Class<IFunction>::getFunction(Number::toFixed, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toExponential",AS3,Class<IFunction>::getFunction(Number::toExponential, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toPrecision",AS3,Class<IFunction>::getFunction(Number::toPrecision, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(Number::toFixed, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(Number::toExponential, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(Number::toPrecision, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(Number,_constructor)

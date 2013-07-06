@@ -149,7 +149,7 @@ public:
 			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
 
-			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+			ret->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
 			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 			if(ret->super)
@@ -257,7 +257,7 @@ public:
 		ret->addPrototypeGetter();
 		ret->addLengthGetter();
 
-		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+		ret->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 		getSys()->customClasses.insert(ret);
 		ret->incRef();
 		return _MR(ret);
@@ -278,7 +278,7 @@ public:
 			ret->prototype = _MNR(new_objectPrototype());
 			ASObject::sinit(ret);
 
-			ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+			ret->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 			ret->incRef();
 			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
 			ret->addPrototypeGetter();

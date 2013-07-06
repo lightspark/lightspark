@@ -36,10 +36,14 @@ RegExp::RegExp(Class_base* c, const tiny_string& _re):ASObject(c),dotall(false),
 void RegExp::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->setDeclaredMethodByQName("exec","",Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("test","",Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("exec","",Class<IFunction>::getFunction(exec),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(exec),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("test","",Class<IFunction>::getFunction(test),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("test",AS3,Class<IFunction>::getFunction(test),DYNAMIC_TRAIT);
 	REGISTER_GETTER(c,dotall);
 	REGISTER_GETTER(c,global);

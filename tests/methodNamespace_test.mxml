@@ -1,0 +1,141 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_methodNamespace_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		namespace as3_ns = "http://adobe.com/AS3/2006/builtin";
+		namespace public_ns = "";
+
+		testMethods(Object.prototype, "Object prototype",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"]]);
+
+		testMethods(new Object(), "Object instance",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"]]);
+
+		testMethods(String.prototype, "String prototype",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"],
+			 ["split", public_ns, "exists"],
+			 ["split", as3_ns, "ReferenceError"]]);
+
+		testMethods(new String(""), "String instance",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "exists"],
+			 ["split", public_ns, "exists"],
+			 ["split", as3_ns, "exists"]]);
+
+		testMethods(Number.prototype, "Number prototype",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"]]);
+
+		testMethods(new Number(0), "Number instance",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "exists"]]);
+
+		testMethods(Boolean.prototype, "Boolean prototype",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"]]);
+
+		testMethods(new Boolean(), "Boolean instance",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "exists"]]);
+
+		testMethods(Function.prototype, "Function prototype",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"],
+			 ["call", public_ns, "exists"],
+			 ["call", as3_ns, "exists"]]);
+
+		testMethods(function():void {}, "function instance",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"],
+			 ["call", public_ns, "exists"],
+			 ["call", as3_ns, "exists"]]);
+
+		testMethods(Math, "Math",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"]]);
+
+		testMethods(Error, "Error",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"]]);
+
+		testMethods(new Error(), "Error instance",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"]]);
+
+		testMethods(Date, "Date",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"]]);
+
+		testMethods(new Date(), "Date",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "exists"]]);
+
+		testMethods(RegExp.prototype, "RegExp prototype",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"],
+			 ["exec", public_ns, "exists"],
+			 ["exec", as3_ns, "exists"]]);
+
+		testMethods(new RegExp(), "RegExp instance",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"],
+			 ["exec", public_ns, "exists"],
+			 ["exec", as3_ns, "exists"]]);
+
+		testMethods(Vector.prototype, "Vector prototype",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "ReferenceError"],
+			 ["every", public_ns, "undefined"],
+			 ["every", as3_ns, "ReferenceError"]]);
+
+		testMethods(new Vector.<int>(), "Vector instance",
+			[["toString", public_ns, "exists"],
+			 ["toString", as3_ns, "exists"],
+			 ["every", public_ns, "exists"],
+			 ["every", as3_ns, "exists"]]);
+
+		Tests.report(visual, this.name);
+	}
+
+	private function testMethods(obj:*, testName:String, methodsAndExpectedResults:Array):void {
+		for (var i:int=0; i<methodsAndExpectedResults.length; i++) {
+			var method:String = methodsAndExpectedResults[i][0];
+			var ns:Namespace = methodsAndExpectedResults[i][1];
+			var expected:String = methodsAndExpectedResults[i][2];
+			var s:String = checkMethodExists(obj, ns, method);
+			var name:String = ns.toString() + "::" + method + " on " + testName;
+			Tests.assertEquals(expected, s, name);
+		}
+	}
+
+	private function checkMethodExists(obj:*, ns:Namespace, method:String):String {
+		var result:String = "exists";
+		try {
+			var f:* = obj.ns::[method];
+			if (f == undefined) {
+			    result = "undefined";
+			}
+		} catch(e:ReferenceError) {
+			result = "ReferenceError";
+		} catch(e:Error) {
+			result = e.toString();
+		}
+		return result;
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

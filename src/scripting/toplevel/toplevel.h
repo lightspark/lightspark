@@ -312,6 +312,8 @@ protected:
 	IFunction(Class_base *c);
 	virtual IFunction* clone()=0;
 	_NR<ASObject> closure_this;
+
+	static void sinit(Class_base* c);
 public:
 	/* If this is a method, inClass is the class this is defined in.
 	 * If this is a function, inClass == NULL

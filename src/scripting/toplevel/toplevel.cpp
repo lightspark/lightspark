@@ -128,6 +128,18 @@ void IFunction::finalize()
 	closure_this.reset();
 }
 
+void IFunction::sinit(Class_base* c)
+{
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
+
+	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("apply","",Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(IFunction::_getter_length),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(IFunction::_toString),NORMAL_METHOD,false);
+}
+
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
 ASFUNCTIONBODY_GETTER(IFunction,length);
 
@@ -841,7 +853,7 @@ void Class_base::addImplementedInterface(Class_base* i)
 
 tiny_string Class_base::toString()
 {
-	tiny_string ret="[Class ";
+	tiny_string ret="[class ";
 	ret+=class_name.name;
 	ret+="]";
 	return ret;
@@ -1875,15 +1887,9 @@ Class<IFunction>* Class<IFunction>::getClass()
 		//addPrototypeGetter and setDeclaredMethodByQName.
 		//Thus we make sure that everything is in order when getFunction() below is called
 		ret->addPrototypeGetter();
-		//copy borrowed traits from ASObject by ourself
-		ASObject::sinit(ret);
-		ret->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
-		ret->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
+		IFunction::sinit(ret);
 		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_getter_prototype),GETTER_METHOD,true);
 		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_setter_prototype),SETTER_METHOD,true);
-		ret->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(IFunction::_getter_length),GETTER_METHOD,true);
-		ret->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
-		ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(*retAddr);

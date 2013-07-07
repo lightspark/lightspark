@@ -66,7 +66,7 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toLocaleString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),NORMAL_METHOD,true);
 
 	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(_concat,1),DYNAMIC_TRAIT);
@@ -88,7 +88,7 @@ void Array::sinit(Class_base* c)
 	c->prototype->setVariableByQName("sort","",Class<IFunction>::getFunction(_sort),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("sortOn","",Class<IFunction>::getFunction(sortOn),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("splice","",Class<IFunction>::getFunction(splice,2),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(_toLocaleString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("unshift","",Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
 }
@@ -1133,6 +1133,20 @@ ASFUNCTIONBODY(Array,_toString)
 	return Class<ASString>::getInstanceS(th->toString_priv());
 }
 
+ASFUNCTIONBODY(Array,_toLocaleString)
+{
+	if(Class<Number>::getClass()->prototype->getObj() == obj)
+		return Class<ASString>::getInstanceS("");
+	if(!obj->is<Array>())
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toLocaleString");
+		return Class<ASString>::getInstanceS("");
+	}
+	
+	Array* th=obj->as<Array>();
+	return Class<ASString>::getInstanceS(th->toString_priv(true));
+}
+
 int32_t Array::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);
@@ -1359,7 +1373,7 @@ tiny_string Array::toString()
 	return toString_priv();
 }
 
-tiny_string Array::toString_priv() const
+tiny_string Array::toString_priv(bool localized) const
 {
 	string ret;
 	for(uint32_t i=0;i<size();i++)
@@ -1370,7 +1384,12 @@ tiny_string Array::toString_priv() const
 			if(sl.type==DATA_OBJECT)
 			{
 				if(sl.data && !sl.data->is<Undefined>() && !sl.data->is<Null>())
-					ret+=sl.data->toString().raw_buf();
+				{
+					if (localized)
+						ret += sl.data->toLocaleString().raw_buf();
+					else
+						ret += sl.data->toString().raw_buf();
+				}
 			}
 			else if(sl.type==DATA_INT)
 			{

@@ -88,7 +88,7 @@ private:
 		bool operator()(const data_slot& d1, const data_slot& d2);
 	};
 	void constructorImpl(ASObject* const* args, const unsigned int argslen);
-	tiny_string toString_priv() const;
+	tiny_string toString_priv(bool localized=false) const;
 	int capIndex(int i) const;
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 public:
@@ -122,6 +122,7 @@ public:
 	ASFUNCTION(lastIndexOf);
 	ASFUNCTION(_map);
 	ASFUNCTION(_toString);
+	ASFUNCTION(_toLocaleString);
 	ASFUNCTION(slice);
 	ASFUNCTION(every);
 	ASFUNCTION(some);

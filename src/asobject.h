@@ -410,6 +410,7 @@ public:
 	}
 	/* Implements ECMA's 9.8 ToString operation, but returns the concrete value */
 	tiny_string toString();
+	tiny_string toLocaleString();
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
 	uint16_t toUInt16();

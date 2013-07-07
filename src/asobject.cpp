@@ -89,6 +89,14 @@ tiny_string ASObject::toString()
 	}
 }
 
+tiny_string ASObject::toLocaleString()
+{
+	_NR<ASObject> str = executeASMethod("toLocaleString", {""}, NULL, 0);
+	if (str.isNull())
+		return "";
+	return str->toString();
+}
+
 TRISTATE ASObject::isLess(ASObject* r)
 {
 	check();

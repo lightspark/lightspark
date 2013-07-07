@@ -147,7 +147,7 @@ void ASObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(hasOwnProperty),NORMAL_METHOD,true);
 
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(_toLocaleString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("hasOwnProperty","",Class<IFunction>::getFunction(hasOwnProperty),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("isPrototypeOf","",Class<IFunction>::getFunction(isPrototypeOf),DYNAMIC_TRAIT);
@@ -841,6 +841,16 @@ ASFUNCTIONBODY(ASObject,_toString)
 		ret="[object Object]";
 
 	return Class<ASString>::getInstanceS(ret);
+}
+
+ASFUNCTIONBODY(ASObject,_toLocaleString)
+{
+	if (!obj->has_toString())
+		throwError<TypeError>(kCallNotFoundError, "toString", obj->getClassName());
+
+	_R<ASObject> res = obj->call_toString();
+	res->incRef();
+	return res.getPtr();
 }
 
 ASFUNCTIONBODY(ASObject,hasOwnProperty)

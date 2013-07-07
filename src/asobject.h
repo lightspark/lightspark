@@ -297,6 +297,7 @@ public:
 	// Throws ArgumentError.
 	ASFUNCTION(_constructorNotInstantiatable);
 	ASFUNCTION(_toString);
+	ASFUNCTION(_toLocaleString);
 	ASFUNCTION(hasOwnProperty);
 	ASFUNCTION(valueOf);
 	ASFUNCTION(isPrototypeOf);

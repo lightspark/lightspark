@@ -286,7 +286,7 @@ IF(AUDIO_BACKEND)
 ENDIF(AUDIO_BACKEND)
 
 IF(ENABLE_LIBAVCODEC)
-	pkg_check_modules(FFMPEG libavcodec libavutil libavformat)
+	pkg_check_modules(FFMPEG libavcodec libavutil libavformat libavresample)
 	IF(NOT(FFMPEG_FOUND))
 		INCLUDE(FindFFMpeg REQUIRED)
 	ENDIF(NOT(FFMPEG_FOUND))

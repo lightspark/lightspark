@@ -295,6 +295,8 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 #else
 	int ret=avcodec_decode_video(codecContext, frameIn, &frameOk, pkt->data, pkt->size);
 #endif
+	if (ret < 0)
+		return false;
 
 	assert_and_throw(ret==(int)pkt->size);
 	if(frameOk)
@@ -612,10 +614,33 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 		ret=-1;
 	else
 	{
-		//This is suboptimal but equivalent to what libavcodec
-		//does for the compatibility version of avcodec_decode_audio3
-		memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
-		maxLen=frameIn->linesize[0];
+		if (frameIn->format != AV_SAMPLE_FMT_S16)
+		{
+			AVAudioResampleContext * avr = avresample_alloc_context();
+			av_opt_set_int(avr, "in_channel_layout",  frameIn->channel_layout, 0);
+			av_opt_set_int(avr, "out_channel_layout", frameIn->channel_layout,  0);
+			av_opt_set_int(avr, "in_sample_rate",     frameIn->sample_rate,     0);
+			av_opt_set_int(avr, "out_sample_rate",    frameIn->sample_rate,     0);
+			av_opt_set_int(avr, "in_sample_fmt",      frameIn->format,   0);
+			av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
+			avresample_open(avr);
+			
+			uint8_t *output;
+			int out_linesize;
+			int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], frameIn->sample_rate, frameIn->sample_rate, AV_ROUND_UP);
+			av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
+			maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*4;
+			memcpy(curTail.samples, output, maxLen);
+			av_freep(&output);
+			avresample_free(&avr);
+		}
+		else 
+		{
+			//This is suboptimal but equivalent to what libavcodec
+			//does for the compatibility version of avcodec_decode_audio3
+			memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
+			maxLen=frameIn->linesize[0];
+		}
 	}
 #else
 	int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
@@ -660,10 +685,33 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 		ret=-1;
 	else
 	{
-		//This is suboptimal but equivalent to what libavcodec
-		//does for the compatibility version of avcodec_decode_audio3
-		memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
-		maxLen=frameIn->linesize[0];
+		if (frameIn->format != AV_SAMPLE_FMT_S16)
+		{
+			AVAudioResampleContext * avr = avresample_alloc_context();
+			av_opt_set_int(avr, "in_channel_layout",  frameIn->channel_layout, 0);
+			av_opt_set_int(avr, "out_channel_layout", frameIn->channel_layout,  0);
+			av_opt_set_int(avr, "in_sample_rate",     frameIn->sample_rate,     0);
+			av_opt_set_int(avr, "out_sample_rate",    frameIn->sample_rate,     0);
+			av_opt_set_int(avr, "in_sample_fmt",      frameIn->format,   0);
+			av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
+			avresample_open(avr);
+			
+			uint8_t *output;
+			int out_linesize;
+			int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], frameIn->sample_rate, frameIn->sample_rate, AV_ROUND_UP);
+			av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
+			maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*4;
+			memcpy(curTail.samples, output, maxLen);
+			av_freep(&output);
+			avresample_free(&avr);
+		}
+		else 
+		{
+			//This is suboptimal but equivalent to what libavcodec
+			//does for the compatibility version of avcodec_decode_audio3
+			memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
+			maxLen=frameIn->linesize[0];
+		}
 	}
 #elif HAVE_AVCODEC_DECODE_AUDIO3
 	int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);

@@ -32,7 +32,22 @@
 using namespace std;
 using namespace lightspark;
 
-XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false),ignoreComments(true)
+static bool ignoreComments;
+static bool ignoreProcessingInstructions;
+static bool ignoreWhitespace;
+static uint32_t prettyIndent;
+static bool prettyPrinting;
+
+void setDefaultXMLSettings()
+{
+	ignoreComments = true;
+	ignoreProcessingInstructions = true;
+	ignoreWhitespace = true;
+	prettyIndent = 2;
+	prettyPrinting = true;
+}
+
+XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false)
 {
 }
 
@@ -62,6 +77,22 @@ void XML::finalize()
 void XML::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	setDefaultXMLSettings();
+
+	c->setDeclaredMethodByQName("ignoreComments","",Class<IFunction>::getFunction(_getIgnoreComments),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreComments","",Class<IFunction>::getFunction(_setIgnoreComments),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreProcessingInstructions","",Class<IFunction>::getFunction(_getIgnoreProcessingInstructions),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreProcessingInstructions","",Class<IFunction>::getFunction(_setIgnoreProcessingInstructions),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreWhitespace","",Class<IFunction>::getFunction(_getIgnoreWhitespace),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreWhitespace","",Class<IFunction>::getFunction(_setIgnoreWhitespace),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("prettyIndent","",Class<IFunction>::getFunction(_getPrettyIndent),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("prettyIndent","",Class<IFunction>::getFunction(_setPrettyIndent),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("prettyPrinting","",Class<IFunction>::getFunction(_getPrettyPrinting),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("prettyPrinting","",Class<IFunction>::getFunction(_setPrettyPrinting),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("settings","",Class<IFunction>::getFunction(_getSettings),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("setSettings","",Class<IFunction>::getFunction(_setSettings),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("defaultSettings","",Class<IFunction>::getFunction(_getDefaultSettings),NORMAL_METHOD,false);
+
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
@@ -406,7 +437,7 @@ void XML::toXMLString_priv(xmlBufferPtr buf)
 			//Override the node defined namespaces
 			cNode->nsDef=&localNamespaces.front();
 		}
-		retVal=xmlNodeDump(buf, xmlDoc, cNode, 0, 0);
+		retVal=xmlNodeDump(buf, xmlDoc, cNode, 0, prettyPrinting);
 		//Restore the previously defined namespaces
 		cNode->nsDef=oldNsDef;
 	}
@@ -1320,6 +1351,160 @@ ASFUNCTIONBODY(XML,_toString)
 {
 	XML* th=Class<XML>::cast(obj);
 	return Class<ASString>::getInstanceS(th->toString_priv());
+}
+
+ASFUNCTIONBODY(XML,_getIgnoreComments)
+{
+	return abstract_b(ignoreComments);
+}
+ASFUNCTIONBODY(XML,_setIgnoreComments)
+{
+	assert(args && argslen==1);
+	ignoreComments = Boolean_concrete(args[0]);
+	LOG(LOG_INFO,"ignoreComments handling is not implemented yet");
+	return NULL;
+}
+ASFUNCTIONBODY(XML,_getIgnoreProcessingInstructions)
+{
+	return abstract_b(ignoreProcessingInstructions);
+}
+ASFUNCTIONBODY(XML,_setIgnoreProcessingInstructions)
+{
+	assert(args && argslen==1);
+	ignoreProcessingInstructions = Boolean_concrete(args[0]);
+	LOG(LOG_INFO,"ignoreProcessingInstructions handling is not implemented yet");
+	return NULL;
+}
+ASFUNCTIONBODY(XML,_getIgnoreWhitespace)
+{
+	return abstract_b(ignoreWhitespace);
+}
+ASFUNCTIONBODY(XML,_setIgnoreWhitespace)
+{
+	assert(args && argslen==1);
+	ignoreWhitespace = Boolean_concrete(args[0]);
+	xmlKeepBlanksDefault(ignoreWhitespace ? 0 : 1);
+	return NULL;
+}
+ASFUNCTIONBODY(XML,_getPrettyIndent)
+{
+	return abstract_i(prettyIndent);
+}
+ASFUNCTIONBODY(XML,_setPrettyIndent)
+{
+	assert(args && argslen==1);
+	prettyIndent = args[0]->toInt();
+	xmlThrDefIndentTreeOutput(prettyIndent);
+	return NULL;
+}
+ASFUNCTIONBODY(XML,_getPrettyPrinting)
+{
+	return abstract_b(prettyPrinting);
+}
+ASFUNCTIONBODY(XML,_setPrettyPrinting)
+{
+	assert(args && argslen==1);
+	prettyPrinting = Boolean_concrete(args[0]);
+	return NULL;
+}
+ASFUNCTIONBODY(XML,_getSettings)
+{
+	ASObject* res = Class<ASObject>::getInstanceS();
+	multiname mn(NULL);
+	mn.name_type=multiname::NAME_STRING;
+	mn.ns.push_back(nsNameAndKind("",NAMESPACE));
+	mn.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	mn.isAttribute = true;
+
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreComments");
+	res->setVariableByMultiname(mn,abstract_b(ignoreComments),CONST_NOT_ALLOWED);
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreProcessingInstructions");
+	res->setVariableByMultiname(mn,abstract_b(ignoreProcessingInstructions),CONST_NOT_ALLOWED);
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreWhitespace");
+	res->setVariableByMultiname(mn,abstract_b(ignoreWhitespace),CONST_NOT_ALLOWED);
+	mn.name_s_id=getSys()->getUniqueStringId("prettyIndent");
+	res->setVariableByMultiname(mn,abstract_i(prettyIndent),CONST_NOT_ALLOWED);
+	mn.name_s_id=getSys()->getUniqueStringId("prettyPrinting");
+	res->setVariableByMultiname(mn,abstract_b(prettyPrinting),CONST_NOT_ALLOWED);
+	return res;
+}
+ASFUNCTIONBODY(XML,_setSettings)
+{
+	if (argslen == 0)
+	{
+		setDefaultXMLSettings();
+		return getSys()->getNullRef();
+	}
+	_NR<ASObject> arg0;
+	ARG_UNPACK(arg0);
+	if (arg0->is<Null>() || arg0->is<Undefined>())
+	{
+		setDefaultXMLSettings();
+		return getSys()->getNullRef();
+	}
+	multiname mn(NULL);
+	mn.name_type=multiname::NAME_STRING;
+	mn.ns.push_back(nsNameAndKind("",NAMESPACE));
+	mn.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	mn.isAttribute = true;
+	_NR<ASObject> o;
+
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreComments");
+	if (arg0->hasPropertyByMultiname(mn,true,true))
+	{
+		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		ignoreComments = o->toInt();
+	}
+
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreProcessingInstructions");
+	if (arg0->hasPropertyByMultiname(mn,true,true))
+	{
+		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		ignoreProcessingInstructions = o->toInt();
+	}
+
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreWhitespace");
+	if (arg0->hasPropertyByMultiname(mn,true,true))
+	{
+		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		ignoreWhitespace = o->toInt();
+	}
+
+	mn.name_s_id=getSys()->getUniqueStringId("prettyIndent");
+	if (arg0->hasPropertyByMultiname(mn,true,true))
+	{
+		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		prettyIndent = o->toInt();
+	}
+
+	mn.name_s_id=getSys()->getUniqueStringId("prettyPrinting");
+	if (arg0->hasPropertyByMultiname(mn,true,true))
+	{
+		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		prettyPrinting = o->toInt();
+	}
+	return getSys()->getNullRef();
+}
+ASFUNCTIONBODY(XML,_getDefaultSettings)
+{
+	ASObject* res = Class<ASObject>::getInstanceS();
+	multiname mn(NULL);
+	mn.name_type=multiname::NAME_STRING;
+	mn.ns.push_back(nsNameAndKind("",NAMESPACE));
+	mn.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	mn.isAttribute = true;
+
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreComments");
+	res->setVariableByMultiname(mn,abstract_b(true),CONST_NOT_ALLOWED);
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreProcessingInstructions");
+	res->setVariableByMultiname(mn,abstract_b(true),CONST_NOT_ALLOWED);
+	mn.name_s_id=getSys()->getUniqueStringId("ignoreWhitespace");
+	res->setVariableByMultiname(mn,abstract_b(true),CONST_NOT_ALLOWED);
+	mn.name_s_id=getSys()->getUniqueStringId("prettyIndent");
+	res->setVariableByMultiname(mn,abstract_i(2),CONST_NOT_ALLOWED);
+	mn.name_s_id=getSys()->getUniqueStringId("prettyPrinting");
+	res->setVariableByMultiname(mn,abstract_b(true),CONST_NOT_ALLOWED);
+	return res;
 }
 
 tiny_string XML::toString_priv()

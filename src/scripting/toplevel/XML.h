@@ -45,11 +45,6 @@ private:
 	XMLList* getAllAttributes();
 	void getText(XMLVector& ret);
 	_NR<XML> getRootNode();
-	bool ignoreComments;
-	bool ignoreProcessingInstructions;
-	bool ignoreWhitespace;
-	uint32_t prettyIndent;
-	bool prettyPrinting;
 	/*
 	 * @param name The name of the wanted children, "*" for all children
 	 *
@@ -102,6 +97,21 @@ public:
 	ASFUNCTION(_setName);
 	ASFUNCTION(_setNamespace);
 	ASFUNCTION(_setChildren);
+
+	ASFUNCTION(_getIgnoreComments);
+	ASFUNCTION(_setIgnoreComments);
+	ASFUNCTION(_getIgnoreProcessingInstructions);
+	ASFUNCTION(_setIgnoreProcessingInstructions);
+	ASFUNCTION(_getIgnoreWhitespace);
+	ASFUNCTION(_setIgnoreWhitespace);
+	ASFUNCTION(_getPrettyIndent);
+	ASFUNCTION(_setPrettyIndent);
+	ASFUNCTION(_getPrettyPrinting);
+	ASFUNCTION(_setPrettyPrinting);
+	ASFUNCTION(_getSettings);
+	ASFUNCTION(_setSettings);
+	ASFUNCTION(_getDefaultSettings);
+
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);

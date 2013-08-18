@@ -227,7 +227,7 @@ uint16_t ASObject::toUInt16()
 
 int32_t ASObject::toInt()
 {
-	return 0;
+	return toPrimitive()->toInt();
 }
 
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */

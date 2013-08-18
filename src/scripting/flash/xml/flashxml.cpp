@@ -296,7 +296,8 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 
 void XMLDocument::parseXMLImpl(const string& str)
 {
-	rootNode=buildFromString(str, ignoreWhite);
+	bool hasParent;
+	rootNode=buildFromString(str, ignoreWhite,&hasParent);
 }
 
 ASFUNCTIONBODY(XMLDocument,_toString)

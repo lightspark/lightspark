@@ -60,6 +60,7 @@ private:
 	void appendChild(_R<XML> child);
 	static void normalizeRecursive(xmlpp::Node *node);
 	void addTextContent(const tiny_string& str);
+	bool hasParentNode;
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);

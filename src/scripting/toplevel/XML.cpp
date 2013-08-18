@@ -47,24 +47,25 @@ void setDefaultXMLSettings()
 	prettyPrinting = true;
 }
 
-XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false)
+XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false), hasParentNode(false)
 {
 }
 
 XML::XML(Class_base* c,const string& str):ASObject(c),node(NULL),constructed(true)
 {
-	node=buildFromString(str, false);
+	node=buildFromString(str, false,&hasParentNode);
 }
 
 XML::XML(Class_base* c,_R<XML> _r, xmlpp::Node* _n):ASObject(c),root(_r),node(_n),constructed(true)
 {
 	assert(node);
+	hasParentNode = true;
 }
 
 XML::XML(Class_base* c,xmlpp::Node* _n):ASObject(c),constructed(true)
 {
 	assert(_n);
-	node=buildCopy(_n);
+	node=buildCopy(_n,&hasParentNode);
 	assert(node);
 }
 
@@ -176,7 +177,7 @@ ASFUNCTIONBODY(XML,_constructor)
 	   args[0]->is<Null>() || 
 	   args[0]->is<Undefined>())
 	{
-		th->node=th->buildFromString("", false);
+		th->node=th->buildFromString("", false,&th->hasParentNode);
 	}
 	else if(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()))
 	{
@@ -185,7 +186,7 @@ ASFUNCTIONBODY(XML,_constructor)
 		ByteArray* ba=Class<ByteArray>::cast(args[0]);
 		uint32_t len=ba->getLength();
 		const uint8_t* str=ba->getBuffer(len, false);
-		th->node=th->buildFromString(std::string((const char*)str,len), false,
+		th->node=th->buildFromString(std::string((const char*)str,len), false,&th->hasParentNode,
 					     getVm()->getDefaultXMLNamespace());
 	}
 	else if(args[0]->is<ASString>() ||
@@ -196,22 +197,22 @@ ASFUNCTIONBODY(XML,_constructor)
 	{
 		//By specs, XML constructor will only convert to string Numbers or Booleans
 		//ints are not explicitly mentioned, but they seem to work
-		th->node=th->buildFromString(args[0]->toString(), false,
+		th->node=th->buildFromString(args[0]->toString(), false,&th->hasParentNode,
 					     getVm()->getDefaultXMLNamespace());
 	}
 	else if(args[0]->is<XML>())
 	{
-		th->node=th->buildCopy(args[0]->as<XML>()->node);
+		th->node=th->buildCopy(args[0]->as<XML>()->node,&th->hasParentNode);
 	}
 	else if(args[0]->is<XMLList>())
 	{
 		XMLList *list=args[0]->as<XMLList>();
 		_R<XML> reduced=list->reduceToXML();
-		th->node=th->buildCopy(reduced->node);
+		th->node=th->buildCopy(reduced->node,&th->hasParentNode);
 	}
 	else
 	{
-		th->node=th->buildFromString(args[0]->toString(), false,
+		th->node=th->buildFromString(args[0]->toString(), false,&th->hasParentNode,
 					     getVm()->getDefaultXMLNamespace());
 	}
 	return NULL;
@@ -327,6 +328,7 @@ void XML::appendChild(_R<XML> newChild)
 		return;
 
 	xmlAddChild(node->cobj(), imported_node);
+
 }
 
 /* returns the named attribute in an XMLList */
@@ -701,7 +703,11 @@ ASObject *XML::getParentNode()
 {
 	xmlpp::Node *parent=node->get_parent();
 	if (parent)
+	{
+		if (!hasParentNode)
+			return getSys()->getUndefinedRef();
 		return Class<XML>::getInstanceS(getRootNode(), parent);
+	}
 	else
 		return getSys()->getUndefinedRef();
 }

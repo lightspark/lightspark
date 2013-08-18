@@ -75,7 +75,7 @@ void RecoveryDomParser::parse_memory_raw(const unsigned char* contents, size_typ
 #endif
 
 xmlpp::Node* XMLBase::buildFromString(const string& str,
-				      bool ignoreEmptyTextNodes,
+				      bool ignoreEmptyTextNodes, bool *hasParent,
 				      const string& default_ns)
 {
 	string buf = parserQuirks(str);
@@ -89,6 +89,7 @@ xmlpp::Node* XMLBase::buildFromString(const string& str,
 	xmlpp::Document* doc=parser.get_document();
 	if(doc && doc->get_root_node())
 	{
+		*hasParent = true;
 		xmlpp::Element *root = doc->get_root_node();
 		// It would be better to remove empty nodes during
 		// parsing, but xmlpp doesn't offer an interface.
@@ -98,16 +99,16 @@ xmlpp::Node* XMLBase::buildFromString(const string& str,
 		return root;
 	}
 
-	LOG(LOG_ERROR, "XML parsing failed, creating text node");
 	//If everything fails, create a fake document and add a single text string child
+	// see 10.3.1 in ECMA 357
 	if (default_ns.empty())
-		buf="<a></a>";
+		buf="<parent></parent>";
 	else
-		buf="<a xmlns=\"" + default_ns + "\"></a>";
+		buf="<parent xmlns=\"" + default_ns + "\"></parent>";
 	parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
 
+	*hasParent = false;
 	return parser.get_document()->get_root_node()->add_child_text(str);
-	// TODO: node's parent (root) should be inaccessible from AS code
 }
 
 void XMLBase::addDefaultNamespace(xmlpp::Element *root, const string& default_ns)
@@ -137,25 +138,25 @@ void XMLBase::addDefaultNamespaceRecursive(xmlNodePtr node, xmlNsPtr ns)
 	}
 }
 
-xmlpp::Node* XMLBase::buildCopy(const xmlpp::Node* src)
+xmlpp::Node* XMLBase::buildCopy(const xmlpp::Node* src, bool *hasParent)
 {
 	const xmlpp::ContentNode* contentnode;
 	const xmlpp::TextNode* textnode=dynamic_cast<const xmlpp::TextNode*>(src);
 	if(textnode)
 	{
-		return buildFromString(textnode->get_content(), false);
+		return buildFromString(textnode->get_content(), false,hasParent);
 	}
 	else if ((contentnode = dynamic_cast<const xmlpp::ContentNode*>(src)))
 	{
 		// ContentNode but not TextNode => comment, PI or CData
 		// These can't be root nodes so we add a dummy root.
-		// TODO: The root node should not be accessible from
-		// AS code.
+		*hasParent = false;
 		xmlpp::Element* root = parser.get_document()->create_root_node("dummy_root");
 		return root->import_node(contentnode);
 	}
 	else
 	{
+		*hasParent = true;
 		return parser.get_document()->create_root_node_by_import(src);
 	}
 }

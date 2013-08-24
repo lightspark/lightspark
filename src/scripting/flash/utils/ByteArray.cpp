@@ -36,7 +36,7 @@ using namespace lightspark;
 
 
 ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),littleEndian(false),objectEncoding(ObjectEncoding::AMF3),
-	position(0),bytes(b),real_len(l),len(l)
+	position(0),bytes(b),real_len(l),len(l),shareable(false)
 {
 #ifdef MEMORY_USAGE_PROFILING
 	c->memoryAccount->addBytes(l);
@@ -102,6 +102,10 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeShort","",Class<IFunction>::getFunction(writeShort),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),DYNAMIC_TRAIT);
+	REGISTER_GETTER_SETTER(c,shareable);
+	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",Class<IFunction>::getFunction(atomicCompareAndSwapIntAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",Class<IFunction>::getFunction(atomicCompareAndSwapLength),NORMAL_METHOD,true);
+
 
 	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass());
 	IDataInput::linkTraits(c);
@@ -111,6 +115,15 @@ void ByteArray::sinit(Class_base* c)
 
 void ByteArray::buildTraits(ASObject* o)
 {
+}
+
+void ByteArray::lock()
+{
+	if (shareable) mutex.lock();
+}
+void ByteArray::unlock()
+{
+	if (shareable) mutex.unlock();
 }
 
 uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
@@ -226,7 +239,9 @@ ASFUNCTIONBODY(ByteArray,_getPosition)
 
 void ByteArray::setPosition(uint32_t p)
 {
+	lock();
 	position=p;
+	unlock();
 }
 
 ASFUNCTIONBODY(ByteArray,_setPosition)
@@ -298,31 +313,37 @@ ASFUNCTIONBODY(ByteArray,_setLength)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==1);
+
 	uint32_t newLen=args[0]->toInt();
+	th->lock();
 	if(newLen==th->len) //Nothing to do
 		return NULL;
+	th->setLength(newLen);
+	th->unlock();
+	return NULL;
+}
+void ByteArray::setLength(uint32_t newLen)
+{
 	if (newLen > 0)
 	{
-		th->getBuffer(newLen,true);
+		getBuffer(newLen,true);
 	}
 	else
 	{
-		if (th->bytes)
+		if (bytes)
 		{
 #ifdef MEMORY_USAGE_PROFILING
-			th->getClass()->memoryAccount->removeBytes(th->real_len);
+			getClass()->memoryAccount->removeBytes(th->real_len);
 #endif
-			free(th->bytes);
+			free(bytes);
 		}
-		th->bytes = NULL;
-		th->len = newLen;
-		th->real_len = newLen;
+		bytes = NULL;
+		real_len = newLen;
 	}
-	if (th->position > th->len)
-		th->position = (th->len > 0 ? th->len-1 : 0);
-	return NULL;
+	len = newLen;
+	if (position > len)
+		position = (len > 0 ? len-1 : 0);
 }
-
 ASFUNCTIONBODY(ByteArray,_getLength)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
@@ -339,12 +360,15 @@ ASFUNCTIONBODY(ByteArray,readBoolean)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 
+	th->lock();
 	uint8_t ret;
 	if(!th->readByte(ret))
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
+	th->unlock();
 	return abstract_b(ret!=0);
 }
 
@@ -356,6 +380,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	uint32_t length;
 	ARG_UNPACK(out)(offset, 0)(length, 0);
 	
+	th->lock();
 	if(length == 0)
 	{
 		assert(th->len >= th->position);
@@ -365,16 +390,19 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	//Error checks
 	if(th->position+length > th->len)
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 	if((uint64_t)length+offset > 0xFFFFFFFF)
 	{
+		th->unlock();
 		throw Class<RangeError>::getInstanceS("length+offset");
 	}
 	
 	uint8_t* buf=out->getBuffer(length+offset,true);
 	memcpy(buf+offset,th->bytes+th->position,length);
 	th->position+=length;
+	th->unlock();
 
 	return NULL;
 }
@@ -398,11 +426,13 @@ ASFUNCTIONBODY(ByteArray,readUTF)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 
 	tiny_string res;
+	th->lock();
 	if (!th->readUTF(res))
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
-
+	th->unlock();
 	return Class<ASString>::getInstanceS(res);
 }
 
@@ -412,13 +442,16 @@ ASFUNCTIONBODY(ByteArray,readUTFBytes)
 	uint32_t length;
 
 	ARG_UNPACK (length);
+	th->lock();
 	if(th->position+length > th->len)
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
 	uint8_t *bufStart=th->bytes+th->position;
 	th->position+=length;
+	th->unlock();
 	return Class<ASString>::getInstanceS((char *)bufStart,length);
 }
 
@@ -442,7 +475,9 @@ ASFUNCTIONBODY(ByteArray,writeUTF)
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
+	th->lock();
 	th->writeUTF(str->data);
+	th->unlock();
 	return NULL;
 }
 
@@ -453,9 +488,11 @@ ASFUNCTIONBODY(ByteArray,writeUTFBytes)
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
+	th->lock();
 	th->getBuffer(th->position+str->data.numBytes(),true);
 	memcpy(th->bytes+th->position,str->data.raw_buf(),str->data.numBytes());
 	th->position+=str->data.numBytes();
+	th->unlock();
 
 	return NULL;
 }
@@ -470,9 +507,11 @@ ASFUNCTIONBODY(ByteArray,writeMultiByte)
 	// TODO: should convert from UTF-8 to charset
 	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.writeMultiByte doesn't convert charset");
 
+	th->lock();
 	th->getBuffer(th->position+value.numBytes(),true);
 	memcpy(th->bytes+th->position,value.raw_buf(),value.numBytes());
 	th->position+=value.numBytes();
+	th->unlock();
 
 	return NULL;
 }
@@ -497,7 +536,9 @@ ASFUNCTIONBODY(ByteArray,writeObject)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert_and_throw(argslen==1);
+	th->lock();
 	th->writeObject(args[0]);
+	th->unlock();
 
 	return NULL;
 }
@@ -516,7 +557,9 @@ ASFUNCTIONBODY(ByteArray,writeShort)
 	int32_t value;
 	ARG_UNPACK(value);
 
+	th->lock();
 	th->writeShort((static_cast<uint16_t>(value & 0xffff)));
+	th->unlock();
 	return NULL;
 }
 
@@ -545,9 +588,11 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	if(length == 0)
 		length=(out->getLength()-offset);
 	uint8_t* buf=out->getBuffer(offset+length,false);
+	th->lock();
 	th->getBuffer(th->position+length,true);
 	memcpy(th->bytes+th->position,buf+offset,length);
 	th->position+=length;
+	th->unlock();
 
 	return NULL;
 }
@@ -565,7 +610,9 @@ ASFUNCTIONBODY(ByteArray,writeByte)
 
 	int32_t value=args[0]->toInt();
 
+	th->lock();
 	th->writeByte(value&0xff);
+	th->unlock();
 
 	return NULL;
 }
@@ -576,10 +623,12 @@ ASFUNCTIONBODY(ByteArray,writeBoolean)
 	bool b;
 	ARG_UNPACK (b);
 
+	th->lock();
 	if (b)
 		th->writeByte(1);
 	else
 		th->writeByte(0);
+	th->unlock();
 
 	return NULL;
 }
@@ -593,9 +642,11 @@ ASFUNCTIONBODY(ByteArray,writeDouble)
 	uint64_t *intptr=reinterpret_cast<uint64_t*>(&value);
 	uint64_t value2=th->endianIn(*intptr);
 
+	th->lock();
 	th->getBuffer(th->position+8,true);
 	memcpy(th->bytes+th->position,&value2,8);
 	th->position+=8;
+	th->unlock();
 
 	return NULL;
 }
@@ -609,9 +660,11 @@ ASFUNCTIONBODY(ByteArray,writeFloat)
 	uint32_t *intptr=reinterpret_cast<uint32_t*>(&value);
 	uint32_t value2=th->endianIn(*intptr);
 
+	th->lock();
 	th->getBuffer(th->position+4,true);
 	memcpy(th->bytes+th->position,&value2,4);
 	th->position+=4;
+	th->unlock();
 
 	return NULL;
 }
@@ -623,9 +676,11 @@ ASFUNCTIONBODY(ByteArray,writeInt)
 
 	uint32_t value=th->endianIn(static_cast<uint32_t>(args[0]->toInt()));
 
+	th->lock();
 	th->getBuffer(th->position+4,true);
 	memcpy(th->bytes+th->position,&value,4);
 	th->position+=4;
+	th->unlock();
 
 	return NULL;
 }
@@ -642,8 +697,10 @@ ASFUNCTIONBODY(ByteArray,writeUnsignedInt)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==1);
 
+	th->lock();
 	uint32_t value=th->endianIn(args[0]->toUInt());
 	th->writeUnsignedInt(value);
+	th->unlock();
 	return NULL;
 }
 
@@ -690,11 +747,14 @@ ASFUNCTIONBODY(ByteArray, readByte)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
+	th->lock();
 	uint8_t ret;
 	if(!th->readByte(ret))
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
+	th->unlock();
 	return abstract_i((int8_t)ret);
 }
 
@@ -703,8 +763,10 @@ ASFUNCTIONBODY(ByteArray,readDouble)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
+	th->lock();
 	if(th->len < th->position+8)
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
@@ -714,6 +776,7 @@ ASFUNCTIONBODY(ByteArray,readDouble)
 	ret = th->endianOut(ret);
 
 	double *doubleptr=reinterpret_cast<double*>(&ret);
+	th->unlock();
 	return abstract_d(*doubleptr);
 }
 
@@ -722,8 +785,10 @@ ASFUNCTIONBODY(ByteArray,readFloat)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
+	th->lock();
 	if(th->len < th->position+4)
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
@@ -733,6 +798,7 @@ ASFUNCTIONBODY(ByteArray,readFloat)
 	ret = th->endianOut(ret);
 
 	float *floatptr=reinterpret_cast<float*>(&ret);
+	th->unlock();
 	return abstract_d(*floatptr);
 }
 
@@ -741,15 +807,17 @@ ASFUNCTIONBODY(ByteArray,readInt)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
 
+	th->lock();
 	if(th->len < th->position+4)
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
 	uint32_t ret;
 	memcpy(&ret,th->bytes+th->position,4);
 	th->position+=4;
-
+	th->unlock();
 	return abstract_i((int32_t)th->endianOut(ret));
 }
 
@@ -771,11 +839,14 @@ ASFUNCTIONBODY(ByteArray,readShort)
 	assert_and_throw(argslen==0);
 
 	uint16_t ret;
+	th->lock();
 	if(!th->readShort(ret))
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
+	th->unlock();
 	return abstract_i((int16_t)ret);
 }
 
@@ -785,8 +856,10 @@ ASFUNCTIONBODY(ByteArray,readUnsignedByte)
 	assert_and_throw(argslen==0);
 
 	uint8_t ret;
+	th->lock();
 	if (!th->readByte(ret))
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 	return abstract_ui(ret);
@@ -810,9 +883,13 @@ ASFUNCTIONBODY(ByteArray,readUnsignedInt)
 	assert_and_throw(argslen==0);
 
 	uint32_t ret;
+	th->lock();
 	if(!th->readUnsignedInt(ret))
+	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
-
+	}
+	th->unlock();
 	return abstract_ui(ret);
 }
 
@@ -822,8 +899,10 @@ ASFUNCTIONBODY(ByteArray,readUnsignedShort)
 	assert_and_throw(argslen==0);
 
 	uint16_t ret;
+	th->lock();
 	if(!th->readShort(ret))
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
@@ -837,8 +916,10 @@ ASFUNCTIONBODY(ByteArray,readMultiByte)
 	tiny_string charset;
 	ARG_UNPACK(strlen)(charset);
 
+	th->lock();
 	if(th->len < th->position+strlen)
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
@@ -851,8 +932,10 @@ ASFUNCTIONBODY(ByteArray,readObject)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	assert_and_throw(argslen==0);
+	th->lock();
 	if(th->bytes==NULL)
 	{
+		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
@@ -861,9 +944,11 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	try
 	{
 		ret=d.readObject();
+		th->unlock();
 	}
 	catch(LightsparkException& e)
 	{
+		th->unlock();
 		LOG(LOG_ERROR,"Exception caught while parsing AMF3: " << e.cause);
 		//TODO: throw AS exception
 	}
@@ -1129,7 +1214,9 @@ ASFUNCTIONBODY(ByteArray,_compress)
 	// flash throws an error if compress is called with a compression algorithm,
 	// and always uses the zlib algorithm
 	// but tamarin tests do not catch it, so we simply ignore any parameters provided
+	th->lock();
 	th->compress_zlib();
+	th->unlock();
 	return NULL;
 }
 
@@ -1139,27 +1226,34 @@ ASFUNCTIONBODY(ByteArray,_uncompress)
 	// flash throws an error if uncompress is called with a compression algorithm,
 	// and always uses the zlib algorithm
 	// but tamarin tests do not catch it, so we simply ignore any parameters provided
+	th->lock();
 	th->uncompress_zlib();
+	th->unlock();
 	return NULL;
 }
 
 ASFUNCTIONBODY(ByteArray,_deflate)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->lock();
 	th->compress_zlib();
+	th->unlock();
 	return NULL;
 }
 
 ASFUNCTIONBODY(ByteArray,_inflate)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->lock();
 	th->uncompress_zlib();
+	th->unlock();
 	return NULL;
 }
 
 ASFUNCTIONBODY(ByteArray,clear)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->lock();
 	if(th->bytes)
 	{
 #ifdef MEMORY_USAGE_PROFILING
@@ -1171,6 +1265,7 @@ ASFUNCTIONBODY(ByteArray,clear)
 	th->len=0;
 	th->real_len=0;
 	th->position=0;
+	th->unlock();
 	return NULL;
 }
 
@@ -1179,11 +1274,13 @@ ASFUNCTIONBODY(ByteArray,pop)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	uint8_t res = 0;
+	th->lock();
 	if (th->readByte(res))
 	{
 		memmove(th->bytes,(th->bytes+1),th->getLength()-1);
 		th->len--;
 	}
+	th->unlock();
 	return abstract_ui(res);
 	
 }
@@ -1192,12 +1289,15 @@ ASFUNCTIONBODY(ByteArray,pop)
 ASFUNCTIONBODY(ByteArray,push)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->lock();
 	th->getBuffer(th->len+argslen,true);
 	for (unsigned int i = 0; i < argslen; i++)
 	{
 		th->bytes[th->len+i] = (uint8_t)args[i]->toInt();
 	}
-	return abstract_ui(th->getLength());
+	uint32_t res = th->getLength();
+	th->unlock();
+	return abstract_ui(res);
 }
 
 // this seems to be how AS3 handles generic shift calls in Array class
@@ -1205,11 +1305,13 @@ ASFUNCTIONBODY(ByteArray,shift)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	uint8_t res = 0;
+	th->lock();
 	if (th->readByte(res))
 	{
 		memmove(th->bytes,(th->bytes+1),th->getLength()-1);
 		th->len--;
 	}
+	th->unlock();
 	return abstract_ui(res);
 }
 
@@ -1217,11 +1319,59 @@ ASFUNCTIONBODY(ByteArray,shift)
 ASFUNCTIONBODY(ByteArray,unshift)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
+	th->lock();
 	th->getBuffer(th->len+argslen,true);
 	for (unsigned int i = 0; i < argslen; i++)
 	{
 		memmove((th->bytes+argslen),(th->bytes),th->len);
 		th->bytes[i] = (uint8_t)args[i]->toInt();
 	}
-	return abstract_ui(th->getLength());
+	uint32_t res = th->getLength();
+	th->unlock();
+	return abstract_ui(res);
 }
+ASFUNCTIONBODY_GETTER_SETTER(ByteArray,shareable);
+
+ASFUNCTIONBODY(ByteArray,atomicCompareAndSwapIntAt)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+
+	int32_t byteindex,expectedValue,newvalue;
+	ARG_UNPACK(byteindex)(expectedValue)(newvalue);
+
+	if (byteindex < 0 || byteindex%4)
+	{
+		throwError<RangeError>(kInvalidRangeError, obj->getClassName());
+	}
+	th->lock();
+	if(byteindex >= (int32_t)th->len-4)
+	{
+		th->unlock();
+		throwError<RangeError>(kInvalidRangeError, obj->getClassName());
+	}
+	int32_t ret;
+	memcpy(&ret,th->bytes+byteindex,4);
+
+	if (ret == expectedValue)
+	{
+		memcpy(th->bytes+byteindex,&newvalue,4);
+	}
+	th->unlock();
+	return abstract_i(ret);
+}
+ASFUNCTIONBODY(ByteArray,atomicCompareAndSwapLength)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj);
+	int32_t expectedLength,newLength;
+	ARG_UNPACK(expectedLength)(newLength);
+
+	th->lock();
+	int32_t ret = th->len;
+	if (ret == expectedLength)
+	{
+		th->setLength(newLength);
+	}
+	th->unlock();
+	return abstract_i(ret);
+}
+

@@ -40,6 +40,10 @@ protected:
 	uint32_t len;
 	void compress_zlib();
 	void uncompress_zlib();
+	Mutex mutex;
+	void lock();
+	void unlock();
+	void setLength(uint32_t newLen);
 public:
 	ByteArray(Class_base* c, uint8_t* b = NULL, uint32_t l = 0);
 	~ByteArray();
@@ -103,6 +107,9 @@ public:
 	ASFUNCTION(writeUTF);
 	ASFUNCTION(writeUTFBytes);
 	ASFUNCTION(_toString);
+	ASPROPERTY_GETTER_SETTER(bool,shareable);
+	ASFUNCTION(atomicCompareAndSwapIntAt);
+	ASFUNCTION(atomicCompareAndSwapLength);
 
 	// these are internal methods used if the generic Array-Methods are called on a ByteArray
 	ASFUNCTION(pop);

@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "thread_pool.h"
 #include "backends/netutils.h"
 

@@ -26,6 +26,7 @@
 #include "toplevel/XML.h"
 #include <iostream>
 #include <fstream>
+#include "scripting/flash/utils/ByteArray.h"
 
 using namespace std;
 using namespace lightspark;

@@ -19,6 +19,7 @@
 
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/toplevel.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "parsing/amf3_generator.h"

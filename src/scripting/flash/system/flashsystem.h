@@ -22,7 +22,8 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "scripting/flash/utils/flashutils.h"
+#include "scripting/flash/utils/ByteArray.h"
+#include "scripting/toplevel/toplevel.h"
 
 namespace lightspark
 {

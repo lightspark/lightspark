@@ -30,6 +30,7 @@
 #include "swftypes.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/utils/IntervalManager.h"
 #include "timer.h"
 #include "memory_support.h"
 #include "platforms/engineutils.h"

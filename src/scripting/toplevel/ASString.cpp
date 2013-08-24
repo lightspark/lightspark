@@ -20,6 +20,7 @@
 #include <pcre.h>
 
 #include "scripting/toplevel/ASString.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "compat.h"
 #include "scripting/argconv.h"
 #include "parsing/amf3_generator.h"

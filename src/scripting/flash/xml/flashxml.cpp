@@ -20,6 +20,7 @@
 #include <libxml++/nodes/textnode.h>
 
 #include "scripting/flash/xml/flashxml.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "swf.h"
 #include "compat.h"
 #include "scripting/argconv.h"

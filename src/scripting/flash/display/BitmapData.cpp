@@ -24,6 +24,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "backends/rendering_context.h"
 
 using namespace lightspark;

@@ -97,6 +97,12 @@ SET(LIBSPARK_SOURCES
   scripting/flash/text/flashtext.cpp
   scripting/flash/text/flashtextengine.cpp
   scripting/flash/utils/flashutils.cpp
+  scripting/flash/utils/ByteArray.cpp
+  scripting/flash/utils/Dictionary.cpp
+  scripting/flash/utils/Proxy.cpp
+  scripting/flash/utils/Timer.cpp
+  scripting/flash/utils/IntervalManager.cpp
+  scripting/flash/utils/IntervalRunner.cpp
   scripting/flash/ui/Keyboard.cpp
   scripting/flash/ui/Mouse.cpp
   scripting/flash/xml/flashxml.cpp

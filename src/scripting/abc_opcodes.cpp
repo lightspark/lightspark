@@ -27,6 +27,7 @@
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
+#include "scripting/flash/utils/Proxy.h"
 
 using namespace std;
 using namespace lightspark;

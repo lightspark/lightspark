@@ -582,7 +582,6 @@ ASFUNCTIONBODY(ColorTransform,setColor)
 
 ASFUNCTIONBODY(ColorTransform,getColor)
 {
-	assert_and_throw(argslen==1);
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
 
 	int ao, ro, go, bo;

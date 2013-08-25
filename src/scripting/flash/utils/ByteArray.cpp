@@ -936,7 +936,9 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	if(th->bytes==NULL)
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		// it seems that contrary to the specs Adobe returns Undefined when reading from an empty ByteArray
+		return getSys()->getUndefinedRef();
+		//throwError<EOFError>(kEOFError);
 	}
 	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
 	Amf3Deserializer d(th);

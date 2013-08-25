@@ -763,7 +763,7 @@ bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_sl
 	assert(comparator);
 	_NR<ASObject> ret=_MNR(comparator->call(getSys()->getNullRef(), objs, 2));
 	assert_and_throw(ret);
-	return (ret->toInt()<0); //Less
+	return (ret->toNumber()<0); //Less
 }
 
 ASFUNCTIONBODY(Array,_sort)

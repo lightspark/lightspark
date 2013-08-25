@@ -819,8 +819,13 @@ ASFUNCTIONBODY(Date,valueOf)
 
 ASObject* Date::msSinceEpoch()
 {
-	return abstract_d(milliseconds+extrayears/400*MS_IN_400_YEARS);
+	return abstract_d(getMsSinceEpoch());
 }
+number_t Date::getMsSinceEpoch()
+{
+	return milliseconds+extrayears/400*MS_IN_400_YEARS;
+}
+
 
 tiny_string Date::toString()
 {
@@ -1091,6 +1096,23 @@ number_t Date::parse(tiny_string str)
 	}
 	
 	return res;
+}
+bool Date::isEqual(ASObject* r)
+{
+	check();
+	//if we are comparing the same object the answer is true
+	if(this==r)
+		return true;
+	if (r->is<Date>())
+		return getMsSinceEpoch() == r->as<Date>()->getMsSinceEpoch();
+	return ASObject::isEqual(r);
+}
+
+TRISTATE Date::isLess(ASObject* o)
+{
+	if (o->is<Date>())
+		return (getMsSinceEpoch() < o->as<Date>()->getMsSinceEpoch())?TTRUE:TFALSE;
+	return ASObject::isLess(o);
 }
 
 void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -35,6 +35,7 @@ private:
 	GDateTime *datetime;
 	GDateTime *datetimeUTC;
 	ASObject *msSinceEpoch();
+	number_t getMsSinceEpoch();
 	tiny_string toString_priv(bool utc, const char* formatstr) const;
 	void MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime);
 	void MakeDateFromMilliseconds(int64_t ms);
@@ -103,6 +104,9 @@ public:
 	ASFUNCTION(toLocaleString);
 	ASFUNCTION(toLocaleDateString);
 	ASFUNCTION(toLocaleTimeString);
+
+	bool isEqual(ASObject* r);
+	TRISTATE isLess(ASObject* r);
 	tiny_string toString();
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -368,6 +368,9 @@ for test in $TESTS; do
 		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 		FAILED_TESTS="$FAILED_TESTS $test"
+		if [ $THISFAILEDCOUNT -eq 0 ]; then
+			ALLSUCCESSCOUNT=`expr $ALLSUCCESSCOUNT + 1`
+		fi
 	else
 		if [ $COLORS -eq 1 ]; then
 			echo -e "\\e[0;31m$test printed no test summary!\\e[0m"

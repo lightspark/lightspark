@@ -232,7 +232,7 @@ if [ $COMPILE -eq 1 ]; then
 	echo -e "\n" 1>&2;
 fi
 
-FAILURECOUNT=0; SUCCESSCOUNT=0; TESTCOUNT=0;
+FAILURECOUNT=0; SUCCESSCOUNT=0; TESTCOUNT=0; EXITEDCOUNT=0; ALLSUCCESSCOUNT=0; NOSUMMARYCOUNT=0;
 
 #Colors used for colorization
 CLEAR='\\\e[0m';
@@ -341,6 +341,7 @@ for test in $TESTS; do
 		fi
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
+		EXITEDCOUNT=`expr $EXITEDCOUNT + 1`
 		continue
 	fi
 	#Remove the RANDR error when running under xvfb, convert control characters to something like \303
@@ -358,6 +359,7 @@ for test in $TESTS; do
 		THISSUCCESSCOUNT=`echo "$lines" | sed -n -e 's/.*=No failures (\(.*\))=.*/\1/p'`
 		THISNUMTESTS="$THISSUCCESSCOUNT"
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
+		ALLSUCCESSCOUNT=`expr $ALLSUCCESSCOUNT + 1`
 	elif [ "`echo $lines | grep 'PASSED!\|FAILED!'`" != "" ]; then
 		# Tamarin commit 7555 and later
 		THISSUCCESSCOUNT=`echo "$lines" | grep -c 'PASSED!'`
@@ -377,6 +379,7 @@ for test in $TESTS; do
 		fi
 		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
 		FAILED_TESTS="$FAILED_TESTS $test"
+		NOSUMMARYCOUNT=`expr $NOSUMMARYCOUNT + 1`
 		continue
 	fi
 
@@ -446,7 +449,13 @@ if [ $PROPRIETARY -eq 0 ]; then
 fi
 
 if [ $COLORS -eq 1 ]; then
-	echo -e "Tests run: $TESTCOUNT, \e[1;32m$SUCCESSCOUNT successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m" 1>&2
+	echo -e "\e[1;36mTEST SUMMARY:" 1>&2
+	echo -e "$TESTCOUNT tests\e[0m were run, of which \e[1;32m`expr $TESTCOUNT - $EXITEDCOUNT` finished\e[0m and \e[1;31m$EXITEDCOUNT exited prematurely\e[0m." 1>&2
+	echo -e "\e[1;36m`expr $SUCCESSCOUNT + $FAILURECOUNT` single test cases\e[0m were performed: \e[1;32m$SUCCESSCOUNT were successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m (\e[1;36m`expr $SUCCESSCOUNT \* 100 / \( $SUCCESSCOUNT + $FAILURECOUNT \)`% success rate\e[0m)." 1>&2
+	echo -e "\e[1;32m$ALLSUCCESSCOUNT tests passed every single test case\e[0m, while \e[1;31m$NOSUMMARYCOUNT didn't print a test summary\e[0m." 1>&2
 else
-	echo -e "Tests run: $TESTCOUNT, $SUCCESSCOUNT successful and $FAILURECOUNT failed" 1>&2
+	echo -e "TEST SUMMARY:" 1>&2
+	echo -e "$TESTCOUNT tests were run, of which `expr $TESTCOUNT - $EXITEDCOUNT` finished and $EXITEDCOUNT exited prematurely." 1>&2
+	echo -e "`expr $SUCCESSCOUNT + $FAILURECOUNT` single test cases were performed: $SUCCESSCOUNT were successful and $FAILURECOUNT failed (`expr $SUCCESSCOUNT \* 100 / \( $SUCCESSCOUNT + $FAILURECOUNT \)`% success rate)." 1>&2
+	echo -e "$ALLSUCCESSCOUNT tests passed every single test case, while $NOSUMMARYCOUNT didn't print a test summary." 1>&2
 fi

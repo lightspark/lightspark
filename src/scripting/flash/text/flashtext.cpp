@@ -228,7 +228,10 @@ _NR<DisplayObject> TextField::hitTestImpl(_NR<DisplayObject> last, number_t x, n
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && isHittable(type))
-		return last;
+	{
+		incRef();
+		return _MNR(this);
+	}
 	else
 		return NullRef;
 }

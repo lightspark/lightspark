@@ -329,7 +329,6 @@ void XML::appendChild(_R<XML> newChild)
 	//E.g. adding xml2 to xml1 and later adding xml3 to xml2
 	//Since xml1 has a copy of xml2 as child, we need to inform xml1 when xml2 receives a child.
 
-
 	xmlNode* imported_node = xmlDocCopyNode(newChild->node->cobj(), node->cobj()->doc, 1);
 	if (!imported_node)
 		return;

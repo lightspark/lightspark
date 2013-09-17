@@ -61,6 +61,8 @@ private:
 	static void normalizeRecursive(xmlpp::Node *node);
 	void addTextContent(const tiny_string& str);
 	bool hasParentNode;
+	XML* delegationNode;
+	xmlNode* coupledNode;
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);

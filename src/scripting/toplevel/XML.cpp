@@ -47,22 +47,22 @@ void setDefaultXMLSettings()
 	prettyPrinting = true;
 }
 
-XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false), hasParentNode(false)
+XML::XML(Class_base* c):ASObject(c),node(NULL),constructed(false),hasParentNode(false),delegationNode(NULL)
 {
 }
 
-XML::XML(Class_base* c,const string& str):ASObject(c),node(NULL),constructed(true)
+XML::XML(Class_base* c,const string& str):ASObject(c),node(NULL),constructed(true),delegationNode(NULL)
 {
 	node=buildFromString(str, false,&hasParentNode);
 }
 
-XML::XML(Class_base* c,_R<XML> _r, xmlpp::Node* _n):ASObject(c),root(_r),node(_n),constructed(true)
+XML::XML(Class_base* c,_R<XML> _r, xmlpp::Node* _n):ASObject(c),root(_r),node(_n),constructed(true),delegationNode(NULL)
 {
 	assert(node);
 	hasParentNode = true;
 }
 
-XML::XML(Class_base* c,xmlpp::Node* _n):ASObject(c),constructed(true)
+XML::XML(Class_base* c,xmlpp::Node* _n):ASObject(c),constructed(true),delegationNode(NULL)
 {
 	assert(_n);
 	node=buildCopy(_n,&hasParentNode);
@@ -320,15 +320,31 @@ ASFUNCTIONBODY(XML,_appendChild)
 
 void XML::appendChild(_R<XML> newChild)
 {
-	// Work around a text node concatenation bug in libxml++ older
-	// than 2.35.3 by importing manually instead of calling
-	// import_node().
+	//libxml++ < 2.35.3 has a bug regarding concatenation
+	//TODO change to import_node() after major distros upgrade libxml++
+
+	//NOTE: libxml2 merges adjacent text nodes and doesn't preserve the tree structure of the nodes
+	//We need to create a copy to keep track of the changes to "our" nodes and delegate them
+	//to libxml2 to reconstruct the affected part of the tree recursivley.
+	//E.g. adding xml2 to xml1 and later adding xml3 to xml2
+	//Since xml1 has a copy of xml2 as child, we need to inform xml1 when xml2 receives a child.
+
+
 	xmlNode* imported_node = xmlDocCopyNode(newChild->node->cobj(), node->cobj()->doc, 1);
 	if (!imported_node)
 		return;
 
-	xmlAddChild(node->cobj(), imported_node);
+	newChild->coupledNode = xmlAddChild(node->cobj(), imported_node);
+	newChild->delegationNode = this;
 
+	if (delegationNode)
+	{
+		xmlUnlinkNode(coupledNode);
+		xmlFreeNode(coupledNode);
+
+		incRef();
+		delegationNode->appendChild(_R<XML>(this));
+	}
 }
 
 /* returns the named attribute in an XMLList */

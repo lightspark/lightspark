@@ -28,13 +28,15 @@ extern "C"
 {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#ifdef HAVE_LIBAVRESAMPLE
 #include <libavresample/avresample.h>
+#endif
 #include <libavutil/opt.h>
 #include <libavutil/mathematics.h>
 #ifndef AVCODEC_MAX_AUDIO_FRAME_SIZE
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
 #endif
-#ifndef CodecID
+#ifdef HAVE_AVCODECID
 #define CodecID AVCodecID
 #endif
 #define MAX_AUDIO_FRAME_SIZE AVCODEC_MAX_AUDIO_FRAME_SIZE
@@ -293,6 +295,7 @@ private:
 #if HAVE_AVCODEC_DECODE_AUDIO4
 	AVFrame* frameIn;
 #endif
+	int resampleFrameToS16(FrameSamples& curTail);
 public:
 	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
 	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, int sampleRate, int channels, bool);

@@ -616,23 +616,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	{
 		if (frameIn->format != AV_SAMPLE_FMT_S16)
 		{
-			AVAudioResampleContext * avr = avresample_alloc_context();
-			av_opt_set_int(avr, "in_channel_layout",  frameIn->channel_layout, 0);
-			av_opt_set_int(avr, "out_channel_layout", frameIn->channel_layout,  0);
-			av_opt_set_int(avr, "in_sample_rate",     frameIn->sample_rate,     0);
-			av_opt_set_int(avr, "out_sample_rate",    frameIn->sample_rate,     0);
-			av_opt_set_int(avr, "in_sample_fmt",      frameIn->format,   0);
-			av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
-			avresample_open(avr);
-			
-			uint8_t *output;
-			int out_linesize;
-			int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], frameIn->sample_rate, frameIn->sample_rate, AV_ROUND_UP);
-			av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
-			maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*4;
-			memcpy(curTail.samples, output, maxLen);
-			av_freep(&output);
-			avresample_free(&avr);
+			maxLen = resampleFrameToS16(curTail);
 		}
 		else 
 		{
@@ -687,23 +671,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	{
 		if (frameIn->format != AV_SAMPLE_FMT_S16)
 		{
-			AVAudioResampleContext * avr = avresample_alloc_context();
-			av_opt_set_int(avr, "in_channel_layout",  frameIn->channel_layout, 0);
-			av_opt_set_int(avr, "out_channel_layout", frameIn->channel_layout,  0);
-			av_opt_set_int(avr, "in_sample_rate",     frameIn->sample_rate,     0);
-			av_opt_set_int(avr, "out_sample_rate",    frameIn->sample_rate,     0);
-			av_opt_set_int(avr, "in_sample_fmt",      frameIn->format,   0);
-			av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
-			avresample_open(avr);
-			
-			uint8_t *output;
-			int out_linesize;
-			int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], frameIn->sample_rate, frameIn->sample_rate, AV_ROUND_UP);
-			av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
-			maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*4;
-			memcpy(curTail.samples, output, maxLen);
-			av_freep(&output);
-			avresample_free(&avr);
+			maxLen = resampleFrameToS16(curTail);
 		}
 		else 
 		{
@@ -741,6 +709,35 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	curTail.current=curTail.samples;
 	curTail.time=time;
 	samplesBuffer.commitLast();
+	return maxLen;
+}
+
+int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
+{
+	int maxLen;
+#ifdef HAVE_LIBAVRESAMPLE
+	AVAudioResampleContext * avr = avresample_alloc_context();
+	av_opt_set_int(avr, "in_channel_layout",  frameIn->channel_layout, 0);
+	av_opt_set_int(avr, "out_channel_layout", frameIn->channel_layout,  0);
+	av_opt_set_int(avr, "in_sample_rate",     frameIn->sample_rate,     0);
+	av_opt_set_int(avr, "out_sample_rate",    frameIn->sample_rate,     0);
+	av_opt_set_int(avr, "in_sample_fmt",      frameIn->format,   0);
+	av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
+	avresample_open(avr);
+
+	uint8_t *output;
+	int out_linesize;
+	int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], frameIn->sample_rate, frameIn->sample_rate, AV_ROUND_UP);
+	av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
+	maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*4;
+	memcpy(curTail.samples, output, maxLen);
+	av_freep(&output);
+	avresample_free(&avr);
+#else
+	LOG(LOG_ERROR, "unexpected sample format and can't resample, recompile with libavresample");
+	memset(curTail.samples, 0, frameIn->linesize[0]);
+	maxLen = frameIn->linesize[0];
+#endif
 	return maxLen;
 }
 

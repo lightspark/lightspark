@@ -629,9 +629,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 #else
 	int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
 #endif
-#else
-	int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
-#endif
+
 	if (ret > 0)
 	{
 		pkt.data += ret;
@@ -642,6 +640,10 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 			overflowBuffer.assign(pkt.data, pkt.data+pkt.size);
 		}
 	}
+
+#else
+	int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
+#endif
 
 	curTail.len=maxLen;
 	assert(!(curTail.len&0x80000000));

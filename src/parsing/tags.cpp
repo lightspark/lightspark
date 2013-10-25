@@ -24,7 +24,11 @@
 #include <list>
 #include <algorithm>
 #include <sstream>
+#ifdef __MINGW32__
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
 #include "scripting/abc.h"
 #include "parsing/tags.h"
 #include "backends/geometry.h"

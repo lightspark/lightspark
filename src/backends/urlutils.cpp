@@ -30,7 +30,11 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#ifdef __MINGW32__
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
 
 using namespace lightspark;
 

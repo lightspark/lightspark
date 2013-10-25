@@ -294,8 +294,8 @@ private:
 	CodecID LSToFFMpegCodec(LS_AUDIO_CODEC lscodec);
 #if HAVE_AVCODEC_DECODE_AUDIO4
 	AVFrame* frameIn;
-#endif
 	int resampleFrameToS16(FrameSamples& curTail);
+#endif
 public:
 	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
 	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, int sampleRate, int channels, bool);

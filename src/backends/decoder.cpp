@@ -713,7 +713,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	samplesBuffer.commitLast();
 	return maxLen;
 }
-
+#if HAVE_AVCODEC_DECODE_AUDIO4
 int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 {
 	int maxLen;
@@ -742,6 +742,7 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 #endif
 	return maxLen;
 }
+#endif
 
 uint32_t FFMpegAudioDecoder::decodeStreamSomePackets(std::istream& s, uint32_t time)
 {

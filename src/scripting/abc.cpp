@@ -56,6 +56,7 @@
 #include "swf.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"
+#include "scripting/toplevel/JSON.h"
 #include "scripting/toplevel/Math.h"
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/toplevel/Vector.h"
@@ -220,6 +221,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Namespace","",Class<Namespace>::getRef());
 	builtin->registerBuiltin("AS3","",_MR(Class<Namespace>::getInstanceS(AS3)));
 	builtin->registerBuiltin("Date","",Class<Date>::getRef());
+	builtin->registerBuiltin("JSON","",Class<JSON>::getRef());
 	builtin->registerBuiltin("RegExp","",Class<RegExp>::getRef());
 	builtin->registerBuiltin("QName","",Class<ASQName>::getRef());
 	builtin->registerBuiltin("uint","",Class<UInteger>::getRef());
@@ -1975,9 +1977,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				//do interfaces have cinit methods?
 				//TODO: call them, set constructor property, do something
 				if(classes[t->classi].cinit != 0)
-					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (static)");
+					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (static):"<<className);
 				if(instances[t->classi].init != 0)
-					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (constructor)");
+					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (constructor):"<<className);
 				ret = ci;
 			}
 			else

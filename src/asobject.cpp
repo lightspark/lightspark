@@ -340,6 +340,46 @@ _R<ASObject> ASObject::call_toString()
 	return _MR(ret);
 }
 
+bool ASObject::has_toJSON()
+{
+	multiname toJSONName(NULL);
+	toJSONName.name_type=multiname::NAME_STRING;
+	toJSONName.name_s_id=getSys()->getUniqueStringId("toJSON");
+	toJSONName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	toJSONName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	toJSONName.isAttribute = false;
+	return ASObject::hasPropertyByMultiname(toJSONName, true, true);
+}
+
+tiny_string ASObject::call_toJSON()
+{
+	multiname toJSONName(NULL);
+	toJSONName.name_type=multiname::NAME_STRING;
+	toJSONName.name_s_id=getSys()->getUniqueStringId("toJSON");
+	toJSONName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	toJSONName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	toJSONName.isAttribute = false;
+	assert(ASObject::hasPropertyByMultiname(toJSONName, true, true));
+
+	_NR<ASObject> o=getVariableByMultiname(toJSONName,SKIP_IMPL);
+	assert_and_throw(o->is<IFunction>());
+	IFunction* f=o->as<IFunction>();
+
+	incRef();
+	ASObject *ret=f->call(this,NULL,0);
+	tiny_string res;
+	if (ret->is<ASString>())
+	{
+		res += "\"";
+		res += ret->toString();
+		res += "\"";
+	}
+	else 
+		res = ret->toString();
+	
+	return res;
+}
+
 bool ASObject::isPrimitive() const
 {
 	// ECMA 3, section 4.3.2, T_INTEGER and T_UINTEGER are added
@@ -1485,6 +1525,131 @@ ASObject *ASObject::describeType() const
 	// TODO: undocumented constructor node
 
 	return Class<XML>::getInstanceS(root);
+}
+
+tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter)
+{
+	if (has_toJSON())
+	{
+		return call_toJSON();
+	}
+
+	tiny_string newline = (spaces.empty() ? "" : "\n");
+	tiny_string res;
+	if (this->isPrimitive())
+	{
+		switch(this->type)
+		{
+			case T_STRING:
+			{
+				res += "\"";
+				tiny_string sub = this->toString();
+				for (CharIterator it=sub.begin(); it!=sub.end(); it++)
+				{
+					switch (*it)
+					{
+						case '\b':
+							res += "\\b";
+							break;
+						case '\f':
+							res += "\\f";
+							break;
+						case '\n':
+							res += "\\n";
+							break;
+						case '\r':
+							res += "\\r";
+							break;
+						case '\t':
+							res += "\\t";
+							break;
+						case '\"':
+							res += "\\\"";
+							break;
+						case '\\':
+							res += "\\\\";
+							break;
+						default:
+							if (*it < 0x20 || *it > 0xff)
+							{
+								char hexstr[7];
+								sprintf(hexstr,"\\u%04x",*it);
+								res += hexstr;
+							}
+							else
+								res += *it;
+							break;
+					}
+				}
+				res += "\"";
+				break;
+			}
+			case T_UNDEFINED:
+				res += "null";
+				break;
+			default:
+				res += this->toString();
+				break;
+		}
+	}
+	else
+	{
+		res += "{";
+		const variables_map::const_var_iterator beginIt = Variables.Variables.begin();
+		const variables_map::const_var_iterator endIt = Variables.Variables.end();
+		bool bfirst = true;
+		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
+		{
+			// check for cylic reference
+			if (std::find(path.begin(),path.end(), varIt->second.var) != path.end())
+				throwError<TypeError>(kJSONCyclicStructure);
+
+			if (replacer != NULL)
+			{
+				if (!bfirst)
+					res += ",";
+				res += newline+spaces;
+				res += "\"";
+				res += getSys()->getStringFromUniqueId(varIt->first.nameId);
+				res += "\"";
+				res += ":";
+				if (!spaces.empty())
+					res += " ";
+				ASObject* params[2];
+				
+				params[0] = Class<ASString>::getInstanceS(getSys()->getStringFromUniqueId(varIt->first.nameId));
+				params[1] = varIt->second.var;
+				params[1]->incRef();
+				ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
+				LOG(LOG_ERROR,"funcall:"<<res<<"|"<<funcret);
+				if (funcret)
+					res += funcret->toString();
+				else
+					res += varIt->second.var->toJSON(path,replacer,spaces+spaces,filter);
+				bfirst = false;
+			}
+			else if (filter.empty() || filter.find(tiny_string(" ")+getSys()->getStringFromUniqueId(varIt->first.nameId)+" ") != tiny_string::npos)
+			{
+				if (!bfirst)
+					res += ",";
+				res += newline+spaces;
+				res += "\"";
+				res += getSys()->getStringFromUniqueId(varIt->first.nameId);
+				res += "\"";
+				res += ":";
+				if (!spaces.empty())
+					res += " ";
+				res += varIt->second.var->toJSON(path,replacer,spaces+spaces,filter);
+				bfirst = false;
+			}
+			path.push_back(varIt->second.var);
+		}
+		if (!bfirst)
+			res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
+
+		res += "}";
+	}
+	return res;
 }
 
 bool ASObject::hasprop_prototype()

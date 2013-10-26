@@ -43,6 +43,7 @@ void Dictionary::finalize()
 void Dictionary::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->setDeclaredMethodByQName("toJSON",AS3,Class<IFunction>::getFunction(_toJSON),NORMAL_METHOD,true);
 }
 
 void Dictionary::buildTraits(ASObject* o)
@@ -52,6 +53,11 @@ void Dictionary::buildTraits(ASObject* o)
 ASFUNCTIONBODY(Dictionary,_constructor)
 {
 	return NULL;
+}
+
+ASFUNCTIONBODY(Dictionary,_toJSON)
+{
+	return Class<ASString>::getInstanceS("Dictionary");
 }
 
 Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)

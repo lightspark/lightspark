@@ -166,6 +166,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
+	virtual tiny_string toJSON(std::vector<ASObject *> &path,IFunction* replacer, const tiny_string &spaces,const tiny_string& filter);
 };
 
 

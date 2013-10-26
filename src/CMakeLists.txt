@@ -112,6 +112,7 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/Date.cpp
   scripting/toplevel/Error.cpp
   scripting/toplevel/Integer.cpp
+  scripting/toplevel/JSON.cpp
   scripting/toplevel/Math.cpp
   scripting/toplevel/Number.cpp
   scripting/toplevel/RegExp.cpp

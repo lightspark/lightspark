@@ -125,6 +125,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setNamespace",AS3,Class<IFunction>::getFunction(_setNamespace),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copy",AS3,Class<IFunction>::getFunction(_copy),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setChildren",AS3,Class<IFunction>::getFunction(_setChildren),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toJSON",AS3,Class<IFunction>::getFunction(_toJSON),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(XML,generator)
@@ -1511,6 +1512,10 @@ ASFUNCTIONBODY(XML,_getDefaultSettings)
 	mn.name_s_id=getSys()->getUniqueStringId("prettyPrinting");
 	res->setVariableByMultiname(mn,abstract_b(true),CONST_NOT_ALLOWED);
 	return res;
+}
+ASFUNCTIONBODY(XML,_toJSON)
+{
+	return Class<ASString>::getInstanceS("XML");
 }
 
 tiny_string XML::toString_priv()

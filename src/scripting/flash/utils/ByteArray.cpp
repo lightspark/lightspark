@@ -105,7 +105,7 @@ void ByteArray::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,shareable);
 	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",Class<IFunction>::getFunction(atomicCompareAndSwapIntAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",Class<IFunction>::getFunction(atomicCompareAndSwapLength),NORMAL_METHOD,true);
-
+	c->setDeclaredMethodByQName("toJSON",AS3,Class<IFunction>::getFunction(_toJSON),NORMAL_METHOD,true);
 
 	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass());
 	IDataInput::linkTraits(c);
@@ -1377,3 +1377,7 @@ ASFUNCTIONBODY(ByteArray,atomicCompareAndSwapLength)
 	return abstract_i(ret);
 }
 
+ASFUNCTIONBODY(ByteArray,_toJSON)
+{
+	return Class<ASString>::getInstanceS("ByteArray");
+}

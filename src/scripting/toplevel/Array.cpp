@@ -1568,6 +1568,59 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 	}
 }
 
+tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string& spaces,const tiny_string& filter)
+{
+	if (has_toJSON())
+	{
+		return call_toJSON();
+	}
+
+	tiny_string res = "[";
+	std::map<uint32_t,data_slot>::iterator it;
+	// check for cylic reference
+	if (std::find(path.begin(),path.end(), this) != path.end())
+		throwError<TypeError>(kJSONCyclicStructure);
+	path.push_back(this);
+	bool bfirst = true;
+	tiny_string newline = (spaces.empty() ? "" : "\n");
+	for (it=data.begin() ; it != data.end(); ++it)
+	{
+		if(it->second.type==DATA_OBJECT && it->second.data)
+		{
+			tiny_string subres;
+			if (replacer != NULL)
+			{
+				ASObject* params[2];
+				
+				params[0] = Class<Number>::getInstanceS(it->first);
+				params[0]->incRef();
+				params[1] = it->second.data;
+				params[1]->incRef();
+				ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
+				if (funcret)
+					subres = funcret->toJSON(path,NULL,spaces,filter);
+			}
+			else
+				subres = it->second.data->toJSON(path,replacer,spaces,filter);
+			if (!subres.empty())
+			{
+				if (!bfirst)
+					res += ",";
+				res += newline+spaces;
+
+				bfirst = false;
+				res += subres;
+			}
+			path.push_back(it->second.data);
+		}
+	}
+	if (!bfirst)
+		res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
+	res += "]";
+	return res;
+	
+}
+
 Array::~Array()
 {
 	Array::finalize();

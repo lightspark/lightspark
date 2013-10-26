@@ -112,6 +112,7 @@ public:
 	ASFUNCTION(_getSettings);
 	ASFUNCTION(_setSettings);
 	ASFUNCTION(_getDefaultSettings);
+	ASFUNCTION(_toJSON);
 
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);

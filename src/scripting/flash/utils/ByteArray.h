@@ -110,6 +110,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,shareable);
 	ASFUNCTION(atomicCompareAndSwapIntAt);
 	ASFUNCTION(atomicCompareAndSwapLength);
+	ASFUNCTION(_toJSON);
 
 	// these are internal methods used if the generic Array-Methods are called on a ByteArray
 	ASFUNCTION(pop);

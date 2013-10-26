@@ -427,6 +427,8 @@ public:
 	_R<ASObject> call_valueOf();
 	bool has_toString();
 	_R<ASObject> call_toString();
+	bool has_toJSON();
+	tiny_string call_toJSON();
 
 	/* Helper function for calling getClass()->getQualifiedClassName() */
 	virtual tiny_string getClassName();
@@ -465,6 +467,7 @@ public:
 
 	virtual ASObject *describeType() const;
 
+	virtual tiny_string toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter);
 	/* returns true if the current object is of type T */
 	template<class T> bool is() const { return dynamic_cast<const T*>(this); }
 	/* returns this object casted to the given type.

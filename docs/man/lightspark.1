@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH LIGHTSPARK 1 "November 7, 2013"
+.TH LIGHTSPARK 1 "November 9, 2013"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -41,6 +41,10 @@ Pretends to be loading the file from an url
 .IP
 Disable the ActionScript interpreter
 .HP 
+\fB\-\-enable-fast-interpreter\fP
+.IP
+Enable an experimental optimized ActionScript interpreter
+.HP 
 \fB\-\-enable-jit\fP, \fB\-j\fP
 .IP
 Enable the ActionScript JIT compilation engine
@@ -56,6 +60,22 @@ Load flash parameters from file. Every odd line will be interpreted as a paramet
 \fB\-\-profiling-output\fP profiling-file, \fB\-o\fP profiling-file
 .IP
 Output profiling data to profiling-file in a callgrind/KCachegrind compatible format
+.HP 
+\fB\-\-security-sandbox\fP type, \fB\-s\fP type
+.IP
+Run a Flash file in a given sandbox to control access to network and local files. The possible types are: remote (default), local-with-filesystem, local-with-networking, local-trusted.
+.HP
+\fB\-\-exit-on-error\fP
+.IP
+Exit as soon as the first error is encountered.
+.HP
+\fB\-\-HTTP-cookies\fP cookie
+.IP
+Set cookie to be used in HTTP requests.
+.HP
+\fB\-\-air\fP
+.IP
+Run as an AIR application: grant permission to access both local files and network, and enable AIR APIs.
 .HP
 \fB\-\-version\fP, \fB\-v\fP
 .IP

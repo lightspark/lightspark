@@ -287,7 +287,12 @@ int main(int argc, char* argv[])
 	{
 		sys->mainClip->setOrigin(url, fileName);
 		sys->parseParametersFromURL(sys->mainClip->getOrigin());
-		sandboxType = SecurityManager::REMOTE;
+		if (sandboxType != SecurityManager::REMOTE &&
+		    sys->mainClip->getOrigin().getProtocol() != "file")
+		{
+			LOG(LOG_INFO, _("Switching to remote sandbox because of remote url"));
+			sandboxType = SecurityManager::REMOTE;
+		}
 	}
 #ifndef _WIN32
 	//When running in a local sandbox, set the root URL to the current working dir

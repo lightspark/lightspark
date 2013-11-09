@@ -246,6 +246,7 @@ int main(int argc, char* argv[])
 #ifdef PROFILING_SUPPORT
 			" [--profiling-output|-o profiling-file]" <<
 #endif
+			" [--version|-v]" <<
 			" <file.swf>");
 		exit(1);
 	}

@@ -942,7 +942,8 @@ ASFUNCTIONBODY(ASObject,isPrototypeOf)
 
 ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 {
-	assert_and_throw(argslen==1);
+	if (argslen == 0)
+		return abstract_b(false);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());

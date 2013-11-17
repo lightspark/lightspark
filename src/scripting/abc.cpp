@@ -782,6 +782,11 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.clear();
 				ret->ns.push_back(nsNameAndKind(qname->getURI(),NAMESPACE));
 			}
+			else
+			{
+				ret->ns.clear();
+				ret->ns.push_back(nsNameAndKind("",NAMESPACE));
+			}
 
 			ret->setName(n);
 			n->decRef();

@@ -122,8 +122,9 @@ struct multiname_info
 	u30 type_definition;
 	std::vector<u30> param_types;
 	multiname* cached;
-	multiname_info():cached(NULL){}
-	~multiname_info(){delete cached;}
+	multiname* dynamic;
+	multiname_info():cached(NULL),dynamic(NULL){}
+	~multiname_info(){delete cached;if (dynamic) {delete dynamic;};}
 	bool isAttributeName() const;
 };
 

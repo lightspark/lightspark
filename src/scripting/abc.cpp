@@ -779,15 +779,14 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			if (n->is<ASQName>())
 			{
 				ASQName *qname = n->as<ASQName>();
+				// don't overwrite any static parts
+				if (!m->dynamic)
+					m->dynamic=new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
+				ret=m->dynamic;
+				ret->isAttribute=m->cached->isAttribute;
 				ret->ns.clear();
 				ret->ns.push_back(nsNameAndKind(qname->getURI(),NAMESPACE));
 			}
-			else
-			{
-				ret->ns.clear();
-				ret->ns.push_back(nsNameAndKind("",NAMESPACE));
-			}
-
 			ret->setName(n);
 			n->decRef();
 			break;

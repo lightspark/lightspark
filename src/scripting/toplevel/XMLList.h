@@ -28,15 +28,21 @@ namespace lightspark
 {
 class XMLList: public ASObject
 {
+friend class XML;
+public:
+	typedef std::vector<_R<XML>, reporter_allocator<_R<XML>>> XMLListVector;
 private:
-	std::vector<_R<XML>, reporter_allocator<_R<XML>>> nodes;
+	XMLListVector nodes;
 	bool constructed;
-	tiny_string toString_priv() const;
+	XMLList* targetobject;
+	multiname targetproperty;
+
+	tiny_string toString_priv();
 	void buildFromString(const std::string& str);
 	std::string extractXMLDeclaration(const std::string& xml, std::string& xmldecl_out);
-	void toXMLString_priv(xmlBufferPtr buf) const;
 	void appendSingleNode(ASObject *x);
-	void replace(unsigned int i, ASObject *x);
+	void replace(unsigned int i, ASObject *x, const XML::XMLVector& retnodes, CONST_ALLOWED_FLAG allowConst);
+	void getTargetVariables(const multiname& name, XML::XMLVector& retnodes);
 public:
 	XMLList(Class_base* c);
 	/*
@@ -44,9 +50,10 @@ public:
 	*/
 	XMLList(Class_base* cb,bool c);
 	XMLList(Class_base* c,const XML::XMLVector& r);
+	XMLList(Class_base* c,const XML::XMLVector& r,XMLList* targetobject,const multiname& targetproperty);
 	XMLList(Class_base* c,const std::string& str);
 	void finalize();
-	static void buildTraits(ASObject* o){};
+	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLength);
@@ -71,7 +78,7 @@ public:
 	ASFUNCTION(_namespace);
 	ASFUNCTION(name);
 	ASFUNCTION(nodeKind);
-	ASFUNCTION(normalize);
+	ASFUNCTION(_normalize);
 	ASFUNCTION(localName);
 	ASFUNCTION(inScopeNamespaces);
 	ASFUNCTION(addNamespace);
@@ -79,16 +86,25 @@ public:
 	ASFUNCTION(_setLocalName);
 	ASFUNCTION(_setName);
 	ASFUNCTION(_setNamespace);
+	ASFUNCTION(insertChildAfter);
+	ASFUNCTION(insertChildBefore);
+	ASFUNCTION(namespaceDeclarations);
+	ASFUNCTION(removeNamespace);
+	ASFUNCTION(comments);
+	ASFUNCTION(processingInstructions);
+	ASFUNCTION(_propertyIsEnumerable);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XML::XMLVector& ret);
+	bool deleteVariableByMultiname(const multiname& name);
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, bool bIsAttribute, XML::XMLVector& ret);
 	_NR<XML> convertToXML() const;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 	void append(_R<XML> x);
 	void append(_R<XMLList> x);
 	tiny_string toString();
+	tiny_string toXMLString_internal(bool pretty=true);
 	int32_t toInt();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
@@ -96,6 +112,9 @@ public:
 	_R<ASObject> nextValue(uint32_t index);
 	_R<XML> reduceToXML() const;
 	void appendNodesTo(XML *dest) const;
+	void normalize();
+	void clear();
+	XMLList* getTargetObject() { return targetobject; }
 };
 }
 #endif /* SCRIPTING_TOPLEVEL_XMLLIST_H */

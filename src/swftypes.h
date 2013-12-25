@@ -376,6 +376,7 @@ struct multiname: public memory_reporter
 	void resetNameIfObject();
 	bool isQName() const { return ns.size() == 1; }
 	bool toUInt(uint32_t& out, bool acceptStringFractions=false) const;
+	bool isEmpty() const { return name_type == NAME_OBJECT && name_o == NULL;}
 };
 
 class FLOAT 

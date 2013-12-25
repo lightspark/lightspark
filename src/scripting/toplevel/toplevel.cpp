@@ -45,7 +45,6 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
-#include "scripting/toplevel/XML.h"
 
 using namespace std;
 using namespace lightspark;
@@ -371,6 +370,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc.scope_stack=func_scope;
 	cc.initialScopeStack=func_scope.size();
 	cc.exec_pos=0;
+	if (getVm()->currentCallContext)
+		cc.defaultNamespaceUri = getVm()->currentCallContext->defaultNamespaceUri;
 
 	/* Set the current global object, each script in each DoABCTag has its own */
 	call_context* saved_cc = getVm()->currentCallContext;
@@ -1357,6 +1358,12 @@ void ASQName::setByNode(xmlpp::Node* node)
 	local_name = node->get_name();
 	uri=node->get_namespace_uri();
 }
+void ASQName::setByXML(XML* node)
+{
+	uri_is_null=false;
+	local_name = node->getName();
+	uri=node->getNamespaceURI();
+}
 
 void ASQName::sinit(Class_base* c)
 {
@@ -1454,9 +1461,7 @@ ASFUNCTIONBODY(ASQName,generator)
 	{
 		th->local_name="";
 		th->uri_is_null=false;
-		th->uri="";
-		// Should set th->uri to the default namespace
-		LOG(LOG_NOT_IMPLEMENTED, "QName constructor not completely implemented");
+		th->uri=getVm()->getDefaultXMLNamespace();
 		return th;
 	}
 	if(argslen==1)
@@ -1498,9 +1503,7 @@ ASFUNCTIONBODY(ASQName,generator)
 		}
 		else
 		{
-			// Should set th->uri to the default namespace
-			LOG(LOG_NOT_IMPLEMENTED, "QName constructor not completely implemented");
-			th->uri="";
+			th->uri=getVm()->getDefaultXMLNamespace();
 		}
 	}
 	else if(namespaceval->getObjectType()==T_NULL)
@@ -1583,9 +1586,9 @@ Namespace::Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& 
 void Namespace::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
+	//c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),SETTER_METHOD,true);
+	//c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_getPrefix),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
@@ -1769,20 +1772,20 @@ ASFUNCTIONBODY(Namespace,generator)
 	}
 	return th;
 }
-
+/*
 ASFUNCTIONBODY(Namespace,_setURI)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
 	th->uri=args[0]->toString();
 	return NULL;
 }
-
+*/
 ASFUNCTIONBODY(Namespace,_getURI)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
 	return Class<ASString>::getInstanceS(th->uri);
 }
-
+/*
 ASFUNCTIONBODY(Namespace,_setPrefix)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
@@ -1798,7 +1801,7 @@ ASFUNCTIONBODY(Namespace,_setPrefix)
 	}
 	return NULL;
 }
-
+*/
 ASFUNCTIONBODY(Namespace,_getPrefix)
 {
 	Namespace* th=static_cast<Namespace*>(obj);

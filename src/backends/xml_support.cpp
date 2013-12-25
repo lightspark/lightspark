@@ -40,6 +40,7 @@ void RecoveryDomParser::parse_memory_raw(const unsigned char* contents, size_typ
 
 	xmlSAXHandlerV1* handler=(xmlSAXHandlerV1*)calloc(1,sizeof(xmlSAXHandlerV1));
 	initxmlDefaultSAXHandler(handler, 0);
+	handler->comment = comment;
 	context_->recovery=1;
 	free(context_->sax);
 	context_->sax=(xmlSAXHandler*)handler;
@@ -87,18 +88,32 @@ xmlpp::Node* XMLBase::buildFromString(const string& str,
 	{
 	}
 	xmlpp::Document* doc=parser.get_document();
-	if(doc && doc->get_root_node())
+	if(doc)
 	{
-		*hasParent = true;
-		xmlpp::Element *root = doc->get_root_node();
-		// It would be better to remove empty nodes during
-		// parsing, but xmlpp doesn't offer an interface.
-		if (ignoreEmptyTextNodes)
-			removeWhitespaceNodes(root);
-		addDefaultNamespace(root, default_ns);
-		return root;
+		if (!doc->get_root_node())
+		{
+			buf = removeWhitespace(str)+"<parent></parent>";
+			try
+			{
+				parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
+			}
+			catch(const exception& e)
+			{
+			}
+			doc=parser.get_document();
+		}
+		if (doc && doc->get_root_node())
+		{
+			*hasParent = true;
+			xmlpp::Element *root = doc->get_root_node();
+			// It would be better to remove empty nodes during
+			// parsing, but xmlpp doesn't offer an interface.
+			if (ignoreEmptyTextNodes)
+				removeWhitespaceNodes(root);
+			addDefaultNamespace(root, default_ns);
+			return root;
+		}
 	}
-
 	//If everything fails, create a fake document and add a single text string child
 	// see 10.3.1 in ECMA 357
 	if (default_ns.empty())
@@ -221,4 +236,26 @@ void XMLBase::removeWhitespaceNodes(xmlpp::Element *node)
 			removeWhitespaceNodes(element);
 		}
 	}
+}
+tiny_string XMLBase::removeWhitespace(tiny_string val)
+{
+	bool bwhite = true;
+	uint32_t start = 0;
+	CharIterator it = val.begin();
+	CharIterator itend = val.begin();
+	while (it != val.end())
+	{
+		if (!g_unichar_isspace(*it))
+		{
+			itend=it;
+			itend++;
+			bwhite = false;
+		}
+		else if (bwhite)
+			start++;
+		it++;
+	}
+	if (bwhite)
+		return "";
+	return val.substr(start,itend);
 }

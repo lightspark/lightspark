@@ -24,27 +24,36 @@
 
 namespace lightspark
 {
+class Namespace;
 class XMLList;
 class XML: public ASObject, public XMLBase
 {
 friend class XMLList;
 public:
 	typedef std::vector<_R<XML>> XMLVector;
+	typedef std::vector<_R<Namespace>> NSVector;
 private:
-	//Pointer to the root XML element, the one that owns the parser that created this node
-	_NR<XML> root;
-	//The node this object represent
-	xmlpp::Node* node;
-	static void recursiveGetDescendantsByQName(_R<XML> root, xmlpp::Node* node, const tiny_string& name, const tiny_string& ns, 
-			XMLVector& ret);
+	_NR<XMLList> childrenlist;
+	_NR<XML> parentNode;
+	xmlElementType nodetype;
+	tiny_string nodename;
+	tiny_string nodevalue;
+	tiny_string nodenamespace_uri;
+	tiny_string nodenamespace_prefix;
+	_NR<XMLList> attributelist;
+	NSVector namespacedefs;
+
+	void createTree(xmlpp::Node* node);
 	tiny_string toString_priv();
+	const char* nodekindString();
+	
 	bool constructed;
-	bool nodesEqual(xmlpp::Node *a, xmlpp::Node *b) const;
-	XMLVector getAttributes(const tiny_string& name="*",
-				const tiny_string& namespace_uri="*");
+	bool nodesEqual(XML *a, XML *b) const;
+	XMLVector getAttributes();
+	XMLVector getAttributesByMultiname(const multiname& name);
+	XMLVector getValuesByMultiname(_NR<XMLList> nodelist, const multiname& name);
 	XMLList* getAllAttributes();
 	void getText(XMLVector& ret);
-	_NR<XML> getRootNode();
 	/*
 	 * @param name The name of the wanted children, "*" for all children
 	 *
@@ -54,17 +63,19 @@ private:
 	tiny_string getNamespacePrefixByURI(const tiny_string& uri, bool create=false);
 	void setLocalName(const tiny_string& localname);
 	void setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix="");
-	void removeAllChildren();
 	// Append node or attribute to this. Concatenates adjacent
 	// text nodes.
 	void appendChild(_R<XML> child);
-	static void normalizeRecursive(xmlpp::Node *node);
+	static void normalizeRecursive(XML *node);
 	void addTextContent(const tiny_string& str);
 	bool hasParentNode;
+	void RemoveNamespace(Namespace *ns);
+	void getComments(XMLVector& ret);
+	void getprocessingInstructions(XMLVector& ret, tiny_string name);
+	void CheckCyclicReference(XML* node);
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
-	XML(Class_base* c,_R<XML> _r, xmlpp::Node* _n);
 	XML(Class_base* c,xmlpp::Node* _n);
 	void finalize();
 	ASFUNCTION(_constructor);
@@ -113,23 +124,43 @@ public:
 	ASFUNCTION(_setSettings);
 	ASFUNCTION(_getDefaultSettings);
 	ASFUNCTION(_toJSON);
+	ASFUNCTION(insertChildAfter);
+	ASFUNCTION(insertChildBefore);
+	ASFUNCTION(namespaceDeclarations);
+	ASFUNCTION(removeNamespace);
+	ASFUNCTION(comments);
+	ASFUNCTION(processingInstructions);
+	ASFUNCTION(_propertyIsEnumerable);
+	ASFUNCTION(_hasOwnProperty);
 
-	static void buildTraits(ASObject* o){};
+	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns, XMLVector& ret);
+	
+	static const tiny_string encodeToXML(const tiny_string value, bool bIsAttribute);
+	static bool getPrettyPrinting();
+
+	const tiny_string getName() const { return nodename;}
+	const tiny_string getNamespaceURI() const { return nodenamespace_uri;}
+	XMLList* getChildrenlist() { return childrenlist ? childrenlist.getPtr() : NULL; }
+	
+	
+	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns,bool bIsAttribute, XMLVector& ret);
 	void getElementNodes(const tiny_string& name, XMLVector& foundElements);
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
+	bool deleteVariableByMultiname(const multiname& name);
+	static bool isValidMultiname(const multiname& name, uint32_t& index);
+
 	void setTextContent(const tiny_string& content);
 	tiny_string toString();
+	const tiny_string toXMLString_internal(bool pretty=true, tiny_string defaultnsprefix = "", const char* indent = "", bool bfirst = true);
 	int32_t toInt();
-	void toXMLString_priv(xmlBufferPtr buf);
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 	xmlElementType getNodeKind() const;
 	ASObject *getParentNode();
-	XML *copy() const;
+	XML *copy();
 	void normalize();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);

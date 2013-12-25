@@ -25,6 +25,7 @@
 #include <libxml++/exceptions/internal_error.h>
 //For xmlCreateFileParserCtxt().
 #include <libxml/parserInternals.h>
+#include "tiny_string.h"
 
 namespace lightspark
 {
@@ -67,6 +68,7 @@ protected:
 	static std::string quirkCData(const std::string& str);
 	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
 	void removeWhitespaceNodes(xmlpp::Element *node);
+	tiny_string removeWhitespace(tiny_string val);
 public:
 	static std::string parserQuirks(const std::string& str);
 };

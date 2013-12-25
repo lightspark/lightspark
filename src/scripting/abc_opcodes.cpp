@@ -1807,15 +1807,32 @@ void ABCVm::getDescendants(call_context* th, int n)
 	assert_and_throw(name->name_type==multiname::NAME_STRING);
 	XML::XMLVector ret;
 	//TODO: support multiname and namespaces
+	XMLList* targetobject = NULL;
 	if(obj->getClass()==Class<XML>::getClass())
 	{
 		XML* xmlObj=Class<XML>::cast(obj);
-		xmlObj->getDescendantsByQName(getSys()->getStringFromUniqueId(name->name_s_id), "", ret);
+		targetobject = xmlObj->getChildrenlist();
+		tiny_string ns_uri = "";
+		if (name->ns.size() > 0)
+		{
+			ns_uri = name->ns[0].getImpl().name;
+			if (ns_uri.empty() && name->ns.size() == 1)
+				ns_uri="*";
+		}
+		xmlObj->getDescendantsByQName(getSys()->getStringFromUniqueId(name->name_s_id), ns_uri,name->isAttribute, ret);
 	}
 	else if(obj->getClass()==Class<XMLList>::getClass())
 	{
 		XMLList* xmlObj=Class<XMLList>::cast(obj);
-		xmlObj->getDescendantsByQName(getSys()->getStringFromUniqueId(name->name_s_id), "", ret);
+		tiny_string ns_uri = "";
+		if (name->ns.size() > 0)
+		{
+			ns_uri = name->ns[0].getImpl().name;
+			if (ns_uri.empty() && name->ns.size() == 1)
+				ns_uri="*";
+		}
+		targetobject = xmlObj;
+		xmlObj->getDescendantsByQName(getSys()->getStringFromUniqueId(name->name_s_id), ns_uri,name->isAttribute, ret);
 	}
 	else if(obj->getClass()->isSubClass(Class<Proxy>::getClass()))
 	{
@@ -1865,7 +1882,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		obj->decRef();
 		throwError<TypeError>(kDescendentsError, objName);
 	}
-	XMLList* retObj=Class<XMLList>::getInstanceS(ret);
+	XMLList* retObj=Class<XMLList>::getInstanceS(ret,targetobject,*name);
 	th->runtime_stack_push(retObj);
 	obj->decRef();
 }
@@ -2289,22 +2306,28 @@ void ABCVm::newArray(call_context* th, int n)
 
 ASObject* ABCVm::esc_xattr(ASObject* o)
 {
-	/* TODO: implement correct escaping according to E4X
-	 * For now we just cut the string at the first \0 byte, which is wrong
-	 * but suppresses more errors */
-	tiny_string t = o->toString();
-	LOG(LOG_NOT_IMPLEMENTED,"esc_xattr on " << t);
-	o->decRef();
-	auto i=t.begin();
-	for(;i!=t.end();++i)
-	{
-		if(*i == '\0')
-			break;
-	}
-	if(i == t.end())
-		return Class<ASString>::getInstanceS(t);
+	tiny_string t;
+	if (o->is<XML>())
+		t = o->as<XML>()->toXMLString_internal();
+	else if (o->is<XMLList>())
+		t = o->as<XMLList>()->toXMLString_internal();
 	else
-		return Class<ASString>::getInstanceS(t.substr(0,i));
+		t = XML::encodeToXML(o->toString(),true);
+	o->decRef();
+	return Class<ASString>::getInstanceS(t);
+}
+
+ASObject* ABCVm::esc_xelem(ASObject* o)
+{
+	tiny_string t;
+	if (o->is<XML>())
+		t = o->as<XML>()->toXMLString_internal();
+	else if (o->is<XMLList>())
+		t = o->as<XMLList>()->toXMLString_internal();
+	else
+		t = XML::encodeToXML(o->toString(),false);
+	o->decRef();
+	return Class<ASString>::getInstanceS(t);
 }
 
 /* This should walk prototype chain of value, trying to find type. See ECMA.

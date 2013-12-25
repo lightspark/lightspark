@@ -380,6 +380,7 @@ private:
 	static uint32_t decrement_i(ASObject*);
 	static bool strictEquals(ASObject*,ASObject*);
 	static ASObject* esc_xattr(ASObject* o);
+	static ASObject* esc_xelem(ASObject* o);
 	static bool instanceOf(ASObject* value, ASObject* type);
 	static Namespace* pushNamespace(call_context* th, int n);
 	static void dxns(call_context* th, int n);

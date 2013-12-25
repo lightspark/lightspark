@@ -29,7 +29,7 @@
 #include "scripting/abcutils.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Error.h"
-//#include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/XML.h"
 #include "memory_support.h"
 #include <libxml++/parsers/domparser.h>
 #include <boost/intrusive/list.hpp>
@@ -538,6 +538,7 @@ private:
 public:
 	ASQName(Class_base* c);
 	void setByNode(xmlpp::Node* node);
+	void setByXML(XML* node);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
@@ -566,9 +567,10 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
 	ASFUNCTION(_getURI);
-	ASFUNCTION(_setURI);
+	// according to ECMA-357 and tamarin tests uri/prefix properties are readonly
+	//ASFUNCTION(_setURI);
 	ASFUNCTION(_getPrefix);
-	ASFUNCTION(_setPrefix);
+	//ASFUNCTION(_setPrefix);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_valueOf);
 	ASFUNCTION(_ECMA_valueOf);

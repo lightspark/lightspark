@@ -175,7 +175,7 @@ private:
 	bool keepCache:1;
 
 	void openCache() DLL_LOCAL;
-	void openExistingCache(const tiny_string& filename) DLL_LOCAL;
+	void openExistingCache(const tiny_string& filename, bool forWriting=true) DLL_LOCAL;
 
 	// Block until the cache file is opened by the writer stream
 	void waitForCache() DLL_LOCAL;

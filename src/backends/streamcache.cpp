@@ -396,7 +396,7 @@ void FileStreamCache::openCache()
  * \throw RunTimeException File could not be opened
  * \throw RunTimeException Called when the cache is already open
  */
-void FileStreamCache::openExistingCache(const tiny_string& filename)
+void FileStreamCache::openExistingCache(const tiny_string& filename, bool forWriting)
 {
 	if (cache.is_open())
 	{
@@ -407,7 +407,12 @@ void FileStreamCache::openExistingCache(const tiny_string& filename)
 	cacheFilename = filename;
 
 	//Open the cache file
-	cache.open(cacheFilename.raw_buf(), std::fstream::binary | std::fstream::out);
+	ios_base::openmode mode;
+	if (forWriting)
+		mode = std::fstream::binary | std::fstream::out;
+	else
+		mode = std::fstream::binary | std::fstream::in;
+	cache.open(cacheFilename.raw_buf(), mode);
 	if (!cache.is_open())
 	{
 		markFinished(true);
@@ -423,7 +428,7 @@ void FileStreamCache::useExistingFile(const tiny_string& filename)
 	keepCache = true;
 
 	cacheFilename = filename;
-	openExistingCache(filename);
+	openExistingCache(filename, false);
 
 	cache.seekg(0, std::ios::end);
 	receivedLength = cache.tellg();

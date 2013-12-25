@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH LIGHTSPARK 1 "May 29, 2010"
+.TH LIGHTSPARK 1 "November 9, 2013"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -19,15 +19,15 @@
 lightspark \- a free Flash player
 .SH SYNOPSIS
 .B lightspark 
-[\-\-url|\-u http://loader.url/file.swf] [\-\-disable-interpreter|\-ni] [\-\-enable\-jit|\-j] [\-\-log\-level|\-l 0-4] [\-\-parameters\-file|\-p params-file] [\-\-version|\-v] file.swf
+[\-\-url|\-u http://loader.url/file.swf] [\-\-air] [\-\-disable-interpreter|\-ni] [\-\-enable-fast-interpreter|\-fi] [\-\-enable\-jit|\-j] [\-\-log\-level|\-l 0-4] [\-\-parameters\-file|\-p params-file] [\-\-profiling-output|\-o] [\-\-security-sandbox|\-s <sandbox type>] [\-\-exit-on-error] [\-\-HTTP-cookies <cookie>] [\-\-version|\-v] file.swf
 .SH DESCRIPTION
 .B Lightspark
 is a free, modern Flash Player implementation, this documents the options accepted by the standalone version of the program.
 .PP
 .\" TeX users may be more comfortable with the \fB<whatever>\fP and
-.\" \fI<whatever>\fP escape sequences to invode bold face and italics,
+.\" \fI<whatever>\fP escape sequences to invoke bold face and italics,
 .\" respectively.
-The player is currently in Beta, support for any particular SWF file is not guaranteed
+The player is currently in Beta, support for any particular SWF file is not guaranteed.
 .PP
 You might wish to see the project website at http://lightspark.sf.net or our 
 technical blog at http://allievi.sssup.it/techblog
@@ -40,6 +40,10 @@ Pretends to be loading the file from an url
 \fB\-\-disable-interpreter\fP, \fB\-ni\fP
 .IP
 Disable the ActionScript interpreter
+.HP 
+\fB\-\-enable-fast-interpreter\fP
+.IP
+Enable an experimental optimized ActionScript interpreter
 .HP 
 \fB\-\-enable-jit\fP, \fB\-j\fP
 .IP
@@ -56,6 +60,22 @@ Load flash parameters from file. Every odd line will be interpreted as a paramet
 \fB\-\-profiling-output\fP profiling-file, \fB\-o\fP profiling-file
 .IP
 Output profiling data to profiling-file in a callgrind/KCachegrind compatible format
+.HP 
+\fB\-\-security-sandbox\fP type, \fB\-s\fP type
+.IP
+Run a Flash file in a given sandbox to control access to network and local files. The possible types are: remote (default), local-with-filesystem, local-with-networking, local-trusted.
+.HP
+\fB\-\-exit-on-error\fP
+.IP
+Exit as soon as the first error is encountered.
+.HP
+\fB\-\-HTTP-cookies\fP cookie
+.IP
+Set cookie to be used in HTTP requests.
+.HP
+\fB\-\-air\fP
+.IP
+Run as an AIR application: grant permission to access both local files and network, and enable AIR APIs.
 .HP
 \fB\-\-version\fP, \fB\-v\fP
 .IP

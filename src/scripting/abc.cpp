@@ -1509,7 +1509,9 @@ void ABCVm::Run(ABCVm* th)
 	{
 #ifdef LLVM_31
 		llvm::TargetOptions Opts;
+#ifndef LLVM_34
 		Opts.JITExceptionHandling = true;
+#endif
 #else
 		llvm::JITExceptionHandling = true;
 #endif

@@ -1367,7 +1367,10 @@ void ParseThread::parseSWF(UI8 ver)
 		{
 			getSys()->needsAVM2(fat->ActionScript3);
 			if(!fat->ActionScript3)
+			{
+                                delete fat;
 				return; /* no more parsing necessary, handled by fallback */
+                        }
 			if(fat->UseNetwork
 			&& getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
 			{

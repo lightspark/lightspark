@@ -1578,6 +1578,7 @@ void ABCVm::Run(ABCVm* th)
 			//If the queue is empty stop immediately
 			if(th->events_queue.empty())
 			{
+				th->event_queue_mutex.unlock();
 				break;
 			}
 			else if(firstMissingEvents)

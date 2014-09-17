@@ -850,7 +850,13 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
 	if(videoFound)
 	{
 		//Pass the frame rate from the container, the once from the codec is often wrong
-		double frameRate=av_q2d(formatCtx->streams[videoIndex]->r_frame_rate);
+		AVStream *stream = formatCtx->streams[videoIndex];
+#if LIBAVUTIL_VERSION_MAJOR < 54
+		AVRational rateRational = stream->r_frame_rate;
+#else
+		AVRational rateRational = stream->avg_frame_rate;
+#endif
+		double frameRate=av_q2d(rateRational);
 		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codec,frameRate);
 		videoDecoder=customVideoDecoder;
 	}

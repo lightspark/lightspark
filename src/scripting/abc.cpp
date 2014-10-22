@@ -46,7 +46,11 @@
 #include <llvm/Target/TargetSelect.h>
 #endif
 #include <llvm/Target/TargetOptions.h>
-#include <llvm/Analysis/Verifier.h>
+#ifdef HAVE_IR_VERIFIER_H
+#  include <llvm/IR/Verifier.h>
+#else
+#  include <llvm/Analysis/Verifier.h>
+#endif
 #include <llvm/Transforms/Scalar.h> 
 #include "logger.h"
 #include "swftypes.h"
@@ -1534,7 +1538,9 @@ void ABCVm::Run(ABCVm* th)
 		assert_and_throw(th->ex);
 
 		th->FPM=new llvm::FunctionPassManager(th->module);
-#if defined HAVE_DATALAYOUT_H || defined HAVE_IR_DATALAYOUT_H
+#ifdef LLVM_35
+		th->FPM->add(new llvm::DataLayoutPass(*th->ex->getDataLayout()));
+#elif defined HAVE_DATALAYOUT_H || defined HAVE_IR_DATALAYOUT_H
 		th->FPM->add(new llvm::DataLayout(*th->ex->getDataLayout()));
 #else
 		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));

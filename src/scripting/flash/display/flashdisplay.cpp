@@ -1542,11 +1542,13 @@ void InteractiveObject::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, contextMenu);
 	REGISTER_GETTER_SETTER(c, tabEnabled);
 	REGISTER_GETTER_SETTER(c, tabIndex);
+	REGISTER_GETTER_SETTER(c, focusRect);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, contextMenu);
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled);
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex);
+ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, focusRect); // stub
 
 void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 {

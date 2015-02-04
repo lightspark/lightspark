@@ -105,6 +105,8 @@ SET(LIBSPARK_SOURCES
   scripting/flash/utils/IntervalRunner.cpp
   scripting/flash/ui/Keyboard.cpp
   scripting/flash/ui/Mouse.cpp
+  scripting/flash/ui/ContextMenu.cpp
+  scripting/flash/ui/ContextMenuItem.cpp
   scripting/flash/xml/flashxml.cpp
   scripting/toplevel/Array.cpp
   scripting/toplevel/ASString.cpp

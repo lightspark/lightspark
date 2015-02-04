@@ -104,6 +104,8 @@
 #include "scripting/flash/text/flashtextengine.h"
 #include "scripting/flash/ui/Keyboard.h"
 #include "scripting/flash/ui/Mouse.h"
+#include "scripting/flash/ui/ContextMenu.h"
+#include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "scripting/abc.h"
@@ -453,8 +455,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef());
 	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef());
 	builtin->registerBuiltin("KeyLocation","flash.ui",Class<KeyLocation>::getRef());
-	builtin->registerBuiltin("ContextMenu","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenu","flash.ui")));
-	builtin->registerBuiltin("ContextMenuItem","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenuItem","flash.ui")));
+	builtin->registerBuiltin("ContextMenu","flash.ui",Class<ContextMenu>::getRef());
+	builtin->registerBuiltin("ContextMenuItem","flash.ui",Class<ContextMenuItem>::getRef());
 	builtin->registerBuiltin("Mouse","flash.ui",Class<Mouse>::getRef());
 
 	builtin->registerBuiltin("Accelerometer", "flash.sensors",Class<Accelerometer>::getRef());

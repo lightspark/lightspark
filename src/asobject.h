@@ -240,6 +240,10 @@ public:
 	 */
 	void setSlotNoCoerce(unsigned int n,ASObject* o);
 	void initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns);
+	void appendSlot(uint32_t nameId, const nsNameAndKind& ns)
+	{
+		initSlot(slots_vars.size()+1, nameId, ns);
+	}
 	int size() const
 	{
 		return Variables.size();
@@ -398,6 +402,7 @@ public:
 		Variables.setSlotNoCoerce(n,o);
 	}
 	void initSlot(unsigned int n, const multiname& name);
+	void appendSlot(const multiname& name);
 	unsigned int numVariables() const;
 	tiny_string getNameAt(int i) const
 	{

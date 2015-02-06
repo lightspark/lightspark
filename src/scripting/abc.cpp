@@ -2077,6 +2077,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);
+			else // slot_id 0 seems to mean appending new slot
+				obj->appendSlot(*mname);
 			break;
 		}
 		case traits_info::Slot:
@@ -2104,7 +2106,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);
-
+			else // slot_id 0 seems to mean appending new slot
+				obj->appendSlot(*mname);
+			
 			break;
 		}
 		default:

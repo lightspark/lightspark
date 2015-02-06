@@ -73,6 +73,12 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 		context->exec_pos = code.tellg();
 		switch(opcode)
 		{
+			case 0x01:
+			{
+				//bkpt
+				LOG(LOG_CALLS, _("bkpt") );
+				break;
+			}
 			case 0x02:
 			{
 				//nop
@@ -1580,6 +1586,12 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				LOG(LOG_CALLS, _("bkptline") );
 				u30 t;
 				code >> t;
+				break;
+			}
+			case 0xf3:
+			{
+				//timestamp
+				LOG(LOG_CALLS, _("timestamp") );
 				break;
 			}
 			default:

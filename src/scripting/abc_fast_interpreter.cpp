@@ -75,6 +75,12 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 
 		switch(opcode)
 		{
+			case 0x01:
+			{
+				//bkpt
+				LOG(LOG_CALLS, _("bkpt") );
+				break;
+			}
 			case 0x02:
 			{
 				//nop
@@ -1433,6 +1439,20 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				if(context->locals[i])
 					context->locals[i]->decRef();
 				context->locals[i]=obj;
+				break;
+			}
+			case 0xf2:
+			{
+				//bkptline
+				LOG(LOG_CALLS, _("bkptline") );
+				instructionPointer+=4;
+				break;
+			}
+			case 0xf3:
+			{
+				//timestamp
+				LOG(LOG_CALLS, _("timestamp") );
+				instructionPointer+=4;
 				break;
 			}
 			//lightspark custom opcodes

@@ -31,6 +31,7 @@ class ByteArray: public ASObject, public IDataInput, public IDataOutput
 {
 friend class LoaderThread;
 friend class URLLoader;
+friend class ApplicationDomain;
 protected:
 	bool littleEndian;
 	uint8_t objectEncoding;

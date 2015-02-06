@@ -122,8 +122,10 @@ ASFUNCTIONBODY(Capabilities,_getScreenResolutionY)
 	return abstract_d(height);
 }
 
-ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c),parentDomain(p)
+#define MIN_DOMAIN_MEMORY_LIMIT 1024
+ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c),domainMemory(Class<ByteArray>::getInstanceS()),parentDomain(p)
 {
+	domainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
 }
 
 void ApplicationDomain::sinit(Class_base* c)
@@ -172,7 +174,7 @@ ASFUNCTIONBODY(ApplicationDomain,_constructor)
 
 ASFUNCTIONBODY(ApplicationDomain,_getMinDomainMemoryLength)
 {
-	return abstract_ui(1024);
+	return abstract_ui(MIN_DOMAIN_MEMORY_LIMIT);
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)

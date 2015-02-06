@@ -565,6 +565,20 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				loadIntN<uint32_t>(context);
 				break;
 			}
+			case 0x38:
+			{
+				//lf32
+				LOG(LOG_CALLS, "lf32");
+				loadNumber(context);
+				break;
+			}
+			case 0x39:
+			{
+				//lf32
+				LOG(LOG_CALLS, "lf64");
+				loadNumber(context);
+				break;
+			}
 			case 0x3a:
 			{
 				//si8
@@ -802,7 +816,12 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//getlocal
 				uint32_t i=data->uints[0];
 				instructionPointer+=4;
-				assert_and_throw(context->locals[i]);
+				if (!context->locals[i])
+				{
+					LOG(LOG_CALLS, _("getLocal ") << i << " not set, pushing Undefined");
+					context->runtime_stack_push(getSys()->getUndefinedRef());
+					break;
+				}
 				context->locals[i]->incRef();
 				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
 				context->runtime_stack_push(context->locals[i]);
@@ -896,6 +915,27 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				setSlot(v1, v2, t);
 				break;
 			}
+			case 0x6e:
+			{
+				//getglobalSlot
+				uint32_t t=data->uints[0];
+				instructionPointer+=4;
+
+				Global* globalscope = getGlobalScope(context);
+				context->runtime_stack_push(globalscope->getSlot(t));
+				break;
+			}
+			case 0x6f:
+			{
+				//setglobalSlot
+				uint32_t t=data->uints[0];
+				instructionPointer+=4;
+
+				Global* globalscope = getGlobalScope(context);
+				ASObject* obj=context->runtime_stack_pop();
+				globalscope->setSlot(t,obj);
+				break;
+			}
 			case 0x70:
 			{
 				//convert_s
@@ -940,6 +980,18 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//convert_b
 				ASObject* val=context->runtime_stack_pop();
 				context->runtime_stack_push(abstract_b(convert_b(val)));
+				break;
+			}
+			case 0x77:
+			{
+				//convert_o
+				ASObject* val=context->runtime_stack_pop();
+				if (val->is<Null>())
+					throwError<TypeError>(kConvertNullToObjectError);
+				if (val->is<Undefined>())
+					throwError<TypeError>(kConvertUndefinedToObjectError);
+					
+				context->runtime_stack_push(val);
 				break;
 			}
 			case 0x78:
@@ -1358,7 +1410,12 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//getlocal_n
 				int i=opcode&3;
-				assert_and_throw(context->locals[i]);
+				if (!context->locals[i])
+				{
+					LOG(LOG_CALLS, _("getLocal ") << i << " not set, pushing Undefined");
+					context->runtime_stack_push(getSys()->getUndefinedRef());
+					break;
+				}
 				LOG(LOG_CALLS, "getLocal " << i << ": " << context->locals[i]->toDebugString() );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);

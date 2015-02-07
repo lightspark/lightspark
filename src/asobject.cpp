@@ -64,6 +64,31 @@ string ASObject::toDebugString()
 	return ret;
 }
 
+void ASObject::setProxyProperty(const multiname &name)
+{
+	if (this->proxyMultiName)
+		this->proxyMultiName->ns.clear();
+	else
+		this->proxyMultiName = new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
+	this->proxyMultiName->ns.reserve(name.ns.size());
+	for(unsigned int i=0;i<name.ns.size();i++)
+	{
+		this->proxyMultiName->ns.push_back(name.ns[i]);
+	}
+	
+}
+
+void ASObject::applyProxyProperty(multiname &name)
+{
+	if (!this->proxyMultiName)
+		return;
+	name.ns.clear();
+	name.ns.reserve(this->proxyMultiName->ns.size());
+	for(unsigned int i=0;i<this->proxyMultiName->ns.size();i++)
+	{
+		name.ns.push_back(this->proxyMultiName->ns[i]);
+	}
+}
 tiny_string ASObject::toString()
 {
 	check();
@@ -1198,7 +1223,7 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),
+ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),proxyMultiName(NULL),
 	type(T_OBJECT),traitsInitialized(false),implEnable(true)
 {
 #ifndef NDEBUG
@@ -1207,7 +1232,7 @@ ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),
 #endif
 }
 
-ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),
+ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),
 	type(T_OBJECT),traitsInitialized(false),implEnable(true)
 {
 	setClass(c);
@@ -1217,7 +1242,7 @@ ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),
+ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),
 	type(o.type),traitsInitialized(false),implEnable(true)
 {
 	if(o.classdef)
@@ -1255,6 +1280,9 @@ void ASObject::finalize()
 		classdef->decRef();
 		classdef=NULL;
 	}
+	if (proxyMultiName)
+		delete proxyMultiName;
+	proxyMultiName = NULL;
 }
 
 ASObject::~ASObject()

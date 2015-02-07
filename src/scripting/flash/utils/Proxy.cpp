@@ -37,7 +37,7 @@ using namespace lightspark;
 
 void Proxy::sinit(Class_base* c)
 {
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject,CLASS_DYNAMIC_NOT_FINAL);
 }
 
 void Proxy::buildTraits(ASObject* o)
@@ -70,9 +70,10 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 
 	IFunction* f=static_cast<IFunction*>(proxySetter.getPtr());
 
-	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
+	ASObject* namearg = Class<ASString>::getInstanceS(name.normalizedName());
+	namearg->setProxyProperty(name);
 	ASObject* args[2];
-	args[0]=Class<ASString>::getInstanceS(name.normalizedName());
+	args[0]=namearg;
 	args[1]=o;
 	//We now suppress special handling
 	implEnable=false;
@@ -87,15 +88,18 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
+	_NR<ASObject> o;
 	if(!name.ns[0].hasEmptyName() || ASObject::hasPropertyByMultiname(name, true, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
-		return ASObject::getVariableByMultiname(name,opt);
+		o = ASObject::getVariableByMultiname(name,opt);
+	if (!o.isNull() || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
+		return o;
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
 	multiname getPropertyName(NULL);
 	getPropertyName.name_type=multiname::NAME_STRING;
 	getPropertyName.name_s_id=getSys()->getUniqueStringId("getProperty");
 	getPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-	_NR<ASObject> o=getVariableByMultiname(getPropertyName,ASObject::SKIP_IMPL);
+	o=getVariableByMultiname(getPropertyName,ASObject::SKIP_IMPL);
 
 	if(o.isNull())
 		return ASObject::getVariableByMultiname(name,opt);
@@ -104,11 +108,12 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 
 	IFunction* f=static_cast<IFunction*>(o.getPtr());
 
-	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.normalizedName());
+	ASObject* namearg = Class<ASString>::getInstanceS(name.normalizedName());
+	namearg->setProxyProperty(name);
+	ASObject* arg = namearg;
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,"Proxy::getProperty");
+	LOG(LOG_CALLS,"Proxy::getProperty "<< name.normalizedName() << " " << this->toDebugString());
 	incRef();
 	_NR<ASObject> ret=_MNR(f->call(this,&arg,1));
 	implEnable=true;
@@ -138,8 +143,9 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 
 	IFunction* f=static_cast<IFunction*>(proxyHasProperty.getPtr());
 
-	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.normalizedName());
+	ASObject* namearg = Class<ASString>::getInstanceS(name.normalizedName());
+	namearg->setProxyProperty(name);
+	ASObject* arg = namearg;
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,_("Proxy::hasProperty"));

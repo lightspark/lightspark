@@ -276,6 +276,7 @@ private:
 	Class_base* classdef;
 	const variable* findGettable(const multiname& name) const DLL_LOCAL;
 	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
+	multiname* proxyMultiName;
 protected:
 	ASObject(MemoryAccount* m);
 	ASObject(const ASObject& o);
@@ -483,6 +484,11 @@ public:
 
 	/* Returns a debug string identifying this object */
 	virtual std::string toDebugString();
+	
+	/* stores proxy namespace settings for internal usage */
+	void setProxyProperty(const multiname& name); 
+	/* applies proxy namespace settings to name for internal usage */
+	void applyProxyProperty(multiname &name); 
 };
 
 class Number;

@@ -668,6 +668,8 @@ multiname* ABCContext::s_getMultiname(ABCContext* th, ASObject* n, ASObject* n2,
  */
 multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int midx)
 {
+	if (constant_pool.multiname_count == 0)
+		return NULL;
 	multiname* ret;
 	multiname_info* m=&constant_pool.multinames[midx];
 

@@ -342,11 +342,12 @@ ASFUNCTIONBODY(XMLList,generator)
 ASFUNCTIONBODY(XMLList,descendants)
 {
 	XMLList* th=Class<XMLList>::cast(obj);
-	tiny_string name;
-	assert_and_throw(argslen==0 || args[0]->getObjectType()!=T_QNAME);
-	ARG_UNPACK(name,"*");
+	_NR<ASObject> name;
+	ARG_UNPACK(name,_NR<ASObject>(Class<ASString>::getInstanceS("*")));
 	XML::XMLVector ret;
-	th->getDescendantsByQName(name,"",false,ret);
+	multiname mname(NULL);
+	name->applyProxyProperty(mname);
+	th->getDescendantsByQName(name->toString(),"",mname.isAttribute,ret);
 	return Class<XMLList>::getInstanceS(ret,th->targetobject,multiname(NULL));
 }
 

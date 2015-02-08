@@ -282,10 +282,12 @@ ASFUNCTIONBODY(XML,name)
 ASFUNCTIONBODY(XML,descendants)
 {
 	XML* th=Class<XML>::cast(obj);
-	tiny_string name;
-	ARG_UNPACK(name,"*");
+	_NR<ASObject> name;
+	ARG_UNPACK(name,_NR<ASObject>(Class<ASString>::getInstanceS("*")));
 	XMLVector ret;
-	th->getDescendantsByQName(name,"",false,ret);
+	multiname mname(NULL);
+	name->applyProxyProperty(mname);
+	th->getDescendantsByQName(name->toString(),"",mname.isAttribute,ret);
 	return Class<XMLList>::getInstanceS(ret,th->getChildrenlist(),multiname(NULL));
 }
 

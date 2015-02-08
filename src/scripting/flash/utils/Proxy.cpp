@@ -122,6 +122,8 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 
 bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
+	if (name.normalizedName() == "isAttribute")
+		return true;
 	//If a variable named like this already exist, use that
 	bool asobject_has_property=ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 	if(asobject_has_property || !implEnable)

@@ -70,6 +70,7 @@ void ASObject::setProxyProperty(const multiname &name)
 		this->proxyMultiName->ns.clear();
 	else
 		this->proxyMultiName = new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
+	this->proxyMultiName->isAttribute = name.isAttribute;
 	this->proxyMultiName->ns.reserve(name.ns.size());
 	for(unsigned int i=0;i<name.ns.size();i++)
 	{
@@ -82,6 +83,7 @@ void ASObject::applyProxyProperty(multiname &name)
 {
 	if (!this->proxyMultiName)
 		return;
+	name.isAttribute = this->proxyMultiName->isAttribute;
 	name.ns.clear();
 	name.ns.reserve(this->proxyMultiName->ns.size());
 	for(unsigned int i=0;i<this->proxyMultiName->ns.size();i++)

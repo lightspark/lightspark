@@ -53,7 +53,7 @@ int32_t ABCVm::bitAnd_oi(ASObject* val1, int32_t val2)
 
 void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 {
-	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj);
+	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj->toDebugString()<<" " << value->toString());
 
 	//Do not allow to set contant traits
 	obj->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED);
@@ -287,14 +287,23 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	LOG(LOG_CALLS, (keepReturn ? "callProperty " : "callPropVoid") << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
-	if(obj->classdef)
-		LOG(LOG_CALLS,obj->classdef->class_name);
 
 	//We should skip the special implementation of get
 	_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
 	name->resetNameIfObject();
-
-	if(!o.isNull())
+	if(o.isNull() && obj->is<Class_base>())
+	{
+		// check super classes
+		_NR<Class_base> tmpcls = obj->as<Class_base>()->super;
+		while (tmpcls && !tmpcls.isNull())
+		{
+			o=tmpcls->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+			if(!o.isNull())
+				break;
+			tmpcls = tmpcls->super;
+		}	
+	}
+	if(!o.isNull() && !(obj->classdef && obj->classdef->isSubClass(Class<Proxy>::getClass())))
 	{
 		o->incRef();
 		callImpl(th, o.getPtr(), obj, args, m, called_mi, keepReturn);
@@ -309,35 +318,43 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s_id=getSys()->getUniqueStringId("callProperty");
 			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
+			_NR<ASObject> oproxy=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 
-			if(!o.isNull())
+			if(!oproxy.isNull())
 			{
-				assert_and_throw(o->getObjectType()==T_FUNCTION);
-
-				IFunction* f=static_cast<IFunction*>(o.getPtr());
-				//Create a new array
-				ASObject** proxyArgs=g_newa(ASObject*, m+1);
-				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-				proxyArgs[0]=Class<ASString>::getInstanceS(getSys()->getStringFromUniqueId(name->name_s_id));
-				for(int i=0;i<m;i++)
-					proxyArgs[i+1]=args[i];
-
-				//We now suppress special handling
-				LOG(LOG_CALLS,_("Proxy::callProperty"));
-				f->incRef();
-				obj->incRef();
-				ASObject* ret=f->call(obj,proxyArgs,m+1);
-				//call getMethodInfo only after the call, so it's updated
-				if(called_mi)
-					*called_mi=f->getMethodInfo();
-				f->decRef();
-				if(keepReturn)
-					th->runtime_stack_push(ret);
+				assert_and_throw(oproxy->getObjectType()==T_FUNCTION);
+				if(!o.isNull())
+				{
+					o->incRef();
+					callImpl(th, o.getPtr(), obj, args, m, called_mi, keepReturn);
+				}
 				else
-					ret->decRef();
-
-				obj->decRef();
+				{
+					IFunction* f=static_cast<IFunction*>(oproxy.getPtr());
+					//Create a new array
+					ASObject** proxyArgs=g_newa(ASObject*, m+1);
+					ASObject* namearg = Class<ASString>::getInstanceS(name->normalizedName());
+					namearg->setProxyProperty(*name);
+					proxyArgs[0]=namearg;
+					for(int i=0;i<m;i++)
+						proxyArgs[i+1]=args[i];
+					
+					//We now suppress special handling
+					LOG(LOG_CALLS,_("Proxy::callProperty"));
+					f->incRef();
+					obj->incRef();
+					ASObject* ret=f->call(obj,proxyArgs,m+1);
+					//call getMethodInfo only after the call, so it's updated
+					if(called_mi)
+						*called_mi=f->getMethodInfo();
+					f->decRef();
+					if(keepReturn)
+						th->runtime_stack_push(ret);
+					else
+						ret->decRef();
+					
+					obj->decRef();
+				}
 				LOG(LOG_CALLS,_("End of calling ") << *name);
 				return;
 			}
@@ -1411,6 +1428,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found, pushing Undefined");
+			throwError<ReferenceError>(kUndefinedVarError);
 			return getSys()->getUndefinedRef();
 		}
 	}
@@ -1801,8 +1819,8 @@ void ABCVm::newObject(call_context* th, int n)
 void ABCVm::getDescendants(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th);
-	LOG(LOG_CALLS,"getDescendants " << *name);
 	ASObject* obj=th->runtime_stack_pop();
+	LOG(LOG_CALLS,"getDescendants " << *name << " " <<name->isAttribute<< " "<<obj->getClassName());
 	//The name must be a QName
 	assert_and_throw(name->name_type==multiname::NAME_STRING);
 	XML::XMLVector ret;
@@ -1836,44 +1854,42 @@ void ABCVm::getDescendants(call_context* th, int n)
 	}
 	else if(obj->getClass()->isSubClass(Class<Proxy>::getClass()))
 	{
-		_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+		multiname callPropertyName(NULL);
+		callPropertyName.name_type=multiname::NAME_STRING;
+		callPropertyName.name_s_id=getSys()->getUniqueStringId("callProperty");
+		callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+		_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
+		
 		if(!o.isNull())
 		{
-			o->incRef();
-			multiname callPropertyName(NULL);
-			callPropertyName.name_type=multiname::NAME_STRING;
-			callPropertyName.name_s_id=getSys()->getUniqueStringId("callProperty");
-			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
-			_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
-
-			if(!o.isNull())
-			{
-				assert_and_throw(o->getObjectType()==T_FUNCTION);
-
-				IFunction* f=static_cast<IFunction*>(o.getPtr());
-				//Create a new array
-				ASObject** proxyArgs=g_newa(ASObject*, 1);
-				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-				proxyArgs[0]=Class<ASString>::getInstanceS(getSys()->getStringFromUniqueId(name->name_s_id));
-
-				//We now suppress special handling
-				LOG(LOG_CALLS,_("Proxy::callProperty"));
-				f->incRef();
-				obj->incRef();
-				ASObject* ret=f->call(obj,proxyArgs,1);
-				f->decRef();
-				th->runtime_stack_push(ret);
-
-				obj->decRef();
-				LOG(LOG_CALLS,_("End of calling ") << *name);
-				return;
-			}
-			else
-			{
-				tiny_string objName = obj->getClassName();
-				obj->decRef();
-				throwError<TypeError>(kDescendentsError, objName);
-			}
+			assert_and_throw(o->getObjectType()==T_FUNCTION);
+			
+			IFunction* f=static_cast<IFunction*>(o.getPtr());
+			//Create a new array
+			ASObject** proxyArgs=g_newa(ASObject*, 2);
+			proxyArgs[0]=Class<ASString>::getInstanceS("descendants");
+			ASObject* namearg = Class<ASString>::getInstanceS(name->normalizedName());
+			namearg->setProxyProperty(*name);
+			proxyArgs[1]=namearg;
+			LOG(LOG_ERROR,"Proxy::getDescend:"<<namearg->toDebugString()<<*name);
+			
+			//We now suppress special handling
+			LOG(LOG_CALLS,_("Proxy::callProperty"));
+			f->incRef();
+			obj->incRef();
+			ASObject* ret=f->call(obj,proxyArgs,2);
+			f->decRef();
+			th->runtime_stack_push(ret);
+			
+			obj->decRef();
+			LOG(LOG_CALLS,_("End of calling ") << *name);
+			return;
+		}
+		else
+		{
+			tiny_string objName = obj->getClassName();
+			obj->decRef();
+			throwError<TypeError>(kDescendentsError, objName);
 		}
 	}
 	else

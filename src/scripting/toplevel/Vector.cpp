@@ -799,10 +799,17 @@ ASFUNCTIONBODY(Vector,unshift)
 ASFUNCTIONBODY(Vector,_map)
 {
 	Vector* th=static_cast<Vector*>(obj);
-	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_FUNCTION);
-	IFunction* func=static_cast<IFunction*>(args[0]);
+	_NR<IFunction> func;
+	_NR<ASObject> thisObject;
+	
+	if (argslen >= 1 && !args[0]->is<IFunction>())
+		throwError<TypeError>(kCheckTypeFailedError, args[0]->getClassName(), "Function");
+
+	ARG_UNPACK(func)(thisObject,NullRef);
+	
 	Vector* ret= (Vector*)obj->getClass()->getInstance(true,NULL,0);
 
+	ASObject* thisObj;
 	for(uint32_t i=0;i<th->size();i++)
 	{
 		ASObject* funcArgs[3];
@@ -821,7 +828,14 @@ ASFUNCTIONBODY(Vector,_map)
 		funcArgs[1]=abstract_i(i);
 		funcArgs[2]=th;
 		funcArgs[2]->incRef();
-		ASObject* funcRet=func->call(getSys()->getNullRef(), funcArgs, 3);
+		if (thisObject.isNull())
+			thisObj = getSys()->getNullRef();
+		else
+		{
+			thisObj = thisObject.getPtr();
+			thisObj->incRef();
+		}
+		ASObject* funcRet=func->call(thisObj, funcArgs, 3);
 		assert_and_throw(funcRet);
 		ret->vec.push_back(funcRet);
 	}

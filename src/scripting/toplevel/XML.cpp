@@ -1581,7 +1581,6 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 bool XML::deleteVariableByMultiname(const multiname& name)
 {
 	unsigned int index=0;
-	bool bdeleted = false;
 	if(name.isAttribute)
 	{
 		//Only the first namespace is used, is this right?
@@ -1611,7 +1610,6 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 						(attr->nodenamespace_uri == ns_uri && attr->nodename == name.normalizedName()))
 				{
 					attributelist->nodes.erase(it);
-					bdeleted= true;
 				}
 			}
 		}
@@ -1643,12 +1641,11 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 						(node->nodenamespace_uri == ns_uri && node->nodename == name.normalizedName()))
 				{
 					childrenlist->nodes.erase(it);
-					bdeleted= true;
 				}
 			}
 		}
 	}
-	return bdeleted;
+	return true;
 }
 bool XML::isValidMultiname(const multiname& name, uint32_t& index)
 {

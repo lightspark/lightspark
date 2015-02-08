@@ -413,6 +413,10 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("DRMStatusEvent","flash.events",Class<DRMStatusEvent>::getRef());
 	builtin->registerBuiltin("StageVideoEvent","flash.events",Class<StageVideoEvent>::getRef());
 	builtin->registerBuiltin("StageVideoAvailabilityEvent","flash.events",Class<StageVideoAvailabilityEvent>::getRef());
+	builtin->registerBuiltin("TouchEvent","flash.events",Class<ASObject>::getStubClass(QName("TouchEvent","flash.events")));
+	builtin->registerBuiltin("GestureEvent","flash.events",Class<ASObject>::getStubClass(QName("GestureEvent","flash.events")));
+	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("PressAndTapGestureEvent","flash.events")));
+	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("TransformGestureEvent","flash.events")));
 
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));

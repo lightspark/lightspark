@@ -181,8 +181,9 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 
 	IFunction* f=static_cast<IFunction*>(proxyDeleter.getPtr());
 
-	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.normalizedName());
+	ASObject* namearg = Class<ASString>::getInstanceS(name.normalizedName());
+	namearg->setProxyProperty(name);
+	ASObject* arg = namearg;
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,_("Proxy::deleteProperty"));

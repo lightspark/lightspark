@@ -91,6 +91,8 @@ SET(LIBSPARK_SOURCES
   scripting/flash/net/URLRequestHeader.cpp
   scripting/flash/net/URLStream.cpp
   scripting/flash/net/XMLSocket.cpp
+  scripting/flash/net/NetStreamPlayOptions.cpp
+  scripting/flash/net/NetStreamPlayTransitions.cpp
   scripting/flash/errors/flasherrors.cpp
   scripting/flash/sensors/flashsensors.cpp
   scripting/flash/system/flashsystem.cpp

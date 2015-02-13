@@ -160,6 +160,8 @@ REGISTER_CLASS_NAME(VideoStatus,"flash.media")
 //Net
 REGISTER_CLASS_NAME(NetConnection,"flash.net")
 REGISTER_CLASS_NAME(NetStream,"flash.net")
+REGISTER_CLASS_NAME(NetStreamPlayTransitions,"flash.net")
+REGISTER_CLASS_NAME(NetStreamPlayOptions,"flash.net")
 REGISTER_CLASS_NAME(ObjectEncoding,"flash.net")
 REGISTER_CLASS_NAME(Responder,"flash.net")
 REGISTER_CLASS_NAME(SharedObject,"flash.net")

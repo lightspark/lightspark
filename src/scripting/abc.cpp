@@ -89,6 +89,8 @@
 #include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/flash/net/URLStream.h"
 #include "scripting/flash/net/XMLSocket.h"
+#include "scripting/flash/net/NetStreamPlayOptions.h"
+#include "scripting/flash/net/NetStreamPlayTransitions.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/sensors/flashsensors.h"
 #include "scripting/flash/utils/flashutils.h"
@@ -423,7 +425,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")));
 	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef());
 	builtin->registerBuiltin("NetStream","flash.net",Class<NetStream>::getRef());
-	builtin->registerBuiltin("NetStreamPlayOptions","flash.net",Class<ASObject>::getStubClass(QName("NetStreamPlayOptions","flash.net")));
+	builtin->registerBuiltin("NetStreamPlayOptions","flash.net",Class<NetStreamPlayOptions>::getRef());
+	builtin->registerBuiltin("NetStreamPlayTransitions","flash.net",Class<NetStreamPlayTransitions>::getRef());
 	builtin->registerBuiltin("URLLoader","flash.net",Class<URLLoader>::getRef());
 	builtin->registerBuiltin("URLStream","flash.net",Class<URLStream>::getRef());
 	builtin->registerBuiltin("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getRef());
@@ -481,6 +484,11 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(isNaN)));
 	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite)));
 	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));
+
+	// TODO stub classes, not yet implemented, but needed in tamarin tests
+	builtin->registerBuiltin("Mutex","flash.concurrent",Class<ASObject>::getStubClass(QName("Mutex","flash.concurrent")));
+	builtin->registerBuiltin("Condition","flash.concurrent",Class<ASObject>::getStubClass(QName("Condition","flash.concurrent")));
+	builtin->registerBuiltin("Worker","flash.system",Class<ASObject>::getStubClass(QName("Worker","flash.system")));
 
 	//If needed add AIR definitions
 	if(getSys()->flashMode==SystemState::AIR)
@@ -799,7 +807,8 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.clear();
 				ret->ns.push_back(nsNameAndKind(qname->getURI(),NAMESPACE));
 			}
-			n->applyProxyProperty(*ret);
+			else
+				n->applyProxyProperty(*ret);
 			ret->setName(n);
 			n->decRef();
 			break;

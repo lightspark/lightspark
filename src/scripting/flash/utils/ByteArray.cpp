@@ -35,7 +35,7 @@ using namespace lightspark;
 #define BA_CHUNK_SIZE 4096
 
 
-ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),littleEndian(false),objectEncoding(ObjectEncoding::AMF3),
+ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),littleEndian(false),objectEncoding(ObjectEncoding::AMF3),currentObjectEncoding(ObjectEncoding::AMF3),
 	position(0),bytes(b),real_len(l),len(l),shareable(false)
 {
 #ifdef MEMORY_USAGE_PROFILING
@@ -288,6 +288,7 @@ ASFUNCTIONBODY(ByteArray,_setObjectEncoding)
 		throwError<ArgumentError>(kInvalidEnumError, "objectEncoding");
 
 	th->objectEncoding=value;
+	th->currentObjectEncoding=value;
 	return NULL;
 }
 
@@ -704,6 +705,14 @@ ASFUNCTIONBODY(ByteArray,writeUnsignedInt)
 	return NULL;
 }
 
+bool ByteArray::peekByte(uint8_t& b)
+{
+	if (len <= position+1)
+		return false;
+
+	b=bytes[position+1];
+	return true;
+}
 bool ByteArray::readByte(uint8_t& b)
 {
 	if (len <= position)
@@ -940,7 +949,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 		return getSys()->getUndefinedRef();
 		//throwError<EOFError>(kEOFError);
 	}
-	assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
+	//assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
 	Amf3Deserializer d(th);
 	_NR<ASObject> ret(NullRef);
 	try

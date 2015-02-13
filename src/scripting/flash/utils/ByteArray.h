@@ -35,6 +35,7 @@ friend class ApplicationDomain;
 protected:
 	bool littleEndian;
 	uint8_t objectEncoding;
+	uint8_t currentObjectEncoding;
 	uint32_t position;
 	uint8_t* bytes;
 	uint32_t real_len;
@@ -49,6 +50,7 @@ public:
 	ByteArray(Class_base* c, uint8_t* b = NULL, uint32_t l = 0);
 	~ByteArray();
 	//Helper interface for serialization
+	bool peekByte(uint8_t& b);
 	bool readByte(uint8_t& b);
 	bool readShort(uint16_t& ret);
 	bool readUnsignedInt(uint32_t& ret);
@@ -64,7 +66,10 @@ public:
 	void writeU29(uint32_t val);
 	uint32_t getPosition() const;
 	void setPosition(uint32_t p);
-
+	
+	uint8_t getCurrentObjectEncoding() const { return currentObjectEncoding; }
+	void setCurrentObjectEncoding(uint8_t encoding) { currentObjectEncoding = encoding; }
+	
 	ASFUNCTION(_getBytesAvailable);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(_setLength);

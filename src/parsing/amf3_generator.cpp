@@ -274,6 +274,7 @@ _R<ASObject> Amf3Deserializer::parseXML(std::vector<ASObject*>& objMap, bool leg
 	return _MR(xmlObj);
 }
 
+
 _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
@@ -282,33 +283,144 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 	uint8_t marker;
 	if(!input->readByte(marker))
 		throw ParseException("Not enough data to parse AMF3 object");
-
-	switch(marker)
+	if (input->getCurrentObjectEncoding() == ObjectEncoding::AMF3)
 	{
-		case null_marker:
-			return _MR(getSys()->getNullRef());
-		case undefined_marker:
-			return _MR(getSys()->getUndefinedRef());
-		case false_marker:
-			return _MR(abstract_b(false));
-		case true_marker:
-			return _MR(abstract_b(true));
-		case integer_marker:
-			return parseInteger();
-		case double_marker:
-			return parseDouble();
-		case string_marker:
-			return _MR(Class<ASString>::getInstanceS(parseStringVR(stringMap)));
-		case xml_doc_marker:
-			return parseXML(objMap, true);
-		case array_marker:
-			return parseArray(stringMap, objMap, traitsMap);
-		case object_marker:
-			return parseObject(stringMap, objMap, traitsMap);
-		case xml_marker:
-			return parseXML(objMap, false);
-		default:
-			LOG(LOG_ERROR,"Unsupported marker " << (uint32_t)marker);
-			throw UnsupportedException("Unsupported marker");
+		switch(marker)
+		{
+			case null_marker:
+				return _MR(getSys()->getNullRef());
+			case undefined_marker:
+				return _MR(getSys()->getUndefinedRef());
+			case false_marker:
+				return _MR(abstract_b(false));
+			case true_marker:
+				return _MR(abstract_b(true));
+			case integer_marker:
+				return parseInteger();
+			case double_marker:
+				return parseDouble();
+			case string_marker:
+				return _MR(Class<ASString>::getInstanceS(parseStringVR(stringMap)));
+			case xml_doc_marker:
+				return parseXML(objMap, true);
+			case array_marker:
+				return parseArray(stringMap, objMap, traitsMap);
+			case object_marker:
+				return parseObject(stringMap, objMap, traitsMap);
+			case xml_marker:
+				return parseXML(objMap, false);
+			default:
+				LOG(LOG_ERROR,"Unsupported marker " << (uint32_t)marker);
+				throw UnsupportedException("Unsupported marker");
+		}
+	
+	}
+	else
+	{
+		switch(marker)
+		{
+			case amf0_number_marker:
+				return parseDouble();
+			case amf0_boolean_marker:
+				return _MR(abstract_b(input->readByte(marker)));
+			case amf0_string_marker:
+				return _MR(Class<ASString>::getInstanceS(parseStringAMF0()));
+			case amf0_object_marker:
+				return parseObjectAMF0(stringMap,objMap,traitsMap);
+			case amf0_null_marker:
+				return _MR(getSys()->getNullRef());
+			case amf0_undefined_marker:
+				return _MR(getSys()->getUndefinedRef());
+			case amf0_reference_marker:
+				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
+				throw UnsupportedException("unimplemented marker");
+			case amf0_ecma_array_marker:
+				return parseECMAArrayAMF0(stringMap,objMap,traitsMap);
+			case amf0_strict_array_marker:
+				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
+				throw UnsupportedException("unimplemented marker");
+			case amf0_date_marker:
+				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
+				throw UnsupportedException("unimplemented marker");
+			case amf0_long_string_marker:
+				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
+				throw UnsupportedException("unimplemented marker");
+			case amf0_xml_document_marker:
+				return parseXML(objMap, false);
+			case amf0_typed_object_marker:
+				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
+				throw UnsupportedException("unimplemented marker");
+			case amf0_avmplus_object_marker:
+				input->setCurrentObjectEncoding(ObjectEncoding::AMF3);
+				return parseValue(stringMap, objMap, traitsMap);
+			default:
+				LOG(LOG_ERROR,"Unsupported marker " << (uint32_t)marker);
+				throw UnsupportedException("Unsupported marker");
+		}
 	}
 }
+tiny_string Amf3Deserializer::parseStringAMF0() const
+{
+	uint16_t strLen;
+	if(!input->readShort(strLen))
+		throw ParseException("Not enough data to parse integer");
+	
+	string retStr;
+	for(uint32_t i=0;i<strLen;i++)
+	{
+		uint8_t c;
+		if(!input->readByte(c))
+			throw ParseException("Not enough data to parse string");
+		retStr.push_back(c);
+	}
+	return retStr;
+}
+_R<ASObject> Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const
+{
+	uint32_t count;
+	if(!input->readUnsignedInt(count))
+		throw ParseException("Not enough data to parse AMF3 array");
+
+	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS());
+
+	//Read name, value pairs
+	while(count)
+	{
+		tiny_string varName = parseStringAMF0();
+		if (varName == "")
+			throw ParseException("empty key in AMF0 ECMA array");
+		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
+		value->incRef();
+
+		ret->setVariableByQName(varName,"",value.getPtr(),DYNAMIC_TRAIT);
+		count--;
+	}
+	return ret;
+}
+_R<ASObject> Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const
+{
+	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS());
+
+	while (true)
+	{
+		tiny_string varName = parseStringAMF0();
+		if (varName == "")
+		{
+			uint8_t marker = 0;
+			input->readByte(marker);
+			if (marker == amf0_object_end_marker )
+				return ret;
+			throw ParseException("empty key in AMF0 object");
+		}
+		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
+		value->incRef();
+
+		ret->setVariableByQName(varName,"",value.getPtr(),DYNAMIC_TRAIT);
+	}
+	return _R<ASObject>(getSys()->getUndefinedRef());
+}
+

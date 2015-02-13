@@ -50,6 +50,28 @@ enum markers_type
 	xml_marker = 0xb
 };
 
+enum amf0_markers_type
+{
+	amf0_number_marker       = 0x00,
+	amf0_boolean_marker      = 0x01,
+	amf0_string_marker       = 0x02,
+	amf0_object_marker       = 0x03,
+	amf0_movieclip_marker    = 0x04,
+	amf0_null_marker         = 0x05,
+	amf0_undefined_marker    = 0x06,
+	amf0_reference_marker    = 0x07,
+	amf0_ecma_array_marker   = 0x08,
+	amf0_object_end_marker   = 0x09,
+	amf0_strict_array_marker = 0x0A,
+	amf0_date_marker         = 0x0B,
+	amf0_long_string_marker  = 0x0C,
+	amf0_unsupported_marker  = 0x0D,
+	amf0_recordset_marker    = 0x0E,
+	amf0_xml_document_marker = 0x0F,
+	amf0_typed_object_marker = 0x10,
+	amf0_avmplus_object_marker = 0x11
+};
+
 class TraitsRef
 {
 public:
@@ -64,6 +86,7 @@ class Amf3Deserializer
 private:
 	ByteArray* input;
 	tiny_string parseStringVR(std::vector<tiny_string>& stringMap) const;
+	
 	_R<ASObject> parseObject(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
@@ -76,6 +99,15 @@ private:
 	_R<ASObject> parseInteger() const;
 	_R<ASObject> parseDouble() const;
 	_R<ASObject> parseXML(std::vector<ASObject*>& objMap, bool legacyXML) const;
+
+
+	tiny_string parseStringAMF0() const;
+	_R<ASObject> parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const;
+	_R<ASObject> parseObjectAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const;
 public:
 	Amf3Deserializer(ByteArray* i):input(i) {}
 	_R<ASObject> readObject() const;

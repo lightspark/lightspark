@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-ContextMenu::ContextMenu(Class_base* c):EventDispatcher(c),customItems(Class<Array>::getInstanceS())
+ContextMenu::ContextMenu(Class_base* c):EventDispatcher(c),customItems(Class<Array>::getInstanceS()),builtInItems(Class<ContextMenuBuiltInItems>::getInstanceS())
 {
 }
 
@@ -32,9 +32,11 @@ void ContextMenu::sinit(Class_base* c)
 	c->setVariableByQName("isSupported","",abstract_b(false),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("hideBuiltInItems","",Class<IFunction>::getFunction(hideBuiltInItems),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,customItems);
+	REGISTER_GETTER_SETTER(c,builtInItems);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,customItems);
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,builtInItems);
 
 ASFUNCTIONBODY(ContextMenu,_constructor)
 {

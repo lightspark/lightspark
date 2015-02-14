@@ -111,6 +111,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/ui/Mouse.cpp
   scripting/flash/ui/ContextMenu.cpp
   scripting/flash/ui/ContextMenuItem.cpp
+  scripting/flash/ui/ContextMenuBuiltInItems.cpp
   scripting/flash/xml/flashxml.cpp
   scripting/toplevel/Array.cpp
   scripting/toplevel/ASString.cpp

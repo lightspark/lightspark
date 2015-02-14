@@ -1,6 +1,8 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
+    Copyright (C) 2013  Antti Ajanki (antti.ajanki@iki.fi)
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -15,28 +17,30 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_FLASH_UI_CONTEXTMENU_H
-#define SCRIPTING_FLASH_UI_CONTEXTMENU_H
+#ifndef SCRIPTING_FLASH_UI_CONTEXTMENUBUILTINITEMS_H
+#define SCRIPTING_FLASH_UI_CONTEXTMENUBUILTINITEMS_H
 
 #include "asobject.h"
-#include "scripting/flash/events/flashevents.h"
-#include "scripting/flash/ui/ContextMenuBuiltInItems.h"
-#include "scripting/toplevel/Array.h"
 
 namespace lightspark
 {
-class Array;
 
-class ContextMenu : public EventDispatcher
+class ContextMenuBuiltInItems : public ASObject
 {
+private:
+	ASPROPERTY_GETTER_SETTER(bool,forwardAndBack);
+	ASPROPERTY_GETTER_SETTER(bool,loop);
+	ASPROPERTY_GETTER_SETTER(bool,play);
+	ASPROPERTY_GETTER_SETTER(bool,print);
+	ASPROPERTY_GETTER_SETTER(bool,quality);
+	ASPROPERTY_GETTER_SETTER(bool,rewind);
+	ASPROPERTY_GETTER_SETTER(bool,save);
+	ASPROPERTY_GETTER_SETTER(bool,zoom);
 public:
-	ContextMenu(Class_base* c);
+	ContextMenuBuiltInItems(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(hideBuiltInItems);
-	ASPROPERTY_GETTER_SETTER(_NR<Array>,customItems);
-	ASPROPERTY_GETTER_SETTER(_NR<ContextMenuBuiltInItems>,builtInItems);
 };
 
 }
-#endif // SCRIPTING_FLASH_UI_CONTEXTMENU_H
+#endif // SCRIPTING_FLASH_UI_CONTEXTMENUBUILTINITEMS_H

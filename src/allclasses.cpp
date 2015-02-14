@@ -72,6 +72,7 @@
 #include "scripting/flash/ui/Mouse.h"
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
+#include "scripting/flash/ui/ContextMenuBuiltInItems.h"
 
 using namespace lightspark;
 

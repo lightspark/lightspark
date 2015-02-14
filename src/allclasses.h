@@ -242,6 +242,7 @@ REGISTER_CLASS_NAME(KeyLocation,"flash.ui")
 REGISTER_CLASS_NAME(Mouse,"flash.ui")
 REGISTER_CLASS_NAME(ContextMenu,"flash.ui")
 REGISTER_CLASS_NAME(ContextMenuItem,"flash.ui")
+REGISTER_CLASS_NAME(ContextMenuBuiltInItems,"flash.ui")
 
 //XML
 REGISTER_CLASS_NAME(XMLDocument,"flash.xml")

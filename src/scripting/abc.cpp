@@ -67,6 +67,8 @@
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
+#include "scripting/flash/concurrent/Mutex.h"
+#include "scripting/flash/concurrent/Condition.h"
 #include "scripting/flash/desktop/flashdesktop.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapData.h"
@@ -269,6 +271,9 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("AccessibilityProperties","flash.accessibility",Class<AccessibilityProperties>::getRef());
 	builtin->registerBuiltin("AccessibilityImplementation","flash.accessibility",Class<AccessibilityImplementation>::getRef());
 
+	builtin->registerBuiltin("Mutex","flash.concurrent",Class<ASMutex>::getRef());
+	builtin->registerBuiltin("Condition","flash.concurrent",Class<ASCondition>::getRef());
+
 	builtin->registerBuiltin("MovieClip","flash.display",Class<MovieClip>::getRef());
 	builtin->registerBuiltin("DisplayObject","flash.display",Class<DisplayObject>::getRef());
 	builtin->registerBuiltin("Loader","flash.display",Class<Loader>::getRef());
@@ -419,6 +424,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("GestureEvent","flash.events",Class<ASObject>::getStubClass(QName("GestureEvent","flash.events")));
 	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("PressAndTapGestureEvent","flash.events")));
 	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("TransformGestureEvent","flash.events")));
+	builtin->registerBuiltin("ContextMenuEvent","flash.events",Class<ASObject>::getStubClass(QName("ContextMenuEvent","flash.events")));
 
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));
@@ -464,6 +470,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("KeyLocation","flash.ui",Class<KeyLocation>::getRef());
 	builtin->registerBuiltin("ContextMenu","flash.ui",Class<ContextMenu>::getRef());
 	builtin->registerBuiltin("ContextMenuItem","flash.ui",Class<ContextMenuItem>::getRef());
+	builtin->registerBuiltin("ContextMenuBuiltInItems","flash.ui",Class<ASObject>::getStubClass(QName("ContextMenuBuiltInItems","flash.ui")));
 	builtin->registerBuiltin("Mouse","flash.ui",Class<Mouse>::getRef());
 
 	builtin->registerBuiltin("Accelerometer", "flash.sensors",Class<Accelerometer>::getRef());
@@ -486,8 +493,6 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));
 
 	// TODO stub classes, not yet implemented, but needed in tamarin tests
-	builtin->registerBuiltin("Mutex","flash.concurrent",Class<ASObject>::getStubClass(QName("Mutex","flash.concurrent")));
-	builtin->registerBuiltin("Condition","flash.concurrent",Class<ASObject>::getStubClass(QName("Condition","flash.concurrent")));
 	builtin->registerBuiltin("Worker","flash.system",Class<ASObject>::getStubClass(QName("Worker","flash.system")));
 
 	//If needed add AIR definitions

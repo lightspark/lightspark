@@ -26,6 +26,8 @@
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
+#include "scripting/flash/concurrent/Mutex.h"
+#include "scripting/flash/concurrent/Condition.h"
 #include "scripting/flash/desktop/flashdesktop.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapData.h"

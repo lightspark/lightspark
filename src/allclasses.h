@@ -56,6 +56,10 @@ REGISTER_CLASS_NAME(Vector,"__AS3__.vec")
 REGISTER_CLASS_NAME(AccessibilityProperties,"flash.accessibility")
 REGISTER_CLASS_NAME(AccessibilityImplementation,"flash.accessibility")
 
+//Concurrent
+REGISTER_CLASS_NAME(ASMutex,"flash.concurrent")
+REGISTER_CLASS_NAME(ASCondition,"flash.concurrent")
+
 //Desktop (AIR)
 REGISTER_CLASS_NAME(NativeApplication,"flash.desktop")
 

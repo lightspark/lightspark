@@ -805,6 +805,7 @@ ASFUNCTIONBODY(BitmapData,compare)
 	
 	BitmapData* res = Class<BitmapData>::getInstanceS(rect.Xmax,rect.Ymax);
 	unsigned int i = 0;
+	bool different = false;
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
 	{
 		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
@@ -815,11 +816,19 @@ ASFUNCTIONBODY(BitmapData,compare)
 			if (pixel == otherpixel)
 				res->pixels->setPixel(x, y, 0, true);
 			else if ((pixel & 0x00FFFFFF) == (otherpixel & 0x00FFFFFF))
+			{
+				different = true;
 				res->pixels->setPixel(x, y, ((pixel & 0xFF000000) - (otherpixel & 0xFF000000)) | 0x00FFFFFF , true);
+			}
 			else 
+			{
+				different = true;
 				res->pixels->setPixel(x, y, ((pixel & 0x00FFFFFF) - (otherpixel & 0x00FFFFFF)), true);
+			}
 			i++;
 		}
 	}
+	if (!different)
+		return abstract_d(0);
 	return res;
 }

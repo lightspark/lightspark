@@ -917,6 +917,7 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	{
 		for(uint32_t i=0;i<argslen;i++)
 			args[i]->decRef();
+		//throwError<TypeError>(kConstructOfNonFunctionError);
 	}
 }
 
@@ -1078,6 +1079,11 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 {
 	check();
 	if(cls==this || cls==Class<ASObject>::getClass())
+		return true;
+
+	// it seems that classes with the same name from different applicationDomains 
+	// are treated as equal, so we test for same names
+	if (this->getQualifiedClassName() == cls->getQualifiedClassName())
 		return true;
 
 	//Now check the interfaces

@@ -80,6 +80,8 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("getVector","",Class<IFunction>::getFunction(getVector),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setPixels","",Class<IFunction>::getFunction(setPixels),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setVector","",Class<IFunction>::getFunction(setVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(colorTransform),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compare","",Class<IFunction>::getFunction(compare),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -727,4 +729,97 @@ ASFUNCTIONBODY(BitmapData,setVector)
 	}
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(BitmapData,colorTransform)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	
+	_NR<Rectangle> inputRect;
+	_NR<ColorTransform> inputColorTransform;
+	ARG_UNPACK (inputRect) (inputColorTransform);
+
+	if (inputRect.isNull())
+		throwError<TypeError>(kNullPointerError, "rect");
+	if (inputColorTransform.isNull())
+		throwError<TypeError>(kNullPointerError, "inputVector");
+
+	RECT rect;
+	th->pixels->clipRect(inputRect->getRect(), rect);
+	
+	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect);
+
+	unsigned int i = 0;
+	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
+	{
+		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
+		{
+
+			uint32_t pixel = pixelvec[i];
+
+			int a, r, g, b;
+			a = ((pixel >> 24 )&0xff) * inputColorTransform->alphaMultiplier + inputColorTransform->alphaOffset;
+			if (a > 255) a = 255;
+			if (a < 0) a = 0;
+			r = ((pixel >> 16 )&0xff) * inputColorTransform->redMultiplier + inputColorTransform->redOffset;
+			if (r > 255) r = 255;
+			if (r < 0) r = 0;
+			g = ((pixel >> 8 )&0xff) * inputColorTransform->greenMultiplier + inputColorTransform->greenOffset;
+			if (g > 255) g = 255;
+			if (g < 0) g = 0;
+			b = ((pixel )&0xff) * inputColorTransform->blueMultiplier + inputColorTransform->blueOffset;
+			if (b > 255) b = 255;
+			if (b < 0) b = 0;
+			
+			pixel = (a<<24) | (r<<16) | (g<<8) | b;
+			
+			th->pixels->setPixel(x, y, pixel, th->transparent);
+			i++;
+		}
+	}
+
+	return NULL;
+}
+ASFUNCTIONBODY(BitmapData,compare)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	
+	_NR<BitmapData> otherBitmapData;
+	ARG_UNPACK (otherBitmapData);
+
+	if (otherBitmapData.isNull())
+		throwError<TypeError>(kNullPointerError, "otherBitmapData");
+
+	if (th->getWidth() != otherBitmapData->getWidth())
+		return abstract_d(-3);
+	if (th->getHeight() != otherBitmapData->getHeight())
+		return abstract_d(-4);
+	RECT rect;
+	rect.Xmin = 0;
+	rect.Xmax = th->getWidth();
+	rect.Ymin = 0;
+	rect.Ymax = th->getHeight();
+	
+	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect);
+	vector<uint32_t> otherpixelvec = otherBitmapData->pixels->getPixelVector(rect);
+	
+	BitmapData* res = Class<BitmapData>::getInstanceS(rect.Xmax,rect.Ymax);
+	unsigned int i = 0;
+	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
+	{
+		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
+		{
+
+			uint32_t pixel = pixelvec[i];
+			uint32_t otherpixel = otherpixelvec[i];
+			if (pixel == otherpixel)
+				res->pixels->setPixel(x, y, 0, true);
+			else if ((pixel & 0x00FFFFFF) == (otherpixel & 0x00FFFFFF))
+				res->pixels->setPixel(x, y, ((pixel & 0xFF000000) - (otherpixel & 0xFF000000)) | 0x00FFFFFF , true);
+			else 
+				res->pixels->setPixel(x, y, ((pixel & 0x00FFFFFF) - (otherpixel & 0x00FFFFFF)), true);
+			i++;
+		}
+	}
+	return res;
 }

@@ -107,7 +107,8 @@ public:
 
 class ColorTransform: public ASObject
 {
-private:
+friend class BitmapData;
+protected:
 	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 public:

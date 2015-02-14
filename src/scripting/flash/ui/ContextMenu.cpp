@@ -30,6 +30,7 @@ void ContextMenu::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL);
 	c->setVariableByQName("isSupported","",abstract_b(false),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("hideBuiltInItems","",Class<IFunction>::getFunction(hideBuiltInItems),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,customItems);
 }
 
@@ -38,6 +39,12 @@ ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,customItems);
 ASFUNCTIONBODY(ContextMenu,_constructor)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ContextMenu constructor is a stub");
+	return NULL;
+}
+
+ASFUNCTIONBODY(ContextMenu,hideBuiltInItems)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"ContextMenu hideBuiltInItems is a stub");
 	return NULL;
 }
 

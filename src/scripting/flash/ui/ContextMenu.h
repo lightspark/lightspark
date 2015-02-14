@@ -32,6 +32,7 @@ public:
 	ContextMenu(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(hideBuiltInItems);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,customItems);
 };
 

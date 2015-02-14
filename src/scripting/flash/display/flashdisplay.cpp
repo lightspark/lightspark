@@ -2051,6 +2051,7 @@ void Stage::sinit(Class_base* c)
 	// override the setter from DisplayObjectContainer
 	c->setDeclaredMethodByQName("tabChildren","",Class<IFunction>::getFunction(_setTabChildren),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("wmodeGPU","",Class<IFunction>::getFunction(_getWmodeGPU),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("invalidate","",Class<IFunction>::getFunction(_invalidate),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,align);
 	REGISTER_GETTER_SETTER(c,colorCorrection);
 	REGISTER_GETTER_SETTER(c,displayState);
@@ -2306,6 +2307,16 @@ ASFUNCTIONBODY(Stage,_getWmodeGPU)
 {
 	return abstract_b(false);
 }
+ASFUNCTIONBODY(Stage,_invalidate)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"invalidate not implemented yet");
+	// TODO this crashes lightspark
+	//Stage* th=obj->as<Stage>();
+	//_R<FlushInvalidationQueueEvent> event=_MR(new (getSys()->unaccountedMemory) FlushInvalidationQueueEvent());
+	//getVm()->addEvent(_MR(th),event);
+	return NULL;
+}
+
 
 void StageScaleMode::sinit(Class_base* c)
 {

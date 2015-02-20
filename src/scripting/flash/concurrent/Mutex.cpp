@@ -28,7 +28,7 @@ ASMutex::ASMutex(Class_base* c):ASObject(c),lockcount(0)
 }
 void ASMutex::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(_lock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(_unlock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("tryLock","",Class<IFunction>::getFunction(_trylock),NORMAL_METHOD,true);

@@ -244,51 +244,8 @@ public:
 	/* This creates a stub class, i.e. a class with given name but without
 	 * any implementation.
 	 */
-	static _R<Class<ASObject>> getStubClass(const QName& name, _R<Class_base> superClass=Class<ASObject>::getRef())
-	{
-		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
-		Class<ASObject>* ret = new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
-
-		ret->setSuper(superClass);
-		ret->prototype = _MNR(new_objectPrototype());
-		ret->prototype->prevPrototype=ret->super->prototype;
-		ret->incRef();
-		ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-		ret->addPrototypeGetter();
-		ret->addLengthGetter();
-
-		ret->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-		getSys()->customClasses.insert(ret);
-		ret->incRef();
-		return _MR(ret);
-	}
-	static Class<ASObject>* getClass()
-	{
-		uint32_t classId=ClassName<ASObject>::id;
-		Class<ASObject>* ret=NULL;
-		Class_base** retAddr=&getSys()->builtinClasses[classId];
-		if(*retAddr==NULL)
-		{
-			//Create the class
-			QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
-			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
-			ret=new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
-			ret->incRef();
-			*retAddr=ret;
-			ret->prototype = _MNR(new_objectPrototype());
-			ASObject::sinit(ret);
-
-			ret->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-			ret->incRef();
-			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-			ret->addPrototypeGetter();
-			ret->addLengthGetter();
-		}
-		else
-			ret=static_cast<Class<ASObject>*>(*retAddr);
-
-		return ret;
-	}
+	static _R<Class<ASObject>> getStubClass(const QName& name, _R<Class_base> superClass=Class<ASObject>::getRef());
+	static Class<ASObject>* getClass();
 	static _R<Class<ASObject>> getRef()
 	{
 		Class<ASObject>* ret = getClass();
@@ -331,7 +288,7 @@ void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& in
 template<class T>
 class InterfaceClass: public Class_base
 {
-	virtual ~InterfaceClass() {}
+	virtual ~InterfaceClass() { }
 	void buildInstanceTraits(ASObject*) const {}
 	ASObject* getInstance(bool, ASObject* const*, unsigned int, Class_base* realClass)
 	{
@@ -343,7 +300,7 @@ class InterfaceClass: public Class_base
 		assert(argslen == 1);
 		return args[0];
 	}
-	InterfaceClass(const QName& name, MemoryAccount* m):Class_base(name, m) {}
+	InterfaceClass(const QName& name, MemoryAccount* m):Class_base(name, m) { }
 public:
 	static InterfaceClass<T>* getClass()
 	{

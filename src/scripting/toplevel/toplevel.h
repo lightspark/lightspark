@@ -45,7 +45,7 @@ class ASString;
 class method_info;
 struct call_context;
 struct traits_info;
-class namespace_info;
+struct namespace_info;
 class Any;
 class Void;
 class Class_object;
@@ -529,7 +529,7 @@ public:
 
 class ASQName: public ASObject
 {
-friend class multiname;
+friend struct multiname;
 friend class Namespace;
 private:
 	bool uri_is_null;

@@ -83,7 +83,7 @@ typedef double number_t;
 
 class ASObject;
 class ABCContext;
-class namespace_info;
+struct namespace_info;
 
 struct multiname;
 class QName

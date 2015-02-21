@@ -288,6 +288,11 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 	ASObject* obj=th->runtime_stack_pop();
 
+	if(obj->is<Null>())
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (obj->is<Undefined>())
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+
 	//We should skip the special implementation of get
 	_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
 	name->resetNameIfObject();
@@ -1334,7 +1339,8 @@ void ABCVm::getLex(call_context* th, int n)
 		o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
 		if(o==NULL)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found, pushing Undefined");
+			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found");
+			throwError<ReferenceError>(kUndefinedVarError);
 			th->runtime_stack_push(getSys()->getUndefinedRef());
 			name->resetNameIfObject();
 			return;
@@ -1427,7 +1433,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 			ret=target;
 		else
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found, pushing Undefined");
+			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
 			throwError<ReferenceError>(kUndefinedVarError);
 			return getSys()->getUndefinedRef();
 		}
@@ -1473,8 +1479,9 @@ bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 
 void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 {
-	LOG(LOG_CALLS, _("initProperty ") << *name << ' ' << obj);
-
+	if(!obj->isInitialized())
+		obj->getClass()->setupDeclaredTraits(obj);
+		
 	//Allow to set contant traits
 	obj->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
 

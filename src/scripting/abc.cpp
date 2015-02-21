@@ -493,7 +493,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite)));
 	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));
 
-	// TODO stub classes, not yet implemented, but needed in tamarin tests
+	// TODO stub classes, not yet implemented, but needed in tests
 	builtin->registerBuiltin("Worker","flash.system",Class<ASObject>::getStubClass(QName("Worker","flash.system")));
 
 	//If needed add AIR definitions
@@ -2120,8 +2120,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else
 			{
 				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname);
-				//The Undefined is coerced to the right type by the initializeVar..
-				ret = getSys()->getUndefinedRef();
+				ret = NULL;
 			}
 
 			obj->initializeVariableByMultiname(*mname, ret, tname, this, DECLARED_TRAIT);

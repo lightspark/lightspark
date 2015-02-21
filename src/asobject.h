@@ -222,7 +222,7 @@ public:
 	 */
 	const variable* findObjVar(const multiname& mname, uint32_t traitKinds) const;
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind);
+	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind,ASObject* mainObj);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
@@ -426,6 +426,7 @@ public:
 	_R<ASObject> toPrimitive(TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;
 
+	bool isInitialized() const {return traitsInitialized;}
 	/* helper functions for calling the "valueOf" and
 	 * "toString" AS-functions which may be members of this
 	 *  object */

@@ -37,7 +37,13 @@ string ASObject::toDebugString()
 {
 	check();
 	string ret;
-	if(getClass())
+	if(this->is<Class_base>())
+	{
+		ret = "[class ";
+		ret+=this->as<Class_base>()->class_name.getQualifiedName().raw_buf();
+		ret+="]";
+	}
+	else if(getClass())
 	{
 		ret="[object ";
 		ret+=getClass()->class_name.name.raw_buf();
@@ -47,12 +53,6 @@ string ASObject::toDebugString()
 		ret = "Undefined";
 	else if(this->is<Null>())
 		ret = "Null";
-	else if(this->is<Class_base>())
-	{
-		ret = "[class ";
-		ret+=this->as<Class_base>()->class_name.getQualifiedName().raw_buf();
-		ret+="]";
-	}
 	else if(this->is<Template_base>())
 	{
 		ret = "[templated class]";
@@ -700,7 +700,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 		return;
 	}
 
-	Variables.initializeVar(name, o, typemname, context, traitKind);
+	Variables.initializeVar(name, o, typemname, context, traitKind,this);
 }
 
 variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
@@ -856,28 +856,57 @@ const variable* variables_map::findObjVar(const multiname& mname, uint32_t trait
 	return NULL;
 }
 
-void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind)
+void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj)
 {
 	const Type* type = NULL;
 	 /* If typename is a builtin type, we coerce obj.
 	  * It it's not it must be a user defined class,
-	  * so we only allow Null and Undefined (which are both coerced to Null) */
+	  * so we try to find the class it is derived from and create an apropriate uninitialized instance */
 
 	type = Type::getBuiltinType(typemname);
+	if (type == NULL)
+		type = Type::getTypeFromMultiname(typemname,context);
 	if(type==NULL)
 	{
-		assert_and_throw(obj->is<Null>() || obj->is<Undefined>());
-		if(obj->is<Undefined>())
+		if (obj == NULL) // create dynamic object
 		{
-			//Casting undefined to an object (of unknown class)
-			//results in Null
-			obj->decRef();
-			obj = getSys()->getNullRef();
+			obj = getSys()->getUndefinedRef();
+		}
+		else
+		{
+			assert_and_throw(obj->is<Null>() || obj->is<Undefined>());
+			if(obj->is<Undefined>())
+			{
+				//Casting undefined to an object (of unknown class)
+				//results in Null
+				obj->decRef();
+				obj = getSys()->getNullRef();
+			}
 		}
 	}
 	else
+	{
+		if (obj == NULL) // create dynamic object
+		{
+			if(mainObj->is<Class_base>() &&
+				mainObj->as<Class_base>()->class_name.getQualifiedName() == typemname->qualifiedString())
+			{
+				// avoid recursive construction
+				obj = getSys()->getNullRef();
+			}
+			else if (type != Class_object::getClass() &&
+					dynamic_cast<const Class_base*>(type) 
+					&& ((Class_base*)type)->super)
+			{
+				obj = ((Class_base*)type)->getInstance(false,NULL,0);
+			}
+			else
+			{
+				obj = getSys()->getUndefinedRef();
+			}
+		}
 		obj = type->coerce(obj);
-
+	}
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT);
 
 	uint32_t name=mname.normalizedNameId();

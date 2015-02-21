@@ -248,7 +248,7 @@ private:
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{
-		throw RunTimeException("Class_object::buildInstanceTraits");
+//		throw RunTimeException("Class_object::buildInstanceTraits");
 	}
 	void finalize();
 public:

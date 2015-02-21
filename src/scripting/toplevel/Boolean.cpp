@@ -53,7 +53,12 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 		return o->as<UInteger>()->val != 0;
 	case T_STRING:
 		return !o->as<ASString>()->data.empty();
+	case T_CLASS:
+		return true;
 	default:
+		// not constructed objects return false
+		if (!o->isInitialized())
+			return false;
 		//everything else is an Object regarding to the spec
 		return true;
 	}

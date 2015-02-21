@@ -1189,8 +1189,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent) const
 	//TODO: support clipping
 	if(ClipDepth!=0)
 	{
-		LOG(LOG_ERROR,"ClipDepth is not supported");
-		return;
+		LOG(LOG_ERROR,"ClipDepth is not supported, but object is created anyway");
 	}
 
 	if(!PlaceFlagHasCharacter && !PlaceFlagMove)

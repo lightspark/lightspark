@@ -47,7 +47,7 @@ private:
 public:
 	Graphics(Class_base* c):ASObject(c),owner(NULL)
 	{
-		throw RunTimeException("Cannot instantiate a Graphics object");
+//		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
 	Graphics(Class_base* c, TokenContainer* _o)
 		: ASObject(c),owner(_o) {}

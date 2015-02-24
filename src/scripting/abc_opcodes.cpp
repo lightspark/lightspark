@@ -375,12 +375,21 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	}
 	LOG(LOG_CALLS,_("End of calling ") << *name);
 }
+void ABCVm::checkDeclaredTraits(ASObject* obj)
+{
+	if(!obj->isInitialized() &&
+			!obj->is<Null>() &&
+			!obj->is<Undefined>() &&
+			!obj->is<IFunction>() &&
+			obj->getClass() &&
+			obj->getClass() != Class_object::getClass())
+		obj->getClass()->setupDeclaredTraits(obj);
+}
 
 int32_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("getProperty_i ") << *name );
-	if(!obj->isInitialized() && !obj->is<Null>() && !obj->is<Undefined>())
-		obj->getClass()->setupDeclaredTraits(obj);
+	checkDeclaredTraits(obj);
 
 	//TODO: implement exception handling to find out if no integer can be returned
 	int32_t ret=obj->getVariableByMultiname_i(*name);
@@ -391,9 +400,8 @@ int32_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 
 ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
-	LOG(LOG_CALLS, _("getProperty ") << *name << ' ' << obj);
-	if(!obj->isInitialized() && !obj->is<Null>() && !obj->is<Undefined>())
-		obj->getClass()->setupDeclaredTraits(obj);
+	LOG(LOG_CALLS, _("getProperty ") << *name << ' ' << obj << ' '<<obj->isInitialized());
+	checkDeclaredTraits(obj);
 
 	_NR<ASObject> prop=obj->getVariableByMultiname(*name);
 	ASObject *ret;
@@ -1483,8 +1491,7 @@ bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 
 void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 {
-	if(!obj->isInitialized() && !obj->is<Null>() && !obj->is<Undefined>())
-		obj->getClass()->setupDeclaredTraits(obj);
+	checkDeclaredTraits(obj);
 		
 	//Allow to set contant traits
 	obj->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);

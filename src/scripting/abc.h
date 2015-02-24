@@ -321,6 +321,7 @@ private:
 	static void decLocal_i(call_context* th, int n);
 	static void decLocal(call_context* th, int n);
 	static void coerce(call_context* th, int n);
+	static void checkDeclaredTraits(ASObject* obj);
 	static ASObject* getProperty(ASObject* obj, multiname* name);
 	static int32_t getProperty_i(ASObject* obj, multiname* name);
 	static void setProperty(ASObject* value,ASObject* obj, multiname* name);

@@ -56,6 +56,8 @@ void Capabilities::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("serverString","",Class<IFunction>::getFunction(_getServerString),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("screenResolutionX","",Class<IFunction>::getFunction(_getScreenResolutionX),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("screenResolutionY","",Class<IFunction>::getFunction(_getScreenResolutionY),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("hasAccessibility","",Class<IFunction>::getFunction(_getHasAccessibility),GETTER_METHOD,false);
+	
 }
 
 ASFUNCTIONBODY(Capabilities,_getPlayerType)
@@ -120,6 +122,11 @@ ASFUNCTIONBODY(Capabilities,_getScreenResolutionY)
 	GdkScreen*  screen = gdk_screen_get_default();
 	gint height = gdk_screen_get_height (screen);
 	return abstract_d(height);
+}
+ASFUNCTIONBODY(Capabilities,_getHasAccessibility)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"hasAccessibility always returns false");
+	return abstract_b(false);
 }
 
 #define MIN_DOMAIN_MEMORY_LIMIT 1024

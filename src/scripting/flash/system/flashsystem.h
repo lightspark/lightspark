@@ -49,6 +49,7 @@ public:
 	ASFUNCTION(_getServerString);
 	ASFUNCTION(_getScreenResolutionX);
 	ASFUNCTION(_getScreenResolutionY);
+	ASFUNCTION(_getHasAccessibility);
 };
 
 class ApplicationDomain: public ASObject

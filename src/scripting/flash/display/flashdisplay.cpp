@@ -1035,6 +1035,7 @@ void MovieClip::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(gotoAndPlay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(prevFrame),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addFrameScript","",Class<IFunction>::getFunction(addFrameScript),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, enabled);
@@ -1229,6 +1230,15 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP+1;
+	th->state.explicit_FP=true;
+	return NULL;
+}
+
+ASFUNCTIONBODY(MovieClip,prevFrame)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	assert_and_throw(th->state.FP<th->getFramesLoaded());
+	th->state.next_FP = th->state.FP-1;
 	th->state.explicit_FP=true;
 	return NULL;
 }

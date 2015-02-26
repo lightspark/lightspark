@@ -486,6 +486,7 @@ public:
 	ASFUNCTION(play);
 	ASFUNCTION(gotoAndStop);
 	ASFUNCTION(gotoAndPlay);
+	ASFUNCTION(prevFrame);
 	ASFUNCTION(nextFrame);
 	ASFUNCTION(_getCurrentFrame);
 	ASFUNCTION(_getCurrentFrameLabel);

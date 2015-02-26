@@ -814,8 +814,11 @@ bool NPScriptObject::callExternalHandler(NPP instance, const char* scriptString,
 		//SUCCESS
 		if(!NPVARIANT_IS_OBJECT(resultVariant))
 		{
-			//Something very wrong happended, our forged function is not a function!
-			LOG(LOG_ERROR,"Could not evaluate wrapper function in external interface");
+			std::map<const NPObject*, std::unique_ptr<ExtObject>> npObjectsMap;
+			NPVariantObject tmp(npObjectsMap, instance, resultVariant);
+			std::map<const ExtObject*, ASObject*> asObjectsMap;
+			*(result) = tmp.getASObject(asObjectsMap);
+			NPN_ReleaseVariantValue(&resultVariant);
 		}
 		else
 		{

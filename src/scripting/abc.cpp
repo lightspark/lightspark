@@ -425,7 +425,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("GestureEvent","flash.events",Class<ASObject>::getStubClass(QName("GestureEvent","flash.events")));
 	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("PressAndTapGestureEvent","flash.events")));
 	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("TransformGestureEvent","flash.events")));
-	builtin->registerBuiltin("ContextMenuEvent","flash.events",Class<ASObject>::getStubClass(QName("ContextMenuEvent","flash.events")));
+	builtin->registerBuiltin("ContextMenuEvent","flash.events",Class<ContextMenuEvent>::getRef());
 
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));
@@ -2032,7 +2032,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		case traits_info::Setter:
 		case traits_info::Method:
 		{
-			//methods can also be defined at toplevel (not only traits_info::Function!)
+		//methods can also be defined at toplevel (not only traits_info::Function!)
 			if(kind == traits_info::Getter)
 				LOG(LOG_CALLS,"Getter trait: " << *mname << _(" #") << t->method);
 			else if(kind == traits_info::Setter)

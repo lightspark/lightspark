@@ -516,5 +516,13 @@ public:
 	ASPROPERTY_GETTER(tiny_string,availability);
 };
 
+class ContextMenuEvent: public Event
+{
+public:
+	ContextMenuEvent(Class_base* c) : Event(c, "ContextMenuEvent") {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
 };
+
+}
 #endif /* SCRIPTING_FLASH_EVENTS_FLASHEVENTS_H */

@@ -1265,3 +1265,10 @@ Event* StageVideoAvailabilityEvent::cloneImpl() const
 }
 
 ASFUNCTIONBODY_GETTER(StageVideoAvailabilityEvent,availability);
+
+void ContextMenuEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
+	c->setVariableByQName("MENU_ITEM_SELECT","",Class<ASString>::getInstanceS("menuItemSelect"),DECLARED_TRAIT);
+	c->setVariableByQName("MENU_SELECT","",Class<ASString>::getInstanceS("menuSelect"),DECLARED_TRAIT);
+}

@@ -133,6 +133,7 @@ REGISTER_CLASS_NAME(StageVideoAvailabilityEvent,"flash.events")
 REGISTER_CLASS_NAME(StatusEvent,"flash.events")
 REGISTER_CLASS_NAME(TextEvent,"flash.events")
 REGISTER_CLASS_NAME(TimerEvent,"flash.events")
+REGISTER_CLASS_NAME(ContextMenuEvent,"flash.events")
 
 //External interface (browser interaction)
 REGISTER_CLASS_NAME(ExternalInterface,"flash.external")

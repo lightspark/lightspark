@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 #This greps the source for SET_NAMESPACE, REGISTER_CLASS_NAME2,
 #sinit definition and the following ->set{Getter,Setter,Method}ByQName calls
 
@@ -27,7 +27,8 @@ rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
 #Constant names do not contain lower-case letters
-rconst = re.compile('[^/]*->setVariableByQName\("([A-Z_]*)",.*_TRAIT');
+rconst = re.compile('[^/]*->setVariableByQName\("([A-Z_0-9]*)",.*_TRAIT');
+rcomment = re.compile('[ \t]*/')
 
 def getFullname(cls,name):
 	if cls != "":
@@ -81,7 +82,14 @@ p1 = Popen(["find", "..", "-name",'*.cpp'], stdout=PIPE)
 p2 = Popen(["xargs","cat"], stdin=p1.stdout, stdout=PIPE);
 p1.stdout.close() 
 
-for line in p2.communicate()[0].split(";"):
+ptmp =""
+for line in p2.communicate()[0].split("\n"):
+	m = rcomment.match(line)
+	if m:
+		continue
+	ptmp = ptmp + line
+	
+for line in ptmp.split(";"):
 	line = line.replace("\n","").rstrip().rstrip();
 	m = sinit.match(line)
 	if m:

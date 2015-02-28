@@ -139,6 +139,7 @@ public:
 	ASFUNCTION(allowInsecureDomain);
 	ASFUNCTION(loadPolicyFile);
 	ASFUNCTION(showSettings);
+	ASFUNCTION(pageDomain);
 };
 
 ASObject* fscommand(ASObject* obj,ASObject* const* args, const unsigned int argslen);

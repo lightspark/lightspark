@@ -430,6 +430,7 @@ void Security::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("showSettings","",Class<IFunction>::getFunction(showSettings),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("pageDomain","",Class<IFunction>::getFunction(pageDomain),GETTER_METHOD,false);
 
 	getSys()->securityManager->setExactSettings(true, false);
 }
@@ -488,6 +489,12 @@ ASFUNCTIONBODY(Security, showSettings)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("Security::showSettings"));
 	return NULL;
+}
+
+ASFUNCTIONBODY(Security, pageDomain)
+{
+	tiny_string s = getSys()->mainClip->getBaseURL().getProtocol()+"://"+getSys()->mainClip->getBaseURL().getHostname();
+	return Class<ASString>::getInstanceS(s);
 }
 
 ASFUNCTIONBODY(lightspark, fscommand)

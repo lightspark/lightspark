@@ -63,6 +63,7 @@ void Video::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(Video::_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(Video::_setHeight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, deblocking);
 	REGISTER_GETTER_SETTER(c, smoothing);
 }
@@ -207,6 +208,11 @@ ASFUNCTIONBODY(Video,attachNetStream)
 
 	Mutex::Lock l(th->mutex);
 	th->netStream=_MR(Class<NetStream>::cast(args[0]));
+	return NULL;
+}
+ASFUNCTIONBODY(Video,clear)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"clear is not implemented");
 	return NULL;
 }
 

@@ -287,6 +287,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	LOG(LOG_CALLS, (keepReturn ? "callProperty " : "callPropVoid") << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
+	checkDeclaredTraits(obj);
 
 	if(obj->is<Null>())
 		throwError<TypeError>(kConvertNullToObjectError);

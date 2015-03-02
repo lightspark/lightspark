@@ -272,6 +272,7 @@ public:
 	ASFUNCTION(_setClient);
 	ASFUNCTION(_getCheckPolicyFile);
 	ASFUNCTION(_setCheckPolicyFile);
+	ASFUNCTION(attach);
 	ASPROPERTY_GETTER(number_t, backBufferLength);
 	ASPROPERTY_GETTER_SETTER(number_t, backBufferTime);
 	ASPROPERTY_GETTER(number_t, bufferLength);

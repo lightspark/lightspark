@@ -1018,6 +1018,7 @@ void NetStream::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("client","",Class<IFunction>::getFunction(_setClient),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(_getCheckPolicyFile),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(_setCheckPolicyFile),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attach","",Class<IFunction>::getFunction(attach),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, backBufferLength);
 	REGISTER_GETTER_SETTER(c, backBufferTime);
 	REGISTER_GETTER(c, bufferLength);
@@ -1081,40 +1082,30 @@ ASFUNCTIONBODY(NetStream,_setCheckPolicyFile)
 
 ASFUNCTIONBODY(NetStream,_constructor)
 {
-	obj->incRef();
-	_R<NetStream> th=_MR(Class<NetStream>::cast(obj));
+	NetStream* th=obj->as<NetStream>();
 
 	LOG(LOG_CALLS,_("NetStream constructor"));
-	assert_and_throw(argslen>=1 && argslen <=2);
-	assert_and_throw(args[0]->getClass()==Class<NetConnection>::getClass());
+	tiny_string value;
+	_NR<NetConnection> netConnection;
 
-	args[0]->incRef();
-	_R<NetConnection> netConnection = _MR(Class<NetConnection>::cast(args[0]));
-	if(argslen == 2)
-	{
-		if(args[1]->getObjectType() == T_STRING)
-		{
-			tiny_string value = Class<ASString>::cast(args[1])->toString();
-			if(value == "directConnections")
-				th->peerID = DIRECT_CONNECTIONS;
-			else
-				th->peerID = CONNECT_TO_FMS;
-		}
-		else if(args[1]->getObjectType() == T_NULL)
-			th->peerID = CONNECT_TO_FMS;
-		else
-			throw Class<ArgumentError>::getInstanceS("NetStream constructor: peerID");
-	}
+	ARG_UNPACK(netConnection)(value, "connectToFMS");
 
-	th->client = th;
+	if(value == "directConnections")
+		th->peerID = DIRECT_CONNECTIONS;
+	else
+		th->peerID = CONNECT_TO_FMS;
+
+	th->incRef();
+	netConnection->incRef();
 	th->connection=netConnection;
+	th->client = _NR<ASObject>(th);
 
 	return NULL;
 }
 
 ASFUNCTIONBODY(NetStream,play)
 {
-	NetStream* th=Class<NetStream>::cast(obj);
+	NetStream* th=obj->as<NetStream>();
 
 	//Make sure the stream is restarted properly
 	if(th->closed)
@@ -1125,8 +1116,10 @@ ASFUNCTIONBODY(NetStream,play)
 	//Reset the paused states
 	th->paused = false;
 //	th->audioPaused = false;
-	assert(!th->connection.isNull());
 
+	if (th->connection.isNull())
+		throwError<ASError>(0,"not connected");
+	
 	if(th->connection->uri.getProtocol()=="http")
 	{
 		//Remoting connection used, this should not happen
@@ -1261,6 +1254,17 @@ ASFUNCTIONBODY(NetStream,seek)
 {
 	//NetStream* th=Class<NetStream>::cast(obj);
 	assert_and_throw(argslen == 1);
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,attach)
+{
+	NetStream* th=obj->as<NetStream>();
+	_NR<NetConnection> netConnection;
+	ARG_UNPACK(netConnection);
+
+	netConnection->incRef();
+	th->connection=netConnection;
 	return NULL;
 }
 
@@ -1845,10 +1849,6 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 
 	//TODO: should we disallow accessing local files in a directory above 
 	//the current one like we do with NetStream.play?
-
-	vector<uint8_t> postData;
-	urlRequest->getPostData(postData);
-	assert_and_throw(postData.empty());
 
 	Downloader* downloader=getSys()->downloadManager->download(url, _MR(new MemoryStreamCache), NULL);
 	//TODO: make the download asynchronous instead of waiting for an unused response

@@ -910,11 +910,13 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	{
 		target->incRef();
 		ASObject* ret=constructor->call(target,args,argslen);
+		target->constructorCalled = true;
 		assert_and_throw(ret->is<Undefined>());
 		ret->decRef();
 	}
 	else
 	{
+		target->constructorCalled = true;
 		for(uint32_t i=0;i<argslen;i++)
 			args[i]->decRef();
 		//throwError<TypeError>(kConstructOfNonFunctionError);

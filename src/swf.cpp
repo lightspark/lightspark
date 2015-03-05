@@ -145,6 +145,7 @@ RootMovieClip* RootMovieClip::getInstance(_NR<LoaderInfo> li, _R<ApplicationDoma
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass();
 	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(li, appDomain, secDomain, movieClipClass);
+	ret->constructorCalled = true;
 	return ret;
 }
 

@@ -283,6 +283,7 @@ protected:
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;
 	bool traitsInitialized:1;
+	bool constructorCalled:1;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const;
@@ -427,6 +428,8 @@ public:
 	bool isPrimitive() const;
 
 	bool isInitialized() const {return traitsInitialized;}
+	bool isConstructed() const;
+	
 	/* helper functions for calling the "valueOf" and
 	 * "toString" AS-functions which may be members of this
 	 *  object */

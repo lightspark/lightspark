@@ -187,7 +187,7 @@ void ASObject::sinit(Class_base* c)
 	c->prototype->setVariableByQName("hasOwnProperty","",Class<IFunction>::getFunction(hasOwnProperty),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("isPrototypeOf","",Class<IFunction>::getFunction(isPrototypeOf),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("propertyIsEnumerable","",Class<IFunction>::getFunction(propertyIsEnumerable),DYNAMIC_TRAIT);
-	
+
 }
 
 void ASObject::buildTraits(ASObject* o)
@@ -205,6 +205,8 @@ bool ASObject::isEqual(ASObject* r)
 	{
 		case T_NULL:
 		case T_UNDEFINED:
+			if (!this->isConstructed())
+				return true;
 			return false;
 		case T_NUMBER:
 		case T_INTEGER:

@@ -148,11 +148,9 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	ASObject* target;
 	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->getVariableAndTargetByMultiname(name,target);
 
-	//TODO: should raise an exception, for now just return undefined	
 	if(o==NULL)
 	{
-		LOG(LOG_ERROR,_("Definition for '") << name << _("' not found."));
-		return getSys()->getUndefinedRef();
+		throwError<ReferenceError>(kClassNotFoundError, tmp);
 	}
 
 	assert_and_throw(o->getObjectType()==T_CLASS);

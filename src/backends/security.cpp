@@ -1023,7 +1023,8 @@ bool URLPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 
 	//Policy files must have on of the following content-types to be valid:
 	//text/*, application/xml or application/xhtml+xml
-	tiny_string contentType = downloader->getHeader("content-type").split(';').front();
+	std::list<tiny_string> contenttypelist = downloader->getHeader("content-type").split(';');
+	tiny_string contentType = contenttypelist.size() == 0 ? "" : contenttypelist.front();
 	if(ok && (subtype == HTTP || subtype == HTTPS) && 
 	   contentType.substr(0, 5) != "text/" &&
 	   contentType != "application/xml" &&

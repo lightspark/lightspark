@@ -2297,6 +2297,8 @@ ASFUNCTIONBODY(lightspark,_isXMLName)
 
 ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
 {
+	traitsInitialized = true;
+	constructorCalled = true;
 }
 
 void ObjectPrototype::finalize()

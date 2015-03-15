@@ -94,7 +94,7 @@ void Vector::sinit(Class_base* c)
 	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
 }
 
-Vector::Vector(Class_base* c, Type *vtype):ASObject(c),vec_type(vtype),fixed(false),vec(reporter_allocator<ASObject*>(c->memoryAccount))
+Vector::Vector(Class_base* c, const Type *vtype):ASObject(c),vec_type(vtype),fixed(false),vec(reporter_allocator<ASObject*>(c->memoryAccount))
 {
 }
 
@@ -114,18 +114,16 @@ void Vector::finalize()
 	ASObject::finalize();
 }
 
-void Vector::setTypes(const std::vector<Type*>& types)
+void Vector::setTypes(const std::vector<const Type *> &types)
 {
 	assert(vec_type == NULL);
-	assert_and_throw(types.size() == 1);
-	vec_type = types[0];
+	if(types.size() == 1)
+		vec_type = types[0];
 }
-
-bool Vector::sameType(const std::vector<Type*>& types) const
+bool Vector::sameType(const QName& classname) const
 {
-	return (types.size() == 1) && ((types[0] == vec_type) ||
-				       (vec_type == Type::anyType) ||
-				       (types[0] == Type::anyType));
+	tiny_string clsname = this->getClass()->getQualifiedClassName();
+	return (clsname.startsWith(classname.getQualifiedName().raw_buf()));
 }
 
 ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen)
@@ -134,7 +132,7 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 	assert_and_throw(args[0]->getClass());
 	assert_and_throw(o_class->getTypes().size() == 1);
 
-	Type* type = o_class->getTypes()[0];
+	const Type* type = o_class->getTypes()[0];
 
 	if(args[0]->getClass() == Class<Array>::getClass())
 	{

@@ -237,9 +237,6 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("QName","",Class<ASQName>::getRef());
 	builtin->registerBuiltin("uint","",Class<UInteger>::getRef());
 	builtin->registerBuiltin("Vector","__AS3__.vec",_MR(Template<Vector>::getTemplate()));
-	//Some instances must be included, they are not created by AS3 code
-	builtin->registerBuiltin("Vector$Object","__AS3__.vec",Template<Vector>::getTemplateInstance(Class<ASObject>::getClass()));
-	builtin->registerBuiltin("Vector$Number","__AS3__.vec",Template<Vector>::getTemplateInstance(Class<Number>::getClass()));
 	builtin->registerBuiltin("Error","",Class<ASError>::getRef());
 	builtin->registerBuiltin("SecurityError","",Class<SecurityError>::getRef());
 	builtin->registerBuiltin("ArgumentError","",Class<ArgumentError>::getRef());
@@ -495,6 +492,7 @@ void ABCVm::registerClasses()
 
 	// TODO stub classes, not yet implemented, but needed in tests
 	builtin->registerBuiltin("Worker","flash.system",Class<ASObject>::getStubClass(QName("Worker","flash.system")));
+	builtin->registerBuiltin("PerspectiveProjection","flash.geom",Class<ASObject>::getStubClass(QName("PerspectiveProjection","flash.geom")));
 
 	//If needed add AIR definitions
 	if(getSys()->flashMode==SystemState::AIR)
@@ -766,6 +764,16 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				{
 					multiname_info* p=&constant_pool.multinames[m->param_types[i]];
 					name += "$";
+					tiny_string nsname;
+					if (p->ns < constant_pool.namespaces.size())
+					{
+						// TODO there's no documentation about how to handle derived classes
+						// We just prepend the namespace to the template class, so we can find it when needed
+						namespace_info nsi = constant_pool.namespaces[p->ns];
+						nsname = getString(nsi.name);
+						if (nsname != "")
+							name += nsname+"$";
+					}
 					name += getString(p->name);
 				}
 				ret->ns.push_back(nsNameAndKind(this, td->ns));
@@ -1948,7 +1956,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 
 	if(t->kind&traits_info::Metadata)
-        {
+	{
 		for(unsigned int i=0;i<t->metadata_count;i++)
 		{
 			metadata_info& minfo = metadata[t->metadata[i]];

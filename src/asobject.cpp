@@ -205,7 +205,7 @@ bool ASObject::isEqual(ASObject* r)
 	{
 		case T_NULL:
 		case T_UNDEFINED:
-			if (!this->isConstructed())
+			if (!this->isConstructed() && !this->is<Class_base>())
 				return true;
 			return false;
 		case T_NUMBER:
@@ -867,8 +867,13 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	 /* If typename is a builtin type, we coerce obj.
 	  * It it's not it must be a user defined class,
 	  * so we try to find the class it is derived from and create an apropriate uninitialized instance */
-
-	type = Type::getBuiltinType(typemname);
+	if (typemname->ns.size() >= 1 && typemname->ns[0].getImpl().name == "__AS3__.vec")
+	{
+		QName qname(getSys()->getStringFromUniqueId(typemname->name_s_id),typemname->ns[0].getImpl().name);
+		type = Template<Vector>::getTemplateInstance(qname,context).getPtr();
+	}
+	if (type == NULL)
+		type = Type::getBuiltinType(typemname);
 	if (type == NULL)
 		type = Type::getTypeFromMultiname(typemname,context);
 	if(type==NULL)
@@ -1766,7 +1771,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 		ret->setVar(obj);
 }
 
-tiny_string ASObject::getClassName()
+tiny_string ASObject::getClassName() const
 {
 	if (getClass())
 		return getClass()->getQualifiedClassName();

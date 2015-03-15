@@ -198,7 +198,7 @@ public:
 	 */
 	bool isSubClass(const Class_base* cls, bool considerInterfaces=true) const;
 	tiny_string getQualifiedClassName() const;
-	tiny_string getName() const { return class_name.name; }
+	tiny_string getName() const { return (class_name.ns.empty() ? class_name.name : class_name.ns +"$"+ class_name.name); }
 	tiny_string toString();
 	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 	ASObject *describeType() const;
@@ -233,7 +233,7 @@ private:
 	QName template_name;
 public:
 	Template_base(QName name);
-	virtual Class_base* applyType(const std::vector<Type*>& t)=0;
+	virtual Class_base* applyType(const std::vector<const Type*>& t)=0;
 };
 
 class Class_object: public Class_base

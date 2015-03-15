@@ -441,7 +441,7 @@ public:
 	tiny_string call_toJSON();
 
 	/* Helper function for calling getClass()->getQualifiedClassName() */
-	virtual tiny_string getClassName();
+	virtual tiny_string getClassName() const;
 
 	ASFUNCTION(generator);
 
@@ -493,6 +493,8 @@ public:
 	void setProxyProperty(const multiname& name); 
 	/* applies proxy namespace settings to name for internal usage */
 	void applyProxyProperty(multiname &name); 
+	
+	void dumpVariables() { Variables.dumpVariables(); }
 };
 
 class Number;

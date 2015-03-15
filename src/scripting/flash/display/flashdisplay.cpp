@@ -1187,7 +1187,7 @@ ASObject* MovieClip::gotoAnd(ASObject* const* args, const unsigned int argslen, 
 	{
 		uint32_t dest=getFrameIdByLabel(args[0]->toString(), sceneName);
 		if(dest==FRAME_NOT_FOUND)
-			throw Class<ArgumentError>::getInstanceS("gotoAndPlay/Stop: label not found");
+			throwError<ArgumentError>(kInvalidArgumentError,stop ? "gotoAndStop: label not found" : "gotoAndPlay: label not found");
 
 		next_FP = dest;
 	}
@@ -1202,7 +1202,7 @@ ASObject* MovieClip::gotoAnd(ASObject* const* args, const unsigned int argslen, 
 		{
 			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded());
 			/* spec says we should throw an error, but then YT breaks */
-			//throw Class<ArgumentError>::getInstanceS("gotoAndPlay/Stop: frame not found");
+			//throwError<ArgumentError>(kInvalidArgumentError,stop ? "gotoAndStop: frame not found" : "gotoAndPlay: frame not found");
 			next_FP = getFramesLoaded()-1;
 		}
 	}
@@ -2222,7 +2222,7 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 ASFUNCTIONBODY(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
-	return Class<Vector>::getInstanceS(Class<StageVideo>::getClass());
+	return Template<Vector>::getInstanceS(Class<StageVideo>::getClass());
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()

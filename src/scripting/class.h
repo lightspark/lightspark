@@ -340,9 +340,9 @@ class TemplatedClass : public Class<T>
 private:
 	/* the Template<T>* this class was generated from */
 	const Template_base* templ;
-	std::vector<Type*> types;
+	std::vector<const Type*> types;
 public:
-	TemplatedClass(const QName& name, const std::vector<Type*>& _types, Template_base* _templ, MemoryAccount* m)
+	TemplatedClass(const QName& name, const std::vector<const Type*>& _types, Template_base* _templ, MemoryAccount* m)
 		: Class<T>(name, m), templ(_templ), types(_types)
 	{
 	}
@@ -374,9 +374,13 @@ public:
 		return templ;
 	}
 
-	const std::vector<Type*> getTypes() const
+	std::vector<const Type*> getTypes() const
 	{
 		return types;
+	}
+	void addType(const Type* type)
+	{
+		types.push_back(type);
 	}
 
 	ASObject* coerce(ASObject* o) const
@@ -386,8 +390,8 @@ public:
 			o->decRef();
 			return getSys()->getNullRef();
 		}
-		else if ((o->is<Vector>() && o->as<Vector>()->sameType(types)) || 
-			 o->is<Null>())
+		else if ((o->is<Vector>() && o->as<Vector>()->sameType(this->class_name)) || 
+				 o->is<Null>())
 		{
 			// Vector.<x> can be coerced to Vector.<y>
 			// only if x and y are the same type
@@ -397,7 +401,7 @@ public:
 		{
 			o->decRef();
 			throwError<TypeError>(kCheckTypeFailedError, o->getClassName(),
-					      Class<T>::getQualifiedClassName());
+								  Class<T>::getQualifiedClassName());
 			return NULL; // not reached
 		}
 	}
@@ -410,7 +414,7 @@ class Template : public Template_base
 public:
 	Template(QName name) : Template_base(name) {};
 
-	QName getQName(const std::vector<Type*>& types)
+	QName getQName(const std::vector<const Type*>& types)
 	{
 		//This is the naming scheme that the ABC compiler uses,
 		//and we need to stay in sync here
@@ -423,7 +427,7 @@ public:
 		return ret;
 	}
 
-	Class_base* applyType(const std::vector<Type*>& types)
+	Class_base* applyType(const std::vector<const Type*>& types)
 	{
 		QName instantiatedQName = getQName(types);
 
@@ -441,19 +445,59 @@ public:
 			ret->addPrototypeGetter();
 		}
 		else
+		{
+			TemplatedClass<T>* tmp = static_cast<TemplatedClass<T>*>(it->second);
+			if (tmp->getTypes().size() == 0)
+				tmp->addType(types[0]);
+			ret= tmp;
+		}
+
+		ret->incRef();
+		return ret;
+	}
+	Class_base* applyTypeByQName(const QName& qname)
+	{
+		const std::vector<const Type*> types;
+		std::map<QName, Class_base*>::iterator it=getSys()->instantiatedTemplates.find(qname);
+		Class<T>* ret=NULL;
+		if(it==getSys()->instantiatedTemplates.end()) //This class is not yet in the map, create it
+		{
+			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(qname.name);
+			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(qname,types,this,memoryAccount);
+			getSys()->instantiatedTemplates.insert(std::make_pair(qname,ret));
+			ret->prototype = _MNR(new_objectPrototype());
+			T::sinit(ret);
+			if(ret->super)
+				ret->prototype->prevPrototype=ret->super->prototype;
+			ret->addPrototypeGetter();
+		}
+		else
 			ret=static_cast<TemplatedClass<T>*>(it->second);
 
 		ret->incRef();
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(Type* type)
+	static Ref<Class_base> getTemplateInstance(const Type* type)
 	{
-		std::vector<Type*> t(1,type);
+		std::vector<const Type*> t(1,type);
 		Template<T>* templ=getTemplate();
 		Ref<Class_base> ret=_MR(templ->applyType(t));
 		templ->decRef();
 		return ret;
+	}
+
+	static Ref<Class_base> getTemplateInstance(const QName& qname, ABCContext* context)
+	{
+		Template<T>* templ=getTemplate();
+		Ref<Class_base> ret=_MR(templ->applyTypeByQName(qname));
+		ret->context = context;
+		templ->decRef();
+		return ret;
+	}
+	static T* getInstanceS(const Type* type)
+	{
+		return static_cast<T*>(getTemplateInstance(type).getPtr()->getInstance(true,NULL,0));
 	}
 
 	static Template<T>* getTemplate(const QName& name)

@@ -382,6 +382,7 @@ void ABCVm::checkDeclaredTraits(ASObject* obj)
 			!obj->is<Null>() &&
 			!obj->is<Undefined>() &&
 			!obj->is<IFunction>() &&
+			!obj->is<Function_object>() &&
 			obj->getClass() &&
 			obj->getClass() != Class_object::getClass())
 		obj->getClass()->setupDeclaredTraits(obj);
@@ -733,7 +734,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 
 	/* Instantiate the template to obtain a class */
 
-	std::vector<Type*> t(m);
+	std::vector<const Type*> t(m);
 	for(int i=0;i<m;++i)
 	{
 		if(args[i]->is<Class_base>())
@@ -1493,7 +1494,7 @@ bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 {
 	checkDeclaredTraits(obj);
-		
+
 	//Allow to set contant traits
 	obj->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
 

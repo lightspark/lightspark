@@ -28,7 +28,7 @@ namespace lightspark
 template<class T> class TemplatedClass;
 class Vector: public ASObject
 {
-	Type* vec_type;
+	const Type* vec_type;
 	bool fixed;
 	std::vector<ASObject*, reporter_allocator<ASObject*>> vec;
 	int capIndex(int i) const;
@@ -36,21 +36,21 @@ class Vector: public ASObject
 	{
 	private:
 		IFunction* comparator;
-		Type* vec_type;
+		const Type* vec_type;
 	public:
-		sortComparatorWrapper(IFunction* c, Type* v):comparator(c),vec_type(v){}
+		sortComparatorWrapper(IFunction* c, const Type* v):comparator(c),vec_type(v){}
 		bool operator()(ASObject* d1, ASObject* d2);
 	};
 public:
-	Vector(Class_base* c, Type *vtype=NULL);
+	Vector(Class_base* c, const Type *vtype=NULL);
 	~Vector();
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {};
 	static ASObject* generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen);
 
-	void setTypes(const std::vector<Type*>& types);
-	bool sameType(const std::vector<Type*>& types) const;
+	void setTypes(const std::vector<const Type*>& types);
+	bool sameType(const QName& classname) const;
 
 	//Overloads
 	tiny_string toString(bool debugMsg=false);
@@ -81,7 +81,6 @@ public:
 
 	//TODO: do we need to implement generator?
 	ASFUNCTION(_constructor);
-	ASFUNCTION(_applytype);
 
 	ASFUNCTION(push);
 	ASFUNCTION(_concat);

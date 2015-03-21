@@ -24,7 +24,9 @@
 #include "compat.h"
 
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#ifndef LLVM_36
 #include <llvm/ExecutionEngine/JIT.h>
+#endif
 #include <llvm/PassManager.h>
 #ifdef HAVE_IR_DATALAYOUT_H
 #  include <llvm/IR/Module.h>
@@ -1560,7 +1562,11 @@ void ABCVm::Run(ABCVm* th)
 #endif
 		llvm::InitializeNativeTarget();
 		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context());
+#ifdef LLVM_36
+		llvm::EngineBuilder eb(std::unique_ptr<llvm::Module>(th->module));
+#else
 		llvm::EngineBuilder eb(th->module);
+#endif
 		eb.setEngineKind(llvm::EngineKind::JIT);
 #ifdef LLVM_31
 		eb.setTargetOptions(Opts);
@@ -1570,12 +1576,16 @@ void ABCVm::Run(ABCVm* th)
 		assert_and_throw(th->ex);
 
 		th->FPM=new llvm::FunctionPassManager(th->module);
+#ifdef LLVM_36
+		th->FPM->add(new llvm::DataLayoutPass());
+#else
 #ifdef LLVM_35
 		th->FPM->add(new llvm::DataLayoutPass(*th->ex->getDataLayout()));
 #elif defined HAVE_DATALAYOUT_H || defined HAVE_IR_DATALAYOUT_H
 		th->FPM->add(new llvm::DataLayout(*th->ex->getDataLayout()));
 #else
 		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
+#endif
 #endif
 #ifdef EXPENSIVE_DEBUG
 		//This is pretty heavy, do not enable in release

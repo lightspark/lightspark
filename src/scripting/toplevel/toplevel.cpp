@@ -1237,7 +1237,7 @@ void Class_base::describeTraits(xmlpp::Element* root,
 		int kind=t.kind&0xf;
 		multiname* mname=context->getMultiname(t.name,NULL);
 		if (mname->name_type!=multiname::NAME_STRING ||
-		    (mname->ns.size()==1 && !mname->ns[0].hasEmptyName()) ||
+		    (mname->ns.size()==1 && (!mname->ns[0].hasEmptyName() || mname->ns[0].getImpl().kind == PRIVATE_NAMESPACE)) ||
 		    mname->ns.size() > 1)
 			continue;
 		

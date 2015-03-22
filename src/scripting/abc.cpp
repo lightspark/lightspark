@@ -507,6 +507,9 @@ void ABCVm::registerClasses()
 				Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")));
 	}
 
+	Class_object::getRef()->getClass()->prototype = _MNR(new_objectPrototype());
+	Class_object::getRef()->getClass()->initStandardProps();
+
 	getSys()->systemDomain->registerGlobalScope(builtin);
 }
 

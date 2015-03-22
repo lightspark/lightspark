@@ -136,6 +136,7 @@ public:
 };
 
 class Prototype;
+class ObjectConstructor;
 
 class Class_base: public ASObject, public Type
 {
@@ -158,9 +159,11 @@ private:
 protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
+	void initStandardProps();
 public:
 	variables_map borrowedVariables;
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
+	ASPROPERTY_GETTER(_NR<ObjectConstructor>,constructorprop);
 	_NR<Class_base> super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
@@ -175,11 +178,13 @@ private:
 	//TODO: move in Class_inherit
 	bool use_protected:1;
 public:
+	void addConstructorGetter();
 	void addPrototypeGetter();
 	void addLengthGetter();
 	void setupDeclaredTraits(ASObject *target);
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
+	bool hasConstructor() { return constructor != NULL; }
 	Class_base(const QName& name, MemoryAccount* m);
 	//Special constructor for Class_object
 	Class_base(const Class_object*);
@@ -285,7 +290,23 @@ public:
 	void decRef() { ASObject::decRef(); }
 	ASObject* getObj() { return this; }
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	bool isEqual(ASObject* r);
 };
+
+/* Special object used as constructor property for classes
+ * It has its own prototype object, but everything else is forwarded to the class object
+ */
+class ObjectConstructor: public ASObject
+{
+	Prototype* prototype;
+public:
+	ObjectConstructor(Class_base* c);
+	void incRef() { getClass()->incRef(); }
+	void decRef() { getClass()->decRef(); }
+	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	bool isEqual(ASObject* r);
+};
+
 
 /* Special object returned when new func() syntax is used.
  * This object looks for properties on the prototype object that is passed in the constructor
@@ -368,6 +389,8 @@ public:
  * Implements the IFunction interface for functions implemented
  * in c-code.
  */
+class FunctionPrototype;
+
 class Function : public IFunction
 {
 friend class Class<IFunction>;
@@ -384,13 +407,7 @@ protected:
 	method_info* getMethodInfo() const { return NULL; }
 public:
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
-	bool isEqual(ASObject* r)
-	{
-		Function* f=dynamic_cast<Function*>(r);
-		if(f==NULL)
-			return false;
-		return (val==f->val) && (closure_this==f->closure_this);
-	}
+	bool isEqual(ASObject* r);
 };
 
 /* Special object used as prototype for the Function class

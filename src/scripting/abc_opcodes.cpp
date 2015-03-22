@@ -2107,6 +2107,9 @@ void ABCVm::newClass(call_context* th, int n)
 	if(ret->super)
 		ret->prototype->prevPrototype=ret->super->prototype;
 	ret->addPrototypeGetter();
+	ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret));
+	ret->constructorprop->incRef();
+	ret->addConstructorGetter();
 
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->context->instances[n].interface_count;i++)

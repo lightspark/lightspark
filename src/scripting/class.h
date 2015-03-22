@@ -72,6 +72,7 @@ ASObject* new_asobject();
 Prototype* new_objectPrototype();
 Prototype* new_functionPrototype(Class_base* functionClass, _NR<Prototype> p);
 Function_object* new_functionObject(_NR<ASObject> p);
+ObjectConstructor* new_objectConstructor(Class_base* cls);
 
 template<class T,std::size_t N>
 struct newWithOptionalClass
@@ -149,13 +150,7 @@ public:
 			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
 
-			ret->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-			ret->incRef();
-			ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-			if(ret->super)
-				ret->prototype->prevPrototype=ret->super->prototype;
-			ret->addPrototypeGetter();
-			ret->addLengthGetter();
+			ret->initStandardProps();
 		}
 		else
 			ret=static_cast<Class<T>*>(*retAddr);

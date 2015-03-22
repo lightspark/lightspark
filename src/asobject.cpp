@@ -231,6 +231,8 @@ bool ASObject::isEqual(ASObject* r)
 				return x->toString()==toString();
 		}
 	}
+	if (r->is<ObjectConstructor>())
+		return this == r->getClass();
 
 	LOG(LOG_CALLS,_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
 	if(classdef)

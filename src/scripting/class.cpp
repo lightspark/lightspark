@@ -48,6 +48,13 @@ Function_object* lightspark::new_functionObject(_NR<ASObject> p)
 	return new (c->memoryAccount) Function_object(c, p);
 }
 
+ObjectConstructor* lightspark::new_objectConstructor(Class_base* cls)
+{
+	return new (cls->memoryAccount) ObjectConstructor(cls);
+}
+
+
+
 Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(name, m),tag(NULL),bindedToRoot(false)
 {
 	this->incRef(); //create on reference for the classes map
@@ -179,13 +186,7 @@ _R<Class<ASObject>> Class<ASObject>::getStubClass(const QName& name, _R<Class_ba
 	
 	ret->setSuper(superClass);
 	ret->prototype = _MNR(new_objectPrototype());
-	ret->prototype->prevPrototype=ret->super->prototype;
-	ret->incRef();
-	ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-	ret->addPrototypeGetter();
-	ret->addLengthGetter();
-	
-	ret->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+	ret->initStandardProps();
 	getSys()->customClasses.insert(ret);
 	ret->incRef();
 	return _MR(ret);
@@ -205,12 +206,7 @@ Class<ASObject>* Class<ASObject>::getClass()
 		*retAddr=ret;
 		ret->prototype = _MNR(new_objectPrototype());
 		ASObject::sinit(ret);
-		
-		ret->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
-		ret->incRef();
-		ret->prototype->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
-		ret->addPrototypeGetter();
-		ret->addLengthGetter();
+		ret->initStandardProps();
 	}
 	else
 		ret=static_cast<Class<ASObject>*>(*retAddr);

@@ -552,6 +552,13 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 		ret=getSys()->getUndefinedRef();
 	return ret;
 }
+bool Function::isEqual(ASObject* r)
+{
+	Function* f=dynamic_cast<Function*>(r);
+	if(f==NULL)
+		return false;
+	return (val==f->val) && (closure_this==f->closure_this);
+}
 
 bool Null::isEqual(ASObject* r)
 {
@@ -775,6 +782,23 @@ void Class_base::copyBorrowedTraitsFromSuper()
 	}
 }
 
+void Class_base::initStandardProps()
+{
+	incRef();
+	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this));
+	constructorprop->incRef();
+	addConstructorGetter();
+	
+	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+	incRef();
+	prototype->setVariableByQName("constructor","",this,DYNAMIC_TRAIT);
+
+	if(super)
+		prototype->prevPrototype=super->prototype;
+	addPrototypeGetter();
+	addLengthGetter();
+}
+
 
 ASObject* Class_base::coerce(ASObject* o) const
 {
@@ -788,6 +812,9 @@ ASObject* Class_base::coerce(ASObject* o) const
 	       else
 		       throwError<TypeError>(kCheckTypeFailedError, o->getClassName(), getQualifiedClassName());
 	}
+	if (o->is<ObjectConstructor>())
+		return o;
+
 	//o->getClass() == NULL for primitive types
 	//those are handled in overloads Class<Number>::coerce etc.
 	if(!o->getClass() || !o->getClass()->isSubClass(this))
@@ -805,6 +832,11 @@ ASFUNCTIONBODY(Class_base,_toString)
 	return Class<ASString>::getInstanceS(ret);
 }
 
+void Class_base::addConstructorGetter()
+{
+	setDeclaredMethodByQName("constructor","",Class<IFunction>::getFunction(_getter_constructorprop),GETTER_METHOD,false);
+}
+
 void Class_base::addPrototypeGetter()
 {
 	setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(_getter_prototype),GETTER_METHOD,false);
@@ -819,6 +851,20 @@ Class_base::~Class_base()
 {
 	if(!referencedObjects.empty())
 		LOG(LOG_ERROR,_("Class destroyed without cleanUp called"));
+}
+
+ASObject* Class_base::_getter_constructorprop(ASObject* obj, ASObject* const* args, const unsigned int argslen)
+{
+	Class_base* th = NULL;
+	if(obj->is<Class_base>())
+		th = obj->as<Class_base>();
+	else
+		th = obj->getClass();
+	if(argslen != 0)
+		throw Class<ArgumentError>::getInstanceS("Arguments provided in getter");
+	ASObject* ret=th->constructorprop.getPtr();
+	ret->incRef();
+	return ret;
 }
 
 ASObject* Class_base::_getter_prototype(ASObject* obj, ASObject* const* args, const unsigned int argslen)
@@ -1899,6 +1945,11 @@ Class<IFunction>* Class<IFunction>::getClass()
 		//Thus we make sure that everything is in order when getFunction() below is called
 		ret->addPrototypeGetter();
 		IFunction::sinit(ret);
+		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret));
+		ret->constructorprop->incRef();
+
+		ret->addConstructorGetter();
+
 		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_getter_prototype),GETTER_METHOD,true);
 		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_setter_prototype),SETTER_METHOD,true);
 	}
@@ -2300,7 +2351,12 @@ ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
 	traitsInitialized = true;
 	constructorCalled = true;
 }
-
+bool ObjectPrototype::isEqual(ASObject* r)
+{
+	if (r->is<ObjectPrototype>())
+		return this->getClass() == r->getClass();
+	return ASObject::isEqual(r);
+}
 void ObjectPrototype::finalize()
 {
 	ASObject::finalize();
@@ -2314,6 +2370,27 @@ _NR<ASObject> ObjectPrototype::getVariableByMultiname(const multiname& name, GET
 		return ret;
 
 	return prevPrototype->getObj()->getVariableByMultiname(name, opt);
+}
+
+
+ObjectConstructor::ObjectConstructor(Class_base* c) : ASObject(c)
+{
+	Class<ASObject>::getRef()->prototype->incRef();
+	this->prototype = Class<ASObject>::getRef()->prototype.getPtr();
+}
+
+_NR<ASObject> ObjectConstructor::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	if (name.normalizedName() == "prototype")
+	{
+		prototype->getObj()->incRef();
+		return _NR<ASObject>(prototype->getObj());
+	}
+	return getClass()->getVariableByMultiname(name, opt);
+}
+bool ObjectConstructor::isEqual(ASObject* r)
+{
+	return this == r || getClass() == r;
 }
 
 FunctionPrototype::FunctionPrototype(Class_base* c, _NR<Prototype> p) : Function(c, ASNop)

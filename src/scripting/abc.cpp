@@ -270,6 +270,7 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("AccessibilityProperties","flash.accessibility",Class<AccessibilityProperties>::getRef());
 	builtin->registerBuiltin("AccessibilityImplementation","flash.accessibility",Class<AccessibilityImplementation>::getRef());
+	builtin->registerBuiltin("Accessibility","flash.accessibility",Class<ASObject>::getStubClass(QName("Accessibility","flash.accessibility")));
 
 	builtin->registerBuiltin("Mutex","flash.concurrent",Class<ASMutex>::getRef());
 	builtin->registerBuiltin("Condition","flash.concurrent",Class<ASCondition>::getRef());
@@ -363,6 +364,9 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextBlock","flash.text.engine",Class<TextBlock>::getRef());
 	builtin->registerBuiltin("TextElement","flash.text.engine",Class<TextElement>::getRef());
 	builtin->registerBuiltin("TextLine","flash.text.engine",Class<TextLine>::getRef());
+	builtin->registerBuiltin("TextJustifier","flash.text.engine",Class<TextJustifier>::getRef());
+	builtin->registerBuiltin("SpaceJustifier","flash.text.engine",Class<SpaceJustifier>::getRef());
+	builtin->registerBuiltin("EastAsianJustifier","flash.text.engine",Class<EastAsianJustifier>::getRef());
 
 	builtin->registerBuiltin("XMLDocument","flash.xml",Class<XMLDocument>::getRef());
 	builtin->registerBuiltin("XMLNode","flash.xml",Class<XMLNode>::getRef());
@@ -425,6 +429,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("PressAndTapGestureEvent","flash.events")));
 	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("TransformGestureEvent","flash.events")));
 	builtin->registerBuiltin("ContextMenuEvent","flash.events",Class<ContextMenuEvent>::getRef());
+	builtin->registerBuiltin("UncaughtErrorEvent","flash.events",Class<UncaughtErrorEvent>::getRef());
 
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));

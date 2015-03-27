@@ -1008,6 +1008,24 @@ ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
 	return NULL;
 }
 
+
+UncaughtErrorEvent::UncaughtErrorEvent(Class_base* c):ErrorEvent(c, "uncaughtError")
+{
+}
+
+void UncaughtErrorEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
+	c->setVariableByQName("UNCAUGHT_ERROR","",Class<ASString>::getInstanceS("uncaughtError"),DECLARED_TRAIT);
+}
+
+ASFUNCTIONBODY(UncaughtErrorEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,4);
+	ErrorEvent::_constructor(obj,args,baseClassArgs);
+	return NULL;
+}
+
 ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event(NULL, "ABCContextInitEvent"),context(c),lazy(l)
 {
 }

@@ -59,6 +59,30 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class TextJustifier: public ASObject
+{
+public:
+	TextJustifier(Class_base* c): ASObject(c) {};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
+class SpaceJustifier: public TextJustifier
+{
+public:
+	SpaceJustifier(Class_base* c): TextJustifier(c) {};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
+class EastAsianJustifier: public TextJustifier
+{
+public:
+	EastAsianJustifier(Class_base* c): TextJustifier(c) {};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
 class TextBlock: public ASObject
 {
 public:
@@ -67,6 +91,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(createTextLine);
 	ASPROPERTY_GETTER_SETTER(_NR<ContentElement>, content);
+	ASPROPERTY_GETTER_SETTER(_NR<TextJustifier>, textJustifier);
 };
 
 class TextElement: public ContentElement
@@ -95,6 +120,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER(_NR<TextBlock>, textBlock);
 };
-};
+
+}
 
 #endif

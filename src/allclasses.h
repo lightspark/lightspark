@@ -134,6 +134,7 @@ REGISTER_CLASS_NAME(StatusEvent,"flash.events")
 REGISTER_CLASS_NAME(TextEvent,"flash.events")
 REGISTER_CLASS_NAME(TimerEvent,"flash.events")
 REGISTER_CLASS_NAME(ContextMenuEvent,"flash.events")
+REGISTER_CLASS_NAME(UncaughtErrorEvent,"flash.events")
 
 //External interface (browser interaction)
 REGISTER_CLASS_NAME(ExternalInterface,"flash.external")
@@ -219,11 +220,14 @@ REGISTER_CLASS_NAME(StyleSheet,"flash.text")
 
 //Text engine
 REGISTER_CLASS_NAME(ContentElement,"flash.text.engine")
+REGISTER_CLASS_NAME(EastAsianJustifier,"flash.text.engine")
 REGISTER_CLASS_NAME(ElementFormat,"flash.text.engine")
 REGISTER_CLASS_NAME(FontDescription,"flash.text.engine")
 REGISTER_CLASS_NAME(FontWeight,"flash.text.engine")
+REGISTER_CLASS_NAME(SpaceJustifier,"flash.text.engine")
 REGISTER_CLASS_NAME(TextBlock,"flash.text.engine")
 REGISTER_CLASS_NAME(TextElement,"flash.text.engine")
+REGISTER_CLASS_NAME(TextJustifier,"flash.text.engine")
 REGISTER_CLASS_NAME(TextLine,"flash.text.engine")
 
 //Utils

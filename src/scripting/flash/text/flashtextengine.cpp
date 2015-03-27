@@ -62,14 +62,47 @@ void FontWeight::sinit(Class_base* c)
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
 }
 
+
+void TextJustifier::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, 0);
+}
+ASFUNCTIONBODY(TextJustifier, _constructor)
+{
+	throwError<ArgumentError>(kCantInstantiateError, "TextJustifier cannot be instantiated");
+	return NULL;
+}
+void SpaceJustifier::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, TextJustifier, _constructor, CLASS_FINAL);
+}
+ASFUNCTIONBODY(SpaceJustifier, _constructor)
+{
+	SpaceJustifier* th=static_cast<SpaceJustifier*>(obj);
+	LOG(LOG_NOT_IMPLEMENTED, "SpaceJustifier is a stub");
+	return NULL;
+}
+void EastAsianJustifier::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, TextJustifier, _constructor, CLASS_FINAL);
+}
+ASFUNCTIONBODY(EastAsianJustifier, _constructor)
+{
+	EastAsianJustifier* th=static_cast<EastAsianJustifier*>(obj);
+	LOG(LOG_NOT_IMPLEMENTED, "EastAsianJustifier is a stub");
+	return NULL;
+}
+
 void TextBlock::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("createTextLine","",Class<IFunction>::getFunction(createTextLine),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, content);
+	REGISTER_GETTER_SETTER(c, textJustifier);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content);
+ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content)
+ASFUNCTIONBODY_GETTER_SETTER(TextBlock, textJustifier)
 
 ASFUNCTIONBODY(TextBlock, _constructor)
 {

@@ -222,6 +222,18 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class UncaughtErrorEvent: public ErrorEvent
+{
+public:
+	UncaughtErrorEvent(Class_base* c);
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+	ASFUNCTION(_constructor);
+};
+
+
 class ProgressEvent: public Event
 {
 private:

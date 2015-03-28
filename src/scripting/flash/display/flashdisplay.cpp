@@ -54,14 +54,14 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true)
+	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true)
 {
 }
 
 LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true)
+	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true)
 {
 }
 
@@ -74,6 +74,7 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_getURL),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytes","",Class<IFunction>::getFunction(_getBytes),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
@@ -101,6 +102,7 @@ void LoaderInfo::finalize()
 	applicationDomain.reset();
 	securityDomain.reset();
 	waitedObject.reset();
+	bytesData.reset();
 }
 
 void LoaderInfo::resetState()
@@ -108,6 +110,8 @@ void LoaderInfo::resetState()
 	SpinlockLocker l(spinlock);
 	bytesLoaded=0;
 	bytesTotal=0;
+	if(!bytesData.isNull())
+		bytesData->setLength(0);
 	loadStatus=STARTED;
 }
 
@@ -160,6 +164,9 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 		return;
 	if(!loader.isNull() && obj==waitedObject)
 		loader->setContent(obj);
+	if (bytesData.isNull())
+		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS());
+	bytesData->writeObject(obj.getPtr());
 	sendInit();
 	waitedObject.reset();
 }
@@ -241,6 +248,12 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	return abstract_i(th->bytesTotal);
+}
+
+ASFUNCTIONBODY(LoaderInfo,_getBytes)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	return th->bytesData.getPtr();
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
@@ -2793,7 +2806,7 @@ void BlendMode::sinit(Class_base* c)
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
 	c->setVariableByQName("OVERLAY","",Class<ASString>::getInstanceS("overlay"),DECLARED_TRAIT);
 	c->setVariableByQName("SCREEN","",Class<ASString>::getInstanceS("screen"),DECLARED_TRAIT);
-	c->setVariableByQName("SUBSTRACT","",Class<ASString>::getInstanceS("substract"),DECLARED_TRAIT);
+	c->setVariableByQName("SUBTRACT","",Class<ASString>::getInstanceS("subtract"),DECLARED_TRAIT);
 }
 
 void SpreadMethod::sinit(Class_base* c)

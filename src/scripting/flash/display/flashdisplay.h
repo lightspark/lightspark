@@ -228,6 +228,7 @@ private:
 	tiny_string loaderURL;
 	_NR<EventDispatcher> sharedEvents;
 	_NR<Loader> loader;
+	_NR<ByteArray> bytesData;
 	/*
 	 * waitedObject is the object we are supposed to wait,
 	 * it's necessary when multiple loads are invoked on
@@ -257,6 +258,7 @@ public:
 	ASFUNCTION(_getURL);
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
+	ASFUNCTION(_getBytes);
 	ASFUNCTION(_getApplicationDomain);
 	ASFUNCTION(_getLoader);
 	ASFUNCTION(_getContent);

@@ -141,7 +141,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("parent","",Class<IFunction>::getFunction(_getParent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("root","",Class<IFunction>::getFunction(_getRoot),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(_getBlendMode),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(_setBlendMode),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(_getScale9Grid),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(_getStage),GETTER_METHOD,true);
@@ -305,7 +305,7 @@ void DisplayObject::extractValuesFromMatrix()
 
 bool DisplayObject::skipRender() const
 {
-	return visible==false || clippedAlpha()==0.0;
+	return visible==false || clippedAlpha()==0.0 || ClipDepth;
 }
 
 void DisplayObject::defaultRender(RenderContext& ctxt) const
@@ -667,8 +667,36 @@ ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
 
 ASFUNCTIONBODY(DisplayObject,_getBlendMode)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return getSys()->getUndefinedRef();
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	return Class<ASString>::getInstanceS(th->blendMode);
+}
+ASFUNCTIONBODY(DisplayObject,_setBlendMode)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	tiny_string val;
+	ARG_UNPACK(val);
+
+	if (
+			val != "add" &&
+			val != "alpha" &&
+			val != "darken" &&
+			val != "difference" &&
+			val != "erase" &&
+			val != "hardlight" &&
+			val != "invert" &&
+			val != "invert" &&
+			val != "layer" &&
+			val != "lighten" &&
+			val != "multiply" &&
+			val != "normal" &&
+			val != "overlay" &&
+			val != "screen" &&
+			val != "subtract"
+			)
+			val = "normal";
+	LOG(LOG_NOT_IMPLEMENTED, "blendmode is set but is not respected during drawing:"<<val);
+	th->blendMode = val;
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,localToGlobal)

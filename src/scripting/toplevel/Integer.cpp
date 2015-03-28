@@ -198,6 +198,11 @@ void Integer::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("MAX_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(_toFixed,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(_toExponential,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toPrecision",AS3,Class<IFunction>::getFunction(_toPrecision,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(Integer::_toExponential, 1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(Integer::_toFixed, 1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(Integer::_toPrecision, 1),DYNAMIC_TRAIT);

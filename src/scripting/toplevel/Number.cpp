@@ -272,6 +272,10 @@ void Number::sinit(Class_base* c)
 	c->setVariableByQName("MIN_VALUE","",pmin,CONSTANT_TRAIT);
 	c->setVariableByQName("NaN","",pnan,CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(toFixed,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(toExponential,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toPrecision",AS3,Class<IFunction>::getFunction(toPrecision,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(Number::toFixed, 1),DYNAMIC_TRAIT);

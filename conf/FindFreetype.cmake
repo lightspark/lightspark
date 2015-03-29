@@ -52,9 +52,13 @@ FIND_PATH(FREETYPE_INCLUDE_DIR_ft2build ft2build.h
   /sw/include
   /opt/local/include
   /usr/freeware/include
+  PATH_SUFFIXES freetype2
 )
 
-FIND_PATH(FREETYPE_INCLUDE_DIR_freetype2 freetype/config/ftheader.h 
+FIND_PATH(FREETYPE_INCLUDE_DIR_freetype2
+  NAMES
+  freetype/config/ftheader.h
+  config/ftheader.h
   HINTS
   $ENV{FREETYPE_DIR}/include/freetype2
   PATHS

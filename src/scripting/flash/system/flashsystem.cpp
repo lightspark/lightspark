@@ -108,8 +108,56 @@ ASFUNCTIONBODY(Capabilities,_getVersion)
 
 ASFUNCTIONBODY(Capabilities,_getServerString)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Capabilities.serverString is not implemented");
-	return Class<ASString>::getInstanceS("");
+	LOG(LOG_NOT_IMPLEMENTED,"Capabilities: not all capabilities are reported in ServerString");
+	tiny_string res = "A=t&SA=t&SV=t&MP3=t&OS=Linux&PT=PlugIn&L=en&TLS=t";
+	res +="&V=";
+	res += EMULATED_VERSION;
+	res +="&M=";
+	res += MANUFACTURER;
+
+	GdkScreen*  screen = gdk_screen_get_default();
+	gint width = gdk_screen_get_width (screen);
+	gint height = gdk_screen_get_height (screen);
+	char buf[40];
+	snprintf(buf,40,"&R=%ix%i",width,height);
+	res += buf;
+
+	/*
+	avHardwareDisable	AVD
+	hasAccessibility	ACC
+	hasAudio	A
+	hasAudioEncoder	AE
+	hasEmbeddedVideo	EV
+	hasIME	IME
+	hasMP3	MP3
+	hasPrinting	PR
+	hasScreenBroadcast	SB
+	hasScreenPlayback	SP
+	hasStreamingAudio	SA
+	hasStreamingVideo	SV
+	hasTLS	TLS
+	hasVideoEncoder	VE
+	isDebugger	DEB
+	language	L
+	localFileReadDisable	LFD
+	manufacturer	M
+	maxLevelIDC	ML
+	os	OS
+	pixelAspectRatio	AR
+	playerType	PT
+	screenColor	COL
+	screenDPI	DP
+	screenResolutionX	R
+	screenResolutionY	R
+	version	V
+	supports Dolby Digital audio	DD
+	supports Dolby Digital Plus audio	DDP
+	supports DTS audio	DTS
+	supports DTS Express audio	DTE
+	supports DTS-HD High Resolution Audio	DTH
+	supports DTS-HD Master Audio	DTM
+	*/
+	return Class<ASString>::getInstanceS(res);
 }
 ASFUNCTIONBODY(Capabilities,_getScreenResolutionX)
 {
@@ -520,5 +568,5 @@ void System::sinit(Class_base* c)
 ASFUNCTIONBODY(System,totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
-	return abstract_d(0);
+	return abstract_d(1024);
 }

@@ -2081,6 +2081,7 @@ void Stage::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,fullScreenSourceRect);
 	REGISTER_GETTER_SETTER(c,showDefaultContextMenu);
 	REGISTER_GETTER_SETTER(c,quality);
+	REGISTER_GETTER_SETTER(c,stageFocusRect);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,align,onAlign);
@@ -2089,6 +2090,7 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,displayState,onDisplayState);
 ASFUNCTIONBODY_GETTER_SETTER(Stage,showDefaultContextMenu);  // stub
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,fullScreenSourceRect,onFullScreenSourceRect);
 ASFUNCTIONBODY_GETTER_SETTER(Stage,quality);
+ASFUNCTIONBODY_GETTER_SETTER(Stage,stageFocusRect);  // stub
 
 void Stage::onDisplayState(const tiny_string&)
 {

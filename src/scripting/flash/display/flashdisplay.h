@@ -550,6 +550,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,fullScreenSourceRect);
 	ASPROPERTY_GETTER_SETTER(bool,showDefaultContextMenu);
 	ASPROPERTY_GETTER_SETTER(tiny_string,quality);
+	ASPROPERTY_GETTER_SETTER(bool,stageFocusRect);
 };
 
 class StageScaleMode: public ASObject

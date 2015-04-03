@@ -113,8 +113,8 @@ void BitmapData::notifyUsers() const
 
 ASFUNCTIONBODY(BitmapData,_constructor)
 {
-	uint32_t width;
-	uint32_t height;
+	int32_t width;
+	int32_t height;
 	bool transparent;
 	uint32_t fillColor;
 	BitmapData* th = obj->as<BitmapData>();
@@ -126,6 +126,10 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 	//If the bitmap is already initialized, just return
 	if(width==0 || height==0 || !th->pixels->isEmpty())
 		return NULL;
+	if(width<0 || height<0)
+		throw Class<ArgumentError>::getInstanceS("invalid height or width", kInvalidArgumentError);
+	if(width>8191 || height>8191)
+		throw Class<ArgumentError>::getInstanceS("invalid height or width", kInvalidArgumentError);
 
 	uint32_t *pixelArray=new uint32_t[width*height];
 	uint32_t c=GUINT32_TO_BE(fillColor); // fromRGB expects big endian data

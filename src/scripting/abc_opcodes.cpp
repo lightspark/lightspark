@@ -384,7 +384,7 @@ void ABCVm::checkDeclaredTraits(ASObject* obj)
 			!obj->is<IFunction>() &&
 			!obj->is<Function_object>() &&
 			obj->getClass() &&
-			obj->getClass() != Class_object::getClass())
+			(obj->is<Class_inherit>() || (obj->getClass() != Class_object::getClass())))
 		obj->getClass()->setupDeclaredTraits(obj);
 }
 
@@ -404,7 +404,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("getProperty ") << *name << ' ' << obj << ' '<<obj->isInitialized());
 	checkDeclaredTraits(obj);
-
+		
 	_NR<ASObject> prop=obj->getVariableByMultiname(*name);
 	ASObject *ret;
 
@@ -2269,6 +2269,7 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 		//we silently ignore calling undefined functions
 		if(f->is<Undefined>())
 		{
+			LOG(LOG_NOT_IMPLEMENTED,"calling undefined function:"<<obj->toDebugString());
 			if(keepReturn)
 				th->runtime_stack_push(f);
 			else

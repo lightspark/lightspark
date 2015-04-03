@@ -288,7 +288,7 @@ ASFUNCTIONBODY(URLRequest,_setData)
 ASFUNCTIONBODY(URLRequest,_getDigest)
 {
 	URLRequest* th=obj->as<URLRequest>();
-	if (th->digest.numChars() == 0)
+	if (th->digest.empty())
 		return getSys()->getNullRef();
 	else
 		return Class<ASString>::getInstanceS(th->digest);

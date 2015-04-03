@@ -1350,7 +1350,7 @@ void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_s
 		assert_and_throw(collon != tmp.raw_buf() && *(collon-1) == ':');
 		uint32_t collon_offset = collon-tmp.raw_buf();
 		ns = tmp.substr_bytes(0,collon_offset-1);
-		name = tmp.substr_bytes(collon_offset+1,tmp.numChars()-collon_offset-1);
+		name = tmp.substr_bytes(collon_offset+1,tmp.numBytes()-collon_offset-1);
 		return;
 	}
 	// No namespace, look for a package name
@@ -1359,7 +1359,7 @@ void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_s
 	{
 		uint32_t dot_offset = dot-tmp.raw_buf();
 		ns = tmp.substr_bytes(0,dot_offset);
-		name = tmp.substr_bytes(dot_offset+1,tmp.numChars()-dot_offset-1);
+		name = tmp.substr_bytes(dot_offset+1,tmp.numBytes()-dot_offset-1);
 		return;
 	}
 	//No namespace or package in the string

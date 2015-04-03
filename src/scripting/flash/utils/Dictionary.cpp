@@ -83,6 +83,30 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, CONS
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
+		multiname tmpname(NULL);
+		tmpname.ns.push_back(nsNameAndKind("",NAMESPACE));
+		switch (name.name_o->getObjectType())
+		{
+			case T_BOOLEAN:
+			case T_UINTEGER:
+			case T_INTEGER:
+				tmpname.name_type=multiname::NAME_INT;
+				tmpname.name_i = name.name_o->toInt();
+				ASObject::setVariableByMultiname(tmpname, o, allowConst);
+				return;
+			case T_NUMBER:
+				tmpname.name_type=multiname::NAME_NUMBER;
+				tmpname.name_d = name.name_o->toNumber();
+				ASObject::setVariableByMultiname(tmpname, o, allowConst);
+				return;
+			case T_STRING:
+				tmpname.name_type=multiname::NAME_STRING;
+				tmpname.name_s_id = getSys()->getUniqueStringId(name.name_o->toString());
+				ASObject::setVariableByMultiname(tmpname, o, allowConst);
+				return;
+			default:
+				break;
+		}
 		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
 
@@ -109,6 +133,27 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
+		multiname tmpname(NULL);
+		tmpname.ns.push_back(nsNameAndKind("",NAMESPACE));
+		switch (name.name_o->getObjectType())
+		{
+			case T_BOOLEAN:
+			case T_UINTEGER:
+			case T_INTEGER:
+				tmpname.name_type=multiname::NAME_INT;
+				tmpname.name_i = name.name_o->toInt();
+				return ASObject::deleteVariableByMultiname(tmpname);
+			case T_NUMBER:
+				tmpname.name_type=multiname::NAME_NUMBER;
+				tmpname.name_d = name.name_o->toNumber();
+				return ASObject::deleteVariableByMultiname(tmpname);
+			case T_STRING:
+				tmpname.name_type=multiname::NAME_STRING;
+				tmpname.name_s_id = getSys()->getUniqueStringId(name.name_o->toString());
+				return ASObject::deleteVariableByMultiname(tmpname);
+			default:
+				break;
+		}
 		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
 
@@ -137,6 +182,27 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 	{
 		if(name.name_type==multiname::NAME_OBJECT)
 		{
+			multiname tmpname(NULL);
+			tmpname.ns.push_back(nsNameAndKind("",NAMESPACE));
+			switch (name.name_o->getObjectType())
+			{
+				case T_BOOLEAN:
+				case T_UINTEGER:
+				case T_INTEGER:
+					tmpname.name_type=multiname::NAME_INT;
+					tmpname.name_i = name.name_o->toInt();
+					return ASObject::getVariableByMultiname(tmpname, opt);
+				case T_NUMBER:
+					tmpname.name_type=multiname::NAME_NUMBER;
+					tmpname.name_d = name.name_o->toNumber();
+					return ASObject::getVariableByMultiname(tmpname, opt);
+				case T_STRING:
+					tmpname.name_type=multiname::NAME_STRING;
+					tmpname.name_s_id = getSys()->getUniqueStringId(name.name_o->toString());
+					return ASObject::getVariableByMultiname(tmpname, opt);
+				default:
+					break;
+			}
 			name.name_o->incRef();
 			_R<ASObject> name_o(name.name_o);
 
@@ -167,6 +233,28 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
+		multiname tmpname(NULL);
+		tmpname.ns.push_back(nsNameAndKind("",NAMESPACE));
+		switch (name.name_o->getObjectType())
+		{
+			case T_BOOLEAN:
+			case T_UINTEGER:
+			case T_INTEGER:
+				tmpname.name_type=multiname::NAME_INT;
+				tmpname.name_i = name.name_o->toInt();
+				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype);
+			case T_NUMBER:
+				tmpname.name_type=multiname::NAME_NUMBER;
+				tmpname.name_d = name.name_o->toNumber();
+				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype);
+			case T_STRING:
+				tmpname.name_type=multiname::NAME_STRING;
+				tmpname.name_s_id = getSys()->getUniqueStringId(name.name_o->toString());
+				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype);
+			default:
+				break;
+		}
+
 		name.name_o->incRef();
 		_R<ASObject> name_o(name.name_o);
 

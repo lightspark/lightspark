@@ -32,6 +32,16 @@ class Vector: public ASObject
 	bool fixed;
 	std::vector<ASObject*, reporter_allocator<ASObject*>> vec;
 	int capIndex(int i) const;
+	class sortComparatorDefault
+	{
+	private:
+		bool isNumeric;
+		bool isCaseInsensitive;
+		bool isDescending;
+	public:
+		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
+		bool operator()(ASObject* d1, ASObject* d2);
+	};
 	class sortComparatorWrapper
 	{
 	private:

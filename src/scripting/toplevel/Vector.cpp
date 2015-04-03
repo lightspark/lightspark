@@ -732,6 +732,45 @@ ASFUNCTIONBODY(Vector,indexOf)
 	}
 	return abstract_i(ret);
 }
+bool Vector::sortComparatorDefault::operator()(ASObject* d1, ASObject* d2)
+{
+	if(isNumeric)
+	{
+		number_t a=d1->toNumber();
+
+		number_t b=d2->toNumber();
+
+		if(std::isnan(a) || std::isnan(b))
+			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
+		if(isDescending)
+			return b>a;
+		else
+			return a<b;
+	}
+	else
+	{
+		//Comparison is always in lexicographic order
+		tiny_string s1 = d1->toString();
+		tiny_string s2 = d2->toString();
+
+		if(isDescending)
+		{
+			//TODO: unicode support
+			if(isCaseInsensitive)
+				return s1.strcasecmp(s2)>0;
+			else
+				return s1>s2;
+		}
+		else
+		{
+			//TODO: unicode support
+			if(isCaseInsensitive)
+				return s1.strcasecmp(s2)<0;
+			else
+				return s1<s2;
+		}
+	}
+}
 bool Vector::sortComparatorWrapper::operator()(ASObject* d1, ASObject* d2)
 {
 	ASObject* objs[2];
@@ -762,10 +801,44 @@ ASFUNCTIONBODY(Vector,_sort)
 		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.sort", "1", Integer::toString(argslen));
 	Vector* th=static_cast<Vector*>(obj);
 	
-	IFunction* comp=static_cast<IFunction*>(args[0]);
+	IFunction* comp=NULL;
+	bool isNumeric=false;
+	bool isCaseInsensitive=false;
+	bool isDescending=false;
+	if(args[0]->getObjectType()==T_FUNCTION) //Comparison func
+	{
+		assert_and_throw(comp==NULL);
+		comp=static_cast<IFunction*>(args[0]);
+	}
+	else
+	{
+		uint32_t options=args[0]->toInt();
+		if(options&Array::NUMERIC)
+			isNumeric=true;
+		if(options&Array::CASEINSENSITIVE)
+			isCaseInsensitive=true;
+		if(options&Array::DESCENDING)
+			isDescending=true;
+		if(options&(~(Array::NUMERIC|Array::CASEINSENSITIVE|Array::DESCENDING)))
+			throw UnsupportedException("Vector::sort not completely implemented");
+	}
+	std::vector<ASObject*> tmp = vector<ASObject*>(th->vec.size());
+	int i = 0;
+	for(auto it=th->vec.begin();it != th->vec.end();++it)
+	{
+		tmp[i++]= *it;
+	}
 	
+	if(comp)
+		sort(tmp.begin(),tmp.end(),sortComparatorWrapper(comp,th->vec_type));
+	else
+		sort(tmp.begin(),tmp.end(),sortComparatorDefault(isNumeric,isCaseInsensitive,isDescending));
 
-	sort(th->vec.begin(),th->vec.end(),sortComparatorWrapper(comp,th->vec_type));
+	th->vec.clear();
+	for(auto ittmp=tmp.begin();ittmp != tmp.end();++ittmp)
+	{
+		th->vec.push_back(*ittmp);
+	}
 	obj->incRef();
 	return obj;
 }

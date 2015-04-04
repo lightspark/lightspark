@@ -164,9 +164,6 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 		return;
 	if(!loader.isNull() && obj==waitedObject)
 		loader->setContent(obj);
-	if (bytesData.isNull())
-		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS());
-	bytesData->writeObject(obj.getPtr());
 	sendInit();
 	waitedObject.reset();
 }
@@ -253,6 +250,11 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 ASFUNCTIONBODY(LoaderInfo,_getBytes)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	if (th->bytesData.isNull())
+		th->bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS());
+	if (!th->loader->getContent().isNull())
+		th->bytesData->writeObject(th->loader->getContent().getPtr());
+
 	return th->bytesData.getPtr();
 }
 

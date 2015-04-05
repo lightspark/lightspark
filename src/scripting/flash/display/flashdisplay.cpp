@@ -319,6 +319,9 @@ void LoaderThread::execute()
 		
 		// Wait for some data, making sure our check for failure is working
 		sbuf->sgetc(); // peek one byte
+		if(downloader->getRequestStatus() == 204) // empty answer
+			return;
+
 		if(cache->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);

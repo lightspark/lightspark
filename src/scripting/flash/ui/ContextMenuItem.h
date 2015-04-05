@@ -32,6 +32,7 @@ public:
 	ContextMenuItem(Class_base* c):EventDispatcher(c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(tiny_string, caption);
 };
 
 }

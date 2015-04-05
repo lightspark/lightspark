@@ -25,6 +25,7 @@ using namespace lightspark;
 void ContextMenuItem::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL);
+	REGISTER_GETTER_SETTER(c, caption);
 }
 
 ASFUNCTIONBODY(ContextMenuItem,_constructor)
@@ -33,4 +34,5 @@ ASFUNCTIONBODY(ContextMenuItem,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,caption);
 

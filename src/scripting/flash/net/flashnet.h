@@ -94,6 +94,14 @@ public:
 	static void sinit(Class_base*);
 };
 
+
+class SharedObjectFlushStatus: public ASObject
+{
+public:
+	SharedObjectFlushStatus(Class_base* c):ASObject(c){}
+	static void sinit(Class_base*);
+};
+
 class SharedObject: public EventDispatcher
 {
 public:
@@ -208,6 +216,14 @@ public:
 	ASPROPERTY_GETTER_SETTER(NullableRef<ASObject>,client);
 };
 
+class NetStreamAppendBytesAction: public ASObject
+{
+public:
+	NetStreamAppendBytesAction(Class_base* c):ASObject(c){}
+	static void sinit(Class_base*);
+};
+
+
 class SoundTransform;
 class NetStream: public EventDispatcher, public IThreadJob, public ITickJob
 {
@@ -273,6 +289,8 @@ public:
 	ASFUNCTION(_getCheckPolicyFile);
 	ASFUNCTION(_setCheckPolicyFile);
 	ASFUNCTION(attach);
+	ASFUNCTION(appendBytes);
+	ASFUNCTION(appendBytesAction);
 	ASPROPERTY_GETTER(number_t, backBufferLength);
 	ASPROPERTY_GETTER_SETTER(number_t, backBufferTime);
 	ASPROPERTY_GETTER(number_t, bufferLength);

@@ -125,8 +125,6 @@ protected:
 	//-- DOWNLOADED DATA
 	//File length (can change in certain cases, resulting in reallocation of the buffer (non-cached))
 	uint32_t length;
-	//Append data to the internal buffer
-	void append(uint8_t* buffer, uint32_t length);
 	//Set the length of the downloaded file, can be called multiple times to accomodate a growing file
 	void setLength(uint32_t _length);
 public:
@@ -163,7 +161,8 @@ public:
 	bool isRedirected() { return redirected; }
 	const tiny_string& getOriginalURL() { return originalURL; }
 	uint16_t getRequestStatus() { return requestStatus; }
-
+	//Append data to the internal buffer
+	void append(uint8_t* buffer, uint32_t length);
 };
 
 class ThreadedDownloader : public Downloader, public IThreadJob

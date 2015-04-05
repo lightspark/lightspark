@@ -436,6 +436,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")));
 	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef());
 	builtin->registerBuiltin("NetStream","flash.net",Class<NetStream>::getRef());
+	builtin->registerBuiltin("NetStreamAppendBytesAction","flash.net",Class<NetStreamAppendBytesAction>::getRef());
 	builtin->registerBuiltin("NetStreamPlayOptions","flash.net",Class<NetStreamPlayOptions>::getRef());
 	builtin->registerBuiltin("NetStreamPlayTransitions","flash.net",Class<NetStreamPlayTransitions>::getRef());
 	builtin->registerBuiltin("URLLoader","flash.net",Class<URLLoader>::getRef());
@@ -446,6 +447,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("URLRequestMethod","flash.net",Class<URLRequestMethod>::getRef());
 	builtin->registerBuiltin("URLVariables","flash.net",Class<URLVariables>::getRef());
 	builtin->registerBuiltin("SharedObject","flash.net",Class<SharedObject>::getRef());
+	builtin->registerBuiltin("SharedObjectFlushStatus","flash.net",Class<SharedObjectFlushStatus>::getRef());
 	builtin->registerBuiltin("ObjectEncoding","flash.net",Class<ObjectEncoding>::getRef());
 	builtin->registerBuiltin("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")));
 	builtin->registerBuiltin("Responder","flash.net",Class<Responder>::getRef());
@@ -1343,7 +1345,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 	Class_inherit* derived_class_tmp=static_cast<Class_inherit*>(derived_class);
 	if(derived_class_tmp->isBinded())
 	{
-		LOG(LOG_ERROR, "Class already binded to a tag. Not binding");
+		LOG(LOG_ERROR, "Class already binded to a tag. Not binding:"<<s<< " class:"<<derived_class_tmp->getQualifiedClassName());
 		return NULL;
 	}
 	return derived_class_tmp;
@@ -2039,9 +2041,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				//do interfaces have cinit methods?
 				//TODO: call them, set constructor property, do something
 				if(classes[t->classi].cinit != 0)
-					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (static):"<<className);
+				{
+					method_info* m=&methods[classes[t->classi].cinit];
+					if (m->body)
+						LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (static):"<<className);
+				}
 				if(instances[t->classi].init != 0)
-					LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (constructor):"<<className);
+				{
+					method_info* m=&methods[instances[t->classi].init];
+					if (m->body)
+						LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (constructor):"<<className);
+				}
 				ret = ci;
 			}
 			else

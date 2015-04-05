@@ -589,6 +589,13 @@ void URLLoaderDataFormat::sinit(Class_base* c)
 	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"),DECLARED_TRAIT);
 }
 
+void SharedObjectFlushStatus::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL);
+	c->setVariableByQName("FLUSHED","",Class<ASString>::getInstanceS("flushed"),DECLARED_TRAIT);
+	c->setVariableByQName("PENDING","",Class<ASString>::getInstanceS("pending"),DECLARED_TRAIT);
+}
+
 SharedObject::SharedObject(Class_base* c):EventDispatcher(c)
 {
 	data=_MR(new_asobject());
@@ -601,7 +608,7 @@ void SharedObject::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
 	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(getLocal),NORMAL_METHOD,false);
 	REGISTER_GETTER(c,data);
-};
+}
 
 ASFUNCTIONBODY_GETTER(SharedObject,data);
 
@@ -984,6 +991,14 @@ NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused
 	soundTransform = _MNR(Class<SoundTransform>::getInstanceS());
 }
 
+void NetStreamAppendBytesAction::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL);
+	c->setVariableByQName("END_SEQUENCE","",Class<ASString>::getInstanceS("endSequence"),DECLARED_TRAIT);
+	c->setVariableByQName("RESET_BEGIN","",Class<ASString>::getInstanceS("resetBegin"),DECLARED_TRAIT);
+	c->setVariableByQName("RESET_SEEK","",Class<ASString>::getInstanceS("resetSeek"),DECLARED_TRAIT);
+}
+
 void NetStream::finalize()
 {
 	EventDispatcher::finalize();
@@ -1019,6 +1034,8 @@ void NetStream::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(_getCheckPolicyFile),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(_setCheckPolicyFile),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("attach","",Class<IFunction>::getFunction(attach),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendBytes","",Class<IFunction>::getFunction(appendBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendBytesAction","",Class<IFunction>::getFunction(appendBytesAction),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, backBufferLength);
 	REGISTER_GETTER_SETTER(c, backBufferTime);
 	REGISTER_GETTER(c, bufferLength);
@@ -1253,6 +1270,7 @@ ASFUNCTIONBODY(NetStream,close)
 ASFUNCTIONBODY(NetStream,seek)
 {
 	//NetStream* th=Class<NetStream>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"NetStream.seek is not implemented yet");
 	assert_and_throw(argslen == 1);
 	return NULL;
 }
@@ -1265,6 +1283,23 @@ ASFUNCTIONBODY(NetStream,attach)
 
 	netConnection->incRef();
 	th->connection=netConnection;
+	return NULL;
+}
+ASFUNCTIONBODY(NetStream,appendBytes)
+{
+	NetStream* th=Class<NetStream>::cast(obj);
+	_NR<ByteArray> bytearray;
+	ARG_UNPACK(bytearray);
+	
+	if(!bytearray.isNull())
+		th->downloader->append(bytearray->getBuffer(bytearray->getLength(),false),bytearray->getLength());
+	return NULL;
+}
+ASFUNCTIONBODY(NetStream,appendBytesAction)
+{
+	//NetStream* th=Class<NetStream>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"NetStream.appendBytesAction is not implemented yet");
+	assert_and_throw(argslen == 1);
 	return NULL;
 }
 

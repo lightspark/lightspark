@@ -915,9 +915,9 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			else
 			{
 				obj = getSys()->getUndefinedRef();
+				obj = type->coerce(obj);
 			}
 		}
-		obj = type->coerce(obj);
 	}
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT);
 

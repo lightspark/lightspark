@@ -52,6 +52,8 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 	case T_UINTEGER:
 		return o->as<UInteger>()->val != 0;
 	case T_STRING:
+		if (!o->isConstructed())
+			return false;
 		return !o->as<ASString>()->data.empty();
 	case T_CLASS:
 	case T_FUNCTION:
@@ -142,6 +144,9 @@ bool Boolean::isEqual(ASObject* r)
 			return b->val==val;
 		}
 		case T_STRING:
+			if (!r->isConstructed())
+				return false;
+			return val==r->toNumber();
 		case T_INTEGER:
 		case T_UINTEGER:
 		case T_NUMBER:

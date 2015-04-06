@@ -538,6 +538,8 @@ bool ASString::isEqual(ASObject* r)
 	{
 		case T_STRING:
 		{
+			if (!this->isConstructed())
+				return !r->isConstructed();
 			const ASString* s=static_cast<const ASString*>(r);
 			return s->data==data;
 		}
@@ -548,6 +550,8 @@ bool ASString::isEqual(ASObject* r)
 			return toNumber()==r->toNumber();
 		case T_NULL:
 		case T_UNDEFINED:
+			if (!this->isConstructed())
+				return true;
 			return false;
 		default:
 			return r->isEqual(this);

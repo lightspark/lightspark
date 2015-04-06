@@ -85,8 +85,11 @@ bool Undefined::isEqual(ASObject* r)
 		case T_NUMBER:
 		case T_INTEGER:
 		case T_UINTEGER:
-		case T_STRING:
 		case T_BOOLEAN:
+			return false;
+		case T_STRING:
+			if (!r->isConstructed())
+				return true;
 			return false;
 		default:
 			return r->isEqual(this);
@@ -570,8 +573,11 @@ bool Null::isEqual(ASObject* r)
 		case T_INTEGER:
 		case T_UINTEGER:
 		case T_NUMBER:
-		case T_STRING:
 		case T_BOOLEAN:
+			return false;
+		case T_STRING:
+			if (!r->isConstructed())
+				return true;
 			return false;
 		default:
 			return r->isEqual(this);
@@ -806,11 +812,11 @@ ASObject* Class_base::coerce(ASObject* o) const
 		return o;
 	if(o->is<Class_base>())
 	{ /* classes can be cast to the type 'Object' or 'Class' */
-	       if(this == Class<ASObject>::getClass()
+		if(this == Class<ASObject>::getClass()
 		|| (class_name.name=="Class" && class_name.ns==""))
-		       return o; /* 'this' is the type of a class */
-	       else
-		       throwError<TypeError>(kCheckTypeFailedError, o->getClassName(), getQualifiedClassName());
+			return o; /* 'this' is the type of a class */
+		else
+			throwError<TypeError>(kCheckTypeFailedError, o->getClassName(), getQualifiedClassName());
 	}
 	if (o->is<ObjectConstructor>())
 		return o;

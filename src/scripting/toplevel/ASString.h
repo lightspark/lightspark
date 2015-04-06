@@ -88,6 +88,8 @@ inline ASObject* Class<ASString>::coerce(ASObject* o) const
 		o->decRef();
 		return getSys()->getNullRef();
 	}
+	if(!o->isConstructed())
+		return o;
 	tiny_string n = o->toString();
 	o->decRef();
 	return Class<ASString>::getInstanceS(n);

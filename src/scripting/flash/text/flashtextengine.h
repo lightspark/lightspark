@@ -180,7 +180,7 @@ private:
 	void renderImpl(RenderContext& ctxt) const;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
-	TextLine(Class_base* c, _NR<ContentElement> content=NullRef, _NR<TextBlock> owner=NullRef);
+	TextLine(Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);
 	static void sinit(Class_base* c);
 	void updateSizes();
 	ASFUNCTION(_constructor);

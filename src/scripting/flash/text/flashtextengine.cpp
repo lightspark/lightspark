@@ -258,12 +258,26 @@ ASFUNCTIONBODY(TextBlock, createTextLine)
 		throwError<ArgumentError>(kOutOfRangeError,"Invalid width");
 	}
 
-
+	// TODO handle non TextElement Content
+	if (th->content.isNull() || !th->content->is<TextElement>() || th->content->as<TextElement>()->text.empty())
+		return NULL;
+	tiny_string linetext = th->content->as<TextElement>()->text;
+	if (fitSomething && linetext == "")
+		linetext = " ";
+		
+	LOG(LOG_NOT_IMPLEMENTED,"splitting textblock in multiple lines not implemented");
+	th->content->as<TextElement>()->text = "";
 	th->incRef();
-	TextLine *textLine = Class<TextLine>::getInstanceS(th->content, _MNR(th));
+	TextLine *textLine = Class<TextLine>::getInstanceS(linetext, _MNR(th));
 	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 	textLine->updateSizes();
+	if (textLine->width > textLine->textWidth)
+	{
+		delete textLine;
+		th->decRef();
+		return NULL;
+	}
 	if (!previousLine.isNull())
 		previousLine->nextLine == textLine;
 	return textLine;
@@ -281,6 +295,10 @@ ASFUNCTIONBODY(TextBlock, recreateTextLine)
 	if (argslen > 2)
 		LOG(LOG_NOT_IMPLEMENTED, "TextBlock::recreateTextLine ignored some parameters");
 	LOG(LOG_NOT_IMPLEMENTED, "TextBlock::recreateTextLine doesn't check all parameters for validity");
+
+	// TODO handle non TextElement Content
+	if (th->content.isNull() || !th->content->is<TextElement>() || th->content->as<TextElement>()->text.empty())
+		return NULL;
 
 	if (!fitSomething && (width < 0 || width > MAX_LINE_WIDTH))
 	{
@@ -301,6 +319,10 @@ ASFUNCTIONBODY(TextBlock, recreateTextLine)
 	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 	textLine->updateSizes();
+	if (textLine->width > textLine->textWidth)
+	{
+		return NULL;
+	}
 	if (!previousLine.isNull())
 		previousLine->nextLine == textLine;
 	return textLine.getPtr();
@@ -324,19 +346,12 @@ ASFUNCTIONBODY(TextElement, _constructor)
 	return NULL;
 }
 
-TextLine::TextLine(Class_base* c, _NR<ContentElement> content, _NR<TextBlock> owner)
+TextLine::TextLine(Class_base* c, tiny_string linetext, _NR<TextBlock> owner)
   : DisplayObjectContainer(c), TextData(),nextLine(NULL),previousLine(NULL),userData(NULL)
 {
 	textBlock = owner;
 
-	if (content.isNull() || !content->is<TextElement>())
-	{
-		LOG(LOG_NOT_IMPLEMENTED, "TextLine supports only TextElements");
-		return;
-	}
-
-	TextElement *textElement = content->as<TextElement>();
-	text = textElement->text;
+	text = linetext;
 	updateSizes();
 	requestInvalidation(getSys());
 }
@@ -378,8 +393,9 @@ ASFUNCTIONBODY(TextLine, getDescent)
 
 ASFUNCTIONBODY(TextLine, getAscent)
 {
+	TextLine* th=static_cast<TextLine*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.ascent");
-	return abstract_d(0);
+	return abstract_d(th->textHeight);
 }
 
 ASFUNCTIONBODY(TextLine, getTextWidth)
@@ -402,7 +418,6 @@ void TextLine::updateSizes()
 	h = height;
 	//Compute (text)width, (text)height
 	CairoPangoRenderer::getBounds(*this, w, h, tw, th);
-	LOG(LOG_INFO,"text size:"<<w<<" "<<h<<" "<<text<<" "<<tw);
 	if (w == 0)
 		w = tw;
 	if (h == 0)

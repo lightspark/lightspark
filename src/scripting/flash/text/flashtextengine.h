@@ -29,40 +29,104 @@
 namespace lightspark
 {
 
+class ElementFormat;
 class ContentElement: public ASObject
 {
 public:
-	ContentElement(Class_base* c): ASObject(c) {};
+	ContentElement(Class_base* c): ASObject(c),elementFormat(NULL) {}
 	static void sinit(Class_base* c);
+	ASPROPERTY_GETTER_SETTER(_NR<ElementFormat>,elementFormat);
 };
 
+class FontDescription;
 class ElementFormat: public ASObject
 {
 public:
-	ElementFormat(Class_base* c): ASObject(c) {};
+	ElementFormat(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(tiny_string,alignmentBaseline);
+	ASPROPERTY_GETTER_SETTER(number_t,alpha);
+	ASPROPERTY_GETTER_SETTER(number_t,baselineShift);
+	ASPROPERTY_GETTER_SETTER(tiny_string,breakOpportunity);
+	ASPROPERTY_GETTER_SETTER(uint,color);
+	ASPROPERTY_GETTER_SETTER(tiny_string,digitCase);
+	ASPROPERTY_GETTER_SETTER(tiny_string,digitWidth);
+	ASPROPERTY_GETTER_SETTER(tiny_string,dominantBaseline);
+	ASPROPERTY_GETTER_SETTER(_NR<FontDescription>,fontDescription);
+	ASPROPERTY_GETTER_SETTER(number_t,fontSize);
+	ASPROPERTY_GETTER_SETTER(tiny_string,kerning);
+	ASPROPERTY_GETTER_SETTER(tiny_string,ligatureLevel);
+	ASPROPERTY_GETTER_SETTER(tiny_string,locale);
+	ASPROPERTY_GETTER_SETTER(bool,locked);
+	ASPROPERTY_GETTER_SETTER(tiny_string,textRotation);
+	ASPROPERTY_GETTER_SETTER(number_t,trackingLeft);
+	ASPROPERTY_GETTER_SETTER(number_t,trackingRight);
+	ASPROPERTY_GETTER_SETTER(tiny_string,typographicCase);
+};
+
+class FontLookup: public ASObject
+{
+public:
+	FontLookup(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
 };
 
 class FontDescription: public ASObject
 {
 public:
-	FontDescription(Class_base* c): ASObject(c) {};
+	FontDescription(Class_base* c): ASObject(c), 
+		cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(tiny_string,cffHinting);
+	ASPROPERTY_GETTER_SETTER(tiny_string,fontLookup);
+	ASPROPERTY_GETTER_SETTER(tiny_string,fontName);
+	ASPROPERTY_GETTER_SETTER(tiny_string,fontPosture);
+	ASPROPERTY_GETTER_SETTER(tiny_string,fontWeight);
+	ASPROPERTY_GETTER_SETTER(bool,locked);
+	ASPROPERTY_GETTER_SETTER(tiny_string,renderingMode);
 };
 
 class FontWeight: public ASObject
 {
 public:
-	FontWeight(Class_base* c): ASObject(c) {};
+	FontWeight(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+
+class FontMetrics: public ASObject
+{
+public:
+	FontMetrics(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
+class Kerning: public ASObject
+{
+public:
+	Kerning(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class LineJustification: public ASObject
+{
+public:
+	LineJustification(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+
+class TextBaseline: public ASObject
+{
+public:
+	TextBaseline(Class_base* c): ASObject(c) {}
 	static void sinit(Class_base* c);
 };
 
 class TextJustifier: public ASObject
 {
 public:
-	TextJustifier(Class_base* c): ASObject(c) {};
+	TextJustifier(Class_base* c): ASObject(c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 };
@@ -70,7 +134,7 @@ public:
 class SpaceJustifier: public TextJustifier
 {
 public:
-	SpaceJustifier(Class_base* c): TextJustifier(c) {};
+	SpaceJustifier(Class_base* c): TextJustifier(c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 };
@@ -78,7 +142,7 @@ public:
 class EastAsianJustifier: public TextJustifier
 {
 public:
-	EastAsianJustifier(Class_base* c): TextJustifier(c) {};
+	EastAsianJustifier(Class_base* c): TextJustifier(c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 };
@@ -86,18 +150,20 @@ public:
 class TextBlock: public ASObject
 {
 public:
-	TextBlock(Class_base* c): ASObject(c) {};
+	TextBlock(Class_base* c): ASObject(c),bidiLevel(0) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(createTextLine);
+	ASFUNCTION(recreateTextLine);
 	ASPROPERTY_GETTER_SETTER(_NR<ContentElement>, content);
 	ASPROPERTY_GETTER_SETTER(_NR<TextJustifier>, textJustifier);
+	ASPROPERTY_GETTER_SETTER(int,bidiLevel);
 };
 
 class TextElement: public ContentElement
 {
 public:
-	TextElement(Class_base* c): ContentElement(c) {};
+	TextElement(Class_base* c): ContentElement(c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,text);
@@ -119,6 +185,22 @@ public:
 	void updateSizes();
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER(_NR<TextBlock>, textBlock);
+	ASPROPERTY_GETTER(_NR<TextLine>, nextLine);
+	ASPROPERTY_GETTER(_NR<TextLine>, previousLine);
+	ASPROPERTY_GETTER_SETTER(tiny_string,validity);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,userData);
+	ASFUNCTION(getDescent);
+	ASFUNCTION(getAscent);
+	ASFUNCTION(getTextWidth);
+	ASFUNCTION(getTextHeight);
+
+};
+
+class TextLineValidity: public ASObject
+{
+public:
+	TextLineValidity(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
 };
 
 }

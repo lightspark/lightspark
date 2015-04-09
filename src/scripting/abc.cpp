@@ -360,10 +360,16 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("ContentElement","flash.text.engine",Class<ContentElement>::getRef());
 	builtin->registerBuiltin("ElementFormat","flash.text.engine",Class<ElementFormat>::getRef());
 	builtin->registerBuiltin("FontDescription","flash.text.engine",Class<FontDescription>::getRef());
+	builtin->registerBuiltin("FontMetrics","flash.text.engine",Class<FontMetrics>::getRef());
+	builtin->registerBuiltin("FontLookup","flash.text.engine",Class<FontLookup>::getRef());
 	builtin->registerBuiltin("FontWeight","flash.text.engine",Class<FontWeight>::getRef());
+	builtin->registerBuiltin("Kerning","flash.text.engine",Class<Kerning>::getRef());
+	builtin->registerBuiltin("LineJustification","flash.text.engine",Class<LineJustification>::getRef());
+	builtin->registerBuiltin("TextBaseline","flash.text.engine",Class<TextBaseline>::getRef());
 	builtin->registerBuiltin("TextBlock","flash.text.engine",Class<TextBlock>::getRef());
 	builtin->registerBuiltin("TextElement","flash.text.engine",Class<TextElement>::getRef());
 	builtin->registerBuiltin("TextLine","flash.text.engine",Class<TextLine>::getRef());
+	builtin->registerBuiltin("TextLineValidity","flash.text.engine",Class<TextLineValidity>::getRef());
 	builtin->registerBuiltin("TextJustifier","flash.text.engine",Class<TextJustifier>::getRef());
 	builtin->registerBuiltin("SpaceJustifier","flash.text.engine",Class<SpaceJustifier>::getRef());
 	builtin->registerBuiltin("EastAsianJustifier","flash.text.engine",Class<EastAsianJustifier>::getRef());

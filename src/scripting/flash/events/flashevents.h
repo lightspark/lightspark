@@ -536,5 +536,37 @@ public:
 	static void buildTraits(ASObject* o) {}
 };
 
+class TouchEvent: public Event
+{
+public:
+	TouchEvent(Class_base* c) : Event(c, "TouchEvent") {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
+};
+
+class GestureEvent: public Event
+{
+public:
+	GestureEvent(Class_base* c, const tiny_string& t = "GestureEvent") : Event(c, t) {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
+};
+
+class PressAndTapGestureEvent: public GestureEvent
+{
+public:
+	PressAndTapGestureEvent(Class_base* c) : GestureEvent(c, "PressAndTapGestureEvent") {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
+};
+class TransformGestureEvent: public GestureEvent
+{
+public:
+	TransformGestureEvent(Class_base* c) : GestureEvent(c, "TransformGestureEvent") {}
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o) {}
+};
+
+
 }
 #endif /* SCRIPTING_FLASH_EVENTS_FLASHEVENTS_H */

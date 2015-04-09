@@ -430,10 +430,10 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("DRMStatusEvent","flash.events",Class<DRMStatusEvent>::getRef());
 	builtin->registerBuiltin("StageVideoEvent","flash.events",Class<StageVideoEvent>::getRef());
 	builtin->registerBuiltin("StageVideoAvailabilityEvent","flash.events",Class<StageVideoAvailabilityEvent>::getRef());
-	builtin->registerBuiltin("TouchEvent","flash.events",Class<ASObject>::getStubClass(QName("TouchEvent","flash.events")));
-	builtin->registerBuiltin("GestureEvent","flash.events",Class<ASObject>::getStubClass(QName("GestureEvent","flash.events")));
-	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("PressAndTapGestureEvent","flash.events")));
-	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<ASObject>::getStubClass(QName("TransformGestureEvent","flash.events")));
+	builtin->registerBuiltin("TouchEvent","flash.events",Class<TouchEvent>::getRef());
+	builtin->registerBuiltin("GestureEvent","flash.events",Class<GestureEvent>::getRef());
+	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<PressAndTapGestureEvent>::getRef());
+	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<TransformGestureEvent>::getRef());
 	builtin->registerBuiltin("ContextMenuEvent","flash.events",Class<ContextMenuEvent>::getRef());
 	builtin->registerBuiltin("UncaughtErrorEvent","flash.events",Class<UncaughtErrorEvent>::getRef());
 

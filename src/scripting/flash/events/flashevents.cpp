@@ -1285,3 +1285,38 @@ void ContextMenuEvent::sinit(Class_base* c)
 	c->setVariableByQName("MENU_ITEM_SELECT","",Class<ASString>::getInstanceS("menuItemSelect"),DECLARED_TRAIT);
 	c->setVariableByQName("MENU_SELECT","",Class<ASString>::getInstanceS("menuSelect"),DECLARED_TRAIT);
 }
+
+
+void TouchEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
+	c->setVariableByQName("TOUCH_BEGIN","",Class<ASString>::getInstanceS("touchBegin"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_END","",Class<ASString>::getInstanceS("touchEnd"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_MOVE","",Class<ASString>::getInstanceS("touchMove"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_OUT","",Class<ASString>::getInstanceS("touchOut"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_OVER","",Class<ASString>::getInstanceS("touchOver"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_ROLL_OUT","",Class<ASString>::getInstanceS("touchRollOut"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_ROLL_OVER","",Class<ASString>::getInstanceS("touchRollOver"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_TAP","",Class<ASString>::getInstanceS("touchTap"),DECLARED_TRAIT);
+}
+
+void GestureEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
+	c->setVariableByQName("GESTURE_TWO_FINGER_TAP","",Class<ASString>::getInstanceS("gestureTwoFingerTap"),DECLARED_TRAIT);
+}
+
+void PressAndTapGestureEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, GestureEvent, _constructor, CLASS_SEALED);
+	c->setVariableByQName("GESTURE_PRESS_AND_TAP","",Class<ASString>::getInstanceS("gesturePressAndTap"),DECLARED_TRAIT);
+}
+
+void TransformGestureEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, GestureEvent, _constructor, CLASS_SEALED);
+	c->setVariableByQName("GESTURE_PAN","",Class<ASString>::getInstanceS("gesturePan"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_ROTATE","",Class<ASString>::getInstanceS("gestureRotate"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_SWIPE","",Class<ASString>::getInstanceS("gestureSwipe"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_ZOOM","",Class<ASString>::getInstanceS("gestureZoom"),DECLARED_TRAIT);
+}

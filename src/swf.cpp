@@ -1346,6 +1346,11 @@ void ParseThread::parseSWF(UI8 ver)
 	try
 	{
 		parseSWFHeader(root, ver);
+		if (loader)
+		{
+			_NR<LoaderInfo> li=loader->getContentLoaderInfo();
+			li->swfVersion = root->version;
+		}
 		if(root->version < 9)
 		{
 			LOG(LOG_INFO,"SWF version " << root->version << " is not handled by lightspark, falling back to gnash (if available)");

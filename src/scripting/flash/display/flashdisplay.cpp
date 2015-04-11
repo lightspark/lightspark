@@ -54,14 +54,14 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true)
+	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),childAllowsParent(true)
 {
 }
 
 LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),childAllowsParent(true)
+	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),childAllowsParent(true)
 {
 }
 
@@ -81,6 +81,7 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
 	REGISTER_GETTER(c,parameters);
 	REGISTER_GETTER(c,actionScriptVersion);
+	REGISTER_GETTER(c,swfVersion);
 	REGISTER_GETTER(c,childAllowsParent);
 	REGISTER_GETTER(c,contentType);
 }
@@ -89,6 +90,7 @@ ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
 ASFUNCTIONBODY_GETTER(LoaderInfo,actionScriptVersion);
 ASFUNCTIONBODY_GETTER(LoaderInfo,childAllowsParent);
 ASFUNCTIONBODY_GETTER(LoaderInfo,contentType);
+ASFUNCTIONBODY_GETTER(LoaderInfo,swfVersion);
 
 void LoaderInfo::buildTraits(ASObject* o)
 {

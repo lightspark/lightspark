@@ -247,6 +247,7 @@ private:
 	void sendInit();
 public:
 	ASPROPERTY_GETTER(uint32_t,actionScriptVersion);
+	ASPROPERTY_GETTER(uint32_t,swfVersion);
 	ASPROPERTY_GETTER(bool, childAllowsParent);
 	LoaderInfo(Class_base* c);
 	LoaderInfo(Class_base* c, _R<Loader> l);

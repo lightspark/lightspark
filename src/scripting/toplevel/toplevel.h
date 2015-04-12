@@ -343,6 +343,7 @@ public:
 	/* returns whether this is this a method of a function */
 	bool isMethod() const { return inClass != NULL; }
 	bool isBound() const { return closure_this; }
+	bool isConstructed() const { return constructIndicator; }
 	void finalize();
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
@@ -372,6 +373,7 @@ public:
 				ret->setClass(getClass());
 			}
 			ret->closure_this=c;
+			ret->constructIndicator = true;
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}
@@ -489,6 +491,7 @@ public:
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		Function* ret=new (c->memoryAccount) Function(c, v);
+		ret->constructIndicator = true;
 		return ret;
 	}
 	static Function* getFunction(Function::as_function v, int len)
@@ -496,12 +499,14 @@ public:
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		Function* ret=new (c->memoryAccount) Function(c, v);
 		ret->length = len;
+		ret->constructIndicator = true;
 		return ret;
 	}
 	static SyntheticFunction* getSyntheticFunction(method_info* m)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		SyntheticFunction* ret=new (c->memoryAccount) SyntheticFunction(c, m);
+		ret->constructIndicator = true;
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}

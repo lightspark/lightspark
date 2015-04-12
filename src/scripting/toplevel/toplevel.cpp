@@ -87,6 +87,7 @@ bool Undefined::isEqual(ASObject* r)
 		case T_UINTEGER:
 		case T_BOOLEAN:
 			return false;
+		case T_FUNCTION:
 		case T_STRING:
 			if (!r->isConstructed())
 				return true;
@@ -575,6 +576,7 @@ bool Null::isEqual(ASObject* r)
 		case T_NUMBER:
 		case T_BOOLEAN:
 			return false;
+		case T_FUNCTION:
 		case T_STRING:
 			if (!r->isConstructed())
 				return true;
@@ -962,13 +964,13 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	{
 		target->incRef();
 		ASObject* ret=constructor->call(target,args,argslen);
-		target->constructorCalled = true;
+		target->constructIndicator = true;
 		assert_and_throw(ret->is<Undefined>());
 		ret->decRef();
 	}
 	else
 	{
-		target->constructorCalled = true;
+		target->constructIndicator = true;
 		for(uint32_t i=0;i<argslen;i++)
 			args[i]->decRef();
 		//throwError<TypeError>(kConstructOfNonFunctionError);
@@ -1921,7 +1923,10 @@ ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, c
 {
 	if (argslen > 0)
 		throwError<EvalError>(kFunctionConstructorError);
-	return getNopFunction();
+	ASObject* ret = getNopFunction();
+	if (construct)
+		ret->setConstructIndicator();
+	return ret;
 }
 
 Class<IFunction>* Class<IFunction>::getClass()
@@ -1943,6 +1948,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		ret->prototype = _MNR(new_functionPrototype(ret, ret->super->prototype));
 		ret->incRef();
 		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
+		ret->prototype->getObj()->setConstructIndicator();
 		ret->incRef();
 		*retAddr = ret;
 
@@ -2355,7 +2361,7 @@ ASFUNCTIONBODY(lightspark,_isXMLName)
 ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
 {
 	traitsInitialized = true;
-	constructorCalled = true;
+	constructIndicator = true;
 }
 bool ObjectPrototype::isEqual(ASObject* r)
 {

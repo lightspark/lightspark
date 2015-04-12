@@ -55,9 +55,7 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 		if (!o->isConstructed())
 			return false;
 		return !o->as<ASString>()->data.empty();
-	case T_CLASS:
 	case T_FUNCTION:
-		return true;
 	case T_ARRAY:
 	case T_OBJECT:
 		// not constructed objects return false

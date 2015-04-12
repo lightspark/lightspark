@@ -196,8 +196,8 @@ tiny_string Integer::toString(int32_t val)
 void Integer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("MAX_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",new (c->memoryAccount) Integer(c,numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",abstract_i(numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",abstract_i(numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(_toFixed,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(_toExponential,1),NORMAL_METHOD,true);

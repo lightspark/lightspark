@@ -43,7 +43,7 @@ multiname::multiname(MemoryAccount* m):name_o(NULL),ns(reporter_allocator<nsName
 
 tiny_string multiname::qualifiedString() const
 {
-	assert_and_throw(ns.size()==1);
+	assert_and_throw(ns.size()>=1);
 	assert_and_throw(name_type==NAME_STRING);
 	const tiny_string nsName=ns[0].getImpl().name;
 	const tiny_string& name=getSys()->getStringFromUniqueId(name_s_id);
@@ -523,10 +523,14 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	assert(v.version!=0xff);
 	UI8 FillStyleCount;
 	s >> FillStyleCount;
+	int fsc = FillStyleCount;
 	if(FillStyleCount==0xff)
-		LOG(LOG_ERROR,_("Fill array extended not supported"));
-
-	for(int i=0;i<FillStyleCount;i++)
+	{
+		UI16_SWF ExtendedFillStyleCount;
+		s >> ExtendedFillStyleCount;
+		fsc = ExtendedFillStyleCount;
+	}
+	for(int i=0;i<fsc;i++)
 	{
 		FILLSTYLE t(v.version);
 		s >> t;
@@ -814,7 +818,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 	else
 	{
 		LOG(LOG_ERROR,_("Not supported fill style ") << (int)v.FillStyleType);
-		throw ParseException("Not supported fill style");
+	throw ParseException("Not supported fill style");
 	}
 	return s;
 }

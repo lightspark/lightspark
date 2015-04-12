@@ -260,17 +260,11 @@ tiny_string Number::toStringRadix(number_t val, int radix)
 void Number::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	//Must create and link the number the hard way
-	Number* ninf=new (c->memoryAccount) Number(c, -numeric_limits<double>::infinity());
-	Number* pinf=new (c->memoryAccount) Number(c, numeric_limits<double>::infinity());
-	Number* pmax=new (c->memoryAccount) Number(c, numeric_limits<double>::max());
-	Number* pmin=new (c->memoryAccount) Number(c, numeric_limits<double>::min());
-	Number* pnan=new (c->memoryAccount) Number(c, numeric_limits<double>::quiet_NaN());
-	c->setVariableByQName("NEGATIVE_INFINITY","",ninf,CONSTANT_TRAIT);
-	c->setVariableByQName("POSITIVE_INFINITY","",pinf,CONSTANT_TRAIT);
-	c->setVariableByQName("MAX_VALUE","",pmax,CONSTANT_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",pmin,CONSTANT_TRAIT);
-	c->setVariableByQName("NaN","",pnan,CONSTANT_TRAIT);
+	c->setVariableByQName("NEGATIVE_INFINITY","",abstract_d(-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	c->setVariableByQName("POSITIVE_INFINITY","",abstract_d(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",abstract_d(numeric_limits<double>::max()),CONSTANT_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",abstract_d(numeric_limits<double>::min()),CONSTANT_TRAIT);
+	c->setVariableByQName("NaN","",abstract_d(numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(toFixed,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(toExponential,1),NORMAL_METHOD,true);

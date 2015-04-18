@@ -703,7 +703,8 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 	{
 		//Initializing an already existing variable
 		LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << "already initialized");
-		o->decRef();
+		if (o != NULL)
+			o->decRef();
 		return;
 	}
 
@@ -900,7 +901,21 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	{
 		if (obj == NULL) // create dynamic object
 		{
-			if(mainObj->is<Class_base>() &&
+			if (type == Type::anyType)
+			{
+				// type could not be found, so it's stored as an uninitialized variable
+				uninitializedVar v;
+				mainObj->incRef();
+				v.mainObj = mainObj;
+				v.mname = mname;
+				v.traitKind = traitKind;
+				v.typemname = *typemname;
+				context->uninitializedVars.push_back(v);
+				
+				obj = getSys()->getUndefinedRef();
+				obj = type->coerce(obj);
+			}
+			else if(mainObj->is<Class_base>() &&
 				mainObj->as<Class_base>()->class_name.getQualifiedName() == typemname->qualifiedString())
 			{
 				// avoid recursive construction

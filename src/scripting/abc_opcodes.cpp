@@ -366,7 +366,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			}
 		}
 
-		LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
+		LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString() << " not found on " << obj->toDebugString());
 		if(keepReturn)
 			th->runtime_stack_push(getSys()->getUndefinedRef());
 
@@ -1892,7 +1892,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 			namearg->setProxyProperty(*name);
 			proxyArgs[1]=namearg;
 			LOG(LOG_ERROR,"Proxy::getDescend:"<<namearg->toDebugString()<<*name);
-			
+
 			//We now suppress special handling
 			LOG(LOG_CALLS,_("Proxy::callProperty"));
 			f->incRef();
@@ -2044,7 +2044,8 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->context=th->context;
 
 	//Null is a "valid" base class
-	if(baseClass->getObjectType()!=T_NULL)
+	// Undefined is used in private Classes that will be defined later
+	if(baseClass->getObjectType()!=T_NULL && baseClass->getObjectType()!=T_UNDEFINED)
 	{
 		assert_and_throw(baseClass->is<Class_base>());
 		Class_base* base = baseClass->as<Class_base>();
@@ -2075,7 +2076,7 @@ void ABCVm::newClass(call_context* th, int n)
 	for(unsigned int i=0;i<cur->trait_count;i++)
 	{
 		int kind=cur->traits[i].kind&0xf;
-		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
+		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter || kind==traits_info::Slot)
 			th->context->buildTrait(ret,&cur->traits[i],true);
 	}
 
@@ -2165,7 +2166,7 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 	assert_and_throw(ret2->is<Undefined>());
 	ret2->decRef();
-	LOG(LOG_CALLS,_("End of Class init ") << ret);
+	LOG(LOG_CALLS,_("End of Class init ") << *mname <<" " <<ret);
 	th->runtime_stack_push(ret);
 	cinit->decRef();
 

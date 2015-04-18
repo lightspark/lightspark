@@ -1547,6 +1547,17 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 		ret->decRef();
 
 	entry->decRef();
+	
+	// initialize vars where type was not known during script init
+	// this may happen for variables of private classes defined in this script
+	for (auto it = uninitializedVars.begin(); it != uninitializedVars.end(); it++)
+	{
+		uninitializedVar v = *it;
+		LOG(LOG_CALLS,"initialize uninitialized var:"<< v.mainObj->toDebugString()<<" "<< v.mname << " " <<v.typemname);
+		v.mainObj->initializeVariableByMultiname(v.mname,NULL,&v.typemname,this,v.traitKind);
+		v.mainObj->decRef();
+	}
+	uninitializedVars.clear();
 	LOG(LOG_CALLS, "Finished script init for script " << i );
 }
 

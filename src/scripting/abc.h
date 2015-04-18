@@ -142,6 +142,15 @@ struct typed_opcode_handler
 	ARGS_TYPE type;
 };
 
+struct uninitializedVar
+{
+	uninitializedVar():mname(NULL),mainObj(NULL),typemname(NULL),traitKind(NO_CREATE_TRAIT) {}
+	multiname mname;
+	ASObject* mainObj;
+	multiname typemname;
+	TRAIT_KIND traitKind;
+};
+
 class ABCContext
 {
 friend class ABCVm;
@@ -174,6 +183,9 @@ public:
 	uint32_t namespaceBaseId;
 
 	std::vector<bool> hasRunScriptInit;
+	// list of vars that have to be initialized after script init is done
+	std::vector<uninitializedVar> uninitializedVars;
+
 	/**
 		Construct and insert in the a object a given trait
 		@param obj the tarhget object

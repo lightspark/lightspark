@@ -395,6 +395,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("clearInterval","flash.utils",_MR(Class<IFunction>::getFunction(clearInterval)));
 	builtin->registerBuiltin("clearTimeout","flash.utils",_MR(Class<IFunction>::getFunction(clearTimeout)));
 	builtin->registerBuiltin("describeType","flash.utils",_MR(Class<IFunction>::getFunction(describeType)));
+	builtin->registerBuiltin("escapeMultiByte","flash.utils",_MR(Class<IFunction>::getFunction(escapeMultiByte)));
+	builtin->registerBuiltin("unescapeMultiByte","flash.utils",_MR(Class<IFunction>::getFunction(unescapeMultiByte)));
 	builtin->registerBuiltin("IExternalizable","flash.utils",InterfaceClass<IExternalizable>::getRef());
 	builtin->registerBuiltin("IDataInput","flash.utils",InterfaceClass<IDataInput>::getRef());
 	builtin->registerBuiltin("IDataOutput","flash.utils",InterfaceClass<IDataOutput>::getRef());

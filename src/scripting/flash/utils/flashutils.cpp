@@ -232,3 +232,16 @@ ASFUNCTIONBODY(lightspark,clearTimeout)
 	getSys()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::TIMEOUT, true);
 	return NULL;
 }
+
+ASFUNCTIONBODY(lightspark,escapeMultiByte)
+{
+	tiny_string str;
+	ARG_UNPACK (str, "undefined");
+	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
+}
+ASFUNCTIONBODY(lightspark,unescapeMultiByte)
+{
+	tiny_string str;
+	ARG_UNPACK (str, "undefined");
+	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
+}

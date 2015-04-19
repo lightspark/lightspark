@@ -67,6 +67,8 @@ ASObject* setTimeout(ASObject* obj,ASObject* const* args, const unsigned int arg
 ASObject* clearInterval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* clearTimeout(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* describeType(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* escapeMultiByte(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* unescapeMultiByte(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 }
 

@@ -105,6 +105,7 @@ public:
 	ColorMatrixFilter(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(_NR<Array>, matrix);
 };
 class BlurFilter: public BitmapFilter
 {

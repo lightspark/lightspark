@@ -212,25 +212,33 @@ BitmapFilter* BevelFilter::cloneImpl() const
 	return cloned;
 }
 ColorMatrixFilter::ColorMatrixFilter(Class_base* c):
-	BitmapFilter(c)
+	BitmapFilter(c),matrix(NULL)
 {
 }
 
 void ColorMatrixFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+	REGISTER_GETTER_SETTER(c, matrix);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(ColorMatrixFilter, matrix);
 
 ASFUNCTIONBODY(ColorMatrixFilter, _constructor)
 {
 	ColorMatrixFilter *th = obj->as<ColorMatrixFilter>();
-	LOG(LOG_NOT_IMPLEMENTED,"ColorMatrixFilter is not implemented");
+	ARG_UNPACK(th->matrix,NullRef);
 	return NULL;
 }
 
 BitmapFilter* ColorMatrixFilter::cloneImpl() const
 {
 	ColorMatrixFilter *cloned = Class<ColorMatrixFilter>::getInstanceS();
+	if (!matrix.isNull())
+	{
+		matrix->incRef();
+		cloned->matrix = matrix;
+	}
 	return cloned;
 }
 BlurFilter::BlurFilter(Class_base* c):

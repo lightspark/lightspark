@@ -1704,3 +1704,28 @@ ASFUNCTIONBODY(Vector3D,subtract)
 
 	return ret;
 }
+
+
+void Matrix3D::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(Matrix3D,_constructor)
+{
+	Matrix3D * th=static_cast<Matrix3D*>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D is not implemented");
+	return NULL;
+}
+
+void PerspectiveProjection::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(PerspectiveProjection,_constructor)
+{
+	PerspectiveProjection * th=static_cast<PerspectiveProjection*>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"PerspectiveProjection is not implemented");
+	return NULL;
+}

@@ -87,6 +87,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/events/flashevents.cpp
   scripting/flash/external/ExternalInterface.cpp
   scripting/flash/filters/flashfilters.cpp
+  scripting/flash/filesystem/flashfilesystem.cpp
   scripting/flash/geom/flashgeom.cpp
   scripting/flash/media/flashmedia.cpp
   scripting/flash/net/flashnet.cpp
@@ -95,6 +96,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/net/XMLSocket.cpp
   scripting/flash/net/NetStreamPlayOptions.cpp
   scripting/flash/net/NetStreamPlayTransitions.cpp
+  scripting/flash/printing/flashprinting.cpp
   scripting/flash/errors/flasherrors.cpp
   scripting/flash/sensors/flashsensors.cpp
   scripting/flash/system/flashsystem.cpp

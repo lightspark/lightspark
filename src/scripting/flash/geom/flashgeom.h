@@ -245,5 +245,22 @@ public:
 	ASFUNCTION(_toString);
 };
 
+class Matrix3D: public ASObject
+{
+public:
+	Matrix3D(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+	
+	ASFUNCTION(_constructor);
 };
+class PerspectiveProjection: public ASObject
+{
+public:
+	PerspectiveProjection(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+	
+	ASFUNCTION(_constructor);
+};
+
+}
 #endif /* SCRIPTING_FLASH_FLASHGEOM_H */

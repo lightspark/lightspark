@@ -78,6 +78,80 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class GradientGlowFilter: public BitmapFilter
+{
+private:
+	virtual BitmapFilter* cloneImpl() const;
+public:
+	GradientGlowFilter(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
+class BevelFilter: public BitmapFilter
+{
+private:
+	virtual BitmapFilter* cloneImpl() const;
+public:
+	BevelFilter(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+class ColorMatrixFilter: public BitmapFilter
+{
+private:
+	virtual BitmapFilter* cloneImpl() const;
+public:
+	ColorMatrixFilter(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+class BlurFilter: public BitmapFilter
+{
+private:
+	virtual BitmapFilter* cloneImpl() const;
+public:
+	BlurFilter(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+class ConvolutionFilter: public BitmapFilter
+{
+private:
+	virtual BitmapFilter* cloneImpl() const;
+public:
+	ConvolutionFilter(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+class DisplacementMapFilter: public BitmapFilter
+{
+private:
+	virtual BitmapFilter* cloneImpl() const;
+public:
+	DisplacementMapFilter(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+class GradientBevelFilter: public BitmapFilter
+{
+private:
+	virtual BitmapFilter* cloneImpl() const;
+public:
+	GradientBevelFilter(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+class ShaderFilter: public BitmapFilter
+{
+private:
+	virtual BitmapFilter* cloneImpl() const;
+public:
+	ShaderFilter(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
 class BitmapFilterQuality: public ASObject
 {
 public:

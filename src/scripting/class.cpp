@@ -178,18 +178,6 @@ ASObject* Class<ASObject>::getInstance(bool construct, ASObject* const* args, co
 		handleConstruction(ret,args,argslen,true);
 	return ret;
 }
-_R<Class<ASObject>> Class<ASObject>::getStubClass(const QName& name, _R<Class_base> superClass)
-{
-	MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
-	Class<ASObject>* ret = new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
-	
-	ret->setSuper(superClass);
-	ret->prototype = _MNR(new_objectPrototype());
-	ret->initStandardProps();
-	getSys()->customClasses.insert(ret);
-	ret->incRef();
-	return _MR(ret);
-}
 Class<ASObject>* Class<ASObject>::getClass()
 {
 	uint32_t classId=ClassName<ASObject>::id;

@@ -24,6 +24,7 @@
 #include "asobject.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/toplevel/toplevel.h"
+#include "scripting/flash/events/flashevents.h"
 
 namespace lightspark
 {
@@ -153,6 +154,12 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(totalMemory);
 };
-
+class ASWorker: public EventDispatcher
+{
+public:
+	ASWorker(Class_base* c);
+	static void sinit(Class_base*);
 };
+
+}
 #endif /* SCRIPTING_FLASH_SYSTEM_FLASHSYSTEM_H */

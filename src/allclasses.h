@@ -53,6 +53,7 @@ REGISTER_CLASS_NAME(XMLList,"")
 REGISTER_CLASS_NAME(Vector,"__AS3__.vec")
 
 //Accessibility
+REGISTER_CLASS_NAME(Accessibility,"flash.accessibility")
 REGISTER_CLASS_NAME(AccessibilityProperties,"flash.accessibility")
 REGISTER_CLASS_NAME(AccessibilityImplementation,"flash.accessibility")
 
@@ -143,11 +144,23 @@ REGISTER_CLASS_NAME(UncaughtErrorEvent,"flash.events")
 //External interface (browser interaction)
 REGISTER_CLASS_NAME(ExternalInterface,"flash.external")
 
+//filesystem
+REGISTER_CLASS_NAME(FileStream,"flash.filesystem")
+
 //Filters
 REGISTER_CLASS_NAME(BitmapFilter,"flash.filters")
 REGISTER_CLASS_NAME(BitmapFilterQuality,"flash.filters")
 REGISTER_CLASS_NAME(DropShadowFilter,"flash.filters")
 REGISTER_CLASS_NAME(GlowFilter,"flash.filters")
+REGISTER_CLASS_NAME(GradientGlowFilter,"flash.filters")
+REGISTER_CLASS_NAME(BevelFilter,"flash.filters")
+REGISTER_CLASS_NAME(ColorMatrixFilter,"flash.filters")
+REGISTER_CLASS_NAME(BlurFilter,"flash.filters")
+REGISTER_CLASS_NAME(ConvolutionFilter,"flash.filters")
+REGISTER_CLASS_NAME(DisplacementMapFilter,"flash.filters")
+REGISTER_CLASS_NAME(GradientBevelFilter,"flash.filters")
+REGISTER_CLASS_NAME(ShaderFilter,"flash.filters")
+
 
 //Geom
 REGISTER_CLASS_NAME(ColorTransform,"flash.geom")
@@ -156,6 +169,8 @@ REGISTER_CLASS_NAME(Point,"flash.geom")
 REGISTER_CLASS_NAME2(Rectangle,"Rectangle","flash.geom")
 REGISTER_CLASS_NAME(Transform,"flash.geom")
 REGISTER_CLASS_NAME(Vector3D,"flash.geom")
+REGISTER_CLASS_NAME(Matrix3D,"flash.geom")
+REGISTER_CLASS_NAME(PerspectiveProjection,"flash.geom")
 
 //Media
 REGISTER_CLASS_NAME(Sound,"flash.media")
@@ -168,7 +183,9 @@ REGISTER_CLASS_NAME(Video,"flash.media")
 REGISTER_CLASS_NAME(VideoStatus,"flash.media")
 
 //Net
+REGISTER_CLASS_NAME(LocalConnection,"flash.net")
 REGISTER_CLASS_NAME(NetConnection,"flash.net")
+REGISTER_CLASS_NAME(NetGroup,"flash.net")
 REGISTER_CLASS_NAME(NetStream,"flash.net")
 REGISTER_CLASS_NAME(NetStreamAppendBytesAction,"flash.net")
 REGISTER_CLASS_NAME(NetStreamPlayTransitions,"flash.net")
@@ -177,6 +194,7 @@ REGISTER_CLASS_NAME(ObjectEncoding,"flash.net")
 REGISTER_CLASS_NAME(Responder,"flash.net")
 REGISTER_CLASS_NAME(SharedObject,"flash.net")
 REGISTER_CLASS_NAME(SharedObjectFlushStatus,"flash.net")
+REGISTER_CLASS_NAME(ASSocket,"flash.net")
 REGISTER_CLASS_NAME(URLLoader,"flash.net")
 REGISTER_CLASS_NAME(URLLoaderDataFormat,"flash.net")
 REGISTER_CLASS_NAME(URLRequest,"flash.net")
@@ -185,6 +203,13 @@ REGISTER_CLASS_NAME(URLRequestMethod,"flash.net")
 REGISTER_CLASS_NAME(URLStream,"flash.net")
 REGISTER_CLASS_NAME(URLVariables,"flash.net")
 REGISTER_CLASS_NAME(XMLSocket,"flash.net")
+
+REGISTER_CLASS_NAME(DRMManager,"flash.net.drm")
+
+//Printing
+REGISTER_CLASS_NAME(PrintJob,"flash.printing")
+REGISTER_CLASS_NAME(PrintJobOptions,"flash.printing")
+REGISTER_CLASS_NAME(PrintJobOrientation,"flash.printing")
 
 //Errors
 REGISTER_CLASS_NAME(EOFError,"flash.errors")
@@ -205,6 +230,7 @@ REGISTER_CLASS_NAME(LoaderContext,"flash.system")
 REGISTER_CLASS_NAME(Security,"flash.system")
 REGISTER_CLASS_NAME(SecurityDomain,"flash.system")
 REGISTER_CLASS_NAME(System,"flash.system")
+REGISTER_CLASS_NAME(ASWorker,"flash.system")
 
 //Text
 REGISTER_CLASS_NAME2(ASFont,"Font","flash.text")

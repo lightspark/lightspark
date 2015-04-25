@@ -571,3 +571,15 @@ ASFUNCTIONBODY(System,totalMemory)
 	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
 	return abstract_d(1024);
 }
+
+ASWorker::ASWorker(Class_base* c):
+	EventDispatcher(c)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
+}
+
+void ASWorker::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
+}
+

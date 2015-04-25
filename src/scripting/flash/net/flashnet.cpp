@@ -1965,6 +1965,72 @@ ASFUNCTIONBODY(Responder, onResult)
 	return NULL;
 }
 
+LocalConnection::LocalConnection(Class_base* c):
+	EventDispatcher(c),isSupported(false)
+{
+}
+
+void LocalConnection::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	REGISTER_GETTER(c,isSupported);
+}
+ASFUNCTIONBODY_GETTER(LocalConnection, isSupported);
+
+ASFUNCTIONBODY(LocalConnection, _constructor)
+{
+	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection is not implemented");
+	return NULL;
+}
+
+NetGroup::NetGroup(Class_base* c):
+	EventDispatcher(c)
+{
+}
+
+void NetGroup::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(NetGroup, _constructor)
+{
+	NetGroup* th=Class<NetGroup>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"NetGroup is not implemented");
+	return NULL;
+}
+
+
+ASSocket::ASSocket(Class_base* c):
+	EventDispatcher(c)
+{
+}
+
+void ASSocket::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(ASSocket, _constructor)
+{
+	ASSocket* th=Class<ASSocket>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"ASSocket is not implemented");
+	return NULL;
+}
+
+DRMManager::DRMManager(Class_base* c):
+	EventDispatcher(c),isSupported(false)
+{
+}
+
+void DRMManager::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);
+	REGISTER_GETTER(c,isSupported);
+}
+ASFUNCTIONBODY_GETTER(DRMManager, isSupported);
+
 ASFUNCTIONBODY(lightspark,registerClassAlias)
 {
 	assert_and_throw(argslen==2 && args[0]->getObjectType()==T_STRING && args[1]->getObjectType()==T_CLASS);

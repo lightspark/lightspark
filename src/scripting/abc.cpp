@@ -88,6 +88,7 @@
 #include "scripting/flash/display/IGraphicsPath.h"
 #include "scripting/flash/display/IGraphicsStroke.h"
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/net/URLRequestHeader.h"
@@ -95,6 +96,7 @@
 #include "scripting/flash/net/XMLSocket.h"
 #include "scripting/flash/net/NetStreamPlayOptions.h"
 #include "scripting/flash/net/NetStreamPlayTransitions.h"
+#include "scripting/flash/printing/flashprinting.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/sensors/flashsensors.h"
 #include "scripting/flash/utils/flashutils.h"
@@ -376,10 +378,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Dictionary","flash.utils",Class<Dictionary>::getRef());
 	builtin->registerBuiltin("Proxy","flash.utils",Class<Proxy>::getRef());
 	builtin->registerBuiltin("Timer","flash.utils",Class<Timer>::getRef());
-	builtin->registerBuiltin("getQualifiedClassName","flash.utils",
-			_MR(Class<IFunction>::getFunction(getQualifiedClassName)));
-	builtin->registerBuiltin("getQualifiedSuperclassName","flash.utils",
-			_MR(Class<IFunction>::getFunction(getQualifiedSuperclassName)));
+	builtin->registerBuiltin("getQualifiedClassName","flash.utils",_MR(Class<IFunction>::getFunction(getQualifiedClassName)));
+	builtin->registerBuiltin("getQualifiedSuperclassName","flash.utils",_MR(Class<IFunction>::getFunction(getQualifiedSuperclassName)));
 	builtin->registerBuiltin("getDefinitionByName","flash.utils",_MR(Class<IFunction>::getFunction(getDefinitionByName)));
 	builtin->registerBuiltin("getTimer","flash.utils",_MR(Class<IFunction>::getFunction(getTimer)));
 	builtin->registerBuiltin("setInterval","flash.utils",_MR(Class<IFunction>::getFunction(setInterval)));
@@ -399,7 +399,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Transform","flash.geom",Class<Transform>::getRef());
 	builtin->registerBuiltin("Point","flash.geom",Class<Point>::getRef());
 	builtin->registerBuiltin("Vector3D","flash.geom",Class<Vector3D>::getRef());
-//	builtin->registerBuiltin("Matrix3D","flash.geom",Class<ASObject>::getStubClass(QName("Matrix3D", "flash.geom")));
+	builtin->registerBuiltin("Matrix3D","flash.geom",Class<Matrix3D>::getRef());
+	builtin->registerBuiltin("PerspectiveProjection","flash.geom",Class<PerspectiveProjection>::getRef());
 
 	builtin->registerBuiltin("EventDispatcher","flash.events",Class<EventDispatcher>::getRef());
 	builtin->registerBuiltin("Event","flash.events",Class<Event>::getRef());
@@ -433,9 +434,9 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));
-//	builtin->registerBuiltin("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")));
+	builtin->registerBuiltin("LocalConnection","flash.net",Class<LocalConnection>::getRef());
 	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef());
-//	builtin->registerBuiltin("NetGroup","flash.net",Class<ASObject>::getStubClass(QName("NetGroup","flash.net")));
+	builtin->registerBuiltin("NetGroup","flash.net",Class<NetGroup>::getRef());
 	builtin->registerBuiltin("NetStream","flash.net",Class<NetStream>::getRef());
 	builtin->registerBuiltin("NetStreamAppendBytesAction","flash.net",Class<NetStreamAppendBytesAction>::getRef());
 	builtin->registerBuiltin("NetStreamPlayOptions","flash.net",Class<NetStreamPlayOptions>::getRef());
@@ -450,12 +451,13 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("SharedObject","flash.net",Class<SharedObject>::getRef());
 	builtin->registerBuiltin("SharedObjectFlushStatus","flash.net",Class<SharedObjectFlushStatus>::getRef());
 	builtin->registerBuiltin("ObjectEncoding","flash.net",Class<ObjectEncoding>::getRef());
-//	builtin->registerBuiltin("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")));
+	builtin->registerBuiltin("Socket","flash.net",Class<ASSocket>::getRef());
 	builtin->registerBuiltin("Responder","flash.net",Class<Responder>::getRef());
 	builtin->registerBuiltin("XMLSocket","flash.net",Class<XMLSocket>::getRef());
 	builtin->registerBuiltin("registerClassAlias","flash.net",_MR(Class<IFunction>::getFunction(registerClassAlias)));
 	builtin->registerBuiltin("getClassByAlias","flash.net",_MR(Class<IFunction>::getFunction(getClassByAlias)));
-//	builtin->registerBuiltin("DRMManager","flash.net.drm",Class<ASObject>::getStubClass(QName("DRMManager","flash.net.drm")));
+
+	builtin->registerBuiltin("DRMManager","flash.net.drm",Class<DRMManager>::getRef());
 
 
 	builtin->registerBuiltin("fscommand","flash.system",_MR(Class<IFunction>::getFunction(fscommand)));
@@ -465,6 +467,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("SecurityDomain","flash.system",Class<SecurityDomain>::getRef());
 	builtin->registerBuiltin("LoaderContext","flash.system",Class<LoaderContext>::getRef());
 	builtin->registerBuiltin("System","flash.system",Class<System>::getRef());
+	builtin->registerBuiltin("Worker","flash.system",Class<ASWorker>::getRef());
 
 	builtin->registerBuiltin("SoundTransform","flash.media",Class<SoundTransform>::getRef());
 	builtin->registerBuiltin("Video","flash.media",Class<Video>::getRef());
@@ -492,19 +495,15 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("MemoryError","flash.errors",Class<MemoryError>::getRef());
 	builtin->registerBuiltin("ScriptTimeoutError","flash.errors",Class<ScriptTimeoutError>::getRef());
 	builtin->registerBuiltin("StackOverflowError","flash.errors",Class<StackOverflowError>::getRef());
-/*
-	builtin->registerBuiltin("PrintJob","flash.printing",
-				 Class<ASObject>::getStubClass(QName("PrintJob","flash.printing"), Class<EventDispatcher>::getRef()));
-	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<ASObject>::getStubClass(QName("PrintJobOptions","flash.printing")));
-	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<ASObject>::getStubClass(QName("PrintJobOrientation","flash.printing")));
-*/
+
+	builtin->registerBuiltin("PrintJob","flash.printing",Class<PrintJob>::getRef());
+	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<PrintJobOptions>::getRef());
+	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<PrintJobOrientation>::getRef());
+
 	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(isNaN)));
 	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite)));
 	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));
 
-	// TODO stub classes, not yet implemented, but needed in tests
-//	builtin->registerBuiltin("Worker","flash.system",Class<ASObject>::getStubClass(QName("Worker","flash.system")));
-//	builtin->registerBuiltin("PerspectiveProjection","flash.geom",Class<ASObject>::getStubClass(QName("PerspectiveProjection","flash.geom")));
 
 	//If needed add AIR definitions
 	if(getSys()->flashMode==SystemState::AIR)
@@ -513,8 +512,7 @@ void ABCVm::registerClasses()
 
 		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef());
 
-//		builtin->registerBuiltin("FileStream","flash.filesystem",
-//				Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")));
+		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef());
 	}
 
 	Class_object::getRef()->getClass()->prototype = _MNR(new_objectPrototype());

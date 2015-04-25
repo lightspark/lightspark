@@ -166,6 +166,188 @@ BitmapFilter* DropShadowFilter::cloneImpl() const
 	return cloned;
 }
 
+GradientGlowFilter::GradientGlowFilter(Class_base* c):
+	BitmapFilter(c)
+{
+}
+
+void GradientGlowFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+ASFUNCTIONBODY(GradientGlowFilter, _constructor)
+{
+	GradientGlowFilter *th = obj->as<GradientGlowFilter>();
+	LOG(LOG_NOT_IMPLEMENTED,"GradientGlowFilter is not implemented");
+	return NULL;
+}
+
+BitmapFilter* GradientGlowFilter::cloneImpl() const
+{
+	GradientGlowFilter *cloned = Class<GradientGlowFilter>::getInstanceS();
+	return cloned;
+}
+
+BevelFilter::BevelFilter(Class_base* c):
+	BitmapFilter(c)
+{
+}
+
+void BevelFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+ASFUNCTIONBODY(BevelFilter, _constructor)
+{
+	BevelFilter *th = obj->as<BevelFilter>();
+	LOG(LOG_NOT_IMPLEMENTED,"GradientGlowFilter is not implemented");
+	return NULL;
+}
+
+BitmapFilter* BevelFilter::cloneImpl() const
+{
+	BevelFilter *cloned = Class<BevelFilter>::getInstanceS();
+	return cloned;
+}
+ColorMatrixFilter::ColorMatrixFilter(Class_base* c):
+	BitmapFilter(c)
+{
+}
+
+void ColorMatrixFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+ASFUNCTIONBODY(ColorMatrixFilter, _constructor)
+{
+	ColorMatrixFilter *th = obj->as<ColorMatrixFilter>();
+	LOG(LOG_NOT_IMPLEMENTED,"ColorMatrixFilter is not implemented");
+	return NULL;
+}
+
+BitmapFilter* ColorMatrixFilter::cloneImpl() const
+{
+	ColorMatrixFilter *cloned = Class<ColorMatrixFilter>::getInstanceS();
+	return cloned;
+}
+BlurFilter::BlurFilter(Class_base* c):
+	BitmapFilter(c)
+{
+}
+
+void BlurFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+ASFUNCTIONBODY(BlurFilter, _constructor)
+{
+	BlurFilter *th = obj->as<BlurFilter>();
+	LOG(LOG_NOT_IMPLEMENTED,"BlurFilter is not implemented");
+	return NULL;
+}
+
+BitmapFilter* BlurFilter::cloneImpl() const
+{
+	BlurFilter *cloned = Class<BlurFilter>::getInstanceS();
+	return cloned;
+}
+
+ConvolutionFilter::ConvolutionFilter(Class_base* c):
+	BitmapFilter(c)
+{
+}
+
+void ConvolutionFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+ASFUNCTIONBODY(ConvolutionFilter, _constructor)
+{
+	ConvolutionFilter *th = obj->as<ConvolutionFilter>();
+	LOG(LOG_NOT_IMPLEMENTED,"ConvolutionFilter is not implemented");
+	return NULL;
+}
+
+BitmapFilter* ConvolutionFilter::cloneImpl() const
+{
+	ConvolutionFilter *cloned = Class<ConvolutionFilter>::getInstanceS();
+	return cloned;
+}
+
+DisplacementMapFilter::DisplacementMapFilter(Class_base* c):
+	BitmapFilter(c)
+{
+}
+
+void DisplacementMapFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+ASFUNCTIONBODY(DisplacementMapFilter, _constructor)
+{
+	DisplacementMapFilter *th = obj->as<DisplacementMapFilter>();
+	LOG(LOG_NOT_IMPLEMENTED,"DisplacementMapFilter is not implemented");
+	return NULL;
+}
+
+BitmapFilter* DisplacementMapFilter::cloneImpl() const
+{
+	DisplacementMapFilter *cloned = Class<DisplacementMapFilter>::getInstanceS();
+	return cloned;
+}
+
+GradientBevelFilter::GradientBevelFilter(Class_base* c):
+	BitmapFilter(c)
+{
+}
+
+void GradientBevelFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+ASFUNCTIONBODY(GradientBevelFilter, _constructor)
+{
+	GradientBevelFilter *th = obj->as<GradientBevelFilter>();
+	LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter is not implemented");
+	return NULL;
+}
+
+BitmapFilter* GradientBevelFilter::cloneImpl() const
+{
+	GradientBevelFilter *cloned = Class<GradientBevelFilter>::getInstanceS();
+	return cloned;
+}
+
+ShaderFilter::ShaderFilter(Class_base* c):
+	BitmapFilter(c)
+{
+}
+
+void ShaderFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+ASFUNCTIONBODY(ShaderFilter, _constructor)
+{
+	ShaderFilter *th = obj->as<ShaderFilter>();
+	LOG(LOG_NOT_IMPLEMENTED,"ShaderFilter is not implemented");
+	return NULL;
+}
+
+BitmapFilter* ShaderFilter::cloneImpl() const
+{
+	ShaderFilter *cloned = Class<ShaderFilter>::getInstanceS();
+	return cloned;
+}
+
 void BitmapFilterQuality::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);

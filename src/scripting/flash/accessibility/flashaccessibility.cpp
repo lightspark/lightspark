@@ -61,3 +61,19 @@ ASFUNCTIONBODY(AccessibilityImplementation,_constructor)
 	LOG(LOG_NOT_IMPLEMENTED, _("AccessibilityImplementation class is unimplemented."));
 	return NULL;
 }
+
+
+void Accessibility::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL);
+	c->setVariableByQName("active","",abstract_b(false),CONSTANT_TRAIT);
+}
+
+ASFUNCTIONBODY(Accessibility,updateProperties)
+{
+	Accessibility* th=obj->as<Accessibility>();
+	LOG(LOG_NOT_IMPLEMENTED, "Accessibility is not supported.");
+	ARG_UNPACK (th->properties);
+
+	return NULL;
+}

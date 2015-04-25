@@ -236,10 +236,6 @@ public:
 		Class<ASObject>* c=Class<ASObject>::getClass();
 		return c->getInstance(true,NULL,0);
 	}
-	/* This creates a stub class, i.e. a class with given name but without
-	 * any implementation.
-	 */
-	static _R<Class<ASObject>> getStubClass(const QName& name, _R<Class_base> superClass=Class<ASObject>::getRef());
 	static Class<ASObject>* getClass();
 	static _R<Class<ASObject>> getRef()
 	{

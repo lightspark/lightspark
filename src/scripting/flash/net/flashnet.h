@@ -361,11 +361,44 @@ public:
 	void unlock();
 };
 
+class LocalConnection: public EventDispatcher
+{
+public:
+	LocalConnection(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER(bool,isSupported);
+};
+
+class NetGroup: public EventDispatcher
+{
+public:
+	NetGroup(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
+
+class ASSocket: public EventDispatcher, IDataInput, IDataOutput
+{
+public:
+	ASSocket(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
+
+class DRMManager: public EventDispatcher
+{
+public:
+	DRMManager(Class_base* c);
+	static void sinit(Class_base*);
+	ASPROPERTY_GETTER(bool,isSupported);
+};
+
 ASObject* navigateToURL(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* sendToURL(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* registerClassAlias(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* getClassByAlias(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
-};
+}
 
 #endif /* SCRIPTING_FLASH_NET_FLASHNET_H */

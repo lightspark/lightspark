@@ -2015,28 +2015,46 @@ void ABCVm::newClass(call_context* th, int n)
 
 	assert_and_throw(mname->ns.size()==1);
 	QName className(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl().name);
-	//Check if this class has been already defined
-	_NR<ApplicationDomain> domain = getCurrentApplicationDomain(th);
-	ASObject* target;
-	ASObject* oldDefinition=domain->getVariableAndTargetByMultiname(*mname, target);
-	if(oldDefinition && oldDefinition->getObjectType()==T_CLASS)
+
+	Class_inherit* ret = NULL;
+	auto i = th->context->root->applicationDomain->classesBeingDefined.cbegin();
+	while (i != th->context->root->applicationDomain->classesBeingDefined.cend())
 	{
-		LOG(LOG_CALLS,_("Class ") << className << _(" already defined. Pushing previous definition"));
-		baseClass->decRef();
-		oldDefinition->incRef();
-		th->runtime_stack_push(oldDefinition);
-		// ensure that this interface is linked to all previously defined classes implementing this interface
-		if (th->context->instances[n].isInterface())
-			ABCVm::SetAllClassLinks();
-		return;
+		if(i->first->qualifiedString() == mname->qualifiedString())
+		{
+			ret = (Class_inherit*)i->second;
+			ret->incRef();
+			break;
+		}
+		i++;
 	}
 
-	MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
-	Class_inherit* ret=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
+	if (ret == NULL)
+	{
+		//Check if this class has been already defined
+		_NR<ApplicationDomain> domain = getCurrentApplicationDomain(th);
+		ASObject* target;
+		ASObject* oldDefinition=domain->getVariableAndTargetByMultiname(*mname, target);
+		if(oldDefinition && oldDefinition->getObjectType()==T_CLASS)
+		{
+			LOG(LOG_CALLS,_("Class ") << className << _(" already defined. Pushing previous definition"));
+			baseClass->decRef();
+			oldDefinition->incRef();
+			th->runtime_stack_push(oldDefinition);
+			// ensure that this interface is linked to all previously defined classes implementing this interface
+			if (th->context->instances[n].isInterface())
+				ABCVm::SetAllClassLinks();
+			return;
+		}
+		
+		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
+		ret=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
 
-	//Add the class to the ones being currently defined in this context
-	th->context->classesBeingDefined.insert(make_pair(mname, ret));
-
+		LOG(LOG_CALLS,"add classes defined:"<<*mname<<" "<<th->context);
+		//Add the class to the ones being currently defined in this context
+		th->context->root->applicationDomain->classesBeingDefined.insert(make_pair(mname, ret));
+	}
+		
 	ret->isFinal = th->context->instances[n].isFinal();
 	ret->isSealed = th->context->instances[n].isSealed();
 
@@ -2044,8 +2062,7 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->context=th->context;
 
 	//Null is a "valid" base class
-	// Undefined is used in private Classes that will be defined later
-	if(baseClass->getObjectType()!=T_NULL && baseClass->getObjectType()!=T_UNDEFINED)
+	if(baseClass->getObjectType()!=T_NULL)
 	{
 		assert_and_throw(baseClass->is<Class_base>());
 		Class_base* base = baseClass->as<Class_base>();
@@ -2161,7 +2178,7 @@ void ABCVm::newClass(call_context* th, int n)
 		cinit->decRef();
 
 		//Remove the class to the ones being currently defined in this context
-		th->context->classesBeingDefined.erase(mname);
+		th->context->root->applicationDomain->classesBeingDefined.erase(mname);
 		throw;
 	}
 	assert_and_throw(ret2->is<Undefined>());
@@ -2171,7 +2188,7 @@ void ABCVm::newClass(call_context* th, int n)
 	cinit->decRef();
 
 	//Remove the class to the ones being currently defined in this context
-	th->context->classesBeingDefined.erase(mname);
+	th->context->root->applicationDomain->classesBeingDefined.erase(mname);
 }
 
 void ABCVm::swap()

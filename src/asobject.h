@@ -153,7 +153,7 @@ class Loader;
 class Type;
 class ABCContext;
 
-enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
+enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
 enum TRAIT_STATE { NO_STATE=0, HAS_GETTER_SETTER=1, TYPE_RESOLVED=2 };
 
 struct variable
@@ -220,9 +220,9 @@ public:
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
-	const variable* findObjVar(const multiname& mname, uint32_t traitKinds) const;
+	const variable* findObjVar(const multiname& mname, uint32_t traitKinds, NS_KIND &nskind) const;
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind,ASObject* mainObj);
+	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
@@ -274,7 +274,7 @@ friend class IFunction; //Needed for clone
 private:
 	variables_map Variables;
 	Class_base* classdef;
-	const variable* findGettable(const multiname& name) const DLL_LOCAL;
+	const variable* findGettable(const multiname& name, NS_KIND &nskind) const DLL_LOCAL;
 	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 	multiname* proxyMultiName;
 protected:
@@ -289,7 +289,7 @@ protected:
 				std::map<const Class_base*, uint32_t> traitsMap) const;
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
-	static const variable* findGettableImpl(const variables_map& map, const multiname& name);
+	static const variable* findGettableImpl(const variables_map& map, const multiname& name, NS_KIND &nskind);
 public:
 	ASObject(Class_base* c);
 #ifndef NDEBUG
@@ -342,7 +342,7 @@ public:
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
 	 */
-	const variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
+	const variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, NS_KIND &nskind);
 	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.
@@ -377,7 +377,7 @@ public:
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
 	 */
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
-			ABCContext* context, TRAIT_KIND traitKind);
+			ABCContext* context, TRAIT_KIND traitKind,bool bOverwrite);
 	/*
 	 * Called by ABCVm::initProperty (implementation of ABC instruction), it is allowed to set CONSTANT_TRAIT
 	 */

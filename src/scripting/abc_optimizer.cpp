@@ -179,7 +179,8 @@ EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFun
 				return CANNOT_BIND;
 			}
 
-			const variable* var=it->object->findVariableByMultiname(*name, ASObject::XML_STRICT, it->object->getClass());
+			NS_KIND nskind;
+			const variable* var=it->object->findVariableByMultiname(*name, ASObject::XML_STRICT, it->object->getClass(),nskind);
 			if(var)
 			{
 				found=true;
@@ -964,7 +965,8 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 						const Class_base* objType=dynamic_cast<const Class_base*>(baseData.type);
 						if(objType)
 						{
-							const variable* var=objType->findBorrowedGettable(*name);
+							NS_KIND nskind;
+							const variable* var=objType->findBorrowedGettable(*name,nskind);
 							if(var && var->var && var->var->getObjectType()==T_FUNCTION)
 							{
 								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(var->var);

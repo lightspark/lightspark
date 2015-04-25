@@ -710,15 +710,15 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 
 	ASObject* typeObject;
 	/*
-	 * During the newClass opcode, the class is added to context->classesBeingDefined.
+	 * During the newClass opcode, the class is added to context->root->applicationDomain->classesBeingDefined.
 	 * The class variable in the global scope is only set a bit later.
 	 * When the class has to be resolved in between (for example, the
 	 * class has traits of the class's type), then we'll find it in
 	 * classesBeingDefined, but context->root->getVariableAndTargetByMultiname()
 	 * would still return "Undefined".
 	 */
-	auto i = context->classesBeingDefined.find(mn);
-	if(i != context->classesBeingDefined.end())
+	auto i = context->root->applicationDomain->classesBeingDefined.find(mn);
+	if(i != context->root->applicationDomain->classesBeingDefined.end())
 		typeObject = i->second;
 	else
 	{
@@ -1377,9 +1377,9 @@ void Class_base::initializeProtectedNamespace(const tiny_string& name, const nam
 		protected_ns=nsNameAndKind(name,baseNs->nsId,(NS_KIND)(int)ns.kind);
 }
 
-const variable* Class_base::findBorrowedGettable(const multiname& name) const
+const variable* Class_base::findBorrowedGettable(const multiname& name,NS_KIND& nskind) const
 {
-	return ASObject::findGettableImpl(borrowedVariables,name);
+	return ASObject::findGettableImpl(borrowedVariables,name,nskind);
 }
 
 variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)
@@ -1404,7 +1404,8 @@ variable* Class_base::findSettableInPrototype(const multiname& name)
 
 EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) const
 {
-	if(findBorrowedGettable(name)!=NULL)
+	NS_KIND nskind;
+	if(findBorrowedGettable(name,nskind)!=NULL)
 		return BINDED;
 	else
 		return NOT_BINDED;

@@ -59,6 +59,8 @@ private:
 public:
 	ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize();
+	std::map<const multiname*, Class_base*> classesBeingDefined;
+
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void registerGlobalScope(Global* scope);

@@ -462,13 +462,14 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(classdef && classdef->borrowedVariables.findObjVar(name, NO_CREATE_TRAIT, DECLARED_TRAIT)!=NULL)
 		return true;
 
+	NS_KIND nskind;
 	//Check prototype inheritance chain
 	if(getClass() && considerPrototype)
 	{
 		Prototype* proto = getClass()->prototype.getPtr();
 		while(proto)
 		{
-			if(proto->getObj()->findGettable(name) != NULL)
+			if(proto->getObj()->findGettable(name,nskind) != NULL)
 				return true;
 			proto=proto->prevPrototype.getPtr();
 		}
@@ -556,7 +557,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 		return true;
 	}
 	//Only dynamic traits are deletable
-	if (obj->kind != DYNAMIC_TRAIT)
+	if (obj->kind != DYNAMIC_TRAIT && obj->kind != INSTANCE_TRAIT)
 		return false;
 
 	assert(obj->getter==NULL && obj->setter==NULL && obj->var!=NULL);
@@ -694,20 +695,21 @@ void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASOb
 }
 
 void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
-		ABCContext* context, TRAIT_KIND traitKind)
+		ABCContext* context, TRAIT_KIND traitKind, bool bOverwrite)
 {
 	check();
-
-	variable* obj=findSettable(name);
-	if(obj)
+	if (!bOverwrite)
 	{
-		//Initializing an already existing variable
-		LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << "already initialized");
-		if (o != NULL)
-			o->decRef();
-		return;
+		variable* obj=findSettable(name);
+		if(obj)
+		{
+			//Initializing an already existing variable
+			LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << " already initialized");
+			if (o != NULL)
+				o->decRef();
+			return;
+		}
 	}
-
 	Variables.initializeVar(name, o, typemname, context, traitKind,this);
 }
 
@@ -831,7 +833,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	return &inserted->second;
 }
 
-const variable* variables_map::findObjVar(const multiname& mname, uint32_t traitKinds) const
+const variable* variables_map::findObjVar(const multiname& mname, uint32_t traitKinds, NS_KIND &nskind) const
 {
 	uint32_t name=mname.normalizedNameId();
 	assert(!mname.ns.empty());
@@ -846,6 +848,7 @@ const variable* variables_map::findObjVar(const multiname& mname, uint32_t trait
 		const nsNameAndKind& ns=ret->first.ns;
 		if(ns==*nsIt)
 		{
+			nskind = ns.getImpl().kind;
 			if(ret->second.kind & traitKinds)
 				return &ret->second;
 			else
@@ -904,14 +907,14 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			if (type == Type::anyType)
 			{
 				// type could not be found, so it's stored as an uninitialized variable
+				LOG(LOG_CALLS,"add uninitialized var:"<<mname);
 				uninitializedVar v;
 				mainObj->incRef();
 				v.mainObj = mainObj;
-				v.mname = mname;
+				v.mname = &mname;
 				v.traitKind = traitKind;
-				v.typemname = *typemname;
-				context->uninitializedVars.push_back(v);
-				
+				v.typemname = typemname;
+				context->addUninitializedVar(v);
 				obj = getSys()->getUndefinedRef();
 				obj = type->coerce(obj);
 			}
@@ -922,10 +925,24 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				obj = getSys()->getNullRef();
 			}
 			else if (type != Class_object::getClass() &&
-					dynamic_cast<const Class_base*>(type) 
-					&& ((Class_base*)type)->super)
+					dynamic_cast<const Class_base*>(type))
 			{
-				obj = ((Class_base*)type)->getInstance(false,NULL,0);
+				if (!((Class_base*)type)->super)
+				{
+					// super type could not be found, so the class is stored as an uninitialized variable
+					LOG(LOG_CALLS,"add uninitialized class var:"<<mname);
+					uninitializedVar v;
+					mainObj->incRef();
+					v.mainObj = mainObj;
+					v.mname = &mname;
+					v.traitKind = traitKind;
+					v.typemname = typemname;
+					context->addUninitializedVar(v);
+					obj = getSys()->getUndefinedRef();
+					obj = type->coerce(obj);
+				}
+				else
+					obj = ((Class_base*)type)->getInstance(false,NULL,0);
 			}
 			else
 			{
@@ -934,7 +951,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			}
 		}
 	}
-	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT);
+	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT || traitKind == INSTANCE_TRAIT);
 
 	uint32_t name=mname.normalizedNameId();
 	Variables.insert(make_pair(varName(name, mname.ns[0]), variable(traitKind, obj, typemname, type)));
@@ -1075,9 +1092,9 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-const variable* ASObject::findGettableImpl(const variables_map& map, const multiname& name)
+const variable* ASObject::findGettableImpl(const variables_map& map, const multiname& name, NS_KIND &nskind)
 {
-	const variable* ret=map.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT);
+	const variable* ret=map.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,nskind);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1088,20 +1105,20 @@ const variable* ASObject::findGettableImpl(const variables_map& map, const multi
 	return ret;
 }
 
-const variable* ASObject::findGettable(const multiname& name) const
+const variable* ASObject::findGettable(const multiname& name, NS_KIND &nskind) const
 {
-	return findGettableImpl(Variables,name);
+	return findGettableImpl(Variables,name,nskind);
 }
 
-const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
+const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, NS_KIND &nskind)
 {
 	//Get from the current object without considering borrowed properties
-	const variable* var=findGettable(name);
+	const variable* var=findGettable(name,nskind);
 
 	if(!var && cls)
 	{
 		//Look for borrowed traits before
-		var=cls->findBorrowedGettable(name);
+		var=cls->findBorrowedGettable(name,nskind);
 	}
 
 	if(!var && cls)
@@ -1110,7 +1127,7 @@ const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VAR
 		Prototype* proto = cls->prototype.getPtr();
 		while(proto)
 		{
-			var = proto->getObj()->findGettable(name);
+			var = proto->getObj()->findGettable(name,nskind);
 			if(var)
 				break;
 			proto = proto->prevPrototype.getPtr();
@@ -1123,10 +1140,24 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
-	const variable* obj=findVariableByMultiname(name, opt, cls);
+	NS_KIND nskind;
+	const variable* obj=findVariableByMultiname(name, opt, cls,nskind);
 
 	if(!obj)
 		return NullRef;
+	if (this->is<Class_base>() && 
+			(!obj->var || 
+			 (obj->var->getObjectType() != T_UNDEFINED && 
+			  obj->var->getObjectType() != T_NULL && 
+			  obj->var->getObjectType() != T_FUNCTION )))
+	{
+		LOG(LOG_CALLS,"accessing class:"<<name<<" "<< this->as<Class_base>()->getQualifiedClassName()<<" "<<nskind);
+		if (obj->kind == INSTANCE_TRAIT &&
+				nskind != NAMESPACE && 
+				nskind != PACKAGE_INTERNAL_NAMESPACE && 
+				nskind != STATIC_PROTECTED_NAMESPACE)
+			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedName());
+	}
 
 	if(obj->getter)
 	{
@@ -1248,6 +1279,9 @@ void variables_map::dumpVariables()
 			case DECLARED_TRAIT:
 			case CONSTANT_TRAIT:
 				kind="Declared: ";
+				break;
+			case INSTANCE_TRAIT:
+				kind="Declared (instance)";
 				break;
 			case DYNAMIC_TRAIT:
 				kind="Dynamic: ";

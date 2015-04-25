@@ -270,7 +270,7 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("AccessibilityProperties","flash.accessibility",Class<AccessibilityProperties>::getRef());
 	builtin->registerBuiltin("AccessibilityImplementation","flash.accessibility",Class<AccessibilityImplementation>::getRef());
-	builtin->registerBuiltin("Accessibility","flash.accessibility",Class<ASObject>::getStubClass(QName("Accessibility","flash.accessibility")));
+	builtin->registerBuiltin("Accessibility","flash.accessibility",Class<Accessibility>::getRef());
 
 	builtin->registerBuiltin("Mutex","flash.concurrent",Class<ASMutex>::getRef());
 	builtin->registerBuiltin("Condition","flash.concurrent",Class<ASCondition>::getRef());
@@ -323,22 +323,14 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("BitmapFilterQuality","flash.filters",Class<BitmapFilterQuality>::getRef());
 	builtin->registerBuiltin("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef());
 	builtin->registerBuiltin("GlowFilter","flash.filters",Class<GlowFilter>::getRef());
-	builtin->registerBuiltin("GradientGlowFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("GradientGlowFilter","flash.filters"), Class<BitmapFilter>::getRef()));
-	builtin->registerBuiltin("BevelFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("BevelFilter","flash.filters"), Class<BitmapFilter>::getRef()));
-	builtin->registerBuiltin("ColorMatrixFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("ColorMatrixFilter","flash.filters"), Class<BitmapFilter>::getRef()));
-	builtin->registerBuiltin("BlurFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("BlurFilter","flash.filters"), Class<BitmapFilter>::getRef()));
-	builtin->registerBuiltin("ConvolutionFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("ConvolutionFilter","flash.filters"), Class<BitmapFilter>::getRef()));
-	builtin->registerBuiltin("DisplacementMapFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("DisplacementMapFilter","flash.filters"), Class<BitmapFilter>::getRef()));
-	builtin->registerBuiltin("GradientBevelFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("GradientBevelFilter","flash.filters"), Class<BitmapFilter>::getRef()));
-	builtin->registerBuiltin("ShaderFilter","flash.filters",
-			Class<ASObject>::getStubClass(QName("ShaderFilter","flash.filters"), Class<BitmapFilter>::getRef()));
+	builtin->registerBuiltin("GradientGlowFilter","flash.filters",Class<GradientGlowFilter>::getRef());
+	builtin->registerBuiltin("BevelFilter","flash.filters",Class<BevelFilter>::getRef());
+	builtin->registerBuiltin("ColorMatrixFilter","flash.filters",Class<ColorMatrixFilter>::getRef());
+	builtin->registerBuiltin("BlurFilter","flash.filters",Class<BlurFilter>::getRef());
+	builtin->registerBuiltin("ConvolutionFilter","flash.filters",Class<ConvolutionFilter>::getRef());
+	builtin->registerBuiltin("DisplacementMapFilter","flash.filters",Class<DisplacementMapFilter>::getRef());
+	builtin->registerBuiltin("GradientBevelFilter","flash.filters",Class<GradientBevelFilter>::getRef());
+	builtin->registerBuiltin("ShaderFilter","flash.filters",Class<ShaderFilter>::getRef());
 
 	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef());
 	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef());
@@ -407,7 +399,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Transform","flash.geom",Class<Transform>::getRef());
 	builtin->registerBuiltin("Point","flash.geom",Class<Point>::getRef());
 	builtin->registerBuiltin("Vector3D","flash.geom",Class<Vector3D>::getRef());
-	builtin->registerBuiltin("Matrix3D","flash.geom",Class<ASObject>::getStubClass(QName("Matrix3D", "flash.geom")));
+//	builtin->registerBuiltin("Matrix3D","flash.geom",Class<ASObject>::getStubClass(QName("Matrix3D", "flash.geom")));
 
 	builtin->registerBuiltin("EventDispatcher","flash.events",Class<EventDispatcher>::getRef());
 	builtin->registerBuiltin("Event","flash.events",Class<Event>::getRef());
@@ -441,8 +433,9 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));
-	builtin->registerBuiltin("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")));
+//	builtin->registerBuiltin("LocalConnection","flash.net",Class<ASObject>::getStubClass(QName("LocalConnection","flash.net")));
 	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef());
+//	builtin->registerBuiltin("NetGroup","flash.net",Class<ASObject>::getStubClass(QName("NetGroup","flash.net")));
 	builtin->registerBuiltin("NetStream","flash.net",Class<NetStream>::getRef());
 	builtin->registerBuiltin("NetStreamAppendBytesAction","flash.net",Class<NetStreamAppendBytesAction>::getRef());
 	builtin->registerBuiltin("NetStreamPlayOptions","flash.net",Class<NetStreamPlayOptions>::getRef());
@@ -457,11 +450,13 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("SharedObject","flash.net",Class<SharedObject>::getRef());
 	builtin->registerBuiltin("SharedObjectFlushStatus","flash.net",Class<SharedObjectFlushStatus>::getRef());
 	builtin->registerBuiltin("ObjectEncoding","flash.net",Class<ObjectEncoding>::getRef());
-	builtin->registerBuiltin("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")));
+//	builtin->registerBuiltin("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")));
 	builtin->registerBuiltin("Responder","flash.net",Class<Responder>::getRef());
 	builtin->registerBuiltin("XMLSocket","flash.net",Class<XMLSocket>::getRef());
 	builtin->registerBuiltin("registerClassAlias","flash.net",_MR(Class<IFunction>::getFunction(registerClassAlias)));
 	builtin->registerBuiltin("getClassByAlias","flash.net",_MR(Class<IFunction>::getFunction(getClassByAlias)));
+//	builtin->registerBuiltin("DRMManager","flash.net.drm",Class<ASObject>::getStubClass(QName("DRMManager","flash.net.drm")));
+
 
 	builtin->registerBuiltin("fscommand","flash.system",_MR(Class<IFunction>::getFunction(fscommand)));
 	builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef());
@@ -497,19 +492,19 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("MemoryError","flash.errors",Class<MemoryError>::getRef());
 	builtin->registerBuiltin("ScriptTimeoutError","flash.errors",Class<ScriptTimeoutError>::getRef());
 	builtin->registerBuiltin("StackOverflowError","flash.errors",Class<StackOverflowError>::getRef());
-
+/*
 	builtin->registerBuiltin("PrintJob","flash.printing",
 				 Class<ASObject>::getStubClass(QName("PrintJob","flash.printing"), Class<EventDispatcher>::getRef()));
 	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<ASObject>::getStubClass(QName("PrintJobOptions","flash.printing")));
 	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<ASObject>::getStubClass(QName("PrintJobOrientation","flash.printing")));
-
+*/
 	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(isNaN)));
 	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite)));
 	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));
 
 	// TODO stub classes, not yet implemented, but needed in tests
-	builtin->registerBuiltin("Worker","flash.system",Class<ASObject>::getStubClass(QName("Worker","flash.system")));
-	builtin->registerBuiltin("PerspectiveProjection","flash.geom",Class<ASObject>::getStubClass(QName("PerspectiveProjection","flash.geom")));
+//	builtin->registerBuiltin("Worker","flash.system",Class<ASObject>::getStubClass(QName("Worker","flash.system")));
+//	builtin->registerBuiltin("PerspectiveProjection","flash.geom",Class<ASObject>::getStubClass(QName("PerspectiveProjection","flash.geom")));
 
 	//If needed add AIR definitions
 	if(getSys()->flashMode==SystemState::AIR)
@@ -518,8 +513,8 @@ void ABCVm::registerClasses()
 
 		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef());
 
-		builtin->registerBuiltin("FileStream","flash.filesystem",
-				Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")));
+//		builtin->registerBuiltin("FileStream","flash.filesystem",
+//				Class<ASObject>::getStubClass(QName("FileStream","flash.filestream")));
 	}
 
 	Class_object::getRef()->getClass()->prototype = _MNR(new_objectPrototype());
@@ -1552,14 +1547,16 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 	
 	// initialize vars where type was not known during script init
 	// this may happen for variables of private classes defined in this script
-	for (auto it = uninitializedVars.begin(); it != uninitializedVars.end(); it++)
+	LOG(LOG_CALLS,"initialize uninitialized vars");
+	auto it = uninitializedVars.begin();
+	while (it != uninitializedVars.end())
 	{
 		uninitializedVar v = *it;
-		LOG(LOG_CALLS,"initialize uninitialized var:"<< v.mainObj->toDebugString()<<" "<< v.mname << " " <<v.typemname);
-		v.mainObj->initializeVariableByMultiname(v.mname,NULL,&v.typemname,this,v.traitKind);
+		v.mainObj->initializeVariableByMultiname(*v.mname,NULL,v.typemname,this,v.traitKind,true);
 		v.mainObj->decRef();
+		uninitializedVars.pop_front();
+		it = uninitializedVars.begin();
 	}
-	uninitializedVars.clear();
 	LOG(LOG_CALLS, "Finished script init for script " << i );
 }
 
@@ -1986,6 +1983,23 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	}
 }
 
+void ABCContext::addUninitializedVar(uninitializedVar &v)
+{
+	auto it = uninitializedVars.begin();
+	bool bfound = false;
+	while (it != uninitializedVars.end())
+	{
+		if (it->mainObj == v.mainObj && it->mname == v.mname)
+		{
+			bfound = true;
+			break;
+		}
+		it++;
+	}
+	if (!bfound)
+		uninitializedVars.push_back(v);
+}
+
 void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid)
 {
 	multiname* mname=getMultiname(t->name,NULL);
@@ -2016,10 +2030,10 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				return;
 			ASObject* ret;
 
+			QName className(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl().name);
 			//check if this class has the 'interface' flag, i.e. it is an interface
 			if((instances[t->classi].flags)&0x04)
 			{
-				QName className(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl().name);
 
 				MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
 				Class_inherit* ci=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
@@ -2074,7 +2088,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret = ci;
 			}
 			else
-				ret=getSys()->getUndefinedRef();
+			{
+				MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
+				Class_inherit* c=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
+				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
+				ret=c;
+			}
+
 
 			obj->setVariableByQName(mname->name_s_id,mname->ns[0],ret,DECLARED_TRAIT);
 
@@ -2150,12 +2170,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret->toDebugString());
 
-			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT);
+			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,false);
 
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);
-			else // slot_id 0 seems to mean appending new slot
-				obj->appendSlot(*mname);
+			//else // slot_id 0 seems to mean appending new slot
+			//	obj->appendSlot(*mname);
 			break;
 		}
 		case traits_info::Slot:
@@ -2170,20 +2190,20 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			if(t->vindex)
 			{
 				ret=getConstant(t->vkind,t->vindex);
-				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname<< " = " << ret->toDebugString() );
+				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname<< " = " << ret->toDebugString() <<" "<<isBorrowed);
 			}
 			else
 			{
-				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname);
+				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname<<" "<<isBorrowed);
 				ret = NULL;
 			}
 
-			obj->initializeVariableByMultiname(*mname, ret, tname, this, DECLARED_TRAIT);
+			obj->initializeVariableByMultiname(*mname, ret, tname, this, isBorrowed ? INSTANCE_TRAIT : DECLARED_TRAIT,false);
 
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);
-			else // slot_id 0 seems to mean appending new slot
-				obj->appendSlot(*mname);
+			//else // slot_id 0 seems to mean appending new slot
+			//	obj->appendSlot(*mname);
 			
 			break;
 		}

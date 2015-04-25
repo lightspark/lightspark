@@ -225,7 +225,7 @@ public:
 		super = super_;
 		copyBorrowedTraitsFromSuper();
 	}
-	const variable* findBorrowedGettable(const multiname& name) const DLL_LOCAL;
+	const variable* findBorrowedGettable(const multiname& name, NS_KIND &nskind) const DLL_LOCAL;
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 	variable* findSettableInPrototype(const multiname& name) DLL_LOCAL;
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;

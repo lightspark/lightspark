@@ -145,9 +145,9 @@ struct typed_opcode_handler
 struct uninitializedVar
 {
 	uninitializedVar():mname(NULL),mainObj(NULL),typemname(NULL),traitKind(NO_CREATE_TRAIT) {}
-	multiname mname;
+	const multiname* mname;
 	ASObject* mainObj;
-	multiname typemname;
+	multiname* typemname;
 	TRAIT_KIND traitKind;
 };
 
@@ -184,8 +184,8 @@ public:
 
 	std::vector<bool> hasRunScriptInit;
 	// list of vars that have to be initialized after script init is done
-	std::vector<uninitializedVar> uninitializedVars;
-
+	std::list<uninitializedVar> uninitializedVars;
+	void addUninitializedVar(uninitializedVar& v);
 	/**
 		Construct and insert in the a object a given trait
 		@param obj the tarhget object
@@ -206,8 +206,6 @@ public:
 	void exec(bool lazy);
 
 	bool isinstance(ASObject* obj, multiname* name);
-
-	std::map<const multiname*, Class_base*> classesBeingDefined;
 
 #ifdef PROFILING_SUPPORT
 	void dumpProfilingData(std::ostream& f) const;

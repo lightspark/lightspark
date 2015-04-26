@@ -2304,7 +2304,7 @@ ASFUNCTIONBODY(Stage,_getFrameRate)
 	Stage* th=obj->as<Stage>();
 	_NR<RootMovieClip> root = th->getRoot();
 	if (root.isNull())
-		return abstract_d(0.);
+		return abstract_d(getSys()->mainClip->getFrameRate());
 	else
 		return abstract_d(root->getFrameRate());
 }

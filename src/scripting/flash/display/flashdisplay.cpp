@@ -328,6 +328,7 @@ void LoaderThread::execute()
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
 			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm()->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS()));
 			delete sbuf;
 			// downloader will be deleted in jobFence
 			return;
@@ -2353,40 +2354,40 @@ ASFUNCTIONBODY(Stage,_invalidate)
 void StageScaleMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS("exactFit"),DECLARED_TRAIT);
-	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS("noBorder"),DECLARED_TRAIT);
-	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS("noScale"),DECLARED_TRAIT);
-	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS("showAll"),DECLARED_TRAIT);
+	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS("exactFit"),CONSTANT_TRAIT);
+	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS("noBorder"),CONSTANT_TRAIT);
+	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS("noScale"),CONSTANT_TRAIT);
+	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS("showAll"),CONSTANT_TRAIT);
 }
 
 void StageAlign::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("BOTTOM","",Class<ASString>::getInstanceS("B"),DECLARED_TRAIT);
-	c->setVariableByQName("BOTTOM_LEFT","",Class<ASString>::getInstanceS("BL"),DECLARED_TRAIT);
-	c->setVariableByQName("BOTTOM_RIGHT","",Class<ASString>::getInstanceS("BR"),DECLARED_TRAIT);
-	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("L"),DECLARED_TRAIT);
-	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("R"),DECLARED_TRAIT);
-	c->setVariableByQName("TOP","",Class<ASString>::getInstanceS("T"),DECLARED_TRAIT);
-	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL"),DECLARED_TRAIT);
-	c->setVariableByQName("TOP_RIGHT","",Class<ASString>::getInstanceS("TR"),DECLARED_TRAIT);
+	c->setVariableByQName("BOTTOM","",Class<ASString>::getInstanceS("B"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOTTOM_LEFT","",Class<ASString>::getInstanceS("BL"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOTTOM_RIGHT","",Class<ASString>::getInstanceS("BR"),CONSTANT_TRAIT);
+	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("L"),CONSTANT_TRAIT);
+	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("R"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP","",Class<ASString>::getInstanceS("T"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP_RIGHT","",Class<ASString>::getInstanceS("TR"),CONSTANT_TRAIT);
 }
 
 void StageQuality::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("BEST","",Class<ASString>::getInstanceS("best"),DECLARED_TRAIT);
-	c->setVariableByQName("HIGH","",Class<ASString>::getInstanceS("high"),DECLARED_TRAIT);
-	c->setVariableByQName("LOW","",Class<ASString>::getInstanceS("low"),DECLARED_TRAIT);
-	c->setVariableByQName("MEDIUM","",Class<ASString>::getInstanceS("medium"),DECLARED_TRAIT);
+	c->setVariableByQName("BEST","",Class<ASString>::getInstanceS("best"),CONSTANT_TRAIT);
+	c->setVariableByQName("HIGH","",Class<ASString>::getInstanceS("high"),CONSTANT_TRAIT);
+	c->setVariableByQName("LOW","",Class<ASString>::getInstanceS("low"),CONSTANT_TRAIT);
+	c->setVariableByQName("MEDIUM","",Class<ASString>::getInstanceS("medium"),CONSTANT_TRAIT);
 }
 
 void StageDisplayState::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"),DECLARED_TRAIT);
-	c->setVariableByQName("FULL_SCREEN_INTERACTIVE","",Class<ASString>::getInstanceS("fullScreenInteractive"),DECLARED_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
+	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"),CONSTANT_TRAIT);
+	c->setVariableByQName("FULL_SCREEN_INTERACTIVE","",Class<ASString>::getInstanceS("fullScreenInteractive"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
 }
 
 Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
@@ -2795,61 +2796,61 @@ ASFUNCTIONBODY(SimpleButton,_getUseHandCursor)
 void GradientType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("LINEAR","",Class<ASString>::getInstanceS("linear"),DECLARED_TRAIT);
-	c->setVariableByQName("RADIAL","",Class<ASString>::getInstanceS("radial"),DECLARED_TRAIT);
+	c->setVariableByQName("LINEAR","",Class<ASString>::getInstanceS("linear"),CONSTANT_TRAIT);
+	c->setVariableByQName("RADIAL","",Class<ASString>::getInstanceS("radial"),CONSTANT_TRAIT);
 }
 
 void BlendMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ADD","",Class<ASString>::getInstanceS("add"),DECLARED_TRAIT);
-	c->setVariableByQName("ALPHA","",Class<ASString>::getInstanceS("alpha"),DECLARED_TRAIT);
-	c->setVariableByQName("DARKEN","",Class<ASString>::getInstanceS("darken"),DECLARED_TRAIT);
-	c->setVariableByQName("DIFFERENCE","",Class<ASString>::getInstanceS("difference"),DECLARED_TRAIT);
-	c->setVariableByQName("ERASE","",Class<ASString>::getInstanceS("erase"),DECLARED_TRAIT);
-	c->setVariableByQName("HARDLIGHT","",Class<ASString>::getInstanceS("hardlight"),DECLARED_TRAIT);
-	c->setVariableByQName("INVERT","",Class<ASString>::getInstanceS("invert"),DECLARED_TRAIT);
-	c->setVariableByQName("LAYER","",Class<ASString>::getInstanceS("layer"),DECLARED_TRAIT);
-	c->setVariableByQName("LIGHTEN","",Class<ASString>::getInstanceS("lighten"),DECLARED_TRAIT);
-	c->setVariableByQName("MULTIPLY","",Class<ASString>::getInstanceS("multiply"),DECLARED_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
-	c->setVariableByQName("OVERLAY","",Class<ASString>::getInstanceS("overlay"),DECLARED_TRAIT);
-	c->setVariableByQName("SCREEN","",Class<ASString>::getInstanceS("screen"),DECLARED_TRAIT);
-	c->setVariableByQName("SUBTRACT","",Class<ASString>::getInstanceS("subtract"),DECLARED_TRAIT);
+	c->setVariableByQName("ADD","",Class<ASString>::getInstanceS("add"),CONSTANT_TRAIT);
+	c->setVariableByQName("ALPHA","",Class<ASString>::getInstanceS("alpha"),CONSTANT_TRAIT);
+	c->setVariableByQName("DARKEN","",Class<ASString>::getInstanceS("darken"),CONSTANT_TRAIT);
+	c->setVariableByQName("DIFFERENCE","",Class<ASString>::getInstanceS("difference"),CONSTANT_TRAIT);
+	c->setVariableByQName("ERASE","",Class<ASString>::getInstanceS("erase"),CONSTANT_TRAIT);
+	c->setVariableByQName("HARDLIGHT","",Class<ASString>::getInstanceS("hardlight"),CONSTANT_TRAIT);
+	c->setVariableByQName("INVERT","",Class<ASString>::getInstanceS("invert"),CONSTANT_TRAIT);
+	c->setVariableByQName("LAYER","",Class<ASString>::getInstanceS("layer"),CONSTANT_TRAIT);
+	c->setVariableByQName("LIGHTEN","",Class<ASString>::getInstanceS("lighten"),CONSTANT_TRAIT);
+	c->setVariableByQName("MULTIPLY","",Class<ASString>::getInstanceS("multiply"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("OVERLAY","",Class<ASString>::getInstanceS("overlay"),CONSTANT_TRAIT);
+	c->setVariableByQName("SCREEN","",Class<ASString>::getInstanceS("screen"),CONSTANT_TRAIT);
+	c->setVariableByQName("SUBTRACT","",Class<ASString>::getInstanceS("subtract"),CONSTANT_TRAIT);
 }
 
 void SpreadMethod::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("PAD","",Class<ASString>::getInstanceS("pad"),DECLARED_TRAIT);
-	c->setVariableByQName("REFLECT","",Class<ASString>::getInstanceS("reflect"),DECLARED_TRAIT);
-	c->setVariableByQName("REPEAT","",Class<ASString>::getInstanceS("repeat"),DECLARED_TRAIT);
+	c->setVariableByQName("PAD","",Class<ASString>::getInstanceS("pad"),CONSTANT_TRAIT);
+	c->setVariableByQName("REFLECT","",Class<ASString>::getInstanceS("reflect"),CONSTANT_TRAIT);
+	c->setVariableByQName("REPEAT","",Class<ASString>::getInstanceS("repeat"),CONSTANT_TRAIT);
 }
 
 void InterpolationMethod::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("RGB","",Class<ASString>::getInstanceS("rgb"),DECLARED_TRAIT);
-	c->setVariableByQName("LINEAR_RGB","",Class<ASString>::getInstanceS("linearRGB"),DECLARED_TRAIT);
+	c->setVariableByQName("RGB","",Class<ASString>::getInstanceS("rgb"),CONSTANT_TRAIT);
+	c->setVariableByQName("LINEAR_RGB","",Class<ASString>::getInstanceS("linearRGB"),CONSTANT_TRAIT);
 }
 
 void GraphicsPathCommand::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("CUBIC_CURVE_TO","",abstract_i(6),DECLARED_TRAIT);
-	c->setVariableByQName("CURVE_TO","",abstract_i(3),DECLARED_TRAIT);
-	c->setVariableByQName("LINE_TO","",abstract_i(2),DECLARED_TRAIT);
-	c->setVariableByQName("MOVE_TO","",abstract_i(1),DECLARED_TRAIT);
-	c->setVariableByQName("NO_OP","",abstract_i(0),DECLARED_TRAIT);
-	c->setVariableByQName("WIDE_LINE_TO","",abstract_i(5),DECLARED_TRAIT);
-	c->setVariableByQName("WIDE_MOVE_TO","",abstract_i(4),DECLARED_TRAIT);
+	c->setVariableByQName("CUBIC_CURVE_TO","",abstract_i(6),CONSTANT_TRAIT);
+	c->setVariableByQName("CURVE_TO","",abstract_i(3),CONSTANT_TRAIT);
+	c->setVariableByQName("LINE_TO","",abstract_i(2),CONSTANT_TRAIT);
+	c->setVariableByQName("MOVE_TO","",abstract_i(1),CONSTANT_TRAIT);
+	c->setVariableByQName("NO_OP","",abstract_i(0),CONSTANT_TRAIT);
+	c->setVariableByQName("WIDE_LINE_TO","",abstract_i(5),CONSTANT_TRAIT);
+	c->setVariableByQName("WIDE_MOVE_TO","",abstract_i(4),CONSTANT_TRAIT);
 }
 
 void GraphicsPathWinding::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("EVEN_ODD","",Class<ASString>::getInstanceS("evenOdd"),DECLARED_TRAIT);
-	c->setVariableByQName("NON_ZERO","",Class<ASString>::getInstanceS("nonZero"),DECLARED_TRAIT);
+	c->setVariableByQName("EVEN_ODD","",Class<ASString>::getInstanceS("evenOdd"),CONSTANT_TRAIT);
+	c->setVariableByQName("NON_ZERO","",Class<ASString>::getInstanceS("nonZero"),CONSTANT_TRAIT);
 }
 
 /* Go through the hierarchy and add all
@@ -3024,10 +3025,10 @@ ASFUNCTIONBODY(Shader,_constructor)
 void BitmapDataChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ALPHA","",abstract_ui(8),DECLARED_TRAIT);
-	c->setVariableByQName("BLUE","",abstract_ui(4),DECLARED_TRAIT);
-	c->setVariableByQName("GREEN","",abstract_ui(2),DECLARED_TRAIT);
-	c->setVariableByQName("RED","",abstract_ui(1),DECLARED_TRAIT);
+	c->setVariableByQName("ALPHA","",abstract_ui(8),CONSTANT_TRAIT);
+	c->setVariableByQName("BLUE","",abstract_ui(4),CONSTANT_TRAIT);
+	c->setVariableByQName("GREEN","",abstract_ui(2),CONSTANT_TRAIT);
+	c->setVariableByQName("RED","",abstract_ui(1),CONSTANT_TRAIT);
 }
 
 unsigned int BitmapDataChannel::channelShift(uint32_t channelConstant)
@@ -3056,8 +3057,8 @@ unsigned int BitmapDataChannel::channelShift(uint32_t channelConstant)
 void LineScaleMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS("horizontal"),DECLARED_TRAIT);
-	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
-	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS("vertical"),DECLARED_TRAIT);
+	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS("horizontal"),CONSTANT_TRAIT);
+	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS("vertical"),CONSTANT_TRAIT);
 }

@@ -695,7 +695,7 @@ Type* Type::getBuiltinType(const multiname* mn)
  * by running ABCContext::exec() for all ABCContexts.
  * Therefore, all classes are at least declared.
  */
-const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* context)
+const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 {
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
@@ -708,7 +708,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
 		return Type::voidType;
 
-	ASObject* typeObject;
+	ASObject* typeObject = NULL;
 	/*
 	 * During the newClass opcode, the class is added to context->root->applicationDomain->classesBeingDefined.
 	 * The class variable in the global scope is only set a bit later.
@@ -728,17 +728,11 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, const ABCContext* co
 
 	if(!typeObject)
 	{
-		//HACK: until we have implemented all flash classes, we need this hack
-		LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname: could not find " << *mn << ", using AnyType");
-		return Type::anyType;
-	}
-
-	if(!typeObject->is<Type>())
-	{
-		//It actually happens in the wild that the class for a member might be a private class
-		//that is defined later in the same script. We have no way to solve the dependency, so return any
-		LOG(LOG_NOT_IMPLEMENTED,"Not resolvable type " << *mn << ", using AnyType");
-		return Type::anyType;
+		if (mn->ns.size() >= 1 && mn->ns[0].getImpl().name == "__AS3__.vec")
+		{
+			QName qname(getSys()->getStringFromUniqueId(mn->name_s_id),mn->ns[0].getImpl().name);
+			typeObject = Template<Vector>::getTemplateInstance(qname,context).getPtr();
+		}
 	}
 	return typeObject->as<Type>();
 }

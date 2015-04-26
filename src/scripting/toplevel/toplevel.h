@@ -74,7 +74,7 @@ public:
 	 * then an exception is thrown.
 	 * The caller does not own the object returned.
 	 */
-	static const Type* getTypeFromMultiname(const multiname* mn, const ABCContext* context);
+	static const Type* getTypeFromMultiname(const multiname* mn, ABCContext* context);
 	/*
 	 * Checks if the type is already in sys->classes
 	 */

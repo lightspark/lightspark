@@ -383,8 +383,9 @@ void ABCVm::checkDeclaredTraits(ASObject* obj)
 			!obj->is<Undefined>() &&
 			!obj->is<IFunction>() &&
 			!obj->is<Function_object>() &&
+			!obj->is<Class_base>() &&
 			obj->getClass() &&
-			(obj->is<Class_inherit>() || (obj->getClass() != Class_object::getClass())))
+			(obj->getClass() != Class_object::getClass()))
 		obj->getClass()->setupDeclaredTraits(obj);
 }
 
@@ -1338,6 +1339,7 @@ void ABCVm::getLex(call_context* th, int n)
 		if(!it->considerDynamic)
 			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 
+		checkDeclaredTraits(it->object.getPtr());
 		_NR<ASObject> prop=it->object->getVariableByMultiname(*name, opt);
 		if(!prop.isNull())
 		{
@@ -1752,6 +1754,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
+	checkDeclaredTraits(obj);
 	_NR<ASObject> o=obj->getVariableByMultiname(*name);
 
 	if(o.isNull())
@@ -2093,7 +2096,7 @@ void ABCVm::newClass(call_context* th, int n)
 	for(unsigned int i=0;i<cur->trait_count;i++)
 	{
 		int kind=cur->traits[i].kind&0xf;
-		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter || kind==traits_info::Slot)
+		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
 			th->context->buildTrait(ret,&cur->traits[i],true);
 	}
 

@@ -873,11 +873,6 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	 /* If typename is a builtin type, we coerce obj.
 	  * It it's not it must be a user defined class,
 	  * so we try to find the class it is derived from and create an apropriate uninitialized instance */
-	if (typemname->ns.size() >= 1 && typemname->ns[0].getImpl().name == "__AS3__.vec")
-	{
-		QName qname(getSys()->getStringFromUniqueId(typemname->name_s_id),typemname->ns[0].getImpl().name);
-		type = Template<Vector>::getTemplateInstance(qname,context).getPtr();
-	}
 	if (type == NULL)
 		type = Type::getBuiltinType(typemname);
 	if (type == NULL)

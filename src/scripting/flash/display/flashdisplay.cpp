@@ -1730,12 +1730,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
 	if(args[0]->getObjectType() == T_CLASS)
-	{
 		return abstract_b(false);
-	}
-	//Validate object type
-	assert_and_throw(args[0] && args[0]->getClass() && 
-		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+	if (!args[0]->getClass())
+		return abstract_b(false);
+	if (!args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()))
+		return abstract_b(false);
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]);

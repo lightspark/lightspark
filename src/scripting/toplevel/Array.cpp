@@ -529,7 +529,7 @@ ASFUNCTIONBODY(Array,splice)
 	int deleteCount;
 	//By default, delete all the element up to the end
 	//DeleteCount defaults to the array len, it will be capped below
-	ARG_UNPACK(startIndex) (deleteCount, th->size());
+	ARG_UNPACK_MORE_ALLOWED(startIndex) (deleteCount, th->size());
 
 	int totalSize=th->size();
 	Array* ret=Class<Array>::getInstanceS();

@@ -215,15 +215,17 @@ inline ASObject* lightspark::ArgumentConversion<RGB>::toAbstract(const RGB& val)
 	return abstract_ui(val.toUInt());
 }
 
-#define ARG_UNPACK ArgUnpack(args,argslen)
+#define ARG_UNPACK ArgUnpack(args,argslen,false)
+#define ARG_UNPACK_MORE_ALLOWED ArgUnpack(args,argslen,true)
 
 class ArgUnpack
 {
 private:
 	ASObject* const * args;
 	int argslen;
+	bool moreAllowed;
 public:
-	ArgUnpack(ASObject* const * _args, int _argslen) : args(_args), argslen(_argslen) {}
+	ArgUnpack(ASObject* const * _args, int _argslen, bool _moreAllowed) : args(_args), argslen(_argslen), moreAllowed(_moreAllowed) {}
 
 	template<class T> ArgUnpack& operator()(T& v)
 	{
@@ -251,7 +253,7 @@ public:
 	}
 	~ArgUnpack()
 	{
-		if(argslen > 0)
+		if(argslen > 0 && !moreAllowed)
 			LOG(LOG_NOT_IMPLEMENTED,"Not all arguments were unpacked");
 	}
 };

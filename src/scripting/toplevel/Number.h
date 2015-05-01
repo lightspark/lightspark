@@ -37,7 +37,7 @@ private:
 	static tiny_string purgeExponentLeadingZeros(const tiny_string& exponentialForm);
 	static int32_t countSignificantDigits(double v);
 public:
-	Number(Class_base* c, double v=0.):ASObject(c),val(v){type=T_NUMBER;}
+	Number(Class_base* c, double v=(std::numeric_limits<double>::quiet_NaN())):ASObject(c),val(v){type=T_NUMBER;}
 	static const number_t NaN;
 	double val;
 	ASFUNCTION(_constructor);

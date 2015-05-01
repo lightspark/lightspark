@@ -283,7 +283,9 @@ ASFUNCTIONBODY(Number,_constructor)
 	Number* th=static_cast<Number*>(obj);
 	if(argslen==0)
 	{
-		//The number is already initialized to NaN
+		// not constructed Numbers are set to NaN, so we have to set it to the default value during dynamic construction
+		if (std::isnan(th->val))
+			th->val = 0.;
 		return NULL;
 	}
 	th->val=args[0]->toNumber();

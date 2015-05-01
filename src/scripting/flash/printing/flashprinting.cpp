@@ -38,6 +38,7 @@ ASFUNCTIONBODY_GETTER(PrintJob, isSupported);
 
 ASFUNCTIONBODY(PrintJob, _constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	PrintJob* th=Class<PrintJob>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PrintJob is not implemented");
 	return NULL;

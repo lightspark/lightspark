@@ -30,6 +30,7 @@ void ContextMenuItem::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ContextMenuItem,_constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	LOG(LOG_NOT_IMPLEMENTED,"ContextMenuItem constructor is a stub");
 	return NULL;
 }

@@ -40,6 +40,7 @@ ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,builtInItems);
 
 ASFUNCTIONBODY(ContextMenu,_constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	LOG(LOG_NOT_IMPLEMENTED,"ContextMenu constructor is a stub");
 	return NULL;
 }

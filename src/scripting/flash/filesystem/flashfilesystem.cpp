@@ -35,6 +35,7 @@ void FileStream::sinit(Class_base* c)
 }
 ASFUNCTIONBODY(FileStream, _constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	FileStream* th=Class<FileStream>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"FileStream is not implemented");
 	return NULL;

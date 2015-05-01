@@ -663,6 +663,7 @@ void NetConnection::finalize()
 
 ASFUNCTIONBODY(NetConnection, _constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	NetConnection* th=Class<NetConnection>::cast(obj);
 	th->objectEncoding = getSys()->staticNetConnectionDefaultObjectEncoding;
 	return NULL;
@@ -981,6 +982,15 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 
 ASFUNCTIONBODY_GETTER_SETTER(NetConnection, client);
 
+void NetStreamAppendBytesAction::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL);
+	c->setVariableByQName("END_SEQUENCE","",Class<ASString>::getInstanceS("endSequence"),CONSTANT_TRAIT);
+	c->setVariableByQName("RESET_BEGIN","",Class<ASString>::getInstanceS("resetBegin"),CONSTANT_TRAIT);
+	c->setVariableByQName("RESET_SEEK","",Class<ASString>::getInstanceS("resetSeek"),CONSTANT_TRAIT);
+}
+
+
 NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused(false),closed(true),
 	streamTime(0),frameRate(0),connection(),downloader(NULL),videoDecoder(NULL),
 	audioDecoder(NULL),audioStream(NULL),
@@ -989,14 +999,6 @@ NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused
 	maxPauseBufferTime(0)
 {
 	soundTransform = _MNR(Class<SoundTransform>::getInstanceS());
-}
-
-void NetStreamAppendBytesAction::sinit(Class_base* c)
-{
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL);
-	c->setVariableByQName("END_SEQUENCE","",Class<ASString>::getInstanceS("endSequence"),DECLARED_TRAIT);
-	c->setVariableByQName("RESET_BEGIN","",Class<ASString>::getInstanceS("resetBegin"),DECLARED_TRAIT);
-	c->setVariableByQName("RESET_SEEK","",Class<ASString>::getInstanceS("resetSeek"),DECLARED_TRAIT);
 }
 
 void NetStream::finalize()
@@ -1099,6 +1101,7 @@ ASFUNCTIONBODY(NetStream,_setCheckPolicyFile)
 
 ASFUNCTIONBODY(NetStream,_constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	NetStream* th=obj->as<NetStream>();
 
 	LOG(LOG_CALLS,_("NetStream constructor"));
@@ -1458,6 +1461,7 @@ void NetStream::execute()
 	}
 	catch(JobTerminationException& e)
 	{
+		LOG(LOG_ERROR, "JobTerminationException in NetStream ");
 		waitForFlush=false;
 	}
 	catch(exception& e)
@@ -1979,6 +1983,7 @@ ASFUNCTIONBODY_GETTER(LocalConnection, isSupported);
 
 ASFUNCTIONBODY(LocalConnection, _constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection is not implemented");
 	return NULL;
@@ -1996,6 +2001,7 @@ void NetGroup::sinit(Class_base* c)
 
 ASFUNCTIONBODY(NetGroup, _constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	NetGroup* th=Class<NetGroup>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"NetGroup is not implemented");
 	return NULL;
@@ -2014,6 +2020,7 @@ void ASSocket::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ASSocket, _constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	ASSocket* th=Class<ASSocket>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"ASSocket is not implemented");
 	return NULL;

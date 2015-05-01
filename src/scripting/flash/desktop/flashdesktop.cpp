@@ -38,6 +38,7 @@ void NativeApplication::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(NativeApplication,_constructor)
 {
+	EventDispatcher::_constructor(obj, NULL, 0);
 	return NULL;
 }
 

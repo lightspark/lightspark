@@ -73,7 +73,8 @@ ASFUNCTIONBODY(ExternalInterface, _setMarshallExceptions)
 ASFUNCTIONBODY(ExternalInterface,addCallback)
 {
 	if(getSys()->extScriptObject == NULL)
-		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
+		return abstract_b(false);
+//		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen == 2);
 
@@ -90,7 +91,8 @@ ASFUNCTIONBODY(ExternalInterface,addCallback)
 ASFUNCTIONBODY(ExternalInterface,call)
 {
 	if(getSys()->extScriptObject == NULL)
-		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
+		return getSys()->getNullRef();
+//		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen >= 1);
 	const tiny_string& arg0=args[0]->toString();

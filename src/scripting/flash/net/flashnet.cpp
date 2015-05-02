@@ -803,7 +803,9 @@ ASFUNCTIONBODY(NetConnection,connect)
 	//bool isRPC = false;
 
 	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
-	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
+	if(args[0]->getObjectType()==T_NULL || 
+			args[0]->getObjectType()==T_UNDEFINED ||
+			!args[0]->isConstructed())
 	{
 		th->_connected = false;
 		isNull = true;

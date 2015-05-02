@@ -74,11 +74,15 @@ URLInfo::URLInfo(const tiny_string& u)
 	if(colonPos == std::string::npos)
 		invalidReason = MISSING_PROTOCOL;
 
-	std::string protocolStr = str.substr(0, colonPos);
-	std::transform(protocolStr.begin(), protocolStr.end(), protocolStr.begin(), ::tolower);
+	std::string protocolStr;
+	if (colonPos != std::string::npos) 
+	{
+		protocolStr = str.substr(0, colonPos);
+		std::transform(protocolStr.begin(), protocolStr.end(), protocolStr.begin(), ::tolower);
+	}
 	protocol = protocolStr;
 
-	size_t hostnamePos = colonPos+3;
+	size_t hostnamePos = colonPos != std::string::npos ? colonPos+3 : std::string::npos;
 	size_t portPos = std::string::npos;
 	size_t pathPos = std::string::npos;
 	size_t queryPos = std::string::npos;
@@ -117,8 +121,12 @@ URLInfo::URLInfo(const tiny_string& u)
 	}
 
 	//Parse the host string
-	std::string hostnameStr = str.substr(hostnamePos, std::min(std::min(pathPos, portPos), queryPos)-hostnamePos);
-	std::transform(hostnameStr.begin(), hostnameStr.end(), hostnameStr.begin(), ::tolower);
+	std::string hostnameStr;
+	if (hostnamePos != std::string::npos)
+	{
+		hostnameStr= str.substr(hostnamePos, std::min(std::min(pathPos, portPos), queryPos)-hostnamePos);
+		std::transform(hostnameStr.begin(), hostnameStr.end(), hostnameStr.begin(), ::tolower);
+	}
 	hostname = hostnameStr;
 
 	port = 0;

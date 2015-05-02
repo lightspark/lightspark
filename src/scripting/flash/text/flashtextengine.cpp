@@ -325,6 +325,7 @@ ASFUNCTIONBODY(TextBlock, recreateTextLine)
 	}
 	if (!previousLine.isNull())
 		previousLine->nextLine == textLine;
+	textLine->incRef();
 	return textLine.getPtr();
 }
 

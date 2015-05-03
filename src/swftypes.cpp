@@ -1327,7 +1327,9 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 
 ASObject* lightspark::abstract_d(number_t i)
 {
-	Number* ret=Class<Number>::getInstanceS(i);
+	Number* ret=Class<Number>::getInstanceS();
+	// we have to set the value seperately, because for i = NaN, getInstanceS will overwrite the value
+	ret->val = i;
 	return ret;
 }
 

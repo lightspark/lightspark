@@ -159,6 +159,7 @@ class ASWorker: public EventDispatcher
 public:
 	ASWorker(Class_base* c);
 	static void sinit(Class_base*);
+	ASFUNCTION(_getCurrent);
 };
 
 }

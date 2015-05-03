@@ -581,5 +581,12 @@ ASWorker::ASWorker(Class_base* c):
 void ASWorker::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
+	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(_getCurrent),GETTER_METHOD,false);
 }
+ASFUNCTIONBODY(ASWorker,_getCurrent)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
+	return getSys()->getUndefinedRef();
+}
+
 

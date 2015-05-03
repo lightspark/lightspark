@@ -567,6 +567,13 @@ public:
 	static void buildTraits(ASObject* o) {}
 };
 
+class UncaughtErrorEvents: public EventDispatcher
+{
+public:
+	UncaughtErrorEvents(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
 
 }
 #endif /* SCRIPTING_FLASH_EVENTS_FLASHEVENTS_H */

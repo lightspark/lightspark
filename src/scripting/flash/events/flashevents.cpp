@@ -1193,14 +1193,14 @@ ASFUNCTIONBODY(DRMStatusEvent,_constructor)
 }
 
 StageVideoEvent::StageVideoEvent(Class_base* c)
-  : Event(c, "renderState")
+  : Event(c, "renderState"),status("unavailable")
 {
 }
 
 void StageVideoEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("RENDER_STATE","",Class<ASString>::getInstanceS("renderState"),DECLARED_TRAIT);
+	c->setVariableByQName("RENDER_STATE","",Class<ASString>::getInstanceS("renderState"),CONSTANT_TRAIT);
 	REGISTER_GETTER(c,colorSpace);
 	REGISTER_GETTER(c,status);
 }
@@ -1319,4 +1319,22 @@ void TransformGestureEvent::sinit(Class_base* c)
 	c->setVariableByQName("GESTURE_ROTATE","",Class<ASString>::getInstanceS("gestureRotate"),DECLARED_TRAIT);
 	c->setVariableByQName("GESTURE_SWIPE","",Class<ASString>::getInstanceS("gestureSwipe"),DECLARED_TRAIT);
 	c->setVariableByQName("GESTURE_ZOOM","",Class<ASString>::getInstanceS("gestureZoom"),DECLARED_TRAIT);
+}
+
+UncaughtErrorEvents::UncaughtErrorEvents(Class_base* c):
+	EventDispatcher(c)
+{
+}
+
+void UncaughtErrorEvents::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(UncaughtErrorEvents, _constructor)
+{
+	EventDispatcher::_constructor(obj, NULL, 0);
+	UncaughtErrorEvents* th=Class<UncaughtErrorEvents>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"UncaughtErrorEvents is not implemented");
+	return NULL;
 }

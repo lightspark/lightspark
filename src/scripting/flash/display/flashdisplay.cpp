@@ -54,14 +54,14 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),childAllowsParent(true)
+	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),childAllowsParent(true),uncaughtErrorEvents(NullRef)
 {
 }
 
 LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),childAllowsParent(true)
+	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),childAllowsParent(true),uncaughtErrorEvents(NullRef)
 {
 }
 
@@ -84,6 +84,7 @@ void LoaderInfo::sinit(Class_base* c)
 	REGISTER_GETTER(c,swfVersion);
 	REGISTER_GETTER(c,childAllowsParent);
 	REGISTER_GETTER(c,contentType);
+	REGISTER_GETTER(c,uncaughtErrorEvents);
 }
 
 ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
@@ -91,6 +92,7 @@ ASFUNCTIONBODY_GETTER(LoaderInfo,actionScriptVersion);
 ASFUNCTIONBODY_GETTER(LoaderInfo,childAllowsParent);
 ASFUNCTIONBODY_GETTER(LoaderInfo,contentType);
 ASFUNCTIONBODY_GETTER(LoaderInfo,swfVersion);
+ASFUNCTIONBODY_GETTER(LoaderInfo,uncaughtErrorEvents);
 
 void LoaderInfo::buildTraits(ASObject* o)
 {
@@ -574,7 +576,7 @@ void Loader::finalize()
 	contentLoaderInfo.reset();
 }
 
-Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true)
+Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
 {
 	incRef();
 	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(this)));
@@ -593,7 +595,10 @@ void Loader::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unload","",Class<IFunction>::getFunction(_unload),NORMAL_METHOD,true);
+	REGISTER_GETTER(c,uncaughtErrorEvents);
 }
+
+ASFUNCTIONBODY_GETTER(Loader,uncaughtErrorEvents);
 
 void Loader::threadFinished(IThreadJob* finishedJob)
 {

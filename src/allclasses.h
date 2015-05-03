@@ -140,6 +140,7 @@ REGISTER_CLASS_NAME(TimerEvent,"flash.events")
 REGISTER_CLASS_NAME(TouchEvent,"flash.events")
 REGISTER_CLASS_NAME(TransformGestureEvent,"flash.events")
 REGISTER_CLASS_NAME(UncaughtErrorEvent,"flash.events")
+REGISTER_CLASS_NAME(UncaughtErrorEvents,"flash.events")
 
 //External interface (browser interaction)
 REGISTER_CLASS_NAME(ExternalInterface,"flash.external")

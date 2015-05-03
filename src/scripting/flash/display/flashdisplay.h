@@ -249,6 +249,7 @@ public:
 	ASPROPERTY_GETTER(uint32_t,actionScriptVersion);
 	ASPROPERTY_GETTER(uint32_t,swfVersion);
 	ASPROPERTY_GETTER(bool, childAllowsParent);
+	ASPROPERTY_GETTER(_NR<UncaughtErrorEvents>,uncaughtErrorEvents);
 	LoaderInfo(Class_base* c);
 	LoaderInfo(Class_base* c, _R<Loader> l);
 	void finalize();
@@ -323,6 +324,7 @@ public:
 	ASFUNCTION(_unload);
 	ASFUNCTION(_getContentLoaderInfo);
 	ASFUNCTION(_getContent);
+	ASPROPERTY_GETTER(_NR<UncaughtErrorEvents>,uncaughtErrorEvents);
 	int getDepth() const
 	{
 		return 0;

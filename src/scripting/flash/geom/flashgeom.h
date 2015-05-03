@@ -201,6 +201,8 @@ public:
 	ASFUNCTION(_setColorTransform);
 	ASFUNCTION(_getMatrix);
 	ASFUNCTION(_setMatrix);
+	ASFUNCTION(_getConcatenatedMatrix);
+	
 };
 
 class Vector3D: public ASObject

@@ -935,6 +935,7 @@ void Transform::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_setMatrix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_getMatrix),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_setMatrix),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("concatenatedMatrix","",Class<IFunction>::getFunction(_getConcatenatedMatrix),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY(Transform,_constructor)
@@ -982,6 +983,13 @@ ASFUNCTIONBODY(Transform,_setColorTransform)
 	// Set colortransform on th->owner
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(Transform,_getConcatenatedMatrix)
+{
+	Transform* th=Class<Transform>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"contcatenatedMAtrix not implemented");
+	return Class<Matrix>::getInstanceS();
 }
 
 void Transform::buildTraits(ASObject* o)

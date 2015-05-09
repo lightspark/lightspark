@@ -365,14 +365,15 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 				return;
 			}
 		}
-
-		LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString() << " not found on " << obj->toDebugString());
-		if(keepReturn)
-			th->runtime_stack_push(getSys()->getUndefinedRef());
-
 		obj->decRef();
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
+		//LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString() << " not found on " << obj->toDebugString());
+		throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), obj->getClassName());
+
+		if(keepReturn)
+			th->runtime_stack_push(getSys()->getUndefinedRef());
+
 	}
 	LOG(LOG_CALLS,_("End of calling ") << *name);
 }
@@ -411,7 +412,10 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 
 	if(prop.isNull())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
+		if (obj->getClass() && obj->getClass()->isSealed)
+			throwError<ReferenceError>(kReadSealedError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
+		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && obj->getClassName() != "Object")
+			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
 		ret = getSys()->getUndefinedRef();
 	}
 	else
@@ -1513,12 +1517,16 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	LOG(LOG_CALLS,(keepReturn ? "callSuper " : "callSuperVoid ") << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
+	if(obj->is<Null>())
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (obj->is<Undefined>())
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 
 	assert_and_throw(th->inClass);
 	assert_and_throw(th->inClass->super);
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
-	_NR<ASObject> f = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super.getPtr());
+	_NR<ASObject> f = obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL,th->inClass->super.getPtr());
 	name->resetNameIfObject();
 	if(!f.isNull())
 	{
@@ -1527,7 +1535,11 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	}
 	else
 	{
-		LOG(LOG_ERROR,_("Calling an undefined function ") << getSys()->getStringFromUniqueId(name->name_s_id));
+		obj->decRef();
+		for(int i=0;i<m;i++)
+			args[i]->decRef();
+		//LOG(LOG_ERROR,_("Calling an undefined function ") << getSys()->getStringFromUniqueId(name->name_s_id));
+		throwError<ReferenceError>(kCallNotFoundError, name->qualifiedString(), obj->getClassName());
 		if(keepReturn)
 			th->runtime_stack_push(getSys()->getUndefinedRef());
 	}

@@ -542,6 +542,22 @@ ASFUNCTIONBODY(Loader,_unload)
 	th->unload();
 	return NULL;
 }
+ASFUNCTIONBODY(Loader,_unloadAndStop)
+{
+	Loader* th=static_cast<Loader*>(obj);
+	th->unload();
+	LOG(LOG_NOT_IMPLEMENTED,"unloadAndStop does not execute any stopping actions");
+	/* TODO: (taken from specs)
+	Sounds are stopped.
+	Stage event listeners are removed.
+	Event listeners for enterFrame, frameConstructed, exitFrame, activate and deactivate are removed.
+	Timers are stopped.
+	Camera and Microphone instances are detached
+	Movie clips are stopped.
+	*/
+
+	return NULL;
+}
 
 void Loader::unload()
 {
@@ -595,6 +611,7 @@ void Loader::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unload","",Class<IFunction>::getFunction(_unload),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unloadAndStop","",Class<IFunction>::getFunction(_unloadAndStop),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,uncaughtErrorEvents);
 }
 

@@ -322,6 +322,7 @@ public:
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
 	ASFUNCTION(_unload);
+	ASFUNCTION(_unloadAndStop);
 	ASFUNCTION(_getContentLoaderInfo);
 	ASFUNCTION(_getContent);
 	ASPROPERTY_GETTER(_NR<UncaughtErrorEvents>,uncaughtErrorEvents);

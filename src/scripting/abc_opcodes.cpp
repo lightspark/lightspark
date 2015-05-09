@@ -656,7 +656,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	f->decRef();
 
 	//ECMA: "return ret2 if it is an object, else ret"
-	if(ret2 && !ret2->is<Undefined>())
+	if(ret2 && !ret2->isPrimitive())
 	{
 		ret->decRef();
 		ret = ret2;

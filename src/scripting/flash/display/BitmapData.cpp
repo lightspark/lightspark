@@ -25,6 +25,7 @@
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/filters/flashfilters.h"
 #include "backends/rendering_context.h"
 
 using namespace lightspark;
@@ -82,6 +83,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setVector","",Class<IFunction>::getFunction(setVector),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(colorTransform),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("compare","",Class<IFunction>::getFunction(compare),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("applyFilter","",Class<IFunction>::getFunction(applyFilter),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -835,4 +837,17 @@ ASFUNCTIONBODY(BitmapData,compare)
 	if (!different)
 		return abstract_d(0);
 	return res;
+}
+
+ASFUNCTIONBODY(BitmapData,applyFilter)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	
+	_NR<BitmapData> sourceBitmapData;
+	_NR<Rectangle> sourceRect;
+	_NR<Point> destPoint;
+	_NR<BitmapFilter> filter;
+	ARG_UNPACK (sourceBitmapData)(sourceRect)(destPoint)(filter);
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.applyFilter not implemented");
+	return NULL;
 }

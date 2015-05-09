@@ -83,6 +83,7 @@ public:
 	ASFUNCTION(setVector);
 	ASFUNCTION(colorTransform);
 	ASFUNCTION(compare);
+	ASFUNCTION(applyFilter);
 };
 
 };

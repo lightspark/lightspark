@@ -647,6 +647,7 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(_getProxyType),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(_setProxyType),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,client);
 }
 
@@ -980,6 +981,17 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 		//Reference says the return should be undefined. The right thing is "null" as a string
 		return Class<ASString>::getInstanceS("null");
 	}
+}
+
+ASFUNCTIONBODY(NetConnection,close)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	if(th->_connected)
+	{
+		th->threadAbort();
+		th->_connected = false;
+	}
+	return NULL;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(NetConnection, client);

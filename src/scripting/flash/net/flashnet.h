@@ -213,6 +213,7 @@ public:
 	ASFUNCTION(_getProxyType);
 	ASFUNCTION(_setProxyType);
 	ASFUNCTION(_getURI);
+	ASFUNCTION(close);
 	ASPROPERTY_GETTER_SETTER(NullableRef<ASObject>,client);
 };
 

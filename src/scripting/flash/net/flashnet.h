@@ -368,6 +368,8 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER(bool,isSupported);
+	ASFUNCTION(allowDomain);
+	ASFUNCTION(allowInsecureDomain);
 };
 
 class NetGroup: public EventDispatcher

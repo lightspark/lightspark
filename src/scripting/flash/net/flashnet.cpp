@@ -1979,6 +1979,8 @@ LocalConnection::LocalConnection(Class_base* c):
 void LocalConnection::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,isSupported);
 }
 ASFUNCTIONBODY_GETTER(LocalConnection, isSupported);
@@ -1988,6 +1990,19 @@ ASFUNCTIONBODY(LocalConnection, _constructor)
 	EventDispatcher::_constructor(obj, NULL, 0);
 	LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection is not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(LocalConnection, allowDomain)
+{
+	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowDomain is not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(LocalConnection, allowInsecureDomain)
+{
+	EventDispatcher::_constructor(obj, NULL, 0);
+	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowInsecureDomain is not implemented");
 	return NULL;
 }
 

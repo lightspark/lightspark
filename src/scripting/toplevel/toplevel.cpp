@@ -116,8 +116,7 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 
 void Undefined::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Ignoring set on Undefined " << name);
-	o->decRef();
+	throwError<TypeError>(kConvertUndefinedToObjectError);
 }
 
 IFunction::IFunction(Class_base* c):ASObject(c),length(0),inClass(NULL)
@@ -787,7 +786,7 @@ void Class_base::copyBorrowedTraitsFromSuper()
 void Class_base::initStandardProps()
 {
 	incRef();
-	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this));
+	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this,0));
 	constructorprop->incRef();
 	addConstructorGetter();
 	
@@ -1627,14 +1626,14 @@ tiny_string ASQName::toString()
 	return s + local_name;
 }
 
-Namespace::Namespace(Class_base* c):ASObject(c)
+Namespace::Namespace(Class_base* c):ASObject(c),nskind(NAMESPACE)
 {
 	type=T_NAMESPACE;
 	prefix_is_undefined=false;
 }
 
 Namespace::Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& _prefix)
-  : ASObject(c),uri(_uri),prefix(_prefix)
+  : ASObject(c),nskind(NAMESPACE),uri(_uri),prefix(_prefix)
 {
 	type=T_NAMESPACE;
 	prefix_is_undefined=false;
@@ -1952,7 +1951,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		//Thus we make sure that everything is in order when getFunction() below is called
 		ret->addPrototypeGetter();
 		IFunction::sinit(ret);
-		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret));
+		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,ret->length));
 		ret->constructorprop->incRef();
 
 		ret->addConstructorGetter();
@@ -2380,7 +2379,7 @@ _NR<ASObject> ObjectPrototype::getVariableByMultiname(const multiname& name, GET
 }
 
 
-ObjectConstructor::ObjectConstructor(Class_base* c) : ASObject(c)
+ObjectConstructor::ObjectConstructor(Class_base* c,uint32_t length) : ASObject(c),_length(length)
 {
 	Class<ASObject>::getRef()->prototype->incRef();
 	this->prototype = Class<ASObject>::getRef()->prototype.getPtr();
@@ -2392,6 +2391,10 @@ _NR<ASObject> ObjectConstructor::getVariableByMultiname(const multiname& name, G
 	{
 		prototype->getObj()->incRef();
 		return _NR<ASObject>(prototype->getObj());
+	}
+	if (name.normalizedName() == "length")
+	{
+		return _NR<ASObject>(abstract_d(_length));
 	}
 	return getClass()->getVariableByMultiname(name, opt);
 }

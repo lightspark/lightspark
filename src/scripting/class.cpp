@@ -48,9 +48,9 @@ Function_object* lightspark::new_functionObject(_NR<ASObject> p)
 	return new (c->memoryAccount) Function_object(c, p);
 }
 
-ObjectConstructor* lightspark::new_objectConstructor(Class_base* cls)
+ObjectConstructor* lightspark::new_objectConstructor(Class_base* cls,uint32_t length)
 {
-	return new (cls->memoryAccount) ObjectConstructor(cls);
+	return new (cls->memoryAccount) ObjectConstructor(cls, length);
 }
 
 

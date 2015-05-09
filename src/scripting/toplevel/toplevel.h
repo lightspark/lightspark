@@ -299,8 +299,9 @@ public:
 class ObjectConstructor: public ASObject
 {
 	Prototype* prototype;
+	uint32_t _length;
 public:
-	ObjectConstructor(Class_base* c);
+	ObjectConstructor(Class_base* c,uint32_t length);
 	void incRef() { getClass()->incRef(); }
 	void decRef() { getClass()->decRef(); }
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
@@ -578,6 +579,7 @@ class Namespace: public ASObject
 friend class ASQName;
 friend class ABCContext;
 private:
+	NS_KIND nskind;
 	bool prefix_is_undefined;
 	tiny_string uri;
 	tiny_string prefix;

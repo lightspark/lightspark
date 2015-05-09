@@ -2140,7 +2140,11 @@ void ABCVm::newClass(call_context* th, int n)
 	if(ret->super)
 		ret->prototype->prevPrototype=ret->super->prototype;
 	ret->addPrototypeGetter();
-	ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret));
+	if (constructor->body)
+		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,ret->constructor->length));
+	else
+		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,0));
+	
 	ret->constructorprop->incRef();
 	ret->addConstructorGetter();
 

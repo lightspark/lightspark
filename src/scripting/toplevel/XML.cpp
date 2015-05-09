@@ -1324,7 +1324,7 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 			return _MNR(this);
 		}
 		else
-			return NullRef;
+			return _MNR(getSys()->getUndefinedRef());
 	}
 	else
 	{

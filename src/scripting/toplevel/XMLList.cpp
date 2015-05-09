@@ -688,7 +688,7 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 		if(index<nodes.size())
 			return nodes[index];
 		else
-			return NullRef;
+			return _MNR(getSys()->getUndefinedRef());
 	}
 	else
 	{

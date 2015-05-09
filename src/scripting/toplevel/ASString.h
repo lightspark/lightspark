@@ -63,6 +63,8 @@ public:
 	ASFUNCTION(toUpperCase);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_getLength);
+	ASFUNCTION(localeCompare);
+	ASFUNCTION(localeCompare_prototype);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	number_t toNumber() const;

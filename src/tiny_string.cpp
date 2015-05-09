@@ -505,7 +505,6 @@ tiny_string tiny_string::lowercase() const
 	uint32_t allocated = 2*numBytes()+7;
 	ret.createBuffer(allocated);
 	char *p = ret.buf;
-	char *pend = ret.buf + allocated;
 	uint32_t len = 0;
 	for (CharIterator it=begin(); it!=end(); it++)
 	{
@@ -528,7 +527,6 @@ tiny_string tiny_string::uppercase() const
 	uint32_t allocated = 2*numBytes()+7;
 	ret.createBuffer(allocated);
 	char *p = ret.buf;
-	char *pend = ret.buf + allocated;
 	uint32_t len = 0;
 	for (CharIterator it=begin(); it!=end(); it++)
 	{
@@ -583,6 +581,23 @@ CharIterator tiny_string::end() const
 {
 	//points to the trailing '\0' byte
 	return CharIterator(buf+numBytes());
+}
+
+int tiny_string::compare(const tiny_string& r) const
+{
+	int l = std::min(stringSize,r.stringSize);
+	int res = 0;
+	for(int i=0;i < l-1;i++)
+	{
+		res = (int)buf[i] - (int)r.buf[i];
+		if (res != 0)
+			return res;
+	}
+	if (stringSize > r.stringSize)
+		res = 1;
+	else if (stringSize < r.stringSize)
+		res = -1;
+	return res;
 }
 
 #ifdef MEMORY_USAGE_PROFILING

@@ -92,6 +92,7 @@ void ASString::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toLocaleUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("localeCompare",AS3,Class<IFunction>::getFunction(localeCompare),NORMAL_METHOD,true);
 	// According to specs fromCharCode belongs to AS3 namespace,
 	// but also empty namespace is seen in the wild and should be
 	// supported.
@@ -119,6 +120,7 @@ void ASString::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toUpperCase","",Class<IFunction>::getFunction(toUpperCase),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("localeCompare","",Class<IFunction>::getFunction(localeCompare_prototype),DYNAMIC_TRAIT);
 }
 
 void ASString::buildTraits(ASObject* o)
@@ -691,6 +693,27 @@ ASFUNCTIONBODY(ASString,toUpperCase)
 {
 	tiny_string data = obj->toString();
 	return Class<ASString>::getInstanceS(data.uppercase());
+}
+ASFUNCTIONBODY(ASString,localeCompare)
+{
+	tiny_string data = obj->toString();
+	tiny_string other;
+	ARG_UNPACK_MORE_ALLOWED(other);
+	if (argslen > 1)
+		LOG(LOG_NOT_IMPLEMENTED,"localeCompare with more than one parameter not implemented");
+	int ret = data.compare(other);
+	return abstract_i(ret);
+}
+ASFUNCTIONBODY(ASString,localeCompare_prototype)
+{
+	tiny_string data = obj->toString();
+	tiny_string other;
+	ARG_UNPACK_MORE_ALLOWED(other);
+	if (argslen > 1)
+		throwError<ArgumentError>(kWrongArgumentCountError, "localeCompare", "1",Integer::toString(argslen));
+
+	int ret = data.compare(other);
+	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(ASString,fromCharCode)

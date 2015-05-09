@@ -847,9 +847,8 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			assert(n && !n2);
 			assert_and_throw(n->classdef==Class<Namespace>::getClass());
 			Namespace* tmpns=static_cast<Namespace*>(n);
-			//TODO: What is the right kind?
 			ret->ns.clear();
-			ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
+			ret->ns.push_back(nsNameAndKind(tmpns->uri,tmpns->nskind));
 			n->decRef();
 			break;
 		}
@@ -860,7 +859,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			assert_and_throw(n2->classdef==Class<Namespace>::getClass());
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
-			ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
+			ret->ns.push_back(nsNameAndKind(tmpns->uri,tmpns->nskind));
 			ret->setName(n);
 			n->decRef();
 			n2->decRef();
@@ -1966,8 +1965,13 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		case 0x06: //Double
 			return abstract_d(constant_pool.doubles[index]);
 		case 0x08: //Namespace
+		{
 			assert_and_throw(constant_pool.namespaces[index].name);
-			return Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name));
+			Namespace* ret = Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name));
+			if (constant_pool.namespaces[index].kind != 0)
+				ret->nskind =(NS_KIND)(int)(constant_pool.namespaces[index].kind);
+			return ret;
+		}
 		case 0x0a: //False
 			return abstract_b(false);
 		case 0x0b: //True

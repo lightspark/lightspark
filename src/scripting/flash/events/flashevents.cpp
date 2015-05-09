@@ -556,7 +556,6 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		list<listener>::iterator insertionPoint=upper_bound(listeners.begin(),listeners.end(),newListener);
 		listeners.insert(insertionPoint,newListener);
 	}
-
 	return NULL;
 }
 
@@ -1191,6 +1190,50 @@ ASFUNCTIONBODY(DRMStatusEvent,_constructor)
 		LOG(LOG_NOT_IMPLEMENTED, "DRMStatusEvent constructor doesn't support all parameters");
 	return NULL;
 }
+
+VideoEvent::VideoEvent(Class_base* c)
+  : Event(c, "renderState"),status("unavailable")
+{
+}
+
+void VideoEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
+	c->setVariableByQName("RENDER_STATE","",Class<ASString>::getInstanceS("renderState"),CONSTANT_TRAIT);
+	c->setVariableByQName("RENDER_STATUS_ACCELERATED","",Class<ASString>::getInstanceS("accelerated"),CONSTANT_TRAIT);
+	c->setVariableByQName("RENDER_STATUS_SOFTWARE","",Class<ASString>::getInstanceS("software"),CONSTANT_TRAIT);
+	c->setVariableByQName("RENDER_STATUS_UNAVAILABLE","",Class<ASString>::getInstanceS("unavailable"),CONSTANT_TRAIT);
+	REGISTER_GETTER(c,status);
+}
+
+ASFUNCTIONBODY(VideoEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(obj,args,baseClassArgs);
+
+	VideoEvent* th=static_cast<VideoEvent*>(obj);
+	if(argslen>=4)
+	{
+		th->status=args[3]->toString();
+	}
+
+	return NULL;
+}
+
+Event* VideoEvent::cloneImpl() const
+{
+	VideoEvent *clone;
+	clone = Class<VideoEvent>::getInstanceS();
+	clone->status = status;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
+}
+
+ASFUNCTIONBODY_GETTER(VideoEvent,status);
+
 
 StageVideoEvent::StageVideoEvent(Class_base* c)
   : Event(c, "renderState"),status("unavailable")

@@ -505,6 +505,17 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class VideoEvent: public Event
+{
+private:
+	Event* cloneImpl() const;
+public:
+	VideoEvent(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER(tiny_string,status);
+};
+
 class StageVideoEvent: public Event
 {
 private:

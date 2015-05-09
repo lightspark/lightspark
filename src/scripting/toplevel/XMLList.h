@@ -93,6 +93,7 @@ public:
 	ASFUNCTION(comments);
 	ASFUNCTION(processingInstructions);
 	ASFUNCTION(_propertyIsEnumerable);
+	ASFUNCTION(_prependChild);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
@@ -103,6 +104,8 @@ public:
 	bool hasComplexContent() const;
 	void append(_R<XML> x);
 	void append(_R<XMLList> x);
+	void prepend(_R<XML> x);
+	void prepend(_R<XMLList> x);
 	tiny_string toString();
 	tiny_string toXMLString_internal(bool pretty=true);
 	int32_t toInt();

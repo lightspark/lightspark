@@ -91,7 +91,7 @@ void XML::sinit(Class_base* c)
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(toXMLString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("nodeKind","",Class<IFunction>::getFunction(nodeKind),DYNAMIC_TRAIT);	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(nodeKind),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(child),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(children),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("childIndex",AS3,Class<IFunction>::getFunction(childIndex),NORMAL_METHOD,true);
@@ -126,6 +126,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("processingInstructions",AS3,Class<IFunction>::getFunction(processingInstructions),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("propertyIsEnumerable",AS3,Class<IFunction>::getFunction(_propertyIsEnumerable),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(_hasOwnProperty),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("prependChild",AS3,Class<IFunction>::getFunction(_prependChild),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(XML,generator)
@@ -2426,3 +2427,43 @@ void XML::createTree(xmlpp::Node* node)
 	constructed=true;
 }
 
+ASFUNCTIONBODY(XML,_prependChild)
+{
+	XML* th=Class<XML>::cast(obj);
+	assert_and_throw(argslen==1);
+	_NR<XML> arg;
+	if(args[0]->getClass()==Class<XML>::getClass())
+	{
+		args[0]->incRef();
+		arg=_MR(Class<XML>::cast(args[0]));
+	}
+	else if(args[0]->getClass()==Class<XMLList>::getClass())
+	{
+		XMLList* list=Class<XMLList>::cast(args[0]);
+		list->appendNodesTo(th);
+		th->incRef();
+		return th;
+	}
+	else
+	{
+		//The appendChild specs says that any other type is converted to string
+		//NOTE: this is explicitly different from XML constructor, that will only convert to
+		//string Numbers and Booleans
+		arg=_MR(Class<XML>::getInstanceS(args[0]->toString()));
+	}
+
+	th->appendChild(arg);
+	th->incRef();
+	return th;
+}
+void XML::prependChild(_R<XML> newChild)
+{
+	if (newChild->constructed)
+	{
+		this->incRef();
+		newChild->parentNode = _NR<XML>(this);
+		childrenlist->append(newChild);
+	}
+	else
+		newChild->decRef();
+}

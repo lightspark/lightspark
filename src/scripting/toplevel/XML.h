@@ -66,6 +66,7 @@ private:
 	// Append node or attribute to this. Concatenates adjacent
 	// text nodes.
 	void appendChild(_R<XML> child);
+	void prependChild(_R<XML> child);
 	static void normalizeRecursive(XML *node);
 	void addTextContent(const tiny_string& str);
 	bool hasParentNode;
@@ -132,6 +133,7 @@ public:
 	ASFUNCTION(processingInstructions);
 	ASFUNCTION(_propertyIsEnumerable);
 	ASFUNCTION(_hasOwnProperty);
+	ASFUNCTION(_prependChild);
 
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);

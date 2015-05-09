@@ -127,7 +127,7 @@ void XMLList::sinit(Class_base* c)
 	REGISTER_XML_DELEGATE2(namespace,_namespace);
 	REGISTER_XML_DELEGATE(namespaceDeclarations);
 	REGISTER_XML_DELEGATE(nodeKind);
-	//REGISTER_XML_DELEGATE(prependChild);
+	REGISTER_XML_DELEGATE2(prependChild,_appendChild);
 	REGISTER_XML_DELEGATE(removeNamespace);
 	//REGISTER_XML_DELEGATE(replace);
 	REGISTER_XML_DELEGATE2(setChildren,_setChildren);
@@ -147,7 +147,7 @@ ASFUNCTIONBODY_XML_DELEGATE(name);
 ASFUNCTIONBODY_XML_DELEGATE(_namespace);
 ASFUNCTIONBODY_XML_DELEGATE(namespaceDeclarations);
 ASFUNCTIONBODY_XML_DELEGATE(nodeKind);
-//ASFUNCTIONBODY_XML_DELEGATE(prependChild);
+ASFUNCTIONBODY_XML_DELEGATE(_prependChild);
 ASFUNCTIONBODY_XML_DELEGATE(removeNamespace);
 //ASFUNCTIONBODY_XML_DELEGATE(replace);
 ASFUNCTIONBODY_XML_DELEGATE(_setChildren);
@@ -922,6 +922,16 @@ void XMLList::append(_R<XML> x)
 void XMLList::append(_R<XMLList> x)
 {
 	nodes.insert(nodes.end(),x->nodes.begin(),x->nodes.end());
+}
+
+void XMLList::prepend(_R<XML> x)
+{
+	nodes.insert(nodes.begin(),x);
+}
+
+void XMLList::prepend(_R<XMLList> x)
+{
+	nodes.insert(nodes.begin(),x->nodes.begin(),x->nodes.end());
 }
 
 void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retnodes,CONST_ALLOWED_FLAG allowConst)

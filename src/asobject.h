@@ -169,8 +169,9 @@ struct variable
 	IFunction* getter;
 	TRAIT_KIND kind;
 	TRAIT_STATE traitState;
+	bool isenumerable:1;
 	variable(TRAIT_KIND _k)
-		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE) {}
+		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE),isenumerable(true) {}
 	variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type);
 	void setVar(ASObject* v);
 	/*
@@ -308,6 +309,7 @@ public:
 	ASFUNCTION(valueOf);
 	ASFUNCTION(isPrototypeOf);
 	ASFUNCTION(propertyIsEnumerable);
+	ASFUNCTION(setPropertyIsEnumerable);
 	void check() const;
 	static void s_incRef(ASObject* o)
 	{

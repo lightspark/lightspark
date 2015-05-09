@@ -24,6 +24,7 @@
 #include <limits>
 #include "compat.h"
 #include "parsing/amf3_generator.h"
+#include "scripting/argconv.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"
 #include "scripting/toplevel/XML.h"
@@ -144,7 +145,7 @@ int variables_map::getNextEnumerable(unsigned int start) const
 		++it;
 	}
 
-	while(it->second.kind!=DYNAMIC_TRAIT)
+	while(it->second.kind!=DYNAMIC_TRAIT || !it->second.isenumerable)
 	{
 		++i;
 		++it;
@@ -180,6 +181,7 @@ _R<ASObject> ASObject::nextValue(uint32_t index)
 void ASObject::sinit(Class_base* c)
 {
 	c->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(hasOwnProperty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPropertyIsEnumerable",AS3,Class<IFunction>::getFunction(setPropertyIsEnumerable),NORMAL_METHOD,true);
 
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(_toLocaleString),DYNAMIC_TRAIT);
@@ -714,7 +716,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 }
 
 variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
-		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE)
+		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE),isenumerable(true)
 {
 	if(_type)
 	{
@@ -1056,6 +1058,21 @@ ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 	if (obj->hasPropertyByMultiname(name,true,false))
 		return abstract_b(true);
 	return abstract_b(false);
+}
+ASFUNCTIONBODY(ASObject,setPropertyIsEnumerable)
+{
+	tiny_string propname;
+	bool isEnum;
+	ARG_UNPACK(propname) (isEnum, true);
+	multiname name(NULL);
+	name.name_type=multiname::NAME_STRING;
+	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
+	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.isAttribute=false;
+	variable* v =obj->Variables.findObjVar(name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	if (v)
+		v->isenumerable = isEnum;
+	return NULL;
 }
 
 ASFUNCTIONBODY(ASObject,_constructor)

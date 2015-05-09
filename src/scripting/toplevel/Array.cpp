@@ -191,16 +191,20 @@ ASFUNCTIONBODY(Array,filter)
 	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
-		assert_and_throw(it->second.type==DATA_OBJECT);
-		params[0] = it->second.data;
-		it->second.data->incRef();
+		if (it->second.type==DATA_OBJECT)
+		{
+			params[0] = it->second.data;
+			it->second.data->incRef();
+		}
+		else
+			params[0] =abstract_d(it->second.data_i);
 		params[1] = abstract_i(it->first);
 		params[2] = th;
 		th->incRef();
 
 		// ensure that return values are the original values
-		ASObject *origval = it->second.data;
-		it->second.data->incRef();
+		ASObject *origval = params[0];
+		origval->incRef();
 		if(argslen==1)
 		{
 			funcRet=f->call(getSys()->getNullRef(), params, 3);
@@ -236,9 +240,13 @@ ASFUNCTIONBODY(Array, some)
 	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
-		assert_and_throw(it->second.type==DATA_OBJECT);
-		params[0] = it->second.data;
-		it->second.data->incRef();
+		if (it->second.type==DATA_OBJECT)
+		{
+			params[0] = it->second.data;
+			it->second.data->incRef();
+		}
+		else
+			params[0] =abstract_d(it->second.data_i);
 		params[1] = abstract_i(it->first);
 		params[2] = th;
 		th->incRef();
@@ -278,9 +286,13 @@ ASFUNCTIONBODY(Array, every)
 	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
-		assert_and_throw(it->second.type==DATA_OBJECT);
-		params[0] = it->second.data;
-		it->second.data->incRef();
+		if (it->second.type==DATA_OBJECT)
+		{
+			params[0] = it->second.data;
+			it->second.data->incRef();
+		}
+		else
+			params[0] =abstract_d(it->second.data_i);
 		params[1] = abstract_i(it->first);
 		params[2] = th;
 		th->incRef();
@@ -336,9 +348,13 @@ ASFUNCTIONBODY(Array,forEach)
 	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
-		assert_and_throw(it->second.type==DATA_OBJECT);
-		params[0] = it->second.data;
-		it->second.data->incRef();
+		if (it->second.type==DATA_OBJECT)
+		{
+			params[0] = it->second.data;
+			it->second.data->incRef();
+		}
+		else
+			params[0] =abstract_d(it->second.data_i);
 		params[1] = abstract_i(it->first);
 		params[2] = th;
 		th->incRef();
@@ -613,7 +629,6 @@ ASFUNCTIONBODY(Array,indexOf)
 	ARG_UNPACK(arg0) (index, 0);
 	if (index < 0) index = abs(index);
 
-
 	DATA_TYPE dtype;
 	std::map<uint32_t,data_slot>::iterator it;
 	for ( it=th->data.begin() ; it != th->data.end(); ++it )
@@ -624,7 +639,7 @@ ASFUNCTIONBODY(Array,indexOf)
 		dtype = sl.type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
 		if((dtype == DATA_OBJECT && sl.data->isEqualStrict(arg0.getPtr())) ||
-			(dtype == DATA_INT && arg0->toInt() == sl.data_i))
+			(dtype == DATA_INT && abstract_d(sl.data_i)->isEqualStrict(arg0.getPtr())))
 		{
 			ret=it->first;
 			break;
@@ -1217,7 +1232,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 					ret->incRef();
 					break;
 				case DATA_INT:
-					ret=abstract_i(sl.data_i);
+					ret=abstract_d(sl.data_i);
 					break;
 			}
 		}
@@ -1426,7 +1441,7 @@ _R<ASObject> Array::nextValue(uint32_t index)
 			}
 		}
 		else if(sl.type==DATA_INT)
-			return _MR(abstract_i(sl.data_i));
+			return _MR(abstract_d(sl.data_i));
 		else
 			throw UnsupportedException("Unexpected data type");
 	}
@@ -1478,7 +1493,7 @@ _R<ASObject> Array::nextName(uint32_t index)
 _R<ASObject> Array::at(unsigned int index) const
 {
 	if(size()<=index)
-		outofbounds();
+		outofbounds(index);
 
 	if (!data.count(index))
 		return _MR(getSys()->getUndefinedRef());
@@ -1494,16 +1509,16 @@ _R<ASObject> Array::at(unsigned int index) const
 			}
 		}
 		case DATA_INT:
-			return _MR(abstract_i(sl.data_i));
+			return _MR(abstract_d(sl.data_i));
 	}
 
 	//We should be here only if data is an object and is NULL
 	return _MR(getSys()->getUndefinedRef());
 }
 
-void Array::outofbounds() const
+void Array::outofbounds(unsigned int index) const
 {
-	throw ParseException("Array access out of bounds");
+	throwError<RangeError>(kInvalidArrayLengthError, Number::toString(index));
 }
 
 void Array::resize(uint64_t n)
@@ -1638,4 +1653,26 @@ void Array::finalize()
 	data.clear();
 }
 
+void Array::set(unsigned int index, _R<ASObject> o)
+{
+	if(index<currentsize)
+	{
+		if(!data.count(index))
+			data[index]=data_slot();
+		if(o->getObjectType()==T_INTEGER)
+		{
+			Integer* i=o->as<Integer>();
+			data[index].data_i=i->val;
+			data[index].type=DATA_INT;
+		}
+		else
+		{
+			o->incRef();
+			data[index].data=o.getPtr();
+			data[index].type=DATA_OBJECT;
+		}
+	}
+	else
+		outofbounds(index);
+}
 

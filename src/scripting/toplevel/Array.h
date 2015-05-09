@@ -48,16 +48,15 @@ struct sorton_field
 	sorton_field(const multiname& sortfieldname):isNumeric(false),isCaseInsensitive(false),isDescending(false),fieldname(sortfieldname){}
 };
 
-
 class Array: public ASObject
 {
 friend class ABCVm;
 protected:
-	uint32_t currentsize;
+	uint64_t currentsize;
 	typedef std::map<uint32_t,data_slot,std::less<uint32_t>,
 		reporter_allocator<std::pair<const uint32_t, data_slot>>> arrayType;
 	arrayType data;
-	void outofbounds() const;
+	void outofbounds(unsigned int index) const;
 	~Array();
 private:
 	class sortComparatorDefault
@@ -128,28 +127,15 @@ public:
 	ASFUNCTION(some);
 
 	_R<ASObject> at(unsigned int index) const;
-	void set(unsigned int index, _R<ASObject> o)
-	{
-		if(index<currentsize)
-		{
-			if(!data.count(index))
-				data[index]=data_slot();
-			o->incRef();
-			data[index].data=o.getPtr();
-			data[index].type=DATA_OBJECT;
-		}
-		else
-			outofbounds();
-	}
+	void set(unsigned int index, _R<ASObject> o);
 	uint64_t size() const
 	{
 		return currentsize;
 	}
 	void push(_R<ASObject> o)
 	{
-		o->incRef();
-		data[currentsize] = data_slot(o.getPtr());
 		currentsize++;
+		set(currentsize-1,o);
 	}
 	void resize(uint64_t n);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);

@@ -1738,7 +1738,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 		{
 			// check for cylic reference
-			if (std::find(path.begin(),path.end(), varIt->second.var) != path.end())
+			if (!varIt->second.var->isPrimitive() && std::find(path.begin(),path.end(), varIt->second.var) != path.end())
 				throwError<TypeError>(kJSONCyclicStructure);
 
 			if (replacer != NULL)

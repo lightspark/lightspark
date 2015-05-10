@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 #This greps the source for SET_NAMESPACE, REGISTER_CLASS_NAME2,
 #sinit definition and the following ->set{Getter,Setter,Method}ByQName calls
 
@@ -21,7 +21,7 @@ if len(sys.argv) < 2:
 	print("Call by langref_parser langref-directory")
 	print("If you do not have a langref directory,")
 	print("please download http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/standalone.zip")
-        print("and unpack it.")
+	print("and unpack it.")
 	exit(1)
 
 langref = sys.argv[1]
@@ -71,10 +71,11 @@ for dirpath, dirnames, filenames in os.walk(langref):
 				if m:
 					if dirpath==langref:
 						curClass = m.group(1)
+						isConst = False
 					else:
 						curClass = dirpath.replace("langref/","").replace("/",".") +"."+ m.group(1)
-			                dclasses.add(curClass)
-			                isConst = False
+						dclasses.add(curClass)
+						isConst = False
 					break
 				m = regconst.search(line)
 				if m:
@@ -84,7 +85,7 @@ for dirpath, dirnames, filenames in os.walk(langref):
 					#there may be another match on this line
 				m = regproperty.search(line)
 				if m:
-					name = m.group(1)
+					name = m.group(1).replace("#","").replace("(","").replace(")","")
 					isOverride = m.group(2) != None
 					isStatic = m.group(3) != None
 					isReadOnly = m.group(4) != None
@@ -94,7 +95,7 @@ for dirpath, dirnames, filenames in os.walk(langref):
 					continue
 				m = regmethod.search(line)
 				if m:
-					name = m.group(1)
+					name = m.group(1).replace("#","").replace("(","").replace(")","")
 					dmethods.add((curClass,name))
 					line = line[m.end():]
 					continue

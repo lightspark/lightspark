@@ -1740,6 +1740,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 			// check for cylic reference
 			if (varIt->second.var->getObjectType() != T_UNDEFINED &&
 				varIt->second.var->getObjectType() != T_NULL &&
+				varIt->second.var->getObjectType() != T_BOOLEAN &&
 					(varIt->second.var == this ||
 					 std::find(path.begin(),path.end(), varIt->second.var) != path.end() ||
 					 std::find(path.begin(),path.end(), this) != path.end() ))
@@ -1784,7 +1785,8 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 				bfirst = false;
 			}
 			if (varIt->second.var->getObjectType() != T_UNDEFINED &&
-				varIt->second.var->getObjectType() != T_NULL)
+				varIt->second.var->getObjectType() != T_NULL &&
+				varIt->second.var->getObjectType() != T_BOOLEAN)
 				path.push_back(varIt->second.var);
 		}
 		if (!bfirst)

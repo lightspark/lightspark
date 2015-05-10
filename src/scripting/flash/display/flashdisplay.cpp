@@ -195,6 +195,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	EventDispatcher::_constructor(obj,NULL,0);
 	th->sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
 	th->parameters = _MR(Class<ASObject>::getInstanceS());
+	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS());
 	return NULL;
 }
 
@@ -379,6 +380,7 @@ ASFUNCTIONBODY(Loader,_constructor)
 	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
 	th->contentLoaderInfo->setLoaderURL(getSys()->mainClip->getOrigin().getParsedURL());
+	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS());
 	return NULL;
 }
 

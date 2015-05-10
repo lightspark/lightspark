@@ -13,9 +13,10 @@ import pickle
 
 #These regexp are used for finding important pieces in the source
 sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
-rconstructor = re.compile('[^/]*->setConstructor\(NULL|Class<IFunction>::getFunction\([^)]*\)\).*')
+rconstructor = re.compile('[^/]*ASFUNCTIONBODY\([^,]*, *\_constructor\)')
 #looks like builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef());
 rclass          = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(\)\)')
+rtemplateclass  = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(Template<([^>]*)>::getTemplate\(\)\)\)')
 rinterfaceclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(\)\)')
 #looks like builtin->registerBuiltin("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")));
 rstupclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<ASObject>::getStubClass\(QName.*')
@@ -55,8 +56,13 @@ curClass = ""
 f = open('../src/scripting/abc.cpp','r')
 for line in f.read().replace("\n","").replace("\t"," ").split(";"):
 	m = rclass.match(line)
-        if m:
+	if m:
 		fullname = getFullname(m.group(2),m.group(1))
+		internalToExternal[m.group(3)] = fullname
+		classes.add(fullname)
+	m = rtemplateclass.match(line)
+	if m:
+		fullname = getFullname("",m.group(1))
 		internalToExternal[m.group(3)] = fullname
 		classes.add(fullname)
 	m = rinterfaceclass.match(line)

@@ -622,7 +622,6 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 
 	args[0]->incRef();
 	_R<Event> e=_MR(Class<Event>::cast(args[0]));
-	assert_and_throw(e->type!="");
 
 	// Must call the AS getter, because the getter may have been
 	// overridden

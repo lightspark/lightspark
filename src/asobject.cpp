@@ -1738,7 +1738,11 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 		{
 			// check for cylic reference
-			if (!varIt->second.var->isPrimitive() && std::find(path.begin(),path.end(), varIt->second.var) != path.end())
+			if (varIt->second.var->getObjectType() != T_UNDEFINED &&
+				varIt->second.var->getObjectType() != T_NULL &&
+					(varIt->second.var == this ||
+					 std::find(path.begin(),path.end(), varIt->second.var) != path.end() ||
+					 std::find(path.begin(),path.end(), this) != path.end() ))
 				throwError<TypeError>(kJSONCyclicStructure);
 
 			if (replacer != NULL)
@@ -1779,7 +1783,9 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 				res += varIt->second.var->toJSON(path,replacer,spaces+spaces,filter);
 				bfirst = false;
 			}
-			path.push_back(varIt->second.var);
+			if (varIt->second.var->getObjectType() != T_UNDEFINED &&
+				varIt->second.var->getObjectType() != T_NULL)
+				path.push_back(varIt->second.var);
 		}
 		if (!bfirst)
 			res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);

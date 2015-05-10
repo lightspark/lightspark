@@ -284,7 +284,8 @@ public:
 	ASFUNCTION_GETTER_SETTER(shiftKey);
 	ASPROPERTY_GETTER(number_t,stageX);
 	ASPROPERTY_GETTER(number_t,stageY);
-	ASPROPERTY_GETTER(_NR<InteractiveObject>,relatedObject);	
+	ASPROPERTY_GETTER(_NR<InteractiveObject>,relatedObject);
+	ASFUNCTION(updateAfterEvent);
 };
 
 class InvokeEvent: public Event

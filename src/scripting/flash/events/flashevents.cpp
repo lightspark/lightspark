@@ -291,6 +291,7 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("RIGHT_CLICK","",Class<ASString>::getInstanceS("rightClick"),DECLARED_TRAIT);
 	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver"),DECLARED_TRAIT);
 	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(updateAfterEvent),NORMAL_METHOD,true);
 
 	REGISTER_GETTER(c,relatedObject);
 	REGISTER_GETTER(c,stageX);
@@ -441,6 +442,11 @@ ASFUNCTIONBODY(MouseEvent,_setter_shiftKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
 	th->modifiers |= GDK_SHIFT_MASK;
+	return NULL;
+}
+ASFUNCTIONBODY(MouseEvent,updateAfterEvent)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"MouseEvent::updateAfterEvent not implemented");
 	return NULL;
 }
 

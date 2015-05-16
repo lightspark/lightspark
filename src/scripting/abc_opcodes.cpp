@@ -1229,8 +1229,7 @@ bool ABCVm::pushFalse()
 ASObject* ABCVm::pushNaN()
 {
 	LOG(LOG_CALLS, _("pushNaN") );
-	//Not completely correct, but mostly ok
-	return getSys()->getUndefinedRef();
+	return abstract_d(Number::NaN);
 }
 
 bool ABCVm::ifGT(ASObject* obj2, ASObject* obj1)

@@ -36,7 +36,7 @@ class Capabilities: public ASObject
 public:
 	DLL_PUBLIC static const char* EMULATED_VERSION;
 	static const char* MANUFACTURER;
-	Capabilities(Class_base* c):ASObject(c){};
+	Capabilities(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_getLanguage);
 	ASFUNCTION(_getPlayerType);
@@ -51,6 +51,7 @@ public:
 	ASFUNCTION(_getScreenResolutionX);
 	ASFUNCTION(_getScreenResolutionY);
 	ASFUNCTION(_getHasAccessibility);
+	ASFUNCTION(_getScreenDPI);
 };
 
 class ApplicationDomain: public ASObject

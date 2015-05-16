@@ -57,6 +57,7 @@ void Capabilities::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("screenResolutionX","",Class<IFunction>::getFunction(_getScreenResolutionX),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("screenResolutionY","",Class<IFunction>::getFunction(_getScreenResolutionY),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("hasAccessibility","",Class<IFunction>::getFunction(_getHasAccessibility),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("screenDPI","",Class<IFunction>::getFunction(_getScreenDPI),GETTER_METHOD,false);
 	
 }
 
@@ -175,6 +176,12 @@ ASFUNCTIONBODY(Capabilities,_getHasAccessibility)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"hasAccessibility always returns false");
 	return abstract_b(false);
+}
+ASFUNCTIONBODY(Capabilities,_getScreenDPI)
+{
+	GdkScreen*  screen = gdk_screen_get_default();
+	gdouble dpi = gdk_screen_get_resolution (screen);
+	return abstract_d(dpi);
 }
 
 #define MIN_DOMAIN_MEMORY_LIMIT 1024
@@ -586,7 +593,7 @@ void ASWorker::sinit(Class_base* c)
 ASFUNCTIONBODY(ASWorker,_getCurrent)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
-	return getSys()->getUndefinedRef();
+	return Class<ASObject>::getInstanceS();
 }
 
 

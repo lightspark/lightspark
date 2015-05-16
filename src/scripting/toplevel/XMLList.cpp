@@ -1085,6 +1085,9 @@ ASFUNCTIONBODY(XMLList,toXMLString)
 
 bool XMLList::isEqual(ASObject* r)
 {
+	if (!isConstructed())
+		return !r->isConstructed() || r->getObjectType() == T_NULL || r->getObjectType() == T_UNDEFINED;
+
 	if(nodes.size()==0 && r->getObjectType()==T_UNDEFINED)
 		return true;
 

@@ -2298,6 +2298,8 @@ _R<ASObject> XML::nextValue(uint32_t index)
 
 bool XML::isEqual(ASObject* r)
 {
+	if (!isConstructed())
+		return !r->isConstructed() || r->getObjectType() == T_NULL || r->getObjectType() == T_UNDEFINED;
 	XML *x=dynamic_cast<XML *>(r);
 	if(x)
 		return nodesEqual(this, x);
